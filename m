@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab2DTIqy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 04:46:54 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:56570 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab2DTIqu (ORCPT
+	id S1753023Ab2DTIr5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 04:47:57 -0400
+Received: from grania.neolocation.net ([91.149.189.243]:50549 "EHLO
+	grania.neolocation.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab2DTIrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 04:46:50 -0400
-Date: Fri, 20 Apr 2012 10:46:47 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/3] x86, extable: Handle early exceptions
-Message-ID: <20120420084647.GA3247@aftab.osrc.amd.com>
-References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
- <20120419092255.GA29542@aftab>
- <20120419092630.GD29542@aftab>
- <4F904541.2030200@zytor.com>
- <CA+55aFwMsm7zVqPjKptm38zJAbJpF=9e51ew7BP6S5YnoJa3ig@mail.gmail.com>
- <20120419173802.GI3221@aftab.osrc.amd.com>
- <CA+55aFywgsZsxRpYeY2TCHUuK6uRvp8fp8GZEVk50qNc=WS=dw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFywgsZsxRpYeY2TCHUuK6uRvp8fp8GZEVk50qNc=WS=dw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Apr 2012 04:47:55 -0400
+X-Greylist: delayed 935 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Apr 2012 04:47:54 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tekinsoft.com;
+	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:DomainKey-Status;
+	b=WA4e+gwo/rFPOXAbXNMFORXX9YE6zEM1pZmai9gfqwtdtmD0nLA/V3vtwrgKmQto5yRAcmXuxrqg/PHyml5of1O7lLGb3Ahxlphrb4D7KXBEswfVLTJs+Bz1R3zR0/vIfTeupOO947La1svPcdLZFCCVqHTRdpBZAQE2bT9Ijt0=;
+From: Yuri Matylitski <ym@tekinsoft.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Johan Hovold <jhovold@gmail.com>,
+        Preston Fick <preston.fick@silabs.com>,
+        Yuri Matylitski <ym@tekinsoft.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kirill@shutemov.name, Yuri Matylitski <ym@tekinsoft.com>
+Subject: [PATCH] Fixed too small hardcoded timeout values for usb_control_msg in driver for SiliconLabs cp210x-based usb-to-serial adapters. Replaced with USB_CTRL_GET_TIMEOUT/USB_CTRL_SET_TIMEOUT.
+Date: Fri, 20 Apr 2012 11:32:02 +0300
+Message-Id: <1334910722-7357-1-git-send-email-ym@tekinsoft.com>
+X-Mailer: git-send-email 1.7.0.4
+DomainKey-Status: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 11:11:00AM -0700, Linus Torvalds wrote:
-> > OTOH, if we can share early and normal exception handling lookup code, then a
-> > perfect hash would make sense as those exceptions would pile up.
-> 
-> Oh, any of this only makes sense if we can share it with the runtime
-> exception lookup.
-> 
-> They are *seldom* hugely performance-critical, but there are some
-> unusual loads where you do get a fair number of exceptions.
+Signed-off-by: Yuri Matylitski <ym@tekinsoft.com>
+---
+ drivers/usb/serial/cp210x.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-I was thinking, and this is probably purely hypothetical and tangential
-to the topic but, what happens if we get an exception right in the
-middle between using the early_idt_handler's and switching to the normal
-trap handlers in trap_init()?
-
-write_idt_entry() is a simple memcpy so what happens if we have a
-half-written descriptor? Won't we need some locking there to atomize the
-switch?
-
-Or am I dreaming?
-
-Thanks.
-
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 0310e2d..e56066b 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -287,7 +287,8 @@ static int cp210x_get_config(struct usb_serial_port *port, u8 request,
+ 	/* Issue the request, attempting to read 'size' bytes */
+ 	result = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_DEVICE_TO_HOST, 0x0000,
+-				port_priv->bInterfaceNumber, buf, size, 300);
++				port_priv->bInterfaceNumber, buf, size,
++				USB_CTRL_GET_TIMEOUT);
+ 
+ 	/* Convert data into an array of integers */
+ 	for (i = 0; i < length; i++)
+@@ -340,12 +341,14 @@ static int cp210x_set_config(struct usb_serial_port *port, u8 request,
+ 		result = usb_control_msg(serial->dev,
+ 				usb_sndctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_HOST_TO_DEVICE, 0x0000,
+-				port_priv->bInterfaceNumber, buf, size, 300);
++				port_priv->bInterfaceNumber, buf, size,
++				USB_CTRL_SET_TIMEOUT);
+ 	} else {
+ 		result = usb_control_msg(serial->dev,
+ 				usb_sndctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_HOST_TO_DEVICE, data[0],
+-				port_priv->bInterfaceNumber, NULL, 0, 300);
++				port_priv->bInterfaceNumber, NULL, 0,
++				USB_CTRL_SET_TIMEOUT);
+ 	}
+ 
+ 	kfree(buf);
 -- 
-Regards/Gruss,
-Boris.
+1.7.0.4
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
