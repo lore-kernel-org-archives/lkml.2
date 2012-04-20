@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab2DTJhj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 05:37:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56357 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651Ab2DTJhi (ORCPT
+	id S1753769Ab2DTJis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 05:38:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43111 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab2DTJir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 05:37:38 -0400
-Date: Fri, 20 Apr 2012 17:37:38 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: lkml <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: [RFC]Is usb port number fixed?
-Message-ID: <20120420093738.GA12755@udknight>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
-	lkml <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-References: <20120420092525.GA12660@udknight>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420092525.GA12660@udknight>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Apr 2012 05:38:47 -0400
+Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>, Lin Ming <mlin@ss.pku.edu.cn>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>
+In-Reply-To: <1334812653.14538.29.camel@ymzhang.sh.intel.com>
+References: <EE928378561BF1449699C96571234A740FCED62F@SHSMSX101.ccr.corp.intel.com>
+	 <4F8F8B9E.3040107@gmail.com>
+	 <1334812653.14538.29.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Apr 2012 11:38:39 +0200
+Message-ID: <1334914719.2463.32.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 05:25:25PM +0800, Wang YanQing wrote:
-> Hi!
-> when I execute the command below:
-> 
-> "ls /sys/bus/usb/devices/"
-> 
-> I get:
-> "1-0:1.0 1-1 1-1:1.0 2-0:1.0 2-1 2-1.1 2-1:1.0 2-1.1:1.0 2-1.5 2-1.5:1.0 2-1.5:1.1  usb1  usb2"
-> 
-> the output format is bus-port.port:config.interface
-> I want to know whether the port number is fixed after I reboot machine time by time.
-> And if it is fixed, then what make it.
-> 
-> Thanks!
+On Thu, 2012-04-19 at 13:17 +0800, Yanmin Zhang wrote:
+> Although not checking the source codes of pstack (sorry, I'm busy in debugging
+> many critical issues), I think pstack is based on ptrace interface, which means:
+> 1) It need traps into system for many times to collect call frames of one
+> task.
+> 2) It need send signal to the ptraced process to stop it. Such behavior
+> might have some impact if the ptraced process also processes many signals.
 
-Make the question precise.
-I assme there are two usb ports in my notebook at left and right separately.
-When I plug mouse into 
-left usb port, I get 2-1.1:1.0
-right usb port, I get 2-1.2:1.0
+Yeah, but who cares.. its debugging stuff..
 
-I want to know whether it is right that no matter how many times I reboot the machine,
-the test result above will be the same.And if it will be the same, then why it will be the same.
+> 3) The data parsing to get symbols might not be split from data collection.
+> I mean, it collects call frames of one process, then parses it; then collects the 2nd
+> task's. If there are many processes, it couldn't collect the data just at the monitor
+> time point. 
 
+This is equally true for your silly patch.
 
