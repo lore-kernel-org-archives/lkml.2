@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab2DTG7d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 02:59:33 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:18299 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab2DTG7b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 02:59:31 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6686"; a="181088131"
-Message-ID: <4F910941.4000702@codeaurora.org>
-Date: Thu, 19 Apr 2012 23:59:13 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1754983Ab2DTHBS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 03:01:18 -0400
+Received: from teranetworks.de ([188.40.78.98]:36471 "EHLO teranetworks.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754575Ab2DTHBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 03:01:16 -0400
+X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Apr 2012 03:01:16 EDT
+Date: Fri, 20 Apr 2012 08:51:50 +0200
+From: Andreas Herz <andi@geekosphere.org>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de
+Subject: msecs_to_jiffies() still returns values greater then MAX_JIFFY_OFFSET
+Message-ID: <20120420065150.GG22975@sweethome.fritz.box>
 MIME-Version: 1.0
-To: Bryan Wu <bryan.wu@canonical.com>
-CC: linux@arm.linux.org.uk, rpurdie@rpsys.net,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, akpm@linux-foundation.org,
-        arnd.bergmann@linaro.org, nicolas.pitre@linaro.org,
-        tim.gardner@canonical.com
-Subject: Re: [PATCH 01/18] led-triggers: create a trigger for CPU activity
-References: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com> <1334660025-20442-2-git-send-email-bryan.wu@canonical.com>
-In-Reply-To: <1334660025-20442-2-git-send-email-bryan.wu@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/17/2012 3:53 AM, Bryan Wu wrote:
-> +static int __init ledtrig_cpu_init(void)
-> +{
-> +	int cpu;
-> +
-> +	/* Supports up to 9999 cpu cores */
-> +	BUILD_BUG_ON(CONFIG_NR_CPUS > 9999);
-> +
-> +	/*
-> +	 * Registering CPU led trigger for each CPU cores here
-> +	 * ignores CPU hotplug, but after this CPU hotplug works
-> +	 * fine with this trigger.
-> +	 */
-> +	for_each_possible_cpu(cpu) {
-> +		struct led_trigger *trig;
-> +		char *name = per_cpu(trig_name, cpu);
-> +		struct rw_semaphore *lock = &per_cpu(trig_lock, cpu);
-> +
-> +		init_rwsem(lock);
+Hi,
 
-What is this lock protecting?
+i'm new to the LKML and so i couldn't reply to the old mail from Mar
+2011.
 
-> +
-> +		snprintf(name, MAX_NAME_LEN, "cpu%d", cpu);
-> +
-> +		down_write(lock);
-> +		led_trigger_register_simple(name, &trig);
-> +		per_cpu(cpu_trig, cpu) = trig;
-> +		up_write(lock);
+On 29 Mar 2011 there was already a disucssion about this issue:
 
-This is the only place it is locked and unlocked.
+http://lkml.org/lkml/2011/3/29/262
 
-I think the previous comment was about how led_trigger_register_simple()
-exposed a live trigger but it wasn't assigned to the per_cpu variable
-yet. Can we not just reorder the assignment so we have
+The problem still exists, as /kernel/time.c wasn't patched. I stumbled
+upon this "bug" when i modified the ipset sourcecode that uses
+msecs_to_jiffies() for timeout calculations.
 
-  struct led_trigger *trig = NULL;
-  ...
-  per_cpu(cpu_trig, cpu) = trig;
-  led_trigger_register_simple();
+When i call msecs_to_jiffies(2147483000) the return value is 2147483000
+on my x86 32-Bit System with 1000Hz. When i call the function with
+msecs_to_jiffies(2147484000) the return value is MAX_JIFFY_OFFSET what's
+1073741822 on my system. That isn't the behaviour i expect from this
+comment in time.c:
 
-?
+ * - 'too large' values [that would result in larger than
+ *   MAX_JIFFY_OFFSET values] mean 'infinite timeout' too.
+
+So you can pass values greater then MAX_JIFFY_OFFSET up to INT_MAX in
+this example although the limit should be at INT_MAX/2 for
+MAX_JIFFY_OFFSET. 
+
+I'm not sure if the solution is to increase MAX_JIFFY_OFFSET or to catch
+values between this gap. I also don't understand why the function
+returns a unsigned long but is limited to integer. It could be nice to
+increase the values that can be handled with this function.
+
+Greetings
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Andreas Herz
