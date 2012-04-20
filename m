@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab2DTJxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 05:53:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54721 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753928Ab2DTJxV (ORCPT
+	id S1753934Ab2DTJyg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 05:54:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51140 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709Ab2DTJyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 05:53:21 -0400
-Date: Fri, 20 Apr 2012 17:59:56 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Andreas Dilger <adilger@whamcloud.com>
-Cc: Lukas Czerner <lczerner@redhat.com>, Eric Sandeen <sandeen@redhat.com>,
+	Fri, 20 Apr 2012 05:54:35 -0400
+Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>, Lin Ming <mlin@ss.pku.edu.cn>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
-Message-ID: <20120420095956.GB30070@gmail.com>
-Mail-Followup-To: Andreas Dilger <adilger@whamcloud.com>,
-	Lukas Czerner <lczerner@redhat.com>,
-	Eric Sandeen <sandeen@redhat.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	Zheng Liu <wenqing.lz@taobao.com>
-References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
- <4F8DAAFE.40500@redhat.com>
- <D225F088-A53F-4962-97AD-13C850BBA722@whamcloud.com>
- <alpine.LFD.2.00.1204181015050.5310@dhcp-27-109.brq.redhat.com>
- <20120418124811.GD3447@gmail.com>
- <341F6DCC-1788-4ACC-A86E-A5D99CC05320@whamcloud.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <341F6DCC-1788-4ACC-A86E-A5D99CC05320@whamcloud.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>
+In-Reply-To: <1334812653.14538.29.camel@ymzhang.sh.intel.com>
+References: <EE928378561BF1449699C96571234A740FCED62F@SHSMSX101.ccr.corp.intel.com>
+	 <4F8F8B9E.3040107@gmail.com>
+	 <1334812653.14538.29.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Apr 2012 11:54:28 +0200
+Message-ID: <1334915668.2463.43.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 08:09:02AM -0700, Andreas Dilger wrote:
-> Looking at these performance numbers again, it would seem better if ext4 _was_ zero filling the whole file and converting the whole thing to initialized extents instead of leaving so many uninitialized extents behind.
-> 
-> The file size is 256MB, and the disk would have to be doing only 3.5MB/s for linear streaming writes to match the performance that you report, so a modern disk doing 50MB/s should be able to zero the whole file in 5s.
-> 
-> It seems the threshold for zeroing uninitialized extents is incorrect. EXT4_EXT_ZERO_LEN is only 7 blocks (28kB normally), but typical disks can write 64kB as easily as 4kB, so it would be interesting to change EXT4_EXT_ZERO_LEN to 16 and re-run your test. 
-> 
-> If that solves this particular test case, it wont necessarily the general case, but is still a useful fix.  If you submit a patch for this, please change this code to compare against 64kB instead of a block count, and also to take s_raid_stride into account if set, like:
-> 
->         ext_zero_len = max(EXT4_EXT_ZERO_LEN * 1024 >> inode->i_blkbits,
->                            EXT4_SB(inode->i_sb)->s_es->s_raid_stride);
-> 
-> This would write up to 64kB, or a full RAID stripe (since it already needs to seek that spindle), whichever is larger.  It isn't perfect, since it should really align the zero-out to the RAID stripe to avoid seeking two spindles, but it is a starting point. 
+On Thu, 2012-04-19 at 13:17 +0800, Yanmin Zhang wrote:
+> 1) We could collect the HEX-format call chain data and /proc/XXX/maps
+> of all the processes quickly, then parse them either after rebooting, or
+> after the issue is reported. It could catch the scene just at the time point
+> when the error happens. Our experiments shows the tool could collect the data
+> of all processes within 200ms.
 
-Hi Andreas,
+No you can't, ever heard of address space randomization?
 
-I set EXT4_EXT_ZERO_LEN to 16 and run the same benchmark again.  the result
-is the same as before.
+> 2) The new tool won't stop the processes and have less impact on them.
+> Considering a scenario of performance bottleneck investigation, statistics collection
+> shouldn't have big impact on running processes. 
 
-I notice this commit (3977c965) and it set EXT4_EXT_ZERO_LEN to 7.  But
-in commit log, it doesn't describe why this value is set to 7.  As you
-said, I believe that the disk writes 64K as easily as as 4k in modern
-disk.  So maybe we can consider to set it to 16 or RAID stripe. :)
+Maybe.. on these tiny systems you're working on most tasks will not be
+runnable anyway since you only have 1 (maybe 2) cpus and what's running
+is your dumper process, so most everything isn't runnable, attaching and
+dumping stack of all tasks isn't really much more expensive than this.
 
-Regards,
-Zheng
+the open/read/close you do on the proc files, along with the readdir
+etc.. are system-calls just like the ptrace alternative.
+
+> 3) It could support both i386 and x86-64. I tried pstack and it doesn't work
+> with x86-64.
+
+Yeah, and you'll need to extend it to ARM/MIPS/etc.. whereas there is
+plenty of userspace around that can already work on all those platforms
+-- if pstack cannot its weird, I'd think it would use all the regular
+binutils muck that already supports all the platforms.
+
+> 4) It follows /proc/XXX/stack interface and it's easy to use it.
+
+Uhm, not so very much, see your ASLR issue. Furthermore it requires all
+userspace be build with framepointers enabled -- which I think would be
+a good thing anyway -- but with which reality seems to disagree.
+
