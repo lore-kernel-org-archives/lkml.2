@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab2DTU4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 16:56:34 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:37848 "EHLO
+	id S1753936Ab2DTU4t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 16:56:49 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:42752 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697Ab2DTU4b (ORCPT
+	with ESMTP id S1753723Ab2DTU4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 16:56:31 -0400
+	Fri, 20 Apr 2012 16:56:32 -0400
 From: mathieu.poirier@linaro.org
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, mathieu.poirier@linaro.org
-Subject: [PATCH 7/8] sungem: use mdelay instead of udelay where necessary
-Date: Fri, 20 Apr 2012 14:56:15 -0600
-Message-Id: <1334955376-17793-8-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 8/8] drivers/net: decouple ISA and ISA_DMA_API
+Date: Fri, 20 Apr 2012 14:56:16 -0600
+Message-Id: <1334955376-17793-9-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1334955376-17793-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1334955376-17793-1-git-send-email-mathieu.poirier@linaro.org>
@@ -22,29 +22,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnd Bergmann <arnd@arndb.de>
 
-Some architectures like ARM cannot handle large numbers as
-arguments to udelay, so the drivers should use mdelay when
-delaying for multiple miliseconds.
+The two options are separate, and some platforms (e.g. arm pxa)
+have ISA slots but no ISA dma controller, so they cannot build
+drivers using the DMA API functions.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- drivers/net/ethernet/sun/sungem.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/tokenring/Kconfig    |    6 +++---
+ drivers/net/tokenring/tms380tr.c |    6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/ethernet/sun/sungem.c b/drivers/net/ethernet/sun/sungem.c
-index 558409f..26c1a2c 100644
---- a/drivers/net/ethernet/sun/sungem.c
-+++ b/drivers/net/ethernet/sun/sungem.c
-@@ -401,7 +401,7 @@ static int gem_rxmac_reset(struct gem *gp)
- 		return 1;
- 	}
+diff --git a/drivers/net/tokenring/Kconfig b/drivers/net/tokenring/Kconfig
+index 45550d4..ef3bb13 100644
+--- a/drivers/net/tokenring/Kconfig
++++ b/drivers/net/tokenring/Kconfig
+@@ -98,7 +98,7 @@ config 3C359
  
--	udelay(5000);
-+	mdelay(5);
+ config TMS380TR
+ 	tristate "Generic TMS380 Token Ring ISA/PCI adapter support"
+-	depends on PCI || ISA && ISA_DMA_API || MCA
++	depends on PCI || ISA || MCA
+ 	select FW_LOADER
+ 	---help---
+ 	  This driver provides generic support for token ring adapters
+@@ -137,7 +137,7 @@ config TMSPCI
  
- 	/* Execute RX reset command. */
- 	writel(gp->swrst_base | GREG_SWRST_RXRST,
+ config SKISA
+ 	tristate "SysKonnect TR4/16 ISA support"
+-	depends on TMS380TR && ISA
++	depends on TMS380TR && ISA && ISA_DMA_API
+ 	help
+ 	  This tms380 module supports SysKonnect TR4/16 ISA cards.
+ 
+@@ -149,7 +149,7 @@ config SKISA
+ 
+ config PROTEON
+ 	tristate "Proteon ISA support"
+-	depends on TMS380TR && ISA
++	depends on TMS380TR && ISA && ISA_DMA_API
+ 	help
+ 	  This tms380 module supports Proteon ISA cards.
+ 
+diff --git a/drivers/net/tokenring/tms380tr.c b/drivers/net/tokenring/tms380tr.c
+index be4813e..b5e0855 100644
+--- a/drivers/net/tokenring/tms380tr.c
++++ b/drivers/net/tokenring/tms380tr.c
+@@ -254,7 +254,7 @@ int tms380tr_open(struct net_device *dev)
+ 
+ 	/* Reset the hardware here. Don't forget to set the station address. */
+ 
+-#ifdef CONFIG_ISA
++#if defined(CONFIG_ISA) && defined(CONFIG_ISA_DMA_API)
+ 	if(dev->dma > 0) 
+ 	{
+ 		unsigned long flags=claim_dma_lock();
+@@ -1125,8 +1125,8 @@ int tms380tr_close(struct net_device *dev)
+     
+ 	del_timer(&tp->timer);
+ 	tms380tr_disable_interrupts(dev);
+-   
+-#ifdef CONFIG_ISA
++
++#if defined(CONFIG_ISA) && defined(CONFIG_ISA_DMA_API)
+ 	if(dev->dma > 0) 
+ 	{
+ 		unsigned long flags=claim_dma_lock();
 -- 
 1.7.5.4
 
