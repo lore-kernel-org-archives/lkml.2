@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab2DTQWU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 12:22:20 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:33451 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab2DTQWS convert rfc822-to-8bit (ORCPT
+	id S1755013Ab2DTQWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 12:22:51 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:24198 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab2DTQWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 12:22:18 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "thomas.mingarelli@hp.com" <thomas.mingarelli@hp.com>
-Date: Fri, 20 Apr 2012 12:17:57 -0400
-Subject: RE: [PATCH 0/3] x86, nmi: Fixes
-Thread-Topic: [PATCH 0/3] x86, nmi: Fixes
-Thread-Index: Ac0N6LujZIWCulIGQc25BMdAfRNmqARJ1m3g
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2E4BF2FD12@USINDEVS01.corp.hds.com>
-References: <1333051877-15755-1-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1333051877-15755-1-git-send-email-dzickus@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 20 Apr 2012 12:22:49 -0400
+Date: Fri, 20 Apr 2012 12:17:46 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] (xen) stable/for-linus-3.4-rc3-tag
+Message-ID: <20120420161746.GA28366@phenom.dumpdata.com>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=7 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1204200157
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4F918D58.007F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-I tested this patch by making kernel panic with NMI switch and confirmed that it works well.
-This patch solves an issue I found in 3.3.0-rc5 because kzalloc in register_nmi_handler() is removed.
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-https://lkml.org/lkml/2012/3/2/356
+Hey Linus,
 
-Tested-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Please git pull the following tag for v3.4-rc4:
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Don Zickus
-> Sent: Thursday, March 29, 2012 4:11 PM
-> To: x86@kernel.org
-> Cc: LKML; Peter Zijlstra; thomas.mingarelli@hp.com; Don Zickus
-> Subject: [PATCH 0/3] x86, nmi: Fixes
-> 
-> The patch series started with fixes for kmemcheck but slowly involved the fixing hpwdt.  Hopefully everything is ok for now.
-> 
-> Don Zickus (2):
->   watchdog, hpwdt: Remove priority option for NMI callback
->   x86, nmi: Add new NMI queues to deal with IO_CHK and SERR
-> 
-> Li Zhong (1):
->   x86,nmi: Fix page faults by nmiaction if kmemcheck is enabled
-> 
->  arch/x86/include/asm/nmi.h |   22 ++++++++++-
->  arch/x86/kernel/nmi.c      |   83 +++++++++++++-------------------------------
->  drivers/watchdog/hpwdt.c   |   46 +++++++++++++------------
->  3 files changed, 68 insertions(+), 83 deletions(-)
-> 
-> --
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More
-> majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.4-rc3-tag
+
+which has a some compile warning fixes and mechanisms to work
+around misbehaving backends. Also there is fix to the internal
+mechanism for dealing with pages brought in from a guest (and
+one fix that I had to revert last minute). Lastly a fix from Julia
+to return proper error code.
+
+Please pull!
+
+Julia Lawall (1):
+      xen/grant-table: add error-handling code on failure of gnttab_resume
+
+Konrad Rzeszutek Wilk (4):
+      xen/blkback: Fix warning error.
+      xen/xenbus: Add quirk to deal with misconfigured backends.
+      xen/resume: Fix compile warnings.
+      Revert "xen/p2m: m2p_find_override: use list_for_each_entry_safe"
+
+Stefano Stabellini (2):
+      xen/gntdev: do not set VM_PFNMAP
+      xen/p2m: m2p_find_override: use list_for_each_entry_safe
+
+ drivers/block/xen-blkback/xenbus.c         |    2 +-
+ drivers/xen/gntdev.c                       |    2 +-
+ drivers/xen/grant-table.c                  |   13 ++++--
+ drivers/xen/manage.c                       |    1 +
+ drivers/xen/xenbus/xenbus_probe_frontend.c |   69 +++++++++++++++++++++------
+ 5 files changed, 65 insertions(+), 22 deletions(-)
+
+--J2SCkAp4GZ/dPZZf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPkYwmAAoJEFjIrFwIi8fJYksH/0PixxaeMs0QyNw8Pa2lm98n
+iDAsCdXCiO06p1FqiBD+BOJDBheqhB1l13jxQln0NjFG4kFiVQcygxPOxdeZAN9u
+6BTFQE0d2Ox81YXkvP57gqC5KEX/0xBtE7bQ4gn648dNj5c5TAcx4qYdbYrWoh92
+hIv5wA9H2pA2BjM7E0Hhowe3AcQ59IioLFtF3/rviB0rqB105eWRjQUW74Mb3lXY
+F5nHDbIIlzG8dCEQ/xrxo5nbfQszVru57q67mIY8gp6PepquuC5PvpZuiUxz/9n8
+WtPS7L8OLq/Rdsi064ZTiWYNokVKzvOkW3iGhQUdd/EBuhGs/ZxZyJ1a3OVorNg=
+=PGfF
+-----END PGP SIGNATURE-----
+
+--J2SCkAp4GZ/dPZZf--
