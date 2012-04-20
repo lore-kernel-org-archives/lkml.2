@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab2DTSXO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 14:23:14 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59303 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756995Ab2DTSXN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757390Ab2DTSXZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 14:23:25 -0400
+Received: from alfa.umsa.bo ([200.7.160.5]:47846 "EHLO alfa.umsa.bo"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757326Ab2DTSXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Apr 2012 14:23:13 -0400
-Message-ID: <4F91A94D.7070908@mvista.com>
-Date: Fri, 20 Apr 2012 22:22:05 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+X-Greylist: delayed 634 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Apr 2012 14:23:13 EDT
 MIME-Version: 1.0
-To: Roland Stigge <stigge@antcom.de>
-CC: wim@iguana.be, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RESEND v3] wdt: Device tree support for pnx4008-wdt
-References: <1334933184-19418-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1334933184-19418-1-git-send-email-stigge@antcom.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Fri, 20 Apr 2012 19:12:18 +0100
+From: Masarykovy univerzity <agaritanozavala@umsa.bo>
+To: undisclosed-recipients:;
+Subject: =?UTF-8?Q?spr=C3=A1vn=C3=AD=20zpr=C3=A1vy?=
+Organization: Masarykovy univerzity
+Reply-To: e-mail002@info.lt
+Message-ID: <cb4aaf8e06724de91ea42a98cf70f18b@umsa.bo>
+User-Agent: RoundCube Webmail/0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+--
+Vážení účtu muni.cz uživatele,
 
-On 04/20/2012 06:46 PM, Roland Stigge wrote:
+zasíláme do (muni.cz) účty uživatele o bezpečnost, údržby před spamem 
+mails.we mají přetížení kvůli anonymní registraci e-mailové účty, takže 
+jsme se zavírat některé účty a účet byl zařazen na seznam osob, které 
+budou potřeba, aby být re-update kvůli tomuto condition.now potvrdit 
+svůj účet tím, že vyplní prostor below.Your uživatelské jméno, heslo, 
+datum narození by bylo třeba pro ověření vašeho účtu nebo na 
+http://0845.com/TiVq~~dobj aktualizovat.
 
-> This patch adds watchdog support to pnx4008-wdt.c
+E-mailová adresa:
+Jméno:
+heslo
+Potvrdit heslo:
+Datum narození:
 
-    s/watchdog/device tree/
 
-> Signed-off-by: Roland Stigge<stigge@antcom.de>
-> Reviewed-by: Arnd Bergmann<arnd@arndb.de>
+Všimněte si, že pokud váš účet Přihlásit se a pak poslat informace, 
+pokud jinak to znamená, že již byl odstraněn. Omlouváme se za 
+nepříjemnosti by to mohlo způsobit vás, jsme se pouze snaží zajistit, 
+aby při procházení dobře s našimi účty.
 
-WBR, Sergei
+
+VAROVÁNÍ *** ***
+
+Uživatelé účtů, že odmítne aktualizovat svoji / heraccount po 3 dnů po 
+obdržení tohoto varování ztratí svůj účet trvale.
+
+Omlouváme se za vzniklé potíže.
+Poštovním účtem Upgrader "
+
+**************************************************
+******************************************
+To je správní Zpráva z Masarykovy vysoké škole a obsah musí být za 
+všech okolností důvěrné
+
+**************************************************
+****************************************
+
