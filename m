@@ -1,58 +1,596 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab2DTHBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 03:01:18 -0400
-Received: from teranetworks.de ([188.40.78.98]:36471 "EHLO teranetworks.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754575Ab2DTHBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754709Ab2DTHBQ (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 20 Apr 2012 03:01:16 -0400
-X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Apr 2012 03:01:16 EDT
-Date: Fri, 20 Apr 2012 08:51:50 +0200
-From: Andreas Herz <andi@geekosphere.org>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de
-Subject: msecs_to_jiffies() still returns values greater then MAX_JIFFY_OFFSET
-Message-ID: <20120420065150.GG22975@sweethome.fritz.box>
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64353 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004Ab2DTHBO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 03:01:14 -0400
+Message-ID: <4F9109A0.8040801@gmail.com>
+Date: Fri, 20 Apr 2012 17:00:48 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldmFn?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        John Stultz <john.stultz@linaro.org>, myungjoo.ham@gmail.com,
+        cw00.choi@samsung.com
+Subject: Re: [PATCH v8 resend 1/6] Extcon (external connector): import Android's
+ switch class and modify.
+References: <20120420033209.GA17930@kroah.com> <1334898987-7800-1-git-send-email-myungjoo.ham@samsung.com> <1334898987-7800-2-git-send-email-myungjoo.ham@samsung.com>
+In-Reply-To: <1334898987-7800-2-git-send-email-myungjoo.ham@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 20/04/12 15:16, MyungJoo Ham wrote:
+> External connector class (extcon) is based on and an extension of
+> Android kernel's switch class located at linux/drivers/switch/.
+>
+> This patch provides the before-extension switch class moved to the
+> location where the extcon will be located (linux/drivers/extcon/) and
+> updates to handle class properly.
+>
+> The before-extension class, switch class of Android kernel, commits
+> imported are:
+>
+> switch: switch class and GPIO drivers. (splitted)
+> Author: Mike Lockwood <lockwood@android.com>
+>
+> switch: Use device_create instead of device_create_drvdata.
+> Author: Arve Hjønnevåg <arve@android.com>
+>
+> In this patch, upon the commits of Android kernel, we have added:
+> - Relocated and renamed for extcon.
+> - Comments, module name, and author information are updated
+> - Code clean for successing patches
+> - Bugfix: enabling write access without write functions
+> - Class/device/sysfs create/remove handling
+> - Added comments about uevents
+> - Format changes for extcon_dev_register() to have a parent dev.
+>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-i'm new to the LKML and so i couldn't reply to the old mail from Mar
-2011.
+Hi Myungjoo,
 
-On 29 Mar 2011 there was already a disucssion about this issue:
+A few comments below.
 
-http://lkml.org/lkml/2011/3/29/262
+~Ryan
 
-The problem still exists, as /kernel/time.c wasn't patched. I stumbled
-upon this "bug" when i modified the ipset sourcecode that uses
-msecs_to_jiffies() for timeout calculations.
+> --
+> Changes from v7
+> - Compiler error fixed when it is compiled as a module.
+> - Removed out-of-date Kconfig entry
+>
+> Changes from v6
+> - Updated comment/strings
+> - Revised "Android-compatible" mode.
+>    * Automatically activated if CONFIG_ANDROID && !CONFIG_ANDROID_SWITCH
+>    * Creates /sys/class/switch/*, which is a copy of /sys/class/extcon/*
+>
+> Changes from v5
+> - Split the patch
+> - Style fixes
+> - "Android-compatible" mode is enabled by Kconfig option.
+>
+> Changes from v2
+> - Updated name_show
+> - Sysfs entries are handled by class itself.
+> - Updated the method to add/remove devices for the class
+> - Comments on uevent send
+> - Able to become a module
+> - Compatible with Android platform
+>
+> Changes from RFC
+> - Renamed to extcon (external connector) from multistate switch
+> - Added a seperated directory (drivers/extcon)
+> - Added kerneldoc comments
+> - Removed unused variables from extcon_gpio.c
+> - Added ABI Documentation.
+> ---
+>  Documentation/ABI/testing/sysfs-class-extcon |   26 +++
+>  drivers/Kconfig                              |    2 +
+>  drivers/Makefile                             |    1 +
+>  drivers/extcon/Kconfig                       |   17 ++
+>  drivers/extcon/Makefile                      |    5 +
+>  drivers/extcon/extcon_class.c                |  236 ++++++++++++++++++++++++++
+>  include/linux/extcon.h                       |   82 +++++++++
+>  7 files changed, 369 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-class-extcon
+>  create mode 100644 drivers/extcon/Kconfig
+>  create mode 100644 drivers/extcon/Makefile
+>  create mode 100644 drivers/extcon/extcon_class.c
+>  create mode 100644 include/linux/extcon.h
+>
+> diff --git a/Documentation/ABI/testing/sysfs-class-extcon b/Documentation/ABI/testing/sysfs-class-extcon
+> new file mode 100644
+> index 0000000..59a4b1c
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-class-extcon
+> @@ -0,0 +1,26 @@
+> +What:		/sys/class/extcon/.../
+> +Date:		December 2011
+> +Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
+> +Description:
+> +		Provide a place in sysfs for the extcon objects.
+> +		This allows accessing extcon specific variables.
+> +		The name of extcon object denoted as ... is the name given
+> +		with extcon_dev_register.
+> +
+> +What:		/sys/class/extcon/.../name
+> +Date:		December 2011
+> +Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
+> +Description:
+> +		The /sys/class/extcon/.../name shows the name of the extcon
+> +		object. If the extcon object has an optional callback
+> +		"show_name" defined, the callback will provide the name with
+> +		this sysfs node.
+> +
+> +What:		/sys/class/extcon/.../state
+> +Date:		December 2011
+> +Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
+> +Description:
+> +		The /sys/class/extcon/.../state shows the cable attach/detach
+> +		information of the corresponding extcon object. If the extcon
+> +		objecct has an optional callback "show_state" defined, the
+> +		callback will provide the name with this sysfs node.
+> diff --git a/drivers/Kconfig b/drivers/Kconfig
+> index d236aef..0233ad9 100644
+> --- a/drivers/Kconfig
+> +++ b/drivers/Kconfig
+> @@ -140,4 +140,6 @@ source "drivers/virt/Kconfig"
+>  
+>  source "drivers/devfreq/Kconfig"
+>  
+> +source "drivers/extcon/Kconfig"
+> +
+>  endmenu
+> diff --git a/drivers/Makefile b/drivers/Makefile
+> index 95952c8..c41dfa9 100644
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@ -134,3 +134,4 @@ obj-$(CONFIG_VIRT_DRIVERS)	+= virt/
+>  obj-$(CONFIG_HYPERV)		+= hv/
+>  
+>  obj-$(CONFIG_PM_DEVFREQ)	+= devfreq/
+> +obj-$(CONFIG_EXTCON)		+= extcon/
+> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+> new file mode 100644
+> index 0000000..7932e1b
+> --- /dev/null
+> +++ b/drivers/extcon/Kconfig
+> @@ -0,0 +1,17 @@
+> +menuconfig EXTCON
+> +	tristate "External Connector Class (extcon) support"
+> +	help
+> +	  Say Y here to enable external connector class (extcon) support.
+> +	  This allows monitoring external connectors by userspace
+> +	  via sysfs and uevent and supports external connectors with
+> +	  multiple states; i.e., an extcon that may have multiple
+> +	  cables attached. For example, an external connector of a device
+> +	  may be used to connect an HDMI cable and a AC adaptor, and to
+> +	  host USB ports. Many of 30-pin connectors including PDMI are
+> +	  also good examples.
+> +
+> +if EXTCON
+> +
+> +comment "Extcon Device Drivers"
+> +
+> +endif # MULTISTATE_SWITCH
+> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+> new file mode 100644
+> index 0000000..6bc6921
+> --- /dev/null
+> +++ b/drivers/extcon/Makefile
+> @@ -0,0 +1,5 @@
+> +#
+> +# Makefile for external connector class (extcon) devices
+> +#
+> +
+> +obj-$(CONFIG_EXTCON)		+= extcon_class.o
+> diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
+> new file mode 100644
+> index 0000000..3c46368
+> --- /dev/null
+> +++ b/drivers/extcon/extcon_class.c
+> @@ -0,0 +1,236 @@
+> +/*
+> + *  drivers/extcon/extcon_class.c
+> + *
+> + *  External connector (extcon) class driver
+> + *
+> + * Copyright (C) 2012 Samsung Electronics
+> + * Author: Donggeun Kim <dg77.kim@samsung.com>
+> + * Author: MyungJoo Ham <myungjoo.ham@samsung.com>
+> + *
+> + * based on android/drivers/switch/switch_class.c
+> + * Copyright (C) 2008 Google, Inc.
+> + * Author: Mike Lockwood <lockwood@android.com>
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> +*/
+> +
+> +#include <linux/module.h>
+> +#include <linux/types.h>
+> +#include <linux/init.h>
+> +#include <linux/device.h>
+> +#include <linux/fs.h>
+> +#include <linux/err.h>
+> +#include <linux/extcon.h>
+> +#include <linux/slab.h>
+> +
+> +struct class *extcon_class;
+> +#if defined(CONFIG_ANDROID) && !defined(CONFIG_ANDROID_SWITCH)
+> +static struct class_compat *switch_class;
+> +#endif /* CONFIG_ANDROID && !defined(CONFIG_ANDROID_SWITCH) */
+> +
+> +static ssize_t state_show(struct device *dev, struct device_attribute *attr,
+> +			  char *buf)
+> +{
+> +	struct extcon_dev *edev = (struct extcon_dev *) dev_get_drvdata(dev);
 
-When i call msecs_to_jiffies(2147483000) the return value is 2147483000
-on my x86 32-Bit System with 1000Hz. When i call the function with
-msecs_to_jiffies(2147484000) the return value is MAX_JIFFY_OFFSET what's
-1073741822 on my system. That isn't the behaviour i expect from this
-comment in time.c:
+Shouldn't need the cast. Same elsewhere.
 
- * - 'too large' values [that would result in larger than
- *   MAX_JIFFY_OFFSET values] mean 'infinite timeout' too.
+> +
+> +	if (edev->print_state) {
+> +		int ret = edev->print_state(edev, buf);
+> +
+> +		if (ret >= 0)
+> +			return ret;
+> +		/* Use default if failed */
+> +	}
+> +	return sprintf(buf, "%u\n", edev->state);
+> +}
+> +
+> +static ssize_t name_show(struct device *dev, struct device_attribute *attr,
+> +		char *buf)
+> +{
+> +	struct extcon_dev *edev = (struct extcon_dev *) dev_get_drvdata(dev);
+> +
+> +	/* Optional callback given by the user */
+> +	if (edev->print_name) {
+> +		int ret = edev->print_name(edev, buf);
+> +		if (ret >= 0)
+> +			return ret;
+> +	}
+> +
+> +	return sprintf(buf, "%s\n", dev_name(edev->dev));
+> +}
+> +
+> +/**
+> + * extcon_set_state() - Set the cable attach states of the extcon device.
+> + * @edev:	the extcon device
+> + * @state:	new cable attach status for @edev
+> + *
+> + * Changing the state sends uevent with environment variable containing
+> + * the name of extcon device (envp[0]) and the state output (envp[1]).
+> + * Tizen uses this format for extcon device to get events from ports.
+> + * Android uses this format as well.
+> + */
+> +void extcon_set_state(struct extcon_dev *edev, u32 state)
+> +{
+> +	char name_buf[120];
+> +	char state_buf[120];
 
-So you can pass values greater then MAX_JIFFY_OFFSET up to INT_MAX in
-this example although the limit should be at INT_MAX/2 for
-MAX_JIFFY_OFFSET. 
+Where do these sizes come from?
 
-I'm not sure if the solution is to increase MAX_JIFFY_OFFSET or to catch
-values between this gap. I also don't understand why the function
-returns a unsigned long but is limited to integer. It could be nice to
-increase the values that can be handled with this function.
+> +	char *prop_buf;
+> +	char *envp[3];
+> +	int env_offset = 0;
+> +	int length;
+> +
+> +	if (edev->state != state) {
+> +		edev->state = state;
+> +
+> +		prop_buf = (char *)get_zeroed_page(GFP_KERNEL);
+> +		if (prop_buf) {
 
-Greetings
+	if (!prop_buf) {
+		dev_err(edev->dev, "out of memory in extcon_set_state\n");
+		kobject_uevent(&edev->dev->kobj, KOBJ_CHANGE);
+		return;
+	}
 
--- 
-Andreas Herz
+
+Gives you one less level of indentation for the normal execution path.
+Also, is there a good reason to use get_zeroed_page(...) instead of
+kzalloc(PAGE_SIZE, ...), the latter doesn't require casting.
+
+Also, should this function return an int so that callers can know
+whether it actually succeeded?
+
+> +			length = name_show(edev->dev, NULL, prop_buf);
+> +			if (length > 0) {
+> +				if (prop_buf[length - 1] == '\n')
+> +					prop_buf[length - 1] = 0;
+
+This is a bit ugly using a sysfs show function internally and then
+manually cropping out the '\n'. Why not have a name get function:
+
+	static ssize_t extcon_snprint_name(struct extcon_dev *edev, char *buf, size_t buf_size)
+	{
+		int ret;
+
+		if (edev->print_state) {
+			ret = edev->print_state(edev, buf, buf_size);
+			if (ret >= 0)
+				return ret;
+		}
+		return snprintf(buf, buf_size, "%u", edev->state);
+	}
+
+
+This function and the sysfs show function can call extcon_snprint_name.
+Having an explict size would also get rid of the need for the
+intermediate prop_buf here:
+
+	count = snprintf(name_buf, sizeof(name_buf), "NAME=");
+	extcon_snprint_name(edev, name_buf + count, sizeof(name_buf) - count);
+
+
+> +				snprintf(name_buf, sizeof(name_buf),
+> +					"NAME=%s", prop_buf);
+> +				envp[env_offset++] = name_buf;
+> +			}
+> +			length = state_show(edev->dev, NULL, prop_buf);
+> +			if (length > 0) {
+> +				if (prop_buf[length - 1] == '\n')
+> +					prop_buf[length - 1] = 0;
+> +				snprintf(state_buf, sizeof(state_buf),
+> +					"STATE=%s", prop_buf);
+> +				envp[env_offset++] = state_buf;
+> +			}
+> +			envp[env_offset] = NULL;
+> +			kobject_uevent_env(&edev->dev->kobj, KOBJ_CHANGE, envp);
+> +			free_page((unsigned long)prop_buf);
+> +		} else {
+> +			dev_err(edev->dev, "out of memory in extcon_set_state\n");
+> +			kobject_uevent(&edev->dev->kobj, KOBJ_CHANGE);
+> +		}
+> +	}
+> +}
+> +EXPORT_SYMBOL_GPL(extcon_set_state);
+> +
+> +static struct device_attribute extcon_attrs[] = {
+> +	__ATTR_RO(state),
+> +	__ATTR_RO(name),
+> +};
+> +
+> +static int create_extcon_class(void)
+> +{
+> +	if (!extcon_class) {
+
+extcon_class can only ever be NULL since this function is only ever
+called from the module init function right?
+
+> +		extcon_class = class_create(THIS_MODULE, "extcon");
+> +		if (IS_ERR(extcon_class))
+> +			return PTR_ERR(extcon_class);
+> +		extcon_class->dev_attrs = extcon_attrs;
+> +
+> +#if defined(CONFIG_ANDROID) && !defined(CONFIG_ANDROID_SWITCH)
+> +		switch_class = class_compat_register("switch");
+> +		if (WARN(!switch_class, "cannot allocate"))
+> +			return -ENOMEM;
+> +#endif /* CONFIG_ANDROID && !defined(CONFIG_ANDROID_SWITCH) */
+
+This is a bit ugly putting Android specific hacks in mainline. Is this
+something that Android could do in user-space instead?
+
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void extcon_cleanup(struct extcon_dev *edev, bool skip)
+> +{
+> +	if (!skip && get_device(edev->dev)) {
+> +		device_unregister(edev->dev);
+> +		put_device(edev->dev);
+> +	}
+> +
+> +	kfree(edev->dev);
+> +}
+> +
+> +static void extcon_dev_release(struct device *dev)
+> +{
+> +	struct extcon_dev *edev = (struct extcon_dev *) dev_get_drvdata(dev);
+> +
+
+Don't need the cast.
+
+> +	extcon_cleanup(edev, true);
+> +}
+> +
+> +/**
+> + * extcon_dev_register() - Register a new extcon device
+> + * @edev	: the new extcon device (should be allocated before calling)
+> + * @dev		: the parent device for this extcon device.
+> + *
+> + * Among the members of edev struct, please set the "user initializing data"
+> + * in any case and set the "optional callbacks" if required. However, please
+> + * do not set the values of "internal data", which are initialized by
+> + * this function.
+> + */
+> +int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
+> +{
+> +	int ret;
+> +
+> +	if (!extcon_class) {
+> +		ret = create_extcon_class();
+> +		if (ret < 0)
+> +			return ret;
+> +	}
+> +
+> +	edev->dev = kzalloc(sizeof(struct device), GFP_KERNEL);
+
+	if (!evdev->dev) {
+		/* Explode */
+	}
+
+
+> +	edev->dev->parent = dev;
+> +	edev->dev->class = extcon_class;
+> +	edev->dev->release = extcon_dev_release;
+> +
+> +	dev_set_name(edev->dev, edev->name ? edev->name : dev_name(dev));
+> +	ret = device_register(edev->dev);
+> +	if (ret) {
+> +		put_device(edev->dev);
+> +		goto err_dev;
+> +	}
+> +#if defined(CONFIG_ANDROID) && !defined(CONFIG_ANDROID_SWITCH)
+> +	if (switch_class)
+> +		ret = class_compat_create_link(switch_class, edev->dev,
+> +					       dev);
+> +#endif /* CONFIG_ANDROID && !defined(CONFIG_ANDROID_SWITCH) */
+> +
+> +	dev_set_drvdata(edev->dev, edev);
+> +	edev->state = 0;
+> +	return 0;
+> +
+> +err_dev:
+> +	kfree(edev->dev);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(extcon_dev_register);
+> +
+> +/**
+> + * extcon_dev_unregister() - Unregister the extcon device.
+> + * @edev:	the extcon device instance to be unregitered.
+> + *
+> + * Note that this does not call kfree(edev) because edev was not allocated
+> + * by this class.
+> + */
+> +void extcon_dev_unregister(struct extcon_dev *edev)
+> +{
+> +	extcon_cleanup(edev, false);
+> +}
+> +EXPORT_SYMBOL_GPL(extcon_dev_unregister);
+> +
+> +static int __init extcon_class_init(void)
+> +{
+> +	return create_extcon_class();
+> +}
+> +module_init(extcon_class_init);
+> +
+> +static void __exit extcon_class_exit(void)
+> +{
+> +	class_destroy(extcon_class);
+> +}
+> +module_exit(extcon_class_exit);
+> +
+> +MODULE_AUTHOR("Mike Lockwood <lockwood@android.com>");
+> +MODULE_AUTHOR("Donggeun Kim <dg77.kim@samsung.com>");
+> +MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");
+> +MODULE_DESCRIPTION("External connector (extcon) class driver");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+> new file mode 100644
+> index 0000000..9cb3aaa
+> --- /dev/null
+> +++ b/include/linux/extcon.h
+> @@ -0,0 +1,82 @@
+> +/*
+> + *  External connector (extcon) class driver
+> + *
+> + * Copyright (C) 2012 Samsung Electronics
+> + * Author: Donggeun Kim <dg77.kim@samsung.com>
+> + * Author: MyungJoo Ham <myungjoo.ham@samsung.com>
+> + *
+> + * based on switch class driver
+> + * Copyright (C) 2008 Google, Inc.
+> + * Author: Mike Lockwood <lockwood@android.com>
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> +*/
+> +
+> +#ifndef __LINUX_EXTCON_H__
+> +#define __LINUX_EXTCON_H__
+> +
+> +/**
+> + * struct extcon_dev - An extcon device represents one external connector.
+> + * @name	The name of this extcon device. Parent device name is used
+> + *		if NULL.
+> + * @print_name	An optional callback to override the method to print the
+> + *		name of the extcon device.
+> + * @print_state	An optional callback to override the method to print the
+> + *		status of the extcon device.
+> + * @dev		Device of this extcon. Do not provide at register-time.
+> + * @state	Attach/detach state of this extcon. Do not provide at
+> + *		register-time
+> + *
+> + * In most cases, users only need to provide "User initializing data" of
+> + * this struct when registering an extcon. In some exceptional cases,
+> + * optional callbacks may be needed. However, the values in "internal data"
+> + * are overwritten by register function.
+> + */
+> +struct extcon_dev {
+> +	/* --- Optional user initializing data --- */
+> +	const char	*name;
+> +
+> +	/* --- Optional callbacks to override class functions --- */
+> +	ssize_t	(*print_name)(struct extcon_dev *edev, char *buf);
+> +	ssize_t	(*print_state)(struct extcon_dev *edev, char *buf);
+> +
+> +	/* --- Internal data. Please do not set. --- */
+> +	struct device	*dev;
+> +	u32		state;
+> +};
+> +
+> +#if IS_ENABLED(CONFIG_EXTCON)
+> +extern int extcon_dev_register(struct extcon_dev *edev, struct device *dev);
+> +extern void extcon_dev_unregister(struct extcon_dev *edev);
+> +
+> +static inline u32 extcon_get_state(struct extcon_dev *edev)
+> +{
+> +	return edev->state;
+> +}
+> +
+> +extern void extcon_set_state(struct extcon_dev *edev, u32 state);
+> +#else /* CONFIG_EXTCON */
+> +static inline int extcon_dev_register(struct extcon_dev *edev,
+> +				      struct device *dev)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void extcon_dev_unregister(struct extcon_dev *edev) { }
+> +
+> +static inline u32 extcon_get_state(struct extcon_dev *edev)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void extcon_set_state(struct extcon_dev *edev, u32 state) { }
+> +#endif /* CONFIG_EXTCON */
+> +#endif /* __LINUX_EXTCON_H__ */
+
