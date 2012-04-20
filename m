@@ -1,131 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704Ab2DTPOo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:14:44 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57839 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932528Ab2DTPOm convert rfc822-to-8bit (ORCPT
+	id S932556Ab2DTPQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:16:28 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:6683 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197Ab2DTPQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:14:42 -0400
+	Fri, 20 Apr 2012 11:16:26 -0400
+Message-ID: <4F9167A4.80305@tilera.com>
+Date: Fri, 20 Apr 2012 15:41:56 +0200
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <201204201312.54949.rjw@sisk.pl>
-References: <1334884749.4927.6.camel@minggr>
-	<1334900255.4927.36.camel@minggr>
-	<20120420074725.GA30140@localhost.amd.com>
-	<201204201312.54949.rjw@sisk.pl>
-Date: Fri, 20 Apr 2012 23:14:40 +0800
-X-Google-Sender-Auth: 1ur78XlJ1AXnaqn5F4Y90n3ZKOo
-Message-ID: <CAF1ivSYxoN3dbrNztY4BGLFYg6wGvCyypLgwXuOFam7uKtBB1w@mail.gmail.com>
-Subject: Re: [PATCH v2] ACPI: D3 states cleanup
-From: Lin Ming <ming.m.lin@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Aaron Lu <aaron.lu@amd.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, "Huang, Ying" <ying.huang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Pawel Moll <pawel.moll@arm.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] init: fix bug where environment vars can't be passed
+ via boot args
+References: <201204061711.q36HBpAh015060@lab-41.internal.tilera.com> <20120419151746.8c765ea7.akpm@linux-foundation.org>
+In-Reply-To: <20120419151746.8c765ea7.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 7:12 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, April 20, 2012, Aaron Lu wrote:
->> Hi,
->>
->> On Fri, Apr 20, 2012 at 01:37:35PM +0800, Lin Ming wrote:
->> > > > > > There are two ACPI D3 states defined now:
->> > > > > > ACPI_STATE_D3 and ACPI_STATE_D3_COLD.
->> > > > > >
->> > > > > > But the uses of these states are not clear/correct in some code.
->> > > > > > For example, some code refer ACPI_STATE_D3 as D3hot and others refer
->> > > > > > it as D3cold.
->> > > > > >
->> > > > > > This patch introduces ACPI_STATE_D3_HOT to refer to ACPI D3hot state.
->> > > > > > And changes ACPI_STATE_D3 to refer to ACPI D3cold state only.
->> > > > > > Also redefines ACPI_STATE_D3_COLD the same as ACPI_STATE_D3.
->> > > > > >
->> > > > >
->> > > > > With this patch now, if a device has _PS3, then we will set its D3hot
->> > > > > flag valid. This doesn't feel right to me, since per our discussion the
->> > > > > other day, we should assume _PS3 will put the device into D3cold.
->> > > > >
->> > > > > Or do you mean: if _PS3 is available, then both D3hot and D3cold is
->> > > > > valid from the perspective of acpi, it is the individual driver's
->> > > > > responsibility to decide which state is actually valid and will be used.
->> > > >
->> > > > Right.
->> > > >
->> > > > ACPI_STATE_D3(same as ACPI_STATE_D3_COLD now) is always valid.
->> > > >
->> > >
->> > > I mean, if _PS3 is available, can we say D3hot is valid?
->> >
->> > Yes.
->> >
->>
->> OK, now I'm confused...
->>
->> First, let me try to clarify the meaning of acpi power state's valid
->> flag.
->>
->> By valid, I suppose it means the device can be in that state, instead of
->> we have a way to program this device to go into that state.
->>
->> e.g. D0 is valid means the device can be in D0 state, and D3_cold is
->> valid means the device can be in D3_cold state. We unconditionally set
->> these two states as valid, because we know every device supports these
->> two states. But we might not be able to put the device into that state
->> in software, since we might not have _PS0 or _PS3 control methods for it.
->>
->> And if we do have the _PSx or _PRx control methods, we knows we have a
->> way to put the device into that state, and hence the device should be
->> able to support that power state, so we will set that state as valid too.
->>
->> Is this correct?
->>
->> For D3hot, obviously not all device supports this state, so we will need
->> to figure it out through the acpi table.
->> I remembered Rafael said the following words the other day in a reply to
->> my evaluate_ps3_when_entering_d3_cold_patch:
->>
->> -----------------------------------------------------------------------
->> I'd rather say that with _PR3 we have the opportunity to avoid removing
->> power completely from the device.  In other words, D3_hot is supported (and
->> it is supported _only_ in that case).
->> -----------------------------------------------------------------------
->>
->> So I think here is a problem, that if a device has only _PS3, why should
->> we say D3hot is supported? Is there a reason for this that I missed?
+On 4/20/2012 12:17 AM, Andrew Morton wrote:
+> On Fri, 6 Apr 2012 12:53:50 -0400
+> Chris Metcalf <cmetcalf@tilera.com> wrote:
 >
-> OK, I agree.  We need to special case the situation in which _PR3 is not
-> present, but _PS3 is.  IOW, we should do something like this in the loop in
-> acpi_bus_get_power_flags():
+>> Commit 026cee0086f had the side-effect of dropping the '=' from
+>> the unknown boot arguments that are passed to init as environment
+>> variables.  This is because parse_args() puts a NUL in the string
+>> where the '=' was when it passes the "param" and "val" pointers
+>> to the parsing subfunctions.  Previously, unknown_bootoption() was
+>> the last parse_args() subfunction to run, and it carefully put back
+>> the '=' character.  Now ignore_unknown_bootoption() is the last
+>> one to run, and it wasn't doing the necessary repair, so the
+>> envp params ended up with the embedded NUL and were no longer
+>> seen as valid environment variables by init.
+> This patch has been stuck in your tree for a week or two.  The copy
+> there is missing Woody's Tested-by and (I suspect) his Reported-by and
+> Pawel's Acked-by.
+
+I pushed it by accident - sorry.  I'll double-check my pending changes more
+carefully in the future.  I meant for that tree only to hold tile-specific
+stuff, but I had the boot-argument change in my tree so I could do more
+effective testing.  I'm on vacation till Tuesday in Croatia, unfortunately,
+so I don't really want to try to do more than email.
+
+> And because that patch is already in linux-next, I can't (or rather
+> don't want to) merge it myself.
 >
->
->                /* State is valid if we have some power control */
->                if (ps->resources.count
->                    || (ps->flags.explicit_set && i < ACPI_STATE_D3))
->                        ps->flags.valid = 1;
+> It needs to be merged into 3.4.  Please fix up the changelog data and
+> send it in?
 
-Will add below change.
+I will either fix it up and move it to my stable tree for 3.4 on Wednesday
+when I'm back in the office, and ask Linus to pull it, or if you want to
+push it, presumably it shouldn't conflict much for linux-next.
 
--               /* State is valid if we have some power control */
--               if (ps->resources.count || ps->flags.explicit_set)
-+               /*
-+                * State is valid if we have some power control
-+                * D3hot state is only valid if _PR3 present
-+                */
-+               if (ps->resources.count ||
-+                   (ps->flags.explicit_set && i < ACPI_STATE_D3_HOT))
-                        ps->flags.valid = 1;
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-Rafael,
-
-can I still add your ACK when send updated patch?
-
-Thanks,
-Lin Ming
-
->
-> Thanks,
-> Rafael
