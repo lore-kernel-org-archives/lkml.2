@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab2DTUA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 16:00:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:4137 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750857Ab2DTUA4 convert rfc822-to-8bit (ORCPT
+	id S1751617Ab2DTUBg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 16:01:36 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:25688 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897Ab2DTUBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 16:00:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="133488159"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] Add mcelog support for xen platform
-Thread-Topic: [PATCH 1/3] Add mcelog support for xen platform
-Thread-Index: AQHNHyT+bwDu17uMTQ2vQPuvK5oUmpakGzsg
-Date: Fri, 20 Apr 2012 20:00:53 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335159293@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com>
- <20120420184001.GA447@phenom.dumpdata.com>
-In-Reply-To: <20120420184001.GA447@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Fri, 20 Apr 2012 16:01:35 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6687"; a="183632767"
+Message-ID: <4F91C09E.8070308@codeaurora.org>
+Date: Fri, 20 Apr 2012 13:01:34 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
+        Sascha Hauer <s.hauer@pengutronix.de>, Rajendra Nayak <rnayak@ti.com>,
+        Olof Johansson <olof@lixom.net>, linaro-dev@lists.linaro.org,
+        arnd.bergmann@linaro.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 13/13] clk: basic: improve parent_names & return errors
+References: <1334192572-12499-1-git-send-email-mturquette@linaro.org> <1334192572-12499-14-git-send-email-mturquette@linaro.org> <20120412064920.GH2445@S2101-09.ap.freescale.net> <CAJOA=zMPQK-W_nbRztXCNdLHoTJU73ZnrxAS8VvvmzgdaVS2mQ@mail.gmail.com> <CAAQ0ZWRg2jwNZ7Bx5j5NtCVveT_085VmFtPMhWW62-aO+kFfnw@mail.gmail.com> <CAJOA=zPnQhq_3O00F4dfUbnywW-Riov7N76F3wraE67yy2MMuA@mail.gmail.com> <CAAQ0ZWQ_haRN-WHNzTMcjFvryRqjM58QoseC8WejBiqcDfSuPA@mail.gmail.com>
+In-Reply-To: <CAAQ0ZWQ_haRN-WHNzTMcjFvryRqjM58QoseC8WejBiqcDfSuPA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Thu, Apr 19, 2012 at 01:29:06PM +0000, Liu, Jinsong wrote:
->>> From af4467b6cf0104ce98cc160438d865256c7d5561 Mon Sep 17 00:00:00
->>> 2001 
->> From: Liu, Jinsong <jinsong.liu@intel.com>
->> Date: Fri, 20 Apr 2012 05:08:38 +0800
->> Subject: [PATCH 1/3] Add mcelog support for xen platform
->> 
->> When MCA error occurs, it would be handled by xen hypervisor first,
->> and then the error information would be sent to dom0 for logging.
-> 
-> How do I test this?
+On 04/17/2012 12:17 AM, Shawn Guo wrote:
+> On 17 April 2012 11:50, Turquette, Mike<mturquette@ti.com>  wrote:
+>> That is a good question.  I think it is worth waiting on Saravana's
+>> patch which exposes non-private members of struct clk via struct
+>> clk_hw.  This will have an effect on both platform clock data and
+>> code.
+>
+> Saravana,
+>
+> (*nudge*) (*nudge*) goes to you now :)
+>
+> Regards,
+> Shawn
 
-It can be tested by EINJ tool to inject an memory error, and by mcelog tool to read error info, basically it need:
+Sorry :) Will do soon.
 
-1. enable einj tools: load EINJ kernel module and mount debugfs;
+-Saravana
 
-2. set error type
-# cat available_error_type (depend on your bios)
-0x00000002      Processor Uncorrectable non-fatal
-0x00000008      Memory Correctable
-0x00000010      Memory Uncorrectable non-fatal
-# echo 0x8 > error_type
-
-3. find a proper physical address for injection (usually use a free page like xen heap page)
- 
-4. set the injection address and mask
-# echo address > param1
-# echo mask > param2
- 
-5. inject error
-# echo 1 > error_inject
- 
-6. use mcelog tool to read error info
-
-
-Thanks,
-Jinsong
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
