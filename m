@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281Ab2DTRzr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:55:47 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:55934 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756987Ab2DTRzc (ORCPT
+	id S1756874Ab2DTRzW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:55:22 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:65059 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025Ab2DTRzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:55:32 -0400
-Date: Fri, 20 Apr 2012 10:55:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
-Message-ID: <20120420175502.GG2407@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120420122120.097464672@linutronix.de>
+	Fri, 20 Apr 2012 13:55:21 -0400
+Date: Fri, 20 Apr 2012 10:55:14 -0700
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <mgalbraith@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Menage <paul@paulmenage.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patch 0/2] cpusets, cpu_cgroup: disallow attaching kthreadd
+Message-ID: <20120420175514.GE32324@google.com>
+References: <alpine.DEB.2.00.1204051542280.25838@chino.kir.corp.google.com>
+ <20120405225854.GE29517@google.com>
+ <alpine.DEB.2.00.1204051559480.25838@chino.kir.corp.google.com>
+ <20120405231306.GF29517@google.com>
+ <alpine.DEB.2.00.1204051630400.25838@chino.kir.corp.google.com>
+ <20120406155203.GA4798@dhcp-172-17-108-109.mtv.corp.google.com>
+ <1333736770.2960.114.camel@laptop>
+ <alpine.DEB.2.00.1204061347180.23328@chino.kir.corp.google.com>
+ <CABEgKgopoHYiisCQnqeFc4qT-Y4Md1b6enTcZdomoKn0vGv_RQ@mail.gmail.com>
+ <alpine.DEB.2.00.1204091747470.4449@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120420122120.097464672@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042017-7408-0000-0000-000004613ADD
+In-Reply-To: <alpine.DEB.2.00.1204091747470.4449@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 01:05:41PM -0000, Thomas Gleixner wrote:
-> Dear all,
-> 
-> I'm working on refactoring the SMP boot and CPU hotplug implementation.
-> 
-> The current code has evolved over time into a conglomerate of
-> warts. My main goals are to:
-> 
->  - reduce the architecture code by moving repeating constructs to the
->    core
-> 
->  - redesigning the handling of per cpu threads. There is no point to
->    tear down the threads just to create them again.
-> 
->  - restructuring the notifier facility into a proper tree with
->    dependencies to avoid the gazillion of callbacks and moving
->    setup/teardown code into the context of the upcoming/dying cpu
-> 
-> The motivation behind this work is the cpu hotplug nightmare which we
-> are facing in the RT kernel and the requests from several groups
-> (e.g. ARM) to make hotplug more lightweight and faster.
-> 
-> This first part moves the idle thread management for non-boot cpus
-> into the core. fork_idle() is called in a workqueue as it is
-> implemented in a few architectures already. This is necessary when not
-> all cpus are brought up by the early boot code as otherwise we would
-> take a ref on the user task VM of the thread which brings the cpu up
-> via the sysfs interface.
-> 
-> This converts all architectures except m32r, mn10300, tile and UM to
-> the new core facility. These architecture are calling fork_idle() in
-> the very early boot code in smp_prepare_cpus() for unknown reasons.
-> I haven't analyzed yet, whether this is on purpose or can be moved
-> over to the generic facility. It'd be nice if the responsible maintainers
-> could look into that as well.
+Hello,
 
-Looks good to me!  Ran some brief rcutorture+hotplug tests, and it
-did fine on KVM on 32-bit x86.
+On Mon, Apr 09, 2012 at 05:52:50PM -0700, David Rientjes wrote:
+> On Sun, 8 Apr 2012, Hiroyuki Kamezawa wrote:
+> 
+> > I'm sorry if I didn't read e-mails while a trip....let me understand...
+> > 
+> >  - Tejun at el, tries to disallow to move kthreadd into cgroups other than root.
+> >  - You wants to account kthreadd's activity under memg at el.
+> > 
+> 
+> memcg isn't the only use case, you can also use it for cpuacct and any 
+> other future cgroup that wants to do so.
+> 
+> > Then, 2 question from me is....
+> > 1. If this patch only affects kthreadd, you can move other
+> >     kthread. Is this correct ?
+> > 
+> 
+> Yes, but not those that are forked by kthreadd at runtime without some 
+> delay between the fork and attaching it to a different cgroup.  With memcg 
+> slab accounting, for example, allocating the task_struct for the kthread 
+> should appropriately be accounted for in a non-root memcg.
+> 
+> Keep in mind that this isn't only limited to memcg, I've just used it to 
+> illustrate how account for slab is useful.  I don't know everybody's use 
+> cases where they may want to do the same thing so I've been arguing 
+> against unnecessarily restricting it from all cgroups other than those 
+> that require it (cpuset and cpu).
+> 
+> Using cpusets as an example, we can even completely remove the restriction 
+> on attaching all PF_THREAD_BOUND threads by not allowing them only if the 
+> destination cpuset has mems that are disjoint from the bound cpu and 
+> disallow changing the mems to be disjoint from a member's bound cpu.
 
-							Thanx, Paul
+So, the scheduler / arch people don't seem too happy with the prospect
+of basic system kthreads living in !root cgroups and memcg people seem
+willing to fix up whatever accounting deficiency in root memcg and I'm
+not convinced the left use cases are all that useful / important.
+There inherently are system-wide things (things happen w/o task
+context and thus w/o any cgroup associated).  Just leave them in the
+rootcg.  If you have to move kthreads to !root cgroups for accounting,
+then do so on your own.  The only downsides are small delays and kmem
+accounting inaccuracy from kthread allocation.
 
+Thanks.
+
+-- 
+tejun
