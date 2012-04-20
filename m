@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab2DTTEX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:04:23 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38988 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754973Ab2DTTEV (ORCPT
+	id S1757482Ab2DTTIG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:08:06 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:39075 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565Ab2DTTIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 15:04:21 -0400
-Date: Fri, 20 Apr 2012 20:04:18 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
- ima-appraisal patches)
-Message-ID: <20120420190418.GK6871@ZenIV.linux.org.uk>
-References: <1334754302.2137.8.camel@falcor>
- <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
- <1334772473.2137.22.camel@falcor>
- <20120418183938.GH6589@ZenIV.linux.org.uk>
- <1334865448.2429.35.camel@falcor>
- <20120420004303.GB6871@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1204201133340.1450@eggly.anvils>
+	Fri, 20 Apr 2012 15:08:04 -0400
+Message-ID: <4F91B3C1.5080507@linux.vnet.ibm.com>
+Date: Fri, 20 Apr 2012 14:06:41 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1204201133340.1450@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <nitingupta910@gmail.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: Tree for Apr 19 (zcache)
+References: <20120419164643.d9f918d44c890722b7707508@canb.auug.org.au> <4F909200.6070104@xenotime.net> <0b74f96b-8450-4dfb-8798-36edd0e06a64@default> <4F90E7CA.6080201@linux.vnet.ibm.com> <20120420163745.GB31062@phenom.dumpdata.com>
+In-Reply-To: <20120420163745.GB31062@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042019-1780-0000-0000-000004ECC574
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000271; HX=3.00000187; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00132596; UDB=6.00031146; UTC=2012-04-20
+ 19:08:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 11:54:01AM -0700, Hugh Dickins wrote:
-> I can see that the discussion has since moved on quite a way from here.
+On 04/20/2012 11:37 AM, Konrad Rzeszutek Wilk wrote:
+> On Thu, Apr 19, 2012 at 11:36:26PM -0500, Seth Jennings wrote:
+>> One fix is this:
+>>
+>> diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
+>> index 3ed2c8f..7048e01 100644
+>> --- a/drivers/staging/zcache/Kconfig
+>> +++ b/drivers/staging/zcache/Kconfig
+>> @@ -2,7 +2,7 @@ config ZCACHE
+>>         bool "Dynamic compression of swap pages and clean pagecache pages"
+>>         # X86 dependency is because zsmalloc uses non-portable pte/tlb
+>>         # functions
+>> -       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO && X86
+>> +       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && X86
+>>         select ZSMALLOC
+>>         select CRYPTO_LZO
+>>         default n
+>>
+>> I think this is the best way since ZCACHE is a bool and CRYPTO is the only
+>> one of the dependencies that is a tristate.  This forces both ZSMALLOC and
+>> CRYPTO_LZO to be builtin if ZCACHE is selected.
+>>
+>> Any other suggestions?
 > 
-> But it looks to me fairly easy for mm to stop doing fput() under mmap_sem.
+> Could you do:
 > 
-> That's already the case when exiting (no mmap_sem held), and shouldn't add
-> observable cost when unmapping (we already work on a chain of vmas to be
-> freed, and when unmapping that chain will usually just be of one: shouldn't
-> matter to defer a final pass until after mmap_sem is dropped).  Unless I'm
-> mistaken, the fput() buried in vma_adjust() can never be a final fput.
-> 
-> Is it worth my trying to implement that?  Or do you see an immediate
-> gotcha that I'm missing?  Or are you happy enough with your deferred
-> fput() ideas, that it would be a waste of time to rearrange the mm end?
+> default y if (CRYPTO=y || ZSMALLOC=m)
+> default m if (CRYPTO=m || ZSMALLOC=y)
 
-Deferring the final pass after dropping ->mmap_sem is going to be
-interesting; what would protect ->vm_next on those suckers?  Locking
-rules are already bloody complicated in mm/*; this will only add more
-subtle fun.  Note that right now both the dissolution of ->vm_next
-list and freeing of VMAs happen under ->mmap_sem; changing that might
-cost us a lot of headache...
+ZCACHE is a bool and can't be built as a module.
+
+The requirement is the if ZCACHE=y, then ZSMALLOC and
+CRYPTO must also =y.
+
+Thanks,
+Seth
+
