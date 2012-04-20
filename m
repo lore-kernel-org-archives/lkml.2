@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932636Ab2DTHah (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 03:30:37 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:54576 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754800Ab2DTHaf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 03:30:35 -0400
-From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 20 Apr 2012 09:28:46 +0200
-Subject: RE: [PATCH 1/2] leds-lm3530: comment correction about the range of
- brightness
-Thread-Topic: [PATCH 1/2] leds-lm3530: comment correction about the range of
- brightness
-Thread-Index: Ac0d91aE61uKSG1fTRa0ziODJqgpzAAz8gZw
-Message-ID: <2E48302EED53D048A7BA72B0A307FB511FB8D43B52@EXDCVYMBSTM005.EQ1STM.local>
-References: <DD6B9D658496A2488636C8C75B9C0CB601CD3224@EXMAIL04.scwf.nsc.com>
-In-Reply-To: <DD6B9D658496A2488636C8C75B9C0CB601CD3224@EXMAIL04.scwf.nsc.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932650Ab2DTHcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 03:32:10 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34408 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343Ab2DTHcI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 03:32:08 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120419162905.GA3084@opensource.wolfsonmicro.com>
+References: <1334829097-32084-1-git-send-email-jaswinder.singh@linaro.org>
+	<20120419124204.GE3046@opensource.wolfsonmicro.com>
+	<CAJe_ZhfbFq98fT56CS-q4VoU8wnybj-+swfB+Jrknd3Zmt9V8g@mail.gmail.com>
+	<20120419162905.GA3084@opensource.wolfsonmicro.com>
+Date: Fri, 20 Apr 2012 13:02:06 +0530
+Message-ID: <CAJe_Zhd0H6kXBhqdynuZqhbcPq8ARWu5SMbs=hQT2n8stzRvXQ@mail.gmail.com>
+Subject: Re: [PATCH] regulator: Provide a check for dummy regulator
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, lrg@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I feel driver should take care of range provided by hardware by 
-scaling the value provided by user, instead of limiting the max 
-brightness to user.
+On 19 April 2012 21:59, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Apr 19, 2012 at 07:35:03PM +0530, Jassi Brar wrote:
+>
+>> Another POV is :
+>>   Is a consumer's need, to know if the gotten regulator is a real
+>> or a dummy one, reasonable ?
+>
+> Absolutely not, you're completely failing to understand what I said
+> about abstraction here.  *Nothing* about this is anything to do with
+> dummy regulators in the slightest, it's about supplies which are already
+> on at the time the driver powers the device up.  Doing this for dummy
+> regulators is not helpful, being enabled isn't in the slightest bit tied
+> to the fact that the regulator is a dummy regulator and it's silly to
+> optimise this only in the specific case where a dummy regulator (which
+> is in the first place only a crutch to keep systems with buggy regulator
+> setups going) is being used is silly.
+>
+> I'd suggest checking with regulator_is_enabled() prior to power up, or
+> adding a notifier for physical enable events and using that.
+>
+Sorry for being slow.
+How would you suggest one works out the following arrangement ?
 
-For .e.g. here it can be something like this -
-                err = i2c_smbus_write_byte_data(drvdata->client,
-                                LM3530_BRT_CTRL_REG, brt_val / 2);
+Say, an audio CODEC chip has a simple PLL1 run by main voltage
+domain(Vmain). PLL1 can only support 11025x sample rates.
+Another PLL2 on the chip, powered by optional supply Vaux, could
+provide 8000x sample rates. Obviously low-end platforms could choose
+to not provide Vaux.
 
-I am not sure if application really use/check max brightness in before 
-calculating/setting new brightness values.
+The platform has some other drivers that need to have dummy regulator
+support enabled.
 
------Original Message-----
-From: Kim, Milo [mailto:Milo.Kim@ti.com] 
-Sent: Thursday, April 19, 2012 12:11 PM
-To: Andrew Morton
-Cc: Shreshtha Kumar SAHU; linus.walleij@linaro.org; Richard Purdie; linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] leds-lm3530: comment correction about the range of brightness
+How is the CODEC driver supposed to know if 'vaux' is actually present?
+Because if it isn't present, the driver wouldn't declare support for
+8000x  rates.
+regulator_get() would always succeed, and regulator_is_enabled() would
+always return 1, even if the vaux is not supplied.
 
-max brightness is 127, so the range of brt_val should be from 0 to 127
-
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- include/linux/led-lm3530.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/led-lm3530.h b/include/linux/led-lm3530.h
-index eeae6e7..4b13347 100644
---- a/include/linux/led-lm3530.h
-+++ b/include/linux/led-lm3530.h
-@@ -92,7 +92,7 @@ struct lm3530_pwm_data {
-  * @als2_resistor_sel: internal resistance from ALS2 input to ground
-  * @als_vmin: als input voltage calibrated for max brightness in mV
-  * @als_vmax: als input voltage calibrated for min brightness in mV
-- * @brt_val: brightness value (0-255)
-+ * @brt_val: brightness value (0-127)
-  * @pwm_data: PWM control functions (only valid when the mode is PWM)
-  */
- struct lm3530_platform_data {
--- 
-1.7.4.1
-
-
-Best Regards,
-Milo (Woogyom) Kim
-
-
+Thanks,
+-Jassi
