@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab2DTTck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:32:40 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:64835 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab2DTTcj convert rfc822-to-8bit (ORCPT
+	id S1757399Ab2DTTfx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:35:53 -0400
+Received: from outmail020.snc4.facebook.com ([66.220.144.154]:59765 "EHLO
+	intmgw003.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751119Ab2DTTfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 15:32:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120420192937.GE15021@tiehlicka.suse.cz>
-References: <20120417155502.GE22687@tiehlicka.suse.cz>
-	<20120420182907.GG32324@google.com>
-	<20120420191418.GA3569@merkur.ravnborg.org>
-	<20120420192937.GE15021@tiehlicka.suse.cz>
-Date: Fri, 20 Apr 2012 12:32:38 -0700
-X-Google-Sender-Auth: rZC6S8WuiwzSgEMFcxY20cXI-TA
-Message-ID: <CAE9FiQUytfCvr8c++im+DignUwZvHmnu8gPNDG6SOJzrF_FsNg@mail.gmail.com>
-Subject: Re: Weirdness in __alloc_bootmem_node_high
-From: Yinghai Lu <yinghai@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 20 Apr 2012 15:35:52 -0400
+From: Arun Sharma <asharma@fb.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arun Sharma <asharma@fb.com>
+Subject: [PATCH 0/3] perf: Support multiple stacks (v2)
+Date: Fri, 20 Apr 2012 12:35:24 -0700
+Message-Id: <1334950527-5050-1-git-send-email-asharma@fb.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 12:29 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> This is what I can see in the current (Linus) git:
-> ./arch/sparc/Kconfig:   select SPARSEMEM_VMEMMAP_ENABLE
-> ./arch/powerpc/Kconfig: select SPARSEMEM_VMEMMAP_ENABLE
-> ./arch/ia64/Kconfig:    select SPARSEMEM_VMEMMAP_ENABLE
-> ./arch/s390/Kconfig:    select SPARSEMEM_VMEMMAP_ENABLE
-> ./arch/s390/Kconfig:    select SPARSEMEM_VMEMMAP
-> ./arch/x86/Kconfig:     select SPARSEMEM_VMEMMAP_ENABLE if X86_64
->
-> So there are more arches which enable SPARSEMEM_VMEMMAP so the function
-> is used. Or am I missing something?
+If userspace has two or more stacks and we happen to take a sample when
+the stack pointer is pointing to a higher stack, we might get truncated
+callchains. This patch series tries to address that.
 
-MAX_DMA32_PFN is not defined for them.
+Changelog:
 
-I was think only x86 have that define. Actually mips have that defined too.
+v2: do this for compat32 as well
+v2: improve safety checks and reduce max callchain size
 
-Yinghai
+Arun Sharma (3):
+  perf, x86: Allow multiple stacks
+  perf, x86: Don't leak kernel data via callchains
+  perf, x86: Limit callchains to 127
+
+ arch/x86/kernel/cpu/perf_event.c |   14 +++++++-------
+ include/linux/perf_event.h       |    2 +-
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+-- 
+1.7.8.4
+
