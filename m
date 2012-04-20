@@ -1,85 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab2DTJkh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 05:40:37 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64498 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab2DTJkg convert rfc822-to-8bit (ORCPT
+	id S1753279Ab2DTJok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 05:44:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43204 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab2DTJoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 05:40:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1334852525-14950-1-git-send-email-apw@canonical.com>
-References: <1334852525-14950-1-git-send-email-apw@canonical.com>
-Date: Fri, 20 Apr 2012 10:40:35 +0100
-Message-ID: <CAPM=9tzC5M-K-irN=Dw3Ai+2ExUj_vSCVYUj-qpmccHLAeaifA@mail.gmail.com>
-Subject: Re: [PATCH 0/1] [RFC] DRM locking issues during early open
-From: Dave Airlie <airlied@gmail.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bryce Harrington <bryce@canonical.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 20 Apr 2012 05:44:39 -0400
+Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>
+In-Reply-To: <EE928378561BF1449699C96571234A740FCE3704@SHSMSX102.ccr.corp.intel.com>
+References: <EE928378561BF1449699C96571234A740FCE3704@SHSMSX102.ccr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Apr 2012 11:44:33 +0200
+Message-ID: <1334915073.2463.36.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 5:22 PM, Andy Whitcroft <apw@canonical.com> wrote:
-> We have been carrying a (rather poor) patch for an issue we identified in
-> the DRM driver.  This issue is triggered when a DRM device is initialising
-> and userspace attempts to open it, typically in response to the sysfs
-> device added event.  Basically we allocate the minor numbers making
-> the device available, and then call the drm load callback.  Until this
-> completes the device is really not ready and these early opens typically
-> lead to oopses.
->
-> We have been using the following patch to avoid this by marking the minors
-> as in error until the load method has completed.  This avoids the early
-> open by simply erroring out the opens with EAGAIN.  Obviously we should
-> be delaying the open until the load method complete.
->
-> I include the existing patch for completness (it is not really ready for
-> merging) to illustrate the issue.  I think it is logical that the wait
-> should simply be delayed until the load has completed.  I am proposing
-> to include a wait queue associated with the idr cache for the drm minors
-> which we can use to allow open callers to wait_event_interruptible() on.
-> I'll be putting together a prototype shortly and will follow up with it.
->
-> Thoughts?
+On Wed, 2012-04-11 at 08:07 +0000, Tu, Xiaobing wrote:
+> From: xiaobing tu <xiaobing.tu@intel.com> 
+> 
+> Here is the kernel patch for this tool, The idea is to output user
+> space stack call-chain from /proc/xxx/stack,
+> currently, /proc/xxx/stack only output kernel stack call chain. We
+> extend it to output user space call chain in hex format
+> 
+> Signed-off-by: yanmin zhang <yanmin_zhang@linux.intel.com>
+> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
 
-I've just revisited this, maybe I'm going insane but why does
-drm_global_mutex not stop this?
+Ok, so I don't like it.. for one I really don't see the need for this,
+secondly the implementation is crappy, thirdly the interface is poor.
 
-drm_get_pci_dev takes drm_global_mutex before calling drm_fill_in_dev
-and drm_get_minor.
+> ---
+>  arch/x86/kernel/stacktrace.c |   55 ++++++++++++++++++++++++++++++++++++++++++
+>  fs/proc/base.c               |   19 +++++++++++++-
+>  include/linux/stacktrace.h   |    5 +++-
+>  3 files changed, 77 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c index fdd0c64..d802f05 100644
+> --- a/arch/x86/kernel/stacktrace.c
+> +++ b/arch/x86/kernel/stacktrace.c
+> @@ -7,6 +7,7 @@
+>  #include <linux/stacktrace.h>
+>  #include <linux/module.h>
+>  #include <linux/uaccess.h>
+> +#include <linux/mm.h>
+>  #include <asm/stacktrace.h>
+>  
+>  static int save_stack_stack(void *data, char *name) @@ -144,3 +145,57 @@ void save_stack_trace_user(struct stack_trace *trace)
+>  		trace->entries[trace->nr_entries++] = ULONG_MAX;  }
+>  
+> +static inline void __save_stack_trace_user_task(struct task_struct *task,
+> +		struct stack_trace *trace)
+> +{
+> +	const struct pt_regs *regs = task_pt_regs(task);
+> +	const void __user *fp;
+> +	unsigned long addr;
+> +
+> +	if (task != current && task->state == TASK_RUNNING && task->on_cpu) {
+> +		/* To trap into kernel at least once */
+> +		smp_send_reschedule(task_cpu(task));
+> +	}
 
-Now the fops should be pointing at stub_open at this point, as we
-won't have switched to the per device fops yet,
-and one of the first things drm_stub_open does is take the
-drm_global_mutex before doing the idr lookup.
+This doesn't make any sense at all..
 
-So is the problem opening some sysfs or proc file early?
+> +
+> +	fp = (const void __user *)regs->bp;
+> +	if (trace->nr_entries < trace->max_entries)
+> +		trace->entries[trace->nr_entries++] = regs->ip;
+> +
+> +	while (trace->nr_entries < trace->max_entries) {
+> +		struct stack_frame_user frame;
+> +
+> +		frame.next_fp = NULL;
+> +		frame.ret_addr = 0;
+> +
+> +		addr = (unsigned long)fp;
+> +		if (!access_process_vm(task, addr, (void *)&frame,
+> +				sizeof(frame), 0))
+> +			break;
+> +		if ((unsigned long)fp < regs->sp)
+> +			break;
+> +		if (frame.ret_addr) {
+> +			trace->entries[trace->nr_entries++] =
+> +				frame.ret_addr;
+> +		}
+> +		if (fp == frame.next_fp)
+> +			break;
+> +		fp = frame.next_fp;
+> +	}
+> +}
+> +
+> +void save_stack_trace_user_task(struct task_struct *task,
+> +		struct stack_trace *trace)
+> +{
+> +	if (task == current || !task) {
+> +		save_stack_trace_user(trace);
+> +		return;
+> +	}
+> +
+> +	if (task->mm)
+> +		__save_stack_trace_user_task(task, trace);
+> +
+> +	if (trace->nr_entries < trace->max_entries)
+> +		trace->entries[trace->nr_entries++] = ULONG_MAX; } 
+> +EXPORT_SYMBOL_GPL(save_stack_trace_user_task);
 
-Dave.
+There's already userspace stack walkers, don't reimplement them yet
+again.
 
+> diff --git a/fs/proc/base.c b/fs/proc/base.c index d4548dd..603e708 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -327,8 +327,25 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
+>  			seq_printf(m, "[<%pK>] %pS\n",
+>  				   (void *)entries[i], (void *)entries[i]);
+>  		}
+> -		unlock_trace(task);
+> +	} else
+> +		goto out;
+> +
+> +	trace.nr_entries	= 0;
+> +	trace.max_entries	= MAX_STACK_TRACE_DEPTH;
+> +	trace.entries		= entries;
+> +	trace.skip		= 0;
+> +
+> +	seq_printf(m, "userspace\n");
+> +
+> +	save_stack_trace_user_task(task, &trace);
+> +
+> +	for (i = 0; i < trace.nr_entries; i++) {
+> +		if (entries[i] != ULONG_MAX)
+> +			seq_printf(m, "%p\n", (void *)entries[i]);
+>  	}
+> +	unlock_trace(task);
+> +
+> +out:
 
->
-> -apw
->
-> Andy Whitcroft (1):
->  drm -- stop early access to drm devices
->
->  drivers/gpu/drm/drm_fops.c     |    8 ++++++--
->  drivers/gpu/drm/drm_pci.c      |    4 ++++
->  drivers/gpu/drm/drm_platform.c |    4 ++++
->  drivers/gpu/drm/drm_stub.c     |    2 +-
->  4 files changed, 15 insertions(+), 3 deletions(-)
->
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Writing out just the IPs means you have to have a stored snapshot
+of /proc/$PID/maps around to make any sense of them. This seems a
+relatively poor interface.
+
