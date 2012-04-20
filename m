@@ -1,54 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236Ab2DTQuF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 12:50:05 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42056 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab2DTQuD (ORCPT
+	id S1754659Ab2DTQxU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 12:53:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49974 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab2DTQxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 12:50:03 -0400
-Message-ID: <4F9193B7.7060706@gmail.com>
-Date: Fri, 20 Apr 2012 09:49:59 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: David Daney <ddaney.cavm@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v1 1/5] scripts: Add sortextable to sort the kernel's
- exception table.
-References: <1334872799-14589-1-git-send-email-ddaney.cavm@gmail.com> <1334872799-14589-2-git-send-email-ddaney.cavm@gmail.com> <20120420145920.GA2891@merkur.ravnborg.org>
-In-Reply-To: <20120420145920.GA2891@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Apr 2012 12:53:17 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 3/4] perf tools: Add 'G' and 'H' modifiers to event parsing
+Date: Fri, 20 Apr 2012 13:53:06 -0300
+Message-Id: <1334940787-16174-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1334940787-16174-1-git-send-email-acme@infradead.org>
+References: <1334940787-16174-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2012 07:59 AM, Sam Ravnborg wrote:
-> On Thu, Apr 19, 2012 at 02:59:55PM -0700, David Daney wrote:
->> From: David Daney<david.daney@cavium.com>
->>
->> Using this build-time sort saves time booting as we don't have to burn
->> cycles sorting the exception table.
->>
->> Signed-off-by: David Daney<david.daney@cavium.com>
->> ---
->>   scripts/.gitignore    |    1 +
->>   scripts/Makefile      |    1 +
->>   scripts/sortextable.c |  273 +++++++++++++++++++++++++++++++++++++++++++++++++
->>   scripts/sortextable.h |  168 ++++++++++++++++++++++++++++++
->
-> If there is only a single file including the .h file - then there is no gain.
-> Just fold it into the .c file.
->
+From: Gleb Natapov <gleb@redhat.com>
 
-s/single file/single site/, and I am in complete agreement.  However 
-this patch doesn't meet that criterion.  In this particular case, there 
-is more to the patch than just the diffstat.
+They were dropped during conversion of event parser. Add test case to
+make sure this will not happen again.
 
-David Daney
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/20120417111345.GK11918@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-test.c      |   30 ++++++++++++++++++++++++++++++
+ tools/perf/util/parse-events.l |    2 +-
+ 2 files changed, 31 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 1c5b980..223ffdc 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -851,6 +851,28 @@ static int test__checkevent_symbolic_name_modifier(struct perf_evlist *evlist)
+ 	return test__checkevent_symbolic_name(evlist);
+ }
+ 
++static int test__checkevent_exclude_host_modifier(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel = list_entry(evlist->entries.next,
++					      struct perf_evsel, node);
++
++	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
++
++	return test__checkevent_symbolic_name(evlist);
++}
++
++static int test__checkevent_exclude_guest_modifier(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel = list_entry(evlist->entries.next,
++					      struct perf_evsel, node);
++
++	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++
++	return test__checkevent_symbolic_name(evlist);
++}
++
+ static int test__checkevent_symbolic_alias_modifier(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *evsel = list_entry(evlist->entries.next,
+@@ -1091,6 +1113,14 @@ static struct test__event_st {
+ 		.name  = "r1,syscalls:sys_enter_open:k,1:1:hp",
+ 		.check = test__checkevent_list,
+ 	},
++	{
++		.name  = "instructions:G",
++		.check = test__checkevent_exclude_host_modifier,
++	},
++	{
++		.name  = "instructions:H",
++		.check = test__checkevent_exclude_guest_modifier,
++	},
+ };
+ 
+ #define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 05d766e..1fcf1bb 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -54,7 +54,7 @@ num_dec		[0-9]+
+ num_hex		0x[a-fA-F0-9]+
+ num_raw_hex	[a-fA-F0-9]+
+ name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
+-modifier_event	[ukhp]{1,5}
++modifier_event	[ukhpGH]{1,8}
+ modifier_bp	[rwx]
+ 
+ %%
+-- 
+1.7.9.2.358.g22243
+
