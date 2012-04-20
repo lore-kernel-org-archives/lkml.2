@@ -1,107 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab2DTBp0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 21:45:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53686 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750868Ab2DTBpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 21:45:25 -0400
-Message-ID: <4F90BF8D.7030209@zytor.com>
-Date: Thu, 19 Apr 2012 18:44:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754588Ab2DTBtF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 21:49:05 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55465 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab2DTBtD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 21:49:03 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F90C01E.3040909@jp.fujitsu.com>
+Date: Fri, 20 Apr 2012 10:47:10 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-CC: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH v1 1/5] scripts: Add sortextable to sort the kernel's
- exception table.
-References: <1334872799-14589-1-git-send-email-ddaney.cavm@gmail.com> <1334872799-14589-2-git-send-email-ddaney.cavm@gmail.com>
-In-Reply-To: <1334872799-14589-2-git-send-email-ddaney.cavm@gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
+To: Hugh Dickins <hughd@google.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] memcg: fix Bad page state after replace_page_cache
+References: <alpine.LSU.2.00.1204182325350.3700@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1204182325350.3700@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I committed this into the tip tree, but I realized something scary on
-the way home... this program is broken: it doesn't handle the
-relocations that go with the entries.  Specifically, it needs to not
-just handle __ex_table, it also needs to handle the corresponding
-entries in .rel__ex_table.
+(2012/04/19 15:34), Hugh Dickins wrote:
 
-On x86-32, in particular, *most*, but not *all*, extable relocations
-will have an R_386_32 relocation on it, so the resulting binary will
-"mostly work"... but the ELF metadata will be wrong, and pretty much any
-user of the try/catch mechanism will be broken, unless your kernel
-happens to be located at its preferred address.
-
-This needs to be addressed, either by adjusting the exception table to
-be relative (which would be good for code size on 64-bit platforms)
-*and* zero out the .rel__ex_table section or by making the program
-actually sort the relocations correctly.
-
-	-hpa
-
-On 04/19/2012 02:59 PM, David Daney wrote:
-> +
-> +/* w8rev, w8nat, ...: Handle endianness. */
-> +
-> +static uint64_t w8rev(uint64_t const x)
-> +{
-> +	return   ((0xff & (x >> (0 * 8))) << (7 * 8))
-> +	       | ((0xff & (x >> (1 * 8))) << (6 * 8))
-> +	       | ((0xff & (x >> (2 * 8))) << (5 * 8))
-> +	       | ((0xff & (x >> (3 * 8))) << (4 * 8))
-> +	       | ((0xff & (x >> (4 * 8))) << (3 * 8))
-> +	       | ((0xff & (x >> (5 * 8))) << (2 * 8))
-> +	       | ((0xff & (x >> (6 * 8))) << (1 * 8))
-> +	       | ((0xff & (x >> (7 * 8))) << (0 * 8));
-> +}
-> +
-> +static uint32_t w4rev(uint32_t const x)
-> +{
-> +	return   ((0xff & (x >> (0 * 8))) << (3 * 8))
-> +	       | ((0xff & (x >> (1 * 8))) << (2 * 8))
-> +	       | ((0xff & (x >> (2 * 8))) << (1 * 8))
-> +	       | ((0xff & (x >> (3 * 8))) << (0 * 8));
-> +}
-> +
-> +static uint32_t w2rev(uint16_t const x)
-> +{
-> +	return   ((0xff & (x >> (0 * 8))) << (1 * 8))
-> +	       | ((0xff & (x >> (1 * 8))) << (0 * 8));
-> +}
-> +
-> +static uint64_t w8nat(uint64_t const x)
-> +{
-> +	return x;
-> +}
-> +
-> +static uint32_t w4nat(uint32_t const x)
-> +{
-> +	return x;
-> +}
-> +
-> +static uint32_t w2nat(uint16_t const x)
-> +{
-> +	return x;
-> +}
-> +
-> +static uint64_t (*w8)(uint64_t);
-> +static uint32_t (*w)(uint32_t);
-> +static uint32_t (*w2)(uint16_t);
-
-Stylistic note: these should use the <tools/*_byteshift.h> headers now.
-
-	-hpa
+> My 9ce70c0240d0 "memcg: fix deadlock by inverting lrucare nesting" put a
+> nasty little bug into v3.3's version of mem_cgroup_replace_page_cache(),
+> sometimes used for FUSE.  Replacing __mem_cgroup_commit_charge_lrucare()
+> by __mem_cgroup_commit_charge(), I used the "pc" pointer set up earlier:
+> but it's for oldpage, and needs now to be for newpage.  Once oldpage was
+> freed, its PageCgroupUsed bit (cleared above but set again here) caused
+> "Bad page state" messages - and perhaps worse, being missed from newpage.
+> (I didn't find this by using FUSE, but in reusing the function for tmpfs.)
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: stable@vger.kernel.org [v3.3 only]
 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Thanks,
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+
+> ---
+> 
+>  mm/memcontrol.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- 3.4-rc3/mm/memcontrol.c	2012-04-15 20:47:37.151777506 -0700
+> +++ linux/mm/memcontrol.c	2012-04-18 22:29:18.490639511 -0700
+> @@ -3392,6 +3392,7 @@ void mem_cgroup_replace_page_cache(struc
+>  	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
+>  	 * LRU while we overwrite pc->mem_cgroup.
+>  	 */
+> +	pc = lookup_page_cgroup(newpage);
+>  	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type, true);
+>  }
+>  
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> 
+
+
+
