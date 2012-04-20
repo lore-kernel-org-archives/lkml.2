@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab2DTGiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 02:38:09 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33941 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab2DTGiH convert rfc822-to-8bit (ORCPT
+	id S1754176Ab2DTG7d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 02:59:33 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:18299 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab2DTG7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 02:38:07 -0400
+	Fri, 20 Apr 2012 02:59:31 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6686"; a="181088131"
+Message-ID: <4F910941.4000702@codeaurora.org>
+Date: Thu, 19 Apr 2012 23:59:13 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120419182917.2F64E3E0700@localhost>
-References: <1334756420-12019-1-git-send-email-linus.walleij@stericsson.com>
-	<1334787792.3143.19.camel@pasglop>
-	<20120419182917.2F64E3E0700@localhost>
-Date: Fri, 20 Apr 2012 08:38:05 +0200
-Message-ID: <CACRpkdYpPLNnuivcN9CsG6ZHsZ7=AOkYv9OSGjfiLFi1ouh03g@mail.gmail.com>
-Subject: Re: [PATCH] irqdomain: print a warning if domains contain IRQ 0
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
+To: Bryan Wu <bryan.wu@canonical.com>
+CC: linux@arm.linux.org.uk, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, akpm@linux-foundation.org,
+        arnd.bergmann@linaro.org, nicolas.pitre@linaro.org,
+        tim.gardner@canonical.com
+Subject: Re: [PATCH 01/18] led-triggers: create a trigger for CPU activity
+References: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com> <1334660025-20442-2-git-send-email-bryan.wu@canonical.com>
+In-Reply-To: <1334660025-20442-2-git-send-email-bryan.wu@canonical.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 8:29 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+On 4/17/2012 3:53 AM, Bryan Wu wrote:
+> +static int __init ledtrig_cpu_init(void)
+> +{
+> +	int cpu;
+> +
+> +	/* Supports up to 9999 cpu cores */
+> +	BUILD_BUG_ON(CONFIG_NR_CPUS > 9999);
+> +
+> +	/*
+> +	 * Registering CPU led trigger for each CPU cores here
+> +	 * ignores CPU hotplug, but after this CPU hotplug works
+> +	 * fine with this trigger.
+> +	 */
+> +	for_each_possible_cpu(cpu) {
+> +		struct led_trigger *trig;
+> +		char *name = per_cpu(trig_name, cpu);
+> +		struct rw_semaphore *lock = &per_cpu(trig_lock, cpu);
+> +
+> +		init_rwsem(lock);
 
-> This is indeed specific to the legacy domain.  I think the patch is
-> good and it will help weed out unintended irq0 users.  However, it
-> requires the following additional fix I think.  It will need to be
-> tested to make sure it doesn't break PowerPC ISA users.
->
-> g.
->
-> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-> index d0995bd..31f1f88 100644
-> --- a/include/linux/irqdomain.h
-> +++ b/include/linux/irqdomain.h
-> @@ -138,7 +138,7 @@ static inline struct irq_domain *irq_domain_add_legacy_isa(
->                                const struct irq_domain_ops *ops,
->                                void *host_data)
->  {
-> -       return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS, 0, 0, ops,
-> +       return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS-1, 1, 1, ops,
->                                     host_data);
+What is this lock protecting?
 
-Hm, so what does this do? If I fold it into my patch I need some
-kind of blurb...
+> +
+> +		snprintf(name, MAX_NAME_LEN, "cpu%d", cpu);
+> +
+> +		down_write(lock);
+> +		led_trigger_register_simple(name, &trig);
+> +		per_cpu(cpu_trig, cpu) = trig;
+> +		up_write(lock);
 
-I'm guessing it bumps the ISA IRQs with one to avoid using IRQ0 which
-seems like a valid patch on its own, and that the old code was
-used for actively ignoring IRQ 0 on ISA (not used or whatever)?
+This is the only place it is locked and unlocked.
 
-Yours,
-Linus Walleij
+I think the previous comment was about how led_trigger_register_simple()
+exposed a live trigger but it wasn't assigned to the per_cpu variable
+yet. Can we not just reorder the assignment so we have
+
+  struct led_trigger *trig = NULL;
+  ...
+  per_cpu(cpu_trig, cpu) = trig;
+  led_trigger_register_simple();
+
+?
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
