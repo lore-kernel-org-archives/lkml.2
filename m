@@ -1,227 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563Ab2DTTdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:33:04 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:43224 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751657Ab2DTTc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 15:32:59 -0400
+	id S1757592Ab2DTTdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:33:18 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50132 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757566Ab2DTTdH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 15:33:07 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Greg KH <gregkh@linuxfoundation.org>,
         Android Kernel Team <kernel-team@android.com>
-Subject: [PATCH 3/4] android-alarm: Rework alarm-dev.c to use upstreamed alarmtimers
-Date: Fri, 20 Apr 2012 12:31:46 -0700
-Message-Id: <1334950307-403-4-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 0/4] Android Alarm Driver Cleanups (for staging-next/3.5)
+Date: Fri, 20 Apr 2012 12:31:43 -0700
+Message-Id: <1334950307-403-1-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1334950307-403-1-git-send-email-john.stultz@linaro.org>
-References: <1334950307-403-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042019-1976-0000-0000-00000C835581
+x-cbid: 12042019-7408-0000-0000-00000461CD7A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reworks the alarm-dev.c to use the upstreamed alarmtimers
-interface.
+This patch-set moves the Android alarm driver in staging to use
+the upstreamed CLOCK_BOOTTIME and alarmtimer interfaces, allowing
+us to greatly shrink the alarm driver.
+
+The Google Android team has been using these patches in its AOSP tree
+for a little while without any reported issues.
+
+The only gotcha is that I needed to make one alarmtimer interface
+non-static in order to support the android alarm driver. This sort
+of is a grey area for the staging tree, but I'm the author of the
+upstreamed alarmtimer code, and Thomas (cc'ed) had no objection
+to this patch going in via the staging tree, instead of -tip so 
+this should be ok (and much simpler then dealing with
+cross-maintainer dependencies).
+
+Greg: Would you mind applying this set to staging-next for 3.5?
+
+thanks
+-john
 
 CC: Colin Cross <ccross@android.com>
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Greg KH <gregkh@linuxfoundation.org>
 CC: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/alarm-dev.c |  108 +++++++++++++++++++++++++++++++---
- 1 files changed, 98 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
-index bc57568..7739029 100644
---- a/drivers/staging/android/alarm-dev.c
-+++ b/drivers/staging/android/alarm-dev.c
-@@ -22,6 +22,7 @@
- #include <linux/sched.h>
- #include <linux/spinlock.h>
- #include <linux/uaccess.h>
-+#include <linux/alarmtimer.h>
- #include "android_alarm.h"
- 
- /* XXX - Hack out wakelocks, while they are out of tree */
-@@ -66,7 +67,53 @@ static uint32_t alarm_pending;
- static uint32_t alarm_enabled;
- static uint32_t wait_pending;
- 
--static struct android_alarm alarms[ANDROID_ALARM_TYPE_COUNT];
-+struct devalarm {
-+	union {
-+		struct hrtimer hrt;
-+		struct alarm alrm;
-+	} u;
-+	enum android_alarm_type type;
-+};
-+
-+static struct devalarm alarms[ANDROID_ALARM_TYPE_COUNT];
-+
-+
-+static int is_wakeup(enum android_alarm_type type)
-+{
-+	if (type == ANDROID_ALARM_RTC_WAKEUP ||
-+			type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP)
-+		return 1;
-+	return 0;
-+}
-+
-+
-+static void devalarm_start(struct devalarm *alrm, ktime_t exp)
-+{
-+	if (is_wakeup(alrm->type))
-+		alarm_start(&alrm->u.alrm, exp);
-+	else
-+		hrtimer_start(&alrm->u.hrt, exp, HRTIMER_MODE_ABS);
-+}
-+
-+
-+static int devalarm_try_to_cancel(struct devalarm *alrm)
-+{
-+	int ret;
-+	if (is_wakeup(alrm->type))
-+		ret = alarm_try_to_cancel(&alrm->u.alrm);
-+	else
-+		ret = hrtimer_try_to_cancel(&alrm->u.hrt);
-+	return ret;
-+}
-+
-+static void devalarm_cancel(struct devalarm *alrm)
-+{
-+	if (is_wakeup(alrm->type))
-+		alarm_cancel(&alrm->u.alrm);
-+	else
-+		hrtimer_cancel(&alrm->u.hrt);
-+}
-+
- 
- static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- {
-@@ -75,6 +122,8 @@ static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	struct timespec new_alarm_time;
- 	struct timespec new_rtc_time;
- 	struct timespec tmp_time;
-+	struct rtc_time new_rtc_tm;
-+	struct rtc_device *rtc_dev;
- 	enum android_alarm_type alarm_type = ANDROID_ALARM_IOCTL_TO_TYPE(cmd);
- 	uint32_t alarm_type_mask = 1U << alarm_type;
- 
-@@ -101,7 +150,7 @@ static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case ANDROID_ALARM_CLEAR(0):
- 		spin_lock_irqsave(&alarm_slock, flags);
- 		pr_alarm(IO, "alarm %d clear\n", alarm_type);
--		android_alarm_try_to_cancel(&alarms[alarm_type]);
-+		devalarm_try_to_cancel(&alarms[alarm_type]);
- 		if (alarm_pending) {
- 			alarm_pending &= ~alarm_type_mask;
- 			if (!alarm_pending && !wait_pending)
-@@ -132,8 +181,7 @@ from_old_alarm_set:
- 		pr_alarm(IO, "alarm %d set %ld.%09ld\n", alarm_type,
- 			new_alarm_time.tv_sec, new_alarm_time.tv_nsec);
- 		alarm_enabled |= alarm_type_mask;
--		android_alarm_start_range(&alarms[alarm_type],
--			timespec_to_ktime(new_alarm_time),
-+		devalarm_start(&alarms[alarm_type],
- 			timespec_to_ktime(new_alarm_time));
- 		spin_unlock_irqrestore(&alarm_slock, flags);
- 		if (ANDROID_ALARM_BASE_CMD(cmd) != ANDROID_ALARM_SET_AND_WAIT(0)
-@@ -163,7 +211,13 @@ from_old_alarm_set:
- 			rv = -EFAULT;
- 			goto err1;
- 		}
--		rv = android_alarm_set_rtc(new_rtc_time);
-+		rtc_time_to_tm(new_rtc_time.tv_sec, &new_rtc_tm);
-+		rtc_dev = alarmtimer_get_rtcdev();
-+		rv = do_settimeofday(&new_rtc_time);
-+		if (rv < 0)
-+			goto err1;
-+		if (rtc_dev)
-+			rv = rtc_set_time(rtc_dev, &new_rtc_tm);
- 		spin_lock_irqsave(&alarm_slock, flags);
- 		alarm_pending |= ANDROID_ALARM_TIME_CHANGE_MASK;
- 		wake_up(&alarm_wait_queue);
-@@ -223,7 +277,7 @@ static int alarm_release(struct inode *inode, struct file *file)
- 				alarm_enabled &= ~alarm_type_mask;
- 			}
- 			spin_unlock_irqrestore(&alarm_slock, flags);
--			android_alarm_cancel(&alarms[i]);
-+			devalarm_cancel(&alarms[i]);
- 			spin_lock_irqsave(&alarm_slock, flags);
- 		}
- 		if (alarm_pending | wait_pending) {
-@@ -240,12 +294,12 @@ static int alarm_release(struct inode *inode, struct file *file)
- 	return 0;
- }
- 
--static void alarm_triggered(struct android_alarm *alarm)
-+static void devalarm_triggered(struct devalarm *alarm)
- {
- 	unsigned long flags;
- 	uint32_t alarm_type_mask = 1U << alarm->type;
- 
--	pr_alarm(INT, "alarm_triggered type %d\n", alarm->type);
-+	pr_alarm(INT, "devalarm_triggered type %d\n", alarm->type);
- 	spin_lock_irqsave(&alarm_slock, flags);
- 	if (alarm_enabled & alarm_type_mask) {
- 		wake_lock_timeout(&alarm_wake_lock, 5 * HZ);
-@@ -256,6 +310,25 @@ static void alarm_triggered(struct android_alarm *alarm)
- 	spin_unlock_irqrestore(&alarm_slock, flags);
- }
- 
-+
-+static enum hrtimer_restart devalarm_hrthandler(struct hrtimer *hrt)
-+{
-+	struct devalarm *devalrm = container_of(hrt, struct devalarm, u.hrt);
-+
-+	devalarm_triggered(devalrm);
-+	return HRTIMER_NORESTART;
-+}
-+
-+static enum alarmtimer_restart devalarm_alarmhandler(struct alarm *alrm,
-+							ktime_t now)
-+{
-+	struct devalarm *devalrm = container_of(alrm, struct devalarm, u.alrm);
-+
-+	devalarm_triggered(devalrm);
-+	return ALARMTIMER_NORESTART;
-+}
-+
-+
- static const struct file_operations alarm_fops = {
- 	.owner = THIS_MODULE,
- 	.unlocked_ioctl = alarm_ioctl,
-@@ -278,8 +351,23 @@ static int __init alarm_dev_init(void)
- 	if (err)
- 		return err;
- 
--	for (i = 0; i < ANDROID_ALARM_TYPE_COUNT; i++)
--		android_alarm_init(&alarms[i], i, alarm_triggered);
-+	alarm_init(&alarms[ANDROID_ALARM_RTC_WAKEUP].u.alrm,
-+			ALARM_REALTIME, devalarm_alarmhandler);
-+	hrtimer_init(&alarms[ANDROID_ALARM_RTC].u.hrt,
-+			CLOCK_REALTIME, HRTIMER_MODE_ABS);
-+	alarm_init(&alarms[ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP].u.alrm,
-+			ALARM_BOOTTIME, devalarm_alarmhandler);
-+	hrtimer_init(&alarms[ANDROID_ALARM_ELAPSED_REALTIME].u.hrt,
-+			CLOCK_BOOTTIME, HRTIMER_MODE_ABS);
-+	hrtimer_init(&alarms[ANDROID_ALARM_SYSTEMTIME].u.hrt,
-+			CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
-+
-+	for (i = 0; i < ANDROID_ALARM_TYPE_COUNT; i++) {
-+		alarms[i].type = i;
-+		if (!is_wakeup(i))
-+			alarms[i].u.hrt.function = devalarm_hrthandler;
-+	}
-+
- 	wake_lock_init(&alarm_wake_lock, WAKE_LOCK_SUSPEND, "alarm");
- 
- 	return 0;
+John Stultz (4):
+  android-alarm: Convert ALARM_ELAPSED_REALTIME to use CLOCK_BOOTTIME
+  alarmtimer: Provide accessor to alarmtimer rtc device
+  android-alarm: Rework alarm-dev.c to use upstreamed alarmtimers
+  android-alarm: Remove unused android alarm in-kernel interfaces
+
+ drivers/staging/android/Kconfig         |   21 +-
+ drivers/staging/android/Makefile        |    1 -
+ drivers/staging/android/alarm-dev.c     |  111 +++++-
+ drivers/staging/android/alarm.c         |  601 -------------------------------
+ drivers/staging/android/android_alarm.h |   59 ---
+ include/linux/alarmtimer.h              |    3 +
+ kernel/time/alarmtimer.c                |    4 +-
+ 7 files changed, 106 insertions(+), 694 deletions(-)
+ delete mode 100644 drivers/staging/android/alarm.c
+
 -- 
 1.7.3.2.146.gca209
 
