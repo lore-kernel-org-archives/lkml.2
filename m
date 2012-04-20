@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438Ab2DTNpz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 09:45:55 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7436 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab2DTNpy (ORCPT
+	id S1754032Ab2DTNr3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 09:47:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45147 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab2DTNr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 09:45:54 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 20 Apr 2012 06:45:54 -0700
-Message-ID: <4F91686A.1030000@nvidia.com>
-Date: Fri, 20 Apr 2012 19:15:14 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 20 Apr 2012 09:47:28 -0400
+Date: Fri, 20 Apr 2012 15:47:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>
+Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
+In-Reply-To: <1334928098.2463.56.camel@laptop>
+Message-ID: <alpine.LFD.2.02.1204201540400.2542@ionos>
+References: <20120420122120.097464672@linutronix.de> <1334928098.2463.56.camel@laptop>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@linux.intel.com>
-CC: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V1] dmaengine: tegra: add dma driver
-References: <1334912896-4614-1-git-send-email-ldewangan@nvidia.com> <1334920487.31825.98.camel@vkoul-udesk3> <4F9153AF.7020901@nvidia.com>
-In-Reply-To: <4F9153AF.7020901@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
-On Friday 20 April 2012 05:46 PM, Laxman Dewangan wrote:
-> Thanks Vinod for quick review.
->
->>> + * @dma_dev: required DMA master client device.
->>> + * @dm_req_id: Peripheral dma requestor ID.
->>> + */
->>> +struct tegra_dma_slave {
->>> +     struct device                   *client_dev;
->>> +     enum tegra_dma_requestor        dma_req_id;
->>> +     enum tegra_dma_burst_size       burst_size;
->> pls remove
-> if above is OK then I can remove this.
->
+On Fri, 20 Apr 2012, Peter Zijlstra wrote:
 
-If I add one more member as slave_id for slave requester in struct 
-dma_slave_config then I will not need the tegra_dma header at all and I 
-can get rid of this file.
-Let me know if this is OK so that I can take care of this in my next patch.
+> On Fri, 2012-04-20 at 13:05 +0000, Thomas Gleixner wrote:
+> > This first part moves the idle thread management for non-boot cpus
+> > into the core. fork_idle() is called in a workqueue as it is
+> > implemented in a few architectures already. This is necessary when not
+> > all cpus are brought up by the early boot code as otherwise we would
+> > take a ref on the user task VM of the thread which brings the cpu up
+> > via the sysfs interface. 
+> 
+> So I was thinking about this and I think we should make that kthreadd
+> instead of a random workqueue thread due to all that cgroup crap. People
+> are wanting to place all sorts of kernel threads in cgroups and I'm
+> still arguing that kthreadd should not be allowed in cgroups.
+
+So your fear is that the idle_thread will end up in some random cgroup
+because some illdesigned user space code decided to stick kernel
+threads into cgroups.
+
+Can we please have some sanity restrictions on this cgroup muck? I
+don't care when user space creates cgroups in circles, but holding the
+whole kernel hostage of this madness is going too far.
 
 Thanks,
-Laxman
 
-
+	tglx
