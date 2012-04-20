@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab2DTWDU (ORCPT <rfc822;w@1wt.eu>);
+	id S1756007Ab2DTWD1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 18:03:27 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:39638 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755881Ab2DTWDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Apr 2012 18:03:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34120 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806Ab2DTWDR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 18:03:17 -0400
-Date: Fri, 20 Apr 2012 15:03:01 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Message-ID: <tip-1a27bc0d99aabea6b628cb994a21a1c79b569fc9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        david.daney@cavium.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        david.daney@cavium.com, tglx@linutronix.de
-In-Reply-To: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
-References: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/extable] x86, extable:
-  Remove open-coded exception table entries in arch/x86/lib/getuser.S
-Git-Commit-ID: 1a27bc0d99aabea6b628cb994a21a1c79b569fc9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+Message-ID: <4F91DCBD.7070005@parallels.com>
+Date: Fri, 20 Apr 2012 19:01:33 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 20 Apr 2012 15:03:07 -0700 (PDT)
+To: Glauber Costa <glommer@parallels.com>
+CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 00/23] slab+slub accounting for memcg
+References: <1334958560-18076-1-git-send-email-glommer@parallels.com>
+In-Reply-To: <1334958560-18076-1-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.19.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1a27bc0d99aabea6b628cb994a21a1c79b569fc9
-Gitweb:     http://git.kernel.org/tip/1a27bc0d99aabea6b628cb994a21a1c79b569fc9
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Fri, 20 Apr 2012 12:19:51 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 20 Apr 2012 13:51:39 -0700
+On 04/20/2012 06:48 PM, Glauber Costa wrote:
+> Hi,
+>
+> This is my current attempt at getting the kmem controller
+> into a mergeable state. IMHO, all the important bits are there, and it should't
+> change *that* much from now on. I am, however, expecting at least a couple more
+> interactions before we sort all the edges out.
+>
+> This series works for both the slub and the slab. One of my main goals was to
+> make sure that the interfaces we are creating actually makes sense for both
+> allocators.
+>
+> I did some adaptations to the slab-specific patches, but the bulk of it
+> comes from Suleiman's patches. I did the best to use his patches
+> as-is where possible so to keep authorship information. When not possible,
+> I tried to be fair and quote it in the commit message.
+>
+> In this series, all existing caches are created per-memcg after its first hit.
+> The main reason is, during discussions in the memory summit we came into
+> agreement that the fragmentation problems that could arise from creating all
+> of them are mitigated by the typically small quantity of caches in the system
+> (order of a few megabytes total for sparsely used caches).
+> The lazy creation from Suleiman is kept, although a bit modified. For instance,
+> I now use a locked scheme instead of cmpxcgh to make sure cache creation won't
+> fail due to duplicates, which simplifies things by quite a bit.
+>
+> The slub is a bit more complex than what I came up with in my slub-only
+> series. The reason is we did not need to use the cache-selection logic
+> in the allocator itself - it was done by the cache users. But since now
+> we are lazy creating all caches, this is simply no longer doable.
+>
+> I am leaving destruction of caches out of the series, although most
+> of the infrastructure for that is here, since we did it in earlier
+> series. This is basically because right now Kame is reworking it for
+> user memcg, and I like the new proposed behavior a lot more. We all seemed
+> to have agreed that reclaim is an interesting problem by itself, and
+> is not included in this already too complicated series. Please note
+> that this is still marked as experimental, so we have so room. A proper
+> shrinker implementation is a hard requirement to take the kmem controller
+> out of the experimental state.
+>
+> I am also not including documentation, but it should only be a matter
+> of merging what we already wrote in earlier series plus some additions.
+>
+> Glauber Costa (19):
+>    slub: don't create a copy of the name string in kmem_cache_create
+>    slub: always get the cache from its page in kfree
+>    slab: rename gfpflags to allocflags
+>    slab: use obj_size field of struct kmem_cache when not debugging
+>    change defines to an enum
+>    don't force return value checking in res_counter_charge_nofail
+>    kmem slab accounting basic infrastructure
+>    slab/slub: struct memcg_params
+>    slub: consider a memcg parameter in kmem_create_cache
+>    slab: pass memcg parameter to kmem_cache_create
+>    slub: create duplicate cache
+>    slub: provide kmalloc_no_account
+>    slab: create duplicate cache
+>    slab: provide kmalloc_no_account
+>    kmem controller charge/uncharge infrastructure
+>    slub: charge allocation to a memcg
+>    slab: per-memcg accounting of slab caches
+>    memcg: disable kmem code when not in use.
+>    slub: create slabinfo file for memcg
+>
+> Suleiman Souhlal (4):
+>    memcg: Make it possible to use the stock for more than one page.
+>    memcg: Reclaim when more than one page needed.
+>    memcg: Track all the memcg children of a kmem_cache.
+>    memcg: Per-memcg memory.kmem.slabinfo file.
+>
+I am sorry.
 
-x86, extable: Remove open-coded exception table entries in arch/x86/lib/getuser.S
+My mail server seems to be going crazy in the middle of the submission, 
+and the whole patchset is not going through (and a part of it got 
+duplicated)
 
-Remove open-coded exception table entries in arch/x86/lib/getuser.S,
-and replace them with _ASM_EXTABLE() macros; this will allow us to
-change the format and type of the exception table entries.
-
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: David Daney <david.daney@cavium.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com
----
- arch/x86/lib/getuser.S |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/lib/getuser.S b/arch/x86/lib/getuser.S
-index 51f1504..b33b1fb 100644
---- a/arch/x86/lib/getuser.S
-+++ b/arch/x86/lib/getuser.S
-@@ -95,10 +95,9 @@ bad_get_user:
- 	CFI_ENDPROC
- END(bad_get_user)
- 
--.section __ex_table,"a"
--	_ASM_PTR 1b,bad_get_user
--	_ASM_PTR 2b,bad_get_user
--	_ASM_PTR 3b,bad_get_user
-+	_ASM_EXTABLE(1b,bad_get_user)
-+	_ASM_EXTABLE(2b,bad_get_user)
-+	_ASM_EXTABLE(3b,bad_get_user)
- #ifdef CONFIG_X86_64
--	_ASM_PTR 4b,bad_get_user
-+	_ASM_EXTABLE(4b,bad_get_user)
- #endif
+I'll post the whole series later, when I figure out what's wrong.
