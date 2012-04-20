@@ -1,46 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487Ab2DTE4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 00:56:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54686 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751103Ab2DTE4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 00:56:41 -0400
-Message-ID: <4F90EC19.7070103@zytor.com>
-Date: Thu, 19 Apr 2012 21:54:49 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: David Daney <david.s.daney@gmail.com>, David Daney <ddaney.cavm@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH v1 1/5] scripts: Add sortextable to sort the kernel's
- exception table.
-References: <1334872799-14589-1-git-send-email-ddaney.cavm@gmail.com> <1334872799-14589-2-git-send-email-ddaney.cavm@gmail.com> <4F90BF8D.7030209@zytor.com> <4F90D564.3090508@gmail.com> <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com> <4F90DB37.9080702@zytor.com> <4F90EAC1.6070508@zytor.com>
-In-Reply-To: <4F90EAC1.6070508@zytor.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751676Ab2DTFQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 01:16:28 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:32122 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463Ab2DTFQZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 01:16:25 -0400
+X-AuditID: cbfee61b-b7cb4ae000000d81-5e-4f90f1272656
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        John Stultz <john.stultz@linaro.org>, myungjoo.ham@gmail.com,
+        cw00.choi@samsung.com
+Subject: [PATCH v8 resend 0/6] Introduce External Connector Class (extcon)
+Date: Fri, 20 Apr 2012 14:16:21 +0900
+Message-id: <1334898987-7800-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <20120420033209.GA17930@kroah.com>
+References: <20120420033209.GA17930@kroah.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2012 09:49 PM, H. Peter Anvin wrote:
-> 
-> Ah, apparently it is possible to generate relocations relative to the
-> start of the current section.
-> 
+For external connectors, which may have different types of cables attached
+(USB, TA, HDMI, Analog A/V, and others), we often have seperated device
+drivers that detect the state changes at the port and device drivers that
+do something according to the state changes.
 
-Nevermind... I'm wrong.  The assembler will generate them but the linker
-will produce garbage.
+An example is a 4-pin (or more pins?) analog audio connector
+(usually referred as "3.5-pi" jacks). It can be implemented with the 5/5
+patch, "adc-jack", supplied with information about IRQ, a method to get
+ADC values, and ADC value ranges. With a 4-pin 3.5-pi port and adc-jack
+driver with proper ADC configurations, the following modes may be
+detected: "standard mono cable", "standard stereo cable",
+"standard stereo + remote cable", "standard stereo + mic + remote cable",
+"standard stereo + different-spec mic + remote cable", and such.
+Note that for 4-pin cables with mic and remote, there are multiple
+standards (at least Samsung and Apple use different configurations for
+those 4-pin earphones although the pins looks exactly same.)
+and they often can be distinguished with ADC values.
 
-So I think using PC-relative relocations and have the postprocessor (or
-the sort in the module loader) convert them to section-relative makes
-sense...
+Although we may have simply given different "cable id" for "stereo" and
+"stereo + mic". However, for those userspace processes or other device
+drivers that are interested only in "stereo" part of possible combinations,
+having seperated mode/id for "stereo" and "mic" is more desirable.
+For example, if we do not have multistate capabilities, those who want
+to know "stereo" is attached or not should monitor everything:
+"standard stereo cable", "standard stereo + remove cable",
+"standard stereo + mic + remote cable", and others. However, with
+multistate capabilities, they only need to monitor the bit associated
+with "standard stero".
 
-	-hpa
+For another example, when MAX8997-MUIC detects a Charger cable insertion,
+another device driver (such as MAX8903 charger, MAX8997 charger, Charger
+Manager, or board file) needs to set charger current limit accordingly
+and when MAX8997-MUIC detects a HDMI cable insertion, multimedia device
+drivers need to do some operations accordingly.
+
+
+This patchset supports the usage of notifier for passing such information
+between device drivers.
+
+Another issue is that at a single switch port, there might be multiple
+and heterogeneous cables attached at the same time. Besides the state
+(Attached or Detached) of each cable may alter independently. Such extcon
+devices that support simultaneous mult-cable attachment include, bot not
+limited to, docks, cradles, and 30-pin-like ports (like that of NURI board
+in linux/arch/arm/mach-exynos, which resembles Samsung Galaxy Tab series).
+For example, the 30-pin port of NURI board may be used to connect analog
+audio cables, analog video cable, and a USB or a charger. Because such
+cables coonnect part of the 30 pins to external devices/cables, the
+possible combinations of external devices/cables vary significantly and
+users may fabricate their own design; e.g., an 30-pin adaptor connecting
+USB, AC-DC adaptor, HDMI, analog audio, analog video, USB-host, SD-card,
+and so on.
+
+In order to address such issues, Android kernel's "Switch" class seems to
+be a good basis and we have implemented "Multistate Switch Class" based on
+it. The "Switch" class code of Android kernel is GPL as well.
+
+Though there can be synchronization delay (up to 12hours), you can see
+the extcon-for-next branch at
+http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
+
+Summary of changes from v8 patchset at v8-resend
+- Style updates
+- Usage of IS_ENABLED to avoid errors when compiled as modules
+
+Summary of changes from v7 patchset
+- Rebased over Linux 3.4 rc3
+- Bugfix (parameters given to register-interest callbacks)
+- Bugfix (header file definitions w/ !CONFIG_EXTCON)
+
+Summary of changes from v6 patchset
+- Added documentation, "porting guide for Android switch device drivers"
+- Usage of class_compat to create /sys/class/switch/* along with
+/sys/class/extcon/* if CONFIG_ANDROID is enabled. However, we cannot
+enable "switch" class_compat if CONFIG_ANDROID_SWITCH is enabled because
+we cannot create two classes with the same name.
+
+Summary of changes from v5 patchset
+- Excluded adc-jack from the "default" patchset. Adc-jack will be later
+added after Extcon is finalized.
+- Sysfs style updated
+- Bugfixes after using at Exynos4412 boards with userspace processes
+- Code stype updated
+
+Summary of changes from v4 patchset
+- Bugfixes after testing at Exynos4412 boards with userspace processes
+- Added adc-jack to support 3.5-pi jack and other ADC-based cable detection
+ports.
+
+Summary of changes from v3 patchset
+- Bugfixes after testing at Exynos4412 boards.
+
+Summary of changes from v2 patchset
+- Support to express mutually exclusive set of cables
+- Revised device/class/sysfs-entries add/removal methods
+- Added sysfs entries
+- Revised documentation and comments
+- Some bugfixes
+- Compatible with Android (for extcon devices with "use_class_name_switch" set)
+
+Summary of changes from RFC
+- ABI documentation added
+- Notifees may get notified for a state change of a specific cable, not
+every cable of the corresponding extcon.
+- Added kerneldoc comments
+- Moved to /drivers/extcon/
+- Added helper functions
+- Some bugfixes
+
+Donggeun Kim (1):
+  Extcon: support notification based on the state changes.
+
+MyungJoo Ham (5):
+  Extcon (external connector): import Android's switch class and
+    modify.
+  Extcon: support generic GPIO extcon driver
+  Extcon: support multiple states at a device.
+  Extcon: support mutually exclusive relation between cables.
+  Documentation/extcon: porting guide for Android kernel switch driver.
+
+ Documentation/ABI/testing/sysfs-class-extcon      |   97 +++
+ Documentation/extcon/porting-android-switch-class |  124 +++
+ drivers/Kconfig                                   |    2 +
+ drivers/Makefile                                  |    1 +
+ drivers/extcon/Kconfig                            |   24 +
+ drivers/extcon/Makefile                           |    6 +
+ drivers/extcon/extcon_class.c                     |  822 +++++++++++++++++++++
+ drivers/extcon/extcon_gpio.c                      |  169 +++++
+ include/linux/extcon.h                            |  323 ++++++++
+ include/linux/extcon/extcon_gpio.h                |   52 ++
+ 10 files changed, 1620 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-extcon
+ create mode 100644 Documentation/extcon/porting-android-switch-class
+ create mode 100644 drivers/extcon/Kconfig
+ create mode 100644 drivers/extcon/Makefile
+ create mode 100644 drivers/extcon/extcon_class.c
+ create mode 100644 drivers/extcon/extcon_gpio.c
+ create mode 100644 include/linux/extcon.h
+ create mode 100644 include/linux/extcon/extcon_gpio.h
+
+-- 
+1.7.4.1
+
