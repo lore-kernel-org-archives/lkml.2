@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759Ab2DTVuy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:50:54 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:35618 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755721Ab2DTVuu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:50:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE_yGnAGPGsOMPsr8bWhTx8wzE6F0XYB4D89bQB=fGiTLW9LkA@mail.gmail.com>
-References: <CAE_yGnAWsWQHCSCLA-LCuugOGTf5L4v2NcQatar4Vv421TNQcw@mail.gmail.com>
-	<CAE_yGnDYkoJYVus-iPinSnqTj1CDfaf-oScPjZ2ibDaeeWF0oQ@mail.gmail.com>
-	<CAE9FiQW5LwRdM2NRUQZjBkyg023gwXa6r10Ym2bo0L1vk74yBg@mail.gmail.com>
-	<CAE_yGnAJ5pEZDXDp1uFaUqZa758+HZbcbcLCgEQh4YYnFBDHxw@mail.gmail.com>
-	<CAE9FiQU2JkJPhw4QA0B8+XQDM93LUJ-tcYDcJaXBvHsrt9KRpQ@mail.gmail.com>
-	<CAE_yGnAGPGsOMPsr8bWhTx8wzE6F0XYB4D89bQB=fGiTLW9LkA@mail.gmail.com>
-Date: Fri, 20 Apr 2012 14:50:50 -0700
-X-Google-Sender-Auth: THFOVZEnC0WEM57eI-sQG2fvCVc
-Message-ID: <CAE9FiQVUbX5+8sp3jMd1ehmdJ9Qs23t=WPV-PsYnOPvpow6jDg@mail.gmail.com>
-Subject: Re: can't boot my laptop with kernel-3.3.*
-From: Yinghai Lu <yinghai@kernel.org>
-To: Petru Ciobanu <petrea.email@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "the arch/x86 maintainers" <x86@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755695Ab2DTVun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:50:43 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:34868 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755367Ab2DTVuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:50:39 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <cgroups@vger.kernel.org>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH 08/23] don't force return value checking in res_counter_charge_nofail
+Date: Fri, 20 Apr 2012 18:49:05 -0300
+Message-Id: <1334958560-18076-9-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1334958560-18076-1-git-send-email-glommer@parallels.com>
+References: <1334958560-18076-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 8:26 PM, Petru Ciobanu <petrea.email@gmail.com> wrote:
-> On 17 April 2012 03:34, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Mon, Apr 16, 2012 at 5:41 PM, Scant Light <scantlight@gmail.com> wrote:
->>> 9. http://www.pasteall.org/pic/30333
->>
->> mpc size if 0, please apply attached patch.
->>
->> Thanks
->>
->> Yinghai
->
-> thank you very much this patch works fine for me
-> I patched the the last stable version 3.3.2 and I was able to boot the
-> system successfully
->
-> ok... this works for me, but how about others? how about future?
-> will this be in the main tracker???
+Since we will succeed with the allocation no matter what, there
+isn't the need to use __must_check with it. It can very well
+be optional.
 
-tj's patch fixes the problem
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Michal Hocko <mhocko@suse.cz>
+---
+ include/linux/res_counter.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=patch;h=b3dc627cabb33fc95f93da78457770c1b2a364d2
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index da81af0..f7621cf 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -119,7 +119,7 @@ int __must_check res_counter_charge_locked(struct res_counter *counter,
+ 		unsigned long val);
+ int __must_check res_counter_charge(struct res_counter *counter,
+ 		unsigned long val, struct res_counter **limit_fail_at);
+-int __must_check res_counter_charge_nofail(struct res_counter *counter,
++int res_counter_charge_nofail(struct res_counter *counter,
+ 		unsigned long val, struct res_counter **limit_fail_at);
+ 
+ /*
+-- 
+1.7.7.6
 
-Yinghai
