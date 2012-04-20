@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab2DTXMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 19:12:00 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64363 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab2DTXL5 convert rfc822-to-8bit (ORCPT
+	id S932405Ab2DTXMb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 19:12:31 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50460 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932216Ab2DTXM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 19:11:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120420122120.097464672@linutronix.de>
-References: <20120420122120.097464672@linutronix.de>
-Date: Fri, 20 Apr 2012 16:11:56 -0700
-Message-ID: <CABeCy1Y0HTtVvRC0bqaHbhqpumek+dERTY6EH_qO2neP6U8U_A@mail.gmail.com>
-Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
-From: Venki Pallipadi <venki@google.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 20 Apr 2012 19:12:28 -0400
+Date: Sat, 21 Apr 2012 00:14:33 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>,
+        Chandra Seetharaman <sekharan@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
+ EXPORT_SYMBOL
+Message-ID: <20120421001433.2955abd4@pyramind.ukuu.org.uk>
+In-Reply-To: <20120420225822.GA10769@redhat.com>
+References: <20111215214440.GA17677@redhat.com>
+	<4EF039D5.5010201@suse.de>
+	<20120405144721.GA18437@redhat.com>
+	<20120420144538.GB8155@redhat.com>
+	<20120420173405.GA8846@redhat.com>
+	<20120420214120.159e2690@pyramind.ukuu.org.uk>
+	<20120420215825.GA10406@redhat.com>
+	<20120420232043.40ddc3c4@pyramind.ukuu.org.uk>
+	<20120420225822.GA10769@redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 6:05 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Dear all,
->
-> I'm working on refactoring the SMP boot and CPU hotplug implementation.
->
-> The current code has evolved over time into a conglomerate of
-> warts. My main goals are to:
->
->  - reduce the architecture code by moving repeating constructs to the
->   core
->
->  - redesigning the handling of per cpu threads. There is no point to
->   tear down the threads just to create them again.
->
->  - restructuring the notifier facility into a proper tree with
->   dependencies to avoid the gazillion of callbacks and moving
->   setup/teardown code into the context of the upcoming/dying cpu
->
-> The motivation behind this work is the cpu hotplug nightmare which we
-> are facing in the RT kernel and the requests from several groups
-> (e.g. ARM) to make hotplug more lightweight and faster.
->
-> This first part moves the idle thread management for non-boot cpus
-> into the core. fork_idle() is called in a workqueue as it is
-> implemented in a few architectures already. This is necessary when not
-> all cpus are brought up by the early boot code as otherwise we would
-> take a ref on the user task VM of the thread which brings the cpu up
-> via the sysfs interface.
->
+> Sure Alan, seize on "proprietary" and "EXPORT_SYMBOL_GPL".. and gloss
+> right over the fact that what is being proposed is reasonable.
 
-I had sent out a patchset that did this cleanup here:
-https://lkml.org/lkml/2012/3/6/466
+I suggest you read the licence document.
 
-This patchset is clean and more exhaustive than what I had. So,
+> Any multipath driver should be able to detach a scsi_dh module.  As is
+> evidenced by the fact that they can already make use of sysfs to do so.
 
-Acked-by: Venkatesh Pallipadi <venki@google.com>
+They can call the _GPL version if they are GPL, so there is no problem.
 
-> This converts all architectures except m32r, mn10300, tile and UM to
-> the new core facility. These architecture are calling fork_idle() in
-> the very early boot code in smp_prepare_cpus() for unknown reasons.
-> I haven't analyzed yet, whether this is on purpose or can be moved
-> over to the generic facility. It'd be nice if the responsible maintainers
-> could look into that as well.
->
-> Thanks,
->
->        tglx
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Relaxing the scsi_dh_detach interface makes it easier for a long
+> standing proprietary driver to get out of Linux's way.
+
+So we are back to this being for a proprietary driver trying to link with
+GPL code.
+
+> _Upstream_ has kept it that way because we've been concerned about
+> breaking PowerPath in enterprises where Linux is deployed.  Upstream has
+> been good citizens to the fault of Linux.
+
+Not from where I am standing. It sounds like upstream has suffered for
+the benefit of a dubious proprietary module.
+
+> > I'm a rights holder. Domain expertise isn't relevant here. The code I
+> > provided is licensed under the GPL. Whether the symbol is EXPORT_SYMBOL
+> > or EXPORT_SYMBOL_GPL any derivative code (eg code that requires the
+> > kernel be modified to match it) cannot call it.
+> 
+> Remind me again when you ever developed anything to do with scsi_dh?
+
+It's part of the same kernel. It's GPL code. You can take your own code
+and relicense it to be non GPL if you wish, but not mine nor Greg's nor
+anyone elses.
+
+> To be clear: PowerPath doesn't _need_ this.  Not even close.
+
+Then we don't need to apply it ? Thank you for clarifying that.
+
+> Linux is improved by not having to walk on egg shells that attaching a
+> helpful linux-only layer in kernel will somehow screw up some 3rd party
+> software that a customer values.
+
+That's a problem for Red Hat. Don't dump it on upstream. If the kernel
+would work better with scsi_dh always attached we should always attach
+it. It's the problem of the out of tree people how they cope. They'll
+figure something out.
+
+And you still have the same confusion
+
+There is no "Linux only" magic in _GPL. Any derivative work of a GPL work
+must be distributed under the GPL.
+
+> You still don't get it... yet you'll saber rattle behind generic GPL
+> lawyer-up nonsense.
+
+This has gone far enough but it seems your management has already jumped
+on it. Not my preferred way of handling such matters but Red Hat legal and
+PR need to rein you in before you cause some serious damage.
+
+Alan
