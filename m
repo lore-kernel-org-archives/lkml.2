@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab2DTRPk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:15:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55088 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753792Ab2DTRPi (ORCPT
+	id S1754776Ab2DTRRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:17:49 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:44181 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310Ab2DTRRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:15:38 -0400
-Date: Fri, 20 Apr 2012 10:15:34 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        John Stultz <john.stultz@linaro.org>, myungjoo.ham@gmail.com,
-        cw00.choi@samsung.com
-Subject: Re: [PATCH v8 resend 6/6] Documentation/extcon: porting guide for
- Android kernel switch driver.
-Message-ID: <20120420171534.GA29519@kroah.com>
-References: <20120420033209.GA17930@kroah.com>
- <1334898987-7800-1-git-send-email-myungjoo.ham@samsung.com>
- <1334898987-7800-7-git-send-email-myungjoo.ham@samsung.com>
- <20120420162529.GA31744@kroah.com>
- <20120420170519.GB3080@opensource.wolfsonmicro.com>
+	Fri, 20 Apr 2012 13:17:47 -0400
+Date: Fri, 20 Apr 2012 10:17:42 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCHSET] block: per-queue policy activation, take#2
+Message-ID: <20120420171742.GC32324@google.com>
+References: <1334347895-6268-1-git-send-email-tj@kernel.org>
+ <20120420080943.GG7505@kernel.dk>
+ <4F91503D.2060402@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120420170519.GB3080@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F91503D.2060402@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 06:05:20PM +0100, Mark Brown wrote:
-> On Fri, Apr 20, 2012 at 09:25:29AM -0700, Greg KH wrote:
+Hello, Jens.
+
+On Fri, Apr 20, 2012 at 02:02:05PM +0200, Jens Axboe wrote:
+> Tejun, everything merged in cleanly. A boot test didn't not go so well,
+> I'm afraid. It complains about stuck RCU. Even with extra RCU
+> debugging/info turned on, it doesn't give my any extra info.
 > 
-> > Ok, I've applied this, but I don't know if we really need this in the
-> > kernel tree.  How many out-of-tree android switch drivers are there?
-> > Who needs to know this information?
-> 
-> Every phone with a headset jack will have at least one switch if it's
-> running on Android.  People doing system integration will generally need
-> to know about this, at least until we've got the ALSA detection stuff
-> integrated with extcon.
+> Config is attached. I can try and debug this on Monday, for now I've
+> pulled it out of for-next again.
 
-Ok, but where are those drivers at?  Any pointers to them so I can start
-sucking them into the tree and doing this conversion?
+Hmmm... it works fine with the same config here (qemu w/ 4 cpus
+configured).  Doesn't stuck RCU usually come from unbalanced RCU
+lock/unlocking?  That should trigger context or RCU warnings before
+anything else, weird.  Anyways, it would be great if you can provide
+more info on how to reproduce the problem.
 
-Is this, and the wakelock stuff, holding back a torrent of drivers to be
-submitted somewhere?  Or are they buried in vendor trees, never to be
-seen?
+Thanks.
 
-thanks,
-
-greg k-h
+-- 
+tejun
