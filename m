@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab2DTOUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 10:20:10 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:34095 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756600Ab2DTOUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 10:20:07 -0400
-Subject: [PATCH 3/3] SUNRPC: set per-net PipeFS superblock before notification
-To: bfields@fieldses.org, Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Fri, 20 Apr 2012 18:19:56 +0400
-Message-ID: <20120420141950.10848.46577.stgit@localhost6.localdomain6>
-In-Reply-To: <20120420141419.10848.84280.stgit@localhost6.localdomain6>
-References: <20120420141419.10848.84280.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1756617Ab2DTOVJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 10:21:09 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:43552 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754144Ab2DTOVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 10:21:07 -0400
+Date: Fri, 20 Apr 2012 07:21:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Rigels Gordani <rgordani@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 0003-Staging-fix-coding-style-issues-and-some-minor-code-
+Message-ID: <20120420142103.GA19609@kroah.com>
+References: <CAKHmb3PrPJY95pcXVeBe4_UjVSKbSM4JjDJ1totREaaLxr_Sqg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKHmb3PrPJY95pcXVeBe4_UjVSKbSM4JjDJ1totREaaLxr_Sqg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There can be a case, when on MOUNT event RPC client (after it's dentries were
-created) is not longer hold by anyone except notification callback.
-I.e. on release this client will be destoroyed. And it's dentries have to be
-destroyed as well. Which in turn requires per-net PipeFS superblock to be set.
+On Fri, Apr 20, 2012 at 12:24:03PM +0200, Rigels Gordani wrote:
+> Hi,
+> this is my first patch in the official linux tree, hope I have done everything
+> OK :).
+> 
+> 0003-Staging-fix-coding-style-issues-and-some-minor-code-.patch
+> 0002-Revert-Staging-fix-coding-style-issues-and-some-mino.patch
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Why are you sending multiple patches as attachments, and one of them
+being a revert for no good reason?
 
----
- net/sunrpc/rpc_pipe.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Please read the file, Documentation/SubmittingPatches and use git
+send-email to send patches out to everyone involved.  For examples of
+how they should be sent, look at the mailing lists for posted patches.
 
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index 0af37fc..3b62cf2 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -1126,19 +1126,20 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 		return -ENOMEM;
- 	dprintk("RPC:	sending pipefs MOUNT notification for net %p%s\n", net,
- 								NET_NAME(net));
-+	sn->pipefs_sb = sb;
- 	err = blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
- 					   RPC_PIPEFS_MOUNT,
- 					   sb);
- 	if (err)
- 		goto err_depopulate;
- 	sb->s_fs_info = get_net(net);
--	sn->pipefs_sb = sb;
- 	return 0;
- 
- err_depopulate:
- 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
- 					   RPC_PIPEFS_UMOUNT,
- 					   sb);
-+	sn->pipefs_sb = NULL;
- 	__rpc_depopulate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF);
- 	return err;
- }
+hope this helps,
+
+greg k-h
 
