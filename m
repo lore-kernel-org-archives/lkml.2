@@ -1,90 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab2DTI36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 04:29:58 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:33609 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab2DTI34 (ORCPT
+	id S1756779Ab2DTIbP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 04:31:15 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:51666 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756503Ab2DTIbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 04:29:56 -0400
-Message-ID: <4F911B92.7040502@linux.vnet.ibm.com>
-Date: Fri, 20 Apr 2012 16:17:22 +0800
+	Fri, 20 Apr 2012 04:31:11 -0400
+Message-ID: <4F911C25.9020509@linux.vnet.ibm.com>
+Date: Fri, 20 Apr 2012 16:19:49 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v3 1/9] KVM: MMU: return bool in __rmap_write_protect
+Subject: [PATCH v3 6/9] KVM: MMU: fast path of handling guest page fault
 References: <4F911B74.4040305@linux.vnet.ibm.com>
 In-Reply-To: <4F911B74.4040305@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12042008-5816-0000-0000-000002364C69
+x-cbid: 12042008-9574-0000-0000-000002472807
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The reture value of __rmap_write_protect is either 1 or 0, use
-true/false instead of these
+If the the present bit of page fault error code is set, it indicates
+the shadow page is populated on all levels, it means what we do is
+only modify the access bit which can be done out of mmu-lock
+
+Currently, in order to simplify the code, we only fix the page fault
+caused by write-protect on the fast path
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/kvm/mmu.c         |  197 ++++++++++++++++++++++++++++++++++++++++----
+ arch/x86/kvm/paging_tmpl.h |    3 +
+ 2 files changed, 184 insertions(+), 16 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 29ad6f9..4a3cc18 100644
+index eb02fc4..7aea156 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1041,11 +1041,12 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+@@ -446,6 +446,13 @@ static bool __check_direct_spte_mmio_pf(u64 spte)
+ }
+ #endif
+
++static bool spte_wp_by_dirty_log(u64 spte)
++{
++	WARN_ON(is_writable_pte(spte));
++
++	return (spte & SPTE_ALLOW_WRITE) && !(spte & SPTE_WRITE_PROTECT);
++}
++
+ static bool spte_has_volatile_bits(u64 spte)
+ {
+ 	if (!shadow_accessed_mask)
+@@ -454,9 +461,18 @@ static bool spte_has_volatile_bits(u64 spte)
+ 	if (!is_shadow_present_pte(spte))
+ 		return false;
+
+-	if ((spte & shadow_accessed_mask) &&
+-	      (!is_writable_pte(spte) || (spte & shadow_dirty_mask)))
+-		return false;
++	if (spte & shadow_accessed_mask) {
++		if (is_writable_pte(spte))
++			return !(spte & shadow_dirty_mask);
++
++		/*
++		 * If the spte is write-protected by dirty-log, it may
++		 * be marked writable on fast page fault path, then CPU
++		 * can modify the Dirty bit.
++		 */
++		if (!spte_wp_by_dirty_log(spte))
++			return false;
++	}
+
+ 	return true;
+ }
+@@ -1043,13 +1059,6 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
  		rmap_remove(kvm, sptep);
  }
 
--static int __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
-+static bool
-+__rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
- {
- 	u64 *sptep;
- 	struct rmap_iterator iter;
--	int write_protected = 0;
-+	bool write_protected = false;
+-static bool spte_wp_by_dirty_log(u64 spte)
+-{
+-	WARN_ON(is_writable_pte(spte));
+-
+-	return (spte & SPTE_ALLOW_WRITE) && !(spte & SPTE_WRITE_PROTECT);
+-}
+-
+ /* Return true if the spte is dropped. */
+ static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
+ 			       bool *flush, bool page_table_protect)
+@@ -1057,13 +1066,12 @@ static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
+ 	u64 spte = *sptep;
 
- 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
- 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
-@@ -1066,7 +1067,7 @@ static int __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level
- 			sptep = rmap_get_first(*rmapp, &iter);
- 		}
+ 	if (is_writable_pte(spte)) {
+-		*flush |= true;
+-
+ 		if (large) {
+ 			pgprintk("rmap_write_protect(large): spte %p %llx\n",
+ 				 spte, *spte);
+ 			BUG_ON(!is_large_pte(spte));
 
--		write_protected = 1;
-+		write_protected = true;
++			*flush |= true;
+ 			drop_spte(kvm, sptep);
+ 			--kvm->stat.lpages;
+ 			return true;
+@@ -1072,6 +1080,9 @@ static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
+ 		goto reset_spte;
  	}
 
- 	return write_protected;
-@@ -1097,12 +1098,12 @@ void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
- 	}
++	/* We need flush tlbs in this case: the fast page fault path
++	 * can mark the spte writable after we read the sptep.
++	 */
+ 	if (page_table_protect && spte_wp_by_dirty_log(spte))
+ 		goto reset_spte;
+
+@@ -1079,6 +1090,8 @@ static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
+
+ reset_spte:
+ 	rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
++
++	*flush |= true;
+ 	spte = spte & ~PT_WRITABLE_MASK;
+ 	if (page_table_protect)
+ 		spte |= SPTE_WRITE_PROTECT;
+@@ -2676,18 +2689,164 @@ exit:
+ 	return ret;
  }
 
--static int rmap_write_protect(struct kvm *kvm, u64 gfn)
-+static bool rmap_write_protect(struct kvm *kvm, u64 gfn)
++static bool page_fault_can_be_fast(struct kvm_vcpu *vcpu, gfn_t gfn,
++				   u32 error_code)
++{
++	/*
++	 * #PF can be fast only if the shadow page table is present and it
++	 * is caused by write-protect, that means we just need change the
++	 * W bit of the spte which can be done out of mmu-lock.
++	 */
++	if (!(error_code & PFERR_PRESENT_MASK) ||
++	      !(error_code & PFERR_WRITE_MASK))
++		return false;
++
++	return true;
++}
++
++static bool
++fast_pf_fix_indirect_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
++			  u64 *sptep, u64 spte, gfn_t gfn)
++{
++	pfn_t pfn;
++	bool ret = false;
++
++	/*
++	 * For the indirect spte, it is hard to get a stable gfn since
++	 * we just use a cmpxchg to avoid all the races which is not
++	 * enough to avoid the ABA problem: the host can arbitrarily
++	 * change spte and the mapping from gfn to pfn.
++	 *
++	 * What we do is call gfn_to_pfn_atomic to bind the gfn and the
++	 * pfn because after the call:
++	 * - we have held the refcount of pfn that means the pfn can not
++	 *   be freed and be reused for another gfn.
++	 * - the pfn is writable that means it can not be shared by different
++	 *   gfn.
++	 */
++	pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
++
++	/* The host page is swapped out or merged. */
++	if (mmu_invalid_pfn(pfn))
++		goto exit;
++
++	ret = true;
++
++	if (pfn != spte_to_pfn(spte))
++		goto exit;
++
++	if (cmpxchg64(sptep, spte, spte | PT_WRITABLE_MASK) == spte)
++		mark_page_dirty(vcpu->kvm, gfn);
++
++exit:
++	kvm_release_pfn_clean(pfn);
++	return ret;
++}
++
++static bool
++fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
++			u64 *sptep, u64 spte)
++{
++	gfn_t gfn;
++
++	WARN_ON(!sp->role.direct);
++
++	/*
++	 * The gfn of direct spte is stable since it is calculated
++	 * by sp->gfn.
++	 */
++	gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
++
++	if (cmpxchg64(sptep, spte, spte | PT_WRITABLE_MASK) == spte)
++		mark_page_dirty(vcpu->kvm, gfn);
++
++	return true;
++}
++
++/*
++ * Return value:
++ * - true: let the vcpu to access on the same address again.
++ * - false: let the real page fault path to fix it.
++ */
++static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
++			    int level, u32 error_code)
++{
++	struct kvm_shadow_walk_iterator iterator;
++	struct kvm_mmu_page *sp;
++	bool ret = false;
++	u64 spte = 0ull;
++
++	if (!page_fault_can_be_fast(vcpu, gfn, error_code))
++		return false;
++
++	walk_shadow_page_lockless_begin(vcpu);
++	for_each_shadow_entry_lockless(vcpu, gva, iterator, spte)
++		if (!is_shadow_present_pte(spte) || iterator.level < level)
++			break;
++
++	/*
++	 * If the mapping has been changed, let the vcpu fault on the
++	 * same address again.
++	 */
++	if (!is_rmap_spte(spte)) {
++		ret = true;
++		goto exit;
++	}
++
++	if (!is_last_spte(spte, level))
++		goto exit;
++
++	/*
++	 * Check if it is a spurious fault caused by TLB lazily flushed.
++	 *
++	 * Need not check the access of upper level table entries since
++	 * they are always ACC_ALL.
++	 */
++	 if (is_writable_pte(spte)) {
++		ret = true;
++		goto exit;
++	}
++
++	/*
++	 * If the page fault is caused by write but host do not allow
++	 * to write the page, we need cow the host page.
++	 */
++	if (!(spte & SPTE_ALLOW_WRITE))
++		goto exit;
++
++	/*
++	 * Currently, to simplify the code, only the spte write-protected
++	 * by dirty-log can be fast fixed.
++	 */
++	if (!spte_wp_by_dirty_log(spte))
++		goto exit;
++
++	sp = page_header(__pa(iterator.sptep));
++
++	if (sp->role.direct)
++		ret = fast_pf_fix_direct_spte(vcpu, sp, iterator.sptep, spte);
++	else
++		ret = fast_pf_fix_indirect_spte(vcpu, sp, iterator.sptep,
++						spte, gfn);
++
++exit:
++	walk_shadow_page_lockless_end(vcpu);
++
++	return ret;
++}
++
+ static bool try_async_pf(struct kvm_vcpu *vcpu, bool prefault, gfn_t gfn,
+ 			 gva_t gva, pfn_t *pfn, bool write, bool *writable);
+
+-static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn,
+-			 bool prefault)
++static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, u32 error_code,
++			 gfn_t gfn, bool prefault)
  {
- 	struct kvm_memory_slot *slot;
- 	unsigned long *rmapp;
- 	int i;
--	int write_protected = 0;
-+	bool write_protected = false;
+ 	int r;
+ 	int level;
+ 	int force_pt_level;
+ 	pfn_t pfn;
+ 	unsigned long mmu_seq;
+-	bool map_writable;
++	bool map_writable, write = error_code & PFERR_WRITE_MASK;
 
- 	slot = gfn_to_memslot(kvm, gfn);
+ 	force_pt_level = mapping_level_dirty_bitmap(vcpu, gfn);
+ 	if (likely(!force_pt_level)) {
+@@ -2704,6 +2863,9 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn,
+ 	} else
+ 		level = PT_PAGE_TABLE_LEVEL;
 
-@@ -1691,7 +1692,7 @@ static void mmu_sync_children(struct kvm_vcpu *vcpu,
++	if (fast_page_fault(vcpu, v, gfn, level, error_code))
++		return 0;
++
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
 
- 	kvm_mmu_pages_init(parent, &parents, &pages);
- 	while (mmu_unsync_walk(parent, &pages)) {
--		int protected = 0;
-+		bool protected = false;
+@@ -3092,7 +3254,7 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+ 	gfn = gva >> PAGE_SHIFT;
 
- 		for_each_sp(pages, sp, parents, i)
- 			protected |= rmap_write_protect(vcpu->kvm, sp->gfn);
+ 	return nonpaging_map(vcpu, gva & PAGE_MASK,
+-			     error_code & PFERR_WRITE_MASK, gfn, prefault);
++			     error_code, gfn, prefault);
+ }
+
+ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+@@ -3172,6 +3334,9 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+ 	} else
+ 		level = PT_PAGE_TABLE_LEVEL;
+
++	if (fast_page_fault(vcpu, gpa, gfn, level, error_code))
++		return 0;
++
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
+
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index df5a703..80493fb 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -617,6 +617,9 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 		walker.gfn = walker.gfn & ~(KVM_PAGES_PER_HPAGE(level) - 1);
+ 	}
+
++	if (fast_page_fault(vcpu, addr, walker.gfn, level, error_code))
++		return 0;
++
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
+
 -- 
 1.7.7.6
 
