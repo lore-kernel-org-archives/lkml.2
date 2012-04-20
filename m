@@ -1,108 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab2DTLIU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 07:08:20 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:55038 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754068Ab2DTLIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 07:08:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Aaron Lu <aaron.lu@amd.com>
-Subject: Re: [PATCH v2] ACPI: D3 states cleanup
-Date: Fri, 20 Apr 2012 13:12:54 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Lin Ming <ming.m.lin@intel.com>, Len Brown <lenb@kernel.org>,
-        "linux-acpi" <linux-acpi@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>
-References: <1334884749.4927.6.camel@minggr> <1334900255.4927.36.camel@minggr> <20120420074725.GA30140@localhost.amd.com>
-In-Reply-To: <20120420074725.GA30140@localhost.amd.com>
+	id S1755201Ab2DTLMN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 07:12:13 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56457 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753586Ab2DTLML convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 07:12:11 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204201312.54949.rjw@sisk.pl>
+In-Reply-To: <4F911568.7050601@pr.hu>
+References: <4F911568.7050601@pr.hu>
+Date: Fri, 20 Apr 2012 13:12:10 +0200
+X-Google-Sender-Auth: aQOkRZ9_6AkVMOYEDMb5KP2c_HU
+Message-ID: <CAMuHMdWCMP8L=k8tWiXv6Mcb5u6iTCx3fb7_mTGVyQSE7V=r_w@mail.gmail.com>
+Subject: Re: VESA and VGA16 framebuffer drivers clash sometimes
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Boszormenyi Zoltan <zboszor@pr.hu>
+Cc: linux-kernel@vger.kernel.org,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 20, 2012, Aaron Lu wrote:
-> Hi,
-> 
-> On Fri, Apr 20, 2012 at 01:37:35PM +0800, Lin Ming wrote:
-> > > > > > There are two ACPI D3 states defined now:
-> > > > > > ACPI_STATE_D3 and ACPI_STATE_D3_COLD.
-> > > > > > 
-> > > > > > But the uses of these states are not clear/correct in some code.
-> > > > > > For example, some code refer ACPI_STATE_D3 as D3hot and others refer
-> > > > > > it as D3cold.
-> > > > > > 
-> > > > > > This patch introduces ACPI_STATE_D3_HOT to refer to ACPI D3hot state.
-> > > > > > And changes ACPI_STATE_D3 to refer to ACPI D3cold state only.
-> > > > > > Also redefines ACPI_STATE_D3_COLD the same as ACPI_STATE_D3.
-> > > > > > 
-> > > > > 
-> > > > > With this patch now, if a device has _PS3, then we will set its D3hot
-> > > > > flag valid. This doesn't feel right to me, since per our discussion the
-> > > > > other day, we should assume _PS3 will put the device into D3cold.
-> > > > > 
-> > > > > Or do you mean: if _PS3 is available, then both D3hot and D3cold is
-> > > > > valid from the perspective of acpi, it is the individual driver's
-> > > > > responsibility to decide which state is actually valid and will be used.
-> > > > 
-> > > > Right.
-> > > > 
-> > > > ACPI_STATE_D3(same as ACPI_STATE_D3_COLD now) is always valid.
-> > > > 
-> > > 
-> > > I mean, if _PS3 is available, can we say D3hot is valid?
-> > 
-> > Yes.
-> > 
-> 
-> OK, now I'm confused...
-> 
-> First, let me try to clarify the meaning of acpi power state's valid
-> flag.
-> 
-> By valid, I suppose it means the device can be in that state, instead of
-> we have a way to program this device to go into that state.
-> 
-> e.g. D0 is valid means the device can be in D0 state, and D3_cold is
-> valid means the device can be in D3_cold state. We unconditionally set
-> these two states as valid, because we know every device supports these
-> two states. But we might not be able to put the device into that state
-> in software, since we might not have _PS0 or _PS3 control methods for it.
-> 
-> And if we do have the _PSx or _PRx control methods, we knows we have a
-> way to put the device into that state, and hence the device should be
-> able to support that power state, so we will set that state as valid too.
-> 
-> Is this correct?
-> 
-> For D3hot, obviously not all device supports this state, so we will need
-> to figure it out through the acpi table.
-> I remembered Rafael said the following words the other day in a reply to
-> my evaluate_ps3_when_entering_d3_cold_patch:
-> 
-> -----------------------------------------------------------------------
-> I'd rather say that with _PR3 we have the opportunity to avoid removing
-> power completely from the device.  In other words, D3_hot is supported (and
-> it is supported _only_ in that case).
-> -----------------------------------------------------------------------
-> 
-> So I think here is a problem, that if a device has only _PS3, why should
-> we say D3hot is supported? Is there a reason for this that I missed?
+2012/4/20 Boszormenyi Zoltan <zboszor@pr.hu>:
+> on an embedded x86 board with Intel Atom, text on vesafb
+> gets distorted if both vesafb and vga16fb are compiled in.
+> The strange thing is that it doesn't happen all the time but
+> about once out of 15 boots.
+>
+> The distortion looks like this:
+> http://www.postgresql-support.de/private/IMG_7221.jpg
+>
+> The relevant kernel messages:
+>
+> Apr 13 11:14:30 term002 kernel: vesafb: mode is 800x600x16, linelength=1600,
+> pages=7
+> Apr 13 11:14:30 term002 kernel: vesafb: scrolling: redraw
+> Apr 13 11:14:30 term002 kernel: vesafb: Truecolor: size=0:5:6:5,
+> shift=0:11:5:0
+> Apr 13 11:14:30 term002 kernel: vesafb: framebuffer at 0xa0000000, mapped to
+> 0xdf580000, using 1875k, total 8128k
+> Apr 13 11:14:30 term002 kernel: Console: switching to colour frame buffer
+> device 100x37
+> Apr 13 11:14:30 term002 kernel: fb0: VESA VGA frame buffer device
+> Apr 13 11:14:30 term002 BOOTLOG: Terminal startup
+> Apr 13 11:14:30 term002 kernel: vga16fb: mapped to 0xc00a0000
+> Apr 13 11:14:30 term002 kernel: fbcon: VGA16 VGA (fb1) is primary device
+> Apr 13 11:14:30 term002 kernel: fbcon: Remapping primary device, fb1, to tty
+> 1-63
+> Apr 13 11:14:30 term002 kernel: fb1: VGA16 VGA frame buffer device
+>
+> It's strange that vga16fb is always detected as primary
+> and vesafb gets remapped to fb1 even when there is no
+> screen distortion. The kernel is compiled for SMP.
 
-OK, I agree.  We need to special case the situation in which _PR3 is not
-present, but _PS3 is.  IOW, we should do something like this in the loop in
-acpi_bus_get_power_flags():
+IIRC, the request_region()/request_mem_region() calls in vga16fb.c that would
+avoid this were removed several years ago. Unfortunately I don't remember
+anymore why. Google or full-history-linux may help you...
 
+Gr{oetje,eeting}s,
 
-		/* State is valid if we have some power control */
-		if (ps->resources.count
-		    || (ps->flags.explicit_set && i < ACPI_STATE_D3))
-			ps->flags.valid = 1;
+                        Geert
 
-Thanks,
-Rafael
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
