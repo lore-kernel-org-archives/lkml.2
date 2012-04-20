@@ -1,63 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253Ab2DTWfy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 18:35:54 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51810 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420Ab2DTWfv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 18:35:51 -0400
+	id S932159Ab2DTWio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 18:38:44 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:40017 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755420Ab2DTWim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 18:38:42 -0400
+Date: Sat, 21 Apr 2012 00:38:33 +0200
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: linux-kernel@vger.kernel.org
+Cc: nikola.ciprich@linuxbox.cz, rob.herring@calxeda.com, minyard@acm.org
+Subject: [BISECTED] ipmi_si not loading since 2.6.39
+Message-ID: <20120420223833.GA7855@nik-comp.lan>
 MIME-Version: 1.0
-In-Reply-To: <20120420221315.GN6871@ZenIV.linux.org.uk>
-References: <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
- <1334772473.2137.22.camel@falcor> <20120418183938.GH6589@ZenIV.linux.org.uk>
- <1334865448.2429.35.camel@falcor> <20120420004303.GB6871@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1204201133340.1450@eggly.anvils> <20120420190418.GK6871@ZenIV.linux.org.uk>
- <CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
- <20120420195833.GM6871@ZenIV.linux.org.uk> <CA+55aFzaC8YfN_q1TxPbNgpD7AnoAVac2Bqa+ysEji3u7ZQ18A@mail.gmail.com>
- <20120420221315.GN6871@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 20 Apr 2012 15:35:29 -0700
-X-Google-Sender-Auth: 7LTFhqGnO6QHZCHmEBcz1Qlatqs
-Message-ID: <CA+55aFzEwsW1kdLo2hpgW2PUCRkyaRxS_KB40iwmuk1FDgV+cg@mail.gmail.com>
-Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
- ima-appraisal patches)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Hugh Dickins <hughd@google.com>, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
+Content-Disposition: inline
+"X-PGP-Key: http://nik.lbox.cz/downloads/nikola.ciprich.asc"
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 7473883 records (last update: 20120420)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 3:13 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Kinda-sorta.  I agree that such helpers make sense, but you are too
-> optimistic about the number of such places.  And clusterfuck around
-> mremap() is fairly deep, so propagating all way back to up_write()
-> wont' be fun.
 
-Fair enough.
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'll do the helpers and see how much they get rid of, just because
-looking at all the callers, those helpers seem to be obviously the
-right thing anyway. So even if we don't do anything else, we can
-improve things regardless.
+Hello,
 
-For do_brk(), for example, it looks like do_brk() itself should
-actually be entirely static to mm/mmap.c, because every single caller
-from the outside actually wants the self-locking version.
+I was trying to find out why IPMI stopped working on new kernels. Since 2.6=
+=2E39
+module loading ends with following message:
 
-So plan right now: do "vm_xyzzy()" helper functions that do
-"do_xyzzy()" and take the lock (and do not take the "mm" argument,
-because it had better always be the current one - keep the calling
-convention as simple as possible).
+ ipmi_si: Interface detection failed
 
-                   Linus
+Then ipmitool is unable to control IPMI device.=20
+
+Works for 2.6.38, doesn't work for 2.6.39, 3.0.28, 3.4-rc1.
+
+I got this bisected to following commit:
+
+commit a1e9c9dd3383e6a1a762464ad604b1081774dbda
+Author: Rob Herring <rob.herring@calxeda.com>
+Date:   Wed Feb 23 15:37:59 2011 -0600
+
+    ipmi: convert OF driver to platform driver
+   =20
+    of_bus is deprecated in favor of the plain platform bus. This patch
+    merges the ipmi OF driver with the existing platform driver.
+   =20
+    CONFIG_PPC_OF occurrances are removed or replaced with CONFIG_OF.
+   =20
+    Compile tested with and without CONFIG_OF. Tested OF probe and
+    default probe cases.
+   =20
+    Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+    Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+
+I wonder whether this is a bug, or I'm doing something wrong?
+
+Thanks in advance!
+
+with best regards
+
+nik
+
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
+
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--2oS5YaxWCcQjTEyO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+R5WkACgkQ3xdJJrLygV6omQCguOal4XzrBG4FLVe3SubC9Y8Q
+KbsAn1M6bMvmncUNw7V6uZIiOv+j/mwX
+=wcWm
+-----END PGP SIGNATURE-----
+
+--2oS5YaxWCcQjTEyO--
