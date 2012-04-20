@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757049Ab2DTOp5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 10:45:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35927 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756598Ab2DTOpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 10:45:44 -0400
-Date: Fri, 20 Apr 2012 10:45:38 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: James.Bottomley@hansenpartnership.com
-Cc: linux-scsi@vger.kernel.org, Hannes Reinecke <hare@suse.de>,
-        Chandra Seetharaman <sekharan@us.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [RESEND][PATCH] [SCSI] scsi_dh: allow 3rd party multipath drivers to
- use scsi_dh_detach
-Message-ID: <20120420144538.GB8155@redhat.com>
-References: <20111215214440.GA17677@redhat.com>
- <4EF039D5.5010201@suse.de>
- <20120405144721.GA18437@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120405144721.GA18437@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932203Ab2DTOqu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 10:46:50 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:57300 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932077Ab2DTOqo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 10:46:44 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: wim@iguana.be, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND v3] wdt: Device tree support for pnx4008-wdt
+Date: Fri, 20 Apr 2012 16:46:23 +0200
+Message-Id: <1334933184-19418-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow 3rd party multipath drivers to programatically detach a scsi_dh
-using the scsi_dh_detach() interface.  This is as improvement over
-requiring them to write 'detach' to /sys/block/sdX/queue/dh_state
+This patch adds watchdog support to pnx4008-wdt.c
 
-End result is both Linux and 3rd party multipath drivers can coexist
-without compromising Linux's default handling of multipath LUNs.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
-Linux has suffered from races associated with attaching a scsi_dh to a
-device too late (after an HBA driver has started the SCSI device scan).
-Attaching a scsi_dh too late results in default sense handling that does
-not silently fail IO to passive paths, which creates excessive delays
-and IO errors during normal boot on a system with hundreds of LUNs.
-
-To fix this the appropriate scsi_dh must be attached before the HBA
-driver(s) are even loaded.  But some scsi_dh are known to conflict with
-3rd party multipath drivers (e.g. both scsi_dh_alua and scsi_dh_emc
-conflict with EMC PowerPath).  This patch allows 3rd party drivers to
-resolve the conflict by detaching an attached scsi_dh.
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Hannes Reinecke <hare@suse.de>
-Cc: Chandra Seetharaman <sekharan@us.ibm.com>
 ---
- drivers/scsi/device_handler/scsi_dh.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/device_handler/scsi_dh.c b/drivers/scsi/device_handler/scsi_dh.c
-index 23149b9..a550de1 100644
---- a/drivers/scsi/device_handler/scsi_dh.c
-+++ b/drivers/scsi/device_handler/scsi_dh.c
-@@ -578,7 +578,7 @@ void scsi_dh_detach(struct request_queue *q)
- 	}
- 	put_device(&sdev->sdev_gendev);
- }
--EXPORT_SYMBOL_GPL(scsi_dh_detach);
-+EXPORT_SYMBOL(scsi_dh_detach);
+Applies to v3.4-rc3
+
+NOTE: I separated out this patch from the first patch series of the LPC32xx
+device tree conversion because most of those patches are already applied to
+-next and are basically unrelated. The LPC32xx devicetree conversion builds
+upon this patch.
+
+ Documentation/devicetree/bindings/watchdog/pnx4008-wdt.txt |   13 +++++++++++++
+ drivers/watchdog/pnx4008_wdt.c                             |   10 ++++++++++
+ 2 files changed, 23 insertions(+)
+
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/watchdog/pnx4008-wdt.txt
+@@ -0,0 +1,13 @@
++* NXP PNX watchdog timer
++
++Required properties:
++- compatible: must be "nxp,pnx4008-wdt"
++- reg: physical base address of the controller and length of memory mapped
++  region.
++
++Example:
++
++	watchdog@4003C000 {
++		compatible = "nxp,pnx4008-wdt";
++		reg = <0x4003C000 0x1000>;
++	};
+--- linux-2.6.orig/drivers/watchdog/pnx4008_wdt.c
++++ linux-2.6/drivers/watchdog/pnx4008_wdt.c
+@@ -32,6 +32,7 @@
+ #include <linux/io.h>
+ #include <linux/slab.h>
+ #include <linux/err.h>
++#include <linux/of.h>
+ #include <mach/hardware.h>
  
- static struct notifier_block scsi_dh_nb = {
- 	.notifier_call = scsi_dh_notifier
+ /* WatchDog Timer - Chapter 23 Page 207 */
+@@ -201,10 +202,19 @@ static int __devexit pnx4008_wdt_remove(
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id pnx4008_wdt_match[] = {
++	{ .compatible = "nxp,pnx4008-wdt" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, pnx4008_wdt_match);
++#endif
++
+ static struct platform_driver platform_wdt_driver = {
+ 	.driver = {
+ 		.name = "pnx4008-watchdog",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(pnx4008_wdt_match),
+ 	},
+ 	.probe = pnx4008_wdt_probe,
+ 	.remove = __devexit_p(pnx4008_wdt_remove),
