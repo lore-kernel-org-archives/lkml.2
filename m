@@ -1,241 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab2DTCAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 22:00:17 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34261 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab2DTCAP (ORCPT
+	id S1756196Ab2DTCG5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 22:06:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44402 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab2DTCGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 22:00:15 -0400
-Date: Thu, 19 Apr 2012 22:00:13 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-next@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: linux-next: triage for April 19, 2012
-Message-ID: <20120420020013.GA19964@windriver.com>
+	Thu, 19 Apr 2012 22:06:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
+References: <4F6A483D.50702@fold.natur.cuni.cz>
+	<4F8BEB1D.9080903@fold.natur.cuni.cz>
+	<CAE9FiQXoX3J6P_9Tun_XbkK3egvSeBZxAtC13HacFDO0fwmZaA@mail.gmail.com>
+	<4F8C6E4E.1000205@fold.natur.cuni.cz>
+	<CAE9FiQXikqikMw_LYGqAUsWqFqL-tLiresPhpkpDhb+AxwundQ@mail.gmail.com>
+	<CAE9FiQUFB=9zbP1yuBDH1RJrCCP=83kV_fH+TEtk80981-uP=w@mail.gmail.com>
+	<CAE9FiQUbzM_TVu+bbXa6LWiUt01QsFiGoyYd0qV=41dXx4J31g@mail.gmail.com>
+	<4F8D1B72.2000105@fold.natur.cuni.cz>
+	<CAE9FiQW2MAW_WT+sq8XVtMOx=uR8FAN8O2wL2AOxkFBfEM285g@mail.gmail.com>
+	<CAE9FiQWSw1h772ijZ6YL4EujwjgvZ84bbDx9VbF_cdE63D-41w@mail.gmail.com>
+	<4F8D390F.9050408@fold.natur.cuni.cz>
+	<CAE9FiQU-_BCCS1OKagVuj8YNrut8-6GH2_i86FsfS8UDWQ1pRA@mail.gmail.com>
+	<CAE9FiQUxoHvUWFXv5LLcBT9vVGnQKp1-Tg7M3XPPULWwtX1iUw@mail.gmail.com>
+	<4F8EFFA3.3050705@fold.natur.cuni.cz>
+	<CAE9FiQVcJbPub1O6nwyNsiijHFpHN0jMsGO4MmKugybPL7Wnug@mail.gmail.com>
+	<4F8F243B.70906@fold.natur.cuni.cz>
+	<CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com>
+	<4F909CEB.3060407@fold.natur.cuni.cz>
+	<CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
+Date: Thu, 19 Apr 2012 19:06:55 -0700
+X-Google-Sender-Auth: awSu4vCoC2cAjO2RKLLkcNQbrgU
+Message-ID: <CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com>
+Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
+From: Yinghai Lu <yinghai@kernel.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=047d7b10d1852269a904be12be45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "undefined reference to `vga_default_device'" stuff appears to
-still be unresolved, as it was in the Apr 19 fails still.     :-(
-[ https://lkml.org/lkml/2012/4/18/157 ]
+--047d7b10d1852269a904be12be45
+Content-Type: text/plain; charset=ISO-8859-1
 
-The samples/seccomp/bpf-direct.c stuff had a fix posted, but
-not in time for Apr19 tree.  Hopefully it is gone tomorrow...
-[ http://marc.info/?l=linux-next&m=133479674429442&w=2 ]
+On Thu, Apr 19, 2012 at 2:48 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Apr 19, 2012 at 4:16 PM, Martin Mokrejs
+>> I just tried something similar under linux, with all the patches I accumulated for 3.4-rc3
+>> and posted in my previous emails. It seems linux flips some value so on every second card
+>> removal it really does realize it was just unplugged.
+> ...
+>
+> that is really looks like silicon problem.
+>
 
-The parisc got borked by some kvm header shuffle it seems?
-Now complaining about "file 'asm-generic/kvm_para.h' is not exported"
-[ http://kisskb.ellerman.id.au/kisskb/buildresult/6137786/ ]
+please check attached patch. Hope link change bit is flip around...
+if there is change, we could add some logic:
+   check if the device is there, or will reset link to normal state.
 
-The gfs2 stuff still has issues, but Apr 19th should be the
-last day, as a fix was posted to follow up my bisect.
-[ http://marc.info/?l=linux-next&m=133479890929994&w=2 ]
+Yinghai
 
-The frv defconfig got its 1st ever linux-next passing build!
+--047d7b10d1852269a904be12be45
+Content-Type: application/octet-stream; name="link_change_report.patch"
+Content-Disposition: attachment; filename="link_change_report.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h18ljzxf0
 
-The recent cris breakage was fixed with the "-traditional" removal.
-
-The xtensa lost its BUG issue, but still has a final link issue.
-
----------------------
-
-New breakage since last report:
-	parisc:defconfig
-			
-Randconfig fails that may or may not be new (by their very nature):
-	i386: drivers/isdn/hardware/avm/b1.o copy_from_user() buffer
-	      size is not provably correct
-		(http://kisskb.ellerman.id.au/kisskb/buildresult/6137763/)
-
-Builds that are fixed since last report:
-	frv:defconfig
-	cris:several
-
-----------------------
-
-Note1: The randconfig fails are only listed once and not tracked
-in the below listing.
-
-Note2: Build fails that are perpetual and/or unlikely to ever
-get fixed are not tracked here.
-
-Note3: Issues that Stephen finds and reverts/avoids before kicking
-off the all-arch/all-config builds are also not tracked here.
-
-Note4: I'm also not tracking the kallsyms extra pass on ARM on
-a per board basis anymore.  It has nothing to do with the board.
-Why? See:  http://marc.info/?l=linux-next&m=133267456809502
-
-----------------------
-
-Latest results at:
-	http://kisskb.ellerman.id.au/kisskb/branch/9/
-
-Failures as of April 19th, 2012:
-===============================
-
-AM33:asb2303_defconfig,asb2364_defconfig
-	when:	Mar 15
-	why:	cc1: error: unrecognized command line option '-mmem-funcs'
-	status:	Possible fix from TonyB sent for review.
-	fix:	http://marc.info/?l=linux-kernel&m=133185020313818&w=2
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878400/
-----------------
-
-ARM:mackerel_defconfig,ag5evm_defconfig
-	when:	Apr 19 (possibly earlier?)
-	why:	pfc-sh7372.c: undefined reference to `mmc_detect_change'
-	why:	pfc-sh73a0.c: undefined reference to `mmc_detect_change'
-	status:	
-	fix:	
-	ref:	http://article.gmane.org/gmane.linux.ports.sh.devel/14412
-	ref:	http://article.gmane.org/gmane.linux.ports.sh.devel/14413
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131930/
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131908/
-
-ARM:bcmring_defconfig
-	when:	Apr 19 (possibly earlier?)
-	why:	core.c: macro "AMBA_APB_DEVICE" requires 6 args, but only 5 given
-	status:	fixed, pending feed into linux next.
-	fix:
-	ref:	http://www.spinics.net/lists/arm-kernel/msg169724.html
-
-ARM:ezx_defconfig
-	when:	Apr 19 (possibly earlier?)
-	why:	ezx-pcap.c: implicit declaration of function 'irq_to_gpio'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131924/
-
-ARM:mini2440_defconfig
-	when:	Apr 19 (possibly earlier?)
-	why:	arm-unknown-linux-gnueabi-ld: no machine record defined
-	status:
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131932/
-
-ARM:spear6xx_defconfig
-	when:	Apr 19 (possibly earlier?)
-	why:	asm/timex.h: fatal error: mach/timex.h: No such file
-	status:
-	fix:
-	ref:
-
-ARM:netx_defconfig,pnx4008_defconfig 
-	when:	Mar 14
-	why:	net/core/pktgen.c: can't find a register in class 'GENERAL_REGS'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869486/
-	ref:	https://lkml.org/lkml/2012/3/13/670
-
-ARM:ixp4xx_defconfig
-	when:	Oct 26
-	why:	gpio.h: implicit declaration of function '__gpio_get_value'
-	status:	fixed (Imre Kaloz) - but possibly needs rework?
-	fix:	https://lkml.org/lkml/2012/2/8/288
-	ref:	https://lkml.org/lkml/2012/2/8/287
-
-ARM:raumfeld_defconfig
-	when:	Nov 23
-	why:	eeti_ts.c: implicit declaration of function 'irq_to_gpio'
-	status:	perhaps broken since 2010?  See ref below.
-	fix:	
-	ref:	http://www.gossamer-threads.com/lists/linux/kernel/1291618?do=post_view_threaded#1291618
-
-----------------
-
-AVR32:allnoconfig
-	when:	May 26 2010, 20:49
-	why:	at32_map_usart: undefined reference to `atmel_default_console_device'
-	status:
-	fix:
-	ref:
----------------
-
-bfin: 50% of builds
-	when:	Mar 31
-	why:	"Error: pcrel too far BFD_RELOC_BFIN_10" from kernel/time/timekeeping.c
-	status:	unknown, binutils issue?
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6087324/
----------------
-
-cris:allyesconfig,allmodconfig
-	when:	Apr 3
-	why:	too many to list here
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6035250/
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6035249/
-----------------
-
-i386:allmodconfig
-	when:	Apr 17
-	why:	samples/seccomp/bpf-direct.c:47:2: error: #error Unsupported platform
-	status:	reported
-	ref:	http://marc.info/?l=linux-kernel&m=133471624530782&w=2
-----------------
-
-h8300:defconfig
-	when:	Mar 15
-	why:	time.c: implicit declaration of function 'get_irq_regs'
-	why:	also seems gcc suffers an ICE
-	status:	ICE bug lodged with gcc folks (TonyB)
-	ref:	http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52598
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884668/
-----------------
-
-m32r:m32700ut.smp_defconfig
-	when:	Mar 15
-	why:	No rule to make target `arch/m32r/boot/compressed/vmlinux.bin
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884670/
-----------------
-
-mips:ip27_defconfig
-	when:	Apr 18
-	why: iwlwifi/iwl-core.h: static decl of 'iwl_alloc_traffic_mem' follows non-static
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131791/
-
-mips:allmodconfig
-	when:	Apr 17
-	why:	sound/oss/soundcard.c: 'MAX_DMA_CHANNELS' undeclared
-	status: one of many fixes mips needs...
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6091660/
-----------------
-
-parisc:defconfig
-	when:	Apr 20
-	why:	file 'asm-generic/kvm_para.h' is not exported
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6137786/
-
-parisc:allmodconfig
-	when:	?
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-
-parisc64:a500_defconfig 
-	when:	?
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-------------------
-
-sparc/m68k:all
-	when:	Apr 18
-	why:	fs/gfs2/lops.c:379:42: error: request for member 'virtual' in something not a structure or union
-	status:	reported/bisected by PaulG
-	ref:	http://marc.info/?l=linux-next&m=133479890929994&w=2
-------------------
-
-xtensa:defconfig
-	when:	Apr 20
-	why:	kallsyms.c:(.text+0x1eb44): undefined reference to `ack_bad_irq'
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6138090/
+U3ViamVjdDogW1BBVENIXSBQQ0ksIHBjaWVocDogUmVwb3J0IHBjaWUgbGluayBzdGF0ZSBjaGFu
+Z2UKClRvIHNlZSBpZiB0aGVyZSBpcyBzb21lIGxpbmsgc3RhdGUgY2hhbmdlLgoKU2lnbmVkLW9m
+Zi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKLS0tCiBkcml2ZXJzL3BjaS9o
+b3RwbHVnL3BjaWVocF9ocGMuYyB8ICAgMjkgKysrKysrKysrKysrKysrKysrKysrKysrKysrLS0K
+IDEgZmlsZSBjaGFuZ2VkLCAyNyBpbnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQoKSW5kZXg6
+IGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9ob3RwbHVnL3BjaWVocF9ocGMuYwo9PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0t
+LSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3BjaS9ob3RwbHVnL3BjaWVocF9ocGMuYworKysgbGlu
+dXgtMi42L2RyaXZlcnMvcGNpL2hvdHBsdWcvcGNpZWhwX2hwYy5jCkBAIC02MjIsNiArNjIyLDI1
+IEBAIGludCBwY2llaHBfcG93ZXJfb2ZmX3Nsb3Qoc3RydWN0IHNsb3QgKgogCXJldHVybiAwOwog
+fQogCitzdGF0aWMgdTggcGNpZWhwX2hhbmRsZV9saW5rc3RhdGVfY2hhbmdlKHN0cnVjdCBzbG90
+ICpzbG90KQoreworCXN0cnVjdCBjb250cm9sbGVyICpjdHJsID0gc2xvdC0+Y3RybDsKKwl1MTYg
+bG5rX3N0YXR1czsKKwlpbnQgcmV0dmFsOworCisgICAgICAgIC8qIExpbmtTdGF0ZSBDaGFuZ2Ug
+Ki8KKwljdHJsX2RiZyhjdHJsLCAiTGlua1N0YXRlIGNoYW5nZVxuIik7CisKKwlyZXR2YWwgPSBw
+Y2llaHBfcmVhZHcoY3RybCwgUENJX0VYUF9MTktTVEEsICZsbmtfc3RhdHVzKTsKKwlpZiAocmV0
+dmFsKSB7CisJCWN0cmxfZXJyKGN0cmwsICJDYW5ub3QgcmVhZCBMTktTVEFUVVMgcmVnaXN0ZXJc
+biIpOworCQlyZXR1cm4gMTsKKwl9CisJY3RybF9pbmZvKGN0cmwsICJsbmtfc3RhdHVzID0gJXhc
+biIsIGxua19zdGF0dXMpOworCisJcmV0dXJuIDE7Cit9CisKIHN0YXRpYyBpcnFyZXR1cm5fdCBw
+Y2llX2lzcihpbnQgaXJxLCB2b2lkICpkZXZfaWQpCiB7CiAJc3RydWN0IGNvbnRyb2xsZXIgKmN0
+cmwgPSAoc3RydWN0IGNvbnRyb2xsZXIgKilkZXZfaWQ7CkBAIC02NDMsNyArNjYyLDcgQEAgc3Rh
+dGljIGlycXJldHVybl90IHBjaWVfaXNyKGludCBpcnEsIHZvaQogCiAJCWRldGVjdGVkICY9IChQ
+Q0lfRVhQX1NMVFNUQV9BQlAgfCBQQ0lfRVhQX1NMVFNUQV9QRkQgfAogCQkJICAgICBQQ0lfRVhQ
+X1NMVFNUQV9NUkxTQyB8IFBDSV9FWFBfU0xUU1RBX1BEQyB8Ci0JCQkgICAgIFBDSV9FWFBfU0xU
+U1RBX0NDKTsKKwkJCSAgICAgUENJX0VYUF9TTFRTVEFfQ0MgfCBQQ0lfRVhQX1NMVFNUQV9ETExT
+Qyk7CiAJCWRldGVjdGVkICY9IH5pbnRyX2xvYzsKIAkJaW50cl9sb2MgfD0gZGV0ZWN0ZWQ7CiAJ
+CWlmICghaW50cl9sb2MpCkBAIC02NjcsNiArNjg2LDEwIEBAIHN0YXRpYyBpcnFyZXR1cm5fdCBw
+Y2llX2lzcihpbnQgaXJxLCB2b2kKIAlpZiAoIShpbnRyX2xvYyAmIH5QQ0lfRVhQX1NMVFNUQV9D
+QykpCiAJCXJldHVybiBJUlFfSEFORExFRDsKIAorCS8qIENoZWNrIExpbmsgU3RhdGUgQ2hhbmdl
+ZCAqLworCWlmIChpbnRyX2xvYyAmIFBDSV9FWFBfU0xUU1RBX0RMTFNDKQorCQlwY2llaHBfaGFu
+ZGxlX2xpbmtzdGF0ZV9jaGFuZ2Uoc2xvdCk7CisKIAkvKiBDaGVjayBNUkwgU2Vuc29yIENoYW5n
+ZWQgKi8KIAlpZiAoaW50cl9sb2MgJiBQQ0lfRVhQX1NMVFNUQV9NUkxTQykKIAkJcGNpZWhwX2hh
+bmRsZV9zd2l0Y2hfY2hhbmdlKHNsb3QpOwpAQCAtODEwLDEwICs4MzMsMTIgQEAgaW50IHBjaWVf
+ZW5hYmxlX25vdGlmaWNhdGlvbihzdHJ1Y3QgY29udAogCQljbWQgfD0gUENJX0VYUF9TTFRDVExf
+TVJMU0NFOwogCWlmICghcGNpZWhwX3BvbGxfbW9kZSkKIAkJY21kIHw9IFBDSV9FWFBfU0xUQ1RM
+X0hQSUUgfCBQQ0lfRVhQX1NMVENUTF9DQ0lFOworCWNtZCB8PSBQQ0lfRVhQX1NMVENUTF9ETExT
+Q0U7CiAKIAltYXNrID0gKFBDSV9FWFBfU0xUQ1RMX1BEQ0UgfCBQQ0lfRVhQX1NMVENUTF9BQlBF
+IHwKIAkJUENJX0VYUF9TTFRDVExfTVJMU0NFIHwgUENJX0VYUF9TTFRDVExfUEZERSB8Ci0JCVBD
+SV9FWFBfU0xUQ1RMX0hQSUUgfCBQQ0lfRVhQX1NMVENUTF9DQ0lFKTsKKwkJUENJX0VYUF9TTFRD
+VExfSFBJRSB8IFBDSV9FWFBfU0xUQ1RMX0NDSUUgfAorCQlQQ0lfRVhQX1NMVENUTF9ETExTQ0Up
+OwogCiAJaWYgKHBjaWVfd3JpdGVfY21kKGN0cmwsIGNtZCwgbWFzaykpIHsKIAkJY3RybF9lcnIo
+Y3RybCwgIkNhbm5vdCBlbmFibGUgc29mdHdhcmUgbm90aWZpY2F0aW9uXG4iKTsK
+--047d7b10d1852269a904be12be45--
