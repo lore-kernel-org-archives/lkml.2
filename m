@@ -1,63 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab2DTIKr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 04:10:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45450 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756290Ab2DTIKf (ORCPT
+	id S932630Ab2DTIR7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 04:17:59 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:57516 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559Ab2DTIR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 04:10:35 -0400
-Date: Fri, 20 Apr 2012 10:10:31 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Tejun Heo <tj@kernel.org>
-Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block: fixes for long standing issues
-Message-ID: <20120420081031.GI7505@kernel.dk>
-References: <1334878164-24788-1-git-send-email-tj@kernel.org>
+	Fri, 20 Apr 2012 04:17:56 -0400
+Message-ID: <4F911BAB.6000206@linux.vnet.ibm.com>
+Date: Fri, 20 Apr 2012 16:17:47 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334878164-24788-1-git-send-email-tj@kernel.org>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v3 2/9] KVM: MMU: abstract spte write-protect
+References: <4F911B74.4040305@linux.vnet.ibm.com>
+In-Reply-To: <4F911B74.4040305@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12042008-2000-0000-0000-0000072F28A9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19 2012, Tejun Heo wrote:
-> Hello,
-> 
-> This patchset fixes two long standing issues and one relatively new
-> css ref leak.
-> 
-> a. elvpriv alloc failure, including ioc and icq failures, fails
->    request allocation.  As those aren't mempool backed and may fail
->    indefinitely, this can lead to deadlock under memory pressure.
-> 
-> b. blkgs don't have proper indexing.  With enough number of
->    request_queues and blk-throttle enabled, block layer can spend
->    considerable amount of cpu cycles walking the same list over and
->    over again.
-> 
-> c. __blkg_lookup_create() was leaking a css ref on failure path.
-> 
-> This patchset contains the following four patches.
-> 
->  0001-block-collapse-blk_alloc_request-into-get_request.patch
->  0002-block-fix-elvpriv-allocation-failure-handling.patch
->  0003-blkcg-fix-blkcg-css-ref-leak-in-__blkg_lookup_create.patch
->  0004-blkcg-use-radix-tree-to-index-blkgs-from-blkcg.patch
-> 
-> 0001-0002 fix #a.  0003 fixes #c.  0004 fixes #b.
-> 
-> This patchset is on top of
-> 
->   block/for-3.5/core 5bc4afb1ec "blkcg: drop BLKCG_STAT_{PRIV|POL|OFF} macros"
-> + [1] [PATCHSET] block: per-queue policy activation, take#2
-> + [2] [PATCHSET] block: cosmetic updates to blkcg API
+Introduce a common function to abstract spte write-protect to
+cleanup the code
 
-Applied, thanks Tejun.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c |   60 ++++++++++++++++++++++++++++++---------------------
+ 1 files changed, 35 insertions(+), 25 deletions(-)
 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 4a3cc18..e70ff38 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1041,6 +1041,34 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+ 		rmap_remove(kvm, sptep);
+ }
+
++/* Return true if the spte is dropped. */
++static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
++			       bool *flush)
++{
++	u64 spte = *sptep;
++
++	if (!is_writable_pte(spte))
++		return false;
++
++	*flush |= true;
++
++	if (large) {
++		pgprintk("rmap_write_protect(large): spte %p %llx\n",
++			 spte, *spte);
++		BUG_ON(!is_large_pte(spte));
++
++		drop_spte(kvm, sptep);
++		--kvm->stat.lpages;
++		return true;
++	}
++
++	rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
++	spte = spte & ~PT_WRITABLE_MASK;
++	mmu_spte_update(sptep, spte);
++
++	return false;
++}
++
+ static bool
+ __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
+ {
+@@ -1050,24 +1078,13 @@ __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
+
+ 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
+ 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
+-		rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+-
+-		if (!is_writable_pte(*sptep)) {
+-			sptep = rmap_get_next(&iter);
+-			continue;
+-		}
+-
+-		if (level == PT_PAGE_TABLE_LEVEL) {
+-			mmu_spte_update(sptep, *sptep & ~PT_WRITABLE_MASK);
+-			sptep = rmap_get_next(&iter);
+-		} else {
+-			BUG_ON(!is_large_pte(*sptep));
+-			drop_spte(kvm, sptep);
+-			--kvm->stat.lpages;
++		if (spte_write_protect(kvm, sptep, level > PT_PAGE_TABLE_LEVEL,
++			  &write_protected)) {
+ 			sptep = rmap_get_first(*rmapp, &iter);
++			continue;
+ 		}
+
+-		write_protected = true;
++		sptep = rmap_get_next(&iter);
+ 	}
+
+ 	return write_protected;
+@@ -3902,6 +3919,7 @@ int kvm_mmu_setup(struct kvm_vcpu *vcpu)
+ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+ {
+ 	struct kvm_mmu_page *sp;
++	bool flush = false;
+
+ 	list_for_each_entry(sp, &kvm->arch.active_mmu_pages, link) {
+ 		int i;
+@@ -3916,16 +3934,8 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+ 			      !is_last_spte(pt[i], sp->role.level))
+ 				continue;
+
+-			if (is_large_pte(pt[i])) {
+-				drop_spte(kvm, &pt[i]);
+-				--kvm->stat.lpages;
+-				continue;
+-			}
+-
+-			/* avoid RMW */
+-			if (is_writable_pte(pt[i]))
+-				mmu_spte_update(&pt[i],
+-						pt[i] & ~PT_WRITABLE_MASK);
++			spte_write_protect(kvm, &pt[i],
++					   is_large_pte(pt[i]), &flush);
+ 		}
+ 	}
+ 	kvm_flush_remote_tlbs(kvm);
 -- 
-Jens Axboe
+1.7.7.6
 
