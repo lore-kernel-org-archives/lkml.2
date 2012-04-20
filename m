@@ -1,77 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab2DTQKb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 12:10:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63862 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757276Ab2DTQKZ (ORCPT
+	id S1757275Ab2DTQKT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 12:10:19 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:64138 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757240Ab2DTQKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 12:10:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Johan Hovold <jhovold@gmail.com>
-Subject: Re: [PATCH 3/4] leds: add LM3533 LED driver
-Date: Fri, 20 Apr 2012 16:10:15 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Richard Purdie <rpurdie@rpsys.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-References: <1334935826-12527-1-git-send-email-jhovold@gmail.com> <1334935826-12527-4-git-send-email-jhovold@gmail.com>
-In-Reply-To: <1334935826-12527-4-git-send-email-jhovold@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204201610.15758.arnd@arndb.de>
-X-Provags-ID: V02:K0:N7OM7OUXGo+bCQqc/iDwCHJBsK+S72GdRZRwJszd6oH
- eKaY0omCUFX684NaIXAF0zrUz0amZCHOdbvf9+xhLBBe06AMoG
- KWlFIzxWN4vGiLYdVr626GBGeTsb97y2ojWaNvg5nbqGSCxkMO
- adQZiSn6PpqgsBA96mGhDqrVIoOY14zX6Igtu0nnLVk2kxl1Vv
- 7bSoW5QIuWj9oHWq6IZnCkZ742KxTqtKz7AVqE/NBwi2FWW6mH
- KZ1FxXfdAO5igFAUNOw2BtXQ473ePqDMCy9hhHc/qLAdvv+OM4
- yFIV8uXj3mpzZ2HTLK16yrqQdfKk8rfShOUCm/CaugYbFpwPY5
- Sw0Nr482jf9PdaBNmIKg=
+	Fri, 20 Apr 2012 12:10:15 -0400
+From: Lin Ming <mlin@ss.pku.edu.cn>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Noonan <steven@uplinklabs.net>, Ben Guthro <ben@guthro.net>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Marcus Granado <marcus.granado@citrix.com>, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] xen: implement apic ipi interface
+Date: Sat, 21 Apr 2012 00:11:04 +0800
+Message-Id: <1334938265-3844-2-git-send-email-mlin@ss.pku.edu.cn>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1334938265-3844-1-git-send-email-mlin@ss.pku.edu.cn>
+References: <1334938265-3844-1-git-send-email-mlin@ss.pku.edu.cn>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 April 2012, Johan Hovold wrote:
-> Add sub-driver for the LEDs in National Semiconductor / TI LM3533
-> lighting power chips.
-> 
-> The chip provides 256 brightness levels, hardware accelerated blinking
-> as well as ambient-light-sensor and pwm input control.
-> 
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+From: Ben Guthro <ben@guthro.net>
 
-I notice that there is already driver for lm3530, which sounds related.
-Is there an opportunity to share code between these, or are they completely
-different devices?
+Map native ipi vector to xen vector.
+Implement apic ipi interface with xen_send_IPI_one.
 
-> +
-> +#define show_ctrlbank_attr(_name)					\
-> +static ssize_t show_##_name(struct device *dev,				\
-> +				struct device_attribute *attr,		\
-> +				char *buf)				\
-> +{									\
-> +	struct led_classdev *led_cdev = dev_get_drvdata(dev);		\
-> +	struct lm3533_led *led = to_lm3533_led(led_cdev);		\
-> +	u8 val;								\
-> +	int ret;							\
-> +									\
-> +	ret = lm3533_ctrlbank_get_##_name(&led->cb, &val);		\
-> +	if (ret)							\
-> +		return ret;						\
-> +									\
-> +	return scnprintf(buf, PAGE_SIZE, "%d\n", val);			\
-> +}
+Tested-by: Steven Noonan <steven@uplinklabs.net>
+Signed-off-by: Ben Guthro <ben@guthro.net>
+Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
+---
+ arch/x86/xen/enlighten.c |    9 +++++
+ arch/x86/xen/smp.c       |   81 +++++++++++++++++++++++++++++++++++++++++++--
+ arch/x86/xen/smp.h       |   12 +++++++
+ 3 files changed, 98 insertions(+), 4 deletions(-)
+ create mode 100644 arch/x86/xen/smp.h
 
-IMHO this macro adds more in terms of complexity than it saves in terms
-of lines of code, and it would be better to open-code the two instances.
-If you need more than two or three instances, I would recommend creating
-keying the number off of the attribute pointer, either by comparing the
-pointer or by adding a data structure derived from device_attribute and
-using container_of to get at the other data.
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 4f51beb..1ed61c2 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -74,6 +74,7 @@
+ 
+ #include "xen-ops.h"
+ #include "mmu.h"
++#include "smp.h"
+ #include "multicalls.h"
+ 
+ EXPORT_SYMBOL_GPL(hypercall_page);
+@@ -849,6 +850,14 @@ static void set_xen_basic_apic_ops(void)
+ 	apic->icr_write = xen_apic_icr_write;
+ 	apic->wait_icr_idle = xen_apic_wait_icr_idle;
+ 	apic->safe_wait_icr_idle = xen_safe_apic_wait_icr_idle;
++
++#ifdef CONFIG_SMP
++	apic->send_IPI_allbutself = xen_send_IPI_allbutself;
++	apic->send_IPI_mask_allbutself = xen_send_IPI_mask_allbutself;
++	apic->send_IPI_mask = xen_send_IPI_mask;
++	apic->send_IPI_all = xen_send_IPI_all;
++	apic->send_IPI_self = xen_send_IPI_self;
++#endif
+ }
+ 
+ #endif
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 5fac691..2dc6628 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -465,8 +465,8 @@ static void xen_smp_send_reschedule(int cpu)
+ 	xen_send_IPI_one(cpu, XEN_RESCHEDULE_VECTOR);
+ }
+ 
+-static void xen_send_IPI_mask(const struct cpumask *mask,
+-			      enum ipi_vector vector)
++static void __xen_send_IPI_mask(const struct cpumask *mask,
++			      int vector)
+ {
+ 	unsigned cpu;
+ 
+@@ -478,7 +478,7 @@ static void xen_smp_send_call_function_ipi(const struct cpumask *mask)
+ {
+ 	int cpu;
+ 
+-	xen_send_IPI_mask(mask, XEN_CALL_FUNCTION_VECTOR);
++	__xen_send_IPI_mask(mask, XEN_CALL_FUNCTION_VECTOR);
+ 
+ 	/* Make sure other vcpus get a chance to run if they need to. */
+ 	for_each_cpu(cpu, mask) {
+@@ -491,10 +491,83 @@ static void xen_smp_send_call_function_ipi(const struct cpumask *mask)
+ 
+ static void xen_smp_send_call_function_single_ipi(int cpu)
+ {
+-	xen_send_IPI_mask(cpumask_of(cpu),
++	__xen_send_IPI_mask(cpumask_of(cpu),
+ 			  XEN_CALL_FUNCTION_SINGLE_VECTOR);
+ }
+ 
++static inline int xen_map_vector(int vector)
++{
++	int xen_vector;
++
++	switch (vector) {
++	case RESCHEDULE_VECTOR:
++		xen_vector = XEN_RESCHEDULE_VECTOR;
++		break;
++	case CALL_FUNCTION_VECTOR:
++		xen_vector = XEN_CALL_FUNCTION_VECTOR;
++		break;
++	case CALL_FUNCTION_SINGLE_VECTOR:
++		xen_vector = XEN_CALL_FUNCTION_SINGLE_VECTOR;
++		break;
++	default:
++		xen_vector = -1;
++		printk(KERN_ERR "xen: vector 0x%x is not implemented\n",
++			vector);
++	}
++
++	return xen_vector;
++}
++
++void xen_send_IPI_mask(const struct cpumask *mask,
++			      int vector)
++{
++	int xen_vector = xen_map_vector(vector);
++
++	if (xen_vector >= 0)
++		__xen_send_IPI_mask(mask, xen_vector);
++}
++
++void xen_send_IPI_all(int vector)
++{
++	int xen_vector = xen_map_vector(vector);
++
++	if (xen_vector >= 0)
++		__xen_send_IPI_mask(cpu_online_mask, xen_vector);
++}
++
++void xen_send_IPI_self(int vector)
++{
++	int xen_vector = xen_map_vector(vector);
++
++	if (xen_vector >= 0)
++		xen_send_IPI_one(smp_processor_id(), xen_vector);
++}
++
++void xen_send_IPI_mask_allbutself(const struct cpumask *mask,
++				int vector)
++{
++	unsigned cpu;
++	unsigned int this_cpu = smp_processor_id();
++
++	if (!(num_online_cpus() > 1))
++		return;
++
++	for_each_cpu_and(cpu, mask, cpu_online_mask) {
++		if (this_cpu == cpu)
++			continue;
++
++		xen_smp_send_call_function_single_ipi(cpu);
++	}
++}
++
++void xen_send_IPI_allbutself(int vector)
++{
++	int xen_vector = xen_map_vector(vector);
++
++	if (xen_vector >= 0)
++		xen_send_IPI_mask_allbutself(cpu_online_mask, xen_vector);
++}
++
+ static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id)
+ {
+ 	irq_enter();
+diff --git a/arch/x86/xen/smp.h b/arch/x86/xen/smp.h
+new file mode 100644
+index 0000000..8981a76
+--- /dev/null
++++ b/arch/x86/xen/smp.h
+@@ -0,0 +1,12 @@
++#ifndef _XEN_SMP_H
++
++extern void xen_send_IPI_mask(const struct cpumask *mask,
++			      int vector);
++extern void xen_send_IPI_mask_allbutself(const struct cpumask *mask,
++				int vector);
++extern void xen_send_IPI_allbutself(int vector);
++extern void physflat_send_IPI_allbutself(int vector);
++extern void xen_send_IPI_all(int vector);
++extern void xen_send_IPI_self(int vector);
++
++#endif
+-- 
+1.7.2.5
 
-	Arnd
