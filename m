@@ -1,84 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab2DTKTO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 06:19:14 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.182]:43085 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab2DTKSy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 06:18:54 -0400
-X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
-X-RZG-CLASS-ID: mo05
-Message-Id: <cover.1334916810.git.n.voss@weinmann.de>
-From: Nikolaus Voss <n.voss@weinmann.de>
-Date: Fri, 20 Apr 2012 12:13:30 +0200
-Subject: [PATCH v10 0/4] AT91: replace broken TWI driver i2c-at91.c
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Cc: nicolas.ferre@atmel.com, ben-linux@fluff.org, balbi@ti.com,
-        h.feurstein@gmail.com, rmallon@gmail.com, adrian.yanes@aalto.fi
+	id S1754488Ab2DTKZY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 06:25:24 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38406 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754374Ab2DTKZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 06:25:23 -0400
+Date: Fri, 20 Apr 2012 15:46:44 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
+Message-ID: <20120420101644.GA17994@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120405222024.GA19154@redhat.com>
+ <1334409396.2528.100.camel@twins>
+ <20120414205200.GA9083@redhat.com>
+ <1334487062.2528.113.camel@twins>
+ <20120415195351.GA22095@redhat.com>
+ <1334526513.28150.23.camel@twins>
+ <20120415234401.GA32662@redhat.com>
+ <1334571419.28150.30.camel@twins>
+ <20120416214707.GA27639@redhat.com>
+ <1334916861.2463.50.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1334916861.2463.50.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042010-5806-0000-0000-0000147175AE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old driver has two main deficencies:
-i)  No repeated start (Sr) condiction is possible, this makes it unusable
-    e.g. for most SMBus transfers.
-ii) I/O was done with polling/busy waiting what caused over-/underruns
-    even at light system loads and clock speeds.
+* Peter Zijlstra <peterz@infradead.org> [2012-04-20 12:14:21]:
 
-The new driver overcomes these deficencies and in addition allows for
-more than one TWI interface.
+> On Mon, 2012-04-16 at 23:47 +0200, Oleg Nesterov wrote:
+> > On 04/16, Peter Zijlstra wrote:
+> > >
+> > > On Mon, 2012-04-16 at 01:44 +0200, Oleg Nesterov wrote:
+> > >
+> > > > And. I have another reason for down_write() in register/unregister.
+> > > > I am still not sure this is possible (I had no time to try to
+> > > > implement), but it seems to me we can kill the uprobe counter in
+> > > > mm_struct.
+> > >
+> > > You mean by making register/unregister down_write, you're exclusive with
+> > > munmap()
+> > 
+> > .. and with register/unregister.
+> > 
+> > Why do we need mm->uprobes_state.count? It is writeonly, except we
+> > check it in the DIE_INT3 notifier before anything else to avoid the
+> > unnecessary uprobes overhead.
+> 
+> and uprobe_munmap().
 
-A remaining limitation is the fact, that only one repeated start is
-possible (two concatenated messages). This limitation is imposed by
-the hardware. However, this should not be a problem as all common
-i2c-client communication does not rely on more than one repeated start.
+If we can kill mm->uprobs_state.count, we can do away with
+uprobe_munmap. Because uprobe_munmap is only around to manage
+mm->uprobes_state.count.
 
-Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Tested-by: Hubert Feurstein <h.feurstein@gmail.com>
+> 
+> > Suppose we kill it, and add the new MMF_HAS_UPROBE flag instead.
+> > install_breakpoint() sets it unconditionally,
+> > uprobe_pre_sstep_notifier() checks it.
+> 
+> Argh, why are MMF_flags part of sched.h.. one would expect those to be
+> in mm.h or mm_types.h.. somewhere near struct mm.
+> 
+> > (And perhaps we can stop right here? I mean how often this can
+> >  slow down the debugger which installs int3 in the same mm?)
+> > 
+> > Now we need to clear MMF_HAS_UPROBE somehowe, when the last
+> > uprobe goes away. Lets ignore uprobe_map/unmap for simplicity.
+> >
+> > 	- We add another flag, MMF_UPROBE_RECALC, it is set by
+> > 	  remove_breakpoint().
+> > 
+> > 	- We change handle_swbp(). Ignoring all details it does:
+> > 
+> > 		if (find_uprobe(vaddr))
+> > 			process_uprobe();
+> > 		else if (test_bit(MMF_HAS_UPROBE) && test_bit(MMF_UPROBE_RECALC))
+> > 			recalc_mmf_uprobe_flag();
+> > 
+> > 	  where recalc_mmf_uprobe_flag() checks all vmas and either
+> > 	  clears both flags or MMF_UPROBE_RECALC only.
+> > 
+> > 	  This is the really slow O(n) path, but it can only happen after
+> > 	  unregister, and only if we hit another non-uprobe breakpoint
+> > 	  in the same mm.
+> > 
+> > Something like this. What do you think?
+> 
+> I think I can live with the simple set MMF_HAS_UPROBE and leave it at
+> that. The better optimization seems to be to not install breakpoints
+> when ->filter() excludes the task..
+> 
+> It looks like we currently install the breakpoint unconditionally and
+> only ->filter() once we hit the breakpoint, which is somewhat
+> sub-optimal.
+> 
 
-v10: - applied fix for RXRDY overrun bug submitted by Hubert Feurstein
-     - applied fix for calculating twi_clk
-v9: - merge i2c-at91.c patches to single patch
-    - rewrite cwgr reg after timeout
-v8: - remove local include
-    - remove cpu_is_rm9200() and put twi hw bug info in platform_device
-    - use readl/writel_relaxed instead of __raw_readl/writel
-v7: i)  fix bug if internal address > 1 byte
-    ii) send stop when len == 1 (both reported by Carsten Behling)
-v6: support for I2C_SMBUS_BLOCK_DATA transfers.
-    Better use of clk_(un)prepare().
-    More sensible transfer timeout.
-v5: Another round of review comments from Ryan Mallon, Felipe Balbi
-    and Russell King: convert twi clk to use .dev_id, cleanups
-v4: Integrated more review comments from Ryan Mallon and Felipe Balbi:
-    Moved register include file to local include, code cleanups
-v3: Integrated review comments from Ryan Mallon and Felipe Balbi
-v2: Fixed whitespace issue
-
-Nikolaus Voss (4):
-  drivers/i2c/busses/i2c-at91.c: remove broken driver
-  Replace clk_lookup.con_id with clk_lookup.dev_id entries for twi clk
-  drivers/i2c/busses/i2c-at91.c: add new driver
-  G45 TWI: remove open drain setting for twi function gpios
-
- arch/arm/mach-at91/at91cap9.c              |    1 +
- arch/arm/mach-at91/at91rm9200.c            |    1 +
- arch/arm/mach-at91/at91rm9200_devices.c    |    9 +
- arch/arm/mach-at91/at91sam9260.c           |    1 +
- arch/arm/mach-at91/at91sam9261.c           |    1 +
- arch/arm/mach-at91/at91sam9263.c           |    1 +
- arch/arm/mach-at91/at91sam9g45.c           |    2 +
- arch/arm/mach-at91/at91sam9g45_devices.c   |    6 -
- arch/arm/mach-at91/at91sam9rl.c            |    2 +
- arch/arm/mach-at91/include/mach/at91_twi.h |   68 ----
- drivers/i2c/busses/Kconfig                 |   11 +-
- drivers/i2c/busses/i2c-at91.c              |  579 ++++++++++++++++++----------
- 12 files changed, 393 insertions(+), 289 deletions(-)
- delete mode 100644 arch/arm/mach-at91/include/mach/at91_twi.h
+Yes, We install breakpoints unconditionally, I think we had already
+discussed this and Oleg had proposed a solution too.
+http://lkml.org/lkml/2011/6/16/470 where we move the mm struct from task
+struct to signal struct.
 
 -- 
-1.7.5.4
+Thanks and Regards
+Srikar
 
