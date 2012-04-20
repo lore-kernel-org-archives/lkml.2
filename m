@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab2DTV7A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:59:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:1391 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753631Ab2DTV64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:58:56 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <cgroups@vger.kernel.org>
-Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH 10/23] slab/slub: struct memcg_params
-Date: Fri, 20 Apr 2012 18:57:18 -0300
-Message-Id: <1334959051-18203-11-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+	id S1756097Ab2DTV7J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:59:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34035 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756058Ab2DTV7C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:59:02 -0400
+Date: Fri, 20 Apr 2012 14:58:51 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <tip-5d6f8d77ede50417dcca4c31a74f0d40a1ee537a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        david.daney@cavium.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        david.daney@cavium.com, tglx@linutronix.de
+In-Reply-To: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
+References: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/extable] x86, extable:
+  Remove open-coded exception table entries in arch/x86/kernel/test_rodata.c
+Git-Commit-ID: 5d6f8d77ede50417dcca4c31a74f0d40a1ee537a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 20 Apr 2012 14:58:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the kmem slab controller, we need to record some extra
-information in the kmem_cache structure.
+Commit-ID:  5d6f8d77ede50417dcca4c31a74f0d40a1ee537a
+Gitweb:     http://git.kernel.org/tip/5d6f8d77ede50417dcca4c31a74f0d40a1ee537a
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Fri, 20 Apr 2012 12:19:50 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Fri, 20 Apr 2012 13:51:38 -0700
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Suleiman Souhlal <suleiman@google.com>
+x86, extable: Remove open-coded exception table entries in arch/x86/kernel/test_rodata.c
+
+Remove open-coded exception table entries in arch/x86/kernel/test_rodata.c,
+and replace them with _ASM_EXTABLE() macros; this will allow us to
+change the format and type of the exception table entries.
+
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: David Daney <david.daney@cavium.com>
+Link: http://lkml.kernel.org/r/CA%2B55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com
 ---
- include/linux/slab.h     |   15 +++++++++++++++
- include/linux/slab_def.h |    4 ++++
- include/linux/slub_def.h |    3 +++
- 3 files changed, 22 insertions(+), 0 deletions(-)
+ arch/x86/kernel/test_rodata.c |   10 ++--------
+ 1 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index a595dce..a5127e1 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -153,6 +153,21 @@ unsigned int kmem_cache_size(struct kmem_cache *);
- #define ARCH_SLAB_MINALIGN __alignof__(unsigned long long)
- #endif
+diff --git a/arch/x86/kernel/test_rodata.c b/arch/x86/kernel/test_rodata.c
+index c29e235..b79133a 100644
+--- a/arch/x86/kernel/test_rodata.c
++++ b/arch/x86/kernel/test_rodata.c
+@@ -12,6 +12,7 @@
+ #include <linux/module.h>
+ #include <asm/cacheflush.h>
+ #include <asm/sections.h>
++#include <asm/asm.h>
  
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+struct mem_cgroup_cache_params {
-+	struct mem_cgroup *memcg;
-+	int id;
-+
-+#ifdef CONFIG_SLAB
-+	/* Original cache parameters, used when creating a memcg cache */
-+	size_t orig_align;
-+	atomic_t refcnt;
-+
-+#endif
-+	struct list_head destroyed_list; /* Used when deleting cpuset cache */
-+};
-+#endif
-+
- /*
-  * Common kmalloc functions provided by all allocators
-  */
-diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
-index cba3139..06e4a3e 100644
---- a/include/linux/slab_def.h
-+++ b/include/linux/slab_def.h
-@@ -83,6 +83,10 @@ struct kmem_cache {
- 	int obj_size;
- #endif
- 
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	struct mem_cgroup_cache_params memcg_params;
-+#endif
-+
- /* 6) per-cpu/per-node data, touched during every alloc/free */
- 	/*
- 	 * We put array[] at the end of kmem_cache, because we want to size
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index c2f8c8b..5f5e942 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -102,6 +102,9 @@ struct kmem_cache {
- #ifdef CONFIG_SYSFS
- 	struct kobject kobj;	/* For sysfs */
- #endif
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	struct mem_cgroup_cache_params memcg_params;
-+#endif
- 
- #ifdef CONFIG_NUMA
- 	/*
--- 
-1.7.7.6
-
+ int rodata_test(void)
+ {
+@@ -42,14 +43,7 @@ int rodata_test(void)
+ 		".section .fixup,\"ax\"\n"
+ 		"2:	jmp 1b\n"
+ 		".previous\n"
+-		".section __ex_table,\"a\"\n"
+-		"       .align 16\n"
+-#ifdef CONFIG_X86_32
+-		"	.long 0b,2b\n"
+-#else
+-		"	.quad 0b,2b\n"
+-#endif
+-		".previous"
++		_ASM_EXTABLE(0b,2b)
+ 		: [rslt] "=r" (result)
+ 		: [rodata_test] "r" (&rodata_test_data), [zero] "r" (0UL)
+ 	);
