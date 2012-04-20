@@ -1,244 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab2DTV6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:58:51 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:40037 "EHLO relay.sw.ru"
+	id S1755991Ab2DTV6o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:58:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35012 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752970Ab2DTV6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:58:49 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <cgroups@vger.kernel.org>
-Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 09/23] kmem slab accounting basic infrastructure
-Date: Fri, 20 Apr 2012 18:57:17 -0300
-Message-Id: <1334959051-18203-10-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+	id S1752970Ab2DTV6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:58:39 -0400
+Date: Fri, 20 Apr 2012 17:58:26 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>,
+        Chandra Seetharaman <sekharan@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
+ EXPORT_SYMBOL
+Message-ID: <20120420215825.GA10406@redhat.com>
+References: <20111215214440.GA17677@redhat.com>
+ <4EF039D5.5010201@suse.de>
+ <20120405144721.GA18437@redhat.com>
+ <20120420144538.GB8155@redhat.com>
+ <20120420173405.GA8846@redhat.com>
+ <20120420214120.159e2690@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120420214120.159e2690@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the basic infrastructure for the accounting of the slab
-caches. To control that, the following files are created:
+On Fri, Apr 20 2012 at  4:41pm -0400,
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
- * memory.kmem.usage_in_bytes
- * memory.kmem.limit_in_bytes
- * memory.kmem.failcnt
- * memory.kmem.max_usage_in_bytes
+> On Fri, 20 Apr 2012 13:34:05 -0400
+> Mike Snitzer <snitzer@redhat.com> wrote:
+> 
+> > Allow a proprietary non-GPL multipath driver, like EMC PowerPath, to
+> > detach a scsi_dh using scsi_dh_detach. 
+> 
+> That I doubt somehow. The GPL covers *all* derivative works.
+> EXPORT_SYMBOL doesn't magically make code non-derivative. If you need to
+> modify the kernel to make your driver work *and* you want to claim it is
+> not derivative then I hope there are good lawyers involved 8-)
 
-They have the same meaning of their user memory counterparts. They reflect
-the state of the "kmem" res_counter.
+Um... now I see that cc'ing LKML was a mistake:
 
-The code is not enabled until a limit is set. This can be tested by the flag
-"kmem_accounted". This means that after the patch is applied, no behavioral
-changes exists for whoever is still using memcg to control their memory usage.
+GPL zealots reading into this _way_ more than is warranted... awesome.
 
-We always account to both user and kernel resource_counters. This effectively
-means that an independent kernel limit is in place when the limit is set
-to a lower value than the user memory. A equal or higher value means that the
-user limit will always hit first, meaning that kmem is effectively unlimited.
+> The kernel is GPL, all derived works of a GPL codebase are required to be
+> GPL. There is no magic rule about modules. I've stated that repeatedly
+> for anything containing a line of code I own. GregKH has made it very
+> clear for his code, and so it goes on.
 
-People who want to track kernel memory but not limit it, can set this limit
-to a very high number (like RESOURCE_MAX - 1page - that no one will ever hit,
-or equal to the user memory)
+This isn't about adding Linux functionality to a proprietary driver.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c |   80 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 79 insertions(+), 1 deletions(-)
+It is about the fact that:
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 2810228..36f1e6b 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -252,6 +252,10 @@ struct mem_cgroup {
- 	};
- 
- 	/*
-+	 * the counter to account for kernel memory usage.
-+	 */
-+	struct res_counter kmem;
-+	/*
- 	 * Per cgroup active and inactive list, similar to the
- 	 * per zone LRU lists.
- 	 */
-@@ -266,6 +270,7 @@ struct mem_cgroup {
- 	 * Should the accounting and control be hierarchical, per subtree?
- 	 */
- 	bool use_hierarchy;
-+	bool kmem_accounted;
- 
- 	bool		oom_lock;
- 	atomic_t	under_oom;
-@@ -378,6 +383,7 @@ enum res_type {
- 	_MEM,
- 	_MEMSWAP,
- 	_OOM_TYPE,
-+	_KMEM,
- };
- 
- #define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
-@@ -1470,6 +1476,10 @@ done:
- 		res_counter_read_u64(&memcg->memsw, RES_USAGE) >> 10,
- 		res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> 10,
- 		res_counter_read_u64(&memcg->memsw, RES_FAILCNT));
-+	printk(KERN_INFO "kmem: usage %llukB, limit %llukB, failcnt %llu\n",
-+		res_counter_read_u64(&memcg->kmem, RES_USAGE) >> 10,
-+		res_counter_read_u64(&memcg->kmem, RES_LIMIT) >> 10,
-+		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
- }
- 
- /*
-@@ -3914,6 +3924,11 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
- 		else
- 			val = res_counter_read_u64(&memcg->memsw, name);
- 		break;
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	case _KMEM:
-+		val = res_counter_read_u64(&memcg->kmem, name);
-+		break;
-+#endif
- 	default:
- 		BUG();
- 	}
-@@ -3951,8 +3966,26 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
- 			break;
- 		if (type == _MEM)
- 			ret = mem_cgroup_resize_limit(memcg, val);
--		else
-+		else if (type == _MEMSWAP)
- 			ret = mem_cgroup_resize_memsw_limit(memcg, val);
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+		else if (type == _KMEM) {
-+			ret = res_counter_set_limit(&memcg->kmem, val);
-+			if (ret)
-+				break;
-+			/*
-+			 * Once enabled, can't be disabled. We could in theory
-+			 * disable it if we haven't yet created any caches, or
-+			 * if we can shrink them all to death.
-+			 *
-+			 * But it is not worth the trouble
-+			 */
-+			if (!memcg->kmem_accounted && val != RESOURCE_MAX)
-+				memcg->kmem_accounted = true;
-+		}
-+#endif
-+		else
-+			return -EINVAL;
- 		break;
- 	case RES_SOFT_LIMIT:
- 		ret = res_counter_memparse_write_strategy(buffer, &val);
-@@ -4017,12 +4050,20 @@ static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
- 	case RES_MAX_USAGE:
- 		if (type == _MEM)
- 			res_counter_reset_max(&memcg->res);
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+		else if (type == _KMEM)
-+			res_counter_reset_max(&memcg->kmem);
-+#endif
- 		else
- 			res_counter_reset_max(&memcg->memsw);
- 		break;
- 	case RES_FAILCNT:
- 		if (type == _MEM)
- 			res_counter_reset_failcnt(&memcg->res);
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+		else if (type == _KMEM)
-+			res_counter_reset_failcnt(&memcg->kmem);
-+#endif
- 		else
- 			res_counter_reset_failcnt(&memcg->memsw);
- 		break;
-@@ -4647,6 +4688,33 @@ static int mem_control_numa_stat_open(struct inode *unused, struct file *file)
- #endif /* CONFIG_NUMA */
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+static struct cftype kmem_cgroup_files[] = {
-+	{
-+		.name = "kmem.limit_in_bytes",
-+		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
-+		.write_string = mem_cgroup_write,
-+		.read = mem_cgroup_read,
-+	},
-+	{
-+		.name = "kmem.usage_in_bytes",
-+		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
-+		.read = mem_cgroup_read,
-+	},
-+	{
-+		.name = "kmem.failcnt",
-+		.private = MEMFILE_PRIVATE(_KMEM, RES_FAILCNT),
-+		.trigger = mem_cgroup_reset,
-+		.read = mem_cgroup_read,
-+	},
-+	{
-+		.name = "kmem.max_usage_in_bytes",
-+		.private = MEMFILE_PRIVATE(_KMEM, RES_MAX_USAGE),
-+		.trigger = mem_cgroup_reset,
-+		.read = mem_cgroup_read,
-+	},
-+	{},
-+};
-+
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
- 	return mem_cgroup_sockets_init(memcg, ss);
-@@ -4654,6 +4722,7 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- 
- static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
- {
-+	BUG_ON(res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0);
- 	mem_cgroup_sockets_destroy(memcg);
- }
- #else
-@@ -4979,6 +5048,12 @@ mem_cgroup_create(struct cgroup *cont)
- 		int cpu;
- 		enable_swap_cgroup();
- 		parent = NULL;
-+
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+		WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys,
-+					   kmem_cgroup_files));
-+#endif
-+
- 		if (mem_cgroup_soft_limit_tree_init())
- 			goto free_out;
- 		root_mem_cgroup = memcg;
-@@ -4997,6 +5072,7 @@ mem_cgroup_create(struct cgroup *cont)
- 	if (parent && parent->use_hierarchy) {
- 		res_counter_init(&memcg->res, &parent->res);
- 		res_counter_init(&memcg->memsw, &parent->memsw);
-+		res_counter_init(&memcg->kmem, &parent->kmem);
- 		/*
- 		 * We increment refcnt of the parent to ensure that we can
- 		 * safely access it on res_counter_charge/uncharge.
-@@ -5007,6 +5083,7 @@ mem_cgroup_create(struct cgroup *cont)
- 	} else {
- 		res_counter_init(&memcg->res, NULL);
- 		res_counter_init(&memcg->memsw, NULL);
-+		res_counter_init(&memcg->kmem, NULL);
- 	}
- 	memcg->last_scanned_node = MAX_NUMNODES;
- 	INIT_LIST_HEAD(&memcg->oom_notify);
-@@ -5014,6 +5091,7 @@ mem_cgroup_create(struct cgroup *cont)
- 	if (parent)
- 		memcg->swappiness = mem_cgroup_swappiness(parent);
- 	atomic_set(&memcg->refcnt, 1);
-+	memcg->kmem_accounted = false;
- 	memcg->move_charge_at_immigrate = 0;
- 	mutex_init(&memcg->thresholds_lock);
- 	spin_lock_init(&memcg->move_lock);
--- 
-1.7.7.6
+1)
+Linux's scsi_dh* adds additional SCSI sense processing that conflicts
+with processing that a long established competing proprietary driver
+also does (and did long before scsi_dh* was introduced).
 
+2)
+If Linux is masking SCSI sense that Powerpath needs to see in order to
+function then they need a way to shut off that conflicting functionality
+in Linux.  What they have enjoyed until now is that Linux has treated
+them with kid gloves -- by not always attaching scsi_dh to each SCSI
+device during SCSI device scan.
+
+Well it is now time to put Linux (and Linux multipathing) first!  But
+doing so while exposing an interface that allows Linux to not have to
+make compromises about how good it can be.
+
+> > End result is Linux and PowerPath can coexist without compromising
+> > Linux's default handling of multipath LUNs.
+> 
+> So your specific purpose seems to me to be to enable a third party piece
+> of non-free code to hook into a piece of GPL code that it needs (which to
+> me implies it is derivative if it does). There is an offence of
+> "conspiracy to commit copyright infringement" so merely grinning and
+> saying its for a third party doesn't let your company off the hook either.
+> 
+> You should probably forward it to your legal teams before taking any
+> other action. Deleting it won't make it go away. It's up to them to
+> decide if they think they can argue properly that the work is not
+> derivative. I shall be most intrigued to see anyone make that argument,
+> but hey I'm not a lawyer.
+> 
+> I'm dying to see anyone make the moral argument for it too.
+
+I think you're blinded by some innate violent pain reaction to seeing
+s/EXPORT_SYMBOL_GPL/EXPORT_SYMBOL/
+
+As I said in the header, Linux's ability to properly support scanning
+LUNs with multiple paths has been fragile for _years_ purely because we
+never had the balls to always attach the scsi_dh which enables Linux to
+work well.  We didn't because of fear that we'd break PowerPath.
+
+As a result, Linux has suffered (in the form of reduced functionality).
+Now your arguing that the because scsi_dh_detach() will become
+EXPORT_SYMBOL it somehow makes PowerPath a derived work if they were to
+use it?!? -- even though they clearly cannot use scsi_dh* in their
+non-GPL driver because all the other scsi_dh* interfaces (like
+scsi_dh_attach!) are _GPL?
+
+The two other people (scsi_dh maintainers) that Acked-by this change
+work for companies other than EMC.  James is the SCSI maintainer and
+understands what is going on here.  Like me, they are domain experts.
+
+What are you?  You're not a lawyer, you're also clearly uninformed.  So
+why even weigh in on something if you cannot understand what the hell is
+being proposed?
+
+You're being a troll... sad really.
