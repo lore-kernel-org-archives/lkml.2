@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab2DTPAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:00:00 -0400
-Received: from [124.207.24.138] ([124.207.24.138]:45323 "EHLO
-	mail.ss.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756732Ab2DTO77 (ORCPT
+	id S1757115Ab2DTPBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:01:51 -0400
+Received: from smtp-out-028.synserver.de ([212.40.185.28]:1042 "EHLO
+	smtp-out-012.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756767Ab2DTPBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 10:59:59 -0400
+	Fri, 20 Apr 2012 11:01:50 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 9511
+Message-ID: <4F917AE3.7050808@metafoo.de>
+Date: Fri, 20 Apr 2012 17:04:03 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-In-Reply-To: <1334927566.28331.80.camel@zakaz.uk.xensource.com>
-References: <1334913957.2863.1.camel@hp6530s>
-	<4F913340.4000202@citrix.com>
-	<1334920396.2863.16.camel@hp6530s>
-	<1334925508.28331.63.camel@zakaz.uk.xensource.com>
-	<4F915C43.4020207@citrix.com>
-	<1334927566.28331.80.camel@zakaz.uk.xensource.com>
-Date: Fri, 20 Apr 2012 22:50:57 +0800
-Message-ID: <CAF1ivSaPshQf=BZ1gKLUq1yRF_MWeyjjVWkfv+E_jT+K5CFmAA@mail.gmail.com>
-Subject: Re: [Xen-devel] [PATCH] xen/apic: implement io apic read with hypercall
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Andrew Cooper <Andrew.Cooper3@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roland Stigge <stigge@antcom.de>
+CC: jic23@cam.ac.uk, gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v3] iio: Add device tree support to LPC32xx ADC
+References: <1334932713-19231-1-git-send-email-stigge@antcom.de>
+In-Reply-To: <1334932713-19231-1-git-send-email-stigge@antcom.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 9:12 PM, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> On Fri, 2012-04-20 at 13:53 +0100, Andrew Cooper wrote:
->> >
->> > Under what circumstances can these hypercalls fail? Would a BUG_ON be
->> > appropriate/
->>
->> -EFAULT, -EPERM, anything xsm_apic() could return (which looks only to
->> be -EPERM).
->
-> So either the guest has called a hypercall which it is not permitted to
-> or it has called it with invalid parameters of one sort or another. Both
-> of these would be a code bug in the guest and therefore asserting that
-> no failure occurred is reasonable?
->
-> What could the caller do with the error other than log it and collapse?
->
->> The call into Xen itself will return 0 as a value if an
->> invalid physbase is passed in the hypercall.
->
->> So a BUG_ON() is not safe/sensible for domU.
->
-> I think you have successfully argued that it is ;-)
+> [...]
+> 
+> --- /dev/null
+> +++ linux-2.6/Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt
+> @@ -0,0 +1,16 @@
+> +* NXP LPC32xx SoC ADC controller
+> +
+> +Required properties:
+> +- compatible: must be "nxp,lpc32xx-adc"
+> +- reg: physical base address of the controller and length of memory mapped
+> +  region.
+> +- interrupts: The ADC interrupt
+> +
+> +Example:
+> +
+> +	adc@40048000 {
+> +		compatible = "nxp,lpc32xx-adc";
 
-BUG_ON is too severe. How about WARN_ON?
+In my opinion it seems to be a bad idea to use wildcard names in devicetree
+compatible strings.
 
-ret = hypercall(...)
+> +		reg = <0x40048000 0x1000>;
+> +		interrupt-parent = <&mic>;
+> +		interrupts = <39 0>;
+> +	};
 
-if (ret) {
-   WARN_ON(1);
-   return -1;
-}
-
-
->
-> Ian.
