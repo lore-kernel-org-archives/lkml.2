@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab2DTReO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:34:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56057 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539Ab2DTReN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:34:13 -0400
-Date: Fri, 20 Apr 2012 13:34:05 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: James.Bottomley@hansenpartnership.com
-Cc: linux-scsi@vger.kernel.org, Hannes Reinecke <hare@suse.de>,
-        Chandra Seetharaman <sekharan@us.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
- EXPORT_SYMBOL
-Message-ID: <20120420173405.GA8846@redhat.com>
-References: <20111215214440.GA17677@redhat.com>
- <4EF039D5.5010201@suse.de>
- <20120405144721.GA18437@redhat.com>
- <20120420144538.GB8155@redhat.com>
+	id S1757287Ab2DTRfg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:35:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42230 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754457Ab2DTRfe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 13:35:34 -0400
+Date: Fri, 20 Apr 2012 10:35:29 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [PATCH 1/2] workqueue: Catch more locking problems with
+ flush_work()
+Message-ID: <20120420173529.GD32324@google.com>
+References: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org>
+ <20120419152841.GA10553@google.com>
+ <4F905521.9020901@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120420144538.GB8155@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F905521.9020901@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow a proprietary non-GPL multipath driver, like EMC PowerPath, to
-detach a scsi_dh using scsi_dh_detach.  This is an improvement over
-requiring them to write 'detach' to /sys/block/sdX/queue/dh_state
+Hello,
 
-End result is Linux and PowerPath can coexist without compromising
-Linux's default handling of multipath LUNs.
+On Thu, Apr 19, 2012 at 11:10:41AM -0700, Stephen Boyd wrote:
+> On 04/19/12 08:28, Tejun Heo wrote:
+> > On Wed, Apr 18, 2012 at 08:25:57PM -0700, Stephen Boyd wrote:
+> >> @@ -2513,8 +2513,11 @@ bool flush_work(struct work_struct *work)
+> >>  		wait_for_completion(&barr.done);
+> >>  		destroy_work_on_stack(&barr.work);
+> >>  		return true;
+> >> -	} else
+> >> +	} else {
+> >> +		lock_map_acquire(&work->lockdep_map);
+> >> +		lock_map_release(&work->lockdep_map);
+> >>  		return false;
+> > We don't have this annotation when start_flush_work() succeeds either,
+> > right?  IOW, would lockdep trigger when an actual deadlock happens?
+> 
+> I believe it does although I haven't tested it.
 
-Linux has suffered from the race where a scsi_dh is not available to be
-attached to a SCSI device until too late (after an HBA driver has
-started the SCSI device scan that may attach a scsi_dh).  Attaching a
-scsi_dh too late results in default sense handling that does not
-silently end IO to passive paths, which creates excessive delays and IO
-errors during normal boot of a system with hundreds of LUNs.
+How does it do that?  While wq->lockdep_map would be able to detect
+some of the chaining, the read acquire paths probably would miss some
+other.  In general, wq->lockdep_map is used to express dependencies
+regarding workqueue flushing (and the self flushing) and it would
+probably be better to express work item dependencies explicitly using
+work->lockdep_map even if it becomes redundant through wq->lockdep_map
+sometimes.
 
-To fix this the appropriate scsi_dh must be available to be attached
-before an HBA driver's SCSI device scan.  But once attached, both
-scsi_dh_alua and scsi_dh_emc are known to conflict with PowerPath --
-allowing PowerPath to use scsi_dh_detach resolves such conflicts.
+> > If not, why not add the acquire/release() before flush_work() does
+> > anything?
+> 
+> I was worried about causing false positive lockdep warnings in the case
+> that start_flush_work() succeeds and returns true. In that case, lockdep
+> is told about the cwq lockdep map:
+> 
+> static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
+>                              bool wait_executing)
+> {
+> 
+>         .....
+> 
+>         if (cwq->wq->saved_max_active == 1 || cwq->wq->flags & WQ_RESCUER)
+>                 lock_map_acquire(&cwq->wq->lockdep_map);
+>         else
+>                 lock_map_acquire_read(&cwq->wq->lockdep_map);
+> 
+> 
+> and so if we acquired the work->lockdep_map before the
+> cwq->wq->lockdep_map we would get a warning about ABBA between these two
+> lockdep maps. At least that is what I'm lead to believe when I look at
+> what process_one_work() is doing. Please correct me if I'm wrong.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Hannes Reinecke <hare@suse.de>
-Acked-by: Chandra Seetharaman <sekharan@us.ibm.com>
----
- drivers/scsi/device_handler/scsi_dh.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+All that's necessary is acquiring and releasing work->lockdep_map.
+There's no need to nest start_flush_work() inside it.  Without
+nesting, there's nothing to worry about ABBA lockdeps.
 
-v2: header tweaks, added Chandra's Acked-by
-    p.s. James, if you still think I'm too indirect or long-winded
-    please feel free to change the header accordingly.  Thanks!
+Thanks.
 
-diff --git a/drivers/scsi/device_handler/scsi_dh.c b/drivers/scsi/device_handler/scsi_dh.c
-index 23149b9..a550de1 100644
---- a/drivers/scsi/device_handler/scsi_dh.c
-+++ b/drivers/scsi/device_handler/scsi_dh.c
-@@ -578,7 +578,7 @@ void scsi_dh_detach(struct request_queue *q)
- 	}
- 	put_device(&sdev->sdev_gendev);
- }
--EXPORT_SYMBOL_GPL(scsi_dh_detach);
-+EXPORT_SYMBOL(scsi_dh_detach);
- 
- static struct notifier_block scsi_dh_nb = {
- 	.notifier_call = scsi_dh_notifier
+-- 
+tejun
