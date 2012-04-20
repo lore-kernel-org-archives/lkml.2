@@ -1,90 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab2DTV6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:58:11 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:37104 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755064Ab2DTV6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:58:07 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <cgroups@vger.kernel.org>
-Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 03/23] slab: rename gfpflags to allocflags
-Date: Fri, 20 Apr 2012 18:57:11 -0300
-Message-Id: <1334959051-18203-4-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+	id S1755811Ab2DTV6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:58:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34023 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755114Ab2DTV6M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:58:12 -0400
+Date: Fri, 20 Apr 2012 14:58:02 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <tip-d7abc0fa997972ddb6d3c403e03a6eefda0c0881@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        david.daney@cavium.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        david.daney@cavium.com, tglx@linutronix.de
+In-Reply-To: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
+References: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/extable] x86, extable:
+  Remove open-coded exception table entries in arch/x86/kernel/entry_64.S
+Git-Commit-ID: d7abc0fa997972ddb6d3c403e03a6eefda0c0881
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 20 Apr 2012 14:58:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A consistent name with slub saves us an acessor function.
-In both caches, this field represents the same thing. We would
-like to use it from the mem_cgroup code.
+Commit-ID:  d7abc0fa997972ddb6d3c403e03a6eefda0c0881
+Gitweb:     http://git.kernel.org/tip/d7abc0fa997972ddb6d3c403e03a6eefda0c0881
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Fri, 20 Apr 2012 12:19:50 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Fri, 20 Apr 2012 13:51:38 -0700
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
+x86, extable: Remove open-coded exception table entries in arch/x86/kernel/entry_64.S
+
+Remove open-coded exception table entries in arch/x86/kernel/entry_64.S,
+and replace them with _ASM_EXTABLE() macros; this will allow us to
+change the format and type of the exception table entries.
+
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: David Daney <david.daney@cavium.com>
+Link: http://lkml.kernel.org/r/CA%2B55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com
 ---
- include/linux/slab_def.h |    2 +-
- mm/slab.c                |   10 +++++-----
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/kernel/entry_64.S |   16 ++++------------
+ 1 files changed, 4 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
-index fbd1117..d41effe 100644
---- a/include/linux/slab_def.h
-+++ b/include/linux/slab_def.h
-@@ -39,7 +39,7 @@ struct kmem_cache {
- 	unsigned int gfporder;
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index cdc79b5..320852d 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -55,6 +55,7 @@
+ #include <asm/paravirt.h>
+ #include <asm/ftrace.h>
+ #include <asm/percpu.h>
++#include <asm/asm.h>
+ #include <linux/err.h>
  
- 	/* force GFP flags, e.g. GFP_DMA */
--	gfp_t gfpflags;
-+	gfp_t allocflags;
+ /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
+@@ -900,18 +901,12 @@ restore_args:
  
- 	size_t colour;			/* cache colouring range */
- 	unsigned int colour_off;	/* colour offset */
-diff --git a/mm/slab.c b/mm/slab.c
-index e901a36..c6e5ab8 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1798,7 +1798,7 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
- 	flags |= __GFP_COMP;
+ irq_return:
+ 	INTERRUPT_RETURN
+-
+-	.section __ex_table, "a"
+-	.quad irq_return, bad_iret
+-	.previous
++	_ASM_EXTABLE(irq_return, bad_iret)
+ 
+ #ifdef CONFIG_PARAVIRT
+ ENTRY(native_iret)
+ 	iretq
+-
+-	.section __ex_table,"a"
+-	.quad native_iret, bad_iret
+-	.previous
++	_ASM_EXTABLE(native_iret, bad_iret)
  #endif
  
--	flags |= cachep->gfpflags;
-+	flags |= cachep->allocflags;
- 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
- 		flags |= __GFP_RECLAIMABLE;
+ 	.section .fixup,"ax"
+@@ -1181,10 +1176,7 @@ gs_change:
+ 	CFI_ENDPROC
+ END(native_load_gs_index)
  
-@@ -2508,9 +2508,9 @@ kmem_cache_create (const char *name, size_t size, size_t align,
- 	cachep->colour = left_over / cachep->colour_off;
- 	cachep->slab_size = slab_size;
- 	cachep->flags = flags;
--	cachep->gfpflags = 0;
-+	cachep->allocflags = 0;
- 	if (CONFIG_ZONE_DMA_FLAG && (flags & SLAB_CACHE_DMA))
--		cachep->gfpflags |= GFP_DMA;
-+		cachep->allocflags |= GFP_DMA;
- 	cachep->buffer_size = size;
- 	cachep->reciprocal_buffer_size = reciprocal_value(size);
- 
-@@ -2857,9 +2857,9 @@ static void kmem_flagcheck(struct kmem_cache *cachep, gfp_t flags)
- {
- 	if (CONFIG_ZONE_DMA_FLAG) {
- 		if (flags & GFP_DMA)
--			BUG_ON(!(cachep->gfpflags & GFP_DMA));
-+			BUG_ON(!(cachep->allocflags & GFP_DMA));
- 		else
--			BUG_ON(cachep->gfpflags & GFP_DMA);
-+			BUG_ON(cachep->allocflags & GFP_DMA);
- 	}
- }
- 
--- 
-1.7.7.6
-
+-	.section __ex_table,"a"
+-	.align 8
+-	.quad gs_change,bad_gs
+-	.previous
++	_ASM_EXTABLE(gs_change,bad_gs)
+ 	.section .fixup,"ax"
+ 	/* running with kernelgs */
+ bad_gs:
