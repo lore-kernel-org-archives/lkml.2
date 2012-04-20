@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab2DTIcQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 04:32:16 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:56533 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756494Ab2DTIcN (ORCPT
+	id S1756821Ab2DTIfT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 04:35:19 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46582 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559Ab2DTIfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 04:32:13 -0400
-Date: Fri, 20 Apr 2012 16:32:02 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        netdev@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH 1/2] workqueue: Catch more locking problems with
- flush_work()
-Message-ID: <20120420083202.GB17846@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org>
- <20120419081002.GB3963@zhy>
- <4F905B30.4080501@codeaurora.org>
- <20120420052633.GA16219@zhy>
- <20120420060101.GA16563@zhy>
- <4F9101A7.5010100@codeaurora.org>
- <20120420071759.GA17846@zhy>
- <4F911BCB.7010809@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4F911BCB.7010809@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Apr 2012 04:35:06 -0400
+Subject: Re: [PATCH] vmsplice: relax alignement requirements for
+ SPLICE_F_GIFT
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Tom Herbert <therbert@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Hugh Dickins <hughd@google.com>, Changli Gao <xiaosuo@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <mszeredi@suse.cz>
+In-Reply-To: <20120420081953.GJ7505@kernel.dk>
+References: <1333530531.18626.550.camel@edumazet-glaptop>
+	 <20120420081953.GJ7505@kernel.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Apr 2012 10:35:00 +0200
+Message-ID: <1334910900.2395.229.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 01:18:19AM -0700, Stephen Boyd wrote:
-> On 4/20/2012 12:18 AM, Yong Zhang wrote:
-> > On Thu, Apr 19, 2012 at 11:26:47PM -0700, Stephen Boyd wrote:
-> >> complain in the case where the work is not queued. That case is not a
-> >> false positive. We will get a lockdep warning if the work is running
-> > IIRC, flush_work() is just a nop when a work is not queued nor running.
+On Fri, 2012-04-20 at 10:19 +0200, Jens Axboe wrote:
+> On Wed, Apr 04 2012, Eric Dumazet wrote:
+> > It seems there is no fundamental reason to limit vmsplice()
+> > SPLICE_F_GIFT to page aligned chunks.
+> > 
+> > All helpers are prepared to cope with offsets in page.
+> > 
+> > This limitation makes vmsplice() API very impractical in the zero-copy
+> > land.
 > 
-> Agreed, but it's better to always print a lockdep warning instead of
-> only when the deadlock is going to occur.
-
-It will IMHO.
-
+> Sorry for the slow reply on this one. It's been a long time since I
+> wrote that code... If I recall correctly, the reason it currently
+> requires alignment, is that a gifted page is no longer yours, by
+> definition. So the alignment check was to ensure that we gift full
+> pages. But if the caller screws that up, I guess it's the callers
+> problem and it's a shame to limit the API in this way.
 > 
-> >
-> >> (when start_flush_work() returns true) solely with the
-> >> lock_map_acquire() on cwq->wq->lockdep_map.
-> > Yeah, that is the point we use lockdep to detect deadlock for workqueue.
-> >
-> > But when looking at start_flush_work(), for some case
-> > !(cwq->wq->saved_max_active == 1 || cwq->wq->flags & WQ_RESCUER),
-> > lock_map_acquire_read() is called, but recursive read is not added to
-> > the chain list. So when lock_map_acquire_read(&cwq->wq->lockdep_map)
-> > is called, deadlock will not be detected. I hope you don't hit that
-> > special case.
+> I will apply it for 3.5.
 > 
-> Hmm. Originally I had what you suggested in my patch but I left it out
-> because I wasn't sure if it would cause false positives.
-> Do you see any
-> possibility for false positives?
 
-No, I don't. My test indeed show nothing (just build and boot).
+Thanks Jens 
 
->I'll add it back in if not.
 
-It's great if you can try it :)
-
-Thanks,
-Yong
