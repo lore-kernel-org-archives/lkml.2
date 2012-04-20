@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab2DTA0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 20:26:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53082 "EHLO
+	id S932353Ab2DTA10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 20:27:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53108 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756950Ab2DTA0h (ORCPT
+	with ESMTP id S1756949Ab2DTA1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 20:26:37 -0400
-Date: Thu, 19 Apr 2012 17:26:25 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Message-ID: <tip-ffc4bc9c6fa4eaf935d96d139bfa7443cac0b88e@git.kernel.org>
+	Thu, 19 Apr 2012 20:27:25 -0400
+Date: Thu, 19 Apr 2012 17:27:15 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-6a1ea279c210e7dc05de86dc29c0d4f577f484fb@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        glommer@parallels.com, tglx@linutronix.de
+        tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        glommer@parallels.com, tglx@linutronix.de
-In-Reply-To: <1334794610-5546-4-git-send-email-hpa@zytor.com>
-References: <1334794610-5546-4-git-send-email-hpa@zytor.com>
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1334794610-5546-1-git-send-email-hpa@zytor.com>
+References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/extable] x86, paravirt:
-  Replace GET_CR2_INTO_RCX with GET_CR2_INTO_RAX
-Git-Commit-ID: ffc4bc9c6fa4eaf935d96d139bfa7443cac0b88e
+Subject: [tip:x86/extable] x86, extable: Add early_fixup_exception()
+Git-Commit-ID: 6a1ea279c210e7dc05de86dc29c0d4f577f484fb
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,82 +27,54 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 19 Apr 2012 17:26:31 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 19 Apr 2012 17:27:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ffc4bc9c6fa4eaf935d96d139bfa7443cac0b88e
-Gitweb:     http://git.kernel.org/tip/ffc4bc9c6fa4eaf935d96d139bfa7443cac0b88e
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Wed, 18 Apr 2012 17:16:48 -0700
+Commit-ID:  6a1ea279c210e7dc05de86dc29c0d4f577f484fb
+Gitweb:     http://git.kernel.org/tip/6a1ea279c210e7dc05de86dc29c0d4f577f484fb
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Thu, 19 Apr 2012 15:24:20 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 19 Apr 2012 15:07:56 -0700
+CommitDate: Thu, 19 Apr 2012 15:31:04 -0700
 
-x86, paravirt: Replace GET_CR2_INTO_RCX with GET_CR2_INTO_RAX
+x86, extable: Add early_fixup_exception()
 
-GET_CR2_INTO_RCX is asinine: it is only used in one place, the actual
-paravirt call returns the value in %rax, not %rcx; and the one place
-that wants it wants the result in %r9.  We actually generate as a
-result of this call:
+Add a restricted version of fixup_exception() to be used during early
+boot only.  In particular, this doesn't support the try..catch variant
+since we may not have a thread_info set up yet.
 
-       call ...
-       movq %rax, %rcx
-       xorq %rax, %rax		/* this value isn't even used... */
-       movq %rcx, %r9
+This relies on the exception table being sorted already at build time.
 
-At least make the macro do what the paravirt call does, which is put
-the value into %rax.
-
-Nevermind the fact that the macro clobbers all the volatile registers.
-
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Link: http://lkml.kernel.org/r/1334794610-5546-4-git-send-email-hpa@zytor.com
-Cc: Glauber de Oliveira Costa <glommer@parallels.com>
+Link: http://lkml.kernel.org/r/1334794610-5546-1-git-send-email-hpa@zytor.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/paravirt.h |    6 ++----
- arch/x86/kernel/head_64.S       |    6 +++---
- 2 files changed, 5 insertions(+), 7 deletions(-)
+ arch/x86/mm/extable.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index aa0f913..6cbbabf 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -1023,10 +1023,8 @@ extern void default_banner(void);
- 		  call PARA_INDIRECT(pv_cpu_ops+PV_CPU_swapgs)		\
- 		 )
+diff --git a/arch/x86/mm/extable.c b/arch/x86/mm/extable.c
+index 1fb85db..5555675 100644
+--- a/arch/x86/mm/extable.c
++++ b/arch/x86/mm/extable.c
+@@ -35,3 +35,20 @@ int fixup_exception(struct pt_regs *regs)
  
--#define GET_CR2_INTO_RCX				\
--	call PARA_INDIRECT(pv_mmu_ops+PV_MMU_read_cr2);	\
--	movq %rax, %rcx;				\
--	xorq %rax, %rax;
-+#define GET_CR2_INTO_RAX				\
-+	call PARA_INDIRECT(pv_mmu_ops+PV_MMU_read_cr2)
- 
- #define PARAVIRT_ADJUST_EXCEPTION_FRAME					\
- 	PARA_SITE(PARA_PATCH(pv_irq_ops, PV_IRQ_adjust_exception_frame), \
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index adf52e8..d1e112c 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -23,8 +23,9 @@
- #ifdef CONFIG_PARAVIRT
- #include <asm/asm-offsets.h>
- #include <asm/paravirt.h>
-+#define GET_CR2_INTO(reg) GET_CR2_INTO_RAX ; movq %rax, reg
- #else
--#define GET_CR2_INTO_RCX movq %cr2, %rcx
-+#define GET_CR2_INTO(reg) movq %cr2, reg
- #endif
- 
- /* we are not able to switch in one step to the final KERNEL ADDRESS SPACE
-@@ -286,8 +287,7 @@ ENTRY(early_idt_handler)
- 	cmpl $2,early_recursion_flag(%rip)
- 	jz  1f
- 	incl early_recursion_flag(%rip)
--	GET_CR2_INTO_RCX
--	movq %rcx,%r9
-+	GET_CR2_INTO(%r9)
- 	xorl %r8d,%r8d		# zero for error code
- 	movl %esi,%ecx		# get vector number
- 	# Test %ecx against mask of vectors that push error code.
+ 	return 0;
+ }
++
++/* Restricted version used during very early boot */
++int __init early_fixup_exception(unsigned long *ip)
++{
++	const struct exception_table_entry *fixup;
++
++	fixup = search_exception_tables(*ip);
++	if (fixup) {
++		if (fixup->fixup < 16)
++			return 0; /* Not supported during early boot */
++
++		*ip = fixup->fixup;
++		return 1;
++	}
++
++	return 0;
++}
