@@ -1,117 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab2DTV6o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:58:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35012 "EHLO mx1.redhat.com"
+	id S932088Ab2DTV7A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:59:00 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:1391 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752970Ab2DTV6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:58:39 -0400
-Date: Fri, 20 Apr 2012 17:58:26 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>,
-        Chandra Seetharaman <sekharan@us.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
- EXPORT_SYMBOL
-Message-ID: <20120420215825.GA10406@redhat.com>
-References: <20111215214440.GA17677@redhat.com>
- <4EF039D5.5010201@suse.de>
- <20120405144721.GA18437@redhat.com>
- <20120420144538.GB8155@redhat.com>
- <20120420173405.GA8846@redhat.com>
- <20120420214120.159e2690@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420214120.159e2690@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753631Ab2DTV64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:58:56 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <cgroups@vger.kernel.org>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH 10/23] slab/slub: struct memcg_params
+Date: Fri, 20 Apr 2012 18:57:18 -0300
+Message-Id: <1334959051-18203-11-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20 2012 at  4:41pm -0400,
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+For the kmem slab controller, we need to record some extra
+information in the kmem_cache structure.
 
-> On Fri, 20 Apr 2012 13:34:05 -0400
-> Mike Snitzer <snitzer@redhat.com> wrote:
-> 
-> > Allow a proprietary non-GPL multipath driver, like EMC PowerPath, to
-> > detach a scsi_dh using scsi_dh_detach. 
-> 
-> That I doubt somehow. The GPL covers *all* derivative works.
-> EXPORT_SYMBOL doesn't magically make code non-derivative. If you need to
-> modify the kernel to make your driver work *and* you want to claim it is
-> not derivative then I hope there are good lawyers involved 8-)
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Suleiman Souhlal <suleiman@google.com>
+---
+ include/linux/slab.h     |   15 +++++++++++++++
+ include/linux/slab_def.h |    4 ++++
+ include/linux/slub_def.h |    3 +++
+ 3 files changed, 22 insertions(+), 0 deletions(-)
 
-Um... now I see that cc'ing LKML was a mistake:
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index a595dce..a5127e1 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -153,6 +153,21 @@ unsigned int kmem_cache_size(struct kmem_cache *);
+ #define ARCH_SLAB_MINALIGN __alignof__(unsigned long long)
+ #endif
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++struct mem_cgroup_cache_params {
++	struct mem_cgroup *memcg;
++	int id;
++
++#ifdef CONFIG_SLAB
++	/* Original cache parameters, used when creating a memcg cache */
++	size_t orig_align;
++	atomic_t refcnt;
++
++#endif
++	struct list_head destroyed_list; /* Used when deleting cpuset cache */
++};
++#endif
++
+ /*
+  * Common kmalloc functions provided by all allocators
+  */
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index cba3139..06e4a3e 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -83,6 +83,10 @@ struct kmem_cache {
+ 	int obj_size;
+ #endif
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	struct mem_cgroup_cache_params memcg_params;
++#endif
++
+ /* 6) per-cpu/per-node data, touched during every alloc/free */
+ 	/*
+ 	 * We put array[] at the end of kmem_cache, because we want to size
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index c2f8c8b..5f5e942 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -102,6 +102,9 @@ struct kmem_cache {
+ #ifdef CONFIG_SYSFS
+ 	struct kobject kobj;	/* For sysfs */
+ #endif
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	struct mem_cgroup_cache_params memcg_params;
++#endif
+ 
+ #ifdef CONFIG_NUMA
+ 	/*
+-- 
+1.7.7.6
 
-GPL zealots reading into this _way_ more than is warranted... awesome.
-
-> The kernel is GPL, all derived works of a GPL codebase are required to be
-> GPL. There is no magic rule about modules. I've stated that repeatedly
-> for anything containing a line of code I own. GregKH has made it very
-> clear for his code, and so it goes on.
-
-This isn't about adding Linux functionality to a proprietary driver.
-
-It is about the fact that:
-
-1)
-Linux's scsi_dh* adds additional SCSI sense processing that conflicts
-with processing that a long established competing proprietary driver
-also does (and did long before scsi_dh* was introduced).
-
-2)
-If Linux is masking SCSI sense that Powerpath needs to see in order to
-function then they need a way to shut off that conflicting functionality
-in Linux.  What they have enjoyed until now is that Linux has treated
-them with kid gloves -- by not always attaching scsi_dh to each SCSI
-device during SCSI device scan.
-
-Well it is now time to put Linux (and Linux multipathing) first!  But
-doing so while exposing an interface that allows Linux to not have to
-make compromises about how good it can be.
-
-> > End result is Linux and PowerPath can coexist without compromising
-> > Linux's default handling of multipath LUNs.
-> 
-> So your specific purpose seems to me to be to enable a third party piece
-> of non-free code to hook into a piece of GPL code that it needs (which to
-> me implies it is derivative if it does). There is an offence of
-> "conspiracy to commit copyright infringement" so merely grinning and
-> saying its for a third party doesn't let your company off the hook either.
-> 
-> You should probably forward it to your legal teams before taking any
-> other action. Deleting it won't make it go away. It's up to them to
-> decide if they think they can argue properly that the work is not
-> derivative. I shall be most intrigued to see anyone make that argument,
-> but hey I'm not a lawyer.
-> 
-> I'm dying to see anyone make the moral argument for it too.
-
-I think you're blinded by some innate violent pain reaction to seeing
-s/EXPORT_SYMBOL_GPL/EXPORT_SYMBOL/
-
-As I said in the header, Linux's ability to properly support scanning
-LUNs with multiple paths has been fragile for _years_ purely because we
-never had the balls to always attach the scsi_dh which enables Linux to
-work well.  We didn't because of fear that we'd break PowerPath.
-
-As a result, Linux has suffered (in the form of reduced functionality).
-Now your arguing that the because scsi_dh_detach() will become
-EXPORT_SYMBOL it somehow makes PowerPath a derived work if they were to
-use it?!? -- even though they clearly cannot use scsi_dh* in their
-non-GPL driver because all the other scsi_dh* interfaces (like
-scsi_dh_attach!) are _GPL?
-
-The two other people (scsi_dh maintainers) that Acked-by this change
-work for companies other than EMC.  James is the SCSI maintainer and
-understands what is going on here.  Like me, they are domain experts.
-
-What are you?  You're not a lawyer, you're also clearly uninformed.  So
-why even weigh in on something if you cannot understand what the hell is
-being proposed?
-
-You're being a troll... sad really.
