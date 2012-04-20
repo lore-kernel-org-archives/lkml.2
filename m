@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394Ab2DTPGM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:06:12 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:32024 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127Ab2DTPGK (ORCPT
+	id S932462Ab2DTPGS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:06:18 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:11670 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932127Ab2DTPGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:06:10 -0400
-X-IronPort-AV: E=Sophos;i="4.75,454,1330905600"; 
-   d="scan'208";a="12052312"
-Message-ID: <1334934367.28331.99.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen/apic: implement io apic read with
- hypercall
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Lin Ming <mlin@ss.pku.edu.cn>
-CC: Andrew Cooper <Andrew.Cooper3@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Date: Fri, 20 Apr 2012 16:06:07 +0100
-In-Reply-To: <CAF1ivSaPshQf=BZ1gKLUq1yRF_MWeyjjVWkfv+E_jT+K5CFmAA@mail.gmail.com>
-References: <1334913957.2863.1.camel@hp6530s>	<4F913340.4000202@citrix.com>
-	 <1334920396.2863.16.camel@hp6530s>
-	 <1334925508.28331.63.camel@zakaz.uk.xensource.com>
-	 <4F915C43.4020207@citrix.com>
-	 <1334927566.28331.80.camel@zakaz.uk.xensource.com>
-	 <CAF1ivSaPshQf=BZ1gKLUq1yRF_MWeyjjVWkfv+E_jT+K5CFmAA@mail.gmail.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Apr 2012 11:06:15 -0400
+Subject: [PATCH 00/17] hpsa updates for April, 2012 
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matthew.gates@hp.com, stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Date: Fri, 20 Apr 2012 10:06:11 -0500
+Message-ID: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-20 at 15:50 +0100, Lin Ming wrote:
-> On Fri, Apr 20, 2012 at 9:12 PM, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> > On Fri, 2012-04-20 at 13:53 +0100, Andrew Cooper wrote:
-> >> >
-> >> > Under what circumstances can these hypercalls fail? Would a BUG_ON be
-> >> > appropriate/
-> >>
-> >> -EFAULT, -EPERM, anything xsm_apic() could return (which looks only to
-> >> be -EPERM).
-> >
-> > So either the guest has called a hypercall which it is not permitted to
-> > or it has called it with invalid parameters of one sort or another. Both
-> > of these would be a code bug in the guest and therefore asserting that
-> > no failure occurred is reasonable?
-> >
-> > What could the caller do with the error other than log it and collapse?
-> >
-> >> The call into Xen itself will return 0 as a value if an
-> >> invalid physbase is passed in the hypercall.
-> >
-> >> So a BUG_ON() is not safe/sensible for domU.
-> >
-> > I think you have successfully argued that it is ;-)
-> 
-> BUG_ON is too severe.
+The two big changes here are adding an abort handler, and using multiple
+reply queues for command completions.  
 
-Why? Under what circumstances can this be correctly called in a way
-which would result in the hypercall failing?
+Matt Bondurant (1):
+      hpsa: retry driver initiated commands on busy status
 
->  How about WARN_ON?
-> 
-> ret = hypercall(...)
-> 
-> if (ret) {
->    WARN_ON(1);
->    return -1;
-> }
-> 
-> 
-> >
-> > Ian.
+Matt Gates (2):
+      hpsa: use multiple reply queues
+      hpsa: refine interrupt handler locking for greater concurrency
+
+Mike Miller (1):
+      hpsa: add new RAID level "1(ADM)"
+
+Stephen M. Cameron (13):
+      hpsa: call pci_disable_device on driver unload
+      hpsa: do not skip disabled devices
+      hpsa: enable bus master bit after pci_enable_device
+      hpsa: suppress excessively chatty error messages
+      hpsa: do not read from controller unnecessarily in completion code
+      hpsa: remove unused parameter from finish_cmd
+      hpsa: add abort error handler function
+      hpsa: do aborts two ways
+      hpsa: factor out tail calls to next_command() in process_(non)indexed_cmd()
+      hpsa: factor out hpsa_free_irqs_and_disable_msix
+      hpsa: use new IS_ENABLED macro
+      hpsa: removed unused member maxQsinceinit
+      hpsa: dial down lockup detection during firmware flash
 
 
+ drivers/block/cciss.c   |    2 
+ drivers/scsi/hpsa.c     |  689 +++++++++++++++++++++++++++++++++++++----------
+ drivers/scsi/hpsa.h     |   85 ++++--
+ drivers/scsi/hpsa_cmd.h |   37 ++-
+ 4 files changed, 643 insertions(+), 170 deletions(-)
+
+-- 
+-- steve
