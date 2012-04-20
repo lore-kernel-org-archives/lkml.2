@@ -1,92 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab2DTWNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 18:13:24 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:33247 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753570Ab2DTWNW (ORCPT
+	id S1756139Ab2DTWSQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 18:18:16 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51817 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755099Ab2DTWSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 18:13:22 -0400
-Date: Fri, 20 Apr 2012 23:13:15 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
- ima-appraisal patches)
-Message-ID: <20120420221315.GN6871@ZenIV.linux.org.uk>
-References: <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
- <1334772473.2137.22.camel@falcor>
- <20120418183938.GH6589@ZenIV.linux.org.uk>
- <1334865448.2429.35.camel@falcor>
- <20120420004303.GB6871@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1204201133340.1450@eggly.anvils>
- <20120420190418.GK6871@ZenIV.linux.org.uk>
- <CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
- <20120420195833.GM6871@ZenIV.linux.org.uk>
- <CA+55aFzaC8YfN_q1TxPbNgpD7AnoAVac2Bqa+ysEji3u7ZQ18A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzaC8YfN_q1TxPbNgpD7AnoAVac2Bqa+ysEji3u7ZQ18A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Apr 2012 18:18:14 -0400
+Date: Fri, 20 Apr 2012 23:20:43 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>,
+        Chandra Seetharaman <sekharan@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
+ EXPORT_SYMBOL
+Message-ID: <20120420232043.40ddc3c4@pyramind.ukuu.org.uk>
+In-Reply-To: <20120420215825.GA10406@redhat.com>
+References: <20111215214440.GA17677@redhat.com>
+	<4EF039D5.5010201@suse.de>
+	<20120405144721.GA18437@redhat.com>
+	<20120420144538.GB8155@redhat.com>
+	<20120420173405.GA8846@redhat.com>
+	<20120420214120.159e2690@pyramind.ukuu.org.uk>
+	<20120420215825.GA10406@redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 02:12:55PM -0700, Linus Torvalds wrote:
+> > The kernel is GPL, all derived works of a GPL codebase are required to be
+> > GPL. There is no magic rule about modules. I've stated that repeatedly
+> > for anything containing a line of code I own. GregKH has made it very
+> > clear for his code, and so it goes on.
+> 
+> This isn't about adding Linux functionality to a proprietary driver.
 
-> Are they all like that? No. But most of the ones outside of mm/ do fit
-> that simple pattern and should probably be fixed up just to have them
-> not contain VM locking details in them *anyway*.
+Let me quote back your previous message
 
-Kinda-sorta.  I agree that such helpers make sense, but you are too
-optimistic about the number of such places.  And clusterfuck around
-mremap() is fairly deep, so propagating all way back to up_write()
-wont' be fun.
+	"Allow a proprietary non-GPL multipath driver, like EMC
+	PowerPath, to detach a scsi_dh using scsi_dh_detach."
 
-sys_shmdt() is misusing do_munmap(), AFAICS.  And there we call it many
-times in a loop, unmapping only a subset, so it's not like we could
-blindly pick a string of vmas and handle them all separately afterwards.
-It could be handled if we passed an initially empty list, collecting
-vmas in it as we go, but... ouch
+what part of that isn't about proprietary drivers.
 
-BTW, looks like I've just found a bug in oprofile - take a look at
-sys_munmap() and you'll see that it's almost exactly your proposed
-helper.  The only difference is that it starts with calling
-	profile_munmap(addr);
-(mind you, *before* grabbing ->mmap_sem), which is to say
-        blocking_notifier_call_chain(&munmap_notifier, 0, (void *)addr);
-i.e. a really fancy way to arrange a call of munmap_notify() from
-drivers/oprofile/buffer_sync.c.  Which does the following:
-{
-        unsigned long addr = (unsigned long)data;
-        struct mm_struct *mm = current->mm;
-        struct vm_area_struct *mpnt;
+> If Linux is masking SCSI sense that Powerpath needs to see in order to
+> function then they need a way to shut off that conflicting functionality
+> in Linux.  What they have enjoyed until now is that Linux has treated
+> them with kid gloves -- by not always attaching scsi_dh to each SCSI
+> device during SCSI device scan.
 
-        down_read(&mm->mmap_sem);
+They can submit the powerpath code to the GPL kernel and it can get dealt
+with nicely.
 
-        mpnt = find_vma(mm, addr);
-        if (mpnt && mpnt->vm_file && (mpnt->vm_flags & VM_EXEC)) {
-                up_read(&mm->mmap_sem);
-                /* To avoid latency problems, we only process the current CPU,
-                 * hoping that most samples for the task are on this CPU
-                 */
-                sync_buffer(raw_smp_processor_id());
-                return 0;
-        }
+> > I'm dying to see anyone make the moral argument for it too.
+> 
+> I think you're blinded by some innate violent pain reaction to seeing
+> s/EXPORT_SYMBOL_GPL/EXPORT_SYMBOL/
 
-        up_read(&mm->mmap_sem);
-        return 0;
-}
+No. I'm just reminding you and Red Hat that the kernel is subject to the
+GPLv2 licence and that adding/removing _GPL from a symbol doesn't
+magically allow you to use proprietary modules as you claim.
 
-Leaving aside the convoluted way it's done, it's obviously both racy and
-incomplete.  The worst part is, sync_buffer() *can't* be called with
-any ->mmap_sem held; it goes through a bunch of task_struct, grabbing
-->mmap_sem shared.  Fun...
+> As I said in the header, Linux's ability to properly support scanning
+> LUNs with multiple paths has been fragile for _years_ purely because we
+> never had the balls to always attach the scsi_dh which enables Linux to
+> work well.  We didn't because of fear that we'd break PowerPath.
+
+Thats unfortunate. You mean your company has been intentionally
+leaving the Linux kernel poorer for the sake of dubious proprietary
+code ?
+
+You might want to stop digging, or at least use a spade not an excavator.
+
+> As a result, Linux has suffered (in the form of reduced functionality).
+> Now your arguing that the because scsi_dh_detach() will become
+> EXPORT_SYMBOL it somehow makes PowerPath a derived work if they were to
+
+I suspect it is already a derived work, but right now that's their
+problem. You are making it yours as well.
+
+> The two other people (scsi_dh maintainers) that Acked-by this change
+> work for companies other than EMC.  James is the SCSI maintainer and
+> understands what is going on here.  Like me, they are domain experts.
+> 
+> What are you?
+
+I'm a rights holder. Domain expertise isn't relevant here. The code I
+provided is licensed under the GPL. Whether the symbol is EXPORT_SYMBOL
+or EXPORT_SYMBOL_GPL any derivative code (eg code that requires the
+kernel be modified to match it) cannot call it.
+
+I'm recommended by my lawyer to always remind people of this when such a
+claim is made. It ensures that triple damages for wilful infringement
+will apply unless the other party can show it reviewed the situation
+carefully and its appropriately qualified legal staff reached a different
+conclusion.
+
+Obviously what action you take is up to Red Hat's legal (and PR) folks.
+However I'd suggest you talk to them first, as per Red Hat training
+unless that has changed..
+
+Alan
