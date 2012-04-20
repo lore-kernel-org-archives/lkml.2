@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab2DTOqF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 10:46:05 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:45828 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab2DTOqD (ORCPT
+	id S1757080Ab2DTOp7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 10:45:59 -0400
+Received: from smtp11.smtpout.orange.fr ([80.12.242.133]:23877 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757020Ab2DTOpz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 10:46:03 -0400
-From: Viresh Kumar <viresh.linux@gmail.com>
-To: vinod.koul@intel.com
-Cc: spear-devel@list.st.com, viresh.linux@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH] dmaengine: dw_dma: add Device Tree probing capability
-Date: Fri, 20 Apr 2012 20:15:34 +0530
-Message-Id: <35e64128140409833be8ca543b9640c2dac39796.1334933079.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.9
+	Fri, 20 Apr 2012 10:45:55 -0400
+Message-ID: <4F91769B.7000709@wanadoo.fr>
+Date: Fri, 20 Apr 2012 16:45:47 +0200
+From: Pascal Chapperon <pascal.chapperon@wanadoo.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org
+Subject: Re: RCU related performance regression in 3.3
+References: <1838583439.163624.1333635333132.JavaMail.www@wwinf1m19> <20120405143918.GE27672@linux.vnet.ibm.com> <588810225.17969.1333703883646.JavaMail.www@wwinf1g24> <20120410160706.GF2428@linux.vnet.ibm.com> <4F859E0E.8050408@wanadoo.fr> <20120412180432.GE2394@linux.vnet.ibm.com> <20120416210234.GA3490@linux.vnet.ibm.com> <4F8E8B58.1040203@wanadoo.fr> <20120418140108.GA6034@linux.vnet.ibm.com> <4F8ED6FE.1000104@wanadoo.fr> <20120418152301.GF6034@linux.vnet.ibm.com>
+In-Reply-To: <20120418152301.GF6034@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SPEAr platforms now support DT and so must convert all drivers to support DT.
-This patch adds DT probing support for Synopsys DMA controller and updates its
-documentation too.
+Le 18/04/2012 17:23, Paul E. McKenney a écrit :
+>> systemd is controlling the whole boot process including mount
+>> operation (apart root filesystem) and as I can see, uses heavily
+>> sockets to do it (not to mention cpu-affinity). It controls also the
+>> major part of umount operations. Is it possible that your patch hits
+>> a systemd bug ?
+>
+> Is it possible that systemd is using network operations that include
+> synchronize_rcu()?  Then if you did the same operation from the
+> command line at runtime, you might not see the slowdown.
+>
+> Is it possible for you to convince systemd to collect RCU event tracing
+> during the slow operation?  RCU event tracing is available under
+> /sys/kernel/debug/tracing/rcu.
+>
+-
+Paul, thank you for these suggestions : I'll manage to enable RCU event
+tracing immediately after mounting debugfs (systemd permits custom
+units). As debugfs is mounted early in the boot sequence, maybe I'll
+catch something.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- Documentation/devicetree/bindings/dma/snps-dma.txt |   17 +++++++++++++++++
- drivers/dma/dw_dmac.c                              |   10 ++++++++++
- 2 files changed, 27 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/dma/snps-dma.txt
-
-diff --git a/Documentation/devicetree/bindings/dma/snps-dma.txt b/Documentation/devicetree/bindings/dma/snps-dma.txt
-new file mode 100644
-index 0000000..c0d85db
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/snps-dma.txt
-@@ -0,0 +1,17 @@
-+* Synopsys Designware DMA Controller
-+
-+Required properties:
-+- compatible: "snps,dma-spear1340"
-+- reg: Address range of the DMAC registers
-+- interrupt-parent: Should be the phandle for the interrupt controller
-+  that services interrupts for this device
-+- interrupt: Should contain the DMAC interrupt number
-+
-+Example:
-+
-+	dma@fc000000 {
-+		compatible = "snps,dma-spear1340";
-+		reg = <0xfc000000 0x1000>;
-+		interrupt-parent = <&vic1>;
-+		interrupts = <12>;
-+	};
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 300d976..13b9298 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -17,6 +17,7 @@
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
-+#include <linux/of.h>
- #include <linux/mm.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
-@@ -1592,12 +1593,21 @@ static const struct dev_pm_ops dw_dev_pm_ops = {
- 	.poweroff_noirq = dw_suspend_noirq,
- };
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id dw_dma_id_table[] = {
-+	{ .compatible = "snps,dma-spear1340" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, dw_dma_id_table);
-+#endif
-+
- static struct platform_driver dw_driver = {
- 	.remove		= __exit_p(dw_remove),
- 	.shutdown	= dw_shutdown,
- 	.driver = {
- 		.name	= "dw_dmac",
- 		.pm	= &dw_dev_pm_ops,
-+		.of_match_table = of_match_ptr(dw_dma_id_table),
- 	},
- };
- 
--- 
-1.7.9
+Pascal
 
