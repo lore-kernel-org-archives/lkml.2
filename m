@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab2DTVMh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:12:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20251 "EHLO mx1.redhat.com"
+	id S1754261Ab2DTVMr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:12:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36297 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752394Ab2DTVMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:12:35 -0400
-Date: Fri, 20 Apr 2012 17:13:00 -0400
+	id S1753838Ab2DTVMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:12:44 -0400
+Date: Fri, 20 Apr 2012 17:13:14 -0400
 From: Jeff Layton <jlayton@redhat.com>
-To: Steve Dickson <SteveD@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, miklos@szeredi.hu,
-        viro@ZenIV.linux.org.uk, hch@infradead.org,
+To: Malahal Naineni <malahal@us.ibm.com>
+Cc: Steve Dickson <SteveD@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        miklos@szeredi.hu, viro@ZenIV.linux.org.uk, hch@infradead.org,
         michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
-        chuck.lever@oracle.com, pstaubach@exagrid.com, malahal@us.ibm.com,
-        bfields@fieldses.org, trond.myklebust@fys.uio.no, rees@umich.edu
+        chuck.lever@oracle.com, pstaubach@exagrid.com, bfields@fieldses.org,
+        trond.myklebust@fys.uio.no, rees@umich.edu
 Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
  from getattr call
-Message-ID: <20120420171300.326d6e36@corrin.poochiereds.net>
-In-Reply-To: <4F91C49D.8070908@RedHat.com>
+Message-ID: <20120420171314.73801874@corrin.poochiereds.net>
+In-Reply-To: <20120420203725.GA3512@us.ibm.com>
 References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
 	<1334749927-26138-1-git-send-email-jlayton@redhat.com>
 	<20120420104055.511e15bc@tlielax.poochiereds.net>
 	<4F91C49D.8070908@RedHat.com>
+	<20120420203725.GA3512@us.ibm.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -30,66 +31,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Apr 2012 16:18:37 -0400
-Steve Dickson <SteveD@redhat.com> wrote:
+On Fri, 20 Apr 2012 15:37:26 -0500
+Malahal Naineni <malahal@us.ibm.com> wrote:
 
-> On 04/20/2012 10:40 AM, Jeff Layton wrote:
-> > I guess the questions at this point is:
-> > 
-> > 1) How representative is Peter's mkdir_test() of a real-world workload?
-> Reading your email I had to wonder the same thing... What application 
-> removes hierarchy of directories in a loop from two different clients?
-> I would suspect not many, if any... esp over NFS... 
->  
-
-Peter's test just happens to demonstrate the problem well, but one
-could envision someone removing a heirarchy of directories on the
-server while we're trying to do other operations in it. At that point,
-we can easily end up hitting an ESTALE twice while doing the lookup and
-returning ESTALE back to userspace.
-
-> > 
-> > 2) if we assume that it is fairly representative of one, how can we
-> > achieve retrying indefinitely with NFS, or at least some large finite
-> > amount?
-> The amount of looping would be peer speculation. If the problem can
-> not be handled by one simple retry I would say we simply pass the
-> error up to the app... Its an application issue... 
->  
-
-It's not an application issue. The application just asked the kernel
-to do an operation on a pathname. The only reason you're getting an
-ESTALE back in this situation is a shortcoming of the implementation.
-
-We passed it a pathname after all, not a filehandle. ESTALE really has
-no place as a return code in that situation...
-
-> > 
-> > I have my doubts as to whether it would really be as big a problem for
-> > other filesystems as Miklos and others have asserted, but I'll take
-> > their word for it at the moment. What's the best way to contain this
-> > behavior to just those filesystems that want to retry indefinitely when
-> > they get an ESTALE? Would we need to go with an entirely new
-> > ESTALERETRY after all?
-> > 
-> Introducing a new errno to handle this problem would be overkill IMHO...
+> Steve Dickson [SteveD@redhat.com] wrote:
+> > > 2) if we assume that it is fairly representative of one, how can we
+> > > achieve retrying indefinitely with NFS, or at least some large finite
+> > > amount?
+> > The amount of looping would be peer speculation. If the problem can
+> > not be handled by one simple retry I would say we simply pass the
+> > error up to the app... Its an application issue... 
 > 
-> If we have to go to the looping approach, I would strong suggest we
-> make the file systems register for this type of behavior...
+> As someone said, ESTALE is an incorrect errno for a path based call.
+> How about turning ESTALE into ENOENT after a retry or few retries?
 > 
 
-Returning ESTALERETRY would be registering for it in a way and it is
-somewhat cleaner than having to go all the way back up to the fstype to
-figure out whether you want to retry it or not.
+It's not really the same thing. One could envision an application
+that's repeatedly renaming a new file on top of another one. The file
+is never missing from the namespace of the server, but you could still
+end up getting an ESTALE.
 
-There's also the non-trivial matter of needing to retry during the
-lookup itself. If the lookup just returns ESTALE, then you don't have
-any way to know whether the underlying fs wanted you to retry it or
-not...
-
-I'm not thrilled with having to do all of this ESTALE to ESTALERETRY
-conversion and back, but it does give us a way to neatly deal with and
-ESTALE during the lookup.
+That would break other atomicity guarantees in an even worse way, IMO...
 
 -- 
 Jeff Layton <jlayton@redhat.com>
