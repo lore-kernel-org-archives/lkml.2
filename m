@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab2DTDgL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 23:36:11 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50166 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab2DTDgI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 23:36:08 -0400
-Date: Fri, 20 Apr 2012 13:35:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>,
-        Alexander Graf <agraf@suse.de>
-Subject: Re: linux-next: build failure after merge of the final tree
- (kvm-ppc tree related)
-Message-Id: <20120420133555.4343c7fc785ed6132a37a9df@canb.auug.org.au>
-In-Reply-To: <20120420011413.GA12235@amt.cnet>
-References: <20120419163535.52c99a34e2664063d654ac4d@canb.auug.org.au>
-	<20120420101012.591b5e64a8939135bf5cd167@canb.auug.org.au>
-	<20120420011413.GA12235@amt.cnet>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__20_Apr_2012_13_35_55_+1000_.N/o/ZyfcFIRSK1f"
+	id S1757109Ab2DTDoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 23:44:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54298 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751718Ab2DTDoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 23:44:18 -0400
+Message-ID: <4F90DB37.9080702@zytor.com>
+Date: Thu, 19 Apr 2012 20:42:47 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: David Daney <david.s.daney@gmail.com>, David Daney <ddaney.cavm@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH v1 1/5] scripts: Add sortextable to sort the kernel's
+ exception table.
+References: <1334872799-14589-1-git-send-email-ddaney.cavm@gmail.com> <1334872799-14589-2-git-send-email-ddaney.cavm@gmail.com> <4F90BF8D.7030209@zytor.com> <4F90D564.3090508@gmail.com> <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
+In-Reply-To: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__20_Apr_2012_13_35_55_+1000_.N/o/ZyfcFIRSK1f
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/19/2012 08:31 PM, Linus Torvalds wrote:
+> On Thu, Apr 19, 2012 at 8:17 PM, David Daney <david.s.daney@gmail.com> wrote:
+>>
+>> I hadn't considered that the image was relocatable.  Our MIPS kernels never
+>> have relocations.
+>>
+>> I am working on a version of this that handles the relocations.  It
+>> shouldn't be too difficult.
+> 
+> It might be better to just make the rule be that we don't have
+> relocations there - make everything relative to the start of the code
+> segment or something.
+> 
+> On x86, we already use that _ASM_EXTABLE() macro to hide the
+> differences between x86-64 and x86-32. So it should be be somewhat
+> easy to make that same macro make it relative to the code start, and
+> at the same time also make the exception table perhaps be two 32-bit
+> words rather than two pointers.
+> 
+> So it would shrink the exception table and avoid relocations at the
+> same time. Win-win. No?
+> 
 
-Hi Marcelo,
+I don't think we can get _ASM_EXTABLE() to do that work for us, because
+we'd need to subtract symbols from two different sections.  We would
+need the postprocessing tool to take care this, but guess what, we can
+do exactly that (and then, as I mentioned, just zero out the relocation
+section.)
 
-On Thu, 19 Apr 2012 22:14:13 -0300 Marcelo Tosatti <mtosatti@redhat.com> wr=
-ote:
->
-> Can you try the patch below please?
->=20
-> KVM: add kvm_arch_para_features stub to asm-generic/kvm_para.h
->=20
-> Needed by kvm_para_has_feature().
->=20
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+	-hpa
 
-That fixes the compilation for me
 
-Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Fri__20_Apr_2012_13_35_55_+1000_.N/o/ZyfcFIRSK1f
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPkNmbAAoJEECxmPOUX5FEeGMP+wf34rBQAPcEq57b0GResF59
-7QZ7cLN/IO8Ukia1RTPlBvFf9zG52bsY5d0e9tWeOhsr6OTuFnquDhxAlJQOm3Pv
-poonPzlh4hqs6PdyHupUGdxgQzr4DupXLHyqqffL38otlh6dgK089FVbif85S58a
-KSZkf/DF9GF3xpvOfOsmeAtbhM6cVnDw2rmXK7xVoo73Wp+PCRPioI6Z0qCgJes0
-IZnfiv1qxNF6FRAmHrG820+13KKQtiFuaWNVT2dx1VDbDmIv/5kb/3mPOb6+IjM2
-qC5xszEKDRdNq9YTnYJuPX0cWPjWjxnZ5YxbgXnhvXXgSo4x5ecE6zUE30p76WPn
-zxx31qwWCwXaaiLVjFqeApYgzaAHWytY9F/k8tcch1PQQWjRVqf5SS4mgroH6eGe
-0VzIZydeEicA75rcSG+QAcG6M8n1vUY6s0LkoTzmr/AwtFsLzG2XWe4Ez6lxUrpv
-9OJHC+0nqg/LZZhPhzpQS/LPunnb0kxuNUttsQOk1Ie74XutIMAQFj3Q2388EOIs
-wA/IbyzR3gEzsH9GpP/OvG4JT2sPMi8jK321PWpCsuQWneSzxh275nEp/OzrkR9p
-EJaW6noz6eOqHEb+n3+IUnzC/82XRHf8vH2iVMqpiGhpjZfjgYeE8riSlst+V6B/
-RogTT9vEcLTxzZ2IFwMS
-=9Pq/
------END PGP SIGNATURE-----
-
---Signature=_Fri__20_Apr_2012_13_35_55_+1000_.N/o/ZyfcFIRSK1f--
