@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115Ab2DTPBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:01:51 -0400
-Received: from smtp-out-028.synserver.de ([212.40.185.28]:1042 "EHLO
-	smtp-out-012.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756767Ab2DTPBu (ORCPT
+	id S932378Ab2DTPCF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:02:05 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:33545 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932127Ab2DTPCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:01:50 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 9511
-Message-ID: <4F917AE3.7050808@metafoo.de>
-Date: Fri, 20 Apr 2012 17:04:03 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+	Fri, 20 Apr 2012 11:02:03 -0400
+Date: Fri, 20 Apr 2012 17:02:01 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH v2 3/5] kbuild/extable: Hook up sortextable into the
+	build system.
+Message-ID: <20120420150201.GB2891@merkur.ravnborg.org>
+References: <1334872799-14589-1-git-send-email-ddaney.cavm@gmail.com> <1334872799-14589-4-git-send-email-ddaney.cavm@gmail.com>
 MIME-Version: 1.0
-To: Roland Stigge <stigge@antcom.de>
-CC: jic23@cam.ac.uk, gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v3] iio: Add device tree support to LPC32xx ADC
-References: <1334932713-19231-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1334932713-19231-1-git-send-email-stigge@antcom.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334872799-14589-4-git-send-email-ddaney.cavm@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> [...]
+On Thu, Apr 19, 2012 at 02:59:57PM -0700, David Daney wrote:
+> From: David Daney <david.daney@cavium.com>
 > 
-> --- /dev/null
-> +++ linux-2.6/Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt
-> @@ -0,0 +1,16 @@
-> +* NXP LPC32xx SoC ADC controller
+> Define a config variable BUILDTIME_EXTABLE_SORT to control build time
+> sorting of the kernel's exception table.
+> 
+> Patch Makefile to do the sorting when BUILDTIME_EXTABLE_SORT is
+> selected.
+> 
+> Signed-off-by: David Daney <david.daney@cavium.com>
+> ---
+>  Makefile     |   10 ++++++++++
+>  init/Kconfig |    3 +++
+>  2 files changed, 13 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Makefile b/Makefile
+> index ae947cc..e3bbca9 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -784,6 +784,10 @@ quiet_cmd_vmlinux_version = GEN     .version
+>  quiet_cmd_sysmap = SYSMAP
+>        cmd_sysmap = $(CONFIG_SHELL) $(srctree)/scripts/mksysmap
+>  
+> +# Sort exception table at build time
+> +quiet_cmd_sortextable = SORTEX
+> +      cmd_sortextable = $(objtree)/scripts/sortextable
 > +
-> +Required properties:
-> +- compatible: must be "nxp,lpc32xx-adc"
-> +- reg: physical base address of the controller and length of memory mapped
-> +  region.
-> +- interrupts: The ADC interrupt
+>  # Link of vmlinux
+>  # If CONFIG_KALLSYMS is set .version is already updated
+>  # Generate System.map and verify that the content is consistent
+> @@ -796,6 +800,12 @@ define rule_vmlinux__
+>  	$(call cmd,vmlinux__)
+>  	$(Q)echo 'cmd_$@ := $(cmd_vmlinux__)' > $(@D)/.$(@F).cmd
+>  
+> +	$(if $(CONFIG_BUILDTIME_EXTABLE_SORT),				\
+> +	  $(Q)$(if $($(quiet)cmd_sortextable),				\
+> +	    echo '  $($(quiet)cmd_sortextable)  vmlinux' &&)		\
+> +	  $(cmd_sortextable)  vmlinux)
 > +
-> +Example:
 > +
-> +	adc@40048000 {
-> +		compatible = "nxp,lpc32xx-adc";
 
-In my opinion it seems to be a bad idea to use wildcard names in devicetree
-compatible strings.
+Anything that add complexity to the top-level Makefile is bad :-(
+I once looked at moving all the final link stuff to a script.
+Maybe it is time to open that again...
 
-> +		reg = <0x40048000 0x1000>;
-> +		interrupt-parent = <&mic>;
-> +		interrupts = <39 0>;
-> +	};
 
+> +config BUILDTIME_EXTABLE_SORT
+> +	bool
+> +
+Please add a comment about what this symbol is used for.
+Also we often name such symbols: HAVE_*
+
+	Sam
