@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab2DTRd0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:33:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50512 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab2DTRdZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:33:25 -0400
-Subject: Re: load balancing regression since commit 367456c7
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Alex Shi <alex.shi@intel.com>,
-        Ying <ying.huang@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1334942012.3796.50.camel@schen9-DESK>
-References: <1334106376.19157.89.camel@schen9-DESK>
-	 <1334664553.28150.87.camel@twins>  <1334681054.3796.28.camel@schen9-DESK>
-	 <1334930421.2463.60.camel@laptop>  <1334940042.3796.48.camel@schen9-DESK>
-	 <1334940837.2463.70.camel@laptop>  <1334942012.3796.50.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Apr 2012 19:33:22 +0200
-Message-ID: <1334943202.2463.71.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1757268Ab2DTReO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:34:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56057 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753539Ab2DTReN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 13:34:13 -0400
+Date: Fri, 20 Apr 2012 13:34:05 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: James.Bottomley@hansenpartnership.com
+Cc: linux-scsi@vger.kernel.org, Hannes Reinecke <hare@suse.de>,
+        Chandra Seetharaman <sekharan@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
+ EXPORT_SYMBOL
+Message-ID: <20120420173405.GA8846@redhat.com>
+References: <20111215214440.GA17677@redhat.com>
+ <4EF039D5.5010201@suse.de>
+ <20120405144721.GA18437@redhat.com>
+ <20120420144538.GB8155@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120420144538.GB8155@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-20 at 10:13 -0700, Tim Chen wrote:
-> On Fri, 2012-04-20 at 18:53 +0200, Peter Zijlstra wrote:
-> > On Fri, 2012-04-20 at 09:40 -0700, Tim Chen wrote:
-> > > We also do not see regression for hackbench on WSM-EP, but only 
-> > > on machines with Sandy-Bridge EP (2 socket, 8 cores/socket, HT enabled).  
-> > 
-> > Argh, Suresh, any idea what could be different and relevant to this
-> > issue between WSM and SNB -EP ?
-> > 
-> > Tim, can you see the problem on the desktop SNB part? That's the only
-> > SNB I have available.
-> > 
-> > > We are not running hackbench in cgroup for this test.
-> > > 
-> > > The Sandy Bridge EP machines installed has FC16, so I think it uses 
-> > > systemd. The machine on our WSM EP has FC15, which also has systemd.
-> > 
-> > Ah, but your .config has:
-> > 
-> > CONFIG_CGROUP_SCHED=y
-> > CONFIG_SCHED_AUTOGROUP=y
-> > 
-> > and systemd, when cpu-cgroup is available, will automagically use it.
-> > 
-> > Could you disable those two CONFIG knobs and see if it persists?
-> > 
-> 
-> Turning those off did recover the regression.
+Allow a proprietary non-GPL multipath driver, like EMC PowerPath, to
+detach a scsi_dh using scsi_dh_detach.  This is an improvement over
+requiring them to write 'detach' to /sys/block/sdX/queue/dh_state
 
-OK, I'll go stare at the cgroup part then.. Thanks!
+End result is Linux and PowerPath can coexist without compromising
+Linux's default handling of multipath LUNs.
 
+Linux has suffered from the race where a scsi_dh is not available to be
+attached to a SCSI device until too late (after an HBA driver has
+started the SCSI device scan that may attach a scsi_dh).  Attaching a
+scsi_dh too late results in default sense handling that does not
+silently end IO to passive paths, which creates excessive delays and IO
+errors during normal boot of a system with hundreds of LUNs.
+
+To fix this the appropriate scsi_dh must be available to be attached
+before an HBA driver's SCSI device scan.  But once attached, both
+scsi_dh_alua and scsi_dh_emc are known to conflict with PowerPath --
+allowing PowerPath to use scsi_dh_detach resolves such conflicts.
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Hannes Reinecke <hare@suse.de>
+Acked-by: Chandra Seetharaman <sekharan@us.ibm.com>
+---
+ drivers/scsi/device_handler/scsi_dh.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+v2: header tweaks, added Chandra's Acked-by
+    p.s. James, if you still think I'm too indirect or long-winded
+    please feel free to change the header accordingly.  Thanks!
+
+diff --git a/drivers/scsi/device_handler/scsi_dh.c b/drivers/scsi/device_handler/scsi_dh.c
+index 23149b9..a550de1 100644
+--- a/drivers/scsi/device_handler/scsi_dh.c
++++ b/drivers/scsi/device_handler/scsi_dh.c
+@@ -578,7 +578,7 @@ void scsi_dh_detach(struct request_queue *q)
+ 	}
+ 	put_device(&sdev->sdev_gendev);
+ }
+-EXPORT_SYMBOL_GPL(scsi_dh_detach);
++EXPORT_SYMBOL(scsi_dh_detach);
+ 
+ static struct notifier_block scsi_dh_nb = {
+ 	.notifier_call = scsi_dh_notifier
