@@ -1,96 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab2DTV7Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:59:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41228 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755427Ab2DTV7I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:59:08 -0400
-Date: Fri, 20 Apr 2012 22:59:03 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        John Stultz <john.stultz@linaro.org>, myungjoo.ham@gmail.com,
-        cw00.choi@samsung.com
-Subject: Re: [PATCH v8 resend 6/6] Documentation/extcon: porting guide for
- Android kernel switch driver.
-Message-ID: <20120420215902.GA3088@opensource.wolfsonmicro.com>
-References: <20120420033209.GA17930@kroah.com>
- <1334898987-7800-1-git-send-email-myungjoo.ham@samsung.com>
- <1334898987-7800-7-git-send-email-myungjoo.ham@samsung.com>
- <20120420162529.GA31744@kroah.com>
- <20120420170519.GB3080@opensource.wolfsonmicro.com>
- <20120420171534.GA29519@kroah.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8t9RHnE3ZwKMSgU+"
-Content-Disposition: inline
-In-Reply-To: <20120420171534.GA29519@kroah.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932104Ab2DTV7t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:59:49 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:26749 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755360Ab2DTV7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:59:05 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <cgroups@vger.kernel.org>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH 11/23] slub: consider a memcg parameter in kmem_create_cache
+Date: Fri, 20 Apr 2012 18:57:19 -0300
+Message-Id: <1334959051-18203-12-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Allow a memcg parameter to be passed during cache creation.
+The slub allocator will only merge caches that belong to
+the same memcg.
 
---8t9RHnE3ZwKMSgU+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Default function is created as a wrapper, passing NULL
+to the memcg version. We only merge caches that belong
+to the same memcg.
 
-On Fri, Apr 20, 2012 at 10:15:34AM -0700, Greg KH wrote:
-> On Fri, Apr 20, 2012 at 06:05:20PM +0100, Mark Brown wrote:
+>From the memcontrol.c side, 3 helper functions are created:
 
-> > Every phone with a headset jack will have at least one switch if it's
-> > running on Android.  People doing system integration will generally need
-> > to know about this, at least until we've got the ALSA detection stuff
-> > integrated with extcon.
+ 1) memcg_css_id: because slub needs a unique cache name
+    for sysfs. Since this is visible, but not the canonical
+    location for slab data, the cache name is not used, the
+    css_id should suffice.
 
-> Ok, but where are those drivers at?  Any pointers to them so I can start
-> sucking them into the tree and doing this conversion?
+ 2) mem_cgroup_register_cache: is responsible for assigning
+    a unique index to each cache, and other general purpose
+    setup. The index is only assigned for the root caches. All
+    others are assigned index == -1.
 
-The actual code is all obviously out of tree, I'd expect any Android BSP
-to contain at least some usage of it (though often just the basic GPIO
-one for CPU vendor ones).
+ 3) mem_cgroup_release_cache: can be called from the root cache
+    destruction, and will release the index for other caches.
 
-> Is this, and the wakelock stuff, holding back a torrent of drivers to be
-> submitted somewhere?  Or are they buried in vendor trees, never to be
-> seen?
+This index mechanism was developed by Suleiman Souhlal.
 
-I'd not characterise it as a massive problem (and wakelocks won't hold
-back anything that doesn't have other problems).  I suspect that the
-code for a Samsung phone with the 30 pin connector will show something
-interesting, though I can't say I've actually looked.  For things like
-headset detection there's already ways to support things in mainline and
-we should just end up hooking extcon into the central support for these
-things.
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Suleiman Souhlal <suleiman@google.com>
+---
+ include/linux/memcontrol.h |   14 ++++++++++++++
+ include/linux/slab.h       |    6 ++++++
+ mm/memcontrol.c            |   29 +++++++++++++++++++++++++++++
+ mm/slub.c                  |   31 +++++++++++++++++++++++++++----
+ 4 files changed, 76 insertions(+), 4 deletions(-)
 
---8t9RHnE3ZwKMSgU+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index f94efd2..99e14b9 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -26,6 +26,7 @@ struct mem_cgroup;
+ struct page_cgroup;
+ struct page;
+ struct mm_struct;
++struct kmem_cache;
+ 
+ /* Stats that can be updated by kernel. */
+ enum mem_cgroup_page_stat_item {
+@@ -440,7 +441,20 @@ struct sock;
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ void sock_update_memcg(struct sock *sk);
+ void sock_release_memcg(struct sock *sk);
++int memcg_css_id(struct mem_cgroup *memcg);
++void mem_cgroup_register_cache(struct mem_cgroup *memcg,
++				      struct kmem_cache *s);
++void mem_cgroup_release_cache(struct kmem_cache *cachep);
+ #else
++static inline void mem_cgroup_register_cache(struct mem_cgroup *memcg,
++					     struct kmem_cache *s)
++{
++}
++
++static inline void mem_cgroup_release_cache(struct kmem_cache *cachep)
++{
++}
++
+ static inline void sock_update_memcg(struct sock *sk)
+ {
+ }
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index a5127e1..c7a7e05 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -321,6 +321,12 @@ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
+ 	__kmalloc(size, flags)
+ #endif /* DEBUG_SLAB */
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++#define MAX_KMEM_CACHE_TYPES 400
++#else
++#define MAX_KMEM_CACHE_TYPES 0
++#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++
+ #ifdef CONFIG_NUMA
+ /*
+  * kmalloc_node_track_caller is a special version of kmalloc_node that
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 36f1e6b..0015ed0 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -323,6 +323,11 @@ struct mem_cgroup {
+ #endif
+ };
+ 
++int memcg_css_id(struct mem_cgroup *memcg)
++{
++	return css_id(&memcg->css);
++}
++
+ /* Stuffs for move charges at task migration. */
+ /*
+  * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
+@@ -461,6 +466,30 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
+ }
+ EXPORT_SYMBOL(tcp_proto_cgroup);
+ #endif /* CONFIG_INET */
++
++/* Bitmap used for allocating the cache id numbers. */
++static DECLARE_BITMAP(cache_types, MAX_KMEM_CACHE_TYPES);
++
++void mem_cgroup_register_cache(struct mem_cgroup *memcg,
++			       struct kmem_cache *cachep)
++{
++	int id = -1;
++
++	cachep->memcg_params.memcg = memcg;
++
++	if (!memcg) {
++		id = find_first_zero_bit(cache_types, MAX_KMEM_CACHE_TYPES);
++		BUG_ON(id < 0 || id >= MAX_KMEM_CACHE_TYPES);
++		__set_bit(id, cache_types);
++	} else
++		INIT_LIST_HEAD(&cachep->memcg_params.destroyed_list);
++	cachep->memcg_params.id = id;
++}
++
++void mem_cgroup_release_cache(struct kmem_cache *cachep)
++{
++	__clear_bit(cachep->memcg_params.id, cache_types);
++}
+ #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+ 
+ static void drain_all_stock_async(struct mem_cgroup *memcg);
+diff --git a/mm/slub.c b/mm/slub.c
+index 2652e7c..86e40cc 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -32,6 +32,7 @@
+ #include <linux/prefetch.h>
+ 
+ #include <trace/events/kmem.h>
++#include <linux/memcontrol.h>
+ 
+ /*
+  * Lock order:
+@@ -3880,7 +3881,7 @@ static int slab_unmergeable(struct kmem_cache *s)
+ 	return 0;
+ }
+ 
+-static struct kmem_cache *find_mergeable(size_t size,
++static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+ 		size_t align, unsigned long flags, const char *name,
+ 		void (*ctor)(void *))
+ {
+@@ -3916,21 +3917,29 @@ static struct kmem_cache *find_mergeable(size_t size,
+ 		if (s->size - size >= sizeof(void *))
+ 			continue;
+ 
++		if (memcg && s->memcg_params.memcg != memcg)
++			continue;
++
+ 		return s;
+ 	}
+ 	return NULL;
+ }
+ 
+-struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+-		size_t align, unsigned long flags, void (*ctor)(void *))
++struct kmem_cache *
++kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
++			size_t align, unsigned long flags, void (*ctor)(void *))
+ {
+ 	struct kmem_cache *s;
+ 
+ 	if (WARN_ON(!name))
+ 		return NULL;
+ 
++#ifndef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	WARN_ON(memcg != NULL);
++#endif
++
+ 	down_write(&slub_lock);
+-	s = find_mergeable(size, align, flags, name, ctor);
++	s = find_mergeable(memcg, size, align, flags, name, ctor);
+ 	if (s) {
+ 		s->refcount++;
+ 		/*
+@@ -3954,12 +3963,15 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+ 				size, align, flags, ctor)) {
+ 			list_add(&s->list, &slab_caches);
+ 			up_write(&slub_lock);
++			mem_cgroup_register_cache(memcg, s);
+ 			if (sysfs_slab_add(s)) {
+ 				down_write(&slub_lock);
+ 				list_del(&s->list);
+ 				kfree(s);
+ 				goto err;
+ 			}
++			if (memcg)
++				s->refcount++;
+ 			return s;
+ 		}
+ 		kfree(s);
+@@ -3973,6 +3985,12 @@ err:
+ 		s = NULL;
+ 	return s;
+ }
++
++struct kmem_cache *kmem_cache_create(const char *name, size_t size,
++		size_t align, unsigned long flags, void (*ctor)(void *))
++{
++	return kmem_cache_create_memcg(NULL, name, size, align, flags, ctor);
++}
+ EXPORT_SYMBOL(kmem_cache_create);
+ 
+ #ifdef CONFIG_SMP
+@@ -5265,6 +5283,11 @@ static char *create_unique_id(struct kmem_cache *s)
+ 	if (p != name + 1)
+ 		*p++ = '-';
+ 	p += sprintf(p, "%07d", s->size);
++
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	if (s->memcg_params.memcg)
++		p += sprintf(p, "-%08d", memcg_css_id(s->memcg_params.memcg));
++#endif
+ 	BUG_ON(p > name + ID_STR_LENGTH - 1);
+ 	return name;
+ }
+-- 
+1.7.7.6
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPkdwgAAoJEBus8iNuMP3dI04P/35kVpPT9PUbkHtjnrMYq5oh
-M3bNmvK9GYNY4MmtoOoS9cfFlfJ3CCs4+yZgUpYV39ekzYie8rzjOBWBRSy7uaWH
-jILFRtHJW4hcxXj+t4wwtO5Dn+Sb2cFoKakcG/UaRslAmXqtiK2Hb9Gb3uE5fZvZ
-Tfvtl+Tfq0fWzlRfHqf3RB4zWNHF0RrfXJagC19PMy5f+kDEqqiLcw8Ob1N/Eh2P
-Z2FwJJ6SIH15k5pEMrV94QDmagFolB2MYqvRmvvSxHjElZBHbdsoTLnJAXlh9yeB
-t+gnD/0puHiZhxsVssQ++iWTqacnqPs3Q+jEKduK7ZqQLKZzb+F22XUyLbNTM/Q4
-WbV0J2su5DpY4M6zoXRDgqJWJC7I0h69c6wFzsUtSVMMbAWFspC56jsgo12PQECo
-Nwpng9DVofrZEnh77I3JXGdDHXbdBSbvcKbuzLygAsM1U5IQeS2TED/LpQ0csdSp
-PEPcQ0M5shKu2iqjVqwA/EqQiLs4DrZE2l0OlnZu/f93JyOpYZZsDTS7Mjowf7v5
-nAAePd9ta5To/DcaAZmJaL56+lxPoeU5HupKtPg+oG5lLVFSFzRwf7UfOUez+qpD
-zKoZTAueBbfuDCFc5t501tVdn8XBJUpqdNmOVCWDHkiIYEnoNcSqHGTMluW0x4nO
-m8IaZxQoniD7cmuFCeA2
-=o+Mf
------END PGP SIGNATURE-----
-
---8t9RHnE3ZwKMSgU+--
