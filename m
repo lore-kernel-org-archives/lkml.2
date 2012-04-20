@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab2DUAJu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 20:09:50 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:42739 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab2DUAJs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 20:09:48 -0400
+	id S1753748Ab2DUAMl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 20:12:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37463 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359Ab2DUAMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 20:12:37 -0400
+Date: Fri, 20 Apr 2012 18:52:11 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 5/9] KVM: MMU: introduce SPTE_WRITE_PROTECT bit
+Message-ID: <20120420215211.GC13817@amt.cnet>
+References: <4F911B74.4040305@linux.vnet.ibm.com>
+ <4F911C05.2070701@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20120420231748.GB7069@xanatos>
-References: <4F8F243B.70906@fold.natur.cuni.cz>
-	<CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com>
-	<4F909CEB.3060407@fold.natur.cuni.cz>
-	<CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
-	<CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com>
-	<4F91473A.1080007@fold.natur.cuni.cz>
-	<CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com>
-	<4F919C22.1070608@fold.natur.cuni.cz>
-	<4F919CD5.7070004@fold.natur.cuni.cz>
-	<CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com>
-	<20120420231748.GB7069@xanatos>
-Date: Fri, 20 Apr 2012 17:09:48 -0700
-X-Google-Sender-Auth: L6sgkFFEeJjanVvvO20nJCGzQUw
-Message-ID: <CAE9FiQX7JCZvL9S8ZOQQaHQ4nfU0XDj=8FmOfCtcz7WFjP8=Bg@mail.gmail.com>
-Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
-From: Yinghai Lu <yinghai@kernel.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>, linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F911C05.2070701@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 4:17 PM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> On Fri, Apr 20, 2012 at 11:47:14AM -0700, Yinghai Lu wrote:
->> On Fri, Apr 20, 2012 at 10:28 AM, Martin Mokrejs
->> <mmokrejs@fold.natur.cuni.cz> wrote:
->> > [30720.175637] pciehp 0000:00:1c.7:pcie04: pcie_isr: intr_loc 108
->> > [30720.175639] pciehp 0000:00:1c.7:pcie04: LinkState change
->> > [30720.175643] pciehp 0000:00:1c.7:pcie04: lnk_status = 5011
->> > [30720.175644] pciehp 0000:00:1c.7:pcie04: Presence/Notify input change
->> > [30720.175648] pciehp 0000:00:1c.7:pcie04: Card not present on Slot(7)
->> > [30720.175687] pciehp 0000:00:1c.7:pcie04: Surprise Removal
->> > [30720.175718] pciehp 0000:00:1c.7:pcie04: Disabling domain:bus:device=0000:11:00
->> > [30720.175721] pciehp 0000:00:1c.7:pcie04: pciehp_unconfigure_device: domain:bus:dev = 0000:11:00
->> >
->>
->> So the USB host control driver xhci put that 11:00.0 in strange power state.
->
-> What do you mean "strange power state"?  The only PCI power states the
-> xHCI driver will use is D0 or D3hot.  D3hot is entered automatically by
-> the USB core runtime PM system when all USB devices are disconnected or
-> suspended.  So what strange power state are we talking about?
+On Fri, Apr 20, 2012 at 04:19:17PM +0800, Xiao Guangrong wrote:
+> If this bit is set, it means the W bit of the spte is cleared due
+> to shadow page table protection
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c |   56 ++++++++++++++++++++++++++++++++++-----------------
+>  1 files changed, 37 insertions(+), 19 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index dd984b6..eb02fc4 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -147,6 +147,7 @@ module_param(dbg, bool, 0644);
+> 
+>  #define SPTE_HOST_WRITEABLE	(1ULL << PT_FIRST_AVAIL_BITS_SHIFT)
+>  #define SPTE_ALLOW_WRITE	(1ULL << (PT_FIRST_AVAIL_BITS_SHIFT + 1))
+> +#define SPTE_WRITE_PROTECT	(1ULL << (PT_FIRST_AVAIL_BITS_SHIFT + 2))
+> 
+>  #define SHADOW_PT_INDEX(addr, level) PT64_INDEX(addr, level)
+> 
+> @@ -1042,36 +1043,51 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+>  		rmap_remove(kvm, sptep);
+>  }
+> 
+> +static bool spte_wp_by_dirty_log(u64 spte)
+> +{
+> +	WARN_ON(is_writable_pte(spte));
+> +
+> +	return (spte & SPTE_ALLOW_WRITE) && !(spte & SPTE_WRITE_PROTECT);
+> +}
 
-that's helpful. Can that feature to be disabled?
+Is the information accurate? Say:
 
-Yinghai
+- dirty log write protect, set SPTE_ALLOW_WRITE, clear WRITABLE.
+- shadow gfn, rmap_write_protect finds page not WRITABLE.
+- spte points to shadow gfn, but SPTE_WRITE_PROTECT is not set.
+
+BTW,
+
+"introduce SPTE_ALLOW_WRITE bit
+
+This bit indicates whether the spte is allow to be writable that
+means the gpte of this spte is writable and the pfn pointed by
+this spte is writable on host"
+
+Other than the fact that each bit should have one meaning, how
+can this bit be accurate without write protection of the gpte?
+
+As soon as guest writes to gpte, information in bit is outdated.
+
