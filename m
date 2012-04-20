@@ -1,237 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab2DTVwu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:52:50 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:28814 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357Ab2DTVtf (ORCPT
+	id S1755320Ab2DTVtb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:49:31 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:45851 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754905Ab2DTVt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:49:35 -0400
+	Fri, 20 Apr 2012 17:49:29 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-mm@kvack.org, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org, ngupta@vflare.org,
         sjenning@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com,
         aarcange@redhat.com, dhowells@redhat.com, riel@redhat.com,
         JBeulich@novell.com
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Matthew Wilcox <matthew@wil.cx>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: [PATCH 1/6] mm: frontswap: add frontswap header file
-Date: Fri, 20 Apr 2012 17:44:10 -0400
-Message-Id: <1334958255-6612-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [RFC PATCH] frontswap (v15). +--------+ |zsmalloc| +--------+ +---------+    +------------+          | | swap    +--->| frontswap  +          v +---------+    +------------|      +--------+  +----->| zcache | +--------+
+Date: Fri, 20 Apr 2012 17:44:09 -0400
+Message-Id: <1334958255-6612-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1334958255-6612-1-git-send-email-konrad.wilk@oracle.com>
-References: <1334958255-6612-1-git-send-email-konrad.wilk@oracle.com>
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4F91D9E2.0067,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090203.4F91D9E0.002A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
+[Example usage, others are tmem, ramster, and RFC KVM]
 
-Frontswap is the alter ego of cleancache, the "yang" to cleancache's
-"yin"... and more precisely frontswap is the provider of anonymous
-pages to transcendent memory to nicely complement cleancache's providing
-of clean pagecache pages to transcendent memory.  For optimal use
-of transcendent memory, both are necessary... because a kernel
-under memory pressure first reclaims clean pagecache pages and,
-when under more memory pressure, starts swapping anonymous pages.
+Frontswap provides a "transcendent memory" interface for swap pages.
+In some environments, dramatic performance savings may be obtained because
+swapped pages are saved in RAM (or a RAM-like device) instead of a swap disk.
+A nice overview of it is visible at: http://lwn.net/Articles/454795/
 
-Frontswap and cleancache (which was merged at 3.0) are the "frontends"
-and the only necessary changes to the core kernel for transcendent memory;
-all other supporting code -- the "backends" -- is implemented as drivers.
-See the LWN.net article "Transcendent memory in a nutshell" for a detailed
-overview of frontswap and related kernel parts:
-https://lwn.net/Articles/454795/
+The backends, such as zcache provides compression of pages resulting
+in speed up [https://lkml.org/lkml/2012/3/22/383]. If the backends
+are not enabled and CONFIG_FRONTSWAP is compiled there is no adverse
+performance hit (details further down).
 
-Frontswap code was first posted publicly in January 2009 and on LKML in
-May 2009, and has remained functionally stable for nearly three years now.
-It is barely invasive, touching only the swap subsystem and adds less
-than 100 lines of code to existing swap subsystem code files.
-It has improved syntactically substantially between V1 and this posting
-of V14, thanks to the review of a few kernel developers, and has adapted
-easily to at least one major swap subsystem change.  As of 3.4, there are
-three in-tree users of frontswap patiently waiting for this patchset and
-for CONFIG_FRONTSWAP to be enabled: zcache (staging driver merged at
-2.6.39), Xen tmem (merged at 3.0 and 3.1) and RAMster (staging driver
-merged at 3.4).  In addition, a RFC has been posted for a KVM backend.
-The frontswap patchset has been in linux-next since next-110603.  Earlier
-versions of frontswap already ship in the Oracle Unbreakable Enterprise Kernel
-and SuSE SLES.
+Patches are also at:
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/mm.git  stable/frontswap.v15.squashed
 
-This patch, 1of4, provides the header file for the core code for frontswap
-that interfaces between the hooks in the swap subsystem and a frontswap
-backend via frontswap_ops.
----
-New file added: include/linux/frontswap.h
+The last time these patches were posted [https://lkml.org/lkml/2011/10/27/206]
+the discussion got very technical - and the feeling I got was that:
+ - The API is too simple. The hard decisions (what to do when memory
+   is low and the pages are mlocked, disk is faster than the CPU compression,
+   need some way to shed pages when OOM conditions are close by, which pages
+   to compress) are left to the backends. Adding VM pressure hooks could solve 
+   some (if not all) of these issues? Dan is working on figuring this out for
+   zcache.
+ - the backends - like zcache - are tied in how this API is used. This means
+   that to get zcache out of staging need to think of the frontswap and
+   zcache (and also the other backends).
 
-[v14: add support for writethrough, per suggestion by aarcange@redhat.com]
-[v14: rebase to 3.4-rc2]
-[v11: konrad.wilk@oracle.com: squashed s/flush/invalidate/ in]
-[v10: no change]
-[v9: akpm@linux-foundation.org: change "flush" to "invalidate", part 1]
-[v8: rebase to 3.0-rc4]
-[v7: rebase to 3.0-rc3]
-[v7: JBeulich@novell.com: new static inlines resolve to no-ops if not config'd]
-[v7: JBeulich@novell.com: avoid redundant shifts/divides for *_bit lib calls]
-[v6: rebase to 3.1-rc1]
-[v5: no change from v4]
-[v4: rebase to 2.6.39]
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-[v15: int/bool on some functions]
-Signed-off-by: Konrad Wilk <konrad.wilk@oracle.com>
-Reviewed-by: Andrew Morton <akpm@linux-foundation.org>
-Acked-by: Jan Beulich <JBeulich@novell.com>
-Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: Chris Mason <chris.mason@oracle.com>
-Cc: Rik Riel <riel@redhat.com>
----
- include/linux/frontswap.h |  127 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 127 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/frontswap.h
+So to rehash, I think the core issues were with the backends [note, I 
+ommitted some here - that is not b/c I choose to ignore them - it just that 
+there were some many and I believe many of them got resolved in the discussion?]
+ - IRQ latency of zcache. Code needs to be rewritten in zcache a bit.
+ - VM pressure - need to be able to influence the backends (or the
+   frontswap API as a whole)
+ - backends need to handle batched requests.
+ - backend needs to fix glaring atrocities (casting of 'struct page *' to
+   'char *' and then back).
 
-diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
-new file mode 100644
-index 0000000..68ff7af
---- /dev/null
-+++ b/include/linux/frontswap.h
-@@ -0,0 +1,127 @@
-+#ifndef _LINUX_FRONTSWAP_H
-+#define _LINUX_FRONTSWAP_H
-+
-+#include <linux/swap.h>
-+#include <linux/mm.h>
-+#include <linux/bitops.h>
-+
-+struct frontswap_ops {
-+	void (*init)(unsigned);
-+	int (*put_page)(unsigned, pgoff_t, struct page *);
-+	int (*get_page)(unsigned, pgoff_t, struct page *);
-+	void (*invalidate_page)(unsigned, pgoff_t);
-+	void (*invalidate_area)(unsigned);
-+};
-+
-+extern bool frontswap_enabled;
-+extern struct frontswap_ops
-+	frontswap_register_ops(struct frontswap_ops *ops);
-+extern void frontswap_shrink(unsigned long);
-+extern unsigned long frontswap_curr_pages(void);
-+extern void frontswap_writethrough(bool);
-+
-+extern void __frontswap_init(unsigned type);
-+extern int __frontswap_put_page(struct page *page);
-+extern int __frontswap_get_page(struct page *page);
-+extern void __frontswap_invalidate_page(unsigned, pgoff_t);
-+extern void __frontswap_invalidate_area(unsigned);
-+
-+#ifdef CONFIG_FRONTSWAP
-+
-+static inline bool frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+	bool ret = false;
-+
-+	if (frontswap_enabled && sis->frontswap_map)
-+		ret = test_bit(offset, sis->frontswap_map);
-+	return ret;
-+}
-+
-+static inline void frontswap_set(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+	if (frontswap_enabled && sis->frontswap_map)
-+		set_bit(offset, sis->frontswap_map);
-+}
-+
-+static inline void frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+	if (frontswap_enabled && sis->frontswap_map)
-+		clear_bit(offset, sis->frontswap_map);
-+}
-+
-+static inline void frontswap_map_set(struct swap_info_struct *p,
-+				     unsigned long *map)
-+{
-+	p->frontswap_map = map;
-+}
-+
-+static inline unsigned long *frontswap_map_get(struct swap_info_struct *p)
-+{
-+	return p->frontswap_map;
-+}
-+#else
-+/* all inline routines become no-ops and all externs are ignored */
-+
-+#define frontswap_enabled (0)
-+
-+static inline bool frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+	return false;
-+}
-+
-+static inline void frontswap_set(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+}
-+
-+static inline void frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+}
-+
-+static inline void frontswap_map_set(struct swap_info_struct *p,
-+				     unsigned long *map)
-+{
-+}
-+
-+static inline unsigned long *frontswap_map_get(struct swap_info_struct *p)
-+{
-+	return NULL;
-+}
-+#endif
-+
-+static inline int frontswap_put_page(struct page *page)
-+{
-+	int ret = -1;
-+
-+	if (frontswap_enabled)
-+		ret = __frontswap_put_page(page);
-+	return ret;
-+}
-+
-+static inline int frontswap_get_page(struct page *page)
-+{
-+	int ret = -1;
-+
-+	if (frontswap_enabled)
-+		ret = __frontswap_get_page(page);
-+	return ret;
-+}
-+
-+static inline void frontswap_invalidate_page(unsigned type, pgoff_t offset)
-+{
-+	if (frontswap_enabled)
-+		__frontswap_invalidate_page(type, offset);
-+}
-+
-+static inline void frontswap_invalidate_area(unsigned type)
-+{
-+	if (frontswap_enabled)
-+		__frontswap_invalidate_area(type);
-+}
-+
-+static inline void frontswap_init(unsigned type)
-+{
-+	if (frontswap_enabled)
-+		__frontswap_init(type);
-+}
-+
-+#endif /* _LINUX_FRONTSWAP_H */
--- 
-1.7.7.5
+frontswap API:
+ - perhaps make it a device driver and stack it (similar to loopback)? So
+   frontswap_ioctl /dev/sda3 /dev/frontswap1 [bind it]
+   swapon /dev/frontswap1
 
+   The work required here means more invasive patches in the swap code and
+   block code to deal with a dynamic sized disk.
+ - only do it on recently activate pages [https://lkml.org/lkml/2012/1/26/520]
+
+
+Compared to the last posting [https://lkml.org/lkml/2011/10/27/206]
+ - a writethrough option. Meaning hat every swap page gets written
+   to both frontswap AND to the swap disk. The backend can choose to tell frontswap
+   to stop sending pages to it. This would allow the backend to react to memory pressure
+   or to shut down if it is taking too much time compressing and pages end up in
+   proper swap.
+ - change the put/get to a different name: store/load
+ - make the return values be bool instead of the int - it was getting confusing
+ - seperate the CONFIG_DEBUGFS options out
+
+Documentation/vm/frontswap.txt        |  278 +++++++++++++++++++++++++++++
+ MAINTAINERS                           |    7 +
+ drivers/staging/ramster/zcache-main.c |    8 +-
+ drivers/staging/zcache/zcache-main.c  |   10 +-
+ drivers/xen/tmem.c                    |    8 +-
+ include/linux/frontswap.h             |  127 +++++++++++++
+ include/linux/swap.h                  |    4 +
+ include/linux/swapfile.h              |   13 ++
+ mm/Kconfig                            |   17 ++
+ mm/Makefile                           |    1 +
+ mm/frontswap.c                        |  314 +++++++++++++++++++++++++++++++++
+ mm/page_io.c                          |   12 ++
+ mm/swapfile.c                         |   54 +++++--
+ 13 files changed, 827 insertions(+), 26 deletions(-)
+Dan Magenheimer (4):
+      mm: frontswap: add frontswap header file
+      mm: frontswap: core swap subsystem hooks and headers
+      mm: frontswap: core frontswap functionality
+      mm: frontswap: config and doc files
+
+Konrad Rzeszutek Wilk (2):
+      MAINTAINER: Add myself for the frontswap API
+      frontswap: s/put_page/store/g s/get_page/load
+
+Benchmarks:
+
+James asked about if compiled in but not used (so FRONTSWAP=y but no 'zcache' on
+the Linux comnand line argument). Dan did some work in this and found that the
+that CONFIG_FRONTSWAP=y is faster... or actually realistically just well within any
+measureable noise. 
