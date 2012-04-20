@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab2DTQVL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 12:21:11 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:18390 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab2DTQVH (ORCPT
+	id S1754098Ab2DTQWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 12:22:20 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:33451 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab2DTQWS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 12:21:07 -0400
-Date: Fri, 20 Apr 2012 18:21:03 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Richard Kuo <rkuo@codeaurora.org>, Tony Luck <tony.luck@intel.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Howells <dhowells@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Richard Weinberger <richard@nod.at>, x86@kernel.org
-Subject: Re: [patch 04/18] smp: Provide generic idle thread allocation
-Message-ID: <20120420162103.GA3065@merkur.ravnborg.org>
-References: <20120420122120.097464672@linutronix.de> <20120420124557.102478630@linutronix.de>
+	Fri, 20 Apr 2012 12:22:18 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "thomas.mingarelli@hp.com" <thomas.mingarelli@hp.com>
+Date: Fri, 20 Apr 2012 12:17:57 -0400
+Subject: RE: [PATCH 0/3] x86, nmi: Fixes
+Thread-Topic: [PATCH 0/3] x86, nmi: Fixes
+Thread-Index: Ac0N6LujZIWCulIGQc25BMdAfRNmqARJ1m3g
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2E4BF2FD12@USINDEVS01.corp.hds.com>
+References: <1333051877-15755-1-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1333051877-15755-1-git-send-email-dzickus@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420124557.102478630@linutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=7 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1204200157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 01:05:45PM -0000, Thomas Gleixner wrote:
-> All SMP architectures have magic to fork the idle task and to store it
-> for reusage when cpu hotplug is enabled. Provide a generic
-> infrastructure for it.
-> 
-> Create/reinit the idle thread for the cpu which is brought up in the
-> generic code and hand the thread pointer to the architecture code via
-> __cpu_up().
-> 
-> Note, that fork_idle() is called via a workqueue, because this
-> guarantees that the idle thread does not get a reference to a user
-> space VM. This can happen when the boot process did not bring up all
-> possible cpus and a later cpu_up() is initiated via the sysfs
-> interface. In that case fork_idle() would be called in the context of
-> the user space task and take a reference on the user space VM.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Matt Turner <mattst88@gmail.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-> Cc: Richard Kuo <rkuo@codeaurora.org>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Hirokazu Takata <takata@linux-m32r.org>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Richard Weinberger <richard@nod.at>
-> Cc: x86@kernel.org
-> ---
->  arch/Kconfig        |    3 +
->  kernel/cpu.c        |    2 -
->  kernel/sched/core.c |    2 +
->  kernel/smpboot.c    |   83 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  kernel/smpboot.h    |   10 ++++++
->  5 files changed, 99 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6/arch/Kconfig
-> ===================================================================
-> --- linux-2.6.orig/arch/Kconfig
-> +++ linux-2.6/arch/Kconfig
-> @@ -145,6 +145,9 @@ config HAVE_DMA_ATTRS
->  config USE_GENERIC_SMP_HELPERS
->  	bool
->  
-> +config GENERIC_SMP_IDLE_THREAD
-> +       bool
-> +
 
-Symbols we select in arch Kconfig files are often named HAVE_*
-And no matter the name - a comment preceeding the definition of the symbol
-would be nice so it is possible to deduct the use of the symbol
-in a few years time when this thread is long forgotten.
+I tested this patch by making kernel panic with NMI switch and confirmed that it works well.
+This patch solves an issue I found in 3.3.0-rc5 because kzalloc in register_nmi_handler() is removed.
 
-	Sam
+https://lkml.org/lkml/2012/3/2/356
+
+Tested-by: Seiji Aguchi <seiji.aguchi@hds.com>
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Don Zickus
+> Sent: Thursday, March 29, 2012 4:11 PM
+> To: x86@kernel.org
+> Cc: LKML; Peter Zijlstra; thomas.mingarelli@hp.com; Don Zickus
+> Subject: [PATCH 0/3] x86, nmi: Fixes
+> 
+> The patch series started with fixes for kmemcheck but slowly involved the fixing hpwdt.  Hopefully everything is ok for now.
+> 
+> Don Zickus (2):
+>   watchdog, hpwdt: Remove priority option for NMI callback
+>   x86, nmi: Add new NMI queues to deal with IO_CHK and SERR
+> 
+> Li Zhong (1):
+>   x86,nmi: Fix page faults by nmiaction if kmemcheck is enabled
+> 
+>  arch/x86/include/asm/nmi.h |   22 ++++++++++-
+>  arch/x86/kernel/nmi.c      |   83 +++++++++++++-------------------------------
+>  drivers/watchdog/hpwdt.c   |   46 +++++++++++++------------
+>  3 files changed, 68 insertions(+), 83 deletions(-)
+> 
+> --
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More
+> majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
