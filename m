@@ -1,133 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab2DTK7F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 06:59:05 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57532 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825Ab2DTK7C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 06:59:02 -0400
-Date: Fri, 20 Apr 2012 07:59:02 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 00/13] Annotation improvements (G+ edition)
-Message-ID: <20120420105902.GC9679@infradead.org>
-References: <1334867644-2722-1-git-send-email-acme@infradead.org>
- <CA+55aFxY0MWR2vTRwf7a6+wm0gXet-X+i11=V_OapneciTJJMg@mail.gmail.com>
+	id S1755234Ab2DTLIU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 07:08:20 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:55038 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754068Ab2DTLIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 07:08:18 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Aaron Lu <aaron.lu@amd.com>
+Subject: Re: [PATCH v2] ACPI: D3 states cleanup
+Date: Fri, 20 Apr 2012 13:12:54 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Lin Ming <ming.m.lin@intel.com>, Len Brown <lenb@kernel.org>,
+        "linux-acpi" <linux-acpi@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>
+References: <1334884749.4927.6.camel@minggr> <1334900255.4927.36.camel@minggr> <20120420074725.GA30140@localhost.amd.com>
+In-Reply-To: <20120420074725.GA30140@localhost.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFxY0MWR2vTRwf7a6+wm0gXet-X+i11=V_OapneciTJJMg@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204201312.54949.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Apr 19, 2012 at 05:31:04PM -0700, Linus Torvalds escreveu:
-> On Thu, Apr 19, 2012 at 1:33 PM, Arnaldo Carvalho de Melo wrote:
-> Ok, so I did a quick test-run, and things are definitely more readable.
+On Friday, April 20, 2012, Aaron Lu wrote:
+> Hi,
 > 
-> However, from a "where is the loop" angle, the one thing that is
-> actually fairly hard to visually see is the branches.
->
-> Sure, you can find them, but they are not nearly as easy to pick out
-> visually as the branch targets are, and I do wonder if it wouldn't
-> make sense to try to make them stand out a bit more.
+> On Fri, Apr 20, 2012 at 01:37:35PM +0800, Lin Ming wrote:
+> > > > > > There are two ACPI D3 states defined now:
+> > > > > > ACPI_STATE_D3 and ACPI_STATE_D3_COLD.
+> > > > > > 
+> > > > > > But the uses of these states are not clear/correct in some code.
+> > > > > > For example, some code refer ACPI_STATE_D3 as D3hot and others refer
+> > > > > > it as D3cold.
+> > > > > > 
+> > > > > > This patch introduces ACPI_STATE_D3_HOT to refer to ACPI D3hot state.
+> > > > > > And changes ACPI_STATE_D3 to refer to ACPI D3cold state only.
+> > > > > > Also redefines ACPI_STATE_D3_COLD the same as ACPI_STATE_D3.
+> > > > > > 
+> > > > > 
+> > > > > With this patch now, if a device has _PS3, then we will set its D3hot
+> > > > > flag valid. This doesn't feel right to me, since per our discussion the
+> > > > > other day, we should assume _PS3 will put the device into D3cold.
+> > > > > 
+> > > > > Or do you mean: if _PS3 is available, then both D3hot and D3cold is
+> > > > > valid from the perspective of acpi, it is the individual driver's
+> > > > > responsibility to decide which state is actually valid and will be used.
+> > > > 
+> > > > Right.
+> > > > 
+> > > > ACPI_STATE_D3(same as ACPI_STATE_D3_COLD now) is always valid.
+> > > > 
+> > > 
+> > > I mean, if _PS3 is available, can we say D3hot is valid?
+> > 
+> > Yes.
+> > 
 > 
-> What is visually important is
->  (a) seeing that it's a branch
->  (b) seeing the direction of the branch (to pick up on loops more easily).
+> OK, now I'm confused...
 > 
-> I suspect that doing a whole arrow is just going to be a horrible
-> criss-crossing mess (although with some graphical UI it might not be
-> as bad as with the textual one), but I think even just doing it in
-> entirely local scope of the particular line that contains the branch
-> would be perfectly fine.
+> First, let me try to clarify the meaning of acpi power state's valid
+> flag.
+> 
+> By valid, I suppose it means the device can be in that state, instead of
+> we have a way to program this device to go into that state.
+> 
+> e.g. D0 is valid means the device can be in D0 state, and D3_cold is
+> valid means the device can be in D3_cold state. We unconditionally set
+> these two states as valid, because we know every device supports these
+> two states. But we might not be able to put the device into that state
+> in software, since we might not have _PS0 or _PS3 control methods for it.
+> 
+> And if we do have the _PSx or _PRx control methods, we knows we have a
+> way to put the device into that state, and hence the device should be
+> able to support that power state, so we will set that state as valid too.
+> 
+> Is this correct?
+> 
+> For D3hot, obviously not all device supports this state, so we will need
+> to figure it out through the acpi table.
+> I remembered Rafael said the following words the other day in a reply to
+> my evaluate_ps3_when_entering_d3_cold_patch:
+> 
+> -----------------------------------------------------------------------
+> I'd rather say that with _PR3 we have the opportunity to avoid removing
+> power completely from the device.  In other words, D3_hot is supported (and
+> it is supported _only_ in that case).
+> -----------------------------------------------------------------------
+> 
+> So I think here is a problem, that if a device has only _PS3, why should
+> we say D3hot is supported? Is there a reason for this that I missed?
 
-You mean we could draw the arrow all the way from the branch to the
-label when the cursor is on one of them (branch, label)?
+OK, I agree.  We need to special case the situation in which _PR3 is not
+present, but _PS3 is.  IOW, we should do something like this in the loop in
+acpi_bus_get_power_flags():
 
-It would avoid the criss-crossing mess, and with identing it would get
-even easier to draw it, i.e. it would be a straight line with a tip just
-below the branch and a "feather" just above the target label.
- 
-> This, for example, is a snippet of a pretty simple function
-> (avc_lookup()) with a few branches and a few branch targets:
-> 
->     2.08 │      test   %rdx,%rdx
->     0.00 │      jne    38
->     0.00 │      jmp    53
->     5.13 │ 30:  mov    (%rdx),%rdx
->     0.74 │      test   %rdx,%rdx
->     0.00 │      je     53
->     0.06 │ 38:  lea    -0x20(%rdx),%rax
->    59.64 │      cmp    -0x20(%rdx),%edi
->     0.40 │      jne    30
->    17.36 │      cmp    -0x18(%rdx),%cx
->     0.00 │      jne    30
->     1.91 │      cmp    0x4(%rax),%esi
->     0.00 │      jne    30
->     0.22 │      test   %rax,%rax
->     0.20 │      je     53
->     1.68 │      leaveq
->     1.90 │      retq
->     0.00 │ 53:  incl   %gs:0xe214
->     0.00 │      xor    %eax,%eax
-> 
-> and the branch targets are fairly easy to pick up, but seeing the
-> branches - and their directions - themselves takes much more parsing.
-> Ok, it's actually pretty simple above, because they have a faily
-> obvious pattern, but in bigger functions they really are harder to
-> pick out.
-> 
-> Now, what if the branch instruction was just followed with a simple
-> "arrow up/down" thing, and to make the distinction really simple to
-> see visually, make the indentation slightly different for the
-> back/forwards case, so that you don't have to really look at the
-> (crappy) arrow head to find possible loops (backwards jumps).
-> 
-> The above snippet would then become:
-> 
->     2.08        test   %rdx,%rdx
->     0.00        jne    38                  ----v
->     0.00        jmp    53                  ----v
->     5.13   30:  mov    (%rdx),%rdx
->     0.74        test   %rdx,%rdx
->     0.00        je     53                  ----v
->     0.06   38:  lea    -0x20(%rdx),%rax
->    59.64        cmp    -0x20(%rdx),%edi
->     0.40        jne    30                      ----^
->    17.36        cmp    -0x18(%rdx),%cx
->     0.00        jne    30                      ----^
->     1.91        cmp    0x4(%rax),%esi
->     0.00        jne    30                      ----^
->     0.22        test   %rax,%rax
->     0.20        je     53                  ----v
->     1.68        leaveq
->     1.90        retq
->     0.00   53:  incl   %gs:0xe214
->     0.00        xor    %eax,%eax
-> 
-> where I think it's fairly easy to pick up the branches. Sure, once you
-> really need to connect them, you do need to compare the offsets (easy
-> in the above case, less obvious with big complex functions), but just
-> making it easy to *see* the backwards branches makes it easier to see
-> the loop, methinks.
-> 
-> I dunno. Just a suggestion. I definitely like the new format better
-> already, regardless of any arrows.
 
-Great, keep suggestions flowing. :-)
+		/* State is valid if we have some power control */
+		if (ps->resources.count
+		    || (ps->flags.explicit_set && i < ACPI_STATE_D3))
+			ps->flags.valid = 1;
 
-- Arnaldo
+Thanks,
+Rafael
