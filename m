@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab2DTXDk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 19:03:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41541 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754187Ab2DTXDj (ORCPT
+	id S1756477Ab2DTXMA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 19:12:00 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64363 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab2DTXL5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 19:03:39 -0400
-Date: Fri, 20 Apr 2012 16:03:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Alex Elder <elder@dreamhost.com>,
-        David Airlie <airlied@linux.ie>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [RFC][PATCH] introduce SIZE_MAX
-Message-Id: <20120420160337.479eeac0.akpm@linux-foundation.org>
-In-Reply-To: <1334809671-15288-1-git-send-email-xi.wang@gmail.com>
-References: <1334809671-15288-1-git-send-email-xi.wang@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Apr 2012 19:11:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120420122120.097464672@linutronix.de>
+References: <20120420122120.097464672@linutronix.de>
+Date: Fri, 20 Apr 2012 16:11:56 -0700
+Message-ID: <CABeCy1Y0HTtVvRC0bqaHbhqpumek+dERTY6EH_qO2neP6U8U_A@mail.gmail.com>
+Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
+From: Venki Pallipadi <venki@google.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Apr 2012 00:27:51 -0400
-Xi Wang <xi.wang@gmail.com> wrote:
-
-> ULONG_MAX is often used to check for integer overflow when calculating
-> allocation size.  While ULONG_MAX happens to work on most systems,
-> there is no guarantee that `size_t' must be the same size as `long'.
-> 
-> This patch introduces SIZE_MAX, the maximum value of `size_t', to
-> improve portability and readability for allocation size validation.
+On Fri, Apr 20, 2012 at 6:05 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Dear all,
 >
-> ...
+> I'm working on refactoring the SMP boot and CPU hotplug implementation.
 >
-> @@ -331,7 +331,7 @@ static int build_snap_context(struct ceph_snap_realm *realm)
->  
->  	/* alloc new snap context */
->  	err = -ENOMEM;
-> -	if (num > (ULONG_MAX - sizeof(*snapc)) / sizeof(u64))
-> +	if (num > (SIZE_MAX - sizeof(*snapc)) / sizeof(u64))
->  		goto fail;
->  	snapc = kzalloc(sizeof(*snapc) + num*sizeof(u64), GFP_NOFS);
->  	if (!snapc)
+> The current code has evolved over time into a conglomerate of
+> warts. My main goals are to:
+>
+>  - reduce the architecture code by moving repeating constructs to the
+>   core
+>
+>  - redesigning the handling of per cpu threads. There is no point to
+>   tear down the threads just to create them again.
+>
+>  - restructuring the notifier facility into a proper tree with
+>   dependencies to avoid the gazillion of callbacks and moving
+>   setup/teardown code into the context of the upcoming/dying cpu
+>
+> The motivation behind this work is the cpu hotplug nightmare which we
+> are facing in the RT kernel and the requests from several groups
+> (e.g. ARM) to make hotplug more lightweight and faster.
+>
+> This first part moves the idle thread management for non-boot cpus
+> into the core. fork_idle() is called in a workqueue as it is
+> implemented in a few architectures already. This is necessary when not
+> all cpus are brought up by the early boot code as otherwise we would
+> take a ref on the user task VM of the thread which brings the cpu up
+> via the sysfs interface.
+>
 
-hm, yes, I suppose that's better - hardwiring the assumption that
-size_t has type unsigned long is pretty ugly.
+I had sent out a patchset that did this cleanup here:
+https://lkml.org/lkml/2012/3/6/466
 
-Will we need something for ssize_t also?
+This patchset is clean and more exhaustive than what I had. So,
+
+Acked-by: Venkatesh Pallipadi <venki@google.com>
+
+> This converts all architectures except m32r, mn10300, tile and UM to
+> the new core facility. These architecture are calling fork_idle() in
+> the very early boot code in smp_prepare_cpus() for unknown reasons.
+> I haven't analyzed yet, whether this is on purpose or can be moved
+> over to the generic facility. It'd be nice if the responsible maintainers
+> could look into that as well.
+>
+> Thanks,
+>
+>        tglx
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
