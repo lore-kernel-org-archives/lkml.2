@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab2DTV5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:57:48 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:23561 "EHLO relay.sw.ru"
+	id S1755506Ab2DTV55 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:57:57 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:22367 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755396Ab2DTV5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:57:46 -0400
+	id S1755195Ab2DTV5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:57:54 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <cgroups@vger.kernel.org>
 Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
@@ -14,96 +14,104 @@ Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Greg Thelen <gthelen@google.com>,
         Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 00/23] slab+slub accounting for memcg
-Date: Fri, 20 Apr 2012 18:57:08 -0300
-Message-Id: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH 01/23] slub: don't create a copy of the name string in kmem_cache_create
+Date: Fri, 20 Apr 2012 18:57:09 -0300
+Message-Id: <1334959051-18203-2-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When creating a cache, slub keeps a copy of the cache name through
+strdup. The slab however, doesn't do that. This means that everyone
+registering caches have to keep a copy themselves anyway, since code
+needs to work on all allocators.
 
-This is my current attempt at getting the kmem controller
-into a mergeable state. IMHO, all the important bits are there, and it should't
-change *that* much from now on. I am, however, expecting at least a couple more
-interactions before we sort all the edges out.
+Having slab create a copy of it as well may very well be the right
+thing to do: but at this point, the callers are already there
 
-This series works for both the slub and the slab. One of my main goals was to
-make sure that the interfaces we are creating actually makes sense for both
-allocators.
+My motivation for it comes from the kmem slab cache controller for
+memcg. Because we create duplicate caches, having a more consistent
+behavior here really helps.
 
-I did some adaptations to the slab-specific patches, but the bulk of it
-comes from Suleiman's patches. I did the best to use his patches
-as-is where possible so to keep authorship information. When not possible,
-I tried to be fair and quote it in the commit message.
+I am sending the patch, however, more to probe on your opinion about
+it. If you guys agree, but don't want to merge it - since it is not
+fixing anything, nor improving any situation etc, I am more than happy
+to carry it in my series until it gets merged (fingers crossed).
 
-In this series, all existing caches are created per-memcg after its first hit.
-The main reason is, during discussions in the memory summit we came into
-agreement that the fragmentation problems that could arise from creating all
-of them are mitigated by the typically small quantity of caches in the system
-(order of a few megabytes total for sparsely used caches).
-The lazy creation from Suleiman is kept, although a bit modified. For instance,
-I now use a locked scheme instead of cmpxcgh to make sure cache creation won't
-fail due to duplicates, which simplifies things by quite a bit.
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+---
+ mm/slub.c |   14 ++------------
+ 1 files changed, 2 insertions(+), 12 deletions(-)
 
-The slub is a bit more complex than what I came up with in my slub-only
-series. The reason is we did not need to use the cache-selection logic
-in the allocator itself - it was done by the cache users. But since now
-we are lazy creating all caches, this is simply no longer doable.
-
-I am leaving destruction of caches out of the series, although most
-of the infrastructure for that is here, since we did it in earlier
-series. This is basically because right now Kame is reworking it for
-user memcg, and I like the new proposed behavior a lot more. We all seemed
-to have agreed that reclaim is an interesting problem by itself, and
-is not included in this already too complicated series. Please note
-that this is still marked as experimental, so we have so room. A proper
-shrinker implementation is a hard requirement to take the kmem controller
-out of the experimental state.
-
-I am also not including documentation, but it should only be a matter
-of merging what we already wrote in earlier series plus some additions.
-
-Glauber Costa (19):
-  slub: don't create a copy of the name string in kmem_cache_create
-  slub: always get the cache from its page in kfree
-  slab: rename gfpflags to allocflags
-  slab: use obj_size field of struct kmem_cache when not debugging
-  change defines to an enum
-  don't force return value checking in res_counter_charge_nofail
-  kmem slab accounting basic infrastructure
-  slab/slub: struct memcg_params
-  slub: consider a memcg parameter in kmem_create_cache
-  slab: pass memcg parameter to kmem_cache_create
-  slub: create duplicate cache
-  slub: provide kmalloc_no_account
-  slab: create duplicate cache
-  slab: provide kmalloc_no_account
-  kmem controller charge/uncharge infrastructure
-  slub: charge allocation to a memcg
-  slab: per-memcg accounting of slab caches
-  memcg: disable kmem code when not in use.
-  slub: create slabinfo file for memcg
-
-Suleiman Souhlal (4):
-  memcg: Make it possible to use the stock for more than one page.
-  memcg: Reclaim when more than one page needed.
-  memcg: Track all the memcg children of a kmem_cache.
-  memcg: Per-memcg memory.kmem.slabinfo file.
-
- include/linux/memcontrol.h  |   87 ++++++
- include/linux/res_counter.h |    2 +-
- include/linux/slab.h        |   26 ++
- include/linux/slab_def.h    |   77 ++++++-
- include/linux/slub_def.h    |   36 +++-
- init/Kconfig                |    2 +-
- mm/memcontrol.c             |  607 +++++++++++++++++++++++++++++++++++++++++--
- mm/slab.c                   |  390 +++++++++++++++++++++++-----
- mm/slub.c                   |  255 ++++++++++++++++--
- 9 files changed, 1364 insertions(+), 118 deletions(-)
-
+diff --git a/mm/slub.c b/mm/slub.c
+index ffe13fd..af8cee9 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3925,7 +3925,6 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+ 		size_t align, unsigned long flags, void (*ctor)(void *))
+ {
+ 	struct kmem_cache *s;
+-	char *n;
+ 
+ 	if (WARN_ON(!name))
+ 		return NULL;
+@@ -3949,26 +3948,20 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+ 		return s;
+ 	}
+ 
+-	n = kstrdup(name, GFP_KERNEL);
+-	if (!n)
+-		goto err;
+-
+ 	s = kmalloc(kmem_size, GFP_KERNEL);
+ 	if (s) {
+-		if (kmem_cache_open(s, n,
++		if (kmem_cache_open(s, name,
+ 				size, align, flags, ctor)) {
+ 			list_add(&s->list, &slab_caches);
+ 			up_write(&slub_lock);
+ 			if (sysfs_slab_add(s)) {
+ 				down_write(&slub_lock);
+ 				list_del(&s->list);
+-				kfree(n);
+ 				kfree(s);
+ 				goto err;
+ 			}
+ 			return s;
+ 		}
+-		kfree(n);
+ 		kfree(s);
+ 	}
+ err:
+@@ -5212,7 +5205,6 @@ static void kmem_cache_release(struct kobject *kobj)
+ {
+ 	struct kmem_cache *s = to_slab(kobj);
+ 
+-	kfree(s->name);
+ 	kfree(s);
+ }
+ 
+@@ -5318,11 +5310,9 @@ static int sysfs_slab_add(struct kmem_cache *s)
+ 		return err;
+ 	}
+ 	kobject_uevent(&s->kobj, KOBJ_ADD);
+-	if (!unmergeable) {
++	if (!unmergeable)
+ 		/* Setup first alias */
+ 		sysfs_slab_alias(s, s->name);
+-		kfree(name);
+-	}
+ 	return 0;
+ }
+ 
 -- 
 1.7.7.6
 
