@@ -1,189 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab2DTWsn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 18:48:43 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:21597 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756241Ab2DTWsm (ORCPT
+	id S932241Ab2DTWv6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 18:51:58 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:22509 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932182Ab2DTWv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 18:48:42 -0400
-Message-ID: <1334962118.3255.40.camel@lorien2>
-Subject: Re: [PATCH ] leds: add new transient trigger for one shot timer
- support
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: shuahkhan@gmail.com, neilb@suse.de, LKML <linux-kernel@vger.kernel.org>,
-        Jonas Bonn <jonas@southpole.se>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>
-Date: Fri, 20 Apr 2012 16:48:38 -0600
-In-Reply-To: <20120420141914.a3235c61.akpm@linux-foundation.org>
-References: <1333310039.2879.4.camel@lorien2> <1334064283.10826.6.camel@ted>
-	 <1334507752.2723.3.camel@lorien2> <1334894674.3051.18.camel@lorien2>
-	 <20120420141914.a3235c61.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 20 Apr 2012 18:51:56 -0400
+From: "Shergill, Gurinder" <gurinder.shergill@hp.com>
+To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Gates, Matt" <matthew.gates@hp.com>,
+        "stephenmcameron@gmail.com" <stephenmcameron@gmail.com>,
+        "thenzl@redhat.com" <thenzl@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mikem@beardog.cce.hp.com" <mikem@beardog.cce.hp.com>,
+        "james.bottomley@hansenpartnership.com" 
+	<james.bottomley@hansenpartnership.com>
+Date: Fri, 20 Apr 2012 23:51:16 +0100
+Subject: RE: [PATCH 06/17] hpsa: retry driver initiated commands on busy
+ status
+Thread-Topic: [PATCH 06/17] hpsa: retry driver initiated commands on busy
+ status
+Thread-Index: Ac0fCOktsMPmkLfdQB25PBcSU/TJFgAPv09g
+Message-ID: <C508F8684F59FF47960D08B35B998FFE6563003D68@GVW1341EXA.americas.hpqcorp.net>
+References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
+ <20120420150646.10596.37875.stgit@beardog.cce.hp.com>
+In-Reply-To: <20120420150646.10596.37875.stgit@beardog.cce.hp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3KMq4dr007333
 
 
-> 
-> Are there no comments from anyone on this?
-Thanks for the comments.
-> 
-> >
-> > ...
-> >
-> > config LEDS_TRIGGER_TRANSIENT
-> > +	tristate "LED Transient Trigger"
-> > +	depends on LEDS_TRIGGERS
-> > +	help
-> > +	  This allows one time enable of a transient state on GPIO/PWM based
-> > +	  hadrware.
-> 
-> Make it "This allows one time enabling of a transient state on GPIO/PWM
-> based hardware."
-Will do.
-> 
-> > +	  If unsure, say Y.
-> > +
-> >
-> > ...
-> >
-> > +static void transient_timer_function(unsigned long data)
-> > +{
-> > +	struct led_classdev *led_cdev = (struct led_classdev *) data;
-> > +	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-> > +
-> > +	if (transient_data->transient_enabled) {
-> > +		transient_data->transient_enabled = 0;
-> > +		led_cdev->brightness_set(led_cdev, LED_OFF);
-> > +		del_timer(&transient_data->timer);
-> 
-> Deleting the timer from within its handler is ...  odd.  Also it is a
-> bit racy against a concurrent add_timer() on a different CPU.
-Good point. Will fix.
-> 
-> > +	}
-> > +}
-> > +
-> >
-> > ...
-> >
-> > +static ssize_t led_transient_enabled_store(struct device *dev,
-> > +		struct device_attribute *attr, const char *buf, size_t size)
-> > +{
-> > +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-> > +	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-> > +	unsigned long state;
-> > +	ssize_t ret = -EINVAL;
-> > +
-> > +	ret = kstrtoul(buf, 10, &state);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	if (state != 1 && state != 0)
-> > +		return ret;
-> 
-> Bug - we'll return 0 here.  Use "return -EINVAL" and remove the above
-> initialisation of `ret'.
+| -----Original Message-----
+| From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
+| owner@vger.kernel.org] On Behalf Of Stephen M. Cameron
+| Sent: Friday, April 20, 2012 8:07 AM
+| To: james.bottomley@hansenpartnership.com
+| Cc: linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org; Gates, Matt;
+| stephenmcameron@gmail.com; thenzl@redhat.com; akpm@linux-foundation.org;
+| mikem@beardog.cce.hp.com
+| Subject: [PATCH 06/17] hpsa: retry driver initiated commands on busy
+| status
+| 
+| From: Matt Bondurant <Matthew.dav.bondurant@hp.com>
+| 
+| In shared SAS configurations we might get a busy status during driver
+| initiated commands (e.g. during rescan for devices).  We should retry the
+| command in such cases rather than giving up.
 
-Good point. Will fix.
-> 
-> 
-> > +	/* cancel the running timer */
-> > +	if (state == 0) {
-> > +		transient_timer_function((unsigned long) led_cdev);
-> 
-> And this is perhaps why transient_timer_function() does del_timer().
-> 
-> I suggest it would be cleaner and simpler to do
-> 
-> 	transient_data->transient_enabled = 0;
-> 	del_timer(...);
-> 
-> right here.
+This may or may not apply to your situation. Some targets/disks return TASK SET FULL when they can't accept any new SCSI commands. If that applies to your situation, it may make sense to also check for SCSI status of SAM_STAT_TASK_SET_FULL.
 
-Will fix it.
-> 
-> This is all rather racy in its handling of ->transient_enabled (at
-> least), but afacit the races are harmless.
+Sunny
 
-I am a bit concerned about it as well. Does adding a mutex to
-trigger_data a good way to go to protect transient_enabled? I will give
-that a try.
-
-> The typecast is unneeded.
-ok
-> 
-> > +	/* start timer with transient_time value */
-> > +	if (state == 1 && transient_data->transient_time != 0) {
-> > +		led_cdev->brightness_set(led_cdev, LED_FULL);
-> > +		mod_timer(&transient_data->timer,
-> > +			  jiffies + transient_data->transient_time);
-> > +	}
-> > +
-> > +	return size;
-> > +}
-> > +
-> >
-> > ...
-> >
-> > +static ssize_t led_transient_time_store(struct device *dev,
-> > +		struct device_attribute *attr, const char *buf, size_t size)
-> > +{
-> > +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-> > +	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-> > +	unsigned long state;
-> > +	ssize_t ret = -EINVAL;
-> 
-> Unneeded initialisation.
-Yup
-> 
-> > +	ret = kstrtoul(buf, 10, &state);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	transient_data->transient_time = state;
-> > +
-> > +	return size;
-> > +}
-> > +
-> >
-> > ...
-> >
-> > +static void transient_trig_deactivate(struct led_classdev *led_cdev)
-> > +{
-> > +	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-> > +
-> > +	if (led_cdev->activated) {
-> > +		device_remove_file(led_cdev->dev, &dev_attr_transient_enabled);
-> > +		device_remove_file(led_cdev->dev, &dev_attr_transient_time);
-> > +		del_timer_sync(&transient_data->timer);
-> > +		led_cdev->trigger_data = NULL;
-> > +		led_cdev->activated = false;
-> > +		kfree(transient_data);
-> 
-> OK.  But it might be nicer to kill off the timer before doing anything else.
-Yes that is correct - will fix it.
-> 
-> > +	}
-> > +	printk(KERN_DEBUG "Deativated led transient trigger %s\n",
-> > +		led_cdev->name);
-> > +}
-> > +
-> >
-> > ...
-> >
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+| 
+| Signed-off-by: Matt Bondurant <Matthew.dav.bondurant@hp.com>
+| Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+| ---
+|  drivers/scsi/hpsa.c |   12 +++++++++++-
+|  1 files changed, 11 insertions(+), 1 deletions(-)
+| 
+| diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c index
+| fcb9fb2..7355891 100644
+| --- a/drivers/scsi/hpsa.c
+| +++ b/drivers/scsi/hpsa.c
+| @@ -234,6 +234,15 @@ static int check_for_unit_attention(struct ctlr_info
+| *h,
+|  	return 1;
+|  }
+| 
+| +static int check_for_busy(struct ctlr_info *h, struct CommandList *c) {
+| +	if (c->err_info->CommandStatus != CMD_TARGET_STATUS ||
+| +		c->err_info->ScsiStatus != SAM_STAT_BUSY)
+| +		return 0;
+| +	dev_warn(&h->pdev->dev, HPSA "device busy");
+| +	return 1;
+| +}
+| +
+|  static ssize_t host_store_rescan(struct device *dev,
+|  				 struct device_attribute *attr,
+|  				 const char *buf, size_t count)
+| @@ -1379,7 +1388,8 @@ static void
+| hpsa_scsi_do_simple_cmd_with_retry(struct ctlr_info *h,
+|  		memset(c->err_info, 0, sizeof(*c->err_info));
+|  		hpsa_scsi_do_simple_cmd_core(h, c);
+|  		retry_count++;
+| -	} while (check_for_unit_attention(h, c) && retry_count <= 3);
+| +	} while ((check_for_unit_attention(h, c) ||
+| +			check_for_busy(h, c)) && retry_count <= 3);
+|  	hpsa_pci_unmap(h->pdev, c, 1, data_direction);  }
+| 
+| 
+| --
+| To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+| the body of a message to majordomo@vger.kernel.org More majordomo info at
+| http://vger.kernel.org/majordomo-info.html
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
