@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab2DTIDT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 04:03:19 -0400
-Received: from mail175c2.megamailservers.com ([69.49.111.75]:59590 "EHLO
-	mail175c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753593Ab2DTIDO (ORCPT
+	id S932646Ab2DTIJh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 04:09:37 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54709 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932388Ab2DTIJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 04:03:14 -0400
-X-Authenticated-User: konrad.gaisler.com
-From: Konrad Eisele <konrad@gaisler.com>
-To: yong.zhang0@gmail.com
-Cc: sam@ravnborg.org, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-        davem@davemloft.net, daniel@gaisler.com,
-        Yong Zhang <yong.zhang@windriver.com>
-Subject: [PATCH 1/1] sparc32,leon: add notify_cpu_starting()
-Date: Fri, 20 Apr 2012 08:28:32 +0200
-Message-Id: <1334903312-18526-1-git-send-email-konrad@gaisler.com>
-X-Mailer: git-send-email 1.6.1.3
-In-Reply-To: <20120420033634.GA13068@zhy>
-References: <20120420033634.GA13068@zhy>
-X-CSC: 0
-X-CHA: v=1.1 cv=0l1ZA7H7kdVYwsUDqKdyt3M1kbawXr/ph8StbAMu7Y4= c=1 sm=1
-		a=WjkYb-kDryMA:10 a=U62ajLuCel8A:10 a=jXKJviUpWSOlMmIvGrHOfw==:17
-		a=t7CeM3EgAAAA:8 a=pGLkceISAAAA:8 a=ebG-ZW-8AAAA:8 a=lyHDfAMR6ef2yV0YzUsA:9
-		a=2e6ZYRoF4I4A:10 a=MSl-tDqOz04A:10 a=cCYF7-FHeg4A:10
-		a=jXKJviUpWSOlMmIvGrHOfw==:117
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A02020A.4F91045B.0041,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-WHL: SLR
+	Fri, 20 Apr 2012 04:09:23 -0400
+Date: Fri, 20 Apr 2012 09:09:14 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
+ ima-appraisal patches)
+Message-ID: <20120420080914.GF6871@ZenIV.linux.org.uk>
+References: <1334754302.2137.8.camel@falcor>
+ <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
+ <1334772473.2137.22.camel@falcor>
+ <20120418183938.GH6589@ZenIV.linux.org.uk>
+ <1334865448.2429.35.camel@falcor>
+ <20120420004303.GB6871@ZenIV.linux.org.uk>
+ <CA+55aFxQR8g3TycW7nOVjjnnsaWWW-Gh74-bV6rUm+7SRTm25g@mail.gmail.com>
+ <20120420025438.GD6871@ZenIV.linux.org.uk>
+ <CA+55aFzinX_6DVvDTyxrsP6VEHVY2Q+Y=e+qksnAjR+oT3GZew@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzinX_6DVvDTyxrsP6VEHVY2Q+Y=e+qksnAjR+oT3GZew@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yong Zhang <yong.zhang@windriver.com>
+On Thu, Apr 19, 2012 at 07:58:57PM -0700, Linus Torvalds wrote:
+> On Thu, Apr 19, 2012 at 7:54 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Umm... ?I really wonder if we *want* filp_close() under any kind of
+> > locks. ?You are right - it should not be deferred. ?I haven't finished
+> > checking the callers of that puppy, but if we really do it while holding
+> > any kind of lock, we are asking for trouble. ?So I'd rather switch
+> > filp_close() to use of fput_nodefer() if that turns out to be possible.
+> 
+> Ok, fair enough, looks like a reasonable plan to me.
 
-Otherwise cpu_active_mask will not set, which lead to other issue.
+Actually, scratch that; I think I have a better variant
+	* switch to fget_light/fput_light where possible; it's not needed
+for the rest, but is useful anyway
+	* move the guts of filp_close() (everything prior to fput() it does
+in the end) into a new helper, turning filp_close() into a couple of calls
+(inlined, at that).  Equivalent transformation.
+	* add fput_nodefer(); does the same thing fput() does now.  Make
+fput() defer the call of __fput().  Add a filp_close_nodefer() - same as
+filp_close(), but the second call in it is fput_nodefer(), not fput().  And
+switch the callers that are known to be done outside of any locks to
+filp_close_nodefer().  Switch accept4()/socketpair() to fput_nodefer()
+(for freshly created struct file in case of cleanup on failure exit).
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Signed-off-by: Konrad Eisele <konrad@gaisler.com>
----
- arch/sparc/kernel/leon_smp.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Note that we do *not* need to bother with fput_light() - even if it does
+fput(), that fput() won't usually be the final one.  We'd need it to
+race with close() or dup2() from another thread for that to happen.  So
+we only need to review the callers of filp_close() and there are much
+fewer of those.
 
-diff --git a/arch/sparc/kernel/leon_smp.c b/arch/sparc/kernel/leon_smp.c
-index 1210fde..160cac9 100644
---- a/arch/sparc/kernel/leon_smp.c
-+++ b/arch/sparc/kernel/leon_smp.c
-@@ -23,6 +23,7 @@
- #include <linux/pm.h>
- #include <linux/delay.h>
- #include <linux/gfp.h>
-+#include <linux/cpu.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/tlbflush.h>
-@@ -78,6 +79,8 @@ void __cpuinit leon_callin(void)
- 	local_flush_tlb_all();
- 	leon_configure_cache_smp();
- 
-+	notify_cpu_starting(cpuid);
-+
- 	/* Get our local ticker going. */
- 	smp_setup_percpu_timer();
- 
--- 
-1.6.1.3
+We also get something else out of that - AFAICS, the kludge in __scm_destroy()
+can be killed after that.  We did it to prevent recursion on fput(), right?
+Now that recursion will be gone...
 
+I'd probably not bother with trying to be clever in doing the deferral itself -
+the point is to make it rare, so it's not a hot path anyway.  We can play
+with per-CPU lists, etc., but in this case dumber is better.
+
+Comments?  I'm half-asleep right now, so I might be missing something
+obvious...
