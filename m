@@ -1,57 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab2DTW5a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 18:57:30 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:54377 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755568Ab2DTW53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 18:57:29 -0400
-Message-ID: <4F91E9C1.4050102@linaro.org>
-Date: Fri, 20 Apr 2012 15:57:05 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S932349Ab2DTW6h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 18:58:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32655 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932213Ab2DTW6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 18:58:36 -0400
+Date: Fri, 20 Apr 2012 18:58:23 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>,
+        Chandra Seetharaman <sekharan@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
+ EXPORT_SYMBOL
+Message-ID: <20120420225822.GA10769@redhat.com>
+References: <20111215214440.GA17677@redhat.com>
+ <4EF039D5.5010201@suse.de>
+ <20120405144721.GA18437@redhat.com>
+ <20120420144538.GB8155@redhat.com>
+ <20120420173405.GA8846@redhat.com>
+ <20120420214120.159e2690@pyramind.ukuu.org.uk>
+ <20120420215825.GA10406@redhat.com>
+ <20120420232043.40ddc3c4@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Colin Cross <ccross@android.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH 0/4] Android Alarm Driver Cleanups (for staging-next/3.5)
-References: <1334950307-403-1-git-send-email-john.stultz@linaro.org> <20120420220849.GA5642@kroah.com>
-In-Reply-To: <20120420220849.GA5642@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042022-4242-0000-0000-000001698664
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120420232043.40ddc3c4@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2012 03:08 PM, Greg KH wrote:
-> On Fri, Apr 20, 2012 at 12:31:43PM -0700, John Stultz wrote:
->> Greg: Would you mind applying this set to staging-next for 3.5?
-> It took some messing with (due to some over-eager people fixing spelling
-> mistakes and compiler warnings that you didn't have in your tree), but
-> I've applied these now.  Thanks for doing this work.
->
-> But, as I already said, this patch set produces some big compiler
-> warnings, can you please fix them up before I get nasty messages from
-> the linux-next maintainer?
-Ok. So I manged to trigger the warning at patch 3/4 too. However, patch 
-4/4 resolves it.
+On Fri, Apr 20 2012 at  6:20pm -0400,
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-The problem is the android alarm driver and the alarmtimer code have a 
-naming collision with "struct alarm", and there were some macros (see 
-CONFIG_ANDROID_ALARM_OLDDRV_COMPAT in staging/android/android_alarm.h 
-before these patches) that allow a easier transition over to the new 
-code for out of tree drivers.
+> > > The kernel is GPL, all derived works of a GPL codebase are required to be
+> > > GPL. There is no magic rule about modules. I've stated that repeatedly
+> > > for anything containing a line of code I own. GregKH has made it very
+> > > clear for his code, and so it goes on.
+> > 
+> > This isn't about adding Linux functionality to a proprietary driver.
+> 
+> Let me quote back your previous message
+> 
+> 	"Allow a proprietary non-GPL multipath driver, like EMC
+> 	PowerPath, to detach a scsi_dh using scsi_dh_detach."
+> 
+> what part of that isn't about proprietary drivers.
 
-Ideally I would have yanked those macros in 3/4 instead of 4/4.  But 
-after 4/4 is applied the issue should not longer be present (at least 
-I've not been able to trigger it)
+Sure Alan, seize on "proprietary" and "EXPORT_SYMBOL_GPL".. and gloss
+right over the fact that what is being proposed is reasonable.
 
-Do you want me to respin the last two patches?
+Any multipath driver should be able to detach a scsi_dh module.  As is
+evidenced by the fact that they can already make use of sysfs to do so.
 
-thanks
--john
+Relaxing the scsi_dh_detach interface makes it easier for a long
+standing proprietary driver to get out of Linux's way.
 
+But yeah, I'm sure you'll gloss over that too.
+ 
+> > If Linux is masking SCSI sense that Powerpath needs to see in order to
+> > function then they need a way to shut off that conflicting functionality
+> > in Linux.  What they have enjoyed until now is that Linux has treated
+> > them with kid gloves -- by not always attaching scsi_dh to each SCSI
+> > device during SCSI device scan.
+> 
+> They can submit the powerpath code to the GPL kernel and it can get dealt
+> with nicely.
+> 
+> > > I'm dying to see anyone make the moral argument for it too.
+> > 
+> > I think you're blinded by some innate violent pain reaction to seeing
+> > s/EXPORT_SYMBOL_GPL/EXPORT_SYMBOL/
+> 
+> No. I'm just reminding you and Red Hat that the kernel is subject to the
+> GPLv2 licence and that adding/removing _GPL from a symbol doesn't
+> magically allow you to use proprietary modules as you claim.
+> 
+> > As I said in the header, Linux's ability to properly support scanning
+> > LUNs with multiple paths has been fragile for _years_ purely because we
+> > never had the balls to always attach the scsi_dh which enables Linux to
+> > work well.  We didn't because of fear that we'd break PowerPath.
+> 
+> Thats unfortunate. You mean your company has been intentionally
+> leaving the Linux kernel poorer for the sake of dubious proprietary
+> code ?
+> 
+> You might want to stop digging, or at least use a spade not an excavator.
+
+_Upstream_ has kept it that way because we've been concerned about
+breaking PowerPath in enterprises where Linux is deployed.  Upstream has
+been good citizens to the fault of Linux.
+
+Please stop being a drama queen and stop putting words in my mouth.
+
+> > As a result, Linux has suffered (in the form of reduced functionality).
+> > Now your arguing that the because scsi_dh_detach() will become
+> > EXPORT_SYMBOL it somehow makes PowerPath a derived work if they were to
+> 
+> I suspect it is already a derived work, but right now that's their
+> problem. You are making it yours as well.
+> 
+> > The two other people (scsi_dh maintainers) that Acked-by this change
+> > work for companies other than EMC.  James is the SCSI maintainer and
+> > understands what is going on here.  Like me, they are domain experts.
+> > 
+> > What are you?
+> 
+> I'm a rights holder. Domain expertise isn't relevant here. The code I
+> provided is licensed under the GPL. Whether the symbol is EXPORT_SYMBOL
+> or EXPORT_SYMBOL_GPL any derivative code (eg code that requires the
+> kernel be modified to match it) cannot call it.
+
+Remind me again when you ever developed anything to do with scsi_dh?
+
+To be clear: PowerPath doesn't _need_ this.  Not even close.
+
+Linux is improved by not having to walk on egg shells that attaching a
+helpful linux-only layer in kernel will somehow screw up some 3rd party
+software that a customer values.
+
+You still don't get it... yet you'll saber rattle behind generic GPL
+lawyer-up nonsense.
+
+It is sad that you didn't even read the important technical aspects of
+my previous reply that prove you're being a troll.
+
+I implore you to defer to the domain experts and refrain from continued
+late Friday night geek melo-drama.
