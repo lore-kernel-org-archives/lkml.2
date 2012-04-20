@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab2DTONa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 10:13:30 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36881 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753032Ab2DTON2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 10:13:28 -0400
+	id S1756270Ab2DTOQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 10:16:17 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:43151 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753931Ab2DTOQQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 10:16:16 -0400
+Date: Fri, 20 Apr 2012 22:16:08 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Fixes for 3.4
+Message-ID: <20120420141608.GA9686@gondor.apana.org.au>
+References: <20100722055043.GA25689@gondor.apana.org.au>
+ <20100903060055.GA28915@gondor.apana.org.au>
+ <20100903110722.GA31826@gondor.apana.org.au>
+ <20101215115035.GA25248@gondor.apana.org.au>
+ <20110216053911.GA10999@gondor.apana.org.au>
+ <20110328071322.GA6569@gondor.apana.org.au>
+ <20110629235153.GA16559@gondor.apana.org.au>
+ <20120126024342.GA12492@gondor.apana.org.au>
+ <20120322012046.GA8854@gondor.apana.org.au>
+ <20120402094516.GA23763@gondor.apana.org.au>
 MIME-Version: 1.0
-In-Reply-To: <CAJe_ZhdKtK8YKo1qc8g18XrdnrQRZw2aFSkW8x3koELU10EsHw@mail.gmail.com>
-References: <1334829097-32084-1-git-send-email-jaswinder.singh@linaro.org>
-	<20120419124204.GE3046@opensource.wolfsonmicro.com>
-	<CAJe_ZhfbFq98fT56CS-q4VoU8wnybj-+swfB+Jrknd3Zmt9V8g@mail.gmail.com>
-	<20120419162905.GA3084@opensource.wolfsonmicro.com>
-	<CAJe_Zhd0H6kXBhqdynuZqhbcPq8ARWu5SMbs=hQT2n8stzRvXQ@mail.gmail.com>
-	<20120420114602.GB3259@opensource.wolfsonmicro.com>
-	<CAJe_ZhdKv_7fTj9ZhJE0JzmuhxEZn-JmSbHu615YMXoWZUei9A@mail.gmail.com>
-	<20120420130134.GA5957@opensource.wolfsonmicro.com>
-	<CAJe_ZhdKtK8YKo1qc8g18XrdnrQRZw2aFSkW8x3koELU10EsHw@mail.gmail.com>
-Date: Fri, 20 Apr 2012 19:43:27 +0530
-Message-ID: <CAJe_ZhfZL+MT3azNifD_UgU1Nx+K0r_=i0yd9B=3L2JJTuXKWg@mail.gmail.com>
-Subject: Re: [PATCH] regulator: Provide a check for dummy regulator
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, lrg@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120402094516.GA23763@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 April 2012 19:18, Jassi Brar <jaswinder.singh@linaro.org> wrote:
->
->> �To repeat yet again you're not supposed to actually use dummy regulators,
->> you're supposed to fully specify the regulators on your platform.
->>
-> I use dummy regulators for what they are meant for - until every platform
-> completely define supplies for every consumer.
-> We are not there yet, yet one 'ideal' consumer suffers because of that.
->
-> If you ask me to go away and disable dummy and update all consumers
-> and their platforms, then I say why not remove the concept of dummy
-> altogether which only delays full compliance to the regulator api ?
->
-Btw, by 'all platforms' I meant those based on my SoC. Popular term - machines.
+Hi Linus:
+
+This push fixes a number of issues:
+
+* Locking fix for talitos driver.
+* Fix 64-bit counter overflow in SHA-512.
+* Build fix for ixp4xx.
+
+
+Please pull from
+
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+or
+
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+
+Horia Geanta (1):
+      crypto: talitos - properly lock access to global talitos registers
+
+Kent Yoder (1):
+      crypto: sha512 - Fix byte counter overflow in SHA-512
+
+Michał Wróbel (1):
+      crypto: ixp4xx - include fix
+
+ crypto/sha512_generic.c        |    2 +-
+ drivers/crypto/ixp4xx_crypto.c |    1 +
+ drivers/crypto/talitos.c       |   20 +++++++++++++++++---
+ 3 files changed, 19 insertions(+), 4 deletions(-)
+ 
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
