@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab2DTJis (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 05:38:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43111 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab2DTJir (ORCPT
+	id S1753865Ab2DTJjV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 05:39:21 -0400
+Received: from grania.neolocation.net ([91.149.189.243]:39562 "EHLO
+	grania.neolocation.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752267Ab2DTJjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 05:38:47 -0400
-Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>, Lin Ming <mlin@ss.pku.edu.cn>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>
-In-Reply-To: <1334812653.14538.29.camel@ymzhang.sh.intel.com>
-References: <EE928378561BF1449699C96571234A740FCED62F@SHSMSX101.ccr.corp.intel.com>
-	 <4F8F8B9E.3040107@gmail.com>
-	 <1334812653.14538.29.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Apr 2012 11:38:39 +0200
-Message-ID: <1334914719.2463.32.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Apr 2012 05:39:20 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tekinsoft.com;
+	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:In-Reply-To:References:DomainKey-Status;
+	b=KEkV14rsr9q8Vy5I0IJUF5bVCL6ivhFbyJdicsjZo6XW9HoL05X0/AtNTjHfpFhJSdlNmZ0N785HFMt1dh3bhis0NPTRrklSwu5V69eZiwokUbuo9Tx2HhZ251NpYlnMaLRyBE4ggP2+SqynnP2cAtXC9oOtyI7hTwEdun2bJQY=;
+From: Yuri Matylitski <ym@tekinsoft.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Johan Hovold <jhovold@gmail.com>,
+        Preston Fick <preston.fick@silabs.com>,
+        Yuri Matylitski <ym@tekinsoft.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kirill@shutemov.name, Yuri Matylitski <ym@tekinsoft.com>
+Subject: [PATCH] Fixed usb_control_msg timeout values in cp210x driver
+Date: Fri, 20 Apr 2012 12:38:32 +0300
+Message-Id: <1334914712-7642-1-git-send-email-ym@tekinsoft.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1334910722-7357-1-git-send-email-ym@tekinsoft.com>
+References: <1334910722-7357-1-git-send-email-ym@tekinsoft.com>
+DomainKey-Status: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-19 at 13:17 +0800, Yanmin Zhang wrote:
-> Although not checking the source codes of pstack (sorry, I'm busy in debugging
-> many critical issues), I think pstack is based on ptrace interface, which means:
-> 1) It need traps into system for many times to collect call frames of one
-> task.
-> 2) It need send signal to the ptraced process to stop it. Such behavior
-> might have some impact if the ptraced process also processes many signals.
+Fixed too small hardcoded timeout values for usb_control_msg
+in driver for SiliconLabs cp210x-based usb-to-serial adapters.
+Replaced with USB_CTRL_GET_TIMEOUT/USB_CTRL_SET_TIMEOUT.
 
-Yeah, but who cares.. its debugging stuff..
+Signed-off-by: Yuri Matylitski <ym@tekinsoft.com>
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+---
+ drivers/usb/serial/cp210x.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-> 3) The data parsing to get symbols might not be split from data collection.
-> I mean, it collects call frames of one process, then parses it; then collects the 2nd
-> task's. If there are many processes, it couldn't collect the data just at the monitor
-> time point. 
-
-This is equally true for your silly patch.
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 0310e2d..e56066b 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -287,7 +287,8 @@ static int cp210x_get_config(struct usb_serial_port *port, u8 request,
+ 	/* Issue the request, attempting to read 'size' bytes */
+ 	result = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_DEVICE_TO_HOST, 0x0000,
+-				port_priv->bInterfaceNumber, buf, size, 300);
++				port_priv->bInterfaceNumber, buf, size, 
++				USB_CTRL_GET_TIMEOUT);
+ 
+ 	/* Convert data into an array of integers */
+ 	for (i = 0; i < length; i++)
+@@ -340,12 +341,14 @@ static int cp210x_set_config(struct usb_serial_port *port, u8 request,
+ 		result = usb_control_msg(serial->dev,
+ 				usb_sndctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_HOST_TO_DEVICE, 0x0000,
+-				port_priv->bInterfaceNumber, buf, size, 300);
++				port_priv->bInterfaceNumber, buf, size, 
++				USB_CTRL_SET_TIMEOUT);
+ 	} else {
+ 		result = usb_control_msg(serial->dev,
+ 				usb_sndctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_HOST_TO_DEVICE, data[0],
+-				port_priv->bInterfaceNumber, NULL, 0, 300);
++				port_priv->bInterfaceNumber, NULL, 0, 
++				USB_CTRL_SET_TIMEOUT);
+ 	}
+ 
+ 	kfree(buf);
+-- 
+1.7.0.4
 
