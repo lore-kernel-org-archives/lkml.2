@@ -1,198 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab2DTQKT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 12:10:19 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:64138 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757240Ab2DTQKP (ORCPT
+	id S1756917Ab2DTQOX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 12:14:23 -0400
+Received: from relay.parallels.com ([195.214.232.42]:42586 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab2DTQOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 12:10:15 -0400
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Noonan <steven@uplinklabs.net>, Ben Guthro <ben@guthro.net>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcus Granado <marcus.granado@citrix.com>, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] xen: implement apic ipi interface
-Date: Sat, 21 Apr 2012 00:11:04 +0800
-Message-Id: <1334938265-3844-2-git-send-email-mlin@ss.pku.edu.cn>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1334938265-3844-1-git-send-email-mlin@ss.pku.edu.cn>
-References: <1334938265-3844-1-git-send-email-mlin@ss.pku.edu.cn>
+	Fri, 20 Apr 2012 12:14:22 -0400
+Message-ID: <4F918B64.5030602@parallels.com>
+Date: Fri, 20 Apr 2012 20:14:28 +0400
+From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+CC: Zach Brown <zab@zabbo.net>, Jeff Moyer <jmoyer@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 15/21] loop: use aio to perform io on the underlying
+ file
+References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com> <1333122228-13633-16-git-send-email-dave.kleikamp@oracle.com> <4F917751.9040600@parallels.com> <4F917C2F.4020805@oracle.com> <x49mx66whty.fsf@segfault.boston.devel.redhat.com> <4F91862F.2030502@zabbo.net> <4F918758.8020001@oracle.com>
+In-Reply-To: <4F918758.8020001@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Guthro <ben@guthro.net>
+On 04/20/2012 07:57 PM, Dave Kleikamp wrote:
+>> So yeah, I'd agree that the loop code should be reworked a bit so that
+>> both the filebacked and aio methods call vfs_sync() when they see
+>> REQ_FLUSH.
+> It's an easy fix. I don't anticipate that it will hurt performance too
+> badly.
 
-Map native ipi vector to xen vector.
-Implement apic ipi interface with xen_send_IPI_one.
+Two questions:
 
-Tested-by: Steven Noonan <steven@uplinklabs.net>
-Signed-off-by: Ben Guthro <ben@guthro.net>
-Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
----
- arch/x86/xen/enlighten.c |    9 +++++
- arch/x86/xen/smp.c       |   81 +++++++++++++++++++++++++++++++++++++++++++--
- arch/x86/xen/smp.h       |   12 +++++++
- 3 files changed, 98 insertions(+), 4 deletions(-)
- create mode 100644 arch/x86/xen/smp.h
+1. Could we use fdatasync there? (otherwise it can hurt performance very 
+badly)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 4f51beb..1ed61c2 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -74,6 +74,7 @@
- 
- #include "xen-ops.h"
- #include "mmu.h"
-+#include "smp.h"
- #include "multicalls.h"
- 
- EXPORT_SYMBOL_GPL(hypercall_page);
-@@ -849,6 +850,14 @@ static void set_xen_basic_apic_ops(void)
- 	apic->icr_write = xen_apic_icr_write;
- 	apic->wait_icr_idle = xen_apic_wait_icr_idle;
- 	apic->safe_wait_icr_idle = xen_safe_apic_wait_icr_idle;
-+
-+#ifdef CONFIG_SMP
-+	apic->send_IPI_allbutself = xen_send_IPI_allbutself;
-+	apic->send_IPI_mask_allbutself = xen_send_IPI_mask_allbutself;
-+	apic->send_IPI_mask = xen_send_IPI_mask;
-+	apic->send_IPI_all = xen_send_IPI_all;
-+	apic->send_IPI_self = xen_send_IPI_self;
-+#endif
- }
- 
- #endif
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 5fac691..2dc6628 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -465,8 +465,8 @@ static void xen_smp_send_reschedule(int cpu)
- 	xen_send_IPI_one(cpu, XEN_RESCHEDULE_VECTOR);
- }
- 
--static void xen_send_IPI_mask(const struct cpumask *mask,
--			      enum ipi_vector vector)
-+static void __xen_send_IPI_mask(const struct cpumask *mask,
-+			      int vector)
- {
- 	unsigned cpu;
- 
-@@ -478,7 +478,7 @@ static void xen_smp_send_call_function_ipi(const struct cpumask *mask)
- {
- 	int cpu;
- 
--	xen_send_IPI_mask(mask, XEN_CALL_FUNCTION_VECTOR);
-+	__xen_send_IPI_mask(mask, XEN_CALL_FUNCTION_VECTOR);
- 
- 	/* Make sure other vcpus get a chance to run if they need to. */
- 	for_each_cpu(cpu, mask) {
-@@ -491,10 +491,83 @@ static void xen_smp_send_call_function_ipi(const struct cpumask *mask)
- 
- static void xen_smp_send_call_function_single_ipi(int cpu)
- {
--	xen_send_IPI_mask(cpumask_of(cpu),
-+	__xen_send_IPI_mask(cpumask_of(cpu),
- 			  XEN_CALL_FUNCTION_SINGLE_VECTOR);
- }
- 
-+static inline int xen_map_vector(int vector)
-+{
-+	int xen_vector;
-+
-+	switch (vector) {
-+	case RESCHEDULE_VECTOR:
-+		xen_vector = XEN_RESCHEDULE_VECTOR;
-+		break;
-+	case CALL_FUNCTION_VECTOR:
-+		xen_vector = XEN_CALL_FUNCTION_VECTOR;
-+		break;
-+	case CALL_FUNCTION_SINGLE_VECTOR:
-+		xen_vector = XEN_CALL_FUNCTION_SINGLE_VECTOR;
-+		break;
-+	default:
-+		xen_vector = -1;
-+		printk(KERN_ERR "xen: vector 0x%x is not implemented\n",
-+			vector);
-+	}
-+
-+	return xen_vector;
-+}
-+
-+void xen_send_IPI_mask(const struct cpumask *mask,
-+			      int vector)
-+{
-+	int xen_vector = xen_map_vector(vector);
-+
-+	if (xen_vector >= 0)
-+		__xen_send_IPI_mask(mask, xen_vector);
-+}
-+
-+void xen_send_IPI_all(int vector)
-+{
-+	int xen_vector = xen_map_vector(vector);
-+
-+	if (xen_vector >= 0)
-+		__xen_send_IPI_mask(cpu_online_mask, xen_vector);
-+}
-+
-+void xen_send_IPI_self(int vector)
-+{
-+	int xen_vector = xen_map_vector(vector);
-+
-+	if (xen_vector >= 0)
-+		xen_send_IPI_one(smp_processor_id(), xen_vector);
-+}
-+
-+void xen_send_IPI_mask_allbutself(const struct cpumask *mask,
-+				int vector)
-+{
-+	unsigned cpu;
-+	unsigned int this_cpu = smp_processor_id();
-+
-+	if (!(num_online_cpus() > 1))
-+		return;
-+
-+	for_each_cpu_and(cpu, mask, cpu_online_mask) {
-+		if (this_cpu == cpu)
-+			continue;
-+
-+		xen_smp_send_call_function_single_ipi(cpu);
-+	}
-+}
-+
-+void xen_send_IPI_allbutself(int vector)
-+{
-+	int xen_vector = xen_map_vector(vector);
-+
-+	if (xen_vector >= 0)
-+		xen_send_IPI_mask_allbutself(cpu_online_mask, xen_vector);
-+}
-+
- static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id)
- {
- 	irq_enter();
-diff --git a/arch/x86/xen/smp.h b/arch/x86/xen/smp.h
-new file mode 100644
-index 0000000..8981a76
---- /dev/null
-+++ b/arch/x86/xen/smp.h
-@@ -0,0 +1,12 @@
-+#ifndef _XEN_SMP_H
-+
-+extern void xen_send_IPI_mask(const struct cpumask *mask,
-+			      int vector);
-+extern void xen_send_IPI_mask_allbutself(const struct cpumask *mask,
-+				int vector);
-+extern void xen_send_IPI_allbutself(int vector);
-+extern void physflat_send_IPI_allbutself(int vector);
-+extern void xen_send_IPI_all(int vector);
-+extern void xen_send_IPI_self(int vector);
-+
-+#endif
--- 
-1.7.2.5
+2. vfs_sync() is synchronous. loop_thread() will be blocked till it's 
+completed. Would it be better to perform vfs_sync in another thread (to 
+allow other bio-s in loop queue proceed)? Also, if there are more than 
+one REQ_FLUSH bio in lo->lo_bio_list, we could call vfs_sync() only 
+once. Make sense?
 
+Thanks,
+Maxim
