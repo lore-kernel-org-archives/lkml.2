@@ -1,54 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809Ab2DTFRL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 01:17:11 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:57841 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751595Ab2DTFRG (ORCPT
+	id S1751997Ab2DTFQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 01:16:57 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:51146 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab2DTFQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 01:17:06 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArYLAJHwkE95LAIE/2dsb2JhbABDsDEBgQuBCIIJAQEFOhwjEAgDGC4UJQMhE4gODLpHBBOMeIJ5YwSVcJA9gnk
-Date: Fri, 20 Apr 2012 14:59:32 +1000
-From: Dave Chinner <david@fromorbit.com>
+	Fri, 20 Apr 2012 01:16:29 -0400
+X-AuditID: cbfee61a-b7c0cae000001518-ef-4f90f12aecd1
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
 To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Shyju PV <shyju.pv@huawei.com>, linux-kernel@vger.kernel.org
-Subject: Re: bnx2 driver loading error : Can't load firmware file
- "bnx2/bnx2-mips-09-6.2.1b.fw
-Message-ID: <20120420045932.GE9541@dastard>
-References: <A49C75C4810A4DD7AAED96B4A5F1A2D4@china.huawei.com>
- <20120420030837.GA17471@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420030837.GA17471@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        John Stultz <john.stultz@linaro.org>, myungjoo.ham@gmail.com,
+        cw00.choi@samsung.com
+Subject: [PATCH v8 resend 6/6] Documentation/extcon: porting guide for Android
+ kernel switch driver.
+Date: Fri, 20 Apr 2012 14:16:27 +0900
+Message-id: <1334898987-7800-7-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <1334898987-7800-1-git-send-email-myungjoo.ham@samsung.com>
+References: <20120420033209.GA17930@kroah.com>
+ <1334898987-7800-1-git-send-email-myungjoo.ham@samsung.com>
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 08:08:37PM -0700, Greg KH wrote:
-> On Fri, Apr 20, 2012 at 08:29:25AM +0530, Shyju PV wrote:
-> >   
-> > Hi
-> > Logged a bug on 3rd april on 3.4-rc1 kernel. 
-> > Bug ID : 43036
-> > Short descreption : bnx2 driver loading error : Can't load firmware file
-> > "bnx2/bnx2-mips-09-6.2.1b.fw Bugzila url :
-> > https://bugzilla.kernel.org/show_bug.cgi?id=43036
-> > The status of the bug is "new" in the bugzila.
-> > Please update.
-> 
-> Do you have that firmware file on your machine?
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ Documentation/extcon/porting-android-switch-class |  124 +++++++++++++++++++++
+ 1 files changed, 124 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/extcon/porting-android-switch-class
 
-It's the silly CONFIG_FIRMWARE_IN_KERNEL/external firwmware tree
-problem again:
-
-https://lkml.org/lkml/2012/4/18/142
-
-Cheers,
-
-Dave.
+diff --git a/Documentation/extcon/porting-android-switch-class b/Documentation/extcon/porting-android-switch-class
+new file mode 100644
+index 0000000..eb0fa5f
+--- /dev/null
++++ b/Documentation/extcon/porting-android-switch-class
+@@ -0,0 +1,124 @@
++
++	Staging/Android Switch Class Porting Guide
++	(linux/drivers/staging/android/switch)
++	(c) Copyright 2012 Samsung Electronics
++
++AUTHORS
++MyungJoo Ham <myungjoo.ham@samsung.com>
++
++/*****************************************************************
++ * CHAPTER 1.                                                    *
++ * PORTING SWITCH CLASS DEVICE DRIVERS                           *
++ *****************************************************************/
++
++****** STEP 1. Basic Functionality
++	No extcon extended feature, but switch features only.
++
++- struct switch_dev (fed to switch_dev_register/unregister)
++    @name: no change
++    @dev: no change
++    @index: drop (not used in switch device driver side anyway)
++    @state: no change
++	If you have used @state with magic numbers, keep it
++	at this step.
++    @print_name: no change but type change (switch_dev->extcon_dev)
++    @print_state: no change but type change (switch_dev->extcon_dev)
++
++- switch_dev_register(sdev, dev)
++	=> extcon_dev_register(edev, dev)
++	: no change but type change (sdev->edev)
++- switch_dev_unregister(sdev)
++	=> extcon_dev_unregister(edev)
++	: no change but type change (sdev->edev)
++- switch_get_state(sdev)
++	=> extcon_get_state(edev)
++	: no change but type change (sdev->edev) and (return: int->u32)
++- switch_set_state(sdev, state)
++	=> extcon_set_state(edev, state)
++	: no change but type change (sdev->edev) and (state: int->u32)
++
++With this changes, the ex-switch extcon class device works as it once
++worked as switch class device. However, it will now have additional
++interfaces (both ABI and in-kernel API) and different ABI locations.
++However, if CONFIG_ANDROID is enabled without CONFIG_ANDROID_SWITCH,
++/sys/class/switch/* will be symbolically linked to /sys/class/extcon/
++so that they are still compatible with legacy userspace processes.
++
++****** STEP 2. Multistate (no more magic numbers in state value)
++	Extcon's extended features for switch device drivers with
++	complex features usually required magic numbers in state
++	value of switch_dev. With extcon, such magic numbers that
++	support multiple cables (
++
++  1. Define cable names at edev->supported_cable.
++  2. (Recommended) remove print_state callback.
++  3. Use extcon_get_cable_state_(edev, index) or
++   extcon_get_cable_state(edev, cable_name) instead of
++   extcon_get_state(edev) if you intend to get a state of a specific
++   cable. Same for set_state. This way, you can remove the usage of
++   magic numbers in state value.
++  4. Use extcon_update_state() if you are updating specific bits of
++   the state value.
++
++Example: a switch device driver w/ magic numbers for two cables.
++	"0x00": no cables connected.
++	"0x01": cable 1 connected
++	"0x02": cable 2 connected
++	"0x03": cable 1 and 2 connected
++  1. edev->supported_cable = {"1", "2", NULL};
++  2. edev->print_state = NULL;
++  3. extcon_get_cable_state_(edev, 0) shows cable 1's state.
++     extcon_get_cable_state(edev, "1") shows cable 1's state.
++     extcon_set_cable_state_(edev, 1) sets cable 2's state.
++     extcon_set_cable_state(edev, "2") sets cable 2's state
++  4. extcon_update_state(edev, 0x01, 0) sets the least bit's 0.
++
++****** STEP 3. Notify other device drivers
++
++  You can notify others of the cable attach/detach events with
++notifier chains.
++
++  At the side of other device drivers (the extcon device itself
++does not need to get notified of its own events), there are two
++methods to register notifier_block for cable events:
++(a) for a specific cable or (b) for every cable.
++
++  (a) extcon_register_interest(obj, extcon_name, cable_name, nb)
++	Example: want to get news of "MAX8997_MUIC"'s "USB" cable
++
++	obj = kzalloc(sizeof(struct extcon_specific_cable_nb),
++		      GFP_KERNEL);
++	nb->notifier_call = the_callback_to_handle_usb;
++
++	extcon_register_intereset(obj, "MAX8997_MUIC", "USB", nb);
++
++  (b) extcon_register_notifier(edev, nb)
++	Call nb for any changes in edev.
++
++  Please note that in order to properly behave with method (a),
++the extcon device driver should support multistate feature (STEP 2).
++
++****** STEP 4. Inter-cable relation (mutually exclusive)
++
++  You can provide inter-cable mutually exclusiveness information
++for an extcon device. When cables A and B are declared to be mutually
++exclusive, the two cables cannot be in ATTACHED state simulteneously.
++
++
++/*****************************************************************
++ * CHAPTER 2.                                                    *
++ * PORTING USERSPACE w/ SWITCH CLASS DEVICE SUPPORT              *
++ *****************************************************************/
++
++****** ABI Location
++
++  If "CONFIG_ANDROID" is enabled and "CONFIG_ANDROID_SWITCH" is
++disabled, /sys/class/switch/* are created as symbolic links to
++/sys/class/extcon/*. Because CONFIG_ANDROID_SWITCH creates
++/sys/class/switch directory, we disable symboling linking if
++CONFIG_ANDROID_SWITCH is enabled.
++
++  The two files of switch class, name and state, are provided with
++extcon, too. When the multistate support (STEP 2 of CHAPTER 1.) is
++not enabled or print_state callback is supplied, the output of
++state ABI is same with switch class.
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.4.1
+
