@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740Ab2DTPSC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:18:02 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44039 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932197Ab2DTPSA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:18:00 -0400
-Date: Fri, 20 Apr 2012 17:17:43 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: grant.likely@secretlab.ca, robherring2@gmail.com, vitalywool@gmail.com,
-        khali@linux-fr.org, ben-linux@fluff.org, rob.herring@calxeda.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Subject: Re: [PATCH v6] i2c: Add device tree support to i2c-pnx.c
-Message-ID: <20120420151743.GA12536@pengutronix.de>
-References: <1334928849-18079-1-git-send-email-stigge@antcom.de>
+	id S932758Ab2DTPUd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:20:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62067 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932512Ab2DTPUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 11:20:32 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zach Brown <zab@zabbo.net>
+Subject: Re: [RFC PATCH v2 15/21] loop: use aio to perform io on the underlying file
+References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com>
+	<1333122228-13633-16-git-send-email-dave.kleikamp@oracle.com>
+	<4F917751.9040600@parallels.com> <4F917C2F.4020805@oracle.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 20 Apr 2012 11:20:25 -0400
+In-Reply-To: <4F917C2F.4020805@oracle.com> (Dave Kleikamp's message of "Fri,
+	20 Apr 2012 10:09:35 -0500")
+Message-ID: <x49mx66whty.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
-Content-Disposition: inline
-In-Reply-To: <1334928849-18079-1-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dave Kleikamp <dave.kleikamp@oracle.com> writes:
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 04/20/2012 09:48 AM, Maxim V. Patlasov wrote:
+>> On 03/30/2012 07:43 PM, Dave Kleikamp wrote:
+>>> From: Zach Brown<zab@zabbo.net>
+>>>
+>>> This uses the new kernel aio interface to process loopback IO by
+>>> submitting concurrent direct aio.  Previously loop's IO was serialized
+>>> by synchronous processing in a thread.
+>>>
+>> 
+>> The patch ignores REQ_FLUSH bit of bi_rw. Is it simply overlook?
+>
+> Good question. Since the loop device is sending only direct IO requests,
+> it shouldn't be necessary to explicitly flush page cache, but REQ_FLUSH
 
-On Fri, Apr 20, 2012 at 03:34:09PM +0200, Roland Stigge wrote:
-> This patch adds device tree support to the pnx-i2c driver by using platfo=
-rm
-> resources for memory region and irq and removing dependency on mach inclu=
-des.
->=20
-> The following platforms are affected:
->=20
-> * PNX
-> * LPC31xx (WIP)
-> * LPC32xx
->=20
-> The patch is based on a patch by Jon Smirl, working on lpc31xx integration
->=20
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+REQ_FLUSH isn't about the page cache, it's about flushing the volatile
+disk write cache.  You need to handle that.
 
-Applied to next \o/
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+RfhcACgkQD27XaX1/VRv43QCcCOXA+kSK6XH+2glVcVSZV9Nf
-oMEAn1KeQpBiGSbH8/WZ9ZozNZi/oSnc
-=BqDo
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
+Cheers,
+Jeff
