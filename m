@@ -1,80 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751277Ab2DTEdI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 00:33:08 -0400
-Received: from 11.mo3.mail-out.ovh.net ([87.98.184.158]:47585 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750724Ab2DTEdH (ORCPT
+	id S1751412Ab2DTEgg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 00:36:36 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:44430 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2DTEge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 00:33:07 -0400
-X-Greylist: delayed 4199 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Apr 2012 00:33:06 EDT
-Date: Fri, 20 Apr 2012 03:08:45 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Dong Aisheng <aisheng.dong@freescale.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <dongas86@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, kernel@pengutronix.de,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH 3/3] ARM: imx6q: switch to use pinctrl driver
-Message-ID: <20120420010845.GV16641@game.jcrosoft.org>
-References: <1334333915-1174-1-git-send-email-b29396@freescale.com>
- <1334333915-1174-3-git-send-email-b29396@freescale.com>
- <20120414135331.GB3852@pengutronix.de>
- <CAA+hA=QhSUZg0bWTss_4ROwZ--OOQfcP=mpt+MP7-ZKPkEwXyA@mail.gmail.com>
- <20120415073751.GF24997@S2101-09.ap.freescale.net>
- <20120416033519.GA17173@shlinux2.ap.freescale.net>
+	Fri, 20 Apr 2012 00:36:34 -0400
+Message-ID: <4F90E7CA.6080201@linux.vnet.ibm.com>
+Date: Thu, 19 Apr 2012 23:36:26 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120416033519.GA17173@shlinux2.ap.freescale.net>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 13511924783436311533
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegtddrtdefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegfedrfeelucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Nitin Gupta <nitingupta910@gmail.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Konrad Wilk <konrad.wilk@oracle.com>
+Subject: Re: linux-next: Tree for Apr 19 (zcache)
+References: <20120419164643.d9f918d44c890722b7707508@canb.auug.org.au> <4F909200.6070104@xenotime.net> <0b74f96b-8450-4dfb-8798-36edd0e06a64@default>
+In-Reply-To: <0b74f96b-8450-4dfb-8798-36edd0e06a64@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042004-3352-0000-0000-0000042680E7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11:35 Mon 16 Apr     , Dong Aisheng wrote:
-> On Sun, Apr 15, 2012 at 03:37:54PM +0800, Shawn Guo wrote:
-> > On Sun, Apr 15, 2012 at 12:03:16PM +0800, Dong Aisheng wrote:
-> > ...
-> > > For MX3 and MX5, before their pinctrl driver are available, user may
-> > > need to define a dummy in dt to avoid such an error.
-> > > 
-> > That is insane, and will not work.
-> > 
-> > 1) We do not have device tree support for MX3 yet.
-> > 2) It's not practical to add dummy entries in dt to avoid the error.
-> > 3) There are still so many non-dt board files support in the tree.
-> > How will they work with that?
-> > 
-> > My suggestion is to not make it an error but a dev_dbg, assuming that
-> > the pins are already set up by platform code if we do not find the
-> > entry from pinctrl system.  We can take it as a transition solution,
-> > and turn the dev_dbg back to error when all the users of the device
-> > driver are converted to device tree.
-> > 
-> My thinking is let pinctrl core handle dummy state as regulator subsystem
-> and does not depend on dt.
-> Linus, Stephen, any comment?
-agreed with Shawn
+On 04/19/2012 05:36 PM, Dan Magenheimer wrote:
+>> From: Randy Dunlap [mailto:rdunlap@xenotime.net]
+>> Sent: Thursday, April 19, 2012 4:30 PM
+>> To: Stephen Rothwell
+>> Cc: linux-next@vger.kernel.org; LKML; Dan Magenheimer
+>> Subject: Re: linux-next: Tree for Apr 19 (zcache)
+>>
+>> On 04/18/2012 11:46 PM, Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> Changes since 20120418:
+>>
+>>
+>> on x86_64:
+>>
+>> drivers/built-in.o: In function `zv_free':
+>> zcache-main.c:(.text+0x5e1c9): undefined reference to `zs_map_object'
+>> zcache-main.c:(.text+0x5e238): undefined reference to `zs_unmap_object'
+>> zcache-main.c:(.text+0x5e29a): undefined reference to `zs_free'
+>> drivers/built-in.o: In function `zv_create':
+>> zcache-main.c:(.text+0x5e6b3): undefined reference to `zs_malloc'
+>> zcache-main.c:(.text+0x5e6f0): undefined reference to `zs_map_object'
+>> zcache-main.c:(.text+0x5e72c): undefined reference to `zs_unmap_object'
+>> drivers/built-in.o: In function `zcache_comp_init':
+>> zcache-main.c:(.text+0x5e831): undefined reference to `crypto_has_alg'
+>> zcache-main.c:(.text+0x5e8a5): undefined reference to `crypto_has_alg'
+>> drivers/built-in.o: In function `zcache_cpu_notifier':
+>> zcache-main.c:(.text+0x5e94f): undefined reference to `crypto_alloc_base'
+>> zcache-main.c:(.text+0x5e9f2): undefined reference to `crypto_destroy_tfm'
+>> drivers/built-in.o: In function `zv_decompress':
+>> zcache-main.c:(.text+0x5ee40): undefined reference to `zs_map_object'
+>> zcache-main.c:(.text+0x5ef06): undefined reference to `zs_unmap_object'
+>> drivers/built-in.o: In function `zcache_pampd_create':
+>> zcache-main.c:(.text+0x5f614): undefined reference to `zs_get_total_size_bytes'
+>> make[1]: *** [.tmp_vmlinux1] Error 1
 
-this is insane if you can an error you do need to report it
+The problem is that zsmalloc is being built as a module and zcache is
+builtin.  It seems that because CRYPTO=m, kbuild is forcing zsmalloc
+to be built, just not forcing it to be builtin.
 
-I get the same issue on at91 and I'm going to make the pinctrl mandatory for DT
-only
+The zcache Kconfig has:
+	bool "Dynamic compression of swap pages and clean pagecache pages"
+	depends on (CLEANCACHE || FRONTSWAP) && CRYPTO && X86
+	select ZSMALLOC
+	select CRYPTO_LZO
 
-Best Regards,
-J.
+Seems to be a nuance of kbuild I didn't know before.  If a
+"selected by" (sub)condition is met, if any of the conditionals are
+built as modules, then the entry can be built as a module.
+
+For example, if zsmalloc is selected by:
+...(CLEANCACHE [=y] || FRONTSWAP [=n]) && CRYPTO [=m] && X86 [=y]
+then it can be built as a module or builtin.
+
+If zsmalloc is selected by:
+...(CLEANCACHE [=y] || FRONTSWAP [=n]) && CRYPTO [=y] && X86 [=y]
+then it must be builtin.
+
+One fix is this:
+
+diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
+index 3ed2c8f..7048e01 100644
+--- a/drivers/staging/zcache/Kconfig
++++ b/drivers/staging/zcache/Kconfig
+@@ -2,7 +2,7 @@ config ZCACHE
+        bool "Dynamic compression of swap pages and clean pagecache pages"
+        # X86 dependency is because zsmalloc uses non-portable pte/tlb
+        # functions
+-       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO && X86
++       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && X86
+        select ZSMALLOC
+        select CRYPTO_LZO
+        default n
+
+I think this is the best way since ZCACHE is a bool and CRYPTO is the only
+one of the dependencies that is a tristate.  This forces both ZSMALLOC and
+CRYPTO_LZO to be builtin if ZCACHE is selected.
+
+Any other suggestions?
+
+Thanks,
+Seth
+
