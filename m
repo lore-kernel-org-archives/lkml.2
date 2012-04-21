@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab2DUJiA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 05:38:00 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:54152 "EHLO
+	id S1755107Ab2DUJzm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 05:55:42 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:59083 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751769Ab2DUJfU (ORCPT
+	with ESMTP id S1751690Ab2DUJzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 05:35:20 -0400
+	Sat, 21 Apr 2012 05:55:41 -0400
 From: Roland Stigge <stigge@antcom.de>
-To: arm@kernel.org, thierry.reding@avionic-design.de, arnd@arndb.de,
-        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
-        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
+To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, stern@rowland.harvard.edu,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
 Cc: Roland Stigge <stigge@antcom.de>
 Subject: [PATCH v5 10/10] ARM: LPC32xx: Move common code to common.c
-Date: Sat, 21 Apr 2012 11:34:28 +0200
-Message-Id: <1335000868-21974-11-git-send-email-stigge@antcom.de>
+Date: Sat, 21 Apr 2012 11:55:05 +0200
+Message-Id: <1335002107-22162-1-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1335000868-21974-1-git-send-email-stigge@antcom.de>
-References: <1335000868-21974-1-git-send-email-stigge@antcom.de>
 X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
