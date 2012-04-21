@@ -1,96 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab2DUI7Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 04:59:24 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:37604 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751277Ab2DUI7W (ORCPT
+	id S1753404Ab2DUJEL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 05:04:11 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:44985 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462Ab2DUJEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 04:59:22 -0400
-Message-ID: <4F927787.409@fold.natur.cuni.cz>
-Date: Sat, 21 Apr 2012 11:01:59 +0200
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120319 Firefox/11.0 SeaMonkey/2.8
+	Sat, 21 Apr 2012 05:04:09 -0400
+Message-ID: <4F927804.4090208@suse.cz>
+Date: Sat, 21 Apr 2012 11:04:04 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120321 Thunderbird/12.0
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec
- timeframe
-References: <4F8F243B.70906@fold.natur.cuni.cz> <CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com> <4F909CEB.3060407@fold.natur.cuni.cz> <CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com> <CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com> <4F91473A.1080007@fold.natur.cuni.cz> <CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com> <4F919C22.1070608@fold.natur.cuni.cz> <4F919CD5.7070004@fold.natur.cuni.cz> <CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com> <20120420231748.GB7069@xanatos> <CAE9FiQX7JCZvL9S8ZOQQaHQ4nfU0XDj=8FmOfCtcz7WFjP8=Bg@mail.gmail.com> <CAE9FiQWLmiqg_8PQXYsccxqrvwEp5zhGLcEpsN-nAJq=1zTZ7Q@mail.gmail.com>
-In-Reply-To: <CAE9FiQWLmiqg_8PQXYsccxqrvwEp5zhGLcEpsN-nAJq=1zTZ7Q@mail.gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Emil Goode <emilgoode@gmail.com>, gregkh@linuxfoundation.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hyc@symas.com, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [PATCH] drivers/tty: Use get_user instead of dereferencing user
+ pointer
+References: <1334937154-23037-1-git-send-email-emilgoode@gmail.com> <20120420220010.0fa29bee@pyramind.ukuu.org.uk>
+In-Reply-To: <20120420220010.0fa29bee@pyramind.ukuu.org.uk>
 X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/20/2012 11:00 PM, Alan Cox wrote:
+> It's not simple however, so can anyone work out or remember wtf the code
+> should be doing ???
+
+Huh.
+
+The code was added by:
+commit 26df6d13406d1a53b0bda08bd712f1924affd7cd
+Author: hyc@symas.com <hyc@symas.com>
+Date:   Tue Jun 22 10:14:49 2010 -0700
+
+    tty: Add EXTPROC support for LINEMODE
+
+====
+
+The code is now:
+
+retval = copy_to_user(*b, &tty->read_buf[tty->read_tail], n);
+n -= retval;
+tty_audit_add_data(tty, &tty->read_buf[tty->read_tail], n);
+spin_lock_irqsave(&tty->read_lock, flags);
+tty->read_tail = (tty->read_tail + n) & (N_TTY_BUF_SIZE-1);
+tty->read_cnt -= n;
+if (L_EXTPROC(tty) && tty->icanon && n == 1) {
+        if (!tty->read_cnt && (*b)[n-1] == EOF_CHAR(tty))
+                n--;
+}
+
+====
+
+n after "n -= retval" means number of successfully copied chars. So the
+test "n == 1" along with "!tty->read_cnt" actually should ensure we
+copied everything and that is exactly one char. Further we test if that
+one is EOF. If so, ignore that char by pretending we copied nothing.
+
+However the implementation does not count with buffer wrapped like:
+EOF..........................something
+                             ^----- tail
+
+Here, the first call to copy_from_read_buf copies "something" and the
+second one is to copy single EOF. But that would be ignored! Is this
+expected?
 
 
-Yinghai Lu wrote:
-> On Fri, Apr 20, 2012 at 5:09 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> What do you mean "strange power state"?  The only PCI power states the
->>> xHCI driver will use is D0 or D3hot.  D3hot is entered automatically by
->>> the USB core runtime PM system when all USB devices are disconnected or
->>> suspended.  So what strange power state are we talking about?
->>
->> that's helpful. Can that feature to be disabled?
-> 
-> please check and set
-> /sys/bus/pci/devices/0000:11:00.0/power/control
-> /sys/bus/pci/devices/0000:11:00.0/usb?/power/control
-> from auto to on
+So to fix the user buffer dereference, the following diff should help.
+In any case the wrapped buffer is still to be fixed... (Or ignored.)
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1630,6 +1630,7 @@ static int copy_from_read_buf(struct tty_struct *tty,
+        int retval;
+        size_t n;
+        unsigned long flags;
++       bool is_eof;
 
-I inserted the card, it was detected:
+        retval = 0;
+        spin_lock_irqsave(&tty->read_lock, flags);
+@@ -1639,15 +1640,15 @@ static int copy_from_read_buf(struct tty_struct
+*tty,
+        if (n) {
+                retval = copy_to_user(*b,
+&tty->read_buf[tty->read_tail], n);
+                n -= retval;
++               is_eof = n == 1 &&
++                       tty->read_buf[tty->read_tail] == EOF_CHAR(tty);
+                tty_audit_add_data(tty, &tty->read_buf[tty->read_tail], n);
+                spin_lock_irqsave(&tty->read_lock, flags);
+                tty->read_tail = (tty->read_tail + n) & (N_TTY_BUF_SIZE-1);
+                tty->read_cnt -= n;
+                /* Turn single EOF into zero-length read */
+-               if (L_EXTPROC(tty) && tty->icanon && n == 1) {
+-                       if (!tty->read_cnt && (*b)[n-1] == EOF_CHAR(tty))
+-                               n--;
+-               }
++               if (L_EXTPROC(tty) && tty->icanon && is_eof &&
+!tty->read_cnt)
++                       n = 0;
+                spin_unlock_irqrestore(&tty->read_lock, flags);
+                *b += n;
+                *nr -= n;
 
-[33335.295737] pci 0000:11:00.0: [1033:0194] type 00 class 0x0c0330
-[33335.295789] pci 0000:11:00.0: reg 10: [mem 0x00000000-0x00001fff 64bit]
-[33335.296043] pci 0000:11:00.0: PME# supported from D0 D3hot
-[33335.315688] pci 0000:11:00.0: BAR 0: assigned [mem 0xf6c00000-0xf6c01fff 64bit]
-[33335.315796] xhci_hcd 0000:11:00.0: enabling device (0100 -> 0102)
-[33335.315893] xhci_hcd 0000:11:00.0: xHCI Host Controller
-[33335.315897] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 5
-[33335.316178] xhci_hcd 0000:11:00.0: irq 19, io mem 0xf6c00000
-[33335.316281] xhci_hcd 0000:11:00.0: irq 53 for MSI/MSI-X
-[33335.316285] xhci_hcd 0000:11:00.0: irq 54 for MSI/MSI-X
-[33335.316288] xhci_hcd 0000:11:00.0: irq 55 for MSI/MSI-X
-[33335.316292] xhci_hcd 0000:11:00.0: irq 56 for MSI/MSI-X
-[33335.316296] xhci_hcd 0000:11:00.0: irq 57 for MSI/MSI-X
-[33335.316447] usb usb5: New USB device found, idVendor=1d6b, idProduct=0002
-[33335.316448] usb usb5: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-[33335.316450] usb usb5: Product: xHCI Host Controller
-[33335.316451] usb usb5: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
-[33335.316452] usb usb5: SerialNumber: 0000:11:00.0
-[33335.316574] xHCI xhci_add_endpoint called for root hub
-[33335.316575] xHCI xhci_check_bandwidth called for root hub
-[33335.316597] hub 5-0:1.0: USB hub found
-[33335.316609] hub 5-0:1.0: 2 ports detected
-[33335.316680] xhci_hcd 0000:11:00.0: xHCI Host Controller
-[33335.316683] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 6
-[33335.319424] usb usb6: New USB device found, idVendor=1d6b, idProduct=0003
-[33335.319426] usb usb6: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-[33335.319428] usb usb6: Product: xHCI Host Controller
-[33335.319429] usb usb6: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
-[33335.319430] usb usb6: SerialNumber: 0000:11:00.0
-[33335.319560] xHCI xhci_add_endpoint called for root hub
-[33335.319562] xHCI xhci_check_bandwidth called for root hub
-[33335.319584] hub 6-0:1.0: USB hub found
-[33335.319602] hub 6-0:1.0: 2 ports detected
-
-# cat /sys/bus/pci/devices/0000:11:00.0/power/control
-on
-# cat /sys/bus/pci/devices/0000:11:00.0/usb?/power/control
-auto
-auto
-# echo on > /sys/bus/pci/devices/0000:11:00.0/usb5/power/control
-# echo on > /sys/bus/pci/devices/0000:11:00.0/usb6/power/control
-#
-
-I removed the card and it was NOT detected.
-
-Note: I did the test with the running instance of kernel booted WITH pcie_aspm=off.
-Will reboot without tha option and re-try.
-
-Martin
+thanks,
+-- 
+js
+suse labs
