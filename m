@@ -1,116 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab2DUNnU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 09:43:20 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:48551 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab2DUNnT (ORCPT
+	id S1751515Ab2DUNrQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 09:47:16 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45399 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084Ab2DUNrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 09:43:19 -0400
-From: Rajman Mekaco <rajman.mekaco@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rajman Mekaco <rajman.mekaco@gmail.com>,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 1/1] mmap.c: find_vma: remove unnecessary if(mm) check
-Date: Sat, 21 Apr 2012 19:12:35 +0530
-Message-Id: <1335015755-2881-1-git-send-email-rajman.mekaco@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sat, 21 Apr 2012 09:47:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120421124219.GH24211@n2100.arm.linux.org.uk>
+References: <cover.1335008617.git.viresh.kumar@st.com>
+	<f48165b92f52e9a879cedacaddc548ac885bf73d.1335008617.git.viresh.kumar@st.com>
+	<20120421124219.GH24211@n2100.arm.linux.org.uk>
+Date: Sat, 21 Apr 2012 19:17:13 +0530
+Message-ID: <CAOh2x=mcFFDHVkm71OC30TrbQTvay-QuCraKQ7gGyUQspQ43Kw@mail.gmail.com>
+Subject: Re: [PATCH 01/13] clk: Add non CONFIG_HAVE_CLK routines
+From: viresh kumar <viresh.linux@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: akpm@linux-foundation.org, mturquette@linaro.org, sshtylyov@mvista.com,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
+        jgarzik@redhat.com, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The if(mm) check is not required in find_vma, as the kernel
-code calls find_vma only when it is absolutely sure that the
-mm_struct arg to it is non-NULL.
+On 4/21/12, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> On Sat, Apr 21, 2012 at 05:17:28PM +0530, Viresh Kumar wrote:
+>> Many drivers are shared between architectures that may or may not have
+>> HAVE_CLK
+>> selected for them. To remove compilation errors for them we enclose
+>> clk_*()
+>> calls in these drivers within #ifdef CONFIG_HAVE_CLK, #endif.
+>
+> All you're doing is making drivers buildable.  Drivers will not be usable
+> with this (they'll error out because clk_get() will fail.)
+>
+> For example:
+>
+> -#ifndef CONFIG_HAVE_CLK
+> -/* Dummy stub for clk framework */
+> -#define clk_get(dev, id)       NULL
+> -#define clk_put(clock)         do {} while (0)
+> -#define clk_enable(clock)      do {} while (0)
+> -#define clk_disable(clock)     do {} while (0)
+> -#endif
+> -
+>
+> along with your change in this patch changes the drivers behaviour.
 
-Removing the if(mm) check and adding the a WARN_ONCE(!mm)
-for now.
-This will serve the purpose of mandating that the execution
-context(user-mode/kernel-mode) be known before find_vma is called.
-Also fixed 2 checkpatch.pl errors in the declaration
-of the rb_node and vma_tmp local variables.
+I tried to take care of these issues, but unfortunately
+i couldn't.
 
-I was browsing through the internet and read a discussion
-at https://lkml.org/lkml/2012/3/27/342 which discusses removal
-of the validation check within find_vma.
-Since no-one responded, I decided to send this patch with Andrew's
-suggestions.
+Patch numbers 6, 12 & 13 will actually break drivers. Will ask Andrew
+to drop them.
 
-Signed-off-by: Rajman Mekaco <rajman.mekaco@gmail.com>
-Cc: Kautuk Consul <consul.kautuk@gmail.com>
----
- mm/mmap.c |   53 +++++++++++++++++++++++++++--------------------------
- 1 files changed, 27 insertions(+), 26 deletions(-)
+> A better solution would be to assume that if HAVE_CLK is not set, then
+> that means there's no control over clocks, and therefore the clk API
+> should become totally transparent and non-failure inducing.  So, having
+> clk_get() return NULL, and having all the other clk API functions ignore
+> their argument (just like the macros above) is the right solution here.
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index b38b47e..1c3ef5d 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1616,33 +1616,34 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
- {
- 	struct vm_area_struct *vma = NULL;
- 
--	if (mm) {
--		/* Check the cache first. */
--		/* (Cache hit rate is typically around 35%.) */
--		vma = mm->mmap_cache;
--		if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
--			struct rb_node * rb_node;
--
--			rb_node = mm->mm_rb.rb_node;
--			vma = NULL;
--
--			while (rb_node) {
--				struct vm_area_struct * vma_tmp;
--
--				vma_tmp = rb_entry(rb_node,
--						struct vm_area_struct, vm_rb);
--
--				if (vma_tmp->vm_end > addr) {
--					vma = vma_tmp;
--					if (vma_tmp->vm_start <= addr)
--						break;
--					rb_node = rb_node->rb_left;
--				} else
--					rb_node = rb_node->rb_right;
--			}
--			if (vma)
--				mm->mmap_cache = vma;
-+	if (WARN_ON_ONCE(!mm))
-+		return NULL;
-+
-+	/* Check the cache first. */
-+	/* (Cache hit rate is typically around 35%.) */
-+	vma = mm->mmap_cache;
-+	if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
-+		struct rb_node *rb_node;
-+
-+		rb_node = mm->mm_rb.rb_node;
-+		vma = NULL;
-+
-+		while (rb_node) {
-+			struct vm_area_struct *vma_tmp;
-+
-+			vma_tmp = rb_entry(rb_node,
-+					   struct vm_area_struct, vm_rb);
-+
-+			if (vma_tmp->vm_end > addr) {
-+				vma = vma_tmp;
-+				if (vma_tmp->vm_start <= addr)
-+					break;
-+				rb_node = rb_node->rb_left;
-+			} else
-+				rb_node = rb_node->rb_right;
- 		}
-+		if (vma)
-+			mm->mmap_cache = vma;
- 	}
- 	return vma;
- }
--- 
-1.7.5.4
+Will leave these macros as is for mentioned patches.
 
+--
+viresh
