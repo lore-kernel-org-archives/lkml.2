@@ -1,119 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab2DUPeL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 11:34:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38689 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab2DUPeJ (ORCPT
+	id S1751300Ab2DUPkx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 11:40:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39537 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750724Ab2DUPkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 11:34:09 -0400
-Date: Sat, 21 Apr 2012 08:34:02 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
-        target-devel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: linux-next: Tree for Apr 20 (usb & target)
-Message-ID: <20120421153402.GA22953@kroah.com>
-References: <20120420155151.3fcac4c2d1002ade5ccf44ac@canb.auug.org.au>
- <4F91D9D9.6020609@xenotime.net>
- <1334999263.30707.129.camel@haakon2.linux-iscsi.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334999263.30707.129.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 21 Apr 2012 11:40:52 -0400
+Message-ID: <1335022841.3209.324.camel@deadeye>
+Subject: [PATCH linux-firmware] Remove unused 'mwl8335_duplex.fw'
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: David Woodhouse <dwmw2@infradead.org>, Dan Williams <dcbw@redhat.com>
+Date: Sat, 21 Apr 2012 16:40:41 +0100
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-/Hkz/5kKTbwWiKUUJWhQ"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 21, 2012 at 02:07:43AM -0700, Nicholas A. Bellinger wrote:
-> On Fri, 2012-04-20 at 14:49 -0700, Randy Dunlap wrote:
-> > On 04/19/2012 10:51 PM, Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > Changes since 20120419:
-> > 
-> > 
-> 
-> Hi Randy,
-> 
-> > CONFIG_MODULES is not enabled.
-> > CONFIG_TCM_USB_GADGET=y
-> > CONFIG_USB_GADGET=y
-> >
-> > drivers/usb/built-in.o: In function `usb_descriptor_fillbuf':
-> > (.text+0x53bb): multiple definition of `usb_descriptor_fillbuf'
-> > drivers/target/built-in.o:(.text+0x1e605): first defined here
-> > drivers/usb/built-in.o: In function `usb_string_ids_n':
-> > (.text+0x4f1a): multiple definition of `usb_string_ids_n'
-> > drivers/target/built-in.o:(.text+0x1f1ed): first defined here
-> > drivers/usb/built-in.o: In function `usb_interface_id':
-> > (.text+0x4ea8): multiple definition of `usb_interface_id'
-> > drivers/target/built-in.o:(.text+0x1f0bc): first defined here
-> > drivers/usb/built-in.o: In function `usb_string_id':
-> > (.text+0x4ecc): multiple definition of `usb_string_id'
-> > drivers/target/built-in.o:(.text+0x1f19f): first defined here
-> > drivers/usb/built-in.o: In function `usb_string_ids_tab':
-> > (.text+0x4ee8): multiple definition of `usb_string_ids_tab'
-> > drivers/target/built-in.o:(.text+0x1f1bb): first defined here
-> > drivers/usb/built-in.o: In function `usb_copy_descriptors':
-> > (.text+0x5a01): multiple definition of `usb_copy_descriptors'
-> > drivers/target/built-in.o:(.text+0x1ec48): first defined here
-> > drivers/usb/built-in.o: In function `usb_composite_unregister':
-> > (.text+0x4fe2): multiple definition of `usb_composite_unregister'
-> > drivers/target/built-in.o:(.text+0x1f2b5): first defined here
-> > drivers/usb/built-in.o: In function `config_ep_by_speed':
-> > (.text+0x4bd7): multiple definition of `config_ep_by_speed'
-> > drivers/target/built-in.o:(.text+0x1ecca): first defined here
-> > drivers/usb/built-in.o: In function `usb_gadget_get_string':
-> > (.text+0x5094): multiple definition of `usb_gadget_get_string'
-> > drivers/target/built-in.o:(.text+0x1dd85): first defined here
-> > drivers/usb/built-in.o: In function `usb_add_function':
-> > (.text+0x4cfc): multiple definition of `usb_add_function'
-> > drivers/target/built-in.o:(.text+0x1ee6c): first defined here
-> > drivers/usb/built-in.o: In function `usb_composite_probe':
-> > (.text+0x4f4a): multiple definition of `usb_composite_probe'
-> > drivers/target/built-in.o:(.text+0x1f21d): first defined here
-> > drivers/usb/built-in.o: In function `usb_composite_setup_continue':
-> > (.text+0x4ffd): multiple definition of `usb_composite_setup_continue'
-> > drivers/target/built-in.o:(.text+0x1f369): first defined here
-> > drivers/usb/built-in.o: In function `usb_gadget_config_buf':
-> > (.text+0x59ad): multiple definition of `usb_gadget_config_buf'
-> > drivers/target/built-in.o:(.text+0x1ebf4): first defined here
-> > drivers/usb/built-in.o: In function `usb_ep_autoconfig':
-> > (.text+0x5bba): multiple definition of `usb_ep_autoconfig'
-> > drivers/target/built-in.o:(.text+0x1e358): first defined here
-> > drivers/usb/built-in.o: In function `usb_function_activate':
-> > (.text+0x4e29): multiple definition of `usb_function_activate'
-> > drivers/target/built-in.o:(.text+0x1f03b): first defined here
-> > drivers/usb/built-in.o: In function `usb_ep_autoconfig_reset':
-> > (.text+0x5bc7): multiple definition of `usb_ep_autoconfig_reset'
-> > drivers/target/built-in.o:(.text+0x1e365): first defined here
-> > drivers/usb/built-in.o: In function `usb_add_config':
-> > (.text+0x5e6a): multiple definition of `usb_add_config'
-> > drivers/target/built-in.o:(.text+0x1f0e0): first defined here
-> > drivers/usb/built-in.o: In function `usb_ep_autoconfig_ss':
-> > (.text+0x5a83): multiple definition of `usb_ep_autoconfig_ss'
-> > drivers/target/built-in.o:(.text+0x1e0ab): first defined here
-> > drivers/usb/built-in.o: In function `usb_function_deactivate':
-> > (.text+0x4dc2): multiple definition of `usb_function_deactivate'
-> > drivers/target/built-in.o:(.text+0x1efd4): first defined here
-> > 
-> > 
-> 
-> Mmmm, It looks like the source file include usage in target/usb-gadget.c
-> might be causing some problems here:
-> 
-> #include "usbstring.c"
-> #include "epautoconf.c"
-> #include "config.c"
-> #include "composite.c"
-> 
-> Sebastian + Greg-KH (Cc'ed), any ideas why this is the case here..?
 
-I have no idea, sorry.
+--=-/Hkz/5kKTbwWiKUUJWhQ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+I've just pushed the following change to linux-firmware.git
+
+Ben.
+---
+This blob comes from the out-of-tree mwl8335 driver.  It was intended
+that the driver would be cleaned up and added to mainline Linux, and
+would use this external firmware file.  Unfortunately that has not
+been done and the file is redundant.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ mwl8335_duplex.fw |  Bin 51596 -> 0 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ delete mode 100644 mwl8335_duplex.fw
+
+diff --git a/mwl8335_duplex.fw b/mwl8335_duplex.fw
+deleted file mode 100644
+index 9490d053a65bfb434bcff78939957e16924540da..000000000000000000000000000=
+0000000000000
+--=20
+1.7.10
+
+
+
+--=-/Hkz/5kKTbwWiKUUJWhQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT5LU+ee/yOyVhhEJAQqZRg/+MqoTfv25y5QIr1bCcQ/Wus5wAmu0lwSG
+Vf1mdEpoFyAsklShAX35EOwzDdnCy1gYPCkQqBkGrQbKzMx+F0TLCt87Hkvowfuq
+q8dezCawid43YjEINIgnWH9rBLkbWlYsFSyR2iSRY3W8FUcOe94VDsXm4WOZymrl
+xYaC6ZdnPTbFnGslCLUVuhueSDunCi4k9usVwKL7+p1oq2wPMiktq9MuS1tY9myX
++HGvBcImsqeTpSeegQ8k98tUq1n0eO11L0EdwfUP9nTRKe8G0Yqocbaq/A076D9N
+u0ABaiVHM3RNtHeSyUXTP0+9xIS3XKfCEyEIp4Jp5hjcCV1fPhCKPzlRpdsf10xZ
+K10EQTezcxN0o6fzG8fcAzatANZXkn93Q1JRdnaM4msGYCLu1RvoHVzaUdUYwCuo
+w/aknh99+bPKXhWwwlkYps4H+aPvHrp5uVkHIJGo3N2Si4WcYKjuGJBJpt9wHc10
+rApaORGSRbcIIgqWtDnWX/YssxulS/r39VSafAZJKr1jhJM1ljvySSuCa9r20sx+
+jhE+lP6NMNy+63DO25e8B3NVGoWcsD5w1APev69yDTA67cI2TaNQsDazAskIGEq0
+MZlIsZpUl7wvGFjGxXGCIDc7ChL556mmzV0e5GJ2fdotU5Oqkwmy9k9upsppa6wj
+jsHbDhvTn20=
+=SW+V
+-----END PGP SIGNATURE-----
+
+--=-/Hkz/5kKTbwWiKUUJWhQ--
