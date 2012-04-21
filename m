@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab2DUEpU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 00:45:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53267 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750897Ab2DUEpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 00:45:19 -0400
-Date: Sat, 21 Apr 2012 01:22:08 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 4/9] KVM: MMU: introduce SPTE_ALLOW_WRITE bit
-Message-ID: <20120421042208.GB2763@amt.cnet>
-References: <4F911B74.4040305@linux.vnet.ibm.com>
- <4F911BE7.30206@linux.vnet.ibm.com>
- <20120420213925.GB13817@amt.cnet>
- <4F9229EF.4010506@gmail.com>
+	id S1752825Ab2DUEqo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 00:46:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38742 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab2DUEqm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 00:46:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9229EF.4010506@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQX7JCZvL9S8ZOQQaHQ4nfU0XDj=8FmOfCtcz7WFjP8=Bg@mail.gmail.com>
+References: <4F8F243B.70906@fold.natur.cuni.cz>
+	<CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com>
+	<4F909CEB.3060407@fold.natur.cuni.cz>
+	<CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
+	<CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com>
+	<4F91473A.1080007@fold.natur.cuni.cz>
+	<CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com>
+	<4F919C22.1070608@fold.natur.cuni.cz>
+	<4F919CD5.7070004@fold.natur.cuni.cz>
+	<CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com>
+	<20120420231748.GB7069@xanatos>
+	<CAE9FiQX7JCZvL9S8ZOQQaHQ4nfU0XDj=8FmOfCtcz7WFjP8=Bg@mail.gmail.com>
+Date: Fri, 20 Apr 2012 21:46:41 -0700
+X-Google-Sender-Auth: -7JDL_-hmdwTbONMTuMlNq_DFPg
+Message-ID: <CAE9FiQWLmiqg_8PQXYsccxqrvwEp5zhGLcEpsN-nAJq=1zTZ7Q@mail.gmail.com>
+Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
+From: Yinghai Lu <yinghai@kernel.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 21, 2012 at 11:30:55AM +0800, Xiao Guangrong wrote:
-> On 04/21/2012 05:39 AM, Marcelo Tosatti wrote:
-> 
-> 
-> >> @@ -1177,9 +1178,8 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
-> >>  			new_spte = *sptep & ~PT64_BASE_ADDR_MASK;
-> >>  			new_spte |= (u64)new_pfn << PAGE_SHIFT;
-> >>
-> >> -			new_spte &= ~PT_WRITABLE_MASK;
-> >> -			new_spte &= ~SPTE_HOST_WRITEABLE;
-> >> -			new_spte &= ~shadow_accessed_mask;
-> >> +			new_spte &= ~(PT_WRITABLE_MASK | SPTE_HOST_WRITEABLE |
-> >> +				      shadow_accessed_mask | SPTE_ALLOW_WRITE);
-> > 
-> > Each bit should have a distinct meaning. Here the host pte is being
-> > write-protected, which means only the SPTE_HOST_WRITEABLE bit
-> > should be cleared.
-> 
-> 
-> Hmm, it is no problem if SPTE_ALLOW_WRITE is not cleared.
-> 
-> But the meaning of SPTE_ALLOW_WRITE will become strange: we will see a
-> spte with spte.SPTE_ALLOW_WRITE = 1 (means the spte is writable on host
-> and guest) and spte.SPTE_HOST_WRITEABLE = 0 (means the spte is read-only
-> on host).
- 
-You are combining gpte writable bit, and host pte writable bit (which
-are separate and independent of each other) into one bit. 
+On Fri, Apr 20, 2012 at 5:09 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> What do you mean "strange power state"?  The only PCI power states the
+>> xHCI driver will use is D0 or D3hot.  D3hot is entered automatically by
+>> the USB core runtime PM system when all USB devices are disconnected or
+>> suspended.  So what strange power state are we talking about?
+>
+> that's helpful. Can that feature to be disabled?
 
-SPTE_HOST_WRITEABLE already indicates whether the host pte is writable 
-or not.
+please check and set
+/sys/bus/pci/devices/0000:11:00.0/power/control
+/sys/bus/pci/devices/0000:11:00.0/usb?/power/control
+from auto to on
 
+Yinghai
