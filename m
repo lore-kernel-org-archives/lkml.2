@@ -1,101 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab2DUJKT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 05:10:19 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:34206 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752666Ab2DUJKR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 05:10:17 -0400
-Message-ID: <4F927A16.1010908@fold.natur.cuni.cz>
-Date: Sat, 21 Apr 2012 11:12:54 +0200
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120319 Firefox/11.0 SeaMonkey/2.8
-MIME-Version: 1.0
-CC: Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec
- timeframe
-References: <4F8F243B.70906@fold.natur.cuni.cz> <CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com> <4F909CEB.3060407@fold.natur.cuni.cz> <CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com> <CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com> <4F91473A.1080007@fold.natur.cuni.cz> <CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com> <4F919C22.1070608@fold.natur.cuni.cz> <4F919CD5.7070004@fold.natur.cuni.cz> <CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com> <20120420231748.GB7069@xanatos> <CAE9FiQX7JCZvL9S8ZOQQaHQ4nfU0XDj=8FmOfCtcz7WFjP8=Bg@mail.gmail.com> <CAE9FiQWLmiqg_8PQXYsccxqrvwEp5zhGLcEpsN-nAJq=1zTZ7Q@mail.gmail.com> <4F927787.409@fold.natur.cuni.cz>
-In-Reply-To: <4F927787.409@fold.natur.cuni.cz>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	id S1754603Ab2DUJNs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 05:13:48 -0400
+Received: from smtp4.mail.ru ([94.100.176.44]:47233 "EHLO smtp4.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753328Ab2DUJKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 05:10:18 -0400
+From: Alexander Shiyan <shc_work@mail.ru>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH 06/17] ARM clps711x: Remove now unused cs89712 board header
+Date: Sat, 21 Apr 2012 13:11:19 +0400
+Message-Id: <1334999490-27177-7-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1334999490-27177-1-git-send-email-shc_work@mail.ru>
+References: <1334999490-27177-1-git-send-email-shc_work@mail.ru>
+X-Spam: Not detected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+---
+ arch/arm/include/asm/hardware/cs89712.h        |   49 ------------------------
+ arch/arm/mach-clps711x/include/mach/hardware.h |    2 -
+ 2 files changed, 0 insertions(+), 51 deletions(-)
+ delete mode 100644 arch/arm/include/asm/hardware/cs89712.h
 
-Martin Mokrejs wrote:
-> 
-> 
-> Yinghai Lu wrote:
->> On Fri, Apr 20, 2012 at 5:09 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>>> What do you mean "strange power state"?  The only PCI power states the
->>>> xHCI driver will use is D0 or D3hot.  D3hot is entered automatically by
->>>> the USB core runtime PM system when all USB devices are disconnected or
->>>> suspended.  So what strange power state are we talking about?
->>>
->>> that's helpful. Can that feature to be disabled?
->>
->> please check and set
->> /sys/bus/pci/devices/0000:11:00.0/power/control
->> /sys/bus/pci/devices/0000:11:00.0/usb?/power/control
->> from auto to on
-> 
-> I inserted the card, it was detected:
-> 
-> [33335.295737] pci 0000:11:00.0: [1033:0194] type 00 class 0x0c0330
-> [33335.295789] pci 0000:11:00.0: reg 10: [mem 0x00000000-0x00001fff 64bit]
-> [33335.296043] pci 0000:11:00.0: PME# supported from D0 D3hot
-> [33335.315688] pci 0000:11:00.0: BAR 0: assigned [mem 0xf6c00000-0xf6c01fff 64bit]
-> [33335.315796] xhci_hcd 0000:11:00.0: enabling device (0100 -> 0102)
-> [33335.315893] xhci_hcd 0000:11:00.0: xHCI Host Controller
-> [33335.315897] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 5
-> [33335.316178] xhci_hcd 0000:11:00.0: irq 19, io mem 0xf6c00000
-> [33335.316281] xhci_hcd 0000:11:00.0: irq 53 for MSI/MSI-X
-> [33335.316285] xhci_hcd 0000:11:00.0: irq 54 for MSI/MSI-X
-> [33335.316288] xhci_hcd 0000:11:00.0: irq 55 for MSI/MSI-X
-> [33335.316292] xhci_hcd 0000:11:00.0: irq 56 for MSI/MSI-X
-> [33335.316296] xhci_hcd 0000:11:00.0: irq 57 for MSI/MSI-X
-> [33335.316447] usb usb5: New USB device found, idVendor=1d6b, idProduct=0002
-> [33335.316448] usb usb5: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-> [33335.316450] usb usb5: Product: xHCI Host Controller
-> [33335.316451] usb usb5: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
-> [33335.316452] usb usb5: SerialNumber: 0000:11:00.0
-> [33335.316574] xHCI xhci_add_endpoint called for root hub
-> [33335.316575] xHCI xhci_check_bandwidth called for root hub
-> [33335.316597] hub 5-0:1.0: USB hub found
-> [33335.316609] hub 5-0:1.0: 2 ports detected
-> [33335.316680] xhci_hcd 0000:11:00.0: xHCI Host Controller
-> [33335.316683] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 6
-> [33335.319424] usb usb6: New USB device found, idVendor=1d6b, idProduct=0003
-> [33335.319426] usb usb6: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-> [33335.319428] usb usb6: Product: xHCI Host Controller
-> [33335.319429] usb usb6: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
-> [33335.319430] usb usb6: SerialNumber: 0000:11:00.0
-> [33335.319560] xHCI xhci_add_endpoint called for root hub
-> [33335.319562] xHCI xhci_check_bandwidth called for root hub
-> [33335.319584] hub 6-0:1.0: USB hub found
-> [33335.319602] hub 6-0:1.0: 2 ports detected
-> 
-> # cat /sys/bus/pci/devices/0000:11:00.0/power/control
-> on
-> # cat /sys/bus/pci/devices/0000:11:00.0/usb?/power/control
-> auto
-> auto
-> # echo on > /sys/bus/pci/devices/0000:11:00.0/usb5/power/control
-> # echo on > /sys/bus/pci/devices/0000:11:00.0/usb6/power/control
-> #
-> 
-> I removed the card and it was NOT detected.
-> 
-> Note: I did the test with the running instance of kernel booted WITH pcie_aspm=off.
-> Will reboot without tha option and re-try.
+diff --git a/arch/arm/include/asm/hardware/cs89712.h b/arch/arm/include/asm/hardware/cs89712.h
+deleted file mode 100644
+index f756269..0000000
+--- a/arch/arm/include/asm/hardware/cs89712.h
++++ /dev/null
+@@ -1,49 +0,0 @@
+-/*
+- *  arch/arm/include/asm/hardware/cs89712.h
+- *
+- *  This file contains the hardware definitions of the CS89712
+- *  additional internal registers.
+- *
+- *  Copyright (C) 2001 Thomas Gleixner autronix automation <gleixner@autronix.de>
+- *			
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-#ifndef __ASM_HARDWARE_CS89712_H
+-#define __ASM_HARDWARE_CS89712_H
+-
+-/*
+-*	CS89712 additional registers
+-*/
+-                                  
+-#define PCDR			0x0002	/* Port C Data register ---------------------------- */
+-#define PCDDR			0x0042	/* Port C Data Direction register ------------------ */
+-#define SDCONF			0x2300  /* SDRAM Configuration register ---------------------*/
+-#define SDRFPR			0x2340  /* SDRAM Refresh period register --------------------*/
+-
+-#define SDCONF_ACTIVE		(1 << 10)
+-#define SDCONF_CLKCTL		(1 << 9)
+-#define SDCONF_WIDTH_4		(0 << 7)
+-#define SDCONF_WIDTH_8		(1 << 7)
+-#define SDCONF_WIDTH_16		(2 << 7)
+-#define SDCONF_WIDTH_32		(3 << 7)
+-#define SDCONF_SIZE_16		(0 << 5)
+-#define SDCONF_SIZE_64		(1 << 5)
+-#define SDCONF_SIZE_128		(2 << 5)
+-#define SDCONF_SIZE_256		(3 << 5)
+-#define SDCONF_CASLAT_2		(2)
+-#define SDCONF_CASLAT_3		(3)
+-
+-#endif /* __ASM_HARDWARE_CS89712_H */
+diff --git a/arch/arm/mach-clps711x/include/mach/hardware.h b/arch/arm/mach-clps711x/include/mach/hardware.h
+index 8c7b28e..f00e87a 100644
+--- a/arch/arm/mach-clps711x/include/mach/hardware.h
++++ b/arch/arm/mach-clps711x/include/mach/hardware.h
+@@ -73,7 +73,6 @@
+ 
+ #include <asm/hardware/clps7111.h>
+ #include <asm/hardware/ep7212.h>
+-#include <asm/hardware/cs89712.h>
+ 
+ #endif
+ 
+@@ -82,7 +81,6 @@
+ 
+ #include <asm/hardware/clps7111.h>
+ #include <asm/hardware/ep7212.h>
+-#include <asm/hardware/cs89712.h>
+ 
+ /* static cdb89712_map_io() areas */
+ #define REGISTER_START   0x80000000
+-- 
+1.7.3.4
 
-Same values in sysfs files, same result.
-
-Martin
