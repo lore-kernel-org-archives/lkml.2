@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab2DUDbB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 23:31:01 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:60797 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab2DUDa7 (ORCPT
+	id S1754054Ab2DUDrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 23:47:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33508 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab2DUDru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 23:30:59 -0400
-Message-ID: <4F9229EF.4010506@gmail.com>
-Date: Sat, 21 Apr 2012 11:30:55 +0800
+	Fri, 20 Apr 2012 23:47:50 -0400
+Message-ID: <4F922DE2.6050300@gmail.com>
+Date: Sat, 21 Apr 2012 11:47:46 +0800
 From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
@@ -16,37 +16,100 @@ To: Marcelo Tosatti <mtosatti@redhat.com>
 CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 4/9] KVM: MMU: introduce SPTE_ALLOW_WRITE bit
-References: <4F911B74.4040305@linux.vnet.ibm.com> <4F911BE7.30206@linux.vnet.ibm.com> <20120420213925.GB13817@amt.cnet>
-In-Reply-To: <20120420213925.GB13817@amt.cnet>
+Subject: Re: [PATCH v3 5/9] KVM: MMU: introduce SPTE_WRITE_PROTECT bit
+References: <4F911B74.4040305@linux.vnet.ibm.com> <4F911C05.2070701@linux.vnet.ibm.com> <20120420215211.GC13817@amt.cnet>
+In-Reply-To: <20120420215211.GC13817@amt.cnet>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2012 05:39 AM, Marcelo Tosatti wrote:
+On 04/21/2012 05:52 AM, Marcelo Tosatti wrote:
 
-
->> @@ -1177,9 +1178,8 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
->>  			new_spte = *sptep & ~PT64_BASE_ADDR_MASK;
->>  			new_spte |= (u64)new_pfn << PAGE_SHIFT;
+> On Fri, Apr 20, 2012 at 04:19:17PM +0800, Xiao Guangrong wrote:
+>> If this bit is set, it means the W bit of the spte is cleared due
+>> to shadow page table protection
 >>
->> -			new_spte &= ~PT_WRITABLE_MASK;
->> -			new_spte &= ~SPTE_HOST_WRITEABLE;
->> -			new_spte &= ~shadow_accessed_mask;
->> +			new_spte &= ~(PT_WRITABLE_MASK | SPTE_HOST_WRITEABLE |
->> +				      shadow_accessed_mask | SPTE_ALLOW_WRITE);
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/mmu.c |   56 ++++++++++++++++++++++++++++++++++-----------------
+>>  1 files changed, 37 insertions(+), 19 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index dd984b6..eb02fc4 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -147,6 +147,7 @@ module_param(dbg, bool, 0644);
+>>
+>>  #define SPTE_HOST_WRITEABLE	(1ULL << PT_FIRST_AVAIL_BITS_SHIFT)
+>>  #define SPTE_ALLOW_WRITE	(1ULL << (PT_FIRST_AVAIL_BITS_SHIFT + 1))
+>> +#define SPTE_WRITE_PROTECT	(1ULL << (PT_FIRST_AVAIL_BITS_SHIFT + 2))
+>>
+>>  #define SHADOW_PT_INDEX(addr, level) PT64_INDEX(addr, level)
+>>
+>> @@ -1042,36 +1043,51 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+>>  		rmap_remove(kvm, sptep);
+>>  }
+>>
+>> +static bool spte_wp_by_dirty_log(u64 spte)
+>> +{
+>> +	WARN_ON(is_writable_pte(spte));
+>> +
+>> +	return (spte & SPTE_ALLOW_WRITE) && !(spte & SPTE_WRITE_PROTECT);
+>> +}
 > 
-> Each bit should have a distinct meaning. Here the host pte is being
-> write-protected, which means only the SPTE_HOST_WRITEABLE bit
-> should be cleared.
+> Is the information accurate? Say:
+> 
+> - dirty log write protect, set SPTE_ALLOW_WRITE, clear WRITABLE.
+> - shadow gfn, rmap_write_protect finds page not WRITABLE.
+> - spte points to shadow gfn, but SPTE_WRITE_PROTECT is not set.
 
 
-Hmm, it is no problem if SPTE_ALLOW_WRITE is not cleared.
+It can not happen, rmap_write_protect will set SPTE_WRITE_PROTECT
+even if the spte is not WRITABLE, please see:
 
-But the meaning of SPTE_ALLOW_WRITE will become strange: we will see a
-spte with spte.SPTE_ALLOW_WRITE = 1 (means the spte is writable on host
-and guest) and spte.SPTE_HOST_WRITEABLE = 0 (means the spte is read-only
-on host).
++	if (page_table_protect && spte_wp_by_dirty_log(spte))
++		goto reset_spte;
++
++	return false;
++
++reset_spte:
+ 	rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
+ 	spte = spte & ~PT_WRITABLE_MASK;
++	if (page_table_protect)
++		spte |= SPTE_WRITE_PROTECT;
+ 	mmu_spte_update(sptep, spte);
+-
+ 	return false;
+ }
+
+> 
+> BTW,
+> 
+> "introduce SPTE_ALLOW_WRITE bit
+> 
+> This bit indicates whether the spte is allow to be writable that
+> means the gpte of this spte is writable and the pfn pointed by
+> this spte is writable on host"
+> 
+> Other than the fact that each bit should have one meaning, how
+> can this bit be accurate without write protection of the gpte?
+> 
+
+
+Above explanation can ensure the meaning of this bit is accurate?
+Or it has another case? :)
+
+> As soon as guest writes to gpte, information in bit is outdated.
+> 
+
+
+The bit will be updated when spte is updated.
+
+When the guest write gpte, the spte is not updated immediately,
+yes, the bit is outdated at that time, but it is ok since tlb is
+not flushed.
+
+After tlb flush, the bit can be coincident with gpte.
 
