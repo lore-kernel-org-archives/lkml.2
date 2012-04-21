@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab2DUJKP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 05:10:15 -0400
-Received: from smtp4.mail.ru ([94.100.176.44]:46738 "EHLO smtp4.mail.ru"
+	id S1754648Ab2DUJOK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 05:14:10 -0400
+Received: from smtp4.mail.ru ([94.100.176.44]:46850 "EHLO smtp4.mail.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752274Ab2DUJKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 05:10:13 -0400
+	id S1752606Ab2DUJKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 05:10:14 -0400
 From: Alexander Shiyan <shc_work@mail.ru>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH 01/17] ARM clps711x: Cleanup: Rename ARCH_EP7211 and ARCH_EP7212 to SOC_xxx
-Date: Sat, 21 Apr 2012 13:11:14 +0400
-Message-Id: <1334999490-27177-2-git-send-email-shc_work@mail.ru>
+Subject: [PATCH 03/17] ARM clps711x: Selecting CPU-variant automatically for clps711x targets
+Date: Sat, 21 Apr 2012 13:11:16 +0400
+Message-Id: <1334999490-27177-4-git-send-email-shc_work@mail.ru>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1334999490-27177-1-git-send-email-shc_work@mail.ru>
 References: <1334999490-27177-1-git-send-email-shc_work@mail.ru>
@@ -21,82 +21,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In fact, these definitions indicate the CPU variant, so it is logically
-correct to change the name of the definitions.
 
 Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 ---
- arch/arm/mach-clps711x/Kconfig                 |    8 ++++----
- arch/arm/mach-clps711x/include/mach/hardware.h |    4 ++--
- drivers/net/irda/Kconfig                       |    2 +-
- 3 files changed, 7 insertions(+), 7 deletions(-)
+ arch/arm/mach-clps711x/Kconfig |   33 ++++++++++++++++-----------------
+ 1 files changed, 16 insertions(+), 17 deletions(-)
 
 diff --git a/arch/arm/mach-clps711x/Kconfig b/arch/arm/mach-clps711x/Kconfig
-index eb34bd1..ec47ef4 100644
+index f86aec1..28ac4d6 100644
 --- a/arch/arm/mach-clps711x/Kconfig
 +++ b/arch/arm/mach-clps711x/Kconfig
-@@ -47,24 +47,24 @@ config ARCH_FORTUNET
+@@ -2,14 +2,25 @@ if ARCH_CLPS711X
  
- # XXX Maybe these should indicate register compatibility
- # instead of being mutually exclusive.
--config ARCH_EP7211
+ menu "CLPS711X/EP721X/EP731X Implementations"
+ 
 +config SOC_EP7211
- 	bool
- 	depends on ARCH_EDB7211
- 	default y
- 
--config ARCH_EP7212
++	bool
++
 +config SOC_EP7212
- 	bool
- 	depends on ARCH_P720T || ARCH_CEIVA
- 	default y
++	bool
++
++config SOC_EP7312
++	bool
++
+ config ARCH_AUTCPU12
+ 	bool "AUTCPU12"
++	select SOC_EP7212
+ 	help
+ 	  Say Y if you intend to run the kernel on the autronix autcpu12
+ 	  board. This board is based on a Cirrus Logic CS89712.
+ 
+ config ARCH_CDB89712
+ 	bool "CDB89712"
++	select SOC_EP7212
+ 	select ISA
+ 	help
+ 	  This is an evaluation board from Cirrus for the CS89712 processor.
+@@ -18,17 +29,20 @@ config ARCH_CDB89712
+ 
+ config ARCH_CEIVA
+ 	bool "CEIVA"
++	select SOC_EP7212
+ 	help
+ 	  Say Y here if you intend to run this kernel on the Ceiva/Polaroid
+ 	  PhotoMax Digital Picture Frame.
+ 
+ config ARCH_CLEP7312
+ 	bool "CLEP7312"
++	select SOC_EP7312
+ 	help
+ 	  Boards based on the Cirrus Logic 7212/7312 chips.
+ 
+ config ARCH_EDB7211
+ 	bool "EDB7211"
++	select SOC_EP7211
+ 	select ISA
+ 	select ARCH_SPARSEMEM_ENABLE
+ 	select ARCH_SELECT_MEMORY_MODEL
+@@ -38,29 +52,14 @@ config ARCH_EDB7211
+ 
+ config ARCH_P720T
+ 	bool "P720T"
++	select SOC_EP7212
+ 	help
+ 	  Say Y here if you intend to run this kernel on the ARM Prospector
+ 	  720T.
+ 
+ config ARCH_FORTUNET
+ 	bool "FORTUNET"
+-
+-# XXX Maybe these should indicate register compatibility
+-# instead of being mutually exclusive.
+-config SOC_EP7211
+-	bool
+-	depends on ARCH_EDB7211
+-	default y
+-
+-config SOC_EP7212
+-	bool
+-	depends on ARCH_P720T || ARCH_CEIVA
+-	default y
+-
+-config SOC_EP7312
+-	bool
+-	depends on ARCH_FORTUNET
+-	default y
++	select SOC_EP7312
  
  config EP72XX_ROM_BOOT
  	bool "EP72xx ROM boot"
--	depends on ARCH_EP7211 || ARCH_EP7212
-+	depends on SOC_EP7211 || SOC_EP7212
- 	---help---
- 	  If you say Y here, your CLPS711x-based kernel will use the bootstrap
- 	  mode memory map instead of the normal memory map.
- 
--	  Processors derived from the Cirrus CLPS-711X core support two boot
-+	  Processors derived from the Cirrus CLPS711X core support two boot
- 	  modes.  Normal mode boots from the external memory device at CS0.
- 	  Bootstrap mode rearranges parts of the memory map, placing an
- 	  internal 128 byte bootstrap ROM at CS0.  This option performs the
-diff --git a/arch/arm/mach-clps711x/include/mach/hardware.h b/arch/arm/mach-clps711x/include/mach/hardware.h
-index d0b7d87..99461f3 100644
---- a/arch/arm/mach-clps711x/include/mach/hardware.h
-+++ b/arch/arm/mach-clps711x/include/mach/hardware.h
-@@ -52,13 +52,13 @@
- #define CS7_PHYS_BASE		(0x00000000)
- #endif
- 
--#if defined (CONFIG_ARCH_EP7211)
-+#if defined (CONFIG_SOC_EP7211)
- 
- #define EP7211_VIRT_BASE	CLPS7111_VIRT_BASE
- #define EP7211_BASE		CLPS7111_VIRT_BASE
- #include <asm/hardware/ep7211.h>
- 
--#elif defined (CONFIG_ARCH_EP7212)
-+#elif defined (CONFIG_SOC_EP7212)
- 
- #define EP7212_VIRT_BASE	CLPS7111_VIRT_BASE
- #define EP7212_BASE		CLPS7111_VIRT_BASE
-diff --git a/drivers/net/irda/Kconfig b/drivers/net/irda/Kconfig
-index 4680478..54d7723 100644
---- a/drivers/net/irda/Kconfig
-+++ b/drivers/net/irda/Kconfig
-@@ -212,7 +212,7 @@ config KINGSUN_DONGLE
- 
- config EP7211_DONGLE
- 	tristate "EP7211 I/R support"
--	depends on IRTTY_SIR && ARCH_EP7211 && IRDA && EXPERIMENTAL
-+	depends on IRTTY_SIR && (SOC_EP7211 || SOC_EP7212) && IRDA && EXPERIMENTAL
- 	help
- 	  Say Y here if you want to build support for the Cirrus logic
- 	  EP7211 chipset's infrared module.
 -- 
 1.7.3.4
 
