@@ -1,101 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372Ab2DUEW5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 00:22:57 -0400
-Received: from void.printf.net ([89.145.121.20]:56152 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722Ab2DUEW4 convert rfc822-to-8bit (ORCPT
+	id S1751404Ab2DUE1n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 00:27:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2474 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab2DUE1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 00:22:56 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] MMC fixes for 3.4-rc4
-Date: Sat, 21 Apr 2012 00:23:08 -0400
-Message-ID: <87zka5g1cj.fsf@laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 21 Apr 2012 00:27:42 -0400
+X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=lt3JZn9S7PoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=IFFSxcZ83qxRnnNlgCYA:9 a=B3yhWHvGVk21BXoNxLgA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334982460.28106.90.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH v5 2/4] trace: Make removal of ring buffer pages atomic
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        Justin Teravest <teravest@google.com>, linux-kernel@vger.kernel.org
+Date: Sat, 21 Apr 2012 00:27:40 -0400
+In-Reply-To: <1328212844-11889-2-git-send-email-vnagarnaik@google.com>
+References: <1318382410-14967-1-git-send-email-vnagarnaik@google.com>
+	 <1328212844-11889-1-git-send-email-vnagarnaik@google.com>
+	 <1328212844-11889-2-git-send-email-vnagarnaik@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2012-02-02 at 12:00 -0800, Vaibhav Nagarnaik wrote:
+> This patch adds the capability to remove pages from a ring buffer
+> without destroying any existing data in it.
+> 
+> This is done by removing the pages after the tail page. This makes sure
+> that first all the empty pages in the ring buffer are removed. If the
+> head page is one in the list of pages to be removed, then the page after
+> the removed ones is made the head page. This removes the oldest data
+> from the ring buffer and keeps the latest data around to be read.
+> 
+> To do this in a non-racey manner, tracing is stopped for a very short
+> time while the pages to be removed are identified and unlinked from the
+> ring buffer. The pages are freed after the tracing is restarted to
+> minimize the time needed to stop tracing.
+> 
+> The context in which the pages from the per-cpu ring buffer are removed
+> runs on the respective CPU. This minimizes the events not traced to only
+> NMI trace contexts.
 
-Please pull from:
+Can't do this. (see below)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.4-rc4
 
-to receive MMC fixes for 3.4-rc4.  There are no merge conflicts, and the
-patches have been tested in linux-next.  Thanks.
 
-The following changes since commit 3b422e9c2c020a1137349c614da7f9c9761a0922:
+> +rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned int
+> nr_pages)
+>  {
+> -       struct buffer_page *bpage;
+> -       struct list_head *p;
+> -       unsigned i;
+> +       unsigned int nr_removed;
+> +       int page_entries;
+> +       struct list_head *tail_page, *to_remove, *next_page;
+> +       unsigned long head_bit;
+> +       struct buffer_page *last_page, *first_page;
+> +       struct buffer_page *to_remove_page, *tmp_iter_page;
+> 
+Also, please use the "upside down x-mas tree" for the declarations:
 
-  Merge tag 'for-torvalds-20120418' of git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl (2012-04-20 12:28:06 -0700)
+ie.
 
-are available in the git repository at:
+       struct list_head *tail_page, *to_remove, *next_page;
+       struct buffer_page *to_remove_page, *tmp_iter_page;
+       struct buffer_page *last_page, *first_page;
+       unsigned int nr_removed;
+       unsigned long head_bit;
+       int page_entries;
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.4-rc4
+See, it looks easier to read then what you had.
 
-for you to fetch changes up to 7c5709194096beea1ab6e6db46768d70a068efb0:
+> +		/* fire off all the required work handlers */
+> +		for_each_buffer_cpu(buffer, cpu) {
+> +			cpu_buffer = buffer->buffers[cpu];
+> +			if (!cpu_buffer->nr_pages_to_update)
+> +				continue;
+> +			schedule_work_on(cpu, &cpu_buffer->update_pages_work);
 
-  mmc: core: Do not pre-claim host in suspend (2012-04-20 21:52:13 -0400)
+This locks up. I just tried the following, and it hung the task.
 
-----------------------------------------------------------------
-MMC fixes for 3.4-rc4:
- The major fixes here are:
-  * Build fix for omap_hsmmc with OF against 3.4-rc1.
-  * Fix CONFIG_MMC_UNSAFE_RESUME semantics regression against 3.3,
-    which broke hotplug card detection when UNSAFE_RESUME is set.
-  * Fix a race condition in omap_hsmmc with runtime PM.
-  * Fix two libertas SDIO-powered-resume regressions.
- Also small fixes for discard/sanitize, dw_mmc, cd-gpio and esdhc-imx.
+Here:
 
-----------------------------------------------------------------
-Adrian Hunter (2):
-      mmc: fixes for eMMC v4.5 discard operation
-      mmc: fixes for eMMC v4.5 sanitize operation
+# cd /sys/kernel/debug/tracing
+# echo 1 > events/enable
+# sleep 10
+# echo 0 > event/enable
+# echo 0 > /sys/devices/system/cpu/cpu1/online
+# echo 100 > buffer_size_kb
 
-Chris Ball (1):
-      mmc: omap_hsmmc: build fix for CONFIG_OF=y and CONFIG_MMC_OMAP_HS=m
+<locked!>
 
-Chuanxiao Dong (1):
-      mmc: remove MMC bus legacy suspend/resume method
+I guess you could test if the cpu is online. And if so, then do the
+schedule_work_on(). You will need to get_online_cpus first.
 
-Daniel Drake (1):
-      mmc: sdhci: refine non-removable card checking for card detection
+If the cpu is offline, just change it.
 
-Eric Bénard (1):
-      mmc: unbreak sdhci-esdhc-imx on i.MX25
+-- Steve
 
-H Hartley Sweeten (1):
-      mmc: cd-gpio: Include header to pickup exported symbol prototypes
+PS. The first patch looks good, but I think you need to add some more
+blank lines in your patches. You like to bunch a lot of text together,
+and that causes some eye strain.
 
-Jaehoon Chung (1):
-      mmc: dw_mmc: prevent NULL dereference for dma_ops
-
-Rajendra Nayak (1):
-      mmc: omap_hsmmc: Get rid of of_have_populated_dt() usage
-
-Seungwon Jeon (1):
-      mmc: dw_mmc: Fix switch from DMA to PIO
-
-Ulf Hansson (1):
-      mmc: core: Do not pre-claim host in suspend
-
- drivers/mmc/card/block.c           |   56 ++++++++++++++++++++++---------
- drivers/mmc/card/queue.c           |    2 +-
- drivers/mmc/core/bus.c             |   24 ++++---------
- drivers/mmc/core/cd-gpio.c         |    1 +
- drivers/mmc/core/core.c            |   64 ++++++++++++++---------------------
- drivers/mmc/host/dw_mmc.c          |    7 +++-
- drivers/mmc/host/omap_hsmmc.c      |    6 ++--
- drivers/mmc/host/sdhci-esdhc-imx.c |    3 +-
- drivers/mmc/host/sdhci.c           |    2 +-
- include/linux/mmc/card.h           |    2 +-
- 10 files changed, 86 insertions(+), 81 deletions(-)
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
