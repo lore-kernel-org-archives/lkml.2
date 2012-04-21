@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab2DUSPI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 14:15:08 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:45909 "EHLO mgw2.diku.dk"
+	id S1751984Ab2DUSX4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 14:23:56 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:42395 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab2DUSPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 14:15:06 -0400
+	id S1751648Ab2DUSXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 14:23:54 -0400
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: cocci@diku.dk, mmarek@suse.cz, linux-kernel@vger.kernel.org
 Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH] scripts/coccinelle: address test is always true
-Date: Sat, 21 Apr 2012 20:14:58 +0200
-Message-Id: <1335032098-4966-2-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH v2] scripts/coccinelle: sizeof of pointer
+Date: Sat, 21 Apr 2012 20:23:48 +0200
+Message-Id: <1335032628-5152-1-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,17 +22,19 @@ From: Julia Lawall <Julia.Lawall@lip6.fr>
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- scripts/coccinelle/misc/ifaddr.cocci |   35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+v2, with a better subject
 
-diff --git a/scripts/coccinelle/misc/ifaddr.cocci b/scripts/coccinelle/misc/ifaddr.cocci
+ scripts/coccinelle/misc/noderef.cocci |   65 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+
+diff --git a/scripts/coccinelle/misc/noderef.cocci b/scripts/coccinelle/misc/noderef.cocci
 new file mode 100644
-index 0000000..3e4089a
+index 0000000..c170721
 --- /dev/null
-+++ b/scripts/coccinelle/misc/ifaddr.cocci
-@@ -0,0 +1,35 @@
-+/// the address of a variable or field is non-zero is likely always to bo
-+/// non-zero
++++ b/scripts/coccinelle/misc/noderef.cocci
+@@ -0,0 +1,65 @@
++/// sizeof when applied to a pointer typed expression gives the size of
++/// the pointer
 +///
 +// Confidence: High
 +// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
@@ -44,26 +46,56 @@ index 0000000..3e4089a
 +virtual org
 +virtual report
 +virtual context
++virtual patch
 +
-+@r@
-+expression x;
-+statement S1,S2;
-+position p;
++@depends on patch@
++expression *x;
++expression f;
++type T;
 +@@
 +
-+*if@p (&x)
-+ S1 else S2
++(
++x = <+... sizeof(
++- x
+++ *x
++   ) ...+>
++|
++f(...,(T)(x),...,sizeof(
++- x
+++ *x
++   ),...)
++|
++f(...,sizeof(x),...,(T)(
++- x
+++ *x
++   ),...)
++)
++
++@r depends on !patch@
++expression *x;
++expression f;
++position p;
++type T;
++@@
++
++(
++*x = <+... sizeof@p(x) ...+>
++|
++*f(...,(T)(x),...,sizeof@p(x),...)
++|
++*f(...,sizeof@p(x),...,(T)(x),...)
++)
 +
 +@script:python depends on org@
 +p << r.p;
 +@@
 +
-+cocci.print_main("test of a variable/field address",p)
++cocci.print_main("application of sizeof to pointer",p)
 +
 +@script:python depends on report@
 +p << r.p;
 +@@
 +
-+msg = "ERROR: test of a variable/field address"
++msg = "ERROR: application of sizeof to pointer"
 +coccilib.report.print_report(p[0],msg)
 
