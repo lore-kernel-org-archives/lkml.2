@@ -1,117 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab2DUCZy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 22:25:54 -0400
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:24032
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752590Ab2DUCZw (ORCPT
+	id S1754709Ab2DUCtX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 22:49:23 -0400
+Received: from host171.canaca.com ([67.55.55.225]:40969 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab2DUCtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 22:25:52 -0400
-X-SpamScore: -3
-X-BigFish: VPS-3(z1039ozbb2dI1432N98dKzz1202hzz8275ch8275bh8275dhz2fh668h839hd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4F921A95.3030805@am.sony.com>
-Date: Fri, 20 Apr 2012 19:25:25 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Richard Kuo <rkuo@codeaurora.org>, Tony Luck <tony.luck@intel.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Howells <dhowells@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Richard Weinberger <richard@nod.at>, "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [patch 04/18] smp: Provide generic idle thread allocation
-References: <20120420122120.097464672@linutronix.de> <20120420124557.102478630@linutronix.de>
-In-Reply-To: <20120420124557.102478630@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+	Fri, 20 Apr 2012 22:49:21 -0400
+From: Simon Wood <simon@mungewell.org>
+To: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        Michael Bauer <michael@m-bauer.org>,
+        Michal Maly <madcatxster@gmail.com>, Simon Wood <simon@mungewell.org>
+Subject: [PATCH 1/2] HID: hid-lg4ff: Add support for G27 LEDs
+Date: Sat, 21 Apr 2012 05:41:15 -0700
+Message-Id: <1335012076-26430-1-git-send-email-simon@mungewell.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <alpine.LNX.2.00.1204201156300.29484@pobox.suse.cz>
+References: <alpine.LNX.2.00.1204201156300.29484@pobox.suse.cz>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/12 06:05, Thomas Gleixner wrote:
-> All SMP architectures have magic to fork the idle task and to store it
-> for reusage when cpu hotplug is enabled. Provide a generic
-> infrastructure for it.
-> 
-> Create/reinit the idle thread for the cpu which is brought up in the
-> generic code and hand the thread pointer to the architecture code via
-> __cpu_up().
-> 
-> Note, that fork_idle() is called via a workqueue, because this
-> guarantees that the idle thread does not get a reference to a user
-> space VM. This can happen when the boot process did not bring up all
-> possible cpus and a later cpu_up() is initiated via the sysfs
-> interface. In that case fork_idle() would be called in the context of
-> the user space task and take a reference on the user space VM.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Matt Turner <mattst88@gmail.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-> Cc: Richard Kuo <rkuo@codeaurora.org>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Hirokazu Takata <takata@linux-m32r.org>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Richard Weinberger <richard@nod.at>
-> Cc: x86@kernel.org
-> ---
->  arch/Kconfig        |    3 +
->  kernel/cpu.c        |    2 -
->  kernel/sched/core.c |    2 +
->  kernel/smpboot.c    |   83 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  kernel/smpboot.h    |   10 ++++++
->  5 files changed, 99 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6/arch/Kconfig
-> ===================================================================
-> --- linux-2.6.orig/arch/Kconfig
-> +++ linux-2.6/arch/Kconfig
-> @@ -145,6 +145,9 @@ config HAVE_DMA_ATTRS
->  config USE_GENERIC_SMP_HELPERS
->  	bool
->  
-> +config GENERIC_SMP_IDLE_THREAD
-> +       bool
+This patch adds supports for controlling the LED 'tachometer' on
+the G27 wheel, via the LED subsystem.
 
-    ^^^^^  This _appears_ to be spaces instead of a tab.  Hopefully not a false alarm, I know
-           my mail servers randomly change tabs to spaces, just to mess with me, but I double
-           checked at the lkml archive.
+The 5 LEDs are arranged from right (1=grn, 2=grn, 3=yel, 4=yel, 5=red)
+and 'mirrored' to the left (10 LEDs in total).
 
-> +
->  config HAVE_REGS_AND_STACK_ACCESS_API
->  	bool
->  	help
+Signed-off-by: Simon Wood <simon@mungewell.org>
+---
+ drivers/hid/hid-lg4ff.c |  158 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 157 insertions(+), 1 deletions(-)
 
-< snip >
-
-- Frank
+diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
+index 32c173f..1e942a0 100644
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -55,7 +55,10 @@ struct lg4ff_device_entry {
+ 	__u16 range;
+ 	__u16 min_range;
+ 	__u16 max_range;
+-	__u8  leds;
++#ifdef CONFIG_LEDS_CLASS
++	__u8  led_state;
++	struct led_classdev *led[5];
++#endif
+ 	struct list_head list;
+ 	void (*set_range)(struct hid_device *hid, u16 range);
+ };
+@@ -335,6 +338,88 @@ static ssize_t lg4ff_range_store(struct device *dev, struct device_attribute *at
+ 	return count;
+ }
+ 
++#ifdef CONFIG_LEDS_CLASS
++static void lg4ff_set_leds(struct hid_device *hid, __u8 leds)
++{
++	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
++	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
++
++	report->field[0]->value[0] = 0xf8;
++	report->field[0]->value[1] = 0x12;
++	report->field[0]->value[2] = leds;
++	report->field[0]->value[3] = 0x00;
++	report->field[0]->value[4] = 0x00;
++	report->field[0]->value[5] = 0x00;
++	report->field[0]->value[6] = 0x00;
++	usbhid_submit_report(hid, report, USB_DIR_OUT);
++}
++
++static void lg4ff_led_set_brightness(struct led_classdev *led_cdev,
++			enum led_brightness value)
++{
++	struct device *dev = led_cdev->dev->parent;
++	struct hid_device *hid = container_of(dev, struct hid_device, dev);
++	struct lg_drv_data *drv_data = (struct lg_drv_data *)hid_get_drvdata(hid);
++	struct lg4ff_device_entry *entry;
++	int i, state = 0;
++
++	if (!drv_data) {
++		hid_err(hid, "Device data not found.");
++		return;
++	}
++
++	entry = (struct lg4ff_device_entry *)drv_data->device_props;
++
++	if (!entry) {
++		hid_err(hid, "Device properties not found.");
++		return;
++	}
++
++	for (i = 0; i < 5; i++) {
++		if (led_cdev != entry->led[i])
++			continue;
++		state = (entry->led_state >> i) & 1;
++		if (value == LED_OFF && state) {
++			entry->led_state &= ~(1 << i);
++			lg4ff_set_leds(hid, entry->led_state);
++		} else if (value != LED_OFF && !state) {
++			entry->led_state |= 1 << i;
++			lg4ff_set_leds(hid, entry->led_state);
++		}
++		break;
++	}
++}
++
++static enum led_brightness lg4ff_led_get_brightness(struct led_classdev *led_cdev)
++{
++	struct device *dev = led_cdev->dev->parent;
++	struct hid_device *hid = container_of(dev, struct hid_device, dev);
++	struct lg_drv_data *drv_data = (struct lg_drv_data *)hid_get_drvdata(hid);
++	struct lg4ff_device_entry *entry;
++	int i, value = 0;
++
++	if (!drv_data) {
++		hid_err(hid, "Device data not found.");
++		return LED_OFF;
++	}
++
++	entry = (struct lg4ff_device_entry *)drv_data->device_props;
++
++	if (!entry) {
++		hid_err(hid, "Device properties not found.");
++		return LED_OFF;
++	}
++
++	for (i = 0; i < 5; i++)
++		if (led_cdev == entry->led[i]) {
++			value = (entry->led_state >> i) & 1;
++			break;
++		}
++
++	return value ? LED_FULL : LED_OFF;
++}
++#endif
++
+ int lg4ff_init(struct hid_device *hid)
+ {
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
+@@ -453,6 +538,58 @@ int lg4ff_init(struct hid_device *hid)
+ 	if (entry->set_range != NULL)
+ 		entry->set_range(hid, entry->range);
+ 
++#ifdef CONFIG_LEDS_CLASS
++	/* register led subsystem - G27 only */
++	entry->led_state = 0;
++	for (j = 0; j < 5; j++)
++		entry->led[j] = NULL;
++
++	if (lg4ff_devices[i].product_id == USB_DEVICE_ID_LOGITECH_G27_WHEEL) {
++		struct led_classdev *led;
++		size_t name_sz;
++		char *name;
++
++		lg4ff_set_leds(hid, 0);
++
++		name_sz = strlen(dev_name(&hid->dev)) + 8;
++
++		for (j = 0; j < 5; j++) {
++			led = kzalloc(sizeof(struct led_classdev)+name_sz, GFP_KERNEL);
++			if (!led) {
++				hid_err(hid, "can't allocate memory for LED %d\n", j);
++				goto err;
++			}
++
++			name = (void *)(&led[1]);
++			snprintf(name, name_sz, "%s::RPM%d", dev_name(&hid->dev), j+1);
++			led->name = name;
++			led->brightness = 0;
++			led->max_brightness = 1;
++			led->brightness_get = lg4ff_led_get_brightness;
++			led->brightness_set = lg4ff_led_set_brightness;
++
++			entry->led[j] = led;
++			error = led_classdev_register(&hid->dev, led);
++
++			if (error) {
++				hid_err(hid, "failed to register LED %d. Aborting.\n", j);
++err:
++				/* Deregister LEDs (if any) */
++				for (j = 0; j < 5; j++) {
++					led = entry->led[j];
++					entry->led[j] = NULL;
++					if (!led)
++						continue;
++					led_classdev_unregister(led);
++					kfree(led);
++				}
++				goto out;	/* Let the driver continue without LEDs */
++			}
++		}
++	}
++#endif
++
++out:
+ 	hid_info(hid, "Force feedback for Logitech Speed Force Wireless by Simon Wood <simon@mungewell.org>\n");
+ 	return 0;
+ }
+@@ -474,6 +611,25 @@ int lg4ff_deinit(struct hid_device *hid)
+ 		hid_err(hid, "Error while deinitializing device, no device properties data.\n");
+ 		return -1;
+ 	}
++
++#ifdef CONFIG_LEDS_CLASS
++	{
++		int j;
++		struct led_classdev *led;
++
++		/* Deregister LEDs (if any) */
++		for (j = 0; j < 5; j++) {
++
++			led = entry->led[j];
++			entry->led[j] = NULL;
++			if (!led)
++				continue;
++			led_classdev_unregister(led);
++			kfree(led);
++		}
++	}
++#endif
++
+ 	/* Deallocate memory */
+ 	kfree(entry);
+ 
+-- 
+1.7.4.1
 
