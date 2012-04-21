@@ -1,53 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab2DUJbe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 05:31:34 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:56750 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab2DUJbd (ORCPT
+	id S1754303Ab2DUJf2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 05:35:28 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:33396 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751657Ab2DUJfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 05:31:33 -0400
-Subject: [PATCH 2/4][Trivial] lib/kobject.c : Check parameter in
- kobject_set_name
-From: yan <clouds.yan@gmail.com>
-To: greg <gregkh@linuxfoundation.org>
-Cc: kernel <linux-kernel@vger.kernel.org>, message <message.get@gmail.com>
-Date: Sat, 21 Apr 2012 17:31:24 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1335000692.2188.10.camel@yan>
-Mime-Version: 1.0
+	Sat, 21 Apr 2012 05:35:20 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: arm@kernel.org, thierry.reding@avionic-design.de, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
+        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v5 3/10] ARM: LPC32xx: clock.c cleanup
+Date: Sat, 21 Apr 2012 11:34:21 +0200
+Message-Id: <1335000868-21974-4-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1335000868-21974-1-git-send-email-stigge@antcom.de>
+References: <1335000868-21974-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kobject_set_name is exported and is just a wrapper for kobject_set_name_vargs
-which does not check its parameter kobj. 
-So check this parameter in kobject_set_name.
+This patch makes use of the default macro CLKDEV_INIT() for clock registration.
 
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Signed-off-by: Yan Hong <clouds.yan@gmail.com>
 ---
- lib/kobject.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/lib/kobject.c b/lib/kobject.c
-index 56c8cb3..dd67855 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -248,6 +248,9 @@ int kobject_set_name(struct kobject *kobj, const char *fmt, ...)
- 	va_list vargs;
- 	int retval;
+Applies to v3.4-rc3
+
+ arch/arm/mach-lpc32xx/clock.c |   77 +++++++++++++++++++-----------------------
+ 1 file changed, 35 insertions(+), 42 deletions(-)
+
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/clock.c
++++ linux-2.6/arch/arm/mach-lpc32xx/clock.c
+@@ -1095,49 +1095,42 @@ struct clk *clk_get_parent(struct clk *c
+ }
+ EXPORT_SYMBOL(clk_get_parent);
  
-+	if (!kobj)
-+		return -EINVAL;
-+
- 	va_start(vargs, fmt);
- 	retval = kobject_set_name_vargs(kobj, fmt, vargs);
- 	va_end(vargs);
--- 
-1.7.5.1
-
-
-
+-#define _REGISTER_CLOCK(d, n, c) \
+-	{ \
+-		.dev_id = (d), \
+-		.con_id = (n), \
+-		.clk = &(c), \
+-	},
+-
+ static struct clk_lookup lookups[] = {
+-	_REGISTER_CLOCK(NULL, "osc_32KHz", osc_32KHz)
+-	_REGISTER_CLOCK(NULL, "osc_pll397", osc_pll397)
+-	_REGISTER_CLOCK(NULL, "osc_main", osc_main)
+-	_REGISTER_CLOCK(NULL, "sys_ck", clk_sys)
+-	_REGISTER_CLOCK(NULL, "arm_pll_ck", clk_armpll)
+-	_REGISTER_CLOCK(NULL, "ck_pll5", clk_usbpll)
+-	_REGISTER_CLOCK(NULL, "hclk_ck", clk_hclk)
+-	_REGISTER_CLOCK(NULL, "pclk_ck", clk_pclk)
+-	_REGISTER_CLOCK(NULL, "timer0_ck", clk_timer0)
+-	_REGISTER_CLOCK(NULL, "timer1_ck", clk_timer1)
+-	_REGISTER_CLOCK(NULL, "timer2_ck", clk_timer2)
+-	_REGISTER_CLOCK(NULL, "timer3_ck", clk_timer3)
+-	_REGISTER_CLOCK(NULL, "vfp9_ck", clk_vfp9)
+-	_REGISTER_CLOCK(NULL, "clk_dmac", clk_dma)
+-	_REGISTER_CLOCK("pnx4008-watchdog", NULL, clk_wdt)
+-	_REGISTER_CLOCK(NULL, "uart3_ck", clk_uart3)
+-	_REGISTER_CLOCK(NULL, "uart4_ck", clk_uart4)
+-	_REGISTER_CLOCK(NULL, "uart5_ck", clk_uart5)
+-	_REGISTER_CLOCK(NULL, "uart6_ck", clk_uart6)
+-	_REGISTER_CLOCK("pnx-i2c.0", NULL, clk_i2c0)
+-	_REGISTER_CLOCK("pnx-i2c.1", NULL, clk_i2c1)
+-	_REGISTER_CLOCK("pnx-i2c.2", NULL, clk_i2c2)
+-	_REGISTER_CLOCK("dev:ssp0", NULL, clk_ssp0)
+-	_REGISTER_CLOCK("dev:ssp1", NULL, clk_ssp1)
+-	_REGISTER_CLOCK("lpc32xx_keys.0", NULL, clk_kscan)
+-	_REGISTER_CLOCK("lpc32xx-nand.0", "nand_ck", clk_nand)
+-	_REGISTER_CLOCK("lpc32xx-adc", NULL, clk_adc)
+-	_REGISTER_CLOCK(NULL, "i2s0_ck", clk_i2s0)
+-	_REGISTER_CLOCK(NULL, "i2s1_ck", clk_i2s1)
+-	_REGISTER_CLOCK("ts-lpc32xx", NULL, clk_tsc)
+-	_REGISTER_CLOCK("dev:mmc0", NULL, clk_mmc)
+-	_REGISTER_CLOCK("lpc-eth.0", NULL, clk_net)
+-	_REGISTER_CLOCK("dev:clcd", NULL, clk_lcd)
+-	_REGISTER_CLOCK("lpc32xx_udc", "ck_usbd", clk_usbd)
+-	_REGISTER_CLOCK("lpc32xx_rtc", NULL, clk_rtc)
++	CLKDEV_INIT(NULL, "osc_32KHz", &osc_32KHz),
++	CLKDEV_INIT(NULL, "osc_pll397", &osc_pll397),
++	CLKDEV_INIT(NULL, "osc_main", &osc_main),
++	CLKDEV_INIT(NULL, "sys_ck", &clk_sys),
++	CLKDEV_INIT(NULL, "arm_pll_ck", &clk_armpll),
++	CLKDEV_INIT(NULL, "ck_pll5", &clk_usbpll),
++	CLKDEV_INIT(NULL, "hclk_ck", &clk_hclk),
++	CLKDEV_INIT(NULL, "pclk_ck", &clk_pclk),
++	CLKDEV_INIT(NULL, "timer0_ck", &clk_timer0),
++	CLKDEV_INIT(NULL, "timer1_ck", &clk_timer1),
++	CLKDEV_INIT(NULL, "timer2_ck", &clk_timer2),
++	CLKDEV_INIT(NULL, "timer3_ck", &clk_timer3),
++	CLKDEV_INIT(NULL, "vfp9_ck", &clk_vfp9),
++	CLKDEV_INIT(NULL, "clk_dmac", &clk_dma),
++	CLKDEV_INIT("pnx4008-watchdog", NULL, &clk_wdt),
++	CLKDEV_INIT(NULL, "uart3_ck", &clk_uart3),
++	CLKDEV_INIT(NULL, "uart4_ck", &clk_uart4),
++	CLKDEV_INIT(NULL, "uart5_ck", &clk_uart5),
++	CLKDEV_INIT(NULL, "uart6_ck", &clk_uart6),
++	CLKDEV_INIT("pnx-i2c.0", NULL, &clk_i2c0),
++	CLKDEV_INIT("pnx-i2c.1", NULL, &clk_i2c1),
++	CLKDEV_INIT("pnx-i2c.2", NULL, &clk_i2c2),
++	CLKDEV_INIT("dev:ssp0", NULL, &clk_ssp0),
++	CLKDEV_INIT("dev:ssp1", NULL, &clk_ssp1),
++	CLKDEV_INIT("lpc32xx_keys.0", NULL, &clk_kscan),
++	CLKDEV_INIT("lpc32xx-nand.0", "nand_ck", &clk_nand),
++	CLKDEV_INIT("lpc32xx-adc", NULL, &clk_adc),
++	CLKDEV_INIT(NULL, "i2s0_ck", &clk_i2s0),
++	CLKDEV_INIT(NULL, "i2s1_ck", &clk_i2s1),
++	CLKDEV_INIT("ts-lpc32xx", NULL, &clk_tsc),
++	CLKDEV_INIT("dev:mmc0", NULL, &clk_mmc),
++	CLKDEV_INIT("lpc-eth.0", NULL, &clk_net),
++	CLKDEV_INIT("dev:clcd", NULL, &clk_lcd),
++	CLKDEV_INIT("lpc32xx_udc", "ck_usbd", &clk_usbd),
++	CLKDEV_INIT("lpc32xx_rtc", NULL, &clk_rtc),
+ };
+ 
+ static int __init clk_init(void)
