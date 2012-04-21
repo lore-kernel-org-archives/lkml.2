@@ -1,145 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab2DUNM4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 09:12:56 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43481 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842Ab2DUNMz (ORCPT
+	id S1753172Ab2DUNOj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 09:14:39 -0400
+Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:34693 "EHLO
+	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751842Ab2DUNOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 09:12:55 -0400
-Date: Sat, 21 Apr 2012 15:13:52 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Regression][3.4-rc3][intel-dri] MMIO read or write has been
- dropped ffffffff
-Message-ID: <20120421131352.GD5019@phenom.ffwll.local>
-Mail-Followup-To: Maciej Rutecki <maciej.rutecki@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org
-References: <201204210739.08963.maciej.rutecki@gmail.com>
- <20120421130307.GB5019@phenom.ffwll.local>
+	Sat, 21 Apr 2012 09:14:37 -0400
+From: Robert Scott <bugs@humanleg.org.uk>
+Reply-To: bugs@humanleg.org.uk
+Organization: none
+To: Jonathan Nieder <jrnieder@gmail.com>
+Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend
+Date: Sat, 21 Apr 2012 14:14:21 +0100
+User-Agent: KMail/1.9.9
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Kevin Tian <kevin.tian@intel.com>,
+        Fengzhe Zhang <fengzhe.zhang@intel.com>, mingo@redhat.com,
+        hpa@zytor.com, Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        JBeulich@novell.com, xen-devel@lists.xensource.com,
+        Lars Boegild Thomsen <lth@cow.dk>,
+        e568b31a443d@6cc2cce7af2d.anonbox.net,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com> <201204161905.13260.bugs@humanleg.org.uk> <20120417020433.GA15848@burratino>
+In-Reply-To: <20120417020433.GA15848@burratino>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20120421130307.GB5019@phenom.ffwll.local>
-X-Operating-System: Linux phenom 3.2.0-2-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201204211414.30286.bugs@humanleg.org.uk>
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=oafpOytrBa8A:10 a=l5_RjRQ6opQA:10 a=8nJEP1OIZ-IA:10 a=hLW_Fef1W2nHZV0zz8kA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 21, 2012 at 03:03:07PM +0200, Daniel Vetter wrote:
-> On Sat, Apr 21, 2012 at 07:39:08AM +0200, Maciej Rutecki wrote:
-> > Bad kernel: 3.4-rc3
-> > Last known good: 3.3
-> > 
-> > Subsystem: dri-intel (guess)
-> > 
-> > Steps to reproduce:
-> > 1. Suspend to ram
-> > 2. Resume
-> > 
-> > After resume laptop works ok, but in dmesg I found:
-> > [  164.098113] ------------[ cut here ]------------
-> > [  164.098124] WARNING: at drivers/gpu/drm/i915/i915_drv.c:398 
-> > gen6_gt_check_fifodbg.isra.6+0x31/0x43()
-> > [  164.098126] Hardware name: 1141ALG
-> > [  164.098128] MMIO read or write has been dropped ffffffff
-> > [  164.098129] Modules linked in: xt_tcpudp xt_limit xt_state iptable_filter 
-> > nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack ip_tables x_tables bnep rfcomm 
-> > bluetooth uinput fuse loop sha256_generic aes_x86_64 aes_generic cbc dm_crypt 
-> > dm_mod uvcvideo videobuf2_vmalloc videobuf2_memops videobuf2_core videodev 
-> > usbhid hid media snd_hda_codec_hdmi snd_hda_codec_conexant arc4 iwlwifi 
-> > mac80211 thinkpad_acpi cfg80211 coretemp nvram snd_hda_intel snd_hda_codec 
-> > snd_hwdep snd_pcm snd_page_alloc snd_seq ehci_hcd sdhci_pci crc32c_intel 
-> > iTCO_wdt iTCO_vendor_support ghash_clmulni_intel snd_seq_device cryptd 
-> > snd_timer microcode snd acpi_cpufreq mperf usbcore psmouse sdhci r8169 
-> > mmc_core mii ac rfkill i2c_i801 soundcore mei(C) serio_raw pcspkr thermal 
-> > battery power_supply wmi usb_common evdev processor
-> > [  164.098188] Pid: 4684, comm: kworker/u:9 Tainted: G         C   3.4.0-rc3 
-> > #1
-> > [  164.098189] Call Trace:
-> > [  164.098197]  [<ffffffff8103aa3c>] warn_slowpath_common+0x7e/0x96
-> > [  164.098200]  [<ffffffff8103aae8>] warn_slowpath_fmt+0x41/0x43
-> > [  164.098203]  [<ffffffff812cbec7>] gen6_gt_check_fifodbg.isra.6+0x31/0x43
-> > [  164.098207]  [<ffffffff812cc13b>] __gen6_gt_force_wake_put+0x19/0x1b
-> > [  164.098210]  [<ffffffff812cc3cf>] i915_read32+0x66/0x9d
-> > [  164.098213]  [<ffffffff812ce4fa>] i915_update_gfx_val+0x61/0xb9
-> > [  164.098218]  [<ffffffff812e989f>] intel_idle_update+0x47/0x18d
-> > [  164.098222]  [<ffffffff810520d7>] process_one_work+0x1b5/0x340
-> > [  164.098225]  [<ffffffff8105203a>] ? process_one_work+0x118/0x340
-> > [  164.098228]  [<ffffffff812e9858>] ? intel_disable_plane+0x60/0x60
-> > [  164.098231]  [<ffffffff81052c63>] worker_thread+0xce/0x152
-> > [  164.098234]  [<ffffffff81052b95>] ? manage_workers.isra.22+0x16a/0x16a
-> > [  164.098237]  [<ffffffff810567c6>] kthread+0xa1/0xa9
-> > [  164.098242]  [<ffffffff81080ea1>] ? trace_hardirqs_on+0xd/0xf
-> > [  164.098246]  [<ffffffff8145d374>] kernel_thread_helper+0x4/0x10
-> > [  164.098250]  [<ffffffff81456970>] ? retint_restore_args+0x13/0x13
-> > [  164.098253]  [<ffffffff81056725>] ? __init_kthread_worker+0x55/0x55
-> > [  164.098256]  [<ffffffff8145d370>] ? gs_change+0x13/0x13
-> > [  164.098257] ---[ end trace 97bd0b679d161c3e ]---
-> > [  164.098827] ------------[ cut here ]------------
-> > [  164.098830] WARNING: at drivers/gpu/drm/i915/i915_drv.c:398 
-> > gen6_gt_check_fifodbg.isra.6+0x31/0x43()
-> > [  164.098832] Hardware name: 1141ALG
-> > [  164.098833] MMIO read or write has been dropped ffffffff
-> > [  164.098834] Modules linked in: xt_tcpudp xt_limit xt_state iptable_filter 
-> > nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack ip_tables x_tables bnep rfcomm 
-> > bluetooth uinput fuse loop sha256_generic aes_x86_64 aes_generic cbc dm_crypt 
-> > dm_mod uvcvideo videobuf2_vmalloc videobuf2_memops videobuf2_core videodev 
-> > usbhid hid media snd_hda_codec_hdmi snd_hda_codec_conexant arc4 iwlwifi 
-> > mac80211 thinkpad_acpi cfg80211 coretemp nvram snd_hda_intel snd_hda_codec 
-> > snd_hwdep snd_pcm snd_page_alloc snd_seq ehci_hcd sdhci_pci crc32c_intel 
-> > iTCO_wdt iTCO_vendor_support ghash_clmulni_intel snd_seq_device cryptd 
-> > snd_timer microcode snd acpi_cpufreq mperf usbcore psmouse sdhci r8169 
-> > mmc_core mii ac rfkill i2c_i801 soundcore mei(C) serio_raw pcspkr thermal 
-> > battery power_supply wmi usb_common evdev processor
-> > [  164.098877] Pid: 4684, comm: kworker/u:9 Tainted: G        WC   3.4.0-rc3 
-> > #1
-> > [  164.098878] Call Trace:
-> > [  164.098881]  [<ffffffff8103aa3c>] warn_slowpath_common+0x7e/0x96
-> > [  164.098884]  [<ffffffff8103aae8>] warn_slowpath_fmt+0x41/0x43
-> > [  164.098888]  [<ffffffff812cbec7>] gen6_gt_check_fifodbg.isra.6+0x31/0x43
-> > [  164.098891]  [<ffffffff812cc13b>] __gen6_gt_force_wake_put+0x19/0x1b
-> > [  164.098894]  [<ffffffff812cc3cf>] i915_read32+0x66/0x9d
-> > [  164.098896]  [<ffffffff812e98f7>] intel_idle_update+0x9f/0x18d
-> > [  164.098899]  [<ffffffff810520d7>] process_one_work+0x1b5/0x340
-> > [  164.098902]  [<ffffffff8105203a>] ? process_one_work+0x118/0x340
-> > [  164.098904]  [<ffffffff812e9858>] ? intel_disable_plane+0x60/0x60
-> > [  164.098907]  [<ffffffff81052c63>] worker_thread+0xce/0x152
-> > [  164.098910]  [<ffffffff81052b95>] ? manage_workers.isra.22+0x16a/0x16a
-> > [  164.098913]  [<ffffffff810567c6>] kthread+0xa1/0xa9
-> > [  164.098916]  [<ffffffff81080ea1>] ? trace_hardirqs_on+0xd/0xf
-> > [  164.098918]  [<ffffffff8145d374>] kernel_thread_helper+0x4/0x10
-> > [  164.098921]  [<ffffffff81456970>] ? retint_restore_args+0x13/0x13
-> > [  164.098925]  [<ffffffff81056725>] ? __init_kthread_worker+0x55/0x55
-> > [  164.098927]  [<ffffffff8145d370>] ? gs_change+0x13/0x13
-> > [  164.098928] ---[ end trace 97bd0b679d161c3f ]---
-> > 
-> > I found similar report in:
-> > https://bugzilla.redhat.com/show_bug.cgi?id=809773
-> > 
-> > Dmesg, config and lspci:
-> > http://mrutecki.pl/download/kernel/3.4-rc3/dri_intel/
+On Tuesday 17 April 2012, Jonathan Nieder wrote:
+> Robert Scott wrote:
+> > On Sunday 15 April 2012, Jonathan Nieder wrote:
 > 
-> Can you please take these files and create a bug report at
-> bugs.freedesktop.org. Also, is there anything going wrong besides these
-> error message while you do a suspend cycle?
+> >> Lars, Robert, anon: can you try 3.4-rc2 or newer and let us know how
+> >> it goes?  I suspect v3.4-rc2~24^2~4 ("x86: Preserve lazy irq disable
+> >> semantics in fixup_irqs()") will fix this.
+> >
+> > Hmm, no, 3.4-rc2 seems to produce the same results I'm afraid.
 > 
-> I'm asking because we newly added this error message to catch potential
-> issues, but without anything else going wrong it's not a regression.
+> Alas.  Does suspend-to-disk ("echo disk >/sys/power/state") have the
+> same problem?  Can you get a log of the failure with
+> "no_console_suspend" appended to the kernel command line, for example
+> with a serial console or netconsole?
 
-Actually no bug report required, Ben Widawsky already stumbled over this
-issue:
+(back on 3.2.0-0.bpo.2-686-pae 3.2.12-1~bpo60+1*:)
 
-https://bugs.freedesktop.org/show_bug.cgi?id=49025
+eth0 seems to go down/come up to early/late to get anything useful from netconsole:
 
-So if you don't see any other bad side-effects than the WARN backtrace, I
-guess we don't need another bug report.
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+[  745.161322] PM: Syncing filesystems ... done.
+[  747.088247] PM: Preparing system for mem sleep
+[  747.187932] Freezing user space processes ... (elapsed 0.01 seconds) done.
+[  747.204325] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+[  747.220416] PM: Entering mem sleep
+[  747.221085] sd 1:0:0:0: [sda] Synchronizing SCSI cache
+[  747.222247] sd 1:0:0:0: [sda] Stopping disk
+
+(then nothing)
+
+I may be able to hook up a usb-serial adaptor to try and get more info but it'll take me a bit longer what with all the rewiring fun as I don't have a null modem cable lying around.
+
+> If someone has time to go through the steps in
+> "Documentation/power/basic-pm-debugging.txt", that would also be useful.
+
+"freezer", "devices", "platform", "processors", or "core" pm_test modes all work fine, naturally.
+
+
+robert.
+
+* I notice I accidentally copy/pasted the linux-modules version in a previous mail but you knew what I was talking about
