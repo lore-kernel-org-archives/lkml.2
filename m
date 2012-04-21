@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab2DUGjD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 02:39:03 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:36496 "EHLO
+	id S1753448Ab2DUGjv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 02:39:51 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:48419 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab2DUGjA (ORCPT
+	with ESMTP id S1751030Ab2DUGjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 02:39:00 -0400
-Date: Fri, 20 Apr 2012 23:38:55 -0700
+	Sat, 21 Apr 2012 02:39:49 -0400
+Date: Fri, 20 Apr 2012 23:39:43 -0700
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: sameo@linux.intel.com, m.grzeschik@pengutronix.de, randy.dunlap@oracle.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch] Touch: DA9052/53 touch screen driver v2
-Message-ID: <20120421063855.GA2360@core.coreip.homeip.net>
-References: <1334924925.3752.14.camel@dhruva>
+To: Roland Stigge <stigge@antcom.de>
+Cc: arm@kernel.org, thierry.reding@avionic-design.de, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, axel.lin@gmail.com,
+        broonie@opensource.wolfsonmicro.com, marek.vasut@gmail.com,
+        devel@driverdev.osuosl.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Subject: Re: [PATCH v4 6/10] input: Device tree support for LPC32xx
+ touchscreen
+Message-ID: <20120421063943.GB2360@core.coreip.homeip.net>
+References: <1334840415-14287-1-git-send-email-stigge@antcom.de>
+ <1334840415-14287-7-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334924925.3752.14.camel@dhruva>
+In-Reply-To: <1334840415-14287-7-git-send-email-stigge@antcom.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ashish,
+On Thu, Apr 19, 2012 at 03:00:11PM +0200, Roland Stigge wrote:
+> This patch adds device tree support for the LPC32xx SoC's touchscreen
+> controller.
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-On Fri, Apr 20, 2012 at 05:58:45PM +0530, Ashish Jangam wrote:
-> +static irqreturn_t da9052_ts_pendwn_irq(int irq, void *data)
-> +{
-> +	struct da9052_tsi *tsi = data;
-> +
-> +	if (!tsi->stopped) {
-> +		/* Mask PEN_DOWN event and unmask TSI_READY event */
-> +		disable_irq_nosync(tsi->da9052->irq_base + tsi->irq_pendwn);
-> +		enable_irq(tsi->da9052->irq_base + tsi->irq_datardy);
-
-Why did you switch to using irq_base here? da9052_onkey driver does not
-do that, should it?
-
-Thanks.
+Applied, thank you Roland.
 
 -- 
 Dmitry
