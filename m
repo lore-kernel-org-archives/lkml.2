@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab2DUTeT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 15:34:19 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43427 "EHLO
+	id S1752048Ab2DUTe4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 15:34:56 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:43436 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450Ab2DUTeR (ORCPT
+	with ESMTP id S1751291Ab2DUTez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 15:34:17 -0400
-Date: Sat, 21 Apr 2012 15:32:01 -0400 (EDT)
-Message-Id: <20120421.153201.2103447307695063734.davem@davemloft.net>
-To: ddaney.cavm@gmail.com
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        afleming@gmail.com, galak@kernel.crashing.org, david.daney@cavium.com
-Subject: Re: [PATCH v5 2/3] netdev/of/phy: Add MDIO bus multiplexer support.
+	Sat, 21 Apr 2012 15:34:55 -0400
+Date: Sat, 21 Apr 2012 15:34:40 -0400 (EDT)
+Message-Id: <20120421.153440.1754750876890229323.davem@davemloft.net>
+To: sboyd@codeaurora.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tj@kernel.org,
+        ben-linux@fluff.org
+Subject: Re: [PATCH 2/2] ks8851: Fix mutex deadlock in ks8851_net_stop()
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1334791254-15987-3-git-send-email-ddaney.cavm@gmail.com>
-References: <1334791254-15987-1-git-send-email-ddaney.cavm@gmail.com>
-	<1334791254-15987-3-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1334805958-29119-2-git-send-email-sboyd@codeaurora.org>
+References: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org>
+	<1334805958-29119-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 21 Apr 2012 12:32:05 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 21 Apr 2012 12:34:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <ddaney.cavm@gmail.com>
-Date: Wed, 18 Apr 2012 16:20:53 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+Date: Wed, 18 Apr 2012 20:25:58 -0700
 
-> +config MDIO_BUS_MUX
-> +	tristate
-> +	help
-> +	  This module provides a driver framework for MDIO bus
-> +	  multiplexers which connect one of several child MDIO busses
-> +	  to a parent bus.  Switching between child busses is done by
-> +	  device specific drivers.
-> +
+> There is a potential deadlock scenario when the ks8851 driver
+> is removed. The interrupt handler schedules a workqueue which
+> acquires a mutex that ks8851_net_stop() also acquires before
+> flushing the workqueue. Previously lockdep wouldn't be able
+> to find this problem but now that it has the support we can
+> trigger this lockdep warning by rmmoding the driver after
+> an ifconfig up.
+> 
+> Fix the possible deadlock by disabling the interrupts in 
+> the chip and then release the lock across the workqueue
+> flushing. The mutex is only there to proect the registers
+> anyway so this should be ok.
+ ...
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-This driver uses OF and OF_MDIO, and therefore need dependencies upon
-them.  Otherwise it can be enabled in configurations which will result
-in build failures.
+Applied.
