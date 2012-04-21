@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208Ab2DUTfI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 15:35:08 -0400
-Received: from plane.gmane.org ([80.91.229.3]:44268 "EHLO plane.gmane.org"
+	id S1751673Ab2DUT5z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 15:57:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50448 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752089Ab2DUTfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 15:35:05 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Adrian Yanes <devel@ayanes.com>
-Subject: Re: [PATCH] i2c-at91: fix data-loss issue
-Date: Sat, 21 Apr 2012 22:33:11 +0300
-Message-ID: <4F930B77.8070909@ayanes.com>
-References: <20120413103937.GH7154@arwen.pp.htv.fi> <1334317476-10044-1-git-send-email-h.feurstein@gmail.com> <EF2E73589CA71846A15D0B2CDF79505D0905D5A1AA@wm021.weinmann.com> <20120418143920.GA19802@pengutronix.de>
-Reply-To: devel@ayanes.com
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: duw0.kyla.fi
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.5; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-In-Reply-To: <20120418143920.GA19802@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+	id S1751354Ab2DUT5x convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 15:57:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <1335011336.3081.12.camel@dabdike.lan>
+References: <1334960945.21447.19.camel@ultramagnus.opencreations.com>
+	<1335011336.3081.12.camel@dabdike.lan>
+Date: Sat, 21 Apr 2012 12:57:50 -0700
+Message-ID: <CABE8wwvQ5_4DnOOce8PVcuR=k0RpzcXN5qbNhQ-=+Cq+Zqv6Dg@mail.gmail.com>
+Subject: Re: [GIT PULL] libsas fixes for 3.4-rc4
+From: Dan Williams <dan.j.williams@intel.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        jack_wang <jack_wang@usish.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sat, Apr 21, 2012 at 5:28 AM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Fri, 2012-04-20 at 15:29 -0700, Dan Williams wrote:
+>> These patches, save for the new "scsi: fix eh wakeup (scsi_schedule_eh
+>> vs scsi_restart_operations)" and "Revert "[SCSI] libsas: fix sas port
+>> naming", were all originally posted before the merge
+>> window opened, and have also appeared in -next for the same timeframe.
+>>
+>> The commit dates are not that aged (9 days old) because they were
+>> rebased out of larger set of updates that were pending for 3.4.
+>>
+>> There is a mix of pure regression fixes and fixes for long-standing bugs
+>> in libsas.  Some of the long-standing bug fixes are made worse / easier
+>> to trigger by the new async error handling scheme.
+>>
+>> The largest patch in the series is "libata, libsas: introduce sched_eh
+>> and end_eh port ops" it has been on the list since March 10th.
+>>
+>> Jack Wang has independently tested this set with pm8001 and reports
+>> success. [1]
+>>
+>> Apologies if scsi-rc-fixes was in the process of picking these up.  With
+>> -rc4 looming I lost my nerve and pulled the trigger.
+>
+> Right, so as a point of process, these are SCSI fixes and are supposed
+> to be going through the SCSI tree.  The only urgent one is the revert; I
+> still have outstanding questions about some of the others.
 
-we performed some measurements with the new version of the patch (v10),
-in order to verify that the twi clock was performing better with the new
-ternary operator introduced for the calculation of CLDIV & CHDIV.
+Up until this feedback I thought the branch was going to be pulled
+intact.  So, not trying to subvert process, just thought this request
+would be seen as helpful since you seem to have been rather busy of
+late.  Yes, I'd much rather these go through the SCSI tree.
 
-However, we noticed we were using the wrongs resistors in our setup,
-changing them to the correct ones, the driver gives us a frequency rate
-of ~396kHz when we tweak the TWI_CLK_HZ to 400000. Using the previous
-version the driver (without the specific offset for the AT91RM9200) it
-gives a frequency rate of ~392kHz. Therefore, both rates are inside of
-the error margin that the oscilloscope can give, so we suggest to keep
-the latest code introduced for it, mostly because it behaves as the
-datasheet claims.
+> We're at least 3 weeks away from 3.4 (and that's only if -rc6 is final),
+> so there's time to address all of this via the usual process.
 
-On the other hand we found that the Underrun Error (UNRE) is not handled
-in the driver. When we send data up > 2-4 bytes (quite random to say
-when it really fails) and we add some dev_dbg() to print
-dev->transfer_status we get 141 (==UNRE). According with the datasheet,
-after the first UNRE received "this action automatically generated a
-STOP bit in Master Mode. Reset by read in TWI_SR when TXCOMP is set."
+My concern is that:
 
-We thought that one possibility for this was that the board was too slow
-to process the requests or that other interrupts were interfering.
-Disabling the interrupts inside of the twi interrupt handler did not
-help either.
+ 19 files changed, 344 insertions(+), 172 deletions(-)
 
-The datasheet does not mention any method to implement some mechanism to
-avoid the UNRE telling the hardware to wait a bit longer for the next
-byte. Thus, one way will be to restart the transfer with the remaining
-bytes (maybe only applicable to at91rm9200) or just to return some
-error/message to userland informing that could not send all the data.
+...is something that should have went in at -rc2.  Waiting longer
+likely means cutting down the list even more and either turning it
+into something nobody has given serious test time to, or leaving known
+bugs un-addressed for 3.4-final.  Some of these we have lived with for
+a while, but are worse with the 3.4-rc1 reworked libsas workqueue and
+new async error handling changes.  For grey area "is this a pure
+regression fix vs old bug that could maybe wait" I thought the earlier
+the rc the better.
 
-Adrian
-
+--
+Dan
