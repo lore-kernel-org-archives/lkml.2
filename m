@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab2DUGrR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 02:47:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53086 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab2DUGrP (ORCPT
+	id S1753549Ab2DUGsG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 02:48:06 -0400
+Received: from 17.mo3.mail-out.ovh.net ([87.98.178.58]:38734 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752644Ab2DUGsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 02:47:15 -0400
-Date: Fri, 20 Apr 2012 23:47:10 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: =?iso-8859-1?Q?Jean-Fran=E7ois?= Dagenais 
-	<jeff.dagenais@gmail.com>
-Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        michael.hennerich@analog.com
-Subject: Re: [PATCH 1/2] input: adp5588-keys - get value from data out when
- dir out
-Message-ID: <20120421064710.GC2360@core.coreip.homeip.net>
-References: <1334935921-13016-1-git-send-email-jeff.dagenais@gmail.com>
+	Sat, 21 Apr 2012 02:48:03 -0400
+X-Greylist: delayed 8699 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Apr 2012 02:48:03 EDT
+Date: Sat, 21 Apr 2012 05:42:04 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: jic23@cam.ac.uk, gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH v4] iio: Add device tree support to LPC32xx ADC
+Message-ID: <20120421034204.GA9142@game.jcrosoft.org>
+References: <1334951307-1269-1-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1334935921-13016-1-git-send-email-jeff.dagenais@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1334951307-1269-1-git-send-email-stigge@antcom.de>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 3531103583657044829
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegtddrtdefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegfedrgedtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean-François,
-
-On Fri, Apr 20, 2012 at 11:32:00AM -0400, Jean-François Dagenais wrote:
-> As discussed here: http://ez.analog.com/message/35852,
-> the 5587 revC and 5588 revB spec sheets contain a mistake
-> in the GPIO_DAT_STATx register description.
+On 21:48 Fri 20 Apr     , Roland Stigge wrote:
+> This patch adds device tree support to the LPC32xx's ADC.
 > 
-> According to R.Shnell at ADI, as well as my own
-> observations, it should read:
-> "GPIO data status (shows GPIO state when read for inputs)".
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 > 
-> This commit changes the get value function accordingly.
-> 
-> A similar patch for gpio-adp5588 follows.
-> 
-> Signed-off-by: Jean-François Dagenais <jeff.dagenais@gmail.com>
-> Acked-by: Michael Hennerich <michael.hennerich@analog.com>
 > ---
->  drivers/input/keyboard/adp5588-keys.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/input/keyboard/adp5588-keys.c b/drivers/input/keyboard/adp5588-keys.c
-> index 6412ced..b7a0f1a 100644
-> --- a/drivers/input/keyboard/adp5588-keys.c
-> +++ b/drivers/input/keyboard/adp5588-keys.c
-> @@ -78,6 +78,13 @@ static int adp5588_gpio_get_value(struct gpio_chip *chip, unsigned off)
->  	unsigned int bank = ADP5588_BANK(kpad->gpiomap[off]);
->  	unsigned int bit = ADP5588_BIT(kpad->gpiomap[off]);
+> Applies to v3.4-rc3
+> 
+> Changes since v3:
+> * Changed "compatible" strings to non-wildcard versions
+> 
+> Thanks to Arnd Bergmann and Lars-Peter Clausen for reviewing!
+> 
+>  Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt |   17 ++++++++++
+>  drivers/staging/iio/adc/lpc32xx_adc.c                             |   13 +++++++
+>  2 files changed, 30 insertions(+)
+> 
+> --- /dev/null
+> +++ linux-2.6/Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt
+> @@ -0,0 +1,17 @@
+> +* NXP LPC32xx SoC ADC controller
+> +
+> +Required properties:
+> +- compatible: must be "nxp,lpc3220-adc", "nxp,lpc3230-adc", "nxp,lpc3240-adc"
+> +  or "nxp,lpc3250-adc"
+> +- reg: physical base address of the controller and length of memory mapped
+> +  region.
+> +- interrupts: The ADC interrupt
+> +
+> +Example:
+> +
+> +	adc@40048000 {
+> +		compatible = "nxp,lpc3250-adc";
+> +		reg = <0x40048000 0x1000>;
+> +		interrupt-parent = <&mic>;
+> +		interrupts = <39 0>;
+> +	};
+> --- linux-2.6.orig/drivers/staging/iio/adc/lpc32xx_adc.c
+> +++ linux-2.6/drivers/staging/iio/adc/lpc32xx_adc.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/clk.h>
+>  #include <linux/err.h>
+>  #include <linux/completion.h>
+> +#include <linux/of.h>
 >  
-> +	mutex_lock(&kpad->gpio_lock);
-> +	if (kpad->dir[bank] & bit) {
-> +		int result = !!(kpad->dat_out[bank] & bit);
-> +		mutex_unlock(&kpad->gpio_lock);
-> +		return result;
-> +	}
-> +	mutex_unlock(&kpad->gpio_lock);
->  	return !!(adp5588_read(kpad->client, GPIO_DAT_STAT1 + bank) & bit);
+>  #include "../iio.h"
+>  #include "../sysfs.h"
+> @@ -221,12 +222,24 @@ static int __devexit lpc32xx_adc_remove(
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id lpc32xx_adc_match[] = {
+> +	{ .compatible = "nxp,lpc3220-adc" },
+> +	{ .compatible = "nxp,lpc3230-adc" },
+> +	{ .compatible = "nxp,lpc3240-adc" },
+> +	{ .compatible = "nxp,lpc3250-adc" },
+do you really need to list them all?
 
-This locking looks wrong as it is possible for adp5588_gpio_get_value()
-to get scheduled out after checking kpad->dir[bank] and releasing
-kpad->gpio_lock while another thread executes
-adp5588_gpio_direction_output() and modifies kpad->dir[bank].
 
-You should keep mutex for the entire duration; something like this:
+if they are all cmpatible just list the first one
 
-	mutex_lock(&kpad->gpio_lock);
-	if (kpad->dir[bank] & bit)
-		val = kpad->dat_out[bank];
-	else
-		val = adp5588_read(kpad->client, GPIO_DAT_STAT1 + bank);
-	mutex_unlock(&kpad->gpio_lock);
-
-	return !!(val & bit);
-
-Thanks.
-
--- 
-Dmitry
+Best Regards,
+J.
