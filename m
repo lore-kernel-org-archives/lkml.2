@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab2DUBKz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 21:10:55 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:34892 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015Ab2DUBKy (ORCPT
+	id S1754564Ab2DUBQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 21:16:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35289 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567Ab2DUBQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 21:10:54 -0400
-Date: Sat, 21 Apr 2012 10:10:49 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 2/9] KVM: MMU: abstract spte write-protect
-Message-Id: <20120421101049.421a744ba5898b6173159cb4@gmail.com>
-In-Reply-To: <20120420213319.GA13817@amt.cnet>
-References: <4F911B74.4040305@linux.vnet.ibm.com>
-	<4F911BAB.6000206@linux.vnet.ibm.com>
-	<20120420213319.GA13817@amt.cnet>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Apr 2012 21:16:57 -0400
+Date: Fri, 20 Apr 2012 18:16:32 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <tip-fa574a48a1e9706bba38188d3bf61ecb66546a77@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        david.daney@cavium.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        david.daney@cavium.com, tglx@linutronix.de
+In-Reply-To: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
+References: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/extable] x86, extable:
+  Disable presorted exception table for now
+Git-Commit-ID: fa574a48a1e9706bba38188d3bf61ecb66546a77
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 20 Apr 2012 18:16:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Apr 2012 18:33:19 -0300
-Marcelo Tosatti <mtosatti@redhat.com> wrote:
+Commit-ID:  fa574a48a1e9706bba38188d3bf61ecb66546a77
+Gitweb:     http://git.kernel.org/tip/fa574a48a1e9706bba38188d3bf61ecb66546a77
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Fri, 20 Apr 2012 17:11:17 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Fri, 20 Apr 2012 17:11:17 -0700
 
-> It is preferable to remove all large sptes including read-only ones, the
-> current behaviour, then to verify that no read->write transition can
-> occur in fault paths (fault paths which are increasing in number).
-> 
+x86, extable: Disable presorted exception table for now
 
-I think we should use separate function than spte_write_protect() for
-the large case.
+Disable presorting the exception table in preparation for changing the
+format.
 
-	Takuya
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: David Daney <david.daney@cavium.com>
+Link: http://lkml.kernel.org/r/CA%2B55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com
+---
+ arch/x86/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 2f925cc..1d14cc6 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -82,7 +82,6 @@ config X86
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_IOMAP
+ 	select DCACHE_WORD_ACCESS if !DEBUG_PAGEALLOC
+-	select BUILDTIME_EXTABLE_SORT
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS)
