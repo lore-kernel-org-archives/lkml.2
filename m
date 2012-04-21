@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285Ab2DUVWS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 17:22:18 -0400
-Received: from smtp.fullrate.dk ([90.185.1.42]:64350 "EHLO smtp.fullrate.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751533Ab2DUVWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 17:22:18 -0400
-Message-ID: <4F932506.8040606@molgaard.org>
-Date: Sat, 21 Apr 2012 23:22:14 +0200
-From: =?ISO-8859-1?Q?Sune_M=F8lgaard?= <sune@molgaard.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120421 Firefox/14.0a1 SeaMonkey/2.11a1
+	id S1752342Ab2DUVZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 17:25:56 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:37519 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab2DUVZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 17:25:54 -0400
+Message-ID: <4F9325DF.7020003@gmail.com>
+Date: Sat, 21 Apr 2012 14:25:51 -0700
+From: David Daney <david.s.daney@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Boot failure since 3.3-rc?
-References: <4F931C6D.8040407@molgaard.org> <CAE9FiQVSWSNt6MVGU6MiHozpcbjyzukvM++E5kEv5BSsS-nbzw@mail.gmail.com>
-In-Reply-To: <CAE9FiQVSWSNt6MVGU6MiHozpcbjyzukvM++E5kEv5BSsS-nbzw@mail.gmail.com>
+To: David Miller <davem@davemloft.net>
+CC: ddaney.cavm@gmail.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        devicetree-discuss@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        afleming@gmail.com, galak@kernel.crashing.org, david.daney@cavium.com
+Subject: Re: [PATCH v5 2/3] netdev/of/phy: Add MDIO bus multiplexer support.
+References: <1334791254-15987-1-git-send-email-ddaney.cavm@gmail.com>        <1334791254-15987-3-git-send-email-ddaney.cavm@gmail.com> <20120421.153201.2103447307695063734.davem@davemloft.net>
+In-Reply-To: <20120421.153201.2103447307695063734.davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu wrote:
-
-> So kernel with reverting that commit will work well?
-
-Being new to reporting bisect results, I stupidly forgot to realise that 
-this would be the final proof. Will report back when I know.
-
-> can you post boot with "debug ignore_loglevel initcall_debug" with and
-> without reverting that patch?
-
-Need to read up on netconsole as it's a headless machine. Would 
-netconsole work through a switch, or would I need to find a cross-over 
-cable?
-
-> Thanks
+On 04/21/2012 12:32 PM, David Miller wrote:
+> From: David Daney<ddaney.cavm@gmail.com>
+> Date: Wed, 18 Apr 2012 16:20:53 -0700
 >
-> Yinghai
+>> +config MDIO_BUS_MUX
+>> +	tristate
+>> +	help
+>> +	  This module provides a driver framework for MDIO bus
+>> +	  multiplexers which connect one of several child MDIO busses
+>> +	  to a parent bus.  Switching between child busses is done by
+>> +	  device specific drivers.
+>> +
+> This driver uses OF and OF_MDIO, and therefore need dependencies upon
+> them.  Otherwise it can be enabled in configurations which will result
+> in build failures.
 
-Thanks for replying. Will report back when I have something to share.
+Note that this symbol cannot be selected by the user, only indirectly 
+via the MDIO_BUS_MUX_GPIO symbol (in patch 3/3) which has the proper 
+dependencies.
 
-Best regards,
+If we were to specify the dependencies in both places, we gain nothing other than duplication of information.
 
-Sune
+However, if you insist, I will of course add it here too.
 
--- 
-Being powerful is like being a lady. If you have to tell people you
-are, you aren't.
-- Margaret Thatcher
+David Daney
+
+
+
+
 
 
