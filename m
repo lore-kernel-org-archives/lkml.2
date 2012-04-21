@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab2DUUFS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 16:05:18 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21410 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab2DUUEi (ORCPT
+	id S1751657Ab2DUUQH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 16:16:07 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:49260 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab2DUUQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 16:04:38 -0400
-Date: Sat, 21 Apr 2012 22:04:37 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: trivial@kernel.org, devel@driverdev.osuosl.org,
-        Xi Wang <xi.wang@gmail.com>, Joe Perches <joe@perches.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Forest Bond <forest@alittletooquiet.net>
-Subject: [PATCH 2/3] staging: vt6656: remove redundant parentheses from
- ioctl.c
-In-Reply-To: <alpine.LNX.2.00.1204212156260.25551@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1204212203030.25551@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1204212156260.25551@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 21 Apr 2012 16:16:05 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] m68k: Make sure {read,write}s[bwl]() are always defined
+Date: Sat, 21 Apr 2012 22:15:58 +0200
+Message-Id: <1335039358-10772-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I seriously doubt that anyone is confused about the precedence rules
-for "*" and "+" - remove redundant extra parentheses.
+drivers/usb/musb/musb_io.h provides default implementations for
+{read,write}s[bwl]() on most platforms, some of which will conflict soon
+with platform-specific counterparts on m68k.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+To avoid having to add more platform-specific checks to musb_io.h later,
+make sure {read,write}s[bwl]() are always defined on m68k, and disable the
+default implementations in musb_io.h on m68k, like is already done for
+several other architectures.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Acked-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/staging/vt6656/ioctl.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+This is the proactive fix, before Atari ROM port ISA is introduced.
 
-diff --git a/drivers/staging/vt6656/ioctl.c b/drivers/staging/vt6656/ioctl.c
-index 8a918e9..deea69b 100644
---- a/drivers/staging/vt6656/ioctl.c
-+++ b/drivers/staging/vt6656/ioctl.c
-@@ -297,7 +297,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 			result = -EINVAL;
- 			break;
- 		}
--		pList = kmalloc(sizeof(SBSSIDList) + (sList.uItem * sizeof(SBSSIDItem)), GFP_ATOMIC);
-+		pList = kmalloc(sizeof(SBSSIDList) + sList.uItem * sizeof(SBSSIDItem), GFP_ATOMIC);
- 		if (pList == NULL) {
- 			result = -ENOMEM;
- 			break;
-@@ -333,7 +333,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 			}
- 		}
+ arch/m68k/include/asm/io_mm.h |    7 +++++++
+ drivers/usb/musb/musb_io.h    |    2 +-
+ 2 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/arch/m68k/include/asm/io_mm.h b/arch/m68k/include/asm/io_mm.h
+index 0fb3468..fa4324b 100644
+--- a/arch/m68k/include/asm/io_mm.h
++++ b/arch/m68k/include/asm/io_mm.h
+@@ -278,6 +278,13 @@ static inline void isa_delay(void)
+ #define readl(addr)      in_le32(addr)
+ #define writel(val,addr) out_le32((addr),(val))
  
--		if (copy_to_user(pReq->data, pList, sizeof(SBSSIDList) + (sList.uItem * sizeof(SBSSIDItem)))) {
-+		if (copy_to_user(pReq->data, pList, sizeof(SBSSIDList) + sList.uItem * sizeof(SBSSIDItem))) {
- 			result = -EFAULT;
- 			break;
- 		}
-@@ -563,7 +563,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 			result = -ENOMEM;
- 			break;
- 		}
--		pNodeList = kmalloc(sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)), GFP_ATOMIC);
-+		pNodeList = kmalloc(sizeof(SNodeList) + sNodeList.uItem * sizeof(SNodeItem), GFP_ATOMIC);
- 		if (pNodeList == NULL) {
- 			result = -ENOMEM;
- 			break;
-@@ -598,7 +598,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 					break;
- 			}
- 		}
--		if (copy_to_user(pReq->data, pNodeList, sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)))) {
-+		if (copy_to_user(pReq->data, pNodeList, sizeof(SNodeList) + sNodeList.uItem * sizeof(SNodeItem))) {
- 			kfree(pNodeList);
- 			result = -EFAULT;
- 			break;
++#define readsb(port, buf, nr)     raw_insb((port), (u8 *)(buf), (nr))
++#define readsw(port, buf, nr)     raw_insw((port), (u16 *)(buf), (nr))
++#define readsl(port, buf, nr)     raw_insl((port), (u32 *)(buf), (nr))
++#define writesb(port, buf, nr)    raw_outsb((port), (u8 *)(buf), (nr))
++#define writesw(port, buf, nr)    raw_outsw((port), (u16 *)(buf), (nr))
++#define writesl(port, buf, nr)    raw_outsl((port), (u32 *)(buf), (nr))
++
+ #define mmiowb()
+ 
+ static inline void __iomem *ioremap(unsigned long physaddr, unsigned long size)
+diff --git a/drivers/usb/musb/musb_io.h b/drivers/usb/musb/musb_io.h
+index 1d5eda2..f7c1c8e 100644
+--- a/drivers/usb/musb/musb_io.h
++++ b/drivers/usb/musb/musb_io.h
+@@ -40,7 +40,7 @@
+ #if !defined(CONFIG_ARM) && !defined(CONFIG_SUPERH) \
+ 	&& !defined(CONFIG_AVR32) && !defined(CONFIG_PPC32) \
+ 	&& !defined(CONFIG_PPC64) && !defined(CONFIG_BLACKFIN) \
+-	&& !defined(CONFIG_MIPS)
++	&& !defined(CONFIG_MIPS) && !defined(CONFIG_M68K)
+ static inline void readsl(const void __iomem *addr, void *buf, int len)
+ 	{ insl((unsigned long)addr, buf, len); }
+ static inline void readsw(const void __iomem *addr, void *buf, int len)
 -- 
-1.7.10
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.0.4
 
