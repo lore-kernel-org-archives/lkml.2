@@ -1,93 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab2DUAVy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 20:21:54 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:50069 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab2DUAVw convert rfc822-to-8bit (ORCPT
+	id S1753067Ab2DUAYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 20:24:04 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:52573 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab2DUAYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 20:21:52 -0400
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "jweiner@redhat.com" <jweiner@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "shaohua.li@intel.com" <shaohua.li@intel.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Fri, 20 Apr 2012 20:21:28 -0400
-Subject: RE: [RFC][PATCH] avoid swapping out with swappiness==0
-Thread-Topic: [RFC][PATCH] avoid swapping out with swappiness==0
-Thread-Index: Ac0SibtX7j/6MI5MS9Ch6BlzO39vIQMyoA0g
-Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9C014575D8CF@USINDEVS02.corp.hds.com>
-References: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
- <20120305215602.GA1693@redhat.com> <4F5798B1.5070005@jp.fujitsu.com>
- <65795E11DBF1E645A09CEC7EAEE94B9CB951A45F@USINDEVS02.corp.hds.com>
- <65795E11DBF1E645A09CEC7EAEE94B9C01454D13A6@USINDEVS02.corp.hds.com>
- <CAHGf_=p9OgVC9J-Nh78CTbuMbc9CVt-+-G+CNbYUsgz70Uc8Qg@mail.gmail.com>
- <4F7ADE1A.2050004@redhat.com> <4F7C870B.6020807@gmail.com>
-In-Reply-To: <4F7C870B.6020807@gmail.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 20 Apr 2012 20:24:01 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>
+Subject: [PATCH] [RFC] android-alarm: Switch from wakelocks to wakeup sources
+Date: Fri, 20 Apr 2012 17:23:50 -0700
+Message-Id: <1334967830-26624-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1204200317
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042100-7408-0000-0000-0000046320EB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+In their current AOSP tree, the Android in-kernel wakelock
+infrastructure has been reimplemented in terms of wakeup
+sources:
+http://git.linaro.org/gitweb?p=people/jstultz/android.git;a=commitdiff;h=e9911f4efdc55af703b8b3bb8c839e6f5dd173bb
 
-Sorry for my late reply.
+The Android alarm driver currently has stubbed out calls
+to wakelock functionality. So this patch simply converts
+the stubbed out wakelock calls to wakeup source calls, and
+removes the empty wakelock macros
 
-On 04/04/2012 01:38 PM, KOSAKI Motohiro wrote:
-> (4/3/12 4:25 AM), Jerome Marchand wrote:
->> On 04/02/2012 07:10 PM, KOSAKI Motohiro wrote:
->>> 2012/3/30 Satoru Moriya<satoru.moriya@hds.com>:
->>>> So the kernel reclaims pages like following.
->>>>
->>>> nr_free + nr_filebacked>= watermark_high: reclaim only filebacked pages
->>>> nr_free + nr_filebacked<   watermark_high: reclaim only anonymous pages
->>>
->>> How?
->>
->> get_scan_count() checks that case explicitly:
->>
->>     if (global_reclaim(sc)) {
->>         free  = zone_page_state(mz->zone, NR_FREE_PAGES);
->>         /* If we have very few page cache pages,
->>            force-scan anon pages. */
->>         if (unlikely(file + free<= high_wmark_pages(mz->zone))) {
->>             fraction[0] = 1;
->>             fraction[1] = 0;
->>             denominator = 1;
->>             goto out;
->>         }
->>     }
-> 
-> Eek. This is silly. Nowaday many people enabled THP and it increase zone watermark.
-> so, high watermask is not good threshold anymore.
+This is something I'd like to propose for staging, but wanted
+to get some input from Arve, Colin or other member of the
+Android team first.
 
-Ah yes, it is not so small now.
-On 4GB server, without THP min_free_kbytes is 8113 but
-with THP it is 67584.
+Thoughts or objections?
 
-How about using low watermark or min watermark?
-Are they still big?
+CC: Colin Cross <ccross@android.com>
+CC: Arve Hjønnevåg <arve@android.com>
+CC: Greg KH <gregkh@linuxfoundation.org>
+CC: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/staging/android/alarm-dev.c |   26 +++++++-------------------
+ 1 files changed, 7 insertions(+), 19 deletions(-)
 
-...or should we use other value? 
+diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
+index 04075b3..53ce6ec 100644
+--- a/drivers/staging/android/alarm-dev.c
++++ b/drivers/staging/android/alarm-dev.c
+@@ -25,17 +25,6 @@
+ #include <linux/alarmtimer.h>
+ #include "android_alarm.h"
+ 
+-/* XXX - Hack out wakelocks, while they are out of tree */
+-struct wake_lock {
+-	int i;
+-};
+-#define wake_lock(x)
+-#define wake_lock_timeout(x, y)
+-#define wake_unlock(x)
+-#define WAKE_LOCK_SUSPEND 0
+-#define wake_lock_init(x, y, z) ((x)->i = 1)
+-#define wake_lock_destroy(x)
+-
+ #define ANDROID_ALARM_PRINT_INFO (1U << 0)
+ #define ANDROID_ALARM_PRINT_IO (1U << 1)
+ #define ANDROID_ALARM_PRINT_INT (1U << 2)
+@@ -61,7 +50,7 @@ module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
+ 
+ static int alarm_opened;
+ static DEFINE_SPINLOCK(alarm_slock);
+-static struct wake_lock alarm_wake_lock;
++static struct wakeup_source alarm_wake_lock;
+ static DECLARE_WAIT_QUEUE_HEAD(alarm_wait_queue);
+ static uint32_t alarm_pending;
+ static uint32_t alarm_enabled;
+@@ -154,7 +143,7 @@ static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		if (alarm_pending) {
+ 			alarm_pending &= ~alarm_type_mask;
+ 			if (!alarm_pending && !wait_pending)
+-				wake_unlock(&alarm_wake_lock);
++				__pm_relax(&alarm_wake_lock);
+ 		}
+ 		alarm_enabled &= ~alarm_type_mask;
+ 		spin_unlock_irqrestore(&alarm_slock, flags);
+@@ -192,7 +181,7 @@ from_old_alarm_set:
+ 		spin_lock_irqsave(&alarm_slock, flags);
+ 		pr_alarm(IO, "alarm wait\n");
+ 		if (!alarm_pending && wait_pending) {
+-			wake_unlock(&alarm_wake_lock);
++			__pm_relax(&alarm_wake_lock);
+ 			wait_pending = 0;
+ 		}
+ 		spin_unlock_irqrestore(&alarm_slock, flags);
+@@ -284,7 +273,7 @@ static int alarm_release(struct inode *inode, struct file *file)
+ 			if (alarm_pending)
+ 				pr_alarm(INFO, "alarm_release: clear "
+ 					"pending alarms %x\n", alarm_pending);
+-			wake_unlock(&alarm_wake_lock);
++			__pm_relax(&alarm_wake_lock);
+ 			wait_pending = 0;
+ 			alarm_pending = 0;
+ 		}
+@@ -302,7 +291,7 @@ static void devalarm_triggered(struct devalarm *alarm)
+ 	pr_alarm(INT, "devalarm_triggered type %d\n", alarm->type);
+ 	spin_lock_irqsave(&alarm_slock, flags);
+ 	if (alarm_enabled & alarm_type_mask) {
+-		wake_lock_timeout(&alarm_wake_lock, 5 * HZ);
++		__pm_wakeup_event(&alarm_wake_lock, 5000); /* 5secs */
+ 		alarm_enabled &= ~alarm_type_mask;
+ 		alarm_pending |= alarm_type_mask;
+ 		wake_up(&alarm_wait_queue);
+@@ -368,15 +357,14 @@ static int __init alarm_dev_init(void)
+ 			alarms[i].u.hrt.function = devalarm_hrthandler;
+ 	}
+ 
+-	wake_lock_init(&alarm_wake_lock, WAKE_LOCK_SUSPEND, "alarm");
+-
++	wakeup_source_init(&alarm_wake_lock, "alarm");
+ 	return 0;
+ }
+ 
+ static void  __exit alarm_dev_exit(void)
+ {
+ 	misc_deregister(&alarm_device);
+-	wake_lock_destroy(&alarm_wake_lock);
++	wakeup_source_trash(&alarm_wake_lock);
+ }
+ 
+ module_init(alarm_dev_init);
+-- 
+1.7.3.2.146.gca209
 
-Regards,
-Satoru
