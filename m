@@ -1,202 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab2DUJNL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 05:13:11 -0400
-Received: from smtp4.mail.ru ([94.100.176.44]:47573 "EHLO smtp4.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753670Ab2DUJKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 05:10:21 -0400
-From: Alexander Shiyan <shc_work@mail.ru>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH 07/17] ARM clps711x: Remove unused includes
-Date: Sat, 21 Apr 2012 13:11:20 +0400
-Message-Id: <1334999490-27177-8-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1334999490-27177-1-git-send-email-shc_work@mail.ru>
-References: <1334999490-27177-1-git-send-email-shc_work@mail.ru>
-X-Spam: Not detected
+	id S1753558Ab2DUJKT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 05:10:19 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:34206 "HELO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752666Ab2DUJKR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 05:10:17 -0400
+Message-ID: <4F927A16.1010908@fold.natur.cuni.cz>
+Date: Sat, 21 Apr 2012 11:12:54 +0200
+From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120319 Firefox/11.0 SeaMonkey/2.8
+MIME-Version: 1.0
+CC: Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec
+ timeframe
+References: <4F8F243B.70906@fold.natur.cuni.cz> <CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com> <4F909CEB.3060407@fold.natur.cuni.cz> <CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com> <CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com> <4F91473A.1080007@fold.natur.cuni.cz> <CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com> <4F919C22.1070608@fold.natur.cuni.cz> <4F919CD5.7070004@fold.natur.cuni.cz> <CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com> <20120420231748.GB7069@xanatos> <CAE9FiQX7JCZvL9S8ZOQQaHQ4nfU0XDj=8FmOfCtcz7WFjP8=Bg@mail.gmail.com> <CAE9FiQWLmiqg_8PQXYsccxqrvwEp5zhGLcEpsN-nAJq=1zTZ7Q@mail.gmail.com> <4F927787.409@fold.natur.cuni.cz>
+In-Reply-To: <4F927787.409@fold.natur.cuni.cz>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All necessary definitions now provides by mach/hardware.h
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
----
- arch/arm/include/asm/hardware/ep7211.h            |    2 --
- arch/arm/mach-clps711x/common.c                   |    1 -
- arch/arm/mach-clps711x/include/mach/debug-macro.S |    1 -
- arch/arm/mach-clps711x/include/mach/entry-macro.S |    1 -
- arch/arm/mach-clps711x/include/mach/hardware.h    |   18 ++----------------
- arch/arm/mach-clps711x/include/mach/time.h        |    2 +-
- arch/arm/mach-clps711x/include/mach/uncompress.h  |    1 -
- arch/arm/mach-clps711x/p720t-leds.c               |    3 ---
- drivers/tty/serial/clps711x.c                     |    1 -
- drivers/video/clps711xfb.c                        |    1 -
- 10 files changed, 3 insertions(+), 28 deletions(-)
 
-diff --git a/arch/arm/include/asm/hardware/ep7211.h b/arch/arm/include/asm/hardware/ep7211.h
-index ca4d198..0b09e38 100644
---- a/arch/arm/include/asm/hardware/ep7211.h
-+++ b/arch/arm/include/asm/hardware/ep7211.h
-@@ -23,8 +23,6 @@
- #ifndef __ASM_HARDWARE_EP7211_H
- #define __ASM_HARDWARE_EP7211_H
- 
--#include <asm/hardware/clps7111.h>
--
- #define EP7211_PHYS_BASE	(0x80000000)
- 
- /*
-diff --git a/arch/arm/mach-clps711x/common.c b/arch/arm/mach-clps711x/common.c
-index 3c5b5bb..3544433 100644
---- a/arch/arm/mach-clps711x/common.c
-+++ b/arch/arm/mach-clps711x/common.c
-@@ -36,7 +36,6 @@
- #include <asm/page.h>
- #include <asm/mach/map.h>
- #include <asm/mach/time.h>
--#include <asm/hardware/clps7111.h>
- #include <asm/system_misc.h>
- 
- /*
-diff --git a/arch/arm/mach-clps711x/include/mach/debug-macro.S b/arch/arm/mach-clps711x/include/mach/debug-macro.S
-index b802e8a..15a9036 100644
---- a/arch/arm/mach-clps711x/include/mach/debug-macro.S
-+++ b/arch/arm/mach-clps711x/include/mach/debug-macro.S
-@@ -12,7 +12,6 @@
- */
- 
- #include <mach/hardware.h>
--#include <asm/hardware/clps7111.h>
- 
- 		.macro	addruart, rp, rv, tmp
- #ifndef CONFIG_DEBUG_CLPS711X_UART2
-diff --git a/arch/arm/mach-clps711x/include/mach/entry-macro.S b/arch/arm/mach-clps711x/include/mach/entry-macro.S
-index 125af59..4ff5e77 100644
---- a/arch/arm/mach-clps711x/include/mach/entry-macro.S
-+++ b/arch/arm/mach-clps711x/include/mach/entry-macro.S
-@@ -8,7 +8,6 @@
-  * warranty of any kind, whether express or implied.
-  */
- #include <mach/hardware.h>
--#include <asm/hardware/clps7111.h>
- 
- 		.macro	get_irqnr_preamble, base, tmp
- 		.endm
-diff --git a/arch/arm/mach-clps711x/include/mach/hardware.h b/arch/arm/mach-clps711x/include/mach/hardware.h
-index f00e87a..fa9b8f2 100644
---- a/arch/arm/mach-clps711x/include/mach/hardware.h
-+++ b/arch/arm/mach-clps711x/include/mach/hardware.h
-@@ -22,10 +22,11 @@
- #ifndef __ASM_ARCH_HARDWARE_H
- #define __ASM_ARCH_HARDWARE_H
- 
--
- #define CLPS7111_VIRT_BASE	0xff000000
- #define CLPS7111_BASE		CLPS7111_VIRT_BASE
- 
-+#include <asm/hardware/clps7111.h>
-+
- /*
-  * The physical addresses that the external chip select signals map to is
-  * dependent on the setting of the nMEDCHG signal on EP7211 and EP7212
-@@ -69,19 +70,8 @@
- #define SYSPLD_VIRT_BASE	0xfe000000
- #define SYSPLD_BASE		SYSPLD_VIRT_BASE
- 
--#if  defined (CONFIG_ARCH_AUTCPU12)
--
--#include <asm/hardware/clps7111.h>
--#include <asm/hardware/ep7212.h>
--
--#endif
--
--
- #if defined (CONFIG_ARCH_CDB89712)
- 
--#include <asm/hardware/clps7111.h>
--#include <asm/hardware/ep7212.h>
--
- /* static cdb89712_map_io() areas */
- #define REGISTER_START   0x80000000
- #define REGISTER_SIZE    0x4000
-@@ -149,10 +139,6 @@
- 
- #if defined (CONFIG_ARCH_CEIVA)
- 
--#include <asm/hardware/clps7111.h>
--#include <asm/hardware/ep7212.h>
--
--
- /*
-  * The two flash banks are wired to chip selects 0 and 1. This is the mapping
-  * for them.
-diff --git a/arch/arm/mach-clps711x/include/mach/time.h b/arch/arm/mach-clps711x/include/mach/time.h
-index 61fef91..5f65865 100644
---- a/arch/arm/mach-clps711x/include/mach/time.h
-+++ b/arch/arm/mach-clps711x/include/mach/time.h
-@@ -18,7 +18,7 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-  */
- #include <asm/leds.h>
--#include <asm/hardware/clps7111.h>
-+#include <mach/hardware.h>
- 
- extern void clps711x_setup_timer(void);
- 
-diff --git a/arch/arm/mach-clps711x/include/mach/uncompress.h b/arch/arm/mach-clps711x/include/mach/uncompress.h
-index 35ed731..ac42332 100644
---- a/arch/arm/mach-clps711x/include/mach/uncompress.h
-+++ b/arch/arm/mach-clps711x/include/mach/uncompress.h
-@@ -18,7 +18,6 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-  */
- #include <mach/hardware.h>
--#include <asm/hardware/clps7111.h>
- 
- #undef CLPS7111_BASE
- #define CLPS7111_BASE CLPS7111_PHYS_BASE
-diff --git a/arch/arm/mach-clps711x/p720t-leds.c b/arch/arm/mach-clps711x/p720t-leds.c
-index dd9a6cd..bbc449f 100644
---- a/arch/arm/mach-clps711x/p720t-leds.c
-+++ b/arch/arm/mach-clps711x/p720t-leds.c
-@@ -27,9 +27,6 @@
- #include <asm/leds.h>
- #include <asm/mach-types.h>
- 
--#include <asm/hardware/clps7111.h>
--#include <asm/hardware/ep7212.h>
--
- static void p720t_leds_event(led_event_t ledevt)
- {
- 	unsigned long flags;
-diff --git a/drivers/tty/serial/clps711x.c b/drivers/tty/serial/clps711x.c
-index 836fe273..d0f719f 100644
---- a/drivers/tty/serial/clps711x.c
-+++ b/drivers/tty/serial/clps711x.c
-@@ -40,7 +40,6 @@
- 
- #include <mach/hardware.h>
- #include <asm/irq.h>
--#include <asm/hardware/clps7111.h>
- 
- #define UART_NR		2
- 
-diff --git a/drivers/video/clps711xfb.c b/drivers/video/clps711xfb.c
-index 99b354b..f994c8b 100644
---- a/drivers/video/clps711xfb.c
-+++ b/drivers/video/clps711xfb.c
-@@ -33,7 +33,6 @@
- #include <asm/mach-types.h>
- #include <linux/uaccess.h>
- 
--#include <asm/hardware/clps7111.h>
- #include <mach/syspld.h>
- 
- struct fb_info	*cfb;
--- 
-1.7.3.4
+Martin Mokrejs wrote:
+> 
+> 
+> Yinghai Lu wrote:
+>> On Fri, Apr 20, 2012 at 5:09 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>>> What do you mean "strange power state"?  The only PCI power states the
+>>>> xHCI driver will use is D0 or D3hot.  D3hot is entered automatically by
+>>>> the USB core runtime PM system when all USB devices are disconnected or
+>>>> suspended.  So what strange power state are we talking about?
+>>>
+>>> that's helpful. Can that feature to be disabled?
+>>
+>> please check and set
+>> /sys/bus/pci/devices/0000:11:00.0/power/control
+>> /sys/bus/pci/devices/0000:11:00.0/usb?/power/control
+>> from auto to on
+> 
+> I inserted the card, it was detected:
+> 
+> [33335.295737] pci 0000:11:00.0: [1033:0194] type 00 class 0x0c0330
+> [33335.295789] pci 0000:11:00.0: reg 10: [mem 0x00000000-0x00001fff 64bit]
+> [33335.296043] pci 0000:11:00.0: PME# supported from D0 D3hot
+> [33335.315688] pci 0000:11:00.0: BAR 0: assigned [mem 0xf6c00000-0xf6c01fff 64bit]
+> [33335.315796] xhci_hcd 0000:11:00.0: enabling device (0100 -> 0102)
+> [33335.315893] xhci_hcd 0000:11:00.0: xHCI Host Controller
+> [33335.315897] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 5
+> [33335.316178] xhci_hcd 0000:11:00.0: irq 19, io mem 0xf6c00000
+> [33335.316281] xhci_hcd 0000:11:00.0: irq 53 for MSI/MSI-X
+> [33335.316285] xhci_hcd 0000:11:00.0: irq 54 for MSI/MSI-X
+> [33335.316288] xhci_hcd 0000:11:00.0: irq 55 for MSI/MSI-X
+> [33335.316292] xhci_hcd 0000:11:00.0: irq 56 for MSI/MSI-X
+> [33335.316296] xhci_hcd 0000:11:00.0: irq 57 for MSI/MSI-X
+> [33335.316447] usb usb5: New USB device found, idVendor=1d6b, idProduct=0002
+> [33335.316448] usb usb5: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+> [33335.316450] usb usb5: Product: xHCI Host Controller
+> [33335.316451] usb usb5: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
+> [33335.316452] usb usb5: SerialNumber: 0000:11:00.0
+> [33335.316574] xHCI xhci_add_endpoint called for root hub
+> [33335.316575] xHCI xhci_check_bandwidth called for root hub
+> [33335.316597] hub 5-0:1.0: USB hub found
+> [33335.316609] hub 5-0:1.0: 2 ports detected
+> [33335.316680] xhci_hcd 0000:11:00.0: xHCI Host Controller
+> [33335.316683] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 6
+> [33335.319424] usb usb6: New USB device found, idVendor=1d6b, idProduct=0003
+> [33335.319426] usb usb6: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+> [33335.319428] usb usb6: Product: xHCI Host Controller
+> [33335.319429] usb usb6: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
+> [33335.319430] usb usb6: SerialNumber: 0000:11:00.0
+> [33335.319560] xHCI xhci_add_endpoint called for root hub
+> [33335.319562] xHCI xhci_check_bandwidth called for root hub
+> [33335.319584] hub 6-0:1.0: USB hub found
+> [33335.319602] hub 6-0:1.0: 2 ports detected
+> 
+> # cat /sys/bus/pci/devices/0000:11:00.0/power/control
+> on
+> # cat /sys/bus/pci/devices/0000:11:00.0/usb?/power/control
+> auto
+> auto
+> # echo on > /sys/bus/pci/devices/0000:11:00.0/usb5/power/control
+> # echo on > /sys/bus/pci/devices/0000:11:00.0/usb6/power/control
+> #
+> 
+> I removed the card and it was NOT detected.
+> 
+> Note: I did the test with the running instance of kernel booted WITH pcie_aspm=off.
+> Will reboot without tha option and re-try.
 
+Same values in sysfs files, same result.
+
+Martin
