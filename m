@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab2DUSX4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 14:23:56 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:42395 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab2DUSXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 14:23:54 -0400
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: cocci@diku.dk, mmarek@suse.cz, linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH v2] scripts/coccinelle: sizeof of pointer
-Date: Sat, 21 Apr 2012 20:23:48 +0200
-Message-Id: <1335032628-5152-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1751807Ab2DUScj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 14:32:39 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17410 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617Ab2DUSci (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 14:32:38 -0400
+Date: Sat, 21 Apr 2012 20:32:36 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: David Woodhouse <dwmw2@infradead.org>,
+        Andres Salomon <dilinger@queued.net>,
+        Jordan Crouse <jordan@cosmicpenguin.net>, Chris Ball <cjb@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Valentin Rothberg <valentinrothberg@googlemail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH 0/3] staging: olpc_dcon.c: checkpatch.pl and style fixups
+Message-ID: <alpine.LNX.2.00.1204212025140.25551@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+Hi
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Greg KH asked that these changes, which I had originally put in a single 
+patch, be submitted as individual patches with just a single change per 
+patch. So here goes.
 
----
-v2, with a better subject
+The 3 patches - submitted as replies to this email are:
 
- scripts/coccinelle/misc/noderef.cocci |   65 ++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
 
-diff --git a/scripts/coccinelle/misc/noderef.cocci b/scripts/coccinelle/misc/noderef.cocci
-new file mode 100644
-index 0000000..c170721
---- /dev/null
-+++ b/scripts/coccinelle/misc/noderef.cocci
-@@ -0,0 +1,65 @@
-+/// sizeof when applied to a pointer typed expression gives the size of
-+/// the pointer
-+///
-+// Confidence: High
-+// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
-+// Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
-+// URL: http://coccinelle.lip6.fr/
-+// Comments:
-+// Options: -no_includes -include_headers
-+
-+virtual org
-+virtual report
-+virtual context
-+virtual patch
-+
-+@depends on patch@
-+expression *x;
-+expression f;
-+type T;
-+@@
-+
-+(
-+x = <+... sizeof(
-+- x
-++ *x
-+   ) ...+>
-+|
-+f(...,(T)(x),...,sizeof(
-+- x
-++ *x
-+   ),...)
-+|
-+f(...,sizeof(x),...,(T)(
-+- x
-++ *x
-+   ),...)
-+)
-+
-+@r depends on !patch@
-+expression *x;
-+expression f;
-+position p;
-+type T;
-+@@
-+
-+(
-+*x = <+... sizeof@p(x) ...+>
-+|
-+*f(...,(T)(x),...,sizeof@p(x),...)
-+|
-+*f(...,sizeof@p(x),...,(T)(x),...)
-+)
-+
-+@script:python depends on org@
-+p << r.p;
-+@@
-+
-+cocci.print_main("application of sizeof to pointer",p)
-+
-+@script:python depends on report@
-+p << r.p;
-+@@
-+
-+msg = "ERROR: application of sizeof to pointer"
-+coccilib.report.print_report(p[0],msg)
+1)
+Subject: [PATCH 1/3] staging: olpc_dcon.c: strings printed with printk() put on a single line
+
+Quoted strings that were broken over multiple lines are put on a
+single line for easier grep'ability.
+
+
+2)
+Subject: [PATCH 2/3] staging: olpc_dcon.c: Add missing level to a printk()
+
+
+3)
+Subject: [PATCH 3/3] staging: olpc_dcon.c: Remove a few spaces between casts and variables
+
+Just a trivial style cleanup.
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
