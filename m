@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab2DUA2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 20:28:54 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:56335 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991Ab2DUA2w (ORCPT
+	id S1753253Ab2DUAck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 20:32:40 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:53229 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751557Ab2DUAcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 20:28:52 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6687"; a="181400834"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Yong Zhang <yong.zhang0@gmail.com>
-Subject: [PATCHv2] workqueue: Catch more locking problems with flush_work()
-Date: Fri, 20 Apr 2012 17:28:50 -0700
-Message-Id: <1334968130-20724-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.10.207.g0bb2e
-In-Reply-To: <20120420173529.GD32324@google.com>
+	Fri, 20 Apr 2012 20:32:39 -0400
+Date: Fri, 20 Apr 2012 20:32:37 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Greg KH <greg@kroah.com>
+cc: Wang YanQing <Udknight@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [RFC]Is usb port number fixed?
+In-Reply-To: <20120420153727.GA29331@kroah.com>
+Message-ID: <Pine.LNX.4.44L0.1204202028250.19313-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a workqueue is flushed with flush_work() lockdep checking can
-be circumvented. For example:
+On Fri, 20 Apr 2012, Greg KH wrote:
 
- static DEFINE_MUTEX(mutex);
+> > Make the question precise.
+> > I assme there are two usb ports in my notebook at left and right separately.
+> > When I plug mouse into 
+> > left usb port, I get 2-1.1:1.0
+> > right usb port, I get 2-1.2:1.0
+> > 
+> > I want to know whether it is right that no matter how many times I reboot the machine,
+> 
+> Not always.
+> 
+> > the test result above will be the same.And if it will be the same, then why it will be the same.
+> 
+> You got lucky :)
+> 
+> USB ports on a hub are all enumerated the same, but the root hubs
+> aren't, and sometimes hubs on the same bus are not as well.
+> 
+> But usually, things do come up in the same way all the time, so
+> depending on your use case, you can rely on this, but it is recommended
+> that you look for something else a bit more unique, like a serial number
+> on a device (if it is present), if you wish to uniquely identify a
+> device all the time.
 
- static void my_work(struct work_struct *w)
- {
-         mutex_lock(&mutex);
-         mutex_unlock(&mutex);
- }
+In this particular case, it is guaranteed that the left USB port will 
+always be numbered as X-1.1:1.0 and the right port as X-1.2:1.0, where 
+the number X may change from one boot to another.  But the -1.1:1.0 and 
+-1.2:1.0 parts will always be the same.
 
- static DECLARE_WORK(work, my_work);
+This is because X is the bus number, which is allowed to change.  The 
+-1.1:1.0 and -1.2:1.0 values are port, configuration, and interface 
+numbers.  They will never change, because they come from the hardware.
 
- static int __init start_test_module(void)
- {
-         schedule_work(&work);
-         return 0;
- }
- module_init(start_test_module);
-
- static void __exit stop_test_module(void)
- {
-         mutex_lock(&mutex);
-         flush_work(&work);
-         mutex_unlock(&mutex);
- }
- module_exit(stop_test_module);
-
-would not always print a warning when flush_work() was called.
-In this trivial example nothing could go wrong since we are
-guaranteed module_init() and module_exit() don't run concurrently,
-but if the work item is schedule asynchronously we could have a
-scenario where the work item is running just at the time flush_work()
-is called resulting in a classic ABBA locking problem.
-
-Add a lockdep hint by acquiring and releasing the work item
-lockdep_map in flush_work() so that we always catch this
-potential deadlock scenario.
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- kernel/workqueue.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 5abf42f..038cf64 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2506,6 +2506,9 @@ bool flush_work(struct work_struct *work)
- {
- 	struct wq_barrier barr;
- 
-+	lock_map_acquire(&work->lockdep_map);
-+	lock_map_release(&work->lockdep_map);
-+
- 	if (start_flush_work(work, &barr, true)) {
- 		wait_for_completion(&barr.done);
- 		destroy_work_on_stack(&barr.work);
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Alan Stern
 
