@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809Ab2DUACA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 20:02:00 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:60725 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab2DUAB5 (ORCPT
+	id S1752017Ab2DUAER (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 20:04:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56410 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab2DUAEQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 20:01:57 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        linux-security-module@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <m11unyn70b.fsf@fess.ebiederm.org>
-	<1333862139-31737-27-git-send-email-ebiederm@xmission.com>
-	<20120418190213.GD5186@mail.hallyn.com>
-Date: Fri, 20 Apr 2012 17:05:56 -0700
-In-Reply-To: <20120418190213.GD5186@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Wed, 18 Apr 2012 19:02:13 +0000")
-Message-ID: <m1y5pq3q57.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Fri, 20 Apr 2012 20:04:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18mtZvXN9IeqzgHg0EVdJW0U2UVvc9Fnuk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: **
-Subject: Re: [PATCH 27/43] userns: Use uid_eq gid_eq helpers when comparing kuids and kgids in the vfs
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <4F91F639.6000107@fold.natur.cuni.cz>
+References: <4F6A483D.50702@fold.natur.cuni.cz>
+	<CAE9FiQWSw1h772ijZ6YL4EujwjgvZ84bbDx9VbF_cdE63D-41w@mail.gmail.com>
+	<4F8D390F.9050408@fold.natur.cuni.cz>
+	<CAE9FiQU-_BCCS1OKagVuj8YNrut8-6GH2_i86FsfS8UDWQ1pRA@mail.gmail.com>
+	<CAE9FiQUxoHvUWFXv5LLcBT9vVGnQKp1-Tg7M3XPPULWwtX1iUw@mail.gmail.com>
+	<4F8EFFA3.3050705@fold.natur.cuni.cz>
+	<CAE9FiQVcJbPub1O6nwyNsiijHFpHN0jMsGO4MmKugybPL7Wnug@mail.gmail.com>
+	<4F8F243B.70906@fold.natur.cuni.cz>
+	<CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com>
+	<4F909CEB.3060407@fold.natur.cuni.cz>
+	<CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
+	<CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com>
+	<4F91473A.1080007@fold.natur.cuni.cz>
+	<CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com>
+	<4F919C22.1070608@fold.natur.cuni.cz>
+	<4F919CD5.7070004@fold.natur.cuni.cz>
+	<CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com>
+	<4F91F639.6000107@fold.natur.cuni.cz>
+Date: Fri, 20 Apr 2012 17:04:15 -0700
+X-Google-Sender-Auth: n8OLxcU4YmwLzsSErgAnR0Czfp8
+Message-ID: <CAE9FiQUFcOV5Vgc_yeU5KSsSPccdmTjyGjGjSOYwrLt-kETGKQ@mail.gmail.com>
+Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
+From: Yinghai Lu <yinghai@kernel.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
-
-> Quoting Eric W. Beiderman (ebiederm@xmission.com):
->> From: Eric W. Biederman <ebiederm@xmission.com>
->> 
->> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
->> ---
->>  fs/attr.c                |    8 ++++----
->>  fs/exec.c                |   10 +++++-----
->>  fs/fcntl.c               |    6 +++---
->>  fs/ioprio.c              |    4 ++--
->>  fs/locks.c               |    2 +-
->>  fs/namei.c               |    8 ++++----
->>  include/linux/quotaops.h |    4 ++--
->>  7 files changed, 21 insertions(+), 21 deletions(-)
->> 
->> diff --git a/fs/attr.c b/fs/attr.c
->> index 73f69a6..2f094c6 100644
->> --- a/fs/attr.c
->> +++ b/fs/attr.c
->> @@ -47,14 +47,14 @@ int inode_change_ok(const struct inode *inode, struct iattr *attr)
->>  
->>  	/* Make sure a caller can chown. */
->>  	if ((ia_valid & ATTR_UID) &&
->> -	    (current_fsuid() != inode->i_uid ||
->> -	     attr->ia_uid != inode->i_uid) && !capable(CAP_CHOWN))
->> +	    (!uid_eq(current_fsuid(), inode->i_uid) ||
->> +	     !uid_eq(attr->ia_uid, inode->i_uid)) && !capable(CAP_CHOWN))
->>  		return -EPERM;
->>  
->>  	/* Make sure caller can chgrp. */
->>  	if ((ia_valid & ATTR_GID) &&
->> -	    (current_fsuid() != inode->i_uid ||
->> -	    (!in_group_p(attr->ia_gid) && attr->ia_gid != inode->i_gid)) &&
->> +	    (!uid_eq(current_fsuid(), inode->i_uid) ||
->> +	    (!in_group_p(attr->ia_gid) && gid_eq(attr->ia_gid, inode->i_gid))) &&
+On Fri, Apr 20, 2012 at 4:50 PM, Martin Mokrejs
+<mmokrejs@fold.natur.cuni.cz> wrote:
 >
-> This should be !gid_eq() ?
+>
+> Yinghai Lu wrote:
+>> On Fri, Apr 20, 2012 at 10:28 AM, Martin Mokrejs
+>> <mmokrejs@fold.natur.cuni.cz> wrote:
+>>>
+>
+> inserting
+>
+> Apr 21 01:38:03 vostro kernel: [  166.843165] pci 0000:11:00.0: BAR 0: assigned [mem 0xf6c00000-0xf6c01fff 64bit]
+> Apr 21 01:38:03 vostro kernel: [  166.843272] xhci_hcd 0000:11:00.0: enabling device (0100 -> 0102)
+> Apr 21 01:38:03 vostro kernel: [  166.843329] xhci_hcd 0000:11:00.0: xHCI Host Controller
+> Apr 21 01:38:03 vostro kernel: [  166.843335] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 5
+> Apr 21 01:38:03 vostro kernel: [  166.843637] xhci_hcd 0000:11:00.0: irq 19, io mem 0xf6c00000
+> Apr 21 01:38:03 vostro kernel: [  166.843923] usb usb5: New USB device found, idVendor=1d6b, idProduct=0002
+> Apr 21 01:38:03 vostro kernel: [  166.843925] usb usb5: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+> Apr 21 01:38:03 vostro kernel: [  166.843926] usb usb5: Product: xHCI Host Controller
+> Apr 21 01:38:03 vostro kernel: [  166.843927] usb usb5: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
+> Apr 21 01:38:03 vostro kernel: [  166.843928] usb usb5: SerialNumber: 0000:11:00.0
+> Apr 21 01:38:03 vostro kernel: [  166.844076] hub 5-0:1.0: USB hub found
+> Apr 21 01:38:03 vostro kernel: [  166.844088] hub 5-0:1.0: 2 ports detected
+> Apr 21 01:38:03 vostro kernel: [  166.844162] xhci_hcd 0000:11:00.0: xHCI Host Controller
+> Apr 21 01:38:03 vostro kernel: [  166.844164] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 6
+> Apr 21 01:38:03 vostro kernel: [  166.846869] usb usb6: New USB device found, idVendor=1d6b, idProduct=0003
+> Apr 21 01:38:03 vostro kernel: [  166.846872] usb usb6: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+> Apr 21 01:38:03 vostro kernel: [  166.846874] usb usb6: Product: xHCI Host Controller
+> Apr 21 01:38:03 vostro kernel: [  166.846876] usb usb6: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
+> Apr 21 01:38:03 vostro kernel: [  166.846878] usb usb6: SerialNumber: 0000:11:00.0
+> Apr 21 01:38:03 vostro kernel: [  166.847205] hub 6-0:1.0: USB hub found
+> Apr 21 01:38:03 vostro kernel: [  166.847224] hub 6-0:1.0: 2 ports detected
+>
+> removed
+>
+> re-inserting
+>
 
-Yes.  Thank you, it is now fixed in my tree.
+so pcie_aspm=off not help.
 
-Eric
+Yinghai
