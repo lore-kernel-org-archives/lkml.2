@@ -1,80 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab2DUWMA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 18:12:00 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46002 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab2DUWL7 (ORCPT
+	id S1752656Ab2DUWMS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 18:12:18 -0400
+Received: from nm2.bullet.mail.sp2.yahoo.com ([98.139.91.72]:42551 "HELO
+	nm2.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752556Ab2DUWMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 18:11:59 -0400
-Date: Sun, 22 Apr 2012 01:13:56 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org,
-        Valentin Rothberg <valentinrothberg@googlemail.com>,
-        devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Jordan Crouse <jordan@cosmicpenguin.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH 3/3] staging: olpc_dcon.c: Remove a few spaces between
- casts and variables
-Message-ID: <20120421221356.GO27101@mwanda>
-References: <alpine.LNX.2.00.1204212025140.25551@swampdragon.chaosbits.net>
- <alpine.LNX.2.00.1204212031360.25551@swampdragon.chaosbits.net>
- <20120421202825.GW6498@mwanda>
- <alpine.LNX.2.00.1204212238040.25551@swampdragon.chaosbits.net>
+	Sat, 21 Apr 2012 18:12:16 -0400
+X-Yahoo-Newman-Id: 539667.72714.bm@smtp202.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: YKAHHdUVM1mvrJBmad8f_Xf0BkAYLkEJiNZeO5iEfzIfaVr
+ AEmoqEC.4kwTEuYBHiJBcOYi2iWneh_Dx9FqQT.G7gW2M.zsZf0cjnTak9T6
+ l0Gnty7z5zviT5vIDkJyRmsuB4q9alBl9XjqXWepMYQrLnbBzpkOPFPq6cdX
+ 4NeJdXIqET7faiYt1kZsAd2pTuWrMctbqBWDqKAz_tesIAgdD2zvWCniO71V
+ ZUX6WsDJr53l_SWH6BlOiQi8gye8DGvo2wINQ7J8c8N2BoqH2Q0CfI0BLnVc
+ SfGjPOyzohotYaOFCnBbcGCIgovc572DMBfyiuewt2iBFzbitk0nVPd5AXTo
+ zjOKkU46nErVa2E9MVO7CA9lgL..N7bMDwJ0dQ4er7BNrB2OI0cnJA268HDJ
+ ptWjGCcsjlokfkCqGqxq8j2DDscMcJmN2xnsGW9bcr6qiV8sRiK.4
+X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
+Date: Sun, 22 Apr 2012 03:43:44 +0530
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+To: tiwai@suse.de
+Cc: linux-kernel@vger.kernel.org, jj@chaosbits.net, ahiliation@yahoo.co.in
+Subject: [PATCH] fixed coding style issues relating to spaces
+Message-ID: <20120421221344.GA8651@debian.Jeff>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1204212238040.25551@swampdragon.chaosbits.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F933089.0021,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 21, 2012 at 10:41:00PM +0200, Jesper Juhl wrote:
-> On Sat, 21 Apr 2012, Dan Carpenter wrote:
-> 
-> > On Sat, Apr 21, 2012 at 08:33:15PM +0200, Jesper Juhl wrote:
-> > > Just a trivial style cleanup.
-> > > 
-> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > > ---
-> > >  drivers/staging/olpc_dcon/olpc_dcon.c |    8 ++++----
-> > >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > > 
-> > > diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-> > > index 7fe6eb6..992275c 100644
-> > > --- a/drivers/staging/olpc_dcon/olpc_dcon.c
-> > > +++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-> > > @@ -134,7 +134,7 @@ static int dcon_bus_stabilize(struct dcon_priv *dcon, int is_powered_down)
-> > >  power_up:
-> > >  	if (is_powered_down) {
-> > >  		x = 1;
-> > > -		x = olpc_ec_cmd(0x26, (unsigned char *) &x, 1, NULL, 0);
-> > > +		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
-> >                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> > This will only work on little endian systems btw.  On big endian
-> > systems the first byte is going to be 0x00 instead of 0x01.
-> > 
-> Thank you, Dan, for bothering to take a look at this trivial patch.
-> 
+hello
 
-Trivial patches are the easiest to review.  ;)
+I have fixed coding style issues relating to
+spaces in sound/usb/card.c
 
-> I hope we can agree that this issue is not affected by my trivial 
-> whitespace cleanup ;-)  So, would you be OK with just leaving the patch 
-> alone for Greg to merge along with the others and then address this issue 
-> in a separate patch later?
-> 
+>From 62fffec818ecc3df83f6c6a274512ab85579dfde Mon Sep 17 00:00:00 2001
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+Date: Sun, 22 Apr 2012 02:31:38 +0530
+Subject: [PATCH 7/7] sound:Fixed coding style issue relating spaces.
 
-Sure.  That's not a problem.
+Fixed coding style issues relating to spaces
+in the file sound/usb/card.c
+Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+Acked-by: Jesper Juhl <jj@chaosbits.net>
+---
+ sound/usb/card.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-regards,
-dan carpenter
+diff --git a/sound/usb/card.c b/sound/usb/card.c
+index 4a7be7b..b664eb8 100644
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -186,7 +186,7 @@ static int snd_usb_create_stream(struct snd_usb_audio *chip, int ctrlif, int int
+ 		return -EINVAL;
+ 	}
+ 
+-	if (! snd_usb_parse_audio_interface(chip, interface)) {
++	if (!snd_usb_parse_audio_interface(chip, interface)) {
+ 		usb_set_interface(dev, interface, 0); /* reset the current interface */
+ 		usb_driver_claim_interface(&usb_audio_driver, iface, (void *)-1L);
+ 		return -EINVAL;
+@@ -331,7 +331,7 @@ static int snd_usb_audio_create(struct usb_device *dev, int idx,
+ 	}
+ 
+ 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+-	if (! chip) {
++	if (!chip) {
+ 		snd_card_free(card);
+ 		return -ENOMEM;
+ 	}
+@@ -474,12 +474,12 @@ snd_usb_audio_probe(struct usb_device *dev,
+ 			break;
+ 		}
+ 	}
+-	if (! chip) {
++	if (!chip) {
+ 		/* it's a fresh one.
+ 		 * now look for an empty slot and create a new card instance
+ 		 */
+ 		for (i = 0; i < SNDRV_CARDS; i++)
+-			if (enable[i] && ! usb_chip[i] &&
++			if (enable[i] && !usb_chip[i] &&
+ 			    (vid[i] == -1 || vid[i] == USB_ID_VENDOR(id)) &&
+ 			    (pid[i] == -1 || pid[i] == USB_ID_PRODUCT(id))) {
+ 				if (snd_usb_audio_create(dev, i, quirk, &chip) < 0) {
+@@ -687,7 +687,7 @@ err_out:
+ #define usb_audio_resume	NULL
+ #endif		/* CONFIG_PM */
+ 
+-static struct usb_device_id usb_audio_ids [] = {
++static struct usb_device_id usb_audio_ids[] = {
+ #include "quirks-table.h"
+     { .match_flags = (USB_DEVICE_ID_MATCH_INT_CLASS | USB_DEVICE_ID_MATCH_INT_SUBCLASS),
+       .bInterfaceClass = USB_CLASS_AUDIO,
+-- 
+1.7.9
+
+
+
+
+/Jeffrin.
+
+
+
+-- 
+software engineer
+Bohr Lab
+department of computer science
+Rajagiri school of engineering and technology.
