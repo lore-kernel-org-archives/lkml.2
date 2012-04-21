@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2DUL0d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 07:26:33 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:43805 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab2DUL0a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 07:26:30 -0400
-Message-ID: <4F92995B.6030805@ahsoftware.de>
-Date: Sat, 21 Apr 2012 13:26:19 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH] video/smscufx: fix line counting in fb_write
-References: <1334959867-3719-1-git-send-email-holler@ahsoftware.de>
-In-Reply-To: <1334959867-3719-1-git-send-email-holler@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751872Ab2DULa3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 07:30:29 -0400
+Received: from f78.mail.ru ([217.69.128.226]:40321 "EHLO f78.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751291Ab2DULa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 07:30:28 -0400
+X-Greylist: delayed 2369 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Apr 2012 07:30:27 EDT
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        =?UTF-8?B?UnVzc2VsbCBLaW5n?= <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Subject: =?UTF-8?B?UmVbMl06IFtQQVRDSCAwMi8xN10gQVJNIGNscHM3MTF4OiBBZGRlZCBDaXJy?=
+ =?UTF-8?B?dXMgTG9naWMgRVA3MzEyIENQVSB2YXJpYW50?=
+Mime-Version: 1.0
+X-Mailer: mPOP Web-Mail 2.19
+X-Originating-IP: [188.134.41.72]
+Date: Sat, 21 Apr 2012 15:30:24 +0400
+References: <1334999490-27177-1-git-send-email-shc_work@mail.ru> <1334999490-27177-3-git-send-email-shc_work@mail.ru> <201204211121.49610.arnd@arndb.de>
+In-Reply-To: <201204211121.49610.arnd@arndb.de>
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 
+Content-Type: text/plain; charset=utf-8
+Message-Id: <E1SLYWG-0001EX-Qj.shc_work-mail-ru@f78.mail.ru>
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3LBUabk010108
 
-Hello,
+Sat, 21 Apr 2012 11:21:49 +0000 Ğ¾Ñ‚ Arnd Bergmann <arnd@arndb.de>:
+> On Saturday 21 April 2012, Alexander Shiyan wrote:
+> > 
+> > Added register definitions specific to EP7312 and the necessary
+> > configuration options.
+> > 
+> > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> > ---
+> >  arch/arm/include/asm/hardware/ep7312.h         |  106 ++++++++++++++++++++++++
+> >  arch/arm/mach-clps711x/Kconfig                 |    9 ++-
+> >  arch/arm/mach-clps711x/include/mach/hardware.h |    4 +
+> >  drivers/net/irda/Kconfig                       |    3 +-
+> >  4 files changed, 119 insertions(+), 3 deletions(-)
+> >  create mode 100644 arch/arm/include/asm/hardware/ep7312.h
+> 
+> I'm missing some historical background here. Why are these files in asm/hardware
+> rather than in mach/? Should we move them to the platform directory?
 
-as for the patch for udlfb, I forgot to mention that this is a candidate 
-for all stable trees 3.2 and above.
-
-Btw., the address of the maintainer doesn't seem to be valid anymore.
-
-Regards,
-
-Alexander
-
-Am 21.04.2012 00:11, schrieb Alexander Holler:
-> Line 0 and 1 were both written to line 0 (on the display) and all subsequent
-> lines had an offset of -1. The result was that the last line on the display
-> was never overwritten by writes to /dev/fbN.
->
-> The origin of this bug seems to have been udlfb.
->
-> Signed-off-by: Alexander Holler<holler@ahsoftware.de>
-
-Cc: stable@vger.kernel.org
-
-> ---
->   drivers/video/smscufx.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/video/smscufx.c b/drivers/video/smscufx.c
-> index ccbfef5..1e1e2d2 100644
-> --- a/drivers/video/smscufx.c
-> +++ b/drivers/video/smscufx.c
-> @@ -904,7 +904,7 @@ static ssize_t ufx_ops_write(struct fb_info *info, const char __user *buf,
->   	result = fb_sys_write(info, buf, count, ppos);
->
->   	if (result>  0) {
-> -		int start = max((int)(offset / info->fix.line_length) - 1, 0);
-> +		int start = max((int)(offset / info->fix.line_length), 0);
->   		int lines = min((u32)((result / info->fix.line_length) + 1),
->   				(u32)info->var.yres);
->
-
+I just placed this header into current place for this cpu.
+Of course it can be moved (with others) into platform directory.
+I can do other patch for this operation later. For this patch I think it is not important.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
