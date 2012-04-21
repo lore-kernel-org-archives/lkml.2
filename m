@@ -1,126 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab2DUUQX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 16:16:23 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:37400 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab2DUUQV (ORCPT
+	id S1751986Ab2DUU0a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 16:26:30 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:39642 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab2DUU03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 16:16:21 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-fbdev@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: [PATCH] m68k/video: Create <asm/vga.h>
-Date: Sat, 21 Apr 2012 22:16:11 +0200
-Message-Id: <1335039371-10805-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Sat, 21 Apr 2012 16:26:29 -0400
+Date: Sat, 21 Apr 2012 23:28:25 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org,
+        Valentin Rothberg <valentinrothberg@googlemail.com>,
+        devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Jordan Crouse <jordan@cosmicpenguin.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 3/3] staging: olpc_dcon.c: Remove a few spaces between
+ casts and variables
+Message-ID: <20120421202825.GW6498@mwanda>
+References: <alpine.LNX.2.00.1204212025140.25551@swampdragon.chaosbits.net>
+ <alpine.LNX.2.00.1204212031360.25551@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1204212031360.25551@swampdragon.chaosbits.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4F9317CD.00A4,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For now, it just contains the hack for cirrusfb on Amiga, which is moved
-out of <video/vga.h> with some slight modifications (use raw_*() instead of
-z_*(), which are defined on all m68k platforms).
+On Sat, Apr 21, 2012 at 08:33:15PM +0200, Jesper Juhl wrote:
+> Just a trivial style cleanup.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  drivers/staging/olpc_dcon/olpc_dcon.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
+> index 7fe6eb6..992275c 100644
+> --- a/drivers/staging/olpc_dcon/olpc_dcon.c
+> +++ b/drivers/staging/olpc_dcon/olpc_dcon.c
+> @@ -134,7 +134,7 @@ static int dcon_bus_stabilize(struct dcon_priv *dcon, int is_powered_down)
+>  power_up:
+>  	if (is_powered_down) {
+>  		x = 1;
+> -		x = olpc_ec_cmd(0x26, (unsigned char *) &x, 1, NULL, 0);
+> +		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This will only work on little endian systems btw.  On big endian
+systems the first byte is going to be 0x00 instead of 0x01.
 
-This makes it safe to include <video/vga.h> in all contexts. Before it
-could fail to compile with
+>  		if (x) {
+>  			printk(KERN_WARNING "olpc-dcon:  unable to force dcon to power up: %d!\n",
+>  				x);
 
-include/video/vga.h: In function ‘vga_mm_r’:
-include/video/vga.h:242: error: implicit declaration of function ‘z_readb’
-include/video/vga.h: In function ‘vga_mm_w’:
-include/video/vga.h:247: error: implicit declaration of function ‘z_writeb’
-include/video/vga.h: In function ‘vga_mm_w_fast’:
-include/video/vga.h:253: error: implicit declaration of function ‘z_writew’
-
-or
-
-include/video/vga.h:23:21: error: asm/vga.h: No such file or directory
-
-depending on the value of CONFIG_AMIGA.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-fbdev@vger.kernel.org
-Cc: dri-devel@lists.freedesktop.org
----
-Will queue for 3.5, cfr.
-http://kisskb.ellerman.id.au/kisskb/buildresult/6127136/
----
- arch/m68k/include/asm/vga.h |   27 +++++++++++++++++++++++++++
- include/video/vga.h         |   22 ----------------------
- 2 files changed, 27 insertions(+), 22 deletions(-)
- create mode 100644 arch/m68k/include/asm/vga.h
-
-diff --git a/arch/m68k/include/asm/vga.h b/arch/m68k/include/asm/vga.h
-new file mode 100644
-index 0000000..d3aa140
---- /dev/null
-+++ b/arch/m68k/include/asm/vga.h
-@@ -0,0 +1,27 @@
-+#ifndef _ASM_M68K_VGA_H
-+#define _ASM_M68K_VGA_H
-+
-+#include <asm/raw_io.h>
-+
-+/*
-+ * FIXME
-+ * Ugh, we don't have PCI space, so map readb() and friends to use raw I/O
-+ * accessors, which are identical to the z_*() Zorro bus accessors.
-+ * This should make cirrusfb work again on Amiga
-+ */
-+#undef inb_p
-+#undef inw_p
-+#undef outb_p
-+#undef outw
-+#undef readb
-+#undef writeb
-+#undef writew
-+#define inb_p(port)		0
-+#define inw_p(port)		0
-+#define outb_p(port, val)	do { } while (0)
-+#define outw(port, val)		do { } while (0)
-+#define readb			raw_inb
-+#define writeb			raw_outb
-+#define writew			raw_outw
-+
-+#endif /* _ASM_M68K_VGA_H */
-diff --git a/include/video/vga.h b/include/video/vga.h
-index 2b8691f..cac567f 100644
---- a/include/video/vga.h
-+++ b/include/video/vga.h
-@@ -19,29 +19,7 @@
- 
- #include <linux/types.h>
- #include <asm/io.h>
--#ifndef CONFIG_AMIGA
- #include <asm/vga.h>
--#else
--/*
-- * FIXME
-- * Ugh, we don't have PCI space, so map readb() and friends to use Zorro space
-- * for MMIO accesses. This should make cirrusfb work again on Amiga
-- */
--#undef inb_p
--#undef inw_p
--#undef outb_p
--#undef outw
--#undef readb
--#undef writeb
--#undef writew
--#define inb_p(port)	0
--#define inw_p(port)	0
--#define outb_p(port, val)	do { } while (0)
--#define outw(port, val)		do { } while (0)
--#define readb		z_readb
--#define writeb		z_writeb
--#define writew		z_writew
--#endif
- #include <asm/byteorder.h>
- 
- 
--- 
-1.7.0.4
-
+regards,
+dan carpenter
