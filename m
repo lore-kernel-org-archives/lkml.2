@@ -1,134 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751018Ab2DUEAH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 00:00:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34973 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab2DUEAE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 00:00:04 -0400
-Message-ID: <4F9230C0.5010100@gmail.com>
-Date: Sat, 21 Apr 2012 12:00:00 +0800
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1751462Ab2DUELi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 00:11:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40691 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750889Ab2DUELh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 00:11:37 -0400
+Message-ID: <4F923374.4060902@redhat.com>
+Date: Sat, 21 Apr 2012 01:11:32 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 5/9] KVM: MMU: introduce SPTE_WRITE_PROTECT bit
-References: <4F911B74.4040305@linux.vnet.ibm.com> <4F911C05.2070701@linux.vnet.ibm.com> <20120420215211.GC13817@amt.cnet> <20120421004030.GA16191@amt.cnet>
-In-Reply-To: <20120421004030.GA16191@amt.cnet>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for v3.4-rc4] media fixes
+X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2012 08:40 AM, Marcelo Tosatti wrote:
+Hi Linus,
 
-> On Fri, Apr 20, 2012 at 06:52:11PM -0300, Marcelo Tosatti wrote:
->> On Fri, Apr 20, 2012 at 04:19:17PM +0800, Xiao Guangrong wrote:
->>> If this bit is set, it means the W bit of the spte is cleared due
->>> to shadow page table protection
->>>
->>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>> ---
->>>  arch/x86/kvm/mmu.c |   56 ++++++++++++++++++++++++++++++++++-----------------
->>>  1 files changed, 37 insertions(+), 19 deletions(-)
->>>
->>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->>> index dd984b6..eb02fc4 100644
->>> --- a/arch/x86/kvm/mmu.c
->>> +++ b/arch/x86/kvm/mmu.c
->>> @@ -147,6 +147,7 @@ module_param(dbg, bool, 0644);
->>>
->>>  #define SPTE_HOST_WRITEABLE	(1ULL << PT_FIRST_AVAIL_BITS_SHIFT)
->>>  #define SPTE_ALLOW_WRITE	(1ULL << (PT_FIRST_AVAIL_BITS_SHIFT + 1))
->>> +#define SPTE_WRITE_PROTECT	(1ULL << (PT_FIRST_AVAIL_BITS_SHIFT + 2))
->>>
->>>  #define SHADOW_PT_INDEX(addr, level) PT64_INDEX(addr, level)
->>>
->>> @@ -1042,36 +1043,51 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
->>>  		rmap_remove(kvm, sptep);
->>>  }
->>>
->>> +static bool spte_wp_by_dirty_log(u64 spte)
->>> +{
->>> +	WARN_ON(is_writable_pte(spte));
->>> +
->>> +	return (spte & SPTE_ALLOW_WRITE) && !(spte & SPTE_WRITE_PROTECT);
->>> +}
->>
->> Is the information accurate? Say:
->>
->> - dirty log write protect, set SPTE_ALLOW_WRITE, clear WRITABLE.
->> - shadow gfn, rmap_write_protect finds page not WRITABLE.
->> - spte points to shadow gfn, but SPTE_WRITE_PROTECT is not set.
->>
->> BTW,
->>
->> "introduce SPTE_ALLOW_WRITE bit
->>
->> This bit indicates whether the spte is allow to be writable that
->> means the gpte of this spte is writable and the pfn pointed by
->> this spte is writable on host"
->>
->> Other than the fact that each bit should have one meaning, how
->> can this bit be accurate without write protection of the gpte?
->>
->> As soon as guest writes to gpte, information in bit is outdated.
-> 
-> Ok, i found one example where mmu_lock was expecting sptes not 
-> to change:
-> 
-> 
-> VCPU0				VCPU1
-> 
-> - read-only gpte
-> - read-only spte
-> - write fault
+Please pull from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
 
+for a some fixes for the media drivers:
+	- Fixes a regression at DVB core when switching from DVB-S2 to DVB-S 
+	  on Kaffeine (Fedora 16 Bugzilla #812895);
+	- Fixes a mutex unlock at an error condition at drx-k;
+	- Fix winbond-cir set mode;
+	- mt9m032: Fix a compilation breakage with some random Kconfig;
+	- mt9m032: fix two dead locks;
+	- xc5000: don't require an special firmware (that won't be provided by
+	  the vendor) just because the xtal frequency is different;
+	- V4L DocBook: fix some typos at multi-plane formats description.
 
-It is not true, gpte is read-only, and it is a write fault, then we
-should reject the page fault to guest, the fast page fault is not called. :)
+Thanks!
+Mauro
 
-> - spte = *sptep
-> 				guest write to gpte, set writable bit
-> 				spte writable
-> 				parent page unsync
-> 				guest write to gpte writable bit clear
-> 				guest invlpg updates spte to RO
-> 				sync_page
-> 				enter set_spte from sync_page
-> - cmpxchg(spte) is now writable
-> [window where another vcpu can
-> cache spte with writable bit
-> set]
-> 
-> 				if (is_writable_pte(entry) && !is_writable_pte(*sptep))
-> 					kvm_flush_remote_tlbs(vcpu->kvm);
-> 
-> The flush is not executed because spte was read-only (which is 
-> a correct assumption as long as sptes updates are protected
-> by mmu_lock).
-> 
+-
 
+Latest commit at the branch: 
+e631f578048e2afd8bfede2e9dc86aa4592def3a [media] xc5000: support 32MHz & 31.875MHz xtal using the 41.024.5 firmware
+The following changes since commit ed0ee0ce0a3224dab5caa088a5f8b6df25924276:
 
-It is also not true, flush tlbs in set_sptes is used to ensure rmap_write_protect
-work correctly, but rmap_write_protect will flush tlbs even if the spte can be changed
-by fast page fault.
+  [media] uvcvideo: Fix race-related crash in uvc_video_clock_update() (2012-04-09 10:15:28 -0300)
 
-> So this is an example of implicit assumptions which break if you update
-> spte without mmu_lock. Certainly there are more cases. :(
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
 
+Alexey Khoroshilov (1):
+      [media] drxk: Does not unlock mutex if sanity check failed in scu_command()
 
-We only need care the path which is depends on spte.WRITEABLE == 0, since only
-these spte has chance to be changed out of mmu-lock.
+David Härdeman (1):
+      [media] rc-core: set mode for winbond-cir
 
-The most trouble is in rmap_write_protect that need flush tlb to protect shadow
-page table.
+Guennadi Liakhovetski (2):
+      [media] V4L: mt9m032: fix two dead-locks
+      [media] V4L: mt9m032: fix compilation breakage
 
-I think it is not too hard to check. :)
+Mauro Carvalho Chehab (1):
+      [media] dvb_frontend: Fix a regression when switching back to DVB-S
 
+Michael Krufky (1):
+      [media] xc5000: support 32MHz & 31.875MHz xtal using the 41.024.5 firmware
+
+Sylwester Nawrocki (1):
+      [media] V4L: DocBook: Fix typos in the multi-plane formats description
+
+ Documentation/DocBook/media/v4l/pixfmt-nv12m.xml   |    2 +-
+ Documentation/DocBook/media/v4l/pixfmt-yuv420m.xml |    2 +-
+ drivers/media/common/tuners/xc5000.c               |   39 ++++++++++++++++++--
+ drivers/media/common/tuners/xc5000.h               |    1 +
+ drivers/media/dvb/dvb-core/dvb_frontend.c          |   25 ++++++++++++-
+ drivers/media/dvb/frontends/drxk_hard.c            |    6 ++-
+ drivers/media/rc/winbond-cir.c                     |    1 +
+ drivers/media/video/Kconfig                        |    2 +-
+ drivers/media/video/mt9m032.c                      |    5 ++-
+ 9 files changed, 71 insertions(+), 12 deletions(-)
 
