@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2DUApI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 20:45:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27257 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751113Ab2DUApG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 20:45:06 -0400
-Date: Fri, 20 Apr 2012 21:40:30 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 5/9] KVM: MMU: introduce SPTE_WRITE_PROTECT bit
-Message-ID: <20120421004030.GA16191@amt.cnet>
-References: <4F911B74.4040305@linux.vnet.ibm.com>
- <4F911C05.2070701@linux.vnet.ibm.com>
- <20120420215211.GC13817@amt.cnet>
+	id S1753347Ab2DUAqS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 20:46:18 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:23776 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab2DUAqR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 20:46:17 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-13.tower-127.messagelabs.com!1334969175!3641863!1
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 20 Apr 2012 19:46:14 -0500
+Subject: RE: [RFC PATCH 0/2] init: make sure syscall arguments are marked
+ __user where needed
+Thread-Topic: [RFC PATCH 0/2] init: make sure syscall arguments are marked
+ __user where needed
+Thread-Index: Ac0fV5MM+5jrQJ/rQ2ayautYpikBQgAAFB9A
+Message-ID: <ADE657CA350FB648AAC2C43247A983F002069887E116@AUSP01VMBX24.collaborationhost.net>
+References: <201204161733.23830.hartleys@visionengravers.com>
+	<20120420160039.74c49a0c.akpm@linux-foundation.org>
+	<ADE657CA350FB648AAC2C43247A983F002069887E112@AUSP01VMBX24.collaborationhost.net>
+ <20120420174319.6cea0e81.akpm@linux-foundation.org>
+In-Reply-To: <20120420174319.6cea0e81.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420215211.GC13817@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 06:52:11PM -0300, Marcelo Tosatti wrote:
-> On Fri, Apr 20, 2012 at 04:19:17PM +0800, Xiao Guangrong wrote:
-> > If this bit is set, it means the W bit of the spte is cleared due
-> > to shadow page table protection
-> > 
-> > Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> > ---
-> >  arch/x86/kvm/mmu.c |   56 ++++++++++++++++++++++++++++++++++-----------------
-> >  1 files changed, 37 insertions(+), 19 deletions(-)
-> > 
-> > diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> > index dd984b6..eb02fc4 100644
-> > --- a/arch/x86/kvm/mmu.c
-> > +++ b/arch/x86/kvm/mmu.c
-> > @@ -147,6 +147,7 @@ module_param(dbg, bool, 0644);
-> > 
-> >  #define SPTE_HOST_WRITEABLE	(1ULL << PT_FIRST_AVAIL_BITS_SHIFT)
-> >  #define SPTE_ALLOW_WRITE	(1ULL << (PT_FIRST_AVAIL_BITS_SHIFT + 1))
-> > +#define SPTE_WRITE_PROTECT	(1ULL << (PT_FIRST_AVAIL_BITS_SHIFT + 2))
-> > 
-> >  #define SHADOW_PT_INDEX(addr, level) PT64_INDEX(addr, level)
-> > 
-> > @@ -1042,36 +1043,51 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
-> >  		rmap_remove(kvm, sptep);
-> >  }
-> > 
-> > +static bool spte_wp_by_dirty_log(u64 spte)
-> > +{
-> > +	WARN_ON(is_writable_pte(spte));
-> > +
-> > +	return (spte & SPTE_ALLOW_WRITE) && !(spte & SPTE_WRITE_PROTECT);
-> > +}
-> 
-> Is the information accurate? Say:
-> 
-> - dirty log write protect, set SPTE_ALLOW_WRITE, clear WRITABLE.
-> - shadow gfn, rmap_write_protect finds page not WRITABLE.
-> - spte points to shadow gfn, but SPTE_WRITE_PROTECT is not set.
-> 
-> BTW,
-> 
-> "introduce SPTE_ALLOW_WRITE bit
-> 
-> This bit indicates whether the spte is allow to be writable that
-> means the gpte of this spte is writable and the pfn pointed by
-> this spte is writable on host"
-> 
-> Other than the fact that each bit should have one meaning, how
-> can this bit be accurate without write protection of the gpte?
-> 
-> As soon as guest writes to gpte, information in bit is outdated.
+On Friday, April 20, 2012 5:43 PM, Andrew Morton wrote:
+> On Fri, 20 Apr 2012 19:05:46 -0500 H Hartley Sweeten wrote:
+>
+>>> Can we just make "make C=1" skip that file or something?
+>> 
+>> What about putting something like this at the top of the files:
+>> 
+>> 
+>> /*
+>>  * Many of the syscalls used in this file expect some of the arguments
+>>  * to be __user pointers not __kernel pointers.  To limit the sparse
+>>  * noise, turn off sparse checking for this file.
+>>  */
+>> #ifdef __CHECKER__
+>> #undef __CHECKER__
+>> #warning "Sparse checking disabled for this file"
+>> #endif
+>> 
+>> 
+>> Maybe without the warning if it doesn't seem necessary.
+>> 
+>> This keeps <linux/compiler.h> from defining the __attribute__* checks.
+>
+> That looks nice and explicit.
 
-Ok, i found one example where mmu_lock was expecting sptes not 
-to change:
+Another option would be to just undef the __user and __kernel checks. That
+way the other sparse checks should still work.
 
+I'll post an updated patch with the #undef __CHECKER__ method shortly.
 
-VCPU0				VCPU1
-
-- read-only gpte
-- read-only spte
-- write fault
-- spte = *sptep
-				guest write to gpte, set writable bit
-				spte writable
-				parent page unsync
-				guest write to gpte writable bit clear
-				guest invlpg updates spte to RO
-				sync_page
-				enter set_spte from sync_page
-- cmpxchg(spte) is now writable
-[window where another vcpu can
-cache spte with writable bit
-set]
-
-				if (is_writable_pte(entry) && !is_writable_pte(*sptep))
-					kvm_flush_remote_tlbs(vcpu->kvm);
-
-The flush is not executed because spte was read-only (which is 
-a correct assumption as long as sptes updates are protected
-by mmu_lock).
-
-So this is an example of implicit assumptions which break if you update
-spte without mmu_lock. Certainly there are more cases. :(
-
-
+Regards,
+Hartley
