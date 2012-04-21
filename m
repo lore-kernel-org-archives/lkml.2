@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab2DUJf3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 05:35:29 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:29302 "EHLO
+	id S1754223Ab2DUJf0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 05:35:26 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:55925 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751722Ab2DUJfU (ORCPT
+	with ESMTP id S1751648Ab2DUJfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 21 Apr 2012 05:35:20 -0400
 From: Roland Stigge <stigge@antcom.de>
@@ -16,9 +16,9 @@ To: arm@kernel.org, thierry.reding@avionic-design.de, arnd@arndb.de,
         marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v5 5/10] ARM: LPC32xx: Remove obsolete platform Kconfig
-Date: Sat, 21 Apr 2012 11:34:23 +0200
-Message-Id: <1335000868-21974-6-git-send-email-stigge@antcom.de>
+Subject: [PATCH v5 2/10] ohci-nxp: Device tree support
+Date: Sat, 21 Apr 2012 11:34:20 +0200
+Message-Id: <1335000868-21974-3-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1335000868-21974-1-git-send-email-stigge@antcom.de>
 References: <1335000868-21974-1-git-send-email-stigge@antcom.de>
@@ -27,8 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes two Kconfig options now unused (the network driver is
-configured via DT now).
+This patch adds device tree support to ohci-nxp.c
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
@@ -36,37 +35,56 @@ Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 Applies to v3.4-rc3
 
---- linux-2.6.orig/arch/arm/mach-lpc32xx/Kconfig
-+++ linux-2.6/arch/arm/mach-lpc32xx/Kconfig
-@@ -29,30 +29,4 @@ config ARCH_LPC32XX_UART6_SELECT
- 
- endmenu
- 
--menu "LPC32XX chip components"
--
--config ARCH_LPC32XX_IRAM_FOR_NET
--	bool "Use IRAM for network buffers"
--	default y
--	help
--	  Say Y here to use the LPC internal fast IRAM (i.e. 256KB SRAM) as
--	  network buffer.  If the total combined required buffer sizes is
--	  larger than the size of IRAM, then SDRAM will be used instead.
--
--	  This can be enabled safely if the IRAM is not intended for other
--	  uses.
--
--config ARCH_LPC32XX_MII_SUPPORT
--	bool "Check to enable MII support or leave disabled for RMII support"
--	help
--	  Say Y here to enable MII support, or N for RMII support. Regardless of
--	  which support is selected, the ethernet interface driver needs to be
--	  selected in the device driver networking section.
--
--	  The PHY3250 reference board uses RMII, so users of this board should
--	  say N.
--
--endmenu
--
- endif
--
+ Documentation/devicetree/bindings/usb/ohci-nxp.txt |   16 ++++++++++++++++
+ drivers/usb/host/ohci-nxp.c                        |   10 ++++++++++
+ 2 files changed, 26 insertions(+)
 
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/usb/ohci-nxp.txt
+@@ -0,0 +1,16 @@
++* OHCI controller, NXP ohci-nxp variant
++
++Required properties:
++- compatible: must be "nxp,ohci-nxp"
++- reg: physical base address of the controller and length of memory mapped
++  region.
++- interrupts: The OHCI interrupt
++
++Example (LPC32xx):
++
++	ohci@31020000 {
++		compatible = "nxp,ohci-nxp";
++		reg = <0x31020000 0x300>;
++		interrupt-parent = <&mic>;
++		interrupts = <0x3b 0>;
++	};
+--- linux-2.6.orig/drivers/usb/host/ohci-nxp.c
++++ linux-2.6/drivers/usb/host/ohci-nxp.c
+@@ -22,6 +22,7 @@
+ #include <linux/clk.h>
+ #include <linux/platform_device.h>
+ #include <linux/i2c.h>
++#include <linux/of.h>
+ 
+ #include <mach/hardware.h>
+ #include <asm/mach-types.h>
+@@ -525,10 +526,19 @@ static int usb_hcd_nxp_remove(struct pla
+ /* work with hotplug and coldplug */
+ MODULE_ALIAS("platform:usb-ohci");
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id usb_hcd_nxp_match[] = {
++	{ .compatible = "nxp,ohci-nxp" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, usb_hcd_nxp_match);
++#endif
++
+ static struct platform_driver usb_hcd_nxp_driver = {
+ 	.driver = {
+ 		.name = "usb-ohci",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(usb_hcd_nxp_match),
+ 	},
+ 	.probe = usb_hcd_nxp_probe,
+ 	.remove = usb_hcd_nxp_remove,
