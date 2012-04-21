@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab2DUSeE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 14:34:04 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:39974 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986Ab2DUSdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 14:33:36 -0400
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: linux-parisc@vger.kernel.org
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 1/6] use linux/bitops.h instead of linux/log2.h to get fls()
-Date: Sat, 21 Apr 2012 20:23:58 +0200
-Message-ID: <3739293.5fPmfJVmA0@donald.sf-tec.de>
-User-Agent: KMail/4.8.2 (Linux/3.2.9-13-desktop; KDE/4.8.2; i686; ; )
-In-Reply-To: <3154414.psmJh6J2U2@donald.sf-tec.de>
-References: <3154414.psmJh6J2U2@donald.sf-tec.de>
+	id S1752292Ab2DUSq0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 14:46:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54123 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab2DUSqJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 14:46:09 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-Date: Sat, 21 Apr 2012 20:33:19 +0200
-From: <eike-kernel@sf-tec.de>
-Message-Id: <1335033199.699870@mail.sf-mail.de>
+In-Reply-To: <20120421132516.GC7069@xanatos>
+References: <4F909CEB.3060407@fold.natur.cuni.cz>
+	<CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
+	<CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com>
+	<4F91473A.1080007@fold.natur.cuni.cz>
+	<CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com>
+	<4F919C22.1070608@fold.natur.cuni.cz>
+	<4F919CD5.7070004@fold.natur.cuni.cz>
+	<CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com>
+	<20120420231748.GB7069@xanatos>
+	<CAE9FiQX7JCZvL9S8ZOQQaHQ4nfU0XDj=8FmOfCtcz7WFjP8=Bg@mail.gmail.com>
+	<20120421132516.GC7069@xanatos>
+Date: Sat, 21 Apr 2012 11:46:07 -0700
+X-Google-Sender-Auth: knFPPYFltq0ZjkDS5aivkSVNWbo
+Message-ID: <CAE9FiQUuHrsNPhPWAc9koOrW6Xc+ryOhf_nv2ZyWvG9XMAdNoA@mail.gmail.com>
+Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
+From: Yinghai Lu <yinghai@kernel.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since d66acc39c7cee323733c8503b9de1821a56dff7e (bitops: Optimise get_order())
-getorder.h includes log2.h to get fls() and fls64(). They are not defined in
-log2.h, but in bitops.h. This works since log2.h includes bitops.h, but we
-should do it properly to not get any bad surprises if log2.h changes.
+On Sat, Apr 21, 2012 at 6:25 AM, Sarah Sharp
+<sarah.a.sharp@linux.intel.com> wrote:
+> On Fri, Apr 20, 2012 at 05:09:48PM -0700, Yinghai Lu wrote:
+>> On Fri, Apr 20, 2012 at 4:17 PM, Sarah Sharp
+>> <sarah.a.sharp@linux.intel.com> wrote:
+>> > On Fri, Apr 20, 2012 at 11:47:14AM -0700, Yinghai Lu wrote:
+>> >> On Fri, Apr 20, 2012 at 10:28 AM, Martin Mokrejs
+>> >> <mmokrejs@fold.natur.cuni.cz> wrote:
+>> >> > [30720.175637] pciehp 0000:00:1c.7:pcie04: pcie_isr: intr_loc 108
+>> >> > [30720.175639] pciehp 0000:00:1c.7:pcie04: LinkState change
+>> >> > [30720.175643] pciehp 0000:00:1c.7:pcie04: lnk_status = 5011
+>> >> > [30720.175644] pciehp 0000:00:1c.7:pcie04: Presence/Notify input change
+>> >> > [30720.175648] pciehp 0000:00:1c.7:pcie04: Card not present on Slot(7)
+>> >> > [30720.175687] pciehp 0000:00:1c.7:pcie04: Surprise Removal
+>> >> > [30720.175718] pciehp 0000:00:1c.7:pcie04: Disabling domain:bus:device=0000:11:00
+>> >> > [30720.175721] pciehp 0000:00:1c.7:pcie04: pciehp_unconfigure_device: domain:bus:dev = 0000:11:00
+>> >> >
+>> >>
+>> >> So the USB host control driver xhci put that 11:00.0 in strange power state.
+>> >
+>> > What do you mean "strange power state"?  The only PCI power states the
+>> > xHCI driver will use is D0 or D3hot.  D3hot is entered automatically by
+>> > the USB core runtime PM system when all USB devices are disconnected or
+>> > suspended.  So what strange power state are we talking about?
+>>
+>> that's helpful. Can that feature to be disabled?
+>
+> Yes.  There are several ways to disable automatic entry into D3hot.
+> The easiest way is to turn off CONFIG_USB_SUSPEND, which will disable
+> USB autosuspend (and subsequent runtime PM entry into D3hot) for all USB
+> hosts and devices.
 
-Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
----
- include/asm-generic/getorder.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Please try to boot with
+usbcore.autosuspend=0
 
-diff --git a/include/asm-generic/getorder.h b/include/asm-generic/getorder.h
-index 65e4468..563114f 100644
---- a/include/asm-generic/getorder.h
-+++ b/include/asm-generic/getorder.h
-@@ -4,7 +4,7 @@
- #ifndef __ASSEMBLY__
- 
- #include <linux/compiler.h>
--#include <linux/log2.h>
-+#include <linux/bitops.h>
- 
- /*
-  * Runtime evaluation of get_order()
--- 
-1.7.9.2
-
+Yinghai
