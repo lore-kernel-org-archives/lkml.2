@@ -1,113 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab2DUJEL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 05:04:11 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:44985 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab2DUJEJ (ORCPT
+	id S1752273Ab2DUJHt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 05:07:49 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:33817 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab2DUJHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 05:04:09 -0400
-Message-ID: <4F927804.4090208@suse.cz>
-Date: Sat, 21 Apr 2012 11:04:04 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120321 Thunderbird/12.0
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Emil Goode <emilgoode@gmail.com>, gregkh@linuxfoundation.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hyc@symas.com, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH] drivers/tty: Use get_user instead of dereferencing user
- pointer
-References: <1334937154-23037-1-git-send-email-emilgoode@gmail.com> <20120420220010.0fa29bee@pyramind.ukuu.org.uk>
-In-Reply-To: <20120420220010.0fa29bee@pyramind.ukuu.org.uk>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 21 Apr 2012 05:07:47 -0400
+Subject: Re: linux-next: Tree for Apr 20 (usb & target)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        target-devel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Greg KH <gregkh@linuxfoundation.org>
+In-Reply-To: <4F91D9D9.6020609@xenotime.net>
+References: <20120420155151.3fcac4c2d1002ade5ccf44ac@canb.auug.org.au>
+	 <4F91D9D9.6020609@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 21 Apr 2012 02:07:43 -0700
+Message-ID: <1334999263.30707.129.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2012 11:00 PM, Alan Cox wrote:
-> It's not simple however, so can anyone work out or remember wtf the code
-> should be doing ???
+On Fri, 2012-04-20 at 14:49 -0700, Randy Dunlap wrote:
+> On 04/19/2012 10:51 PM, Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20120419:
+> 
+> 
 
-Huh.
+Hi Randy,
 
-The code was added by:
-commit 26df6d13406d1a53b0bda08bd712f1924affd7cd
-Author: hyc@symas.com <hyc@symas.com>
-Date:   Tue Jun 22 10:14:49 2010 -0700
+> CONFIG_MODULES is not enabled.
+> CONFIG_TCM_USB_GADGET=y
+> CONFIG_USB_GADGET=y
+>
+> drivers/usb/built-in.o: In function `usb_descriptor_fillbuf':
+> (.text+0x53bb): multiple definition of `usb_descriptor_fillbuf'
+> drivers/target/built-in.o:(.text+0x1e605): first defined here
+> drivers/usb/built-in.o: In function `usb_string_ids_n':
+> (.text+0x4f1a): multiple definition of `usb_string_ids_n'
+> drivers/target/built-in.o:(.text+0x1f1ed): first defined here
+> drivers/usb/built-in.o: In function `usb_interface_id':
+> (.text+0x4ea8): multiple definition of `usb_interface_id'
+> drivers/target/built-in.o:(.text+0x1f0bc): first defined here
+> drivers/usb/built-in.o: In function `usb_string_id':
+> (.text+0x4ecc): multiple definition of `usb_string_id'
+> drivers/target/built-in.o:(.text+0x1f19f): first defined here
+> drivers/usb/built-in.o: In function `usb_string_ids_tab':
+> (.text+0x4ee8): multiple definition of `usb_string_ids_tab'
+> drivers/target/built-in.o:(.text+0x1f1bb): first defined here
+> drivers/usb/built-in.o: In function `usb_copy_descriptors':
+> (.text+0x5a01): multiple definition of `usb_copy_descriptors'
+> drivers/target/built-in.o:(.text+0x1ec48): first defined here
+> drivers/usb/built-in.o: In function `usb_composite_unregister':
+> (.text+0x4fe2): multiple definition of `usb_composite_unregister'
+> drivers/target/built-in.o:(.text+0x1f2b5): first defined here
+> drivers/usb/built-in.o: In function `config_ep_by_speed':
+> (.text+0x4bd7): multiple definition of `config_ep_by_speed'
+> drivers/target/built-in.o:(.text+0x1ecca): first defined here
+> drivers/usb/built-in.o: In function `usb_gadget_get_string':
+> (.text+0x5094): multiple definition of `usb_gadget_get_string'
+> drivers/target/built-in.o:(.text+0x1dd85): first defined here
+> drivers/usb/built-in.o: In function `usb_add_function':
+> (.text+0x4cfc): multiple definition of `usb_add_function'
+> drivers/target/built-in.o:(.text+0x1ee6c): first defined here
+> drivers/usb/built-in.o: In function `usb_composite_probe':
+> (.text+0x4f4a): multiple definition of `usb_composite_probe'
+> drivers/target/built-in.o:(.text+0x1f21d): first defined here
+> drivers/usb/built-in.o: In function `usb_composite_setup_continue':
+> (.text+0x4ffd): multiple definition of `usb_composite_setup_continue'
+> drivers/target/built-in.o:(.text+0x1f369): first defined here
+> drivers/usb/built-in.o: In function `usb_gadget_config_buf':
+> (.text+0x59ad): multiple definition of `usb_gadget_config_buf'
+> drivers/target/built-in.o:(.text+0x1ebf4): first defined here
+> drivers/usb/built-in.o: In function `usb_ep_autoconfig':
+> (.text+0x5bba): multiple definition of `usb_ep_autoconfig'
+> drivers/target/built-in.o:(.text+0x1e358): first defined here
+> drivers/usb/built-in.o: In function `usb_function_activate':
+> (.text+0x4e29): multiple definition of `usb_function_activate'
+> drivers/target/built-in.o:(.text+0x1f03b): first defined here
+> drivers/usb/built-in.o: In function `usb_ep_autoconfig_reset':
+> (.text+0x5bc7): multiple definition of `usb_ep_autoconfig_reset'
+> drivers/target/built-in.o:(.text+0x1e365): first defined here
+> drivers/usb/built-in.o: In function `usb_add_config':
+> (.text+0x5e6a): multiple definition of `usb_add_config'
+> drivers/target/built-in.o:(.text+0x1f0e0): first defined here
+> drivers/usb/built-in.o: In function `usb_ep_autoconfig_ss':
+> (.text+0x5a83): multiple definition of `usb_ep_autoconfig_ss'
+> drivers/target/built-in.o:(.text+0x1e0ab): first defined here
+> drivers/usb/built-in.o: In function `usb_function_deactivate':
+> (.text+0x4dc2): multiple definition of `usb_function_deactivate'
+> drivers/target/built-in.o:(.text+0x1efd4): first defined here
+> 
+> 
 
-    tty: Add EXTPROC support for LINEMODE
+Mmmm, It looks like the source file include usage in target/usb-gadget.c
+might be causing some problems here:
 
-====
+#include "usbstring.c"
+#include "epautoconf.c"
+#include "config.c"
+#include "composite.c"
 
-The code is now:
+Sebastian + Greg-KH (Cc'ed), any ideas why this is the case here..?
 
-retval = copy_to_user(*b, &tty->read_buf[tty->read_tail], n);
-n -= retval;
-tty_audit_add_data(tty, &tty->read_buf[tty->read_tail], n);
-spin_lock_irqsave(&tty->read_lock, flags);
-tty->read_tail = (tty->read_tail + n) & (N_TTY_BUF_SIZE-1);
-tty->read_cnt -= n;
-if (L_EXTPROC(tty) && tty->icanon && n == 1) {
-        if (!tty->read_cnt && (*b)[n-1] == EOF_CHAR(tty))
-                n--;
-}
+Thanks,
 
-====
+--nab
 
-n after "n -= retval" means number of successfully copied chars. So the
-test "n == 1" along with "!tty->read_cnt" actually should ensure we
-copied everything and that is exactly one char. Further we test if that
-one is EOF. If so, ignore that char by pretending we copied nothing.
-
-However the implementation does not count with buffer wrapped like:
-EOF..........................something
-                             ^----- tail
-
-Here, the first call to copy_from_read_buf copies "something" and the
-second one is to copy single EOF. But that would be ignored! Is this
-expected?
-
-
-So to fix the user buffer dereference, the following diff should help.
-In any case the wrapped buffer is still to be fixed... (Or ignored.)
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1630,6 +1630,7 @@ static int copy_from_read_buf(struct tty_struct *tty,
-        int retval;
-        size_t n;
-        unsigned long flags;
-+       bool is_eof;
-
-        retval = 0;
-        spin_lock_irqsave(&tty->read_lock, flags);
-@@ -1639,15 +1640,15 @@ static int copy_from_read_buf(struct tty_struct
-*tty,
-        if (n) {
-                retval = copy_to_user(*b,
-&tty->read_buf[tty->read_tail], n);
-                n -= retval;
-+               is_eof = n == 1 &&
-+                       tty->read_buf[tty->read_tail] == EOF_CHAR(tty);
-                tty_audit_add_data(tty, &tty->read_buf[tty->read_tail], n);
-                spin_lock_irqsave(&tty->read_lock, flags);
-                tty->read_tail = (tty->read_tail + n) & (N_TTY_BUF_SIZE-1);
-                tty->read_cnt -= n;
-                /* Turn single EOF into zero-length read */
--               if (L_EXTPROC(tty) && tty->icanon && n == 1) {
--                       if (!tty->read_cnt && (*b)[n-1] == EOF_CHAR(tty))
--                               n--;
--               }
-+               if (L_EXTPROC(tty) && tty->icanon && is_eof &&
-!tty->read_cnt)
-+                       n = 0;
-                spin_unlock_irqrestore(&tty->read_lock, flags);
-                *b += n;
-                *nr -= n;
-
-thanks,
--- 
-js
-suse labs
