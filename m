@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab2DUNr2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 09:47:28 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47495 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab2DUNr0 (ORCPT
+	id S1752183Ab2DUNsv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 09:48:51 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37611 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2DUNsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 09:47:26 -0400
-Date: Sat, 21 Apr 2012 16:49:38 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: my84@bk.ru
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, mchehab@infradead.org,
-        dhowells@redhat.com, justinmattock@gmail.com,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] [Trivial] staging: go7007: Framesizes features
-Message-ID: <20120421134938.GT6498@mwanda>
-References: <4f92b043.xYYL+7fcNMQk08OJ%my84@bk.ru>
+	Sat, 21 Apr 2012 09:48:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4f92b043.xYYL+7fcNMQk08OJ%my84@bk.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4F92BA57.0059,ss=1,re=0.000,fgs=0
+In-Reply-To: <cover.1335008617.git.viresh.kumar@st.com>
+References: <cover.1335008617.git.viresh.kumar@st.com>
+Date: Sat, 21 Apr 2012 19:18:49 +0530
+Message-ID: <CAOh2x=nZF_uK5YQwKsfWX322jSqJ75vcWw54Ut6J3-s+WByhhw@mail.gmail.com>
+Subject: Re: [PATCH 00/13] clk: Add non CONFIG_HAVE_CLK routines
+From: viresh kumar <viresh.linux@gmail.com>
+To: akpm@linux-foundation.org
+Cc: spear-devel@list.st.com, viresh.linux@gmail.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        mturquette@linaro.org, sshtylyov@mvista.com, jgarzik@redhat.com,
+        Viresh Kumar <viresh.kumar@st.com>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 21, 2012 at 05:04:03PM +0400, my84@bk.ru wrote:
-> 
-> Correct framesizes
-> 
-> Signed-off-by Volokh Konstantin <my84@bk.ru>
->
+On 4/21/12, Viresh Kumar <viresh.linux@gmail.com> wrote:
 
-Looks good.  But could you write a proper changelog?  What is the
-effect for the user?  How did you find these numbers?  Have you
-tested the changes?  It should mention something about that this
-affects boards with GO7007_SENSOR_TV.
+Hi Andrew,
 
-Btw, how many boards are their that have a GO7007_SENSOR_TV but
-don't have a GO7007_BOARD_HAS_TUNER?  Should the comment be updated?
+Please drop following patches:
 
-The changelog says it "Correct framesizes" but it doesn't actually
-correct anything, it just adds new features that weren't supported
-before.
+>   clk: CLK_PREPARE must depend on HAVE_CLK
+>   i2c/i2c-pxa: Remove conditional compilation of clk code
+>   usb/marvell: Remove conditional compilation of clk code
+>   usb/musb: Remove conditional compilation of clk code
 
-Don't put [Trivial] in the subject line.  Trivial patches are things
-like spelling mistakes in comments.
-
-regards,
-dan carpenter
-
+--
+Viresh
