@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab2DUEqo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 00:46:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38742 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab2DUEqm convert rfc822-to-8bit (ORCPT
+	id S1752323Ab2DUFB1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 01:01:27 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48305 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755Ab2DUFB0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 00:46:42 -0400
+	Sat, 21 Apr 2012 01:01:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQX7JCZvL9S8ZOQQaHQ4nfU0XDj=8FmOfCtcz7WFjP8=Bg@mail.gmail.com>
-References: <4F8F243B.70906@fold.natur.cuni.cz>
-	<CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com>
-	<4F909CEB.3060407@fold.natur.cuni.cz>
-	<CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
-	<CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com>
-	<4F91473A.1080007@fold.natur.cuni.cz>
-	<CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com>
-	<4F919C22.1070608@fold.natur.cuni.cz>
-	<4F919CD5.7070004@fold.natur.cuni.cz>
-	<CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com>
-	<20120420231748.GB7069@xanatos>
-	<CAE9FiQX7JCZvL9S8ZOQQaHQ4nfU0XDj=8FmOfCtcz7WFjP8=Bg@mail.gmail.com>
-Date: Fri, 20 Apr 2012 21:46:41 -0700
-X-Google-Sender-Auth: -7JDL_-hmdwTbONMTuMlNq_DFPg
-Message-ID: <CAE9FiQWLmiqg_8PQXYsccxqrvwEp5zhGLcEpsN-nAJq=1zTZ7Q@mail.gmail.com>
-Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
-From: Yinghai Lu <yinghai@kernel.org>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1334958476-6296-1-git-send-email-msalter@redhat.com>
+References: <1334958476-6296-1-git-send-email-msalter@redhat.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Sat, 21 Apr 2012 01:01:04 -0400
+Message-ID: <CAMjpGUe+CMkHP7owZym_6c2RDvgLzj8t+ZpLBuqQ0euk+ArV2Q@mail.gmail.com>
+Subject: Re: [PATCH] C6X: add support to build with BINFMT_ELF_FDPIC
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 5:09 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> What do you mean "strange power state"? �The only PCI power states the
->> xHCI driver will use is D0 or D3hot. �D3hot is entered automatically by
->> the USB core runtime PM system when all USB devices are disconnected or
->> suspended. �So what strange power state are we talking about?
+On Fri, Apr 20, 2012 at 17:47, Mark Salter wrote:
+> --- a/arch/c6x/kernel/process.c
+> +++ b/arch/c6x/kernel/process.c
 >
-> that's helpful. Can that feature to be disabled?
+> +
+> +/* Fill in the fpu structure for a core dump. This is easy -- we don't have any */
+> +int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
+> +{
+> +       /* Not valid */
+> +       return 0;
+> +}
 
-please check and set
-/sys/bus/pci/devices/0000:11:00.0/power/control
-/sys/bus/pci/devices/0000:11:00.0/usb?/power/control
-from auto to on
+you could avoid this like Blackfin has:
+arch/blackfin/include/asm/elf.h:
+#define ELF_CORE_COPY_FPREGS(...) 0     /* Blackfin has no FPU */
 
-Yinghai
+> --- a/fs/Kconfig.binfmt
+> +++ b/fs/Kconfig.binfmt
+>
+>  config BINFMT_ELF_FDPIC
+>        bool "Kernel support for FDPIC ELF binaries"
+>        default y
+> -       depends on (FRV || BLACKFIN || (SUPERH32 && !MMU))
+> +       depends on (FRV || BLACKFIN || (SUPERH32 && !MMU) || TMS320C6X)
+
+shouldn't the main arch symbol be "C6X" to match arch/c6x/ ?
+-mike
