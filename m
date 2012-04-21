@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab2DUWsQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 18:48:16 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42556 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab2DUWsO (ORCPT
+	id S1752692Ab2DUWzT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 18:55:19 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:53429 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827Ab2DUWzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 18:48:14 -0400
-From: Eldad Zack <eldad@fogrefinery.com>
-To: Brett Rudley <brudley@broadcom.com>, Roland Vossen <rvossen@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>, Kan Yan <kanyan@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Eldad Zack <eldad@fogrefinery.com>
-Subject: [PATCH] [brcmsmac] "INTERMEDIATE but not AMPDU" only when tracing
-Date: Sun, 22 Apr 2012 00:48:04 +0200
-Message-Id: <1335048484-5925-1-git-send-email-eldad@fogrefinery.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 21 Apr 2012 18:55:17 -0400
+References: <1334267969.2573.14.camel@shrek.rexursive.com> <4F8C773C.2010902@debian.org> <6ab4e086-9f7b-4a3e-87ed-430e74333dcf@email.android.com> <201204182330.38156.rjw@sisk.pl>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <201204182330.38156.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for hibernate/thaw buffering
+From: Bojan Smojver <bojan@rexursive.com>
+Date: Sun, 22 Apr 2012 08:55:14 +1000
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Per Olofsson <pelle@debian.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Message-ID: <161dc918-dabe-4c26-a25b-772498282722@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I keep getting the following messages on the log buffer:
-[ 2167.097507] ieee80211 phy0: brcms_c_dotxstatus: INTERMEDIATE but not AMPDU
-[ 2281.331305] ieee80211 phy0: brcms_c_dotxstatus: INTERMEDIATE but not AMPDU
-[ 2281.332539] ieee80211 phy0: brcms_c_dotxstatus: INTERMEDIATE but not AMPDU
-[ 2329.876605] ieee80211 phy0: brcms_c_dotxstatus: INTERMEDIATE but not AMPDU
-[ 2329.877354] ieee80211 phy0: brcms_c_dotxstatus: INTERMEDIATE but not AMPDU
-[ 2462.280756] ieee80211 phy0: brcms_c_dotxstatus: INTERMEDIATE but not AMPDU
-[ 2615.651689] ieee80211 phy0: brcms_c_dotxstatus: INTERMEDIATE but not AMPDU
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
->From the code comment I understand that this something that can - and does, quite frequently - happen.
-This patch demotes the message to the trace level.
+>On Wednesday, April 18, 2012, Bojan Smojver wrote:
+>> Per Olofsson <pelle@debian.org> wrote:
+>> 
+>> >OK, let's say Reviewed-by then.
+>> >
+>> >Reviewed-by: Per Olofsson <pelle@debian.org>
+>> >
+>> 
+>> Rafael,
+>> 
+>> Anything you still need here?
+>
+>No, thanks, I'm going to apply the patch.
+>
+>Rafael
 
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
----
- drivers/net/wireless/brcm80211/brcmsmac/main.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Any chance of it in 3.3.3? Looks like rc1 of it is already out there...
 
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-index 231ddf4..2fc5956 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-@@ -847,8 +847,7 @@ brcms_c_dotxstatus(struct brcms_c_info *wlc, struct tx_status *txs)
- 	 */
- 	if (!(txs->status & TX_STATUS_AMPDU)
- 	    && (txs->status & TX_STATUS_INTERMEDIATE)) {
--		wiphy_err(wlc->wiphy, "%s: INTERMEDIATE but not AMPDU\n",
--			  __func__);
-+		BCMMSG(wlc->wiphy, "INTERMEDIATE but not AMPDU\n");
- 		return false;
- 	}
- 
 -- 
-1.7.9.5
-
+Bojan
