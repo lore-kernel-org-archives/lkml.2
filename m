@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab2DUUxn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 16:53:43 -0400
-Received: from smtp.fullrate.dk ([90.185.1.42]:65012 "EHLO smtp.fullrate.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490Ab2DUUxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 16:53:42 -0400
-X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Apr 2012 16:53:42 EDT
-Message-ID: <4F931C6D.8040407@molgaard.org>
-Date: Sat, 21 Apr 2012 22:45:33 +0200
-From: =?ISO-8859-1?Q?Sune_M=F8lgaard?= <sune@molgaard.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120421 Firefox/14.0a1 SeaMonkey/2.11a1
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Boot failure since 3.3-rc?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752240Ab2DUU6l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 16:58:41 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:43869 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab2DUU6k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 16:58:40 -0400
+Date: Sat, 21 Apr 2012 16:58:37 -0400 (EDT)
+Message-Id: <20120421.165837.76978862714579140.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 21 Apr 2012 13:58:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hiya,
 
-My old AMD Duron system (i386 with 2G RAM) has been unable to boot 
-recent kernels, and I have bisected it down to:
+Please pull to get this sparc32 LEON smp bootup bug fix.
 
-commit 321bf4ed5ff5f7c62ef59f33b7eec5b154391f0a
-Author: Yinghai Lu <yinghai@kernel.org>
-Date:   Mon Jan 30 13:57:12 2012 -0800
+Thanks!
 
-     drivers/base/memory.c: fix memory_dev_init() long delay
+The following changes since commit 8f4f9d4d3cb84686a75f6195b8f8705376763fc7:
 
-     One system with 2048g ram, reported soft lockup on recent kernel.
+  Merge tag 'fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2012-04-21 12:45:52 -0700)
 
-[snip the trace of the bug that this should fix]
+are available in the git repository at:
 
-     Finally it takes about 55s to create 16400 memory entries.
 
-     Root cause: for x86_64, 2048g (with 2g hole at [2g,4g), and TOP2 
-will be 2050g), will have 16400 memory block.
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
 
-     find_memory_block/subsys_find_device_by_id will be expensive with 
-that many entries.
+for you to fetch changes up to e9a5ea1852cd8d7e155d2e3a45e4a6ea25110f7d:
 
-     Actually, we don't need to find that memory block for BOOT path.
+  sparc32,leon: add notify_cpu_starting() (2012-04-21 16:35:06 -0400)
 
-     Skip that finding make it get back to normal.
+----------------------------------------------------------------
+Yong Zhang (1):
+      sparc32,leon: add notify_cpu_starting()
 
-     [   34.466696] cpu_dev_init done
-     [   35.290080] memory_dev_init done
-
-     Also solved the delay with topology_init when sections_per_block is 
-not 1.
-
-     Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-     Cc: Kay Sievers <kay.sievers@vrfy.org>
-     Cc: Nathan Fontenot <nfont@austin.ibm.com>
-     Cc: Robin Holt <holt@sgi.com>
-     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-:040000 040000 95174f8192a2303d9e59e5f8523a58780b828e3e 
-2de57c6dc44872ac11766616f1cf05d6070b60de M	drivers
-
-Will be happy to test patches, but compilation is obviously slow on this 
-machine, so some delay might occur.
-
-Best regards,
-
-Sune Mølgaard
-
--- 
-To err is human--and to blame it on a computer is even more so.
-- Orben - Current Comedy
-
+ arch/sparc/kernel/leon_smp.c |    3 +++
+ 1 file changed, 3 insertions(+)
