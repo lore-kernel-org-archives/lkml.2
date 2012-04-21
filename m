@@ -1,195 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673Ab2DUH42 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 03:56:28 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:31559 "EHLO
+	id S1751475Ab2DUIL2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 04:11:28 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:54706 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750838Ab2DUH4N (ORCPT
+	with ESMTP id S1750704Ab2DUILR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 03:56:13 -0400
+	Sat, 21 Apr 2012 04:11:17 -0400
 From: Roland Stigge <stigge@antcom.de>
-To: grant.likely@secretlab.ca, arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com
+To: jic23@cam.ac.uk, gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        plagnioj@jcrosoft.com, lars@metafoo.de
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v5] gpio: Device tree support for LPC32xx
-Date: Sat, 21 Apr 2012 09:55:25 +0200
-Message-Id: <1334994925-11842-1-git-send-email-stigge@antcom.de>
+Subject: [PATCH v5] iio: Add device tree support to LPC32xx ADC
+Date: Sat, 21 Apr 2012 10:10:16 +0200
+Message-Id: <1334995816-14334-1-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.9
 X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree support for gpio-lpc32xx.c
+This patch adds device tree support to the LPC32xx's ADC.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 ---
 
- Applies to v3.4-rc3
+Applies to v3.4-rc3
 
- Changes since last version:
- * Typo fix in documentation
- * Changed "compatible" strings to non-wildcard versions
- * Removed Arnd Bergmann's "Reviewed-by:" due to above change
- 
- Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt |   66 ++++++++++++++++
- arch/arm/mach-lpc32xx/include/mach/gpio.h               |    9 +-
- drivers/gpio/gpio-lpc32xx.c                             |   55 ++++++++++++-
- 3 files changed, 127 insertions(+), 3 deletions(-)
+Changes since v4:
+* Changed "compatible" strings to non-wildcard versions
+
+Thanks to Jean-Christophe PLAGNIOL-VILLARD, Arnd Bergmann and Lars-Peter
+Clausen for reviewing!
+
+ Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt |   16 ++++++++++
+ drivers/staging/iio/adc/lpc32xx_adc.c                             |   10 ++++++
+ 2 files changed, 26 insertions(+)
 
 --- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
-@@ -0,0 +1,66 @@
-+NXP LPC32xx SoC GPIO controller
++++ linux-2.6/Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt
+@@ -0,0 +1,16 @@
++* NXP LPC32xx SoC ADC controller
 +
 +Required properties:
-+- compatible: must be "nxp,lpc3220-gpio", "nxp,lpc3230-gpio", "nxp,lpc3240-gpio"
-+  or "nxp,lpc3250-gpio"
-+- reg: Physical base address and length of the controller's registers.
-+- #address-cells: Always 1, for indexing of the subnodes (GPIO groups of the
-+  SoC)
-+- #size-cells: Always 0
-+
-+Required properties of sub-nodes which describe the GPIO groups of LPC32xx:
-+- gpio-controller: Marks the device node as a GPIO controller.
-+- #gpio-cells: Should be two. The first cell is the pin number and the
-+  second cell is used to specify optional parameters:
-+  - bit 0 specifies polarity (0 for normal, 1 for inverted)
-+- reg: Index of the GPIO group
-+
-+Optional properties of sub-nodes which describe the GPIO groups of LPC32xx:
-+- status: Set to "disabled" if you don't use the respective GPIO group
-+  of the LPC32xx SoC
++- compatible: must be "nxp,lpc3220-adc"
++- reg: physical base address of the controller and length of memory mapped
++  region.
++- interrupts: The ADC interrupt
 +
 +Example:
 +
-+	gpio: gpio@40028000 {
-+		compatible = "nxp,lpc3250-gpio";
-+		reg = <0x40028000 0x1000>;
-+		/* create a private address space for enumeration */
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		gpio_p0: gpio-bank@0 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <0>;
-+		};
-+
-+		gpio_p1: gpio-bank@1 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <1>;
-+		};
-+
-+		gpio_p2: gpio-bank@2 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <2>;
-+		};
-+
-+		gpio_p3: gpio-bank@3 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <3>;
-+		};
-+
-+		gpi_p3: gpio-bank@4 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <4>;
-+		};
-+
-+		gpo_p3: gpio-bank@5 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <5>;
-+		};
++	adc@40048000 {
++		compatible = "nxp,lpc3220-adc";
++		reg = <0x40048000 0x1000>;
++		interrupt-parent = <&mic>;
++		interrupts = <39 0>;
 +	};
---- linux-2.6.orig/arch/arm/mach-lpc32xx/include/mach/gpio.h
-+++ linux-2.6/arch/arm/mach-lpc32xx/include/mach/gpio.h
-@@ -1 +1,8 @@
--/* empty */
-+#ifndef __MACH_GPIO_H
-+#define __MACH_GPIO_H
-+
-+#include "gpio-lpc32xx.h"
-+
-+#define ARCH_NR_GPIOS (LPC32XX_GPO_P3_GRP + LPC32XX_GPO_P3_MAX)
-+
-+#endif /* __MACH_GPIO_H */
---- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
-+++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
-@@ -21,6 +21,9 @@
- #include <linux/io.h>
- #include <linux/errno.h>
- #include <linux/gpio.h>
-+#include <linux/of_gpio.h>
-+#include <linux/platform_device.h>
-+#include <linux/module.h>
+--- linux-2.6.orig/drivers/staging/iio/adc/lpc32xx_adc.c
++++ linux-2.6/drivers/staging/iio/adc/lpc32xx_adc.c
+@@ -30,6 +30,7 @@
+ #include <linux/clk.h>
+ #include <linux/err.h>
+ #include <linux/completion.h>
++#include <linux/of.h>
  
- #include <mach/hardware.h>
- #include <mach/platform.h>
-@@ -454,10 +457,58 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ #include "../iio.h"
+ #include "../sysfs.h"
+@@ -221,12 +222,21 @@ static int __devexit lpc32xx_adc_remove(
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id lpc32xx_adc_match[] = {
++	{ .compatible = "nxp,lpc3220-adc" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, lpc32xx_adc_match);
++#endif
++
+ static struct platform_driver lpc32xx_adc_driver = {
+ 	.probe		= lpc32xx_adc_probe,
+ 	.remove		= __devexit_p(lpc32xx_adc_remove),
+ 	.driver		= {
+ 		.name	= MOD_NAME,
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(lpc32xx_adc_match),
  	},
  };
  
-+/* Empty now, can be removed later when mach-lpc32xx is finally switched over
-+ * to DT support
-+ */
- void __init lpc32xx_gpio_init(void)
- {
-+}
-+
-+static int __devinit lpc32xx_gpio_probe(struct platform_device *pdev)
-+{
-+	struct device_node *node;
- 	int i;
- 
--	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
--		gpiochip_add(&lpc32xx_gpiochip[i].chip);
-+	if (pdev->dev.of_node) {
-+		for_each_child_of_node(pdev->dev.of_node, node) {
-+			if (of_device_is_available(node)) {
-+				u32 index;
-+				struct gpio_chip *chip;
-+				if (of_property_read_u32(node,
-+							 "reg", &index) <  0)
-+					continue;
-+				if (index >= ARRAY_SIZE(lpc32xx_gpiochip))
-+					continue;
-+				chip = &lpc32xx_gpiochip[index].chip;
-+				chip->of_node = of_node_get(node);
-+				gpiochip_add(chip);
-+			}
-+		}
-+	} else {
-+		for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
-+			gpiochip_add(&lpc32xx_gpiochip[i].chip);
-+	}
-+
-+	return 0;
- }
-+
-+#ifdef CONFIG_OF
-+static struct of_device_id lpc32xx_gpio_of_match[] __devinitdata = {
-+	{ .compatible = "nxp,lpc3220-gpio", },
-+	{ .compatible = "nxp,lpc3230-gpio", },
-+	{ .compatible = "nxp,lpc3240-gpio", },
-+	{ .compatible = "nxp,lpc3250-gpio", },
-+	{ },
-+};
-+#endif
-+
-+static struct platform_driver lpc32xx_gpio_driver = {
-+	.driver		= {
-+		.name	= "lpc32xx-gpio",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(lpc32xx_gpio_of_match),
-+	},
-+	.probe		= lpc32xx_gpio_probe,
-+};
-+
-+module_platform_driver(lpc32xx_gpio_driver);
