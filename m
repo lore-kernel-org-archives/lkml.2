@@ -1,127 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab2DUK5H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 06:57:07 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40452 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754591Ab2DUK5E (ORCPT
+	id S1754183Ab2DULG7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 07:06:59 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:36353 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751980Ab2DULG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 06:57:04 -0400
-From: Valentin Ilie <valentin.ilie@gmail.com>
-To: viro@zeniv.linux.org.uk, schwidefsky@de.ibm.com
-Cc: linux-kernel@vger.kernel.org, Valentin Ilie <valentin.ilie@gmail.com>
-Subject: [PATCH] kernel: acct.c: fixed minor coding style issues
-Date: Sat, 21 Apr 2012 13:56:46 +0300
-Message-Id: <1335005806-12198-1-git-send-email-valentin.ilie@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 21 Apr 2012 07:06:57 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] Defconfig update for LPC32xx
+Date: Sat, 21 Apr 2012 13:06:34 +0200
+Message-Id: <1335006394-26810-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed minor coding style issues. (Detected by checkpatch).
+This patch updates the defconfig for the LPC32xx SoC after device tree
+conversion:
 
-Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+* Adjustment to DT conversion, added new driver support
+* Added IPv6
+* Increased kernel log buffer
+
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+
 ---
- kernel/acct.c |   27 ++++++++++++++-------------
- 1 file changed, 14 insertions(+), 13 deletions(-)
+ arch/arm/configs/lpc32xx_defconfig |   44 +++++++++++++++++++++++++++++++------
+ 1 file changed, 38 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/acct.c b/kernel/acct.c
-index 02e6167..a796ede 100644
---- a/kernel/acct.c
-+++ b/kernel/acct.c
-@@ -134,7 +134,7 @@ static int check_free_space(struct bsd_acct_struct *acct, struct file *file)
- 	spin_lock(&acct_lock);
- 	if (file != acct->file) {
- 		if (act)
--			res = act>0;
-+			res = act > 0;
- 		goto out;
- 	}
- 
-@@ -262,7 +262,7 @@ SYSCALL_DEFINE1(acct, const char __user *, name)
- 	if (name) {
- 		char *tmp = getname(name);
- 		if (IS_ERR(tmp))
--			return (PTR_ERR(tmp));
-+			return PTR_ERR(tmp);
- 		error = acct_on(tmp);
- 		putname(tmp);
- 	} else {
-@@ -376,7 +376,7 @@ static comp_t encode_comp_t(unsigned long value)
- 	return exp;
- }
- 
--#if ACCT_VERSION==1 || ACCT_VERSION==2
-+#if ACCT_VERSION == 1 || ACCT_VERSION == 2
- /*
-  * encode an u64 into a comp2_t (24 bits)
-  *
-@@ -389,7 +389,7 @@ static comp_t encode_comp_t(unsigned long value)
- #define MANTSIZE2       20                      /* 20 bit mantissa. */
- #define EXPSIZE2        5                       /* 5 bit base 2 exponent. */
- #define MAXFRACT2       ((1ul << MANTSIZE2) - 1) /* Maximum fractional value. */
--#define MAXEXP2         ((1 <<EXPSIZE2) - 1)    /* Maximum exponent. */
-+#define MAXEXP2         ((1 << EXPSIZE2) - 1)    /* Maximum exponent. */
- 
- static comp2_t encode_comp2_t(u64 value)
- {
-@@ -420,7 +420,7 @@ static comp2_t encode_comp2_t(u64 value)
- }
- #endif
- 
--#if ACCT_VERSION==3
-+#if ACCT_VERSION == 3
- /*
-  * encode an u64 into a 32 bit IEEE float
-  */
-@@ -429,8 +429,9 @@ static u32 encode_float(u64 value)
- 	unsigned exp = 190;
- 	unsigned u;
- 
--	if (value==0) return 0;
--	while ((s64)value > 0){
-+	if (value == 0)
-+		return 0;
-+	while ((s64)value > 0) {
- 		value <<= 1;
- 		exp--;
- 	}
-@@ -490,13 +491,13 @@ static void do_acct_process(struct bsd_acct_struct *acct,
- 		       + current->group_leader->start_time.tv_nsec;
- 	/* convert nsec -> AHZ */
- 	elapsed = nsec_to_AHZ(run_time);
--#if ACCT_VERSION==3
-+#if ACCT_VERSION == 3
- 	ac.ac_etime = encode_float(elapsed);
- #else
- 	ac.ac_etime = encode_comp_t(elapsed < (unsigned long) -1l ?
--	                       (unsigned long) elapsed : (unsigned long) -1l);
-+				(unsigned long) elapsed : (unsigned long) -1l);
- #endif
--#if ACCT_VERSION==1 || ACCT_VERSION==2
-+#if ACCT_VERSION == 1 || ACCT_VERSION == 2
- 	{
- 		/* new enlarged etime field */
- 		comp2_t etime = encode_comp2_t(elapsed);
-@@ -509,15 +510,15 @@ static void do_acct_process(struct bsd_acct_struct *acct,
- 	/* we really need to bite the bullet and change layout */
- 	ac.ac_uid = orig_cred->uid;
- 	ac.ac_gid = orig_cred->gid;
--#if ACCT_VERSION==2
-+#if ACCT_VERSION == 2
- 	ac.ac_ahz = AHZ;
- #endif
--#if ACCT_VERSION==1 || ACCT_VERSION==2
-+#if ACCT_VERSION == 1 || ACCT_VERSION == 2
- 	/* backward-compatible 16 bit fields */
- 	ac.ac_uid16 = ac.ac_uid;
- 	ac.ac_gid16 = ac.ac_gid;
- #endif
--#if ACCT_VERSION==3
-+#if ACCT_VERSION == 3
- 	ac.ac_pid = task_tgid_nr_ns(current, ns);
- 	rcu_read_lock();
- 	ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(current->real_parent), ns);
--- 
-1.7.9.5
-
+--- linux-2.6.orig/arch/arm/configs/lpc32xx_defconfig
++++ linux-2.6/arch/arm/configs/lpc32xx_defconfig
+@@ -2,7 +2,7 @@ CONFIG_EXPERIMENTAL=y
+ CONFIG_SYSVIPC=y
+ CONFIG_IKCONFIG=y
+ CONFIG_IKCONFIG_PROC=y
+-CONFIG_LOG_BUF_SHIFT=14
++CONFIG_LOG_BUF_SHIFT=16
+ CONFIG_SYSFS_DEPRECATED=y
+ CONFIG_SYSFS_DEPRECATED_V2=y
+ CONFIG_BLK_DEV_INITRD=y
+@@ -10,6 +10,7 @@ CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+ CONFIG_SYSCTL_SYSCALL=y
+ CONFIG_EMBEDDED=y
+ CONFIG_SLAB=y
++CONFIG_JUMP_LABEL=y
+ CONFIG_MODULES=y
+ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+@@ -21,6 +22,8 @@ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
+ CONFIG_ZBOOT_ROM_TEXT=0x0
+ CONFIG_ZBOOT_ROM_BSS=0x0
++CONFIG_ARM_APPENDED_DTB=y
++CONFIG_ARM_ATAG_DTB_COMPAT=y
+ CONFIG_CMDLINE="console=ttyS0,115200n81 root=/dev/ram0"
+ CONFIG_CPU_IDLE=y
+ CONFIG_FPE_NWFPE=y
+@@ -40,7 +43,8 @@ CONFIG_IP_PNP_BOOTP=y
+ # CONFIG_INET_XFRM_MODE_BEET is not set
+ # CONFIG_INET_LRO is not set
+ # CONFIG_INET_DIAG is not set
+-# CONFIG_IPV6 is not set
++CONFIG_IPV6=y
++CONFIG_IPV6_PRIVACY=y
+ # CONFIG_WIRELESS is not set
+ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+ # CONFIG_FW_LOADER is not set
+@@ -55,13 +59,24 @@ CONFIG_BLK_DEV_CRYPTOLOOP=y
+ CONFIG_BLK_DEV_RAM=y
+ CONFIG_BLK_DEV_RAM_COUNT=1
+ CONFIG_BLK_DEV_RAM_SIZE=16384
+-CONFIG_MISC_DEVICES=y
+ CONFIG_EEPROM_AT25=y
+ CONFIG_SCSI=y
+ CONFIG_BLK_DEV_SD=y
+ CONFIG_NETDEVICES=y
+ CONFIG_MII=y
+-CONFIG_PHYLIB=y
++# CONFIG_NET_VENDOR_BROADCOM is not set
++# CONFIG_NET_VENDOR_CHELSIO is not set
++# CONFIG_NET_VENDOR_CIRRUS is not set
++# CONFIG_NET_VENDOR_FARADAY is not set
++# CONFIG_NET_VENDOR_INTEL is not set
++# CONFIG_NET_VENDOR_MARVELL is not set
++# CONFIG_NET_VENDOR_MICREL is not set
++# CONFIG_NET_VENDOR_MICROCHIP is not set
++# CONFIG_NET_VENDOR_NATSEMI is not set
++CONFIG_LPC_ENET=y
++# CONFIG_NET_VENDOR_SEEQ is not set
++# CONFIG_NET_VENDOR_SMSC is not set
++# CONFIG_NET_VENDOR_STMICRO is not set
+ CONFIG_SMSC_PHY=y
+ # CONFIG_WLAN is not set
+ # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
+@@ -97,16 +112,22 @@ CONFIG_SND_SEQUENCER=y
+ CONFIG_SND_MIXER_OSS=y
+ CONFIG_SND_PCM_OSS=y
+ CONFIG_SND_SEQUENCER_OSS=y
+-CONFIG_SND_DYNAMIC_MINORS=y
++# CONFIG_SND_SUPPORT_OLD_API is not set
+ # CONFIG_SND_VERBOSE_PROCFS is not set
++CONFIG_SND_DEBUG=y
++CONFIG_SND_DEBUG_VERBOSE=y
+ # CONFIG_SND_DRIVERS is not set
+ # CONFIG_SND_ARM is not set
+ # CONFIG_SND_SPI is not set
+ CONFIG_SND_SOC=y
+ # CONFIG_HID_SUPPORT is not set
+ CONFIG_USB=y
++CONFIG_USB_OHCI_HCD=y
+ CONFIG_USB_STORAGE=y
+-CONFIG_USB_LIBUSUAL=y
++CONFIG_USB_GADGET=y
++CONFIG_USB_LPC32XX=y
++CONFIG_USB_MASS_STORAGE=m
++CONFIG_USB_G_SERIAL=m
+ CONFIG_MMC=y
+ # CONFIG_MMC_BLOCK_BOUNCE is not set
+ CONFIG_MMC_ARMMMCI=y
+@@ -114,10 +135,21 @@ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+ CONFIG_LEDS_GPIO=y
+ CONFIG_LEDS_TRIGGERS=y
++CONFIG_LEDS_TRIGGER_TIMER=y
+ CONFIG_LEDS_TRIGGER_HEARTBEAT=y
++CONFIG_LEDS_TRIGGER_BACKLIGHT=y
++CONFIG_LEDS_TRIGGER_GPIO=y
++CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
+ CONFIG_RTC_CLASS=y
+ CONFIG_RTC_INTF_DEV_UIE_EMUL=y
++CONFIG_RTC_DRV_DS1374=y
++CONFIG_RTC_DRV_PCF8563=y
+ CONFIG_RTC_DRV_LPC32XX=y
++CONFIG_DMADEVICES=y
++CONFIG_AMBA_PL08X=y
++CONFIG_STAGING=y
++CONFIG_IIO=y
++CONFIG_LPC32XX_ADC=y
+ CONFIG_EXT2_FS=y
+ CONFIG_AUTOFS4_FS=y
+ CONFIG_MSDOS_FS=y
