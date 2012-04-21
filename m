@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab2DUJKX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 05:10:23 -0400
-Received: from smtp4.mail.ru ([94.100.176.44]:46947 "EHLO smtp4.mail.ru"
+	id S1754341Ab2DUJMc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 05:12:32 -0400
+Received: from smtp4.mail.ru ([94.100.176.44]:47816 "EHLO smtp4.mail.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752857Ab2DUJKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 05:10:15 -0400
+	id S1753820Ab2DUJKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Apr 2012 05:10:24 -0400
 From: Alexander Shiyan <shc_work@mail.ru>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH 04/17] ARM clps711x: Using a single definition for virtual address register
-Date: Sat, 21 Apr 2012 13:11:17 +0400
-Message-Id: <1334999490-27177-5-git-send-email-shc_work@mail.ru>
+Subject: [PATCH 10/17] ARM clps711x: Address register renaming to reflect the fact that the name is the same for all arch
+Date: Sat, 21 Apr 2012 13:11:23 +0400
+Message-Id: <1334999490-27177-11-git-send-email-shc_work@mail.ru>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1334999490-27177-1-git-send-email-shc_work@mail.ru>
 References: <1334999490-27177-1-git-send-email-shc_work@mail.ru>
@@ -21,105 +21,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using a single definition for the virtual address register for all
-variants boards clps711x.
 
 Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 ---
- arch/arm/include/asm/hardware/ep7211.h         |    5 -----
- arch/arm/include/asm/hardware/ep7212.h         |    9 ++-------
- arch/arm/mach-clps711x/include/mach/hardware.h |   10 ----------
- drivers/mtd/nand/autcpu12.c                    |    4 ++--
- 4 files changed, 4 insertions(+), 24 deletions(-)
+ arch/arm/include/asm/hardware/clps7111.h          |    2 +-
+ arch/arm/mach-clps711x/common.c                   |    4 ++--
+ arch/arm/mach-clps711x/include/mach/debug-macro.S |    4 ++--
+ arch/arm/mach-clps711x/include/mach/hardware.h    |    4 ++--
+ arch/arm/mach-clps711x/include/mach/uncompress.h  |    2 +-
+ drivers/mtd/nand/autcpu12.c                       |    4 ++--
+ drivers/mtd/nand/h1910.c                          |    2 +-
+ 7 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/include/asm/hardware/ep7211.h b/arch/arm/include/asm/hardware/ep7211.h
-index 654d5f6..ca4d198 100644
---- a/arch/arm/include/asm/hardware/ep7211.h
-+++ b/arch/arm/include/asm/hardware/ep7211.h
-@@ -25,11 +25,6 @@
+diff --git a/arch/arm/include/asm/hardware/clps7111.h b/arch/arm/include/asm/hardware/clps7111.h
+index 84358d8..b63ed8c 100644
+--- a/arch/arm/include/asm/hardware/clps7111.h
++++ b/arch/arm/include/asm/hardware/clps7111.h
+@@ -23,7 +23,7 @@
+ #ifndef __ASM_HARDWARE_CLPS7111_H
+ #define __ASM_HARDWARE_CLPS7111_H
  
- #include <asm/hardware/clps7111.h>
- 
--/*
-- * define EP7211_BASE to be the base address of the region
-- * you want to access.
-- */
--
- #define EP7211_PHYS_BASE	(0x80000000)
- 
- /*
-diff --git a/arch/arm/include/asm/hardware/ep7212.h b/arch/arm/include/asm/hardware/ep7212.h
-index 3b43bbe..0b1f508 100644
---- a/arch/arm/include/asm/hardware/ep7212.h
-+++ b/arch/arm/include/asm/hardware/ep7212.h
-@@ -23,16 +23,11 @@
- #ifndef __ASM_HARDWARE_EP7212_H
- #define __ASM_HARDWARE_EP7212_H
- 
--/*
-- * define EP7212_BASE to be the base address of the region
-- * you want to access.
-- */
--
- #define EP7212_PHYS_BASE	(0x80000000)
+-#define CLPS7111_PHYS_BASE	(0x80000000)
++#define CLPS711X_PHYS_BASE	(0x80000000)
  
  #ifndef __ASSEMBLY__
--#define ep_readl(off)		__raw_readl(EP7212_BASE + (off))
--#define ep_writel(val,off)	__raw_writel(val, EP7212_BASE + (off))
-+#define ep_readl(off)		__raw_readl(CLPS7111_BASE + (off))
-+#define ep_writel(val,off)	__raw_writel(val, CLPS7111_BASE + (off))
+ #define clps_readb(off)		__raw_readb(CLPS7111_BASE + (off))
+diff --git a/arch/arm/mach-clps711x/common.c b/arch/arm/mach-clps711x/common.c
+index 3544433..3b6e6b8 100644
+--- a/arch/arm/mach-clps711x/common.c
++++ b/arch/arm/mach-clps711x/common.c
+@@ -43,8 +43,8 @@
+  */
+ static struct map_desc clps711x_io_desc[] __initdata = {
+ 	{
+-		.virtual	= CLPS7111_VIRT_BASE,
+-		.pfn		= __phys_to_pfn(CLPS7111_PHYS_BASE),
++		.virtual	= CLPS711X_VIRT_BASE,
++		.pfn		= __phys_to_pfn(CLPS711X_PHYS_BASE),
+ 		.length		= SZ_1M,
+ 		.type		= MT_DEVICE
+ 	}
+diff --git a/arch/arm/mach-clps711x/include/mach/debug-macro.S b/arch/arm/mach-clps711x/include/mach/debug-macro.S
+index 15a9036..118b3d9 100644
+--- a/arch/arm/mach-clps711x/include/mach/debug-macro.S
++++ b/arch/arm/mach-clps711x/include/mach/debug-macro.S
+@@ -19,8 +19,8 @@
+ #else
+ 		mov	\rp, #0x1000	@ UART2
  #endif
+-		orr	\rv, \rp, #CLPS7111_VIRT_BASE
+-		orr	\rp, \rp, #CLPS7111_PHYS_BASE
++		orr	\rv, \rp, #CLPS711X_VIRT_BASE
++		orr	\rp, \rp, #CLPS711X_PHYS_BASE
+ 		.endm
  
- /*
+ 		.macro	senduart,rd,rx
 diff --git a/arch/arm/mach-clps711x/include/mach/hardware.h b/arch/arm/mach-clps711x/include/mach/hardware.h
-index 2ff3473..8c7b28e 100644
+index 50d68c2..f5d8313 100644
 --- a/arch/arm/mach-clps711x/include/mach/hardware.h
 +++ b/arch/arm/mach-clps711x/include/mach/hardware.h
-@@ -54,14 +54,10 @@
+@@ -22,8 +22,8 @@
+ #ifndef __ASM_ARCH_HARDWARE_H
+ #define __ASM_ARCH_HARDWARE_H
  
- #if defined (CONFIG_SOC_EP7211)
+-#define CLPS7111_VIRT_BASE	0xff000000
+-#define CLPS7111_BASE		CLPS7111_VIRT_BASE
++#define CLPS711X_VIRT_BASE	0xff000000
++#define CLPS7111_BASE		CLPS711X_VIRT_BASE
  
--#define EP7211_VIRT_BASE	CLPS7111_VIRT_BASE
--#define EP7211_BASE		CLPS7111_VIRT_BASE
- #include <asm/hardware/ep7211.h>
- 
- #elif defined (CONFIG_SOC_EP7212)
- 
--#define EP7212_VIRT_BASE	CLPS7111_VIRT_BASE
--#define EP7212_BASE		CLPS7111_VIRT_BASE
- #include <asm/hardware/ep7212.h>
- 
- #elif defined (CONFIG_SOC_EP7213)
-@@ -75,9 +71,6 @@
- 
- #if  defined (CONFIG_ARCH_AUTCPU12)
- 
--#define  CS89712_VIRT_BASE	CLPS7111_VIRT_BASE
--#define  CS89712_BASE		CLPS7111_VIRT_BASE
--
  #include <asm/hardware/clps7111.h>
- #include <asm/hardware/ep7212.h>
- #include <asm/hardware/cs89712.h>
-@@ -158,9 +151,6 @@
  
- #if defined (CONFIG_ARCH_CEIVA)
+diff --git a/arch/arm/mach-clps711x/include/mach/uncompress.h b/arch/arm/mach-clps711x/include/mach/uncompress.h
+index ac42332..bf7b112 100644
+--- a/arch/arm/mach-clps711x/include/mach/uncompress.h
++++ b/arch/arm/mach-clps711x/include/mach/uncompress.h
+@@ -20,7 +20,7 @@
+ #include <mach/hardware.h>
  
--#define  CEIVA_VIRT_BASE	CLPS7111_VIRT_BASE
--#define  CEIVA_BASE		CLPS7111_VIRT_BASE
--
- #include <asm/hardware/clps7111.h>
- #include <asm/hardware/ep7212.h>
+ #undef CLPS7111_BASE
+-#define CLPS7111_BASE CLPS7111_PHYS_BASE
++#define CLPS7111_BASE CLPS711X_PHYS_BASE
  
+ #define __raw_readl(p)		(*(unsigned long *)(p))
+ #define __raw_writel(v,p)	(*(unsigned long *)(p) = (v))
 diff --git a/drivers/mtd/nand/autcpu12.c b/drivers/mtd/nand/autcpu12.c
-index 2e42ec2..5bd4107 100644
+index 5bd4107..e78975a 100644
 --- a/drivers/mtd/nand/autcpu12.c
 +++ b/drivers/mtd/nand/autcpu12.c
 @@ -102,7 +102,7 @@ static void autcpu12_hwcontrol(struct mtd_info *mtd, int cmd,
  		void __iomem *addr;
  		unsigned char bits;
  
--		addr = CS89712_VIRT_BASE + AUTCPU12_SMC_PORT_OFFSET;
-+		addr = CLPS7111_VIRT_BASE + AUTCPU12_SMC_PORT_OFFSET;
+-		addr = CLPS7111_VIRT_BASE + AUTCPU12_SMC_PORT_OFFSET;
++		addr = CLPS711X_VIRT_BASE + AUTCPU12_SMC_PORT_OFFSET;
  		bits = (ctrl & NAND_CLE) << 4;
  		bits |= (ctrl & NAND_ALE) << 2;
  		writeb((readb(addr) & ~0x30) | bits, addr);
@@ -127,11 +121,24 @@ index 2e42ec2..5bd4107 100644
   */
  int autcpu12_device_ready(struct mtd_info *mtd)
  {
--	void __iomem *addr = CS89712_VIRT_BASE + AUTCPU12_SMC_PORT_OFFSET;
-+	void __iomem *addr = CLPS7111_VIRT_BASE + AUTCPU12_SMC_PORT_OFFSET;
+-	void __iomem *addr = CLPS7111_VIRT_BASE + AUTCPU12_SMC_PORT_OFFSET;
++	void __iomem *addr = CLPS711X_VIRT_BASE + AUTCPU12_SMC_PORT_OFFSET;
  
  	return readb(addr) & AUTCPU12_SMC_RDY;
  }
+diff --git a/drivers/mtd/nand/h1910.c b/drivers/mtd/nand/h1910.c
+index 11e4878..9bf5ce5 100644
+--- a/drivers/mtd/nand/h1910.c
++++ b/drivers/mtd/nand/h1910.c
+@@ -24,7 +24,7 @@
+ #include <linux/mtd/nand.h>
+ #include <linux/mtd/partitions.h>
+ #include <asm/io.h>
+-#include <mach/hardware.h>	/* for CLPS7111_VIRT_BASE */
++#include <mach/hardware.h>
+ #include <asm/sizes.h>
+ #include <mach/h1900-gpio.h>
+ #include <mach/ipaq.h>
 -- 
 1.7.3.4
 
