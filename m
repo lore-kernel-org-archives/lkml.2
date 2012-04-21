@@ -1,191 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab2DUIWf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 04:22:35 -0400
-Received: from 7.mo3.mail-out.ovh.net ([46.105.57.200]:52262 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750704Ab2DUIWd (ORCPT
+	id S1752953Ab2DUIYf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 04:24:35 -0400
+Received: from nk11p00mm-asmtp003.mac.com ([17.158.161.2]:52724 "EHLO
+	nk11p00mm-asmtp003.mac.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750709Ab2DUIYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 04:22:33 -0400
-X-Greylist: delayed 110666 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Apr 2012 04:22:33 EDT
-Date: Sat, 21 Apr 2012 10:03:21 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: grant.likely@secretlab.ca, arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH v5] gpio: Device tree support for LPC32xx
-Message-ID: <20120421080321.GB9142@game.jcrosoft.org>
-References: <1334994925-11842-1-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334994925-11842-1-git-send-email-stigge@antcom.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 7944068267859422045
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegtddrtdefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegfedrgedtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+	Sat, 21 Apr 2012 04:24:31 -0400
+X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Apr 2012 04:24:31 EDT
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.6.7580,1.0.260,0.0.0000
+ definitions=2012-04-21_02:2012-04-20,2012-04-21,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1204210007
+Subject: Re: [PATCH] fix oops in updating thread cputime and task time
+From: Fawzi Mohamed <fmohamed@me.com>
+In-reply-to: <A4012A3B-7FF6-4ED8-8E00-51661D11CF4C@gmx.ch>
+Date: Sat, 21 Apr 2012 09:23:52 +0200
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Dargel <td@chemie.hu-berlin.de>,
+        Hillf Danton <dhillf@gmail.com>
+Message-id: <301628B7-B058-4C01-9A65-F2A4AAF05EE6@me.com>
+References: <A4012A3B-7FF6-4ED8-8E00-51661D11CF4C@gmx.ch>
+To: linux-kernel@vger.kernel.org
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:55 Sat 21 Apr     , Roland Stigge wrote:
-> This patch adds device tree support for gpio-lpc32xx.c
-> 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> 
-> ---
-> 
->  Applies to v3.4-rc3
-> 
->  Changes since last version:
->  * Typo fix in documentation
->  * Changed "compatible" strings to non-wildcard versions
->  * Removed Arnd Bergmann's "Reviewed-by:" due to above change
->  
->  Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt |   66 ++++++++++++++++
->  arch/arm/mach-lpc32xx/include/mach/gpio.h               |    9 +-
->  drivers/gpio/gpio-lpc32xx.c                             |   55 ++++++++++++-
->  3 files changed, 127 insertions(+), 3 deletions(-)
-> 
-> --- /dev/null
-> +++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
-> @@ -0,0 +1,66 @@
-> +NXP LPC32xx SoC GPIO controller
-> +
-> +Required properties:
-> +- compatible: must be "nxp,lpc3220-gpio", "nxp,lpc3230-gpio", "nxp,lpc3240-gpio"
-> +  or "nxp,lpc3250-gpio"
-same comment as on the ADC you don't need to list all
+An update on this, it successfully passed our testing (more than 35 days of uptime/computation without problems), so we rebased, added tested-by it and submit it again.
 
-just put the first soc where this IP was used
-> +- reg: Physical base address and length of the controller's registers.
-> +- #address-cells: Always 1, for indexing of the subnodes (GPIO groups of the
-> +  SoC)
-> +- #size-cells: Always 0
-> +
-> +Required properties of sub-nodes which describe the GPIO groups of LPC32xx:
-> +- gpio-controller: Marks the device node as a GPIO controller.
-> +- #gpio-cells: Should be two. The first cell is the pin number and the
-> +  second cell is used to specify optional parameters:
-> +  - bit 0 specifies polarity (0 for normal, 1 for inverted)
-> +- reg: Index of the GPIO group
-> +
-> +Optional properties of sub-nodes which describe the GPIO groups of LPC32xx:
-> +- status: Set to "disabled" if you don't use the respective GPIO group
-> +  of the LPC32xx SoC
-> +
-> +Example:
-> +
-> +	gpio: gpio@40028000 {
-> +		compatible = "nxp,lpc3250-gpio";
-> +		reg = <0x40028000 0x1000>;
-> +		/* create a private address space for enumeration */
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		gpio_p0: gpio-bank@0 {
-> +			gpio-controller;
-> +			#gpio-cells = <2>;
-> +			reg = <0>;
-> +		};
-> +
-> +		gpio_p1: gpio-bank@1 {
-> +			gpio-controller;
-> +			#gpio-cells = <2>;
-> +			reg = <1>;
-> +		};
-> +
-> +		gpio_p2: gpio-bank@2 {
-> +			gpio-controller;
-> +			#gpio-cells = <2>;
-> +			reg = <2>;
-> +		};
-> +
-> +		gpio_p3: gpio-bank@3 {
-> +			gpio-controller;
-> +			#gpio-cells = <2>;
-> +			reg = <3>;
-> +		};
-> +
-> +		gpi_p3: gpio-bank@4 {
-> +			gpio-controller;
-> +			#gpio-cells = <2>;
-> +			reg = <4>;
-> +		};
-> +
-> +		gpo_p3: gpio-bank@5 {
-> +			gpio-controller;
-> +			#gpio-cells = <2>;
-> +			reg = <5>;
-> +		};
-> +	};
-> --- linux-2.6.orig/arch/arm/mach-lpc32xx/include/mach/gpio.h
-> +++ linux-2.6/arch/arm/mach-lpc32xx/include/mach/gpio.h
-> @@ -1 +1,8 @@
-> -/* empty */
-> +#ifndef __MACH_GPIO_H
-> +#define __MACH_GPIO_H
-> +
-> +#include "gpio-lpc32xx.h"
-> +
-> +#define ARCH_NR_GPIOS (LPC32XX_GPO_P3_GRP + LPC32XX_GPO_P3_MAX)
-> +
-> +#endif /* __MACH_GPIO_H */
-> --- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
-> +++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
-> @@ -21,6 +21,9 @@
->  #include <linux/io.h>
->  #include <linux/errno.h>
->  #include <linux/gpio.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/module.h>
->  
->  #include <mach/hardware.h>
->  #include <mach/platform.h>
-> @@ -454,10 +457,58 @@ static struct lpc32xx_gpio_chip lpc32xx_
->  	},
->  };
->  
-> +/* Empty now, can be removed later when mach-lpc32xx is finally switched over
-> + * to DT support
-> + */
->  void __init lpc32xx_gpio_init(void)
->  {
-> +}
-> +
-> +static int __devinit lpc32xx_gpio_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *node;
->  	int i;
->  
-> -	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
-> -		gpiochip_add(&lpc32xx_gpiochip[i].chip);
-> +	if (pdev->dev.of_node) {
-> +		for_each_child_of_node(pdev->dev.of_node, node) {
-> +			if (of_device_is_available(node)) {
-> +				u32 index;
-> +				struct gpio_chip *chip;
-> +				if (of_property_read_u32(node,
-> +							 "reg", &index) <  0)
-> +					continue;
-> +				if (index >= ARRAY_SIZE(lpc32xx_gpiochip))
-> +					continue;
-> +				chip = &lpc32xx_gpiochip[index].chip;
-> +				chip->of_node = of_node_get(node);
-> +				gpiochip_add(chip);
-split this in an toher function so it's more readble
+>From d0a7d56c283205806d122442448063d2c8812669 Mon Sep 17 00:00:00 2001
+From: Fawzi Mohamed <fawzi@gmx.ch>
+Date: Mon, 12 Mar 2012 23:10:57 +0100
+Subject: [PATCH] fix oops in updating thread cputime and task time
 
-Best Regards,
-J.
+use div64_u64 instead of do_div to divide cputime_t with each other
+because if cputime_t is u64 it does crash when overflowing u32.
+
+    KERNEL: ./vmlinux-2.6.32.54-0.3-default.gz
+ DEBUGINFO: .//vmlinux-2.6.32.54-0.3-default.debug
+  DUMPFILE: ./vmcore
+      CPUS: 24
+      DATE: Mon Mar  5 00:58:10 2012
+    UPTIME: 19 days, 11:01:56
+LOAD AVERAGE: 0.74, 0.42, 0.40
+     TASKS: 731
+  NODENAME: node65
+   RELEASE: 2.6.32.54-0.3-default
+   VERSION: #1 SMP 2012-01-27 17:38:56 +0100
+   MACHINE: x86_64  (3067 Mhz)
+    MEMORY: 96 GB
+     PANIC: ""
+       PID: 11234
+   COMMAND: "ricc2_smp"
+      TASK: ffff881813de2240  [THREAD_INFO: ffff8818153c2000]
+       CPU: 8
+     STATE: TASK_RUNNING (PANIC)
+
+crash> bt
+PID: 11234  TASK: ffff881813de2240  CPU: 8   COMMAND: "ricc2_smp"
+  RIP: 00007f5e4f418617  RSP: 00007f5e4dd3ebd0  RFLAGS: 00000202
+  RAX: 0000000000000062  RBX: ffffffff81002f7b  RCX: 0000000000000179
+  RDX: 00007f5e4dd3edb4  RSI: 00007f5e4dd3ec70  RDI: 0000000000000000
+  RBP: 00007f5e4dd3ecf0   R8: 0000000000000001   R9: 00007f5e4dd3edc4
+  R10: 0000000000000001  R11: 0000000000000246  R12: ffffffff8105eb81
+  R13: 00007f5e4dd3ed30  R14: 00007f5e4dd3f2f0  R15: 0000000000000000
+  ORIG_RAX: 0000000000000062  CS: 0033  SS: 002b
+
+Basically the same problem was found earlier in kernel vmlinux-2.6.32.12-0.7-default.gz.
+
+This patch was tested on 2.6.32 (as some kernel modules we need
+require it) and the computation ran for more than 35 days without
+any problems, before it would crash after 19 days of that ricc2 computation.
+
+Signed-off-by: Fawzi Mohamed <fawzi@gmx.ch>
+Signed-off-by: Thomas Dargel <td@no-spam.hu-berlin.de>
+Tested-by: Thomas Dargel <td@no-spam.hu-berlin.de>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched/core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4603b9d..03a2d89 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2966,7 +2966,7 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 		u64 temp = (__force u64) rtime;
+ 
+ 		temp *= (__force u64) utime;
+-		do_div(temp, (__force u32) total);
++		temp = div64_u64(temp, total);
+ 		utime = (__force cputime_t) temp;
+ 	} else
+ 		utime = rtime;
+@@ -2999,7 +2999,7 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 		u64 temp = (__force u64) rtime;
+ 
+ 		temp *= (__force u64) cputime.utime;
+-		do_div(temp, (__force u32) total);
++		temp = div64_u64(temp, total);
+ 		utime = (__force cputime_t) temp;
+ 	} else
+ 		utime = rtime;
+-- 
+1.7.0.4
+
