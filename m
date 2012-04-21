@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab2DUU6l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 16:58:41 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43869 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab2DUU6k (ORCPT
+	id S1752327Ab2DUVBA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 17:01:00 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22580 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab2DUVA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 16:58:40 -0400
-Date: Sat, 21 Apr 2012 16:58:37 -0400 (EDT)
-Message-Id: <20120421.165837.76978862714579140.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 21 Apr 2012 13:58:39 -0700 (PDT)
+	Sat, 21 Apr 2012 17:00:59 -0400
+Date: Sat, 21 Apr 2012 23:00:57 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: cluster-devel@redhat.com, Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH] GFS2: Fix mem leak in gfs2_get_acl()
+Message-ID: <alpine.LNX.2.00.1204212258130.25551@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If gfs2_xattr_acl_get() returns 0 - which, as far as I can tell, it
+may do independently of having allocated memory for its third argument
+('data' in this case) - then we may leak the memory allocated to data.
 
-Please pull to get this sparc32 LEON smp bootup bug fix.
+This patch initializes 'data' to NULL so that it will be safe to call
+kfree() on it even if we do not allocate anything and also makes sure
+that we kfree(data) in the 'len == 0' case.
 
-Thanks!
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ fs/gfs2/acl.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-The following changes since commit 8f4f9d4d3cb84686a75f6195b8f8705376763fc7:
+ Note: I have tested that this change compiles. It has seen no other 
+       testing than that.
 
-  Merge tag 'fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2012-04-21 12:45:52 -0700)
+diff --git a/fs/gfs2/acl.c b/fs/gfs2/acl.c
+index 230eb0f..d254d98 100644
+--- a/fs/gfs2/acl.c
++++ b/fs/gfs2/acl.c
+@@ -43,7 +43,7 @@ struct posix_acl *gfs2_get_acl(struct inode *inode, int type)
+ 	struct gfs2_inode *ip = GFS2_I(inode);
+ 	struct posix_acl *acl;
+ 	const char *name;
+-	char *data;
++	char *data = NULL;
+ 	int len;
+ 
+ 	if (!ip->i_eattr)
+@@ -60,8 +60,10 @@ struct posix_acl *gfs2_get_acl(struct inode *inode, int type)
+ 	len = gfs2_xattr_acl_get(ip, name, &data);
+ 	if (len < 0)
+ 		return ERR_PTR(len);
+-	if (len == 0)
++	if (len == 0) {
++		kfree(data);
+ 		return NULL;
++	}
+ 
+ 	acl = posix_acl_from_xattr(data, len);
+ 	kfree(data);
+-- 
+1.7.10
 
-are available in the git repository at:
 
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
-
-for you to fetch changes up to e9a5ea1852cd8d7e155d2e3a45e4a6ea25110f7d:
-
-  sparc32,leon: add notify_cpu_starting() (2012-04-21 16:35:06 -0400)
-
-----------------------------------------------------------------
-Yong Zhang (1):
-      sparc32,leon: add notify_cpu_starting()
-
- arch/sparc/kernel/leon_smp.c |    3 +++
- 1 file changed, 3 insertions(+)
