@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2DUWzT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 18:55:19 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:53429 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab2DUWzR (ORCPT
+	id S1752190Ab2DUXFz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 19:05:55 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:44425 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577Ab2DUXFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 18:55:17 -0400
-References: <1334267969.2573.14.camel@shrek.rexursive.com> <4F8C773C.2010902@debian.org> <6ab4e086-9f7b-4a3e-87ed-430e74333dcf@email.android.com> <201204182330.38156.rjw@sisk.pl>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <201204182330.38156.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for hibernate/thaw buffering
-From: Bojan Smojver <bojan@rexursive.com>
-Date: Sun, 22 Apr 2012 08:55:14 +1000
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Per Olofsson <pelle@debian.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Message-ID: <161dc918-dabe-4c26-a25b-772498282722@email.android.com>
+	Sat, 21 Apr 2012 19:05:54 -0400
+Date: Sat, 21 Apr 2012 19:03:35 -0400 (EDT)
+Message-Id: <20120421.190335.1197591560590885057.davem@davemloft.net>
+To: david.s.daney@gmail.com
+Cc: ddaney.cavm@gmail.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        devicetree-discuss@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        afleming@gmail.com, galak@kernel.crashing.org, david.daney@cavium.com
+Subject: Re: [PATCH v5 2/3] netdev/of/phy: Add MDIO bus multiplexer support.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F9325DF.7020003@gmail.com>
+References: <1334791254-15987-3-git-send-email-ddaney.cavm@gmail.com>
+	<20120421.153201.2103447307695063734.davem@davemloft.net>
+	<4F9325DF.7020003@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 21 Apr 2012 16:03:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+From: David Daney <david.s.daney@gmail.com>
+Date: Sat, 21 Apr 2012 14:25:51 -0700
 
->On Wednesday, April 18, 2012, Bojan Smojver wrote:
->> Per Olofsson <pelle@debian.org> wrote:
->> 
->> >OK, let's say Reviewed-by then.
->> >
->> >Reviewed-by: Per Olofsson <pelle@debian.org>
->> >
->> 
->> Rafael,
->> 
->> Anything you still need here?
->
->No, thanks, I'm going to apply the patch.
->
->Rafael
+> If we were to specify the dependencies in both places, we gain nothing
+> other than duplication of information.
 
-Any chance of it in 3.3.3? Looks like rc1 of it is already out there...
-
--- 
-Bojan
+Each Kconfig option enabling a module has to have appropriate
+dependencies.
