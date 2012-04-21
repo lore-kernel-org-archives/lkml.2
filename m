@@ -1,318 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab2DUBRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 21:17:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35297 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab2DUBRp (ORCPT
+	id S1754619Ab2DUBWz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 21:22:55 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:56952 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753007Ab2DUBWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 21:17:45 -0400
-Date: Fri, 20 Apr 2012 18:17:22 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Message-ID: <tip-706276543b699d80f546e45f8b12574e7b18d952@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        david.daney@cavium.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        david.daney@cavium.com, tglx@linutronix.de
-In-Reply-To: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
-References: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/extable] x86, extable:
-  Switch to relative exception table entries
-Git-Commit-ID: 706276543b699d80f546e45f8b12574e7b18d952
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 20 Apr 2012 21:22:53 -0400
+From: Omar Ramirez Luna <omar.ramirez@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Victor Manuel Jaquez Leal <vjaquez@igalia.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: tidspbridge: remove usage of OMAP2_L4_IO_ADDRESS
+Date: Fri, 20 Apr 2012 20:22:41 -0500
+Message-Id: <1334971361-29758-1-git-send-email-omar.ramirez@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 20 Apr 2012 18:17:32 -0700 (PDT)
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  706276543b699d80f546e45f8b12574e7b18d952
-Gitweb:     http://git.kernel.org/tip/706276543b699d80f546e45f8b12574e7b18d952
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Fri, 20 Apr 2012 17:12:48 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 20 Apr 2012 17:22:34 -0700
+Instead now use ioremap. This is needed for 3.4 since this change
+emerged in mainline during one of the previous rc cycles.
 
-x86, extable: Switch to relative exception table entries
+These solves the following compilation breaks:
 
-Switch to using relative exception table entries on x86.  On i386,
-this has the advantage that the exception table entries don't need to
-be relocated; on x86-64 this means the exception table entries take up
-only half the space.
+drivers/staging/tidspbridge/core/tiomap3430.c:
+    In function ‘bridge_brd_start’:
+drivers/staging/tidspbridge/core/tiomap3430.c:425:4:
+    error: implicit declaration of function ‘OMAP2_L4_IO_ADDRESS’
 
-In either case, a 32-bit delta is sufficient, as the range of kernel
-code addresses is limited.
+drivers/staging/tidspbridge/core/wdt.c: In function ‘dsp_wdt_init’:
+drivers/staging/tidspbridge/core/wdt.c:56:2:
+    error: implicit declaration of function ‘OMAP2_L4_IO_ADDRESS’
 
-Since part of the goal is to avoid needing to adjust the entries when
-the kernel is relocated, the old trick of using addresses in the NULL
-pointer range to indicate uaccess_err no longer works (and unlike RISC
-architectures we can't use a flag bit); instead use an delta just
-below +2G to indicate these special entries.  The reach is still
-limited to a single instruction.
+For control registers a new function needs to be defined so we
+can get rid of a layer violation, but that approach must be queued
+for the next merge window.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: David Daney <david.daney@cavium.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com
+As seen in:
+http://www.arm.linux.org.uk/developer/build/
+platform: omap4430-sdp		build: uImage
+config: randconfig			version: 3.4.0-rc3
+start time: Apr 20 2012 01:07
+
+Reported-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
 ---
- arch/x86/include/asm/asm.h     |   20 ++++---
- arch/x86/include/asm/uaccess.h |   17 ++++--
- arch/x86/mm/extable.c          |  131 +++++++++++++++++++++++++++++++++++++---
- 3 files changed, 146 insertions(+), 22 deletions(-)
+ drivers/staging/tidspbridge/core/tiomap3430.c |   20 ++++++++++++--------
+ drivers/staging/tidspbridge/core/wdt.c        |    8 +++++++-
+ 2 files changed, 19 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/include/asm/asm.h b/arch/x86/include/asm/asm.h
-index 0f15e8a..1c2d247 100644
---- a/arch/x86/include/asm/asm.h
-+++ b/arch/x86/include/asm/asm.h
-@@ -42,26 +42,30 @@
- #ifdef __ASSEMBLY__
- # define _ASM_EXTABLE(from,to)					\
- 	.pushsection "__ex_table","a" ;				\
--	_ASM_ALIGN ;						\
--	_ASM_PTR from , to ;					\
-+	.balign 8 ;						\
-+	.long (from) - . ;					\
-+	.long (to) - . ;					\
- 	.popsection
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index 7862513..9cf29fc 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -79,10 +79,6 @@
+ #define OMAP343X_CONTROL_IVA2_BOOTADDR (OMAP2_CONTROL_GENERAL + 0x0190)
+ #define OMAP343X_CONTROL_IVA2_BOOTMOD (OMAP2_CONTROL_GENERAL + 0x0194)
  
- # define _ASM_EXTABLE_EX(from,to)				\
- 	.pushsection "__ex_table","a" ;				\
--	_ASM_ALIGN ;						\
--	_ASM_PTR from , (to) - (from) ;				\
-+	.balign 8 ;						\
-+	.long (from) - . ;					\
-+	.long (to) - . + 0x7ffffff0 ;				\
- 	.popsection
- #else
- # define _ASM_EXTABLE(from,to)					\
- 	" .pushsection \"__ex_table\",\"a\"\n"			\
--	_ASM_ALIGN "\n" 					\
--	_ASM_PTR #from "," #to "\n" 				\
-+	" .balign 8\n"						\
-+	" .long (" #from ") - .\n"				\
-+	" .long (" #to ") - .\n"				\
- 	" .popsection\n"
+-#define OMAP343X_CTRL_REGADDR(reg) \
+-	OMAP2_L4_IO_ADDRESS(OMAP343X_CTRL_BASE + (reg))
+-
+-
+ /* Forward Declarations: */
+ static int bridge_brd_monitor(struct bridge_dev_context *dev_ctxt);
+ static int bridge_brd_read(struct bridge_dev_context *dev_ctxt,
+@@ -418,19 +414,27 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
  
- # define _ASM_EXTABLE_EX(from,to)				\
- 	" .pushsection \"__ex_table\",\"a\"\n"			\
--	_ASM_ALIGN "\n" 					\
--	_ASM_PTR #from ",(" #to ")-(" #from ")\n" 		\
-+	" .balign 8\n"						\
-+	" .long (" #from ") - .\n"				\
-+	" .long (" #to ") - . + 0x7ffffff0\n"			\
- 	" .popsection\n"
- #endif
- 
-diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-index 4ee59dd..851fe0d 100644
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -79,11 +79,12 @@
- #define access_ok(type, addr, size) (likely(__range_not_ok(addr, size) == 0))
- 
- /*
-- * The exception table consists of pairs of addresses: the first is the
-- * address of an instruction that is allowed to fault, and the second is
-- * the address at which the program should continue.  No registers are
-- * modified, so it is entirely up to the continuation code to figure out
-- * what to do.
-+ * The exception table consists of pairs of addresses relative to the
-+ * exception table enty itself: the first is the address of an
-+ * instruction that is allowed to fault, and the second is the address
-+ * at which the program should continue.  No registers are modified,
-+ * so it is entirely up to the continuation code to figure out what to
-+ * do.
-  *
-  * All the routines below use bits of fixup code that are out of line
-  * with the main instruction path.  This means when everything is well,
-@@ -92,10 +93,14 @@
-  */
- 
- struct exception_table_entry {
--	unsigned long insn, fixup;
-+	int insn, fixup;
- };
-+/* This is not the generic standard exception_table_entry format */
-+#define ARCH_HAS_SORT_EXTABLE
-+#define ARCH_HAS_SEARCH_EXTABLE
- 
- extern int fixup_exception(struct pt_regs *regs);
-+extern int early_fixup_exception(unsigned long *ip);
- 
- /*
-  * These are the main single-value transfer routines.  They automatically
-diff --git a/arch/x86/mm/extable.c b/arch/x86/mm/extable.c
-index 5555675..903ec1e 100644
---- a/arch/x86/mm/extable.c
-+++ b/arch/x86/mm/extable.c
-@@ -1,11 +1,23 @@
- #include <linux/module.h>
- #include <linux/spinlock.h>
-+#include <linux/sort.h>
- #include <asm/uaccess.h>
- 
-+static inline unsigned long
-+ex_insn_addr(const struct exception_table_entry *x)
-+{
-+	return (unsigned long)&x->insn + x->insn;
-+}
-+static inline unsigned long
-+ex_fixup_addr(const struct exception_table_entry *x)
-+{
-+	return (unsigned long)&x->fixup + x->fixup;
-+}
- 
- int fixup_exception(struct pt_regs *regs)
- {
- 	const struct exception_table_entry *fixup;
-+	unsigned long new_ip;
- 
- #ifdef CONFIG_PNPBIOS
- 	if (unlikely(SEGMENT_IS_PNP_CODE(regs->cs))) {
-@@ -23,13 +35,14 @@ int fixup_exception(struct pt_regs *regs)
- 
- 	fixup = search_exception_tables(regs->ip);
- 	if (fixup) {
--		/* If fixup is less than 16, it means uaccess error */
--		if (fixup->fixup < 16) {
-+		new_ip = ex_fixup_addr(fixup);
+ 		/* Assert RST1 i.e only the RST only for DSP megacell */
+ 		if (!status) {
++			/*
++			 * XXX: ioremapping  MUST be removed once ctrl
++			 * function is made available.
++			 */
++			void __iomem *ctrl = ioremap(OMAP343X_CTRL_BASE, SZ_4K);
++			if (!ctrl)
++				return -ENOMEM;
 +
-+		if (fixup->fixup - fixup->insn >= 0x7ffffff0 - 4) {
-+			/* Special hack for uaccess_err */
- 			current_thread_info()->uaccess_err = 1;
--			regs->ip += fixup->fixup;
--			return 1;
-+			new_ip -= 0x7ffffff0;
+ 			(*pdata->dsp_prm_rmw_bits)(OMAP3430_RST1_IVA2_MASK,
+ 					OMAP3430_RST1_IVA2_MASK, OMAP3430_IVA2_MOD,
+ 					OMAP2_RM_RSTCTRL);
+ 			/* Mask address with 1K for compatibility */
+ 			__raw_writel(dsp_addr & OMAP3_IVA2_BOOTADDR_MASK,
+-					OMAP343X_CTRL_REGADDR(
+-					OMAP343X_CONTROL_IVA2_BOOTADDR));
++					ctrl + OMAP343X_CONTROL_IVA2_BOOTADDR);
+ 			/*
+ 			 * Set bootmode to self loop if dsp_debug flag is true
+ 			 */
+ 			__raw_writel((dsp_debug) ? OMAP3_IVA2_BOOTMOD_IDLE : 0,
+-					OMAP343X_CTRL_REGADDR(
+-					OMAP343X_CONTROL_IVA2_BOOTMOD));
++					ctrl + OMAP343X_CONTROL_IVA2_BOOTMOD);
++
++			iounmap(ctrl);
  		}
--		regs->ip = fixup->fixup;
-+		regs->ip = new_ip;
- 		return 1;
  	}
+ 	if (!status) {
+diff --git a/drivers/staging/tidspbridge/core/wdt.c b/drivers/staging/tidspbridge/core/wdt.c
+index 70055c8..870f934 100644
+--- a/drivers/staging/tidspbridge/core/wdt.c
++++ b/drivers/staging/tidspbridge/core/wdt.c
+@@ -53,7 +53,10 @@ int dsp_wdt_init(void)
+ 	int ret = 0;
  
-@@ -40,15 +53,117 @@ int fixup_exception(struct pt_regs *regs)
- int __init early_fixup_exception(unsigned long *ip)
- {
- 	const struct exception_table_entry *fixup;
-+	unsigned long new_ip;
- 
- 	fixup = search_exception_tables(*ip);
- 	if (fixup) {
--		if (fixup->fixup < 16)
--			return 0; /* Not supported during early boot */
-+		new_ip = ex_fixup_addr(fixup);
+ 	dsp_wdt.sm_wdt = NULL;
+-	dsp_wdt.reg_base = OMAP2_L4_IO_ADDRESS(OMAP34XX_WDT3_BASE);
++	dsp_wdt.reg_base = ioremap(OMAP34XX_WDT3_BASE, SZ_4K);
++	if (!dsp_wdt.reg_base)
++		return -ENOMEM;
 +
-+		if (fixup->fixup - fixup->insn >= 0x7ffffff0 - 4) {
-+			/* uaccess handling not supported during early boot */
-+			return 0;
-+		}
+ 	tasklet_init(&dsp_wdt.wdt3_tasklet, dsp_wdt_dpc, 0);
  
--		*ip = fixup->fixup;
-+		*ip = new_ip;
- 		return 1;
- 	}
- 
- 	return 0;
+ 	dsp_wdt.fclk = clk_get(NULL, "wdt3_fck");
+@@ -99,6 +102,9 @@ void dsp_wdt_exit(void)
+ 	dsp_wdt.fclk = NULL;
+ 	dsp_wdt.iclk = NULL;
+ 	dsp_wdt.sm_wdt = NULL;
++
++	if (dsp_wdt.reg_base)
++		iounmap(dsp_wdt.reg_base);
+ 	dsp_wdt.reg_base = NULL;
  }
-+
-+/*
-+ * Search one exception table for an entry corresponding to the
-+ * given instruction address, and return the address of the entry,
-+ * or NULL if none is found.
-+ * We use a binary search, and thus we assume that the table is
-+ * already sorted.
-+ */
-+const struct exception_table_entry *
-+search_extable(const struct exception_table_entry *first,
-+	       const struct exception_table_entry *last,
-+	       unsigned long value)
-+{
-+	while (first <= last) {
-+		const struct exception_table_entry *mid;
-+		unsigned long addr;
-+
-+		mid = ((last - first) >> 1) + first;
-+		addr = ex_insn_addr(mid);
-+		if (addr < value)
-+			first = mid + 1;
-+		else if (addr > value)
-+			last = mid - 1;
-+		else
-+			return mid;
-+        }
-+        return NULL;
-+}
-+
-+/*
-+ * The exception table needs to be sorted so that the binary
-+ * search that we use to find entries in it works properly.
-+ * This is used both for the kernel exception table and for
-+ * the exception tables of modules that get loaded.
-+ *
-+ */
-+static int cmp_ex(const void *a, const void *b)
-+{
-+	const struct exception_table_entry *x = a, *y = b;
-+
-+	/*
-+	 * This value will always end up fittin in an int, because on
-+	 * both i386 and x86-64 the kernel symbol-reachable address
-+	 * space is < 2 GiB.
-+	 *
-+	 * This compare is only valid after normalization.
-+	 */
-+	return x->insn - y->insn;
-+}
-+
-+void sort_extable(struct exception_table_entry *start,
-+		  struct exception_table_entry *finish)
-+{
-+	struct exception_table_entry *p;
-+	int i;
-+
-+	/* Convert all entries to being relative to the start of the section */
-+	i = 0;
-+	for (p = start; p < finish; p++) {
-+		p->insn += i;
-+		i += 4;
-+		p->fixup += i;
-+		i += 4;
-+	}
-+
-+	sort(start, finish - start, sizeof(struct exception_table_entry),
-+	     cmp_ex, NULL);
-+
-+	/* Denormalize all entries */
-+	i = 0;
-+	for (p = start; p < finish; p++) {
-+		p->insn -= i;
-+		i += 4;
-+		p->fixup -= i;
-+		i += 4;
-+	}
-+}
-+
-+#ifdef CONFIG_MODULES
-+/*
-+ * If the exception table is sorted, any referring to the module init
-+ * will be at the beginning or the end.
-+ */
-+void trim_init_extable(struct module *m)
-+{
-+	/*trim the beginning*/
-+	while (m->num_exentries &&
-+	       within_module_init(ex_insn_addr(&m->extable[0]), m)) {
-+		m->extable++;
-+		m->num_exentries--;
-+	}
-+	/*trim the end*/
-+	while (m->num_exentries &&
-+	       within_module_init(ex_insn_addr(&m->extable[m->num_exentries-1]), m))
-+		m->num_exentries--;
-+}
-+#endif /* CONFIG_MODULES */
+ 
+-- 
+1.7.4.1
+
