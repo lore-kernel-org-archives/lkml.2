@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab2DUMEo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 08:04:44 -0400
-Received: from fallback2.mail.ru ([94.100.176.87]:60837 "EHLO
-	fallback2.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab2DUMEn (ORCPT
+	id S1753549Ab2DUMLm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 08:11:42 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64366 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782Ab2DUMLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 08:04:43 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        =?UTF-8?B?UnVzc2VsbCBLaW5n?= <linux@arm.linux.org.uk>,
+	Sat, 21 Apr 2012 08:11:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 02/17] ARM clps711x: Added Cirrus Logic EP7312 CPU variant
+Date: Sat, 21 Apr 2012 12:11:35 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Alexander Shiyan <shc_work@mail.ru>,
         linux-kernel@vger.kernel.org
-Subject: =?UTF-8?B?UmVbMl06IGNscHM3MTF4IHBhdGNoc2V0?=
-Mime-Version: 1.0
-X-Mailer: mPOP Web-Mail 2.19
-X-Originating-IP: [188.134.41.72]
-Date: Sat, 21 Apr 2012 16:04:02 +0400
-References: <1334999490-27177-1-git-send-email-shc_work@mail.ru> <201204211140.21564.arnd@arndb.de>
-In-Reply-To: <201204211140.21564.arnd@arndb.de>
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 
-Content-Type: text/plain; charset=utf-8
-Message-Id: <E1SLZ2o-0002iH-SH.shc_work-mail-ru@f105.mail.ru>
-X-Spam: Not detected
-X-Mras: Ok
+References: <1334999490-27177-1-git-send-email-shc_work@mail.ru> <201204211121.49610.arnd@arndb.de> <20120421114803.GE24211@n2100.arm.linux.org.uk>
+In-Reply-To: <20120421114803.GE24211@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204211211.36273.arnd@arndb.de>
+X-Provags-ID: V02:K0:digMACvGzvcaPj/ZyPcEiLIVw8cLAXBFQCYG38AmqYq
+ XByEJ+2XR76cze9dcbc2HlRfQF5s/y/8Gb9js1JucdBOcNHNaS
+ 3Hv8B9bBUjeG+KzlIR8kVdpsVOH/EWKpaf9OWp0S+ywlPk98FP
+ nSqGXV4wcVVh26mdItigFrdNc7vrQ0P/Zqc3ytrVKse4SXyJ8+
+ z5wX40hKZAiP/NkL6K+Znhfb5K/2WX6r8ezkROlbgSfqYrl6Ws
+ vyCfWVz/+J5s2LmTjy8a5ZioemhG9BV+cYm0Wx0yZ8DL+KGpFM
+ SmDBApFN9BEdXWhFaPsppeXc0bqDAmOSpzTk/12xUhwOLs0Qtv
+ gnAHCvnVI7jYwUkuZu6M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3LC4phB010273
 
-Sat, 21 Apr 2012 11:40:21 +0000 Ğ¾Ñ‚ Arnd Bergmann <arnd@arndb.de>:
-> On Saturday 21 April 2012, Alexander Shiyan wrote:
-> > Hello.
-> > This is patchset contains some cleanups and tricks for CLPS711X ARM target.
-> > Please review and apply it to kernel tree. Comments are welcome :)
-...
-> This looks very nice overall, it's certainly good that you can manage to add
-> support for a new soc with a net removal of lines.
+On Saturday 21 April 2012, Russell King - ARM Linux wrote:
+> That's where we used to put truely hardware dependent stuff, rather than
+> machine type stuff when the structure was first implemented.  At that time
+> we had a number of different mach-* directories wanting to share things
+> like the acorn IOC/IOMD stuff, and there's also sharing of definitions
+> between CLPS711x and EP93xx.
 > 
-> Note that with the current work split, it will be Olof and me who apply
-> these patches in the end, not Russell, although he will probably have
-> to something to say about the patches, too, since he has done almost all the
-> changes to this platform in its more active times.
-> 
-> From my reading of the git history, very little has happened in clps711x
-> since about 2005, and we've never had a subarch maintainer for it. Are you
-> interested in becoming the maintainer for it, or is this more a one-time
-> effort on your side? I don't expect this to be much work for you, but it
-> would be nice to have some person that can review the occasional patch
-> touching multiple platforms.
-> 
-> Do you have any plans to add more stuff to the platform, like additional
-> SoCs or more board files? Do you see value in having it included in
-> a single kernel image that runs on various different ARMv4/ARMv5 based
-> Socs? I assume that the answer to all of these is 'no', but you plan
-> to do them, we should talk about how to make that happen.
+> That was long before we invented the plat-* stuff - but even that doesn't
+> actually cover what asm/hardware does - eg, the SA1111 stuff shared
+> between SA11x0 and PXA.
 
-The new processors in this series as far as I know there is not and no more will be.
-Existing processors are still produced and used. We use this processor is 4-5 years
-old and still expect to use in the future.
+Ah, thanks for the explanation.
 
-I can look at the new code is correct, but check it can only work on our custom board.
+Since the clps7111 based asm/hardware/*.h files are not shared with ep93xx,
+I guess it makes sense to move them to mach-clps711x/include/mach/*.h as part of
+this cleanup series, right?
 
-Of the new things I would like to add the ability to use gpiolib with this type of processor.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I found these clps711x specific files:
+
+ asm/hardware/clps7111.h
+ asm/hardware/cs89712.h
+ asm/hardware/ep7211.h
+ asm/hardware/ep7212.h
+
+Out of these, only the first one is used in two places outside of
+arch/arm/mach-clps711x, the serial and the fb driver, which could
+be changed to use mach/hardware.h instead.
+
+	Arnd
