@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab2DUGzO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 02:55:14 -0400
-Received: from szxga01-in.huawei.com ([58.251.152.64]:51765 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab2DUGzM (ORCPT
+	id S1753693Ab2DUGzz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 02:55:55 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:60537 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022Ab2DUGzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 02:55:12 -0400
-Date: Sat, 21 Apr 2012 14:54:58 +0800
-From: Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch] cgroups: disallow attaching kthreadd
-In-reply-to: <1334986264.5428.1.camel@marge.simpson.net>
-X-Originating-IP: [10.166.88.147]
-To: Mike Galbraith <mgalbraith@suse.de>
-Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Li Zefan <lizf@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
-        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Message-id: <4F9259C2.9040305@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
- Thunderbird/11.0
-X-CFilter-Loop: Reflected
-References: <1333475906.7439.7.camel@marge.simpson.net>
- <20120420175751.GF32324@google.com> <1334986264.5428.1.camel@marge.simpson.net>
+	Sat, 21 Apr 2012 02:55:54 -0400
+Message-ID: <4F9259F5.2060806@gmail.com>
+Date: Sat, 21 Apr 2012 14:55:49 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 4/9] KVM: MMU: introduce SPTE_ALLOW_WRITE bit
+References: <4F911B74.4040305@linux.vnet.ibm.com> <4F911BE7.30206@linux.vnet.ibm.com> <20120420213925.GB13817@amt.cnet> <4F9229EF.4010506@gmail.com> <20120421042208.GB2763@amt.cnet>
+In-Reply-To: <20120421042208.GB2763@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Galbraith wrote:
+On 04/21/2012 12:22 PM, Marcelo Tosatti wrote:
 
-> On Fri, 2012-04-20 at 10:57 -0700, Tejun Heo wrote: 
->> Hello, Mike.
+> On Sat, Apr 21, 2012 at 11:30:55AM +0800, Xiao Guangrong wrote:
+>> On 04/21/2012 05:39 AM, Marcelo Tosatti wrote:
 >>
->> This is dragging out too long but can you please update the patch so
->> that both kthreadd and PF_THREAD_BOUND tasks are disallowed from !root
->> cgroups?
-> 
-> cgroups: disallow attaching kthreadd or PF_THREAD_BOUND threads
-> 
-> Allowing kthreadd to be moved to a non-root group makes no sense, it being
-> a global resource, and needlessly leads unsuspecting users toward trouble.
-> 
-> 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
-> allocated is not schedulable.  Simple user error, but harmful to the box.
-> 
-> 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
-> rendering the cpuset immortal.
-> 
-> Save the user some unexpected trouble, just say no.
-> 
-> Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
-
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Acked-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  kernel/cgroup.c |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -60,6 +60,7 @@
->  #include <linux/eventfd.h>
->  #include <linux/poll.h>
->  #include <linux/flex_array.h> /* used in cgroup_attach_proc */
-> +#include <linux/kthread.h>
+>>
+>>>> @@ -1177,9 +1178,8 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
+>>>>  			new_spte = *sptep & ~PT64_BASE_ADDR_MASK;
+>>>>  			new_spte |= (u64)new_pfn << PAGE_SHIFT;
+>>>>
+>>>> -			new_spte &= ~PT_WRITABLE_MASK;
+>>>> -			new_spte &= ~SPTE_HOST_WRITEABLE;
+>>>> -			new_spte &= ~shadow_accessed_mask;
+>>>> +			new_spte &= ~(PT_WRITABLE_MASK | SPTE_HOST_WRITEABLE |
+>>>> +				      shadow_accessed_mask | SPTE_ALLOW_WRITE);
+>>>
+>>> Each bit should have a distinct meaning. Here the host pte is being
+>>> write-protected, which means only the SPTE_HOST_WRITEABLE bit
+>>> should be cleared.
+>>
+>>
+>> Hmm, it is no problem if SPTE_ALLOW_WRITE is not cleared.
+>>
+>> But the meaning of SPTE_ALLOW_WRITE will become strange: we will see a
+>> spte with spte.SPTE_ALLOW_WRITE = 1 (means the spte is writable on host
+>> and guest) and spte.SPTE_HOST_WRITEABLE = 0 (means the spte is read-only
+>> on host).
 >  
->  #include <linux/atomic.h>
->  
-> @@ -2172,6 +2173,17 @@ static int attach_task_by_pid(struct cgr
->  
->  	if (threadgroup)
->  		tsk = tsk->group_leader;
-> +
-> +	/*
-> +	 * Workqueue threads may acquire PF_THREAD_BOUND and become
-> +	 * trapped in a cpuset, or RT worker may be born in a cgroup
-> +	 * with no rt_runtime allocated.  Just say no.
-> +	 */
-> +	if (tsk == kthreadd_task || (tsk->flags & PF_THREAD_BOUND)) {
-> +		ret = -EINVAL;
-> +		goto out_unlock_cgroup;
+> You are combining gpte writable bit, and host pte writable bit (which
+> are separate and independent of each other) into one bit. 
+> 
+> SPTE_HOST_WRITEABLE already indicates whether the host pte is writable 
+> or not.
 
 
-forgot rcu_read_unlock() ?
-
-Otherwise Acked-by: Li Zefan <lizefan@huawei.com>
-
-> +	}
-> +
->  	get_task_struct(tsk);
->  	rcu_read_unlock();
+Okay, i will split the meaning in next version! Thank you, Marcelo!
 
