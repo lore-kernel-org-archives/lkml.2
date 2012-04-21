@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab2DUAER (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 20:04:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56410 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab2DUAEQ convert rfc822-to-8bit (ORCPT
+	id S1751791Ab2DUAFu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 20:05:50 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:48314 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab2DUAFt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 20:04:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F91F639.6000107@fold.natur.cuni.cz>
-References: <4F6A483D.50702@fold.natur.cuni.cz>
-	<CAE9FiQWSw1h772ijZ6YL4EujwjgvZ84bbDx9VbF_cdE63D-41w@mail.gmail.com>
-	<4F8D390F.9050408@fold.natur.cuni.cz>
-	<CAE9FiQU-_BCCS1OKagVuj8YNrut8-6GH2_i86FsfS8UDWQ1pRA@mail.gmail.com>
-	<CAE9FiQUxoHvUWFXv5LLcBT9vVGnQKp1-Tg7M3XPPULWwtX1iUw@mail.gmail.com>
-	<4F8EFFA3.3050705@fold.natur.cuni.cz>
-	<CAE9FiQVcJbPub1O6nwyNsiijHFpHN0jMsGO4MmKugybPL7Wnug@mail.gmail.com>
-	<4F8F243B.70906@fold.natur.cuni.cz>
-	<CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com>
-	<4F909CEB.3060407@fold.natur.cuni.cz>
-	<CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
-	<CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com>
-	<4F91473A.1080007@fold.natur.cuni.cz>
-	<CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com>
-	<4F919C22.1070608@fold.natur.cuni.cz>
-	<4F919CD5.7070004@fold.natur.cuni.cz>
-	<CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com>
-	<4F91F639.6000107@fold.natur.cuni.cz>
-Date: Fri, 20 Apr 2012 17:04:15 -0700
-X-Google-Sender-Auth: n8OLxcU4YmwLzsSErgAnR0Czfp8
-Message-ID: <CAE9FiQUFcOV5Vgc_yeU5KSsSPccdmTjyGjGjSOYwrLt-kETGKQ@mail.gmail.com>
-Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
-From: Yinghai Lu <yinghai@kernel.org>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 Apr 2012 20:05:49 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-127.messagelabs.com!1334966747!3635711!1
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 20 Apr 2012 19:05:46 -0500
+Subject: RE: [RFC PATCH 0/2] init: make sure syscall arguments are marked
+ __user where needed
+Thread-Topic: [RFC PATCH 0/2] init: make sure syscall arguments are marked
+ __user where needed
+Thread-Index: Ac0fSWp/xWPd8yhXRxutowORuLplpgABNSDg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F002069887E112@AUSP01VMBX24.collaborationhost.net>
+References: <201204161733.23830.hartleys@visionengravers.com>
+ <20120420160039.74c49a0c.akpm@linux-foundation.org>
+In-Reply-To: <20120420160039.74c49a0c.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 4:50 PM, Martin Mokrejs
-<mmokrejs@fold.natur.cuni.cz> wrote:
+In Friday, April 20, 2012 4:01 PM, Andrew Morton wrote:
+> On Mon, 16 Apr 2012 17:33:23 -0700 H Hartley Sweeten wrote:
 >
+>> When using syscall routines in the kernel, some of the arguments
+>> should be user pointers but are missing the __user markup. This
+>> produces a number of sparse warnings of the format:    
+>>   
+>> warning: incorrect type in argument 1 (different address spaces)
+>>    expected char [noderef] <asn:1>*dev_name
+>>    got char *name 
+>> 
+>> Wrap the syscall routines in the private do_mounts.h header so that
+>> the appropriate __user markups are added for the init mount code.
 >
-> Yinghai Lu wrote:
->> On Fri, Apr 20, 2012 at 10:28 AM, Martin Mokrejs
->> <mmokrejs@fold.natur.cuni.cz> wrote:
->>>
->
-> inserting
->
-> Apr 21 01:38:03 vostro kernel: [  166.843165] pci 0000:11:00.0: BAR 0: assigned [mem 0xf6c00000-0xf6c01fff 64bit]
-> Apr 21 01:38:03 vostro kernel: [  166.843272] xhci_hcd 0000:11:00.0: enabling device (0100 -> 0102)
-> Apr 21 01:38:03 vostro kernel: [  166.843329] xhci_hcd 0000:11:00.0: xHCI Host Controller
-> Apr 21 01:38:03 vostro kernel: [  166.843335] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 5
-> Apr 21 01:38:03 vostro kernel: [  166.843637] xhci_hcd 0000:11:00.0: irq 19, io mem 0xf6c00000
-> Apr 21 01:38:03 vostro kernel: [  166.843923] usb usb5: New USB device found, idVendor=1d6b, idProduct=0002
-> Apr 21 01:38:03 vostro kernel: [  166.843925] usb usb5: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-> Apr 21 01:38:03 vostro kernel: [  166.843926] usb usb5: Product: xHCI Host Controller
-> Apr 21 01:38:03 vostro kernel: [  166.843927] usb usb5: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
-> Apr 21 01:38:03 vostro kernel: [  166.843928] usb usb5: SerialNumber: 0000:11:00.0
-> Apr 21 01:38:03 vostro kernel: [  166.844076] hub 5-0:1.0: USB hub found
-> Apr 21 01:38:03 vostro kernel: [  166.844088] hub 5-0:1.0: 2 ports detected
-> Apr 21 01:38:03 vostro kernel: [  166.844162] xhci_hcd 0000:11:00.0: xHCI Host Controller
-> Apr 21 01:38:03 vostro kernel: [  166.844164] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 6
-> Apr 21 01:38:03 vostro kernel: [  166.846869] usb usb6: New USB device found, idVendor=1d6b, idProduct=0003
-> Apr 21 01:38:03 vostro kernel: [  166.846872] usb usb6: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-> Apr 21 01:38:03 vostro kernel: [  166.846874] usb usb6: Product: xHCI Host Controller
-> Apr 21 01:38:03 vostro kernel: [  166.846876] usb usb6: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
-> Apr 21 01:38:03 vostro kernel: [  166.846878] usb usb6: SerialNumber: 0000:11:00.0
-> Apr 21 01:38:03 vostro kernel: [  166.847205] hub 6-0:1.0: USB hub found
-> Apr 21 01:38:03 vostro kernel: [  166.847224] hub 6-0:1.0: 2 ports detected
->
-> removed
->
-> re-inserting
->
+> This makes rather a mess of do_mounts.c for pretty marginal benefit.
 
-so pcie_aspm=off not help.
+Well... That's why it was a RFC... ;-)
 
-Yinghai
+> Can we just make "make C=1" skip that file or something?
+
+What about putting something like this at the top of the files:
+
+
+/*
+ * Many of the syscalls used in this file expect some of the arguments
+ * to be __user pointers not __kernel pointers.  To limit the sparse
+ * noise, turn off sparse checking for this file.
+ */
+#ifdef __CHECKER__
+#undef __CHECKER__
+#warning "Sparse checking disabled for this file"
+#endif
+
+
+Maybe without the warning if it doesn't seem necessary.
+
+This keeps <linux/compiler.h> from defining the __attribute__* checks.
+
+Regards,
+Hartley
+
