@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab2DUFuj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 01:50:39 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57493 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751425Ab2DUFty (ORCPT
+	id S1752799Ab2DUF5f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 01:57:35 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:59036 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab2DUF5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 01:49:54 -0400
-Subject: [PATCH] fs: fix integer overflow in MS_NOUSER definition
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Date: Sat, 21 Apr 2012 09:49:49 +0400
-Message-ID: <20120421054949.32549.2823.stgit@zurg>
-User-Agent: StGit/0.15
+	Sat, 21 Apr 2012 01:57:33 -0400
+Date: Sat, 21 Apr 2012 13:56:59 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <greg@kroah.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org
+Subject: Re: [RFC]Is usb port number fixed?
+Message-ID: <20120421055658.GA5277@udknight>
+Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
+	Alan Stern <stern@rowland.harvard.edu>, Greg KH <greg@kroah.com>,
+	lkml <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+References: <20120420153727.GA29331@kroah.com>
+ <Pine.LNX.4.44L0.1204202028250.19313-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1204202028250.19313-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MS_NOUSER defined as signed int (1<<31), sb->s_flags declared as unsigned long.
-So (sb->s_flags & MS_NOUSER) works as (sb->s_flags & 0xffffffff80000000).
-
-Other potential bugs: git grep -w -e '1\s*<<\s*31'
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
----
- include/linux/fs.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 6b71bd6..903bf00 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -217,7 +217,7 @@ struct inodes_stat_t {
- #define MS_NOSEC	(1<<28)
- #define MS_BORN		(1<<29)
- #define MS_ACTIVE	(1<<30)
--#define MS_NOUSER	(1<<31)
-+#define MS_NOUSER	(1u<<31)
- 
- /*
-  * Superblock flags that can be altered by MS_REMOUNT
-
+On Fri, Apr 20, 2012 at 08:32:37PM -0400, Alan Stern wrote:
+> In this particular case, it is guaranteed that the left USB port will 
+> always be numbered as X-1.1:1.0 and the right port as X-1.2:1.0, where 
+> the number X may change from one boot to another.  But the -1.1:1.0 and 
+> -1.2:1.0 parts will always be the same.
+> 
+> This is because X is the bus number, which is allowed to change.  The 
+> -1.1:1.0 and -1.2:1.0 values are port, configuration, and interface 
+> numbers.  They will never change, because they come from the hardware.
+Yes, configuration and interface come from the hardware,
+but I don't know where the port come from, at least I don't think the port
+comes from the same hardware with the configuration and interface, do you 
+mean port come from the hub?
