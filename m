@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab2DUUEw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 16:04:52 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21381 "EHLO
+	id S1752637Ab2DUUFU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 16:05:20 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:21451 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab2DUUEb (ORCPT
+	with ESMTP id S1752190Ab2DUUEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 16:04:31 -0400
-Date: Sat, 21 Apr 2012 22:04:30 +0200 (CEST)
+	Sat, 21 Apr 2012 16:04:46 -0400
+Date: Sat, 21 Apr 2012 22:04:45 +0200 (CEST)
 From: Jesper Juhl <jj@chaosbits.net>
 To: linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -15,9 +15,10 @@ cc: trivial@kernel.org, devel@driverdev.osuosl.org,
         Xi Wang <xi.wang@gmail.com>, Joe Perches <joe@perches.com>,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Forest Bond <forest@alittletooquiet.net>
-Subject: [PATCH 1/3] staging: vt6656: Remove redundant casts from ioctl.c
+Subject: [PATCH 3/3] staging: vt6656: trivial whitespace cleanups to
+ ioctl.c
 In-Reply-To: <alpine.LNX.2.00.1204212156260.25551@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1204212202090.25551@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1204212203320.25551@swampdragon.chaosbits.net>
 References: <alpine.LNX.2.00.1204212156260.25551@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
@@ -26,81 +27,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove some unneeded explicit casts from
-drivers/staging/vt6656/ioctl.c
+This removes a space between a cast and the variable and makes the
+case statements in the switch stylewise consistent as to whether
+there's a blank line before each 'case' or not.
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/staging/vt6656/ioctl.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+ drivers/staging/vt6656/ioctl.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/staging/vt6656/ioctl.c b/drivers/staging/vt6656/ioctl.c
-index d59456c..8a918e9 100644
+index deea69b..4f29778 100644
 --- a/drivers/staging/vt6656/ioctl.c
 +++ b/drivers/staging/vt6656/ioctl.c
-@@ -90,18 +90,17 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 		spin_lock_irq(&pDevice->lock);
- 
- 		if (memcmp(pMgmt->abyCurrBSSID, &abyNullAddr[0], 6) == 0)
--			BSSvClearBSSList((void *)pDevice, FALSE);
-+			BSSvClearBSSList(pDevice, FALSE);
- 		else
--			BSSvClearBSSList((void *)pDevice, pDevice->bLinkPass);
-+			BSSvClearBSSList(pDevice, pDevice->bLinkPass);
- 
- 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "WLAN_CMD_BSS_SCAN..begin\n");
- 
- 		if (pItemSSID->len != 0)
--			bScheduleCommand((void *)pDevice,
--					 WLAN_CMD_BSSID_SCAN,
-+			bScheduleCommand(pDevice, WLAN_CMD_BSSID_SCAN,
- 					 abyScanSSID);
- 		else
--			bScheduleCommand((void *) pDevice, WLAN_CMD_BSSID_SCAN, NULL);
-+			bScheduleCommand(pDevice, WLAN_CMD_BSSID_SCAN, NULL);
- 
- 		spin_unlock_irq(&pDevice->lock);
+@@ -149,6 +149,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
+ 			}
+ 		}
  		break;
-@@ -190,10 +189,9 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 		netif_stop_queue(pDevice->dev);
- 		spin_lock_irq(&pDevice->lock);
- 		pMgmt->eCurrState = WMAC_STATE_IDLE;
--		bScheduleCommand((void *) pDevice,
--				 WLAN_CMD_BSSID_SCAN,
-+		bScheduleCommand(pDevice, WLAN_CMD_BSSID_SCAN,
- 				 pMgmt->abyDesireSSID);
--		bScheduleCommand((void *) pDevice, WLAN_CMD_SSID, NULL);
-+		bScheduleCommand(pDevice, WLAN_CMD_SSID, NULL);
- 		spin_unlock_irq(&pDevice->lock);
- 		break;
- 
-@@ -299,7 +297,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 			result = -EINVAL;
++
+ 	case WLAN_CMD_BSS_JOIN:
+ 		if (copy_from_user(&sJoinCmd, pReq->data, sizeof(SCmdBSSJoin))) {
+ 			result = -EFAULT;
+@@ -311,7 +312,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
+ 				pList->sBSSIDList[ii].wBeaconInterval = pBSS->wBeaconInterval;
+ 				pList->sBSSIDList[ii].wCapInfo = pBSS->wCapInfo;
+ 				RFvRSSITodBm(pDevice, (BYTE)(pBSS->uRSSI), &ldBm);
+-				pList->sBSSIDList[ii].uRSSI = (unsigned int) ldBm;
++				pList->sBSSIDList[ii].uRSSI = (unsigned int)ldBm;
+ 				/* pList->sBSSIDList[ii].uRSSI = pBSS->uRSSI; */
+ 				memcpy(pList->sBSSIDList[ii].abyBSSID, pBSS->abyBSSID, WLAN_BSSID_LEN);
+ 				pItemSSID = (PWLAN_IE_SSID)pBSS->abySSID;
+@@ -354,6 +355,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
  			break;
  		}
--		pList = (PSBSSIDList)kmalloc(sizeof(SBSSIDList) + (sList.uItem * sizeof(SBSSIDItem)), (int)GFP_ATOMIC);
-+		pList = kmalloc(sizeof(SBSSIDList) + (sList.uItem * sizeof(SBSSIDItem)), GFP_ATOMIC);
- 		if (pList == NULL) {
- 			result = -ENOMEM;
- 			break;
-@@ -534,7 +532,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 
- 		netif_stop_queue(pDevice->dev);
- 		spin_lock_irq(&pDevice->lock);
--		bScheduleCommand((void *)pDevice, WLAN_CMD_RUN_AP, NULL);
-+		bScheduleCommand(pDevice, WLAN_CMD_RUN_AP, NULL);
- 		spin_unlock_irq(&pDevice->lock);
  		break;
- 
-@@ -565,7 +563,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 			result = -ENOMEM;
- 			break;
- 		}
--		pNodeList = kmalloc(sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)), (int)GFP_ATOMIC);
-+		pNodeList = kmalloc(sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)), GFP_ATOMIC);
- 		if (pNodeList == NULL) {
- 			result = -ENOMEM;
- 			break;
++
+ 	case WLAN_CMD_STOP_MAC:
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "WLAN_CMD_STOP_MAC\n");
+ 		/* Todo xxxxxx */
 -- 
 1.7.10
 
