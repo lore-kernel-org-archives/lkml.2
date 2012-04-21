@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673Ab2DUT5z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Apr 2012 15:57:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:50448 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354Ab2DUT5x convert rfc822-to-8bit (ORCPT
+	id S1752127Ab2DUT6T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Apr 2012 15:58:19 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58821 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab2DUT6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Apr 2012 15:57:53 -0400
+	Sat, 21 Apr 2012 15:58:14 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Renzo Dani <arons7@gmail.com>
+Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Added GenesysLogic BW Microscope device id
+Date: Sat, 21 Apr 2012 17:07:04 +0200
+Message-ID: <11816853.jz81JXdN3I@avalon>
+User-Agent: KMail/4.8.0 (Linux/3.2.1-gentoo-r2; KDE/4.8.1; x86_64; ; )
+In-Reply-To: <1334946523-14618-1-git-send-email-arons7@gmail.com>
+References: <1334946523-14618-1-git-send-email-arons7@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1335011336.3081.12.camel@dabdike.lan>
-References: <1334960945.21447.19.camel@ultramagnus.opencreations.com>
-	<1335011336.3081.12.camel@dabdike.lan>
-Date: Sat, 21 Apr 2012 12:57:50 -0700
-Message-ID: <CABE8wwvQ5_4DnOOce8PVcuR=k0RpzcXN5qbNhQ-=+Cq+Zqv6Dg@mail.gmail.com>
-Subject: Re: [GIT PULL] libsas fixes for 3.4-rc4
-From: Dan Williams <dan.j.williams@intel.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        jack_wang <jack_wang@usish.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 21, 2012 at 5:28 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Fri, 2012-04-20 at 15:29 -0700, Dan Williams wrote:
->> These patches, save for the new "scsi: fix eh wakeup (scsi_schedule_eh
->> vs scsi_restart_operations)" and "Revert "[SCSI] libsas: fix sas port
->> naming", were all originally posted before the merge
->> window opened, and have also appeared in -next for the same timeframe.
->>
->> The commit dates are not that aged (9 days old) because they were
->> rebased out of larger set of updates that were pending for 3.4.
->>
->> There is a mix of pure regression fixes and fixes for long-standing bugs
->> in libsas.  Some of the long-standing bug fixes are made worse / easier
->> to trigger by the new async error handling scheme.
->>
->> The largest patch in the series is "libata, libsas: introduce sched_eh
->> and end_eh port ops" it has been on the list since March 10th.
->>
->> Jack Wang has independently tested this set with pm8001 and reports
->> success. [1]
->>
->> Apologies if scsi-rc-fixes was in the process of picking these up.  With
->> -rc4 looming I lost my nerve and pulled the trigger.
->
-> Right, so as a point of process, these are SCSI fixes and are supposed
-> to be going through the SCSI tree.  The only urgent one is the revert; I
-> still have outstanding questions about some of the others.
+Hi Renzo,
 
-Up until this feedback I thought the branch was going to be pulled
-intact.  So, not trying to subvert process, just thought this request
-would be seen as helpful since you seem to have been rather busy of
-late.  Yes, I'd much rather these go through the SCSI tree.
+On Friday 20 April 2012 20:28:43 Renzo Dani wrote:
+> From: Renzo Dani <arons7@gmail.com>
+> 
+> Signed-off-by: Renzo Dani <arons7@gmail.com>
 
-> We're at least 3 weeks away from 3.4 (and that's only if -rc6 is final),
-> so there's time to address all of this via the usual process.
+Thank you for the patch.
 
-My concern is that:
+> ---
+>  drivers/media/video/uvc/uvc_driver.c |   11 ++++++++++-
+>  1 files changed, 10 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/uvc/uvc_driver.c
+> b/drivers/media/video/uvc/uvc_driver.c index 1d13172..b8c94b4 100644
+> --- a/drivers/media/video/uvc/uvc_driver.c
+> +++ b/drivers/media/video/uvc/uvc_driver.c
+> @@ -2176,7 +2176,16 @@ static struct usb_device_id uvc_ids[] = {
+>  	  .bInterfaceSubClass	= 1,
+>  	  .bInterfaceProtocol	= 0,
+>  	  .driver_info		= UVC_QUIRK_STREAM_NO_FID },
+> -	/* Hercules Classic Silver */
+> +	/* Genesys Logic USB 2.0 BW Microscope */
+> +        { .match_flags          = USB_DEVICE_ID_MATCH_DEVICE
+> +                                | USB_DEVICE_ID_MATCH_INT_INFO,
+> +          .idVendor             = 0x05e3,
+> +          .idProduct            = 0x0511,
+> +          .bInterfaceClass      = USB_CLASS_VIDEO,
+> +          .bInterfaceSubClass   = 1,
+> +          .bInterfaceProtocol   = 0,
 
- 19 files changed, 344 insertions(+), 172 deletions(-)
+Please use tabs instead of space to indent the code. Running 
+scripts/checkpatch.pl on the patch before sending it catches this kind of 
+issues, it's thus a good practice to do so. As the patch is small I've fixed 
+the issue myself, there's no need to resubmit it.
 
-...is something that should have went in at -rc2.  Waiting longer
-likely means cutting down the list even more and either turning it
-into something nobody has given serious test time to, or leaving known
-bugs un-addressed for 3.4-final.  Some of these we have lived with for
-a while, but are worse with the 3.4-rc1 reworked libsas workqueue and
-new async error handling changes.  For grey area "is this a pure
-regression fix vs old bug that could maybe wait" I thought the earlier
-the rc the better.
+> +          .driver_info          = UVC_QUIRK_STREAM_NO_FID },
 
---
-Dan
+I suppose you have tested the device without this patch and that it didn't 
+work. Could you please confirm that ? Could you please also send me the output 
+of
+
+lsusb -v -d 05e3:0511
+
+> +        /* Hercules Classic Silver */
+>  	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
+> 
+>  				| USB_DEVICE_ID_MATCH_INT_INFO,
+> 
+>  	  .idVendor		= 0x06f8,
+
+-- 
+Regards,
+
+Laurent Pinchart
+
