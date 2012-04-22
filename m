@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab2DVGDD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 02:03:03 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:45173 "EHLO
+	id S1752209Ab2DVGDA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 02:03:00 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:45171 "EHLO
 	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab2DVGCa (ORCPT
+	with ESMTP id S1751725Ab2DVGCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 02:02:30 -0400
+	Sun, 22 Apr 2012 02:02:24 -0400
 X-SENDER-IP: [85.230.169.225]
 X-LISTENER: [smtp.bredband.net]
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AllUAE2ek09V5qnhPGdsb2JhbABEiiqnFhkBAQEBHhkNJ4IKAQUnLxMBDxAIETg5ChQGExuHeLldE5EgBJt9jSY
+X-IronPort-Anti-Spam-Result: AllUAE2ek09V5qnhPGdsb2JhbABEiiqnFhkBAQEBHhkNJ4IKAQUnLxMBDxAIETg5ChQGExuHeLldE4pVhksEm32NJoFS
 X-IronPort-AV: E=Sophos;i="4.75,461,1330902000"; 
-   d="scan'208";a="317576303"
+   d="scan'208";a="100771211"
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Jiri Kosina <jkosina@suse.cz>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH v2 3/6] hid: Create a generic device group
-Date: Sun, 22 Apr 2012 08:05:23 +0200
-Message-Id: <1335074726-2276-4-git-send-email-rydberg@euromail.se>
+Subject: [PATCH v2 2/6] hid: Parse the device before adding it
+Date: Sun, 22 Apr 2012 08:05:22 +0200
+Message-Id: <1335074726-2276-3-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1335074726-2276-1-git-send-email-rydberg@euromail.se>
 References: <1335074726-2276-1-git-send-email-rydberg@euromail.se>
@@ -29,114 +29,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devices that do not have a special driver are handled by the generic
-driver. This patch does the same thing using device groups; Instead of
-forcing a particular driver, the appropriate driver is picked up by
-udev. As a consequence, one can now move a device from generic to
-specific handling by a simple rebind. By adding a new device id to the
-generic driver, the same thing can be done in reverse.
+The hid bus is populated by devices created by the usb and bluetooth
+subsystems. The hid device is then broadcast to userland via uevents.
+Currently, the parsing of the hid reports is done during probe of
+the hid device, after the device has been broadcast. In order to
+allow for the report descriptors to influence the device properties,
+it is desirable to parse the device _before_ it is broadcast to
+userland.
+
+Specific in-kernel device drivers, in particular those with report
+fixup routines, are not affected by this patch. Out-of-tree drivers
+with fixups is a known issue still to be addressed.
 
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/hid/hid-core.c        |   14 ++++++--------
- drivers/hid/usbhid/hid-core.c |    2 +-
- include/linux/hid.h           |   17 +++++++++++------
- net/bluetooth/hidp/core.c     |    2 +-
- 4 files changed, 19 insertions(+), 16 deletions(-)
+ drivers/hid/hid-core.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 5378cf6..32a40879 100644
+index 3ed13b4..5378cf6 100644
 --- a/drivers/hid/hid-core.c
 +++ b/drivers/hid/hid-core.c
-@@ -1685,14 +1685,7 @@ static int hid_bus_match(struct device *dev, struct device_driver *drv)
- 		!strncmp(hdrv->name, "hid-multitouch", 14))
- 		return 1;
+@@ -662,7 +662,7 @@ int hid_parse_report(struct hid_device *device, __u8 *start,
+ 		hid_parser_reserved
+ 	};
  
--	if (!hid_match_device(hdev, hdrv))
--		return 0;
--
--	/* generic wants all that don't have specialized driver */
--	if (!strncmp(hdrv->name, "generic-", 8) && !hid_ignore_special_drivers)
--		return !hid_match_id(hdev, hid_have_special_driver);
--
--	return 1;
-+	return hid_match_device(hdev, hdrv) != NULL;
- }
+-	if (device->driver->report_fixup)
++	if (device->driver && device->driver->report_fixup)
+ 		start = device->driver->report_fixup(device, start, &size);
  
- static int hid_device_probe(struct device *dev)
-@@ -2104,6 +2097,11 @@ int hid_add_device(struct hid_device *hdev)
- 		ret = hid_parse(hdev);
- 		if (ret)
- 			return ret;
-+		/*
-+		 * Generic handler picks up all non-assigned devices.
-+		 */
-+		if (hdev->group == HID_GROUP_ANY)
-+			hdev->group = HID_GROUP_GENERIC;
- 	}
+ 	device->rdesc = kmemdup(start, size, GFP_KERNEL);
+@@ -2095,6 +2095,17 @@ int hid_add_device(struct hid_device *hdev)
+             && (hid_ignore(hdev) || (hdev->quirks & HID_QUIRK_IGNORE)))
+ 		return -ENODEV;
  
- 	/* XXX hack, any other cleaner solution after the driver core
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index 5bf91db..9abf718 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -1505,7 +1505,7 @@ static struct usb_driver hid_driver = {
- };
- 
- static const struct hid_device_id hid_usb_table[] = {
--	{ HID_USB_DEVICE(HID_ANY_ID, HID_ANY_ID) },
-+	{ HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, HID_ANY_ID, HID_ANY_ID) },
- 	{ }
- };
- 
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 85871f7..96197f7 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -325,6 +325,11 @@ struct hid_item {
- #define HID_QUIRK_NO_INPUT_SYNC			0x80000000
- 
- /*
-+ * HID device groups
-+ */
-+#define HID_GROUP_GENERIC			0x0001
++	/*
++	 * Parse generically handled devices early to allow for
++	 * report-defined device groups.
++	 */
++	if (hid_ignore_special_drivers ||
++	    !hid_match_id(hdev, hid_have_special_driver)) {
++		ret = hid_parse(hdev);
++		if (ret)
++			return ret;
++	}
 +
-+/*
-  * This is the global environment of the parser. This information is
-  * persistent for main-items. The global environment can be saved and
-  * restored with PUSH/POP statements.
-@@ -579,12 +584,12 @@ struct hid_descriptor {
- 	struct hid_class_descriptor desc[1];
- } __attribute__ ((packed));
- 
--#define HID_DEVICE(b, ven, prod) \
--	.bus = (b), \
--	.vendor = (ven), .product = (prod)
--
--#define HID_USB_DEVICE(ven, prod)	HID_DEVICE(BUS_USB, ven, prod)
--#define HID_BLUETOOTH_DEVICE(ven, prod)	HID_DEVICE(BUS_BLUETOOTH, ven, prod)
-+#define HID_DEVICE(b, g, ven, prod)					\
-+	.bus = (b), .group = (g), .vendor = (ven), .product = (prod)
-+#define HID_USB_DEVICE(ven, prod)				\
-+	.bus = BUS_USB, .vendor = (ven), .product = (prod)
-+#define HID_BLUETOOTH_DEVICE(ven, prod)					\
-+	.bus = BUS_BLUETOOTH, .vendor = (ven), .product = (prod)
- 
- #define HID_REPORT_ID(rep) \
- 	.report_type = (rep)
-diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
-index d478be1..b6fa982 100644
---- a/net/bluetooth/hidp/core.c
-+++ b/net/bluetooth/hidp/core.c
-@@ -1196,7 +1196,7 @@ int hidp_get_conninfo(struct hidp_conninfo *ci)
- }
- 
- static const struct hid_device_id hidp_table[] = {
--	{ HID_BLUETOOTH_DEVICE(HID_ANY_ID, HID_ANY_ID) },
-+	{ HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_GENERIC, HID_ANY_ID, HID_ANY_ID) },
- 	{ }
- };
- 
+ 	/* XXX hack, any other cleaner solution after the driver core
+ 	 * is converted to allow more than 20 bytes as the device name? */
+ 	dev_set_name(&hdev->dev, "%04X:%04X:%04X.%04X", hdev->bus,
 -- 
 1.7.10
 
