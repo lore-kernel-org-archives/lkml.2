@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab2DVOYk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 10:24:40 -0400
-Received: from fallback3.mail.ru ([94.100.176.58]:45616 "EHLO
-	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab2DVOYj (ORCPT
+	id S1752142Ab2DVO3C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 10:29:02 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:39312 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab2DVO3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 10:24:39 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        =?UTF-8?B?UnVzc2VsbCBLaW5nIC0gQVJNIExpbnV4?= 
-	<linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-Subject: =?UTF-8?B?UmVbMl06IFtQQVRDSCAwMi8xN10gQVJNIGNscHM3MTF4OiBBZGRlZCBDaXJy?=
- =?UTF-8?B?dXMgTG9naWMgRVA3MzEyIENQVSB2YXJpYW50?=
-Mime-Version: 1.0
-X-Mailer: mPOP Web-Mail 2.19
-X-Originating-IP: [188.134.41.72]
-Date: Sun, 22 Apr 2012 18:24:05 +0400
-References: <1334999490-27177-1-git-send-email-shc_work@mail.ru> <20120421122044.GF24211@n2100.arm.linux.org.uk> <201204221358.29315.arnd@arndb.de>
-In-Reply-To: <201204221358.29315.arnd@arndb.de>
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 
-Content-Type: text/plain; charset=utf-8
-Message-Id: <E1SLxht-0000II-Od.shc_work-mail-ru@f23.mail.ru>
-X-Spam: Not detected
-X-Mras: Ok
+	Sun, 22 Apr 2012 10:29:01 -0400
+Message-ID: <4F9415A8.20708@gmail.com>
+Date: Sun, 22 Apr 2012 16:28:56 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Subject: Re: [PATCH 12/16] rtmutex: turn the plist into an rb-tree.
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>  <1333696481-3433-13-git-send-email-juri.lelli@gmail.com> <1334178715.23924.308.camel@gandalf.stny.rr.com>
+In-Reply-To: <1334178715.23924.308.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3MEOoA4015557
 
+On 04/11/2012 11:11 PM, Steven Rostedt wrote:
+> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+>> From: Peter Zijlstra<peterz@infradead.org>
+>>
+>> Turn the pi-chains from plist to rb-tree, in the rt_mutex code,
+>> and provide a proper comparison function for -deadline and
+>> -priority tasks.
+>
+> I have to ask. Why not just add a rbtree with a plist? That is, add all
+> deadline tasks to the rbtree and all others to the plist. As plist has a
+> O(1) operation, and rbtree does not. We are making all RT tasks suffer
+> the overhead of the rbtree.
+>
 
+I basically got this patch from the v3 patchset and, since it applied
+perfectly and came from Peter, I assumed it was the right way to go ;-).
 
+> As deadline tasks always win, the two may stay agnostic from each other.
+> Check first the rbtree, if it is empty, then check the plist.
+>
+> This will become more predominant with the -rt tree as it converts most
+> the locks in the kernel to pi mutexes.
+>
 
-Sun, 22 Apr 2012 13:58:28 +0000 Ð¾Ñ‚ Arnd Bergmann <arnd@arndb.de>:
-> On Saturday 21 April 2012, Russell King - ARM Linux wrote:
-> > The headers still have to end up being in an accessible place, and having
-> > drivers include the minimum required is a good idea.  Merely moving them
-> > into include/mach and updating the include statements as far as I'd go.
-> > (and I've never liked the idea of mach/hardware.h being an "include the
-> > world for this platform" header file.)
-> 
-> Digging a bit deeper into clps711x, I found that with Alexander's patch
-> series applied, there is nothing that actually includes the three
-> asm/hardware/ep7*.h files. I wonder about the motivation behind providing
-> them. Any reason we can't just remove those three files altogher?
-> 
-> Note that if we were to actually start using those files, this section
-> of mach/hardware.h would be broken:
-> 
-> #if defined (CONFIG_SOC_EP7211)
-> #include <asm/hardware/ep7211.h>
-> #elif defined (CONFIG_SOC_EP7212)
-> #include <asm/hardware/ep7212.h>
-> #elif defined (CONFIG_SOC_EP7213)
-> #include <asm/hardware/ep7312.h>
-> #endif
-> 
-> Because we can have more than one of these socs enabled in the
-> same configuration and enabling CONFIG_SOC_EP7211 would make the
-> other two headers invisible.
-We can define the ÑƒÐ·7312 registers in a single clps7111.h header and just always
-keep in mind that additional registers can be used only with the corresponding processor.
-In any case, additional registers are used in the code for a particular board only.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I see your point, but I'm not yet convinced that in the end the plist +
+rbtree implementation would win. AFAIK, the only O(1) plist operation is
+removal, beeing addition O(K) [K RT priorities]. Now, we have O(logn)
+[n elements] operations for rbtrees and we speed-up search with the
+leftmost pointer.
+So, are we sure that add complexity (and related checks) is needed here?
+I'm not against your point, I'm only asking :-).
+
+Thanks a lot,
+
+- Juri
+  
+>>
+>> This is done mainly because:
+>>   - classical prio field of the plist is just an int, which might
+>>     not be enough for representing a deadline;
+>>   - manipulating such a list would become O(nr_deadline_tasks),
+>>     which might be to much, as the number of -deadline task increases.
+>>
+>> Therefore, an rb-tree is used, and tasks are queued in it according
+>> to the following logic:
+>>   - among two -priority (i.e., SCHED_BATCH/OTHER/RR/FIFO) tasks, the
+>>     one with the higher (lower, actually!) prio wins;
+>>   - among a -priority and a -deadline task, the latter always wins;
+>>   - among two -deadline tasks, the one with the earliest deadline
+>>     wins.
+>>
+>> Queueing and dequeueing functions are changed accordingly, for both
+>> the list of a task's pi-waiters and the list of tasks blocked on
+>> a pi-lock.
+>>
+>> Signed-off-by: Peter Zijlstra<peterz@infradead.org>
+>> Signed-off-by: Dario Faggioli<raistlin@linux.it>
+>> Signed-off-by: Juri Lelli<juri.lelli@gmail.com>
+>
+>
