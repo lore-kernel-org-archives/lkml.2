@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2DVVVl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 17:21:41 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:58249 "EHLO ogre.sisk.pl"
+	id S1752992Ab2DVVVh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 17:21:37 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:58219 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824Ab2DVVUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 17:20:53 -0400
+	id S1752814Ab2DVVUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 17:20:51 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 7/8] PM / Sleep: Add "prevent autosleep time" statistics to wakeup sources
-Date: Sun, 22 Apr 2012 23:24:04 +0200
+Subject: [RFC][PATCH 8/8] PM / Sleep: Add user space interface for manipulating wakeup sources
+Date: Sun, 22 Apr 2012 23:24:45 +0200
 User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
@@ -26,276 +26,437 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204222324.04848.rjw@sisk.pl>
+Message-Id: <201204222324.45586.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Android uses one wakelock statistics that is only necessary for
-opportunistic sleep.  Namely, the prevent_suspend_time field
-accumulates the total time the given wakelock has been locked
-while "automatic suspend" was enabled.  Add an analogous field,
-prevent_sleep_time, to wakeup sources and make it behave in a similar
-way.
+Android allows user space to manipulate wakelocks using two
+sysfs file located in /sys/power/, wake_lock and wake_unlock.
+Writing a wakelock name and optionally a timeout to the wake_lock
+file causes the wakelock whose name was written to be acquired (it
+is created before is necessary), optionally with the given timeout.
+Writing the name of a wakelock to wake_unlock causes that wakelock
+to be released.
+
+Implement an analogous interface for user space using wakeup sources.
+Add the /sys/power/wake_lock and /sys/power/wake_unlock files
+allowing user space to create, activate and deactivate wakeup
+sources, such that writing a name and optionally a timeout to
+wake_lock causes the wakeup source of that name to be activated,
+optionally with the given timeout.  If that wakeup source doesn't
+exist, it will be created and then activated.  Writing a name to
+wake_unlock causes the wakeup source of that name, if there is one,
+to be deactivated.  Wakeup sources created with the help of
+wake_lock that haven't been used for more than 5 minutes are garbage
+collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
+wakeup sources created with the help of wake_lock present at a time.
+
+The data type used to track wakeup sources created by user space is
+called "struct wakelock" to indicate the origins of this feature.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- Documentation/ABI/testing/sysfs-devices-power |   11 ++++
- drivers/base/power/sysfs.c                    |   24 ++++++++++
- drivers/base/power/wakeup.c                   |   61 ++++++++++++++++++++++++--
- include/linux/pm_wakeup.h                     |    4 +
- include/linux/suspend.h                       |    1 
- kernel/power/autosleep.c                      |    6 ++
- 6 files changed, 102 insertions(+), 5 deletions(-)
+ Documentation/ABI/testing/sysfs-power |   42 ++++++
+ drivers/base/power/wakeup.c           |    1 
+ kernel/power/Kconfig                  |    8 +
+ kernel/power/Makefile                 |    1 
+ kernel/power/main.c                   |   41 ++++++
+ kernel/power/power.h                  |    9 +
+ kernel/power/wakelock.c               |  218 ++++++++++++++++++++++++++++++++++
+ 7 files changed, 320 insertions(+)
 
-Index: linux/include/linux/pm_wakeup.h
+Index: linux/kernel/power/main.c
 ===================================================================
---- linux.orig/include/linux/pm_wakeup.h
-+++ linux/include/linux/pm_wakeup.h
-@@ -34,6 +34,7 @@
-  * @total_time: Total time this wakeup source has been active.
-  * @max_time: Maximum time this wakeup source has been continuously active.
-  * @last_time: Monotonic clock when the wakeup source's was touched last time.
-+ * @prevent_sleep_time: Total time this source has been preventing autosleep.
-  * @event_count: Number of signaled wakeup events.
-  * @active_count: Number of times the wakeup sorce was activated.
-  * @relax_count: Number of times the wakeup sorce was deactivated.
-@@ -51,12 +52,15 @@ struct wakeup_source {
- 	ktime_t total_time;
- 	ktime_t max_time;
- 	ktime_t last_time;
-+	ktime_t start_prevent_time;
-+	ktime_t prevent_sleep_time;
- 	unsigned long		event_count;
- 	unsigned long		active_count;
- 	unsigned long		relax_count;
- 	unsigned long		expire_count;
- 	unsigned long		wakeup_count;
- 	bool			active:1;
-+	bool			autosleep_enabled:1;
- };
+--- linux.orig/kernel/power/main.c
++++ linux/kernel/power/main.c
+@@ -431,6 +431,43 @@ static ssize_t autosleep_store(struct ko
  
- #ifdef CONFIG_PM_SLEEP
+ power_attr(autosleep);
+ #endif /* CONFIG_PM_AUTOSLEEP */
++
++#ifdef CONFIG_PM_WAKELOCKS
++static ssize_t wake_lock_show(struct kobject *kobj,
++			      struct kobj_attribute *attr,
++			      char *buf)
++{
++	return pm_show_wakelocks(buf, true);
++}
++
++static ssize_t wake_lock_store(struct kobject *kobj,
++			       struct kobj_attribute *attr,
++			       const char *buf, size_t n)
++{
++	int error = pm_wake_lock(buf);
++	return error ? error : n;
++}
++
++power_attr(wake_lock);
++
++static ssize_t wake_unlock_show(struct kobject *kobj,
++				struct kobj_attribute *attr,
++				char *buf)
++{
++	return pm_show_wakelocks(buf, false);
++}
++
++static ssize_t wake_unlock_store(struct kobject *kobj,
++				 struct kobj_attribute *attr,
++				 const char *buf, size_t n)
++{
++	int error = pm_wake_unlock(buf);
++	return error ? error : n;
++}
++
++power_attr(wake_unlock);
++
++#endif /* CONFIG_PM_WAKELOCKS */
+ #endif /* CONFIG_PM_SLEEP */
+ 
+ #ifdef CONFIG_PM_TRACE
+@@ -487,6 +524,10 @@ static struct attribute * g[] = {
+ #ifdef CONFIG_PM_AUTOSLEEP
+ 	&autosleep_attr.attr,
+ #endif
++#ifdef CONFIG_PM_WAKELOCKS
++	&wake_lock_attr.attr,
++	&wake_unlock_attr.attr,
++#endif
+ #ifdef CONFIG_PM_DEBUG
+ 	&pm_test_attr.attr,
+ #endif
+Index: linux/kernel/power/power.h
+===================================================================
+--- linux.orig/kernel/power/power.h
++++ linux/kernel/power/power.h
+@@ -282,3 +282,12 @@ static inline void pm_autosleep_unlock(v
+ static inline suspend_state_t pm_autosleep_state(void) { return PM_SUSPEND_ON; }
+ 
+ #endif /* !CONFIG_PM_AUTOSLEEP */
++
++#ifdef CONFIG_PM_WAKELOCKS
++
++/* kernel/power/wakelock.c */
++extern ssize_t pm_show_wakelocks(char *buf, bool show_active);
++extern int pm_wake_lock(const char *buf);
++extern int pm_wake_unlock(const char *buf);
++
++#endif /* !CONFIG_PM_WAKELOCKS */
+Index: linux/kernel/power/Kconfig
+===================================================================
+--- linux.orig/kernel/power/Kconfig
++++ linux/kernel/power/Kconfig
+@@ -111,6 +111,14 @@ config PM_AUTOSLEEP
+ 	Allow the kernel to trigger a system transition into a global sleep
+ 	state automatically whenever there are no active wakeup sources.
+ 
++config PM_WAKELOCKS
++	bool "User space wakeup sources interface"
++	depends on PM_SLEEP
++	default n
++	---help---
++	Allow user space to create, activate and deactivate wakeup source
++	objects with the help of a sysfs-based interface.
++
+ config PM_RUNTIME
+ 	bool "Run-time PM core functionality"
+ 	depends on !IA64_HP_SIM
+Index: linux/kernel/power/wakelock.c
+===================================================================
+--- /dev/null
++++ linux/kernel/power/wakelock.c
+@@ -0,0 +1,218 @@
++/*
++ * kernel/power/wakelock.c
++ *
++ * User space wakeup sources support.
++ *
++ * Copyright (C) 2012 Rafael J. Wysocki <rjw@sisk.pl>
++ *
++ * This code is based on the analogous interface allowing user space to
++ * manipulate wakelocks on Android.
++ */
++
++#include <linux/ctype.h>
++#include <linux/device.h>
++#include <linux/err.h>
++#include <linux/hrtimer.h>
++#include <linux/list.h>
++#include <linux/rbtree.h>
++#include <linux/slab.h>
++
++#define WL_NUMBER_LIMIT	100
++#define WL_GC_COUNT_MAX	100
++#define WL_GC_TIME_SEC	300
++
++static DEFINE_MUTEX(wakelocks_lock);
++
++struct wakelock {
++	char			*name;
++	struct rb_node		node;
++	struct wakeup_source	ws;
++	struct list_head	lru;
++};
++
++static struct rb_root wakelocks_tree = RB_ROOT;
++static LIST_HEAD(wakelocks_lru_list);
++static unsigned int number_of_wakelocks;
++static unsigned int wakelocks_gc_count;
++
++ssize_t pm_show_wakelocks(char *buf, bool show_active)
++{
++	struct rb_node *node;
++	struct wakelock *wl;
++	char *str = buf;
++	char *end = buf + PAGE_SIZE;
++
++	mutex_lock(&wakelocks_lock);
++
++	for (node = rb_first(&wakelocks_tree); node; node = rb_next(node)) {
++		bool active;
++
++		wl = rb_entry(node, struct wakelock, node);
++		spin_lock_irq(&wl->ws.lock);
++		active = wl->ws.active;
++		spin_unlock_irq(&wl->ws.lock);
++		if (active == show_active)
++			str += scnprintf(str, end - str, "%s ", wl->name);
++	}
++	str += scnprintf(str, end - str, "\n");
++
++	mutex_unlock(&wakelocks_lock);
++	return (str - buf);
++}
++
++static struct wakelock *wakelock_lookup_add(const char *name, size_t len,
++					    bool add_if_not_found)
++{
++	struct rb_node **node = &wakelocks_tree.rb_node;
++	struct rb_node *parent = *node;
++	struct wakelock *wl;
++
++	while (*node) {
++		int diff;
++
++		wl = rb_entry(*node, struct wakelock, node);
++		diff = strncmp(name, wl->name, len);
++		if (diff == 0) {
++			if (wl->name[len])
++				diff = -1;
++			else
++				return wl;
++		}
++		if (diff < 0)
++			node = &(*node)->rb_left;
++		else
++			node = &(*node)->rb_right;
++
++		parent = *node;
++	}
++	if (!add_if_not_found)
++		return ERR_PTR(-EINVAL);
++
++	if (number_of_wakelocks > WL_NUMBER_LIMIT)
++		return ERR_PTR(-ENOSPC);
++
++	/* Not found, we have to add a new one. */
++	wl = kzalloc(sizeof(*wl), GFP_KERNEL);
++	if (!wl)
++		return ERR_PTR(-ENOMEM);
++
++	wl->name = kstrndup(name, len, GFP_KERNEL);
++	if (!wl->name) {
++		kfree(wl);
++		return ERR_PTR(-ENOMEM);
++	}
++	wl->ws.name = wl->name;
++	wakeup_source_add(&wl->ws);
++	rb_link_node(&wl->node, parent, node);
++	rb_insert_color(&wl->node, &wakelocks_tree);
++	list_add(&wl->lru, &wakelocks_lru_list);
++	number_of_wakelocks++;
++	return wl;
++}
++
++int pm_wake_lock(const char *buf)
++{
++	const char *str = buf;
++	struct wakelock *wl;
++	u64 timeout_ns = 0;
++	size_t len;
++	int ret = 0;
++
++	while (*str && !isspace(*str))
++		str++;
++
++	len = str - buf;
++	if (!len)
++		return -EINVAL;
++
++	if (*str && *str != '\n') {
++		/* Find out if there's a valid timeout string appended. */
++		ret = kstrtou64(skip_spaces(str), 10, &timeout_ns);
++		if (ret)
++			return -EINVAL;
++	}
++
++	mutex_lock(&wakelocks_lock);
++
++	wl = wakelock_lookup_add(buf, len, true);
++	if (IS_ERR(wl)) {
++		ret = PTR_ERR(wl);
++		goto out;
++	}
++	if (timeout_ns) {
++		u64 timeout_ms = timeout_ns + NSEC_PER_MSEC - 1;
++
++		do_div(timeout_ms, NSEC_PER_MSEC);
++		__pm_wakeup_event(&wl->ws, timeout_ms);
++	} else {
++		__pm_stay_awake(&wl->ws);
++	}
++
++	list_move(&wl->lru, &wakelocks_lru_list);
++
++ out:
++	mutex_unlock(&wakelocks_lock);
++	return ret;
++}
++
++static void wakelocks_gc(void)
++{
++	struct wakelock *wl, *aux;
++	ktime_t now = ktime_get();
++
++	list_for_each_entry_safe_reverse(wl, aux, &wakelocks_lru_list, lru) {
++		u64 idle_time_ns;
++		bool active;
++
++		spin_lock_irq(&wl->ws.lock);
++		idle_time_ns = ktime_to_ns(ktime_sub(now, wl->ws.last_time));
++		active = wl->ws.active;
++		spin_unlock_irq(&wl->ws.lock);
++
++		if (idle_time_ns < ((u64)WL_GC_TIME_SEC * NSEC_PER_SEC))
++			break;
++
++		if (!active) {
++			wakeup_source_remove(&wl->ws);
++			rb_erase(&wl->node, &wakelocks_tree);
++			list_del(&wl->lru);
++			kfree(wl->name);
++			kfree(wl);
++			number_of_wakelocks--;
++		}
++	}
++	wakelocks_gc_count = 0;
++}
++
++int pm_wake_unlock(const char *buf)
++{
++	struct wakelock *wl;
++	size_t len;
++	int ret = 0;
++
++	len = strlen(buf);
++	if (!len)
++		return -EINVAL;
++
++	if (buf[len-1] == '\n')
++		len--;
++
++	if (!len)
++		return -EINVAL;
++
++	mutex_lock(&wakelocks_lock);
++
++	wl = wakelock_lookup_add(buf, len, false);
++	if (IS_ERR(wl)) {
++		ret = PTR_ERR(wl);
++		goto out;
++	}
++	__pm_relax(&wl->ws);
++	list_move(&wl->lru, &wakelocks_lru_list);
++	if (++wakelocks_gc_count > WL_GC_COUNT_MAX)
++		wakelocks_gc();
++
++ out:
++	mutex_unlock(&wakelocks_lock);
++	return ret;
++}
+Index: linux/kernel/power/Makefile
+===================================================================
+--- linux.orig/kernel/power/Makefile
++++ linux/kernel/power/Makefile
+@@ -10,5 +10,6 @@ obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend
+ obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
+ 				   block_io.o
+ obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
++obj-$(CONFIG_PM_WAKELOCKS)	+= wakelock.o
+ 
+ obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
 Index: linux/drivers/base/power/wakeup.c
 ===================================================================
 --- linux.orig/drivers/base/power/wakeup.c
 +++ linux/drivers/base/power/wakeup.c
-@@ -380,6 +380,8 @@ static void wakeup_source_activate(struc
- 	ws->active = true;
- 	ws->active_count++;
- 	ws->last_time = ktime_get();
-+	if (ws->autosleep_enabled)
-+		ws->start_prevent_time = ws->last_time;
+@@ -133,6 +133,7 @@ void wakeup_source_add(struct wakeup_sou
+ 	spin_lock_init(&ws->lock);
+ 	setup_timer(&ws->timer, pm_wakeup_timer_fn, (unsigned long)ws);
+ 	ws->active = false;
++	ws->last_time = ktime_get();
  
- 	/* Increment the counter of events in progress. */
- 	cec = atomic_inc_return(&combined_event_count);
-@@ -449,6 +451,17 @@ void pm_stay_awake(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(pm_stay_awake);
- 
-+#ifdef CONFIG_PM_AUTOSLEEP
-+static void update_prevent_sleep_time(struct wakeup_source *ws, ktime_t now)
-+{
-+	ktime_t delta = ktime_sub(now, ws->start_prevent_time);
-+	ws->prevent_sleep_time = ktime_add(ws->prevent_sleep_time, delta);
-+}
-+#else
-+static inline void update_prevent_sleep_time(struct wakeup_source *ws,
-+					     ktime_t now) {}
-+#endif
-+
- /**
-  * wakup_source_deactivate - Mark given wakeup source as inactive.
-  * @ws: Wakeup source to handle.
-@@ -490,6 +503,9 @@ static void wakeup_source_deactivate(str
- 	del_timer(&ws->timer);
- 	ws->timer_expires = 0;
- 
-+	if (ws->autosleep_enabled)
-+		update_prevent_sleep_time(ws, now);
-+
- 	/*
- 	 * Increment the counter of registered wakeup events and decrement the
- 	 * couter of wakeup events in progress simultaneously.
-@@ -720,6 +736,34 @@ bool pm_save_wakeup_count(unsigned int c
- 	return events_check_enabled;
- }
- 
-+#ifdef CONFIG_PM_AUTOSLEEP
-+/**
-+ * pm_wakep_autosleep_enabled - Modify autosleep_enabled for all wakeup sources.
-+ * @enabled: Whether to set or to clear the autosleep_enabled flags.
-+ */
-+void pm_wakep_autosleep_enabled(bool set)
-+{
-+	struct wakeup_source *ws;
-+	ktime_t now = ktime_get();
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
-+		spin_lock_irq(&ws->lock);
-+		if (ws->autosleep_enabled != set) {
-+			ws->autosleep_enabled = set;
-+			if (ws->active) {
-+				if (set)
-+					ws->start_prevent_time = now;
-+				else
-+					update_prevent_sleep_time(ws, now);
-+			}
-+		}
-+		spin_unlock_irq(&ws->lock);
-+	}
-+	rcu_read_unlock();
-+}
-+#endif /* CONFIG_PM_AUTOSLEEP */
-+
- static struct dentry *wakeup_sources_stats_dentry;
- 
- /**
-@@ -735,28 +779,37 @@ static int print_wakeup_source_stats(str
- 	ktime_t max_time;
- 	unsigned long active_count;
- 	ktime_t active_time;
-+	ktime_t prevent_sleep_time;
- 	int ret;
- 
- 	spin_lock_irqsave(&ws->lock, flags);
- 
- 	total_time = ws->total_time;
- 	max_time = ws->max_time;
-+	prevent_sleep_time = ws->prevent_sleep_time;
- 	active_count = ws->active_count;
- 	if (ws->active) {
--		active_time = ktime_sub(ktime_get(), ws->last_time);
-+		ktime_t now = ktime_get();
-+
-+		active_time = ktime_sub(now, ws->last_time);
- 		total_time = ktime_add(total_time, active_time);
- 		if (active_time.tv64 > max_time.tv64)
- 			max_time = active_time;
-+
-+		if (ws->autosleep_enabled)
-+			prevent_sleep_time = ktime_add(prevent_sleep_time,
-+				ktime_sub(now, ws->start_prevent_time));
- 	} else {
- 		active_time = ktime_set(0, 0);
- 	}
- 
- 	ret = seq_printf(m, "%-12s\t%lu\t\t%lu\t\t%lu\t\t%lu\t\t"
--			"%lld\t\t%lld\t\t%lld\t\t%lld\n",
-+			"%lld\t\t%lld\t\t%lld\t\t%lld\t\t%lld\n",
- 			ws->name, active_count, ws->event_count,
- 			ws->wakeup_count, ws->expire_count,
- 			ktime_to_ms(active_time), ktime_to_ms(total_time),
--			ktime_to_ms(max_time), ktime_to_ms(ws->last_time));
-+			ktime_to_ms(max_time), ktime_to_ms(ws->last_time),
-+			ktime_to_ms(prevent_sleep_time));
- 
- 	spin_unlock_irqrestore(&ws->lock, flags);
- 
-@@ -773,7 +826,7 @@ static int wakeup_sources_stats_show(str
- 
- 	seq_puts(m, "name\t\tactive_count\tevent_count\twakeup_count\t"
- 		"expire_count\tactive_since\ttotal_time\tmax_time\t"
--		"last_change\n");
-+		"last_change\tprevent_suspend_time\n");
- 
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(ws, &wakeup_sources, entry)
-Index: linux/include/linux/suspend.h
+ 	spin_lock_irq(&events_lock);
+ 	list_add_rcu(&ws->entry, &wakeup_sources);
+Index: linux/Documentation/ABI/testing/sysfs-power
 ===================================================================
---- linux.orig/include/linux/suspend.h
-+++ linux/include/linux/suspend.h
-@@ -358,6 +358,7 @@ extern bool events_check_enabled;
- extern bool pm_wakeup_pending(void);
- extern bool pm_get_wakeup_count(unsigned int *count, bool block);
- extern bool pm_save_wakeup_count(unsigned int count);
-+extern void pm_wakep_autosleep_enabled(bool set);
+--- linux.orig/Documentation/ABI/testing/sysfs-power
++++ linux/Documentation/ABI/testing/sysfs-power
+@@ -189,3 +189,45 @@ Description:
  
- static inline void lock_system_sleep(void)
- {
-Index: linux/drivers/base/power/sysfs.c
-===================================================================
---- linux.orig/drivers/base/power/sysfs.c
-+++ linux/drivers/base/power/sysfs.c
-@@ -417,6 +417,27 @@ static ssize_t wakeup_last_time_show(str
- }
- 
- static DEVICE_ATTR(wakeup_last_time_ms, 0444, wakeup_last_time_show, NULL);
+ 		Reading from this file causes the last string successfully
+ 		written to it to be displayed.
 +
-+#ifdef CONFIG_PM_AUTOSLEEP
-+static ssize_t wakeup_prevent_sleep_time_show(struct device *dev,
-+					      struct device_attribute *attr,
-+					      char *buf)
-+{
-+	s64 msec = 0;
-+	bool enabled = false;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.wakeup) {
-+		msec = ktime_to_ms(dev->power.wakeup->prevent_sleep_time);
-+		enabled = true;
-+	}
-+	spin_unlock_irq(&dev->power.lock);
-+	return enabled ? sprintf(buf, "%lld\n", msec) : sprintf(buf, "\n");
-+}
-+
-+static DEVICE_ATTR(wakeup_prevent_sleep_time_ms, 0444,
-+		   wakeup_prevent_sleep_time_show, NULL);
-+#endif /* CONFIG_PM_AUTOSLEEP */
- #endif /* CONFIG_PM_SLEEP */
- 
- #ifdef CONFIG_PM_ADVANCED_DEBUG
-@@ -511,6 +532,9 @@ static struct attribute *wakeup_attrs[]
- 	&dev_attr_wakeup_total_time_ms.attr,
- 	&dev_attr_wakeup_max_time_ms.attr,
- 	&dev_attr_wakeup_last_time_ms.attr,
-+#ifdef CONFIG_PM_AUTOSLEEP
-+	&dev_attr_wakeup_prevent_sleep_time_ms.attr,
-+#endif
- #endif
- 	NULL,
- };
-Index: linux/Documentation/ABI/testing/sysfs-devices-power
-===================================================================
---- linux.orig/Documentation/ABI/testing/sysfs-devices-power
-+++ linux/Documentation/ABI/testing/sysfs-devices-power
-@@ -158,6 +158,17 @@ Description:
- 		not enabled to wake up the system from sleep states, this
- 		attribute is not present.
- 
-+What:		/sys/devices/.../power/wakeup_prevent_sleep_time_ms
++What:		/sys/power/wake_lock
 +Date:		February 2012
 +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
 +Description:
-+		The /sys/devices/.../wakeup_prevent_sleep_time_ms attribute
-+		contains the total time the device has been preventing
-+		opportunistic transitions to sleep states from occuring.
-+		This attribute is read-only.  If the device is not enabled to
-+		wake up the system from sleep states, this attribute is not
-+		present.
++		The /sys/power/wake_lock file allows user space to create
++		wakeup source objects and activate them on demand (if one of
++		those wakeup sources is active, reads from the
++		/sys/power/wakeup_count file block or return false).  When a
++		string without white space is written to /sys/power/wake_lock,
++		it will be assumed to represent a wakeup source name.  If there
++		is a wakeup source object with that name, it will be activated
++		(unless active already).  Otherwise, a new wakeup source object
++		will be registered, assigned the given name and activated.
++		If a string written to /sys/power/wake_lock contains white
++		space, the part of the string preceding the white space will be
++		regarded as a wakeup source name and handled as descrived above.
++		The other part of the string will be regarded as a timeout (in
++		nanoseconds) such that the wakeup source will be automatically
++		deactivated after it has expired.  The timeout, if present, is
++		set regardless of the current state of the wakeup source object
++		in question.
 +
- What:		/sys/devices/.../power/autosuspend_delay_ms
- Date:		September 2010
- Contact:	Alan Stern <stern@rowland.harvard.edu>
-Index: linux/kernel/power/autosleep.c
-===================================================================
---- linux.orig/kernel/power/autosleep.c
-+++ linux/kernel/power/autosleep.c
-@@ -91,8 +91,12 @@ int pm_autosleep_set_state(suspend_state
- 
- 	__pm_relax(autosleep_ws);
- 
--	if (state > PM_SUSPEND_ON)
-+	if (state > PM_SUSPEND_ON) {
-+		pm_wakep_autosleep_enabled(true);
- 		queue_up_suspend_work();
-+	} else {
-+		pm_wakep_autosleep_enabled(false);
-+	}
- 
- 	mutex_unlock(&autosleep_lock);
- 	return 0;
++		Reads from this file return a string consisting of the names of
++		wakeup sources created with the help of it that are active at
++		the moment, separated with spaces.
++
++
++What:		/sys/power/wake_unlock
++Date:		February 2012
++Contact:	Rafael J. Wysocki <rjw@sisk.pl>
++Description:
++		The /sys/power/wake_unlock file allows user space to deactivate
++		wakeup sources created with the help of /sys/power/wake_lock.
++		When a string is written to /sys/power/wake_unlock, it will be
++		assumed to represent the name of a wakeup source to deactivate.
++		If a wakeup source object of that name exists and is active at
++		the moment, it will be deactivated.
++
++		Reads from this file return a string consisting of the names of
++		wakeup sources created with the help of /sys/power/wake_lock
++		that are inactive at the moment, separated with spaces.
 
