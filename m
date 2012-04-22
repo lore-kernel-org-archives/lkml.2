@@ -1,194 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab2DVVV3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 17:21:29 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:58191 "EHLO ogre.sisk.pl"
+	id S1752957Ab2DVVX0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 17:23:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44854 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752476Ab2DVVUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 17:20:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks", take 3
-Date: Sun, 22 Apr 2012 23:19:01 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
-        markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <201202070200.55505.rjw@sisk.pl> <201202220031.46219.rjw@sisk.pl>
-In-Reply-To: <201202220031.46219.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1752741Ab2DVVV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 17:21:26 -0400
+Subject: Re: [PATCH] C6X: add support to build with BINFMT_ELF_FDPIC
+From: Mark Salter <msalter@redhat.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>, Arnd Bergmann <arnd@arndb.de>
+Date: Sun, 22 Apr 2012 17:21:18 -0400
+In-Reply-To: <CAMjpGUe+CMkHP7owZym_6c2RDvgLzj8t+ZpLBuqQ0euk+ArV2Q@mail.gmail.com>
+References: <1334958476-6296-1-git-send-email-msalter@redhat.com>
+	 <CAMjpGUe+CMkHP7owZym_6c2RDvgLzj8t+ZpLBuqQ0euk+ArV2Q@mail.gmail.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204222319.02228.rjw@sisk.pl>
+Message-ID: <1335129679.12741.4.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-
-Following is the third update of the autosleep patchset.
-
-Patches [1-4/8] are regarded as v3.5 material, the rest - depending on
-the feedback I get (lack of feedback will be understood as no objections,
-though).
-
-On Wednesday, February 22, 2012, Rafael J. Wysocki wrote:
-> Hi all,
+On Sat, 2012-04-21 at 01:01 -0400, Mike Frysinger wrote:
+> On Fri, Apr 20, 2012 at 17:47, Mark Salter wrote:
+> > --- a/arch/c6x/kernel/process.c
+> > +++ b/arch/c6x/kernel/process.c
+> >
+> > +
+> > +/* Fill in the fpu structure for a core dump. This is easy -- we don't have any */
+> > +int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
+> > +{
+> > +       /* Not valid */
+> > +       return 0;
+> > +}
 > 
-> After the feedback so far I've decided to follow up with a refreshed patchset.
-> The first two patches from the previous one went to linux-pm/linux-next
-> and I included the recent evdev patch from Arve (with some modifications)
-> to this patchset for completness.
+> you could avoid this like Blackfin has:
+> arch/blackfin/include/asm/elf.h:
+> #define ELF_CORE_COPY_FPREGS(...) 0     /* Blackfin has no FPU */
+
+Yes, thanks. That's a better way I missed.
+
 > 
-> On Tuesday, February 07, 2012, Rafael J. Wysocki wrote:
-> > Hi all,
-> > 
-> > This series tests the theory that the easiest way to sell a once rejected
-> > feature is to advertise it under a different name.
-> > 
-> > Well, there actually are two different features, although they are closely
-> > related to each other.  First, patch [6/8] introduces a feature that allows
-> > the kernel to trigger system suspend (or more generally a transition into
-> > a sleep state) whenever there are no active wakeup sources (no, they aren't
-> > called wakelocks).  It is called "autosleep" here, but it was called a few
-> > different names in the past ("opportunistic suspend" was probably the most
-> > popular one).  Second, patch [8/8] introduces "wake locks" that are,
-> > essentially, wakeup sources which may be created and manipulated by user
-> > space.  Using them user space may control the autosleep feature introduced
-> > earlier.
-> > 
-> > This also is a kind of a proof of concept for the people who wanted me to
-> > show a kernel-based implementation of automatic suspend, so there you go.
-> > Please note, however, that it is done so that the user space "wake locks"
-> > interface is compatible with Android in support of its user space.  I don't
-> > really like this interface, but since the Android's user space seems to rely
-> > on it, I'm fine with using it as is.  YMMV.
-> > 
-> > Let me say a few words about every patch in the series individually.
-> > 
-> > [1/8] - This really is a bug fix, so it's v3.4 material.  Nobody has stepped
-> >   on this bug so far, but it should be fixed anyway.
-> > 
-> > [2/8] - This is a freezer cleanup, worth doing anyway IMO, so v3.4 material too.
-
-The two patches above have been merged.
-
-> The above two are in linux-pm/linux-next now.  There are a few more fixes
-> related to wakeup sources in there and the patches below are based on that
-> branch.
+> > --- a/fs/Kconfig.binfmt
+> > +++ b/fs/Kconfig.binfmt
+> >
+> >  config BINFMT_ELF_FDPIC
+> >        bool "Kernel support for FDPIC ELF binaries"
+> >        default y
+> > -       depends on (FRV || BLACKFIN || (SUPERH32 && !MMU))
+> > +       depends on (FRV || BLACKFIN || (SUPERH32 && !MMU) || TMS320C6X)
 > 
-> > [3/8] - This is something we can do no problem, although completely optional
-> >   without the autosleep feature.  Rather necessary with it, though.
->
-> Now [1/7] - Look for wakeup events in later stages of device suspend.
+> shouldn't the main arch symbol be "C6X" to match arch/c6x/ ?
 
-[1/8] now - Look for wakeup events later down the suspend code path.
- 
-> > [4/8] - This kind of reintroduces my original idea of using a wait queue for
-> >   waiting until there are no wakeup events in progress.  Alan convinced me that
-> >   it would be better to poll the counter to prevent wakeup_source_deactivate()
-> >   from having to call wake_up_all() occasionally (that may be costly in fast
-> >   paths), but then quite some people told me that the wait queue migh be
-> >   better.  I think that the polling will make much less sense with autosleep
-> >   and user space "wake locks".  Anyway, [4/8] is something we can do without
-> >   those things too.
-> 
-> Now [2/7] - Use wait queue to signal "no wakeup events in progress"
-> 
->   With a couple of improvements suggested by Neil.
+It probably should have been. Most architectures use that convention but
+there are notable exceptions like powerpc and sh.
 
-[2/8] now - Use wait queue to signal "no wakeup events in progress" condition.
+> -mike
 
-> > The patches above were given Sign-off-by tags, because I think they make some
-> > sense regardless of the features introcuded by the remaining patches that in
-> > turn are total RFC.
-> 
-> This time all of the patches are signed-off and include the requisite
-> documentation changes (hopefully, I haven't forgotten about anything).
-> 
-> > [5/8] - This changes wakeup source statistics so that they are more similar to
-> >   the statistics collected for wakelocks on Android.  The file those statistics
-> >   may be read from is still located in debugfs, though (I don't think it
-> >   belongs to proc and its name is different from the analogous Android's file
-> >   name anyway).  It could be done without autosleep, but then it would be a bit
-> >   pointless.  BTW, this changes interfaces that _in_ _theory_ may be used by
-> >   someone, but I'm not aware of anyone using them.  If you are one, I'll be
-> >   pleased to learn about that, so please tell me who you are. :-)
-> 
-> Now [3/7] - Change wakeup source statistics to follow Android.
->
->   Rebased and reworked in accordance with the Arve's feedback.
 
-[3/8] now - Change wakeup source statistics to follow Android.
-
-[4/8] - Add tracepoints to wakeup_source_{de}activate()
-
-[5/8] - Teach epoll to use wakeup sources if requested
-
-This should be sufficient to ensure that a wakeup source will be kept active
-after a wakeup event all the way up to user space without a need to make a
-number of random drivers use wakeup sources.
-
-> > [6/8] - Autosleep implementation.  I think the changelog explains the idea
-> >   quite well and the code is really nothing special.  It doesn't really add
-> >   anything new to the kernel in terms of infrastructure etc., it just uses
-> >   the existing stuff to implement an alternative method of triggering system
-> >   sleep transitions.  Note, though, that the interface here is different
-> >   from the Android's one, because Android actually modifies /sys/power/state
-> >   to trigger something called "early suspend" (that is never going to be
-> >   implemented in the "stock" kernel as long as I have any influence on it) and
-> >   we simply can't do that in the mainline.
-> 
-> Now [5/7] - Implement opportunistic sleep
-> 
->   Rebased and simplified (most notably, I've dropped the "main" wakeup source,
->   since it wasn't really necessary).
-
-[6/8] now - Implement apportunistic sleep.
-
-> > [7/8] - This adds a wakeup source statistics that only makes sense with
-> >   autosleep and (I believe) is analogous to the Android's prevent_suspend_time
-> >   statistics.  Nothing really special, but I didn't want
-> >   wakeup_source_activate/deactivate() to take a common lock to avoid
-> >   congestion.
-> 
-> Now [6/7] - Add "prevent autosleep time" statistics to wakeup sources.
-> 
->   Rebased.
-
-[7/8] now - Add "prevent autosleep time" statistics to wakeup sources.
-
-> > [8/8] - This adds a user space interface to create, activate and deactivate
-> >   wakeup sources.  Since the files it consists of are called wake_lock and
-> >   wake_unlock, to follow Android, the objects the wakeup sources are wrapped
-> >   into are called "wakelocks" (for added confusion).  Since the interface
-> >   doesn't provide any means to destroy those "wakelocks", I added a garbage
-> >   collection mechanism to get rid of the unused ones, if any.  I also tought
-> >   it might be a good idea to put a limit on the number of those things that
-> >   user space can operate simultaneously, so I did that too.
-> 
-> Now [7/7] - Add user space interface for manipulating wakeup sources.
-
-[8/8] now - Add user space interface for manipulating wakeup sources.
-
-> > All of the above has been tested very briefly on my test-bed Mackerel board
-> > and it quite obviously requires more thorough testing, but first I need to know
-> > if it makes sense to spend any more time on it.
-> 
-> The above is still accurate, but I also verified that the patches don't break
-> my PC test boxes (at least as long as the new features aren't used ;-)).
-
-Nothing has changed in that respect, as far as I can say.
-
-The patches in the following series are available from the autosleep branch in
-the linux-pm tree.
-
-Thanks,
-Rafael
