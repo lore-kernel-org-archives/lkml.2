@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab2DVFSj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 01:18:39 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:44735 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab2DVFSi convert rfc822-to-8bit (ORCPT
+	id S1752632Ab2DVFlC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 01:41:02 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:63836 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab2DVFk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 01:18:38 -0400
+	Sun, 22 Apr 2012 01:40:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <1334711117.4785.43.camel@smoke>
-References: <CANFwon0C46UWTLVSeBTTm_aUCub7qW9d+jm=71h894bRODwyQA@mail.gmail.com>
- <1334711117.4785.43.camel@smoke>
-From: Hui Zhu <teawater@gmail.com>
-Date: Sun, 22 Apr 2012 13:17:54 +0800
-Message-ID: <CANFwon0m8Z56kjK_rSROsh4HHiR91S6F8+g4Ftav-unkzam9ig@mail.gmail.com>
-Subject: Re: KGTP (Linux Kernel debugger and tracer) 20120406 release(hotcode
- analyzer hotcode.py can output html) include patch for review
-To: Geoff Levand <geoff@infradead.org>
-Cc: linux-kernel@vger.kernel.org, zen lin <zen@openhuawei.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [88.209.222.127]
+In-Reply-To: <20120420171314.73801874@corrin.poochiereds.net>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+	<1334749927-26138-1-git-send-email-jlayton@redhat.com>
+	<20120420104055.511e15bc@tlielax.poochiereds.net>
+	<4F91C49D.8070908@RedHat.com>
+	<20120420203725.GA3512@us.ibm.com>
+	<20120420171314.73801874@corrin.poochiereds.net>
+Date: Sun, 22 Apr 2012 07:40:57 +0200
+Message-ID: <CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
+Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from
+ getattr call
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Malahal Naineni <malahal@us.ibm.com>, Steve Dickson <SteveD@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        hch@infradead.org, michael.brantley@deshaw.com,
+        sven.breuner@itwm.fraunhofer.de, chuck.lever@oracle.com,
+        pstaubach@exagrid.com, bfields@fieldses.org,
+        trond.myklebust@fys.uio.no, rees@umich.edu
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geoff,
+On Fri, Apr 20, 2012 at 11:13 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> On Fri, 20 Apr 2012 15:37:26 -0500
+> Malahal Naineni <malahal@us.ibm.com> wrote:
+>
+>> Steve Dickson [SteveD@redhat.com] wrote:
+>> > > 2) if we assume that it is fairly representative of one, how can we
+>> > > achieve retrying indefinitely with NFS, or at least some large finite
+>> > > amount?
+>> > The amount of looping would be peer speculation. If the problem can
+>> > not be handled by one simple retry I would say we simply pass the
+>> > error up to the app... Its an application issue...
+>>
+>> As someone said, ESTALE is an incorrect errno for a path based call.
+>> How about turning ESTALE into ENOENT after a retry or few retries?
+>>
+>
+> It's not really the same thing. One could envision an application
+> that's repeatedly renaming a new file on top of another one. The file
+> is never missing from the namespace of the server, but you could still
+> end up getting an ESTALE.
+>
+> That would break other atomicity guarantees in an even worse way, IMO...
 
-On Wed, Apr 18, 2012 at 09:05, Geoff Levand <geoff@infradead.org> wrote:
-> Hi Hui,
->
-> On Sat, 2012-04-07 at 20:21 +0800, Hui Zhu wrote:
->> Signed-off-by: Hui Zhu <teawater@gmail.com>
->
-> You have done some interesting work, but can I recommend a
-> few things?
->
-> Please break your patch into a few smaller ones, say, one
-> that adds the core kgtp support, one that adds the
-> documentation files, one that adds the scripts.  Each patch
-> should have a suitable comment that describes the
-> changes.  For kgtp the patch for the core support would
-> of course have a discussion of the feature and its
-> benefits, etc.
->
-> Also, please post your patches inline so we can give
-> line-by-line comments.  It is difficult to give comments
-> when the patch is an email attachment.
->
+For directory operations ESTALE *is* equivalent to ENOENT if already
+retrying with LOOKUP_REVAL.  Think about it.  Atomic replacement by
+another directory with rename(2) is not an excuse here actually.
+Local filesystems too can end up with IS_DEAD directory after lookup
+in that case.
 
-Thanks a lot for your mail.  I will do all of them according to your mail.
+For non directories we basically have getattr and setattr.   NFSv4 can
+handle both without retries if we supply the name instead of the
+handle (i.e. i_op->getattr_by_name, i_op->setattr_by_name).  Other
+protocols can do whatever they want, exponential backoff with limited
+number of retries, whatever.
 
-Best.
-Hui
+No looping required in the VFS.
+
+Thanks,
+Miklos
