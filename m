@@ -1,121 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab2DVW34 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 18:29:56 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:51398 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab2DVW3z (ORCPT
+	id S1752894Ab2DVWcc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 18:32:32 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42873 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558Ab2DVWca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 18:29:55 -0400
-Message-ID: <1335133792.2187.8.camel@shrek.rexursive.com>
-Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for
- hibernate/thaw buffering
-From: Bojan Smojver <bojan@rexursive.com>
-To: Per Olofsson <pelle@debian.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Date: Mon, 23 Apr 2012 08:29:52 +1000
-In-Reply-To: <4F946B86.4000509@debian.org>
-References: <1334267969.2573.14.camel@shrek.rexursive.com>
-	 <201204221347.52883.rjw@sisk.pl>
-	 <22aaaccf-5898-460c-b1e4-a87c153d9e0c@email.android.com>
-	 <201204222229.47160.rjw@sisk.pl> <4F946B86.4000509@debian.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
+	Sun, 22 Apr 2012 18:32:30 -0400
+Date: Sun, 22 Apr 2012 23:34:54 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>,
+        Chandra Seetharaman <sekharan@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
+ EXPORT_SYMBOL
+Message-ID: <20120422233454.7cdd0f35@pyramind.ukuu.org.uk>
+In-Reply-To: <20120422221329.GB24109@redhat.com>
+References: <20111215214440.GA17677@redhat.com>
+	<4EF039D5.5010201@suse.de>
+	<20120405144721.GA18437@redhat.com>
+	<20120420144538.GB8155@redhat.com>
+	<20120420173405.GA8846@redhat.com>
+	<20120420214120.159e2690@pyramind.ukuu.org.uk>
+	<20120420215825.GA10406@redhat.com>
+	<20120420232043.40ddc3c4@pyramind.ukuu.org.uk>
+	<20120420225822.GA10769@redhat.com>
+	<20120421001433.2955abd4@pyramind.ukuu.org.uk>
+	<20120422221329.GB24109@redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-22 at 22:35 +0200, Per Olofsson wrote:
-> It is also possible to create a much smaller patch which only
-> subtracts the high pages and nothing else.
+> The author and maintainers of the scsi_dh code agreed that relaxing
+> scsi_dh_detach's export was fine and they acked the change.  Their
+> rights are important too.
 
-For instance:
----------------------------------------
-Hibernation regression fix, since 3.2:
+They can only grant rights beyond the GPL providing they remove everyone
+elses code. But that isn't the big issue. I wish you'd go talk to your
+legal team, then you might understand the real problem here. But you
+won't, so I'll hopefully be talking to them tomorrow.
 
-Calculate the number of required free pages based on non-high memory
-pages only, because that is where the buffers will come from.
+> And I understand what you're saying about you and others being rights
+> holders that have a say.  But communication has broken down because
+> you've been unwilling to concede that those who have acked this
+> relaxation _know_ that what scsi_dh provides is _not_ unique
+> functionality to Linux or Linux SCSI multipathing.
 
-Signed-off-by: Bojan Smojver <bojan@rexursive.com>
----
- kernel/power/swap.c |   33 +++++++++++++++++++++++++--------
- 1 files changed, 25 insertions(+), 8 deletions(-)
+"Unwilling to concede". There is nothing to concede. The GPL spells out
+the rules. Also if you'd have talked to Red Hat legal you'd have
+understood there are other issues here.
 
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 8742fd0..fdf834f 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -51,6 +51,23 @@
- 
- #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
- 
-+/*
-+ * Number of free pages that are not high.
-+ */
-+static inline unsigned long low_free_pages(void)
-+{
-+	return nr_free_pages() - nr_free_highpages();
-+}
-+
-+/*
-+ * Number of pages required to be kept free while writing the image. Always
-+ * half of all available low pages before the writing starts.
-+ */
-+static inline unsigned long reqd_free_pages(void)
-+{
-+	return low_free_pages() / 2;
-+}
-+
- struct swap_map_page {
- 	sector_t entries[MAP_PAGE_ENTRIES];
- 	sector_t next_swap;
-@@ -72,7 +89,7 @@ struct swap_map_handle {
- 	sector_t cur_swap;
- 	sector_t first_sector;
- 	unsigned int k;
--	unsigned long nr_free_pages, written;
-+	unsigned long reqd_free_pages;
- 	u32 crc32;
- };
- 
-@@ -316,8 +333,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
- 		goto err_rel;
- 	}
- 	handle->k = 0;
--	handle->nr_free_pages = nr_free_pages() >> 1;
--	handle->written = 0;
-+	handle->reqd_free_pages = reqd_free_pages();
- 	handle->first_sector = handle->cur_swap;
- 	return 0;
- err_rel:
-@@ -352,11 +368,11 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
- 		handle->cur_swap = offset;
- 		handle->k = 0;
- 	}
--	if (bio_chain && ++handle->written > handle->nr_free_pages) {
-+	if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
- 		error = hib_wait_on_bio_chain(bio_chain);
- 		if (error)
- 			goto out;
--		handle->written = 0;
-+		handle->reqd_free_pages = reqd_free_pages();
- 	}
-  out:
- 	return error;
-@@ -618,7 +634,7 @@ static int save_image_lzo(struct swap_map_handle *handle,
- 	 * Adjust number of free pages after all allocations have been done.
- 	 * We don't want to run out of pages when writing.
- 	 */
--	handle->nr_free_pages = nr_free_pages() >> 1;
-+	handle->reqd_free_pages = reqd_free_pages();
- 
- 	/*
- 	 * Start the CRC32 thread.
----------------------------------------
+> Allowing a proprietary driver to use scsi_dh_detach to unload scsh_dh*'s
+> associated additional SCSI sense and error processing doesn't implicitly
+> mean said driver is using derived work to achieve it's comparable
+> processing.  It simply means their offering reasonably conflicts with
+> what Linux is providing:
 
--- 
-Bojan
+Can I suggest you don't make legal statements from a Red Hat address
+without talking to your legal team. It's not a good idea and tends to get
+people into trouble.
 
+> All SCSI multipathing drivers are expected to interpret and react to
+> SCSI sense information.  Doing so is not an innovation unique to Linux.
+> Because it is not unique it collides with a long established proprietary
+> driver's offering.
+
+That's their problem. They chose not to play ball, and they are going to
+have to run after us and sort their own mess out. They'll cope as they've
+had a lot of practice at it.
+
+> Yes, secretly switching channels to google+ and lobbing questions about
+> Red Hat's commitment to free software at one of Red Hat's OSS community
+> leaders probably isn't the preferred way to handle such things.
+
+I didn't do anything secret. How is posting publically "secret". Also I
+made very sure the people who needed to see it in Red Hat did, so they
+can do something about it and rein you in. It's had the right effect and
+it means the right folks in Red Hat can look at the issue itself.
+
+> You capture the hearts and minds of many Linux and GPL stakeholders and
+> are well respected -- and believe it or not I'm not some naive or
+> reckless individual.  I am a professional Linux developer who works for
+> the most respected name in Open Source development.
+
+I spent ten years at Red Hat, I'd like them to keep that reputation which
+is one of the reasons this bothers me a lot. The other being the legal
+issues.
+
+> And I now do _not_ have concerns of legal issues associated with this
+> change.  I genuinely do appreciate your concern though.
+
+Well that's for Red Hat management and legal to determine, unless you are
+also a practicing IP lawyer as well ?
+
+> With that said, I'm leaving the decision of whether or not to relax
+> scsi_dh_detach's export in the very capable hands of James Bottomley.
+> 
+> I'll be fine with whatever James decides but do hope that this outcry
+> will not serve to establish precedent that ties our hands in the future
+> when comparable decisions need to be made about the improvement of
+> Linux's interfaces and overall function.
+
+This isn't tying your hands. There are two things which tie your hands
+here - the GPL (intentionally) and certain properties of US law - which
+I'll discuss with the appropriate Red Hat people in an appropriate forum.
+You clearly are not that appropriate person.
+
+Perhaps after that they can explain to you in the proper manner internally
+
+- Why legal matters should be referred to lawyers for checking.
+- Why your patch may raise a particularly nasty potential problem if it
+  were merged
+
+Alan
