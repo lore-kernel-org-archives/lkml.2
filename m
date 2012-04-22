@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab2DVWgX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 18:36:23 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34965 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752623Ab2DVWgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 18:36:21 -0400
-X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Apr 2012 18:36:21 EDT
-X-Sasl-enc: H7r44qgwJCUx/9lpq91p8jHKwOObrkWYLWsNR5HUHy2K 1335133678
-Date: Sun, 22 Apr 2012 15:27:57 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anatolij Gustschin <agust@denx.de>,
-        Ramneek Mehresh <ramneek.mehresh@freescale.com>
-Subject: Re: linux-next: manual merge of the usb tree with the usb.current
- tree
-Message-ID: <20120422222757.GA26593@kroah.com>
-References: <20120419151402.6f958fabc6bd96696b4cde3c@canb.auug.org.au>
+	id S1753008Ab2DVXCN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 19:02:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38823 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752743Ab2DVXCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 19:02:11 -0400
+Date: Sun, 22 Apr 2012 19:01:58 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>,
+        Chandra Seetharaman <sekharan@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
+ EXPORT_SYMBOL
+Message-ID: <20120422230156.GA25181@redhat.com>
+References: <20120405144721.GA18437@redhat.com>
+ <20120420144538.GB8155@redhat.com>
+ <20120420173405.GA8846@redhat.com>
+ <20120420214120.159e2690@pyramind.ukuu.org.uk>
+ <20120420215825.GA10406@redhat.com>
+ <20120420232043.40ddc3c4@pyramind.ukuu.org.uk>
+ <20120420225822.GA10769@redhat.com>
+ <20120421001433.2955abd4@pyramind.ukuu.org.uk>
+ <20120422221329.GB24109@redhat.com>
+ <20120422233454.7cdd0f35@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120419151402.6f958fabc6bd96696b4cde3c@canb.auug.org.au>
+In-Reply-To: <20120422233454.7cdd0f35@pyramind.ukuu.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 03:14:02PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the usb tree got a conflict in
-> drivers/usb/host/ehci-fsl.c between commit f941f6922533 ("USB: ehci-fsl:
-> Fix kernel crash on mpc5121e") from the usb.current tree and commit
-> 58c559e6509f ("fsl/usb: Add controller version based ULPI and UTMI phy
-> support") from the usb tree.
-> 
-> I fixed it up (using the pdata assignment from the latter commit) and
-> can carry the fix as necessary.
+Funny thing happens when you assume too much...
 
-This should now be resolved in my tree.
+Anyway, your no compromises approach is admirable but it doesn't erase
+the fact that all proprietary Linux drivers use EXPORT_SYMBOL code.
 
-thanks,
+So what you're really saying is no proprietary drivers are allowed to be
+loaded into a Linux kernel.  Nice that you've made this scsi_dh_detach
+change the frontline of a battle that has already been lost years ago.
 
-greg k-h
+Thanks for your time,
+Mike
