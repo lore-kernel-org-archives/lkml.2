@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab2DVVVm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 17:21:42 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:58259 "EHLO ogre.sisk.pl"
+	id S1753015Ab2DVVVj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 17:21:39 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:58238 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752825Ab2DVVUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 17:20:55 -0400
+	id S1752821Ab2DVVUw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 17:20:52 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 6/8] PM / Sleep: Implement opportunistic sleep
-Date: Sun, 22 Apr 2012 23:23:23 +0200
+Subject: [RFC][PATCH 5/8] epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll events are ready
+Date: Sun, 22 Apr 2012 23:22:43 +0200
 User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
@@ -25,518 +26,264 @@ In-Reply-To: <201204222319.02228.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204222323.23685.rjw@sisk.pl>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201204222322.44278.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+From: Arve Hjønnevåg <arve@android.com>
 
-Introduce a mechanism by which the kernel can trigger global
-transitions to a sleep state chosen by user space if there are no
-active wakeup sources.
+When an epoll_event, that has the EPOLLWAKEUP flag set, is ready, a
+wakeup_source will be active to prevent suspend. This can be used to
+handle wakeup events from a driver that support poll, e.g. input, if
+that driver wakes up the waitqueue passed to epoll before allowing
+suspend.
 
-It consists of a new sysfs attribute, /sys/power/autosleep, that
-can be written one of the strings returned by reads from
-/sys/power/state, an ordered workqueue and a work item carrying out
-the "suspend" operations.  If a string representing the system's
-sleep state is written to /sys/power/autosleep, the work item
-triggering transitions to that state is queued up and it requeues
-itself after every execution until user space writes "off" to
-/sys/power/autosleep.
+The current implementation uses an extra wakeup_source when
+ep_scan_ready_list runs. This can cause problems if a single thread
+is polling on wakeup events and frequent non-wakeup events (events
+usually arrive during thread freezing) using the same epoll file.
 
-That work item enables the detection of wakeup events using the
-functions already defined in drivers/base/power/wakeup.c (with one
-small modification) and calls either pm_suspend(), or hibernate() to
-put the system into a sleep state.  If a wakeup event is reported
-while the transition is in progress, it will abort the transition and
-the "system suspend" work item will be queued up again.
-
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- Documentation/ABI/testing/sysfs-power |   17 ++++
- drivers/base/power/wakeup.c           |   38 ++++++-----
- include/linux/suspend.h               |   13 +++
- kernel/power/Kconfig                  |    8 ++
- kernel/power/Makefile                 |    1 
- kernel/power/autosleep.c              |  113 ++++++++++++++++++++++++++++++++
- kernel/power/main.c                   |  117 ++++++++++++++++++++++++++++------
- kernel/power/power.h                  |   18 +++++
- 8 files changed, 290 insertions(+), 35 deletions(-)
+ fs/eventpoll.c            |   71 ++++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/eventpoll.h |    6 +++
+ 2 files changed, 74 insertions(+), 3 deletions(-)
 
-Index: linux/kernel/power/Makefile
+Index: linux/fs/eventpoll.c
 ===================================================================
---- linux.orig/kernel/power/Makefile
-+++ linux/kernel/power/Makefile
-@@ -9,5 +9,6 @@ obj-$(CONFIG_SUSPEND)		+= suspend.o
- obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
- obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
- 				   block_io.o
-+obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
- 
- obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
-Index: linux/kernel/power/Kconfig
-===================================================================
---- linux.orig/kernel/power/Kconfig
-+++ linux/kernel/power/Kconfig
-@@ -103,6 +103,14 @@ config PM_SLEEP_SMP
- 	select HOTPLUG
- 	select HOTPLUG_CPU
- 
-+config PM_AUTOSLEEP
-+	bool "Opportunistic sleep"
-+	depends on PM_SLEEP
-+	default n
-+	---help---
-+	Allow the kernel to trigger a system transition into a global sleep
-+	state automatically whenever there are no active wakeup sources.
-+
- config PM_RUNTIME
- 	bool "Run-time PM core functionality"
- 	depends on !IA64_HP_SIM
-Index: linux/kernel/power/power.h
-===================================================================
---- linux.orig/kernel/power/power.h
-+++ linux/kernel/power/power.h
-@@ -264,3 +264,21 @@ static inline void suspend_thaw_processe
- {
- }
- #endif
-+
-+#ifdef CONFIG_PM_AUTOSLEEP
-+
-+/* kernel/power/autosleep.c */
-+extern int pm_autosleep_init(void);
-+extern int pm_autosleep_lock(void);
-+extern void pm_autosleep_unlock(void);
-+extern suspend_state_t pm_autosleep_state(void);
-+extern int pm_autosleep_set_state(suspend_state_t state);
-+
-+#else /* !CONFIG_PM_AUTOSLEEP */
-+
-+static inline int pm_autosleep_init(void) { return 0; }
-+static inline int pm_autosleep_lock(void) { return 0; }
-+static inline void pm_autosleep_unlock(void) {}
-+static inline suspend_state_t pm_autosleep_state(void) { return PM_SUSPEND_ON; }
-+
-+#endif /* !CONFIG_PM_AUTOSLEEP */
-Index: linux/include/linux/suspend.h
-===================================================================
---- linux.orig/include/linux/suspend.h
-+++ linux/include/linux/suspend.h
-@@ -356,7 +356,7 @@ extern int unregister_pm_notifier(struct
- extern bool events_check_enabled;
- 
- extern bool pm_wakeup_pending(void);
--extern bool pm_get_wakeup_count(unsigned int *count);
-+extern bool pm_get_wakeup_count(unsigned int *count, bool block);
- extern bool pm_save_wakeup_count(unsigned int count);
- 
- static inline void lock_system_sleep(void)
-@@ -407,6 +407,17 @@ static inline void unlock_system_sleep(v
- 
- #endif /* !CONFIG_PM_SLEEP */
- 
-+#ifdef CONFIG_PM_AUTOSLEEP
-+
-+/* kernel/power/autosleep.c */
-+void queue_up_suspend_work(void);
-+
-+#else /* !CONFIG_PM_AUTOSLEEP */
-+
-+static inline void queue_up_suspend_work(void) {}
-+
-+#endif /* !CONFIG_PM_AUTOSLEEP */
-+
- #ifdef CONFIG_ARCH_SAVE_PAGE_KEYS
- /*
-  * The ARCH_SAVE_PAGE_KEYS functions can be used by an architecture
-Index: linux/kernel/power/autosleep.c
-===================================================================
---- /dev/null
-+++ linux/kernel/power/autosleep.c
-@@ -0,0 +1,113 @@
-+/*
-+ * kernel/power/autosleep.c
-+ *
-+ * Opportunistic sleep support.
-+ *
-+ * Copyright (C) 2012 Rafael J. Wysocki <rjw@sisk.pl>
-+ */
-+
+--- linux.orig/fs/eventpoll.c
++++ linux/fs/eventpoll.c
+@@ -33,6 +33,7 @@
+ #include <linux/bitops.h>
+ #include <linux/mutex.h>
+ #include <linux/anon_inodes.h>
 +#include <linux/device.h>
-+#include <linux/mutex.h>
-+#include <linux/pm_wakeup.h>
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+ #include <asm/mman.h>
+@@ -87,7 +88,7 @@
+  */
+ 
+ /* Epoll private bits inside the event mask */
+-#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET)
++#define EP_PRIVATE_BITS (EPOLLWAKEUP | EPOLLONESHOT | EPOLLET)
+ 
+ /* Maximum number of nesting allowed inside epoll sets */
+ #define EP_MAX_NESTS 4
+@@ -154,6 +155,9 @@ struct epitem {
+ 	/* List header used to link this item to the "struct file" items list */
+ 	struct list_head fllink;
+ 
++	/* wakeup_source used when EPOLLWAKEUP is set */
++	struct wakeup_source *ws;
 +
-+#include "power.h"
+ 	/* The structure that describe the interested events and the source fd */
+ 	struct epoll_event event;
+ };
+@@ -194,6 +198,9 @@ struct eventpoll {
+ 	 */
+ 	struct epitem *ovflist;
+ 
++	/* wakeup_source used when ep_scan_ready_list is running */
++	struct wakeup_source *ws;
 +
-+static suspend_state_t autosleep_state;
-+static struct workqueue_struct *autosleep_wq;
-+static DEFINE_MUTEX(autosleep_lock);
-+static struct wakeup_source *autosleep_ws;
+ 	/* The user that created the eventpoll descriptor */
+ 	struct user_struct *user;
+ 
+@@ -565,6 +572,7 @@ static int ep_scan_ready_list(struct eve
+ 	 * in a lockless way.
+ 	 */
+ 	spin_lock_irqsave(&ep->lock, flags);
++	__pm_stay_awake(ep->ws);
+ 	list_splice_init(&ep->rdllist, &txlist);
+ 	ep->ovflist = NULL;
+ 	spin_unlock_irqrestore(&ep->lock, flags);
+@@ -588,8 +596,10 @@ static int ep_scan_ready_list(struct eve
+ 		 * queued into ->ovflist but the "txlist" might already
+ 		 * contain them, and the list_splice() below takes care of them.
+ 		 */
+-		if (!ep_is_linked(&epi->rdllink))
++		if (!ep_is_linked(&epi->rdllink)) {
+ 			list_add_tail(&epi->rdllink, &ep->rdllist);
++			__pm_stay_awake(epi->ws);
++		}
+ 	}
+ 	/*
+ 	 * We need to set back ep->ovflist to EP_UNACTIVE_PTR, so that after
+@@ -602,6 +612,7 @@ static int ep_scan_ready_list(struct eve
+ 	 * Quickly re-inject items left on "txlist".
+ 	 */
+ 	list_splice(&txlist, &ep->rdllist);
++	__pm_relax(ep->ws);
+ 
+ 	if (!list_empty(&ep->rdllist)) {
+ 		/*
+@@ -656,6 +667,9 @@ static int ep_remove(struct eventpoll *e
+ 		list_del_init(&epi->rdllink);
+ 	spin_unlock_irqrestore(&ep->lock, flags);
+ 
++	if (epi->ws)
++		wakeup_source_unregister(epi->ws);
 +
-+static void try_to_suspend(struct work_struct *work)
+ 	/* At this point it is safe to free the eventpoll item */
+ 	kmem_cache_free(epi_cache, epi);
+ 
+@@ -706,6 +720,8 @@ static void ep_free(struct eventpoll *ep
+ 	mutex_unlock(&epmutex);
+ 	mutex_destroy(&ep->mtx);
+ 	free_uid(ep->user);
++	if (ep->ws)
++		wakeup_source_unregister(ep->ws);
+ 	kfree(ep);
+ }
+ 
+@@ -737,6 +753,7 @@ static int ep_read_events_proc(struct ev
+ 			 * callback, but it's not actually ready, as far as
+ 			 * caller requested events goes. We can remove it here.
+ 			 */
++			__pm_relax(epi->ws);
+ 			list_del_init(&epi->rdllink);
+ 		}
+ 	}
+@@ -932,8 +949,10 @@ static int ep_poll_callback(wait_queue_t
+ 	}
+ 
+ 	/* If this file is already in the ready list we exit soon */
+-	if (!ep_is_linked(&epi->rdllink))
++	if (!ep_is_linked(&epi->rdllink)) {
+ 		list_add_tail(&epi->rdllink, &ep->rdllist);
++		__pm_stay_awake(epi->ws);
++	}
+ 
+ 	/*
+ 	 * Wake up ( if active ) both the eventpoll wait list and the ->poll()
+@@ -1091,6 +1110,30 @@ static int reverse_path_check(void)
+ 	return error;
+ }
+ 
++static int ep_create_wakeup_source(struct epitem *epi)
 +{
-+	unsigned int initial_count, final_count;
++	const char *name;
 +
-+	if (!pm_get_wakeup_count(&initial_count, true))
-+		goto out;
-+
-+	mutex_lock(&autosleep_lock);
-+
-+	if (!pm_save_wakeup_count(initial_count)) {
-+		mutex_unlock(&autosleep_lock);
-+		goto out;
++	if (!epi->ep->ws) {
++		epi->ep->ws = wakeup_source_register("eventpoll");
++		if (!epi->ep->ws)
++			return -ENOMEM;
 +	}
 +
-+	if (autosleep_state == PM_SUSPEND_ON) {
-+		mutex_unlock(&autosleep_lock);
-+		return;
-+	}
-+	if (autosleep_state >= PM_SUSPEND_MAX)
-+		hibernate();
-+	else
-+		pm_suspend(autosleep_state);
++	name = epi->ffd.file->f_path.dentry->d_name.name;
++	epi->ws = wakeup_source_register(name);
++	if (!epi->ws)
++		return -ENOMEM;
 +
-+	mutex_unlock(&autosleep_lock);
-+
-+	if (!pm_get_wakeup_count(&final_count, false))
-+		goto out;
-+
-+	if (final_count == initial_count)
-+		schedule_timeout(HZ / 2);
-+
-+ out:
-+	queue_up_suspend_work();
-+}
-+
-+static DECLARE_WORK(suspend_work, try_to_suspend);
-+
-+void queue_up_suspend_work(void)
-+{
-+	if (!work_pending(&suspend_work) && autosleep_state > PM_SUSPEND_ON)
-+		queue_work(autosleep_wq, &suspend_work);
-+}
-+
-+suspend_state_t pm_autosleep_state(void)
-+{
-+	return autosleep_state;
-+}
-+
-+int pm_autosleep_lock(void)
-+{
-+	return mutex_lock_interruptible(&autosleep_lock);
-+}
-+
-+void pm_autosleep_unlock(void)
-+{
-+	mutex_unlock(&autosleep_lock);
-+}
-+
-+int pm_autosleep_set_state(suspend_state_t state)
-+{
-+
-+#ifndef CONFIG_HIBERNATION
-+	if (state >= PM_SUSPEND_MAX)
-+		return -EINVAL;
-+#endif
-+
-+	__pm_stay_awake(autosleep_ws);
-+
-+	mutex_lock(&autosleep_lock);
-+
-+	autosleep_state = state;
-+
-+	__pm_relax(autosleep_ws);
-+
-+	if (state > PM_SUSPEND_ON)
-+		queue_up_suspend_work();
-+
-+	mutex_unlock(&autosleep_lock);
 +	return 0;
 +}
 +
-+int __init pm_autosleep_init(void)
++static void ep_destroy_wakeup_source(struct epitem *epi)
 +{
-+	autosleep_ws = wakeup_source_register("autosleep");
-+	if (!autosleep_ws)
-+		return -ENOMEM;
-+
-+	autosleep_wq = alloc_ordered_workqueue("autosleep", 0);
-+	if (autosleep_wq)
-+		return 0;
-+
-+	wakeup_source_unregister(autosleep_ws);
-+	return -ENOMEM;
-+}
-Index: linux/kernel/power/main.c
-===================================================================
---- linux.orig/kernel/power/main.c
-+++ linux/kernel/power/main.c
-@@ -269,8 +269,7 @@ static ssize_t state_show(struct kobject
- 	return (s - buf);
- }
- 
--static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
--			   const char *buf, size_t n)
-+static suspend_state_t decode_state(const char *buf, size_t n)
- {
- #ifdef CONFIG_SUSPEND
- 	suspend_state_t state = PM_SUSPEND_STANDBY;
-@@ -278,27 +277,48 @@ static ssize_t state_store(struct kobjec
- #endif
- 	char *p;
- 	int len;
--	int error = -EINVAL;
- 
- 	p = memchr(buf, '\n', n);
- 	len = p ? p - buf : n;
- 
--	/* First, check if we are requested to hibernate */
--	if (len == 4 && !strncmp(buf, "disk", len)) {
--		error = hibernate();
--		goto Exit;
--	}
-+	/* Check hibernation first. */
-+	if (len == 4 && !strncmp(buf, "disk", len))
-+		return PM_SUSPEND_MAX;
- 
- #ifdef CONFIG_SUSPEND
--	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
--		if (*s && len == strlen(*s) && !strncmp(buf, *s, len)) {
--			error = pm_suspend(state);
--			break;
--		}
--	}
-+	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++)
-+		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
-+			return state;
- #endif
- 
-- Exit:
-+	return PM_SUSPEND_ON;
++	wakeup_source_unregister(epi->ws);
++	epi->ws = NULL;
 +}
 +
-+static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
-+			   const char *buf, size_t n)
-+{
-+	suspend_state_t state;
-+	int error;
-+
-+	error = pm_autosleep_lock();
-+	if (error)
-+		return error;
-+
-+	if (pm_autosleep_state() > PM_SUSPEND_ON) {
-+		error = -EBUSY;
-+		goto out;
-+	}
-+
-+	state = decode_state(buf, n);
-+	if (state < PM_SUSPEND_MAX)
-+		error = pm_suspend(state);
-+	else if (state > PM_SUSPEND_ON)
-+		error = hibernate();
-+	else
-+		error = -EINVAL;
-+
-+ out:
-+	pm_autosleep_unlock();
- 	return error ? error : n;
- }
- 
-@@ -339,7 +359,8 @@ static ssize_t wakeup_count_show(struct
- {
- 	unsigned int val;
- 
--	return pm_get_wakeup_count(&val) ? sprintf(buf, "%u\n", val) : -EINTR;
-+	return pm_get_wakeup_count(&val, true) ?
-+		sprintf(buf, "%u\n", val) : -EINTR;
- }
- 
- static ssize_t wakeup_count_store(struct kobject *kobj,
-@@ -347,15 +368,69 @@ static ssize_t wakeup_count_store(struct
- 				const char *buf, size_t n)
- {
- 	unsigned int val;
-+	int error;
-+
-+	error = pm_autosleep_lock();
-+	if (error)
-+		return error;
-+
-+	if (pm_autosleep_state() > PM_SUSPEND_ON) {
-+		error = -EBUSY;
-+		goto out;
-+	}
- 
- 	if (sscanf(buf, "%u", &val) == 1) {
- 		if (pm_save_wakeup_count(val))
- 			return n;
- 	}
--	return -EINVAL;
-+	error = -EINVAL;
-+
-+ out:
-+	pm_autosleep_unlock();
-+	return error;
- }
- 
- power_attr(wakeup_count);
-+
-+#ifdef CONFIG_PM_AUTOSLEEP
-+static ssize_t autosleep_show(struct kobject *kobj,
-+			      struct kobj_attribute *attr,
-+			      char *buf)
-+{
-+	suspend_state_t state = pm_autosleep_state();
-+
-+	if (state == PM_SUSPEND_ON)
-+		return sprintf(buf, "off\n");
-+
-+#ifdef CONFIG_SUSPEND
-+	if (state < PM_SUSPEND_MAX)
-+		return sprintf(buf, "%s\n", valid_state(state) ?
-+						pm_states[state] : "error");
-+#endif
-+#ifdef CONFIG_HIBERNATION
-+	return sprintf(buf, "disk\n");
-+#else
-+	return sprintf(buf, "error");
-+#endif
-+}
-+
-+static ssize_t autosleep_store(struct kobject *kobj,
-+			       struct kobj_attribute *attr,
-+			       const char *buf, size_t n)
-+{
-+	suspend_state_t state = decode_state(buf, n);
-+	int error;
-+
-+	if (state == PM_SUSPEND_ON && strncmp(buf, "off", 3)
-+	    && strncmp(buf, "off\n", 4))
-+		return -EINVAL;
-+
-+	error = pm_autosleep_set_state(state);
-+	return error ? error : n;
-+}
-+
-+power_attr(autosleep);
-+#endif /* CONFIG_PM_AUTOSLEEP */
- #endif /* CONFIG_PM_SLEEP */
- 
- #ifdef CONFIG_PM_TRACE
-@@ -409,6 +484,9 @@ static struct attribute * g[] = {
- #ifdef CONFIG_PM_SLEEP
- 	&pm_async_attr.attr,
- 	&wakeup_count_attr.attr,
-+#ifdef CONFIG_PM_AUTOSLEEP
-+	&autosleep_attr.attr,
-+#endif
- #ifdef CONFIG_PM_DEBUG
- 	&pm_test_attr.attr,
- #endif
-@@ -444,7 +522,10 @@ static int __init pm_init(void)
- 	power_kobj = kobject_create_and_add("power", NULL);
- 	if (!power_kobj)
- 		return -ENOMEM;
--	return sysfs_create_group(power_kobj, &attr_group);
-+	error = sysfs_create_group(power_kobj, &attr_group);
-+	if (error)
-+		return error;
-+	return pm_autosleep_init();
- }
- 
- core_initcall(pm_init);
-Index: linux/drivers/base/power/wakeup.c
-===================================================================
---- linux.orig/drivers/base/power/wakeup.c
-+++ linux/drivers/base/power/wakeup.c
-@@ -498,8 +498,10 @@ static void wakeup_source_deactivate(str
- 	trace_wakeup_source_deactivate(ws->name, cec);
- 
- 	split_counters(&cnt, &inpr);
--	if (!inpr && waitqueue_active(&wakeup_count_wait_queue))
-+	if (!inpr && waitqueue_active(&wakeup_count_wait_queue)) {
- 		wake_up(&wakeup_count_wait_queue);
-+		queue_up_suspend_work();
-+	}
- }
- 
- /**
-@@ -660,29 +662,33 @@ bool pm_wakeup_pending(void)
- /**
-  * pm_get_wakeup_count - Read the number of registered wakeup events.
-  * @count: Address to store the value at.
-+ * @block: Whether or not to block.
-  *
-- * Store the number of registered wakeup events at the address in @count.  Block
-- * if the current number of wakeup events being processed is nonzero.
-+ * Store the number of registered wakeup events at the address in @count.  If
-+ * @block is set, block until the current number of wakeup events being
-+ * processed is zero.
-  *
-- * Return 'false' if the wait for the number of wakeup events being processed to
-- * drop down to zero has been interrupted by a signal (and the current number
-- * of wakeup events being processed is still nonzero).  Otherwise return 'true'.
-+ * Return 'false' if the current number of wakeup events being processed is
-+ * nonzero.  Otherwise return 'true'.
+ /*
+  * Must be called with "mtx" held.
   */
--bool pm_get_wakeup_count(unsigned int *count)
-+bool pm_get_wakeup_count(unsigned int *count, bool block)
- {
- 	unsigned int cnt, inpr;
--	DEFINE_WAIT(wait);
+@@ -1118,6 +1161,13 @@ static int ep_insert(struct eventpoll *e
+ 	epi->event = *event;
+ 	epi->nwait = 0;
+ 	epi->next = EP_UNACTIVE_PTR;
++	if (epi->event.events & EPOLLWAKEUP) {
++		error = ep_create_wakeup_source(epi);
++		if (error)
++			goto error_create_wakeup_source;
++	} else {
++		epi->ws = NULL;
++	}
  
--	for (;;) {
--		prepare_to_wait(&wakeup_count_wait_queue, &wait,
--				TASK_INTERRUPTIBLE);
--		split_counters(&cnt, &inpr);
--		if (inpr == 0 || signal_pending(current))
--			break;
-+	if (block) {
-+		DEFINE_WAIT(wait);
+ 	/* Initialize the poll table using the queue callback */
+ 	epq.epi = epi;
+@@ -1164,6 +1214,7 @@ static int ep_insert(struct eventpoll *e
+ 	/* If the file is already "ready" we drop it inside the ready list */
+ 	if ((revents & event->events) && !ep_is_linked(&epi->rdllink)) {
+ 		list_add_tail(&epi->rdllink, &ep->rdllist);
++		__pm_stay_awake(epi->ws);
  
--		schedule();
-+		for (;;) {
-+			prepare_to_wait(&wakeup_count_wait_queue, &wait,
-+					TASK_INTERRUPTIBLE);
-+			split_counters(&cnt, &inpr);
-+			if (inpr == 0 || signal_pending(current))
-+				break;
+ 		/* Notify waiting tasks that events are available */
+ 		if (waitqueue_active(&ep->wq))
+@@ -1204,6 +1255,10 @@ error_unregister:
+ 		list_del_init(&epi->rdllink);
+ 	spin_unlock_irqrestore(&ep->lock, flags);
+ 
++	if (epi->ws)
++		wakeup_source_unregister(epi->ws);
 +
-+			schedule();
-+		}
-+		finish_wait(&wakeup_count_wait_queue, &wait);
++error_create_wakeup_source:
+ 	kmem_cache_free(epi_cache, epi);
+ 
+ 	return error;
+@@ -1229,6 +1284,12 @@ static int ep_modify(struct eventpoll *e
+ 	epi->event.events = event->events;
+ 	pt._key = event->events;
+ 	epi->event.data = event->data; /* protected by mtx */
++	if (epi->event.events & EPOLLWAKEUP) {
++		if (!epi->ws)
++			ep_create_wakeup_source(epi);
++	} else if (epi->ws) {
++		ep_destroy_wakeup_source(epi);
++	}
+ 
+ 	/*
+ 	 * Get current event bits. We can safely use the file* here because
+@@ -1244,6 +1305,7 @@ static int ep_modify(struct eventpoll *e
+ 		spin_lock_irq(&ep->lock);
+ 		if (!ep_is_linked(&epi->rdllink)) {
+ 			list_add_tail(&epi->rdllink, &ep->rdllist);
++			__pm_stay_awake(epi->ws);
+ 
+ 			/* Notify waiting tasks that events are available */
+ 			if (waitqueue_active(&ep->wq))
+@@ -1282,6 +1344,7 @@ static int ep_send_events_proc(struct ev
+ 	     !list_empty(head) && eventcnt < esed->maxevents;) {
+ 		epi = list_first_entry(head, struct epitem, rdllink);
+ 
++		__pm_relax(epi->ws);
+ 		list_del_init(&epi->rdllink);
+ 
+ 		pt._key = epi->event.events;
+@@ -1298,6 +1361,7 @@ static int ep_send_events_proc(struct ev
+ 			if (__put_user(revents, &uevent->events) ||
+ 			    __put_user(epi->event.data, &uevent->data)) {
+ 				list_add(&epi->rdllink, head);
++				__pm_stay_awake(epi->ws);
+ 				return eventcnt ? eventcnt : -EFAULT;
+ 			}
+ 			eventcnt++;
+@@ -1317,6 +1381,7 @@ static int ep_send_events_proc(struct ev
+ 				 * poll callback will queue them in ep->ovflist.
+ 				 */
+ 				list_add_tail(&epi->rdllink, &ep->rdllist);
++				__pm_stay_awake(epi->ws);
+ 			}
+ 		}
  	}
--	finish_wait(&wakeup_count_wait_queue, &wait);
- 
- 	split_counters(&cnt, &inpr);
- 	*count = cnt;
-Index: linux/Documentation/ABI/testing/sysfs-power
+Index: linux/include/linux/eventpoll.h
 ===================================================================
---- linux.orig/Documentation/ABI/testing/sysfs-power
-+++ linux/Documentation/ABI/testing/sysfs-power
-@@ -172,3 +172,20 @@ Description:
+--- linux.orig/include/linux/eventpoll.h
++++ linux/include/linux/eventpoll.h
+@@ -26,6 +26,12 @@
+ #define EPOLL_CTL_DEL 2
+ #define EPOLL_CTL_MOD 3
  
- 		Reading from this file will display the current value, which is
- 		set to 1 MB by default.
++/*
++ * Request the handling of system wakeup events so as to prevent automatic
++ * system suspends from happening while those events are being processed.
++ */
++#define EPOLLWAKEUP (1 << 29)
 +
-+What:		/sys/power/autosleep
-+Date:		February 2012
-+Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-+Description:
-+		The /sys/power/autosleep file can be written one of the strings
-+		returned by reads from /sys/power/state.  If that happens, a
-+		work item attempting to trigger a transition of the system to
-+		the sleep state represented by that string is queued up.  This
-+		attempt will only succeed if there are no active wakeup sources
-+		in the system at that time.  After evey execution, regardless
-+		of whether or not the attempt to put the system to sleep has
-+		succeeded, the work item requeues itself until user space
-+		writes "off" to /sys/power/autosleep.
-+
-+		Reading from this file causes the last string successfully
-+		written to it to be displayed.
+ /* Set the One Shot behaviour for the target file descriptor */
+ #define EPOLLONESHOT (1 << 30)
+ 
 
