@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255Ab2DVPvF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 11:51:05 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60915 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126Ab2DVPvE (ORCPT
+	id S1752291Ab2DVPwN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 11:52:13 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:42433 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab2DVPwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 11:51:04 -0400
-From: Eldad Zack <eldad@fogrefinery.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Eldad Zack <eldad@fogrefinery.com>
-Subject: [PATCH] [EXT4] super.c: unused variable warning without CONFIG_QUOTA
-Date: Sun, 22 Apr 2012 17:50:52 +0200
-Message-Id: <1335109852-17829-1-git-send-email-eldad@fogrefinery.com>
-X-Mailer: git-send-email 1.7.10
+	Sun, 22 Apr 2012 11:52:11 -0400
+Date: Sun, 22 Apr 2012 23:52:02 +0800
+From: Richard Yang <weiyang@linux.vnet.ibm.com>
+To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: One problem in reassign pci bus number?
+Message-ID: <20120422155202.GA13540@richard>
+Reply-To: Richard Yang <weiyang@linux.vnet.ibm.com>
+References: <20120410090306.GA7056@richard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410090306.GA7056@richard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12042215-5816-0000-0000-0000023DB204
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sb info is only checked with quota support.
+All,
 
-fs/ext4/super.c: In function ‘parse_options’:
-fs/ext4/super.c:1600:23: warning: unused variable ‘sbi’ [-Wunused-variable]
+I am reading the pci_scan_bridge() and not sure what will happen in
+following situation.
 
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
----
- fs/ext4/super.c |    2 ++
- 1 file changed, 2 insertions(+)
+Suppose the kernel is not passed the pci=assign-busses.
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 6da1935..e1fb1d5 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1597,7 +1597,9 @@ static int parse_options(char *options, struct super_block *sb,
- 			 unsigned int *journal_ioprio,
- 			 int is_remount)
- {
-+#ifdef CONFIG_QUOTA
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
-+#endif
- 	char *p;
- 	substring_t args[MAX_OPT_ARGS];
- 	int token;
+Below is a picture about the pci system.
+
+                   +-------+       
+                   |       | root bridge(0,255)
+                   +---+---+       
+                       |          Bus 0 
+      -----+-----------+------------------------------+--
+           |                                          |
+           |                                          |
+           |                                          |
+      +----+----+                               +-----+-----+
+      |         |  B1(1,15)                     |           |B2(16,28)
+      +----+----+                               +-----+-----+
+           |  Bus 1                                   |    Bus 16           
+      -----+-----------------------         ----------+----------------
+                            |
+                       +----+----+
+                       |         | B3               
+                       +---------+                
+                                                 
+Suppose B1 and B2 works fine with the BIOS, which get the right bus
+number and range.
+
+B3 does not works fine with the BIOS, which doesn't get the bus number.
+
+So in pci_scan_bridge(), B3 will be met in the second pass and get bus
+number 16?
+Would this be a conflict?
+
 -- 
-1.7.10
+Richard Yang
+Help you, Help me
 
