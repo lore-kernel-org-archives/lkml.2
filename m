@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab2DVOTe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 10:19:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:41532 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751725Ab2DVOTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 10:19:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="132585075"
-Message-ID: <1335104359.7078.0.camel@golum>
-Subject: Re: [PATCH 1/1] Remove UBIFS_FS_XATTR config option.
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Subodh Nijsure <subodh.nijsure@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Subodh Nijsure <snijsure@grid-net.com>
-Date: Sun, 22 Apr 2012 17:19:19 +0300
-In-Reply-To: <1334419797-28995-1-git-send-email-snijsure@grid-net.com>
-References: <1334419797-28995-1-git-send-email-snijsure@grid-net.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-zIAwDYVTXJHeKVHgvwid"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+	id S1752088Ab2DVOYk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 10:24:40 -0400
+Received: from fallback3.mail.ru ([94.100.176.58]:45616 "EHLO
+	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab2DVOYj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 10:24:39 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        =?UTF-8?B?UnVzc2VsbCBLaW5nIC0gQVJNIExpbnV4?= 
+	<linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Subject: =?UTF-8?B?UmVbMl06IFtQQVRDSCAwMi8xN10gQVJNIGNscHM3MTF4OiBBZGRlZCBDaXJy?=
+ =?UTF-8?B?dXMgTG9naWMgRVA3MzEyIENQVSB2YXJpYW50?=
 Mime-Version: 1.0
+X-Mailer: mPOP Web-Mail 2.19
+X-Originating-IP: [188.134.41.72]
+Date: Sun, 22 Apr 2012 18:24:05 +0400
+References: <1334999490-27177-1-git-send-email-shc_work@mail.ru> <20120421122044.GF24211@n2100.arm.linux.org.uk> <201204221358.29315.arnd@arndb.de>
+In-Reply-To: <201204221358.29315.arnd@arndb.de>
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 
+Content-Type: text/plain; charset=utf-8
+Message-Id: <E1SLxht-0000II-Od.shc_work-mail-ru@f23.mail.ru>
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3MEOoA4015557
 
 
---=-zIAwDYVTXJHeKVHgvwid
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Sat, 2012-04-14 at 09:09 -0700, Subodh Nijsure wrote:
-> Remove CONFIG_UBIFS_FS_XATTR configuration option and associated
-> UBIFS_FS_XATTR ifdefs.
->=20
-> Testing:
->        Tested using integck while using nandsim on x86 & MX28 based=20
->        platform with Micron MT29F2G08ABAEAH4 nand.
->=20
-> Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
 
-Ok, while babies are sleeping I had time to handle my inbox. Pushed to
-linux-ubifs.git, thanks!
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-zIAwDYVTXJHeKVHgvwid
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPlBNnAAoJECmIfjd9wqK0HMoQALvIYv08xI/FkXPUYYLmCfZD
-ocSbo0f5JBDeMkDOqc3WCxK7mISC/f0fNFHZHBGFMjEy4lZmVKnokr97CQtYYqqg
-84+be4v0JfLLJcTrAWne5eyUGqs7mWbV6A4cu1u/2MH31+Nkc9+QeCU8AVxqcpzk
-nhh3GbazsPavKWLyJNbU1fGjkk4YMkLemuD+D/O97MTVLQPofsZ9oovyUWPuBjXE
-gXVV4MFAROr68woaAuAnm1ixBiPQXccZb6Zc44BLwU8Fz44tggdfMUO+GCND93Ts
-wzOwWDjOxinr2nnPW/EGxdbQRd6wShaF0ugCbC+TAkBLrZWv6Ki3JQCSc+hCTDEq
-Yb7qxSA2TzrLdfas/iDwdueogwVN0CToYvMpQyEqPyFWa/yrNduPb4w5xE/X4IVA
-rvePzwHkgAMuypb4awUlfNWX4mZSPAt8Vk9SkN993oTAGxYaiviXobdHO8NWcbFQ
-Jvsq07VtByWOSc5M6uNr/HQkDIDVW4dPfrYPsJukFgyaiL5ELNX7jL6r8NyAWZWg
-dtLxjYrdxY1GCZWXyLcbi7xiGBBOqpZAaRzmBcX9TbpXiYBxCGZ8WM9Oo7nF2wJu
-6PCteVcwz+97fMnaNYsc8qNOdrNjsYGtxyMz+bDukPrx9VrleLQGSVl8TTpmdw38
-D+gm/sDHRqOxzAv52OUz
-=oED8
------END PGP SIGNATURE-----
-
---=-zIAwDYVTXJHeKVHgvwid--
-
+Sun, 22 Apr 2012 13:58:28 +0000 –æ—Ç Arnd Bergmann <arnd@arndb.de>:
+> On Saturday 21 April 2012, Russell King - ARM Linux wrote:
+> > The headers still have to end up being in an accessible place, and having
+> > drivers include the minimum required is a good idea.  Merely moving them
+> > into include/mach and updating the include statements as far as I'd go.
+> > (and I've never liked the idea of mach/hardware.h being an "include the
+> > world for this platform" header file.)
+> 
+> Digging a bit deeper into clps711x, I found that with Alexander's patch
+> series applied, there is nothing that actually includes the three
+> asm/hardware/ep7*.h files. I wonder about the motivation behind providing
+> them. Any reason we can't just remove those three files altogher?
+> 
+> Note that if we were to actually start using those files, this section
+> of mach/hardware.h would be broken:
+> 
+> #if defined (CONFIG_SOC_EP7211)
+> #include <asm/hardware/ep7211.h>
+> #elif defined (CONFIG_SOC_EP7212)
+> #include <asm/hardware/ep7212.h>
+> #elif defined (CONFIG_SOC_EP7213)
+> #include <asm/hardware/ep7312.h>
+> #endif
+> 
+> Because we can have more than one of these socs enabled in the
+> same configuration and enabling CONFIG_SOC_EP7211 would make the
+> other two headers invisible.
+We can define the —É–∑7312 registers in a single clps7111.h header and just always
+keep in mind that additional registers can be used only with the corresponding processor.
+In any case, additional registers are used in the code for a particular board only.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
