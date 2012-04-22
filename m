@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab2DVQb7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 12:31:59 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58931 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab2DVQb5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 12:31:57 -0400
-Date: Sun, 22 Apr 2012 18:31:37 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 3/5] i2c: remove ixp2000 driver
-Message-ID: <20120422163137.GB4201@pengutronix.de>
-References: <1333503243-7702-1-git-send-email-robherring2@gmail.com>
- <1333503243-7702-3-git-send-email-robherring2@gmail.com>
+	id S1752317Ab2DVQe0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 12:34:26 -0400
+Received: from smtp.tele.fi ([192.89.123.25]:33291 "EHLO smtp.tele.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751441Ab2DVQeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 12:34:25 -0400
+X-Originating-Ip: [194.89.68.22]
+Date: Sun, 22 Apr 2012 19:34:18 +0300
+From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
+To: Lars Boegild Thomsen <lth@cow.dk>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, Kevin Tian <kevin.tian@intel.com>,
+        xen-devel@lists.xensource.com, Robert Scott <bugs@humanleg.org.uk>,
+        hpa@zytor.com, linux-kernel@vger.kernel.org,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>, mingo@redhat.com,
+        Fengzhe Zhang <fengzhe.zhang@intel.com>,
+        e568b31a443d@6cc2cce7af2d.anonbox.net,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: Re: [Xen-devel] [regression] Ideapad S10-3 does not wake up from
+ suspend
+Message-ID: <20120422163418.GD2058@reaktio.net>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
+ <201204161905.13260.bugs@humanleg.org.uk>
+ <20120417020433.GA15848@burratino>
+ <201204181803.00383.lth@cow.dk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3uo+9/B/ebqu+fSQ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1333503243-7702-3-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <201204181803.00383.lth@cow.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 18, 2012 at 06:03:00PM +0800, Lars Boegild Thomsen wrote:
+> On Tuesday 17 April 2012 10:04:33 Jonathan Nieder wrote:
+> > > Hmm, no, 3.4-rc2 seems to produce the same results I'm afraid.
+> > Alas.  Does suspend-to-disk ("echo disk >/sys/power/state") have the
+> > same problem?  Can you get a log of the failure with
+> > "no_console_suspend" appended to the kernel command line, for example
+> > with a serial console or netconsole?
+> 
+> Using a serial console is a bit of a problem on this netbook as it hasn't got 
+> a serial port.  Not sure how the netconsole works - will read up on that.
+> 
 
---3uo+9/B/ebqu+fSQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You can get an ExpressCard Serial Card and use that..
+or if the laptop has vPro then it has Serial Over LAN in the AMT chip.
 
-On Tue, Apr 03, 2012 at 08:34:01PM -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
->=20
-> The platform is removed, so there are no users of this driver.
->=20
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+http://wiki.xen.org/wiki/Xen_Serial_Console
 
-Thanks, applied to next.
+-- Pasi
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---3uo+9/B/ebqu+fSQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+UMmkACgkQD27XaX1/VRspIgCgoRlmrxMwvB/muNf6wWeJXh2T
-C/UAnR4dEuEb4nqT7WcH0wrAGDBsEbuo
-=vFla
------END PGP SIGNATURE-----
-
---3uo+9/B/ebqu+fSQ--
+> And no - suspend to disk works fine.
+> 
+> I have by the way experimentally switched to 32bit version and it's the same 
+> thing (originally I was running 64bit version but that really doesn't make 
+> sense on a netbook - except doing it because it could be done).
+> 
+> //Lars...
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
