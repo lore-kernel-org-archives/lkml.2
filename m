@@ -1,55 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab2DVMoY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 08:44:24 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:53974 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751475Ab2DVMoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 08:44:22 -0400
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH] drivers/parport/parport_gsc.c: add missing kfree
-Date: Sun, 22 Apr 2012 14:44:15 +0200
-Message-Id: <1335098655-18387-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1751807Ab2DVMr1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 08:47:27 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:52930 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751673Ab2DVMrZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 08:47:25 -0400
+Date: Sun, 22 Apr 2012 08:47:24 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Anil Nair <anilcoll90@gmail.com>
+cc: Wang YanQing <Udknight@gmail.com>, Greg KH <greg@kroah.com>,
+        lkml <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [RFC]Is usb port number fixed?
+In-Reply-To: <CAHkwNT=DTjdhZmEg+SFGOVi+ZcS-NpHWH8Hh3XV+-BPzHRC7NA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1204220846290.15283-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Sun, 22 Apr 2012, Anil Nair wrote:
 
-Free ops as done just below.
-Adjust some spacing to please checkpatch.
+> The port number comes from root hub managed by the host controller. Its
+> fixed dynamically during enumeration, and can change.
+> Please correct me if i am wrong.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+You are indeed wrong.  Port numbers are not fixed dynamically and they 
+cannot change.
 
----
- drivers/parport/parport_gsc.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+On the other hand, bus numbers _are_ assigned dynamically and they can 
+(and do) change.
 
-diff --git a/drivers/parport/parport_gsc.c b/drivers/parport/parport_gsc.c
-index 5d6de38..d2dcb27 100644
---- a/drivers/parport/parport_gsc.c
-+++ b/drivers/parport/parport_gsc.c
-@@ -270,15 +270,16 @@ struct parport *__devinit parport_gsc_probe_port (unsigned long base,
- 	p->physport = p;
- 	if (!parport_SPP_supported (p)) {
- 		/* No port. */
--		kfree (priv);
-+		kfree(priv);
-+		kfree(ops);
- 		return NULL;
- 	}
- 	parport_PS2_supported (p);
- 
- 	if (!(p = parport_register_port(base, PARPORT_IRQ_NONE,
- 					PARPORT_DMA_NONE, ops))) {
--		kfree (priv);
--		kfree (ops);
-+		kfree(priv);
-+		kfree(ops);
- 		return NULL;
- 	}
- 
+Alan Stern
 
