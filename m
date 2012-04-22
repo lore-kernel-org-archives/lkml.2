@@ -1,110 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab2DVWNr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 18:13:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64325 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558Ab2DVWNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 18:13:46 -0400
-Date: Sun, 22 Apr 2012 18:13:29 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>,
-        Chandra Seetharaman <sekharan@us.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
- EXPORT_SYMBOL
-Message-ID: <20120422221329.GB24109@redhat.com>
-References: <20111215214440.GA17677@redhat.com>
- <4EF039D5.5010201@suse.de>
- <20120405144721.GA18437@redhat.com>
- <20120420144538.GB8155@redhat.com>
- <20120420173405.GA8846@redhat.com>
- <20120420214120.159e2690@pyramind.ukuu.org.uk>
- <20120420215825.GA10406@redhat.com>
- <20120420232043.40ddc3c4@pyramind.ukuu.org.uk>
- <20120420225822.GA10769@redhat.com>
- <20120421001433.2955abd4@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120421001433.2955abd4@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752847Ab2DVW34 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 18:29:56 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:51398 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558Ab2DVW3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 18:29:55 -0400
+Message-ID: <1335133792.2187.8.camel@shrek.rexursive.com>
+Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for
+ hibernate/thaw buffering
+From: Bojan Smojver <bojan@rexursive.com>
+To: Per Olofsson <pelle@debian.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Date: Mon, 23 Apr 2012 08:29:52 +1000
+In-Reply-To: <4F946B86.4000509@debian.org>
+References: <1334267969.2573.14.camel@shrek.rexursive.com>
+	 <201204221347.52883.rjw@sisk.pl>
+	 <22aaaccf-5898-460c-b1e4-a87c153d9e0c@email.android.com>
+	 <201204222229.47160.rjw@sisk.pl> <4F946B86.4000509@debian.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20 2012 at  7:14pm -0400,
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+On Sun, 2012-04-22 at 22:35 +0200, Per Olofsson wrote:
+> It is also possible to create a much smaller patch which only
+> subtracts the high pages and nothing else.
 
-> There is no "Linux only" magic in _GPL. Any derivative work of a GPL work
-> must be distributed under the GPL.
+For instance:
+---------------------------------------
+Hibernation regression fix, since 3.2:
 
-The author and maintainers of the scsi_dh code agreed that relaxing
-scsi_dh_detach's export was fine and they acked the change.  Their
-rights are important too.
+Calculate the number of required free pages based on non-high memory
+pages only, because that is where the buffers will come from.
 
-And I understand what you're saying about you and others being rights
-holders that have a say.  But communication has broken down because
-you've been unwilling to concede that those who have acked this
-relaxation _know_ that what scsi_dh provides is _not_ unique
-functionality to Linux or Linux SCSI multipathing.
+Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+---
+ kernel/power/swap.c |   33 +++++++++++++++++++++++++--------
+ 1 files changed, 25 insertions(+), 8 deletions(-)
 
-Allowing a proprietary driver to use scsi_dh_detach to unload scsh_dh*'s
-associated additional SCSI sense and error processing doesn't implicitly
-mean said driver is using derived work to achieve it's comparable
-processing.  It simply means their offering reasonably conflicts with
-what Linux is providing:
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 8742fd0..fdf834f 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -51,6 +51,23 @@
+ 
+ #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
+ 
++/*
++ * Number of free pages that are not high.
++ */
++static inline unsigned long low_free_pages(void)
++{
++	return nr_free_pages() - nr_free_highpages();
++}
++
++/*
++ * Number of pages required to be kept free while writing the image. Always
++ * half of all available low pages before the writing starts.
++ */
++static inline unsigned long reqd_free_pages(void)
++{
++	return low_free_pages() / 2;
++}
++
+ struct swap_map_page {
+ 	sector_t entries[MAP_PAGE_ENTRIES];
+ 	sector_t next_swap;
+@@ -72,7 +89,7 @@ struct swap_map_handle {
+ 	sector_t cur_swap;
+ 	sector_t first_sector;
+ 	unsigned int k;
+-	unsigned long nr_free_pages, written;
++	unsigned long reqd_free_pages;
+ 	u32 crc32;
+ };
+ 
+@@ -316,8 +333,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
+ 		goto err_rel;
+ 	}
+ 	handle->k = 0;
+-	handle->nr_free_pages = nr_free_pages() >> 1;
+-	handle->written = 0;
++	handle->reqd_free_pages = reqd_free_pages();
+ 	handle->first_sector = handle->cur_swap;
+ 	return 0;
+ err_rel:
+@@ -352,11 +368,11 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
+ 		handle->cur_swap = offset;
+ 		handle->k = 0;
+ 	}
+-	if (bio_chain && ++handle->written > handle->nr_free_pages) {
++	if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
+ 		error = hib_wait_on_bio_chain(bio_chain);
+ 		if (error)
+ 			goto out;
+-		handle->written = 0;
++		handle->reqd_free_pages = reqd_free_pages();
+ 	}
+  out:
+ 	return error;
+@@ -618,7 +634,7 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 	 * Adjust number of free pages after all allocations have been done.
+ 	 * We don't want to run out of pages when writing.
+ 	 */
+-	handle->nr_free_pages = nr_free_pages() >> 1;
++	handle->reqd_free_pages = reqd_free_pages();
+ 
+ 	/*
+ 	 * Start the CRC32 thread.
+---------------------------------------
 
-All SCSI multipathing drivers are expected to interpret and react to
-SCSI sense information.  Doing so is not an innovation unique to Linux.
-Because it is not unique it collides with a long established proprietary
-driver's offering.
+-- 
+Bojan
 
-> > You still don't get it... yet you'll saber rattle behind generic GPL
-> > lawyer-up nonsense.
-> 
-> This has gone far enough but it seems your management has already jumped
-> on it. Not my preferred way of handling such matters but Red Hat legal and
-> PR need to rein you in before you cause some serious damage.
-
-Yes, secretly switching channels to google+ and lobbing questions about
-Red Hat's commitment to free software at one of Red Hat's OSS community
-leaders probably isn't the preferred way to handle such things.
-
-But seeing a s/EXPORT_SYMBOL_GPL/EXPORT_SYMBOL/ change clearly does
-trigger a negative reaction for some (and that really doesn't make them
-"zealots").  However the validity of making that change should not be so
-easily stifled with rhetorical GPL violation theory or legal threat.  I
-don't respond well to threats but could have certainly used more tact in
-my original responses to you.
-
-You capture the hearts and minds of many Linux and GPL stakeholders and
-are well respected -- and believe it or not I'm not some naive or
-reckless individual.  I am a professional Linux developer who works for
-the most respected name in Open Source development.
-
-And I now do _not_ have concerns of legal issues associated with this
-change.  I genuinely do appreciate your concern though.
-
-You view this change as detrimental to Linux and think it could
-theoretically be enabling proprietary use of derived work.  Reasonable
-initial concern but this change does not do that for the intended use --
-as hard as it may be to believe it actually benefits Linux multipathing.
-And as I said on google+:
-
-"I've been very pragmatic with my reasoning behind this change and
-followed the established process of getting author and maintainer
-buy-off.  None of us are out to hurt Linux."
-
-With that said, I'm leaving the decision of whether or not to relax
-scsi_dh_detach's export in the very capable hands of James Bottomley.
-
-I'll be fine with whatever James decides but do hope that this outcry
-will not serve to establish precedent that ties our hands in the future
-when comparable decisions need to be made about the improvement of
-Linux's interfaces and overall function.
-
-Regards,
-Mike
