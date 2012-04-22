@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab2DVVVe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 17:21:34 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:58177 "EHLO ogre.sisk.pl"
+	id S1752948Ab2DVVVc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 17:21:32 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:58191 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752506Ab2DVVUa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 17:20:30 -0400
+	id S1752738Ab2DVVUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 17:20:33 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 4/8] PM / Sleep: Add wakeup_source_activate and wakeup_source_deactivate tracepoints
-Date: Sun, 22 Apr 2012 23:21:57 +0200
+Subject: [PATCH 3/8] PM / Sleep: Change wakeup source statistics to follow Android
+Date: Sun, 22 Apr 2012 23:21:21 +0200
 User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
@@ -26,116 +25,325 @@ In-Reply-To: <201204222319.02228.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201204222321.58248.rjw@sisk.pl>
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204222321.21843.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arve Hjønnevåg <arve@android.com>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Add tracepoints to wakeup_source_activate and wakeup_source_deactivate.
-Useful for checking that specific wakeup sources overlap as expected.
+Wakeup statistics used by Android are slightly different from what we
+have in wakeup sources at the moment and there aren't any known
+users of those statistics other than Android, so modify them to make
+it easier for Android to switch to wakeup sources.
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
+This removes the struct wakeup_source's hit_cout field, which is very
+rough and therefore not very useful, and adds two new fields,
+wakeup_count and expire_count.  The first one tracks how many times
+the wakeup source is activated with events_check_enabled set (which
+roughly corresponds to the situations when a system power transition
+to a sleep state is in progress and would be aborted by this wakeup
+source if it were the only active one at that time) and the second
+one is the number of times the wakeup source has been activated with
+a timeout that expired.
+
+Additionally, the last_time field is now updated when the wakeup
+source is deactivated too (previously it was only updated during
+the wakeup source's activation), which seems to be what Android does
+with the analogous counter for wakelocks.
+
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/wakeup.c  |   12 +++++++++---
- include/trace/events/power.h |   34 ++++++++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+), 3 deletions(-)
+ Documentation/ABI/testing/sysfs-devices-power |   24 ++++++---
+ drivers/base/power/sysfs.c                    |   30 ++++++++++--
+ drivers/base/power/wakeup.c                   |   64 +++++++++++---------------
+ include/linux/pm_wakeup.h                     |   11 ++--
+ 4 files changed, 77 insertions(+), 52 deletions(-)
 
+Index: linux/include/linux/pm_wakeup.h
+===================================================================
+--- linux.orig/include/linux/pm_wakeup.h
++++ linux/include/linux/pm_wakeup.h
+@@ -33,12 +33,14 @@
+  *
+  * @total_time: Total time this wakeup source has been active.
+  * @max_time: Maximum time this wakeup source has been continuously active.
+- * @last_time: Monotonic clock when the wakeup source's was activated last time.
++ * @last_time: Monotonic clock when the wakeup source's was touched last time.
+  * @event_count: Number of signaled wakeup events.
+  * @active_count: Number of times the wakeup sorce was activated.
+  * @relax_count: Number of times the wakeup sorce was deactivated.
+- * @hit_count: Number of times the wakeup sorce might abort system suspend.
++ * @expire_count: Number of times the wakeup source's timeout has expired.
++ * @wakeup_count: Number of times the wakeup source might abort suspend.
+  * @active: Status of the wakeup source.
++ * @has_timeout: The wakeup source has been activated with a timeout.
+  */
+ struct wakeup_source {
+ 	const char 		*name;
+@@ -52,8 +54,9 @@ struct wakeup_source {
+ 	unsigned long		event_count;
+ 	unsigned long		active_count;
+ 	unsigned long		relax_count;
+-	unsigned long		hit_count;
+-	unsigned int		active:1;
++	unsigned long		expire_count;
++	unsigned long		wakeup_count;
++	bool			active:1;
+ };
+ 
+ #ifdef CONFIG_PM_SLEEP
 Index: linux/drivers/base/power/wakeup.c
 ===================================================================
 --- linux.orig/drivers/base/power/wakeup.c
 +++ linux/drivers/base/power/wakeup.c
-@@ -14,6 +14,7 @@
- #include <linux/suspend.h>
- #include <linux/seq_file.h>
- #include <linux/debugfs.h>
-+#include <trace/events/power.h>
- 
- #include "power.h"
- 
-@@ -374,12 +375,16 @@ EXPORT_SYMBOL_GPL(device_set_wakeup_enab
+@@ -21,7 +21,7 @@
+  * If set, the suspend/hibernate code will abort transitions to a sleep state
+  * if wakeup events are registered during or immediately before the transition.
   */
- static void wakeup_source_activate(struct wakeup_source *ws)
- {
-+	unsigned int cec;
-+
- 	ws->active = true;
- 	ws->active_count++;
- 	ws->last_time = ktime_get();
+-bool events_check_enabled;
++bool events_check_enabled __read_mostly;
  
- 	/* Increment the counter of events in progress. */
--	atomic_inc(&combined_event_count);
-+	cec = atomic_inc_return(&combined_event_count);
-+
-+	trace_wakeup_source_activate(ws->name, cec);
+ /*
+  * Combined counters of registered wakeup events and wakeup events in progress.
+@@ -383,6 +383,21 @@ static void wakeup_source_activate(struc
  }
  
  /**
-@@ -454,7 +459,7 @@ EXPORT_SYMBOL_GPL(pm_stay_awake);
-  */
- static void wakeup_source_deactivate(struct wakeup_source *ws)
++ * wakeup_source_report_event - Report wakeup event using the given source.
++ * @ws: Wakeup source to report the event for.
++ */
++static void wakeup_source_report_event(struct wakeup_source *ws)
++{
++	ws->event_count++;
++	/* This is racy, but the counter is approximate anyway. */
++	if (events_check_enabled)
++		ws->wakeup_count++;
++
++	if (!ws->active)
++		wakeup_source_activate(ws);
++}
++
++/**
+  * __pm_stay_awake - Notify the PM core of a wakeup event.
+  * @ws: Wakeup source object associated with the source of the event.
+  *
+@@ -397,10 +412,7 @@ void __pm_stay_awake(struct wakeup_sourc
+ 
+ 	spin_lock_irqsave(&ws->lock, flags);
+ 
+-	ws->event_count++;
+-	if (!ws->active)
+-		wakeup_source_activate(ws);
+-
++	wakeup_source_report_event(ws);
+ 	del_timer(&ws->timer);
+ 	ws->timer_expires = 0;
+ 
+@@ -469,6 +481,7 @@ static void wakeup_source_deactivate(str
+ 	if (ktime_to_ns(duration) > ktime_to_ns(ws->max_time))
+ 		ws->max_time = duration;
+ 
++	ws->last_time = now;
+ 	del_timer(&ws->timer);
+ 	ws->timer_expires = 0;
+ 
+@@ -541,8 +554,10 @@ static void pm_wakeup_timer_fn(unsigned
+ 	spin_lock_irqsave(&ws->lock, flags);
+ 
+ 	if (ws->active && ws->timer_expires
+-	    && time_after_eq(jiffies, ws->timer_expires))
++	    && time_after_eq(jiffies, ws->timer_expires)) {
+ 		wakeup_source_deactivate(ws);
++		ws->expire_count++;
++	}
+ 
+ 	spin_unlock_irqrestore(&ws->lock, flags);
+ }
+@@ -569,9 +584,7 @@ void __pm_wakeup_event(struct wakeup_sou
+ 
+ 	spin_lock_irqsave(&ws->lock, flags);
+ 
+-	ws->event_count++;
+-	if (!ws->active)
+-		wakeup_source_activate(ws);
++	wakeup_source_report_event(ws);
+ 
+ 	if (!msec) {
+ 		wakeup_source_deactivate(ws);
+@@ -614,24 +627,6 @@ void pm_wakeup_event(struct device *dev,
+ EXPORT_SYMBOL_GPL(pm_wakeup_event);
+ 
+ /**
+- * pm_wakeup_update_hit_counts - Update hit counts of all active wakeup sources.
+- */
+-static void pm_wakeup_update_hit_counts(void)
+-{
+-	unsigned long flags;
+-	struct wakeup_source *ws;
+-
+-	rcu_read_lock();
+-	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
+-		spin_lock_irqsave(&ws->lock, flags);
+-		if (ws->active)
+-			ws->hit_count++;
+-		spin_unlock_irqrestore(&ws->lock, flags);
+-	}
+-	rcu_read_unlock();
+-}
+-
+-/**
+  * pm_wakeup_pending - Check if power transition in progress should be aborted.
+  *
+  * Compare the current number of registered wakeup events with its preserved
+@@ -653,8 +648,6 @@ bool pm_wakeup_pending(void)
+ 		events_check_enabled = !ret;
+ 	}
+ 	spin_unlock_irqrestore(&events_lock, flags);
+-	if (ret)
+-		pm_wakeup_update_hit_counts();
+ 	return ret;
+ }
+ 
+@@ -680,7 +673,6 @@ bool pm_get_wakeup_count(unsigned int *c
+ 		split_counters(&cnt, &inpr);
+ 		if (inpr == 0 || signal_pending(current))
+ 			break;
+-		pm_wakeup_update_hit_counts();
+ 
+ 		schedule();
+ 	}
+@@ -713,8 +705,6 @@ bool pm_save_wakeup_count(unsigned int c
+ 		events_check_enabled = true;
+ 	}
+ 	spin_unlock_irq(&events_lock);
+-	if (!events_check_enabled)
+-		pm_wakeup_update_hit_counts();
+ 	return events_check_enabled;
+ }
+ 
+@@ -749,9 +739,10 @@ static int print_wakeup_source_stats(str
+ 		active_time = ktime_set(0, 0);
+ 	}
+ 
+-	ret = seq_printf(m, "%-12s\t%lu\t\t%lu\t\t%lu\t\t"
++	ret = seq_printf(m, "%-12s\t%lu\t\t%lu\t\t%lu\t\t%lu\t\t"
+ 			"%lld\t\t%lld\t\t%lld\t\t%lld\n",
+-			ws->name, active_count, ws->event_count, ws->hit_count,
++			ws->name, active_count, ws->event_count,
++			ws->wakeup_count, ws->expire_count,
+ 			ktime_to_ms(active_time), ktime_to_ms(total_time),
+ 			ktime_to_ms(max_time), ktime_to_ms(ws->last_time));
+ 
+@@ -768,8 +759,9 @@ static int wakeup_sources_stats_show(str
  {
--	unsigned int cnt, inpr;
-+	unsigned int cnt, inpr, cec;
- 	ktime_t duration;
- 	ktime_t now;
+ 	struct wakeup_source *ws;
  
-@@ -489,7 +494,8 @@ static void wakeup_source_deactivate(str
- 	 * Increment the counter of registered wakeup events and decrement the
- 	 * couter of wakeup events in progress simultaneously.
- 	 */
--	atomic_add(MAX_IN_PROGRESS, &combined_event_count);
-+	cec = atomic_add_return(MAX_IN_PROGRESS, &combined_event_count);
-+	trace_wakeup_source_deactivate(ws->name, cec);
+-	seq_puts(m, "name\t\tactive_count\tevent_count\thit_count\t"
+-		"active_since\ttotal_time\tmax_time\tlast_change\n");
++	seq_puts(m, "name\t\tactive_count\tevent_count\twakeup_count\t"
++		"expire_count\tactive_since\ttotal_time\tmax_time\t"
++		"last_change\n");
  
- 	split_counters(&cnt, &inpr);
- 	if (!inpr && waitqueue_active(&wakeup_count_wait_queue))
-Index: linux/include/trace/events/power.h
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(ws, &wakeup_sources, entry)
+Index: linux/drivers/base/power/sysfs.c
 ===================================================================
---- linux.orig/include/trace/events/power.h
-+++ linux/include/trace/events/power.h
-@@ -65,6 +65,40 @@ TRACE_EVENT(machine_suspend,
- 	TP_printk("state=%lu", (unsigned long)__entry->state)
- );
+--- linux.orig/drivers/base/power/sysfs.c
++++ linux/drivers/base/power/sysfs.c
+@@ -314,22 +314,41 @@ static ssize_t wakeup_active_count_show(
  
-+DECLARE_EVENT_CLASS(wakeup_source,
-+
-+	TP_PROTO(const char *name, unsigned int state),
-+
-+	TP_ARGS(name, state),
-+
-+	TP_STRUCT__entry(
-+		__string(       name,           name            )
-+		__field(        u64,            state           )
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(name, name);
-+		__entry->state = state;
-+	),
-+
-+	TP_printk("%s state=0x%lx", __get_str(name),
-+		(unsigned long)__entry->state)
-+);
-+
-+DEFINE_EVENT(wakeup_source, wakeup_source_activate,
-+
-+	TP_PROTO(const char *name, unsigned int state),
-+
-+	TP_ARGS(name, state)
-+);
-+
-+DEFINE_EVENT(wakeup_source, wakeup_source_deactivate,
-+
-+	TP_PROTO(const char *name, unsigned int state),
-+
-+	TP_ARGS(name, state)
-+);
-+
- #ifdef CONFIG_EVENT_POWER_TRACING_DEPRECATED
+ static DEVICE_ATTR(wakeup_active_count, 0444, wakeup_active_count_show, NULL);
  
- /*
+-static ssize_t wakeup_hit_count_show(struct device *dev,
+-				struct device_attribute *attr, char *buf)
++static ssize_t wakeup_abort_count_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	unsigned long count = 0;
++	bool enabled = false;
++
++	spin_lock_irq(&dev->power.lock);
++	if (dev->power.wakeup) {
++		count = dev->power.wakeup->wakeup_count;
++		enabled = true;
++	}
++	spin_unlock_irq(&dev->power.lock);
++	return enabled ? sprintf(buf, "%lu\n", count) : sprintf(buf, "\n");
++}
++
++static DEVICE_ATTR(wakeup_abort_count, 0444, wakeup_abort_count_show, NULL);
++
++static ssize_t wakeup_expire_count_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
+ {
+ 	unsigned long count = 0;
+ 	bool enabled = false;
+ 
+ 	spin_lock_irq(&dev->power.lock);
+ 	if (dev->power.wakeup) {
+-		count = dev->power.wakeup->hit_count;
++		count = dev->power.wakeup->expire_count;
+ 		enabled = true;
+ 	}
+ 	spin_unlock_irq(&dev->power.lock);
+ 	return enabled ? sprintf(buf, "%lu\n", count) : sprintf(buf, "\n");
+ }
+ 
+-static DEVICE_ATTR(wakeup_hit_count, 0444, wakeup_hit_count_show, NULL);
++static DEVICE_ATTR(wakeup_expire_count, 0444, wakeup_expire_count_show, NULL);
+ 
+ static ssize_t wakeup_active_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+@@ -486,7 +505,8 @@ static struct attribute *wakeup_attrs[]
+ 	&dev_attr_wakeup.attr,
+ 	&dev_attr_wakeup_count.attr,
+ 	&dev_attr_wakeup_active_count.attr,
+-	&dev_attr_wakeup_hit_count.attr,
++	&dev_attr_wakeup_abort_count.attr,
++	&dev_attr_wakeup_expire_count.attr,
+ 	&dev_attr_wakeup_active.attr,
+ 	&dev_attr_wakeup_total_time_ms.attr,
+ 	&dev_attr_wakeup_max_time_ms.attr,
+Index: linux/Documentation/ABI/testing/sysfs-devices-power
+===================================================================
+--- linux.orig/Documentation/ABI/testing/sysfs-devices-power
++++ linux/Documentation/ABI/testing/sysfs-devices-power
+@@ -96,16 +96,26 @@ Description:
+ 		is read-only.  If the device is not enabled to wake up the
+ 		system from sleep states, this attribute is not present.
+ 
+-What:		/sys/devices/.../power/wakeup_hit_count
+-Date:		September 2010
++What:		/sys/devices/.../power/wakeup_abort_count
++Date:		February 2012
+ Contact:	Rafael J. Wysocki <rjw@sisk.pl>
+ Description:
+-		The /sys/devices/.../wakeup_hit_count attribute contains the
++		The /sys/devices/.../wakeup_abort_count attribute contains the
+ 		number of times the processing of a wakeup event associated with
+-		the device might prevent the system from entering a sleep state.
+-		This attribute is read-only.  If the device is not enabled to
+-		wake up the system from sleep states, this attribute is not
+-		present.
++		the device might have aborted system transition into a sleep
++		state in progress.  This attribute is read-only.  If the device
++		is not enabled to wake up the system from sleep states, this
++		attribute is not present.
++
++What:		/sys/devices/.../power/wakeup_expire_count
++Date:		February 2012
++Contact:	Rafael J. Wysocki <rjw@sisk.pl>
++Description:
++		The /sys/devices/.../wakeup_expire_count attribute contains the
++		number of times a wakeup event associated with the device has
++		been reported with a timeout that expired.  This attribute is
++		read-only.  If the device is not enabled to wake up the system
++		from sleep states, this attribute is not present.
+ 
+ What:		/sys/devices/.../power/wakeup_active
+ Date:		September 2010
 
