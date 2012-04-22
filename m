@@ -1,289 +1,637 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab2DVVVj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 17:21:39 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:58238 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab2DVVUw convert rfc822-to-8bit (ORCPT
+	id S1753120Ab2DVVWc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 17:22:32 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:62320 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab2DVVW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 17:20:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 5/8] epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll events are ready
-Date: Sun, 22 Apr 2012 23:22:43 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
-        markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <201202070200.55505.rjw@sisk.pl> <201202220031.46219.rjw@sisk.pl> <201204222319.02228.rjw@sisk.pl>
-In-Reply-To: <201204222319.02228.rjw@sisk.pl>
+	Sun, 22 Apr 2012 17:22:27 -0400
+Date: Sun, 22 Apr 2012 23:22:20 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: linux arch <linux-arch@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Subject: [RFC] move link of vmlinux to a script
+Message-ID: <20120422212220.GA6537@merkur.ravnborg.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201204222322.44278.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arve Hjønnevåg <arve@android.com>
+The part of the top-level Makefile that links the
+final vmlinux has accumulated a lot of cruft over
+times and the makefile code is unreadable for
+any normal human.
 
-When an epoll_event, that has the EPOLLWAKEUP flag set, is ready, a
-wakeup_source will be active to prevent suspend. This can be used to
-handle wakeup events from a driver that support poll, e.g. input, if
-that driver wakes up the waitqueue passed to epoll before allowing
-suspend.
+This is an attempt to clean up the situation, by
+moving all the logic to a shell script.
+In reality we almost never rely on the Makefile
+logic to avoid a few steps in the link - and
+the process is serialized in any case.
+So the drawbacks by moving this to a shell script
+are small compared to the added readability.
 
-The current implementation uses an extra wakeup_source when
-ep_scan_ready_list runs. This can cause problems if a single thread
-is polling on wakeup events and frequent non-wakeup events (events
-usually arrive during thread freezing) using the same epoll file.
+Known issues:
+- sparc32 is broken by this. I will address the
+  sparc32 bits before I do any final submission.
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- fs/eventpoll.c            |   71 ++++++++++++++++++++++++++++++++++++++++++++--
- include/linux/eventpoll.h |    6 +++
- 2 files changed, 74 insertions(+), 3 deletions(-)
+All the link magic is moved to a shell script:
 
-Index: linux/fs/eventpoll.c
-===================================================================
---- linux.orig/fs/eventpoll.c
-+++ linux/fs/eventpoll.c
-@@ -33,6 +33,7 @@
- #include <linux/bitops.h>
- #include <linux/mutex.h>
- #include <linux/anon_inodes.h>
-+#include <linux/device.h>
- #include <asm/uaccess.h>
- #include <asm/io.h>
- #include <asm/mman.h>
-@@ -87,7 +88,7 @@
-  */
+    scripts/link-vmlinux.sh
+
+To do so a few varialbles had to be exported
+form the top-level Makefile.
+
+"um" has a local definition of the linker
+macro. I found no better way than to hardcode this
+in the script. It looks ugly - and alternatives are
+welcome!
+
+If you apply the patch you can use:
+
+   make V=L  (capital L)
+
+to debug the script.
+The default is the non-verbose output.
+
+My shell script foo is limited, so expect to
+find something sub-optimal in the script.
+
+	Sam
+
+ b/Makefile                |  211 +---------------------------------------
+ b/arch/um/Makefile        |   11 --
+ b/scripts/link-vmlinux.sh |  238 ++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/mksysmap          |   45 --------
+ 4 files changed, 250 insertions(+), 255 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index f6578f4..ca0b407 100644
+--- a/Makefile
++++ b/Makefile
+@@ -341,7 +341,6 @@ AWK		= awk
+ GENKSYMS	= scripts/genksyms/genksyms
+ INSTALLKERNEL  := installkernel
+ DEPMOD		= /sbin/depmod
+-KALLSYMS	= scripts/kallsyms
+ PERL		= perl
+ CHECK		= sparse
  
- /* Epoll private bits inside the event mask */
--#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET)
-+#define EP_PRIVATE_BITS (EPOLLWAKEUP | EPOLLONESHOT | EPOLLET)
+@@ -727,187 +726,16 @@ libs-y1		:= $(patsubst %/, %/lib.a, $(libs-y))
+ libs-y2		:= $(patsubst %/, %/built-in.o, $(libs-y))
+ libs-y		:= $(libs-y1) $(libs-y2)
  
- /* Maximum number of nesting allowed inside epoll sets */
- #define EP_MAX_NESTS 4
-@@ -154,6 +155,9 @@ struct epitem {
- 	/* List header used to link this item to the "struct file" items list */
- 	struct list_head fllink;
+-# Build vmlinux
+-# ---------------------------------------------------------------------------
+-# vmlinux is built from the objects selected by $(vmlinux-init) and
+-# $(vmlinux-main). Most are built-in.o files from top-level directories
+-# in the kernel tree, others are specified in arch/$(ARCH)/Makefile.
+-# Ordering when linking is important, and $(vmlinux-init) must be first.
+-#
+-# vmlinux
+-#   ^
+-#   |
+-#   +-< $(vmlinux-init)
+-#   |   +--< init/version.o + more
+-#   |
+-#   +--< $(vmlinux-main)
+-#   |    +--< driver/built-in.o mm/built-in.o + more
+-#   |
+-#   +-< kallsyms.o (see description in CONFIG_KALLSYMS section)
+-#
+-# vmlinux version (uname -v) cannot be updated during normal
+-# descending-into-subdirs phase since we do not yet know if we need to
+-# update vmlinux.
+-# Therefore this step is delayed until just before final link of vmlinux -
+-# except in the kallsyms case where it is done just before adding the
+-# symbols to the kernel.
+-#
+-# System.map is generated to document addresses of all kernel symbols
+-
+-vmlinux-init := $(head-y) $(init-y)
+-vmlinux-main := $(core-y) $(libs-y) $(drivers-y) $(net-y)
+-vmlinux-all  := $(vmlinux-init) $(vmlinux-main)
+-vmlinux-lds  := arch/$(SRCARCH)/kernel/vmlinux.lds
+-export KBUILD_VMLINUX_OBJS := $(vmlinux-all)
+-
+-# Rule to link vmlinux - also used during CONFIG_KALLSYMS
+-# May be overridden by arch/$(ARCH)/Makefile
+-quiet_cmd_vmlinux__ ?= LD      $@
+-      cmd_vmlinux__ ?= $(LD) $(LDFLAGS) $(LDFLAGS_vmlinux) -o $@ \
+-      -T $(vmlinux-lds) $(vmlinux-init)                          \
+-      --start-group $(vmlinux-main) --end-group                  \
+-      $(filter-out $(vmlinux-lds) $(vmlinux-init) $(vmlinux-main) vmlinux.o FORCE ,$^)
+-
+-# Generate new vmlinux version
+-quiet_cmd_vmlinux_version = GEN     .version
+-      cmd_vmlinux_version = set -e;                     \
+-	if [ ! -r .version ]; then			\
+-	  rm -f .version;				\
+-	  echo 1 >.version;				\
+-	else						\
+-	  mv .version .old_version;			\
+-	  expr 0$$(cat .old_version) + 1 >.version;	\
+-	fi;						\
+-	$(MAKE) $(build)=init
+-
+-# Generate System.map
+-quiet_cmd_sysmap = SYSMAP
+-      cmd_sysmap = $(CONFIG_SHELL) $(srctree)/scripts/mksysmap
+-
+-# Link of vmlinux
+-# If CONFIG_KALLSYMS is set .version is already updated
+-# Generate System.map and verify that the content is consistent
+-# Use + in front of the vmlinux_version rule to silent warning with make -j2
+-# First command is ':' to allow us to use + in front of the rule
+-define rule_vmlinux__
+-	:
+-	$(if $(CONFIG_KALLSYMS),,+$(call cmd,vmlinux_version))
+-
+-	$(call cmd,vmlinux__)
+-	$(Q)echo 'cmd_$@ := $(cmd_vmlinux__)' > $(@D)/.$(@F).cmd
+-
+-	$(Q)$(if $($(quiet)cmd_sysmap),                                      \
+-	  echo '  $($(quiet)cmd_sysmap)  System.map' &&)                     \
+-	$(cmd_sysmap) $@ System.map;                                         \
+-	if [ $$? -ne 0 ]; then                                               \
+-		rm -f $@;                                                    \
+-		/bin/false;                                                  \
+-	fi;
+-	$(verify_kallsyms)
+-endef
+-
+-
+-ifdef CONFIG_KALLSYMS
+-# Generate section listing all symbols and add it into vmlinux $(kallsyms.o)
+-# It's a three stage process:
+-# o .tmp_vmlinux1 has all symbols and sections, but __kallsyms is
+-#   empty
+-#   Running kallsyms on that gives us .tmp_kallsyms1.o with
+-#   the right size - vmlinux version (uname -v) is updated during this step
+-# o .tmp_vmlinux2 now has a __kallsyms section of the right size,
+-#   but due to the added section, some addresses have shifted.
+-#   From here, we generate a correct .tmp_kallsyms2.o
+-# o The correct .tmp_kallsyms2.o is linked into the final vmlinux.
+-# o Verify that the System.map from vmlinux matches the map from
+-#   .tmp_vmlinux2, just in case we did not generate kallsyms correctly.
+-# o If 'make KALLSYMS_EXTRA_PASS=1" was used, do an extra pass using
+-#   .tmp_vmlinux3 and .tmp_kallsyms3.o.  This is only meant as a
+-#   temporary bypass to allow the kernel to be built while the
+-#   maintainers work out what went wrong with kallsyms.
+-
+-last_kallsyms := 2
+-
+-ifdef KALLSYMS_EXTRA_PASS
+-ifneq ($(KALLSYMS_EXTRA_PASS),0)
+-last_kallsyms := 3
+-endif
+-endif
+-
+-kallsyms.o := .tmp_kallsyms$(last_kallsyms).o
+-
+-define verify_kallsyms
+-	$(Q)$(if $($(quiet)cmd_sysmap),                                      \
+-	  echo '  $($(quiet)cmd_sysmap)  .tmp_System.map' &&)                \
+-	  $(cmd_sysmap) .tmp_vmlinux$(last_kallsyms) .tmp_System.map
+-	$(Q)cmp -s System.map .tmp_System.map ||                             \
+-		(echo Inconsistent kallsyms data;                            \
+-		 echo This is a bug - please report about it;                \
+-		 echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround;      \
+-		 rm .tmp_kallsyms* ; /bin/false )
+-endef
+-
+-# Update vmlinux version before link
+-# Use + in front of this rule to silent warning about make -j1
+-# First command is ':' to allow us to use + in front of this rule
+-cmd_ksym_ld = $(cmd_vmlinux__)
+-define rule_ksym_ld
+-	: 
+-	+$(call cmd,vmlinux_version)
+-	$(call cmd,vmlinux__)
+-	$(Q)echo 'cmd_$@ := $(cmd_vmlinux__)' > $(@D)/.$(@F).cmd
+-endef
+-
+-# Generate .S file with all kernel symbols
+-quiet_cmd_kallsyms = KSYM    $@
+-      cmd_kallsyms = $(NM) -n $< | $(KALLSYMS) \
+-                     $(if $(CONFIG_KALLSYMS_ALL),--all-symbols) > $@
+-
+-.tmp_kallsyms1.o .tmp_kallsyms2.o .tmp_kallsyms3.o: %.o: %.S scripts FORCE
+-	$(call if_changed_dep,as_o_S)
++# used by link-vmlinux.sh
++export KBUILD_VMLINUX_INIT := $(head-y) $(init-y)
++export KBUILD_VMLINUX_MAIN := $(core-y) $(libs-y) $(drivers-y) $(net-y)
++export KBUILD_LDS          := arch/$(SRCARCH)/kernel/vmlinux.lds
++export LDFLAGS_vmlinux
  
-+	/* wakeup_source used when EPOLLWAKEUP is set */
-+	struct wakeup_source *ws;
+-.tmp_kallsyms%.S: .tmp_vmlinux% $(KALLSYMS)
+-	$(call cmd,kallsyms)
++vmlinux-deps := $(KBUILD_LDS) $(KBUILD_VMLINUX_INIT) $(KBUILD_VMLINUX_MAIN)
+ 
+-# .tmp_vmlinux1 must be complete except kallsyms, so update vmlinux version
+-.tmp_vmlinux1: $(vmlinux-lds) $(vmlinux-all) FORCE
+-	$(call if_changed_rule,ksym_ld)
+-
+-.tmp_vmlinux2: $(vmlinux-lds) $(vmlinux-all) .tmp_kallsyms1.o FORCE
+-	$(call if_changed,vmlinux__)
+-
+-.tmp_vmlinux3: $(vmlinux-lds) $(vmlinux-all) .tmp_kallsyms2.o FORCE
+-	$(call if_changed,vmlinux__)
+-
+-# Needs to visit scripts/ before $(KALLSYMS) can be used.
+-$(KALLSYMS): scripts ;
+-
+-# Generate some data for debugging strange kallsyms problems
+-debug_kallsyms: .tmp_map$(last_kallsyms)
+-
+-.tmp_map%: .tmp_vmlinux% FORCE
+-	($(OBJDUMP) -h $< | $(AWK) '/^ +[0-9]/{print $$4 " 0 " $$2}'; $(NM) $<) | sort > $@
+-
+-.tmp_map3: .tmp_map2
+-
+-.tmp_map2: .tmp_map1
+-
+-endif # ifdef CONFIG_KALLSYMS
+-
+-# Do modpost on a prelinked vmlinux. The finally linked vmlinux has
+-# relevant sections renamed as per the linker script.
+-quiet_cmd_vmlinux-modpost = LD      $@
+-      cmd_vmlinux-modpost = $(LD) $(LDFLAGS) -r -o $@                          \
+-	 $(vmlinux-init) --start-group $(vmlinux-main) --end-group             \
+-	 $(filter-out $(vmlinux-init) $(vmlinux-main) FORCE ,$^)
+-define rule_vmlinux-modpost
+-	:
+-	+$(call cmd,vmlinux-modpost)
+-	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modpost $@
+-	$(Q)echo 'cmd_$@ := $(cmd_vmlinux-modpost)' > $(dot-target).cmd
+-endef
+-
+-# vmlinux image - including updated kernel symbols
+-vmlinux: $(vmlinux-lds) $(vmlinux-init) $(vmlinux-main) vmlinux.o $(kallsyms.o) FORCE
++# vmlinux image
++vmlinux: scripts/link-vmlinux.sh scripts/kallsyms $(vmlinux-deps)
+ ifdef CONFIG_HEADERS_CHECK
+ 	$(Q)$(MAKE) -f $(srctree)/Makefile headers_check
+ endif
+@@ -917,22 +745,11 @@ endif
+ ifdef CONFIG_BUILD_DOCSRC
+ 	$(Q)$(MAKE) $(build)=Documentation
+ endif
+-	$(call vmlinux-modpost)
+-	$(call if_changed_rule,vmlinux__)
+-	$(Q)rm -f .old_version
+-
+-# build vmlinux.o first to catch section mismatch errors early
+-ifdef CONFIG_KALLSYMS
+-.tmp_vmlinux1: vmlinux.o
+-endif
+-
+-modpost-init := $(filter-out init/built-in.o, $(vmlinux-init))
+-vmlinux.o: $(modpost-init) $(vmlinux-main) FORCE
+-	$(call if_changed_rule,vmlinux-modpost)
++	$(Q)$(CONFIG_SHELL) $<
+ 
+ # The actual objects are generated when descending, 
+ # make sure no implicit rule kicks in
+-$(sort $(vmlinux-init) $(vmlinux-main)) $(vmlinux-lds): $(vmlinux-dirs) ;
++$(sort $(vmlinux-deps)): $(vmlinux-dirs) ;
+ 
+ # Handle descending into subdirectories listed in $(vmlinux-dirs)
+ # Preset locale variables to speed up the build process. Limit locale
+@@ -1536,14 +1353,6 @@ quiet_cmd_depmod = DEPMOD  $(KERNELRELEASE)
+ cmd_crmodverdir = $(Q)mkdir -p $(MODVERDIR) \
+                   $(if $(KBUILD_MODULES),; rm -f $(MODVERDIR)/*)
+ 
+-a_flags = -Wp,-MD,$(depfile) $(KBUILD_AFLAGS) $(AFLAGS_KERNEL) \
+-	  $(KBUILD_AFLAGS_KERNEL)                              \
+-	  $(NOSTDINC_FLAGS) $(LINUXINCLUDE) $(KBUILD_CPPFLAGS) \
+-	  $(modkern_aflags) $(EXTRA_AFLAGS) $(AFLAGS_$(basetarget).o)
+-
+-quiet_cmd_as_o_S = AS      $@
+-cmd_as_o_S       = $(CC) $(a_flags) -c -o $@ $<
+-
+ # read all saved command lines
+ 
+ targets := $(wildcard $(sort $(targets)))
+diff --git a/arch/um/Makefile b/arch/um/Makefile
+index 55c0661..6decba4 100644
+--- a/arch/um/Makefile
++++ b/arch/um/Makefile
+@@ -121,15 +121,8 @@ LINK_WRAPS = -Wl,--wrap,malloc -Wl,--wrap,free -Wl,--wrap,calloc
+ 
+ LD_FLAGS_CMDLINE = $(foreach opt,$(LDFLAGS),-Wl,$(opt))
+ 
+-CFLAGS_vmlinux := $(LINK-y) $(LINK_WRAPS) $(LD_FLAGS_CMDLINE)
+-define cmd_vmlinux__
+-	$(CC) $(CFLAGS_vmlinux) -o $@ \
+-	-Wl,-T,$(vmlinux-lds) $(vmlinux-init) \
+-	-Wl,--start-group $(vmlinux-main) -Wl,--end-group \
+-	-lutil \
+-	$(filter-out $(vmlinux-lds) $(vmlinux-init) $(vmlinux-main) vmlinux.o \
+-	FORCE ,$^) ; rm -f linux
+-endef
++# used by link-vmlinux.sh
++export CFLAGS_vmlinux := $(LINK-y) $(LINK_WRAPS) $(LD_FLAGS_CMDLINE)
+ 
+ # When cleaning we don't include .config, so we don't include
+ # TT or skas makefiles and don't clean skas_ptregs.h.
+diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
+new file mode 100644
+index 0000000..c5a46ae
+--- /dev/null
++++ b/scripts/link-vmlinux.sh
+@@ -0,0 +1,238 @@
++#!/bin/sh
++#
++# link vmlinux
++#
++# vmlinux is linked from the objects selected by $(KBUILD_VMLINUX_INIT) and
++# $(KBUILD_VMLINUX_MAIN). Most are built-in.o files from top-level directories
++# in the kernel tree, others are specified in arch/$(ARCH)/Makefile.
++# Ordering when linking is important, and $(KBUILD_VMLINUX_INIT) must be first.
++#
++# vmlinux
++#   ^
++#   |
++#   +-< $(KBUILD_VMLINUX_INIT)
++#   |   +--< init/version.o + more
++#   |
++#   +--< $(KBUILD_VMLINUX_MAIN)
++#   |    +--< driver/built-in.o mm/built-in.o + more
++#   |
++#   +-< ${kallsymso} (see description in KALLSYMS section)
++#
++# vmlinux version (uname -v) cannot be updated during normal
++# descending-into-subdirs phase since we do not yet know if we need to
++# update vmlinux.
++# Therefore this step is delayed until just before final link of vmlinux.
++#
++# System.map is generated to document addresses of all kernel symbols
 +
- 	/* The structure that describe the interested events and the source fd */
- 	struct epoll_event event;
- };
-@@ -194,6 +198,9 @@ struct eventpoll {
- 	 */
- 	struct epitem *ovflist;
- 
-+	/* wakeup_source used when ep_scan_ready_list is running */
-+	struct wakeup_source *ws;
++# We need access to CONFIG_ symbols
++source ./.config
 +
- 	/* The user that created the eventpoll descriptor */
- 	struct user_struct *user;
- 
-@@ -565,6 +572,7 @@ static int ep_scan_ready_list(struct eve
- 	 * in a lockless way.
- 	 */
- 	spin_lock_irqsave(&ep->lock, flags);
-+	__pm_stay_awake(ep->ws);
- 	list_splice_init(&ep->rdllist, &txlist);
- 	ep->ovflist = NULL;
- 	spin_unlock_irqrestore(&ep->lock, flags);
-@@ -588,8 +596,10 @@ static int ep_scan_ready_list(struct eve
- 		 * queued into ->ovflist but the "txlist" might already
- 		 * contain them, and the list_splice() below takes care of them.
- 		 */
--		if (!ep_is_linked(&epi->rdllink))
-+		if (!ep_is_linked(&epi->rdllink)) {
- 			list_add_tail(&epi->rdllink, &ep->rdllist);
-+			__pm_stay_awake(epi->ws);
-+		}
- 	}
- 	/*
- 	 * We need to set back ep->ovflist to EP_UNACTIVE_PTR, so that after
-@@ -602,6 +612,7 @@ static int ep_scan_ready_list(struct eve
- 	 * Quickly re-inject items left on "txlist".
- 	 */
- 	list_splice(&txlist, &ep->rdllist);
-+	__pm_relax(ep->ws);
- 
- 	if (!list_empty(&ep->rdllist)) {
- 		/*
-@@ -656,6 +667,9 @@ static int ep_remove(struct eventpoll *e
- 		list_del_init(&epi->rdllink);
- 	spin_unlock_irqrestore(&ep->lock, flags);
- 
-+	if (epi->ws)
-+		wakeup_source_unregister(epi->ws);
++# Error out on error
++set -e
 +
- 	/* At this point it is safe to free the eventpoll item */
- 	kmem_cache_free(epi_cache, epi);
- 
-@@ -706,6 +720,8 @@ static void ep_free(struct eventpoll *ep
- 	mutex_unlock(&epmutex);
- 	mutex_destroy(&ep->mtx);
- 	free_uid(ep->user);
-+	if (ep->ws)
-+		wakeup_source_unregister(ep->ws);
- 	kfree(ep);
- }
- 
-@@ -737,6 +753,7 @@ static int ep_read_events_proc(struct ev
- 			 * callback, but it's not actually ready, as far as
- 			 * caller requested events goes. We can remove it here.
- 			 */
-+			__pm_relax(epi->ws);
- 			list_del_init(&epi->rdllink);
- 		}
- 	}
-@@ -932,8 +949,10 @@ static int ep_poll_callback(wait_queue_t
- 	}
- 
- 	/* If this file is already in the ready list we exit soon */
--	if (!ep_is_linked(&epi->rdllink))
-+	if (!ep_is_linked(&epi->rdllink)) {
- 		list_add_tail(&epi->rdllink, &ep->rdllist);
-+		__pm_stay_awake(epi->ws);
-+	}
- 
- 	/*
- 	 * Wake up ( if active ) both the eventpoll wait list and the ->poll()
-@@ -1091,6 +1110,30 @@ static int reverse_path_check(void)
- 	return error;
- }
- 
-+static int ep_create_wakeup_source(struct epitem *epi)
++# Link of vmlinux
++# $1 output file
++modpost_link()
 +{
-+	const char *name;
-+
-+	if (!epi->ep->ws) {
-+		epi->ep->ws = wakeup_source_register("eventpoll");
-+		if (!epi->ep->ws)
-+			return -ENOMEM;
-+	}
-+
-+	name = epi->ffd.file->f_path.dentry->d_name.name;
-+	epi->ws = wakeup_source_register(name);
-+	if (!epi->ws)
-+		return -ENOMEM;
-+
-+	return 0;
++	${LD} ${LDFLAGS} -r -o $1 ${KBUILD_VMLINUX_INIT}                     \
++		--start-group ${KBUILD_VMLINUX_MAIN} --end-group
 +}
 +
-+static void ep_destroy_wakeup_source(struct epitem *epi)
++# Link of vmlinux
++# $1 - optional extra .o files
++# $2 output file
++vmlinux_link()
 +{
-+	wakeup_source_unregister(epi->ws);
-+	epi->ws = NULL;
++	local lds=${srctree}/arch/${SRCARCH}/kernel/vmlinux.lds
++echo srcarch=${SRCARCH} CF=${CFLAGS_vmlinux}
++	if [ "${SRCARCH}" != "um" ]; then 
++		${LD} ${LDFLAGS} ${LDFLAGS_vmlinux} -o $2                    \
++			-T ${lds} ${KBUILD_VMLINUX_INIT}                     \
++			--start-group ${KBUILD_VMLINUX_MAIN} --end-group $1
++	else
++		${CC} ${CFLAGS_vmlinux} -o $2                                \
++			-Wl,-T,${lds} ${KBUILD_VMLINUX_INIT}                 \
++			-Wl,--start-group                                    \
++				 ${KBUILD_VMLINUX_MAIN}                      \
++			-Wl,--end-group                                      \
++			-lutil $1
++		rm -f linux
++	fi
 +}
 +
- /*
-  * Must be called with "mtx" held.
-  */
-@@ -1118,6 +1161,13 @@ static int ep_insert(struct eventpoll *e
- 	epi->event = *event;
- 	epi->nwait = 0;
- 	epi->next = EP_UNACTIVE_PTR;
-+	if (epi->event.events & EPOLLWAKEUP) {
-+		error = ep_create_wakeup_source(epi);
-+		if (error)
-+			goto error_create_wakeup_source;
-+	} else {
-+		epi->ws = NULL;
-+	}
- 
- 	/* Initialize the poll table using the queue callback */
- 	epq.epi = epi;
-@@ -1164,6 +1214,7 @@ static int ep_insert(struct eventpoll *e
- 	/* If the file is already "ready" we drop it inside the ready list */
- 	if ((revents & event->events) && !ep_is_linked(&epi->rdllink)) {
- 		list_add_tail(&epi->rdllink, &ep->rdllist);
-+		__pm_stay_awake(epi->ws);
- 
- 		/* Notify waiting tasks that events are available */
- 		if (waitqueue_active(&ep->wq))
-@@ -1204,6 +1255,10 @@ error_unregister:
- 		list_del_init(&epi->rdllink);
- 	spin_unlock_irqrestore(&ep->lock, flags);
- 
-+	if (epi->ws)
-+		wakeup_source_unregister(epi->ws);
 +
-+error_create_wakeup_source:
- 	kmem_cache_free(epi_cache, epi);
- 
- 	return error;
-@@ -1229,6 +1284,12 @@ static int ep_modify(struct eventpoll *e
- 	epi->event.events = event->events;
- 	pt._key = event->events;
- 	epi->event.data = event->data; /* protected by mtx */
-+	if (epi->event.events & EPOLLWAKEUP) {
-+		if (!epi->ws)
-+			ep_create_wakeup_source(epi);
-+	} else if (epi->ws) {
-+		ep_destroy_wakeup_source(epi);
-+	}
- 
- 	/*
- 	 * Get current event bits. We can safely use the file* here because
-@@ -1244,6 +1305,7 @@ static int ep_modify(struct eventpoll *e
- 		spin_lock_irq(&ep->lock);
- 		if (!ep_is_linked(&epi->rdllink)) {
- 			list_add_tail(&epi->rdllink, &ep->rdllist);
-+			__pm_stay_awake(epi->ws);
- 
- 			/* Notify waiting tasks that events are available */
- 			if (waitqueue_active(&ep->wq))
-@@ -1282,6 +1344,7 @@ static int ep_send_events_proc(struct ev
- 	     !list_empty(head) && eventcnt < esed->maxevents;) {
- 		epi = list_first_entry(head, struct epitem, rdllink);
- 
-+		__pm_relax(epi->ws);
- 		list_del_init(&epi->rdllink);
- 
- 		pt._key = epi->event.events;
-@@ -1298,6 +1361,7 @@ static int ep_send_events_proc(struct ev
- 			if (__put_user(revents, &uevent->events) ||
- 			    __put_user(epi->event.data, &uevent->data)) {
- 				list_add(&epi->rdllink, head);
-+				__pm_stay_awake(epi->ws);
- 				return eventcnt ? eventcnt : -EFAULT;
- 			}
- 			eventcnt++;
-@@ -1317,6 +1381,7 @@ static int ep_send_events_proc(struct ev
- 				 * poll callback will queue them in ep->ovflist.
- 				 */
- 				list_add_tail(&epi->rdllink, &ep->rdllist);
-+				__pm_stay_awake(epi->ws);
- 			}
- 		}
- 	}
-Index: linux/include/linux/eventpoll.h
-===================================================================
---- linux.orig/include/linux/eventpoll.h
-+++ linux/include/linux/eventpoll.h
-@@ -26,6 +26,12 @@
- #define EPOLL_CTL_DEL 2
- #define EPOLL_CTL_MOD 3
- 
-+/*
-+ * Request the handling of system wakeup events so as to prevent automatic
-+ * system suspends from happening while those events are being processed.
-+ */
-+#define EPOLLWAKEUP (1 << 29)
++# Create $2 .o file with all symbols from $1 .o file
++kallsyms()
++{
++	info KSYM $2
++	local kallsymopt;
 +
- /* Set the One Shot behaviour for the target file descriptor */
- #define EPOLLONESHOT (1 << 30)
- 
-
++	if [ "${CONFIG_KALLSYMS_ALL}" != "" ]; then
++		kallsymopt=--all-symbols
++	fi
++
++	local aflags="${KBUILD_AFLAGS} ${AFLAGS_KERNEL} ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS} ${modkern_aflags}"
++	${NM} -n $1 | \
++		scripts/kallsyms ${kallsymopt} | \
++ 		${CC} ${aflags} -c -o $2 -x assembler-with-cpp -
++}
++
++# Based on the vmlinux file create the System.map file
++# System.map is used by module-init tools and some debugging
++# tools to retrieve the actual addresses of symbols in the kernel.
++# Generate System.map (actual filename passed as second argument)
++
++# $NM produces the following output:
++# f0081e80 T alloc_vfsmnt
++
++#   The second row specify the type of the symbol:
++#   A = Absolute
++#   B = Uninitialised data (.bss)
++#   C = Comon symbol
++#   D = Initialised data
++#   G = Initialised data for small objects
++#   I = Indirect reference to another symbol
++#   N = Debugging symbol
++#   R = Read only
++#   S = Uninitialised data for small objects
++#   T = Text code symbol
++#   U = Undefined symbol
++#   V = Weak symbol
++#   W = Weak symbol
++#   Corresponding small letters are local symbols
++
++# For System.map filter away:
++#   a - local absolute symbols
++#   U - undefined global symbols
++#   N - debugging symbols
++#   w - local weak symbols
++
++# readprofile starts reading symbols when _stext is found, and
++# continue until it finds a symbol which is not either of 'T', 't',
++# 'W' or 'w'. __crc_ are 'A' and placed in the middle
++# so we just ignore them to let readprofile continue to work.
++# (At least sparc64 has __crc_ in the middle).
++mksysmap()
++{
++	$NM -n $1 | \
++		grep -v '\( [aNUw] \)\|\(__crc_\)\|\( \$[adt]\)' > $2
++}
++
++
++# Delete output files in case of error
++trap cleanup SIGHUP SIGINT SIGQUIT SIGTERM ERR
++cleanup()
++{
++	rm -f vmlinux.o
++	rm -f .old_version
++	rm -f .tmp_vmlinux*
++	rm -f .tmp_kallsyms*
++	rm -f vmlinux
++	rm -f .tmp_System.map
++	rm -f System.map
++}
++
++# non-verbose output
++info()
++{
++	printf "  %-7s %s\n" $1 $2
++}
++
++# Use "make V=L" to debug this script
++case "${KBUILD_VERBOSE}" in
++*L*)
++	set -x
++	;;
++esac
++
++# Override MAKEFLAGS to avoid parrallel builds
++MAKEFLAGS='--no-print-directory -Rr'
++
++#link vmlinux.o
++info LD vmlinux.o
++modpost_link vmlinux.o
++
++# modpost vmlinux.o to check for section mismatches
++${MAKE} -f ${srctree}/scripts/Makefile.modpost vmlinux.o
++
++# Update version
++info GEN .version
++if [ ! -r .version ]; then
++	rm -f .version;
++	echo 1 >.version;
++else
++	mv .version .old_version;
++	expr 0$(cat .old_version) + 1 >.version;
++fi;
++
++# final build of init/
++${MAKE} -f ${srctree}/scripts/Makefile.build obj=init
++
++
++kallsymso=""
++kallsyms_vmlinux=""
++
++if [ "${CONFIG_KALLSYMS}" != "" ]; then
++
++	# kallsyms support
++	# Generate section listing all symbols and add it into vmlinux
++	# It's a three step process:
++	# 1)  Link .tmp_vmlinux1 so it has all symbols and sections,
++	#     but __kallsyms is empty.
++	#     Running kallsyms on that gives us .tmp_kallsyms1.o with
++	#     the right size
++	# 2)  Link .tmp_vmlinux2 so it now has a __kallsyms section of
++	#     the right size, but due to the added section, some
++	#     addresses have shifted.
++	#     From here, we generate a correct .tmp_kallsyms2.o
++	# 2a) We may use an extra pass as this has been necessary to
++	#     woraround some alignment related bugs.
++	#     KALLSYMS_EXTRA_PASS=1 is used to trigger this.
++	# 3)  The correct ${kallsymso} is linked into the final vmlinux.
++	#
++	# a)  Verify that the System.map from vmlinux matches the map from
++	#     ${kallsymso}.
++
++	kallsymso=.tmp_kallsyms2.o
++	kallsyms_vmlinux=.tmp_vmlinux2
++
++	# step 1
++	vmlinux_link "" .tmp_vmlinux1
++	kallsyms .tmp_vmlinux1 .tmp_kallsyms1.o
++
++	# step 2
++	vmlinux_link .tmp_kallsyms1.o .tmp_vmlinux2
++	kallsyms .tmp_vmlinux2 .tmp_kallsyms2.o
++
++	# step 2a
++	if [ "${KALLSYMS_EXTRA_PASS}" != "" ]; then
++		kallsymso=.tmp_kallsyms3.o
++		kallsyms_vmlinux=.tmp_vmlinux2
++
++		vmlinux_link .tmp_kallsyms2.o .tmp_vmlinux3
++
++		kallsyms .tmp_vmlinux3 .tmp_kallsyms3.o
++	fi
++fi
++
++vmlinux_link "${kallsymso}" vmlinux
++
++info SYSMAP System.map
++mksysmap vmlinux System.map
++
++# step a (see comment above)
++if [ "${CONFIG_KALLSYMS}" != "" ]; then
++	mksysmap ${kallsyms_vmlinux} .tmp_System.map
++
++	if [ $(cmp -s System.map .tmp_System.map) ]; then
++		echo Inconsistent kallsyms data
++		echo This is a bug - please report about it
++		echo echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
++		cleanup
++		exit 1
++	fi
++fi
++
++# We made a new kernel - delete old version file
++rm -f .old_version
+diff --git a/scripts/mksysmap b/scripts/mksysmap
+deleted file mode 100644
+index 6e133a0..0000000
+--- a/scripts/mksysmap
++++ /dev/null
+@@ -1,45 +0,0 @@
+-#!/bin/sh -x
+-# Based on the vmlinux file create the System.map file
+-# System.map is used by module-init tools and some debugging
+-# tools to retrieve the actual addresses of symbols in the kernel.
+-#
+-# Usage
+-# mksysmap vmlinux System.map
+-
+-
+-#####
+-# Generate System.map (actual filename passed as second argument)
+-
+-# $NM produces the following output:
+-# f0081e80 T alloc_vfsmnt
+-
+-#   The second row specify the type of the symbol:
+-#   A = Absolute
+-#   B = Uninitialised data (.bss)
+-#   C = Comon symbol
+-#   D = Initialised data
+-#   G = Initialised data for small objects
+-#   I = Indirect reference to another symbol
+-#   N = Debugging symbol
+-#   R = Read only
+-#   S = Uninitialised data for small objects
+-#   T = Text code symbol
+-#   U = Undefined symbol
+-#   V = Weak symbol
+-#   W = Weak symbol
+-#   Corresponding small letters are local symbols
+-
+-# For System.map filter away:
+-#   a - local absolute symbols
+-#   U - undefined global symbols
+-#   N - debugging symbols
+-#   w - local weak symbols
+-
+-# readprofile starts reading symbols when _stext is found, and
+-# continue until it finds a symbol which is not either of 'T', 't',
+-# 'W' or 'w'. __crc_ are 'A' and placed in the middle
+-# so we just ignore them to let readprofile continue to work.
+-# (At least sparc64 has __crc_ in the middle).
+-
+-$NM -n $1 | grep -v '\( [aNUw] \)\|\(__crc_\)\|\( \$[adt]\)' > $2
+-
