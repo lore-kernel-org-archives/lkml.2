@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751657Ab2DVK5o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 06:57:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63790 "EHLO mx1.redhat.com"
+	id S1751736Ab2DVLhS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 07:37:18 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:53318 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017Ab2DVK5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 06:57:43 -0400
-Message-ID: <4F93E411.7070809@redhat.com>
-Date: Sun, 22 Apr 2012 13:57:21 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, dzickus@redhat.com,
-        luto@mit.edu, gregkh@suse.de, kvm@vger.kernel.org,
-        joerg.roedel@amd.com, mtosatti@redhat.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
-        zhangyanfei@cn.fujitsu.com, ebiederm@xmission.com,
-        ludwig.nussel@suse.de
-Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
- for kdump
-References: <4F8FF7AC.1060309@redhat.com> <20120419.210119.246504497.d.hatayama@jp.fujitsu.com> <4F900020.5010702@redhat.com> <20120420.191133.488341439.d.hatayama@jp.fujitsu.com> <4F93D64B.50803@redhat.com> <20120422103340.GE12768@redhat.com>
-In-Reply-To: <20120422103340.GE12768@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751017Ab2DVLhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 07:37:15 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: kernel-janitors@vger.kernel.org, Mori Hess <fmhess@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/staging/comedi/comedi_fops.c: add missing vfree
+Date: Sun, 22 Apr 2012 13:37:09 +0200
+Message-Id: <1335094629-15879-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2012 01:33 PM, Gleb Natapov wrote:
-> > 
-> > What I don't understand is why you are interested in the guest machine
-> > at all, if it was qemu that crashed.
-> > 
-> It would be interesting to extract enough information from the core to be
-> able to restart the guest from the point where qemu crashed, but
-> decoding VMCS is not enough for that.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Interesting idea.  It should be possible if you attach all kvm state to
-the core (and do quite a lot of digging to recover device model state).
+aux_free is freed on all other exits from the function.  By removing the
+return, we can benefit from the vfree already at the end of the function.
 
--- 
-error compiling committee.c: too many arguments to function
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/staging/comedi/comedi_fops.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index a0861fb..06fc656 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -301,7 +301,7 @@ static int do_devconfig_ioctl(struct comedi_device *dev,
+ 	if (ret == 0) {
+ 		if (!try_module_get(dev->driver->module)) {
+ 			comedi_device_detach(dev);
+-			return -ENOSYS;
++			ret = -ENOSYS;
+ 		}
+ 	}
+ 
 
