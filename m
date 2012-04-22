@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab2DVVVc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 17:21:32 -0400
+	id S1752861Ab2DVVV3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 17:21:29 -0400
 Received: from ogre.sisk.pl ([193.178.161.156]:58191 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752738Ab2DVVUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 17:20:33 -0400
+	id S1752476Ab2DVVUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 17:20:32 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 3/8] PM / Sleep: Change wakeup source statistics to follow Android
-Date: Sun, 22 Apr 2012 23:21:21 +0200
+Subject: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks", take 3
+Date: Sun, 22 Apr 2012 23:19:01 +0200
 User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
@@ -20,330 +20,175 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         Alan Stern <stern@rowland.harvard.edu>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <201202070200.55505.rjw@sisk.pl> <201202220031.46219.rjw@sisk.pl> <201204222319.02228.rjw@sisk.pl>
-In-Reply-To: <201204222319.02228.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl> <201202220031.46219.rjw@sisk.pl>
+In-Reply-To: <201202220031.46219.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204222321.21843.rjw@sisk.pl>
+Message-Id: <201204222319.02228.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+Hi all,
 
-Wakeup statistics used by Android are slightly different from what we
-have in wakeup sources at the moment and there aren't any known
-users of those statistics other than Android, so modify them to make
-it easier for Android to switch to wakeup sources.
+Following is the third update of the autosleep patchset.
 
-This removes the struct wakeup_source's hit_cout field, which is very
-rough and therefore not very useful, and adds two new fields,
-wakeup_count and expire_count.  The first one tracks how many times
-the wakeup source is activated with events_check_enabled set (which
-roughly corresponds to the situations when a system power transition
-to a sleep state is in progress and would be aborted by this wakeup
-source if it were the only active one at that time) and the second
-one is the number of times the wakeup source has been activated with
-a timeout that expired.
+Patches [1-4/8] are regarded as v3.5 material, the rest - depending on
+the feedback I get (lack of feedback will be understood as no objections,
+though).
 
-Additionally, the last_time field is now updated when the wakeup
-source is deactivated too (previously it was only updated during
-the wakeup source's activation), which seems to be what Android does
-with the analogous counter for wakelocks.
+On Wednesday, February 22, 2012, Rafael J. Wysocki wrote:
+> Hi all,
+> 
+> After the feedback so far I've decided to follow up with a refreshed patchset.
+> The first two patches from the previous one went to linux-pm/linux-next
+> and I included the recent evdev patch from Arve (with some modifications)
+> to this patchset for completness.
+> 
+> On Tuesday, February 07, 2012, Rafael J. Wysocki wrote:
+> > Hi all,
+> > 
+> > This series tests the theory that the easiest way to sell a once rejected
+> > feature is to advertise it under a different name.
+> > 
+> > Well, there actually are two different features, although they are closely
+> > related to each other.  First, patch [6/8] introduces a feature that allows
+> > the kernel to trigger system suspend (or more generally a transition into
+> > a sleep state) whenever there are no active wakeup sources (no, they aren't
+> > called wakelocks).  It is called "autosleep" here, but it was called a few
+> > different names in the past ("opportunistic suspend" was probably the most
+> > popular one).  Second, patch [8/8] introduces "wake locks" that are,
+> > essentially, wakeup sources which may be created and manipulated by user
+> > space.  Using them user space may control the autosleep feature introduced
+> > earlier.
+> > 
+> > This also is a kind of a proof of concept for the people who wanted me to
+> > show a kernel-based implementation of automatic suspend, so there you go.
+> > Please note, however, that it is done so that the user space "wake locks"
+> > interface is compatible with Android in support of its user space.  I don't
+> > really like this interface, but since the Android's user space seems to rely
+> > on it, I'm fine with using it as is.  YMMV.
+> > 
+> > Let me say a few words about every patch in the series individually.
+> > 
+> > [1/8] - This really is a bug fix, so it's v3.4 material.  Nobody has stepped
+> >   on this bug so far, but it should be fixed anyway.
+> > 
+> > [2/8] - This is a freezer cleanup, worth doing anyway IMO, so v3.4 material too.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- Documentation/ABI/testing/sysfs-devices-power |   24 ++++++---
- drivers/base/power/sysfs.c                    |   30 ++++++++++--
- drivers/base/power/wakeup.c                   |   64 +++++++++++---------------
- include/linux/pm_wakeup.h                     |   11 ++--
- 4 files changed, 77 insertions(+), 52 deletions(-)
+The two patches above have been merged.
 
-Index: linux/include/linux/pm_wakeup.h
-===================================================================
---- linux.orig/include/linux/pm_wakeup.h
-+++ linux/include/linux/pm_wakeup.h
-@@ -33,12 +33,14 @@
-  *
-  * @total_time: Total time this wakeup source has been active.
-  * @max_time: Maximum time this wakeup source has been continuously active.
-- * @last_time: Monotonic clock when the wakeup source's was activated last time.
-+ * @last_time: Monotonic clock when the wakeup source's was touched last time.
-  * @event_count: Number of signaled wakeup events.
-  * @active_count: Number of times the wakeup sorce was activated.
-  * @relax_count: Number of times the wakeup sorce was deactivated.
-- * @hit_count: Number of times the wakeup sorce might abort system suspend.
-+ * @expire_count: Number of times the wakeup source's timeout has expired.
-+ * @wakeup_count: Number of times the wakeup source might abort suspend.
-  * @active: Status of the wakeup source.
-+ * @has_timeout: The wakeup source has been activated with a timeout.
-  */
- struct wakeup_source {
- 	const char 		*name;
-@@ -52,8 +54,9 @@ struct wakeup_source {
- 	unsigned long		event_count;
- 	unsigned long		active_count;
- 	unsigned long		relax_count;
--	unsigned long		hit_count;
--	unsigned int		active:1;
-+	unsigned long		expire_count;
-+	unsigned long		wakeup_count;
-+	bool			active:1;
- };
- 
- #ifdef CONFIG_PM_SLEEP
-Index: linux/drivers/base/power/wakeup.c
-===================================================================
---- linux.orig/drivers/base/power/wakeup.c
-+++ linux/drivers/base/power/wakeup.c
-@@ -21,7 +21,7 @@
-  * If set, the suspend/hibernate code will abort transitions to a sleep state
-  * if wakeup events are registered during or immediately before the transition.
-  */
--bool events_check_enabled;
-+bool events_check_enabled __read_mostly;
- 
- /*
-  * Combined counters of registered wakeup events and wakeup events in progress.
-@@ -383,6 +383,21 @@ static void wakeup_source_activate(struc
- }
- 
- /**
-+ * wakeup_source_report_event - Report wakeup event using the given source.
-+ * @ws: Wakeup source to report the event for.
-+ */
-+static void wakeup_source_report_event(struct wakeup_source *ws)
-+{
-+	ws->event_count++;
-+	/* This is racy, but the counter is approximate anyway. */
-+	if (events_check_enabled)
-+		ws->wakeup_count++;
-+
-+	if (!ws->active)
-+		wakeup_source_activate(ws);
-+}
-+
-+/**
-  * __pm_stay_awake - Notify the PM core of a wakeup event.
-  * @ws: Wakeup source object associated with the source of the event.
-  *
-@@ -397,10 +412,7 @@ void __pm_stay_awake(struct wakeup_sourc
- 
- 	spin_lock_irqsave(&ws->lock, flags);
- 
--	ws->event_count++;
--	if (!ws->active)
--		wakeup_source_activate(ws);
--
-+	wakeup_source_report_event(ws);
- 	del_timer(&ws->timer);
- 	ws->timer_expires = 0;
- 
-@@ -469,6 +481,7 @@ static void wakeup_source_deactivate(str
- 	if (ktime_to_ns(duration) > ktime_to_ns(ws->max_time))
- 		ws->max_time = duration;
- 
-+	ws->last_time = now;
- 	del_timer(&ws->timer);
- 	ws->timer_expires = 0;
- 
-@@ -541,8 +554,10 @@ static void pm_wakeup_timer_fn(unsigned
- 	spin_lock_irqsave(&ws->lock, flags);
- 
- 	if (ws->active && ws->timer_expires
--	    && time_after_eq(jiffies, ws->timer_expires))
-+	    && time_after_eq(jiffies, ws->timer_expires)) {
- 		wakeup_source_deactivate(ws);
-+		ws->expire_count++;
-+	}
- 
- 	spin_unlock_irqrestore(&ws->lock, flags);
- }
-@@ -569,9 +584,7 @@ void __pm_wakeup_event(struct wakeup_sou
- 
- 	spin_lock_irqsave(&ws->lock, flags);
- 
--	ws->event_count++;
--	if (!ws->active)
--		wakeup_source_activate(ws);
-+	wakeup_source_report_event(ws);
- 
- 	if (!msec) {
- 		wakeup_source_deactivate(ws);
-@@ -614,24 +627,6 @@ void pm_wakeup_event(struct device *dev,
- EXPORT_SYMBOL_GPL(pm_wakeup_event);
- 
- /**
-- * pm_wakeup_update_hit_counts - Update hit counts of all active wakeup sources.
-- */
--static void pm_wakeup_update_hit_counts(void)
--{
--	unsigned long flags;
--	struct wakeup_source *ws;
--
--	rcu_read_lock();
--	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
--		spin_lock_irqsave(&ws->lock, flags);
--		if (ws->active)
--			ws->hit_count++;
--		spin_unlock_irqrestore(&ws->lock, flags);
--	}
--	rcu_read_unlock();
--}
--
--/**
-  * pm_wakeup_pending - Check if power transition in progress should be aborted.
-  *
-  * Compare the current number of registered wakeup events with its preserved
-@@ -653,8 +648,6 @@ bool pm_wakeup_pending(void)
- 		events_check_enabled = !ret;
- 	}
- 	spin_unlock_irqrestore(&events_lock, flags);
--	if (ret)
--		pm_wakeup_update_hit_counts();
- 	return ret;
- }
- 
-@@ -680,7 +673,6 @@ bool pm_get_wakeup_count(unsigned int *c
- 		split_counters(&cnt, &inpr);
- 		if (inpr == 0 || signal_pending(current))
- 			break;
--		pm_wakeup_update_hit_counts();
- 
- 		schedule();
- 	}
-@@ -713,8 +705,6 @@ bool pm_save_wakeup_count(unsigned int c
- 		events_check_enabled = true;
- 	}
- 	spin_unlock_irq(&events_lock);
--	if (!events_check_enabled)
--		pm_wakeup_update_hit_counts();
- 	return events_check_enabled;
- }
- 
-@@ -749,9 +739,10 @@ static int print_wakeup_source_stats(str
- 		active_time = ktime_set(0, 0);
- 	}
- 
--	ret = seq_printf(m, "%-12s\t%lu\t\t%lu\t\t%lu\t\t"
-+	ret = seq_printf(m, "%-12s\t%lu\t\t%lu\t\t%lu\t\t%lu\t\t"
- 			"%lld\t\t%lld\t\t%lld\t\t%lld\n",
--			ws->name, active_count, ws->event_count, ws->hit_count,
-+			ws->name, active_count, ws->event_count,
-+			ws->wakeup_count, ws->expire_count,
- 			ktime_to_ms(active_time), ktime_to_ms(total_time),
- 			ktime_to_ms(max_time), ktime_to_ms(ws->last_time));
- 
-@@ -768,8 +759,9 @@ static int wakeup_sources_stats_show(str
- {
- 	struct wakeup_source *ws;
- 
--	seq_puts(m, "name\t\tactive_count\tevent_count\thit_count\t"
--		"active_since\ttotal_time\tmax_time\tlast_change\n");
-+	seq_puts(m, "name\t\tactive_count\tevent_count\twakeup_count\t"
-+		"expire_count\tactive_since\ttotal_time\tmax_time\t"
-+		"last_change\n");
- 
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(ws, &wakeup_sources, entry)
-Index: linux/drivers/base/power/sysfs.c
-===================================================================
---- linux.orig/drivers/base/power/sysfs.c
-+++ linux/drivers/base/power/sysfs.c
-@@ -314,22 +314,41 @@ static ssize_t wakeup_active_count_show(
- 
- static DEVICE_ATTR(wakeup_active_count, 0444, wakeup_active_count_show, NULL);
- 
--static ssize_t wakeup_hit_count_show(struct device *dev,
--				struct device_attribute *attr, char *buf)
-+static ssize_t wakeup_abort_count_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	unsigned long count = 0;
-+	bool enabled = false;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.wakeup) {
-+		count = dev->power.wakeup->wakeup_count;
-+		enabled = true;
-+	}
-+	spin_unlock_irq(&dev->power.lock);
-+	return enabled ? sprintf(buf, "%lu\n", count) : sprintf(buf, "\n");
-+}
-+
-+static DEVICE_ATTR(wakeup_abort_count, 0444, wakeup_abort_count_show, NULL);
-+
-+static ssize_t wakeup_expire_count_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
- {
- 	unsigned long count = 0;
- 	bool enabled = false;
- 
- 	spin_lock_irq(&dev->power.lock);
- 	if (dev->power.wakeup) {
--		count = dev->power.wakeup->hit_count;
-+		count = dev->power.wakeup->expire_count;
- 		enabled = true;
- 	}
- 	spin_unlock_irq(&dev->power.lock);
- 	return enabled ? sprintf(buf, "%lu\n", count) : sprintf(buf, "\n");
- }
- 
--static DEVICE_ATTR(wakeup_hit_count, 0444, wakeup_hit_count_show, NULL);
-+static DEVICE_ATTR(wakeup_expire_count, 0444, wakeup_expire_count_show, NULL);
- 
- static ssize_t wakeup_active_show(struct device *dev,
- 				struct device_attribute *attr, char *buf)
-@@ -486,7 +505,8 @@ static struct attribute *wakeup_attrs[]
- 	&dev_attr_wakeup.attr,
- 	&dev_attr_wakeup_count.attr,
- 	&dev_attr_wakeup_active_count.attr,
--	&dev_attr_wakeup_hit_count.attr,
-+	&dev_attr_wakeup_abort_count.attr,
-+	&dev_attr_wakeup_expire_count.attr,
- 	&dev_attr_wakeup_active.attr,
- 	&dev_attr_wakeup_total_time_ms.attr,
- 	&dev_attr_wakeup_max_time_ms.attr,
-Index: linux/Documentation/ABI/testing/sysfs-devices-power
-===================================================================
---- linux.orig/Documentation/ABI/testing/sysfs-devices-power
-+++ linux/Documentation/ABI/testing/sysfs-devices-power
-@@ -96,16 +96,26 @@ Description:
- 		is read-only.  If the device is not enabled to wake up the
- 		system from sleep states, this attribute is not present.
- 
--What:		/sys/devices/.../power/wakeup_hit_count
--Date:		September 2010
-+What:		/sys/devices/.../power/wakeup_abort_count
-+Date:		February 2012
- Contact:	Rafael J. Wysocki <rjw@sisk.pl>
- Description:
--		The /sys/devices/.../wakeup_hit_count attribute contains the
-+		The /sys/devices/.../wakeup_abort_count attribute contains the
- 		number of times the processing of a wakeup event associated with
--		the device might prevent the system from entering a sleep state.
--		This attribute is read-only.  If the device is not enabled to
--		wake up the system from sleep states, this attribute is not
--		present.
-+		the device might have aborted system transition into a sleep
-+		state in progress.  This attribute is read-only.  If the device
-+		is not enabled to wake up the system from sleep states, this
-+		attribute is not present.
-+
-+What:		/sys/devices/.../power/wakeup_expire_count
-+Date:		February 2012
-+Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-+Description:
-+		The /sys/devices/.../wakeup_expire_count attribute contains the
-+		number of times a wakeup event associated with the device has
-+		been reported with a timeout that expired.  This attribute is
-+		read-only.  If the device is not enabled to wake up the system
-+		from sleep states, this attribute is not present.
- 
- What:		/sys/devices/.../power/wakeup_active
- Date:		September 2010
+> The above two are in linux-pm/linux-next now.  There are a few more fixes
+> related to wakeup sources in there and the patches below are based on that
+> branch.
+> 
+> > [3/8] - This is something we can do no problem, although completely optional
+> >   without the autosleep feature.  Rather necessary with it, though.
+>
+> Now [1/7] - Look for wakeup events in later stages of device suspend.
 
+[1/8] now - Look for wakeup events later down the suspend code path.
+ 
+> > [4/8] - This kind of reintroduces my original idea of using a wait queue for
+> >   waiting until there are no wakeup events in progress.  Alan convinced me that
+> >   it would be better to poll the counter to prevent wakeup_source_deactivate()
+> >   from having to call wake_up_all() occasionally (that may be costly in fast
+> >   paths), but then quite some people told me that the wait queue migh be
+> >   better.  I think that the polling will make much less sense with autosleep
+> >   and user space "wake locks".  Anyway, [4/8] is something we can do without
+> >   those things too.
+> 
+> Now [2/7] - Use wait queue to signal "no wakeup events in progress"
+> 
+>   With a couple of improvements suggested by Neil.
+
+[2/8] now - Use wait queue to signal "no wakeup events in progress" condition.
+
+> > The patches above were given Sign-off-by tags, because I think they make some
+> > sense regardless of the features introcuded by the remaining patches that in
+> > turn are total RFC.
+> 
+> This time all of the patches are signed-off and include the requisite
+> documentation changes (hopefully, I haven't forgotten about anything).
+> 
+> > [5/8] - This changes wakeup source statistics so that they are more similar to
+> >   the statistics collected for wakelocks on Android.  The file those statistics
+> >   may be read from is still located in debugfs, though (I don't think it
+> >   belongs to proc and its name is different from the analogous Android's file
+> >   name anyway).  It could be done without autosleep, but then it would be a bit
+> >   pointless.  BTW, this changes interfaces that _in_ _theory_ may be used by
+> >   someone, but I'm not aware of anyone using them.  If you are one, I'll be
+> >   pleased to learn about that, so please tell me who you are. :-)
+> 
+> Now [3/7] - Change wakeup source statistics to follow Android.
+>
+>   Rebased and reworked in accordance with the Arve's feedback.
+
+[3/8] now - Change wakeup source statistics to follow Android.
+
+[4/8] - Add tracepoints to wakeup_source_{de}activate()
+
+[5/8] - Teach epoll to use wakeup sources if requested
+
+This should be sufficient to ensure that a wakeup source will be kept active
+after a wakeup event all the way up to user space without a need to make a
+number of random drivers use wakeup sources.
+
+> > [6/8] - Autosleep implementation.  I think the changelog explains the idea
+> >   quite well and the code is really nothing special.  It doesn't really add
+> >   anything new to the kernel in terms of infrastructure etc., it just uses
+> >   the existing stuff to implement an alternative method of triggering system
+> >   sleep transitions.  Note, though, that the interface here is different
+> >   from the Android's one, because Android actually modifies /sys/power/state
+> >   to trigger something called "early suspend" (that is never going to be
+> >   implemented in the "stock" kernel as long as I have any influence on it) and
+> >   we simply can't do that in the mainline.
+> 
+> Now [5/7] - Implement opportunistic sleep
+> 
+>   Rebased and simplified (most notably, I've dropped the "main" wakeup source,
+>   since it wasn't really necessary).
+
+[6/8] now - Implement apportunistic sleep.
+
+> > [7/8] - This adds a wakeup source statistics that only makes sense with
+> >   autosleep and (I believe) is analogous to the Android's prevent_suspend_time
+> >   statistics.  Nothing really special, but I didn't want
+> >   wakeup_source_activate/deactivate() to take a common lock to avoid
+> >   congestion.
+> 
+> Now [6/7] - Add "prevent autosleep time" statistics to wakeup sources.
+> 
+>   Rebased.
+
+[7/8] now - Add "prevent autosleep time" statistics to wakeup sources.
+
+> > [8/8] - This adds a user space interface to create, activate and deactivate
+> >   wakeup sources.  Since the files it consists of are called wake_lock and
+> >   wake_unlock, to follow Android, the objects the wakeup sources are wrapped
+> >   into are called "wakelocks" (for added confusion).  Since the interface
+> >   doesn't provide any means to destroy those "wakelocks", I added a garbage
+> >   collection mechanism to get rid of the unused ones, if any.  I also tought
+> >   it might be a good idea to put a limit on the number of those things that
+> >   user space can operate simultaneously, so I did that too.
+> 
+> Now [7/7] - Add user space interface for manipulating wakeup sources.
+
+[8/8] now - Add user space interface for manipulating wakeup sources.
+
+> > All of the above has been tested very briefly on my test-bed Mackerel board
+> > and it quite obviously requires more thorough testing, but first I need to know
+> > if it makes sense to spend any more time on it.
+> 
+> The above is still accurate, but I also verified that the patches don't break
+> my PC test boxes (at least as long as the new features aren't used ;-)).
+
+Nothing has changed in that respect, as far as I can say.
+
+The patches in the following series are available from the autosleep branch in
+the linux-pm tree.
+
+Thanks,
+Rafael
