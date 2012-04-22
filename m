@@ -1,47 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab2DVWJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 18:09:27 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41628 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565Ab2DVWJZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 18:09:25 -0400
+	id S1752828Ab2DVWNr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 18:13:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64325 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752558Ab2DVWNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 18:13:46 -0400
+Date: Sun, 22 Apr 2012 18:13:29 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>,
+        Chandra Seetharaman <sekharan@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
+ EXPORT_SYMBOL
+Message-ID: <20120422221329.GB24109@redhat.com>
+References: <20111215214440.GA17677@redhat.com>
+ <4EF039D5.5010201@suse.de>
+ <20120405144721.GA18437@redhat.com>
+ <20120420144538.GB8155@redhat.com>
+ <20120420173405.GA8846@redhat.com>
+ <20120420214120.159e2690@pyramind.ukuu.org.uk>
+ <20120420215825.GA10406@redhat.com>
+ <20120420232043.40ddc3c4@pyramind.ukuu.org.uk>
+ <20120420225822.GA10769@redhat.com>
+ <20120421001433.2955abd4@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1335129679.12741.4.camel@deneb.redhat.com>
-References: <1334958476-6296-1-git-send-email-msalter@redhat.com>
- <CAMjpGUe+CMkHP7owZym_6c2RDvgLzj8t+ZpLBuqQ0euk+ArV2Q@mail.gmail.com> <1335129679.12741.4.camel@deneb.redhat.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sun, 22 Apr 2012 18:09:03 -0400
-Message-ID: <CAMjpGUd1+8aHsLp-eipVbRxOiSULPTgMBatxSPPm7tasq226-w@mail.gmail.com>
-Subject: Re: [PATCH] C6X: add support to build with BINFMT_ELF_FDPIC
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120421001433.2955abd4@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 22, 2012 at 17:21, Mark Salter wrote:
-> On Sat, 2012-04-21 at 01:01 -0400, Mike Frysinger wrote:
->> On Fri, Apr 20, 2012 at 17:47, Mark Salter wrote:
->> > --- a/fs/Kconfig.binfmt
->> > +++ b/fs/Kconfig.binfmt
->> >
->> >  config BINFMT_ELF_FDPIC
->> >        bool "Kernel support for FDPIC ELF binaries"
->> >        default y
->> > -       depends on (FRV || BLACKFIN || (SUPERH32 && !MMU))
->> > +       depends on (FRV || BLACKFIN || (SUPERH32 && !MMU) || TMS320C6X)
->>
->> shouldn't the main arch symbol be "C6X" to match arch/c6x/ ?
->
-> It probably should have been. Most architectures use that convention but
-> there are notable exceptions like powerpc and sh.
+On Fri, Apr 20 2012 at  7:14pm -0400,
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-seems like it'd be fairly trivial to convert it.  there aren't many
-references in the kernel tree to TMS320C6X.
--mike
+> There is no "Linux only" magic in _GPL. Any derivative work of a GPL work
+> must be distributed under the GPL.
+
+The author and maintainers of the scsi_dh code agreed that relaxing
+scsi_dh_detach's export was fine and they acked the change.  Their
+rights are important too.
+
+And I understand what you're saying about you and others being rights
+holders that have a say.  But communication has broken down because
+you've been unwilling to concede that those who have acked this
+relaxation _know_ that what scsi_dh provides is _not_ unique
+functionality to Linux or Linux SCSI multipathing.
+
+Allowing a proprietary driver to use scsi_dh_detach to unload scsh_dh*'s
+associated additional SCSI sense and error processing doesn't implicitly
+mean said driver is using derived work to achieve it's comparable
+processing.  It simply means their offering reasonably conflicts with
+what Linux is providing:
+
+All SCSI multipathing drivers are expected to interpret and react to
+SCSI sense information.  Doing so is not an innovation unique to Linux.
+Because it is not unique it collides with a long established proprietary
+driver's offering.
+
+> > You still don't get it... yet you'll saber rattle behind generic GPL
+> > lawyer-up nonsense.
+> 
+> This has gone far enough but it seems your management has already jumped
+> on it. Not my preferred way of handling such matters but Red Hat legal and
+> PR need to rein you in before you cause some serious damage.
+
+Yes, secretly switching channels to google+ and lobbing questions about
+Red Hat's commitment to free software at one of Red Hat's OSS community
+leaders probably isn't the preferred way to handle such things.
+
+But seeing a s/EXPORT_SYMBOL_GPL/EXPORT_SYMBOL/ change clearly does
+trigger a negative reaction for some (and that really doesn't make them
+"zealots").  However the validity of making that change should not be so
+easily stifled with rhetorical GPL violation theory or legal threat.  I
+don't respond well to threats but could have certainly used more tact in
+my original responses to you.
+
+You capture the hearts and minds of many Linux and GPL stakeholders and
+are well respected -- and believe it or not I'm not some naive or
+reckless individual.  I am a professional Linux developer who works for
+the most respected name in Open Source development.
+
+And I now do _not_ have concerns of legal issues associated with this
+change.  I genuinely do appreciate your concern though.
+
+You view this change as detrimental to Linux and think it could
+theoretically be enabling proprietary use of derived work.  Reasonable
+initial concern but this change does not do that for the intended use --
+as hard as it may be to believe it actually benefits Linux multipathing.
+And as I said on google+:
+
+"I've been very pragmatic with my reasoning behind this change and
+followed the established process of getting author and maintainer
+buy-off.  None of us are out to hurt Linux."
+
+With that said, I'm leaving the decision of whether or not to relax
+scsi_dh_detach's export in the very capable hands of James Bottomley.
+
+I'll be fine with whatever James decides but do hope that this outcry
+will not serve to establish precedent that ties our hands in the future
+when comparable decisions need to be made about the improvement of
+Linux's interfaces and overall function.
+
+Regards,
+Mike
