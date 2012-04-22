@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab2DVR03 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 13:26:29 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35540 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab2DVR02 (ORCPT
+	id S1752048Ab2DVRi6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 13:38:58 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36640 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab2DVRi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 13:26:28 -0400
-Date: Sun, 22 Apr 2012 19:26:11 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: ben-linux@fluff.org, spear-devel@list.st.com, viresh.linux@gmail.com,
-        khali@linux-fr.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] i2c: designware: Add clk_{un}prepare() support
-Message-ID: <20120422172611.GA15041@pengutronix.de>
-References: <caa4a0645f80f199b31ec16de37a5c4c9c67a6fa.1334652570.git.viresh.kumar@st.com>
- <b562073871c8c3c13a1f59698f69cfdf65db3b5a.1334662366.git.viresh.kumar@st.com>
+	Sun, 22 Apr 2012 13:38:57 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CE+1k2dSO48ffgeK"
-Content-Disposition: inline
-In-Reply-To: <b562073871c8c3c13a1f59698f69cfdf65db3b5a.1334662366.git.viresh.kumar@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20120422172611.GA15041@pengutronix.de>
+References: <caa4a0645f80f199b31ec16de37a5c4c9c67a6fa.1334652570.git.viresh.kumar@st.com>
+	<b562073871c8c3c13a1f59698f69cfdf65db3b5a.1334662366.git.viresh.kumar@st.com>
+	<20120422172611.GA15041@pengutronix.de>
+Date: Sun, 22 Apr 2012 23:08:55 +0530
+Message-ID: <CAOh2x=mHS9h6kHxw2of-XWTtv35-SHRRno9Jdkb_3HuDoAovAg@mail.gmail.com>
+Subject: Re: [PATCH V2] i2c: designware: Add clk_{un}prepare() support
+From: viresh kumar <viresh.linux@gmail.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Viresh Kumar <viresh.kumar@st.com>, ben-linux@fluff.org,
+        spear-devel@list.st.com, khali@linux-fr.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 4/22/12, Wolfram Sang <w.sang@pengutronix.de> wrote:
+> On Tue, Apr 17, 2012 at 05:04:31PM +0530, Viresh Kumar wrote:
+>> clk_{un}prepare is mandatory for platforms using common clock framework.
+>> Since
+>> this driver is used by SPEAr platform, which supports common clock
+>> framework,
+>> add clk_{un}prepare() support for designware i2c.
+>>
+>> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+>
+> ? Can't apply, which version is this against? Looks good otherwise.
 
---CE+1k2dSO48ffgeK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Because following is waiting in you todo list and must be applied
+before this one: :)
 
-On Tue, Apr 17, 2012 at 05:04:31PM +0530, Viresh Kumar wrote:
-> clk_{un}prepare is mandatory for platforms using common clock framework. =
-Since
-> this driver is used by SPEAr platform, which supports common clock framew=
-ork,
-> add clk_{un}prepare() support for designware i2c.
->=20
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Author: Deepak Sikri <deepak.sikri@st.com>
+Date:   Mon Sep 26 18:42:10 2011 +0530
 
-? Can't apply, which version is this against? Looks good otherwise.
+    i2c/busses: Add PM support
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+    This patch adds in support for standby/S2R/hybernate for
+i2c-designware driver.
 
---CE+1k2dSO48ffgeK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+    Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
+    Signed-off-by: Rajeev Kumar <rajeev-dlh.kumar@st.com>
+---
+ drivers/i2c/busses/i2c-designware-platdrv.c |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iEYEARECAAYFAk+UPzMACgkQD27XaX1/VRub3wCfevLeEGhwxQ0b0s6DKF5yKz5f
-QxwAnj7fqilV4GTgmsNj19JeKdka5TYh
-=tksO
------END PGP SIGNATURE-----
+Actually suspend/resume of above are also fixed by this patch.
 
---CE+1k2dSO48ffgeK--
+What are your plans for following patchset:
+i2c/adapter: Add bus recovery infrastructure
+
+Would be good if you can apply that or ask for another version if you see some
+shortcomings. Otherwise this kind of issues will happen again.
+Please allocate some time for this, it is really important for other bus
+drivers. All controllers/slaves have that bug.
+They will be fixed only once this is applied. :)
+
+--
+viresh
