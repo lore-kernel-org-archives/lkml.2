@@ -1,91 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676Ab2DVLyv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 07:54:51 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:37352 "EHLO mgw2.diku.dk"
+	id S1751666Ab2DVL6z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 07:58:55 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:57733 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750921Ab2DVLyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 07:54:49 -0400
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/media/video/au0828/au0828-video.c: add missing video_device_release
-Date: Sun, 22 Apr 2012 13:54:42 +0200
-Message-Id: <1335095682-16530-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1751018Ab2DVL6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 07:58:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Per Olofsson <pelle@debian.org>
+Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for hibernate/thaw buffering
+Date: Sun, 22 Apr 2012 14:03:32 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Bojan Smojver <bojan@rexursive.com>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <1334267969.2573.14.camel@shrek.rexursive.com> <201204221347.52883.rjw@sisk.pl> <4F93F0B9.3070101@debian.org>
+In-Reply-To: <4F93F0B9.3070101@debian.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204221403.32758.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Sunday, April 22, 2012, Per Olofsson wrote:
+> 2012-04-22 13:47, Rafael J. Wysocki skrev:
+> >> > Any chance of it in 3.3.3?
+> > Nope.
+> > 
+> >> > Looks like rc1 of it is already out there...
+> > I'm going to push it for v3.5, so it will only appear in 3.4.y I guess.
+> 
+> What about 3.2.y?
 
-At the point of the call to video_register_device, both dev->vbi_dev and
-dev->vdev have been allocated, and so should be freed on failure.  The
-error-handling code is moved to the end of the function, to avoid code
-duplication.
+That depends on Greg.  If 3.2.y is still being continued when 3.5 is out, I think
+it also will appear in there.  I'll just add the "CC stable" tag to the commit.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/media/video/au0828/au0828-video.c |   21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/media/video/au0828/au0828-video.c b/drivers/media/video/au0828/au0828-video.c
-index 0b3e481..141f9c2 100644
---- a/drivers/media/video/au0828/au0828-video.c
-+++ b/drivers/media/video/au0828/au0828-video.c
-@@ -1881,7 +1881,7 @@ int au0828_analog_register(struct au0828_dev *dev,
- 	int retval = -ENOMEM;
- 	struct usb_host_interface *iface_desc;
- 	struct usb_endpoint_descriptor *endpoint;
--	int i;
-+	int i, ret;
- 
- 	dprintk(1, "au0828_analog_register called!\n");
- 
-@@ -1951,8 +1951,8 @@ int au0828_analog_register(struct au0828_dev *dev,
- 	dev->vbi_dev = video_device_alloc();
- 	if (NULL == dev->vbi_dev) {
- 		dprintk(1, "Can't allocate vbi_device.\n");
--		kfree(dev->vdev);
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+		goto err_vdev;
- 	}
- 
- 	/* Fill the video capture device struct */
-@@ -1971,8 +1971,8 @@ int au0828_analog_register(struct au0828_dev *dev,
- 	if (retval != 0) {
- 		dprintk(1, "unable to register video device (error = %d).\n",
- 			retval);
--		video_device_release(dev->vdev);
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto err_vbi_dev;
- 	}
- 
- 	/* Register the vbi device */
-@@ -1981,13 +1981,18 @@ int au0828_analog_register(struct au0828_dev *dev,
- 	if (retval != 0) {
- 		dprintk(1, "unable to register vbi device (error = %d).\n",
- 			retval);
--		video_device_release(dev->vbi_dev);
--		video_device_release(dev->vdev);
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto err_vbi_dev;
- 	}
- 
- 	dprintk(1, "%s completed!\n", __func__);
- 
- 	return 0;
-+
-+err_vbi_dev:
-+	video_device_release(dev->vbi_dev);
-+err_vdev:
-+	video_device_release(dev->vdev);
-+	return ret;
- }
- 
-
+Thanks,
+Rafael
