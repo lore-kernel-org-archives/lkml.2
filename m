@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab2DVU5N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 16:57:13 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13430 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500Ab2DVU5M (ORCPT
+	id S1752671Ab2DVVCF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 17:02:05 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:48292 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab2DVVCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 16:57:12 -0400
-Date: Sun, 22 Apr 2012 22:57:09 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Luciano Coelho <coelho@ti.com>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] wl12xx: fix size of two memset's in
- wl1271_cmd_build_arp_rsp()
-In-Reply-To: <alpine.LNX.2.00.1204222252000.27455@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1204222255460.27455@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1204222252000.27455@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 22 Apr 2012 17:02:03 -0400
+Message-ID: <4F9471B9.5050007@tilera.com>
+Date: Sun, 22 Apr 2012 23:01:45 +0200
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Newsgroups: linux-arch
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
+References: <20120420122120.097464672@linutronix.de>
+In-Reply-To: <20120420122120.097464672@linutronix.de>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 Apr 2012, Jesper Juhl wrote:
-
-> We currently do this:
+On Fri, 2012-04-20 at 13:05 +0000, Thomas Gleixner wrote:
+> [...]
+> This first part moves the idle thread management for non-boot cpus
+> into the core. fork_idle() is called in a workqueue as it is
+> implemented in a few architectures already. This is necessary when not
+> all cpus are brought up by the early boot code as otherwise we would
+> take a ref on the user task VM of the thread which brings the cpu up
+> via the sysfs interface.
 > 
-> int wl1271_cmd_build_arp_rsp(struct wl1271 *wl, struct wl12xx_vif *wlvif)
-> ...
-> 	struct wl12xx_arp_rsp_template *tmpl;
-> 	struct ieee80211_hdr_3addr *hdr;
-> ...
-> 	tmpl = (struct wl12xx_arp_rsp_template *)skb_put(skb, sizeof(*tmpl));
-> 	memset(tmpl, 0, sizeof(tmpl));
-> ...
-> 	hdr = (struct ieee80211_hdr_3addr *)skb_push(skb, sizeof(*hdr));
-> 	memset(hdr, 0, sizeof(*hdr));
-> ...
-> 
-> I believe we want to set the entire structures to 0 with those
-> memset() calls, not just zero the initial part of them (size of the
-> pointer bytes).
-> 
+> This converts all architectures except m32r, mn10300, tile and UM to
+> the new core facility. These architecture are calling fork_idle() in
+> the very early boot code in smp_prepare_cpus() for unknown reasons.
+> I haven't analyzed yet, whether this is on purpose or can be moved
+> over to the generic facility. It'd be nice if the responsible maintainers
+> could look into that as well.
 
-Sorry, I accidentally copied that code from the fixed version. The above 
-should read:
-
-
-We currently do this:
-
-int wl1271_cmd_build_arp_rsp(struct wl1271 *wl, struct wl12xx_vif *wlvif)
-...
-      struct wl12xx_arp_rsp_template *tmpl;
-      struct ieee80211_hdr_3addr *hdr;
-...
-      tmpl = (struct wl12xx_arp_rsp_template *)skb_put(skb, sizeof(*tmpl));
-      memset(tmpl, 0, sizeof(tmpl));
-...
-      hdr = (struct ieee80211_hdr_3addr *)skb_push(skb, sizeof(*hdr));
-      memset(hdr, 0, sizeof(hdr));
-...
-
-I believe we want to set the entire structures to 0 with those
-memset() calls, not just zero the initial part of them (size of the
-pointer bytes).
-
-
-
-
-
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  drivers/net/wireless/wl12xx/cmd.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/wl12xx/cmd.c b/drivers/net/wireless/wl12xx/cmd.c
-> index 3414fc1..8e65529 100644
-> --- a/drivers/net/wireless/wl12xx/cmd.c
-> +++ b/drivers/net/wireless/wl12xx/cmd.c
-> @@ -1249,7 +1249,7 @@ int wl1271_cmd_build_arp_rsp(struct wl1271 *wl, struct wl12xx_vif *wlvif)
->  	skb_reserve(skb, sizeof(*hdr) + WL1271_EXTRA_SPACE_MAX);
->  
->  	tmpl = (struct wl12xx_arp_rsp_template *)skb_put(skb, sizeof(*tmpl));
-> -	memset(tmpl, 0, sizeof(tmpl));
-> +	memset(tmpl, 0, sizeof(*tmpl));
->  
->  	/* llc layer */
->  	memcpy(tmpl->llc_hdr, rfc1042_header, sizeof(rfc1042_header));
-> @@ -1298,7 +1298,7 @@ int wl1271_cmd_build_arp_rsp(struct wl1271 *wl, struct wl12xx_vif *wlvif)
->  
->  	/* mac80211 header */
->  	hdr = (struct ieee80211_hdr_3addr *)skb_push(skb, sizeof(*hdr));
-> -	memset(hdr, 0, sizeof(hdr));
-> +	memset(hdr, 0, sizeof(*hdr));
->  	fc = IEEE80211_FTYPE_DATA | IEEE80211_FCTL_TODS;
->  	if (wlvif->sta.qos)
->  		fc |= IEEE80211_STYPE_QOS_DATA;
-> 
+I will take a look at this for the tile architecture later this week; I'm
+out on vacation until Wednesday.
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-arch" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
