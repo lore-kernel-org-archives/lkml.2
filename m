@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957Ab2DVVX0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 17:23:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44854 "EHLO mx1.redhat.com"
+	id S1752834Ab2DVV1L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 17:27:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36228 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752741Ab2DVVV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 17:21:26 -0400
-Subject: Re: [PATCH] C6X: add support to build with BINFMT_ELF_FDPIC
-From: Mark Salter <msalter@redhat.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, Arnd Bergmann <arnd@arndb.de>
-Date: Sun, 22 Apr 2012 17:21:18 -0400
-In-Reply-To: <CAMjpGUe+CMkHP7owZym_6c2RDvgLzj8t+ZpLBuqQ0euk+ArV2Q@mail.gmail.com>
-References: <1334958476-6296-1-git-send-email-msalter@redhat.com>
-	 <CAMjpGUe+CMkHP7owZym_6c2RDvgLzj8t+ZpLBuqQ0euk+ArV2Q@mail.gmail.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1335129679.12741.4.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1752586Ab2DVV1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 17:27:09 -0400
+Date: Sun, 22 Apr 2012 23:27:04 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nikolai Kondrashov <spbnick@gmail.com>
+Subject: Re: [PATCH 0/3] hid: Enable report fixup on rebind
+In-Reply-To: <1335097300-11881-1-git-send-email-rydberg@euromail.se>
+Message-ID: <alpine.LNX.2.00.1204222325380.1856@pobox.suse.cz>
+References: <1335097300-11881-1-git-send-email-rydberg@euromail.se>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-21 at 01:01 -0400, Mike Frysinger wrote:
-> On Fri, Apr 20, 2012 at 17:47, Mark Salter wrote:
-> > --- a/arch/c6x/kernel/process.c
-> > +++ b/arch/c6x/kernel/process.c
-> >
-> > +
-> > +/* Fill in the fpu structure for a core dump. This is easy -- we don't have any */
-> > +int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
-> > +{
-> > +       /* Not valid */
-> > +       return 0;
-> > +}
+On Sun, 22 Apr 2012, Henrik Rydberg wrote:
+
+> This patchset contains a resolution to the problem with
+> driver-specific modification of the report descriptor. The core of the
+> problem lies with the dual semantics of hid_parse_report(), which is
+> therefore split into two functions. As a consequence, the hid core can
+> handle the rebind case internally, with no changes to the
+> drivers. Out-of-tree drivers will work fine as long as they operate in
+> the same way as the in-kernel drivers.
 > 
-> you could avoid this like Blackfin has:
-> arch/blackfin/include/asm/elf.h:
-> #define ELF_CORE_COPY_FPREGS(...) 0     /* Blackfin has no FPU */
+> The first two patches are bug fixes found in the process. I am hoping
+> for some test feedback on those. The third patch is the main one.
 
-Yes, thanks. That's a better way I missed.
+Hi Henrik,
+
+thanks a lot for looking into this. I will look into the patches in more 
+detail tomorrow. I am now just adding Nikolai to CC, as he was the first 
+one to bring this up and actually has a driver that exposed the fact that 
+just freeing/reinstatiating rdesc is not enough.
+
+Thanks!
 
 > 
-> > --- a/fs/Kconfig.binfmt
-> > +++ b/fs/Kconfig.binfmt
-> >
-> >  config BINFMT_ELF_FDPIC
-> >        bool "Kernel support for FDPIC ELF binaries"
-> >        default y
-> > -       depends on (FRV || BLACKFIN || (SUPERH32 && !MMU))
-> > +       depends on (FRV || BLACKFIN || (SUPERH32 && !MMU) || TMS320C6X)
+> Henrik Rydberg (3):
+>   hid-hyperv: Do not use hid_parse_report() directly
+>   hid-logitech: Collect report descriptors before sending
+>   hid: Handle driver-specific device descriptor in core
 > 
-> shouldn't the main arch symbol be "C6X" to match arch/c6x/ ?
+>  drivers/hid/hid-core.c        |  112 +++++++++++++++++++++++++++++++++--------
+>  drivers/hid/hid-hyperv.c      |   14 +++++-
+>  drivers/hid/hid-logitech-dj.c |   71 +++++++++++---------------
+>  include/linux/hid.h           |   14 ++----
+>  4 files changed, 135 insertions(+), 76 deletions(-)
+> 
+> -- 
+> 1.7.10
+> 
 
-It probably should have been. Most architectures use that convention but
-there are notable exceptions like powerpc and sh.
-
-> -mike
-
-
+-- 
+Jiri Kosina
+SUSE Labs
