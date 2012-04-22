@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751122Ab2DVQyH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 12:54:07 -0400
-Received: from jim.sh ([75.150.123.25]:42815 "EHLO psychosis.jim.sh"
+	id S1751782Ab2DVRHs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 13:07:48 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:43039 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017Ab2DVQyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 12:54:04 -0400
-Date: Sun, 22 Apr 2012 12:54:01 -0400
-From: Jim Paris <jim@jtan.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: udev missing events?
-Message-ID: <20120422165401.GA16163@psychosis.jim.sh>
-References: <20120422043655.GA27861@psychosis.jim.sh>
- <ef67a489-94bc-4f97-903d-907ab974537c@email.android.com>
- <20120422141106.GA3021@psychosis.jim.sh>
- <m14nsbwy1c.fsf@fess.ebiederm.org>
+	id S1751319Ab2DVRHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 13:07:47 -0400
+Message-ID: <4F943AE1.5050207@msgid.tls.msk.ru>
+Date: Sun, 22 Apr 2012 21:07:45 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m14nsbwy1c.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: hibernate a system booted from external USB drive - is it posible
+ ?
+References: <201204221849.31198.toralf.foerster@gmx.de>
+In-Reply-To: <201204221849.31198.toralf.foerster@gmx.de>
+X-Enigmail-Version: 1.4
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric W. Biederman wrote:
-> > I'm not using them on purpose, but it's caused by a probing clone() in
-> > libvirt's lxcContainerAavilable, followed by a "ip link set lo netns -1"
-> > in lxcCheckNetNsSupport.  It can be recreated with just:
-> >
-> >   #include <unistd.h>
-> >   #include <sched.h>
-> >   static int dummy(void *argv) { _exit(0); }
-> >   main() {
-> >           char stack[4096];
-> >           clone(dummy, stack+4096, CLONE_NEWNET, NULL);
-> >           wait();
-> >           system("ip link set lo netns -1");
-> >   }
-> >
-> > Running that program causes "udevadm settle" to stop working due to
-> > the filtered events.
+On 22.04.2012 20:49, Toralf Förster wrote:
+> I wonder, whether it is expect to work with current stable kernel 3.3.2 or 
+> not. Seems not to work here (s2ram works fine).
+> Hibernate however writes data to the swap partition, but during wakeup I get :
 > 
-> By stop working you mean "udevadm settle" waits because it thinks there
-> are unprocessed events but those events are never found, and eventually
-> "udevadm settle" times out?
+> kernel: PM: Hibernation image partition 8:6 present
+> kernel: PM: Looking for hibernation image.
+> kernel: PM: Image not found (code -22)
+> kernel: PM: Hibernation image not present or could not be loaded. 
 
-Yeah.
+This is entirely an initramfs issue/question.  The device should be
+present in early userspace when it attempts to resume.  Also, s2ram &Co
+may not be prepared for changing device name/node.
 
-> I'm sorry I don't see the problem.
-> 
-> I think the most we could do would be to have a per network namespace
-> sequence number, but I don't get see the problem with skipping a sequence
-> number or two.  Does that cause udev to explode or something?  It
-> doesn't sound like udev has problems.
-> 
-> It does look like we aren't filtering all of the events for the new
-> loopback device properly.  We should be filtering the events for
-> /sys/devices/virtual/net/lo/queues/rx-0 and friends.  But fixing that
-> problem looks like it will only make the gap in sequence numbers
-> larger, and if anything make the "udevadm settle" problem worse.
-> 
-> What precisely is the problem you are seeing?
+I've a system with only one "drive" being an usb flash stick (Sandisk
+Cruzer Fit).  This system is able to hibernate and resume just fine,
+but I don't do it often (it is our router).
 
-The specific problem is that virt-manager loses its connection to
-libvirt.  Libvirt triggers this situation, and then later executes
-"udevadm settle" after some of virt-manager's storage requests.  I
-think that happens in one thread, while another libvirt thread then
-kills the virt-manager connection for stalling for so long.
-
-I can certainly ask the libvirt guys to add a shorter --timeout
-parameter, at the very least, if this isn't considered a bug from the
-udev point of view.  But libvirt isn't the only thing that calls
-"udevadm settle" -- having to wait 2-3 minutes for each settle call
-during an initramfs build or similar would also be annoying.
-
-> Of course in this instance I can't see how the version of libvirt you
-> are playing with would ever have worked.  It is relying on features to
-> act in a way the simply don't act.
-
-I upgraded libvirt and the kernel lately, so either some of this lxc
-probing code in libvirt is new, or maybe my kernel didn't support net
-namespaces before.  Libvirt has called udevadm settle for a while,
-though.
-
-Thanks,
--jim
+/mjt
