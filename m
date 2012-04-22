@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab2DVXz4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 19:55:56 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45922 "EHLO relay.sw.ru"
+	id S1753342Ab2DVX4I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 19:56:08 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:19559 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020Ab2DVXzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 19:55:54 -0400
+	id S1753020Ab2DVX4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 19:56:03 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <cgroups@vger.kernel.org>
 Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
@@ -16,9 +16,9 @@ Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
         Glauber Costa <glommer@parallels.com>,
         Christoph Lameter <cl@linux.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH 15/23] slab: create duplicate cache
-Date: Sun, 22 Apr 2012 20:53:32 -0300
-Message-Id: <1335138820-26590-4-git-send-email-glommer@parallels.com>
+Subject: [PATCH 16/23] slab: provide kmalloc_no_account
+Date: Sun, 22 Apr 2012 20:53:33 -0300
+Message-Id: <1335138820-26590-5-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
 References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
@@ -26,14 +26,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides kmem_cache_dup(), that duplicates
-a cache for a memcg, preserving its creation properties.
-Object size, alignment and flags are all respected.
-An exception is the SLAB_PANIC flag, since cache creation
-inside a memcg should not be fatal.
+Some allocations need to be accounted to the root memcg regardless
+of their context. One trivial example, is the allocations we do
+during the memcg slab cache creation themselves. Strictly speaking,
+they could go to the parent, but it is way easier to bill them to
+the root cgroup.
 
-This code is mostly written by Suleiman Souhlal,
-with some adaptations and simplifications by me.
+Only generic kmalloc allocations are allowed to be bypassed.
+
+The function is not exported, because drivers code should always
+be accounted.
+
+This code is mosly written by Suleiman Souhlal.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Christoph Lameter <cl@linux.com>
@@ -43,63 +47,56 @@ CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
 CC: Suleiman Souhlal <suleiman@google.com>
 ---
- mm/slab.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 36 insertions(+), 0 deletions(-)
+ include/linux/slab_def.h |    1 +
+ mm/slab.c                |   23 +++++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index 06e4a3e..54d25d7 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -114,6 +114,7 @@ extern struct cache_sizes malloc_sizes[];
+ 
+ void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
+ void *__kmalloc(size_t size, gfp_t flags);
++void *kmalloc_no_account(size_t size, gfp_t flags);
+ 
+ #ifdef CONFIG_TRACING
+ extern void *kmem_cache_alloc_trace(size_t size,
 diff --git a/mm/slab.c b/mm/slab.c
-index 362bb6e..c4ef684 100644
+index c4ef684..13948c3 100644
 --- a/mm/slab.c
 +++ b/mm/slab.c
-@@ -301,6 +301,8 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int len,
- 			int node);
- static int enable_cpucache(struct kmem_cache *cachep, gfp_t gfp);
- static void cache_reap(struct work_struct *unused);
-+static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
-+			    int batchcount, int shared, gfp_t gfp);
- 
- /*
-  * This function must be completely optimized away if a constant is passed to
-@@ -2593,6 +2595,40 @@ kmem_cache_create(const char *name, size_t size, size_t align,
+@@ -3960,6 +3960,29 @@ void *__kmalloc(size_t size, gfp_t flags)
  }
- EXPORT_SYMBOL(kmem_cache_create);
+ EXPORT_SYMBOL(__kmalloc);
  
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+struct kmem_cache *
-+kmem_cache_dup(struct mem_cgroup *memcg, struct kmem_cache *cachep)
++static __always_inline void *__do_kmalloc_no_account(size_t size, gfp_t flags,
++						     void *caller)
 +{
-+	struct kmem_cache *new;
-+	int flags;
-+	char *name;
++	struct kmem_cache *cachep;
++	void *ret;
 +
-+	name = mem_cgroup_cache_name(memcg, cachep);
-+	if (!name)
-+		return NULL;
++	cachep = __find_general_cachep(size, flags);
++	if (unlikely(ZERO_OR_NULL_PTR(cachep)))
++		return cachep;
 +
-+	flags = cachep->flags & ~SLAB_PANIC;
-+	mutex_lock(&cache_chain_mutex);
-+	new = __kmem_cache_create(memcg, name, obj_size(cachep),
-+	    cachep->memcg_params.orig_align, flags, cachep->ctor);
++	ret = __cache_alloc(cachep, flags, caller);
++	trace_kmalloc((unsigned long)caller, ret, size,
++		      cachep->buffer_size, flags);
 +
-+	if (new == NULL) {
-+		mutex_unlock(&cache_chain_mutex);
-+		kfree(name);
-+		return NULL;
-+	}
-+
-+	if ((cachep->limit != new->limit) ||
-+	    (cachep->batchcount != new->batchcount) ||
-+	    (cachep->shared != new->shared))
-+		do_tune_cpucache(new, cachep->limit, cachep->batchcount,
-+		    cachep->shared, GFP_KERNEL);
-+	mutex_unlock(&cache_chain_mutex);
-+
-+	return new;
++	return ret;
 +}
-+#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
 +
- #if DEBUG
- static void check_irq_off(void)
++void *kmalloc_no_account(size_t size, gfp_t flags)
++{
++	return __do_kmalloc_no_account(size, flags,
++				       __builtin_return_address(0));
++}
++
+ void *__kmalloc_track_caller(size_t size, gfp_t flags, unsigned long caller)
  {
+ 	return __do_kmalloc(size, flags, (void *)caller);
 -- 
 1.7.7.6
 
