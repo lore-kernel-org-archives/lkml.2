@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab2DVUF6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 16:05:58 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:12889 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab2DVUF5 (ORCPT
+	id S1752442Ab2DVUNO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 16:13:14 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12544 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab2DVUNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 16:05:57 -0400
-Date: Sun, 22 Apr 2012 22:05:54 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: David Miller <davem@davemloft.net>
-Cc: yinghai@kernel.org, tj@kernel.org, mhocko@suse.cz, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Weirdness in __alloc_bootmem_node_high
-Message-ID: <20120422200554.GA6385@merkur.ravnborg.org>
-References: <20120420191418.GA3569@merkur.ravnborg.org> <CAE9FiQU-M0yW_rwysq56zrZzift=PxgwioMmx8bMcJ5o20m2TQ@mail.gmail.com> <20120420194309.GA3689@merkur.ravnborg.org> <20120422.152210.1520263792125579554.davem@davemloft.net>
+	Sun, 22 Apr 2012 16:13:13 -0400
+Date: Sun, 22 Apr 2012 22:13:12 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Marek Vasut <marek.vasut@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>
+Subject: [PATCH] ISP1704 USB Charger: Fix use-after-free error in
+ isp1704_charger_probe()
+Message-ID: <alpine.LNX.2.00.1204222210290.27455@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120422.152210.1520263792125579554.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 22, 2012 at 03:22:10PM -0400, David Miller wrote:
-> From: Sam Ravnborg <sam@ravnborg.org>
-> Date: Fri, 20 Apr 2012 21:43:09 +0200
-> 
-> > I have it almost finished - except that it does not work :-(
-> > We have limitations in what area we can allocate very early,
-> > and here I had to use the alloc_bootmem_low() variant.
-> > I had preferred a variant that allowed me to allocate
-> > bottom-up in this case.
-> 
-> I think you're going to have to bear down and map all of linear kernel
-> mappings before you start using the bootmem code rather than
-> afterwards.
+In isp1704_charger_probe() at the 'fail0:' label we kfree(isp) and
+then subsequently call isp1704_charger_set_power(isp, 0). That's a
+problem since isp1704_charger_set_power() dereferences the pointer it
+is passed as its first argument, which is 'isp', which we already
+freed.
 
-Thanks - I will try to do so.
-But I must admit I do not (yet) see any big difference in the
-approach before/after.
+Fixed by simply swapping the order of the two calls so that we only
+kfree() *after* the call to isp1704_charger_set_power().
 
-I digged up an old todo regarding final link of vmlinux.
-Will look at this and then re-visit memblock at sparc32.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/power/isp1704_charger.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-	Sam
+diff --git a/drivers/power/isp1704_charger.c b/drivers/power/isp1704_charger.c
+index 39eb50f..8a610da 100644
+--- a/drivers/power/isp1704_charger.c
++++ b/drivers/power/isp1704_charger.c
+@@ -476,11 +476,9 @@ fail2:
+ fail1:
+ 	usb_put_transceiver(isp->phy);
+ fail0:
+-	kfree(isp);
+-
+ 	dev_err(&pdev->dev, "failed to register isp1704 with error %d\n", ret);
+-
+ 	isp1704_charger_set_power(isp, 0);
++	kfree(isp);
+ 	return ret;
+ }
+ 
+-- 
+1.7.10
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
