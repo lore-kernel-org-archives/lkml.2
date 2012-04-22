@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab2DVUvv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 16:51:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17753 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752476Ab2DVUvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 16:51:49 -0400
-Date: Sun, 22 Apr 2012 22:04:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: pacman@kosh.dhis.org, linux-man <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Pedro Alves <palves@redhat.com>
-Subject: Re: ptrace.2: PTRACE_KILL needs a stopped process too
-Message-ID: <20120422200459.GA7519@redhat.com>
-References: <20091216004533.22261.qmail@kosh.dhis.org> <CAKgNAkhtu8d0NKcTwWyCA8qWgz8Lag+GcpEE1=YMVe_Nh8XJ9Q@mail.gmail.com>
+	id S1752637Ab2DVUyD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 16:54:03 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13354 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab2DVUyB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 16:54:01 -0400
+Date: Sun, 22 Apr 2012 22:53:59 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Luciano Coelho <coelho@ti.com>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] wl12xx: fix size of two memset's in
+ wl1271_cmd_build_arp_rsp()
+Message-ID: <alpine.LNX.2.00.1204222252000.27455@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkhtu8d0NKcTwWyCA8qWgz8Lag+GcpEE1=YMVe_Nh8XJ9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23, Michael Kerrisk (man-pages) wrote:
->
-> [widening CC]
+We currently do this:
 
-add more CC's
+int wl1271_cmd_build_arp_rsp(struct wl1271 *wl, struct wl12xx_vif *wlvif)
+...
+	struct wl12xx_arp_rsp_template *tmpl;
+	struct ieee80211_hdr_3addr *hdr;
+...
+	tmpl = (struct wl12xx_arp_rsp_template *)skb_put(skb, sizeof(*tmpl));
+	memset(tmpl, 0, sizeof(tmpl));
+...
+	hdr = (struct ieee80211_hdr_3addr *)skb_push(skb, sizeof(*hdr));
+	memset(hdr, 0, sizeof(*hdr));
+...
 
-> The man page says "For requests other than PTRACE_KILL,
+I believe we want to set the entire structures to 0 with those
+memset() calls, not just zero the initial part of them (size of the
+pointer bytes).
 
-Argh, PTRACE_KILL again.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/net/wireless/wl12xx/cmd.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-You know, I simply do not know what it was supposed to do. I can only
-see what the code actually does.
+diff --git a/drivers/net/wireless/wl12xx/cmd.c b/drivers/net/wireless/wl12xx/cmd.c
+index 3414fc1..8e65529 100644
+--- a/drivers/net/wireless/wl12xx/cmd.c
++++ b/drivers/net/wireless/wl12xx/cmd.c
+@@ -1249,7 +1249,7 @@ int wl1271_cmd_build_arp_rsp(struct wl1271 *wl, struct wl12xx_vif *wlvif)
+ 	skb_reserve(skb, sizeof(*hdr) + WL1271_EXTRA_SPACE_MAX);
+ 
+ 	tmpl = (struct wl12xx_arp_rsp_template *)skb_put(skb, sizeof(*tmpl));
+-	memset(tmpl, 0, sizeof(tmpl));
++	memset(tmpl, 0, sizeof(*tmpl));
+ 
+ 	/* llc layer */
+ 	memcpy(tmpl->llc_hdr, rfc1042_header, sizeof(rfc1042_header));
+@@ -1298,7 +1298,7 @@ int wl1271_cmd_build_arp_rsp(struct wl1271 *wl, struct wl12xx_vif *wlvif)
+ 
+ 	/* mac80211 header */
+ 	hdr = (struct ieee80211_hdr_3addr *)skb_push(skb, sizeof(*hdr));
+-	memset(hdr, 0, sizeof(hdr));
++	memset(hdr, 0, sizeof(*hdr));
+ 	fc = IEEE80211_FTYPE_DATA | IEEE80211_FCTL_TODS;
+ 	if (wlvif->sta.qos)
+ 		fc |= IEEE80211_STYPE_QOS_DATA;
+-- 
+1.7.10
 
-> the child process
-> must be stopped."
 
-Yes and no.
+Please CC me on replies.
 
-Yes, ptrace(PTRACE_KILL) "succeeds" even if the tracee is not stopped.
 
-No, it has no effect if the tracee is not stopped.
-
-All I can say is: PTRACE_KILL should never exist. If you want to kill
-the tracee, you can do kill(SIGKILL).
-
-Roughly, ptrace(PTRACE_KILL) is equal to ptrace(PTRACE_CONT, SIGKILL)
-except it always returns 0.
-
-> If the man page is describing actual intended kernel behavior, then it's a
-> fairly long-standing kernel bug.
-
-Perhaps. May be it should simply do kill(SIGKILL), but then it is not
-clear why do we have PTRACE_KILL. And once again, I was never able to
-understand the supposed behaviour.
-
-Personally, I think we should fix the documentation. And imho the only
-possible fix is to add this note: do not ever use PTRACE_KILL.
-
-Oleg.
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
