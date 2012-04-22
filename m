@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598Ab2DVJ5v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 05:57:51 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:47854 "EHLO mgw2.diku.dk"
+	id S1751657Ab2DVJ66 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 05:58:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26378 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911Ab2DVJ5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 05:57:48 -0400
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: kernel-janitors@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/video/xen-fbfront.c: add missing cleanup code
-Date: Sun, 22 Apr 2012 11:57:40 +0200
-Message-Id: <1335088660-13219-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1750899Ab2DVJ64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 05:58:56 -0400
+Message-ID: <4F93D64B.50803@redhat.com>
+Date: Sun, 22 Apr 2012 12:58:35 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: dzickus@redhat.com, luto@mit.edu, gregkh@suse.de, kvm@vger.kernel.org,
+        joerg.roedel@amd.com, mtosatti@redhat.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        zhangyanfei@cn.fujitsu.com, ebiederm@xmission.com,
+        ludwig.nussel@suse.de
+Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
+ for kdump
+References: <4F8FF7AC.1060309@redhat.com> <20120419.210119.246504497.d.hatayama@jp.fujitsu.com> <4F900020.5010702@redhat.com> <20120420.191133.488341439.d.hatayama@jp.fujitsu.com>
+In-Reply-To: <20120420.191133.488341439.d.hatayama@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 04/20/2012 01:11 PM, HATAYAMA Daisuke wrote:
+> From: Avi Kivity <avi@redhat.com>
+> Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information for kdump
+> Date: Thu, 19 Apr 2012 15:08:00 +0300
+>
+> > On 04/19/2012 03:01 PM, HATAYAMA Daisuke wrote:
+> >> >> It would be not helpful for the qemu crash case you are concerned
+> >> >> about. We want to use the guest state data to look into guest
+> >> >> machine's image in the crasshed qemu.
+> >> > 
+> >> > Why?
+> >> > 
+> >>
+> >> It seems natural to check the situation from guest machine's side when
+> >> qemu crashs. Suppose a service is running on the guest machine, and
+> >> then the qemu crash. Then, we may need to know the details of the
+> >> progress of the service if it's important. What has been successfully
+> >> done, and what has not yet.
+> > 
+> > How can a service on the guest be related to a qemu crash?  And how
+> > would guest registers help?
+>
+> I don't mean the service is related to qemu's crash. When qemu
+> crashes, then the guest machine also crashes (although it doesn't
+> notice anything). What I'm interested in here is guest machine side,
+> not qemu side. I want to debug guest machine, not qemu.
 
-The operations in the subsequent error-handling code appear to be also
-useful here.
+There is no bug in the guest, so why debug it?
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+It's similar to pulling out the power from a server and wanting to
+inspect the registers and memory at the time the cpu died.  Even if it's
+possible, you don't gain any information from it.
 
----
-Not tested.
+> > 
+> > You can extract the list of running processes from a qemu crash dump
+> > without looking at guest registers.  And most vcpus are running
+> > asynchronously to qemu, so their register contents is irrelevant (if a
+> > vcpu is running synchronously with qemu - it just exited to qemu and is
+> > waiting for a response - then you'd see the details in qemu's call stack).
+> > 
+>
+> Just as you say, we can refer to guest machine's memory without guest
+> registers.
+>
+> The definitely necessary data in vmcs are RSP and RIP, which are not
+> saved in anywhare of kvm module. The two registers are needed for back
+> tracing to determine what processsing is being done on the guest
+> machine at qemu crash.
 
- drivers/video/xen-fbfront.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+What I don't understand is why you are interested in the guest machine
+at all, if it was qemu that crashed.
 
-diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
-index cb4529c..b0bd59c 100644
---- a/drivers/video/xen-fbfront.c
-+++ b/drivers/video/xen-fbfront.c
-@@ -458,8 +458,13 @@ static int __devinit xenfb_probe(struct xenbus_device *dev,
- 	xenfb_init_shared_page(info, fb_info);
- 
- 	ret = xenfb_connect_backend(dev, info);
--	if (ret < 0)
-+	if (ret < 0) {
-+		fb_deferred_io_cleanup(fb_info);
-+		fb_dealloc_cmap(&fb_info->cmap);
-+		framebuffer_release(fb_info);
-+		xenbus_dev_fatal(dev, ret, "xenfb_connect_backend");
- 		goto error;
-+	}
- 
- 	ret = register_framebuffer(fb_info);
- 	if (ret) {
+> There are other useful data in vmcs, but even if we don't have them,
+> we can do what we want to do in exchange of usability.
+>
+> For example, we want IA32_EFER.LMA to determine whether guest machine
+> is in 32-bit or 64-bit mode. But there are only two modes, we can
+> perhaps try these in order in an ad-hoc way.
+>
+> Other control registers are also useful, but they are not so important
+> than definitely needed.
+>
+
+If this is your interest, then the data should be encoded in a vendor
+agnostic way.  That is, not as lists of vmcs fields, but instead guest
+registers.  This can be implemented for both vmx and svm.
+
+However this is secondary to the question of why we need to do this at all.
+
+-- 
+error compiling committee.c: too many arguments to function
 
