@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab2DVTyX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 15:54:23 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12393 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab2DVTyV (ORCPT
+	id S1752490Ab2DVTzI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 15:55:08 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:50100 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab2DVTzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 15:54:21 -0400
-Date: Sun, 22 Apr 2012 21:54:19 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-cc: JJ Ding <dgdunix@gmail.com>, Axel Lin <axel.lin@gmail.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: atkbd - Fix language in a printed message
-Message-ID: <alpine.LNX.2.00.1204222144550.27455@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 22 Apr 2012 15:55:06 -0400
+Date: Sun, 22 Apr 2012 15:52:36 -0400 (EDT)
+Message-Id: <20120422.155236.157167853813534336.davem@davemloft.net>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        peterz@infradead.org, rusty@rustcorp.com.au,
+        paulmck@linux.vnet.ibm.com, mingo@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [patch 18/18] sparc: Use generic idle thread allocation
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120420124558.055198736@linutronix.de>
+References: <20120420122120.097464672@linutronix.de>
+	<20120420124558.055198736@linutronix.de>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 22 Apr 2012 12:52:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I believe that "trying to access hardware" is more correct english
-than "trying acess hardware".
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 20 Apr 2012 13:05:56 -0000
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/input/keyboard/atkbd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: "David S. Miller" <davem@davemloft.net>
 
-diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
-index e05a2e7..add5ffd 100644
---- a/drivers/input/keyboard/atkbd.c
-+++ b/drivers/input/keyboard/atkbd.c
-@@ -433,7 +433,7 @@ static irqreturn_t atkbd_interrupt(struct serio *serio, unsigned char data,
- 		if (printk_ratelimit())
- 			dev_warn(&serio->dev,
- 				 "Spurious %s on %s. "
--				 "Some program might be trying access hardware directly.\n",
-+				 "Some program might be trying to access hardware directly.\n",
- 				 data == ATKBD_RET_ACK ? "ACK" : "NAK", serio->phys);
- 		goto out;
- 	case ATKBD_RET_ERR:
--- 
-1.7.10
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Tested-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
