@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab2DVIvX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 04:51:23 -0400
-Received: from www.tvnetwork.hu ([109.61.0.42]:40931 "EHLO www.tvnetwork.hu"
+	id S1752488Ab2DVJPx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 05:15:53 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:38669 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980Ab2DVIvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 04:51:23 -0400
-X-Greylist: delayed 555 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Apr 2012 04:51:22 EDT
-Message-ID: <c09433af2907d40fb55e096aca38c92a.squirrel@webmail.tvnetwork.hu>
-Date: Sun, 22 Apr 2012 11:31:26 +0200
-Subject: Web teknisk support team
-From: "Webmaster Upgradeing  Avdeling" <info@tvnetwork.hu>
-Reply-To: webmaster2012@admin.in.th
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1751980Ab2DVJPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 05:15:51 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Chirag Kantharia <chirag.kantharia@hp.com>
+Cc: kernel-janitors@vger.kernel.org, iss_storagedev@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/block/cpqarray.c: add missing cmd_free
+Date: Sun, 22 Apr 2012 11:15:12 +0200
+Message-Id: <1335086112-10528-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
+Call cmd_free(h, c, 0); before leaving the function as done on all other
+exit paths.
 
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
+---
+ drivers/block/cpqarray.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-
-
-Kjære Webmail medlem ®.
-
-Denne meldingen er fra vårt sikre webmaster.
-
-Kjære medlem, er Denne e å varsle deg om at de er
-tiden pågår vedlikehold for webmaster oppgradering til en
-Internett-tjeneste sikrere og raskere. vi å måtte oppdage at de fleste
-ikke har vært aktiv for litt tid på grunn av en eller annen grunn, blir vi
-eliminere inntekt Vår viktigste server for å redusere byrden, slik det har
-vært ubrukelig.Vi foreslår at du hjelper oss med å beskytte din konto.
-Hvis du mottar denne meldingen betyr at din e-post har blitt kø for off:
-dette var et resultat av en kontinuerlig skriptfeil (kode: 505) har
-mottatt e-post adresse dette problemet og vi er i ferd med å slette
-kontoen. For å kontrollere at posten er aktiv, må du svare på denne e-post
-med følgende
-
-informasjon om bekreftelse.
-
-Epost Gjeldende Brukernavn: {}
-Epost Gjeldende passord: {}
-Reconfirm Passord: {}
-
-Merk: Å gi uriktige opplysninger eller ignorerer dette
-Meldingen vil bli løst i deaktivering av din e-post
-post fra vårt kontrollpanel.
-
-Takk © Web-mail. Alle rettigheter reservert.
-Web teknisk support team
-
-
-e-postvarsling
+diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
+index 9125bbe..db6f15d 100644
+--- a/drivers/block/cpqarray.c
++++ b/drivers/block/cpqarray.c
+@@ -1334,6 +1334,7 @@ static int ida_ctlr_ioctl(ctlr_info_t *h, int dsk, ida_ioctl_t *io)
+ 	case READ_FLASH_ROM:
+ 		if (copy_to_user(io->sg[0].addr, p, io->sg[0].size)) {
+ 			kfree(p);
++			cmd_free(h, c, 0);
+ 			return -EFAULT;
+ 		}
+ 		/* fall through and free p */
 
