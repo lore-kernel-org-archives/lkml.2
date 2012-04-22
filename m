@@ -1,122 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab2DVWcc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 18:32:32 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42873 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab2DVWca (ORCPT
+	id S1752988Ab2DVWgX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 18:36:23 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34965 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752623Ab2DVWgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 18:32:30 -0400
-Date: Sun, 22 Apr 2012 23:34:54 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>,
-        Chandra Seetharaman <sekharan@us.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
- EXPORT_SYMBOL
-Message-ID: <20120422233454.7cdd0f35@pyramind.ukuu.org.uk>
-In-Reply-To: <20120422221329.GB24109@redhat.com>
-References: <20111215214440.GA17677@redhat.com>
-	<4EF039D5.5010201@suse.de>
-	<20120405144721.GA18437@redhat.com>
-	<20120420144538.GB8155@redhat.com>
-	<20120420173405.GA8846@redhat.com>
-	<20120420214120.159e2690@pyramind.ukuu.org.uk>
-	<20120420215825.GA10406@redhat.com>
-	<20120420232043.40ddc3c4@pyramind.ukuu.org.uk>
-	<20120420225822.GA10769@redhat.com>
-	<20120421001433.2955abd4@pyramind.ukuu.org.uk>
-	<20120422221329.GB24109@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 22 Apr 2012 18:36:21 -0400
+X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Apr 2012 18:36:21 EDT
+X-Sasl-enc: H7r44qgwJCUx/9lpq91p8jHKwOObrkWYLWsNR5HUHy2K 1335133678
+Date: Sun, 22 Apr 2012 15:27:57 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anatolij Gustschin <agust@denx.de>,
+        Ramneek Mehresh <ramneek.mehresh@freescale.com>
+Subject: Re: linux-next: manual merge of the usb tree with the usb.current
+ tree
+Message-ID: <20120422222757.GA26593@kroah.com>
+References: <20120419151402.6f958fabc6bd96696b4cde3c@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120419151402.6f958fabc6bd96696b4cde3c@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The author and maintainers of the scsi_dh code agreed that relaxing
-> scsi_dh_detach's export was fine and they acked the change.  Their
-> rights are important too.
-
-They can only grant rights beyond the GPL providing they remove everyone
-elses code. But that isn't the big issue. I wish you'd go talk to your
-legal team, then you might understand the real problem here. But you
-won't, so I'll hopefully be talking to them tomorrow.
-
-> And I understand what you're saying about you and others being rights
-> holders that have a say.  But communication has broken down because
-> you've been unwilling to concede that those who have acked this
-> relaxation _know_ that what scsi_dh provides is _not_ unique
-> functionality to Linux or Linux SCSI multipathing.
-
-"Unwilling to concede". There is nothing to concede. The GPL spells out
-the rules. Also if you'd have talked to Red Hat legal you'd have
-understood there are other issues here.
-
-> Allowing a proprietary driver to use scsi_dh_detach to unload scsh_dh*'s
-> associated additional SCSI sense and error processing doesn't implicitly
-> mean said driver is using derived work to achieve it's comparable
-> processing.  It simply means their offering reasonably conflicts with
-> what Linux is providing:
-
-Can I suggest you don't make legal statements from a Red Hat address
-without talking to your legal team. It's not a good idea and tends to get
-people into trouble.
-
-> All SCSI multipathing drivers are expected to interpret and react to
-> SCSI sense information.  Doing so is not an innovation unique to Linux.
-> Because it is not unique it collides with a long established proprietary
-> driver's offering.
-
-That's their problem. They chose not to play ball, and they are going to
-have to run after us and sort their own mess out. They'll cope as they've
-had a lot of practice at it.
-
-> Yes, secretly switching channels to google+ and lobbing questions about
-> Red Hat's commitment to free software at one of Red Hat's OSS community
-> leaders probably isn't the preferred way to handle such things.
-
-I didn't do anything secret. How is posting publically "secret". Also I
-made very sure the people who needed to see it in Red Hat did, so they
-can do something about it and rein you in. It's had the right effect and
-it means the right folks in Red Hat can look at the issue itself.
-
-> You capture the hearts and minds of many Linux and GPL stakeholders and
-> are well respected -- and believe it or not I'm not some naive or
-> reckless individual.  I am a professional Linux developer who works for
-> the most respected name in Open Source development.
-
-I spent ten years at Red Hat, I'd like them to keep that reputation which
-is one of the reasons this bothers me a lot. The other being the legal
-issues.
-
-> And I now do _not_ have concerns of legal issues associated with this
-> change.  I genuinely do appreciate your concern though.
-
-Well that's for Red Hat management and legal to determine, unless you are
-also a practicing IP lawyer as well ?
-
-> With that said, I'm leaving the decision of whether or not to relax
-> scsi_dh_detach's export in the very capable hands of James Bottomley.
+On Thu, Apr 19, 2012 at 03:14:02PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> I'll be fine with whatever James decides but do hope that this outcry
-> will not serve to establish precedent that ties our hands in the future
-> when comparable decisions need to be made about the improvement of
-> Linux's interfaces and overall function.
+> Today's linux-next merge of the usb tree got a conflict in
+> drivers/usb/host/ehci-fsl.c between commit f941f6922533 ("USB: ehci-fsl:
+> Fix kernel crash on mpc5121e") from the usb.current tree and commit
+> 58c559e6509f ("fsl/usb: Add controller version based ULPI and UTMI phy
+> support") from the usb tree.
+> 
+> I fixed it up (using the pdata assignment from the latter commit) and
+> can carry the fix as necessary.
 
-This isn't tying your hands. There are two things which tie your hands
-here - the GPL (intentionally) and certain properties of US law - which
-I'll discuss with the appropriate Red Hat people in an appropriate forum.
-You clearly are not that appropriate person.
+This should now be resolved in my tree.
 
-Perhaps after that they can explain to you in the proper manner internally
+thanks,
 
-- Why legal matters should be referred to lawyers for checking.
-- Why your patch may raise a particularly nasty potential problem if it
-  were merged
-
-Alan
+greg k-h
