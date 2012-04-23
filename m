@@ -1,131 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2DWWko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 18:40:44 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:33021 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421Ab2DWWkm (ORCPT
+	id S1754058Ab2DWWmT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 18:42:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46237 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab2DWWmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 18:40:42 -0400
-Message-ID: <1335220840.2187.30.camel@shrek.rexursive.com>
-Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for
- hibernate/thaw buffering
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Per Olofsson <pelle@debian.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Date: Tue, 24 Apr 2012 08:40:40 +1000
-In-Reply-To: <201204232359.14109.rjw@sisk.pl>
-References: <1334267969.2573.14.camel@shrek.rexursive.com>
-	 <1335133792.2187.8.camel@shrek.rexursive.com>
-	 <1335216712.2187.17.camel@shrek.rexursive.com>
-	 <201204232359.14109.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 23 Apr 2012 18:42:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <cover.1331137504.git.jbaron@redhat.com>
+References: <cover.1331137504.git.jbaron@redhat.com>
+Date: Tue, 24 Apr 2012 10:42:16 +1200
+X-Google-Sender-Auth: 9j63bBlZaSm9hmXJATEtq-KV2Xw
+Message-ID: <CAHO5Pa0cyvD-zUh-RRyOwvu2FGQYOMn_thFQt3_64BDi-wB=GQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] core dump: re-purpose VM_ALWAYSDUMP to user
+ controlled VM_DONTDUMP
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: mcgrathr@google.com, akpm@linux-foundation.org, avi@redhat.com,
+        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 23:59 +0200, Rafael J. Wysocki wrote:
-> Please resend it with a better changelog.  I mean, please explain what
-> the regression is and why it is being fixed this way. 
+Jason,
 
----------------------------------------
-Hibernation regression fix, since 3.2.
+On Thu, Mar 8, 2012 at 6:00 AM, Jason Baron <jbaron@redhat.com> wrote:
+> Hi,
+>
+> The motivation for this change was that I was looking at a way for a qemu-kvm
+> process, to exclude the guest memory from its core dump, which can be quite
+> large. There are already a number of filter flags in
+> /proc/<pid>/coredump_filter, however, these allow one to specify 'types' of
+> kernel memory, not specific address ranges (which is needed in this case).
+>
+> Since there are no more vma flags available, the first patch eliminates the
+> need for the 'VM_ALWAYSDUMP' flag. The flag is used internally by the kernel to
+> mark vdso and vsyscall pages. However, it is simple enough to check if a vma
+> covers a vdso or vsyscall page without the need for this flag.
+>
+> The second patch then replaces the 'VM_ALWAYSDUMP' flag with a new
+> 'VM_DONTDUMP' flag, which can be set by userspace using new madvise flags:
+> 'MADV_DONTDUMP', and unset via 'MADV_DUMP'. The core dump filters continue to
+> work the same as before unless 'MADV_DONTDUMP' is set on the region.
+>
+> The qemu code which implements this features is at:
+> http://people.redhat.com/~jbaron/qemu-dump/qemu-dump.patch
+>
+> In my testing the qemu core dump shrunk from 383MB -> 13MB with this patch.
+>
+> I also believe that the 'MADV_DONTDUMP' flag might be useful for security
+> sensitive apps, which might want to select which areas are dumped.
 
-Calculate the number of required free pages based on non-high memory
-pages only, because that is where the buffers will come from.
+Since we have
+MADV_DODUMP
+MADV_DONTDUMP
+MADV_NODUMP
+heading for userspace in 3.4, would you be willing to write patches
+for the madvise(2) man page to describe these flags?
 
-Commit 081a9d043c983f161b78fdc4671324d1342b86bc introduced a new buffer
-page allocation logic during hibernation, in order to improve the
-performance. The amount of pages allocated was calculated based on total
-amount of pages available, although only non-high memory pages are
-usable for this purpose. This caused hibernation code to attempt to over
-allocate pages on platforms that have high memory, which led to hangs.
+See http://www.kernel.org/doc/man-pages/download.html for details on
+accessing man-pages Git.
 
-A more elaborate patch, which also addressed other hibernation/thaw
-issues, has been merged into linux-next, commit
-e9cbc5a6270be7aa9c42d9b15293ba9ac7161262.
+Cheers,
 
-Signed-off-by: Bojan Smojver <bojan@rexursive.com>
----
- kernel/power/swap.c |   33 +++++++++++++++++++++++++--------
- 1 files changed, 25 insertions(+), 8 deletions(-)
+Michael
 
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 8742fd0..fdf834f 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -51,6 +51,23 @@
- 
- #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
- 
-+/*
-+ * Number of free pages that are not high.
-+ */
-+static inline unsigned long low_free_pages(void)
-+{
-+	return nr_free_pages() - nr_free_highpages();
-+}
-+
-+/*
-+ * Number of pages required to be kept free while writing the image. Always
-+ * half of all available low pages before the writing starts.
-+ */
-+static inline unsigned long reqd_free_pages(void)
-+{
-+	return low_free_pages() / 2;
-+}
-+
- struct swap_map_page {
- 	sector_t entries[MAP_PAGE_ENTRIES];
- 	sector_t next_swap;
-@@ -72,7 +89,7 @@ struct swap_map_handle {
- 	sector_t cur_swap;
- 	sector_t first_sector;
- 	unsigned int k;
--	unsigned long nr_free_pages, written;
-+	unsigned long reqd_free_pages;
- 	u32 crc32;
- };
- 
-@@ -316,8 +333,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
- 		goto err_rel;
- 	}
- 	handle->k = 0;
--	handle->nr_free_pages = nr_free_pages() >> 1;
--	handle->written = 0;
-+	handle->reqd_free_pages = reqd_free_pages();
- 	handle->first_sector = handle->cur_swap;
- 	return 0;
- err_rel:
-@@ -352,11 +368,11 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
- 		handle->cur_swap = offset;
- 		handle->k = 0;
- 	}
--	if (bio_chain && ++handle->written > handle->nr_free_pages) {
-+	if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
- 		error = hib_wait_on_bio_chain(bio_chain);
- 		if (error)
- 			goto out;
--		handle->written = 0;
-+		handle->reqd_free_pages = reqd_free_pages();
- 	}
-  out:
- 	return error;
-@@ -618,7 +634,7 @@ static int save_image_lzo(struct swap_map_handle *handle,
- 	 * Adjust number of free pages after all allocations have been done.
- 	 * We don't want to run out of pages when writing.
- 	 */
--	handle->nr_free_pages = nr_free_pages() >> 1;
-+	handle->reqd_free_pages = reqd_free_pages();
- 
- 	/*
- 	 * Start the CRC32 thread.
----------------------------------------
+PS Please also CC linux-api@ when making API/ABI changes.
+
 
 -- 
-Bojan
-
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
