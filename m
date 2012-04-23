@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab2DWOiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 10:38:23 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:52635 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431Ab2DWOiV (ORCPT
+	id S1755657Ab2DWOio (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 10:38:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56437 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755625Ab2DWOil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 10:38:21 -0400
+	Mon, 23 Apr 2012 10:38:41 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Paul Gortmaker <paul.gortmaker@windriver.com>,
         Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
         Vinod Koul <vinod.koul@intel.com>,
         Dan Williams <dan.j.williams@intel.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Jiang Liu <liuj97@gmail.com>, Keping Chen <chenkeping@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v1 0/3] enhance DCA core to support DCA device hotplug
-Date: Mon, 23 Apr 2012 22:33:59 +0800
-Message-Id: <1335191642-6869-1-git-send-email-jiang.liu@huawei.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH v1 2/3] DCA, x86: restart DCA operations in unregister_dca_provider()
+Date: Mon, 23 Apr 2012 22:34:01 +0800
+Message-Id: <1335191642-6869-3-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1335191642-6869-1-git-send-email-jiang.liu@huawei.com>
+References: <1335191642-6869-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <liuj97@gmail.com>
+When deregistering a DCA device, function unregister_dca_provider() will
+notify clients by DCA_PROVIDER_REMOVE to stop DCA operations at beginning.
+Currently DCA operations won't be restarted by unregister_dca_provider()
+even if there are still DCA devices left. This may cause trouble to systems
+with multiple DCA devices/IOHs. So restart DCA operations if there are
+still DCA devices left after removing a DCA device.
 
-When hot-removing PCI host bridges on Intel platforms, all endpoint devices
-built in the PCI host bridge (IOH) should be removed too. This patchset
-enhances the DCA core logic to support hotplug of Intel Crystall Beach PCI
-devices built in the IOH. It also enhances the core to support multiple
-PCI root complexes (domains).
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+---
+ drivers/dca/dca-core.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-The patchset applies to the mainline kernel at
-cdd5983 Merge tag 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost
-and it has been tested on an IBM x3850 system.
-
-Jiang Liu (3):
-  DCA, x86: fix invalid memory access in DCA core
-  DCA, x86: restart DCA operations in unregister_dca_provider()
-  DCA, x86: support mutitple PCI root complexes in DCA core logic
-
- drivers/dca/dca-core.c |  152 ++++++++++++++++++++++++------------------------
- 1 files changed, 77 insertions(+), 75 deletions(-)
-
+diff --git a/drivers/dca/dca-core.c b/drivers/dca/dca-core.c
+index 075c4bd..f8cfa58 100644
+--- a/drivers/dca/dca-core.c
++++ b/drivers/dca/dca-core.c
+@@ -414,6 +414,7 @@ void unregister_dca_provider(struct dca_provider *dca, struct device *dev)
+ 	unsigned long flags;
+ 	struct pci_bus *pci_rc;
+ 	struct dca_domain *domain;
++	bool restart = false;
+ 
+ 	blocking_notifier_call_chain(&dca_provider_chain,
+ 				     DCA_PROVIDER_REMOVE, NULL);
+@@ -427,9 +428,20 @@ void unregister_dca_provider(struct dca_provider *dca, struct device *dev)
+ 	if (list_empty(&domain->dca_providers))
+ 		dca_free_domain(domain);
+ 
++	if (!list_empty(&dca_domains))
++		restart = true;
++
+ 	raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 
+ 	dca_sysfs_remove_provider(dca);
++
++	/*
++	 * Notify DCA clients to restart DCA operations if there are still
++	 * DCA devices left.
++	 */
++	if (restart)
++		blocking_notifier_call_chain(&dca_provider_chain,
++					     DCA_PROVIDER_ADD, NULL);
+ }
+ EXPORT_SYMBOL_GPL(unregister_dca_provider);
+ 
 -- 
 1.7.5.4
 
