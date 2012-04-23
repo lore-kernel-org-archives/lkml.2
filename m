@@ -1,144 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab2DWWzd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 18:55:33 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57076 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab2DWWzc convert rfc822-to-8bit (ORCPT
+	id S1756038Ab2DWW4J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 18:56:09 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:62689 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755025Ab2DWW4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 18:55:32 -0400
+	Mon, 23 Apr 2012 18:56:08 -0400
+Date: Mon, 23 Apr 2012 15:56:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: George Nychis <gnychis@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: what determines how firmware is loaded? (Q. on request_firmware
+ details)
+Message-ID: <20120423225603.GA23276@kroah.com>
+References: <CA+7oygfcQbOFdCFibTW0pqYQpcLwrqCM_jvKpr=GYFBMn9t3GQ@mail.gmail.com>
+ <20120423212144.GA3378@kroah.com>
+ <CA+7oygc839sn-s3hHo0XBA_BJop86hZB1h987af1caJ6pAOwyw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1335221222-30879-1-git-send-email-davidb@codeaurora.org>
-References: <1335221222-30879-1-git-send-email-davidb@codeaurora.org>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 23 Apr 2012 16:55:11 -0600
-X-Google-Sender-Auth: O1x3Dwt2iq7HHQ0-UDqXsW2u3_o
-Message-ID: <CACxGe6sPkW8WviMX=oJEj+-G7XMeaWaQYfe_hg2quB-Sh2gEDA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: msm: Fix gic irqdomain support
-To: David Brown <davidb@codeaurora.org>
-Cc: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+7oygc839sn-s3hHo0XBA_BJop86hZB1h987af1caJ6pAOwyw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 4:47 PM, David Brown <davidb@codeaurora.org> wrote:
-> As of
->
->    commit 75294957be1dee7d22dd7d90bd31334ba410e836
->    Author: Grant Likely <grant.likely@secretlab.ca>
->    Date:   Tue Feb 14 14:06:57 2012 -0700
->
->        irq_domain: Remove 'new' irq_domain in favour of the ppc one
->
-> the ARM gic controller uses proper irq domains.  Fix the MSM gic
-> initialization and DT so that it works again.
->
-> Signed-off-by: David Brown <davidb@codeaurora.org>
+On Mon, Apr 23, 2012 at 05:28:51PM -0400, George Nychis wrote:
+> Hi Greg,
+> 
+> On Mon, Apr 23, 2012 at 5:21 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Apr 23, 2012 at 04:18:56PM -0400, George Nychis wrote:
+> >> Hi all,
+> >>
+> >> I notice in an older version of Ubuntu that when I plugin a USB
+> >> wireless device its firmware is loaded via sysfs.  For example, this
+> >> would pop up in sysfs:
+> >> /sys/devices/pci0000:00/0000:00:1d.7/usb2/2-1/compat_firmware/2-1/loading
+> >
+> > How old are we talking about here?  What version of the kernel?
+> 
+> This was on a 2.6.32-21 Kernel.  Ubuntu 10.04 LTS.
+> 
+> >
+> >> Has the former method of loading firmware been removed as the default?
+> >>  Is there any way to request that the firmware load be done manually
+> >> (the former method)?
+> >
+> > Why?  In the end, they do the same thing, right?
+> 
+> I am having issues with the automatic load on an embedded device
+> running a 3.0.8 kernel.  I get USB URB related errors like this:
+> <7>[  708.739241] ath9k_htc 1-1.1:1.0: usb_probe_interface - got id
+> <3>[  708.999596] otg_err: in s5pc110_otghcd_urb_dequeue()::00508
+> <3>[  709.000670] => fail to cancel_transfer()
+> <7>[  709.002489] usb 1-1.1: hcd_unlink_urb d2f7c780 fail -1
+> <7>[  709.004372] usb 1-1.1: khubd timed out on ep0out len=0/4096
+> <3>[  709.005181] usb 1-1.1: ath9k_htc: Firmware - htc_7010.fw download failed
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+You do realize just how old and obsolete your 3.0.8 kernel is, right?  I
+suggest you update to the latest version, or, if you are stuck with this
+kernel, go ask the vendor who provided it to you for support, as they
+are the best ones to help you out.
 
-This should go via the arm-soc tree I think
+Either way, it looks like this is a USB issue in your usb controller,
+not a firmware issue, so I don't think the firmware portion of the
+interaction is the problem.
 
-g.
+best of luck,
 
-> ---
->  arch/arm/boot/dts/msm8660-surf.dts |    4 ++--
->  arch/arm/mach-msm/board-msm8x60.c  |   25 +++++++++++++++----------
->  2 files changed, 17 insertions(+), 12 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
-> index 15ded0d..45bc4bb 100644
-> --- a/arch/arm/boot/dts/msm8660-surf.dts
-> +++ b/arch/arm/boot/dts/msm8660-surf.dts
-> @@ -10,7 +10,7 @@
->        intc: interrupt-controller@02080000 {
->                compatible = "qcom,msm-8660-qgic";
->                interrupt-controller;
-> -               #interrupt-cells = <1>;
-> +               #interrupt-cells = <3>;
->                reg = < 0x02080000 0x1000 >,
->                      < 0x02081000 0x1000 >;
->        };
-> @@ -19,6 +19,6 @@
->                compatible = "qcom,msm-hsuart", "qcom,msm-uart";
->                reg = <0x19c40000 0x1000>,
->                      <0x19c00000 0x1000>;
-> -               interrupts = <195>;
-> +               interrupts = <0 195 0x0>;
->        };
->  };
-> diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
-> index 962e711..fb3496a 100644
-> --- a/arch/arm/mach-msm/board-msm8x60.c
-> +++ b/arch/arm/mach-msm/board-msm8x60.c
-> @@ -17,6 +17,7 @@
->  #include <linux/irqdomain.h>
->  #include <linux/of.h>
->  #include <linux/of_address.h>
-> +#include <linux/of_irq.h>
->  #include <linux/of_platform.h>
->  #include <linux/memblock.h>
->
-> @@ -49,10 +50,22 @@ static void __init msm8x60_map_io(void)
->        msm_map_msm8x60_io();
->  }
->
-> +#ifdef CONFIG_OF
-> +static struct of_device_id msm_dt_gic_match[] __initdata = {
-> +       { .compatible = "qcom,msm-8660-qgic", .data = gic_of_init },
-> +       {}
-> +};
-> +#endif
-> +
->  static void __init msm8x60_init_irq(void)
->  {
-> -       gic_init(0, GIC_PPI_START, MSM_QGIC_DIST_BASE,
-> -                (void *)MSM_QGIC_CPU_BASE);
-> +       if (!of_have_populated_dt())
-> +               gic_init(0, GIC_PPI_START, MSM_QGIC_DIST_BASE,
-> +                        (void *)MSM_QGIC_CPU_BASE);
-> +#ifdef CONFIG_OF
-> +       else
-> +               of_irq_init(msm_dt_gic_match);
-> +#endif
->
->        /* Edge trigger PPIs except AVS_SVICINT and AVS_SVICINTSWDONE */
->        writel(0xFFFFD7FF, MSM_QGIC_DIST_BASE + GIC_DIST_CONFIG + 4);
-> @@ -73,16 +86,8 @@ static struct of_dev_auxdata msm_auxdata_lookup[] __initdata = {
->        {}
->  };
->
-> -static struct of_device_id msm_dt_gic_match[] __initdata = {
-> -       { .compatible = "qcom,msm-8660-qgic", },
-> -       {}
-> -};
-> -
->  static void __init msm8x60_dt_init(void)
->  {
-> -       irq_domain_generate_simple(msm_dt_gic_match, MSM8X60_QGIC_DIST_PHYS,
-> -                               GIC_SPI_START);
-> -
->        if (of_machine_is_compatible("qcom,msm8660-surf")) {
->                printk(KERN_INFO "Init surf UART registers\n");
->                msm8x60_init_uart12dm();
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+greg k-h
