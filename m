@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab2DWJsZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 05:48:25 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:42126 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab2DWJsX (ORCPT
+	id S1754674Ab2DWJtp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 05:49:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49647 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273Ab2DWJtn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 05:48:23 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Mon, 23 Apr 2012 11:48:23 +0200
-Message-ID: <CA+icZUWVwUr19xL0Dn5mHnZjQaVjj6VYD3BMMktEWO0vgoZEXw@mail.gmail.com>
-Subject: Warning: pnp 00:0b: can't evaluate _CRS: 12311
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: linux-acpi@vger.kernel.org
-Cc: Len Brown <lenb@kernel.org>, Adam Belay <abelay@mit.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 23 Apr 2012 05:49:43 -0400
+Message-ID: <1335174564.28150.107.camel@twins>
+Subject: Re: [PATCH 03/16] sched: SCHED_DEADLINE data structures.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Date: Mon, 23 Apr 2012 11:49:24 +0200
+In-Reply-To: <4F95253F.4090005@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	  <1333696481-3433-4-git-send-email-juri.lelli@gmail.com>
+	 <1335172098.28150.99.camel@twins> <4F95253F.4090005@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Please CC me I am not subscribed to this ML ]
+On Mon, 2012-04-23 at 11:47 +0200, Juri Lelli wrote:
+> On 04/23/2012 11:08 AM, Peter Zijlstra wrote:
+> > On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+> >> +struct sched_dl_entity {
+> >> +       struct rb_node  rb_node;
+> >> +       int nr_cpus_allowed;
+> >
+> > I think it would be all-round best to move
+> > sched_rt_entity::nr_cpus_allowed out next to cpus_allowed.
+> 
+> You mean unify them: a single nr_cpus_allowed after
+> task_struct::cpus_allowed, right?
 
-Hi,
-
-with a self-compiled linux-3.4-rc4 I am seeing this bugs/failures/warnings:
-
-[    0.241572] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
-
-[    0.279385]  pci0000:00: ACPI _OSC request failed (AE_ERROR),
-returned control mask: 0x1d
-
-[    0.293699] system 00:0a: Plug and Play ACPI device, IDs PNP0c02 (active)
-[    0.294032] ACPI Error: Invalid/unsupported resource descriptor:
-Type 0x00 (20120320/utresrc-650)
-[    0.294037] pnp 00:0b: can't evaluate _CRS: 12311
-
-The same outputs I have seen also with an unsupported drm-intel-next
-kernel from Ubuntu/PPA archives [1].
-
-What does ist mean? Is it harmless? Buggy firmware/bios?
-
-Do you need more background infos (dmesg, kernel-config, etc.)?
-
-Regards,
-- Sedat -
-
-[1] http://kernel.ubuntu.com/~kernel-ppa/mainline/drm-intel-next/current/
+Yes, no point in keeping that one value twice and in fact there's a
+usage of p->rt.nr_cpus_allowed in sched/fair.c so its past time its
+moved out of that rt specific thing.
