@@ -1,87 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab2DWNzF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 09:55:05 -0400
-Received: from fieldses.org ([174.143.236.118]:37360 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752454Ab2DWNzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 09:55:03 -0400
-Date: Mon, 23 Apr 2012 09:54:56 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Malahal Naineni <malahal@us.ibm.com>,
-        Steve Dickson <SteveD@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, hch@infradead.org,
-        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
-        chuck.lever@oracle.com, pstaubach@exagrid.com,
-        trond.myklebust@fys.uio.no, rees@umich.edu
-Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
- from getattr call
-Message-ID: <20120423135456.GC13681@fieldses.org>
-References: <20120420104055.511e15bc@tlielax.poochiereds.net>
- <4F91C49D.8070908@RedHat.com>
- <20120420203725.GA3512@us.ibm.com>
- <20120420171314.73801874@corrin.poochiereds.net>
- <CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
- <20120423080012.7c23ef24@tlielax.poochiereds.net>
- <20120423130009.GA13681@fieldses.org>
- <20120423091255.00f926c4@tlielax.poochiereds.net>
- <20120423133412.GB13681@fieldses.org>
- <20120423095021.1a91a23b@tlielax.poochiereds.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120423095021.1a91a23b@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755471Ab2DWN4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 09:56:05 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:45199 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab2DWN4D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 09:56:03 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Keping Chen <chenkeping@huawei.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v1 0/8] enhance dmaengine core to support DMA device hotplug
+Date: Mon, 23 Apr 2012 21:51:41 +0800
+Message-Id: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 09:50:21AM -0400, Jeff Layton wrote:
-> On Mon, 23 Apr 2012 09:34:12 -0400
-> "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> 
-> > On Mon, Apr 23, 2012 at 09:12:55AM -0400, Jeff Layton wrote:
-> > > Here's an example -- suppose we have two directories: /foo
-> > > and /bar. /bar is empty. We call:
-> > > 
-> > >     rename("/foo","/bar");
-> > > 
-> > > ...and at the same time, someone is calling:
-> > > 
-> > >     stat("/bar");
-> > > 
-> > > ...the calls race and in this condition the stat() gets ESTALE back
-> > > -- /bar got replaced after we did the lookup.
-> > > 
-> > > According to POSIX, the name "/bar" should never be absent from the
-> > > namespace in this situation, so I'm not sure I understand why returning
-> > > ENOENT here would be acceptable.
-> > 
-> > Yes, agreed, my assertion was just that an ESTALE on a lookup of a
-> > non-final component is probably equivalent to ENOENT.
-> > 
-> > I'm not sure if that's what Miklos meant.
-> > 
-> 
-> Ahh ok, sorry I misunderstood. Yeah in that case I suppose it would
-> be ok to replace ESTALE with ENOENT. Ok, so to illustrate...
-> 
-> Suppose we're trying to stat("/bar/baz") instead in the above example.
-> Then we could just return ENOENT instead on an ESTALE return for the
-> reasons that Bruce outlined. If the dir was stale, then there was a
-> at least one point in time where we *know* that "baz" didn't exist.
-> 
-> That doesn't seem like it'll work as a general solution though since it
-> wouldn't apply to an ESTALE on the last component. For that we'd need
-> to do something different -- retry the operation in some form, but it
-> might be potential optimization in the path walking code to avoid
-> retrying in some cases.
+From: Jiang Liu <liuj97@gmail.com>
 
-I also wonder whether it would be making too many assumptions about the
-server or filesystem: just because ordinary posix interfaces don't allow
-atomic replacement of a whole directory tree doesn't mean the server
-might not have some way to do it.
+This patchset tries to enhance the dmaengine and its clients to support
+hot-removal of DMA devices at runtime, especially for IOAT devices.
 
---b.
+When hot-removing IOH (PCI host bridge) on Intel Nehalem/Westmere platform,
+we need to remove all IOAT devices embedded in the IOH. For future Intel
+processor with IIO (Embedded IOH), we need to remove IOAT devices even
+when hot-removing a physical processor. But current dmaengine implementation
+doesn't support hot-removal of IOAT devices at runtime.
+
+Currently dmaengine has an assumption that a DMA device could only be
+deregistered when there's no any clients making use of the dmaengine.
+So dma_async_device_unregister() is designed to be called by DMA driver's
+exit routines only. But the ioatdma driver doesn't conform to that design,
+it calls dma_async_device_unregister() from dma_async_device_unregister(),
+which is called in the driver detaching path. Following simple test could
+unveil the issue.
+
+The proposed solution is to get rid of the assumption and enhance
+dma_async_device_unregister(), so it could be called from DMA driver's
+detach routines. It will also introduce several interfaces and enhance
+dmaengine clients to support hot-removal of DMA devices at runtime.
+
+This patchset applies to the mainline kernel at
+cdd5983 Merge tag 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost
+
+---------------------------------------------------------------------
+echo 0000:80:16.7 > /sys/bus/pci/drivers/ioatdma/unbind
+ioatdma 0000:80:16.7: Removing dma and dca services
+------------[ cut here ]------------
+WARNING: at drivers/dma/dmaengine.c:831 dma_async_device_unregister+0xd5/0xf0() (Tainted: G           ---------------- T)
+Hardware name: System x3850 X5 -[7143O3G]-
+dma_async_device_unregister called while 17 clients hold a reference
+Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vfat fat vhost_net macvtap macvlan tun kvm_intel kvm uinput microcode sg serio_raw cdc_ether usbnet mii be2net i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp i7core_edac edac_core ioatdma igb dca e1000e bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif qla2xxx pmcraid pata_acpi ata_generic ata_piix bfa(T) scsi_transport_fc scsi_tgt megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
+Pid: 5143, comm: bash Tainted: G           ---------------- T 2.6.32-220.el6.x86_64 #1
+Call Trace:
+ [<ffffffff81069b77>] ? warn_slowpath_common+0x87/0xc0
+ [<ffffffff81069c66>] ? warn_slowpath_fmt+0x46/0x50
+ [<ffffffff813fe465>] ? dma_async_device_unregister+0xd5/0xf0
+ [<ffffffffa00ec5e9>] ? ioat_dma_remove+0x28/0x4a [ioatdma]
+ [<ffffffffa00ec5b9>] ? ioat_remove+0x82/0x8a [ioatdma]
+ [<ffffffff8128ab37>] ? pci_device_remove+0x37/0x70
+ [<ffffffff8134623f>] ? __device_release_driver+0x6f/0xe0
+ [<ffffffff813463ad>] ? device_release_driver+0x2d/0x40
+ [<ffffffff81345711>] ? driver_unbind+0xa1/0xc0
+ [<ffffffff81344b7c>] ? drv_attr_store+0x2c/0x30
+ [<ffffffff811eb445>] ? sysfs_write_file+0xe5/0x170
+ [<ffffffff811765d8>] ? vfs_write+0xb8/0x1a0
+ [<ffffffff810d46e2>] ? audit_syscall_entry+0x272/0x2a0
+ [<ffffffff81176fe1>] ? sys_write+0x51/0x90
+ [<ffffffff8100b0f2>] ? system_call_fastpath+0x16/0x1b
+---[ end trace 436e184dbc830d94 ]---
+ioatdma 0000:80:16.7: dma_pool_destroy dma_desc_pool, ffff881073536000 busy
+ioatdma 0000:80:16.7: dma_pool_destroy dma_desc_pool, ffff881073533000 busy
+ioatdma 0000:80:16.7: dma_pool_destroy dma_desc_pool, ffff88107352f000 busy
+ioatdma 0000:80:16.7: dma_pool_destroy dma_desc_pool, ffff88107352c000 busy
+ioatdma 0000:80:16.7: dma_pool_destroy dma_desc_pool, ffff881073529000 busy
+ioatdma 0000:80:16.7: dma_pool_destroy completion_pool, ffff881073527000 busy
+---------------------------------------------------------------------
+
+Jiang Liu (8):
+  dmaengine: enhance DMA channel reference count management
+  dmaengine: rebalance DMA channels when CPU hotplug happens
+  dmaengine: introduce CONFIG_DMA_ENGINE_HOTPLUG for DMA device hotplug
+  dmaengine: use atomic_t for struct dma_chan->client_count field
+  dmaengine: enhance dma_async_device_unregister() to be called by
+    drv->remove()
+  dmaengine: enhance network subsystem to support DMA device hotplug
+  dmaengine: enhance ASYNC_TX subsystem to support DMA device hotplug
+  dmaengine: assign DMA channel to CPU according to NUMA affinity
+
+ crypto/async_tx/async_memcpy.c      |    2 +
+ crypto/async_tx/async_memset.c      |    2 +
+ crypto/async_tx/async_pq.c          |   10 +-
+ crypto/async_tx/async_raid6_recov.c |    8 +-
+ crypto/async_tx/async_tx.c          |    6 +-
+ crypto/async_tx/async_xor.c         |   13 +-
+ drivers/dma/Kconfig                 |    6 +
+ drivers/dma/dmaengine.c             |  384 ++++++++++++++++++++++-------------
+ include/linux/async_tx.h            |   13 ++
+ include/linux/dmaengine.h           |   30 +++
+ include/net/netdma.h                |   26 +++
+ net/ipv4/tcp.c                      |   10 +-
+ net/ipv4/tcp_input.c                |    5 +-
+ net/ipv4/tcp_ipv4.c                 |    4 +-
+ net/ipv6/tcp_ipv6.c                 |    4 +-
+ 15 files changed, 357 insertions(+), 166 deletions(-)
+
+-- 
+1.7.5.4
+
