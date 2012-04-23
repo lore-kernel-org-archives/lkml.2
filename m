@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab2DWITd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 04:19:33 -0400
-Received: from smtp.fireflyinternet.com ([109.228.6.236]:44816 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751721Ab2DWITS (ORCPT
+	id S1754216Ab2DWI1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 04:27:04 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:46150 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449Ab2DWI1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 04:19:18 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH v2 2/2] drm/i915: fix integer overflow in i915_gem_do_execbuffer()
-To: Xi Wang <xi.wang@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Keith Packard <keithp@keithp.com>
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, security@kernel.org,
-        Xi Wang <xi.wang@gmail.com>, stable@vger.kernel.org
-In-Reply-To: <1335168402-25174-2-git-send-email-xi.wang@gmail.com>
-References: <1335168402-25174-1-git-send-email-xi.wang@gmail.com> <1335168402-25174-2-git-send-email-xi.wang@gmail.com>
-Date: Mon, 23 Apr 2012 09:18:44 +0100
-X-Originating-IP: 78.156.66.37
-Message-ID: <1335169153_26005@CP5-2952>
+	Mon, 23 Apr 2012 04:27:01 -0400
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Apr 2012 04:27:01 EDT
+Message-ID: <4F9510FF.9060604@atmel.com>
+Date: Mon, 23 Apr 2012 10:21:19 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <arnd@arndb.de>, <olof@lixom.net>,
+        <plagnioj@jcrosoft.com>, <ludovic.desroches@atmel.com>,
+        <linux-kernel@vger.kernel.org>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>
+Subject: Re: [PATCH 10/12] leds-atmel-pwm.c: Make pwmled_probe() __devinit
+References: <cover.1334567594.git.nicolas.ferre@atmel.com> <23f8dba8a3e1ae21a5953747b63dc0a21fcba868.1334567594.git.nicolas.ferre@atmel.com> <20120420143427.97c08ee5.akpm@linux-foundation.org>
+In-Reply-To: <20120420143427.97c08ee5.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Apr 2012 04:06:42 -0400, Xi Wang <xi.wang@gmail.com> wrote:
-> On 32-bit systems, a large args->num_cliprects from userspace via ioctl
-> may overflow the allocation size, leading to out-of-bounds access.
+On 04/20/2012 11:34 PM, Andrew Morton :
+> On Mon, 16 Apr 2012 11:20:54 +0200
+> Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
 > 
-> This vulnerability was introduced in commit 432e58ed ("drm/i915: Avoid
-> allocation for execbuffer object list").
+>> Commit 892a884 (leds: convert led platform drivers to module_platform_driver)
+>> is omitting the section mismatch error: so change annotation of the probe
+>> function to __devinit instead of __init.
+>>
+>> ...
+>>
+>> --- a/drivers/leds/leds-atmel-pwm.c
+>> +++ b/drivers/leds/leds-atmel-pwm.c
+>> @@ -35,7 +35,7 @@ static void pwmled_brightness(struct led_classdev *cdev, enum led_brightness b)
+>>   * NOTE:  we reuse the platform_data structure of GPIO leds,
+>>   * but repurpose its "gpio" number as a PWM channel number.
+>>   */
+>> -static int __init pwmled_probe(struct platform_device *pdev)
+>> +static int __devinit pwmled_probe(struct platform_device *pdev)
+>>  {
+>>  	const struct gpio_led_platform_data	*pdata;
+>>  	struct pwmled				*leds;
 > 
-> Signed-off-by: Xi Wang <xi.wang@gmail.com>
-> Cc: Chris Wilson <chris@chris-wilson.co.uk>
-> Cc: stable@vger.kernel.org
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
--Chris
+> This is theoretically oopsable and the patch is probably needed in 3.4
+> and 3.3.x.
 
+Absolutely, I will request it to be included in stable tree then.
+
+> But you've applied it to linu-next via your own tree so I won't be
+> merging it.
+
+Ok, thanks for having taken this patch into account Andrew.
+
+Best regards,
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Nicolas Ferre
