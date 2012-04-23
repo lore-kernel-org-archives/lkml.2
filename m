@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab2DWJPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 05:15:38 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:34651 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754415Ab2DWJPd (ORCPT
+	id S1754577Ab2DWJPh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 05:15:37 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:59867 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754110Ab2DWJPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 05:15:33 -0400
+	Mon, 23 Apr 2012 05:15:35 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 Cc: Grant Likely <grant.likely@secretlab.ca>,
@@ -14,10 +14,12 @@ Cc: Grant Likely <grant.likely@secretlab.ca>,
         Rabin Vincent <rabin.vincent@stericsson.com>,
         Jonas Aberg <jonas.aberg@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 9/9] ARM: ux500: update pin handling
-Date: Mon, 23 Apr 2012 11:15:12 +0200
-Message-ID: <1335172512-27790-1-git-send-email-linus.walleij@stericsson.com>
+        Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Templing <magnus.templing@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Subject: [PATCH 7/9] ARM: ux500: remove a bunch of internal pull-ups
+Date: Mon, 23 Apr 2012 11:14:57 +0200
+Message-ID: <1335172497-27720-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.9.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -27,548 +29,239 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Walleij <linus.walleij@linaro.org>
 
-This updates the Ux500 pin handling to take much more care when
-applying pin settings for different platforms and peripherals.
-This is an accumulation of a longer history of updates to the
-MOP500 family pin file.
+The default configuration for a number of I2C and keypad pins was
+to pull-up. However on most reference designs the electronics
+already contain external pull-ups which means the internal
+pull-ups will lower the common resistance and increase power
+consumption on these lines, and in some reference designs the
+keypad inputs are not used so this will just cause problems. So
+remove these pull-ups and add them on demand instead if needed.
 
+Signed-off-by: Magnus Templing <magnus.templing@stericsson.com>
+Signed-off-by: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Reviewed-by: Jonas Aberg <jonas.aberg@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-pins.c |  393 +++++++++++++++++++++++--------
- arch/arm/mach-ux500/board-mop500.h      |    4 +
- 2 files changed, 301 insertions(+), 96 deletions(-)
+ arch/arm/mach-ux500/pins-db8500.h |   72 ++++++++++++++++++-------------------
+ 1 file changed, 36 insertions(+), 36 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-pins.c b/arch/arm/mach-ux500/board-mop500-pins.c
-index e2a2e50..df5b190 100644
---- a/arch/arm/mach-ux500/board-mop500-pins.c
-+++ b/arch/arm/mach-ux500/board-mop500-pins.c
-@@ -7,110 +7,47 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/bug.h>
-+#include <linux/string.h>
+diff --git a/arch/arm/mach-ux500/pins-db8500.h b/arch/arm/mach-ux500/pins-db8500.h
+index 8b1d1a7..062c7ac 100644
+--- a/arch/arm/mach-ux500/pins-db8500.h
++++ b/arch/arm/mach-ux500/pins-db8500.h
+@@ -35,40 +35,40 @@
  
- #include <asm/mach-types.h>
- #include <plat/pincfg.h>
- #include <plat/gpio-nomadik.h>
-+
- #include <mach/hardware.h>
+ #define GPIO4_GPIO		PIN_CFG(4, GPIO)
+ #define GPIO4_U1_RXD		PIN_CFG(4, ALT_A)
+-#define GPIO4_I2C4_SCL		PIN_CFG_INPUT(4, ALT_B, PULLUP)
++#define GPIO4_I2C4_SCL		PIN_CFG(4, ALT_B)
+ #define GPIO4_IP_TRSTn		PIN_CFG(4, ALT_C)
  
- #include "pins-db8500.h"
- #include "pins.h"
-+#include "board-mop500.h"
-+
-+enum custom_pin_cfg_t {
-+	PINS_FOR_DEFAULT,
-+	PINS_FOR_U9500,
-+};
-+
-+static enum custom_pin_cfg_t pinsfor;
+ #define GPIO5_GPIO		PIN_CFG(5, GPIO)
+ #define GPIO5_U1_TXD		PIN_CFG(5, ALT_A)
+-#define GPIO5_I2C4_SDA		PIN_CFG_INPUT(5, ALT_B, PULLUP)
++#define GPIO5_I2C4_SDA		PIN_CFG(5, ALT_B)
+ #define GPIO5_IP_GPIO6		PIN_CFG(5, ALT_C)
  
- static pin_cfg_t mop500_pins_common[] = {
--	/* I2C */
--	GPIO147_I2C0_SCL,
--	GPIO148_I2C0_SDA,
--	GPIO16_I2C1_SCL,
--	GPIO17_I2C1_SDA,
--	GPIO10_I2C2_SDA,
--	GPIO11_I2C2_SCL,
--	GPIO229_I2C3_SDA,
--	GPIO230_I2C3_SCL,
--
--	/* MSP0 */
-+	/* uMSP0 */
- 	GPIO12_MSP0_TXD,
- 	GPIO13_MSP0_TFS,
- 	GPIO14_MSP0_TCK,
- 	GPIO15_MSP0_RXD,
+ #define GPIO6_GPIO		PIN_CFG(6, GPIO)
+ #define GPIO6_U1_CTSn		PIN_CFG(6, ALT_A)
+-#define GPIO6_I2C1_SCL		PIN_CFG_INPUT(6, ALT_B, PULLUP)
++#define GPIO6_I2C1_SCL		PIN_CFG(6, ALT_B)
+ #define GPIO6_IP_GPIO0		PIN_CFG(6, ALT_C)
  
- 	/* MSP2: HDMI */
--	GPIO193_MSP2_TXD,
--	GPIO194_MSP2_TCK,
--	GPIO195_MSP2_TFS,
-+	GPIO193_MSP2_TXD | PIN_INPUT_PULLDOWN,
-+	GPIO194_MSP2_TCK | PIN_INPUT_PULLDOWN,
-+	GPIO195_MSP2_TFS | PIN_INPUT_PULLDOWN,
- 	GPIO196_MSP2_RXD | PIN_OUTPUT_LOW,
+ #define GPIO7_GPIO		PIN_CFG(7, GPIO)
+ #define GPIO7_U1_RTSn		PIN_CFG(7, ALT_A)
+-#define GPIO7_I2C1_SDA		PIN_CFG_INPUT(7, ALT_B, PULLUP)
++#define GPIO7_I2C1_SDA		PIN_CFG(7, ALT_B)
+ #define GPIO7_IP_GPIO1		PIN_CFG(7, ALT_C)
  
-+	/* LCD TE0 */
-+	GPIO68_LCD_VSI0	| PIN_INPUT_PULLUP,
-+
- 	/* Touch screen INTERFACE */
- 	GPIO84_GPIO	| PIN_INPUT_PULLUP, /* TOUCH_INT1 */
+ #define GPIO8_GPIO		PIN_CFG(8, GPIO)
+-#define GPIO8_IPI2C_SDA		PIN_CFG_INPUT(8, ALT_A, PULLUP)
+-#define GPIO8_I2C2_SDA		PIN_CFG_INPUT(8, ALT_B, PULLUP)
++#define GPIO8_IPI2C_SDA		PIN_CFG(8, ALT_A)
++#define GPIO8_I2C2_SDA		PIN_CFG(8, ALT_B)
  
- 	/* STMPE1601/tc35893 keypad  IRQ */
- 	GPIO218_GPIO	| PIN_INPUT_PULLUP,
+ #define GPIO9_GPIO		PIN_CFG(9, GPIO)
+-#define GPIO9_IPI2C_SCL		PIN_CFG_INPUT(9, ALT_A, PULLUP)
+-#define GPIO9_I2C2_SCL		PIN_CFG_INPUT(9, ALT_B, PULLUP)
++#define GPIO9_IPI2C_SCL		PIN_CFG(9, ALT_A)
++#define GPIO9_I2C2_SCL		PIN_CFG(9, ALT_B)
  
--	/* MMC0 (MicroSD card) */
--	GPIO18_MC0_CMDDIR	| PIN_OUTPUT_HIGH,
--	GPIO19_MC0_DAT0DIR	| PIN_OUTPUT_HIGH,
--	GPIO20_MC0_DAT2DIR	| PIN_OUTPUT_HIGH,
--
--	GPIO22_MC0_FBCLK	| PIN_INPUT_NOPULL,
--	GPIO23_MC0_CLK		| PIN_OUTPUT_LOW,
--	GPIO24_MC0_CMD		| PIN_INPUT_PULLUP,
--	GPIO25_MC0_DAT0		| PIN_INPUT_PULLUP,
--	GPIO26_MC0_DAT1		| PIN_INPUT_PULLUP,
--	GPIO27_MC0_DAT2		| PIN_INPUT_PULLUP,
--	GPIO28_MC0_DAT3		| PIN_INPUT_PULLUP,
--
--	/* SDI1 (SDIO) */
--	GPIO208_MC1_CLK		| PIN_OUTPUT_LOW,
--	GPIO209_MC1_FBCLK	| PIN_INPUT_NOPULL,
--	GPIO210_MC1_CMD		| PIN_INPUT_PULLUP,
--	GPIO211_MC1_DAT0	| PIN_INPUT_PULLUP,
--	GPIO212_MC1_DAT1	| PIN_INPUT_PULLUP,
--	GPIO213_MC1_DAT2	| PIN_INPUT_PULLUP,
--	GPIO214_MC1_DAT3	| PIN_INPUT_PULLUP,
--
--	/* MMC2 (On-board DATA INTERFACE eMMC) */
--	GPIO128_MC2_CLK		| PIN_OUTPUT_LOW,
--	GPIO129_MC2_CMD		| PIN_INPUT_PULLUP,
--	GPIO130_MC2_FBCLK	| PIN_INPUT_NOPULL,
--	GPIO131_MC2_DAT0	| PIN_INPUT_PULLUP,
--	GPIO132_MC2_DAT1	| PIN_INPUT_PULLUP,
--	GPIO133_MC2_DAT2	| PIN_INPUT_PULLUP,
--	GPIO134_MC2_DAT3	| PIN_INPUT_PULLUP,
--	GPIO135_MC2_DAT4	| PIN_INPUT_PULLUP,
--	GPIO136_MC2_DAT5	| PIN_INPUT_PULLUP,
--	GPIO137_MC2_DAT6	| PIN_INPUT_PULLUP,
--	GPIO138_MC2_DAT7	| PIN_INPUT_PULLUP,
--
--	/* MMC4 (On-board STORAGE INTERFACE eMMC) */
--	GPIO197_MC4_DAT3	| PIN_INPUT_PULLUP,
--	GPIO198_MC4_DAT2	| PIN_INPUT_PULLUP,
--	GPIO199_MC4_DAT1	| PIN_INPUT_PULLUP,
--	GPIO200_MC4_DAT0	| PIN_INPUT_PULLUP,
--	GPIO201_MC4_CMD		| PIN_INPUT_PULLUP,
--	GPIO202_MC4_FBCLK	| PIN_INPUT_NOPULL,
--	GPIO203_MC4_CLK		| PIN_OUTPUT_LOW,
--	GPIO204_MC4_DAT7	| PIN_INPUT_PULLUP,
--	GPIO205_MC4_DAT6	| PIN_INPUT_PULLUP,
--	GPIO206_MC4_DAT5	| PIN_INPUT_PULLUP,
--	GPIO207_MC4_DAT4	| PIN_INPUT_PULLUP,
--
--	/* SKE keypad */
--	GPIO153_KP_I7,
--	GPIO154_KP_I6,
--	GPIO155_KP_I5,
--	GPIO156_KP_I4,
--	GPIO157_KP_O7,
--	GPIO158_KP_O6,
--	GPIO159_KP_O5,
--	GPIO160_KP_O4,
--	GPIO161_KP_I3,
--	GPIO162_KP_I2,
--	GPIO163_KP_I1,
--	GPIO164_KP_I0,
--	GPIO165_KP_O3,
--	GPIO166_KP_O2,
--	GPIO167_KP_O1,
--	GPIO168_KP_O0,
--
- 	/* UART */
- 	/* uart-0 pins gpio configuration should be
- 	 * kept intact to prevent glitch in tx line
-@@ -129,10 +66,6 @@ static pin_cfg_t mop500_pins_common[] = {
- 	GPIO30_U2_TXD	| PIN_OUTPUT_HIGH,
- 	GPIO31_U2_CTSn	| PIN_INPUT_PULLUP,
- 	GPIO32_U2_RTSn	| PIN_OUTPUT_HIGH,
--
--	/* Display & HDMI HW sync */
--	GPIO68_LCD_VSI0	| PIN_INPUT_PULLUP,
--	GPIO69_LCD_VSI1	| PIN_INPUT_PULLUP,
- };
+ #define GPIO10_GPIO		PIN_CFG(10, GPIO)
+-#define GPIO10_IPI2C_SDA	PIN_CFG_INPUT(10, ALT_A, PULLUP)
+-#define GPIO10_I2C2_SDA		PIN_CFG_INPUT(10, ALT_B, PULLUP)
++#define GPIO10_IPI2C_SDA	PIN_CFG(10, ALT_A)
++#define GPIO10_I2C2_SDA		PIN_CFG(10, ALT_B)
+ #define GPIO10_IP_GPIO3		PIN_CFG(10, ALT_C)
  
- static pin_cfg_t mop500_pins_default[] = {
-@@ -142,10 +75,13 @@ static pin_cfg_t mop500_pins_default[] = {
- 	GPIO145_SSP0_RXD | PIN_PULL_DOWN,
- 	GPIO146_SSP0_TXD,
+ #define GPIO11_GPIO		PIN_CFG(11, GPIO)
+-#define GPIO11_IPI2C_SCL	PIN_CFG_INPUT(11, ALT_A, PULLUP)
+-#define GPIO11_I2C2_SCL		PIN_CFG_INPUT(11, ALT_B, PULLUP)
++#define GPIO11_IPI2C_SCL	PIN_CFG(11, ALT_A)
++#define GPIO11_I2C2_SCL		PIN_CFG(11, ALT_B)
+ #define GPIO11_IP_GPIO2		PIN_CFG(11, ALT_C)
  
-+	/* XENON Flashgun INTERFACE */
-+	GPIO6_IP_GPIO0	| PIN_INPUT_PULLUP,/* XENON_FLASH_ID */
-+	GPIO7_IP_GPIO1	| PIN_INPUT_PULLUP,/* XENON_READY */
+ #define GPIO12_GPIO		PIN_CFG(12, GPIO)
+@@ -87,12 +87,12 @@
  
- 	GPIO217_GPIO	| PIN_INPUT_PULLUP, /* TC35892 IRQ */
+ #define GPIO16_GPIO		PIN_CFG(16, GPIO)
+ #define GPIO16_MSP0_RFS		PIN_CFG(16, ALT_A)
+-#define GPIO16_I2C1_SCL		PIN_CFG_INPUT(16, ALT_B, PULLUP)
++#define GPIO16_I2C1_SCL		PIN_CFG(16, ALT_B)
+ #define GPIO16_SLIM0_DAT	PIN_CFG(16, ALT_C)
  
--	/* SDI0 (MicroSD card) */
-+	/* sdi0 (removable MMC/SD/SDIO cards) not handled by pm_runtime */
- 	GPIO21_MC0_DAT31DIR	| PIN_OUTPUT_HIGH,
+ #define GPIO17_GPIO		PIN_CFG(17, GPIO)
+ #define GPIO17_MSP0_RCK		PIN_CFG(17, ALT_A)
+-#define GPIO17_I2C1_SDA		PIN_CFG_INPUT(17, ALT_B, PULLUP)
++#define GPIO17_I2C1_SDA		PIN_CFG(17, ALT_B)
+ #define GPIO17_SLIM0_CLK	PIN_CFG(17, ALT_C)
  
- 	/* UART */
-@@ -157,13 +93,11 @@ static pin_cfg_t mop500_pins_default[] = {
+ #define GPIO18_GPIO		PIN_CFG(18, GPIO)
+@@ -434,10 +434,10 @@
+ #define GPIO146_SSP0_TXD	PIN_CFG(146, ALT_A)
  
- static pin_cfg_t hrefv60_pins[] = {
- 	/* WLAN */
--	GPIO4_GPIO		| PIN_INPUT_PULLUP,/* WLAN_IRQ */
- 	GPIO85_GPIO		| PIN_OUTPUT_LOW,/* WLAN_ENA */
+ #define GPIO147_GPIO		PIN_CFG(147, GPIO)
+-#define GPIO147_I2C0_SCL	PIN_CFG_INPUT(147, ALT_A, PULLUP)
++#define GPIO147_I2C0_SCL	PIN_CFG(147, ALT_A)
  
- 	/* XENON Flashgun INTERFACE */
- 	GPIO6_IP_GPIO0	| PIN_INPUT_PULLUP,/* XENON_FLASH_ID */
- 	GPIO7_IP_GPIO1	| PIN_INPUT_PULLUP,/* XENON_READY */
--	GPIO170_GPIO	| PIN_OUTPUT_LOW, /* XENON_CHARGE */
+ #define GPIO148_GPIO		PIN_CFG(148, GPIO)
+-#define GPIO148_I2C0_SDA	PIN_CFG_INPUT(148, ALT_A, PULLUP)
++#define GPIO148_I2C0_SDA	PIN_CFG(148, ALT_A)
  
- 	/* Assistant LED INTERFACE */
- 	GPIO21_GPIO | PIN_OUTPUT_LOW,  /* XENON_EN1 */
-@@ -174,7 +108,7 @@ static pin_cfg_t hrefv60_pins[] = {
- 	GPIO32_GPIO | PIN_INPUT_PULLDOWN, /* Magnetometer DRDY */
+ #define GPIO149_GPIO		PIN_CFG(149, GPIO)
+ #define GPIO149_IP_GPIO0	PIN_CFG(149, ALT_A)
+@@ -459,82 +459,82 @@
+ #define GPIO152_KP_O9		PIN_CFG(152, ALT_C)
  
- 	/* Display Interface */
--	GPIO65_GPIO		| PIN_OUTPUT_LOW, /* DISP1 RST */
-+	GPIO65_GPIO		| PIN_OUTPUT_HIGH, /* DISP1 NO RST */
- 	GPIO66_GPIO		| PIN_OUTPUT_LOW, /* DISP2 RST */
+ #define GPIO153_GPIO		PIN_CFG(153, GPIO)
+-#define GPIO153_KP_I7		PIN_CFG_INPUT(153, ALT_A, PULLDOWN)
++#define GPIO153_KP_I7		PIN_CFG(153, ALT_A)
+ #define GPIO153_LCD_D24		PIN_CFG(153, ALT_B)
+ #define GPIO153_U2_RXD		PIN_CFG(153, ALT_C)
  
- 	/* Touch screen INTERFACE */
-@@ -216,11 +150,8 @@ static pin_cfg_t hrefv60_pins[] = {
- 	/* DiPro Sensor Interface */
- 	GPIO139_GPIO	| PIN_INPUT_PULLUP, /* DIPRO_INT */
+ #define GPIO154_GPIO		PIN_CFG(154, GPIO)
+-#define GPIO154_KP_I6		PIN_CFG_INPUT(154, ALT_A, PULLDOWN)
++#define GPIO154_KP_I6		PIN_CFG(154, ALT_A)
+ #define GPIO154_LCD_D25		PIN_CFG(154, ALT_B)
+ #define GPIO154_U2_TXD		PIN_CFG(154, ALT_C)
  
--	/* HAL SWITCH INTERFACE */
--	GPIO145_GPIO	| PIN_INPUT_PULLDOWN,/* HAL_SW */
--
- 	/* Audio Amplifier Interface */
--	GPIO149_GPIO	| PIN_OUTPUT_LOW, /* VAUDIO_HF_EN */
-+	GPIO149_GPIO	| PIN_OUTPUT_HIGH, /* VAUDIO_HF_EN, enable MAX8968 */
+ #define GPIO155_GPIO		PIN_CFG(155, GPIO)
+-#define GPIO155_KP_I5		PIN_CFG_INPUT(155, ALT_A, PULLDOWN)
++#define GPIO155_KP_I5		PIN_CFG(155, ALT_A)
+ #define GPIO155_LCD_D26		PIN_CFG(155, ALT_B)
+ #define GPIO155_STMAPE_CLK	PIN_CFG(155, ALT_C)
  
- 	/* GBF INTERFACE */
- 	GPIO171_GPIO	| PIN_OUTPUT_LOW, /* GBF_ENA_RESET */
-@@ -232,10 +163,29 @@ static pin_cfg_t hrefv60_pins[] = {
- 	GPIO82_GPIO		| PIN_INPUT_PULLUP, /* ACC_INT1 */
- 	GPIO83_GPIO		| PIN_INPUT_PULLUP, /* ACC_INT2 */
+ #define GPIO156_GPIO		PIN_CFG(156, GPIO)
+-#define GPIO156_KP_I4		PIN_CFG_INPUT(156, ALT_A, PULLDOWN)
++#define GPIO156_KP_I4		PIN_CFG(156, ALT_A)
+ #define GPIO156_LCD_D27		PIN_CFG(156, ALT_B)
+ #define GPIO156_STMAPE_DAT3	PIN_CFG(156, ALT_C)
  
--	/* Proximity Sensor */
--	GPIO217_GPIO		| PIN_INPUT_PULLUP,
-+	/* SD card detect */
-+	GPIO95_GPIO	| PIN_INPUT_PULLUP,
-+};
+ #define GPIO157_GPIO		PIN_CFG(157, GPIO)
+-#define GPIO157_KP_O7		PIN_CFG_INPUT(157, ALT_A, PULLUP)
++#define GPIO157_KP_O7		PIN_CFG(157, ALT_A)
+ #define GPIO157_LCD_D28		PIN_CFG(157, ALT_B)
+ #define GPIO157_STMAPE_DAT2	PIN_CFG(157, ALT_C)
  
-+static pin_cfg_t u9500_pins[] = {
-+	GPIO4_U1_RXD    | PIN_INPUT_PULLUP,
-+	GPIO5_U1_TXD    | PIN_OUTPUT_HIGH,
-+	GPIO144_GPIO	| PIN_INPUT_PULLUP,/* WLAN_IRQ */
-+
-+	/* HSI */
-+	GPIO219_HSIR_FLA0 | PIN_INPUT_PULLDOWN,
-+	GPIO220_HSIR_DAT0 | PIN_INPUT_PULLDOWN,
-+	GPIO221_HSIR_RDY0 | PIN_OUTPUT_LOW,
-+	GPIO222_HSIT_FLA0 | PIN_OUTPUT_LOW,
-+	GPIO223_HSIT_DAT0 | PIN_OUTPUT_LOW,
-+	GPIO224_HSIT_RDY0 | PIN_INPUT_PULLDOWN,
-+	GPIO225_HSIT_CAWAKE0 | PIN_INPUT_PULLDOWN, /* CA_WAKE0 */
-+	GPIO226_GPIO	| PIN_OUTPUT_HIGH, /* AC_WAKE0 */
-+};
+ #define GPIO158_GPIO		PIN_CFG(158, GPIO)
+-#define GPIO158_KP_O6		PIN_CFG_INPUT(158, ALT_A, PULLUP)
++#define GPIO158_KP_O6		PIN_CFG(158, ALT_A)
+ #define GPIO158_LCD_D29		PIN_CFG(158, ALT_B)
+ #define GPIO158_STMAPE_DAT1	PIN_CFG(158, ALT_C)
  
-+static pin_cfg_t u8500_pins[] = {
-+	GPIO226_GPIO	| PIN_OUTPUT_LOW, /* WLAN_PMU_EN */
-+	GPIO4_GPIO		| PIN_INPUT_PULLUP,/* WLAN_IRQ */
- };
+ #define GPIO159_GPIO		PIN_CFG(159, GPIO)
+-#define GPIO159_KP_O5		PIN_CFG_INPUT(159, ALT_A, PULLUP)
++#define GPIO159_KP_O5		PIN_CFG(159, ALT_A)
+ #define GPIO159_LCD_D30		PIN_CFG(159, ALT_B)
+ #define GPIO159_STMAPE_DAT0	PIN_CFG(159, ALT_C)
  
- static pin_cfg_t snowball_pins[] = {
-@@ -276,13 +226,245 @@ static pin_cfg_t snowball_pins[] = {
+ #define GPIO160_GPIO		PIN_CFG(160, GPIO)
+-#define GPIO160_KP_O4		PIN_CFG_INPUT(160, ALT_A, PULLUP)
++#define GPIO160_KP_O4		PIN_CFG(160, ALT_A)
+ #define GPIO160_LCD_D31		PIN_CFG(160, ALT_B)
+ #define GPIO160_NONE		PIN_CFG(160, ALT_C)
  
- 	/* RSTn_LAN */
- 	GPIO141_GPIO		| PIN_OUTPUT_HIGH,
-+
-+	/*  Accelerometer/Magnetometer */
-+	GPIO163_GPIO		| PIN_INPUT_PULLUP, /* ACCEL_IRQ1 */
-+	GPIO164_GPIO		| PIN_INPUT_PULLUP, /* ACCEL_IRQ2 */
-+	GPIO165_GPIO		| PIN_INPUT_PULLUP, /* MAG_DRDY */
-+
-+	/* WLAN/GBF */
-+	GPIO161_GPIO		| PIN_OUTPUT_LOW, /* WLAN_PMU_EN */
-+	GPIO171_GPIO		| PIN_OUTPUT_HIGH,/* GBF_ENA */
-+	GPIO215_GPIO		| PIN_OUTPUT_LOW,/* WLAN_ENA */
-+	GPIO216_GPIO		| PIN_INPUT_PULLUP,/* WLAN_IRQ */
-+};
-+
-+/*
-+ * I2C
-+ */
-+
-+static UX500_PINS(mop500_pins_i2c0,
-+	GPIO147_I2C0_SCL |
-+		PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
-+	GPIO148_I2C0_SDA |
-+		PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
-+);
-+
-+static UX500_PINS(mop500_pins_i2c1,
-+	GPIO16_I2C1_SCL |
-+		PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
-+	GPIO17_I2C1_SDA |
-+		PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
-+);
-+
-+static UX500_PINS(mop500_pins_i2c2,
-+	GPIO10_I2C2_SDA |
-+		PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
-+	GPIO11_I2C2_SCL |
-+		PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
-+);
-+
-+static UX500_PINS(mop500_pins_i2c3,
-+	GPIO229_I2C3_SDA |
-+		PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
-+	GPIO230_I2C3_SCL |
-+		PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
-+);
-+
-+static UX500_PINS(mop500_pins_mcde_tvout,
-+	GPIO78_LCD_D8,
-+	GPIO79_LCD_D9,
-+	GPIO80_LCD_D10,
-+	GPIO81_LCD_D11,
-+	GPIO150_LCDA_CLK,
-+);
-+
-+static UX500_PINS(mop500_pins_mcde_hdmi,
-+	GPIO69_LCD_VSI1	| PIN_INPUT_PULLUP,
-+);
-+
-+static UX500_PINS(mop500_pins_ske,
-+	GPIO153_KP_I7 | PIN_INPUT_PULLDOWN | PIN_SLPM_INPUT_PULLUP,
-+	GPIO154_KP_I6 | PIN_INPUT_PULLDOWN | PIN_SLPM_INPUT_PULLUP,
-+	GPIO155_KP_I5 | PIN_INPUT_PULLDOWN | PIN_SLPM_INPUT_PULLUP,
-+	GPIO156_KP_I4 | PIN_INPUT_PULLDOWN | PIN_SLPM_INPUT_PULLUP,
-+	GPIO161_KP_I3 | PIN_INPUT_PULLDOWN | PIN_SLPM_INPUT_PULLUP,
-+	GPIO162_KP_I2 | PIN_INPUT_PULLDOWN | PIN_SLPM_INPUT_PULLUP,
-+	GPIO163_KP_I1 | PIN_INPUT_PULLDOWN | PIN_SLPM_INPUT_PULLUP,
-+	GPIO164_KP_I0 | PIN_INPUT_PULLDOWN | PIN_SLPM_INPUT_PULLUP,
-+	GPIO157_KP_O7 | PIN_INPUT_PULLUP | PIN_SLPM_OUTPUT_LOW,
-+	GPIO158_KP_O6 | PIN_INPUT_PULLUP | PIN_SLPM_OUTPUT_LOW,
-+	GPIO159_KP_O5 | PIN_INPUT_PULLUP | PIN_SLPM_OUTPUT_LOW,
-+	GPIO160_KP_O4 | PIN_INPUT_PULLUP | PIN_SLPM_OUTPUT_LOW,
-+	GPIO165_KP_O3 | PIN_INPUT_PULLUP | PIN_SLPM_OUTPUT_LOW,
-+	GPIO166_KP_O2 | PIN_INPUT_PULLUP | PIN_SLPM_OUTPUT_LOW,
-+	GPIO167_KP_O1 | PIN_INPUT_PULLUP | PIN_SLPM_OUTPUT_LOW,
-+	GPIO168_KP_O0 | PIN_INPUT_PULLUP | PIN_SLPM_OUTPUT_LOW,
-+);
-+
-+/* sdi0 (removable MMC/SD/SDIO cards) */
-+static UX500_PINS(mop500_pins_sdi0,
-+	GPIO18_MC0_CMDDIR	| PIN_OUTPUT_HIGH,
-+	GPIO19_MC0_DAT0DIR	| PIN_OUTPUT_HIGH,
-+	GPIO20_MC0_DAT2DIR	| PIN_OUTPUT_HIGH,
-+
-+	GPIO22_MC0_FBCLK	| PIN_INPUT_NOPULL,
-+	GPIO23_MC0_CLK		| PIN_OUTPUT_LOW,
-+	GPIO24_MC0_CMD		| PIN_INPUT_PULLUP,
-+	GPIO25_MC0_DAT0		| PIN_INPUT_PULLUP,
-+	GPIO26_MC0_DAT1		| PIN_INPUT_PULLUP,
-+	GPIO27_MC0_DAT2		| PIN_INPUT_PULLUP,
-+	GPIO28_MC0_DAT3		| PIN_INPUT_PULLUP,
-+);
-+
-+/* sdi1 (WLAN CW1200) */
-+static UX500_PINS(mop500_pins_sdi1,
-+	GPIO208_MC1_CLK		| PIN_OUTPUT_LOW,
-+	GPIO209_MC1_FBCLK	| PIN_INPUT_NOPULL,
-+	GPIO210_MC1_CMD		| PIN_INPUT_PULLUP,
-+	GPIO211_MC1_DAT0	| PIN_INPUT_PULLUP,
-+	GPIO212_MC1_DAT1	| PIN_INPUT_PULLUP,
-+	GPIO213_MC1_DAT2	| PIN_INPUT_PULLUP,
-+	GPIO214_MC1_DAT3	| PIN_INPUT_PULLUP,
-+);
-+
-+/* sdi2 (POP eMMC) */
-+static UX500_PINS(mop500_pins_sdi2,
-+	GPIO128_MC2_CLK		| PIN_OUTPUT_LOW,
-+	GPIO129_MC2_CMD		| PIN_INPUT_PULLUP,
-+	GPIO130_MC2_FBCLK	| PIN_INPUT_NOPULL,
-+	GPIO131_MC2_DAT0	| PIN_INPUT_PULLUP,
-+	GPIO132_MC2_DAT1	| PIN_INPUT_PULLUP,
-+	GPIO133_MC2_DAT2	| PIN_INPUT_PULLUP,
-+	GPIO134_MC2_DAT3	| PIN_INPUT_PULLUP,
-+	GPIO135_MC2_DAT4	| PIN_INPUT_PULLUP,
-+	GPIO136_MC2_DAT5	| PIN_INPUT_PULLUP,
-+	GPIO137_MC2_DAT6	| PIN_INPUT_PULLUP,
-+	GPIO138_MC2_DAT7	| PIN_INPUT_PULLUP,
-+);
-+
-+/* sdi4 (PCB eMMC) */
-+static UX500_PINS(mop500_pins_sdi4,
-+	GPIO197_MC4_DAT3	| PIN_INPUT_PULLUP,
-+	GPIO198_MC4_DAT2	| PIN_INPUT_PULLUP,
-+	GPIO199_MC4_DAT1	| PIN_INPUT_PULLUP,
-+	GPIO200_MC4_DAT0	| PIN_INPUT_PULLUP,
-+	GPIO201_MC4_CMD		| PIN_INPUT_PULLUP,
-+	GPIO202_MC4_FBCLK	| PIN_INPUT_NOPULL,
-+	GPIO203_MC4_CLK		| PIN_OUTPUT_LOW,
-+	GPIO204_MC4_DAT7	| PIN_INPUT_PULLUP,
-+	GPIO205_MC4_DAT6	| PIN_INPUT_PULLUP,
-+	GPIO206_MC4_DAT5	| PIN_INPUT_PULLUP,
-+	GPIO207_MC4_DAT4	| PIN_INPUT_PULLUP,
-+);
-+
-+/* USB */
-+static UX500_PINS(mop500_pins_usb,
-+	GPIO256_USB_NXT,
-+	GPIO257_USB_STP		| PIN_OUTPUT_HIGH,
-+	GPIO258_USB_XCLK,
-+	GPIO259_USB_DIR,
-+	GPIO260_USB_DAT7,
-+	GPIO261_USB_DAT6,
-+	GPIO262_USB_DAT5,
-+	GPIO263_USB_DAT4,
-+	GPIO264_USB_DAT3,
-+	GPIO265_USB_DAT2,
-+	GPIO266_USB_DAT1,
-+	GPIO267_USB_DAT0,
-+);
-+
-+/* SPI2 */
-+static UX500_PINS(mop500_pins_spi2,
-+	GPIO216_GPIO    | PIN_OUTPUT_HIGH,
-+	GPIO218_SPI2_RXD        | PIN_INPUT_PULLDOWN,
-+	GPIO215_SPI2_TXD        | PIN_OUTPUT_LOW,
-+	GPIO217_SPI2_CLK        | PIN_OUTPUT_LOW,
-+);
-+
-+static UX500_PINS(mop500_pins_sensors1p_v60,
-+	GPIO217_GPIO| PIN_INPUT_PULLUP |
-+		  PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
-+	GPIO145_GPIO | PIN_INPUT_PULLDOWN |
-+		  PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
-+	GPIO139_GPIO | PIN_INPUT_PULLUP |
-+		  PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
-+);
-+
-+static UX500_PINS(mop500_pins_sensors1p,
-+	PIN_CFG_INPUT(GPIO_PROX_SENSOR, GPIO, NOPULL),
-+	PIN_CFG_INPUT(GPIO_HAL_SENSOR, GPIO, NOPULL),
-+);
-+
-+static struct ux500_pin_lookup mop500_runtime_pins[] = {
-+	PIN_LOOKUP("mcde-tvout", &mop500_pins_mcde_tvout),
-+	PIN_LOOKUP("av8100-hdmi", &mop500_pins_mcde_hdmi),
-+	PIN_LOOKUP("nmk-i2c.0", &mop500_pins_i2c0),
-+	PIN_LOOKUP("nmk-i2c.1", &mop500_pins_i2c1),
-+	PIN_LOOKUP("nmk-i2c.2", &mop500_pins_i2c2),
-+	PIN_LOOKUP("nmk-i2c.3", &mop500_pins_i2c3),
-+	PIN_LOOKUP("sdi0", &mop500_pins_sdi0),
-+	PIN_LOOKUP("sdi1", &mop500_pins_sdi1),
-+	PIN_LOOKUP("sdi2", &mop500_pins_sdi2),
-+	PIN_LOOKUP("sdi4", &mop500_pins_sdi4),
-+	PIN_LOOKUP("musb-ux500.0", &mop500_pins_usb),
-+	PIN_LOOKUP("spi2", &mop500_pins_spi2),
- };
+ #define GPIO161_GPIO		PIN_CFG(161, GPIO)
+-#define GPIO161_KP_I3		PIN_CFG_INPUT(161, ALT_A, PULLDOWN)
++#define GPIO161_KP_I3		PIN_CFG(161, ALT_A)
+ #define GPIO161_LCD_D32		PIN_CFG(161, ALT_B)
+ #define GPIO161_UARTMOD_RXD	PIN_CFG(161, ALT_C)
  
-+static struct ux500_pin_lookup mop500_runtime_pins_v60[] = {
-+	PIN_LOOKUP("ske", &mop500_pins_ske),
-+	PIN_LOOKUP("gpio-keys.0", &mop500_pins_sensors1p_v60),
-+};
-+
-+static struct ux500_pin_lookup mop500_runtime_pins_pre_v60[] = {
-+	PIN_LOOKUP("ske", &mop500_pins_ske),
-+	PIN_LOOKUP("gpio-keys.0", &mop500_pins_sensors1p),
-+};
-+
-+/*
-+ * passing "pinsfor=" in kernel cmdline allows for custom
-+ * configuration of GPIOs on u8500 derived boards.
-+ */
-+static int __init early_pinsfor(char *p)
-+{
-+	pinsfor = PINS_FOR_DEFAULT;
-+
-+	if (strcmp(p, "u9500-21") == 0)
-+		pinsfor = PINS_FOR_U9500;
-+
-+	return 0;
-+}
-+early_param("pinsfor", early_pinsfor);
-+
-+int pins_for_u9500(void)
-+{
-+	if (pinsfor == PINS_FOR_U9500)
-+		return 1;
-+
-+	return 0;
-+}
-+
- void __init mop500_pins_init(void)
- {
- 	nmk_config_pins(mop500_pins_common,
- 			ARRAY_SIZE(mop500_pins_common));
+ #define GPIO162_GPIO		PIN_CFG(162, GPIO)
+-#define GPIO162_KP_I2		PIN_CFG_INPUT(162, ALT_A, PULLDOWN)
++#define GPIO162_KP_I2		PIN_CFG(162, ALT_A)
+ #define GPIO162_LCD_D33		PIN_CFG(162, ALT_B)
+ #define GPIO162_UARTMOD_TXD	PIN_CFG(162, ALT_C)
  
-+	ux500_pins_add(mop500_runtime_pins, ARRAY_SIZE(mop500_runtime_pins));
-+
-+	ux500_pins_add(mop500_runtime_pins_pre_v60,
-+		       ARRAY_SIZE(mop500_runtime_pins_pre_v60));
-+
-+	switch (pinsfor) {
-+	case PINS_FOR_U9500:
-+		nmk_config_pins(u9500_pins, ARRAY_SIZE(u9500_pins));
-+		break;
-+
-+	case PINS_FOR_DEFAULT:
-+		nmk_config_pins(u8500_pins, ARRAY_SIZE(u8500_pins));
-+	default:
-+		break;
-+	}
-+
- 	nmk_config_pins(mop500_pins_default,
- 			ARRAY_SIZE(mop500_pins_default));
- }
-@@ -292,8 +474,11 @@ void __init snowball_pins_init(void)
- 	nmk_config_pins(mop500_pins_common,
- 			ARRAY_SIZE(mop500_pins_common));
+ #define GPIO163_GPIO		PIN_CFG(163, GPIO)
+-#define GPIO163_KP_I1		PIN_CFG_INPUT(163, ALT_A, PULLDOWN)
++#define GPIO163_KP_I1		PIN_CFG(163, ALT_A)
+ #define GPIO163_LCD_D34		PIN_CFG(163, ALT_B)
+ #define GPIO163_STMMOD_CLK	PIN_CFG(163, ALT_C)
  
--	nmk_config_pins(snowball_pins,
--			ARRAY_SIZE(snowball_pins));
-+	ux500_pins_add(mop500_runtime_pins, ARRAY_SIZE(mop500_runtime_pins));
-+
-+	nmk_config_pins(u8500_pins, ARRAY_SIZE(u8500_pins));
-+
-+	nmk_config_pins(snowball_pins, ARRAY_SIZE(snowball_pins));
- }
+ #define GPIO164_GPIO		PIN_CFG(164, GPIO)
+-#define GPIO164_KP_I0		PIN_CFG_INPUT(164, ALT_A, PULLUP)
++#define GPIO164_KP_I0		PIN_CFG(164, ALT_A)
+ #define GPIO164_LCD_D35		PIN_CFG(164, ALT_B)
+ #define GPIO164_STMMOD_DAT3	PIN_CFG(164, ALT_C)
  
- void __init hrefv60_pins_init(void)
-@@ -301,6 +486,22 @@ void __init hrefv60_pins_init(void)
- 	nmk_config_pins(mop500_pins_common,
- 			ARRAY_SIZE(mop500_pins_common));
+ #define GPIO165_GPIO		PIN_CFG(165, GPIO)
+-#define GPIO165_KP_O3		PIN_CFG_INPUT(165, ALT_A, PULLUP)
++#define GPIO165_KP_O3		PIN_CFG(165, ALT_A)
+ #define GPIO165_LCD_D36		PIN_CFG(165, ALT_B)
+ #define GPIO165_STMMOD_DAT2	PIN_CFG(165, ALT_C)
  
-+	ux500_pins_add(mop500_runtime_pins, ARRAY_SIZE(mop500_runtime_pins));
-+
-+	ux500_pins_add(mop500_runtime_pins_v60,
-+		       ARRAY_SIZE(mop500_runtime_pins_v60));
-+
- 	nmk_config_pins(hrefv60_pins,
- 			ARRAY_SIZE(hrefv60_pins));
-+
-+	switch (pinsfor) {
-+	case PINS_FOR_U9500:
-+		nmk_config_pins(u9500_pins, ARRAY_SIZE(u9500_pins));
-+		break;
-+
-+	case PINS_FOR_DEFAULT:
-+		nmk_config_pins(u8500_pins, ARRAY_SIZE(u8500_pins));
-+	default:
-+		break;
-+	}
- }
-diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
-index fdcfa87..91dc63f 100644
---- a/arch/arm/mach-ux500/board-mop500.h
-+++ b/arch/arm/mach-ux500/board-mop500.h
-@@ -7,6 +7,9 @@
- #ifndef __BOARD_MOP500_H
- #define __BOARD_MOP500_H
+ #define GPIO166_GPIO		PIN_CFG(166, GPIO)
+-#define GPIO166_KP_O2		PIN_CFG_INPUT(166, ALT_A, PULLUP)
++#define GPIO166_KP_O2		PIN_CFG(166, ALT_A)
+ #define GPIO166_LCD_D37		PIN_CFG(166, ALT_B)
+ #define GPIO166_STMMOD_DAT1	PIN_CFG(166, ALT_C)
  
-+/* For NOMADIK_NR_GPIO */
-+#include <mach/irqs.h>
-+
- /* Snowball specific GPIO assignments, this board has no GPIO expander */
- #define SNOWBALL_ACCEL_INT1_GPIO	163
- #define SNOWBALL_ACCEL_INT2_GPIO	164
-@@ -73,6 +76,7 @@
- #define SNOWBALL_PME_ETH_GPIO		MOP500_AB8500_PIN_GPIO(24)	/* SYSCLKREQ7/GPIO24 */
- #define SNOWBALL_EN_3V3_ETH_GPIO	MOP500_AB8500_PIN_GPIO(26)	/* GPIO26 */
+ #define GPIO167_GPIO		PIN_CFG(167, GPIO)
+-#define GPIO167_KP_O1		PIN_CFG_INPUT(167, ALT_A, PULLUP)
++#define GPIO167_KP_O1		PIN_CFG(167, ALT_A)
+ #define GPIO167_LCD_D38		PIN_CFG(167, ALT_B)
+ #define GPIO167_STMMOD_DAT0	PIN_CFG(167, ALT_C)
  
-+struct device;
- struct i2c_board_info;
+ #define GPIO168_GPIO		PIN_CFG(168, GPIO)
+-#define GPIO168_KP_O0		PIN_CFG_INPUT(168, ALT_A, PULLUP)
++#define GPIO168_KP_O0		PIN_CFG(168, ALT_A)
+ #define GPIO168_LCD_D39		PIN_CFG(168, ALT_B)
+ #define GPIO168_NONE		PIN_CFG(168, ALT_C)
  
- extern void mop500_sdi_init(struct device *parent);
+@@ -637,7 +637,7 @@
+ #define GPIO216_GPIO		PIN_CFG(216, GPIO)
+ #define GPIO216_MC1_DAT2DIR	PIN_CFG(216, ALT_A)
+ #define GPIO216_MC3_CMDDIR	PIN_CFG(216, ALT_B)
+-#define GPIO216_I2C3_SDA	PIN_CFG_INPUT(216, ALT_C, PULLUP)
++#define GPIO216_I2C3_SDA	PIN_CFG(216, ALT_C)
+ #define GPIO216_SPI2_FRM	PIN_CFG(216, ALT_C)
+ 
+ #define GPIO217_GPIO		PIN_CFG(217, GPIO)
+@@ -649,7 +649,7 @@
+ #define GPIO218_GPIO		PIN_CFG(218, GPIO)
+ #define GPIO218_MC1_DAT31DIR	PIN_CFG(218, ALT_A)
+ #define GPIO218_MC3_DAT0DIR	PIN_CFG(218, ALT_B)
+-#define GPIO218_I2C3_SCL	PIN_CFG_INPUT(218, ALT_C, PULLUP)
++#define GPIO218_I2C3_SCL	PIN_CFG(218, ALT_C)
+ #define GPIO218_SPI2_RXD	PIN_CFG(218, ALT_C)
+ 
+ #define GPIO219_GPIO		PIN_CFG(219, GPIO)
+@@ -698,12 +698,12 @@
+ #define GPIO229_GPIO		PIN_CFG(229, GPIO)
+ #define GPIO229_CLKOUT1		PIN_CFG(229, ALT_A)
+ #define GPIO229_PWL		PIN_CFG(229, ALT_B)
+-#define GPIO229_I2C3_SDA	PIN_CFG_INPUT(229, ALT_C, PULLUP)
++#define GPIO229_I2C3_SDA	PIN_CFG(229, ALT_C)
+ 
+ #define GPIO230_GPIO		PIN_CFG(230, GPIO)
+ #define GPIO230_CLKOUT2		PIN_CFG(230, ALT_A)
+ #define GPIO230_PWL		PIN_CFG(230, ALT_B)
+-#define GPIO230_I2C3_SCL	PIN_CFG_INPUT(230, ALT_C, PULLUP)
++#define GPIO230_I2C3_SCL	PIN_CFG(230, ALT_C)
+ 
+ #define GPIO256_GPIO		PIN_CFG(256, GPIO)
+ #define GPIO256_USB_NXT		PIN_CFG(256, ALT_A)
 -- 
 1.7.9.2
 
