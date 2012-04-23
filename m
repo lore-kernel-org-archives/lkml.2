@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab2DWQHH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:07:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38064 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477Ab2DWQHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:07:05 -0400
-Date: Mon, 23 Apr 2012 18:07:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: Our failure on tracing tools unification (Was: Re: [RFC][PATCH
- 00/15] tools: Unify perf and trace-cmd trace event format parsing v2)
-Message-ID: <20120423160710.GA5115@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-	Arnaldo Carvalho de Melo <acme@infradead.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-	Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
-	David Sharp <dhsharp@google.com>,
-	Vaibhav Nagarnaik <vnagarnaik@google.com>,
-	Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
- <20120423144743.GB29985@somewhere>
- <1335193719.28150.171.camel@twins>
- <1335195100.28106.100.camel@gandalf.stny.rr.com>
+	id S1753325Ab2DWQNZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:13:25 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47758 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab2DWQNX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 12:13:23 -0400
+Message-ID: <4F957F9F.7000309@wwwdotorg.org>
+Date: Mon, 23 Apr 2012 10:13:19 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1335195100.28106.100.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        David Daney <ddaney.cavm@gmail.com>
+Subject: Re: [PATCH 1/2] i2c: mux: add device tree support
+References: <1334688545-8465-1-git-send-email-swarren@wwwdotorg.org> <20120423111507.GF19192@pengutronix.de>
+In-Reply-To: <20120423111507.GF19192@pengutronix.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 11:31:40AM -0400, Steven Rostedt wrote:
-> On Mon, 2012-04-23 at 17:08 +0200, Peter Zijlstra wrote:
-> > On Mon, 2012-04-23 at 16:47 +0200, Frederic Weisbecker wrote:
-> > > Ingo doesn't seem to want this library outside perf in order to avoid
-> > > the fragmentation of the efforts on tracing tools.
-> > 
-> > I really don't see the point.. parsing /debug/tracing/events/*/format
-> > gunk really is separate, furthermore things like powertop et al already
-> > are separate projects and really need this lib.
+On 04/23/2012 05:15 AM, Wolfram Sang wrote:
+> On Tue, Apr 17, 2012 at 12:49:04PM -0600, Stephen Warren wrote:
+>> From: Stephen Warren <swarren@nvidia.com>
+>>
+>> * Define core portions of the DT binding for I2C bus muxes.
+>> * Enhance i2c_add_mux_adapter():
+>> ** Add parameters required for DT support. Update all callers.
+>> ** Set the appropriate adap->dev.of_node for the child bus.
+>> ** Call of_i2c_register_devices() for the child bus.
+>>
+>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 > 
-> Note, powertop has already pulled in the lib into itself, thus we now
-> have 3 dis-joint locations. I can imagine it getting worse soon.
+> David Daney (CCed) posted another variant [1]. Just looking at the
+> patches (and not really using them), I tend to like the approach using
+> <reg> better. But I am open for discussion, so I'd appreciate your
+> feedback.
+> 
+> Regards,
+> 
+>    Wolfram
+> 
+> [1] http://lkml.org/lkml/2012/4/12/423
 
-Oh, and there's the mce_record event which I'm going to be needing soon
-so this adds yet another user to this library - a minor one but still.
+Ah, that does look like a reasonable binding.
 
-So yeah, we should probably get our stuff in order before going any
-further with events and stuff and all...
+I had meant to call out to reviewers the potentially unusual use of
+explicitly named sub-nodes, rather than using the usual reg-based matching.
 
--- 
-Regards/Gruss,
-Boris.
+The main reason I chose named sub-nodes for the busses was so the
+sub-nodes would match the pinctrl named states. However, I think we can
+make the pinctrl numbering match rather than the pinctrl naming instead.
+The only issue is the "idle" state; if we allow it to exist anywhere in
+the pinctrl-names list, it'll make the pinctrl numbering mismatch the
+sub-node numbering. I think we can solve this by forcing the idle state
+to be listed last in pinctrl-names (if it's listed at all). I'll update
+my patches based on that David's patch.
