@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab2DWCEy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 22:04:54 -0400
-Received: from mailq2.tnnet.fi ([217.112.254.233]:37337 "EHLO mailq2.tnnet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753062Ab2DWCEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 22:04:50 -0400
-X-Greylist: delayed 512 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Apr 2012 22:04:50 EDT
-Date: Mon, 23 Apr 2012 04:55:31 +0300 (EEST)
-From: Szabolcs Szakacsits <szaka@tuxera.com>
-X-X-Sender: szaka@ax228.axxion.fi
-To: Zheng Liu <gnehzuil.liu@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
-Message-ID: <alpine.DEB.1.10.1204230431510.11748@ax228.axxion.fi>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	id S1753441Ab2DWCUi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 22:20:38 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:59316 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab2DWCUg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 22:20:36 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAP=VYLpOyBuvZ3+Nfw1u0dojOX8kt-1TDJA+v-EWQuKPdh0A1w@mail.gmail.com>
+References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
+	<20120420150732.10596.9085.stgit@beardog.cce.hp.com>
+	<CAP=VYLpOyBuvZ3+Nfw1u0dojOX8kt-1TDJA+v-EWQuKPdh0A1w@mail.gmail.com>
+Date: Sun, 22 Apr 2012 21:20:35 -0500
+Message-ID: <CADzpL0S04XTYoe4u7_WNgA6cw11uNw9uxiyyYCQ=cY-p-Z+sww@mail.gmail.com>
+Subject: Re: [PATCH 14/17] hpsa: use new IS_ENABLED macro
+From: Stephen Cameron <stephenmcameron@gmail.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, matthew.gates@hp.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Apr 22, 2012 at 1:12 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> On Fri, Apr 20, 2012 at 11:07 AM, Stephen M. Cameron
+> <scameron@beardog.cce.hp.com> wrote:
+>> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>>
+>> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>
+> You've not written a commit log, so I'm left guessing what the
+> intended rationale is here.  COMPAT, X86 and PCI_MSI are
+> I believe all bool, so why make this change?  To me it gives
+> a misleading message that some level of modular awareness
+> is needed here, when there really isn't any such need.
 
-On 4/17/12 11:53 AM, Zheng Liu wrote:
+Well, I saw this commit go by: 69349c2dc01c489eccaa4c472542c08e370c6d7e
 
-> fallocate is a useful system call because it can preallocate some disk 
-> blocks for a file and keep blocks contiguous.  However, it has a defect 
-> that file system will convert an uninitialized extent to be an 
-> initialized when the user wants to write some data to this file, because 
-> file system create an unititalized extent while it preallocates some 
-> blocks in fallocate (e.g. ext4). Especially, it causes a severe 
-> degradation when the user tries to do some random write operations, which 
-> frequently modifies the metadata of this file. We meet this problem in 
-> our product system at Taobao.  Last month, in ext4 workshop, we discussed 
-> this problem and the Google faces the same problem.  So a new flag, 
-> FALLOC_FL_NO_HIDE_STALE, is added in order to solve this problem. 
+   Using IS_ENABLED() within C (vs.  within CPP #if statements) in its
+   current form requires us to actually define every possible bool/tristate
+   Kconfig option twice (__enabled_* and __enabled_*_MODULE variants).
+   [...]
 
-I think a more explicit name would be better like FALLOC_FL_EXPOSE_DATA, 
-FALLOC_FL_EXPOSE_STALE_DATA, FALLOC_FL_EXPOSE_UNINITIALIZED_DATA, etc.
+and so I kind of thought IS_ENABLED is the new way to do that sort of thing.
 
-> When this flag is set, file system will create an inititalized extent for 
-> this file.  So it avoids the conversion from uninitialized to 
-> initialized.  If users want to use this flag, they must guarantee that 
-> file has been initialized by themselves before it is read at the same 
-> offset.  This flag is added in vfs so that other file systems can also 
-> support this flag to improve the performance.
+Perhaps I'm wrong about that.  Obviously the patch is not _needed_ for
+things to work.
 
-This flag could be indeed helpful for filesystems which can't fully support 
-uninitialized allocated blocks efficiently unlike XFS and ext4. We are 
-supporting several such interoperable filesystems (NTFS, exFAT, FAT) where 
-changing the specification is unfortunately not possible.
-
-There is real user need despite explaining potential security consequences. 
-Typical usage scenarios are using a large file as a container for an 
-application which tracks free/used blocks itself. Windows supports this 
-feature by SetFileValidData() if extra privilege is granted.
-
-The performance gain can be fairly large on embedded using low-end storage 
-and CPU. In one of our cases it took 5 days vs 12 minutes to fully setup a 
-large file for use.
-
-Regards,
-	   Szaka
+-- steve
