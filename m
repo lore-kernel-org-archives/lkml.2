@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab2DWK5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:57:20 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39844 "EHLO comal.ext.ti.com"
+	id S1755258Ab2DWK5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:57:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3048 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754585Ab2DWK5T convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:57:19 -0400
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: "V, Aneesh" <aneesh@ti.com>, Greg KH <greg@kroah.com>
-CC: Paul Walmsley <paul@pwsan.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mgreer@animalcreek.com" <mgreer@animalcreek.com>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Hunter, Jon" <jon-hunter@ti.com>
-Subject: RE: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
-Thread-Topic: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
-Thread-Index: AQHNA78a9lhevdYvxk2HV7vF+jKLg5aWSLeAgAAEfgCAAPKRgIARNXwQ
-Date: Mon, 23 Apr 2012 10:56:32 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93E96E7C5@DBDE01.ent.ti.com>
-References: <1331934707-29487-1-git-send-email-aneesh@ti.com>
- <alpine.DEB.2.00.1204112042070.29473@utopia.booyaka.com>
- <20120412030044.GA26236@kroah.com>
- <CAM=4YEQ6_+7xPwi2jucks1P9p8tO3cSG7S0s=VVJVrueb4fB=g@mail.gmail.com>
-In-Reply-To: <CAM=4YEQ6_+7xPwi2jucks1P9p8tO3cSG7S0s=VVJVrueb4fB=g@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754426Ab2DWK5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 06:57:39 -0400
+Date: Mon, 23 Apr 2012 12:57:26 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
+        David Ahern <dsahern@gmail.com>,
+        Robert Richter <robert.richter@amd.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [BUG] perf stat: useless output for raw events with new event
+ parser
+Message-ID: <20120423105726.GD1720@m.brq.redhat.com>
+References: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Aneesh,
+On Mon, Apr 23, 2012 at 12:45:34PM +0200, Stephane Eranian wrote:
+> Hi,
+> 
+> With the new event parser, one can express raw events field by field:
+> 
+> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
+> 
+> The problem with this is that the output of perf stat becomes useless:
+> 
+> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
+> noploop for 1 seconds
+> 
+>  Performance counter stats for 'noploop 1':
+> 
+>         2395038678 pmu
+>             10787 pmu
+>                        ^^^^^^
+>        1.000802603 seconds time elapsed
+> 
+> We lose the event names or encoding completely. Now for all events
+> expressed via this
+> new syntax , all we see is 'pmu'. That is pretty useless. It is hard
+> to decrypt the results
+> without some serious scripting.
+> 
+> Not sure how to solve this given how the parser works. This looks like
+> a regression to me.
 
-On Fri, Apr 13, 2012 at 01:28:55, V, Aneesh wrote:
+I dont think thats regression, since you use new way to express an event.
+Please check my answer in the other reply to Peter.
 
-> Thanks. I will wait for your review then. Once I have your comments
-> I will re-work and submit in the new directory structure proposed.
-
-Do you have a plan on submitting EMIF driver in the new proposed
-(drivers/memory) directory. Or shall I submit GPMC driver by creating
-the new "memory" directory.
-
-Regards
-Afzal
+thanks,
+jirka
