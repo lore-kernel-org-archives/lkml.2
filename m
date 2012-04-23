@@ -1,223 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab2DWRuD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 13:50:03 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39902 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab2DWRuA (ORCPT
+	id S1754122Ab2DWRuc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 13:50:32 -0400
+Received: from p02c11o144.mxlogic.net ([208.65.144.77]:46641 "EHLO
+	p02c11o144.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab2DWRu2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 13:50:00 -0400
-Date: Mon, 23 Apr 2012 19:49:55 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: [EDAC PATCH v13 6/7] edac.h: Prepare to handle with generic
- layers
-Message-ID: <20120423174955.GH6147@aftab.osrc.amd.com>
-References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
- <1334607133-30039-1-git-send-email-mchehab@redhat.com>
- <1334607133-30039-7-git-send-email-mchehab@redhat.com>
+	Mon, 23 Apr 2012 13:50:28 -0400
+X-MXL-Hash: 4f9596641f4bc3d0-aeea6dfa1a2c605141c1bfdd5cc1fc7276ab1584
+X-MXL-Hash: 4f9595383159b6eb-ff3ff0dbee3ac35da46b375ade79f17776c2e379
+From: Peter Staubach <pstaubach@exagrid.com>
+To: Miklos Szeredi <miklos@szeredi.hu>, Chuck Lever <chuck.lever@oracle.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@redhat.com>,
+        Malahal Naineni <malahal@us.ibm.com>,
+        Steve Dickson <SteveD@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
+        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>,
+        "trond.myklebust@fys.uio.no" <trond.myklebust@fys.uio.no>,
+        "rees@umich.edu" <rees@umich.edu>
+Date: Mon, 23 Apr 2012 13:45:08 -0400
+Subject: RE: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
+ from getattr call
+Thread-Topic: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
+ from getattr call
+Thread-Index: Ac0hZQ+HoAx5StqJT9yvKkoUWlLaiwAE6E6g
+Message-ID: <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E604@IT-1874.Isys.com>
+References: <20120420104055.511e15bc@tlielax.poochiereds.net>
+	<4F91C49D.8070908@RedHat.com> <20120420203725.GA3512@us.ibm.com>
+	<20120420171314.73801874@corrin.poochiereds.net>
+	<CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
+	<20120423080012.7c23ef24@tlielax.poochiereds.net>
+	<20120423130009.GA13681@fieldses.org>
+	<20120423091255.00f926c4@tlielax.poochiereds.net>
+	<20120423133412.GB13681@fieldses.org>
+	<20120423095021.1a91a23b@tlielax.poochiereds.net>
+	<20120423135456.GC13681@fieldses.org>
+	<87hawasdrb.fsf@tucsk.pomaz.szeredi.hu>
+	<9991AAC7-5256-4AFE-9722-7AF1119EE7BE@oracle.com>
+ <874nsasc8l.fsf@tucsk.pomaz.szeredi.hu>
+In-Reply-To: <874nsasc8l.fsf@tucsk.pomaz.szeredi.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334607133-30039-7-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010122901)]
+X-MAIL-FROM: <pstaubach@exagrid.com>
+X-SOURCE-IP: [69.84.133.248]
+X-AnalysisOut: [v=1.0 c=1 a=lnpZ504GmfQA:10 a=ooaBVg03rvgA:10 a=BLceEmwcHo]
+X-AnalysisOut: [wA:10 a=kj9zAlcOel0A:10 a=YmXeKoonWU0GTmr6cORa5w==:17 a=Vw]
+X-AnalysisOut: [QbUJbxAAAA:8 a=drOt6m5kAAAA:8 a=JfrnYn6hAAAA:8 a=sHqLhEVXA]
+X-AnalysisOut: [AAA:8 a=yPCof4ZbAAAA:8 a=mJjC6ScEAAAA:8 a=xArGQ6MUFWvTgfh6]
+X-AnalysisOut: [KKgA:9 a=8LoMMqNwaQoM5rYJdmEA:7 a=CjuIK1q_8ugA:10 a=3Rfx1n]
+X-AnalysisOut: [USh_UA:10 a=tIBAwYQmwVgA:10 a=7DSvI1NPTFQA:10 a=2NEUOfxDfW]
+X-AnalysisOut: [4A:10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: "edac.h: Prepare to handle with generic layers"
+The situation of stale current directories and/or stale root directories for mounted file systems is handled.  In these cases, recovery is not possible and so, are not looped for.
 
-what does that even mean?
+	Thanx...
 
-Do you per chance mean
+		ps
 
-	"Add generic layers for describing a memory location"
 
-or something similar?
+-----Original Message-----
+From: Miklos Szeredi [mailto:miklos@szeredi.hu] 
+Sent: Monday, April 23, 2012 11:24 AM
+To: Chuck Lever
+Cc: J. Bruce Fields; Jeff Layton; Malahal Naineni; Steve Dickson; linux-fsdevel@vger.kernel.org; linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org; viro@zeniv.linux.org.uk; hch@infradead.org; michael.brantley@deshaw.com; sven.breuner@itwm.fraunhofer.de; Peter Staubach; trond.myklebust@fys.uio.no; rees@umich.edu
+Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
 
-On Mon, Apr 16, 2012 at 05:12:12PM -0300, Mauro Carvalho Chehab wrote:
-> The edac core were written with the idea that memory controllers
-> are able to directly access csrows, and that the channels are
-> used inside a csrows select.
-> 
-> This is not true for FB-DIMM and RAMBUS memory controllers.
-> 
-> Also, some recent advanced memory controllers don't present a per-csrows
-> view. Instead, they view memories as DIMM's, instead of ranks, accessed
+Chuck Lever <chuck.lever@oracle.com> writes:
 
-				       DIMMs
+> On Apr 23, 2012, at 10:51 AM, Miklos Szeredi wrote:
+>
+>> "J. Bruce Fields" <bfields@fieldses.org> writes:
+>> 
+>>> 
+>>> I also wonder whether it would be making too many assumptions about 
+>>> the server or filesystem: just because ordinary posix interfaces 
+>>> don't allow atomic replacement of a whole directory tree doesn't 
+>>> mean the server might not have some way to do it.
+>> 
+>> Exactly because posix limits the atomic replacement to empty 
+>> directories is that this feature is not useful and is why linux can 
+>> get away with the dead directory behavior in this case.  And thinking 
+>> about fixing this in NFS is completely pointless since no one will 
+>> rely on the atomic replacement behavior.  Fixing local filesystems is 
+>> also pointless for the same reason.
+>> 
+>> Atomic replacement of whole directory trees would indeed be more 
+>> useful, but it's highly unlikely to be used anywhere since 
+>> applications relying on this feature would be limited to special filesystems that allow this.
+>
+> The cases I can think of have to do with file system restore, file 
+> system and block device snapshots, and so on.  This type of use case 
+> may not practical on today's Linux server, but they are a reality for 
+> anyone using high-end NFS storage.
 
-> via csrow/channel.
-> 
-> So, changes are needed in order to allow the EDAC core to
-> work with all types of architectures.
-> 
-> As a preparation for handling non-csrows based memory controllers,
+Problem with this is: if some directory file handles are stale (e.g. due to directories being removed, recreated, moved around) and on the client there are cwd-s referring to these handles, then they are going to become stale no matter what you do, even if the same path does exist after the restore on the server.
 
- In preparation...
-
-> adds some memory structs and a macro:
-
-  add some...
-
-> enum hw_event_mc_err_type: describes the type of error
-> 			   (corrected, uncorrected, fatal)
-> 
-> To be used by the new edac_mc_handle_error function;
-> 
-> enum edac_mc_layer: describes the type of a given Memory
-
-						    memory
-
-> architecture layer (branch, channel, slot, csrow).
-> 
-> struct edac_mc_layer: describes the properties of a memory
-> 		      layer (type, size, and if the layer
-> 		      will be used on a virtual csrow.
-> 
-> GET_POS() - as the number of layers can vary from 1 to 3,
-> this macro converts from an address with up to 3 layers into
-> a linear address.
-> 
-> Cc: Doug Thompson <norsk5@yahoo.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  include/linux/edac.h |   83 +++++++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 82 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/edac.h b/include/linux/edac.h
-> index 8b78bd0..0fdf6ba 100644
-> --- a/include/linux/edac.h
-> +++ b/include/linux/edac.h
-> @@ -67,6 +67,25 @@ enum dev_type {
->  #define DEV_FLAG_X64		BIT(DEV_X64)
->  
->  /**
-> + * enum hw_event_mc_err_type - type of the detected error
-> + *
-> + * @HW_EVENT_ERR_CORRECTED:	Corrected Error - Indicates that an ECC
-> + *				corrected error was detected
-> + * @HW_EVENT_ERR_UNCORRECTED:	Uncorrected Error - Indicates an error that
-> + *				can't be corrected by ECC, but it is not
-> + *				factal (maybe it is on an unused memory area,
-
-				fatal
-
-> + *				or the memory controller could recover from
-> + *				it for example, by re-trying the operation).
-> + * @HW_EVENT_ERR_FATAL:		Fatal Error - Uncorrected error that could not
-> + *				be recovered.
-> + */
-> +enum hw_event_mc_err_type {
-> +	HW_EVENT_ERR_CORRECTED,
-> +	HW_EVENT_ERR_UNCORRECTED,
-> +	HW_EVENT_ERR_FATAL,
-
-Need a terminating elem here:
-	HW_EVENT_ERR_NUM,
-
-> +};
-> +
-> +/**
->   * enum mem_type - memory types. For a more detailed reference, please see
->   *			http://en.wikipedia.org/wiki/DRAM
->   *
-> @@ -308,7 +327,69 @@ enum scrub_type {
->   * PS - I enjoyed writing all that about as much as you enjoyed reading it.
->   */
->  
-> -/* FIXME: add a per-dimm ce error count */
-> +/**
-> + * enum edac_mc_layer - memory controller hierarchy layer
-> + *
-> + * @EDAC_MC_LAYER_BRANCH:	memory layer is named "branch"
-> + * @EDAC_MC_LAYER_CHANNEL:	memory layer is named "channel"
-> + * @EDAC_MC_LAYER_SLOT:		memory layer is named "slot"
-> + * @EDAC_MC_LAYER_CHIP_SELECT:	memory layer is named "chip select"
-> + *
-> + * This enum is used by the drivers to tell edac_mc_sysfs what name should
-> + * be used when describing a memory stick location.
-> + */
-> +enum edac_mc_layer_type {
-> +	EDAC_MC_LAYER_BRANCH,
-> +	EDAC_MC_LAYER_CHANNEL,
-> +	EDAC_MC_LAYER_SLOT,
-> +	EDAC_MC_LAYER_CHIP_SELECT,
-
-ditto.
-
-> +};
-> +
-> +/**
-> + * struct edac_mc_layer - describes the memory controller hierarchy
-> + * @layer:		layer type
-> + * @size:maximum size of the layer
-> + * @is_csrow:		This layer is part of the "csrow" when old API
-> + *			compatibility mode is enabled. Otherwise, it is
-> + *			a channel
-> + */
-> +struct edac_mc_layer {
-> +	enum edac_mc_layer_type	type;
-> +	unsigned		size;
-> +	bool			is_csrow;
-> +};
-
-Huh, why do you need is_csrow? Can't do
-
-	type = EDAC_MC_LAYER_CHIP_SELECT;
-
-?
-
-> +
-> +/*
-> + * Maximum number of layers used by the memory controller to uniquelly
-
-								uniquely
-
-> + * identify a single memory stick.
-> + * NOTE: incrementing it would require changes at edac_mc_handle_error()
-> + * and at the routines at edac_mc_sysfs that create layers
-
-Maybe add their names here with a regex or so: edac_mc_blabla_*
-?
-
-> + */
-> +#define EDAC_MAX_LAYERS		3
-> +
-> +/*
-> + * A loop could be used here to make it more generic, but, as we only have
-> + * 3 layers, this is a little faster. By design, layers can never be 0 or
-> + * more than 3. If that ever happens, a NULL is returned, causing an OOPS
-> + * during the memory allocation routine, with would point to the developer
-> + * that he's doing something wrong.
-> + */
-> +#define GET_POS(layers, var, nlayers, lay0, lay1, lay2) ({		\
-
-This is returning size per layers so it cannot be GET_POS(), AFAICT.
-EDAC_GET_SIZE or similar maybe?
-
-> +	typeof(var) __p;						\
-> +	if ((nlayers) == 1)						\
-> +		__p = &var[lay0];					\
-> +	else if ((nlayers) == 2)					\
-> +		__p = &var[(lay1) + ((layers[1]).size * (lay0))];	\
-> +	else if ((nlayers) == 3)					\
-> +		__p = &var[(lay2) + ((layers[2]).size * ((lay1) +	\
-> +			    ((layers[1]).size * (lay0))))];		\
-> +	else								\
-> +		__p = NULL;						\
-> +	__p;								\
-> +})
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Thanks,
+Miklos
