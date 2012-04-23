@@ -1,147 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab2DWKA7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:00:59 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:36044 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463Ab2DWKA5 (ORCPT
+	id S1754775Ab2DWKBV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:01:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48151 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754463Ab2DWKBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:00:57 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        KVM <kvm@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Xen <xen-devel@lists.xensource.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Date: Mon, 23 Apr 2012 15:30:34 +0530
-Message-Id: <20120423100034.30893.81866.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com>
-References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH RFC V6 5/5] Documentation/kvm : Add documentation on Hypercalls and features used for PV spinlock
-x-cbid: 12042223-7014-0000-0000-000000F74429
+	Mon, 23 Apr 2012 06:01:19 -0400
+Date: Mon, 23 Apr 2012 12:01:06 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, ben-linux@fluff.org,
+        thomas.abraham@linaro.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-samsung-soc@vger.kernel.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        kyungmin.park@samsung.com, broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 3/3] i2c-s3c2410: Add HDMIPHY quirk for S3C2440
+Message-ID: <20120423100106.GB19192@pengutronix.de>
+References: <1332357113-2973-1-git-send-email-k.lewandowsk@samsung.com>
+ <1332357113-2973-4-git-send-email-k.lewandowsk@samsung.com>
+ <20120417174029.GC22406@pengutronix.de>
+ <00dd01cd1d5c$57ce7f80$076b7e80$%szyprowski@samsung.com>
+ <20120418134644.GB19220@pengutronix.de>
+ <4F8EEC60.2080603@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i0/AhcQY5QxfSsSZ"
+Content-Disposition: inline
+In-Reply-To: <4F8EEC60.2080603@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> 
 
-KVM_HC_KICK_CPU  hypercall added to wakeup halted vcpu in paravirtual spinlock
-enabled guest.
+--i0/AhcQY5QxfSsSZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-KVM_FEATURE_PV_UNHALT enables guest to check whether pv spinlock can be enabled
-in guest. support in host is queried via
-ioctl(KVM_CHECK_EXTENSION, KVM_CAP_PV_UNHALT)
+Hi Karol,
 
-Thanks Alex for KVM_HC_FEATURES inputs and Vatsa for rewriting KVM_HC_KICK_CPU
+> >>> ... and this one, if we declare a new compatible-entry for exynos4?
+> >>
+> >> It is not strictly related to Exynos4 SoCs. Exynos4 SoC has 8 standard=
+ s3c2440 style
+> >> i2c controllers and one additional, internal controller for HDMIPHY, w=
+hich needs=20
+> >> some workarounds in the driver. Maybe the quirk should be named 'broke=
+n timeout=20
+> >> detection'
+> >=20
+> > I was wondering since you do what I suggested for platform devices alre=
+ady:
+> >=20
+> > +               .name           =3D "s3c2440-hdmiphy-i2c",
+> > +               .driver_data    =3D QUIRK_S3C2440 | QUIRK_HDMIPHY | QUI=
+RK_NO_GPIO,
+>=20
+>=20
+> Here I've done it this way for compatibility with legacy driver and
+> board(s).
 
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index 6386f8c..7e2eba0 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1119,6 +1119,13 @@ support.  Instead it is reported via
- if that returns true and you use KVM_CREATE_IRQCHIP, or if you emulate the
- feature in userspace, then you can enable the feature for KVM_SET_CPUID2.
- 
-+Paravirtualized ticket spinlocks can be enabled in guest by checking whether
-+support exists in host via,
-+
-+  ioctl(KVM_CHECK_EXTENSION, KVM_CAP_PV_UNHALT)
-+
-+if this call return true, guest can use the feature.
-+
- 4.47 KVM_PPC_GET_PVINFO
- 
- Capability: KVM_CAP_PPC_GET_PVINFO
-diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
-index 8820685..062dff9 100644
---- a/Documentation/virtual/kvm/cpuid.txt
-+++ b/Documentation/virtual/kvm/cpuid.txt
-@@ -39,6 +39,10 @@ KVM_FEATURE_CLOCKSOURCE2           ||     3 || kvmclock available at msrs
- KVM_FEATURE_ASYNC_PF               ||     4 || async pf can be enabled by
-                                    ||       || writing to msr 0x4b564d02
- ------------------------------------------------------------------------------
-+KVM_FEATURE_PV_UNHALT              ||     6 || guest checks this feature bit
-+                                   ||       || before enabling paravirtualized
-+                                   ||       || spinlock support.
-+------------------------------------------------------------------------------
- KVM_FEATURE_CLOCKSOURCE_STABLE_BIT ||    24 || host will warn if no guest-side
-                                    ||       || per-cpu warps are expected in
-                                    ||       || kvmclock.
-diff --git a/Documentation/virtual/kvm/hypercalls.txt b/Documentation/virtual/kvm/hypercalls.txt
-new file mode 100644
-index 0000000..c9e8b9c
---- /dev/null
-+++ b/Documentation/virtual/kvm/hypercalls.txt
-@@ -0,0 +1,59 @@
-+KVM Hypercalls Documentation
-+===========================
-+Template for documentation is
-+The documenenation for hypercalls should inlcude
-+1. Hypercall name, value.
-+2. Architecture(s)
-+3. status (deprecated, obsolete, active)
-+4. Purpose
-+
-+
-+1. KVM_HC_VAPIC_POLL_IRQ
-+------------------------
-+value: 1
-+Architecture: x86
-+Purpose:
-+
-+2. KVM_HC_MMU_OP
-+------------------------
-+value: 2
-+Architecture: x86
-+status: deprecated.
-+Purpose: Support MMU operations such as writing to PTE,
-+flushing TLB, release PT.
-+
-+3. KVM_HC_FEATURES
-+------------------------
-+value: 3
-+Architecture: PPC
-+Purpose: Expose hypercall availability to the guest. On x86 platforms, cpuid
-+used to enumerate which hypercalls are available. On PPC, either device tree
-+based lookup ( which is also what EPAPR dictates) OR KVM specific enumeration
-+mechanism (which is this hypercall) can be used.
-+
-+4. KVM_HC_PPC_MAP_MAGIC_PAGE
-+------------------------
-+value: 4
-+Architecture: PPC
-+Purpose: To enable communication between the hypervisor and guest there is a
-+shared page that contains parts of supervisor visible register state.
-+The guest can map this shared page to access its supervisor register through
-+memory using this hypercall.
-+
-+5. KVM_HC_KICK_CPU
-+------------------------
-+value: 5
-+Architecture: x86
-+Purpose: Hypercall used to wakeup a vcpu from HLT state
-+
-+Usage example : A vcpu of a paravirtualized guest that is busywaiting in guest
-+kernel mode for an event to occur (ex: a spinlock to become available) can
-+execute HLT instruction once it has busy-waited for more than a threshold
-+time-interval. Execution of HLT instruction would cause the hypervisor to put
-+the vcpu to sleep until occurence of an appropriate event. Another vcpu of the
-+same guest can wakeup the sleeping vcpu by issuing KVM_HC_KICK_CPU hypercall,
-+specifying APIC ID of the vcpu to be wokenup.
-+
-+TODO:
-+1. more information on input and output needed?
-+2. Add more detail to purpose of hypercalls.
+Understood.
 
+> Device tree is new interface, and I thought that it would be better
+> to describe things explicitly and separately from device type.
+>=20
+> Right now these properties are used only on S3C2440, but I don't
+> consider it highly unlikely to see these on S3C**** in future.
+
+My experience also says that it easily can get even worse :(
+
+> Tomasz had similar doubts when I've posted patch that checked these
+> quirks only for S3C2440:
+>=20
+>   http://permalink.gmane.org/gmane.linux.drivers.i2c/10305
+>=20
+> Thus, I've chosen properties and not separate type.
+
+I understand this reasoning. I still differ, though. Think about my
+above example about things getting worse. Then, you'd need another
+quirk-property for $FLAW. Later, $FLAW is still there, but the timeout
+issue was fixed. That would mean, the poor device-tree making person has
+to know which quirks to select for this version of the controller. Just
+specifying that it is the HDMI-phy and not a regular I2C controller is
+much more convenient, and the driver will figure the rest.
+
+> It's easy to introduce compat string (see below), but given above
+> I'm afraid that we might end up adding -hdmiphy- variant for every
+> new version of i2c controller.
+
+I'd be fine with that, given that the upcoming hdmiphy versions will not
+need all the same set of quirk-flags. I think we want that "quirk lookup
+table" fixed in the driver and not encoded in the device tree where
+people could get it wrong. Also, the quirks are nothing a board maker
+can select from; it is implicit as soons as you want the HDMIPHY on that
+SoC, thus the compatible-entry should be enough of a description.
+
+I am not the ultimate expert about bindings, though, and am open for
+corrections (I feel kinda confident on this issue, though ;))
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--i0/AhcQY5QxfSsSZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+VKGIACgkQD27XaX1/VRs/3gCfaJYb7/C+CZeqJPVdH2tbSFk2
+POQAoL60oVexMDsHMPZY/04TUAk4p9nU
+=DI+t
+-----END PGP SIGNATURE-----
+
+--i0/AhcQY5QxfSsSZ--
