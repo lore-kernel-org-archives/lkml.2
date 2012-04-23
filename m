@@ -1,78 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab2DWWmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 18:42:19 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46237 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab2DWWmR (ORCPT
+	id S1754641Ab2DWWnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 18:43:31 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:52776 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753017Ab2DWWna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 18:42:17 -0400
+	Mon, 23 Apr 2012 18:43:30 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-14.tower-132.messagelabs.com!1335221008!9482173!3
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: refactor adl_pci9111 driver to remove forward declarations
+Date: Mon, 23 Apr 2012 15:43:22 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <cover.1331137504.git.jbaron@redhat.com>
-References: <cover.1331137504.git.jbaron@redhat.com>
-Date: Tue, 24 Apr 2012 10:42:16 +1200
-X-Google-Sender-Auth: 9j63bBlZaSm9hmXJATEtq-KV2Xw
-Message-ID: <CAHO5Pa0cyvD-zUh-RRyOwvu2FGQYOMn_thFQt3_64BDi-wB=GQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] core dump: re-purpose VM_ALWAYSDUMP to user
- controlled VM_DONTDUMP
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: mcgrathr@google.com, akpm@linux-foundation.org, avi@redhat.com,
-        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204231543.22770.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jason,
+Move the module_init/module_exit routines and variables to the
+end of the source as is more typically done with other drivers.
+Then rearrange the attach/detach and probe/remove functions,
+this removes the need for all the forward declarations.
 
-On Thu, Mar 8, 2012 at 6:00 AM, Jason Baron <jbaron@redhat.com> wrote:
-> Hi,
->
-> The motivation for this change was that I was looking at a way for a qemu-kvm
-> process, to exclude the guest memory from its core dump, which can be quite
-> large. There are already a number of filter flags in
-> /proc/<pid>/coredump_filter, however, these allow one to specify 'types' of
-> kernel memory, not specific address ranges (which is needed in this case).
->
-> Since there are no more vma flags available, the first patch eliminates the
-> need for the 'VM_ALWAYSDUMP' flag. The flag is used internally by the kernel to
-> mark vdso and vsyscall pages. However, it is simple enough to check if a vma
-> covers a vdso or vsyscall page without the need for this flag.
->
-> The second patch then replaces the 'VM_ALWAYSDUMP' flag with a new
-> 'VM_DONTDUMP' flag, which can be set by userspace using new madvise flags:
-> 'MADV_DONTDUMP', and unset via 'MADV_DUMP'. The core dump filters continue to
-> work the same as before unless 'MADV_DONTDUMP' is set on the region.
->
-> The qemu code which implements this features is at:
-> http://people.redhat.com/~jbaron/qemu-dump/qemu-dump.patch
->
-> In my testing the qemu core dump shrunk from 383MB -> 13MB with this patch.
->
-> I also believe that the 'MADV_DONTDUMP' flag might be useful for security
-> sensitive apps, which might want to select which areas are dumped.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Since we have
-MADV_DODUMP
-MADV_DONTDUMP
-MADV_NODUMP
-heading for userspace in 3.4, would you be willing to write patches
-for the madvise(2) man page to describe these flags?
+---
 
-See http://www.kernel.org/doc/man-pages/download.html for details on
-accessing man-pages Git.
-
-Cheers,
-
-Michael
-
-PS Please also CC linux-api@ when making API/ABI changes.
-
-
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
+diff --git a/drivers/staging/comedi/drivers/adl_pci9111.c b/drivers/staging/comedi/drivers/adl_pci9111.c
+index 6b4d98a..4e4e5fd 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9111.c
++++ b/drivers/staging/comedi/drivers/adl_pci9111.c
+@@ -289,16 +289,6 @@ TODO:
+ 			PCI9111_IO_BASE+PCI9111_REGISTER_8254_COUNTER_2); \
+ 	} while (0)
+ 
+-/*  Function prototypes */
+-
+-static int pci9111_attach(struct comedi_device *dev,
+-			  struct comedi_devconfig *it);
+-static int pci9111_detach(struct comedi_device *dev);
+-static void pci9111_ai_munge(struct comedi_device *dev,
+-			     struct comedi_subdevice *s, void *data,
+-			     unsigned int num_bytes,
+-			     unsigned int start_chan_index);
+-
+ static const struct comedi_lrange pci9111_hr_ai_range = {
+ 	5,
+ 	{
+@@ -310,14 +300,6 @@ static const struct comedi_lrange pci9111_hr_ai_range = {
+ 	 }
+ };
+ 
+-static DEFINE_PCI_DEVICE_TABLE(pci9111_pci_table) = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI9111_HR_DEVICE_ID) },
+-	/* { PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI9111_HG_DEVICE_ID) }, */
+-	{ 0 }
+-};
+-
+-MODULE_DEVICE_TABLE(pci, pci9111_pci_table);
+-
+ /*  */
+ /*  Board specification structure */
+ /*  */
+@@ -354,51 +336,6 @@ static const struct pci9111_board pci9111_boards[] = {
+ #define pci9111_board_nbr \
+ 	(sizeof(pci9111_boards)/sizeof(struct pci9111_board))
+ 
+-static struct comedi_driver pci9111_driver = {
+-	.driver_name = PCI9111_DRIVER_NAME,
+-	.module = THIS_MODULE,
+-	.attach = pci9111_attach,
+-	.detach = pci9111_detach,
+-};
+-
+-static int __devinit pci9111_driver_pci_probe(struct pci_dev *dev,
+-					      const struct pci_device_id *ent)
+-{
+-	return comedi_pci_auto_config(dev, &pci9111_driver);
+-}
+-
+-static void __devexit pci9111_driver_pci_remove(struct pci_dev *dev)
+-{
+-	comedi_pci_auto_unconfig(dev);
+-}
+-
+-static struct pci_driver pci9111_driver_pci_driver = {
+-	.id_table = pci9111_pci_table,
+-	.probe = &pci9111_driver_pci_probe,
+-	.remove = __devexit_p(&pci9111_driver_pci_remove)
+-};
+-
+-static int __init pci9111_driver_init_module(void)
+-{
+-	int retval;
+-
+-	retval = comedi_driver_register(&pci9111_driver);
+-	if (retval < 0)
+-		return retval;
+-
+-	pci9111_driver_pci_driver.name = (char *)pci9111_driver.driver_name;
+-	return pci_register_driver(&pci9111_driver_pci_driver);
+-}
+-
+-static void __exit pci9111_driver_cleanup_module(void)
+-{
+-	pci_unregister_driver(&pci9111_driver_pci_driver);
+-	comedi_driver_unregister(&pci9111_driver);
+-}
+-
+-module_init(pci9111_driver_init_module);
+-module_exit(pci9111_driver_cleanup_module);
+-
+ /*  Private data structure */
+ 
+ struct pci9111_private_data {
+@@ -1470,6 +1407,57 @@ static int pci9111_detach(struct comedi_device *dev)
+ 	return 0;
+ }
+ 
++static struct comedi_driver pci9111_driver = {
++	.driver_name	= PCI9111_DRIVER_NAME,
++	.module		= THIS_MODULE,
++	.attach		= pci9111_attach,
++	.detach		= pci9111_detach,
++};
++
++static int __devinit pci9111_driver_pci_probe(struct pci_dev *dev,
++					      const struct pci_device_id *ent)
++{
++	return comedi_pci_auto_config(dev, &pci9111_driver);
++}
++
++static void __devexit pci9111_driver_pci_remove(struct pci_dev *dev)
++{
++	comedi_pci_auto_unconfig(dev);
++}
++
++static DEFINE_PCI_DEVICE_TABLE(pci9111_pci_table) = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI9111_HR_DEVICE_ID) },
++	/* { PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI9111_HG_DEVICE_ID) }, */
++	{ 0 }
++};
++MODULE_DEVICE_TABLE(pci, pci9111_pci_table);
++
++static struct pci_driver pci9111_driver_pci_driver = {
++	.id_table	= pci9111_pci_table,
++	.probe		= pci9111_driver_pci_probe,
++	.remove		= __devexit_p(pci9111_driver_pci_remove),
++};
++
++static int __init pci9111_driver_init_module(void)
++{
++	int retval;
++
++	retval = comedi_driver_register(&pci9111_driver);
++	if (retval < 0)
++		return retval;
++
++	pci9111_driver_pci_driver.name = (char *)pci9111_driver.driver_name;
++	return pci_register_driver(&pci9111_driver_pci_driver);
++}
++module_init(pci9111_driver_init_module);
++
++static void __exit pci9111_driver_cleanup_module(void)
++{
++	pci_unregister_driver(&pci9111_driver_pci_driver);
++	comedi_driver_unregister(&pci9111_driver);
++}
++module_exit(pci9111_driver_cleanup_module);
++
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
+ MODULE_DESCRIPTION("Comedi low-level driver");
+ MODULE_LICENSE("GPL");
