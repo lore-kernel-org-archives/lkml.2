@@ -1,113 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab2DWOga (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 10:36:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30747 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755343Ab2DWOg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 10:36:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="144870988"
-Date: Mon, 23 Apr 2012 22:31:03 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, vgoyal@redhat.com, Jens Axboe <axboe@kernel.dk>,
-        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
-        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        lsf@lists.linux-foundation.org, Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120423143103.GA14642@localhost>
-References: <20120404175124.GA8931@localhost>
- <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120406095934.GA10465@localhost>
- <20120417223854.GG19975@google.com>
- <20120419142343.GA12684@localhost>
- <20120419202635.GA4795@quack.suse.cz>
- <20120420133441.GA7035@localhost>
- <20120423091432.GC6512@quack.suse.cz>
- <20120423102420.GA13262@localhost>
- <20120423124240.GE6512@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120423124240.GE6512@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755543Ab2DWOhC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 10:37:02 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38565 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755343Ab2DWOhA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 10:37:00 -0400
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: seanm@seanm.ca, Larry.Finger@lwfinger.net, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH NEXT]staging: rtl8192e: Fix typos. 
+Date: Mon, 23 Apr 2012 07:36:52 -0700
+Message-Id: <1335191812-17071-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 02:42:40PM +0200, Jan Kara wrote:
-> On Mon 23-04-12 18:24:20, Wu Fengguang wrote:
-> > On Mon, Apr 23, 2012 at 11:14:32AM +0200, Jan Kara wrote:
-> > > On Fri 20-04-12 21:34:41, Wu Fengguang wrote:
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-> > > > But be warned! Partitioning the dirty pages always means more
-> > > > fluctuations of dirty rates (and even stalls) that's perceivable by
-> > > > the user. Which means another limiting factor for the backpressure
-> > > > based IO controller to scale well.
-> > >   Sure, the smaller the memcg gets, the more noticeable these fluctuations
-> > > would be. I would not expect memcg with 200 MB of memory to behave better
-> > > (and also not much worse) than if I have a machine with that much memory...
-> > 
-> > It would be much worse if it's one single flusher thread round robin
-> > over the cgroups...
-> > 
-> > For a small machine with 200MB memory, its IO completion events can
-> > arrive continuously over time. However if its a 2000MB box divided
-> > into 10 cgroups and the flusher is writing out dirty pages, spending
-> > 0.5s on each cgroup and then go on to the next, then for any single
-> > cgroup, its IO completion events go quiet for every 9.5s and goes up
-> > on the other 0.5s. It becomes really hard to control the number of
-> > dirty pages.
->   Umm, but flusher does not spend 0.5s on each cgroup. It submits 0.5s
-> worth of IO for each cgroup.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Right.
+---
 
-> Since the throughput computed for each cgroup
-> will be scaled down accordingly (and thus write_chunk will be scaled down
-> as well), it should end up submitting 0.5s worth of IO for the whole system
-> after it traverses all the cgroups, shouldn't it? Effectively we will work
-> with smaller write_chunk which will lead to lower total throughput - that's
-> the price of partitioning and higher fairness requirements (previously the
+The below patch fixes some typos that I found while doing a little bit of reading in the
+staging directory.
 
-Sure you can do that. However I think we were talking about memcg
-dirty limits, in which case we still have good chances to keep the
-0.5s per inode granularity by making the dirty limits high so that it
-won't be hit normally. Only when there comes lots of memory cgroups
-that the flusher cannot easily safeguard fairness among them, we may
-consider decreasing the writeback chunk size.
+ drivers/staging/rtl8192e/rtl8192e/r819xE_phyreg.h |    4 +-
+ drivers/staging/rtl8192e/rtl8192e/rtl_core.c      |    2 +-
+ drivers/staging/rtl8192e/rtl8192e/rtl_dm.c        |    2 +-
+ drivers/staging/rtl8192e/rtllib.h                 |   18 ++++++------
+ drivers/staging/rtl8192e/rtllib_rx.c              |    4 +-
+ drivers/staging/rtl8192e/rtllib_softmac.c         |   32 ++++++++++----------
+ drivers/staging/rtl8192e/rtllib_softmac_wx.c      |    4 +-
+ drivers/staging/rtl8192e/rtllib_tx.c              |    6 ++--
+ drivers/staging/rtl8192e/rtllib_wx.c              |    2 +-
+ 9 files changed, 37 insertions(+), 37 deletions(-)
 
-> requirement was to switch to a new inode every 0.5s, now the requirement is
-> to switch to a new inode in each cgroup every 0.5s). In the end, we may end
-> up increasing the write_chunk by some factor like \sqrt(number of memcgs)
-> to get some middle ground between the guaranteed small latency and
-> reasonable total throughput but before I'd go for such hacks, I'd wait to
-> see real numbers - e.g. paying 10% of total throughput for partitioning the
-> machine into 10 IO intensive cgroups (as in your tests with dd's) would be
-> a reasonable cost in my opinion.
+diff --git a/drivers/staging/rtl8192e/rtl8192e/r819xE_phyreg.h b/drivers/staging/rtl8192e/rtl8192e/r819xE_phyreg.h
+index d5de279..970298b 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/r819xE_phyreg.h
++++ b/drivers/staging/rtl8192e/rtl8192e/r819xE_phyreg.h
+@@ -306,7 +306,7 @@
+ #define bRFStart                  	0x0000f000
+ #define bBBStart                  	0x000000f0
+ #define bBBCCKStart               	0x0000000f
+-/* Reg)x814 */
++/* Reg x814 */
+ #define bPAEnd                    	0xf
+ #define bTREnd                    	0x0f000000
+ #define bRFEnd                    	0x000f0000
+@@ -844,7 +844,7 @@
+ #define bRTL8258_RxLPFBW          0xc00
+ #define bRTL8258_RSSILPFBW        0xc0
+ 
+-/* byte endable for sb_write */
++/* byte enable for sb_write */
+ #define bByte0                    0x1
+ #define bByte1                    0x2
+ #define bByte2                    0x4
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
+index 7c676c2..97a5f49 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
+@@ -1025,7 +1025,7 @@ static int rtl8192_sta_down(struct net_device *dev, bool shutdownrf)
+ 			break;
+ 		}
+ 		RT_TRACE(COMP_DBG, "===>%s():RF is in progress, need to wait "
+-			 "until rf chang is done.\n", __func__);
++			 "until rf change is done.\n", __func__);
+ 		mdelay(1);
+ 		RFInProgressTimeOut++;
+ 		spin_lock_irqsave(&priv->rf_ps_lock, flags);
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c b/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c
+index f026b71..2dfb0f0 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c
+@@ -493,7 +493,7 @@ static void dm_TXPowerTrackingCallback_TSSI(struct net_device *dev)
+ 
+ 				if (priv->bResetInProgress) {
+ 					RT_TRACE(COMP_POWER_TRACKING,
+-						 "we are in slient reset progress, so return\n");
++						 "we are in silent reset progress, so return\n");
+ 					write_nic_byte(dev, Pw_Track_Flag, 0);
+ 					write_nic_byte(dev, FW_Busy_Flag, 0);
+ 					return;
+diff --git a/drivers/staging/rtl8192e/rtllib.h b/drivers/staging/rtl8192e/rtllib.h
+index e26aec8..d7460ae 100644
+--- a/drivers/staging/rtl8192e/rtllib.h
++++ b/drivers/staging/rtl8192e/rtllib.h
+@@ -169,7 +169,7 @@ struct cb_desc {
+ 
+ 	u8 nStuckCount;
+ 
+-	/* Tx Firmware Relaged flags (10-11)*/
++	/* Tx Firmware Related flags (10-11)*/
+ 	u8 bCTSEnable:1;
+ 	u8 bRTSEnable:1;
+ 	u8 bUseShortGI:1;
+@@ -1690,7 +1690,7 @@ enum rtllib_state {
+ 	/* the association procedure is sending AUTH request*/
+ 	RTLLIB_ASSOCIATING_AUTHENTICATING,
+ 
+-	/* the association procedure has successfully authentcated
++	/* the association procedure has successfully authenticated
+ 	 * and is sending association request
+ 	 */
+ 	RTLLIB_ASSOCIATING_AUTHENTICATED,
+@@ -2409,7 +2409,7 @@ struct rtllib_device {
+ 
+ 	/* used instead of hard_start_xmit (not softmac_hard_start_xmit)
+ 	 * if the IEEE_SOFTMAC_TX_QUEUE feature is used to TX data
+-	 * frames. I the option IEEE_SOFTMAC_SINGLE_QUEUE is also set
++	 * frames. If the option IEEE_SOFTMAC_SINGLE_QUEUE is also set
+ 	 * then also management frames are sent via this callback.
+ 	 * This function can't sleep.
+ 	 */
+@@ -2422,12 +2422,12 @@ struct rtllib_device {
+ 	 */
+ 	void (*data_hard_stop)(struct net_device *dev);
+ 
+-	/* OK this is complementar to data_poll_hard_stop */
++	/* OK this is complementing to data_poll_hard_stop */
+ 	void (*data_hard_resume)(struct net_device *dev);
+ 
+ 	/* ask to the driver to retune the radio .
+ 	 * This function can sleep. the driver should ensure
+-	 * the radio has been swithced before return.
++	 * the radio has been switched before return.
+ 	 */
+ 	void (*set_chan)(struct net_device *dev, short ch);
+ 
+@@ -2438,7 +2438,7 @@ struct rtllib_device {
+ 	 * The syncro version is similar to the start_scan but
+ 	 * does not return until all channels has been scanned.
+ 	 * this is called in user context and should sleep,
+-	 * it is called in a work_queue when swithcing to ad-hoc mode
++	 * it is called in a work_queue when switching to ad-hoc mode
+ 	 * or in behalf of iwlist scan when the card is associated
+ 	 * and root user ask for a scan.
+ 	 * the fucntion stop_scan should stop both the syncro and
+@@ -2481,7 +2481,7 @@ struct rtllib_device {
+ 				     struct rtllib_network *network);
+ 
+ 
+-	/* check whether Tx hw resouce available */
++	/* check whether Tx hw resource available */
+ 	short (*check_nic_enough_desc)(struct net_device *dev, int queue_index);
+ 	short (*get_nic_desc_num)(struct net_device *dev, int queue_index);
+ 	void (*SetBWModeHandler)(struct net_device *dev,
+@@ -2543,10 +2543,10 @@ struct rtllib_device {
+ /* Generate probe requests */
+ #define IEEE_SOFTMAC_PROBERQ (1<<4)
+ 
+-/* Generate respones to probe requests */
++/* Generate response to probe requests */
+ #define IEEE_SOFTMAC_PROBERS (1<<5)
+ 
+-/* The ieee802.11 stack will manages the netif queue
++/* The ieee802.11 stack will manage the netif queue
+  * wake/stop for the driver, taking care of 802.11
+  * fragmentation. See softmac.c for details. */
+ #define IEEE_SOFTMAC_TX_QUEUE (1<<7)
+diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
+index 13979b5..40a59c9 100644
+--- a/drivers/staging/rtl8192e/rtllib_rx.c
++++ b/drivers/staging/rtl8192e/rtllib_rx.c
+@@ -496,7 +496,7 @@ void rtllib_indicate_packets(struct rtllib_device *ieee, struct rtllib_rxb **prx
+ 				memcpy(skb_push(sub_skb, ETH_ALEN), prxb->dst, ETH_ALEN);
+ 			}
+ 
+-			/* Indicat the packets to upper layer */
++			/* Indicate the packets to upper layer */
+ 			if (sub_skb) {
+ 				stats->rx_packets++;
+ 				stats->rx_bytes += sub_skb->len;
+@@ -1233,7 +1233,7 @@ static void rtllib_rx_indicate_pkt_legacy(struct rtllib_device *ieee,
+ 			if (is_multicast_ether_addr(dst))
+ 				ieee->stats.multicast++;
+ 
+-			/* Indicat the packets to upper layer */
++			/* Indicate the packets to upper layer */
+ 			memset(sub_skb->cb, 0, sizeof(sub_skb->cb));
+ 			sub_skb->protocol = eth_type_trans(sub_skb, dev);
+ 			sub_skb->dev = dev;
+diff --git a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
+index c5a15db..236477d 100644
+--- a/drivers/staging/rtl8192e/rtllib_softmac.c
++++ b/drivers/staging/rtl8192e/rtllib_softmac.c
+@@ -31,7 +31,7 @@ short rtllib_is_shortslot(const struct rtllib_network *net)
+ 	return net->capability & WLAN_CAPABILITY_SHORT_SLOT_TIME;
+ }
+ 
+-/* returns the total length needed for pleacing the RATE MFIE
++/* returns the total length needed for placing the RATE MFIE
+  * tag and the EXTENDED RATE MFIE tag if needed.
+  * It encludes two bytes per tag for the tag itself and its len
+  */
+@@ -49,7 +49,7 @@ static unsigned int rtllib_MFIE_rate_len(struct rtllib_device *ieee)
+ 	return rate_len;
+ }
+ 
+-/* pleace the MFIE rate, tag to the memory (double) poined.
++/* place the MFIE rate, tag to the memory (double) pointed.
+  * Then it updates the pointer so that
+  * it points after the new MFIE tag added.
+  */
+@@ -557,7 +557,7 @@ void rtllib_softmac_scan_syncro(struct rtllib_device *ieee, u8 is_mesh)
+ 		 *    new network events, despite for updating the net list,
+ 		 *    but we are temporarly 'unlinked' as the driver shall
+ 		 *    not filter RX frames and the channel is changing.
+-		 * So the only situation in witch are interested is to check
++		 * So the only situation in which are interested is to check
+ 		 * if the state become LINKED because of the #1 situation
+ 		 */
+ 
+@@ -1681,7 +1681,7 @@ inline void rtllib_softmac_new_net(struct rtllib_device *ieee,
+ 
+ 		/* if the user set the AP check if match.
+ 		 * if the network does not broadcast essid we check the
+-		 *	 user supplyed ANY essid
++		 *	 user supplied ANY essid
+ 		 * if the network does broadcast and the user does not set
+ 		 *	 essid it is OK
+ 		 * if the network does broadcast and the user did set essid
+@@ -2444,16 +2444,16 @@ inline int rtllib_rx_frame_softmac(struct rtllib_device *ieee,
+ 
+ /* following are for a simplier TX queue management.
+  * Instead of using netif_[stop/wake]_queue the driver
+- * will uses these two function (plus a reset one), that
+- * will internally uses the kernel netif_* and takes
++ * will use these two functions (plus a reset one), that
++ * will internally use the kernel netif_* and takes
+  * care of the ieee802.11 fragmentation.
+  * So the driver receives a fragment per time and might
+- * call the stop function when it want without take care
+- * to have enought room to TX an entire packet.
+- * This might be useful if each fragment need it's own
++ * call the stop function when it wants to not
++ * have enough room to TX an entire packet.
++ * This might be useful if each fragment needs it's own
+  * descriptor, thus just keep a total free memory > than
+- * the max fragmentation treshold is not enought.. If the
+- * ieee802.11 stack passed a TXB struct then you needed
++ * the max fragmentation threshold is not enough.. If the
++ * ieee802.11 stack passed a TXB struct then you need
+  * to keep N free descriptors where
+  * N = MAX_PACKET_SIZE / MIN_FRAG_TRESHOLD
+  * In this way you need just one and the 802.11 stack
+@@ -2696,15 +2696,15 @@ static void rtllib_start_ibss_wq(void *data)
+ 	rtllib_softmac_check_all_nets(ieee);
+ 
+ 
+-	/* if not then the state is not linked. Maybe the user swithced to
++	/* if not then the state is not linked. Maybe the user switched to
+ 	 * ad-hoc mode just after being in monitor mode, or just after
+ 	 * being very few time in managed mode (so the card have had no
+ 	 * time to scan all the chans..) or we have just run up the iface
+ 	 * after setting ad-hoc mode. So we have to give another try..
+ 	 * Here, in ibss mode, should be safe to do this without extra care
+-	 * (in bss mode we had to make sure no-one tryed to associate when
++	 * (in bss mode we had to make sure no-one tried to associate when
+ 	 * we had just checked the ieee->state and we was going to start the
+-	 * scan) beacause in ibss mode the rtllib_new_net function, when
++	 * scan) because in ibss mode the rtllib_new_net function, when
+ 	 * finds a good net, just set the ieee->state to RTLLIB_LINKED,
+ 	 * so, at worst, we waste a bit of time to initiate an unneeded syncro
+ 	 * scan, that will stop at the first round because it sees the state
+@@ -2819,7 +2819,7 @@ void rtllib_start_bss(struct rtllib_device *ieee)
+ 
+ 	/* ensure no-one start an associating process (thus setting
+ 	 * the ieee->state to rtllib_ASSOCIATING) while we
+-	 * have just cheked it and we are going to enable scan.
++	 * have just checked it and we are going to enable scan.
+ 	 * The rtllib_new_net function is always called with
+ 	 * lock held (from both rtllib_softmac_check_all_nets and
+ 	 * the rx path), so we cannot be in the middle of such function
+@@ -2872,7 +2872,7 @@ static void rtllib_associate_retry_wq(void *data)
+ 
+ 	/* until we do not set the state to RTLLIB_NOLINK
+ 	* there are no possibility to have someone else trying
+-	* to start an association procdure (we get here with
++	* to start an association procedure (we get here with
+ 	* ieee->state = RTLLIB_ASSOCIATING).
+ 	* When we set the state to RTLLIB_NOLINK it is possible
+ 	* that the RX path run an attempt to associate, but
+diff --git a/drivers/staging/rtl8192e/rtllib_softmac_wx.c b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
+index 1523bc7..1bb6b52 100644
+--- a/drivers/staging/rtl8192e/rtllib_softmac_wx.c
++++ b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
+@@ -479,7 +479,7 @@ int rtllib_wx_set_essid(struct rtllib_device *ieee,
+ 
+ 
+ 	/* this is just to be sure that the GET wx callback
+-	 * has consisten infos. not needed otherwise
++	 * has consistent infos. not needed otherwise
+ 	 */
+ 	spin_lock_irqsave(&ieee->lock, flags);
+ 
+@@ -575,7 +575,7 @@ int rtllib_wx_set_power(struct rtllib_device *ieee,
+ 	if ((!ieee->sta_wake_up) ||
+ 	    (!ieee->enter_sleep_state) ||
+ 	    (!ieee->ps_is_queue_empty)) {
+-		RTLLIB_DEBUG(RTLLIB_DL_ERR, "%s(): PS mode is tryied to be use "
++		RTLLIB_DEBUG(RTLLIB_DL_ERR, "%s(): PS mode is tried to be use "
+ 			     "but driver missed a callback\n\n", __func__);
+ 		return -1;
+ 	}
+diff --git a/drivers/staging/rtl8192e/rtllib_tx.c b/drivers/staging/rtl8192e/rtllib_tx.c
+index f451bfc..f24aa00c 100644
+--- a/drivers/staging/rtl8192e/rtllib_tx.c
++++ b/drivers/staging/rtl8192e/rtllib_tx.c
+@@ -59,7 +59,7 @@
+ 802.11 Data Frame
+ 
+ 
+-802.11 frame_contorl for data frames - 2 bytes
++802.11 frame_control for data frames - 2 bytes
+      ,-----------------------------------------------------------------------------------------.
+ bits | 0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  a  |  b  |  c  |  d  |  e   |
+      |----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|------|
+@@ -576,7 +576,7 @@ int rtllib_xmit_inter(struct sk_buff *skb, struct net_device *dev)
+ 
+ 	spin_lock_irqsave(&ieee->lock, flags);
+ 
+-	/* If there is no driver handler to take the TXB, dont' bother
++	/* If there is no driver handler to take the TXB, don't bother
+ 	 * creating it... */
+ 	if ((!ieee->hard_start_xmit && !(ieee->softmac_features &
+ 	   IEEE_SOFTMAC_TX_QUEUE)) ||
+@@ -738,7 +738,7 @@ int rtllib_xmit_inter(struct sk_buff *skb, struct net_device *dev)
+ 		   (CFG_RTLLIB_COMPUTE_FCS | CFG_RTLLIB_RESERVE_FCS))
+ 			bytes_per_frag -= RTLLIB_FCS_LEN;
+ 
+-		/* Each fragment may need to have room for encryptiong
++		/* Each fragment may need to have room for encrypting
+ 		 * pre/postfix */
+ 		if (encrypt) {
+ 			bytes_per_frag -= crypt->ops->extra_mpdu_prefix_len +
+diff --git a/drivers/staging/rtl8192e/rtllib_wx.c b/drivers/staging/rtl8192e/rtllib_wx.c
+index e5fe2e8..c7e8d4d8 100644
+--- a/drivers/staging/rtl8192e/rtllib_wx.c
++++ b/drivers/staging/rtl8192e/rtllib_wx.c
+@@ -408,7 +408,7 @@ int rtllib_wx_set_encode(struct rtllib_device *ieee,
+ 				       (*crypt)->priv);
+ 		sec.flags |= (1 << key);
+ 		/* This ensures a key will be activated if no key is
+-		 * explicitely set */
++		 * explicitly set */
+ 		if (key == sec.active_key)
+ 			sec.flags |= SEC_ACTIVE_KEY;
+ 		ieee->crypt_info.tx_keyidx = key;
+-- 
+1.7.5.4
 
-For IO cgroups, I'd always prefer to avoid partitioning the dirty pages
-and async IO queue so as to avoid such embarrassing tradeoffs in the
-first place :-)
-
-> Also the granularity of IO completions should depend more on the
-> granularity of IO scheduler (CFQ) rather than the granularity of flusher
-> thread as such so I wouldn't think that would be a problem.
-
-By avoiding the partitions, we'll cancel the fairness problem. So
-the coarse granularity of flusher won't be a problem for IO cgroups at
-all.  balance_dirty_pages() will do proper throttling when dirty pages
-are created, based directly on the blkcg weights and ongoing IO.
-After that all async IOs go as a single stream from the flusher to the
-storage. There are no need for page tracking. No split inode lists and
-hence granularity or shared inodes issues for the flusher. Above all
-there will be no degradation of performance at all, whether it be
-throughput, latency or responsiveness. 
-
-Thanks,
-Fengguang
