@@ -1,49 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab2DWQ1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:27:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:55628 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753597Ab2DWQ1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:27:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="135721602"
-From: Seth Heasley <seth.heasley@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Seth Heasley <seth.heasley@intel.com>
-Subject: [PATCH 1/3] pci_ids: Add Intel Centerton Legacy Block DeviceID
-Date: Mon, 23 Apr 2012 09:23:56 -0700
-Message-Id: <1335198236-3183-1-git-send-email-seth.heasley@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1753699Ab2DWQ3h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:29:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55831 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab2DWQ3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 12:29:35 -0400
+Subject: Patch "Perf: fix build breakage" has been added to the 3.0-stable tree
+To: zeev.tarantov@gmail.com, acme@redhat.com, davem@davemloft.net,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
+From: <gregkh@linuxfoundation.org>
+Date: Mon, 23 Apr 2012 09:29:32 -0700
+In-Reply-To: <20120423063704.GA3465@myhost>
+Message-ID: <1335198572696@kroah.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Integrated Legacy Block DeviceID for the Centerton CPU.  It will be used in the GPIO and Multifunction Devices driver.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+This is a note to let you know that I've just added the patch titled
+
+    Perf: fix build breakage
+
+to the 3.0-stable tree which can be found at:
+    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+
+The filename of the patch is:
+     perf-fix-build-breakage.patch
+and it can be found in the queue-3.0 subdirectory.
+
+If you, or anyone else, feels it should not be added to the stable tree,
+please let <stable@vger.kernel.org> know about it.
+
+
+>From zeev.tarantov@gmail.com Sun Apr 22 23:38:36 2012
+From: Zeev Tarantov <zeev.tarantov@gmail.com>
+Date: Mon, 23 Apr 2012 09:37:04 +0300
+Subject: Perf: fix build breakage
+To: "David S. Miller" <davem@davemloft.net>, Arnaldo Carvalho de Melo <acme@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20120423063704.GA3465@myhost>
+Content-Disposition: inline
+
+
+From: Zeev Tarantov <zeev.tarantov@gmail.com>
+
+[Patch not needed upstream as this is a backport build bugfix - gregkh
+
+gcc correctly complains:
+
+util/hist.c: In function ‘__hists__add_entry’:
+util/hist.c:240:27: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
+util/hist.c:241:23: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
+
+for this new code:
+
++                       if (he->ms.map != entry->ms.map) {
++                               he->ms.map = entry->ms.map;
++                               if (he->ms.map)
++                                       he->ms.map->referenced = true;
++                       }
+
+because "entry" is a "struct hist_entry", not a pointer to a struct.
+
+In mainline, "entry" is a pointer to struct passed as argument to the function.
+So this is broken during backporting. But obviously not compile tested.
+
+Signed-off-by: Zeev Tarantov <zeev.tarantov@gmail.com>
+Cc: Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-Adding Samuel Ortiz, because a subsequent multifunction device patch references this one.
+ tools/perf/util/hist.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
- include/linux/pci_ids.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -165,8 +165,8 @@ struct hist_entry *__hists__add_entry(st
+ 			 * mis-adjust symbol addresses when computing
+ 			 * the history counter to increment.
+ 			 */
+-			if (he->ms.map != entry->ms.map) {
+-				he->ms.map = entry->ms.map;
++			if (he->ms.map != entry.ms.map) {
++				he->ms.map = entry.ms.map;
+ 				if (he->ms.map)
+ 					he->ms.map->referenced = true;
+ 			}
 
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 3329965..ab741b0 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2506,6 +2506,7 @@
- #define PCI_DEVICE_ID_INTEL_MRST_SD2	0x084F
- #define PCI_DEVICE_ID_INTEL_I960	0x0960
- #define PCI_DEVICE_ID_INTEL_I960RM	0x0962
-+#define PCI_DEVICE_ID_INTEL_CENTERTON_ILB	0x0c60
- #define PCI_DEVICE_ID_INTEL_8257X_SOL	0x1062
- #define PCI_DEVICE_ID_INTEL_82573E_SOL	0x1085
- #define PCI_DEVICE_ID_INTEL_82573L_SOL	0x108F
--- 
-1.7.4.4
 
+Patches currently in stable-queue which might be from zeev.tarantov@gmail.com are
+
+queue-3.0/perf-fix-build-breakage.patch
