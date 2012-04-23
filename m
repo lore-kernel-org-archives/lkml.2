@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab2DWSIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 14:08:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33826 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784Ab2DWSIU (ORCPT
+	id S1754306Ab2DWSKJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 14:10:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45965 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943Ab2DWSKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 14:08:20 -0400
-Date: Mon, 23 Apr 2012 11:07:57 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Yong Zhang <yong.zhang0@gmail.com>
-Subject: Re: [PATCHv2] workqueue: Catch more locking problems with
- flush_work()
-Message-ID: <20120423180757.GD5406@google.com>
-References: <20120420173529.GD32324@google.com>
- <1334968130-20724-1-git-send-email-sboyd@codeaurora.org>
+	Mon, 23 Apr 2012 14:10:07 -0400
+Date: Mon, 23 Apr 2012 11:09:46 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Ken Chen <kenchen@google.com>,
+        Linux-MM <linux-mm@kvack.org>, Linux-S390 <linux-s390@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] s390: mm: rmap: Transfer storage key to struct page
+ under the page lock
+In-Reply-To: <20120423124124.GB3255@suse.de>
+Message-ID: <alpine.LSU.2.00.1204231106450.23248@eggly.anvils>
+References: <20120416141423.GD2359@suse.de> <alpine.LSU.2.00.1204161332120.1675@eggly.anvils> <20120417122202.GF2359@suse.de> <alpine.LSU.2.00.1204172023390.1609@eggly.anvils> <20120418152831.GK2359@suse.de> <alpine.LSU.2.00.1204181005500.1811@eggly.anvils>
+ <20120423124124.GB3255@suse.de>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334968130-20724-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 05:28:50PM -0700, Stephen Boyd wrote:
-> If a workqueue is flushed with flush_work() lockdep checking can
-> be circumvented. For example:
+On Mon, 23 Apr 2012, Mel Gorman wrote:
+> On Wed, Apr 18, 2012 at 10:09:24AM -0700, Hugh Dickins wrote:
+> > > Acked-by: Mel Gorman <mgorman@suse.de>
+> > > 
+> > > I've sent a kernel based on this patch to the s390 folk that originally
+> > > reported the bug. Hopefully they'll test and get back to me in a few
+> > > days.
+> > 
+> > Thanks - I'll leave it at that for the moment, expecting to hear back.
+> > 
 > 
->  static DEFINE_MUTEX(mutex);
+> Tests completed successfully confirming that this was certainly a
+> PageSwapCache issue. Will you resend the patch to Andrew for merging or
+> will I?
 > 
->  static void my_work(struct work_struct *w)
->  {
->          mutex_lock(&mutex);
->          mutex_unlock(&mutex);
->  }
-> 
->  static DECLARE_WORK(work, my_work);
-> 
->  static int __init start_test_module(void)
->  {
->          schedule_work(&work);
->          return 0;
->  }
->  module_init(start_test_module);
-> 
->  static void __exit stop_test_module(void)
->  {
->          mutex_lock(&mutex);
->          flush_work(&work);
->          mutex_unlock(&mutex);
->  }
->  module_exit(stop_test_module);
-> 
-> would not always print a warning when flush_work() was called.
-> In this trivial example nothing could go wrong since we are
-> guaranteed module_init() and module_exit() don't run concurrently,
-> but if the work item is schedule asynchronously we could have a
-> scenario where the work item is running just at the time flush_work()
-> is called resulting in a classic ABBA locking problem.
-> 
-> Add a lockdep hint by acquiring and releasing the work item
-> lockdep_map in flush_work() so that we always catch this
-> potential deadlock scenario.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Thanks Hugh.
 
-Applied to wq/for-3.5.  Let's see whether it triggers spuriously.
+Great, thanks Mel: as it's a one-liner, I'll send it straight to Linus now.
 
-Thanks.
-
--- 
-tejun
+Hugh
