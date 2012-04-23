@@ -1,114 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab2DWO4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 10:56:33 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52414 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754013Ab2DWO4b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 10:56:31 -0400
-Message-ID: <1335192983.4191.25.camel@dabdike.lan>
-Subject: Re: [PATCH 14/17] hpsa: use new IS_ENABLED macro
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Stephen Cameron <stephenmcameron@gmail.com>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        matthew.gates@hp.com, thenzl@redhat.com, akpm@linux-foundation.org,
-        mikem@beardog.cce.hp.com
-Date: Mon, 23 Apr 2012 15:56:23 +0100
-In-Reply-To: <4F955F78.8070604@windriver.com>
-References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
-		<20120420150732.10596.9085.stgit@beardog.cce.hp.com>
-		<CAP=VYLpOyBuvZ3+Nfw1u0dojOX8kt-1TDJA+v-EWQuKPdh0A1w@mail.gmail.com>
-	 <CADzpL0S04XTYoe4u7_WNgA6cw11uNw9uxiyyYCQ=cY-p-Z+sww@mail.gmail.com>
-	 <4F955F78.8070604@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	id S1753879Ab2DWO6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 10:58:21 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751812Ab2DWO6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 10:58:20 -0400
+Message-ID: <4F956DF2.7020408@nod.at>
+Date: Mon, 23 Apr 2012 16:57:54 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        linaro-kernel@lists.linaro.org, patches@linaro.org, linux-mm@kvack.org
+Subject: Re: [PATCH 7/9] um: Should hold tasklist_lock while traversing processes
+References: <20120423070641.GA27702@lizard> <20120423070925.GG30752@lizard>
+In-Reply-To: <20120423070925.GG30752@lizard>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 09:56 -0400, Paul Gortmaker wrote:
-> On 12-04-22 10:20 PM, Stephen Cameron wrote:
-> > On Sun, Apr 22, 2012 at 1:12 PM, Paul Gortmaker
-> > <paul.gortmaker@windriver.com> wrote:
-> >> On Fri, Apr 20, 2012 at 11:07 AM, Stephen M. Cameron
-> >> <scameron@beardog.cce.hp.com> wrote:
-> >>> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> >>>
-> >>> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> >>
-> >> You've not written a commit log, so I'm left guessing what the
-> >> intended rationale is here.  COMPAT, X86 and PCI_MSI are
-> >> I believe all bool, so why make this change?  To me it gives
-> >> a misleading message that some level of modular awareness
-> >> is needed here, when there really isn't any such need.
-> > 
-> > Well, I saw this commit go by: 69349c2dc01c489eccaa4c472542c08e370c6d7e
-> > 
-> >    Using IS_ENABLED() within C (vs.  within CPP #if statements) in its
-> >    current form requires us to actually define every possible bool/tristate
-> >    Kconfig option twice (__enabled_* and __enabled_*_MODULE variants).
-> >    [...]
-> > 
-> > and so I kind of thought IS_ENABLED is the new way to do that sort of thing.
+On 23.04.2012 09:09, Anton Vorontsov wrote:
+> Traversing the tasks requires holding tasklist_lock, otherwise it
+> is unsafe.
+>
+> p.s. However, I'm not sure that calling os_kill_ptraced_process()
+> in the atomic context is correct. It seem to work, but please
+> take a closer look.
+>
+> Signed-off-by: Anton Vorontsov<anton.vorontsov@linaro.org>
+> ---
 
-I don't think you need to change the driver unless there's a good
-reason.  In kernel terms, it's usually better to wait a bit to see if
-the wheels fall off any particular bandwagon before leaping on it ...
+You forgot my Ack and I've already explained why 
+os_kill_ptraced_process() is fine.
 
-> In my opinion, IS_ENABLED can/should be used when you have:
-> 
-> #if defined(CONFIG_FOO) || defined(CONFIG_FOO_MODULE)
-> 
-> i.e. "is this driver built in, or can it be loaded as a module?"
-> The CONFIG_FOO_MODULE doesn't appear in your .config -- it is auto
-> generated by Kbuild infrastructure.
-> 
-> It will do the Right Thing even for cases where CONFIG_FOO_MODULE
-> is impossible, but it does as I've said, give the wrong impression
-> that there is some possibility of modular presence.  At least to
-> those who are familiar with the implementation and why it exists.
-> [I'll grant you that the name doesn't convey the use case too well.]
-> 
-> > 
-> > Perhaps I'm wrong about that.  Obviously the patch is not _needed_ for
-> > things to work.
-> 
-> I don't think we want to go and mass replace all existing cases of
-> 
->    #ifdef CONFIG_SOME_BOOL
-> 
-> with:
-> 
->    #if IS_ENABLED(CONFIG_SOME_BOOL)
-> 
-> There is no value add.  However, replacing instances of:
-> 
->    #if defined(CONFIG_FOO) || defined(CONFIG_FOO_MODULE)
-> 
-> with:
-> 
->    #if IS_ENABLED(CONFIG_FOO)
-> 
-> is in my opinion, a reasonable thing to do.  It is shorter, and
-> it does hide the internally generated _MODULE suffixed "shadow"
-> variables from appearing directly in the main source files.  And
-> it tells you that the author was thinking about both the built
-> in and the modular cases when they wrote it.
-
-To be honest, I think we want to use #if IS_ENABLED() for all cases
-going forwards, including the boolean case.
-
-The reason is that it's an easier design pattern.  If we have the #ifdef
-CONFIG_X vs #if IS_ENABLED(CONFIG_X) depending on whether CONFIG_X can
-be modular or not it's just creating pointless rules that someone will
-annoy us all by enforcing in a checkpatch or some other script.  Whereas
-#if IS_ENABLED(CONFIG_X) is obvious and simple.
-
-James
-
-
+Thanks,
+//richard
