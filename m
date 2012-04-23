@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab2DWX0w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 19:26:52 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:33332 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab2DWX0u (ORCPT
+	id S1755828Ab2DWXoK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 19:44:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35405 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754642Ab2DWXoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 19:26:50 -0400
-Date: Mon, 23 Apr 2012 19:24:42 -0400 (EDT)
-Message-Id: <20120423.192442.379812896211622385.davem@davemloft.net>
-To: rdunlap@xenotime.net
-Cc: ebiederm@xmission.com, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net sysctl: Add place holder functions for when sysctl
- support is compiled out of the kernel.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F95D9F5.3040407@xenotime.net>
-References: <4F958598.6080305@xenotime.net>
-	<m1lilmt7v5.fsf_-_@fess.ebiederm.org>
-	<4F95D9F5.3040407@xenotime.net>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 23 Apr 2012 19:44:07 -0400
+Date: Mon, 23 Apr 2012 16:44:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V6 04/14] hugetlb: Use mmu_gather instead of a
+ temporary linked list for accumulating pages
+Message-Id: <20120423164405.4b628580.akpm@linux-foundation.org>
+In-Reply-To: <1334573091-18602-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1334573091-18602-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 23 Apr 2012 16:24:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
-Date: Mon, 23 Apr 2012 15:38:45 -0700
+On Mon, 16 Apr 2012 16:14:41 +0530
+"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-> On 04/23/2012 03:13 PM, Eric W. Biederman wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 > 
->> 
->> Randy Dunlap <rdunlap@xenotime.net> reported:
->>> On 04/23/2012 12:07 AM, Stephen Rothwell wrote:
->>>
->>>> Hi all,
->>>>
->>>> Changes since 20120420:
->>>
->>>
->>>
->>> ERROR: "unregister_net_sysctl_table" [net/phonet/phonet.ko] undefined!
->>> ERROR: "register_net_sysctl" [net/phonet/phonet.ko] undefined!
->>>
->>> when CONFIG_SYSCTL is not enabled.
->> 
->> Add static inline stub functions to gracefully handle the case when sysctl
->> support is not present.
->> 
->> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> Use mmu_gather instead of temporary linked list for accumulating pages when
+> we unmap a hugepage range. This also allows us to get rid of i_mmap_mutex
+> unmap_hugepage_range in the following patch.
 > 
-> 
-> Yep, that works.
-> 
-> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-Applied, thanks everyone.
+Another warning and a build error, due to inadequate coverage testing.
+
+mm/memory.c: In function 'unmap_single_vma':
+mm/memory.c:1334: error: implicit declaration of function '__unmap_hugepage_range'
+
+--- a/include/linux/hugetlb.h~hugetlb-use-mmu_gather-instead-of-a-temporary-linked-list-for-accumulating-pages-fix
++++ a/include/linux/hugetlb.h
+@@ -41,8 +41,9 @@ int follow_hugetlb_page(struct mm_struct
+ 			unsigned long *, int *, int, unsigned int flags);
+ void unmap_hugepage_range(struct vm_area_struct *,
+ 			  unsigned long, unsigned long, struct page *);
+-void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *,
+-			    unsigned long, unsigned long, struct page *);
++void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vms,
++				unsigned long start, unsigned long end,
++				struct page *ref_page);
+ int hugetlb_prefault(struct address_space *, struct vm_area_struct *);
+ void hugetlb_report_meminfo(struct seq_file *);
+ int hugetlb_report_node_meminfo(int, char *);
+@@ -119,6 +120,12 @@ static inline void copy_huge_page(struct
+ 
+ #define hugetlb_change_protection(vma, address, end, newprot)
+ 
++static inline void __unmap_hugepage_range(struct mmu_gather *tlb,
++			struct vm_area_struct *vma, unsigned long start,
++			unsigned long end, struct page *ref_page)
++{
++}
++
+ #endif /* !CONFIG_HUGETLB_PAGE */
+ 
+ #define HUGETLB_ANON_FILE "anon_hugepage"
+
+
+I also fixed up that __unmap_hugepage_range() declaration - it's quite
+maddening to work on and review and read code when people have gone and
+left out the names of the arguments.
+
