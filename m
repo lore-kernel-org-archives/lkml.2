@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab2DWGxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 02:53:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55887 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539Ab2DWGxh (ORCPT
+	id S1753927Ab2DWGyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 02:54:18 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50598 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753780Ab2DWGyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 02:53:37 -0400
-Date: Sun, 22 Apr 2012 23:55:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: Re: [PATCH V2 1/3] lib: add support for stmp-style devices
-Message-Id: <20120422235506.d3377f0e.akpm@linux-foundation.org>
-In-Reply-To: <1332368519-22660-2-git-send-email-w.sang@pengutronix.de>
-References: <1332368519-22660-1-git-send-email-w.sang@pengutronix.de>
-	<1332368519-22660-2-git-send-email-w.sang@pengutronix.de>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Mon, 23 Apr 2012 02:54:17 -0400
+Date: Mon, 23 Apr 2012 16:54:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neal Cardwell <ncardwell@google.com>
+Subject: linux-next: build warning after merge of the net-next tree
+Message-Id: <20120423165409.d424daced95611012d151aa6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__23_Apr_2012_16_54_09_+1000_HUWtHaC8wXxhQHv+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Mar 2012 23:21:57 +0100 Wolfram Sang <w.sang@pengutronix.de> wrote:
+--Signature=_Mon__23_Apr_2012_16_54_09_+1000_HUWtHaC8wXxhQHv+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> MX23/28 use IP cores which follow a register layout I have first seen on
-> STMP3xxx SoCs. In this layout, every register actually has four u32:
-> 
->  1.) to store a value directly
->  2.) a SET register where every 1-bit sets the corresponding bit,
->      others are unaffected
->  3.) same with a CLR register
->  4.) same with a TOG (toggle) register
-> 
-> Also, the 2 MSBs in register 0 are always the same and can be used to reset
-> the IP core.
-> 
-> All this is strictly speaking not mach-specific (but IP core specific) and,
-> thus, doesn't need to be in mach-mxs/include. At least, mx6 and mx50 also
-> utilize IP cores following this stmp-style. So:
-> 
-> Introduce a stmp-style device, put the code and defines for that in a public
-> place (lib/), and let drivers for stmp-style devices select that code.
-> To avoid regressions and ease reviewing, the actual code is simply copied from
-> mach-mxs. It definately wants updates, but those need a seperate patch series.
-> 
-> Voila, mach dependency gone, reusable code introduced. Note that I didn't
-> remove the duplicated code from mach-mxs yet, first the drivers have to be
-> converted.
-> 
-> ...
->
->  include/linux/stmp_device.h |   20 +++++++++++
->  lib/Kconfig                 |    3 ++
->  lib/Makefile                |    2 +
->  lib/stmp_device.c           |   80 +++++++++++++++++++++++++++++++++++++++++++
+Hi all,
 
-It's good that this is being presented as library code, rather than
-being buried in some device-specific directory then copied and pasted
-ten times.
+After merging the net-next tree, today's linux-next build (powerpc
+ppc44x_defconfig) produced these warnings:
 
-But ./lib/ does seem rather a strange place for it.  Perhaps we need a
-drivers/lib/ or something.  We can use ./lib/ for now - it can always
-be moved later on.
+net/ipv4/tcp_ipv4.c: In function 'tcp_v4_init_sock':
+net/ipv4/tcp_ipv4.c:1891:19: warning: unused variable 'tp' [-Wunused-variab=
+le]
+net/ipv6/tcp_ipv6.c: In function 'tcp_v6_init_sock':
+net/ipv6/tcp_ipv6.c:1836:19: warning: unused variable 'tp' [-Wunused-variab=
+le]
 
-> --- /dev/null
-> +++ b/lib/stmp_device.c
+Introduced by commit 900f65d361d3 ("tcp: move duplicate code from
+tcp_v4_init_sock()/tcp_v6_init_sock()").
 
-The functions in this file look terribly racy on SMP, or even with
-preemption or interrupts.  What happens if two CPUs or threads run
-stmp_reset_block() against the same device at the same time?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Perhaps the caller is supposed to prevent that, and the documentation
-which isn't there forgot to mention it ;)
+--Signature=_Mon__23_Apr_2012_16_54_09_+1000_HUWtHaC8wXxhQHv+
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPlPyRAAoJEECxmPOUX5FE+FsQAJiexwxIEC6Owvq46O8Hafqx
+kIGXubjiuvsGo0BXk4Q1smUbsrTsEMYhFcOYpkEbC4dADV4yXnUMSBhnqXTZYuD+
+gaNxGJKObviWGOe79GLr90ckmFQRs0/GcGbzYPTD+giErCaVNAcXHZU8hyoMnmcd
+ndIl0OZfDRu8Sp7PnOvJhx8iaAsvwdyORxO139bM84wYtnvBQhRhzmAopvN3P1Z4
+OAbloQipSST4yi6uqyea4DAgZN7OYLanv8tSyh7r+1TS0qfi3dqwDcnCJppbnxdJ
+Db1oPjDOIWAegJxRBCMsXannbZx1cQZXshy8jg7myUMlLTY2rljqAWIS0DmcuJYB
+yH6UKfWqnKmOR7PPACNghuWu9dAqAn/mAJELB2L6XH1mETlVe7GXeBnZltgfU2fb
+xwZXFIClMAQSAHUzvT1oWUyDp9qAEtBQxbI1eaerz/FrPHgw+IHMTfgqN6+W3aQK
+UUnnNL2IKxtddJH/T/dNvAvcx79aw1/6idMLe6VkNCqQJXMxg/xdqqp39YukBmty
+3mMAvRKXqaEdNeX2RNQwlZWEGY54R6AR1gMEDSvFqZn+sdnPlHUZZ55u8VgMKlFV
+kZYUj+Ri5eAYMW5h7QrgD/xXUlY4jFfM4Cb+4v7hAcsC6LjmVr+EbfdNURtO+Hke
+r30/4BAx6BVhYj3KJTNI
+=L1B2
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__23_Apr_2012_16_54_09_+1000_HUWtHaC8wXxhQHv+--
