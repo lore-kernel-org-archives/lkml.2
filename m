@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab2DWLeg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 07:34:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40908 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab2DWLef convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752995Ab2DWLef (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 23 Apr 2012 07:34:35 -0400
-Message-ID: <1335180849.28150.121.camel@twins>
-Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
-        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Date: Mon, 23 Apr 2012 13:34:09 +0200
-In-Reply-To: <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	 <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49618 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361Ab2DWLed (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 07:34:33 -0400
+Date: Mon, 23 Apr 2012 12:34:25 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Jonas Aberg <jonas.aberg@stericsson.com>,
+        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 5/9 v2] gpio/nomadik: use ioremap() instead of static
+	mappings
+Message-ID: <20120423113425.GN24211@n2100.arm.linux.org.uk>
+References: <1335180632-21381-1-git-send-email-linus.walleij@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335180632-21381-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
-> +       /*
-> +        * At this point, the deadline really should be "in
-> +        * the future" with respect to rq->clock. If it's
-> +        * not, we are, for some reason, lagging too much!
-> +        * Anyway, after having warn userspace abut that,
-> +        * we still try to keep the things running by
-> +        * resetting the deadline and the budget of the
-> +        * entity.
-> +        */
-> +       if (dl_time_before(dl_se->deadline, rq->clock)) {
-> +               WARN_ON_ONCE(1);
+On Mon, Apr 23, 2012 at 01:30:32PM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> We were using a custom io_p2v() (physical-to-virtual) translation
+> macro, but it's fully possible to just ioremap() this memory
+> now, so skip use of static addresses altogether.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/gpio/gpio-nomadik.c |   14 +++++++++++---
+>  1 file changed, 11 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-nomadik.c b/drivers/gpio/gpio-nomadik.c
+> index 7b45d88..bddc3dd 100644
+> --- a/drivers/gpio/gpio-nomadik.c
+> +++ b/drivers/gpio/gpio-nomadik.c
+> @@ -28,7 +28,6 @@
+>  
+>  #include <plat/pincfg.h>
+>  #include <plat/gpio-nomadik.h>
+> -#include <mach/hardware.h>
+>  #include <asm/gpio.h>
 
-Doing printk() and friends from scheduler context isn't actually safe
-and can lock up your machine.. there's a printk_sched() that
-maybe-sorta-kinda can get your complaints out..
-
-> +               dl_se->deadline = rq->clock + dl_se->dl_deadline;
-> +               dl_se->runtime = dl_se->dl_runtime;
-> +       } 
+While you're here, please replace this with linux/gpio.h - which will give
+us one less direct dependency on asm/ or mach/ includes from drivers.
