@@ -1,94 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2DWGDX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 02:03:23 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57074 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab2DWGDV (ORCPT
+	id S1753596Ab2DWGJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 02:09:28 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:36574 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab2DWGJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 02:03:21 -0400
-Date: Mon, 23 Apr 2012 16:03:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the dma-mapping tree with the tip tree
-Message-Id: <20120423160309.59622ba2cc2139dd50f742e9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__23_Apr_2012_16_03_09_+1000_th8pjFweVXpQiYT0"
+	Mon, 23 Apr 2012 02:09:26 -0400
+Date: Mon, 23 Apr 2012 08:09:21 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Borislav Petkov <bp@amd64.org>, "Liu, Jinsong" <jinsong.liu@intel.com>,
+        tony.luck@intel.com, x86@kernel.org, linux-edac@vger.kernel.org,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
+Message-ID: <20120423060921.GA29378@aftab.osrc.amd.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com>
+ <20120421041454.GA29704@phenom.dumpdata.com>
+ <20120421104502.GB17005@aftab.osrc.amd.com>
+ <20120423021827.GA13840@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120423021827.GA13840@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__23_Apr_2012_16_03_09_+1000_th8pjFweVXpQiYT0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Apr 22, 2012 at 10:18:27PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > > This patch gets error information from xen hypervisor and convert
+> > > > xen format error into linux format mcelog. This logic is basically
+> > > > self-contained, not much touching other kernel components.
+> > 
+> > I have a problem with that statement above. This thing uses struct mce
+> > and mce_log(), which are internal to x86, and whenever we want to change
+> > anything there, we won't be able to because xen uses it too.
+> 
+> Huh? You mean this:
+> 
+>        m.misc = mc_bank->mc_misc;
+>        m.status = mc_bank->mc_status;
+>        m.addr = mc_bank->mc_addr;
+>        m.tsc = mc_bank->mc_tsc;
+>        m.bank = mc_bank->mc_bank;
+>        m.finished = 1;
+>        /*log this record*/
+>        mce_log(&m);
+> 
+> ?
+> 
+> This driver is not that much different from the APEI bridge to MCE code -
+> it just that instead of reading APEI blob data it reads it from an hypercall.
 
-Hi all,
+Let me ask you this: is APEI a virtualization solution of some sort?
 
-Today's linux-next merge of the dma-mapping tree got a conflict in
-arch/x86/include/asm/dma-mapping.h between commit f7219a5300ba ("x86:
-Introduce CONFIG_X86_DMA_REMAP") from the tip tree and commit
-cfe29d4b429b ("X86: integrate CMA with DMA-mapping subsystem") from the
-dma-mapping tree.
+No, it is the old windoze RAS crap but I guess Linux has to support it
+now too through BIOS. And x86 vendors will have to support it too.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So it is piece of the firmware we'd have to deal with too.
 
-diff --cc arch/x86/include/asm/dma-mapping.h
-index 61c0bd2,7b9227b..0000000
---- a/arch/x86/include/asm/dma-mapping.h
-+++ b/arch/x86/include/asm/dma-mapping.h
-@@@ -62,12 -63,10 +63,16 @@@ extern void *dma_generic_alloc_coherent
-  					dma_addr_t *dma_addr, gfp_t flag,
-  					struct dma_attrs *attrs);
- =20
-+ extern void dma_generic_free_coherent(struct device *dev, size_t size,
-+ 				      void *vaddr, dma_addr_t dma_addr,
-+ 				      struct dma_attrs *attrs);
-+=20
- +#ifdef CONFIG_X86_DMA_REMAP /* Platform code defines bridge-specific code=
- */
- +extern bool dma_capable(struct device *dev, dma_addr_t addr, size_t size);
- +extern dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr);
- +extern phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr);
- +#else
- +
-  static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_=
-t size)
-  {
-  	if (!dev->dma_mask)
+Now xen is a whole another deal - it is purely a piece of software.
 
---Signature=_Mon__23_Apr_2012_16_03_09_+1000_th8pjFweVXpQiYT0
-Content-Type: application/pgp-signature
+> The fix seems quite easy - you change the 'struct mce' and 'mce_log()'
+> along with the drivers that use it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+This is exactly what I have a problem with: having to take care of xen
+too. "No, Boris, nope, we cannot take your new feature because it breaks
+xen." and also "Have you tested this on xen too?" where the only thing I
+do is _hardware_ enablement and improving software support for it. And
+xen is not hardware...
 
-iQIcBAEBCAAGBQJPlPCdAAoJEECxmPOUX5FE4XUP/1RG9Vlt6lxYPVjqkZXGPucQ
-cCTvFW2/Kq8bEbqnDSKbNQxMRv4tJDlD40fGbrBCcBXT6OFDuUYivVL8p93NW/83
-3eClQid4WKx9UsUfJWB2b1mlxpxXpQAPEId2/AKzyHrg6moCEvMW+5AZgRrYMfIy
-SWalCNOPXovvWXbUf7RdrKmZdXghedCVfF2LnP9qX8SExPmmmg2TFuToflBVjmnY
-4Cc07PVtc576VrbCOyYOpmFnSycEIOJD6iOqh80BnrjrfhTa4OAtu//PvaseFH9K
-cwphdTeRBoLI8uKDWKsbPS10tkAxpGdbI30T6fJFhLElTlJuf2yS1L1TXOTuK+6s
-47W2rCcqDKyhGz9ubugSqohhjA/xPGgwhcvLbxsVHPXo4epSwVPUNcwqaijHjsMX
-yXwWGWGW1YFRXhseqyOQJU4k5IeVi1fnkFNn2Bf6kkitIyB4GkD2FDWIkZ/elyx+
-qVeMDCnCFGOHMLCvUgu0VJH/fjsqOQqSEBEY2BWzF8D0SgxlFRp1uzmt5NnX+YfD
-E+zrPn1MJ+BgGwhiIXYmy665ec2Ohx4tjPUFT63g1Vx9iPUpB3o+8t1ITE4LPq+c
-t7Oj5r8m6O13TAAmctk1C9aD+R+cPtfT05ck5jifwEgwlazOTRDwOqm/t1SiPyOX
-6nBTEn/jN3xzz9siNvRf
-=ANZS
------END PGP SIGNATURE-----
+[..]
 
---Signature=_Mon__23_Apr_2012_16_03_09_+1000_th8pjFweVXpQiYT0--
+> If you are worried about breaking something, then you can just send
+> the change to me or Liu to test it out before committing API changes
+> in the MCE code.
+
+This probably sounds good now but I don't think code changes like
+that ever run as smoothly. Whenever there's breakage, there'll always
+be people screaming against it - I just don't want code that enables
+hardware to be crippled and unable to change because it breaks
+completely unrelated pieces - it is bad as it is now.
+
+> > And this has happened already with the whole microcode loading debacle.
+> 
+> My recollection is that the existing microcode API had major issues that
+> could not fixed. The only fix was to make it be very early in the bootup
+> processes and that is what hpa would like developers to focus on.
+
+That was one side of the problem. The other was, AFAICR, creating a xen
+microcode driver which was "on the same level" as the hardware microcode
+drivers, which was completely bull*.
+
+The problem is xen growing stuff everywhere in arch/x86/ and this way,
+maybe even unwillingly, crippling development of hardware-related
+features. I know you're willing to help and I know you mean it well, but
+there's always some other problem in practice.
+
+Now I keep wondering, why don't you guys simply create your own mcelog
+ring buffer and interface on the userspace tool side instead of hooking
+into lowlevel kernel stuff? I mean, the code is there, you simply have
+to copy it into arch/xen/ or whatever you have there. Why do you have to
+hook into arch/x86/ instead of doing your own stuff?
+
+> > So, my suggestion is to copy the pieces you need and create your own xen
+> > version of /dev/mcelog and add it to dom0 so that there's no hooking
+> > into baremetal code and whenever a dom0 kernel is running, you can
+> > reroute the mcelog userspace tool to read /dev/xen_mcelog or whatever
+> > and not hook into the x86 versions.
+> > 
+> > Because, if you'd hooked into it, just imagine one fine day, when we
+> > remove mcelog support, what screaming the xen people will be doing when
+> > mcelog doesn't work anymore.
+> 
+> You would have more screaming from the distro camp about removing
+> /dev/mcelog.
+
+How do you know that? Don't you think that we probably would've talked
+to them already and made preparations for conversion first?
+
+> But if that is your choice, I would send you an email asking how I
+> need to retool this driver to work with the new MCE gen2 code that you
+> had in mind.
+
+As I said above, I'm very sceptical this will ever work, I guess I'd
+have to live and see.
+
+Now, with your own buffer solution, nothing breaks and all is happy,
+a win-win, if you wish. I think this is much simpler and easier a
+solution.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
