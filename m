@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab2DWLL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 07:11:57 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:56133 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab2DWLL4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 07:11:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Olof Johansson <olof@lixom.net>
-Subject: Re: [GIT PULL] at91: fist cleanup branch for 3.5
-Date: Mon, 23 Apr 2012 11:11:47 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
-References: <4F8D9037.9010401@atmel.com> <201204222032.48694.arnd@arndb.de> <CAOesGMg4fJD9ojem_Z2ZZTswK10TwNMtBMncPYhQS9ozmPfqbg@mail.gmail.com>
-In-Reply-To: <CAOesGMg4fJD9ojem_Z2ZZTswK10TwNMtBMncPYhQS9ozmPfqbg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1755280Ab2DWLNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 07:13:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3841 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab2DWLNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 07:13:21 -0400
+Subject: Re: [PATCH] GFS2: Fix mem leak in gfs2_get_acl()
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+In-Reply-To: <alpine.LNX.2.00.1204212258130.25551@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1204212258130.25551@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 23 Apr 2012 12:12:55 +0100
+Message-ID: <1335179575.2708.28.camel@menhir>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204231111.47448.arnd@arndb.de>
-X-Provags-ID: V02:K0:YW/iwF40uKdnv09iKKGXK+wSJfm4Ct23KJIhhglZ3jx
- dn/LA+eFUnQ7fCC/hn/7morKyHtV4C+tvT9zew3zB6yc1dj55/
- EaV1OLmj2DZr/X5SbxCqM26twBweMeNuRWBwuwAddMqg2Lk3V/
- 3RT0QpfB1CIejk0Ds/ANVTdXLEW/iGHISvQU9AsiFCeUJR3wzo
- XEJ7zhMkTSMvIN74ZJzVjrkW4qQDVAXJ4Gse12nDtaU/9pGcNF
- ovWRiEt2OFpv3tDWNf0t15djpukySJL9ecrVrfX+hCh8EdM4ir
- bPr0/ET5xU5ab+dKSgwidj6Q496z+hdsl8EwuK9AxSWViVY08T
- uq9q7NCA8KOwi5q7TgYI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 22 April 2012, Olof Johansson wrote:
-> There, I had this workflow:
+Hi,
+
+On Sat, 2012-04-21 at 23:00 +0200, Jesper Juhl wrote:
+> If gfs2_xattr_acl_get() returns 0 - which, as far as I can tell, it
+> may do independently of having allocated memory for its third argument
+> ('data' in this case) - then we may leak the memory allocated to data.
 > 
-> * git fetch <url+branch from pull request>
-> * tig FETCH_HEAD   (look at contents, sanity check, etc: If something
-> looks wrong there's no merge to undo)
-> * git checkout -b subarch/topic FETCH_HEAD     to create the pulled-in
-> topic branch
-> * git checkout next/topic
-> * git pull --log <url+branch from pull request>    to get the original
-> URL in the merge commit
+I'm not so sure... in gfs2_xattr_acl_get() we have:
+
+        error = gfs2_ea_find(ip, GFS2_EATYPE_SYS, name, &el);
+        if (error)
+                return error;
+        if (!el.el_ea)
+                goto out;
+        if (!GFS2_EA_DATA_LEN(el.el_ea))   <---- zero length means return without allocating
+                goto out;
+
+        len = GFS2_EA_DATA_LEN(el.el_ea);
+        data = kmalloc(len, GFP_NOFS);
+etc.
+
+So it looks to me as if we will never have allocated any
+data unless the length is greater than zero, unless I've
+missed something?
+
+Steve.
+
+> This patch initializes 'data' to NULL so that it will be safe to call
+> kfree() on it even if we do not allocate anything and also makes sure
+> that we kfree(data) in the 'len == 0' case.
 > 
-> Then the usual steps to get it into for-next and added to the contents file.
-
-Ok. I've now started skipping the 'checkout -b' step and just doing
-a 'git branch subarch/topic FETCH_HEAD', but the result is the same.
-
-> That way we do get the --log in the next/ branch as well as the tag
-> message, but only one merge changeset. It also has the benefit of
-> making it trivial to see when things have been merged with mainline
-> which branches can be pruned and not.
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  fs/gfs2/acl.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
 > 
-> The only thing missing from that workflow is the authenticity of the
-> subarch/topic branch once it's done, in case there is tinkering with
-> the arm-soc repo by some third party. I don't think that's a big risk
-> since we tend to diff the for-next contents before and after a
-> rebuild, so any delta in file contents will be caught. Since each
-> branch is documented in arm-soc-for-next-contents, we should have all
-> bases covered there.
+>  Note: I have tested that this change compiles. It has seen no other 
+>        testing than that.
+> 
+> diff --git a/fs/gfs2/acl.c b/fs/gfs2/acl.c
+> index 230eb0f..d254d98 100644
+> --- a/fs/gfs2/acl.c
+> +++ b/fs/gfs2/acl.c
+> @@ -43,7 +43,7 @@ struct posix_acl *gfs2_get_acl(struct inode *inode, int type)
+>  	struct gfs2_inode *ip = GFS2_I(inode);
+>  	struct posix_acl *acl;
+>  	const char *name;
+> -	char *data;
+> +	char *data = NULL;
+>  	int len;
+>  
+>  	if (!ip->i_eattr)
+> @@ -60,8 +60,10 @@ struct posix_acl *gfs2_get_acl(struct inode *inode, int type)
+>  	len = gfs2_xattr_acl_get(ip, name, &data);
+>  	if (len < 0)
+>  		return ERR_PTR(len);
+> -	if (len == 0)
+> +	if (len == 0) {
+> +		kfree(data);
+>  		return NULL;
+> +	}
+>  
+>  	acl = posix_acl_from_xattr(data, len);
+>  	kfree(data);
+> -- 
+> 1.7.10
+> 
+> 
 
-I also catch changes to the branches when I update my tree.
 
-> I guess we could tag every subarch/topic tip as well, but it'll get
-> pretty noisy with all them in the main repo. We have the option of
-> pushing those to a separate repo instead of the main arm-soc.git if we
-> wanted though.
-
-The idea I've had before is to just keep tags for each subarch/topic
-instead of branches, which would seperate them from one another, and
-we could leave the message in the tag without it cluttering the history.
-
-The main disadvantage I see in that is that I don't have a good workflow
-for maintaining remote tags yet.
-
-	Arnd
