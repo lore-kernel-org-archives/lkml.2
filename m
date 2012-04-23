@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab2DWQ1G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:27:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54514 "EHLO mail.zytor.com"
+	id S1754111Ab2DWQ1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:27:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:55628 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753591Ab2DWQ1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:27:03 -0400
-Message-ID: <4F9582C2.6020009@zytor.com>
-Date: Mon, 23 Apr 2012 09:26:42 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-CC: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
-References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com> <20120421041454.GA29704@phenom.dumpdata.com> <20120421104502.GB17005@aftab.osrc.amd.com> <3908561D78D1C84285E8C5FCA982C28F170EF841@ORSMSX104.amr.corp.intel.com> <DE8DF0795D48FD4CA783C40EC8292335168D26@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335168D26@SHSMSX101.ccr.corp.intel.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753597Ab2DWQ1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 12:27:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="135721602"
+From: Seth Heasley <seth.heasley@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Ralston <james.d.ralston@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Seth Heasley <seth.heasley@intel.com>
+Subject: [PATCH 1/3] pci_ids: Add Intel Centerton Legacy Block DeviceID
+Date: Mon, 23 Apr 2012 09:23:56 -0700
+Message-Id: <1335198236-3183-1-git-send-email-seth.heasley@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 08:43 AM, Liu, Jinsong wrote:
-> 
-> and, hypervisor only record error into its mc_info cookie (in its
-> own format), it doesn't care what's dom0's version and how dom0 translate it
-> -- that's dom0's business. The role of hypervisor is virtual 'platform',
-> just like h/w platform don't care what linux version runs over it.
-> 
+This patch adds the Integrated Legacy Block DeviceID for the Centerton CPU.  It will be used in the GPIO and Multifunction Devices driver.
 
-And this is the *OTHER* problem with Xen.  A platform is only a platform
-if it is documented.  There are a number of PV hypervisors which *are*
-documented in detail, but Xen is not one of them.
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+---
+Adding Samuel Ortiz, because a subsequent multifunction device patch references this one.
 
-	-hpa
+ include/linux/pci_ids.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 3329965..ab741b0 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2506,6 +2506,7 @@
+ #define PCI_DEVICE_ID_INTEL_MRST_SD2	0x084F
+ #define PCI_DEVICE_ID_INTEL_I960	0x0960
+ #define PCI_DEVICE_ID_INTEL_I960RM	0x0962
++#define PCI_DEVICE_ID_INTEL_CENTERTON_ILB	0x0c60
+ #define PCI_DEVICE_ID_INTEL_8257X_SOL	0x1062
+ #define PCI_DEVICE_ID_INTEL_82573E_SOL	0x1085
+ #define PCI_DEVICE_ID_INTEL_82573L_SOL	0x108F
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.4.4
 
