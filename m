@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436Ab2DWRTf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 13:19:35 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:58946 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab2DWRTd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 13:19:33 -0400
-Message-ID: <4F958F13.1000005@linux.vnet.ibm.com>
-Date: Mon, 23 Apr 2012 10:19:15 -0700
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
+	id S1753488Ab2DWR0W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 13:26:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54983 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752547Ab2DWR0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 13:26:21 -0400
+References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com> <20120421041454.GA29704@phenom.dumpdata.com> <20120421104502.GB17005@aftab.osrc.amd.com> <3908561D78D1C84285E8C5FCA982C28F170EF841@ORSMSX104.amr.corp.intel.com> <DE8DF0795D48FD4CA783C40EC8292335168D26@SHSMSX101.ccr.corp.intel.com> <4F9582C2.6020009@zytor.com> <20120423170507.GD22364@phenom.dumpdata.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20120423170507.GD22364@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Richard Davies <richard@arachsys.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Chris Webb <chris@arachsys.com>, Badari <pbadari@us.ibm.com>
-Subject: Re: Over-eager swapping
-References: <20120423092730.GB20543@alpha.arachsys.com>
-In-Reply-To: <20120423092730.GB20543@alpha.arachsys.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042317-4242-0000-0000-0000016DCF2D
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 23 Apr 2012 10:23:55 -0700
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "Liu, Jinsong" <jinsong.liu@intel.com>, "Luck, Tony" <tony.luck@intel.com>,
+        Borislav Petkov <bp@amd64.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <f6e39d21-e5d9-4558-b3a4-11437b664951@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 02:27 AM, Richard Davies wrote:
-> # cat /proc/meminfo
-> MemTotal:       65915384 kB
-> MemFree:          271104 kB
-> Buffers:        36274368 kB
+I know.  It is very frustrating to me that this comes now rather than before Xen was merged, but changing the past is hard.  At least you are trying to fix it.
 
-Your "Buffers" are the only thing that really stands out here.  We used
-to see this kind of thing on ext3 a lot, but it's gotten much better
-lately.  From slabinfo, you can see all the buffer_heads:
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-buffer_head       8175114 8360937    104   39    1 : tunables    0    0
-   0 : slabdata 214383 214383      0
+>On Mon, Apr 23, 2012 at 09:26:42AM -0700, H. Peter Anvin wrote:
+>> On 04/23/2012 08:43 AM, Liu, Jinsong wrote:
+>> > 
+>> > and, hypervisor only record error into its mc_info cookie (in its
+>> > own format), it doesn't care what's dom0's version and how dom0
+>translate it
+>> > -- that's dom0's business. The role of hypervisor is virtual
+>'platform',
+>> > just like h/w platform don't care what linux version runs over it.
+>> > 
+>> 
+>> And this is the *OTHER* problem with Xen.  A platform is only a
+>platform
+>> if it is documented.  There are a number of PV hypervisors which
+>*are*
+>> documented in detail, but Xen is not one of them.
+>
+>And slowly we are working on that. As I mentioned to you, we are in
+>process
+>of documenting those calls so that there is a document similar to an
+>SDM.
+>It takes time though.
 
-I _think_ this was a filesystems issue where the FS for some reason kept
-the buffers locked down.  The swapping just comes later as so much of
-RAM is eaten up by buffers.
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
