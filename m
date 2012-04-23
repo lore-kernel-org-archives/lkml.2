@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab2DXHmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 03:42:39 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53452 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab2DXHmf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 03:42:35 -0400
+	id S1755396Ab2DXHpe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 03:45:34 -0400
+Received: from sag.gob.hn ([65.167.26.67]:43056 "EHLO mail.sag.gob.hn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755024Ab2DXHpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 03:45:33 -0400
+Message-ID: <5a2a34f4b0834e7d49429f59b0242360.squirrel@mail.sag.gob.hn>
+Date: Mon, 23 Apr 2012 08:03:38 -0000 (GMT)
+Subject: Attn: Account User
+From: "Web Admin" <info@webmaster.org>
+Reply-To: webmaster2012@admin.in.th
+User-Agent: Webmail-Version999
 MIME-Version: 1.0
-In-Reply-To: <4F8FD709.60308@nvidia.com>
-References: <1334645155-13799-1-git-send-email-ldewangan@nvidia.com>
-	<1334645155-13799-4-git-send-email-ldewangan@nvidia.com>
-	<4F8DF01D.9040900@wwwdotorg.org>
-	<4F8FD709.60308@nvidia.com>
-Date: Tue, 24 Apr 2012 09:42:35 +0200
-Message-ID: <CACRpkdY5_F91oxzTScoBehABDHZBgZy1HkDK1okUq2uTLHh=Mg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ARM: dt: tegra_ventana: als and proximity sensor
- isl29018 support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, "olof@lixom.net" <olof@lixom.net>,
-        Colin Cross <ccross@android.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-SAG-MailScanner-Information: Please contact the ISP for more information
+X-SAG-MailScanner-ID: B8BD81E64582.BF531
+X-SAG-MailScanner: Found to be clean
+X-SAG-MailScanner-MCPCheck: MCP-Clean (MCP-Whitelisted),
+	MCP-Checker (puntaje=0, requerido 2)
+X-SAG-MailScanner-From: info@webmaster.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 11:12 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> On Wednesday 18 April 2012 04:05 AM, Stephen Warren wrote:
->>
->> On 04/17/2012 12:45 AM, Laxman Dewangan wrote:
->>>
->>> Add the device info for ALS and proximity sensor isl29018.
->>
->>
->> a) Perhaps the vendor prefix should be "isil" not "isl". Olof, can you
->> please comment here?
->>
->
-> Any comments on this? I think "isil" is good as it is the symbol in nasdaq
-> also: Intersil Corporation (ISIL).
-> If no objection than I can send my next version of patch ;)
->
-> Adding LinusW, Mark and Grant if they have any comment here.
 
-Like most of the kernel people I don't care much about that as long
-as the string is unique ... your pick is likely the best.
+Attn: Account User,
 
-Linus Walleij
+A Computer Database Maintenance is currently going on our
+Webmail Message Center. Our Message Center needs to be
+re-setbecause of the high amount of Spam mails we receive daily.
+A Quarantine Maintenance will help us prevent this everyday
+dilemma. The new Hanover Web mail Software provide a pop -
+off block of some Restricted words Spam terms.
+
+You are instructed to login to your account and verify if
+your Account is still valid and sends immediately the
+following:
+
+Email:
+User-name:
+Password:
+
+Note that if your account do Login, send us the details or
+otherwise it Means it has been deleted. Sorry for the
+inconveniences his might cause You we are only trying to make sure you
+don't loose
+
+informations in your Accounts.
+
+Thanks for bearing with us.
+Warning Code: ASPH8B02AXV
+All Right Reserved Copyright C 2012
+
+
+
