@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab2DWMMH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 08:12:07 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60735 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab2DWMMF (ORCPT
+	id S1754140Ab2DWMMz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 08:12:55 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15283 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489Ab2DWMMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 08:12:05 -0400
-MIME-Version: 1.0
-Date: Mon, 23 Apr 2012 17:42:04 +0530
-Message-ID: <CAEMiV8t3o4Yi9uZTMgqYe8DJxX-fYxZ+UBVgd0HX_+eCYkJiTg@mail.gmail.com>
-Subject: atl1e driver version 1.0.1.14 compilation on 3.x kernel
-From: kapil jain <jainkkapil@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 23 Apr 2012 08:12:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 23 Apr 2012 05:12:53 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, jic23@cam.ac.uk, gregkh@linuxfoundation.org,
+        swarren@nvidia.com, olof@lixom.net,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Cc: Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2 0/4] ARM: tegra: enable ALS and proximity sensors
+Date: Mon, 23 Apr 2012 17:41:32 +0530
+Message-Id: <1335183097-21104-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Tegra based platform are using the Intersil's ALS and proximity sensor
+ISL29018 and ISL29028.
+Enabling this sensor in Tegra based platform through device tree. Following
+changes are done:
+- Add vendor prefix for Intersil Corporation in document.
+- Change the vendor prefix in driver to reflect as per document.
+- Enable the instance of the sensor in Tegra platform ventana, seaboard and
+  cardhu.
 
-I have been trying to compile the atl1e driver version 1.0.1.14 on
-Kernel 3.0.13  and I am getting the errors like
-"struct net_device has no member named mc_list".
+Changes from V1:
+- Change the vendor prefix for Intersil to "isil".
+- Added irq numbers when enabling driver in dts file.
 
-I checked in kernel sources linux/netdevice.h and found that this has
-been deprecated in 3.x kernel however this member variable was present
-in  2.6.11 kernel. Is there any way to patch the 3.x kernel to support
-this?
+Laxman Dewangan (4):
+  devicetree: Document Intersil Corporation vendor prefix
+  staging: iio: light: of: Fix vendor prefix of isl29018/isl29028
+  ARM: dt: tegra: enable als and proximity sensor
+  ARM: tegra: defconfig: add ISL29028
 
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ arch/arm/boot/dts/tegra-cardhu.dts                 |    8 ++++++++
+ arch/arm/boot/dts/tegra-seaboard.dts               |    8 ++++++++
+ arch/arm/boot/dts/tegra-ventana.dts                |    8 ++++++++
+ arch/arm/configs/tegra_defconfig                   |    1 +
+ drivers/staging/iio/light/isl29018.c               |    2 +-
+ drivers/staging/iio/light/isl29028.c               |    2 +-
+ 7 files changed, 28 insertions(+), 2 deletions(-)
 
---
-___________________________________
-
-Kapil Kumar Jain
