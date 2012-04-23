@@ -1,319 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab2DWKLB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:11:01 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58315 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690Ab2DWKK7 convert rfc822-to-8bit (ORCPT
+	id S1754863Ab2DWKL6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:11:58 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60768 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754690Ab2DWKL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:10:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <1334661441-4420-3-git-send-email-jolsa@redhat.com>
-References: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
-	<1334661441-4420-3-git-send-email-jolsa@redhat.com>
-Date: Mon, 23 Apr 2012 12:10:57 +0200
-Message-ID: <CABPqkBRqG5WhWYY5viVW3j89WUrpmkk1j7VA=oUhY_TGXg=14g@mail.gmail.com>
-Subject: Re: [PATCH 02/16] perf: Unified API to record selective sets of arch registers
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, rostedt@goodmis.org,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 23 Apr 2012 06:11:56 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        KVM <kvm@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-doc@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Xen <xen-devel@lists.xensource.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 23 Apr 2012 15:29:37 +0530
+Message-Id: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH RFC V6 0/5] kvm : Paravirt-spinlock support for KVM guests
+x-cbid: 12042309-8256-0000-0000-0000021A1DD0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 1:17 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> This brings a new API to help the selective dump of registers on
-> event sampling, and its implementation in x86.
->
-> - The informations about the desired registers will be passed
->  to a single u64 mask. It's up to the architecture to map the
->  registers into the mask bits.
->
-> - The architecture must provide a non-zero and unique id to
->  identify the origin of a register set because interpreting a
->  register dump requires to know from which architecture it comes.
->  The achitecture is considered different between the 32 and 64 bits
->  version. x86-32 has the id 1, x86-64 has the id 2.
->
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  arch/x86/include/asm/perf_regs.h    |   16 ++++++
->  arch/x86/include/asm/perf_regs_32.h |   84 +++++++++++++++++++++++++++++
->  arch/x86/include/asm/perf_regs_64.h |  101 +++++++++++++++++++++++++++++++++++
->  include/asm-generic/perf_regs.h     |   23 ++++++++
->  4 files changed, 224 insertions(+), 0 deletions(-)
->  create mode 100644 arch/x86/include/asm/perf_regs.h
->  create mode 100644 arch/x86/include/asm/perf_regs_32.h
->  create mode 100644 arch/x86/include/asm/perf_regs_64.h
->  create mode 100644 include/asm-generic/perf_regs.h
->
-> diff --git a/arch/x86/include/asm/perf_regs.h b/arch/x86/include/asm/perf_regs.h
-> new file mode 100644
-> index 0000000..80b7fbe
-> --- /dev/null
-> +++ b/arch/x86/include/asm/perf_regs.h
-> @@ -0,0 +1,16 @@
-> +#ifndef _ASM_X86_PERF_REGS_H
-> +#define _ASM_X86_PERF_REGS_H
-> +
-> +enum {
-> +       PERF_REGS_VERSION_NONE   = 0UL,
-> +       PERF_REGS_VERSION_X86_32 = 1UL,
-> +       PERF_REGS_VERSION_X86_64 = 2UL,
-> +};
-> +
-I don't really like the term VERSION here. It's not a versioning
-problem you're trying to solve. It's an ABI problem, unless I am
-mistaken. You should rename to PERF_REGS_ABI_X86_32 and
-PERF_REGS_ABI_X86_64.
+The 5-patch series to follow this email extends KVM-hypervisor and Linux guest
+running on KVM-hypervisor to support pv-ticket spinlocks, based on Xen's 
+implementation.
 
-I assume the NONE is here to cover the case where you don't
-have a user machine state, i.e., hit a kernel thread. Is that right?
+One hypercall is introduced in KVM hypervisor,that allows a vcpu to kick
+another vcpu out of halt state.
+The blocking of vcpu is done using halt() in (lock_spinning) slowpath.
 
+Note: 1) patch is based on 3.4-rc3 + ticketlock patches in 
+	https://lkml.org/lkml/2012/4/19/335 
 
-> +#ifdef CONFIG_X86_32
-> +#include "perf_regs_32.h"
-> +#else
-> +#include "perf_regs_64.h"
-> +#endif
-> +
-How are you going to deal with 32-bit binaries sampled on a 64-bit system?
+ [ The patches are targeted for 3.5 window ]
 
-> +#endif /* _ASM_X86_PERF_REGS_H */
-> diff --git a/arch/x86/include/asm/perf_regs_32.h b/arch/x86/include/asm/perf_regs_32.h
-> new file mode 100644
-> index 0000000..3c5aa80
-> --- /dev/null
-> +++ b/arch/x86/include/asm/perf_regs_32.h
-> @@ -0,0 +1,84 @@
-> +#ifndef _ASM_X86_PERF_REGS_32_H
-> +#define _ASM_X86_PERF_REGS_32_H
-> +
-> +enum perf_event_x86_32_regs {
-> +       PERF_X86_32_REG_EAX,
-> +       PERF_X86_32_REG_EBX,
-> +       PERF_X86_32_REG_ECX,
-> +       PERF_X86_32_REG_EDX,
-> +       PERF_X86_32_REG_ESI,
-> +       PERF_X86_32_REG_EDI,
-> +       PERF_X86_32_REG_EBP,
-> +       PERF_X86_32_REG_ESP,
-> +       PERF_X86_32_REG_EIP,
-> +       PERF_X86_32_REG_FLAGS,
-> +       PERF_X86_32_REG_CS,
-> +       PERF_X86_32_REG_DS,
-> +       PERF_X86_32_REG_ES,
-> +       PERF_X86_32_REG_FS,
-> +       PERF_X86_32_REG_GS,
-> +
-> +       /* Non ABI */
-> +       PERF_X86_32_REG_MAX,
-> +       PERF_REG_IP = PERF_X86_32_REG_EIP,
-> +       PERF_REG_SP = PERF_X86_32_REG_ESP,
-> +};
-> +
-> +#ifdef __KERNEL__
-> +
-> +#define PERF_X86_32_REG_RESERVED (~((1ULL << PERF_X86_32_REG_MAX) - 1ULL))
-> +
-> +static inline u64 perf_reg_version(void)
-> +{
-> +       return PERF_REGS_VERSION_X86_32;
-> +}
-> +
-> +static inline int perf_reg_validate(u64 mask)
-> +{
-> +       if (mask & PERF_X86_32_REG_RESERVED)
-> +               return -EINVAL;
-> +
-> +       return 0;
-> +}
-> +
-> +static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
-> +{
-> +       switch (idx) {
-> +       case PERF_X86_32_REG_EAX:
-> +               return regs->ax;
-> +       case PERF_X86_32_REG_EBX:
-> +               return regs->bx;
-> +       case PERF_X86_32_REG_ECX:
-> +               return regs->cx;
-> +       case PERF_X86_32_REG_EDX:
-> +               return regs->dx;
-> +       case PERF_X86_32_REG_ESI:
-> +               return regs->si;
-> +       case PERF_X86_32_REG_EDI:
-> +               return regs->di;
-> +       case PERF_X86_32_REG_EBP:
-> +               return regs->bp;
-> +       case PERF_X86_32_REG_ESP:
-> +               return regs->sp;
-> +       case PERF_X86_32_REG_EIP:
-> +               return regs->ip;
-> +       case PERF_X86_32_REG_FLAGS:
-> +               return regs->flags;
-> +       case PERF_X86_32_REG_CS:
-> +               return regs->cs;
-> +       case PERF_X86_32_REG_DS:
-> +               return regs->ds;
-> +       case PERF_X86_32_REG_ES:
-> +               return regs->es;
-> +       case PERF_X86_32_REG_FS:
-> +               return regs->fs;
-> +       case PERF_X86_32_REG_GS:
-> +               return regs->gs;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +#endif /* __KERNEL__ */
-> +
-> +#endif /* _ASM_X86_PERF_REGS_32_H */
-> diff --git a/arch/x86/include/asm/perf_regs_64.h b/arch/x86/include/asm/perf_regs_64.h
-> new file mode 100644
-> index 0000000..d775213
-> --- /dev/null
-> +++ b/arch/x86/include/asm/perf_regs_64.h
-> @@ -0,0 +1,101 @@
-> +#ifndef _ASM_X86_PERF_REGS_64_H
-> +#define _ASM_X86_PERF_REGS_64_H
-> +
-> +#define PERF_X86_64_REG_VERSION                1ULL
-> +
-> +enum perf_event_x86_64_regs {
-> +       PERF_X86_64_REG_RAX,
-> +       PERF_X86_64_REG_RBX,
-> +       PERF_X86_64_REG_RCX,
-> +       PERF_X86_64_REG_RDX,
-> +       PERF_X86_64_REG_RSI,
-> +       PERF_X86_64_REG_RDI,
-> +       PERF_X86_64_REG_R8,
-> +       PERF_X86_64_REG_R9,
-> +       PERF_X86_64_REG_R10,
-> +       PERF_X86_64_REG_R11,
-> +       PERF_X86_64_REG_R12,
-> +       PERF_X86_64_REG_R13,
-> +       PERF_X86_64_REG_R14,
-> +       PERF_X86_64_REG_R15,
-> +       PERF_X86_64_REG_RBP,
-> +       PERF_X86_64_REG_RSP,
-> +       PERF_X86_64_REG_RIP,
-> +       PERF_X86_64_REG_FLAGS,
-> +       PERF_X86_64_REG_CS,
-> +       PERF_X86_64_REG_SS,
-> +
-> +       /* Non ABI */
-> +       PERF_X86_64_REG_MAX,
-> +       PERF_REG_IP = PERF_X86_64_REG_RIP,
-> +       PERF_REG_SP = PERF_X86_64_REG_RSP,
-> +};
-> +
-> +#ifdef __KERNEL__
-> +
-> +#define PERF_X86_64_REG_RESERVED (~((1ULL << PERF_X86_64_REG_MAX) - 1ULL))
-> +
-> +static inline u64 perf_reg_version(void)
-> +{
-> +       return PERF_REGS_VERSION_X86_64;
-> +}
-> +
-> +static inline int perf_reg_validate(u64 mask)
-> +{
-> +       if (mask & PERF_X86_64_REG_RESERVED)
-> +               return -EINVAL;
-> +
-> +       return 0;
-> +}
-> +
-> +static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
-> +{
-> +       switch (idx) {
-> +       case PERF_X86_64_REG_RAX:
-> +               return regs->ax;
-> +       case PERF_X86_64_REG_RBX:
-> +               return regs->bx;
-> +       case PERF_X86_64_REG_RCX:
-> +               return regs->cx;
-> +       case PERF_X86_64_REG_RDX:
-> +               return regs->dx;
-> +       case PERF_X86_64_REG_RSI:
-> +               return regs->si;
-> +       case PERF_X86_64_REG_RDI:
-> +               return regs->di;
-> +       case PERF_X86_64_REG_R8:
-> +               return regs->r8;
-> +       case PERF_X86_64_REG_R9:
-> +               return regs->r9;
-> +       case PERF_X86_64_REG_R10:
-> +               return regs->r10;
-> +       case PERF_X86_64_REG_R11:
-> +               return regs->r11;
-> +       case PERF_X86_64_REG_R12:
-> +               return regs->r12;
-> +       case PERF_X86_64_REG_R13:
-> +               return regs->r13;
-> +       case PERF_X86_64_REG_R14:
-> +               return regs->r14;
-> +       case PERF_X86_64_REG_R15:
-> +               return regs->r15;
-> +       case PERF_X86_64_REG_RBP:
-> +               return regs->bp;
-> +       case PERF_X86_64_REG_RSP:
-> +               return regs->sp;
-> +       case PERF_X86_64_REG_RIP:
-> +               return regs->ip;
-> +       case PERF_X86_64_REG_FLAGS:
-> +               return regs->flags;
-> +       case PERF_X86_64_REG_CS:
-> +               return regs->cs;
-> +       case PERF_X86_64_REG_SS:
-> +               return regs->ss;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +#endif /* __KERNEL__ */
-> +
-> +#endif /* _ASM_X86_PERF_REGS_64_H */
-> diff --git a/include/asm-generic/perf_regs.h b/include/asm-generic/perf_regs.h
-> new file mode 100644
-> index 0000000..f616096
-> --- /dev/null
-> +++ b/include/asm-generic/perf_regs.h
-> @@ -0,0 +1,23 @@
-> +#ifndef __ASM_GENERIC_PERF_REGS_H
-> +#define __ASM_GENERIC_PERF_REGS_H
-> +
-> +enum {
-> +       PERF_REGS_VERSION_NONE = 0UL,
-> +};
-> +
-> +static inline int perf_reg_value(struct pt_regs *regs, int idx)
-> +{
-> +       return 0;
-> +}
-> +
-> +static inline int perf_reg_version(void)
-> +{
-> +       return PERF_REGS_VERSION_NONE;
-> +}
-> +
-> +static inline int perf_reg_validate(u64 mask)
-> +{
-> +       return mask ? -ENOSYS : 0;
-> +}
-> +
-> +#endif /* __ASM_GENERIC_PERF_REGS_H */
-> --
-> 1.7.7.6
->
+Changes in V6:
+- Rebased to 3.4-rc3
+- Removed debugfs changes patch which should now be in Xen/linux-next.
+  (https://lkml.org/lkml/2012/3/30/687)
+- Removed PV_UNHALT_MSR since currently we don't need guest communication,
+  and made pv_unhalt folded to GET_MP_STATE (Marcello, Avi[long back])
+- Take jumplabel changes from Ingo/Jason into use (static_key_slow_inc usage)
+- Added inline to spinlock_init in non PARAVIRT case
+- Move arch specific code to arch/x86 and add stubs to other archs (Marcello)
+- Added more comments on pv_unhalt usage etc (Marcello)
+
+Changes in V5:
+- rebased to 3.3-rc6
+- added PV_UNHALT_MSR that would help in live migration (Avi)
+- removed PV_LOCK_KICK vcpu request and pv_unhalt flag (re)added.
+- Changed hypercall documentaion (Alex).
+- mode_t changed to umode_t in debugfs.
+- MSR related documentation added.
+- rename PV_LOCK_KICK to PV_UNHALT. 
+- host and guest patches not mixed. (Marcelo, Alex)
+- kvm_kick_cpu now takes cpu so it can be used by flush_tlb_ipi_other 
+   paravirtualization (Nikunj)
+- coding style changes in variable declarion etc (Srikar)
+
+Changes in V4:
+- reabsed to 3.2.0 pre.
+- use APIC ID for kicking the vcpu and use kvm_apic_match_dest for matching (Avi)
+- fold vcpu->kicked flag into vcpu->requests (KVM_REQ_PVLOCK_KICK) and related 
+  changes for UNHALT path to make pv ticket spinlock migration friendly(Avi, Marcello)
+- Added Documentation for CPUID, Hypercall (KVM_HC_KICK_CPU)
+  and capabilty (KVM_CAP_PVLOCK_KICK) (Avi)
+- Remove unneeded kvm_arch_vcpu_ioctl_set_mpstate call. (Marcello)
+- cumulative variable type changed (int ==> u32) in add_stat (Konrad)
+- remove unneeded kvm_guest_init for !CONFIG_KVM_GUEST case
+
+Changes in V3:
+- rebased to 3.2-rc1
+- use halt() instead of wait for kick hypercall.
+- modify kick hyper call to do wakeup halted vcpu.
+- hook kvm_spinlock_init to smp_prepare_cpus call (moved the call out of head##.c).
+- fix the potential race when zero_stat is read.
+- export debugfs_create_32 and add documentation to API.
+- use static inline and enum instead of ADDSTAT macro. 
+- add  barrier() in after setting kick_vcpu.
+- empty static inline function for kvm_spinlock_init.
+- combine the patches one and two readuce overhead.
+- make KVM_DEBUGFS depends on DEBUGFS.
+- include debugfs header unconditionally.
+
+Changes in V2:
+- rebased patchesto -rc9
+- synchronization related changes based on Jeremy's changes 
+ (Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>) pointed by 
+ Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+- enabling 32 bit guests
+- splitted patches into two more chunks
+
+Results:
+results for PLE / non PLE machine were posted for V5 patches in
+ https://lkml.org/lkml/2012/3/23/50
+ https://lkml.org/lkml/2012/4/5/73
+
+Current series is giving similar results but more formal results will
+be posted in next couple of days.
+      
+Interestingly with current patchset I do not see CPU stalls observed in vanilla.
+
+TODO: 1) remove CONFIG_PARAVIRT_SPINLOCK ?
+      2) experiments on further optimization possibilities.
+		(discussed in V6 of ticketlock) 
+      3) possible debugfs cleanups (combining common code of Xen/KVM)
+
+Let me know if you have any sugestion/comments...
+---
+ V5 kernel changes:
+ https://lkml.org/lkml/2012/3/23/50
+ Qemu changes for V5:
+ http://lists.gnu.org/archive/html/qemu-devel/2012-03/msg04455.html 
+
+ V4 kernel changes:
+ https://lkml.org/lkml/2012/1/14/66
+
+ Qemu changes for V4:
+ http://www.mail-archive.com/kvm@vger.kernel.org/msg66450.html
+
+ V3 kernel Changes:
+ https://lkml.org/lkml/2011/11/30/62
+ V2 kernel changes : 
+ https://lkml.org/lkml/2011/10/23/207
+
+ Previous discussions : (posted by Srivatsa V).
+ https://lkml.org/lkml/2010/7/26/24
+ https://lkml.org/lkml/2011/1/19/212
+ 
+ Qemu patch for V3:
+ http://lists.gnu.org/archive/html/qemu-devel/2011-12/msg00397.html
+ 
+Srivatsa Vaddagiri (3): 
+  Add a hypercall to KVM hypervisor to support pv-ticketlocks
+  Added configuration support to enable debug information for KVM Guests
+  pv-ticketlock support for linux guests running on KVM hypervisor
+
+Raghavendra K T (2):
+  Fold pv_unhalt flag into GET_MP_STATE ioctl to aid migration
+  Add documentation on Hypercalls and features used for PV spinlock
+
+ Documentation/virtual/kvm/api.txt        |    7 +
+ Documentation/virtual/kvm/cpuid.txt      |    4 +
+ Documentation/virtual/kvm/hypercalls.txt |   59 +++++++
+ arch/ia64/include/asm/kvm_host.h         |    3 +
+ arch/powerpc/include/asm/kvm_host.h      |    4 +
+ arch/s390/include/asm/kvm_host.h         |    4 +
+ arch/x86/Kconfig                         |    9 +
+ arch/x86/include/asm/kvm_host.h          |    6 +
+ arch/x86/include/asm/kvm_para.h          |   16 ++-
+ arch/x86/kernel/kvm.c                    |  254 ++++++++++++++++++++++++++++++
+ arch/x86/kvm/cpuid.c                     |    3 +-
+ arch/x86/kvm/x86.c                       |   46 ++++++-
+ include/linux/kvm.h                      |    1 +
+ include/linux/kvm_para.h                 |    1 +
+ virt/kvm/kvm_main.c                      |    8 +
+ 15 files changed, 421 insertions(+), 4 deletions(-)
+
