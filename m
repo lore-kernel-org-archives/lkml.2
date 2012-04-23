@@ -1,166 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab2DWBxL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 21:53:11 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:35097
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753062Ab2DWBxJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 21:53:09 -0400
-X-SpamScore: -15
-X-BigFish: VPS-15(zz1803M1432N98dK4015Izz1202hzz8275bhz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M2WT8C-02-4FR-02
-X-M-MSG: 
-Date: Mon, 23 Apr 2012 09:52:54 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Lin Ming <ming.m.lin@intel.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, lenb <lenb@kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] ACPI: D3 states cleanup
-Message-ID: <20120423015247.GA1119@localhost.amd.com>
-References: <1335143029.4927.45.camel@minggr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1335143029.4927.45.camel@minggr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 23 Apr 2012 01:52:54.0699 (UTC) FILETIME=[CCB247B0:01CD20F3]
-X-OriginatorOrg: amd.com
+	id S1753388Ab2DWB4X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 21:56:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45297 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753062Ab2DWB4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 21:56:22 -0400
+Date: Mon, 23 Apr 2012 11:56:10 +1000
+From: NeilBrown <neilb@suse.de>
+To: shuahkhan@gmail.com
+Cc: Jonas Bonn <jonas@southpole.se>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>
+Subject: Re: [PATCH ] leds: add new transient trigger for one shot timer
+ support
+Message-ID: <20120423115610.2da4d4d7@notabene.brown>
+In-Reply-To: <1335138687.2882.20.camel@lorien2>
+References: <1333310039.2879.4.camel@lorien2>
+	<1334064283.10826.6.camel@ted>
+	<1334507752.2723.3.camel@lorien2>
+	<1334894674.3051.18.camel@lorien2>
+	<1334983269.2435.90.camel@jerome.southpole.se>
+	<1335138687.2882.20.camel@lorien2>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/nNsEhl/JAU.MhpcP.ojCWQO"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 09:03:49AM +0800, Lin Ming wrote:
-> There are two ACPI D3 states defined now:
-> ACPI_STATE_D3 and ACPI_STATE_D3_COLD.
-> 
-> But the uses of these states are not clear/correct in some code.
-> For example, some code refer ACPI_STATE_D3 as D3hot and others refer
-> it as D3cold.
-> 
-> This patch introduces ACPI_STATE_D3_HOT to refer to ACPI D3hot state.
-> D3hot is only valid if _PR3 present.
-> And changes ACPI_STATE_D3 to refer to ACPI D3cold state only.
-> Also redefines ACPI_STATE_D3_COLD the same as ACPI_STATE_D3.
-> 
+--Sig_/nNsEhl/JAU.MhpcP.ojCWQO
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Aaron Lu <aaron.lu@amd.com>
+On Sun, 22 Apr 2012 17:51:27 -0600 Shuah Khan <shuahkhan@gmail.com> wrote:
 
-Thanks,
-Aaron
+> Hi Jonas,
+>=20
+> activate does sound better and having units in the property name is a
+> good idea. Will make the changes including the 0200 change for activate.
+> Will change the transient_time to transient_time_msec (no problem using
+> duration, just that time is shorter :)
 
-> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
-> 
-> v3: D3hot is only valid if _PR3 present
-> 
->  drivers/acpi/power.c   |    2 +-
->  drivers/acpi/scan.c    |   17 +++++++----------
->  drivers/pci/pci-acpi.c |    4 ++--
->  include/acpi/actypes.h |    7 ++++---
->  4 files changed, 14 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> index 7049a7d..330bb4d 100644
-> --- a/drivers/acpi/power.c
-> +++ b/drivers/acpi/power.c
-> @@ -631,7 +631,7 @@ int acpi_power_get_inferred_state(struct acpi_device *device, int *state)
->  	 * We know a device's inferred power state when all the resources
->  	 * required for a given D-state are 'on'.
->  	 */
-> -	for (i = ACPI_STATE_D0; i < ACPI_STATE_D3; i++) {
-> +	for (i = ACPI_STATE_D0; i < ACPI_STATE_D3_HOT; i++) {
->  		list = &device->power.states[i].resources;
->  		if (list->count < 1)
->  			continue;
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 767e2dc..7417267 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -869,7 +869,7 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
->  	/*
->  	 * Enumerate supported power management states
->  	 */
-> -	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3; i++) {
-> +	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
->  		struct acpi_device_power_state *ps = &device->power.states[i];
->  		char object_name[5] = { '_', 'P', 'R', '0' + i, '\0' };
->  
-> @@ -884,21 +884,18 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
->  				acpi_bus_add_power_resource(ps->resources.handles[j]);
->  		}
->  
-> -		/* The exist of _PR3 indicates D3Cold support */
-> -		if (i == ACPI_STATE_D3) {
-> -			status = acpi_get_handle(device->handle, object_name, &handle);
-> -			if (ACPI_SUCCESS(status))
-> -				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
-> -		}
-> -
->  		/* Evaluate "_PSx" to see if we can do explicit sets */
->  		object_name[2] = 'S';
->  		status = acpi_get_handle(device->handle, object_name, &handle);
->  		if (ACPI_SUCCESS(status))
->  			ps->flags.explicit_set = 1;
->  
-> -		/* State is valid if we have some power control */
-> -		if (ps->resources.count || ps->flags.explicit_set)
-> +		/*
-> +		 * State is valid if there are means to put the device into it.
-> +		 * D3hot is only valid if _PR3 present.
-> +		 */
-> +		if (ps->resources.count ||
-> +		    (ps->flags.explicit_set && i < ACPI_STATE_D3_HOT))
->  			ps->flags.valid = 1;
->  
->  		ps->power = -1;	/* Unknown - driver assigned */
-> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-> index 0f150f2..1929c0c 100644
-> --- a/drivers/pci/pci-acpi.c
-> +++ b/drivers/pci/pci-acpi.c
-> @@ -200,7 +200,7 @@ static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
->  		return PCI_D1;
->  	case ACPI_STATE_D2:
->  		return PCI_D2;
-> -	case ACPI_STATE_D3:
-> +	case ACPI_STATE_D3_HOT:
->  		return PCI_D3hot;
->  	case ACPI_STATE_D3_COLD:
->  		return PCI_D3cold;
-> @@ -223,7 +223,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  		[PCI_D0] = ACPI_STATE_D0,
->  		[PCI_D1] = ACPI_STATE_D1,
->  		[PCI_D2] = ACPI_STATE_D2,
-> -		[PCI_D3hot] = ACPI_STATE_D3,
-> +		[PCI_D3hot] = ACPI_STATE_D3_HOT,
->  		[PCI_D3cold] = ACPI_STATE_D3
->  	};
->  	int error = -EINVAL;
-> diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
-> index eba6604..e8bcc47 100644
-> --- a/include/acpi/actypes.h
-> +++ b/include/acpi/actypes.h
-> @@ -499,9 +499,10 @@ typedef u64 acpi_integer;
->  #define ACPI_STATE_D0                   (u8) 0
->  #define ACPI_STATE_D1                   (u8) 1
->  #define ACPI_STATE_D2                   (u8) 2
-> -#define ACPI_STATE_D3                   (u8) 3
-> -#define ACPI_STATE_D3_COLD              (u8) 4
-> -#define ACPI_D_STATES_MAX               ACPI_STATE_D3_COLD
-> +#define ACPI_STATE_D3_HOT               (u8) 3
-> +#define ACPI_STATE_D3                   (u8) 4
-> +#define ACPI_STATE_D3_COLD              ACPI_STATE_D3
-> +#define ACPI_D_STATES_MAX               ACPI_STATE_D3
->  #define ACPI_D_STATE_COUNT              5
->  
->  #define ACPI_STATE_C0                   (u8) 0
-> -- 
-> 1.7.2.5
-> 
-> 
-> 
-> 
+I'm not sure I agree.
 
+I think there are two possible correct choices:
+
+ 1/ follow the established pattern:  use "delay_off" and assume millisecond=
+s.
+    Consistency is good.
+
+ 2/ Do the "right" thing which is to use seconds.  "seconds" are the SI=20
+    unit for time and we should always use them (says Linus - I could
+    probably hunt up a reference if you were interested).
+    so "0.2" is 200ms.  In that case don't use "delay_off" - probably
+    "duration" would be good.
+    This doesn't mean you need to use floating point.  See
+    "safe_delay_show" and "safe_delay_store" in drivers/md/md.c
+
+But that is just my opinion.
+
+
+>=20
+> > A couple of questions:
+> >=20
+> > i)  Why is it important for you to maintain the LED state?
+> One use-case that would be easier for user to comprehend would be to
+> have a constant timer that runs periodically. time value doesn't change
+> and by simply writing 1 or 0, timer with a value specified by the time
+> file can be started. The following use-case is a good example for what I
+> am talking about:
+
+I agree that "delay" and "activate" should be separate interfaces.
+
+I wonder if we should allow control of the brightness during the "on" time =
+as
+well.
+You could set the brightness after enabling the timer, but awkward pauses or
+races could then leave the "led" permanently on.
+
+Possibly we could hook into led_set_brightness() and restart the timer
+whenever the brightness was set - and remember the setting.
+
+
+So
+  echo 100 > brightness
+
+set the current brightness, sets the future brightness, starts the timer.
+Or maybe if we have to hook into led_set_brightness anyway, then we could
+cause "echo 100 > brightness" *not* to set the current brightness but just
+to record a value for later usage...
+
+But these are just minor things.  I think you are close to something useful.
+
+NeilBrown
+
+
+--Sig_/nNsEhl/JAU.MhpcP.ojCWQO
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBT5S2ujnsnt1WYoG5AQKkthAAmwl81Ymk7LKT57pVTLKKn68vlvJoMBAK
+CNPo34A42XPdFf90Z31pFTsT7/xe7JHNVw6hzm4S3MTT9BZ7mJgjVZkBL44aZH2m
+OOrlOIcNlbyDAM/IEBNGbUwTN7PnTEK8kG+pVb2CTEwlpx86m81TKiIgO4X/R1z2
+oxjDIg/U+m4FNFuXTyO16TKvfj28firweSEazO7qjmtDsiaJ6tA6pRP+PPyHAP23
+3i4UMHIrQuPNcchh9XcUg8mQpUVTsDtw2laYMY2qNfZrYJis7dr2QzAFGFCCv7AM
+Kyh6tchDp0N3pf72hS+D9Gzc+JvilpHHgpOa+ocT1P/T+f00GaYguspbw/8IQ+Vs
+EETKPMSoDzbxmmrEwVg5IaFCMi1AAlKUxzEiYSIjtUV/nsuFofi/OGBfnm+wvAID
+OKzJ41BWEGS+o1HQMljzH5CwjXDgISQ44n7jqypayL07ps2AZ9En3amVutw5GpPE
+b6HlaWk78v4iO1VwIYZGY1f47IOfYBzvQwhouNxc8fX/XNZKvlP71dEn8KnTFTKE
+zNn4Ijexfm46Frp8KI3HrboZUxsooe8IYuJ14l6Kffb4s7uxP5x1uIjO1ULCxVrH
+iwSzIL8QU9wUQhOnud62nnuiwj6QNk88Cc2gq+bFvXrUOvL9Z/uMK94yAF7tFZZq
+tSX31UbJq6E=
+=1MHB
+-----END PGP SIGNATURE-----
+
+--Sig_/nNsEhl/JAU.MhpcP.ojCWQO--
