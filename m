@@ -1,120 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab2DWI3z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 04:29:55 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52460 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112Ab2DWI3x (ORCPT
+	id S1754261Ab2DWIca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 04:32:30 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11706 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191Ab2DWIc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 04:29:53 -0400
-Date: Mon, 23 Apr 2012 01:28:35 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: cgroups@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        John Stultz <john.stultz@linaro.org>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org
-Subject: [PATCH RFC] memcg: MEMCG_NR_FILE_MAPPED should update _STAT_CACHE as
- well
-Message-ID: <20120423082835.GA32359@lizard>
-References: <20120302162753.GA11748@oksana.dev.rtsoft.ru>
- <20120305091934.588c160b.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120305091934.588c160b.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Apr 2012 04:32:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 23 Apr 2012 01:32:28 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: tegra: Initialize pll_p_out1
+Date: Mon, 23 Apr 2012 11:31:49 +0300
+Message-Id: <1335169910-29403-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...otherwise the we're getting the wrong numbers in usage_in_bytes.
+pll_a uses pll_p_out1 as its parent. Therefore this clock needs to be
+initialized to make sure pll_a has a known input clock. Failure to do so
+will cause the system to crash early in the bootup.
 
-On Mon, Mar 05, 2012 at 09:19:34AM +0900, KAMEZAWA Hiroyuki wrote:
-[...]
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 228d646..c8abdc5 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -3812,6 +3812,9 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
-> >  
-> >         val = mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_CACHE);
-> >         val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_RSS);
-> > +       val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
-> > 
-> > 1. Is there any particular reason we don't currently account file mapped
-> >    memory in usage_in_bytes?
-> > 
-> >    To me, MEM_CGROUP_STAT_FILE_MAPPED hunk seems logical even if we
-> >    don't use it for lowmemory notifications.
-> > 
-> >    Plus, it seems that FILE_MAPPED _is_ accounted for the non-root
-> >    cgroups, so I guess it's clearly a bug for the root memcg?
-> 
-> CACHE includes all file caches. Why do you think FILE_MAPPED is not included in CACHE ?
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 
-There were tons of changes in the memcg lately, but I believe the issue
-is still there.
+--
 
-For example, looking into this code flow:
+Changes in v2:
 
--> page_add_file_rmap() (mm/rmap.c)
- -> mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_MAPPED) (include/linux/memcontrol.h)
-  -> void mem_cgroup_update_page_stat(page, MEMCG_NR_FILE_MAPPED, 1) (mm/memcontrol.c)
-
-And then:
-
-void mem_cgroup_update_page_stat(struct page *page,
-                                 enum mem_cgroup_page_stat_item idx, int val)
-{
-        ...
-        switch (idx) {
-        case MEMCG_NR_FILE_MAPPED:
-                idx = MEM_CGROUP_STAT_FILE_MAPPED;
-                break;
-        default:
-                BUG();
-        }
-
-        this_cpu_add(memcg->stat->count[idx], val);
-        ...
-}
-
-So, clearly, this function only bothers updating _FILE_MAPPED only,
-leaving _CACHE alone.
-
-If you're saying that _CACHE meant to include _FILE_MAPPED, then
-I guess the patch down below would be a proper fix then... Otherwise
-we need to be consistent on stats reporting, and either fall-back
-to my original fix (in mem_cgroup_usage()), or think about doing it
-some other way...
-
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+* moved pll_p_out1 initialization to early_init to make it similar to the
+  tegra20 code.
 ---
+ arch/arm/mach-tegra/common.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-The patch is against current -next.
-
-Thanks,
-
- mm/memcontrol.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 884e936..760ecf5 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1958,6 +1958,8 @@ void mem_cgroup_update_page_stat(struct page *page,
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index c50f2ee..654a457 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -95,6 +95,17 @@ static __initdata struct tegra_clk_init_table tegra20_clk_init_table[] = {
+ };
+ #endif
  
- 	switch (idx) {
- 	case MEMCG_NR_FILE_MAPPED:
-+		idx = MEM_CGROUP_STAT_CACHE;
-+		this_cpu_add(memcg->stat->count[idx], val);
- 		idx = MEM_CGROUP_STAT_FILE_MAPPED;
- 		break;
- 	default:
++#ifdef CONFIG_ARCH_TEGRA_3x_SOC
++static __initdata struct tegra_clk_init_table tegra30_clk_init_table[] = {
++	/* name		parent		rate		enabled */
++	{ "clk_m",	NULL,		0,		true },
++	{ "pll_p",	"clk_m",	408000000,	true },
++	{ "pll_p_out1",	"pll_p",	9600000,	true },
++	{ NULL,		NULL,		0,		0},
++};
++#endif
++
++
+ static void __init tegra_init_cache(u32 tag_latency, u32 data_latency)
+ {
+ #ifdef CONFIG_CACHE_L2X0
+@@ -129,6 +140,7 @@ void __init tegra30_init_early(void)
+ {
+ 	tegra_init_fuse();
+ 	tegra30_init_clocks();
++	tegra_clk_init_from_table(tegra30_clk_init_table);
+ 	tegra_init_cache(0x441, 0x551);
+ 	tegra_pmc_init();
+ 	tegra_powergate_init();
 -- 
-1.7.9.2
+1.7.7.rc0.72.g4b5ea.dirty
 
