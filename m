@@ -1,234 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2DWWeG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 18:34:06 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37495 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754479Ab2DWWeD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 18:34:03 -0400
+	id S1755982Ab2DWWgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 18:36:09 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56497 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753549Ab2DWWgG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 18:36:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F95B67D.7020706@redhat.com>
-References: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com>
- <201204152140.40747.rjw@sisk.pl> <CAErSpo4St6zBBz7131Ne3BEHNO8Xcq8sCy3T5HV1F0B1B1u1cg@mail.gmail.com>
- <201204232153.57351.rjw@sisk.pl> <4F95B67D.7020706@redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 23 Apr 2012 16:33:41 -0600
-Message-ID: <CAErSpo4MRASkhaeTKozFuBRH13koV6=evC5GVAyJ0K222B6=aw@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Fix regression in pci_restore_state()
-To: Don Dutile <ddutile@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mikko Vinni <mmvinni@yahoo.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Allen Kay <allen.m.kay@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+In-Reply-To: <1325951797.860.10.camel@mop>
+References: <1325951797.860.10.camel@mop>
+Date: Tue, 24 Apr 2012 10:36:05 +1200
+X-Google-Sender-Auth: jX0BGqhJOhYRlFRatpIOM4XHDQY
+Message-ID: <CAHO5Pa3G6VOirXf9pDjids8D3XGESCUVeipOiBBWY-Mn6xYpRg@mail.gmail.com>
+Subject: Re: [PATCH] prctl: add PR_{SET,GET}_CHILD_SUBREAPER to allow simple
+ process supervision
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+To: Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 2:07 PM, Don Dutile <ddutile@redhat.com> wrote:
-> On 04/23/2012 03:53 PM, Rafael J. Wysocki wrote:
->>
->> On Monday, April 23, 2012, Bjorn Helgaas wrote:
->>>
->>> On Sun, Apr 15, 2012 at 1:40 PM, Rafael J. Wysocki<rjw@sisk.pl>  wrote:
->>>>
->>>> On Sunday, April 15, 2012, Linus Torvalds wrote:
->>>>>
->>>>> On Sun, Apr 15, 2012 at 11:47 AM, Rafael J. Wysocki<rjw@sisk.pl>
->>>>>  wrote:
->>>>>>
->>>>>>
->>>>>> mdelay(10) doesn't really look good either to me in this case, though.
->>>>>
->>>>>
->>>>> Oh, I agree. What kind of ass-backwards device actually needs that
->>>>> kind of crazy delays? It is almost certainly buggy.
->>>>>
->>>>> With retries, 10ms delays are totally unacceptable. There's something
->>>>> wrong.
->>>>>
->>>>> A single ms *may* be ok.
->>>>>
->>>>> Anyway, can you also split the actual "write _one_ register with
->>>>> retry" into a function of its own? The code looks like crap with those
->>>>> multiple levels of looping, with conditionals inside them etc. With a
->>>>> simple helper function, you could change the break into return, and it
->>>>> would look much better, I bet.
->>>>
->>>>
->>>> Sure.  It appears cleaner this way.
->>>>
->>>> ---
->>>> From: Rafael J. Wysocki<rjw@sisk.pl>
->>>> Subject: PCI: Fix regression in pci_restore_state(), v3
->>>>
->>>> Commit 26f41062f28de65e11d3cf353e52d0be73442be1
->>>>
->>>>    PCI: check for pci bar restore completion and retry
->>>>
->>>> attempted to address problems with PCI BAR restoration on systems
->>>> where FLR had not been completed before pci_restore_state() was
->>>> called, but it did that in an utterly wrong way.
->>>>
->>>> First off, instead of retrying the writes for the BAR registers
->>>> only, it did that for all of the PCI config space of the device,
->>>> including the status register (whose value after the write quite
->>>> obviously need not be the same as the written one).  Second, it
->>>> added arbitrary delay to pci_restore_state() even for systems
->>>> where the PCI config space restoration was successful at first
->>>> attempt.  Finally, the mdelay(10) it added to every iteration of the
->>>> writing loop was way too much of a delay for any reasonable device.
->>>>
->>>> All of this actually caused resume failures for some devices on
->>>> the Mikko's system.
->>>>
->>>> To fix the regression, make pci_restore_state() only retry the
->>>> writes for BAR registers and only wait if the first read from
->>>> the register doesn't return the written value.  Additionaly, make
->>>> it wait for 1 ms, instead of 10 ms, after every failing attempt
->>>> to write into config space.
->>>>
->>>> Reported-by: Mikko Vinni<mmvinni@yahoo.com>
->>>> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
->>>> ---
->>>>  drivers/pci/pci.c |   57
->>>> ++++++++++++++++++++++++++++++++++++------------------
->>>>  1 file changed, 39 insertions(+), 18 deletions(-)
->>>>
->>>> Index: linux/drivers/pci/pci.c
->>>> ===================================================================
->>>> --- linux.orig/drivers/pci/pci.c
->>>> +++ linux/drivers/pci/pci.c
->>>> @@ -967,16 +967,47 @@ pci_save_state(struct pci_dev *dev)
->>>>        return 0;
->>>>  }
->>>>
->>>> +static void pci_restore_config_dword(struct pci_dev *pdev, int offset,
->>>> +                                    u32 saved_val, int retry)
->>>> +{
->>>> +       u32 val;
->>>> +
->>>> +       pci_read_config_dword(pdev, offset,&val);
->>>> +       if (val == saved_val)
->>>> +               return;
->>>> +
->>>> +       for (;;) {
->>>> +               dev_dbg(&pdev->dev, "restoring config space at offset "
->>>> +                       "%#x (was %#x, writing %#x)\n", offset, val,
->>>> saved_val);
->>>> +               pci_write_config_dword(pdev, offset, saved_val);
->>>> +               if (retry--<= 0)
->>>> +                       return;
->>>> +
->>>> +               pci_read_config_dword(pdev, offset,&val);
->>>> +               if (val == saved_val)
->>>> +                       return;
->>>> +
->>>> +               mdelay(1);
->>>> +       }
->>>> +}
->>>> +
->>>> +static void pci_restore_config_space(struct pci_dev *pdev, int start,
->>>> int end,
->>>> +                                    int retry)
->>>> +{
->>>> +       int index;
->>>> +
->>>> +       for (index = end; index>= start; index--)
->>>> +               pci_restore_config_dword(pdev, 4 * index,
->>>> +
->>>>  pdev->saved_config_space[index],
->>>> +                                        retry);
->>>> +}
->>>> +
->>>>  /**
->>>>  * pci_restore_state - Restore the saved state of a PCI device
->>>>  * @dev: - PCI device that we're dealing with
->>>>  */
->>>>  void pci_restore_state(struct pci_dev *dev)
->>>>  {
->>>> -       int i;
->>>> -       u32 val;
->>>> -       int tries;
->>>> -
->>>>        if (!dev->state_saved)
->>>>                return;
->>>>
->>>> @@ -984,24 +1015,14 @@ void pci_restore_state(struct pci_dev *d
->>>>        pci_restore_pcie_state(dev);
->>>>        pci_restore_ats_state(dev);
->>>>
->>>> +       pci_restore_config_space(dev, 10, 15, 0);
->>>>        /*
->>>>         * The Base Address register should be programmed before the
->>>> command
->>>>         * register(s)
->>>>         */
->>>> -       for (i = 15; i>= 0; i--) {
->>>> -               pci_read_config_dword(dev, i * 4,&val);
->>>> -               tries = 10;
->>>> -               while (tries&&  val != dev->saved_config_space[i]) {
->>>>
->>>> -                       dev_dbg(&dev->dev, "restoring config "
->>>> -                               "space at offset %#x (was %#x, writing
->>>> %#x)\n",
->>>> -                               i, val,
->>>> (int)dev->saved_config_space[i]);
->>>> -                       pci_write_config_dword(dev,i * 4,
->>>> -                               dev->saved_config_space[i]);
->>>> -                       pci_read_config_dword(dev, i * 4,&val);
->>>> -                       mdelay(10);
->>>> -                       tries--;
->>>> -               }
->>>> -       }
->>>> +       pci_restore_config_space(dev, 4, 9, 10);
->>>> +       pci_restore_config_space(dev, 0, 3, 0);
->>>> +
->>>>        pci_restore_pcix_state(dev);
->>>>        pci_restore_msi_state(dev);
->>>>        pci_restore_iov_state(dev);
->>>
->>>
->>> I'd feel better about this if there were a way to delay in the FLR
->>> path instead.  If we delay in the restore path, we're only fixing one
->>> of the many ways config space can be written.  Other paths that write
->>> config space will just silently fail.
->>>
->>> The PCIe spec (r3.0, sec 6.6.2) mentions waiting for the "pre-FLR
->>> value for Completion Timeout," but I don't see anything that looks
->>> like that in pcie_flr() or pci_af_flr().  Are there any other direct
->>> ways we can detect when the FLR is complete?
->>
->>
->> I'm not aware of any.
->>
->> Thanks,
->> Rafael
+Lennart,
+
+On Sun, Jan 8, 2012 at 4:56 AM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> Resending this, it got lost last year's September.
 >
-> I don't think so, either.
-> I believe an ECN is being worked in the PCI-SIG
-> to add such a notification, though.
-> Even if adopted, need to wait for another crank of the hw before
-> the notification can be used.
+> We still need it to properly implement init-like service managers.
+>
+> Andrew, care to pick this up again? The issues raised the last year are
+> all expected to be fixed.
+>
+> Thanks,
+> Kay
+>
+>
+> From: Lennart Poettering <lennart@poettering.net>
+> Subject: prctl: add PR_{SET,GET}_CHILD_SUBREAPER to allow simple process supervision
 
-I agree, we can't do something that works only on new hardware -- we
-have to make the existing hardware in the field work.
+You have often enthusiastically pointed out to me pieces that are
+missing from the man pages. When will you be sending me a man-pages
+patch to document these new prctl() options that you've added?
 
-What about the "waiting for as much time as the pre-FLR value for
-Completion Timeout" part?
+Thanks,
 
-Or can we do something like asserting FLR, sleeping 100ms, then
-attempting a write to something in config space and retrying until it
-sticks?  It's kludgy, but I'm not sure it's any worse than putting the
-retries in the restore path, and it would have the advantage that
-other writers of config space wouldn't have to worry.
+Michael
 
-Bjorn
+
+
+> Userspace service managers/supervisors need to track their started
+> services. Many services daemonize by double-forking and get implicitly
+> re-parented to PID 1. The service manager will no longer be able to
+> receive the SIGCHLD signals for them, and is no longer in charge of
+> reaping the children with wait(). All information about the children
+> is lost at the moment PID 1 cleans up the re-parented processes.
+>
+> With this prctl, a service manager process can mark itself as a sort of
+> 'sub-init', able to stay as the parent for all orphaned processes
+> created by the started services. All SIGCHLD signals will be delivered
+> to the service manager.
+>
+> Receiving SIGCHLD and doing wait() is in cases of a service-manager
+> much preferred over any possible asynchronous notification about
+> specific PIDs, because the service manager has full access to the
+> child process data in /proc and the PID can not be re-used until
+> the wait(), the service-manager itself is in charge of, has happened.
+>
+> As a side effect, the relevant parent PID information does not get lost
+> by a double-fork, which results in a more elaborate process tree and 'ps'
+> output:
+>
+> before:
+>  # ps afx
+>  253 ?        Ss     0:00 /bin/dbus-daemon --system --nofork
+>  294 ?        Sl     0:00 /usr/libexec/polkit-1/polkitd
+>  328 ?        S      0:00 /usr/sbin/modem-manager
+>  608 ?        Sl     0:00 /usr/libexec/colord
+>  658 ?        Sl     0:00 /usr/libexec/upowerd
+>  819 ?        Sl     0:00 /usr/libexec/imsettings-daemon
+>  916 ?        Sl     0:00 /usr/libexec/udisks-daemon
+>  917 ?        S      0:00  \_ udisks-daemon: not polling any devices
+>
+> after:
+>  # ps afx
+>  294 ?        Ss     0:00 /bin/dbus-daemon --system --nofork
+>  426 ?        Sl     0:00  \_ /usr/libexec/polkit-1/polkitd
+>  449 ?        S      0:00  \_ /usr/sbin/modem-manager
+>  635 ?        Sl     0:00  \_ /usr/libexec/colord
+>  705 ?        Sl     0:00  \_ /usr/libexec/upowerd
+>  959 ?        Sl     0:00  \_ /usr/libexec/udisks-daemon
+>  960 ?        S      0:00  |   \_ udisks-daemon: not polling any devices
+>  977 ?        Sl     0:00  \_ /usr/libexec/packagekitd
+>
+> This prctl is orthogonal to PID namespaces. PID namespaces are isolated
+> from each other, while a service management process usually requires
+> the services to live in the same namespace, to be able to talk to each
+> other.
+>
+> Users of this will be the systemd per-user instance, which provides
+> init-like functionality for the user's login session and D-Bus, which
+> activates bus services on-demand. Both need init-like capabilities
+> to be able to properly keep track of the services they start.
+>
+> Many thanks to Oleg for several rounds of review and insights.
+>
+> Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Lennart Poettering <lennart@poettering.net>
+> Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+> ---
+>
+>  include/linux/prctl.h |    3 +++
+>  include/linux/sched.h |   12 ++++++++++++
+>  kernel/exit.c         |   28 +++++++++++++++++++++++-----
+>  kernel/fork.c         |    3 +++
+>  kernel/sys.c          |    8 ++++++++
+>  5 files changed, 49 insertions(+), 5 deletions(-)
+>
+> --- a/include/linux/prctl.h
+> +++ b/include/linux/prctl.h
+> @@ -102,4 +102,7 @@
+>
+>  #define PR_MCE_KILL_GET 34
+>
+> +#define PR_SET_CHILD_SUBREAPER 35
+> +#define PR_GET_CHILD_SUBREAPER 36
+> +
+>  #endif /* _LINUX_PRCTL_H */
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -552,6 +552,18 @@ struct signal_struct {
+>        int                     group_stop_count;
+>        unsigned int            flags; /* see SIGNAL_* flags below */
+>
+> +       /*
+> +        * PR_SET_CHILD_SUBREAPER marks a process, like a service
+> +        * manager, to re-parent orphan (double-forking) child processes
+> +        * to this process instead of 'init'. The service manager is
+> +        * able to receive SIGCHLD signals and is able to investigate
+> +        * the process until it calls wait(). All children of this
+> +        * process will inherit a flag if they should look for a
+> +        * child_subreaper process at exit.
+> +        */
+> +       unsigned int            is_child_subreaper:1;
+> +       unsigned int            has_child_subreaper:1;
+> +
+>        /* POSIX.1b Interval Timers */
+>        struct list_head posix_timers;
+>
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -687,11 +687,12 @@ static void exit_mm(struct task_struct *
+>  }
+>
+>  /*
+> - * When we die, we re-parent all our children.
+> - * Try to give them to another thread in our thread
+> - * group, and if no such member exists, give it to
+> - * the child reaper process (ie "init") in our pid
+> - * space.
+> + * When we die, we re-parent all our children, and try to:
+> + * 1. give them to another thread in our thread group, if such a
+> + *    member exists
+> + * 2. give it to the first anchestor process which prctl'd itself
+> + *    as a child_subreaper for its children (like a service manager)
+> + * 3. give it to the init process (PID 1) in our pid namespace
+>  */
+>  static struct task_struct *find_new_reaper(struct task_struct *father)
+>        __releases(&tasklist_lock)
+> @@ -722,6 +723,23 @@ static struct task_struct *find_new_reap
+>                 * forget_original_parent() must move them somewhere.
+>                 */
+>                pid_ns->child_reaper = init_pid_ns.child_reaper;
+> +       } else if (father->signal->has_child_subreaper) {
+> +               struct task_struct *reaper;
+> +
+> +               /* find the first ancestor marked as child_subreaper */
+> +               for (reaper = father->real_parent;
+> +                    reaper != &init_task;
+> +                    reaper = reaper->real_parent) {
+> +                       if (same_thread_group(reaper, pid_ns->child_reaper))
+> +                               break;
+> +                       if (!reaper->signal->is_child_subreaper)
+> +                               continue;
+> +                       thread = reaper;
+> +                       do {
+> +                               if (!(thread->flags & PF_EXITING))
+> +                                       return reaper;
+> +                       } while_each_thread(reaper, thread);
+> +               }
+>        }
+>
+>        return pid_ns->child_reaper;
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -979,6 +979,9 @@ static int copy_signal(unsigned long clo
+>        sig->oom_score_adj = current->signal->oom_score_adj;
+>        sig->oom_score_adj_min = current->signal->oom_score_adj_min;
+>
+> +       sig->has_child_subreaper = current->signal->has_child_subreaper ||
+> +                                  current->signal->is_child_subreaper;
+> +
+>        mutex_init(&sig->cred_guard_mutex);
+>
+>        return 0;
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -1841,6 +1841,14 @@ SYSCALL_DEFINE5(prctl, int, option, unsi
+>                        else
+>                                error = PR_MCE_KILL_DEFAULT;
+>                        break;
+> +               case PR_SET_CHILD_SUBREAPER:
+> +                       me->signal->is_child_subreaper = !!arg2;
+> +                       error = 0;
+> +                       break;
+> +               case PR_GET_CHILD_SUBREAPER:
+> +                       error = put_user(me->signal->is_child_subreaper,
+> +                                        (int __user *) arg2);
+> +                       break;
+>                default:
+>                        error = -EINVAL;
+>                        break;
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
