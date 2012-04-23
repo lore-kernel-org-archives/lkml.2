@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab2DWKty (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:49:54 -0400
-Received: from plane.gmane.org ([80.91.229.3]:34303 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754225Ab2DWKtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:49:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="135609136"
-From: Andi Kleen <andi@firstfloor.org>
-To: HATAYAMA Daisuke 
-	<public-d.hatayama-+CUm20s59erQFUHtdCDX3A@plane.gmane.org>
-Cc: public-kexec-IAPFreCvJWM7uuMidbF8XUB+6BGkLq7r@plane.gmane.org,
-        public-linux-kernel-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org,
-        public-ebiederm-aS9lmoZGLiVWk0Htik3J/w@plane.gmane.org,
-        public-vgoyal-H+wXaHxf7aLQT0dZR+AlfA@plane.gmane.org,
-        public-kumagai-atsushi-biTfD1RFvDe45+QrQBaojngSJqDPrsil@plane.gmane.org,
-        fenghua.yu@intel.com
-Subject: Re: [PATCH 2/2] Enter 2nd kernel with BSP
-References: <20120416021951.9303.58568.stgit@localhost6.localdomain6>
-	<20120416022139.9303.56284.stgit@localhost6.localdomain6>
-Date: Mon, 23 Apr 2012 03:46:15 -0700
-In-Reply-To: <20120416022139.9303.56284.stgit@localhost6.localdomain6>
-	(HATAYAMA Daisuke's message of "Mon, 16 Apr 2012 11:21:39 +0900")
-Message-ID: <m2mx62ohe0.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1755187Ab2DWKvb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:51:31 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58892 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754241Ab2DWKva convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 06:51:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+Date: Mon, 23 Apr 2012 12:51:27 +0200
+Message-ID: <CAN+gG=GJFNgFHqn9O8e+5MoVWRLRJB8a=r2OuUNuEtomqTjQRQ@mail.gmail.com>
+Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: linux-input <linux-input@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Henrik,
 
+Thanks for handling this. I still won't have the time to review this
+patch set before early may as I'm out of my office till then. Also
+sorry for not answering the previous mails, I did not had a reliable
+internet connection during my holidays.
 
-HATAYAMA Daisuke <d.hatayama-+CUm20s59erQFUHtdCDX3A@public.gmane.org>
-writes:
+Thanks,
+Benjamin
 
-> Split logic into BSP's and AP's: BSP waits for AP halting.
+Le 23 avr. 2012 12:03, "Henrik Rydberg" <rydberg@euromail.se> a écrit :
 >
-> Don't remove variable crashing_cpu for debugging use; useful for
-> determining one what CPU crash happens.
-
-Fenghua has this patchkit to allow offlining the BSP. What happens then?
-
-It would be good to understand why initializing APs from other APs
-should not work.  Not aware of such a limitation in x86.
-
-AFAIK when we online a random cpu after boot there is no effort to do it
-from BSP. Why does that work and not from the kexec boot?
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
-
+> Hi Jiri.
+>
+> Here is the third version of the extension to the device-driver
+> matching mechanism. AFAICT, there are no outstanding issues. I think
+> we are getting close. :-)
+>
+> Building on the report fixup patches, this patchset brings a bit of
+> transparency to the hid bus, by the addition of device groups.  This
+> allows a more versatile handling of hid drivers in userland, and
+> simplifies the logic in the kernel.
+>
+> In particular, there can be one generic module per device group, and
+> those modules are handled automatically by udev. Dynamic rebinding of
+> drivers is fully supported. For instance, to load a special
+> out-of-tree driver instead of the a generic one, simply unbind the
+> device and load the new module. One can also keep _all_ generic
+> drivers as modules, significantly simplifying the process of adding
+> and testing new features.
+>
+> And, of course, auto-loading of new multitouch drivers works, since
+> that was what triggered this patchset to begin with. :-)
+>
+> The second patch contains a simple descriptor scanner that is
+> new. The last patch unifies the generic drivers into a single,
+> loadable module.
+>
+> Enjoy,
+> Henrik
+>
+> Henrik Rydberg (6):
+>  hid: Add device group to modalias
+>  hid: Scan the device for group info before adding it
+>  hid: Allow bus wildcard matching
+>  hid: Create a generic device group
+>  hid-multitouch: Switch to device groups
+>  hid: Create a common generic driver
+>
+>  drivers/hid/Kconfig             |   12 +++
+>  drivers/hid/Makefile            |    2 +
+>  drivers/hid/hid-core.c          |  172 ++++++++++++++++++++-------------------
+>  drivers/hid/hid-generic.c       |   53 ++++++++++++
+>  drivers/hid/hid-input.c         |   11 ---
+>  drivers/hid/hid-multitouch.c    |    3 +-
+>  drivers/hid/usbhid/hid-core.c   |   16 ----
+>  include/linux/hid.h             |   20 +++--
+>  include/linux/mod_devicetable.h |    4 +-
+>  net/bluetooth/hidp/core.c       |   27 +-----
+>  scripts/mod/file2alias.c        |    5 +-
+>  11 files changed, 180 insertions(+), 145 deletions(-)
+>  create mode 100644 drivers/hid/hid-generic.c
+>
+> --
+> 1.7.10
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
