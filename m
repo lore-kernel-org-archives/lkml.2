@@ -1,97 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab2DWSXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 14:23:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55289 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235Ab2DWSXm (ORCPT
+	id S1754460Ab2DWS0l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 14:26:41 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44210 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab2DWS0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 14:23:42 -0400
-Message-ID: <4F959E2B.5090109@wwwdotorg.org>
-Date: Mon, 23 Apr 2012 12:23:39 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Mon, 23 Apr 2012 14:26:40 -0400
+Date: Mon, 23 Apr 2012 13:26:30 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: x86@kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>
+Subject: [PATCH resend v3] x86: memtest: WARN if bad RAM found
+Message-ID: <20120423182630.GA13067@burratino>
+References: <20120402150522.GA4980@burratino>
+ <20120413193905.GD2387@burratino>
 MIME-Version: 1.0
-To: Hiroshi DOYU <hdoyu@nvidia.com>
-CC: linux-tegra@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] iommu/tegra: smmu: Reserve SMMU reg regions precisely
-References: <1335182340-17237-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1335182340-17237-1-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413193905.GD2387@burratino>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 05:58 AM, Hiroshi DOYU wrote:
-> SMMU register regions are located into 3 blocks discontiguously.
-> 
-> Get them and reserve each region respectively. This allows other
-> module to use/reserve other register regions between SMMU register
-> blocks.
-> 
-> Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Mon, 5 Dec 2011 04:00:58 +0000
 
-This patch depends on the other series you sent which adds the Tegra AHB
-driver, and modifies the SMMU driver to use it. At least you need to
-mention the dependencies so e.g. these patches don't get applied without
-the other series.
+The novice who enables CONFIG_MEMTEST may not realize that it is not a
+particularly thorough test.  If we find any bad bits of RAM then there
+is a fair chance that there are other bad bits we fail to detect; add
+a WARNING for this situation so people helping debug ensuing problems
+can understand what happened.
 
-> @@ -875,9 +877,25 @@ static int tegra_smmu_probe(struct platform_device *pdev)
->  
->  	BUILD_BUG_ON(PAGE_SHIFT != SMMU_PAGE_SHIFT);
->  
-> -	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	window = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> -	if (!regs || !window) {
-> +	for (i = 0; i < ARRAY_SIZE(res); i++) {
-> +		res[i] = platform_get_resource(pdev, IORESOURCE_MEM, i);
-> +		if (!res[i])
-> +			return -ENODEV;
-> +
-> +		res[i] = devm_request_mem_region(&pdev->dev, res[i]->start,
-> +						 resource_size(res[i]),
-> +						 dev_name(&pdev->dev));
-> +		if (res[i])
-> +			continue;
-> +
-> +		while (--i >= 0)
-> +			devm_release_mem_region(&pdev->dev, res[i]->start,
-> +						resource_size(res[i]));
+The warning text gives advice to allow the sysadmin to run a more
+thorough test and suppress the warning.
 
-The whole point of using the devm_* functions is that you no longer need
-to write out all the error-handling and freeing code related to those
-allocations. A similar comment applies to many other parts of this patch.
+	Bad RAM detected. Use memtest86+ to perform a thorough test
+	and the memmap= parameter to reserve the bad areas.
 
-> +		return -EIO;
-> +	}
-> +
-> +	window = platform_get_resource(pdev, IORESOURCE_MEM, 3);
-> +	if (!window) {
->  		dev_err(dev, "No SMMU resources\n");
->  		return -ENODEV;
->  	}
-> @@ -892,7 +910,8 @@ static int tegra_smmu_probe(struct platform_device *pdev)
->  	smmu->num_as = SMMU_NUM_ASIDS;
->  	smmu->iovmm_base = (unsigned long)window->start;
->  	smmu->page_count = resource_size(window) >> SMMU_PAGE_SHIFT;
-> -	smmu->regs = devm_ioremap(dev, regs->start, resource_size(regs));
-> +	smmu->regs = devm_ioremap(dev, res[0]->start,
-> +				  res[2]->end - res[0]->start + 1);
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+---
+Jonathan Nieder wrote:
 
-So, you've retrieved 3 separate resources for the address space, but
-only call ioremap once. That doesn't seem right; there should be a 1:1
-relationship between the number of resources and ioremap calls. This is
-only working because the SMMU driver isn't calling request_mem_region
-for this whole range, and hence isn't conflicting with the
-request_mem_region and ioremap callss that the AHB driver is (or rather,
-should be) performing...
+> The patch below last visited this list on 2 April, about a week and a
+> half ago.  No reply.
 
->  	smmu->as = devm_kzalloc(dev,
-> -			sizeof(smmu->as[0]) * smmu->num_as, GFP_KERNEL);
-> +				sizeof(smmu->as[0]) * smmu->num_as, GFP_KERNEL);
+Are Ben and I the only ones who care either way about this change?
 
-That looks unrelated.
+ arch/x86/mm/memtest.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/x86/mm/memtest.c b/arch/x86/mm/memtest.c
+index c80b9fb95734..38caeb44a218 100644
+--- a/arch/x86/mm/memtest.c
++++ b/arch/x86/mm/memtest.c
+@@ -30,6 +30,8 @@ static u64 patterns[] __initdata = {
+ 
+ static void __init reserve_bad_mem(u64 pattern, u64 start_bad, u64 end_bad)
+ {
++	WARN_ONCE(1, "Bad RAM detected. Use memtest86+ to perform a thorough test\n"
++		  "and the memmap= parameter to reserve the bad areas.");
+ 	printk(KERN_INFO "  %016llx bad mem addr %010llx - %010llx reserved\n",
+ 	       (unsigned long long) pattern,
+ 	       (unsigned long long) start_bad,
+-- 
+1.7.10
+
