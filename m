@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534Ab2DWQnj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:43:39 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:42049 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab2DWQnh (ORCPT
+	id S1754561Ab2DWQnP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:43:15 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:40107 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab2DWQnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:43:37 -0400
+	Mon, 23 Apr 2012 12:43:12 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,72 +15,129 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 4/6] rcu: Clarify help text for RCU_BOOST_PRIO
-Date: Mon, 23 Apr 2012 09:42:25 -0700
-Message-Id: <1335199347-13926-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 6/6] rcu: Reduce cache-miss initialization latencies for large systems
+Date: Mon, 23 Apr 2012 09:42:27 -0700
+Message-Id: <1335199347-13926-6-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120423164159.GA13819@linux.vnet.ibm.com>
  <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042316-3352-0000-0000-000004369A46
+x-cbid: 12042316-4242-0000-0000-0000016DB43D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The old text confused real-time applications with real-time threads, so
-that you pretty much needed to understand how this kernel configuration
-parameter worked to understand the help text.  This commit therefore
-attempts to make the help text human-readable.
+Commit #0209f649 (rcu: limit rcu_node leaf-level fanout) set an upper
+limit of 16 on the leaf-level fanout for the rcu_node tree.  This was
+needed to reduce lock contention that was induced by the synchronization
+of scheduling-clock interrupts, which was in turn needed to improve
+energy efficiency for moderate-sized lightly loaded servers.
 
-Reported-by: Jörn Engel <joern@purestorage.com>
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+However, reducing the leaf-level fanout means that there are more
+leaf-level rcu_node structures in the tree, which in turn means that
+RCU's grace-period initialization incurs more cache misses.  This is
+not a problem on moderate-sized servers with only a few tens of CPUs,
+but becomes a major source of real-time latency spikes on systems with
+many hundreds of CPUs.  In addition, the workloads running on these large
+systems tend to be CPU-bound, which eliminates the energy-efficiency
+advantages of synchronizing scheduling-clock interrupts.  Therefore,
+these systems need maximal values for the rcu_node leaf-level fanout.
+
+This commit addresses this problem by introducing a new kernel parameter
+named RCU_FANOUT_LEAF that directly controls the leaf-level fanout.
+This parameter defaults to 16 to handle the common case of a moderate
+sized lightly loaded servers, but may be set higher on larger systems.
+
+Reported-by: Mike Galbraith <efault@gmx.de>
+Reported-by: Dimitri Sivanich <sivanich@sgi.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- init/Kconfig |   23 +++++++++++++++++++----
- 1 files changed, 19 insertions(+), 4 deletions(-)
+ init/Kconfig     |   27 +++++++++++++++++++++++++++
+ kernel/rcutree.c |    2 +-
+ kernel/rcutree.h |   10 +++-------
+ 3 files changed, 31 insertions(+), 8 deletions(-)
 
 diff --git a/init/Kconfig b/init/Kconfig
-index 6cfd71d..85c6870 100644
+index 85c6870..6d18ef8 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
-@@ -515,10 +515,25 @@ config RCU_BOOST_PRIO
- 	depends on RCU_BOOST
- 	default 1
- 	help
--	  This option specifies the real-time priority to which preempted
--	  RCU readers are to be boosted.  If you are working with CPU-bound
--	  real-time applications, you should specify a priority higher then
--	  the highest-priority CPU-bound application.
-+	  This option specifies the real-time priority to which long-term
-+	  preempted RCU readers are to be boosted.  If you are working
-+	  with a real-time application that has one or more CPU-bound
-+	  threads running at a real-time priority level, you should set
-+	  RCU_BOOST_PRIO to a priority higher then the highest-priority
-+	  real-time CPU-bound thread.  The default RCU_BOOST_PRIO value
-+	  of 1 is appropriate in the common case, which is real-time
-+	  applications that do not have any CPU-bound threads.
+@@ -458,6 +458,33 @@ config RCU_FANOUT
+ 	  Select a specific number if testing RCU itself.
+ 	  Take the default if unsure.
+ 
++config RCU_FANOUT_LEAF
++	int "Tree-based hierarchical RCU leaf-level fanout value"
++	range 2 RCU_FANOUT if 64BIT
++	range 2 RCU_FANOUT if !64BIT
++	depends on TREE_RCU || TREE_PREEMPT_RCU
++	default 16
++	help
++	  This option controls the leaf-level fanout of hierarchical
++	  implementations of RCU, and allows trading off cache misses
++	  against lock contention.  Systems that synchronize their
++	  scheduling-clock interrupts for energy-efficiency reasons will
++	  want the default because the smaller leaf-level fanout keeps
++	  lock contention levels acceptably low.  Very large systems
++	  (hundreds or thousands of CPUs) will instead want to set this
++	  value to the maximum value possible in order to reduce the
++	  number of cache misses incurred during RCU's grace-period
++	  initialization.  These systems tend to run CPU-bound, and thus
++	  are not helped by synchronized interrupts, and thus tend to
++	  skew them, which reduces lock contention enough that large
++	  leaf-level fanouts work well.
 +
-+	  Some real-time applications might not have a single real-time
-+	  thread that saturates a given CPU, but instead might have
-+	  multiple real-time threads that, taken together, fully utilize
-+	  that CPU.  In this case, you should set RCU_BOOST_PRIO to
-+	  a priority higher than the lowest-priority thread that is
-+	  conspiring to prevent the CPU from running any non-real-time
-+	  tasks.  For example, if one thread at priority 10 and another
-+	  thread at priority 5 are between themselves fully consuming
-+	  the CPU time on a given CPU, then RCU_BOOST_PRIO should be
-+	  set to priority 6 or higher.
++	  Select a specific number if testing RCU itself.
++
++	  Select the maximum permissible value for large systems.
++
++	  Take the default if unsure.
++
+ config RCU_FANOUT_EXACT
+ 	bool "Disable tree-based hierarchical RCU auto-balancing"
+ 	depends on TREE_RCU || TREE_PREEMPT_RCU
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 1050d6d..780acf8 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -2418,7 +2418,7 @@ static void __init rcu_init_levelspread(struct rcu_state *rsp)
  
- 	  Specify the real-time priority, or take the default if unsure.
+ 	for (i = NUM_RCU_LVLS - 1; i > 0; i--)
+ 		rsp->levelspread[i] = CONFIG_RCU_FANOUT;
+-	rsp->levelspread[0] = RCU_FANOUT_LEAF;
++	rsp->levelspread[0] = CONFIG_RCU_FANOUT_LEAF;
+ }
+ #else /* #ifdef CONFIG_RCU_FANOUT_EXACT */
+ static void __init rcu_init_levelspread(struct rcu_state *rsp)
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index cdd1be0..a905c20 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -29,18 +29,14 @@
+ #include <linux/seqlock.h>
  
+ /*
+- * Define shape of hierarchy based on NR_CPUS and CONFIG_RCU_FANOUT.
++ * Define shape of hierarchy based on NR_CPUS, CONFIG_RCU_FANOUT, and
++ * CONFIG_RCU_FANOUT_LEAF.
+  * In theory, it should be possible to add more levels straightforwardly.
+  * In practice, this did work well going from three levels to four.
+  * Of course, your mileage may vary.
+  */
+ #define MAX_RCU_LVLS 4
+-#if CONFIG_RCU_FANOUT > 16
+-#define RCU_FANOUT_LEAF       16
+-#else /* #if CONFIG_RCU_FANOUT > 16 */
+-#define RCU_FANOUT_LEAF       (CONFIG_RCU_FANOUT)
+-#endif /* #else #if CONFIG_RCU_FANOUT > 16 */
+-#define RCU_FANOUT_1	      (RCU_FANOUT_LEAF)
++#define RCU_FANOUT_1	      (CONFIG_RCU_FANOUT_LEAF)
+ #define RCU_FANOUT_2	      (RCU_FANOUT_1 * CONFIG_RCU_FANOUT)
+ #define RCU_FANOUT_3	      (RCU_FANOUT_2 * CONFIG_RCU_FANOUT)
+ #define RCU_FANOUT_4	      (RCU_FANOUT_3 * CONFIG_RCU_FANOUT)
 -- 
 1.7.8
 
