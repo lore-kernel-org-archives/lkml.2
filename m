@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab2DWFaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 01:30:04 -0400
-Received: from mail.southpole.se ([193.12.106.18]:45152 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab2DWFaD (ORCPT
+	id S1753305Ab2DWFog (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 01:44:36 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55502 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218Ab2DWFoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 01:30:03 -0400
-Message-ID: <1335158999.5139.47.camel@jerome.southpole.se>
-Subject: Re: [PATCH ] leds: add new transient trigger for one shot timer
- support
-From: Jonas Bonn <jonas@southpole.se>
-To: NeilBrown <neilb@suse.de>
-Cc: shuahkhan@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>
-Date: Mon, 23 Apr 2012 07:29:59 +0200
-In-Reply-To: <20120423115610.2da4d4d7@notabene.brown>
-References: <1333310039.2879.4.camel@lorien2> <1334064283.10826.6.camel@ted>
-	 <1334507752.2723.3.camel@lorien2> <1334894674.3051.18.camel@lorien2>
-	 <1334983269.2435.90.camel@jerome.southpole.se>
-	 <1335138687.2882.20.camel@lorien2> <20120423115610.2da4d4d7@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Apr 2012 01:44:34 -0400
+Date: Mon, 23 Apr 2012 15:44:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        =?UTF-8?B?IlNqdXIgQnLDpm5k?= =?UTF-8?B?ZWxhbmQi?= 
+	<sjur.brandeland@stericsson.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        MyungJoo Ham <myungjoo.ham@samsung.com>, Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the modem-shm tree with the driver-core
+ tree
+Message-Id: <20120423154420.09f149266ae36bb8e08b4207@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Assp-Version: 2.1.1(11364) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 59000-07996
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__23_Apr_2012_15_44_20_+1000_JO9A3/RW7+Yd21FN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__23_Apr_2012_15_44_20_+1000_JO9A3/RW7+Yd21FN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2012-04-23 at 11:56 +1000, NeilBrown wrote:
-> I wonder if we should allow control of the brightness during the "on" time as
-> well.
-> You could set the brightness after enabling the timer, but awkward pauses or
-> races could then leave the "led" permanently on.
+Hi all,
 
-echo transient > trigger
-echo 200 > duration
-echo 1 > activate
-echo 100 > brightness
+Today's linux-next merge of the modem-shm tree got a conflict in
+drivers/Kconfig between commit de55d8716ac5  ("Extcon (external
+connector): import Android's switch class and modify") from the
+driver-core tree and commit 021fd6178bcd ("modem_shm: Makefile and
+Kconfig for M7400 Shared Memory Drivers") from the modem-shm tree.
 
-Worst case, the brightness doesn't get set and you get a 'bright' LED
-until it expires... but at least it does expire!
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
-> Possibly we could hook into led_set_brightness() and restart the timer
-> whenever the brightness was set - and remember the setting.
+diff --cc drivers/Kconfig
+index 0233ad9,918e943..0000000
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@@ -140,6 -136,6 +140,8 @@@ source "drivers/virt/Kconfig
+ =20
+  source "drivers/devfreq/Kconfig"
+ =20
+ +source "drivers/extcon/Kconfig"
+ +
++ source "drivers/modem_shm/Kconfig"
++=20
+  endmenu
 
-An easy way to do this might be to check the brightness setting at the
-time the timer expires and save this value.  Next time the LED is
-activated, we use this brightness setting instead of FULL_ON.  It would
-be nice to keep this trigger self-contained and not have to hook into
-led_set_brightness
+--Signature=_Mon__23_Apr_2012_15_44_20_+1000_JO9A3/RW7+Yd21FN
+Content-Type: application/pgp-signature
 
-You make interesting point about using the brightness property as the
-actual timer trigger, though.  That's pretty elegant, but it does
-require hooking into led_set_brightness.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-/Jonas
+iQIcBAEBCAAGBQJPlOw0AAoJEECxmPOUX5FEb68QAJAOvqTfCD5eqXwUI9jjd43J
+NN2Qfz1htHKGHJ53A9JK5lt+DjrrGziB7fXaqtpkNjJsaKJXjx3JGmToyJTwQE5x
+OgkmOfvLbWmYFGipMWEZhBAfS/QPrmey17nB5vPepA3UqPmXWMGPYSvkyoMBtofy
+eX9PAEF1e+ZW3ivST041poyPsc+l0eh2uTsU8T0hHRxO1b9eOsGT4CA6h/w+P/g7
+bGJeCs6VBryVAyrFS2kZMmQiZTQSjg8M3T6z8EHTMishdJchDVsTxg15vN3mS+M3
+jA8RhTdRkwbtQ8KpwoJ11gO1cfIkG3jQsgd2AB1W9CaQscEbKI5igBlf7tawLlGM
+A1SwnagKRyFioaSLft6OMOa934Zy8+1IT0mEzz3COo6kapvQ2hCoBpkkobDFq7gk
+xYnaFPfapY3v5Rz3an/NdMCIvSyAkpCb9Fib0ujRSmXITNC8VF+k7luAsd8TMV0M
+gTRNy8NQRw//gyAufPbnYhkd4OsAwhUCMyJNprydBh853NDqDfKiuF8rQNpxWoa3
+an5LNjEMzSwu8I/qm5rTWwtShe/TCiTiHqwxrtBKGSQcZd+VphYfYE3Jfz/m0b7F
+/CPp+Hmhe2T5bq9UcuIyNkhvPrqMzdAuDMr9oPpVQHj4ZdG8Mn8+iGAV/53FyQe/
+/dX6Dot9RQrSYguRicGv
+=dX0b
+-----END PGP SIGNATURE-----
 
+--Signature=_Mon__23_Apr_2012_15_44_20_+1000_JO9A3/RW7+Yd21FN--
