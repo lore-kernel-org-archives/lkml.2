@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab2DWQnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:43:07 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:39979 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab2DWQnF (ORCPT
+	id S1754608Ab2DWQnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:43:17 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:40086 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab2DWQnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:43:05 -0400
+	Mon, 23 Apr 2012 12:43:11 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,108 +14,102 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org, Dave Jones <davej@redhat.com>,
+        fweisbec@gmail.com, patches@linaro.org,
+        Michel Machado <michel@digirati.com.br>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 2/6] rcu: List-debug variants of rcu list routines.
-Date: Mon, 23 Apr 2012 09:42:23 -0700
-Message-Id: <1335199347-13926-2-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 3/6] rcu: Replace list_first_entry_rcu() with list_first_or_null_rcu()
+Date: Mon, 23 Apr 2012 09:42:24 -0700
+Message-Id: <1335199347-13926-3-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120423164159.GA13819@linux.vnet.ibm.com>
  <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042316-2398-0000-0000-0000060975AA
+x-cbid: 12042316-4242-0000-0000-0000016DB458
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Jones <davej@redhat.com>
+From: Michel Machado <michel@digirati.com.br>
 
-* Make __list_add_rcu check the next->prev and prev->next pointers
-  just like __list_add does.
-* Make list_del_rcu use __list_del_entry, which does the same checking
-  at deletion time.
+The list_first_entry_rcu() macro is inherently unsafe because it cannot
+be applied to an empty list.  But because RCU readers do not exclude
+updaters, a list might become empty between the time that list_empty()
+claimed it was non-empty and the time that list_first_entry_rcu() is
+invoked.  Therefore, the list_empty() test cannot be separated from the
+list_first_entry_rcu() call.  This commit therefore combines these to
+macros to create a new list_first_or_null_rcu() macro that replaces
+the old (and unsafe) list_first_entry_rcu() macro.
 
-Has been running for a week here without anything being tripped up,
-but it seems worth adding for completeness just in case something
-ever does corrupt those lists.
+This patch incorporates Paul's review comments on the previous version of
+this patch available here:
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+https://lkml.org/lkml/2012/4/2/536
+
+This patch cannot break any upstream code because list_first_entry_rcu()
+is not being used anywhere in the kernel (tested with grep(1)), and any
+external code using it is probably broken as a result of using it.
+
+Signed-off-by: Michel Machado <michel@digirati.com.br>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Dipankar Sarma <dipankar@in.ibm.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rculist.h |    7 ++++++-
- lib/list_debug.c        |   22 ++++++++++++++++++++++
- 2 files changed, 28 insertions(+), 1 deletions(-)
+ include/linux/rculist.h |   33 +++++++++++++++++++++++++++++----
+ 1 files changed, 29 insertions(+), 4 deletions(-)
 
 diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index d079290..a20c050 100644
+index a20c050..e0f0fab 100644
 --- a/include/linux/rculist.h
 +++ b/include/linux/rculist.h
-@@ -30,6 +30,7 @@
-  * This is only for internal list manipulation where we know
-  * the prev/next entries already!
-  */
-+#ifndef CONFIG_DEBUG_LIST
- static inline void __list_add_rcu(struct list_head *new,
- 		struct list_head *prev, struct list_head *next)
- {
-@@ -38,6 +39,10 @@ static inline void __list_add_rcu(struct list_head *new,
- 	rcu_assign_pointer(list_next_rcu(prev), new);
- 	next->prev = new;
- }
-+#else
-+extern void __list_add_rcu(struct list_head *new,
-+		struct list_head *prev, struct list_head *next);
-+#endif
+@@ -233,18 +233,43 @@ static inline void list_splice_init_rcu(struct list_head *list,
+ 	})
  
  /**
-  * list_add_rcu - add a new entry to rcu-protected list
-@@ -108,7 +113,7 @@ static inline void list_add_tail_rcu(struct list_head *new,
-  */
- static inline void list_del_rcu(struct list_head *entry)
- {
--	__list_del(entry->prev, entry->next);
-+	__list_del_entry(entry);
- 	entry->prev = LIST_POISON2;
- }
- 
-diff --git a/lib/list_debug.c b/lib/list_debug.c
-index 982b850..3810b48 100644
---- a/lib/list_debug.c
-+++ b/lib/list_debug.c
-@@ -10,6 +10,7 @@
- #include <linux/list.h>
- #include <linux/bug.h>
- #include <linux/kernel.h>
-+#include <linux/rculist.h>
- 
- /*
-  * Insert a new entry between two known consecutive entries.
-@@ -75,3 +76,24 @@ void list_del(struct list_head *entry)
- 	entry->prev = LIST_POISON2;
- }
- EXPORT_SYMBOL(list_del);
-+
-+/*
-+ * RCU variants.
+- * list_first_entry_rcu - get the first element from a list
++ * Where are list_empty_rcu() and list_first_entry_rcu()?
++ *
++ * Implementing those functions following their counterparts list_empty() and
++ * list_first_entry() is not advisable because they lead to subtle race
++ * conditions as the following snippet shows:
++ *
++ * if (!list_empty_rcu(mylist)) {
++ *	struct foo *bar = list_first_entry_rcu(mylist, struct foo, list_member);
++ *	do_something(bar);
++ * }
++ *
++ * The list may not be empty when list_empty_rcu checks it, but it may be when
++ * list_first_entry_rcu rereads the ->next pointer.
++ *
++ * Rereading the ->next pointer is not a problem for list_empty() and
++ * list_first_entry() because they would be protected by a lock that blocks
++ * writers.
++ *
++ * See list_first_or_null_rcu for an alternative.
 + */
-+void __list_add_rcu(struct list_head *new,
-+		    struct list_head *prev, struct list_head *next)
-+{
-+	WARN(next->prev != prev,
-+		"list_add_rcu corruption. next->prev should be "
-+		"prev (%p), but was %p. (next=%p).\n",
-+		prev, next->prev, next);
-+	WARN(prev->next != next,
-+		"list_add_rcu corruption. prev->next should be "
-+		"next (%p), but was %p. (prev=%p).\n",
-+		next, prev->next, prev);
-+	new->next = next;
-+	new->prev = prev;
-+	rcu_assign_pointer(list_next_rcu(prev), new);
-+	next->prev = new;
-+}
-+EXPORT_SYMBOL(__list_add_rcu);
++
++/**
++ * list_first_or_null_rcu - get the first element from a list
+  * @ptr:        the list head to take the element from.
+  * @type:       the type of the struct this is embedded in.
+  * @member:     the name of the list_struct within the struct.
+  *
+- * Note, that list is expected to be not empty.
++ * Note that if the list is empty, it returns NULL.
+  *
+  * This primitive may safely run concurrently with the _rcu list-mutation
+  * primitives such as list_add_rcu() as long as it's guarded by rcu_read_lock().
+  */
+-#define list_first_entry_rcu(ptr, type, member) \
+-	list_entry_rcu((ptr)->next, type, member)
++#define list_first_or_null_rcu(ptr, type, member) \
++	({struct list_head *__ptr = (ptr); \
++	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
++	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
++	})
+ 
+ /**
+  * list_for_each_entry_rcu	-	iterate over rcu list of given type
 -- 
 1.7.8
 
