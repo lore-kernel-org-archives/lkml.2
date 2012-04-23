@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab2DWP2D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 11:28:03 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44479 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab2DWP2B (ORCPT
+	id S1752649Ab2DWPbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 11:31:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27832 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712Ab2DWPbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 11:28:01 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        Steve Dickson <SteveD@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, hch@infradead.org,
-        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
-        chuck.lever@oracle.com, pstaubach@exagrid.com,
-        trond.myklebust@fys.uio.no, rees@umich.edu
-Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
-References: <20120420104055.511e15bc@tlielax.poochiereds.net>
-	<4F91C49D.8070908@RedHat.com> <20120420203725.GA3512@us.ibm.com>
-	<20120420171314.73801874@corrin.poochiereds.net>
-	<CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
-	<20120423080012.7c23ef24@tlielax.poochiereds.net>
-	<20120423130009.GA13681@fieldses.org>
-	<20120423091255.00f926c4@tlielax.poochiereds.net>
-	<20120423133412.GB13681@fieldses.org>
-	<20120423095021.1a91a23b@tlielax.poochiereds.net>
-	<20120423135456.GC13681@fieldses.org>
-	<87hawasdrb.fsf@tucsk.pomaz.szeredi.hu>
-	<20120423111610.0259d610@tlielax.poochiereds.net>
-Date: Mon, 23 Apr 2012 17:28:19 +0200
-In-Reply-To: <20120423111610.0259d610@tlielax.poochiereds.net> (Jeff Layton's
-	message of "Mon, 23 Apr 2012 11:16:10 -0400")
-Message-ID: <87zka2qxgs.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 23 Apr 2012 11:31:43 -0400
+X-Authority-Analysis: v=2.0 cv=MNHiabll c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=CwwbBQyXtmIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=xqmvskA9eSf5JdJbXC0A:9 a=Jw7HWJvadDMPWtbgsAYA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1335195100.28106.100.camel@gandalf.stny.rr.com>
+Subject: Re: Our failure on tracing tools unification (Was: Re: [RFC][PATCH
+ 00/15] tools: Unify perf and trace-cmd trace event format parsing v2)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
+Date: Mon, 23 Apr 2012 11:31:40 -0400
+In-Reply-To: <1335193719.28150.171.camel@twins>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+	 <20120423144743.GB29985@somewhere> <1335193719.28150.171.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Layton <jlayton@redhat.com> writes:
+On Mon, 2012-04-23 at 17:08 +0200, Peter Zijlstra wrote:
+> On Mon, 2012-04-23 at 16:47 +0200, Frederic Weisbecker wrote:
+> > Ingo doesn't seem to want this library outside perf in order to avoid
+> > the fragmentation of the efforts on tracing tools.
+> 
+> I really don't see the point.. parsing /debug/tracing/events/*/format
+> gunk really is separate, furthermore things like powertop et al already
+> are separate projects and really need this lib.
 
->
-> Ok, but again, that only applies to the lookup. It has no bearing on
-> the subsequent operation. For instance, if we're doing:
->
->      rename("/foo", "/bar");
->
-> ...and another client is simultaneously doing:
->
->      creat("/bar/baz", 0600);
->
-> ...and we get back ESTALE from the server on the create because the
-> "old" /bar got replaced after the lookup of it. Then it seems like
-> returning -ENOENT would not be correct since there was never a time
-> where /bar didn't exist...
+Note, powertop has already pulled in the lib into itself, thus we now
+have 3 dis-joint locations. I can imagine it getting worse soon.
 
-It may not be "correct" according to some standard.  But it's what Linux
-does since day one on *all* filesystems.  And probably other OS's that
-have remotely scalable lookup routines.
+-- Steve
 
-Thanks,
-Miklos
+> 
+> I mean, who gives a bother where all that crap lives, if its in the
+> kernel tree its all close enough to keep an eye on.. its not like
+> kernel/events/ and kernel/trace/ are the same directory.
+> 
+> Ingo, please could you lighten up and let people get stuff done? Merging
+> the two implementations, wherever the result lives, is a better
+> situation that two dis-joint implementations. So either let Frederic
+> work or do it yourself but don't hand-wave and road-block stuff.
+
+
