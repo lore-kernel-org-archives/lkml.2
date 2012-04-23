@@ -1,116 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab2DWABR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 20:01:17 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:57642 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753046Ab2DWABP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 20:01:15 -0400
-Message-ID: <4F949B53.5030705@parallels.com>
-Date: Sun, 22 Apr 2012 20:59:15 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1753154Ab2DWAF7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 20:05:59 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:30013 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752895Ab2DWAF6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 20:05:58 -0400
+Date: Sun, 22 Apr 2012 20:05:54 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
+        Martin Peres <martin.peres@labri.fr>, dri-devel@lists.freedesktop.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.4-rc4
+Message-ID: <20120423000554.GA893@elliptictech.com>
+References: <CA+55aFzQD4UyPVDQesrWq7JkM=BoQevdJpQt1YyaG10MtfM-Pw@mail.gmail.com>
+ <20120422040715.GA30689@elliptictech.com>
+ <CA+55aFwGrb_sOjHFWe6tYwf8mmNsFbqKAhz=bq2ofiU+F+wVvA@mail.gmail.com>
+ <20120422164023.GA32342@elliptictech.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
-        "Johannes Weiner" <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Greg Thelen" <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 00/23] slab+slub accounting for memcg
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
-In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.34.46.150]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120422164023.GA32342@elliptictech.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2012 06:57 PM, Glauber Costa wrote:
-> Hi,
->
-> This is my current attempt at getting the kmem controller
-> into a mergeable state. IMHO, all the important bits are there, and it should't
-> change *that* much from now on. I am, however, expecting at least a couple more
-> interactions before we sort all the edges out.
->
-> This series works for both the slub and the slab. One of my main goals was to
-> make sure that the interfaces we are creating actually makes sense for both
-> allocators.
->
-> I did some adaptations to the slab-specific patches, but the bulk of it
-> comes from Suleiman's patches. I did the best to use his patches
-> as-is where possible so to keep authorship information. When not possible,
-> I tried to be fair and quote it in the commit message.
->
-> In this series, all existing caches are created per-memcg after its first hit.
-> The main reason is, during discussions in the memory summit we came into
-> agreement that the fragmentation problems that could arise from creating all
-> of them are mitigated by the typically small quantity of caches in the system
-> (order of a few megabytes total for sparsely used caches).
-> The lazy creation from Suleiman is kept, although a bit modified. For instance,
-> I now use a locked scheme instead of cmpxcgh to make sure cache creation won't
-> fail due to duplicates, which simplifies things by quite a bit.
->
-> The slub is a bit more complex than what I came up with in my slub-only
-> series. The reason is we did not need to use the cache-selection logic
-> in the allocator itself - it was done by the cache users. But since now
-> we are lazy creating all caches, this is simply no longer doable.
->
-> I am leaving destruction of caches out of the series, although most
-> of the infrastructure for that is here, since we did it in earlier
-> series. This is basically because right now Kame is reworking it for
-> user memcg, and I like the new proposed behavior a lot more. We all seemed
-> to have agreed that reclaim is an interesting problem by itself, and
-> is not included in this already too complicated series. Please note
-> that this is still marked as experimental, so we have so room. A proper
-> shrinker implementation is a hard requirement to take the kmem controller
-> out of the experimental state.
->
-> I am also not including documentation, but it should only be a matter
-> of merging what we already wrote in earlier series plus some additions.
->
-> Glauber Costa (19):
->    slub: don't create a copy of the name string in kmem_cache_create
->    slub: always get the cache from its page in kfree
->    slab: rename gfpflags to allocflags
->    slab: use obj_size field of struct kmem_cache when not debugging
->    change defines to an enum
->    don't force return value checking in res_counter_charge_nofail
->    kmem slab accounting basic infrastructure
->    slab/slub: struct memcg_params
->    slub: consider a memcg parameter in kmem_create_cache
->    slab: pass memcg parameter to kmem_cache_create
->    slub: create duplicate cache
->    slub: provide kmalloc_no_account
->    slab: create duplicate cache
->    slab: provide kmalloc_no_account
->    kmem controller charge/uncharge infrastructure
->    slub: charge allocation to a memcg
->    slab: per-memcg accounting of slab caches
->    memcg: disable kmem code when not in use.
->    slub: create slabinfo file for memcg
->
-> Suleiman Souhlal (4):
->    memcg: Make it possible to use the stock for more than one page.
->    memcg: Reclaim when more than one page needed.
->    memcg: Track all the memcg children of a kmem_cache.
->    memcg: Per-memcg memory.kmem.slabinfo file.
->
->   include/linux/memcontrol.h  |   87 ++++++
->   include/linux/res_counter.h |    2 +-
->   include/linux/slab.h        |   26 ++
->   include/linux/slab_def.h    |   77 ++++++-
->   include/linux/slub_def.h    |   36 +++-
->   init/Kconfig                |    2 +-
->   mm/memcontrol.c             |  607 +++++++++++++++++++++++++++++++++++++++++--
->   mm/slab.c                   |  390 +++++++++++++++++++++++-----
->   mm/slub.c                   |  255 ++++++++++++++++--
->   9 files changed, 1364 insertions(+), 118 deletions(-)
->
-All patches should be there now.
+On 2012-04-22 12:40 -0400, Nick Bowler wrote:
+> On 2012-04-21 21:51 -0700, Linus Torvalds wrote:
+> > Nick, I realize you had trouble with a bisection already, but it might
+> > really be worth trying again. Do a
+> > 
+> >     git bisect visualize
+> > 
+> > and try to pick a good commit (avoding the problems you hit) when you
+> > hit a problem, and then do
+> > 
+> >    git reset --hard <that-point>
+> > 
+> > to force bisection to try another place. That way you can sometimes
+> > avoid the problem spots, and continue the bisection.
+> 
+> Unfortunately, I think the whole swath of commits bisect wants to test
+> are broken (as in, they panic before I get to see whether or not the VGA
+> is working), because the commit from which most of the drm trees were
+> based appears to be broken.  Nevertheless, I've included the new bisect
+> log (four new commits marked skip as opposed to last time).  I've also
+> included the boot log from a crashing kernel, in case someone recognizes
+> how I can avoid this during bisection.  Note that this crash is *not* a
+> regression that exists in current mainline -- bisecting this issue was
+> the first time I had ever seen it.
 
-Sorry for the trouble.
+Following up on the above, the commit which introduces the panics during
+boot is this one:
+
+commit 8e7e70522d760c4ccd4cd370ebfa0ba69e006c6e
+Author: Jerome Glisse <jglisse@redhat.com>
+Date:   Wed Nov 9 17:15:26 2011 -0500
+
+    drm/ttm: isolate dma data from ttm_tt V4
+    
+    Move dma data to a superset ttm_dma_tt structure which herit
+    from ttm_tt. This allow driver that don't use dma functionalities
+    to not have to waste memory for it.
+    
+    V2 Rebase on top of no memory account changes (where/when is my
+       delorean when i need it ?)
+    V3 Make sure page list is initialized empty
+    V4 typo/syntax fixes
+    
+    Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+    Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+
+and the previous commit (3230cfc34fca: "drm/nouveau: enable the ttm dma
+pool when swiotlb is active V3") works properly.
+
+Sometime this week I suppose I'll try to track down the commit which
+fixed the crashes...
+
+Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+
