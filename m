@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083Ab2DWM3G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 08:29:06 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:53281 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753923Ab2DWM3D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 08:29:03 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Dmitry Torokhov <dtor@mail.ru>
-Subject: [PATCH] mfd/stmpe: allow for const keyboard data
-Date: Mon, 23 Apr 2012 14:28:44 +0200
-Message-ID: <1335184124-9105-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
+	id S1755309Ab2DWMay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 08:30:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754483Ab2DWMaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 08:30:52 -0400
+Date: Mon, 23 Apr 2012 08:30:11 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
+        andrea@betterlinux.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120423123011.GA8103@redhat.com>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404175124.GA8931@localhost>
+ <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120406095934.GA10465@localhost>
+ <20120417223854.GG19975@google.com>
+ <20120419142343.GA12684@localhost>
+ <20120419183118.GM10216@redhat.com>
+ <20120420124518.GA7133@localhost>
+ <20120420192930.GR22419@redhat.com>
+ <20120420213301.GA29134@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120420213301.GA29134@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Fri, Apr 20, 2012 at 02:33:01PM -0700, Tejun Heo wrote:
+> On Fri, Apr 20, 2012 at 03:29:30PM -0400, Vivek Goyal wrote:
+> > I am personally is not too excited about the case of putting async IO
+> > in separate groups due to the reason that async IO of one group will
+> > start impacting latencies of sync IO of another group and in practice
+> > it might not be desirable. But there are others who have use cases for
+> > separate async IO queue. So as long as switch is there to change the
+> > behavior, I am not too worried.
+> 
+> Why not just fix cfq so that it prefers groups w/ sync IOs?
 
-Since it's not like we will re-arrange the keys at run-time, it
-seems proper to allow the keymap data to be const. This solves
-a compilation warning in ux500.
+Yes that could possibly be done but now that's change of requirements. Now
+we are saying that I want one buffered write to go faster than other
+buffered write only if there is no sync IO present in any of the groups.
 
-Cc: Dmitry Torokhov <dtor@mail.ru>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- include/linux/mfd/stmpe.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
-index 8516fd1..f8d5b4d 100644
---- a/include/linux/mfd/stmpe.h
-+++ b/include/linux/mfd/stmpe.h
-@@ -117,7 +117,7 @@ struct matrix_keymap_data;
-  * @no_autorepeat: disable key autorepeat
-  */
- struct stmpe_keypad_platform_data {
--	struct matrix_keymap_data *keymap_data;
-+	const struct matrix_keymap_data *keymap_data;
- 	unsigned int debounce_ms;
- 	unsigned int scan_count;
- 	bool no_autorepeat;
--- 
-1.7.9.2
-
+Thanks
+Vivek
