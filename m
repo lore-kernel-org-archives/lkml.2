@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab2DWQFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:05:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45401 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab2DWQFB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:05:01 -0400
-Date: Mon, 23 Apr 2012 09:04:54 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120423160454.GA5406@google.com>
-References: <20120404175124.GA8931@localhost>
- <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120406095934.GA10465@localhost>
- <20120417223854.GG19975@google.com>
- <20120419142343.GA12684@localhost>
- <20120419183118.GM10216@redhat.com>
- <20120420124518.GA7133@localhost>
- <20120420192930.GR22419@redhat.com>
- <20120420213301.GA29134@google.com>
- <20120423123011.GA8103@redhat.com>
+	id S1753583Ab2DWQHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:07:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38064 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753477Ab2DWQHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 12:07:05 -0400
+Date: Mon, 23 Apr 2012 18:07:11 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: Our failure on tracing tools unification (Was: Re: [RFC][PATCH
+ 00/15] tools: Unify perf and trace-cmd trace event format parsing v2)
+Message-ID: <20120423160710.GA5115@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+	Arnaldo Carvalho de Melo <acme@infradead.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+	Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
+	David Sharp <dhsharp@google.com>,
+	Vaibhav Nagarnaik <vnagarnaik@google.com>,
+	Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+ <20120423144743.GB29985@somewhere>
+ <1335193719.28150.171.camel@twins>
+ <1335195100.28106.100.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120423123011.GA8103@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1335195100.28106.100.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek.
-
-On Mon, Apr 23, 2012 at 08:30:11AM -0400, Vivek Goyal wrote:
-> On Fri, Apr 20, 2012 at 02:33:01PM -0700, Tejun Heo wrote:
-> > On Fri, Apr 20, 2012 at 03:29:30PM -0400, Vivek Goyal wrote:
-> > > I am personally is not too excited about the case of putting async IO
-> > > in separate groups due to the reason that async IO of one group will
-> > > start impacting latencies of sync IO of another group and in practice
-> > > it might not be desirable. But there are others who have use cases for
-> > > separate async IO queue. So as long as switch is there to change the
-> > > behavior, I am not too worried.
+On Mon, Apr 23, 2012 at 11:31:40AM -0400, Steven Rostedt wrote:
+> On Mon, 2012-04-23 at 17:08 +0200, Peter Zijlstra wrote:
+> > On Mon, 2012-04-23 at 16:47 +0200, Frederic Weisbecker wrote:
+> > > Ingo doesn't seem to want this library outside perf in order to avoid
+> > > the fragmentation of the efforts on tracing tools.
 > > 
-> > Why not just fix cfq so that it prefers groups w/ sync IOs?
+> > I really don't see the point.. parsing /debug/tracing/events/*/format
+> > gunk really is separate, furthermore things like powertop et al already
+> > are separate projects and really need this lib.
 > 
-> Yes that could possibly be done but now that's change of requirements. Now
-> we are saying that I want one buffered write to go faster than other
-> buffered write only if there is no sync IO present in any of the groups.
+> Note, powertop has already pulled in the lib into itself, thus we now
+> have 3 dis-joint locations. I can imagine it getting worse soon.
 
-It's a scheduling decision and the resource split may or may not be
-about latency (the faster part).  We're currently just shoving all
-asyncs into the root group and preferring sync IOs in general.  The
-other end would be keeping them completely siloed and not caring about
-[a]sync across different cgroups.  My point is that managing async IOs
-per cgroup doesn't mean we can't prioritize sync IOs in general.
+Oh, and there's the mce_record event which I'm going to be needing soon
+so this adds yet another user to this library - a minor one but still.
 
-Thanks.
+So yeah, we should probably get our stuff in order before going any
+further with events and stuff and all...
 
 -- 
-tejun
+Regards/Gruss,
+Boris.
