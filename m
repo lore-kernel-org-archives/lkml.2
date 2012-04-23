@@ -1,57 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab2DWDLL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 23:11:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4085 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753298Ab2DWDLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 23:11:10 -0400
-Message-ID: <1335150978.6913.3.camel@nisroch>
-Subject: Re: Linux 3.4-rc4
-From: Ben Skeggs <bskeggs@redhat.com>
-Reply-To: bskeggs@redhat.com
-To: Dave Airlie <airlied@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Martin Peres <martin.peres@labri.fr>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Date: Mon, 23 Apr 2012 13:16:18 +1000
-In-Reply-To: <CAPM=9tx9=mCEv-K8y95O-L6+8vWk4gt42ncFyNivV1S8T-9ykA@mail.gmail.com>
-References: <CA+55aFzQD4UyPVDQesrWq7JkM=BoQevdJpQt1YyaG10MtfM-Pw@mail.gmail.com>
-	 <20120422040715.GA30689@elliptictech.com>
-	 <CA+55aFwGrb_sOjHFWe6tYwf8mmNsFbqKAhz=bq2ofiU+F+wVvA@mail.gmail.com>
-	 <CAPM=9tx9=mCEv-K8y95O-L6+8vWk4gt42ncFyNivV1S8T-9ykA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1753435Ab2DWDYg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 23:24:36 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:50733 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121Ab2DWDYe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 23:24:34 -0400
+X-AuditID: b753bd60-99794ba000007b1b-34-4f94cb6fca8b
+X-AuditID: b753bd60-99794ba000007b1b-34-4f94cb6fca8b
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH -tip ] perf probe: Fix finder to find lines of given function
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Date: Mon, 23 Apr 2012 12:24:36 +0900
+Message-ID: <20120423032435.8737.80064.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-22 at 08:26 +0100, Dave Airlie wrote:
-> On Sun, Apr 22, 2012 at 5:51 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > David & co, any ideas?
-> 
-> I've been asking Ben about this, I might have to use a bit more pressure,
-I unfortunately haven't yet had any ideas which could be useful aside
-from continuing to try and narrow down the change that caused the issue.
+The commit ba28c59bc9ed8fb7b9a753cd88ee54a2c4f6265b fixed
+a declaration entry bug in probe_point_search_cb().
+There are same bugs in line finder and call_probe_finder().
+This introduces a new dwarf utility function to determine
+given DIE is a function definition, not declaration.
 
-I've been using the VGA output on a lot of different boards (including
-of the same generation as the one in the original bug report) with the
-latest code without an issue..
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
 
-Ben.
+ tools/perf/util/dwarf-aux.c    |   19 +++++++++++++++++++
+ tools/perf/util/dwarf-aux.h    |    3 +++
+ tools/perf/util/probe-finder.c |   12 +++++-------
+ 3 files changed, 27 insertions(+), 7 deletions(-)
 
-> 
-> It would be worth bisecting drivers/gpu/drm only, I doubt its going to
-> be outside that area.
-> 
-> Dave.
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
-
+diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
+index ee51e9b..66a76e5 100644
+--- a/tools/perf/util/dwarf-aux.c
++++ b/tools/perf/util/dwarf-aux.c
+@@ -263,6 +263,21 @@ bool die_is_signed_type(Dwarf_Die *tp_die)
+ }
+ 
+ /**
++ * die_is_func_def - Ensure that this DIE is a subprogram and definition
++ * @dw_die: a DIE
++ *
++ * Ensure that this DIE is a subprogram and NOT a declaration. This
++ * returns true if @dw_die is a function definition.
++ **/
++bool die_is_func_def(Dwarf_Die *dw_die)
++{
++	Dwarf_Attribute attr;
++
++	return (dwarf_tag(dw_die) == DW_TAG_subprogram &&
++		dwarf_attr(dw_die, DW_AT_declaration, &attr) == NULL);
++}
++
++/**
+  * die_get_data_member_location - Get the data-member offset
+  * @mb_die: a DIE of a member of a data structure
+  * @offs: The offset of the member in the data structure
+@@ -392,6 +407,10 @@ static int __die_search_func_cb(Dwarf_Die *fn_die, void *data)
+ {
+ 	struct __addr_die_search_param *ad = data;
+ 
++	/*
++	 * Since a declaration entry doesn't has given pc, this always returns
++	 * function definition entry.
++	 */
+ 	if (dwarf_tag(fn_die) == DW_TAG_subprogram &&
+ 	    dwarf_haspc(fn_die, ad->addr)) {
+ 		memcpy(ad->die_mem, fn_die, sizeof(Dwarf_Die));
+diff --git a/tools/perf/util/dwarf-aux.h b/tools/perf/util/dwarf-aux.h
+index 6ce1717..8658d41 100644
+--- a/tools/perf/util/dwarf-aux.h
++++ b/tools/perf/util/dwarf-aux.h
+@@ -38,6 +38,9 @@ extern int cu_find_lineinfo(Dwarf_Die *cudie, unsigned long addr,
+ extern int cu_walk_functions_at(Dwarf_Die *cu_die, Dwarf_Addr addr,
+ 			int (*callback)(Dwarf_Die *, void *), void *data);
+ 
++/* Ensure that this DIE is a subprogram and definition (not declaration) */
++extern bool die_is_func_def(Dwarf_Die *dw_die);
++
+ /* Compare diename and tname */
+ extern bool die_compare_name(Dwarf_Die *dw_die, const char *tname);
+ 
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index d448984..d793c0a 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -726,7 +726,7 @@ static int call_probe_finder(Dwarf_Die *sc_die, struct probe_finder *pf)
+ 	}
+ 
+ 	/* If not a real subprogram, find a real one */
+-	if (dwarf_tag(sc_die) != DW_TAG_subprogram) {
++	if (!die_is_func_def(sc_die)) {
+ 		if (!die_find_realfunc(&pf->cu_die, pf->addr, &pf->sp_die)) {
+ 			pr_warning("Failed to find probe point in any "
+ 				   "functions.\n");
+@@ -972,12 +972,10 @@ static int probe_point_search_cb(Dwarf_Die *sp_die, void *data)
+ 	struct dwarf_callback_param *param = data;
+ 	struct probe_finder *pf = param->data;
+ 	struct perf_probe_point *pp = &pf->pev->point;
+-	Dwarf_Attribute attr;
+ 
+ 	/* Check tag and diename */
+-	if (dwarf_tag(sp_die) != DW_TAG_subprogram ||
+-	    !die_compare_name(sp_die, pp->function) ||
+-	    dwarf_attr(sp_die, DW_AT_declaration, &attr))
++	if (!die_is_func_def(sp_die) ||
++	    !die_compare_name(sp_die, pp->function))
+ 		return DWARF_CB_OK;
+ 
+ 	/* Check declared file */
+@@ -1466,7 +1464,7 @@ static int line_range_inline_cb(Dwarf_Die *in_die, void *data)
+ 	return 0;
+ }
+ 
+-/* Search function from function name */
++/* Search function definition from function name */
+ static int line_range_search_cb(Dwarf_Die *sp_die, void *data)
+ {
+ 	struct dwarf_callback_param *param = data;
+@@ -1477,7 +1475,7 @@ static int line_range_search_cb(Dwarf_Die *sp_die, void *data)
+ 	if (lr->file && strtailcmp(lr->file, dwarf_decl_file(sp_die)))
+ 		return DWARF_CB_OK;
+ 
+-	if (dwarf_tag(sp_die) == DW_TAG_subprogram &&
++	if (die_is_func_def(sp_die) &&
+ 	    die_compare_name(sp_die, lr->function)) {
+ 		lf->fname = dwarf_decl_file(sp_die);
+ 		dwarf_decl_line(sp_die, &lr->offset);
 
