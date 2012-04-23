@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2DWPBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 11:01:23 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:7006 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab2DWPBV (ORCPT
+	id S1754231Ab2DWPDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 11:03:18 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38829 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657Ab2DWPDQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 11:01:21 -0400
-Message-ID: <4F956EBF.7020506@hp.com>
-Date: Mon, 23 Apr 2012 10:01:19 -0500
-From: Mike Miller <mike.miller@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Chirag Kantharia <chirag.kantharia@hp.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        ISS StorageDev <iss_storagedev@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/block/cpqarray.c: add missing cmd_free
-References: <1335086112-10528-1-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1335086112-10528-1-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Apr 2012 11:03:16 -0400
+Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=us-ascii
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <87hawasdrb.fsf@tucsk.pomaz.szeredi.hu>
+Date: Mon, 23 Apr 2012 11:02:32 -0400
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@redhat.com>,
+        Malahal Naineni <malahal@us.ibm.com>,
+        Steve Dickson <SteveD@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, hch@infradead.org,
+        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
+        pstaubach@exagrid.com, trond.myklebust@fys.uio.no, rees@umich.edu
+Content-Transfer-Encoding: 8BIT
+Message-Id: <9991AAC7-5256-4AFE-9722-7AF1119EE7BE@oracle.com>
+References: <20120420104055.511e15bc@tlielax.poochiereds.net> <4F91C49D.8070908@RedHat.com> <20120420203725.GA3512@us.ibm.com> <20120420171314.73801874@corrin.poochiereds.net> <CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com> <20120423080012.7c23ef24@tlielax.poochiereds.net> <20120423130009.GA13681@fieldses.org> <20120423091255.00f926c4@tlielax.poochiereds.net> <20120423133412.GB13681@fieldses.org> <20120423095021.1a91a23b@tlielax.poochiereds.net> <20120423135456.GC13681@fieldses.org> <87hawasdrb.fsf@tucsk.pomaz.szeredi.hu>
+To: Miklos Szeredi <miklos@szeredi.hu>
+X-Mailer: Apple Mail (2.1257)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2012 04:15 AM, Julia Lawall wrote:
-> From: Julia Lawall<Julia.Lawall@lip6.fr>
->
-> Call cmd_free(h, c, 0); before leaving the function as done on all other
-> exit paths.
->
-> Signed-off-by: Julia Lawall<Julia.Lawall@lip6.fr>
-Acked-by: Mike Miller <mike.miller@hp.com>
->
-> ---
->   drivers/block/cpqarray.c |    1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
-> index 9125bbe..db6f15d 100644
-> --- a/drivers/block/cpqarray.c
-> +++ b/drivers/block/cpqarray.c
-> @@ -1334,6 +1334,7 @@ static int ida_ctlr_ioctl(ctlr_info_t *h, int dsk, ida_ioctl_t *io)
->   	case READ_FLASH_ROM:
->   		if (copy_to_user(io->sg[0].addr, p, io->sg[0].size)) {
->   			kfree(p);
-> +			cmd_free(h, c, 0);
->   			return -EFAULT;
->   		}
->   		/* fall through and free p */
->
+
+On Apr 23, 2012, at 10:51 AM, Miklos Szeredi wrote:
+
+> "J. Bruce Fields" <bfields@fieldses.org> writes:
+> 
+>> 
+>> I also wonder whether it would be making too many assumptions about the
+>> server or filesystem: just because ordinary posix interfaces don't allow
+>> atomic replacement of a whole directory tree doesn't mean the server
+>> might not have some way to do it.
+> 
+> Exactly because posix limits the atomic replacement to empty directories
+> is that this feature is not useful and is why linux can get away with
+> the dead directory behavior in this case.  And thinking about fixing
+> this in NFS is completely pointless since no one will rely on the atomic
+> replacement behavior.  Fixing local filesystems is also pointless for
+> the same reason.
+> 
+> Atomic replacement of whole directory trees would indeed be more useful,
+> but it's highly unlikely to be used anywhere since applications relying
+> on this feature would be limited to special filesystems that allow this.
+
+The cases I can think of have to do with file system restore, file system and block device snapshots, and so on.  This type of use case may not practical on today's Linux server, but they are a reality for anyone using high-end NFS storage.
+
+> So my statement is "ENOENT is equivalent to ESTALE if already retrying
+> path lookup with LOOKUP_REVAL on any operation that takes an parent
+> directory and a name (lookup, create, link, unlink, symlink, mkdir,
+> rmdir, mknod, rename)."
+> 
+> This equivalence is in the sense that it doesn't change behavior
+> compared to local filesystems.
+> 
+> For other operations ENOENT is not equivalent to ESTALE.
+> 
+> Thanks,
+> Miklos
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
 
