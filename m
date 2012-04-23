@@ -1,79 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab2DWKSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:18:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36894 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754619Ab2DWKSJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:18:09 -0400
-Date: Mon, 23 Apr 2012 11:18:05 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ulf Hansson <ulf.hansson@stericsson.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Mattias Wallin <mattias.wallin@stericsson.com>,
-        Jonas Aberg <jonas.aberg@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH] regulator: core: Keep boot_on regulators powered during
- init
-Message-ID: <20120423101804.GA8318@opensource.wolfsonmicro.com>
-References: <1335173873-24301-1-git-send-email-ulf.hansson@stericsson.com>
+	id S1755015Ab2DWKTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:19:40 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:29914 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754818Ab2DWKTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 06:19:39 -0400
+Message-ID: <4F952CAD.5070405@openvz.org>
+Date: Mon, 23 Apr 2012 14:19:25 +0400
+From: Kinsbursky Stanislav <skinsbursky@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
-Content-Disposition: inline
-In-Reply-To: <1335173873-24301-1-git-send-email-ulf.hansson@stericsson.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "serge.hallyn@canonical.com" <serge.hallyn@canonical.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "criu@openvz.org" <criu@openvz.org>,
+        "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>
+Subject: Re: [CRIU] [PATCH v2 0/2] IPC: message queue checkpoint/restore -
+ requested updates
+References: <20120416140235.653.36996.stgit@localhost6.localdomain6>
+In-Reply-To: <20120416140235.653.36996.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Andrew.
+I'm very sorry, but a critical flaw has been found in this feature: copying of 
+kernel data to user is done under spinlock.
+Since message queue size can be increased up to INT_MAX, then copying to 
+temporary kernel buffer while passing message queue in not a solution.
+So, please, drop both patches (feature implementation and test).
+Most probably Ill replace them with MSG_PEEK feature (the same logic, but only 
+for one message - like it's done for sockets).
 
---SLDf9lqlvOQaIe6s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+-- 
+Best regards,
+Stanislav Kinsbursky
 
-On Mon, Apr 23, 2012 at 11:37:53AM +0200, Ulf Hansson wrote:
-
-> Regulators which has boot_on constraints set, will now remain
-> powered after regulator_init_complete is done.
-
-This would be a bug.  All boot_on means is that the regulator was turned
-on during boot, the regulator is free to vary after that.
-
-> In this case we leave the enable->disable operation to be
-> handled by the regulator consumer instead.
-
-Which would be a bug if the consumer wasn't the thing that took the
-reference to the regulator in the first place.  Remember, regulators can
-be shared so the consumer can't disable a regulator it didn't enable in
-the first place (unless it used regulator_get_exclusive() but the use
-cases for that are a little suspicious so it'd be worth taking a careful
-look before using it).  A consumer can't tell if the regulator was left
-enabled by the firmware on boot or if it has been enabled by another
-consumer.
-
---SLDf9lqlvOQaIe6s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPlSxTAAoJEBus8iNuMP3domkP/1LlZmh3V+NPnsCfxEE5AhkI
-IWXvBl9l5YEmZhBZ5FQNhq9QEvIcdMkHw/hYDAx8w8Gni3bmSS7ot5hcBEUFCN54
-er5qxzj7ZUeLkKp278iKJAC7iOOP2mYLg81dxFfMOMU9G5iv/t5CM0PATa6qZxae
-3NmNFZyfYs/LnynLQHKb38FrrRTmMtbITCHdbrZOgCeQV9Ffw9H1yRNgDug6KETw
-HBT9lyemjZzQU0RxGvBxbpYW9hcTWOJC8c+5rp3+vHrWxcpLAltpr56MYRoXgLxb
-7JLrNrZhI3yDNAFgg6+N4qqff5ExmgshgcBBrXi3u9uMFZKjoyb3BFOL8x0KEmOY
-9b1NPFlqvDiH9JKfiR35eANrGqWkU9VPbTlL9gmzhAN7ItHraepgp4/Mc0GNiER/
-iP7+pOcFY4O/f4WF4vpRtH6tAPJyzIBI7NHWlhhJRcpqmS9zmqvGkMAFnB9QG4g8
-l1glowu81iztNeIw4FYlTJ8H0klbwWCsmw6sjzz5b7RJehwKUM5eRWkk4CDWla5A
-fvhF/qDgEBhVReR77zLFPsJ5lui/xdYFmbfq4J91xs50QzJsCHT1oddMGnzl+ZwD
-ir3QwQxQ5tWGoqB+i3tdTmzME6f415UtJrzNy+SrGwnAGi5Dmsh+/7azLoGEqn2w
-mEwUcsv81kHqb17nIFuQ
-=5lNx
------END PGP SIGNATURE-----
-
---SLDf9lqlvOQaIe6s--
