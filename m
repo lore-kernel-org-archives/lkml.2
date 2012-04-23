@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab2DWCE1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 22:04:27 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53449 "EHLO gate.crashing.org"
+	id S1753446Ab2DWCEy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 22:04:54 -0400
+Received: from mailq2.tnnet.fi ([217.112.254.233]:37337 "EHLO mailq2.tnnet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753062Ab2DWCE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 22:04:26 -0400
-Message-ID: <1335146650.21619.3.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 23 Apr 2012 12:04:10 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753062Ab2DWCEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 22:04:50 -0400
+X-Greylist: delayed 512 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Apr 2012 22:04:50 EDT
+Date: Mon, 23 Apr 2012 04:55:31 +0300 (EEST)
+From: Szabolcs Szakacsits <szaka@tuxera.com>
+X-X-Sender: szaka@ax228.axxion.fi
+To: Zheng Liu <gnehzuil.liu@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+Message-ID: <alpine.DEB.1.10.1204230431510.11748@ax228.axxion.fi>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
 
-Here are a few fixes for powerpc. Note the addition to the generic
-irq.h. This is part of a 3-patches regression fix for mpic due to
-changes in how IRQ_TYPE_NONE is being handled. Thomas agreed to the
-addition of the new IRQ_TYPE_DEFAULT contant, however he hasn't
-replied with an Ack to the actual patch yet. I don't to wait much
-longer with these patches tho.
+On 4/17/12 11:53 AM, Zheng Liu wrote:
 
-Cheers,
-Ben.
+> fallocate is a useful system call because it can preallocate some disk 
+> blocks for a file and keep blocks contiguous.  However, it has a defect 
+> that file system will convert an uninitialized extent to be an 
+> initialized when the user wants to write some data to this file, because 
+> file system create an unititalized extent while it preallocates some 
+> blocks in fallocate (e.g. ext4). Especially, it causes a severe 
+> degradation when the user tries to do some random write operations, which 
+> frequently modifies the metadata of this file. We meet this problem in 
+> our product system at Taobao.  Last month, in ext4 workshop, we discussed 
+> this problem and the Google faces the same problem.  So a new flag, 
+> FALLOC_FL_NO_HIDE_STALE, is added in order to solve this problem. 
 
-The following changes since commit 932e9f352b5d685725076f21b237f7c7d804b29c:
+I think a more explicit name would be better like FALLOC_FL_EXPOSE_DATA, 
+FALLOC_FL_EXPOSE_STALE_DATA, FALLOC_FL_EXPOSE_UNINITIALIZED_DATA, etc.
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security (2012-04-18 20:16:02 -0700)
+> When this flag is set, file system will create an inititalized extent for 
+> this file.  So it avoids the conversion from uninitialized to 
+> initialized.  If users want to use this flag, they must guarantee that 
+> file has been initialized by themselves before it is read at the same 
+> offset.  This flag is added in vfs so that other file systems can also 
+> support this flag to improve the performance.
 
-are available in the git repository at:
+This flag could be indeed helpful for filesystems which can't fully support 
+uninitialized allocated blocks efficiently unlike XFS and ext4. We are 
+supporting several such interoperable filesystems (NTFS, exFAT, FAT) where 
+changing the specification is unfortunately not possible.
 
+There is real user need despite explaining potential security consequences. 
+Typical usage scenarios are using a large file as a container for an 
+application which tracks free/used blocks itself. Windows supports this 
+feature by SetFileValidData() if extra privilege is granted.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+The performance gain can be fairly large on embedded using low-end storage 
+and CPU. In one of our cases it took 5 days vs 12 minutes to fully setup a 
+large file for use.
 
-for you to fetch changes up to 446f6d06fab0b49c61887ecbe8286d6aaa796637:
-
-  powerpc/mpic: Properly set default triggers (2012-04-23 11:04:30 +1000)
-
-----------------------------------------------------------------
-Baruch Siach (1):
-      powerpc: fix build when CONFIG_BOOKE_WDT is enabled
-
-Benjamin Herrenschmidt (5):
-      Merge remote-tracking branch 'kumar/merge' into merge
-      powerpc/pmac: Don't add_timer() twice
-      powerpc/mpic: Fix confusion between hw_irq and virq
-      irq: Add IRQ_TYPE_DEFAULT for use by PIC drivers
-      powerpc/mpic: Properly set default triggers
-
-Gavin Shan (1):
-      powerpc/eeh: Fix crash caused by null eeh_dev
-
-Mingkai Hu (4):
-      powerpc/mpic_msgr: fix compile error when SMP disabled
-      powerpc/mpic_msgr: add lock for MPIC message global variable
-      powerpc/mpic_msgr: fix offset error when setting mer register
-      powerpc/mpc85xx: add MPIC message dts node
-
-Timur Tabi (1):
-      powerpc/85xx: don't call of_platform_bus_probe() twice
-
- arch/powerpc/boot/dts/fsl/pq3-mpic-message-B.dtsi |   43 ++++++++++++++++
- arch/powerpc/boot/dts/fsl/pq3-mpic.dtsi           |   10 ++++
- arch/powerpc/include/asm/mpic.h                   |   18 -------
- arch/powerpc/include/asm/mpic_msgr.h              |    1 +
- arch/powerpc/include/asm/reg_booke.h              |    5 --
- arch/powerpc/kernel/setup_32.c                    |    3 ++
- arch/powerpc/platforms/85xx/common.c              |    6 +++
- arch/powerpc/platforms/85xx/mpc85xx_mds.c         |   11 +----
- arch/powerpc/platforms/85xx/p1022_ds.c            |   13 +----
- arch/powerpc/platforms/powermac/low_i2c.c         |    9 ++++
- arch/powerpc/platforms/pseries/eeh.c              |    2 +-
- arch/powerpc/sysdev/mpic.c                        |   54 +++++++++++++--------
- arch/powerpc/sysdev/mpic_msgr.c                   |   12 ++---
- include/linux/irq.h                               |    7 +++
- 14 files changed, 122 insertions(+), 72 deletions(-)
- create mode 100644 arch/powerpc/boot/dts/fsl/pq3-mpic-message-B.dtsi
-
-
+Regards,
+	   Szaka
