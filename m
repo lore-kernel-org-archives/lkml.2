@@ -1,158 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab2DWJQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 05:16:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39699 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754365Ab2DWJOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 05:14:39 -0400
-Date: Mon, 23 Apr 2012 11:14:32 +0200
-From: Jan Kara <jack@suse.cz>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>, vgoyal@redhat.com,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120423091432.GC6512@quack.suse.cz>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404175124.GA8931@localhost>
- <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120406095934.GA10465@localhost>
- <20120417223854.GG19975@google.com>
- <20120419142343.GA12684@localhost>
- <20120419202635.GA4795@quack.suse.cz>
- <20120420133441.GA7035@localhost>
+	id S1754523Ab2DWJQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 05:16:49 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:35455 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753938Ab2DWJOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 05:14:32 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Jonas Aberg <jonas.aberg@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/9] gpio/nomadik: don't set SLPM to 1 for non-wakeup pins
+Date: Mon, 23 Apr 2012 11:14:08 +0200
+Message-ID: <1335172448-27506-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420133441.GA7035@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 20-04-12 21:34:41, Wu Fengguang wrote:
-> On Thu, Apr 19, 2012 at 10:26:35PM +0200, Jan Kara wrote:
-> > > It's not uncommon for me to see filesystems sleep on PG_writeback
-> > > pages during heavy writeback, within some lock or transaction, which in
-> > > turn stall many tasks that try to do IO or merely dirty some page in
-> > > memory. Random writes are especially susceptible to such stalls. The
-> > > stable page feature also vastly increase the chances of stalls by
-> > > locking the writeback pages. 
-> > > 
-> > > Page reclaim may also block on PG_writeback and/or PG_dirty pages. In
-> > > the case of direct reclaim, it means blocking random tasks that are
-> > > allocating memory in the system.
-> > > 
-> > > PG_writeback pages are much worse than PG_dirty pages in that they are
-> > > not movable. This makes a big difference for high-order page allocations.
-> > > To make room for a 2MB huge page, vmscan has the option to migrate
-> > > PG_dirty pages, but for PG_writeback it has no better choices than to
-> > > wait for IO completion.
-> > > 
-> > > The difficulty of THP allocation goes up *exponentially* with the
-> > > number of PG_writeback pages. Assume PG_writeback pages are randomly
-> > > distributed in the physical memory space. Then we have formula
-> > > 
-> > >         P(reclaimable for THP) = 1 - P(hit PG_writeback)^256
-> >   Well, this implicitely assumes that PG_Writeback pages are scattered
-> > across memory uniformly at random. I'm not sure to which extent this is
-> > true...
-> 
-> Yeah, when describing the problem I was also thinking about the
-> possibilities of optimization (it would be a very good general
-> improvements). Or maybe Mel already has some solutions :)
-> 
-> > Also as a nitpick, this isn't really an exponential growth since
-> > the exponent is fixed (256 - actually it should be 512, right?). It's just
-> 
-> Right, 512 4k pages to form one x86_64 2MB huge pages.
-> 
-> > a polynomial with a big exponent. But sure, growth in number of PG_Writeback
-> > pages will cause relatively steep drop in the number of available huge
-> > pages.
-> 
-> It's exponential indeed, because "1 - p(x)" here means "p(!x)".
-> It's exponential for a 10x increase in x resulting in 100x drop of y.
-  If 'x' is the probability page has PG_Writeback set, then the probability
-a huge page has a single PG_Writeback page is (as you almost correctly wrote):
-(1-x)^512. This is a polynominal by the definition: It can be
-expressed as $\sum_{i=0}^n a_i*x^i$ for $a_i\in R$ and $n$ finite.
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
-The expression decreases fast as x approaches to 1, that's for sure, but
-that does not make it exponential. Sorry, my mathematical part could not
-resist this terminology correction.
+Setting GPIOs' SLPM value to 1 (WAKEUP_DISABLE) is seen to cause
+increased power consumption in sleep/deep-sleep. So remove the code
+which disables SLPM based on the wakeup settings and only ensure
+it is on as needed.
 
-> > ...
-> > > > > To me, balance_dirty_pages() is *the* proper layer for buffered writes.
-> > > > > It's always there doing 1:1 proportional throttling. Then you try to
-> > > > > kick in to add *double* throttling in block/cfq layer. Now the low
-> > > > > layer may enforce 10:1 throttling and push balance_dirty_pages() away
-> > > > > from its balanced state, leading to large fluctuations and program
-> > > > > stalls.
-> > > > 
-> > > > Just do the same 1:1 inside each cgroup.
-> > > 
-> > > Sure. But the ratio mismatch I'm talking about is inter-cgroup.
-> > > For example there are only 2 dd tasks doing buffered writes in the
-> > > system. Now consider the mismatch that cfq is dispatching their IO
-> > > requests at 10:1 weights, while balance_dirty_pages() is throttling
-> > > the dd tasks at 1:1 equal split because it's not aware of the cgroup
-> > > weights.
-> > > 
-> > > What will happen in the end? The 1:1 ratio imposed by
-> > > balance_dirty_pages() will take effect and the dd tasks will progress
-> > > at the same pace. The cfq weights will be defeated because the async
-> > > queue for the second dd (and cgroup) constantly runs empty.
-> >   Yup. This just shows that you have to have per-cgroup dirty limits. Once
-> > you have those, things start working again.
-> 
-> Right. I think Tejun was more of less aware of this.
-> 
-> I was rather upset by this per-memcg dirty_limit idea indeed. I never
-> expect it to work well when used extensively. My plan was to set the
-> default memcg dirty_limit high enough, so that it's not hit in normal.
-> Then Tejun came and proposed to (mis-)use dirty_limit as the way to
-> convert the dirty pages' backpressure into real dirty throttling rate.
-> No, that's just crazy idea!
-> 
-> Come on, let's not over-use memcg's dirty_limit. It's there as the
-> *last resort* to keep dirty pages under control so as to maintain
-> interactive performance inside the cgroup. However if used extensively
-> in the system (like dozens of memcgs all hit their dirty limits), the
-> limit itself may stall random dirtiers and create interactive
-> performance issues!
-> 
-> In the recent days I've come up with the idea of memcg.dirty_setpoint
-> for the blkcg backpressure stuff. We can use that instead.
-> 
-> memcg.dirty_setpoint will scale proportionally with blkcg.writeout_rate.
-> Imagine bdi_setpoint. It's all the same concepts. Why we need this?
-> Because if blkcg A and B does 10:1 weights and are both doing buffered
-> writes, their dirty pages should better be maintained around 10:1
-> ratio to avoid underrun and hopefully achieve better IO size.
-> memcg.dirty_limit cannot guarantee that goal.
-  I agree that to avoid stalls of throttled processes we shouldn't be
-hitting memcg.dirty_limit on a regular basis. When I wrote we need "per
-cgroup dirty limits" I actually imagined something like you write above -
-do complete throttling computations within each memcg - estimate throughput
-available for it, compute appropriate dirty rates for it's processes and
-from its dirty limit estimate appropriate setpoint to balance around.
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/gpio/gpio-nomadik.c |   21 +++++++--------------
+ 1 file changed, 7 insertions(+), 14 deletions(-)
 
-> But be warned! Partitioning the dirty pages always means more
-> fluctuations of dirty rates (and even stalls) that's perceivable by
-> the user. Which means another limiting factor for the backpressure
-> based IO controller to scale well.
-  Sure, the smaller the memcg gets, the more noticeable these fluctuations
-would be. I would not expect memcg with 200 MB of memory to behave better
-(and also not much worse) than if I have a machine with that much memory...
-
-								Honza
+diff --git a/drivers/gpio/gpio-nomadik.c b/drivers/gpio/gpio-nomadik.c
+index 839624f..f1ebd05 100644
+--- a/drivers/gpio/gpio-nomadik.c
++++ b/drivers/gpio/gpio-nomadik.c
+@@ -58,7 +58,6 @@ struct nmk_gpio_chip {
+ 	u32 real_wake;
+ 	u32 rwimsc;
+ 	u32 fwimsc;
+-	u32 slpm;
+ 	u32 pull_up;
+ };
+ 
+@@ -583,10 +582,14 @@ static void __nmk_gpio_irq_modify(struct nmk_gpio_chip *nmk_chip,
+ static void __nmk_gpio_set_wake(struct nmk_gpio_chip *nmk_chip,
+ 				int gpio, bool on)
+ {
+-	if (nmk_chip->sleepmode) {
++	/*
++	 * Ensure WAKEUP_ENABLE is on.  No need to disable it if wakeup is
++	 * disabled, since setting SLPM to 1 increases power consumption, and
++	 * wakeup is anyhow controlled by the RIMSC and FIMSC registers.
++	 */
++	if (nmk_chip->sleepmode && on) {
+ 		__nmk_gpio_set_slpm(nmk_chip, gpio - nmk_chip->chip.base,
+-				    on ? NMK_GPIO_SLPM_WAKEUP_ENABLE
+-				    : NMK_GPIO_SLPM_WAKEUP_DISABLE);
++				    NMK_GPIO_SLPM_WAKEUP_ENABLE);
+ 	}
+ 
+ 	__nmk_gpio_irq_modify(nmk_chip, gpio, WAKE, on);
+@@ -1016,13 +1019,6 @@ void nmk_gpio_wakeups_suspend(void)
+ 		writel(chip->fwimsc & chip->real_wake,
+ 		       chip->addr + NMK_GPIO_FWIMSC);
+ 
+-		if (chip->sleepmode) {
+-			chip->slpm = readl(chip->addr + NMK_GPIO_SLPC);
+-
+-			/* 0 -> wakeup enable */
+-			writel(~chip->real_wake, chip->addr + NMK_GPIO_SLPC);
+-		}
+-
+ 		clk_disable(chip->clk);
+ 	}
+ }
+@@ -1042,9 +1038,6 @@ void nmk_gpio_wakeups_resume(void)
+ 		writel(chip->rwimsc, chip->addr + NMK_GPIO_RWIMSC);
+ 		writel(chip->fwimsc, chip->addr + NMK_GPIO_FWIMSC);
+ 
+-		if (chip->sleepmode)
+-			writel(chip->slpm, chip->addr + NMK_GPIO_SLPC);
+-
+ 		clk_disable(chip->clk);
+ 	}
+ }
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.9.2
+
