@@ -1,114 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab2DWRuc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 13:50:32 -0400
-Received: from p02c11o144.mxlogic.net ([208.65.144.77]:46641 "EHLO
-	p02c11o144.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab2DWRu2 convert rfc822-to-8bit (ORCPT
+	id S1753929Ab2DWR51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 13:57:27 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37690 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab2DWR50 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 13:50:28 -0400
-X-MXL-Hash: 4f9596641f4bc3d0-aeea6dfa1a2c605141c1bfdd5cc1fc7276ab1584
-X-MXL-Hash: 4f9595383159b6eb-ff3ff0dbee3ac35da46b375ade79f17776c2e379
-From: Peter Staubach <pstaubach@exagrid.com>
-To: Miklos Szeredi <miklos@szeredi.hu>, Chuck Lever <chuck.lever@oracle.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@redhat.com>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        Steve Dickson <SteveD@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>,
-        "trond.myklebust@fys.uio.no" <trond.myklebust@fys.uio.no>,
-        "rees@umich.edu" <rees@umich.edu>
-Date: Mon, 23 Apr 2012 13:45:08 -0400
-Subject: RE: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
- from getattr call
-Thread-Topic: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
- from getattr call
-Thread-Index: Ac0hZQ+HoAx5StqJT9yvKkoUWlLaiwAE6E6g
-Message-ID: <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E604@IT-1874.Isys.com>
-References: <20120420104055.511e15bc@tlielax.poochiereds.net>
-	<4F91C49D.8070908@RedHat.com> <20120420203725.GA3512@us.ibm.com>
-	<20120420171314.73801874@corrin.poochiereds.net>
-	<CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
-	<20120423080012.7c23ef24@tlielax.poochiereds.net>
-	<20120423130009.GA13681@fieldses.org>
-	<20120423091255.00f926c4@tlielax.poochiereds.net>
-	<20120423133412.GB13681@fieldses.org>
-	<20120423095021.1a91a23b@tlielax.poochiereds.net>
-	<20120423135456.GC13681@fieldses.org>
-	<87hawasdrb.fsf@tucsk.pomaz.szeredi.hu>
-	<9991AAC7-5256-4AFE-9722-7AF1119EE7BE@oracle.com>
- <874nsasc8l.fsf@tucsk.pomaz.szeredi.hu>
-In-Reply-To: <874nsasc8l.fsf@tucsk.pomaz.szeredi.hu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 23 Apr 2012 13:57:26 -0400
+Date: Mon, 23 Apr 2012 12:57:15 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: =?utf-8?B?TGVzxYJhdyBLb3BlxIc=?= <leslaw.kopec@nasza-klasa.pl>
+Cc: Peter Zijlstra <peterz@infradead.org>, Aman Gupta <aman@tmm1.net>,
+        linux-kernel@vger.kernel.org,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Damien Wyart <damien.wyart@free.fr>, Kyle McMartin <kyle@redhat.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Doug Smythies <dsmythies@telus.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Inconsistent load average on tickless kernels
+Message-ID: <20120423175715.GD9635@burratino>
+References: <1330532667.11248.153.camel@twins>
+ <1330534998.11248.158.camel@twins>
+ <4F551ABE.5080605@nasza-klasa.pl>
+ <CAK=uwuxvzGwes4ffy9EXVReG95U3HQaKmPPKgFnHzo_MwaO_NA@mail.gmail.com>
+ <1330989903.11248.261.camel@twins>
+ <1330990360.11248.264.camel@twins>
+ <1330990413.11248.265.camel@twins>
+ <4F8D678C.6050104@nasza-klasa.pl>
+ <20120417153032.GB21534@burratino>
+ <4F958141.2000505@nasza-klasa.pl>
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010122901)]
-X-MAIL-FROM: <pstaubach@exagrid.com>
-X-SOURCE-IP: [69.84.133.248]
-X-AnalysisOut: [v=1.0 c=1 a=lnpZ504GmfQA:10 a=ooaBVg03rvgA:10 a=BLceEmwcHo]
-X-AnalysisOut: [wA:10 a=kj9zAlcOel0A:10 a=YmXeKoonWU0GTmr6cORa5w==:17 a=Vw]
-X-AnalysisOut: [QbUJbxAAAA:8 a=drOt6m5kAAAA:8 a=JfrnYn6hAAAA:8 a=sHqLhEVXA]
-X-AnalysisOut: [AAA:8 a=yPCof4ZbAAAA:8 a=mJjC6ScEAAAA:8 a=xArGQ6MUFWvTgfh6]
-X-AnalysisOut: [KKgA:9 a=8LoMMqNwaQoM5rYJdmEA:7 a=CjuIK1q_8ugA:10 a=3Rfx1n]
-X-AnalysisOut: [USh_UA:10 a=tIBAwYQmwVgA:10 a=7DSvI1NPTFQA:10 a=2NEUOfxDfW]
-X-AnalysisOut: [4A:10]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4F958141.2000505@nasza-klasa.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The situation of stale current directories and/or stale root directories for mounted file systems is handled.  In these cases, recovery is not possible and so, are not looped for.
+Lesław Kopeć wrote:
 
-	Thanx...
-
-		ps
-
-
------Original Message-----
-From: Miklos Szeredi [mailto:miklos@szeredi.hu] 
-Sent: Monday, April 23, 2012 11:24 AM
-To: Chuck Lever
-Cc: J. Bruce Fields; Jeff Layton; Malahal Naineni; Steve Dickson; linux-fsdevel@vger.kernel.org; linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org; viro@zeniv.linux.org.uk; hch@infradead.org; michael.brantley@deshaw.com; sven.breuner@itwm.fraunhofer.de; Peter Staubach; trond.myklebust@fys.uio.no; rees@umich.edu
-Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
-
-Chuck Lever <chuck.lever@oracle.com> writes:
-
-> On Apr 23, 2012, at 10:51 AM, Miklos Szeredi wrote:
+> 2.6.32.55-hz-0f004f5a69			9.88
+> 2.6.32.55-no-hz-74f5187ac8		2.48
+> 2.6.32.55-no-hz-c308b56b53		2.22
+> 3.0.28-hz				10.66
+> 3.0.28-no-hz				0.60
+> 3.0.28-no-hz-c308b56b53			4.09
+> 3.0.28-no-hz-c308b56b53 nohz=off	6.78
+> 3.2.12-hz				10.16
+> 3.2.12-no-hz				0.66
+> 3.2.12-no-hz-c308b56b53			4.36
 >
->> "J. Bruce Fields" <bfields@fieldses.org> writes:
->> 
->>> 
->>> I also wonder whether it would be making too many assumptions about 
->>> the server or filesystem: just because ordinary posix interfaces 
->>> don't allow atomic replacement of a whole directory tree doesn't 
->>> mean the server might not have some way to do it.
->> 
->> Exactly because posix limits the atomic replacement to empty 
->> directories is that this feature is not useful and is why linux can 
->> get away with the dead directory behavior in this case.  And thinking 
->> about fixing this in NFS is completely pointless since no one will 
->> rely on the atomic replacement behavior.  Fixing local filesystems is 
->> also pointless for the same reason.
->> 
->> Atomic replacement of whole directory trees would indeed be more 
->> useful, but it's highly unlikely to be used anywhere since 
->> applications relying on this feature would be limited to special filesystems that allow this.
->
-> The cases I can think of have to do with file system restore, file 
-> system and block device snapshots, and so on.  This type of use case 
-> may not practical on today's Linux server, but they are a reality for 
-> anyone using high-end NFS storage.
+> What's worth noting is that I haven't seen any nasty side effects of the
+> latest patch on all kernel versions that I've tested. Hope that helps.
 
-Problem with this is: if some directory file handles are stale (e.g. due to directories being removed, recreated, moved around) and on the client there are cwd-s referring to these handles, then they are going to become stale no matter what you do, even if the same path does exist after the restore on the server.
+Ok.
+
+Peter, do you think it would make sense to add c308b56b53987 to 3.0.y
+and newer stable kernels?
 
 Thanks,
-Miklos
+Jonathan
