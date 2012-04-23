@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab2DWMSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 08:18:25 -0400
-Received: from relay.parallels.com ([195.214.232.42]:40367 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754462Ab2DWMSX (ORCPT
+	id S1754877Ab2DWMSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 08:18:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42798 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754100Ab2DWMSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 08:18:23 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andy Lutomirski <luto@mit.edu>, Jan Beulich <jbeulich@suse.com>
-CC: Vladimir Davydov <vdavydov@parallels.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch: x86: take precautions against spurious timer interrupts
-Date: Mon, 23 Apr 2012 16:18:14 +0400
-Message-ID: <1335183494-19645-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 23 Apr 2012 08:18:34 -0400
+Date: Mon, 23 Apr 2012 13:18:31 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: s5m8767: Use DIV_ROUND_UP to calculate
+ selector
+Message-ID: <20120423121831.GF8318@opensource.wolfsonmicro.com>
+References: <1334280605.6755.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SxgehGEc6vB0cZwN"
+Content-Disposition: inline
+In-Reply-To: <1334280605.6755.1.camel@phoenix>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If hpet is enabled by hpet_late_init() - this usually occurs on systems
-with buggy BIOS, which does not report about hpet presence through ACPI,
-hpet_clockevent's event_handler can be left uninitialized by
-clockevents_register_device() because of hpet_clockevent low rating (by
-the time hpet_late_init() is called, high prio apic timers have already
-been setup). The event_handler is then initialized a bit later by the
-clocksource_done_booting() procedure.
 
-Normally, timer interrupts should not be delivered between these two
-calls, but if e.g. the kernel is booted using kexec, there might be some
-pending interrupts from the previous kernel's context, which can lead to
-a NULL pointer dereference.
+--SxgehGEc6vB0cZwN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So, take precautions against spurious timer interrupts by checking the
-event_handler value before calling it.
----
- arch/x86/kernel/time.c |   18 +++++++++++++++++-
- 1 files changed, 17 insertions(+), 1 deletions(-)
+On Fri, Apr 13, 2012 at 09:30:05AM +0800, Axel Lin wrote:
+> Integer division may truncate the result.
+> Use DIV_ROUND_UP to ensure new voltage setting falls within specified range.
 
-diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
-index c6eba2b..43bdd3a 100644
---- a/arch/x86/kernel/time.c
-+++ b/arch/x86/kernel/time.c
-@@ -57,7 +57,23 @@ EXPORT_SYMBOL(profile_pc);
-  */
- static irqreturn_t timer_interrupt(int irq, void *dev_id)
- {
--	global_clock_event->event_handler(global_clock_event);
-+	/*
-+	 * If hpet is enabled by hpet_late_init(), event_handler can be left
-+	 * uninitialized by clockevents_register_device() because of
-+	 * hpet_clockevent low rating (by the time hpet_late_init() is called,
-+	 * high prio apic timers have already been setup). The event_handler is
-+	 * then initialized a bit later by the clocksource_done_booting()
-+	 * procedure.
-+	 *
-+	 * Normally, timer interrupts should not be delivered between these two
-+	 * calls, but if e.g. the kernel is booted using kexec, there might be
-+	 * some pending interrupts from the previous kernel's context, which
-+	 * can lead to a NULL pointer dereference.
-+	 *
-+	 * So, take precautions against spurious timer interrupts.
-+	 */
-+	if (global_clock_event->event_handler)
-+		global_clock_event->event_handler(global_clock_event);
- 
- 	/* MCA bus quirk: Acknowledge irq0 by setting bit 7 in port 0x61 */
- 	if (MCA_bus)
--- 
-1.7.1
+Applied, thanks.
 
+--SxgehGEc6vB0cZwN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPlUiQAAoJEBus8iNuMP3dJzMP/2IuU2/GDy6jEi6hfFmixEd/
+GdgRXST/TGNQEZYKRaObMnTRq4BuOYpH9wUszmh5ckoNqSuc2lVniQSWYkVk0dIA
+mGEwhg6GDy8tOBsJuAxxSX7ZDyj7snwoJiexv6JQqKaFIVmj9ySJzX7vJCuCn4t9
+8E9Hmi3ktMpdp/9S78j3QV83kb6UD7lM7OHCm8o6TAuQM0vgP3t7bgzMqRR3Omtw
+nQLq6euLQIZdRGKgZST0CxMDMaLpBCs/naeEGFNfxUSgAYSGvS8NywGG4xkfMFfb
+arnSzLqvLIsgDXvxRCc0A2yDQQSoQCn/Ert1KIV9mg3Gf6lFVXPp9RtTy41JEJtB
+2SGeHkSdi5EeYi1s9n1eFFtpIdx6uc/sqSb84qW7re8kDPUh5QYqo+6ihs5Hw+0V
+eQKQwsTmwalHp9mBHIXKvGNAMOfLnI4zIRKot5NAoH2oCO6yAn5NZsMtqNUApqtL
+lYY+bfHht5YqyeXz5CwSJ5pbuh88+RcKksYZ5nm4W74JSlcVzxo1QnuxjUqbR1KC
+LABoApNwq5aWu053hOH+JcGqpkfH4Dk5vpHoSihX9DSU/jOODM8Wp1ZalcVObPjY
+WiPPuvUkeQGJ74vbUQfPPejIxAZmYqoEpXsuB/xKp7HW+hdU3D8CGNk/UrrNkpsS
+Sfdz0zo/hFvqJ6Jh7w0T
+=aTiS
+-----END PGP SIGNATURE-----
+
+--SxgehGEc6vB0cZwN--
