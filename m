@@ -1,288 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2DWKNC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:13:02 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49742 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754422Ab2DWKNA convert rfc822-to-8bit (ORCPT
+	id S1754894Ab2DWKPN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:15:13 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:39825 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754753Ab2DWKPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:13:00 -0400
-Message-ID: <1335175949.28150.109.camel@twins>
-Subject: Re: [PATCH 03/16] sched: SCHED_DEADLINE data structures.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
-        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Date: Mon, 23 Apr 2012 12:12:29 +0200
-In-Reply-To: <4F952721.9030302@gmail.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	   <1333696481-3433-4-git-send-email-juri.lelli@gmail.com>
-	  <1335172098.28150.99.camel@twins> <4F95253F.4090005@gmail.com>
-	 <1335174564.28150.107.camel@twins> <4F952721.9030302@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 23 Apr 2012 06:15:10 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org, KVM <kvm@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        X86 <x86@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Xen <xen-devel@lists.xensource.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Date: Mon, 23 Apr 2012 15:30:23 +0530
+Message-Id: <20120423100023.30893.53020.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com>
+References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH RFC V6 4/5] kvm : pv-ticketlocks support for linux guests running on KVM hypervisor
+x-cbid: 12042310-9574-0000-0000-00000251E9AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 11:55 +0200, Juri Lelli wrote:
-> On 04/23/2012 11:49 AM, Peter Zijlstra wrote:
-> > On Mon, 2012-04-23 at 11:47 +0200, Juri Lelli wrote:
-> >> On 04/23/2012 11:08 AM, Peter Zijlstra wrote:
-> >>> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
-> >>>> +struct sched_dl_entity {
-> >>>> +       struct rb_node  rb_node;
-> >>>> +       int nr_cpus_allowed;
-> >>>
-> >>> I think it would be all-round best to move
-> >>> sched_rt_entity::nr_cpus_allowed out next to cpus_allowed.
-> >>
-> >> You mean unify them: a single nr_cpus_allowed after
-> >> task_struct::cpus_allowed, right?
-> >
-> > Yes, no point in keeping that one value twice and in fact there's a
-> > usage of p->rt.nr_cpus_allowed in sched/fair.c so its past time its
-> > moved out of that rt specific thing.
-> 
-> Sure. Since this is a small change, probably not strictly related to
-> this patchset, may I wait to see the change in mainline?
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 
-Ok..
+During smp_boot_cpus  paravirtualied KVM guest detects if the hypervisor has
+required feature (KVM_FEATURE_PV_UNHALT) to support pv-ticketlocks. If so,
+ support for pv-ticketlocks is registered via pv_lock_ops.
 
+Use KVM_HC_KICK_CPU hypercall to wakeup waiting/halted vcpu.
 
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
-Subject: sched: Move nr_cpus_allowed out of sched_rt_entity
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon Apr 23 12:11:21 CEST 2012
-
-Since nr_cpus_allowed is used outside of sched/rt.c and wants to be
-used outside of there more, move it to a more natural site.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-gba0fya9qv86mo5m1cjf7f0v@git.kernel.org
----
- arch/blackfin/kernel/process.c |    2 +-
- include/linux/init_task.h      |    2 +-
- include/linux/sched.h          |    2 +-
- kernel/sched/core.c            |    2 +-
- kernel/sched/fair.c            |    2 +-
- kernel/sched/rt.c              |   36 +++++++++++++++++++++---------------
- 6 files changed, 26 insertions(+), 20 deletions(-)
-
---- a/arch/blackfin/kernel/process.c
-+++ b/arch/blackfin/kernel/process.c
-@@ -171,7 +171,7 @@ asmlinkage int bfin_clone(struct pt_regs
- 	unsigned long newsp;
- 
- #ifdef __ARCH_SYNC_CORE_DCACHE
--	if (current->rt.nr_cpus_allowed == num_possible_cpus())
-+	if (current->nr_cpus_allowed == num_possible_cpus())
- 		set_cpus_allowed_ptr(current, cpumask_of(smp_processor_id()));
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 5b647ea..77266d3 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -195,10 +195,20 @@ void kvm_async_pf_task_wait(u32 token);
+ void kvm_async_pf_task_wake(u32 token);
+ u32 kvm_read_and_reset_pf_reason(void);
+ extern void kvm_disable_steal_time(void);
+-#else
+-#define kvm_guest_init() do { } while (0)
++
++#ifdef CONFIG_PARAVIRT_SPINLOCKS
++void __init kvm_spinlock_init(void);
++#else /* !CONFIG_PARAVIRT_SPINLOCKS */
++static inline void kvm_spinlock_init(void)
++{
++}
++#endif /* CONFIG_PARAVIRT_SPINLOCKS */
++
++#else /* CONFIG_KVM_GUEST */
++#define kvm_guest_init() do {} while (0)
+ #define kvm_async_pf_task_wait(T) do {} while(0)
+ #define kvm_async_pf_task_wake(T) do {} while(0)
++
+ static inline u32 kvm_read_and_reset_pf_reason(void)
+ {
+ 	return 0;
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index b8ba6e4..98f0378 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -33,6 +33,7 @@
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+ #include <linux/kprobes.h>
++#include <linux/debugfs.h>
+ #include <asm/timer.h>
+ #include <asm/cpu.h>
+ #include <asm/traps.h>
+@@ -368,6 +369,7 @@ static void __init kvm_smp_prepare_boot_cpu(void)
  #endif
- 
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -149,6 +149,7 @@ extern struct cred init_cred;
- 	.normal_prio	= MAX_PRIO-20,					\
- 	.policy		= SCHED_NORMAL,					\
- 	.cpus_allowed	= CPU_MASK_ALL,					\
-+	.nr_cpus_allowed= NR_CPUS,					\
- 	.mm		= NULL,						\
- 	.active_mm	= &init_mm,					\
- 	.se		= {						\
-@@ -157,7 +158,6 @@ extern struct cred init_cred;
- 	.rt		= {						\
- 		.run_list	= LIST_HEAD_INIT(tsk.rt.run_list),	\
- 		.time_slice	= RR_TIMESLICE,				\
--		.nr_cpus_allowed = NR_CPUS,				\
- 	},								\
- 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
- 	INIT_PUSHABLE_TASKS(tsk)					\
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1234,7 +1234,6 @@ struct sched_rt_entity {
- 	struct list_head run_list;
- 	unsigned long timeout;
- 	unsigned int time_slice;
--	int nr_cpus_allowed;
- 
- 	struct sched_rt_entity *back;
- #ifdef CONFIG_RT_GROUP_SCHED
-@@ -1299,6 +1298,7 @@ struct task_struct {
- #endif
- 
- 	unsigned int policy;
-+	int nr_cpus_allowed;
- 	cpumask_t cpus_allowed;
- 
- #ifdef CONFIG_PREEMPT_RCU
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4957,7 +4957,7 @@ void do_set_cpus_allowed(struct task_str
- 		p->sched_class->set_cpus_allowed(p, new_mask);
- 
- 	cpumask_copy(&p->cpus_allowed, new_mask);
--	p->rt.nr_cpus_allowed = cpumask_weight(new_mask);
-+	p->nr_cpus_allowed = cpumask_weight(new_mask);
+ 	kvm_guest_cpu_init();
+ 	native_smp_prepare_boot_cpu();
++	kvm_spinlock_init();
  }
  
- /*
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2703,7 +2703,7 @@ select_task_rq_fair(struct task_struct *
- 	int want_sd = 1;
- 	int sync = wake_flags & WF_SYNC;
- 
--	if (p->rt.nr_cpus_allowed == 1)
-+	if (p->nr_cpus_allowed == 1)
- 		return prev_cpu;
- 
- 	if (sd_flag & SD_BALANCE_WAKE) {
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -274,13 +274,16 @@ static void update_rt_migration(struct r
- 
- static void inc_rt_migration(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
- {
-+	struct task_struct *p;
-+
- 	if (!rt_entity_is_task(rt_se))
- 		return;
- 
-+	p = rt_task_of(rt_se);
- 	rt_rq = &rq_of_rt_rq(rt_rq)->rt;
- 
- 	rt_rq->rt_nr_total++;
--	if (rt_se->nr_cpus_allowed > 1)
-+	if (p->nr_cpus_allowed > 1)
- 		rt_rq->rt_nr_migratory++;
- 
- 	update_rt_migration(rt_rq);
-@@ -288,13 +291,16 @@ static void inc_rt_migration(struct sche
- 
- static void dec_rt_migration(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
- {
-+	struct task_struct *p;
-+
- 	if (!rt_entity_is_task(rt_se))
- 		return;
- 
-+	p = rt_task_of(rt_se);
- 	rt_rq = &rq_of_rt_rq(rt_rq)->rt;
- 
- 	rt_rq->rt_nr_total--;
--	if (rt_se->nr_cpus_allowed > 1)
-+	if (p->nr_cpus_allowed > 1)
- 		rt_rq->rt_nr_migratory--;
- 
- 	update_rt_migration(rt_rq);
-@@ -1161,7 +1167,7 @@ enqueue_task_rt(struct rq *rq, struct ta
- 
- 	enqueue_rt_entity(rt_se, flags & ENQUEUE_HEAD);
- 
--	if (!task_current(rq, p) && p->rt.nr_cpus_allowed > 1)
-+	if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
- 		enqueue_pushable_task(rq, p);
- 
- 	inc_nr_running(rq);
-@@ -1225,7 +1231,7 @@ select_task_rq_rt(struct task_struct *p,
- 
- 	cpu = task_cpu(p);
- 
--	if (p->rt.nr_cpus_allowed == 1)
-+	if (p->nr_cpus_allowed == 1)
- 		goto out;
- 
- 	/* For anything but wake ups, just return the task_cpu */
-@@ -1260,9 +1266,9 @@ select_task_rq_rt(struct task_struct *p,
- 	 * will have to sort it out.
- 	 */
- 	if (curr && unlikely(rt_task(curr)) &&
--	    (curr->rt.nr_cpus_allowed < 2 ||
-+	    (curr->nr_cpus_allowed < 2 ||
- 	     curr->prio <= p->prio) &&
--	    (p->rt.nr_cpus_allowed > 1)) {
-+	    (p->nr_cpus_allowed > 1)) {
- 		int target = find_lowest_rq(p);
- 
- 		if (target != -1)
-@@ -1276,10 +1282,10 @@ select_task_rq_rt(struct task_struct *p,
- 
- static void check_preempt_equal_prio(struct rq *rq, struct task_struct *p)
- {
--	if (rq->curr->rt.nr_cpus_allowed == 1)
-+	if (rq->curr->nr_cpus_allowed == 1)
- 		return;
- 
--	if (p->rt.nr_cpus_allowed != 1
-+	if (p->nr_cpus_allowed != 1
- 	    && cpupri_find(&rq->rd->cpupri, p, NULL))
- 		return;
- 
-@@ -1395,7 +1401,7 @@ static void put_prev_task_rt(struct rq *
- 	 * The previous task needs to be made eligible for pushing
- 	 * if it is still active
- 	 */
--	if (on_rt_rq(&p->rt) && p->rt.nr_cpus_allowed > 1)
-+	if (on_rt_rq(&p->rt) && p->nr_cpus_allowed > 1)
- 		enqueue_pushable_task(rq, p);
- }
- 
-@@ -1408,7 +1414,7 @@ static int pick_rt_task(struct rq *rq, s
- {
- 	if (!task_running(rq, p) &&
- 	    (cpu < 0 || cpumask_test_cpu(cpu, tsk_cpus_allowed(p))) &&
--	    (p->rt.nr_cpus_allowed > 1))
-+	    (p->nr_cpus_allowed > 1))
- 		return 1;
+ static void __cpuinit kvm_guest_cpu_online(void *dummy)
+@@ -450,3 +452,255 @@ static __init int activate_jump_labels(void)
  	return 0;
  }
-@@ -1464,7 +1470,7 @@ static int find_lowest_rq(struct task_st
- 	if (unlikely(!lowest_mask))
- 		return -1;
- 
--	if (task->rt.nr_cpus_allowed == 1)
-+	if (task->nr_cpus_allowed == 1)
- 		return -1; /* No other targets possible */
- 
- 	if (!cpupri_find(&task_rq(task)->rd->cpupri, task, lowest_mask))
-@@ -1586,7 +1592,7 @@ static struct task_struct *pick_next_pus
- 
- 	BUG_ON(rq->cpu != task_cpu(p));
- 	BUG_ON(task_current(rq, p));
--	BUG_ON(p->rt.nr_cpus_allowed <= 1);
-+	BUG_ON(p->nr_cpus_allowed <= 1);
- 
- 	BUG_ON(!p->on_rq);
- 	BUG_ON(!rt_task(p));
-@@ -1793,9 +1799,9 @@ static void task_woken_rt(struct rq *rq,
- 	if (!task_running(rq, p) &&
- 	    !test_tsk_need_resched(rq->curr) &&
- 	    has_pushable_tasks(rq) &&
--	    p->rt.nr_cpus_allowed > 1 &&
-+	    p->nr_cpus_allowed > 1 &&
- 	    rt_task(rq->curr) &&
--	    (rq->curr->rt.nr_cpus_allowed < 2 ||
-+	    (rq->curr->nr_cpus_allowed < 2 ||
- 	     rq->curr->prio <= p->prio))
- 		push_rt_tasks(rq);
- }
-@@ -1817,7 +1823,7 @@ static void set_cpus_allowed_rt(struct t
- 	 * Only update if the process changes its state from whether it
- 	 * can migrate or not.
- 	 */
--	if ((p->rt.nr_cpus_allowed > 1) == (weight > 1))
-+	if ((p->nr_cpus_allowed > 1) == (weight > 1))
- 		return;
- 
- 	rq = task_rq(p);
+ arch_initcall(activate_jump_labels);
++
++#ifdef CONFIG_PARAVIRT_SPINLOCKS
++
++enum kvm_contention_stat {
++	TAKEN_SLOW,
++	TAKEN_SLOW_PICKUP,
++	RELEASED_SLOW,
++	RELEASED_SLOW_KICKED,
++	NR_CONTENTION_STATS
++};
++
++#ifdef CONFIG_KVM_DEBUG_FS
++#define HISTO_BUCKETS	30
++
++static struct kvm_spinlock_stats
++{
++	u32 contention_stats[NR_CONTENTION_STATS];
++	u32 histo_spin_blocked[HISTO_BUCKETS+1];
++	u64 time_blocked;
++} spinlock_stats;
++
++static u8 zero_stats;
++
++static inline void check_zero(void)
++{
++	u8 ret;
++	u8 old;
++
++	old = ACCESS_ONCE(zero_stats);
++	if (unlikely(old)) {
++		ret = cmpxchg(&zero_stats, old, 0);
++		/* This ensures only one fellow resets the stat */
++		if (ret == old)
++			memset(&spinlock_stats, 0, sizeof(spinlock_stats));
++	}
++}
++
++static inline void add_stats(enum kvm_contention_stat var, u32 val)
++{
++	check_zero();
++	spinlock_stats.contention_stats[var] += val;
++}
++
++
++static inline u64 spin_time_start(void)
++{
++	return sched_clock();
++}
++
++static void __spin_time_accum(u64 delta, u32 *array)
++{
++	unsigned index;
++
++	index = ilog2(delta);
++	check_zero();
++
++	if (index < HISTO_BUCKETS)
++		array[index]++;
++	else
++		array[HISTO_BUCKETS]++;
++}
++
++static inline void spin_time_accum_blocked(u64 start)
++{
++	u32 delta;
++
++	delta = sched_clock() - start;
++	__spin_time_accum(delta, spinlock_stats.histo_spin_blocked);
++	spinlock_stats.time_blocked += delta;
++}
++
++static struct dentry *d_spin_debug;
++static struct dentry *d_kvm_debug;
++
++struct dentry *kvm_init_debugfs(void)
++{
++	d_kvm_debug = debugfs_create_dir("kvm", NULL);
++	if (!d_kvm_debug)
++		printk(KERN_WARNING "Could not create 'kvm' debugfs directory\n");
++
++	return d_kvm_debug;
++}
++
++static int __init kvm_spinlock_debugfs(void)
++{
++	struct dentry *d_kvm;
++
++	d_kvm = kvm_init_debugfs();
++	if (d_kvm == NULL)
++		return -ENOMEM;
++
++	d_spin_debug = debugfs_create_dir("spinlocks", d_kvm);
++
++	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
++
++	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
++		   &spinlock_stats.contention_stats[TAKEN_SLOW]);
++	debugfs_create_u32("taken_slow_pickup", 0444, d_spin_debug,
++		   &spinlock_stats.contention_stats[TAKEN_SLOW_PICKUP]);
++
++	debugfs_create_u32("released_slow", 0444, d_spin_debug,
++		   &spinlock_stats.contention_stats[RELEASED_SLOW]);
++	debugfs_create_u32("released_slow_kicked", 0444, d_spin_debug,
++		   &spinlock_stats.contention_stats[RELEASED_SLOW_KICKED]);
++
++	debugfs_create_u64("time_blocked", 0444, d_spin_debug,
++			   &spinlock_stats.time_blocked);
++
++	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
++		     spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
++
++	return 0;
++}
++fs_initcall(kvm_spinlock_debugfs);
++#else  /* !CONFIG_KVM_DEBUG_FS */
++#define TIMEOUT			(1 << 10)
++static inline void add_stats(enum kvm_contention_stat var, u32 val)
++{
++}
++
++static inline u64 spin_time_start(void)
++{
++	return 0;
++}
++
++static inline void spin_time_accum_blocked(u64 start)
++{
++}
++#endif  /* CONFIG_KVM_DEBUG_FS */
++
++struct kvm_lock_waiting {
++	struct arch_spinlock *lock;
++	__ticket_t want;
++};
++
++/* cpus 'waiting' on a spinlock to become available */
++static cpumask_t waiting_cpus;
++
++/* Track spinlock on which a cpu is waiting */
++static DEFINE_PER_CPU(struct kvm_lock_waiting, lock_waiting);
++
++static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
++{
++	struct kvm_lock_waiting *w;
++	int cpu;
++	u64 start;
++	unsigned long flags;
++
++	w = &__get_cpu_var(lock_waiting);
++	cpu = smp_processor_id();
++	start = spin_time_start();
++
++	/*
++	 * Make sure an interrupt handler can't upset things in a
++	 * partially setup state.
++	 */
++	local_irq_save(flags);
++
++	/*
++	 * The ordering protocol on this is that the "lock" pointer
++	 * may only be set non-NULL if the "want" ticket is correct.
++	 * If we're updating "want", we must first clear "lock".
++	 */
++	w->lock = NULL;
++	smp_wmb();
++	w->want = want;
++	smp_wmb();
++	w->lock = lock;
++
++	add_stats(TAKEN_SLOW, 1);
++
++	/*
++	 * This uses set_bit, which is atomic but we should not rely on its
++	 * reordering gurantees. So barrier is needed after this call.
++	 */
++	cpumask_set_cpu(cpu, &waiting_cpus);
++
++	barrier();
++
++	/*
++	 * Mark entry to slowpath before doing the pickup test to make
++	 * sure we don't deadlock with an unlocker.
++	 */
++	__ticket_enter_slowpath(lock);
++
++	/*
++	 * check again make sure it didn't become free while
++	 * we weren't looking.
++	 */
++	if (ACCESS_ONCE(lock->tickets.head) == want) {
++		add_stats(TAKEN_SLOW_PICKUP, 1);
++		goto out;
++	}
++
++	/* Allow interrupts while blocked */
++	local_irq_restore(flags);
++
++	/* halt until it's our turn and kicked. */
++	halt();
++
++	local_irq_save(flags);
++out:
++	cpumask_clear_cpu(cpu, &waiting_cpus);
++	w->lock = NULL;
++	local_irq_restore(flags);
++	spin_time_accum_blocked(start);
++}
++PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
++
++/* Kick a cpu by its apicid*/
++static inline void kvm_kick_cpu(int cpu)
++{
++	int apicid;
++
++	apicid = per_cpu(x86_cpu_to_apicid, cpu);
++	kvm_hypercall1(KVM_HC_KICK_CPU, apicid);
++}
++
++/* Kick vcpu waiting on @lock->head to reach value @ticket */
++static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
++{
++	int cpu;
++
++	add_stats(RELEASED_SLOW, 1);
++	for_each_cpu(cpu, &waiting_cpus) {
++		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
++		if (ACCESS_ONCE(w->lock) == lock &&
++		    ACCESS_ONCE(w->want) == ticket) {
++			add_stats(RELEASED_SLOW_KICKED, 1);
++			kvm_kick_cpu(cpu);
++			break;
++		}
++	}
++}
++
++/*
++ * Setup pv_lock_ops to exploit KVM_FEATURE_PV_UNHALT if present.
++ */
++void __init kvm_spinlock_init(void)
++{
++	if (!kvm_para_available())
++		return;
++	/* Does host kernel support KVM_FEATURE_PV_UNHALT? */
++	if (!kvm_para_has_feature(KVM_FEATURE_PV_UNHALT))
++		return;
++
++	static_key_slow_inc(&paravirt_ticketlocks_enabled);
++
++	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(kvm_lock_spinning);
++	pv_lock_ops.unlock_kick = kvm_unlock_kick;
++}
++#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
 
