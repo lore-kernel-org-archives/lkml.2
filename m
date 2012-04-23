@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab2DWM1I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 08:27:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58147 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754947Ab2DWM1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 08:27:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="144833158"
-Subject: Re: [PATCH V1] dmaengine: tegra: add dma driver
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: rmk <rmk@arm.linux.org.uk>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-In-Reply-To: <4F95483F.5020005@nvidia.com>
-References: <1334912896-4614-1-git-send-email-ldewangan@nvidia.com>
-	 <1334920487.31825.98.camel@vkoul-udesk3>  <4F9153AF.7020901@nvidia.com>
-	 <1335170491.31825.104.camel@vkoul-udesk3>  <4F95483F.5020005@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Apr 2012 17:53:39 +0530
-Message-ID: <1335183819.31825.110.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755083Ab2DWM3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 08:29:06 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:53281 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753923Ab2DWM3D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 08:29:03 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Dmitry Torokhov <dtor@mail.ru>
+Subject: [PATCH] mfd/stmpe: allow for const keyboard data
+Date: Mon, 23 Apr 2012 14:28:44 +0200
+Message-ID: <1335184124-9105-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 17:47 +0530, Laxman Dewangan wrote:
-> Hi Russell,
-> On Monday 23 April 2012 02:11 PM, Vinod Koul wrote:
-> > On Fri, 2012-04-20 at 17:46 +0530, Laxman Dewangan wrote:
-> >> Thanks Vinod for quick review.
-> > Since I was on vacation, I hadn't noticed Russell has already sent the
-> > patches for omap dma support.
-> > http://permalink.gmane.org/gmane.linux.ports.arm.omap/75034
-> >
-> > It would be nice if both the efforts are coordinated.
-> >
-> > Btw I like the virtual channel support introduced by Russell
-> >
-> 
-> Can you please point me the virtual channel related change? I am not 
-> able to locate this like search for function vchan_* ().
-> My driver is also on same line but not used vchan_* and also having 
-> support for cyclic transfer.
-See the patch 3/8 in this series
+From: Linus Walleij <linus.walleij@linaro.org>
 
+Since it's not like we will re-arrange the keys at run-time, it
+seems proper to allow the keymap data to be const. This solves
+a compilation warning in ux500.
 
+Cc: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ include/linux/mfd/stmpe.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
+index 8516fd1..f8d5b4d 100644
+--- a/include/linux/mfd/stmpe.h
++++ b/include/linux/mfd/stmpe.h
+@@ -117,7 +117,7 @@ struct matrix_keymap_data;
+  * @no_autorepeat: disable key autorepeat
+  */
+ struct stmpe_keypad_platform_data {
+-	struct matrix_keymap_data *keymap_data;
++	const struct matrix_keymap_data *keymap_data;
+ 	unsigned int debounce_ms;
+ 	unsigned int scan_count;
+ 	bool no_autorepeat;
 -- 
-~Vinod
+1.7.9.2
 
