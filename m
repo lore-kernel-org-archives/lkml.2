@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab2DWUiY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 16:38:24 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46705 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754240Ab2DWUiW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 16:38:22 -0400
+	id S1755383Ab2DWUib (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 16:38:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56231 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308Ab2DWUi2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 16:38:28 -0400
+Date: Mon, 23 Apr 2012 13:38:24 -0700
+From: greg <gregkh@linuxfoundation.org>
+To: yan <clouds.yan@gmail.com>
+Cc: kernel <linux-kernel@vger.kernel.org>, message <message.get@gmail.com>
+Subject: Re: [PATCH 1/4][Trivial] lib/kobject.c: Check parameter in
+ kobject_get_path
+Message-ID: <20120423203824.GA13075@kroah.com>
+References: <1335000350.2188.5.camel@yan>
 MIME-Version: 1.0
-In-Reply-To: <1334784254-17603-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1334784254-17603-1-git-send-email-paul.gortmaker@windriver.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 23 Apr 2012 14:38:00 -0600
-Message-ID: <CAErSpo4t2USorOiSMs99UQ_JPyhnz=FKfF=R5twhepDMPVH5oQ@mail.gmail.com>
-Subject: Re: [PATCH] pci: frv architecture needs generic setup-bus infrastructure
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335000350.2188.5.camel@yan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 3:24 PM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> Otherwise we get this link failure for frv's defconfig:
->
->   LD      .tmp_vmlinux1
->  drivers/built-in.o: In function `pci_assign_resource':
->  (.text+0xbf0c): undefined reference to `pci_cardbus_resource_alignment'
->  drivers/built-in.o: In function `pci_setup':
->  pci.c:(.init.text+0x174): undefined reference to `pci_realloc_get_opt'
->  pci.c:(.init.text+0x1a0): undefined reference to `pci_realloc_get_opt'
->  make[1]: *** [.tmp_vmlinux1] Error 1
->
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
->
-> diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
-> index 083a49f..165274c 100644
-> --- a/drivers/pci/Makefile
-> +++ b/drivers/pci/Makefile
-> @@ -42,6 +42,7 @@ obj-$(CONFIG_UNICORE32) += setup-bus.o setup-irq.o
->  obj-$(CONFIG_PARISC) += setup-bus.o
->  obj-$(CONFIG_SUPERH) += setup-bus.o setup-irq.o
->  obj-$(CONFIG_PPC) += setup-bus.o
-> +obj-$(CONFIG_FRV) += setup-bus.o
->  obj-$(CONFIG_MIPS) += setup-bus.o setup-irq.o
->  obj-$(CONFIG_X86_VISWS) += setup-irq.o
->  obj-$(CONFIG_MN10300) += setup-bus.o
+On Sat, Apr 21, 2012 at 05:25:42PM +0800, yan wrote:
+> kobject_get_path is exported, it passes its parameter kobj to
+> get_kobj_path_length and fill_kobj_path which are both static 
+> and called only once here. So check this parameter.
 
-Wow, I didn't even realize that we had this sort of arch-specific
-selection of generic PCI parts.  drivers/pci/setup-irq.c is on my list
-for reworking because it looks like it doesn't work correctly for
-hotplug.  setup-bus.c is much more complicated, but (a) it looks like
-most architectures include it anyway, and (b) it seems like it'd be
-cleaner to have a CONFIG_PCI_REALLOC or something to avoid having
-arch-specific stuff in the Makefile.
+Why?  If you call this function, you should pass in a valid pointer,
+that's the proper way to call it.  No need to be "defensive" here at
+all, if the caller messes up, then it crashes, as it should not be
+making this type of call on a NULL pointer.
 
-Anyway, that's all for the future.  Does this fix need to go in 3.4,
-or should it go in -next?  What commit introduced the problem?
+In looking at all of the in-kernel users of this function, they all do
+this properly, so I see no need for this patch.
 
-Bjorn
+And these types of patches are not "trivial" at all, so please don't
+mark them as such.
+
+thanks,
+
+greg k-h
