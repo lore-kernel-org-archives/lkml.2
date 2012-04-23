@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab2DWOry (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 10:47:54 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:34890 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082Ab2DWOrx (ORCPT
+	id S1753737Ab2DWOut (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 10:50:49 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44808 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240Ab2DWOur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 10:47:53 -0400
-Date: Mon, 23 Apr 2012 16:47:45 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
-Cc: Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Our failure on tracing tools unification (Was: Re: [RFC][PATCH
- 00/15] tools: Unify perf and trace-cmd trace event format parsing v2)
-Message-ID: <20120423144743.GB29985@somewhere>
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+	Mon, 23 Apr 2012 10:50:47 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Jeff Layton <jlayton@redhat.com>, Malahal Naineni <malahal@us.ibm.com>,
+        Steve Dickson <SteveD@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, hch@infradead.org,
+        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
+        chuck.lever@oracle.com, pstaubach@exagrid.com,
+        trond.myklebust@fys.uio.no, rees@umich.edu
+Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
+References: <20120420104055.511e15bc@tlielax.poochiereds.net>
+	<4F91C49D.8070908@RedHat.com> <20120420203725.GA3512@us.ibm.com>
+	<20120420171314.73801874@corrin.poochiereds.net>
+	<CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
+	<20120423080012.7c23ef24@tlielax.poochiereds.net>
+	<20120423130009.GA13681@fieldses.org>
+	<20120423091255.00f926c4@tlielax.poochiereds.net>
+	<20120423133412.GB13681@fieldses.org>
+	<20120423095021.1a91a23b@tlielax.poochiereds.net>
+	<20120423135456.GC13681@fieldses.org>
+Date: Mon, 23 Apr 2012 16:51:04 +0200
+In-Reply-To: <20120423135456.GC13681@fieldses.org> (J. Bruce Fields's message
+	of "Mon, 23 Apr 2012 09:54:56 -0400")
+Message-ID: <87hawasdrb.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 06, 2012 at 12:47:51AM +0200, Frederic Weisbecker wrote:
-> 
-> Hi,
-> 
-> So this is a new iteration of the libtracevent library, basically a
-> rebase of https://lkml.org/lkml/2011/8/5/299 against latest progresses
-> (latest tip/perf/core + tip/perf/urgent).
-> 
-> This library unifies the trace events parsing code between perf and
-> trace-cmd. I initially took this parsing code from trace-cmd to make
-> perf able to display trace-events and play with their contents.
-> 
-> But there is a continuous drift between perf and trace-cmd trace event
-> parsing code since then because the fork I did and the original code in
-> trace-cmd have never merged into a common entity. As a result, perf
-> stays backward because we haven't ported all the progresses that
-> trace-cmd did in this area.
-> 
-> Considering the reactions after the last attempt, it appears the
-> unification of this code is uncontroversial. What seem to cause 
-> problems is how we do it:
-> 
-> - as an internal library inside perf, where other tools can hook
-> - as a self-contained library in tools/lib, independant from perf
-> 
-> The argument for the first solution was that trace events format
-> is not mature enough to be available for any tool and thus it's too
-> early to release a library that would engrave into the stone an
-> interface to it, preventing the events format from evolving in the
-> future.
-> 
-> However users of trace events are there already and they all use
-> their own parsing. They sometimes wrongly rely on the stability of a
-> whole event layout or its ascii structure. The lack of a common and
-> independant library is eventually what prevents us from doing progresses
-> or make evolutions on trace events.
-> 
-> So I think we really need to restart the debate. We strongly need to make
-> progresses in this area so I'm posting this iteration in the hope we
-> can move forward. With the coming of uprobes, there are some chances
-> that our tracing becomes more important in the future. Let's join
-> our efforts.
+"J. Bruce Fields" <bfields@fieldses.org> writes:
 
-I'm trying to summarize some conversations that I got outside the mailing
-list (and I truly regret because it should have been debated publicly).
+>
+> I also wonder whether it would be making too many assumptions about the
+> server or filesystem: just because ordinary posix interfaces don't allow
+> atomic replacement of a whole directory tree doesn't mean the server
+> might not have some way to do it.
 
-Ingo doesn't seem to want this library outside perf in order to avoid
-the fragmentation of the efforts on tracing tools.
+Exactly because posix limits the atomic replacement to empty directories
+is that this feature is not useful and is why linux can get away with
+the dead directory behavior in this case.  And thinking about fixing
+this in NFS is completely pointless since no one will rely on the atomic
+replacement behavior.  Fixing local filesystems is also pointless for
+the same reason.
 
-We indeed want to unify our tools, like merging trace-cmd into perf.
-And after talking with Steve about that, he told me he wants to have
-both tools unified as well. But he wants to keep libparseevent as
-a generic standalone library.
+Atomic replacement of whole directory trees would indeed be more useful,
+but it's highly unlikely to be used anywhere since applications relying
+on this feature would be limited to special filesystems that allow this.
 
-Indeed, it makes it possible for those who want to use trace events
-on their own tools to do it properly. I believe powertop fits into
-this scheme. Trace events are a generally useful feature. I wish
-we gather our efforts on one tool like perf but I don't want to force
-everyone to this path. So I personally agree with that library
-to be standalone.
+So my statement is "ENOENT is equivalent to ESTALE if already retrying
+path lookup with LOOKUP_REVAL on any operation that takes an parent
+directory and a name (lookup, create, link, unlink, symlink, mkdir,
+rmdir, mknod, rename)."
 
-Thus I think we are stuck again.
+This equivalence is in the sense that it doesn't change behavior
+compared to local filesystems.
 
-Now libtraceevent is perhaps going to become a separate project. I don't
-know.
+For other operations ENOENT is not equivalent to ESTALE.
 
-By backporting and sending this libparsevent patch series, I felt pretty
-eager in that we could make a great step toward the tracing code unification.
-
-But now with the current state of the picture, I'm worried about
-the future of tracing in perf tools. I don't want to spend my time to backport
-the features of the parse event code because I refuse to hack around
-politics disagreements. So probably the current code is going to rot. Unless
-somebody wants to handle this unpleasant task.
+Thanks,
+Miklos
