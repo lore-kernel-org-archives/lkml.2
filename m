@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab2DWKtI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:49:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50588 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175Ab2DWKtG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:49:06 -0400
-Message-ID: <1335178132.28150.117.camel@twins>
-Subject: Re: [BUG] perf stat: useless output for raw events with new event
- parser
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@elte.hu,
-        David Ahern <dsahern@gmail.com>,
-        Robert Richter <robert.richter@amd.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Date: Mon, 23 Apr 2012 12:48:52 +0200
-In-Reply-To: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
-References: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1755211Ab2DWKtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:49:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23937 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754225Ab2DWKtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 06:49:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="144801114"
+From: Andi Kleen <andi@firstfloor.org>
+To: HATAYAMA Daisuke 
+	<d.hatayama-+CUm20s59erQFUHtdCDX3A@public.gmane.org>
+Subject: Re: [PATCH 2/2] Enter 2nd kernel with BSP
+References: <20120416021951.9303.58568.stgit@localhost6.localdomain6>
+	<20120416022139.9303.56284.stgit@localhost6.localdomain6>
+cc: linux-kernel@vger.kernel.org, fenghua.yu@intel.com
+Date: Mon, 23 Apr 2012 03:49:15 -0700
+In-Reply-To: <20120416022139.9303.56284.stgit@localhost6.localdomain6>
+	(HATAYAMA Daisuke's message of "Mon, 16 Apr 2012 11:21:39 +0900")
+Message-ID: <m2ipgqoh90.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 12:45 +0200, Stephane Eranian wrote:
-> Hi,
-> 
-> With the new event parser, one can express raw events field by field:
-> 
-> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
-> 
-> The problem with this is that the output of perf stat becomes useless:
-> 
-> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
-> noploop for 1 seconds
-> 
->  Performance counter stats for 'noploop 1':
-> 
->         2395038678 pmu
->             10787 pmu
->                        ^^^^^^
->        1.000802603 seconds time elapsed
 
-Yeah, I already complained about that.. Jolsa proposed adding a name=
-parameter so you could explicitly name your events. I think I've seen a
-patch adding that, but can't atm seem to locate it.
+> Split logic into BSP's and AP's: BSP waits for AP halting.
+>
+> Don't remove variable crashing_cpu for debugging use; useful for
+> determining one what CPU crash happens.
 
-Jiri?
+Fenghua has this patchkit to allow offlining the BSP. What happens then?
+
+It would be good to understand why initializing APs from other APs
+should not work.  Not aware of such a limitation in x86.
+
+AFAIK when we online a random cpu after boot there is no effort to do it
+from BSP. Why does that work and not from the kexec boot?
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
