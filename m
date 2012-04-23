@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab2DWUfe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 16:35:34 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48699 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753753Ab2DWUfc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 16:35:32 -0400
-Date: Mon, 23 Apr 2012 13:35:30 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sasikantha babu <sasikanth.v19@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm:vmstat - Removed debug fs entries on failure of file
- creation and made extfrag_debug_root dentry local
-In-Reply-To: <1335208126-25919-1-git-send-email-sasikanth.v19@gmail.com>
-Message-ID: <alpine.DEB.2.00.1204231334200.11602@chino.kir.corp.google.com>
-References: <1335208126-25919-1-git-send-email-sasikanth.v19@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755016Ab2DWUiY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 16:38:24 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46705 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754240Ab2DWUiW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 16:38:22 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1334784254-17603-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1334784254-17603-1-git-send-email-paul.gortmaker@windriver.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 23 Apr 2012 14:38:00 -0600
+Message-ID: <CAErSpo4t2USorOiSMs99UQ_JPyhnz=FKfF=R5twhepDMPVH5oQ@mail.gmail.com>
+Subject: Re: [PATCH] pci: frv architecture needs generic setup-bus infrastructure
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Apr 2012, Sasikantha babu wrote:
+On Wed, Apr 18, 2012 at 3:24 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> Otherwise we get this link failure for frv's defconfig:
+>
+>   LD      .tmp_vmlinux1
+>  drivers/built-in.o: In function `pci_assign_resource':
+>  (.text+0xbf0c): undefined reference to `pci_cardbus_resource_alignment'
+>  drivers/built-in.o: In function `pci_setup':
+>  pci.c:(.init.text+0x174): undefined reference to `pci_realloc_get_opt'
+>  pci.c:(.init.text+0x1a0): undefined reference to `pci_realloc_get_opt'
+>  make[1]: *** [.tmp_vmlinux1] Error 1
+>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: David Howells <dhowells@redhat.com>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>
+> diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
+> index 083a49f..165274c 100644
+> --- a/drivers/pci/Makefile
+> +++ b/drivers/pci/Makefile
+> @@ -42,6 +42,7 @@ obj-$(CONFIG_UNICORE32) += setup-bus.o setup-irq.o
+>  obj-$(CONFIG_PARISC) += setup-bus.o
+>  obj-$(CONFIG_SUPERH) += setup-bus.o setup-irq.o
+>  obj-$(CONFIG_PPC) += setup-bus.o
+> +obj-$(CONFIG_FRV) += setup-bus.o
+>  obj-$(CONFIG_MIPS) += setup-bus.o setup-irq.o
+>  obj-$(CONFIG_X86_VISWS) += setup-irq.o
+>  obj-$(CONFIG_MN10300) += setup-bus.o
 
-> diff --git a/mm/vmstat.c b/mm/vmstat.c
-> index f600557..ddae476 100644
-> --- a/mm/vmstat.c
-> +++ b/mm/vmstat.c
-> @@ -1220,7 +1220,6 @@ module_init(setup_vmstat)
->  #if defined(CONFIG_DEBUG_FS) && defined(CONFIG_COMPACTION)
->  #include <linux/debugfs.h>
->  
-> -static struct dentry *extfrag_debug_root;
->  
->  /*
->   * Return an index indicating how much of the available free memory is
-> @@ -1358,17 +1357,23 @@ static const struct file_operations extfrag_file_ops = {
->  
->  static int __init extfrag_debug_init(void)
->  {
-> +	struct dentry *extfrag_debug_root;
-> +
->  	extfrag_debug_root = debugfs_create_dir("extfrag", NULL);
->  	if (!extfrag_debug_root)
->  		return -ENOMEM;
->  
->  	if (!debugfs_create_file("unusable_index", 0444,
-> -			extfrag_debug_root, NULL, &unusable_file_ops))
-> +			extfrag_debug_root, NULL, &unusable_file_ops)) {
-> +		debugfs_remove (extfrag_debug_root);
->  		return -ENOMEM;
-> +	}
->  
->  	if (!debugfs_create_file("extfrag_index", 0444,
-> -			extfrag_debug_root, NULL, &extfrag_file_ops))
-> +			extfrag_debug_root, NULL, &extfrag_file_ops)) {
-> +		debugfs_remove_recursive (extfrag_debug_root);
->  		return -ENOMEM;
-> +	}
->  
->  	return 0;
->  }
+Wow, I didn't even realize that we had this sort of arch-specific
+selection of generic PCI parts.  drivers/pci/setup-irq.c is on my list
+for reworking because it looks like it doesn't work correctly for
+hotplug.  setup-bus.c is much more complicated, but (a) it looks like
+most architectures include it anyway, and (b) it seems like it'd be
+cleaner to have a CONFIG_PCI_REALLOC or something to avoid having
+arch-specific stuff in the Makefile.
 
-Probably easier to do something like "goto fail" and then have a
+Anyway, that's all for the future.  Does this fix need to go in 3.4,
+or should it go in -next?  What commit introduced the problem?
 
-		return 0;
-
-	fail:
-		debugfs_remove_recursive(extfrag_debug_root);
-		return -ENOMEM;
-
-at the end of the function.
-
-Please run scripts/checkpatch.pl on your patch before proposing it.
+Bjorn
