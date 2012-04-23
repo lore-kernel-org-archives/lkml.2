@@ -1,193 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab2DWKPa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:15:30 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:56621 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754591Ab2DWKP1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:15:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <1334661441-4420-4-git-send-email-jolsa@redhat.com>
-References: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
-	<1334661441-4420-4-git-send-email-jolsa@redhat.com>
-Date: Mon, 23 Apr 2012 12:15:25 +0200
-Message-ID: <CABPqkBSupk4vizQ0t2CsgbNUtZLrQtKbSaLicO+hiXOfK52zQA@mail.gmail.com>
-Subject: Re: [PATCH 03/16] perf: Add ability to dump user regs
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, rostedt@goodmis.org,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1754963Ab2DWKPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:15:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49788 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667Ab2DWKP3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 06:15:29 -0400
+Message-ID: <1335176108.28150.110.camel@twins>
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Date: Mon, 23 Apr 2012 12:15:08 +0200
+In-Reply-To: <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	 <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 1:17 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> Add new attr->user_regs bitmap that lets a user choose a set
-> of user registers to dump to the sample. The layout of this
-> bitmap is described in asm/perf_regs.h for archs that
-> support register dump.
->
-> The perf syscall will fail if attr->user_regs is non zero.
->
-> The register value here are those of the user space context as
-> it was before the user entered the kernel for whatever reason
-> (syscall, irq, exception, or a PMI happening in userspace).
->
-> This is going to be useful to bring Dwarf CFI based stack unwinding
-> on top of samples.
->
-> TODO handle compat tasks
->
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  include/linux/perf_event.h |    8 +++++
->  kernel/events/core.c       |   63 ++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 71 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index ddbb6a9..c63b807 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -272,6 +272,12 @@ struct perf_event_attr {
->                __u64           config2; /* extension of config1 */
->        };
->        __u64   branch_sample_type; /* enum branch_sample_type */
-> +
-> +       /*
-> +        * Arch specific mask that defines a set of user regs to dump on
-> +        * samples. See asm/perf_regs.h for details.
-> +        */
-> +       __u64                   user_regs;
->  };
->
-Don't like the name of the field too much. You be more explicit.
-Something like user_sample_regs.
+On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+> + * Copyright (C) 2010 Dario Faggioli <raistlin@linux.it>,
+> + *                    Michael Trimarchi <michael@amarulasolutions.com>,
+> + *                    Fabio Checconi <fabio@gandalf.sssup.it>
 
->  /*
-> @@ -608,6 +614,7 @@ struct perf_guest_info_callbacks {
->  #include <linux/atomic.h>
->  #include <linux/sysfs.h>
->  #include <asm/local.h>
-> +#include <asm/perf_regs.h>
->
->  #define PERF_MAX_STACK_DEPTH           255
->
-> @@ -1130,6 +1137,7 @@ struct perf_sample_data {
->        struct perf_callchain_entry     *callchain;
->        struct perf_raw_record          *raw;
->        struct perf_branch_stack        *br_stack;
-> +       struct pt_regs                  *uregs;
->  };
->
->  static inline void perf_sample_data_init(struct perf_sample_data *data, u64 addr)
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index a6a9ec4..9f29fc3 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -3751,6 +3751,37 @@ int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs)
->  }
->  EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
->
-> +static void
-> +perf_output_sample_regs(struct perf_output_handle *handle,
-> +                       struct pt_regs *regs, u64 mask)
-> +{
-> +       int i = 0;
-> +
-> +       do {
-> +               u64 val;
-> +
-> +               if (mask & 1) {
-> +                       val = perf_reg_value(regs, i);
-> +                       perf_output_put(handle, val);
-> +               }
-> +
-> +               mask >>= 1;
-> +               i++;
-> +       } while (mask);
-> +}
-> +
-> +static struct pt_regs *perf_sample_uregs(struct pt_regs *regs)
-> +{
-> +       if (!user_mode(regs)) {
-> +               if (current->mm)
-> +                       regs = task_pt_regs(current);
-> +               else
-> +                       regs = NULL;
-> +       }
-> +
-> +       return regs;
-> +}
-> +
-You are assuming the user app is running the same ABI than that of the
-kernel. That's not correct on X86 and possibly other architectures.
-
->  static void __perf_event_header__init_id(struct perf_event_header *header,
->                                         struct perf_sample_data *data,
->                                         struct perf_event *event)
-> @@ -4011,6 +4042,21 @@ void perf_output_sample(struct perf_output_handle *handle,
->                        perf_output_put(handle, nr);
->                }
->        }
-> +
-> +       if (event->attr.user_regs) {
-> +               u64 id;
-> +
-> +               /*
-> +                * If there are no regs to dump, notice it through a
-> +                * PERF_REGS_VERSION_NONE version.
-> +                */
-> +               id = data->uregs ? perf_reg_version() : PERF_REGS_VERSION_NONE;
-> +               perf_output_put(handle, id);
-> +
-> +               if (id)
-> +                       perf_output_sample_regs(handle, data->uregs,
-> +                                               event->attr.user_regs);
-> +       }
->  }
->
->  void perf_prepare_sample(struct perf_event_header *header,
-> @@ -4062,6 +4108,16 @@ void perf_prepare_sample(struct perf_event_header *header,
->                }
->                header->size += size;
->        }
-> +
-> +       if (event->attr.user_regs) {
-> +               int size = sizeof(u64); /* the version size */
-> +
-> +               data->uregs = perf_sample_uregs(regs);
-> +               if (data->uregs)
-> +                       size += hweight64(event->attr.user_regs) * sizeof(u64);
-> +
-> +               header->size += size;
-> +       }
->  }
->
->  static void perf_event_output(struct perf_event *event,
-> @@ -6112,6 +6168,13 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
->                        attr->branch_sample_type = mask;
->                }
->        }
-> +
-> +       /*
-> +        * Don't let throught invalid register mask (i.e. the architecture
-> +        * does not support register dump at all).
-> +        */
-> +       ret = perf_reg_validate(attr->user_regs);
-> +
-Again, how do you deal with 32-bit apps vs. 64-bit kernel?
-
->  out:
->        return ret;
->
-> --
-> 1.7.7.6
->
+Its 2012 at the time of writing, you might want to update this.. ;-)
