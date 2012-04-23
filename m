@@ -1,103 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2DWHYe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 03:24:34 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53415 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684Ab2DWHYd (ORCPT
+	id S1753968Ab2DWH2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 03:28:45 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48346 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753684Ab2DWH2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 03:24:33 -0400
-Date: Mon, 23 Apr 2012 03:22:24 -0400 (EDT)
-Message-Id: <20120423.032224.814734981507451327.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ncardwell@google.com
-Subject: Re: linux-next: build warning after merge of the net-next tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120423165409.d424daced95611012d151aa6@canb.auug.org.au>
-References: <20120423165409.d424daced95611012d151aa6@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 23 Apr 2012 00:22:26 -0700 (PDT)
+	Mon, 23 Apr 2012 03:28:44 -0400
+Date: Mon, 23 Apr 2012 09:28:39 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: Re: [PATCH V2 1/3] lib: add support for stmp-style devices
+Message-ID: <20120423072839.GC4568@pengutronix.de>
+References: <1332368519-22660-1-git-send-email-w.sang@pengutronix.de>
+ <1332368519-22660-2-git-send-email-w.sang@pengutronix.de>
+ <20120422235506.d3377f0e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="w7PDEPdKQumQfZlR"
+Content-Disposition: inline
+In-Reply-To: <20120422235506.d3377f0e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 23 Apr 2012 16:54:09 +1000
 
-> Hi all,
-> 
-> After merging the net-next tree, today's linux-next build (powerpc
-> ppc44x_defconfig) produced these warnings:
-> 
-> net/ipv4/tcp_ipv4.c: In function 'tcp_v4_init_sock':
-> net/ipv4/tcp_ipv4.c:1891:19: warning: unused variable 'tp' [-Wunused-variable]
-> net/ipv6/tcp_ipv6.c: In function 'tcp_v6_init_sock':
-> net/ipv6/tcp_ipv6.c:1836:19: warning: unused variable 'tp' [-Wunused-variable]
-> 
-> Introduced by commit 900f65d361d3 ("tcp: move duplicate code from
-> tcp_v4_init_sock()/tcp_v6_init_sock()").
+--w7PDEPdKQumQfZlR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks, I just pushed the following:
+On Sun, Apr 22, 2012 at 11:55:06PM -0700, Andrew Morton wrote:
+> On Wed, 21 Mar 2012 23:21:57 +0100 Wolfram Sang <w.sang@pengutronix.de> w=
+rote:
+>=20
+> > MX23/28 use IP cores which follow a register layout I have first seen on
+> > STMP3xxx SoCs. In this layout, every register actually has four u32:
+> >=20
+> >  1.) to store a value directly
+> >  2.) a SET register where every 1-bit sets the corresponding bit,
+> >      others are unaffected
+> >  3.) same with a CLR register
+> >  4.) same with a TOG (toggle) register
+> >=20
+> > Also, the 2 MSBs in register 0 are always the same and can be used to r=
+eset
+> > the IP core.
+> >=20
+> > All this is strictly speaking not mach-specific (but IP core specific) =
+and,
+> > thus, doesn't need to be in mach-mxs/include. At least, mx6 and mx50 al=
+so
+> > utilize IP cores following this stmp-style. So:
+> >=20
+> > Introduce a stmp-style device, put the code and defines for that in a p=
+ublic
+> > place (lib/), and let drivers for stmp-style devices select that code.
+> > To avoid regressions and ease reviewing, the actual code is simply copi=
+ed from
+> > mach-mxs. It definately wants updates, but those need a seperate patch =
+series.
+> >=20
+> > Voila, mach dependency gone, reusable code introduced. Note that I didn=
+'t
+> > remove the duplicated code from mach-mxs yet, first the drivers have to=
+ be
+> > converted.
+> >=20
+> > ...
+> >
+> >  include/linux/stmp_device.h |   20 +++++++++++
+> >  lib/Kconfig                 |    3 ++
+> >  lib/Makefile                |    2 +
+> >  lib/stmp_device.c           |   80 +++++++++++++++++++++++++++++++++++=
+++++++++
+>=20
+> It's good that this is being presented as library code, rather than
+> being buried in some device-specific directory then copied and pasted
+> ten times.
+>=20
+> But ./lib/ does seem rather a strange place for it.  Perhaps we need a
+> drivers/lib/ or something.  We can use ./lib/ for now - it can always
+> be moved later on.
 
---------------------
-tcp: Fix build warning after tcp_{v4,v6}_init_sock consolidation.
+The first version had it in drivers/base/ but that also felt strange.
+I like drivers/lib/. Arnd, do you agree? Shall I resend?
 
-net/ipv4/tcp_ipv4.c: In function 'tcp_v4_init_sock':
-net/ipv4/tcp_ipv4.c:1891:19: warning: unused variable 'tp' [-Wunused-variable]
-net/ipv6/tcp_ipv6.c: In function 'tcp_v6_init_sock':
-net/ipv6/tcp_ipv6.c:1836:19: warning: unused variable 'tp' [-Wunused-variable]
+>=20
+> > --- /dev/null
+> > +++ b/lib/stmp_device.c
+>=20
+> The functions in this file look terribly racy on SMP, or even with
+> preemption or interrupts.  What happens if two CPUs or threads run
+> stmp_reset_block() against the same device at the same time?
+>=20
+> Perhaps the caller is supposed to prevent that, and the documentation
+> which isn't there forgot to mention it ;)
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/ipv4/tcp_ipv4.c |    3 +--
- net/ipv6/tcp_ipv6.c |    3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+The code needs even more cleanups, timeouts are terrible as well. But as
+mentioned above, this series only moves existing code to a central
+place. Improvements would be the next, seperate step.
 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 5b07ea1..0883921 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1888,14 +1888,13 @@ static const struct tcp_sock_af_ops tcp_sock_ipv4_specific = {
- static int tcp_v4_init_sock(struct sock *sk)
- {
- 	struct inet_connection_sock *icsk = inet_csk(sk);
--	struct tcp_sock *tp = tcp_sk(sk);
- 
- 	tcp_init_sock(sk);
- 
- 	icsk->icsk_af_ops = &ipv4_specific;
- 
- #ifdef CONFIG_TCP_MD5SIG
--	tp->af_specific = &tcp_sock_ipv4_specific;
-+	tcp_sk(sk)->af_specific = &tcp_sock_ipv4_specific;
- #endif
- 
- 	return 0;
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 24dac6b..8044f6a 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1829,14 +1829,13 @@ static const struct tcp_sock_af_ops tcp_sock_ipv6_mapped_specific = {
- static int tcp_v6_init_sock(struct sock *sk)
- {
- 	struct inet_connection_sock *icsk = inet_csk(sk);
--	struct tcp_sock *tp = tcp_sk(sk);
- 
- 	tcp_init_sock(sk);
- 
- 	icsk->icsk_af_ops = &ipv6_specific;
- 
- #ifdef CONFIG_TCP_MD5SIG
--	tp->af_specific = &tcp_sock_ipv6_specific;
-+	tcp_sk(sk)->af_specific = &tcp_sock_ipv6_specific;
- #endif
- 
- 	return 0;
--- 
-1.7.10
+Regards,
 
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--w7PDEPdKQumQfZlR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+VBKcACgkQD27XaX1/VRvmQQCeOi616QJuSWw78koSOmgN3yUx
+xvQAoJsWagvjQ1lsq9DhBlKlPUjdveDv
+=S7Xl
+-----END PGP SIGNATURE-----
+
+--w7PDEPdKQumQfZlR--
