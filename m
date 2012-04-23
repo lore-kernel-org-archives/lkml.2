@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab2DWFKr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 01:10:47 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:40926 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab2DWFKq (ORCPT
+	id S1752732Ab2DWFL4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 01:11:56 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50732 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab2DWFLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 01:10:46 -0400
-Date: Mon, 23 Apr 2012 07:10:41 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux arch <linux-arch@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
-Subject: Re: [RFC] move link of vmlinux to a script
-Message-ID: <20120423051041.GA6709@merkur.ravnborg.org>
-References: <20120422212220.GA6537@merkur.ravnborg.org> <CACqU3MU7MS7MjpyiSx-tUJ6c3rSexUB5=vTGy6gPv_OJevuOqw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACqU3MU7MS7MjpyiSx-tUJ6c3rSexUB5=vTGy6gPv_OJevuOqw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 23 Apr 2012 01:11:55 -0400
+Date: Mon, 23 Apr 2012 15:11:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: linux-next: manual merge of the staging tree with the usb tree
+Message-Id: <20120423151146.8c5687c65c4eab16f063954c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__23_Apr_2012_15_11_46_+1000_QF+S.g.P2bMayYjm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaud.
+--Signature=_Mon__23_Apr_2012_15_11_46_+1000_QF+S.g.P2bMayYjm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the comments.
+Hi Greg,
 
-> > +# Link of vmlinux
-> > +# $1 - optional extra .o files
-> > +# $2 output file
-> > +vmlinux_link()
-> > +{
-> > +       local lds=${srctree}/arch/${SRCARCH}/kernel/vmlinux.lds
-> > +echo srcarch=${SRCARCH} CF=${CFLAGS_vmlinux}
-> debugging leftover ?
-yes - will be deleted.
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/comedi/drivers/dt9812.c between commit de15fe3ed9c3
+("USB: dt9812.c: remove err() usage") from the usb tree and commit
+73e2918990c0 ("staging: Fix typo in multiple files") from the staging
+tree.
 
-> > +
-> > +       local aflags="${KBUILD_AFLAGS} ${AFLAGS_KERNEL} ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS} ${modkern_aflags}"
-> might be worse splitting that line.
+The former supercedes the latter, so I used that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I may be able to drop several of the variables,
-otherwise yes.
+--Signature=_Mon__23_Apr_2012_15_11_46_+1000_QF+S.g.P2bMayYjm
+Content-Type: application/pgp-signature
 
-> > +mksysmap()
-> > +{
-> > +       $NM -n $1 | \
-> > +               grep -v '\( [aNUw] \)\|\(__crc_\)\|\( \$[adt]\)' > $2
-> > +}
-> > +
-> you don't seem to consistently use #{FOO} vs. $FOO.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-For arguments I use $FOO for the rest ${FOO}
-I will fix this up to be consistent.
+iQIcBAEBCAAGBQJPlOSSAAoJEECxmPOUX5FEdRQP/RnBYkT3U6Wej90CILTuL2pZ
+GPEqs/xOjaWq8/0UPC4VnreGN1x/Mz7oZPO7w+Go6EVP0tEvUb3EQO6TRHYP/P64
+kzGBFAGTE+Jn5f42voS/OrfJ2YulLVWssmK5O6YyD6Tyr6zYVaaXDVaatDgmXK81
+C3ijUjEghgO1aXNJGfw6LW21jqwotiW+WwAuC0IoUDMh5hfoMdn69j2iCkUp5bH2
+1AQKg0X8ilvKwmFXazhQVeshqJDNUYIHssLEaAma3/S3+bPqvI7H13QGAFZl24eS
+alwbL0vd4IY9sPFwn2ZfSce4ccFJjR9xNtQN8B6G64vDOZxy3T/eDQFLUs2aCQRj
+DCIjT1EmWILMbBk1Hk7GAjIuGrhHMdKwYs4VS6yL4ggFLKLCZPPL8F9bsuwsQ9cu
+A5MrxosLKE1bmW0+Gp1zFarLK/xd8TCFoOzpEEWuHw1e+x25Q91m/lJ9Mzw5Jeb0
+z8t/0mVM4WoA8wUFrjr/u9z399NUXLtlJHtorv/7UHtF1ewvU2xAklpSXxMXuvtT
+HPRvGW5dnI3yBaXGKRzUnoVKV7WKcuExWlDUkR9Scx/EiP0+e92mSHKFJVzxQAKd
+xyILx5WWRXvAbGYnkOyXtttSQx2H4/LWSnMRSLCm7yZVssoZwYmATCHel9C9oosK
+Crh1l2qLwAtbfMi/qsSF
+=ivUT
+-----END PGP SIGNATURE-----
 
-> > +# Update version
-> > +info GEN .version
-> > +if [ ! -r .version ]; then
-> why '-r' specifically ? '-e' might be just enough.
-
-I was so before - this part is a copy from the kernel.
-And there is already enough changes..
-
-> > +# final build of init/
-> > +${MAKE} -f ${srctree}/scripts/Makefile.build obj=init
-> > +
-> are spaces allowed in `srctree' ? if so, this will break here.
-Good catch.
-Sticking "" around should do the trick? I will try to do so.
-I should also try if it works with spaces - I think not.
-
-
-> > +kallsymso=""
-> > +kallsyms_vmlinux=""
-> > +
-> > +if [ "${CONFIG_KALLSYMS}" != "" ]; then
-> > +
-> [ -n "${CONFIG_KALLSYMS}" ] would work too, as well as the other
-> places where you use the [ "${FOO}" != "" ] syntax.
-
-Much more readable - will change.
-
-	Sam
+--Signature=_Mon__23_Apr_2012_15_11_46_+1000_QF+S.g.P2bMayYjm--
