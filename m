@@ -1,300 +1,628 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab2DWIo7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 04:44:59 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13166 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752082Ab2DWIo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 04:44:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="134108548"
-Subject: Re: [PATCH V1] dmaengine: tegra: add dma driver
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>, rmk <rmk@arm.linux.org.uk>
-Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-In-Reply-To: <4F9153AF.7020901@nvidia.com>
-References: <1334912896-4614-1-git-send-email-ldewangan@nvidia.com>
-	 <1334920487.31825.98.camel@vkoul-udesk3>  <4F9153AF.7020901@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Apr 2012 14:11:31 +0530
-Message-ID: <1335170491.31825.104.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753764Ab2DWIzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 04:55:03 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47625 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449Ab2DWIzA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 04:55:00 -0400
+X-AuditID: 9c930179-b7bfaae000006f69-48-4f9518e02f49
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>
+Subject: [RFC] propagate gfp_t to page table alloc functions
+Date: Mon, 23 Apr 2012 17:55:18 +0900
+Message-Id: <1335171318-4838-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-20 at 17:46 +0530, Laxman Dewangan wrote:
-> Thanks Vinod for quick review.
-Since I was on vacation, I hadn't noticed Russell has already sent the
-patches for omap dma support.
-http://permalink.gmane.org/gmane.linux.ports.arm.omap/75034
+As I test some code, I found a problem about deadlock by lockdep.
+The reason I saw the message is __vmalloc calls map_vm_area which calls
+pud/pmd_alloc without gfp_t. so although we call __vmalloc with
+GFP_ATOMIC or GFP_NOIO, it ends up allocating pages with GFP_KERNEL.
+The should be a BUG. This patch fixes it by passing gfp_to to low page
+table allocate functions.
 
-It would be nice if both the efforts are coordinated.
-
-Btw I like the virtual channel support introduced by Russell
-
-> 
-> On Friday 20 April 2012 04:44 PM, Vinod Koul wrote:
-> > On Fri, 2012-04-20 at 14:38 +0530, Laxman Dewangan wrote:
-> > + * dma_transfer_mode: Different dma transfer mode.
-> >> + * DMA_MODE_ONCE: Dma transfer the configured buffer once and at the end of
-> >> + *           transfer, dma  stops automatically and generates interrupt
-> >> + *           if enabled. SW need to reprogram dma for next transfer.
-> >> + * DMA_MODE_CYCLE: Dma keeps transferring the same buffer again and again
-> >> + *           until dma stopped explicitly by SW or another buffer configured.
-> >> + *           After transfer completes, dma again starts transfer from
-> >> + *           beginning of buffer without sw intervention. If any new
-> >> + *           address/size is configured during buffer transfer then
-> >> + *           dma start transfer with new configuration otherwise it
-> >> + *           will keep transferring with old configuration. It also
-> >> + *           generates the interrupt after buffer transfer completes.
-> > why do you need to define this? use the cyclic api to convey this
-> 
-> This is not the public definition, only used in dma_driver locally. The 
-> tegra dma support the cyclic mode in two ways;
-> Cyclic single interrupt mode on which it generates interrupt once full 
-> buffer transfer completes and hw keep transferring the data from start 
-> of buffer without sw intervention.
-> Cyclic double interrupt mode on which it generates interrupt two times, 
-> once after half buffer and second after full buffer. The hw keep 
-> transferring buffer in cyclic manner.
-> 
-> I am using these mode based on how cyclic parameter is passed from client.
-> If period_len is half of buffer len the using cyclic double interrupt 
-> mode and hence configure dma once for two interrupt.
-> For other cases, I am using the cyclic single interrupt mode.
-> 
-> 
-> 
-> >> + * DMA_MODE_CYCLE_HALF_NOTIFY: In this mode dma keeps transferring the buffer
-> >> + *           into two folds. This is kind of ping-pong buffer where both
-> >> + *           buffer size should be same. Dma completes the one buffer,
-> >> + *           generates interrupt and keep transferring the next buffer
-> >> + *           whose address start just next to first buffer. At the end of
-> >> + *           second buffer transfer, dma again generates interrupt and
-> >> + *           keep transferring of the data from starting of first buffer.
-> >> + *           If sw wants to change the address/size of the buffer then
-> >> + *           it needs to change only when dma transferring the second
-> >> + *           half of buffer. In dma configuration, it only need to
-> >> + *           configure starting of first buffer and size of first buffer.
-> >> + *           Dma hw assumes that striating address of second buffer is just
-> >> + *           next to end of first buffer and size is same as the first
-> >> + *           buffer.
-> > isnt this a specifc example of cylci and frankly why should dmaengine
-> > care about this. This one of the configurations you are passing for a
-> > cyclic dma operation
-> 
-> No special configuration is passed. Just based on buf_len and 
-> period_len, the mode get selected.
-> 
-> >> + */
-> >> +enum dma_transfer_mode {
-> >> +     DMA_MODE_NONE,
-> >> +     DMA_MODE_ONCE,
-> >> +     DMA_MODE_CYCLE,
-> >> +     DMA_MODE_CYCLE_HALF_NOTIFY,
-> >> +};
-> >> +
-> >> +/* List of memory allocated for that channel */
-> >> +struct tegra_dma_chan_mem_alloc {
-> >> +     struct list_head        node;
-> >> +};
-> > this seems questionable too...
-> 
-> When we allocate the channel, initially allocate some descriptors with 
-> some initial count. If client has more request and if it is found out of 
-> descriptor then we reallocate the some more descriptors. All these 
-> allocations are dynamically and when Chanel got released, it frees all 
-> allocations.
-> This structure is to maintain the list of memory pointers which are 
-> allocated.
-> 
-> here I am allocating chunk of descriptor in one shot, not one by one. If 
-> I allocate descriptor one by one then I will not need this structure. 
-> tried to optimize the malloc call here.
-> 
-> 
-> >> + * The client's request for data transfer can be broken into multiple
-> >> + * sub-transfer as per requestor details and hw support.
-> > typo                      ^^^^^^^^^
-> 
-> Will fix this.
-> 
-> >> + * tegra_dma_desc: Tegra dma descriptors which manages the client requests.
-> >> + * This de scripts keep track of transfer status, callbacks, transfer and
-> > again     ^^^^
-> Will fix this, thanks for pointing. My spell check did not found it.
-> 
-> 
-> >> +
-> >> +static dma_cookie_t tegra_dma_tx_submit(struct dma_async_tx_descriptor *tx);
-> >> +
-> >> +static int allocate_tegra_desc(struct tegra_dma_channel *tdc,
-> >> +             int ndma_desc, int nsg_req)
-> > what does the last arg mean?
-> 
-> This is number of transfer request. So if client call the prep_slave or 
-> prep_dma_cyclic with multiple segment/period len then this structure 
-> will contain the details of sub transfer per segment/period_len.
-> And it allocate one main dma_descriptor which have the transfer 
-> descriptor. So one dma_desc which is allocated one per call will contain 
-> list of such transfer requests.
-> 
-> >> +     INIT_LIST_HEAD(&sg_req_list);
-> >> +
-> >> +     /* Calculate total require size of memory and then allocate */
-> >> +     dma_desc_size = sizeof(struct tegra_dma_desc) * ndma_desc;
-> >> +     sg_req_size = sizeof(struct tegra_dma_sg_req) * nsg_req;
-> >> +     chan_mem_size = sizeof(struct tegra_dma_chan_mem_alloc);
-> >> +     total_size = chan_mem_size + dma_desc_size + sg_req_size;
-> > why cant you simply allocate three structs you need?
-> 
-> So allocation is done for number of dma desc and number of request 
-> structure and the structure which keeps track for allocated pointers.
-> Here I am calculating total allocation size and then allocating once in 
-> place of allocating them in loop.
-> 
-> >> +static int tegra_dma_slave_config(struct dma_chan *dc,
-> >> +             struct dma_slave_config *sconfig)
-> >> +{
-> >> +     struct tegra_dma_channel *tdc = to_tegra_dma_chan(dc);
-> >> +
-> >> +     if (!list_empty(&tdc->pending_sg_req)) {
-> >> +             dev_err(tdc2dev(tdc),
-> >> +                  "dma requests are pending, cannot take new configuration");
-> >> +             return -EBUSY;
-> >> +     }
-> >> +
-> >> +     /* Slave specific configuration is must for channel configuration */
-> >> +     if (!dc->private) {
-> > private is deprecated, pls dont use that
-> 
-> OK,  I saw this in the linux-next and hence I used it. So is there any 
-> way to send the client specific data to the dma driver.
-> I will remove this.
-> 
-> 
-> >> +
-> >> +     apb_seq = APB_SEQ_WRAP_WORD_1;
-> >> +
-> >> +     switch (direction) {
-> >> +     case DMA_MEM_TO_DEV:
-> >> +             apb_ptr = tdc->dma_sconfig.dst_addr;
-> >> +             apb_seq |= get_bus_width(tdc->dma_sconfig.dst_addr_width);
-> >> +             csr |= CSR_DIR;
-> >> +             break;
-> >> +
-> >> +     case DMA_DEV_TO_MEM:
-> >> +             apb_ptr = tdc->dma_sconfig.src_addr;
-> >> +             apb_seq |= get_bus_width(tdc->dma_sconfig.src_addr_width);
-> >> +             break;
-> > you dont support DMA_MEM_TO_DEV?
-> >
-> 
-> Supported, first case ;-)
-> But MEM_TO_MEM is not supported by this dma controller.
-> 
-> >
-> >> +     if (!period_len)
-> >> +             period_len = buf_len;
-> > i am not sure about this assignment here. Why should period length be
-> > ZERO?
-> >
-> 
-> Just in case, if some client send it to ZERO then  setting it to buf_len 
-> in place of returning error.
-> 
-> 
-> >> +
-> >> +     if (buf_len % period_len) {
-> >> +             dev_err(tdc2dev(tdc),
-> >> +                "buf_len %d should be multiple of period_len %d\n",
-> >> +                     buf_len, period_len);
-> >> +             return NULL;
-> >> +     }
-> > I am assuming you are also putting this as a constraint in sound driver.
-> >
-> 
-> Yaah, I think sound driver make sure that the buf_len should be integer 
-> multiple period_len. Not supporting if it is not  to reduce the complexity.
-> 
-> >> +
-> >> +     half_buffer_notify = (buf_len == (2 * period_len)) ? true : false;
-> >> +     len = (half_buffer_notify) ? buf_len / 2 : period_len;
-> >> +     if ((len&  3) || (buf_addr&  3) ||
-> >> +                     (len>  tdc->tdma->chip_data.max_dma_count)) {
-> >> +             dev_err(tdc2dev(tdc),
-> >> +                     "Dma length/memory address is not correct\n");
-> > not supported would be apt
-> 
-> Fine. I will do it.
-> 
-> >> +#ifndef LINUX_TEGRA_DMA_H
-> >> +#define LINUX_TEGRA_DMA_H
-> >> +
-> >> +/*
-> >> + * tegra_dma_burst_size: Burst size of dma.
-> >> + * @TEGRA_DMA_AUTO: Based on transfer size, select the burst size.
-> >> + *       If it is multple of 32 bytes then burst size will be 32 bytes else
-> >> + *       If it is multiple of 16 bytes then burst size will be 16 bytes else
-> >> + *       If it is multiple of 4 bytes then burst size will be 4 bytes.
-> >> + * @TEGRA_DMA_BURST_1: Burst size is 1 word/4 bytes.
-> >> + * @TEGRA_DMA_BURST_4: Burst size is 4 word/16 bytes.
-> >> + * @TEGRA_DMA_BURST_8: Burst size is 8 words/32 bytes.
-> >> + */
-> >> +enum tegra_dma_burst_size {
-> >> +     TEGRA_DMA_AUTO,
-> >> +     TEGRA_DMA_BURST_1,
-> >> +     TEGRA_DMA_BURST_4,
-> >> +     TEGRA_DMA_BURST_8,
-> >> +};
-> > why should this be global, clinet should pass them as defined in
-> > dmaengine.h
-> 
-> The dma_slave_config on the dmaengine have the member as src_maxburst 
-> and I understand that this is for maximum burst only.
-> and so passing the actual burst size, I defined new enums.  Also wanted 
-> to have the auto mode where I can select the BURST size based on the 
-> request length.
-> if some encoding and understanding is maintain between client and dma 
-> driver then I can get rid of this:
-> like src_maxburst = 0 is for the selection of burst size based on req 
-> len otherwise use non-zero value of src_maxburst.
-> 
-> 
-> 
-> >> + * @dma_dev: required DMA master client device.
-> >> + * @dm_req_id: Peripheral dma requestor ID.
-> >> + */
-> >> +struct tegra_dma_slave {
-> >> +     struct device                   *client_dev;
-> >> +     enum tegra_dma_requestor        dma_req_id;
-> >> +     enum tegra_dma_burst_size       burst_size;
-> > pls remove
-> 
-> if above is OK then I can remove this.
-> 
-> >> +};
-> >> +
-> >> +#endif /* LINUX_TEGRA_DMA_H */
-> > Please also update the driver to use the cookie helpers in
-> > drivers/dma/dmaengine.h
-> >
-> 
-> I have already used cookie helper.
-> 
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+NOTE!
+This isn't perfect patch but I send this patch which only works for x86
+to listen opinion from others. If it's best, I will fix other architectures
+and resend it. Maybe the patch would become a all-in-one patch which
+changes all architectures all at once. If you have better idea not to
+break bisectability, please advise me.
 
 
+ arch/x86/include/asm/pgalloc.h      |   15 ++++++----
+ arch/x86/kernel/tboot.c             |    4 +--
+ arch/x86/mm/hugetlbpage.c           |    4 +--
+ arch/x86/mm/pgtable.c               |    8 +++--
+ include/asm-generic/4level-fixup.h  |    7 +++--
+ include/asm-generic/pgtable-nopmd.h |    2 +-
+ include/asm-generic/pgtable-nopud.h |    2 +-
+ include/linux/mm.h                  |   29 +++++++++++-------
+ lib/ioremap.c                       |    6 ++--
+ mm/memory.c                         |   36 ++++++++++++-----------
+ mm/mremap.c                         |    4 +--
+ mm/vmalloc.c                        |   55 +++++++++++++++++++++++++----------
+ 12 files changed, 106 insertions(+), 66 deletions(-)
+
+diff --git a/arch/x86/include/asm/pgalloc.h b/arch/x86/include/asm/pgalloc.h
+index b4389a4..9a6408f 100644
+--- a/arch/x86/include/asm/pgalloc.h
++++ b/arch/x86/include/asm/pgalloc.h
+@@ -33,7 +33,8 @@ extern gfp_t __userpte_alloc_gfp;
+ extern pgd_t *pgd_alloc(struct mm_struct *);
+ extern void pgd_free(struct mm_struct *mm, pgd_t *pgd);
+ 
+-extern pte_t *pte_alloc_one_kernel(struct mm_struct *, unsigned long);
++extern pte_t *pte_alloc_one_kernel(struct mm_struct *,
++					unsigned long, gfp_t);
+ extern pgtable_t pte_alloc_one(struct mm_struct *, unsigned long);
+ 
+ /* Should really implement gc for free page table pages. This could be
+@@ -78,9 +79,11 @@ static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
+ #define pmd_pgtable(pmd) pmd_page(pmd)
+ 
+ #if PAGETABLE_LEVELS > 2
+-static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
++static inline pmd_t *pmd_alloc_one(struct mm_struct *mm,
++			unsigned long addr, gfp_t gfp_mask)
+ {
+-	return (pmd_t *)get_zeroed_page(GFP_KERNEL|__GFP_REPEAT);
++	return (pmd_t *)get_zeroed_page(__GFP_REPEAT |
++					(gfp_mask & ~__GFP_HIGHMEM));
+ }
+ 
+ static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
+@@ -114,9 +117,11 @@ static inline void pgd_populate(struct mm_struct *mm, pgd_t *pgd, pud_t *pud)
+ 	set_pgd(pgd, __pgd(_PAGE_TABLE | __pa(pud)));
+ }
+ 
+-static inline pud_t *pud_alloc_one(struct mm_struct *mm, unsigned long addr)
++static inline pud_t *pud_alloc_one(struct mm_struct *mm,
++				unsigned long addr, gfp_t gfp_mask)
+ {
+-	return (pud_t *)get_zeroed_page(GFP_KERNEL|__GFP_REPEAT);
++	return (pud_t *)get_zeroed_page(__GFP_REPEAT |
++				(gfp_mask & ~__GFP_HIGHMEM));
+ }
+ 
+ static inline void pud_free(struct mm_struct *mm, pud_t *pud)
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index 6410744..c0d8df1 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -128,10 +128,10 @@ static int map_tboot_page(unsigned long vaddr, unsigned long pfn,
+ 	pte_t *pte;
+ 
+ 	pgd = pgd_offset(&tboot_mm, vaddr);
+-	pud = pud_alloc(&tboot_mm, pgd, vaddr);
++	pud = pud_alloc(&tboot_mm, pgd, vaddr, GFP_KERNEL);
+ 	if (!pud)
+ 		return -1;
+-	pmd = pmd_alloc(&tboot_mm, pud, vaddr);
++	pmd = pmd_alloc(&tboot_mm, pud, vaddr, GFP_KERNEL);
+ 	if (!pmd)
+ 		return -1;
+ 	pte = pte_alloc_map(&tboot_mm, NULL, pmd, vaddr);
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index f6679a7..95260b9 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -135,7 +135,7 @@ pte_t *huge_pte_alloc(struct mm_struct *mm,
+ 	pte_t *pte = NULL;
+ 
+ 	pgd = pgd_offset(mm, addr);
+-	pud = pud_alloc(mm, pgd, addr);
++	pud = pud_alloc(mm, pgd, addr, GFP_KERNEL);
+ 	if (pud) {
+ 		if (sz == PUD_SIZE) {
+ 			pte = (pte_t *)pud;
+@@ -143,7 +143,7 @@ pte_t *huge_pte_alloc(struct mm_struct *mm,
+ 			BUG_ON(sz != PMD_SIZE);
+ 			if (pud_none(*pud))
+ 				huge_pmd_share(mm, addr, pud);
+-			pte = (pte_t *) pmd_alloc(mm, pud, addr);
++			pte = (pte_t *) pmd_alloc(mm, pud, addr, GFP_KERNEL);
+ 		}
+ 	}
+ 	BUG_ON(pte && !pte_none(*pte) && !pte_huge(*pte));
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 8573b83..5b7ee39 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -5,7 +5,7 @@
+ #include <asm/tlb.h>
+ #include <asm/fixmap.h>
+ 
+-#define PGALLOC_GFP GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO
++#define PGALLOC_GFP (GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO)
+ 
+ #ifdef CONFIG_HIGHPTE
+ #define PGALLOC_USER_GFP __GFP_HIGHMEM
+@@ -15,9 +15,11 @@
+ 
+ gfp_t __userpte_alloc_gfp = PGALLOC_GFP | PGALLOC_USER_GFP;
+ 
+-pte_t *pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address)
++pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
++		unsigned long address, gfp_t gfp_mask)
+ {
+-	return (pte_t *)__get_free_page(PGALLOC_GFP);
++	return (pte_t *)__get_free_page(PGALLOC_GFP & ~GFP_KERNEL |
++			(gfp_mask & ~__GFP_HIGHMEM));
+ }
+ 
+ pgtable_t pte_alloc_one(struct mm_struct *mm, unsigned long address)
+diff --git a/include/asm-generic/4level-fixup.h b/include/asm-generic/4level-fixup.h
+index 77ff547..ceba139 100644
+--- a/include/asm-generic/4level-fixup.h
++++ b/include/asm-generic/4level-fixup.h
+@@ -10,11 +10,12 @@
+ 
+ #define pud_t				pgd_t
+ 
+-#define pmd_alloc(mm, pud, address) \
+-	((unlikely(pgd_none(*(pud))) && __pmd_alloc(mm, pud, address))? \
++#define pmd_alloc(mm, pud, address, gfp_mask) \
++	((unlikely(pgd_none(*(pud))) &&		\
++		__pmd_alloc(mm, pud, address, gfp_mask))? \
+  		NULL: pmd_offset(pud, address))
+ 
+-#define pud_alloc(mm, pgd, address)	(pgd)
++#define pud_alloc(mm, pgd, address, gfp_mask)	(pgd)
+ #define pud_offset(pgd, start)		(pgd)
+ #define pud_none(pud)			0
+ #define pud_bad(pud)			0
+diff --git a/include/asm-generic/pgtable-nopmd.h b/include/asm-generic/pgtable-nopmd.h
+index 725612b..298bd89 100644
+--- a/include/asm-generic/pgtable-nopmd.h
++++ b/include/asm-generic/pgtable-nopmd.h
+@@ -55,7 +55,7 @@ static inline pmd_t * pmd_offset(pud_t * pud, unsigned long address)
+  * allocating and freeing a pmd is trivial: the 1-entry pmd is
+  * inside the pud, so has no extra memory associated with it.
+  */
+-#define pmd_alloc_one(mm, address)		NULL
++#define pmd_alloc_one(mm, address, gfp_mask)		NULL
+ static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
+ {
+ }
+diff --git a/include/asm-generic/pgtable-nopud.h b/include/asm-generic/pgtable-nopud.h
+index 810431d..cdd3b08 100644
+--- a/include/asm-generic/pgtable-nopud.h
++++ b/include/asm-generic/pgtable-nopud.h
+@@ -50,7 +50,7 @@ static inline pud_t * pud_offset(pgd_t * pgd, unsigned long address)
+  * allocating and freeing a pud is trivial: the 1-entry pud is
+  * inside the pgd, so has no extra memory associated with it.
+  */
+-#define pud_alloc_one(mm, address)		NULL
++#define pud_alloc_one(mm, address, gfp_mask)		NULL
+ #define pud_free(mm, x)				do { } while (0)
+ #define __pud_free_tlb(tlb, x, a)		do { } while (0)
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index d8738a4..c93302b 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1153,42 +1153,48 @@ static inline pte_t *get_locked_pte(struct mm_struct *mm, unsigned long addr,
+ 
+ #ifdef __PAGETABLE_PUD_FOLDED
+ static inline int __pud_alloc(struct mm_struct *mm, pgd_t *pgd,
+-						unsigned long address)
++				unsigned long address, gfp_t gfp_mask)
+ {
+ 	return 0;
+ }
+ #else
+-int __pud_alloc(struct mm_struct *mm, pgd_t *pgd, unsigned long address);
++int __pud_alloc(struct mm_struct *mm, pgd_t *pgd,
++		unsigned long address, gfp_t gfp_mask);
+ #endif
+ 
+ #ifdef __PAGETABLE_PMD_FOLDED
+ static inline int __pmd_alloc(struct mm_struct *mm, pud_t *pud,
+-						unsigned long address)
++				unsigned long address, gfp_t gfp_mask)
+ {
+ 	return 0;
+ }
+ #else
+-int __pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long address);
++int __pmd_alloc(struct mm_struct *mm, pud_t *pud,
++		unsigned long address, gfp_t gfp_mask);
+ #endif
+ 
+ int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		pmd_t *pmd, unsigned long address);
+-int __pte_alloc_kernel(pmd_t *pmd, unsigned long address);
++int __pte_alloc_kernel(pmd_t *pmd, unsigned long address, gfp_t gfp_mask);
+ 
+ /*
+  * The following ifdef needed to get the 4level-fixup.h header to work.
+  * Remove it when 4level-fixup.h has been removed.
+  */
+ #if defined(CONFIG_MMU) && !defined(__ARCH_HAS_4LEVEL_HACK)
+-static inline pud_t *pud_alloc(struct mm_struct *mm, pgd_t *pgd, unsigned long address)
++static inline pud_t *pud_alloc(struct mm_struct *mm, pgd_t *pgd,
++			unsigned long address, gfp_t gfp_mask)
+ {
+-	return (unlikely(pgd_none(*pgd)) && __pud_alloc(mm, pgd, address))?
++	return (unlikely(pgd_none(*pgd)) &&
++		__pud_alloc(mm, pgd, address, gfp_mask))?
+ 		NULL: pud_offset(pgd, address);
+ }
+ 
+-static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long address)
++static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud,
++			unsigned long address, gfp_t gfp_mask)
+ {
+-	return (unlikely(pud_none(*pud)) && __pmd_alloc(mm, pud, address))?
++	return (unlikely(pud_none(*pud)) &&
++		__pmd_alloc(mm, pud, address, gfp_mask))?
+ 		NULL: pmd_offset(pud, address);
+ }
+ #endif /* CONFIG_MMU && !__ARCH_HAS_4LEVEL_HACK */
+@@ -1251,8 +1257,9 @@ static inline void pgtable_page_dtor(struct page *page)
+ 							pmd, address))?	\
+ 		NULL: pte_offset_map_lock(mm, pmd, address, ptlp))
+ 
+-#define pte_alloc_kernel(pmd, address)			\
+-	((unlikely(pmd_none(*(pmd))) && __pte_alloc_kernel(pmd, address))? \
++#define pte_alloc_kernel(pmd, address, gfp_mask)			\
++	((unlikely(pmd_none(*(pmd))) &&		\
++		__pte_alloc_kernel(pmd, address, gfp_mask))? \
+ 		NULL: pte_offset_kernel(pmd, address))
+ 
+ extern void free_area_init(unsigned long * zones_size);
+diff --git a/lib/ioremap.c b/lib/ioremap.c
+index 0c9216c..d2c4fd3 100644
+--- a/lib/ioremap.c
++++ b/lib/ioremap.c
+@@ -20,7 +20,7 @@ static int ioremap_pte_range(pmd_t *pmd, unsigned long addr,
+ 	u64 pfn;
+ 
+ 	pfn = phys_addr >> PAGE_SHIFT;
+-	pte = pte_alloc_kernel(pmd, addr);
++	pte = pte_alloc_kernel(pmd, addr, GFP_KERNEL);
+ 	if (!pte)
+ 		return -ENOMEM;
+ 	do {
+@@ -38,7 +38,7 @@ static inline int ioremap_pmd_range(pud_t *pud, unsigned long addr,
+ 	unsigned long next;
+ 
+ 	phys_addr -= addr;
+-	pmd = pmd_alloc(&init_mm, pud, addr);
++	pmd = pmd_alloc(&init_mm, pud, addr, GFP_KERNEL);
+ 	if (!pmd)
+ 		return -ENOMEM;
+ 	do {
+@@ -56,7 +56,7 @@ static inline int ioremap_pud_range(pgd_t *pgd, unsigned long addr,
+ 	unsigned long next;
+ 
+ 	phys_addr -= addr;
+-	pud = pud_alloc(&init_mm, pgd, addr);
++	pud = pud_alloc(&init_mm, pgd, addr, GFP_KERNEL);
+ 	if (!pud)
+ 		return -ENOMEM;
+ 	do {
+diff --git a/mm/memory.c b/mm/memory.c
+index 706a274..9d3bc40 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -608,9 +608,9 @@ int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	return 0;
+ }
+ 
+-int __pte_alloc_kernel(pmd_t *pmd, unsigned long address)
++int __pte_alloc_kernel(pmd_t *pmd, unsigned long address, gfp_t gfp_mask)
+ {
+-	pte_t *new = pte_alloc_one_kernel(&init_mm, address);
++	pte_t *new = pte_alloc_one_kernel(&init_mm, address, gfp_mask);
+ 	if (!new)
+ 		return -ENOMEM;
+ 
+@@ -980,7 +980,7 @@ static inline int copy_pmd_range(struct mm_struct *dst_mm, struct mm_struct *src
+ 	pmd_t *src_pmd, *dst_pmd;
+ 	unsigned long next;
+ 
+-	dst_pmd = pmd_alloc(dst_mm, dst_pud, addr);
++	dst_pmd = pmd_alloc(dst_mm, dst_pud, addr, GFP_KERNEL);
+ 	if (!dst_pmd)
+ 		return -ENOMEM;
+ 	src_pmd = pmd_offset(src_pud, addr);
+@@ -1013,7 +1013,7 @@ static inline int copy_pud_range(struct mm_struct *dst_mm, struct mm_struct *src
+ 	pud_t *src_pud, *dst_pud;
+ 	unsigned long next;
+ 
+-	dst_pud = pud_alloc(dst_mm, dst_pgd, addr);
++	dst_pud = pud_alloc(dst_mm, dst_pgd, addr, GFP_KERNEL);
+ 	if (!dst_pud)
+ 		return -ENOMEM;
+ 	src_pud = pud_offset(src_pgd, addr);
+@@ -1997,9 +1997,9 @@ pte_t *__get_locked_pte(struct mm_struct *mm, unsigned long addr,
+ 			spinlock_t **ptl)
+ {
+ 	pgd_t * pgd = pgd_offset(mm, addr);
+-	pud_t * pud = pud_alloc(mm, pgd, addr);
++	pud_t * pud = pud_alloc(mm, pgd, addr, GFP_KERNEL);
+ 	if (pud) {
+-		pmd_t * pmd = pmd_alloc(mm, pud, addr);
++		pmd_t * pmd = pmd_alloc(mm, pud, addr, GFP_KERNEL);
+ 		if (pmd) {
+ 			VM_BUG_ON(pmd_trans_huge(*pmd));
+ 			return pte_alloc_map_lock(mm, pmd, addr, ptl);
+@@ -2219,7 +2219,7 @@ static inline int remap_pmd_range(struct mm_struct *mm, pud_t *pud,
+ 	unsigned long next;
+ 
+ 	pfn -= addr >> PAGE_SHIFT;
+-	pmd = pmd_alloc(mm, pud, addr);
++	pmd = pmd_alloc(mm, pud, addr, GFP_KERNEL);
+ 	if (!pmd)
+ 		return -ENOMEM;
+ 	VM_BUG_ON(pmd_trans_huge(*pmd));
+@@ -2240,7 +2240,7 @@ static inline int remap_pud_range(struct mm_struct *mm, pgd_t *pgd,
+ 	unsigned long next;
+ 
+ 	pfn -= addr >> PAGE_SHIFT;
+-	pud = pud_alloc(mm, pgd, addr);
++	pud = pud_alloc(mm, pgd, addr, GFP_KERNEL);
+ 	if (!pud)
+ 		return -ENOMEM;
+ 	do {
+@@ -2337,7 +2337,7 @@ static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 	spinlock_t *uninitialized_var(ptl);
+ 
+ 	pte = (mm == &init_mm) ?
+-		pte_alloc_kernel(pmd, addr) :
++		pte_alloc_kernel(pmd, addr, GFP_KERNEL) :
+ 		pte_alloc_map_lock(mm, pmd, addr, &ptl);
+ 	if (!pte)
+ 		return -ENOMEM;
+@@ -2371,7 +2371,7 @@ static int apply_to_pmd_range(struct mm_struct *mm, pud_t *pud,
+ 
+ 	BUG_ON(pud_huge(*pud));
+ 
+-	pmd = pmd_alloc(mm, pud, addr);
++	pmd = pmd_alloc(mm, pud, addr, GFP_KERNEL);
+ 	if (!pmd)
+ 		return -ENOMEM;
+ 	do {
+@@ -2391,7 +2391,7 @@ static int apply_to_pud_range(struct mm_struct *mm, pgd_t *pgd,
+ 	unsigned long next;
+ 	int err;
+ 
+-	pud = pud_alloc(mm, pgd, addr);
++	pud = pud_alloc(mm, pgd, addr, GFP_KERNEL);
+ 	if (!pud)
+ 		return -ENOMEM;
+ 	do {
+@@ -3493,10 +3493,10 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		return hugetlb_fault(mm, vma, address, flags);
+ 
+ 	pgd = pgd_offset(mm, address);
+-	pud = pud_alloc(mm, pgd, address);
++	pud = pud_alloc(mm, pgd, address, GFP_KERNEL);
+ 	if (!pud)
+ 		return VM_FAULT_OOM;
+-	pmd = pmd_alloc(mm, pud, address);
++	pmd = pmd_alloc(mm, pud, address, GFP_KERNEL);
+ 	if (!pmd)
+ 		return VM_FAULT_OOM;
+ 	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
+@@ -3542,9 +3542,10 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+  * Allocate page upper directory.
+  * We've already handled the fast-path in-line.
+  */
+-int __pud_alloc(struct mm_struct *mm, pgd_t *pgd, unsigned long address)
++int __pud_alloc(struct mm_struct *mm, pgd_t *pgd,
++		unsigned long address, gfp_t gfp_mask)
+ {
+-	pud_t *new = pud_alloc_one(mm, address);
++	pud_t *new = pud_alloc_one(mm, address, gfp_mask);
+ 	if (!new)
+ 		return -ENOMEM;
+ 
+@@ -3565,9 +3566,10 @@ int __pud_alloc(struct mm_struct *mm, pgd_t *pgd, unsigned long address)
+  * Allocate page middle directory.
+  * We've already handled the fast-path in-line.
+  */
+-int __pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long address)
++int __pmd_alloc(struct mm_struct *mm, pud_t *pud,
++		unsigned long address, gfp_t gfp_mask)
+ {
+-	pmd_t *new = pmd_alloc_one(mm, address);
++	pmd_t *new = pmd_alloc_one(mm, address, gfp_mask);
+ 	if (!new)
+ 		return -ENOMEM;
+ 
+diff --git a/mm/mremap.c b/mm/mremap.c
+index db8d983..309014a 100644
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -55,11 +55,11 @@ static pmd_t *alloc_new_pmd(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	pmd_t *pmd;
+ 
+ 	pgd = pgd_offset(mm, addr);
+-	pud = pud_alloc(mm, pgd, addr);
++	pud = pud_alloc(mm, pgd, addr, GFP_KERNEL);
+ 	if (!pud)
+ 		return NULL;
+ 
+-	pmd = pmd_alloc(mm, pud, addr);
++	pmd = pmd_alloc(mm, pud, addr, GFP_KERNEL);
+ 	if (!pmd)
+ 		return NULL;
+ 
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 94dff88..69e9aea 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -88,7 +88,8 @@ static void vunmap_page_range(unsigned long addr, unsigned long end)
+ }
+ 
+ static int vmap_pte_range(pmd_t *pmd, unsigned long addr,
+-		unsigned long end, pgprot_t prot, struct page **pages, int *nr)
++		unsigned long end, pgprot_t prot,
++		struct page **pages, int *nr, gfp_t gfp_mask)
+ {
+ 	pte_t *pte;
+ 
+@@ -97,7 +98,7 @@ static int vmap_pte_range(pmd_t *pmd, unsigned long addr,
+ 	 * callers keep track of where we're up to.
+ 	 */
+ 
+-	pte = pte_alloc_kernel(pmd, addr);
++	pte = pte_alloc_kernel(pmd, addr, gfp_mask);
+ 	if (!pte)
+ 		return -ENOMEM;
+ 	do {
+@@ -114,34 +115,38 @@ static int vmap_pte_range(pmd_t *pmd, unsigned long addr,
+ }
+ 
+ static int vmap_pmd_range(pud_t *pud, unsigned long addr,
+-		unsigned long end, pgprot_t prot, struct page **pages, int *nr)
++		unsigned long end, pgprot_t prot,
++		struct page **pages, int *nr, gfp_t gfp_mask)
+ {
+ 	pmd_t *pmd;
+ 	unsigned long next;
+ 
+-	pmd = pmd_alloc(&init_mm, pud, addr);
++	pmd = pmd_alloc(&init_mm, pud, addr, gfp_mask);
+ 	if (!pmd)
+ 		return -ENOMEM;
+ 	do {
+ 		next = pmd_addr_end(addr, end);
+-		if (vmap_pte_range(pmd, addr, next, prot, pages, nr))
++		if (vmap_pte_range(pmd, addr, next, prot,
++				pages, nr, gfp_mask))
+ 			return -ENOMEM;
+ 	} while (pmd++, addr = next, addr != end);
+ 	return 0;
+ }
+ 
+ static int vmap_pud_range(pgd_t *pgd, unsigned long addr,
+-		unsigned long end, pgprot_t prot, struct page **pages, int *nr)
++		unsigned long end, pgprot_t prot,
++		struct page **pages, int *nr, gfp_t gfp_mask)
+ {
+ 	pud_t *pud;
+ 	unsigned long next;
+ 
+-	pud = pud_alloc(&init_mm, pgd, addr);
++	pud = pud_alloc(&init_mm, pgd, addr, gfp_mask);
+ 	if (!pud)
+ 		return -ENOMEM;
+ 	do {
+ 		next = pud_addr_end(addr, end);
+-		if (vmap_pmd_range(pud, addr, next, prot, pages, nr))
++		if (vmap_pmd_range(pud, addr, next, prot,
++					pages, nr, gfp_mask))
+ 			return -ENOMEM;
+ 	} while (pud++, addr = next, addr != end);
+ 	return 0;
+@@ -154,7 +159,7 @@ static int vmap_pud_range(pgd_t *pgd, unsigned long addr,
+  * Ie. pte at addr+N*PAGE_SIZE shall point to pfn corresponding to pages[N]
+  */
+ static int vmap_page_range_noflush(unsigned long start, unsigned long end,
+-				   pgprot_t prot, struct page **pages)
++			   pgprot_t prot, struct page **pages, gfp_t gfp_mask)
+ {
+ 	pgd_t *pgd;
+ 	unsigned long next;
+@@ -166,7 +171,8 @@ static int vmap_page_range_noflush(unsigned long start, unsigned long end,
+ 	pgd = pgd_offset_k(addr);
+ 	do {
+ 		next = pgd_addr_end(addr, end);
+-		err = vmap_pud_range(pgd, addr, next, prot, pages, &nr);
++		err = vmap_pud_range(pgd, addr, next, prot,
++					pages, &nr, gfp_mask);
+ 		if (err)
+ 			return err;
+ 	} while (pgd++, addr = next, addr != end);
+@@ -175,11 +181,11 @@ static int vmap_page_range_noflush(unsigned long start, unsigned long end,
+ }
+ 
+ static int vmap_page_range(unsigned long start, unsigned long end,
+-			   pgprot_t prot, struct page **pages)
++		pgprot_t prot, struct page **pages, gfp_t gfp_mask)
+ {
+ 	int ret;
+ 
+-	ret = vmap_page_range_noflush(start, end, prot, pages);
++	ret = vmap_page_range_noflush(start, end, prot, pages, gfp_mask);
+ 	flush_cache_vmap(start, end);
+ 	return ret;
+ }
+@@ -1109,7 +1115,7 @@ void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t pro
+ 		addr = va->va_start;
+ 		mem = (void *)addr;
+ 	}
+-	if (vmap_page_range(addr, addr + size, prot, pages) < 0) {
++	if (vmap_page_range(addr, addr + size, prot, pages, GFP_KERNEL) < 0) {
+ 		vm_unmap_ram(mem, count);
+ 		return NULL;
+ 	}
+@@ -1218,7 +1224,8 @@ void __init vmalloc_init(void)
+ int map_kernel_range_noflush(unsigned long addr, unsigned long size,
+ 			     pgprot_t prot, struct page **pages)
+ {
+-	return vmap_page_range_noflush(addr, addr + size, prot, pages);
++	return vmap_page_range_noflush(addr, addr + size,
++			prot, pages, GFP_KERNEL);
+ }
+ 
+ /**
+@@ -1258,13 +1265,29 @@ void unmap_kernel_range(unsigned long addr, unsigned long size)
+ 	flush_tlb_kernel_range(addr, end);
+ }
+ 
++int map_vm_area_gfp(struct vm_struct *area, pgprot_t prot,
++			struct page ***pages, gfp_t gfp_mask)
++{
++	unsigned long addr = (unsigned long)area->addr;
++	unsigned long end = addr + area->size - PAGE_SIZE;
++	int err;
++
++	err = vmap_page_range(addr, end, prot, *pages, gfp_mask);
++	if (err > 0) {
++		*pages += err;
++		err = 0;
++	}
++
++	return err;
++}
++
+ int map_vm_area(struct vm_struct *area, pgprot_t prot, struct page ***pages)
+ {
+ 	unsigned long addr = (unsigned long)area->addr;
+ 	unsigned long end = addr + area->size - PAGE_SIZE;
+ 	int err;
+ 
+-	err = vmap_page_range(addr, end, prot, *pages);
++	err = vmap_page_range(addr, end, prot, *pages, GFP_KERNEL);
+ 	if (err > 0) {
+ 		*pages += err;
+ 		err = 0;
+@@ -1613,7 +1636,7 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+ 		area->pages[i] = page;
+ 	}
+ 
+-	if (map_vm_area(area, prot, &pages))
++	if (map_vm_area_gfp(area, prot, &pages, gfp_mask))
+ 		goto fail;
+ 	return area->addr;
+ 
 -- 
-~Vinod
+1.7.9.5
 
