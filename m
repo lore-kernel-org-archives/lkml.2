@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab2DWIOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 04:14:44 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:37012
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752090Ab2DWIOn (ORCPT
+	id S1754183Ab2DWITD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 04:19:03 -0400
+Received: from smtp.fireflyinternet.com ([109.228.6.236]:44746 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751721Ab2DWITB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 04:14:43 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzzz2dh2a8h668h839h93fhd24hd2bh)
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: Watchdog settimeout causes an error condition
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        Anthony Olech <Anthony.Olech@diasemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Apr 2012 13:40:39 +0530
-Message-ID: <1335168639.11826.7.camel@dhruva>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+	Mon, 23 Apr 2012 04:19:01 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH v2 1/2] drm/i915: fix integer overflow in i915_gem_execbuffer2()
+To: Xi Wang <xi.wang@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Keith Packard <keithp@keithp.com>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, security@kernel.org,
+        Xi Wang <xi.wang@gmail.com>, stable@vger.kernel.org
+In-Reply-To: <1335168402-25174-1-git-send-email-xi.wang@gmail.com>
+References: <1335168402-25174-1-git-send-email-xi.wang@gmail.com>
+Date: Mon, 23 Apr 2012 09:18:25 +0100
+X-Originating-IP: 78.156.66.37
+Message-ID: <1335169134_26001@CP5-2952>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new watchdog framework of settimeout causes an error condition for
-the DA9052/53 PMIC since watchdog ping gets called upon applying the new
-watchdog window and in the DA9052/53 PMIC we have a minimum time for the
-watchdog window called TWDMIN. A write to the watchdog before this
-elapsed time - TWDMIN - cause an error.
+On Mon, 23 Apr 2012 04:06:41 -0400, Xi Wang <xi.wang@gmail.com> wrote:
+> On 32-bit systems, a large args->buffer_count from userspace via ioctl
+> may overflow the allocation size, leading to out-of-bounds access.
+> 
+> This vulnerability was introduced in commit 8408c282 ("drm/i915:
+> First try a normal large kmalloc for the temporary exec buffers").
+> 
+> Signed-off-by: Xi Wang <xi.wang@gmail.com>
+> Cc: Chris Wilson <chris@chris-wilson.co.uk>
+> Cc: stable@vger.kernel.org
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+-Chris
 
-Can this be get fixed in the new framework?
-
-Regards,
-Ashish
-  
-
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
