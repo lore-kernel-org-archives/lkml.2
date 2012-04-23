@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab2DWVZK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 17:25:10 -0400
-Received: from ms01.sssup.it ([193.205.80.99]:44379 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753591Ab2DWVZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 17:25:09 -0400
-Message-ID: <4F95C8AF.2040606@sssup.it>
-Date: Mon, 23 Apr 2012 22:25:03 +0100
-From: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1755545Ab2DWV0q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 17:26:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53850 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753511Ab2DWV0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 17:26:45 -0400
+Date: Mon, 23 Apr 2012 23:25:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
+Message-ID: <20120423212536.GA8700@redhat.com>
+References: <1334571419.28150.30.camel@twins> <20120416214707.GA27639@redhat.com> <1334916861.2463.50.camel@laptop> <20120420183718.GA2236@redhat.com> <1335165240.28150.89.camel@twins> <20120423072445.GC8357@linux.vnet.ibm.com> <1335166842.28150.92.camel@twins> <20120423172957.GA29708@redhat.com> <1335208690.2463.84.camel@laptop> <20120423205049.GA7831@redhat.com>
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, tglx@linutronix.de,
-        mingo@redhat.com, rostedt@goodmis.org, cfriesen@nortel.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com
-Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>  <1333696481-3433-6-git-send-email-juri.lelli@gmail.com> <1335177104.28150.113.camel@twins> <4F9530F7.9010400@gmail.com>
-In-Reply-To: <4F9530F7.9010400@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120423205049.GA7831@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 23/04/2012 11:37, Juri Lelli ha scritto:
-> On 04/23/2012 12:31 PM, Peter Zijlstra wrote:
->> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
->>> +       dl_se->deadline = rq->clock + dl_se->dl_deadline;
->>
->> You might want to use rq->clock_task, this clock excludes times spend in
->> hardirq context and steal-time (when paravirt).
->>
->> Then again, it might not want to use that.. but its something you might
->> want to consider and make explicit by means of a comment.
+forgot to mention,
+
+On 04/23, Oleg Nesterov wrote:
 >
-> Yes, I planned a consistency check for the use of clock/clock_task
-> throughout the code, but it seems I then forgot it.
-> Planned for the next iteration :-).
+> Just it seems to me there are to many "details"
+> we should discuss to make the filtering reasonable.
 
-unless I'm mistaken, there are 3 repetitions of this block in 05/16:
+And so far we assumed that consumer->filter() is "stable" and never
+changes its mind.
 
-+		dl_se->deadline = rq->clock + dl_se->dl_deadline;
-+		dl_se->runtime = dl_se->dl_runtime;
+Perhaps this is fine, but I am not sure. May we need need some
+interface to add/del the task. Probably not, but unregister + register
+doesn't look very convenient and can miss a hit.
 
+> Yes, and probably this makes sense for handler_chain(). Although otoh
+> I do not really understand what this filter buys us at this point.
 
-perhaps enclosing them into a function (e.g., reset_from_now() or 
-similar) may help to keep consistency...
+But if we change the rules so that ->filter() or ->handler() itself can
+return the "please remove this bp from ->mm" then perhaps it makes more
+sense for the filtering. Again, not sure.
 
-Another thing: I cannot get the real difference between rq->clock and 
-rq->task_clock.
-If task_clock is a kind of CLOCK_MONOTONIC thing that increases only 
-when the task (or any task) is scheduled, then you don't want to use 
-that here.
-Here you need to set the new ->deadline to an absolute time, so I guess 
-the regular rq->clock is what you need, isn't it ?
-
-Hope I didn't say too much nonsense.
-
-     T.
-
--- 
-Tommaso Cucinotta, Computer Engineering PhD, Researcher
-ReTiS Lab, Scuola Superiore Sant'Anna, Pisa, Italy
-Tel +39 050 882 024, Fax +39 050 882 003
-http://retis.sssup.it/people/tommaso
+Oleg.
 
