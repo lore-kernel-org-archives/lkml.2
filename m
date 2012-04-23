@@ -1,256 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab2DWOiy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 10:38:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56437 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755679Ab2DWOiv (ORCPT
+	id S1755547Ab2DWOl7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 10:41:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45536 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486Ab2DWOl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 10:38:51 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v1 3/3] DCA, x86: support mutitple PCI root complexes in DCA core logic
-Date: Mon, 23 Apr 2012 22:34:02 +0800
-Message-Id: <1335191642-6869-4-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1335191642-6869-1-git-send-email-jiang.liu@huawei.com>
-References: <1335191642-6869-1-git-send-email-jiang.liu@huawei.com>
+	Mon, 23 Apr 2012 10:41:58 -0400
+Message-ID: <4F956A31.6050808@lwfinger.net>
+Date: Mon, 23 Apr 2012 09:41:53 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: gregkh@linuxfoundation.org, seanm@seanm.ca, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCH NEXT]staging: rtl8192e: Fix typos.
+References: <1335191812-17071-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1335191812-17071-1-git-send-email-justinmattock@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To maintain backward compatibility with old interface dca_get_tag(), currently
-the DCA core logic is limited to support only one domain (PCI root complex).
-This effectively disables DCA on systems with multiple PCI root complexes,
-such as IBM x3850, Quantan S4R etc.
+On 04/23/2012 09:36 AM, Justin P. Mattock wrote:
+> From: "Justin P. Mattock"<justinmattock@gmail.com>
+>
+> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>
+> ---
+>
+> The below patch fixes some typos that I found while doing a little bit of reading in the
+> staging directory.
 
-This patch enhances the DCA core logic only to disable DCA operations when
-both dca_get_tag() has been used and there are multiple PCI root complexes
-in the system.
+ACKed-by: Larry Finger <Larry.finger@lwfinger.net>
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
----
- drivers/dca/dca-core.c |  138 ++++++++++++++++++++++--------------------------
- 1 files changed, 64 insertions(+), 74 deletions(-)
+Larry
 
-diff --git a/drivers/dca/dca-core.c b/drivers/dca/dca-core.c
-index f8cfa58..ff9017d 100644
---- a/drivers/dca/dca-core.c
-+++ b/drivers/dca/dca-core.c
-@@ -42,7 +42,14 @@ static LIST_HEAD(dca_domains);
- 
- static BLOCKING_NOTIFIER_HEAD(dca_provider_chain);
- 
--static int dca_providers_blocked;
-+static enum {
-+	DCA_COMPAT_INITIAL = 0,		/* Initial state */
-+	DCA_COMPAT_MULTI_DOMAINS = 1,	/* Multiple Root Complexes detected */
-+	DCA_COMPAT_LEGACY_INTERFACE = 2,/* Legacy interface has been used */
-+	DCA_COMPAT_DISABLED = 3		/* DCA disabled due to legacy interface
-+					 * has been used and there are multiple
-+					 * RCs in the system */
-+} dca_compat_state;
- 
- static struct pci_bus *dca_pci_rc_from_dev(struct device *dev)
- {
-@@ -75,26 +82,11 @@ static void dca_free_domain(struct dca_domain *domain)
- 	kfree(domain);
- }
- 
--static int dca_provider_ioat_ver_3_0(struct device *dev)
--{
--	struct pci_dev *pdev = to_pci_dev(dev);
--
--	return ((pdev->vendor == PCI_VENDOR_ID_INTEL) &&
--		((pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG0) ||
--		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG1) ||
--		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG2) ||
--		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG3) ||
--		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG4) ||
--		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG5) ||
--		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG6) ||
--		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG7)));
--}
--
- static void unregister_dca_providers(void)
- {
- 	struct dca_provider *dca, *_dca;
- 	struct list_head unregistered_providers;
--	struct dca_domain *domain;
-+	struct dca_domain *domain, *_domain;
- 	unsigned long flags;
- 
- 	blocking_notifier_call_chain(&dca_provider_chain,
-@@ -103,20 +95,11 @@ static void unregister_dca_providers(void)
- 	INIT_LIST_HEAD(&unregistered_providers);
- 
- 	raw_spin_lock_irqsave(&dca_lock, flags);
--
--	if (list_empty(&dca_domains)) {
--		raw_spin_unlock_irqrestore(&dca_lock, flags);
--		return;
-+	list_for_each_entry_safe(domain, _domain, &dca_domains, node) {
-+		list_splice_init(&domain->dca_providers,
-+				 &unregistered_providers);
-+		dca_free_domain(domain);
- 	}
--
--	/* at this point only one domain in the list is expected */
--	domain = list_first_entry(&dca_domains, struct dca_domain, node);
--
--	list_for_each_entry_safe(dca, _dca, &domain->dca_providers, node)
--		list_move(&dca->node, &unregistered_providers);
--
--	dca_free_domain(domain);
--
- 	raw_spin_unlock_irqrestore(&dca_lock, flags);
- 
- 	list_for_each_entry_safe(dca, _dca, &unregistered_providers, node) {
-@@ -136,22 +119,6 @@ static struct dca_domain *dca_find_domain(struct pci_bus *rc)
- 	return NULL;
- }
- 
--static struct dca_domain *dca_get_domain(struct device *dev)
--{
--	struct pci_bus *rc;
--	struct dca_domain *domain;
--
--	rc = dca_pci_rc_from_dev(dev);
--	domain = dca_find_domain(rc);
--
--	if (!domain) {
--		if (dca_provider_ioat_ver_3_0(dev) && !list_empty(&dca_domains))
--			dca_providers_blocked = 1;
--	}
--
--	return domain;
--}
--
- static struct dca_provider *dca_find_provider_by_dev(struct device *dev)
- {
- 	struct dca_provider *dca;
-@@ -278,6 +245,11 @@ u8 dca_common_get_tag(struct device *dev, int cpu)
- 
- 	raw_spin_lock_irqsave(&dca_lock, flags);
- 
-+	if (dca_compat_state == DCA_COMPAT_DISABLED) {
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
-+		return -ENODEV;
-+	}
-+
- 	dca = dca_find_provider_by_dev(dev);
- 	if (!dca) {
- 		raw_spin_unlock_irqrestore(&dca_lock, flags);
-@@ -311,6 +283,21 @@ EXPORT_SYMBOL_GPL(dca3_get_tag);
- u8 dca_get_tag(int cpu)
- {
- 	struct device *dev = NULL;
-+	unsigned long flags;
-+
-+	if (unlikely(dca_compat_state == DCA_COMPAT_INITIAL)) {
-+		raw_spin_lock_irqsave(&dca_lock, flags);
-+		if (dca_compat_state == DCA_COMPAT_INITIAL)
-+			dca_compat_state = DCA_COMPAT_LEGACY_INTERFACE;
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
-+	}
-+	if (unlikely(dca_compat_state == DCA_COMPAT_MULTI_DOMAINS)) {
-+		unregister_dca_providers();
-+		raw_spin_lock_irqsave(&dca_lock, flags);
-+		if (dca_compat_state == DCA_COMPAT_MULTI_DOMAINS)
-+			dca_compat_state = DCA_COMPAT_DISABLED;
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
-+	}
- 
- 	return dca_common_get_tag(dev, cpu);
- }
-@@ -357,43 +344,38 @@ int register_dca_provider(struct dca_provider *dca, struct device *dev)
- 	int err;
- 	unsigned long flags;
- 	struct dca_domain *domain, *newdomain = NULL;
-+	struct pci_bus *rc;
- 
--	raw_spin_lock_irqsave(&dca_lock, flags);
--	if (dca_providers_blocked) {
--		raw_spin_unlock_irqrestore(&dca_lock, flags);
--		return -ENODEV;
--	}
--	raw_spin_unlock_irqrestore(&dca_lock, flags);
-+	rc = dca_pci_rc_from_dev(dev);
-+	newdomain = dca_allocate_domain(rc);
-+	if (!newdomain)
-+		return -ENOMEM;
- 
- 	err = dca_sysfs_add_provider(dca, dev);
- 	if (err)
--		return err;
-+		goto out_free;
- 
- 	raw_spin_lock_irqsave(&dca_lock, flags);
--	domain = dca_get_domain(dev);
--	if (!domain) {
--		struct pci_bus *rc;
-+	if (dca_compat_state == DCA_COMPAT_DISABLED) {
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
-+		goto out_remove_sysfs;
-+	}
- 
--		if (dca_providers_blocked) {
--			raw_spin_unlock_irqrestore(&dca_lock, flags);
--			dca_sysfs_remove_provider(dca);
--			unregister_dca_providers();
--			return -ENODEV;
-+	domain = dca_find_domain(rc);
-+	if (!domain) {
-+		if (!list_empty(&dca_domains)) {
-+			if (dca_compat_state == DCA_COMPAT_LEGACY_INTERFACE) {
-+				dca_compat_state = DCA_COMPAT_DISABLED;
-+				raw_spin_unlock_irqrestore(&dca_lock, flags);
-+				err = -ENODEV;
-+				goto out_unregister_dca;
-+			} else if (dca_compat_state == DCA_COMPAT_INITIAL)
-+				dca_compat_state = DCA_COMPAT_MULTI_DOMAINS;
- 		}
- 
--		raw_spin_unlock_irqrestore(&dca_lock, flags);
--		rc = dca_pci_rc_from_dev(dev);
--		newdomain = dca_allocate_domain(rc);
--		if (!newdomain)
--			return -ENODEV;
--		raw_spin_lock_irqsave(&dca_lock, flags);
--		/* Recheck, we might have raced after dropping the lock */
--		domain = dca_get_domain(dev);
--		if (!domain) {
--			domain = newdomain;
--			newdomain = NULL;
--			list_add(&domain->node, &dca_domains);
--		}
-+		domain = newdomain;
-+		newdomain = NULL;
-+		list_add(&domain->node, &dca_domains);
- 	}
- 	list_add(&dca->node, &domain->dca_providers);
- 	raw_spin_unlock_irqrestore(&dca_lock, flags);
-@@ -402,6 +384,14 @@ int register_dca_provider(struct dca_provider *dca, struct device *dev)
- 				     DCA_PROVIDER_ADD, NULL);
- 	kfree(newdomain);
- 	return 0;
-+
-+out_unregister_dca:
-+	unregister_dca_providers();
-+out_remove_sysfs:
-+	dca_sysfs_remove_provider(dca);
-+out_free:
-+	kfree(newdomain);
-+	return err;
- }
- EXPORT_SYMBOL_GPL(register_dca_provider);
- 
--- 
-1.7.5.4
+>
+>   drivers/staging/rtl8192e/rtl8192e/r819xE_phyreg.h |    4 +-
+>   drivers/staging/rtl8192e/rtl8192e/rtl_core.c      |    2 +-
+>   drivers/staging/rtl8192e/rtl8192e/rtl_dm.c        |    2 +-
+>   drivers/staging/rtl8192e/rtllib.h                 |   18 ++++++------
+>   drivers/staging/rtl8192e/rtllib_rx.c              |    4 +-
+>   drivers/staging/rtl8192e/rtllib_softmac.c         |   32 ++++++++++----------
+>   drivers/staging/rtl8192e/rtllib_softmac_wx.c      |    4 +-
+>   drivers/staging/rtl8192e/rtllib_tx.c              |    6 ++--
+>   drivers/staging/rtl8192e/rtllib_wx.c              |    2 +-
+>   9 files changed, 37 insertions(+), 37 deletions(-)
+>
+> diff --git a/drivers/staging/rtl8192e/rtl8192e/r819xE_phyreg.h b/drivers/staging/rtl8192e/rtl8192e/r819xE_phyreg.h
+> index d5de279..970298b 100644
+> --- a/drivers/staging/rtl8192e/rtl8192e/r819xE_phyreg.h
+> +++ b/drivers/staging/rtl8192e/rtl8192e/r819xE_phyreg.h
+> @@ -306,7 +306,7 @@
+>   #define bRFStart                  	0x0000f000
+>   #define bBBStart                  	0x000000f0
+>   #define bBBCCKStart               	0x0000000f
+> -/* Reg)x814 */
+> +/* Reg x814 */
+>   #define bPAEnd                    	0xf
+>   #define bTREnd                    	0x0f000000
+>   #define bRFEnd                    	0x000f0000
+> @@ -844,7 +844,7 @@
+>   #define bRTL8258_RxLPFBW          0xc00
+>   #define bRTL8258_RSSILPFBW        0xc0
+>
+> -/* byte endable for sb_write */
+> +/* byte enable for sb_write */
+>   #define bByte0                    0x1
+>   #define bByte1                    0x2
+>   #define bByte2                    0x4
+> diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
+> index 7c676c2..97a5f49 100644
+> --- a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
+> +++ b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
+> @@ -1025,7 +1025,7 @@ static int rtl8192_sta_down(struct net_device *dev, bool shutdownrf)
+>   			break;
+>   		}
+>   		RT_TRACE(COMP_DBG, "===>%s():RF is in progress, need to wait "
+> -			 "until rf chang is done.\n", __func__);
+> +			 "until rf change is done.\n", __func__);
+>   		mdelay(1);
+>   		RFInProgressTimeOut++;
+>   		spin_lock_irqsave(&priv->rf_ps_lock, flags);
+> diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c b/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c
+> index f026b71..2dfb0f0 100644
+> --- a/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c
+> +++ b/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c
+> @@ -493,7 +493,7 @@ static void dm_TXPowerTrackingCallback_TSSI(struct net_device *dev)
+>
+>   				if (priv->bResetInProgress) {
+>   					RT_TRACE(COMP_POWER_TRACKING,
+> -						 "we are in slient reset progress, so return\n");
+> +						 "we are in silent reset progress, so return\n");
+>   					write_nic_byte(dev, Pw_Track_Flag, 0);
+>   					write_nic_byte(dev, FW_Busy_Flag, 0);
+>   					return;
+> diff --git a/drivers/staging/rtl8192e/rtllib.h b/drivers/staging/rtl8192e/rtllib.h
+> index e26aec8..d7460ae 100644
+> --- a/drivers/staging/rtl8192e/rtllib.h
+> +++ b/drivers/staging/rtl8192e/rtllib.h
+> @@ -169,7 +169,7 @@ struct cb_desc {
+>
+>   	u8 nStuckCount;
+>
+> -	/* Tx Firmware Relaged flags (10-11)*/
+> +	/* Tx Firmware Related flags (10-11)*/
+>   	u8 bCTSEnable:1;
+>   	u8 bRTSEnable:1;
+>   	u8 bUseShortGI:1;
+> @@ -1690,7 +1690,7 @@ enum rtllib_state {
+>   	/* the association procedure is sending AUTH request*/
+>   	RTLLIB_ASSOCIATING_AUTHENTICATING,
+>
+> -	/* the association procedure has successfully authentcated
+> +	/* the association procedure has successfully authenticated
+>   	 * and is sending association request
+>   	 */
+>   	RTLLIB_ASSOCIATING_AUTHENTICATED,
+> @@ -2409,7 +2409,7 @@ struct rtllib_device {
+>
+>   	/* used instead of hard_start_xmit (not softmac_hard_start_xmit)
+>   	 * if the IEEE_SOFTMAC_TX_QUEUE feature is used to TX data
+> -	 * frames. I the option IEEE_SOFTMAC_SINGLE_QUEUE is also set
+> +	 * frames. If the option IEEE_SOFTMAC_SINGLE_QUEUE is also set
+>   	 * then also management frames are sent via this callback.
+>   	 * This function can't sleep.
+>   	 */
+> @@ -2422,12 +2422,12 @@ struct rtllib_device {
+>   	 */
+>   	void (*data_hard_stop)(struct net_device *dev);
+>
+> -	/* OK this is complementar to data_poll_hard_stop */
+> +	/* OK this is complementing to data_poll_hard_stop */
+>   	void (*data_hard_resume)(struct net_device *dev);
+>
+>   	/* ask to the driver to retune the radio .
+>   	 * This function can sleep. the driver should ensure
+> -	 * the radio has been swithced before return.
+> +	 * the radio has been switched before return.
+>   	 */
+>   	void (*set_chan)(struct net_device *dev, short ch);
+>
+> @@ -2438,7 +2438,7 @@ struct rtllib_device {
+>   	 * The syncro version is similar to the start_scan but
+>   	 * does not return until all channels has been scanned.
+>   	 * this is called in user context and should sleep,
+> -	 * it is called in a work_queue when swithcing to ad-hoc mode
+> +	 * it is called in a work_queue when switching to ad-hoc mode
+>   	 * or in behalf of iwlist scan when the card is associated
+>   	 * and root user ask for a scan.
+>   	 * the fucntion stop_scan should stop both the syncro and
+> @@ -2481,7 +2481,7 @@ struct rtllib_device {
+>   				     struct rtllib_network *network);
+>
+>
+> -	/* check whether Tx hw resouce available */
+> +	/* check whether Tx hw resource available */
+>   	short (*check_nic_enough_desc)(struct net_device *dev, int queue_index);
+>   	short (*get_nic_desc_num)(struct net_device *dev, int queue_index);
+>   	void (*SetBWModeHandler)(struct net_device *dev,
+> @@ -2543,10 +2543,10 @@ struct rtllib_device {
+>   /* Generate probe requests */
+>   #define IEEE_SOFTMAC_PROBERQ (1<<4)
+>
+> -/* Generate respones to probe requests */
+> +/* Generate response to probe requests */
+>   #define IEEE_SOFTMAC_PROBERS (1<<5)
+>
+> -/* The ieee802.11 stack will manages the netif queue
+> +/* The ieee802.11 stack will manage the netif queue
+>    * wake/stop for the driver, taking care of 802.11
+>    * fragmentation. See softmac.c for details. */
+>   #define IEEE_SOFTMAC_TX_QUEUE (1<<7)
+> diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
+> index 13979b5..40a59c9 100644
+> --- a/drivers/staging/rtl8192e/rtllib_rx.c
+> +++ b/drivers/staging/rtl8192e/rtllib_rx.c
+> @@ -496,7 +496,7 @@ void rtllib_indicate_packets(struct rtllib_device *ieee, struct rtllib_rxb **prx
+>   				memcpy(skb_push(sub_skb, ETH_ALEN), prxb->dst, ETH_ALEN);
+>   			}
+>
+> -			/* Indicat the packets to upper layer */
+> +			/* Indicate the packets to upper layer */
+>   			if (sub_skb) {
+>   				stats->rx_packets++;
+>   				stats->rx_bytes += sub_skb->len;
+> @@ -1233,7 +1233,7 @@ static void rtllib_rx_indicate_pkt_legacy(struct rtllib_device *ieee,
+>   			if (is_multicast_ether_addr(dst))
+>   				ieee->stats.multicast++;
+>
+> -			/* Indicat the packets to upper layer */
+> +			/* Indicate the packets to upper layer */
+>   			memset(sub_skb->cb, 0, sizeof(sub_skb->cb));
+>   			sub_skb->protocol = eth_type_trans(sub_skb, dev);
+>   			sub_skb->dev = dev;
+> diff --git a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
+> index c5a15db..236477d 100644
+> --- a/drivers/staging/rtl8192e/rtllib_softmac.c
+> +++ b/drivers/staging/rtl8192e/rtllib_softmac.c
+> @@ -31,7 +31,7 @@ short rtllib_is_shortslot(const struct rtllib_network *net)
+>   	return net->capability&  WLAN_CAPABILITY_SHORT_SLOT_TIME;
+>   }
+>
+> -/* returns the total length needed for pleacing the RATE MFIE
+> +/* returns the total length needed for placing the RATE MFIE
+>    * tag and the EXTENDED RATE MFIE tag if needed.
+>    * It encludes two bytes per tag for the tag itself and its len
+>    */
+> @@ -49,7 +49,7 @@ static unsigned int rtllib_MFIE_rate_len(struct rtllib_device *ieee)
+>   	return rate_len;
+>   }
+>
+> -/* pleace the MFIE rate, tag to the memory (double) poined.
+> +/* place the MFIE rate, tag to the memory (double) pointed.
+>    * Then it updates the pointer so that
+>    * it points after the new MFIE tag added.
+>    */
+> @@ -557,7 +557,7 @@ void rtllib_softmac_scan_syncro(struct rtllib_device *ieee, u8 is_mesh)
+>   		 *    new network events, despite for updating the net list,
+>   		 *    but we are temporarly 'unlinked' as the driver shall
+>   		 *    not filter RX frames and the channel is changing.
+> -		 * So the only situation in witch are interested is to check
+> +		 * So the only situation in which are interested is to check
+>   		 * if the state become LINKED because of the #1 situation
+>   		 */
+>
+> @@ -1681,7 +1681,7 @@ inline void rtllib_softmac_new_net(struct rtllib_device *ieee,
+>
+>   		/* if the user set the AP check if match.
+>   		 * if the network does not broadcast essid we check the
+> -		 *	 user supplyed ANY essid
+> +		 *	 user supplied ANY essid
+>   		 * if the network does broadcast and the user does not set
+>   		 *	 essid it is OK
+>   		 * if the network does broadcast and the user did set essid
+> @@ -2444,16 +2444,16 @@ inline int rtllib_rx_frame_softmac(struct rtllib_device *ieee,
+>
+>   /* following are for a simplier TX queue management.
+>    * Instead of using netif_[stop/wake]_queue the driver
+> - * will uses these two function (plus a reset one), that
+> - * will internally uses the kernel netif_* and takes
+> + * will use these two functions (plus a reset one), that
+> + * will internally use the kernel netif_* and takes
+>    * care of the ieee802.11 fragmentation.
+>    * So the driver receives a fragment per time and might
+> - * call the stop function when it want without take care
+> - * to have enought room to TX an entire packet.
+> - * This might be useful if each fragment need it's own
+> + * call the stop function when it wants to not
+> + * have enough room to TX an entire packet.
+> + * This might be useful if each fragment needs it's own
+>    * descriptor, thus just keep a total free memory>  than
+> - * the max fragmentation treshold is not enought.. If the
+> - * ieee802.11 stack passed a TXB struct then you needed
+> + * the max fragmentation threshold is not enough.. If the
+> + * ieee802.11 stack passed a TXB struct then you need
+>    * to keep N free descriptors where
+>    * N = MAX_PACKET_SIZE / MIN_FRAG_TRESHOLD
+>    * In this way you need just one and the 802.11 stack
+> @@ -2696,15 +2696,15 @@ static void rtllib_start_ibss_wq(void *data)
+>   	rtllib_softmac_check_all_nets(ieee);
+>
+>
+> -	/* if not then the state is not linked. Maybe the user swithced to
+> +	/* if not then the state is not linked. Maybe the user switched to
+>   	 * ad-hoc mode just after being in monitor mode, or just after
+>   	 * being very few time in managed mode (so the card have had no
+>   	 * time to scan all the chans..) or we have just run up the iface
+>   	 * after setting ad-hoc mode. So we have to give another try..
+>   	 * Here, in ibss mode, should be safe to do this without extra care
+> -	 * (in bss mode we had to make sure no-one tryed to associate when
+> +	 * (in bss mode we had to make sure no-one tried to associate when
+>   	 * we had just checked the ieee->state and we was going to start the
+> -	 * scan) beacause in ibss mode the rtllib_new_net function, when
+> +	 * scan) because in ibss mode the rtllib_new_net function, when
+>   	 * finds a good net, just set the ieee->state to RTLLIB_LINKED,
+>   	 * so, at worst, we waste a bit of time to initiate an unneeded syncro
+>   	 * scan, that will stop at the first round because it sees the state
+> @@ -2819,7 +2819,7 @@ void rtllib_start_bss(struct rtllib_device *ieee)
+>
+>   	/* ensure no-one start an associating process (thus setting
+>   	 * the ieee->state to rtllib_ASSOCIATING) while we
+> -	 * have just cheked it and we are going to enable scan.
+> +	 * have just checked it and we are going to enable scan.
+>   	 * The rtllib_new_net function is always called with
+>   	 * lock held (from both rtllib_softmac_check_all_nets and
+>   	 * the rx path), so we cannot be in the middle of such function
+> @@ -2872,7 +2872,7 @@ static void rtllib_associate_retry_wq(void *data)
+>
+>   	/* until we do not set the state to RTLLIB_NOLINK
+>   	* there are no possibility to have someone else trying
+> -	* to start an association procdure (we get here with
+> +	* to start an association procedure (we get here with
+>   	* ieee->state = RTLLIB_ASSOCIATING).
+>   	* When we set the state to RTLLIB_NOLINK it is possible
+>   	* that the RX path run an attempt to associate, but
+> diff --git a/drivers/staging/rtl8192e/rtllib_softmac_wx.c b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
+> index 1523bc7..1bb6b52 100644
+> --- a/drivers/staging/rtl8192e/rtllib_softmac_wx.c
+> +++ b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
+> @@ -479,7 +479,7 @@ int rtllib_wx_set_essid(struct rtllib_device *ieee,
+>
+>
+>   	/* this is just to be sure that the GET wx callback
+> -	 * has consisten infos. not needed otherwise
+> +	 * has consistent infos. not needed otherwise
+>   	 */
+>   	spin_lock_irqsave(&ieee->lock, flags);
+>
+> @@ -575,7 +575,7 @@ int rtllib_wx_set_power(struct rtllib_device *ieee,
+>   	if ((!ieee->sta_wake_up) ||
+>   	    (!ieee->enter_sleep_state) ||
+>   	    (!ieee->ps_is_queue_empty)) {
+> -		RTLLIB_DEBUG(RTLLIB_DL_ERR, "%s(): PS mode is tryied to be use "
+> +		RTLLIB_DEBUG(RTLLIB_DL_ERR, "%s(): PS mode is tried to be use "
+>   			     "but driver missed a callback\n\n", __func__);
+>   		return -1;
+>   	}
+> diff --git a/drivers/staging/rtl8192e/rtllib_tx.c b/drivers/staging/rtl8192e/rtllib_tx.c
+> index f451bfc..f24aa00c 100644
+> --- a/drivers/staging/rtl8192e/rtllib_tx.c
+> +++ b/drivers/staging/rtl8192e/rtllib_tx.c
+> @@ -59,7 +59,7 @@
+>   802.11 Data Frame
+>
+>
+> -802.11 frame_contorl for data frames - 2 bytes
+> +802.11 frame_control for data frames - 2 bytes
+>        ,-----------------------------------------------------------------------------------------.
+>   bits | 0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  a  |  b  |  c  |  d  |  e   |
+>        |----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|------|
+> @@ -576,7 +576,7 @@ int rtllib_xmit_inter(struct sk_buff *skb, struct net_device *dev)
+>
+>   	spin_lock_irqsave(&ieee->lock, flags);
+>
+> -	/* If there is no driver handler to take the TXB, dont' bother
+> +	/* If there is no driver handler to take the TXB, don't bother
+>   	 * creating it... */
+>   	if ((!ieee->hard_start_xmit&&  !(ieee->softmac_features&
+>   	IEEE_SOFTMAC_TX_QUEUE)) ||
+> @@ -738,7 +738,7 @@ int rtllib_xmit_inter(struct sk_buff *skb, struct net_device *dev)
+>   		   (CFG_RTLLIB_COMPUTE_FCS | CFG_RTLLIB_RESERVE_FCS))
+>   			bytes_per_frag -= RTLLIB_FCS_LEN;
+>
+> -		/* Each fragment may need to have room for encryptiong
+> +		/* Each fragment may need to have room for encrypting
+>   		 * pre/postfix */
+>   		if (encrypt) {
+>   			bytes_per_frag -= crypt->ops->extra_mpdu_prefix_len +
+> diff --git a/drivers/staging/rtl8192e/rtllib_wx.c b/drivers/staging/rtl8192e/rtllib_wx.c
+> index e5fe2e8..c7e8d4d8 100644
+> --- a/drivers/staging/rtl8192e/rtllib_wx.c
+> +++ b/drivers/staging/rtl8192e/rtllib_wx.c
+> @@ -408,7 +408,7 @@ int rtllib_wx_set_encode(struct rtllib_device *ieee,
+>   				       (*crypt)->priv);
+>   		sec.flags |= (1<<  key);
+>   		/* This ensures a key will be activated if no key is
+> -		 * explicitely set */
+> +		 * explicitly set */
+>   		if (key == sec.active_key)
+>   			sec.flags |= SEC_ACTIVE_KEY;
+>   		ieee->crypt_info.tx_keyidx = key;
 
