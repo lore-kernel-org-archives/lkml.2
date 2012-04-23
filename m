@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab2DWWJE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 18:09:04 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:56893 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab2DWWJB (ORCPT
+	id S1755409Ab2DWWNP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 18:13:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56861 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab2DWWNO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 18:09:01 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Miller <davem@davemloft.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-References: <20120423170701.c96e402234b1387dece11dda@canb.auug.org.au>
-	<4F958598.6080305@xenotime.net>
-Date: Mon, 23 Apr 2012 15:13:02 -0700
-In-Reply-To: <4F958598.6080305@xenotime.net> (Randy Dunlap's message of "Mon,
-	23 Apr 2012 09:38:48 -0700")
-Message-ID: <m1lilmt7v5.fsf_-_@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Mon, 23 Apr 2012 18:13:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18uWFnuy+tzupSkyfimOaOtqOCfjbuD27g=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  8.5 XMNoUri_00 BODY: domains not in uri format
-	*  0.1 XMSubLong Long Subject
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *****;David Miller <davem@davemloft.net>
-X-Spam-Relay-Country: 
-Subject: [PATCH] net sysctl: Add place holder functions for when sysctl support is compiled out of the kernel.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <20120423202839.GA14147@burratino>
+References: <20120402150522.GA4980@burratino>
+	<20120413193905.GD2387@burratino>
+	<20120423182630.GA13067@burratino>
+	<CAE9FiQVSdnqrno4VBZbcQmcYagpXPOo_Cvw=c9w_1GZycKv1Xg@mail.gmail.com>
+	<20120423202839.GA14147@burratino>
+Date: Mon, 23 Apr 2012 15:13:13 -0700
+X-Google-Sender-Auth: _6omxC4sswpDT2rli4JL5ltW5e0
+Message-ID: <CAE9FiQVaThbo0oQZThc9JdEtu53CWfBvFAH6Sc9bpkwFSVAFiw@mail.gmail.com>
+Subject: Re: [PATCH resend v3] x86: memtest: WARN if bad RAM found
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Randy Dunlap <rdunlap@xenotime.net> reported:
-> On 04/23/2012 12:07 AM, Stephen Rothwell wrote:
+On Mon, Apr 23, 2012 at 1:28 PM, Jonathan Nieder <jrnieder@gmail.com> wrote:
+> Yinghai Lu wrote:
+>> On Mon, Apr 23, 2012 at 11:26 AM, Jonathan Nieder <jrnieder@gmail.com> wrote:
 >
->> Hi all,
+>>> --- a/arch/x86/mm/memtest.c
+>>> +++ b/arch/x86/mm/memtest.c
+>>> @@ -30,6 +30,8 @@ static u64 patterns[] __initdata = {
+>>>
+>>>  static void __init reserve_bad_mem(u64 pattern, u64 start_bad, u64 end_bad)
+>>>  {
+>>> +       WARN_ONCE(1, "Bad RAM detected. Use memtest86+ to perform a thorough test\n"
+>>> +                 "and the memmap= parameter to reserve the bad areas.");
 >>
->> Changes since 20120420:
+>> You must be kidding : calling memtest86+ "thorough test".
 >
->
->
-> ERROR: "unregister_net_sysctl_table" [net/phonet/phonet.ko] undefined!
-> ERROR: "register_net_sysctl" [net/phonet/phonet.ko] undefined!
->
-> when CONFIG_SYSCTL is not enabled.
+> How about "more thorough test"?  Or do you have a better
+> recommendation for users?
 
-Add static inline stub functions to gracefully handle the case when sysctl
-support is not present.
+The reason for adding early_memtest is for debug purpose.
+Sometimes BIOS mess up setting, on some booting memory is ok, but
+other booting the memory is not initialized properly.
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- include/net/net_namespace.h |   15 ++++++++++++---
- 1 files changed, 12 insertions(+), 3 deletions(-)
+in that case: preboot memtest tools is not going to help.
 
-diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
-index 3ee4a3d..ac9195e 100644
---- a/include/net/net_namespace.h
-+++ b/include/net/net_namespace.h
-@@ -284,11 +284,20 @@ struct ctl_table_header;
- 
- #ifdef CONFIG_SYSCTL
- extern int net_sysctl_init(void);
--#else
--static inline int net_sysctl_init(void) { return 0; }
--#endif
- extern struct ctl_table_header *register_net_sysctl(struct net *net,
- 	const char *path, struct ctl_table *table);
- extern void unregister_net_sysctl_table(struct ctl_table_header *header);
-+#else
-+static inline int net_sysctl_init(void) { return 0; }
-+static inline struct ctl_table_header *register_net_sysctl(struct net *net,
-+	const char *path, struct ctl_table *table)
-+{
-+	return NULL;
-+}
-+static inline void unregister_net_sysctl_table(struct ctl_table_header *header)
-+{
-+}
-+#endif
-+
- 
- #endif /* __NET_NET_NAMESPACE_H */
--- 
-1.7.2.5
+also preboot memtest tools and early_memtest is not stressed enough.
+--- only one process is running.
+Need to run memtester multiple instances to test your memory and systems.
 
+Yinghai
