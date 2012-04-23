@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000Ab2DWKSM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:18:12 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46568 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab2DWKSL (ORCPT
+	id S1755056Ab2DWKSW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:18:22 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:43776 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012Ab2DWKST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:18:11 -0400
-Message-ID: <4F952C5E.5030009@gmail.com>
-Date: Mon, 23 Apr 2012 12:18:06 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
-        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>  <1333696481-3433-6-git-send-email-juri.lelli@gmail.com> <1335176108.28150.110.camel@twins>
-In-Reply-To: <1335176108.28150.110.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Apr 2012 06:18:19 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org, KVM <kvm@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Xen <xen-devel@lists.xensource.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 23 Apr 2012 15:30:02 +0530
+Message-Id: <20120423100002.30893.60584.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com>
+References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH RFC V6 2/5] kvm : Fold pv_unhalt flag into GET_MP_STATE ioctl to aid migration
+x-cbid: 12042310-5816-0000-0000-0000023FE510
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 12:15 PM, Peter Zijlstra wrote:
-> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
->> + * Copyright (C) 2010 Dario Faggioli<raistlin@linux.it>,
->> + *                    Michael Trimarchi<michael@amarulasolutions.com>,
->> + *                    Fabio Checconi<fabio@gandalf.sssup.it>
->
-> Its 2012 at the time of writing, you might want to update this.. ;-)
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
-Yep, time passes.. :-P
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 6faa550..7354c1b 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5691,7 +5691,9 @@ int kvm_arch_vcpu_ioctl_get_sregs(struct kvm_vcpu *vcpu,
+ int kvm_arch_vcpu_ioctl_get_mpstate(struct kvm_vcpu *vcpu,
+ 				    struct kvm_mp_state *mp_state)
+ {
+-	mp_state->mp_state = vcpu->arch.mp_state;
++	mp_state->mp_state = (vcpu->arch.mp_state == KVM_MP_STATE_HALTED &&
++				vcpu->arch.pv.pv_unhalted) ?
++	KVM_MP_STATE_RUNNABLE : vcpu->arch.mp_state;
+ 	return 0;
+ }
+ 
 
-Thanks,
-
-- Juri
