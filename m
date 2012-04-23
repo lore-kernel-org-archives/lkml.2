@@ -1,163 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab2DWPNy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 11:13:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38403 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab2DWPNw (ORCPT
+	id S1754456Ab2DWPQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 11:16:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54965 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab2DWPQL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 11:13:52 -0400
-Date: Mon, 23 Apr 2012 23:13:27 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Len Brown <lenb@kernel.org>, Lin Ming <ming.m.lin@intel.com>,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
-Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
-Message-ID: <20120423151327.GA4019@fedora>
-References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
- <20120423010929.GA13246@ladygaga>
- <201204231343.03382.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201204231343.03382.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Apr 2012 11:16:11 -0400
+Message-ID: <1335194148.28150.175.camel@twins>
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Date: Mon, 23 Apr 2012 17:15:48 +0200
+In-Reply-To: <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	 <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 01:43:03PM +0200, Rafael J. Wysocki wrote:
-> On Monday, April 23, 2012, Aaron Lu wrote:
-> > Hi Rafael and Ming,
-> > 
-> > Do you have any more comments on this patch?
-> > If not, can I have your ack? Thanks.
-> > 
-> > -Aaron
-> > 
-> > On Sun, Apr 01, 2012 at 02:18:30AM +0800, Aaron Lu wrote:
-> > > When entering D3 Cold from a higher device state, evaluate _PS3 first
-> > > and then make the proper power transition.
-> > > This is used to solve the ZPODD problem on AMD's platform, _PS3 on such
-> > > platforms will power off the ODD device and thus make the device enter
-> > > D3 cold state.
-> > > 
-> > > Signed-off-by: Aaron Lu <aaron.lu@amd.com>
-> > > Cc: Andiry Xu <andiry.xu@amd.com>
-> > > Cc: Alex He <alex.he@amd.com>
-> > > ---
-> > >  drivers/acpi/bus.c |   17 ++++++++++++++---
-> > >  1 file changed, 14 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-> > > index 3263b68..68e593f 100644
-> > > --- a/drivers/acpi/bus.c
-> > > +++ b/drivers/acpi/bus.c
-> > > @@ -227,6 +227,8 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
-> > >  	int result = 0;
-> > >  	acpi_status status = AE_OK;
-> > >  	char object_name[5] = { '_', 'P', 'S', '0' + state, '\0' };
-> > > +	struct acpi_device_power_state *ps;
-> > > +	u8 explicit_set;
-> > >  
-> > >  	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
-> > >  		return -EINVAL;
-> > > @@ -239,7 +241,8 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
-> > >  		return 0;
-> > >  	}
-> > >  
-> > > -	if (!device->power.states[state].flags.valid) {
-> > > +	ps = &device->power.states[state];
-> > > +	if (!ps->flags.valid) {
-> > >  		printk(KERN_WARNING PREFIX "Device does not support D%d\n", state);
-> > >  		return -ENODEV;
-> > >  	}
-> > > @@ -263,7 +266,7 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
-> > >  			if (result)
-> > >  				goto end;
-> > >  		}
-> > > -		if (device->power.states[state].flags.explicit_set) {
-> > > +		if (ps->flags.explicit_set) {
-> > >  			status = acpi_evaluate_object(device->handle,
-> > >  						      object_name, NULL, NULL);
-> > >  			if (ACPI_FAILURE(status)) {
-> > > @@ -272,7 +275,15 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
-> > >  			}
-> > >  		}
-> > >  	} else {
-> > > -		if (device->power.states[state].flags.explicit_set) {
-> > > +		/* If state is D3 Cold, try to evaluate _PS3 first */
-> > > +		if (state == ACPI_STATE_D3_COLD) {
-> > > +			explicit_set = (ps - 1)->flags.explicit_set;
-> > > +			object_name[3] -= 1;
-> > > +		}
-> > > +		else {
-> > > +			explicit_set = ps->flags.explicit_set;
-> > > +		}
-> 
-> I really don't like this.  I think you should modify acpi_bus_get_power_flags(),
-> on top of the recent Lin Ming's patch, so that it sets flags.explicit_set for
-> D3_COLD if _PS3 is present and _PR3 is not.
-> 
+On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+> +static
+> +int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
+> +{
+> +       int dmiss = dl_time_before(dl_se->deadline, rq->clock);
+> +       int rorun = dl_se->runtime <= 0;
+>+
+> +       if (!rorun && !dmiss)
+> +               return 0;
+> +
+> +       /*
+> +        * If we are beyond our current deadline and we are still
+> +        * executing, then we have already used some of the runtime of
+> +        * the next instance. Thus, if we do not account that, we are
+> +        * stealing bandwidth from the system at each deadline miss!
+> +        */
+> +       if (dmiss) {
+> +               dl_se->runtime = rorun ? dl_se->runtime : 0;
+> +               dl_se->runtime -= rq->clock - dl_se->deadline;
+> +       }
 
-Thanks for your comments.
+So ideally this can't happen, but since we already leak time from the
+system through means of hardirq / kstop / context-switch-overhead /
+clock-jitter etc.. we avoid the error accumulating?
 
-> I'm not sure you'll need the $subject patch any more then.
-> 
-
-A little change is still required. I attached the code below.
-BTW, I think _PS3 will also need be executed if both _PS3 and _PR3
-available when putting a device into D3cold.
-
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index 3263b68..187433f 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -273,6 +273,9 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
- 		}
- 	} else {
- 		if (device->power.states[state].flags.explicit_set) {
-+			/* evaluate _PS3 instead of _PS4 when entering D3Cold */
-+			if (state == ACPI_STATE_D3)
-+				object_name[3] -= 1;
- 			status = acpi_evaluate_object(device->handle,
- 						      object_name, NULL, NULL);
- 			if (ACPI_FAILURE(status)) {
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 7417267..de2ae10 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -887,8 +887,12 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
- 		/* Evaluate "_PSx" to see if we can do explicit sets */
- 		object_name[2] = 'S';
- 		status = acpi_get_handle(device->handle, object_name, &handle);
--		if (ACPI_SUCCESS(status))
-+		if (ACPI_SUCCESS(status)) {
- 			ps->flags.explicit_set = 1;
-+			/* Also set D3Cold's explicit flag when _PS3 exists */
-+			if (i == ACPI_STATE_D3_HOT)
-+				(ps+1)->flags.explicit_set = 1;
-+		}
- 
- 		/*
- 		 * State is valid if there are means to put the device into it.
+> +
+> +       return 1;
+> +} 
 
 
-Do you like this?
-
-Thanks,
-Aaron
-
-> > > +		if (explicit_set) {
-> > >  			status = acpi_evaluate_object(device->handle,
-> > >  						      object_name, NULL, NULL);
-> > >  			if (ACPI_FAILURE(status)) {
-> 
-> Thanks,
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
