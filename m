@@ -1,144 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab2DWRn2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 13:43:28 -0400
-Received: from p02c11o148.mxlogic.net ([208.65.144.81]:54833 "EHLO
-	p02c11o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547Ab2DWRn0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 13:43:26 -0400
-X-MXL-Hash: 4f9594be78c9dd60-c55ecf1d0c72b8f4df616e0321d5737b367bb788
-X-MXL-Hash: 4f9594bc00fab34d-32277ad238f027831ead38a7102828077c6f75d1
-From: Peter Staubach <pstaubach@exagrid.com>
-To: Steve Dickson <SteveD@redhat.com>, Jeff Layton <jlayton@redhat.com>
-CC: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>,
-        "chuck.lever@oracle.com" <chuck.lever@oracle.com>,
-        "malahal@us.ibm.com" <malahal@us.ibm.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "trond.myklebust@fys.uio.no" <trond.myklebust@fys.uio.no>,
-        "rees@umich.edu" <rees@umich.edu>
-Date: Mon, 23 Apr 2012 13:43:12 -0400
-Subject: RE: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
- from getattr call
-Thread-Topic: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
- from getattr call
-Thread-Index: Ac0hYSV5hL3tLs+yQCWSXPcI/SaHvgAFh+sw
-Message-ID: <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E603@IT-1874.Isys.com>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
- <1334749927-26138-1-git-send-email-jlayton@redhat.com>
- <20120420104055.511e15bc@tlielax.poochiereds.net>
- <4F91C49D.8070908@RedHat.com>
- <20120420171300.326d6e36@corrin.poochiereds.net>
- <4F956D5C.5050801@RedHat.com>
-In-Reply-To: <4F956D5C.5050801@RedHat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753744Ab2DWRnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 13:43:47 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:3346 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753504Ab2DWRnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 13:43:42 -0400
+X-Server-Uuid: 72204117-5C29-4314-8910-60DB108979CB
+Message-ID: <4F9594C1.5060000@broadcom.com>
+Date: Mon, 23 Apr 2012 10:43:29 -0700
+From: "Franky Lin" <frankyl@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310
+ Thunderbird/11.0
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010122901)]
-X-MAIL-FROM: <pstaubach@exagrid.com>
-X-SOURCE-IP: [69.84.133.248]
-X-AnalysisOut: [v=1.0 c=1 a=lnpZ504GmfQA:10 a=ooaBVg03rvgA:10 a=BLceEmwcHo]
-X-AnalysisOut: [wA:10 a=kj9zAlcOel0A:10 a=YmXeKoonWU0GTmr6cORa5w==:17 a=20]
-X-AnalysisOut: [KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=drOt6m5kAAAA:8 a=JfrnYn6hA]
-X-AnalysisOut: [AAA:8 a=sHqLhEVXAAAA:8 a=yPCof4ZbAAAA:8 a=VnNF1IyMAAAA:8 a]
-X-AnalysisOut: [=mJjC6ScEAAAA:8 a=uYNK62N8hAROh-eNRbQA:9 a=D-dEXuG72VSUNd-]
-X-AnalysisOut: [z3w8A:7 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=3Rfx1nUSh_UA]
-X-AnalysisOut: [:10 a=tIBAwYQmwVgA:10 a=7DSvI1NPTFQA:10 a=2NEUOfxDfW4A:10 ]
-X-AnalysisOut: [a=QwNme6u36fnNrXW1:21 a=T6UanXlwzL7_U_vi:21]
+To: "Eldad Zack" <eldad@fogrefinery.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+cc: "Brett Rudley" <brudley@broadcom.com>,
+        "Roland Vossen" <rvossen@broadcom.com>,
+        "Arend van Spriel" <arend@broadcom.com>,
+        "Kan Yan" <kanyan@broadcom.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [brcmsmac] "INTERMEDIATE but not AMPDU" only when
+ tracing
+References: <1335048484-5925-1-git-send-email-eldad@fogrefinery.com>
+In-Reply-To: <1335048484-5925-1-git-send-email-eldad@fogrefinery.com>
+X-WSS-ID: 638B4B423IO9025608-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The test program runs and expects many, many ENOENTS to be returned.  It just doesn't expect ESTALE to be returned.  It doesn't see ESTALE from local file systems.
+On 04/21/2012 03:48 PM, Eldad Zack wrote:
+>  From the code comment I understand that this something that can - and does, quite frequently - happen.
+> This patch demotes the message to the trace level.
+>
+> Signed-off-by: Eldad Zack<eldad@fogrefinery.com>
 
-To answer a question asked earlier -- the test program does not mimic any particular application behavior, except in the extreme.  It is designed to create as stressful a situation as might be ever seen.
+Thx Eldad,
 
-Has anyone explained why the full solution won't work from a technical viewpoint?
+Acked-by: Franky Lin<frankyl@broadcom.com>
 
-	Thanx...
-
-		ps
-
-
------Original Message-----
-From: Steve Dickson [mailto:SteveD@redhat.com] 
-Sent: Monday, April 23, 2012 10:55 AM
-To: Jeff Layton
-Cc: linux-fsdevel@vger.kernel.org; linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org; miklos@szeredi.hu; viro@ZenIV.linux.org.uk; hch@infradead.org; michael.brantley@deshaw.com; sven.breuner@itwm.fraunhofer.de; chuck.lever@oracle.com; Peter Staubach; malahal@us.ibm.com; bfields@fieldses.org; trond.myklebust@fys.uio.no; rees@umich.edu
-Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
-
-
-
-On 04/20/2012 05:13 PM, Jeff Layton wrote:
-> On Fri, 20 Apr 2012 16:18:37 -0400
-> Steve Dickson <SteveD@redhat.com> wrote:
-> 
->> On 04/20/2012 10:40 AM, Jeff Layton wrote:
->>> I guess the questions at this point is:
->>>
->>> 1) How representative is Peter's mkdir_test() of a real-world workload?
->> Reading your email I had to wonder the same thing... What application 
->> removes hierarchy of directories in a loop from two different clients?
->> I would suspect not many, if any... esp over NFS... 
->>  
-> 
-> Peter's test just happens to demonstrate the problem well, but one 
-> could envision someone removing a heirarchy of directories on the 
-> server while we're trying to do other operations in it. At that point, 
-> we can easily end up hitting an ESTALE twice while doing the lookup 
-> and returning ESTALE back to userspace.
-Just curious, what happens when you run Peter's mkdir_test() on a local file system? Any errors returned? 
-
-I would think removing hierarchy of directories while they are being accessed has to even cause local fs some type of havoc
-
-> 
->>>
->>> 2) if we assume that it is fairly representative of one, how can we 
->>> achieve retrying indefinitely with NFS, or at least some large 
->>> finite amount?
->> The amount of looping would be peer speculation. If the problem can 
->> not be handled by one simple retry I would say we simply pass the 
->> error up to the app... Its an application issue...
->>  
-> 
-> It's not an application issue. The application just asked the kernel 
-> to do an operation on a pathname. The only reason you're getting an 
-> ESTALE back in this situation is a shortcoming of the implementation.
-> 
-> We passed it a pathname after all, not a filehandle. ESTALE really has 
-> no place as a return code in that situation...
-We'll have to agree to disagree... I think any application that is removing hierarchies of file and directory w/out taking any precautionary locking is a shortcoming of the application implementation.
-    
-> 
->>>
->>> I have my doubts as to whether it would really be as big a problem 
->>> for other filesystems as Miklos and others have asserted, but I'll 
->>> take their word for it at the moment. What's the best way to contain 
->>> this behavior to just those filesystems that want to retry 
->>> indefinitely when they get an ESTALE? Would we need to go with an 
->>> entirely new ESTALERETRY after all?
->>>
->> Introducing a new errno to handle this problem would be overkill IMHO...
->>
->> If we have to go to the looping approach, I would strong suggest we 
->> make the file systems register for this type of behavior...
->>
-> 
-> Returning ESTALERETRY would be registering for it in a way and it is 
-> somewhat cleaner than having to go all the way back up to the fstype 
-> to figure out whether you want to retry it or not.
-How would legacy apps handle this new errno, esp if they have logic to take care of ESTALE errors?
-
-steved.
