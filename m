@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab2DWMAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 08:00:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65208 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752239Ab2DWMAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 08:00:52 -0400
-Date: Mon, 23 Apr 2012 08:00:12 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Malahal Naineni <malahal@us.ibm.com>, Steve Dickson <SteveD@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        hch@infradead.org, michael.brantley@deshaw.com,
-        sven.breuner@itwm.fraunhofer.de, chuck.lever@oracle.com,
-        pstaubach@exagrid.com, bfields@fieldses.org,
-        trond.myklebust@fys.uio.no, rees@umich.edu
-Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
- from getattr call
-Message-ID: <20120423080012.7c23ef24@tlielax.poochiereds.net>
-In-Reply-To: <CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<1334749927-26138-1-git-send-email-jlayton@redhat.com>
-	<20120420104055.511e15bc@tlielax.poochiereds.net>
-	<4F91C49D.8070908@RedHat.com>
-	<20120420203725.GA3512@us.ibm.com>
-	<20120420171314.73801874@corrin.poochiereds.net>
-	<CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753623Ab2DWMDE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 08:03:04 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:54001 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840Ab2DWMDC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 08:03:02 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUWVwUr19xL0Dn5mHnZjQaVjj6VYD3BMMktEWO0vgoZEXw@mail.gmail.com>
+References: <CA+icZUWVwUr19xL0Dn5mHnZjQaVjj6VYD3BMMktEWO0vgoZEXw@mail.gmail.com>
+Date: Mon, 23 Apr 2012 14:03:01 +0200
+Message-ID: <CA+icZUUGFaz0c-tHa9EGUxZaxPj_M=zrE+kE0dv5UMoA6GyN3w@mail.gmail.com>
+Subject: Re: Warning: pnp 00:0b: can't evaluate _CRS: 12311
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: linux-acpi@vger.kernel.org
+Cc: Len Brown <lenb@kernel.org>, Adam Belay <abelay@mit.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 Apr 2012 07:40:57 +0200
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+On Mon, Apr 23, 2012 at 11:48 AM, Sedat Dilek
+<sedat.dilek@googlemail.com> wrote:
+> [ Please CC me I am not subscribed to this ML ]
+>
+> Hi,
+>
+> with a self-compiled linux-3.4-rc4 I am seeing this bugs/failures/warnings:
+>
+> [    0.241572] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
+>
+> [    0.279385]  pci0000:00: ACPI _OSC request failed (AE_ERROR),
+> returned control mask: 0x1d
+>
+> [    0.293699] system 00:0a: Plug and Play ACPI device, IDs PNP0c02 (active)
+> [    0.294032] ACPI Error: Invalid/unsupported resource descriptor:
+> Type 0x00 (20120320/utresrc-650)
+> [    0.294037] pnp 00:0b: can't evaluate _CRS: 12311
+>
+> The same outputs I have seen also with an unsupported drm-intel-next
+> kernel from Ubuntu/PPA archives [1].
+>
+> What does ist mean? Is it harmless? Buggy firmware/bios?
+>
+> Do you need more background infos (dmesg, kernel-config, etc.)?
+>
+> Regards,
+> - Sedat -
+>
+> [1] http://kernel.ubuntu.com/~kernel-ppa/mainline/drm-intel-next/current/
 
-> On Fri, Apr 20, 2012 at 11:13 PM, Jeff Layton <jlayton@redhat.com> wrote:
-> > On Fri, 20 Apr 2012 15:37:26 -0500
-> > Malahal Naineni <malahal@us.ibm.com> wrote:
-> >
-> >> Steve Dickson [SteveD@redhat.com] wrote:
-> >> > > 2) if we assume that it is fairly representative of one, how can we
-> >> > > achieve retrying indefinitely with NFS, or at least some large finite
-> >> > > amount?
-> >> > The amount of looping would be peer speculation. If the problem can
-> >> > not be handled by one simple retry I would say we simply pass the
-> >> > error up to the app... Its an application issue...
-> >>
-> >> As someone said, ESTALE is an incorrect errno for a path based call.
-> >> How about turning ESTALE into ENOENT after a retry or few retries?
-> >>
-> >
-> > It's not really the same thing. One could envision an application
-> > that's repeatedly renaming a new file on top of another one. The file
-> > is never missing from the namespace of the server, but you could still
-> > end up getting an ESTALE.
-> >
-> > That would break other atomicity guarantees in an even worse way, IMO...
-> 
-> For directory operations ESTALE *is* equivalent to ENOENT if already
-> retrying with LOOKUP_REVAL.  Think about it.  Atomic replacement by
-> another directory with rename(2) is not an excuse here actually.
-> Local filesystems too can end up with IS_DEAD directory after lookup
-> in that case.
-> 
+I have upgraded this Samsung series-5 notebook from BIOS version 05XK
+to 06XK, but the pnp/_CRS warning still remains.
 
-Doesn't that violate POSIX? rename(2) is supposed to be atomic, and I
-can't see where there's any exception for that for directories.
-
-Seems like it ought to be possible to eliminate that race for other
-filesystems as well, by turning those into an ESTALE return and
-retrying again.
-
-> For non directories we basically have getattr and setattr.   NFSv4 can
-> handle both without retries if we supply the name instead of the
-> handle (i.e. i_op->getattr_by_name, i_op->setattr_by_name).  Other
-> protocols can do whatever they want, exponential backoff with limited
-> number of retries, whatever.
-> 
-> No looping required in the VFS.
-> 
-
-Per-name operations for things like getattr and setattr would be nice.
-It would also make things cleaner on CIFS since there'd be less
-conversion from dentry to path.
-
-Note that we would still need to do a lookup. We have to update the
-inode attributes with these operations too. But, that would likely
-avoid the ESTALE problems with NFS since we could retry within
-the lower fs itself.
-
-That said, there's more than just those two operations involved. We'd
-need similar ones for other inode operations too:
-
-readlink
-permission
-*xattr
-
-...and probably others, especially if you want to allow for more
-resilient create/delete in the face of a stale directory.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+- Sedat -
