@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab2DWRTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 13:19:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54917 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819Ab2DWRTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 13:19:15 -0400
-References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com> <20120421041454.GA29704@phenom.dumpdata.com> <20120421104502.GB17005@aftab.osrc.amd.com> <3908561D78D1C84285E8C5FCA982C28F170EF841@ORSMSX104.amr.corp.intel.com> <4F958098.1050402@zytor.com> <20120423170327.GC22364@phenom.dumpdata.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120423170327.GC22364@phenom.dumpdata.com>
+	id S1754436Ab2DWRTf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 13:19:35 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:58946 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414Ab2DWRTd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 13:19:33 -0400
+Message-ID: <4F958F13.1000005@linux.vnet.ibm.com>
+Date: Mon, 23 Apr 2012 10:19:15 -0700
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 23 Apr 2012 10:16:16 -0700
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "Luck, Tony" <tony.luck@intel.com>, "Liu, Jinsong" <jinsong.liu@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@amd64.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
-Message-ID: <45d73970-bf49-4695-8fe6-6f3c19e1097f@email.android.com>
+To: Richard Davies <richard@arachsys.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Chris Webb <chris@arachsys.com>, Badari <pbadari@us.ibm.com>
+Subject: Re: Over-eager swapping
+References: <20120423092730.GB20543@alpha.arachsys.com>
+In-Reply-To: <20120423092730.GB20543@alpha.arachsys.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042317-4242-0000-0000-0000016DCF2D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My biggest beefs are page table manipulation, all the extra ugliness in kernel entry and exit, and lack of clear initialization semantics.  Additionally, any pvop which has unclear semantics - especially anything which is a nop on native and has zero documentation.
+On 04/23/2012 02:27 AM, Richard Davies wrote:
+> # cat /proc/meminfo
+> MemTotal:       65915384 kB
+> MemFree:          271104 kB
+> Buffers:        36274368 kB
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+Your "Buffers" are the only thing that really stands out here.  We used
+to see this kind of thing on ext3 a lot, but it's gotten much better
+lately.  From slabinfo, you can see all the buffer_heads:
 
->On Mon, Apr 23, 2012 at 09:17:28AM -0700, H. Peter Anvin wrote:
->> On 04/23/2012 08:27 AM, Luck, Tony wrote:
->> >> Because, if you'd hooked into it, just imagine one fine day, when
->we
->> >> remove mcelog support, what screaming the xen people will be doing
->when
->> >> mcelog doesn't work anymore.
->> > 
->> > Agreed. Even before we get to deleting mcelog, "struct mce" can
->change (new
->> > fields could be added) ... and you don't want to have your
->hypervisor to
->> > have to know which version of Linux it is talking to.
->> 
->> This is a great example on the fundamental problem with Xen, or
->rather
->> the approach that Xen has taken of grabbing random kernel internals
->and
->> claiming them as APIs (or, in some cases even as ABIs.)  A lot of
->these
->
->I am _not_ claiming that. If I left you with that impression from my
->responses - my fault for not getting my point across (the sleep
->deprevation
->is probably not helping either).
->
->I am _not_ stating that the usage of 'mce_log' or 'struct mce' MUST
->remain the same from now on. No. I am saying that the driver will be
->changed lock-step as Tony and Boris see fit in changing the functions.
->
->And currently the way the existing MCE drivers do this - is by using
->mce_log. This driver does is too - since the in-tree drivers do it this
->way.
->When they change to use a different mechanism - this driver will as
->well.
->
->> have had problems that are now very nearly unfixable, and that has
->> seriously stalled out the ability of evolve the Linux kernel in some
->> areas.  Note that the cost of this is borne by the development
->> community, not by the Xen maintainers.
->
->The ones I know that you are unhappy about are the MMU paravirt
->interfaces
->and I did mention to you that once some prototype work is done and
->it showed success, I will work on removing said support.
->
->Why don't you send me your unhappy list so that is on my radar as well
->please?
->
->> 
->> 	-hpa
->> 
->> -- 
->> H. Peter Anvin, Intel Open Source Technology Center
->> I work for Intel.  I don't speak on their behalf.
->> 
->> 
->> _______________________________________________
->> Xen-devel mailing list
->> Xen-devel@lists.xen.org
->> http://lists.xen.org/xen-devel
+buffer_head       8175114 8360937    104   39    1 : tunables    0    0
+   0 : slabdata 214383 214383      0
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+I _think_ this was a filesystems issue where the FS for some reason kept
+the buffers locked down.  The swapping just comes later as so much of
+RAM is eaten up by buffers.
+
