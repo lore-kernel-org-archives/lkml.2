@@ -1,162 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab2DWN4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 09:56:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46808 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755575Ab2DWN4x (ORCPT
+	id S1755662Ab2DWN5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 09:57:09 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:56250 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755616Ab2DWN5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 09:56:53 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v1 6/8] dmaengine: enhance network subsystem to support DMA device hotplug
-Date: Mon, 23 Apr 2012 21:51:47 +0800
-Message-Id: <1335189109-4871-7-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
-References: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
+	Mon, 23 Apr 2012 09:57:02 -0400
+Message-ID: <4F955F78.8070604@windriver.com>
+Date: Mon, 23 Apr 2012 09:56:08 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Stephen Cameron <stephenmcameron@gmail.com>
+CC: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        <james.bottomley@hansenpartnership.com>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <matthew.gates@hp.com>,
+        <thenzl@redhat.com>, <akpm@linux-foundation.org>,
+        <mikem@beardog.cce.hp.com>
+Subject: Re: [PATCH 14/17] hpsa: use new IS_ENABLED macro
+References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>	<20120420150732.10596.9085.stgit@beardog.cce.hp.com>	<CAP=VYLpOyBuvZ3+Nfw1u0dojOX8kt-1TDJA+v-EWQuKPdh0A1w@mail.gmail.com> <CADzpL0S04XTYoe4u7_WNgA6cw11uNw9uxiyyYCQ=cY-p-Z+sww@mail.gmail.com>
+In-Reply-To: <CADzpL0S04XTYoe4u7_WNgA6cw11uNw9uxiyyYCQ=cY-p-Z+sww@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance network subsystem to correctly update DMA channel reference counts,
-so it won't break DMA device hotplug logic.
+On 12-04-22 10:20 PM, Stephen Cameron wrote:
+> On Sun, Apr 22, 2012 at 1:12 PM, Paul Gortmaker
+> <paul.gortmaker@windriver.com> wrote:
+>> On Fri, Apr 20, 2012 at 11:07 AM, Stephen M. Cameron
+>> <scameron@beardog.cce.hp.com> wrote:
+>>> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>>>
+>>> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>>
+>> You've not written a commit log, so I'm left guessing what the
+>> intended rationale is here.  COMPAT, X86 and PCI_MSI are
+>> I believe all bool, so why make this change?  To me it gives
+>> a misleading message that some level of modular awareness
+>> is needed here, when there really isn't any such need.
+> 
+> Well, I saw this commit go by: 69349c2dc01c489eccaa4c472542c08e370c6d7e
+> 
+>    Using IS_ENABLED() within C (vs.  within CPP #if statements) in its
+>    current form requires us to actually define every possible bool/tristate
+>    Kconfig option twice (__enabled_* and __enabled_*_MODULE variants).
+>    [...]
+> 
+> and so I kind of thought IS_ENABLED is the new way to do that sort of thing.
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
----
- include/net/netdma.h |   26 ++++++++++++++++++++++++++
- net/ipv4/tcp.c       |   10 +++-------
- net/ipv4/tcp_input.c |    5 +----
- net/ipv4/tcp_ipv4.c  |    4 +---
- net/ipv6/tcp_ipv6.c  |    4 +---
- 5 files changed, 32 insertions(+), 17 deletions(-)
+In my opinion, IS_ENABLED can/should be used when you have:
 
-diff --git a/include/net/netdma.h b/include/net/netdma.h
-index 8ba8ce2..6d71724 100644
---- a/include/net/netdma.h
-+++ b/include/net/netdma.h
-@@ -24,6 +24,32 @@
- #include <linux/dmaengine.h>
- #include <linux/skbuff.h>
- 
-+static inline bool
-+net_dma_capable(void)
-+{
-+	struct dma_chan *chan = net_dma_find_channel();
-+	dma_put_channel(chan);
-+
-+	return !!chan;
-+}
-+
-+static inline struct dma_chan *
-+net_dma_get_channel(struct tcp_sock *tp)
-+{
-+	if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
-+		tp->ucopy.dma_chan = net_dma_find_channel();
-+	return tp->ucopy.dma_chan;
-+}
-+
-+static inline void
-+net_dma_put_channel(struct tcp_sock *tp)
-+{
-+	if (tp->ucopy.dma_chan) {
-+		dma_put_channel(tp->ucopy.dma_chan);
-+		tp->ucopy.dma_chan = NULL;
-+	}
-+}
-+
- int dma_skb_copy_datagram_iovec(struct dma_chan* chan,
- 		struct sk_buff *skb, int offset, struct iovec *to,
- 		size_t len, struct dma_pinned_list *pinned_list);
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 8bb6ade..aea4032 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1451,8 +1451,7 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 			available = TCP_SKB_CB(skb)->seq + skb->len - (*seq);
- 		if ((available < target) &&
- 		    (len > sysctl_tcp_dma_copybreak) && !(flags & MSG_PEEK) &&
--		    !sysctl_tcp_low_latency &&
--		    net_dma_find_channel()) {
-+		    !sysctl_tcp_low_latency && net_dma_capable()) {
- 			preempt_enable_no_resched();
- 			tp->ucopy.pinned_list =
- 					dma_pin_iovec_pages(msg->msg_iov, len);
-@@ -1666,10 +1665,7 @@ do_prequeue:
- 
- 		if (!(flags & MSG_TRUNC)) {
- #ifdef CONFIG_NET_DMA
--			if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--				tp->ucopy.dma_chan = net_dma_find_channel();
--
--			if (tp->ucopy.dma_chan) {
-+			if (net_dma_get_channel(tp)) {
- 				tp->ucopy.dma_cookie = dma_skb_copy_datagram_iovec(
- 					tp->ucopy.dma_chan, skb, offset,
- 					msg->msg_iov, used,
-@@ -1758,7 +1754,7 @@ skip_copy:
- 
- #ifdef CONFIG_NET_DMA
- 	tcp_service_net_dma(sk, true);  /* Wait for queue to drain */
--	tp->ucopy.dma_chan = NULL;
-+	net_dma_put_channel(tp);
- 
- 	if (tp->ucopy.pinned_list) {
- 		dma_unpin_iovec_pages(tp->ucopy.pinned_list);
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 9944c1d..3878916 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5227,10 +5227,7 @@ static int tcp_dma_try_early_copy(struct sock *sk, struct sk_buff *skb,
- 	if (tp->ucopy.wakeup)
- 		return 0;
- 
--	if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--		tp->ucopy.dma_chan = net_dma_find_channel();
--
--	if (tp->ucopy.dma_chan && skb_csum_unnecessary(skb)) {
-+	if (net_dma_get_channel(tp) && skb_csum_unnecessary(skb)) {
- 
- 		dma_cookie = dma_skb_copy_datagram_iovec(tp->ucopy.dma_chan,
- 							 skb, hlen,
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 0cb86ce..90ea1c0 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1729,9 +1729,7 @@ process:
- 	if (!sock_owned_by_user(sk)) {
- #ifdef CONFIG_NET_DMA
- 		struct tcp_sock *tp = tcp_sk(sk);
--		if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--			tp->ucopy.dma_chan = net_dma_find_channel();
--		if (tp->ucopy.dma_chan)
-+		if (net_dma_get_channel(tp))
- 			ret = tcp_v4_do_rcv(sk, skb);
- 		else
- #endif
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 86cfe60..fb81bbd 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1644,9 +1644,7 @@ process:
- 	if (!sock_owned_by_user(sk)) {
- #ifdef CONFIG_NET_DMA
- 		struct tcp_sock *tp = tcp_sk(sk);
--		if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--			tp->ucopy.dma_chan = net_dma_find_channel();
--		if (tp->ucopy.dma_chan)
-+		if (net_dma_get_channel(tp))
- 			ret = tcp_v6_do_rcv(sk, skb);
- 		else
- #endif
--- 
-1.7.5.4
+#if defined(CONFIG_FOO) || defined(CONFIG_FOO_MODULE)
 
+i.e. "is this driver built in, or can it be loaded as a module?"
+The CONFIG_FOO_MODULE doesn't appear in your .config -- it is auto
+generated by Kbuild infrastructure.
+
+It will do the Right Thing even for cases where CONFIG_FOO_MODULE
+is impossible, but it does as I've said, give the wrong impression
+that there is some possibility of modular presence.  At least to
+those who are familiar with the implementation and why it exists.
+[I'll grant you that the name doesn't convey the use case too well.]
+
+> 
+> Perhaps I'm wrong about that.  Obviously the patch is not _needed_ for
+> things to work.
+
+I don't think we want to go and mass replace all existing cases of
+
+   #ifdef CONFIG_SOME_BOOL
+
+with:
+
+   #if IS_ENABLED(CONFIG_SOME_BOOL)
+
+There is no value add.  However, replacing instances of:
+
+   #if defined(CONFIG_FOO) || defined(CONFIG_FOO_MODULE)
+
+with:
+
+   #if IS_ENABLED(CONFIG_FOO)
+
+is in my opinion, a reasonable thing to do.  It is shorter, and
+it does hide the internally generated _MODULE suffixed "shadow"
+variables from appearing directly in the main source files.  And
+it tells you that the author was thinking about both the built
+in and the modular cases when they wrote it.
+
+Paul.
+--
+
+> 
+> -- steve
