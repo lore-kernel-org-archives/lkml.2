@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab2DWUnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 16:43:43 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34332 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755347Ab2DWUnl (ORCPT
+	id S1755046Ab2DWUri (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 16:47:38 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:40089 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954Ab2DWUrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 16:43:41 -0400
-Date: Mon, 23 Apr 2012 22:44:39 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Xi Wang <xi.wang@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Keith Packard <keithp@keithp.com>, security@kernel.org,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH v2 1/2] drm/i915: fix integer overflow in
- i915_gem_execbuffer2()
-Message-ID: <20120423204439.GM4935@phenom.ffwll.local>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Xi Wang <xi.wang@gmail.com>, Keith Packard <keithp@keithp.com>,
-	security@kernel.org, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-	dri-devel@lists.freedesktop.org
-References: <1335168402-25174-1-git-send-email-xi.wang@gmail.com>
- <1335169134_26001@CP5-2952>
+	Mon, 23 Apr 2012 16:47:37 -0400
+Date: Mon, 23 Apr 2012 22:47:35 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: David Miller <davem@davemloft.net>, mmarek@suse.cz,
+        torvalds@linux-foundation.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [GIT] modpost fix for newer toolchain
+Message-ID: <20120423204735.GA18585@merkur.ravnborg.org>
+References: <20120423184918.GA27862@sepie.suse.cz> <20120423192201.GA18512@merkur.ravnborg.org> <20120423201226.GA22593@kroah.com> <20120423.161353.876914987115892015.davem@davemloft.net> <20120423202248.GA24548@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1335169134_26001@CP5-2952>
-X-Operating-System: Linux phenom 3.2.0-2-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120423202248.GA24548@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 09:18:25AM +0100, Chris Wilson wrote:
-> On Mon, 23 Apr 2012 04:06:41 -0400, Xi Wang <xi.wang@gmail.com> wrote:
-> > On 32-bit systems, a large args->buffer_count from userspace via ioctl
-> > may overflow the allocation size, leading to out-of-bounds access.
+On Mon, Apr 23, 2012 at 01:22:48PM -0700, Greg KH wrote:
+> On Mon, Apr 23, 2012 at 04:13:53PM -0400, David Miller wrote:
+> > From: Greg KH <gregkh@linuxfoundation.org>
+> > Date: Mon, 23 Apr 2012 13:12:26 -0700
 > > 
-> > This vulnerability was introduced in commit 8408c282 ("drm/i915:
-> > First try a normal large kmalloc for the temporary exec buffers").
+> > > On Mon, Apr 23, 2012 at 09:22:01PM +0200, Sam Ravnborg wrote:
+> > >> On Mon, Apr 23, 2012 at 08:49:18PM +0200, Michal Marek wrote:
+> > >> > Hi Linus,
+> > >> > 
+> > >> > Please pull this modpost patch. It fixes build failure with newer gcc that adds
+> > >> > some internal symbols that end in "__mod_*_device_table", but are not
+> > >> > actually the tables themselves.
+> > >> > 
+> > >> > Michal
+> > >> > 
+> > >> > The following changes since commit 0eb043d0eec44cd083ea6910b1db2f77eb212ebd:
+> > >> > 
+> > >> >   Subject: [PATCH] tags.sh: Add missing quotes (2012-04-02 11:28:17 +0200)
+> > >> > 
+> > >> > are available in the git repository at:
+> > >> > 
+> > >> >   git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
+> > >> > 
+> > >> > for you to fetch changes up to e88aa7bbbe3046a125ea1936b16bb921cc9c6349:
+> > >> > 
+> > >> >   Fix modpost failures in fedora 17 (2012-04-18 21:42:07 +0200)
+> > >> 
+> > >> Hi Michal.
+> > >> 
+> > >> The patch missed a "Cc: stable..." as discussed in the thread about
+> > >> said patch.
+> > > 
+> > > What is the git commit id of the patch in Linus's tree that I should add
+> > > to stable?
 > > 
-> > Signed-off-by: Xi Wang <xi.wang@gmail.com>
-> > Cc: Chris Wilson <chris@chris-wilson.co.uk>
-> > Cc: stable@vger.kernel.org
-> Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Both patches picked up for -fixes, thanks.
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+> > He didn't pull this in yet, so such commit ID doesn't yet exist :-)
+> 
+> Then why is someone emailing stable@ about this patch yet?  :)
+
+Because I was fooling around - sorry.
+I will mail stable when I have a commit-id - if no-one else does.
+
+	Sam
