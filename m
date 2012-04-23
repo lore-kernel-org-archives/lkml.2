@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab2DWQ47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:56:59 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:44991 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287Ab2DWQ46 (ORCPT
+	id S1753255Ab2DWQ71 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:59:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35769 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab2DWQ7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:56:58 -0400
-Date: Mon, 23 Apr 2012 12:51:28 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>, "Liu, Jinsong" <jinsong.liu@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
-Message-ID: <20120423165128.GA22364@phenom.dumpdata.com>
-References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com>
- <20120421041454.GA29704@phenom.dumpdata.com>
- <20120421104502.GB17005@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F170EF841@ORSMSX104.amr.corp.intel.com>
- <20120423153222.GE24481@phenom.dumpdata.com>
- <3908561D78D1C84285E8C5FCA982C28F170EF914@ORSMSX104.amr.corp.intel.com>
+	Mon, 23 Apr 2012 12:59:25 -0400
+Date: Mon, 23 Apr 2012 18:58:47 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org,
+        "Jean Delvare (PC drivers core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, linux-i2c@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH v3 2/2] i2c/of: Automatically populate i2c mux busses
+ from device tree data.
+Message-ID: <20120423165847.GF27321@pengutronix.de>
+References: <1334265263-13549-1-git-send-email-ddaney.cavm@gmail.com>
+ <1334265263-13549-3-git-send-email-ddaney.cavm@gmail.com>
+ <20120422162008.GA4201@pengutronix.de>
+ <4F9587E8.1050702@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Bqc0IY4JZZt50bUr"
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F170EF914@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <4F9587E8.1050702@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 04:17:14PM +0000, Luck, Tony wrote:
-> > This driver is _not_ doing a strict bit-by-bit copy of 'struct mcinfo'
-> > to 'struct mce'. It is plucking the right bits and setting them in
-> > 'struct mce'.
-> 
-> That isn't any worse that what we currently have ... but what we currently
-> have is ugly, and doing more ugly things just because we did them before
-> generally isn't a winning argument on the mailing lists.
 
-Heh.
+--Bqc0IY4JZZt50bUr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Until about an hour ago I did not know that what is there is considered
-'ugly' and you guys had thoughts of how to make it nicer. That is good.
-And the driver isn't set in stone by only using those function - it can
-change.
+> I can send a new patch set with those corrections, or if you prefer,
+> you could commit these making the changes yourself.
 
-I am not sure if I have stated, but providing this driver in my mind
-is an implicit contract that I, as the sub-maintainer, will keep it
-in lock-step with mce.h cleanups. That is after all, the job of a
-(sub)-maintainer.
+I'll do it, probably faster for both of us :)
+
+Thanks.
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--Bqc0IY4JZZt50bUr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+VikcACgkQD27XaX1/VRthzQCgrsSj0Znag3hwJFNEA9ruNW4x
+5cgAnjDMmscysGhSCPJhl8hZaIOEeks4
+=4sKg
+-----END PGP SIGNATURE-----
+
+--Bqc0IY4JZZt50bUr--
