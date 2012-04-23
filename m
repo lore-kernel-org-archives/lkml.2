@@ -1,53 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab2DWUx0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 16:53:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34716 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab2DWUxY (ORCPT
+	id S1755482Ab2DWU5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 16:57:06 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43835 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755464Ab2DWU5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 16:53:24 -0400
-Date: Mon, 23 Apr 2012 13:53:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nikolaus Voss <n.voss@weinmann.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, a.zummo@towertech.it,
-        grant.likely@secretlab.ca
-Subject: Re: [PATCH] drivers/rtc/rtc-m41t93.c: don't let get_time() reset
- error state
-Message-Id: <20120423135322.5b9b1635.akpm@linux-foundation.org>
-In-Reply-To: <201204231230.q3NCUbbP015327@gatekeeper.vosshq.de>
-References: <201204231230.q3NCUbbP015327@gatekeeper.vosshq.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Apr 2012 16:57:03 -0400
+Date: Mon, 23 Apr 2012 22:58:01 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Abhinav Kochhar <kochhar.abhinav@gmail.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Linaro-mm-sig] [PATCH 0/4] ARM: replace custom consistent dma
+ region with vmalloc
+Message-ID: <20120423205801.GO4935@phenom.ffwll.local>
+Mail-Followup-To: Abhinav Kochhar <kochhar.abhinav@gmail.com>,
+	Marek Szyprowski <m.szyprowski@samsung.com>,
+	Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Arnd Bergmann <arnd@arndb.de>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
+	linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+	linux-arm-kernel@lists.infradead.org
+References: <1334325950-7881-1-git-send-email-m.szyprowski@samsung.com>
+ <CALYq+qSMPoVC5OF+oBbt_i7O+_fmogLCtpqTAqHbsv1TcKrPdA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALYq+qSMPoVC5OF+oBbt_i7O+_fmogLCtpqTAqHbsv1TcKrPdA@mail.gmail.com>
+X-Operating-System: Linux phenom 3.2.0-2-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Apr 2012 12:51:23 +0200
-Nikolaus Voss <n.voss@weinmann.de> wrote:
-
-> If the rtc reports the time might be invalid due to oscillator
-> failure, this flags must not be reset by get_time() as the read
-> operation doesn't make the time valid.
+On Mon, Apr 23, 2012 at 09:02:25PM +0900, Abhinav Kochhar wrote:
+> Hi,
 > 
-> Instead, the flag is reset in set_time() when a valid time is
-> to be written.
+> I see a bottle-neck with the current dma-mapping framework.
+> Issue seems to be with the Virtual memory allocation for access in kernel
+> address space.
+> 
+> 1. In "arch/arm/mm/dma-mapping.c" there is a initialization call to
+> "consistent_init". It reserves size 32MB of Kernel Address space.
+> 2. "consistent_init" allocates memory for kernel page directory and page
+> tables.
+> 
+> 3. "__iommu_alloc_remap" function allocates virtual memory region in kernel
+> address space reserved in step 1.
+> 
+> 4. "__iommu_alloc_remap" function then maps the allocated pages to the
+> address space reserved in step 3.
+> 
+> Since the virtual memory area allocated for mapping these pages in kernel
+> address space is only 32MB,
+> 
+> eventually the calls for allocation and mapping new pages into kernel
+> address space are going to fail once 32 MB is exhausted.
+> 
+> e.g., For Exynos 5 platform Each framebuffer for 1280x800 resolution
+> consumes around 4MB.
+> 
+> We have a scenario where X11 DRI driver would allocate Non-contig pages for
+> all "Pixmaps" through arm_iommu_alloc_attrs" function which will follow the
+> path given above in steps 1 - 4.
+> 
+> Now the problem is the size limitation of 32MB. We may want to allocate
+> more than 8 such buffers when X11 DRI driver is integrated.
+> Possible solutions:
+> 
+> 1. Why do we need to create a kernel virtual address space? Are we going to
+> access these pages in kernel using this address?
+> 
+> If we are not going to access anything in kernel then why do we need to map
+> these pages in kernel address space?. If we can avoid this then the problem
+> can be solved.
+> 
+> OR
+> 
+> 2 Is it used for only book-keeping to retrieve "struct pages" later on for
+> passing/mapping to different devices?
+> 
+> If yes, then we have to find another way.
+> 
+> For "dmabuf" framework one solution could be to add a new member variable
+> "pages" in the exporting driver's local object and use that for
+> passing/mapping to different devices.
+> 
+> Moreover, even if we increase to say 64 MB that would not be enough for our
+> use, we never know how many graphic applications would be spawned by the
+> user.
+> Let me know your opinion on this.
 
-This is rather vague - what is/are "these flags"?  From the patch I
-think you're referring to (the maddeningly undocumented)
-M41T93_FLAG_ST?  If so, I'd suggest something like
+This is more or less the reason I'm so massively opposed to adding vmap to
+dma-buf - you _really_ burn through the vmap space ridiculously quickly on
+32bit platforms with too much memory (i.e. everything with more than 1 G).
 
-: If the rtc reports the time might be invalid due to oscillator failure,
-: the M41T93_FLAG_ST flag must not be reset by get_time() as the read
-: operation doesn't make the time valid.
-: 
-: Instead, the M41T93_FLAG_ST flag is reset in set_time() when a valid time
-: is to be written.
-
-Secondly, you provided no description of the user-visible effects of
-the bug.  Hence I cannot work out which kernel version(s) this patch
-should be merged into.
-
+You need to map/unmap everything page-by-page with all the usual kmap apis
+the kernel provides.
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
