@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab2DWIHL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 04:07:11 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:44655 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754083Ab2DWIHG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 04:07:06 -0400
-From: Xi Wang <xi.wang@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, Keith Packard <keithp@keithp.com>
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, security@kernel.org,
-        Xi Wang <xi.wang@gmail.com>, Chris Wilson <chris@chris-wilson.co.uk>,
-        stable@vger.kernel.org
-Subject: [PATCH v2 2/2] drm/i915: fix integer overflow in i915_gem_do_execbuffer()
-Date: Mon, 23 Apr 2012 04:06:42 -0400
-Message-Id: <1335168402-25174-2-git-send-email-xi.wang@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1335168402-25174-1-git-send-email-xi.wang@gmail.com>
-References: <1335168402-25174-1-git-send-email-xi.wang@gmail.com>
+	id S1754133Ab2DWIN0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 04:13:26 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37815 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752090Ab2DWINZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 04:13:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="144755223"
+Date: Mon, 23 Apr 2012 10:13:16 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "Heasley, Seth" <seth.heasley@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ralston, James D" <james.d.ralston@intel.com>
+Subject: Re: [PATCH 3/3] lpc_sch: Add Intel Centerton Multifunction Device
+ support
+Message-ID: <20120423081316.GA14577@sortiz-mobl>
+References: <1334696962-3642-1-git-send-email-seth.heasley@intel.com>
+ <20120418101802.GD1204@sortiz-mobl>
+ <DEC3922D1904474A8862C7BFF516EA9A41A5CB9B@ORSMSX102.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DEC3922D1904474A8862C7BFF516EA9A41A5CB9B@ORSMSX102.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 32-bit systems, a large args->num_cliprects from userspace via ioctl
-may overflow the allocation size, leading to out-of-bounds access.
+Hi Seth,
 
-This vulnerability was introduced in commit 432e58ed ("drm/i915: Avoid
-allocation for execbuffer object list").
+On Wed, Apr 18, 2012 at 03:59:49PM +0000, Heasley, Seth wrote:
+> Hi Samuel,
+> 
+> >Is the pci_ids.h change already in ? If not, I should take it at the
+> >same time so that we don't break compilation.
+> 
+> It was submitted just prior to my sending this patch.
+Please send it to me as your MFD patch build depends on it and it should be
+committed first.
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: stable@vger.kernel.org
----
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-index 7c50e58..de43194 100644
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -1133,6 +1133,11 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
- 			return -EINVAL;
- 		}
- 
-+		if (args->num_cliprects > UINT_MAX / sizeof(*cliprects)) {
-+			DRM_DEBUG("execbuf with %u cliprects\n",
-+				  args->num_cliprects);
-+			return -EINVAL;
-+		}
- 		cliprects = kmalloc(args->num_cliprects * sizeof(*cliprects),
- 				    GFP_KERNEL);
- 		if (cliprects == NULL) {
+
+> >> @@ -68,7 +69,7 @@ static struct resource wdt_sch_resource = {
+> >>
+> >>  static struct mfd_cell tunnelcreek_cells[] = {
+> >>  	{
+> >> -		.name = "tunnelcreek_wdt",
+> >> +		.name = "ie6xx_wdt",
+> >>  		.num_resources = 1,
+> >>  		.resources = &wdt_sch_resource,
+> >>  	},
+> >This one should be part of your upcoming watchdog driver patch (as a
+> >separate patch that I'd take).
+> 
+> I'm actually not submitting a watchdog patch.  The maintainer already has code for this driver and is converting it to the new watchdog API.  In discussions with him, we agreed to the renaming of the driver, which was submitted for a previous platform.  He'll be committing the new code in the next couple of weeks, so I made this change in anticipation of the driver making it upstream.
+>
+That's reasonable, but I'd prefer this naming change to happen when the
+watchdog patch is submitted as well, as a separate MFD one liner patch.
+
+Cheers,
+Samuel.
+
 -- 
-1.7.5.4
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
