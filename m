@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab2DWNoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 09:44:46 -0400
-Received: from 207-126-122-235.ip.openhosting.com ([207.126.122.235]:41838
-	"EHLO drepperk.user.openhosting.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753786Ab2DWNop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 09:44:45 -0400
-X-Greylist: delayed 2330 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Apr 2012 09:44:45 EDT
-Date: Mon, 23 Apr 2012 09:04:29 -0400
-From: Ulrich Drepper <drepper@akkadia.org>
-Message-Id: <201204231304.q3ND4TFe020805@drepperk.user.openhosting.com>
-To: a.p.zijlstra@chello.nl, acme@ghostprotocols.net, dsahern@gmail.com,
-        eranian@google.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        paulus@samba.org, robert.richter@amd.com
-Subject: [PATCH] Small perf cleanup
+	id S1755436Ab2DWNpq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 09:45:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33373 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753786Ab2DWNpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 09:45:45 -0400
+Date: Mon, 23 Apr 2012 15:45:43 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: =?ISO-8859-15?Q?Richard_Sch=FCtz?= <r.schtz@t-online.de>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtitmuss@logitech.com, ogay@logitech.com, jzanone@logitech.com
+Subject: Re: [PATCH v5 1/1] HID: Add full support for Logitech Unifying
+ receivers
+In-Reply-To: <CAN+gG=Hs-JrnPvfAB2XtrSQiKYw4NFMOKBaj+8n9Xtoq1rmtUA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1204231544220.1856@pobox.suse.cz>
+References: <1316018905-4175-1-git-send-email-nlopezcasad@logitech.com> <4E77A221.1060909@t-online.de> <CAN+gG=EcaMrz2w-cVL-cCwi2NNVJ-NXOpOQpbjyFdCwn5+Bn+w@mail.gmail.com> <alpine.LRH.2.00.1204171027220.11298@twin.jikos.cz>
+ <CAN+gG=Hs-JrnPvfAB2XtrSQiKYw4NFMOKBaj+8n9Xtoq1rmtUA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just noticed this.  The if branch is completely unnecessary since
-'realloc' handles NULL pointers for the first parameter.  This is
-really only a cleanup and submitted mainly to prevent proliferation
-of bad practices.
+On Mon, 23 Apr 2012, Benjamin Tissoires wrote:
 
+> >> here, you'll find a small C program that allows you to do a pairing of
+> >> a new device to a receiver.
+> >>
+> >> compile it with with gcc -o pairing_tool pairing_tool.c
+> >
+> > Could this perhaps be provided into Documentation/ or samples/ somewhere?
+> > I don't think that Logitech themselves do ship pairing application for
+> > Linux, or do they?
+> >
+> well, I don't have any information about an official pairing tool.
+> However, I don't think the kernel is the good place for this stuff.
+> Other people started projects based on this code:
+> https://bitbucket.org/clach04/logitech-unifying-receiver-tools/ for instance.
 
-Signed-off-by: Ulrich Drepper <drepper@gmail.com>
+Thanks for the pointer. I don't think we need to fully include the pairing 
+tool in the kernel, sure.
+But at least description of the pairing magic packet, or link such as the 
+above might be nice to have.
 
- tools/perf/util/header.c |   17 ++++++-----------
- 1 files changed, 6 insertions(+), 11 deletions(-)
+Thanks,
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 4c7c2d7..6e618ba 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -31,21 +31,16 @@ static const char **header_argv;
- 
- int perf_header__push_event(u64 id, const char *name)
- {
-+	struct perf_trace_event_type *nevents;
-+
- 	if (strlen(name) > MAX_EVENT_NAME)
- 		pr_warning("Event %s will be truncated\n", name);
- 
--	if (!events) {
--		events = malloc(sizeof(struct perf_trace_event_type));
--		if (events == NULL)
--			return -ENOMEM;
--	} else {
--		struct perf_trace_event_type *nevents;
-+	nevents = realloc(events, (event_count + 1) * sizeof(*events));
-+	if (nevents == NULL)
-+		return -ENOMEM;
-+	events = nevents;
- 
--		nevents = realloc(events, (event_count + 1) * sizeof(*events));
--		if (nevents == NULL)
--			return -ENOMEM;
--		events = nevents;
--	}
- 	memset(&events[event_count], 0, sizeof(struct perf_trace_event_type));
- 	events[event_count].event_id = id;
- 	strncpy(events[event_count].name, name, MAX_EVENT_NAME - 1);
+-- 
+Jiri Kosina
+SUSE Labs
