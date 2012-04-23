@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab2DWV25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 17:28:57 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:60663 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab2DWV2z (ORCPT
+	id S1755681Ab2DWV3s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 17:29:48 -0400
+Received: from kamaji.grokhost.net ([87.117.218.43]:57339 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755447Ab2DWV3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 17:28:55 -0400
-Date: Mon, 23 Apr 2012 17:28:48 -0400 (EDT)
-Message-Id: <20120423.172848.1733968863825393980.davem@davemloft.net>
-To: smhodgson@solarflare.com
-Cc: netdev@vger.kernel.org, bhutchings@solarflare.com, bruce.w.allan@intel.com,
-        decot@google.com, alexander.h.duyck@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 1/3] Add capability to retrieve plug-in module
- EEPROM
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F9031BF.10106@solarflare.com>
-References: <4F9031BF.10106@solarflare.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 23 Apr 2012 14:28:50 -0700 (PDT)
+	Mon, 23 Apr 2012 17:29:44 -0400
+From: Chris Boot <bootc@bootc.net>
+To: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, nix@esperi.org.uk, carolyn.wyborny@intel.com,
+        Chris Boot <bootc@bootc.net>
+Subject: [PATCH 1/2] e1000e: Disable ASPM L1 on 82574
+Date: Mon, 23 Apr 2012 22:29:37 +0100
+Message-Id: <1335216578-21542-2-git-send-email-bootc@bootc.net>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1335216578-21542-1-git-send-email-bootc@bootc.net>
+References: <1335216578-21542-1-git-send-email-bootc@bootc.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ASPM on the 82574 causes trouble. Currently the driver disables L0s for
+this NIC but only disables L1 if the MTU is >1500. This patch simply
+causes L1 to be disabled regardless of the MTU setting.
 
-You can't just submit three seperate patches each with the same exact
-Subject line.
+Signed-off-by: Chris Boot <bootc@bootc.net>
+Cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
+Cc: Nix <nix@esperi.org.uk>
+Link: https://lkml.org/lkml/2012/3/19/362
+---
+ drivers/net/ethernet/intel/e1000e/82571.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Otherwise someone scanning the commit headers can't figure out what
-is different in each of these changes.
+diff --git a/drivers/net/ethernet/intel/e1000e/82571.c b/drivers/net/ethernet/intel/e1000e/82571.c
+index b3fdc69..c6d95f2 100644
+--- a/drivers/net/ethernet/intel/e1000e/82571.c
++++ b/drivers/net/ethernet/intel/e1000e/82571.c
+@@ -2061,8 +2061,9 @@ const struct e1000_info e1000_82574_info = {
+ 				  | FLAG_HAS_SMART_POWER_DOWN
+ 				  | FLAG_HAS_AMT
+ 				  | FLAG_HAS_CTRLEXT_ON_LOAD,
+-	.flags2			  = FLAG2_CHECK_PHY_HANG
++	.flags2			= FLAG2_CHECK_PHY_HANG
+ 				  | FLAG2_DISABLE_ASPM_L0S
++				  | FLAG2_DISABLE_ASPM_L1
+ 				  | FLAG2_NO_DISABLE_RX,
+ 	.pba			= 32,
+ 	.max_hw_frame_size	= DEFAULT_JUMBO,
+-- 
+1.7.10
 
-There also is no signoff from Ben for patches #2 or #3, did he review
-them?  If so, why didn't he ACK or sign off on it?  If not, why not?
