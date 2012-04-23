@@ -1,134 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab2DWHJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 03:09:26 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45494 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab2DWHJY (ORCPT
+	id S1754006Ab2DWHJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 03:09:29 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:42626 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab2DWHJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 03:09:24 -0400
-Date: Mon, 23 Apr 2012 00:07:36 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Mike Frysinger <vapier@gentoo.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        linaro-kernel@lists.linaro.org, patches@linaro.org, linux-mm@kvack.org
-Subject: [PATCH 1/9] cpu: Introduce clear_tasks_mm_cpumask() helper
-Message-ID: <20120423070736.GA30752@lizard>
-References: <20120423070641.GA27702@lizard>
+	Mon, 23 Apr 2012 03:09:27 -0400
+Date: Mon, 23 Apr 2012 15:10:15 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Rob Lee <rob.lee@linaro.org>, Amit Kucheria <amit.kucheria@linaro.org>,
+        kernel@pengutronix.de, linaro-dev@lists.linaro.org, patches@linaro.org,
+        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
+Message-ID: <20120423071013.GS26306@S2101-09.ap.freescale.net>
+References: <20120417174213.GD3852@pengutronix.de>
+ <CAMXH7KFYA24sPUcwgKfwVLNPA0jWQ-QG02y+SfPNnAqdiv0+gg@mail.gmail.com>
+ <CAMXH7KGgSmvfqUTC1bufBz0QXbt01dHsPo1cbRA9jLj9mGmfjg@mail.gmail.com>
+ <20120419064308.GH3852@pengutronix.de>
+ <20120420020816.GH22219@S2101-09.ap.freescale.net>
+ <CAMXH7KE2RtdNy3G61guZb2uWy3rn267Z3eEVEgN5e==tHHsiuA@mail.gmail.com>
+ <20120423051813.GM26306@S2101-09.ap.freescale.net>
+ <20120423062739.GX3852@pengutronix.de>
+ <20120423065259.GR26306@S2101-09.ap.freescale.net>
+ <20120423065623.GA3852@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120423070641.GA27702@lizard>
+In-Reply-To: <20120423065623.GA3852@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many architectures clear tasks' mm_cpumask like this:
+On Mon, Apr 23, 2012 at 08:56:23AM +0200, Sascha Hauer wrote:
+> On Mon, Apr 23, 2012 at 02:53:01PM +0800, Shawn Guo wrote:
+> > On Mon, Apr 23, 2012 at 08:27:39AM +0200, Sascha Hauer wrote:
+> > > On Mon, Apr 23, 2012 at 01:18:21PM +0800, Shawn Guo wrote:
+> > > > On Sun, Apr 22, 2012 at 11:44:39PM -0500, Rob Lee wrote:
+...
+> > > > > Since device_initcall isn't platform specific, it seems I would still
+> > > > > need a cpu_is_imx6q() function or similiar functionality from a device
+> > > > > tree call.  Or do you have something else in mind that I'm not seeing?
+> > > > > 
+> > > > I guess Sascha is asking for something like the following.
+> > > > 
+> > > > static int __init imx_device_init(void)
+> > > > {
+> > > > 	imx5_device_init();
+> > > > 	imx6_device_init();
+> > > > }
+> > > > device_initcall(imx_device_init)
+> > > > 
+> > > > static int __init imx6_device_init(void)
+> > > > {
+> > > > 	/*
+> > > > 	 * do whatever needs to get done in device_initcall time
+> > > > 	 */
+> > > > }
+> > > 
+> > > The problem is more how we can detect that we are actually running a
+> > > i.MX6 SoC. We could directly ask the devicetree in an initcall or we
+> > > could introduce a cpu_is_mx6() just like we have a macro for all other
+> > > i.MX SoCs.
+> > > 
+> > Oops, my reply was a brain-dead one.  Hmm, then it seems that we have
+> > to introduce cpu_is_mx6() which I tried hard to avoid.  I do not have
+> > a preference between defining a macro and asking device tree.
+> 
+> Since we already have a place in early setup code in which we know that
+> we are running on an i.MX6 I suggest for the sake of the symmetry of the
+> universe that we introduce a cpu_is_mx6.
+> 
+Let me try last time.  What about having a late_initcall hook in
+machine_desc?
 
-	read_lock(&tasklist_lock);
-	for_each_process(p) {
-		if (p->mm)
-			cpumask_clear_cpu(cpu, mm_cpumask(p->mm));
-	}
-	read_unlock(&tasklist_lock);
+Regards,
+Shawn
 
-Depending on the context, the code above may have several problems,
-such as:
+8<---
 
-1. Working with task->mm w/o getting mm or grabing the task lock is
-   dangerous as ->mm might disappear (exit_mm() assigns NULL under
-   task_lock(), so tasklist lock is not enough).
-
-2. Checking for process->mm is not enough because process' main
-   thread may exit or detach its mm via use_mm(), but other threads
-   may still have a valid mm.
-
-This patch implements a small helper function that does things
-correctly, i.e.:
-
-1. We take the task's lock while whe handle its mm (we can't use
-   get_task_mm()/mmput() pair as mmput() might sleep);
-
-2. To catch exited main thread case, we use find_lock_task_mm(),
-   which walks up all threads and returns an appropriate task
-   (with task lock held).
-
-Also, Per Peter Zijlstra's idea, now we don't grab tasklist_lock in
-the new helper, instead we take the rcu read lock. We can do this
-because the function is called after the cpu is taken down and marked
-offline, so no new tasks will get this cpu set in their mm mask.
-
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- include/linux/cpu.h |    1 +
- kernel/cpu.c        |   26 ++++++++++++++++++++++++++
- 2 files changed, 27 insertions(+)
-
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index ee28844..d2ca49f 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -179,6 +179,7 @@ extern void put_online_cpus(void);
- #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
- #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
- #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
-+void clear_tasks_mm_cpumask(int cpu);
- int cpu_down(unsigned int cpu);
- 
- #ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 2060c6e..ecdf499 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -10,6 +10,8 @@
- #include <linux/sched.h>
- #include <linux/unistd.h>
- #include <linux/cpu.h>
-+#include <linux/oom.h>
-+#include <linux/rcupdate.h>
- #include <linux/export.h>
- #include <linux/kthread.h>
- #include <linux/stop_machine.h>
-@@ -171,6 +173,30 @@ void __ref unregister_cpu_notifier(struct notifier_block *nb)
+diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+index d7692ca..0b1c94b 100644
+--- a/arch/arm/include/asm/mach/arch.h
++++ b/arch/arm/include/asm/mach/arch.h
+@@ -43,6 +43,7 @@ struct machine_desc {
+        void                    (*init_irq)(void);
+        struct sys_timer        *timer;         /* system tick timer    */
+        void                    (*init_machine)(void);
++       void                    (*init_late)(void);
+ #ifdef CONFIG_MULTI_IRQ_HANDLER
+        void                    (*handle_irq)(struct pt_regs *);
+ #endif
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index ebfac78..549f036 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -800,6 +800,14 @@ static int __init customize_machine(void)
  }
- EXPORT_SYMBOL(unregister_cpu_notifier);
- 
-+void clear_tasks_mm_cpumask(int cpu)
-+{
-+	struct task_struct *p;
-+
-+	/*
-+	 * This function is called after the cpu is taken down and marked
-+	 * offline, so its not like new tasks will ever get this cpu set in
-+	 * their mm mask. -- Peter Zijlstra
-+	 * Thus, we may use rcu_read_lock() here, instead of grabbing
-+	 * full-fledged tasklist_lock.
-+	 */
-+	rcu_read_lock();
-+	for_each_process(p) {
-+		struct task_struct *t;
-+
-+		t = find_lock_task_mm(p);
-+		if (!t)
-+			continue;
-+		cpumask_clear_cpu(cpu, mm_cpumask(t->mm));
-+		task_unlock(t);
-+	}
-+	rcu_read_unlock();
-+}
-+
- static inline void check_for_tasks(int cpu)
- {
- 	struct task_struct *p;
--- 
-1.7.9.2
+ arch_initcall(customize_machine);
 
++static int __init init_machine_late(void)
++{
++       if (machine_desc->init_late)
++               machine_desc->init_late();
++       return 0;
++}
++late_initcall(init_machine_late);
++
+ #ifdef CONFIG_KEXEC
+ static inline unsigned long long get_total_mem(void)
+ {
+diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+index da6c1d9..0e3640f 100644
+--- a/arch/arm/mach-imx/mach-imx6q.c
++++ b/arch/arm/mach-imx/mach-imx6q.c
+@@ -142,6 +142,7 @@ DT_MACHINE_START(IMX6Q, "Freescale i.MX6 Quad (Device Tree)")
+        .handle_irq     = imx6q_handle_irq,
+        .timer          = &imx6q_timer,
+        .init_machine   = imx6q_init_machine,
++       .init_late      = imx6q_init_late,
+        .dt_compat      = imx6q_dt_compat,
+        .restart        = imx6q_restart,
+ MACHINE_END
