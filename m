@@ -1,152 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab2DWLHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 07:07:34 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36350 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755265Ab2DWLHc (ORCPT
+	id S1755195Ab2DWLJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 07:09:22 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57493 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754833Ab2DWLJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 07:07:32 -0400
+	Mon, 23 Apr 2012 07:09:20 -0400
+Date: Mon, 23 Apr 2012 12:09:13 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        "Milo(Woogyom) Kim" <milo.kim@ti.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] leds: lm3530: fix handling of already enabled regulators
+Message-ID: <20120423110912.GC8318@opensource.wolfsonmicro.com>
+References: <1335107508.6261.3.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1204171027220.11298@twin.jikos.cz>
-References: <1316018905-4175-1-git-send-email-nlopezcasad@logitech.com>
-	<4E77A221.1060909@t-online.de>
-	<CAN+gG=EcaMrz2w-cVL-cCwi2NNVJ-NXOpOQpbjyFdCwn5+Bn+w@mail.gmail.com>
-	<alpine.LRH.2.00.1204171027220.11298@twin.jikos.cz>
-Date: Mon, 23 Apr 2012 13:07:32 +0200
-Message-ID: <CAN+gG=Hs-JrnPvfAB2XtrSQiKYw4NFMOKBaj+8n9Xtoq1rmtUA@mail.gmail.com>
-Subject: Re: [PATCH v5 1/1] HID: Add full support for Logitech Unifying receivers
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: =?ISO-8859-1?Q?Richard_Sch=FCtz?= <r.schtz@t-online.de>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtitmuss@logitech.com, ogay@logitech.com, jzanone@logitech.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gr/z0/N6AeWAPJVB"
+Content-Disposition: inline
+In-Reply-To: <1335107508.6261.3.camel@phoenix>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/04/2012, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Thu, 22 Sep 2011, Benjamin Tissoires wrote:
->
->> Hi Richard,
->>
->> here, you'll find a small C program that allows you to do a pairing of
->> a new device to a receiver.
->>
->> compile it with with gcc -o pairing_tool pairing_tool.c
->
-> Could this perhaps be provided into Documentation/ or samples/ somewhere?
-> I don't think that Logitech themselves do ship pairing application for
-> Linux, or do they?
->
 
-Hi Jiri,
+--gr/z0/N6AeWAPJVB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-well, I don't have any information about an official pairing tool.
-However, I don't think the kernel is the good place for this stuff.
-Other people started projects based on this code:
-https://bitbucket.org/clach04/logitech-unifying-receiver-tools/ for instance.
+On Sun, Apr 22, 2012 at 11:11:48PM +0800, Axel Lin wrote:
 
-Thanks,
-Benjamin
+>  		drvdata->regulator =3D NULL;
+>  		goto err_regulator_get;
+>  	}
+> +	drvdata->enable =3D regulator_is_enabled(drvdata->regulator);
+> =20
 
-> If they don't, it'd be nice to have this at least documented somewhere, so
-> that someone could write a pairing GUI.
->
-> Thanks.
->
->>
->> --------------------------------- file pairing_tool.c
->> ---------------------------------
->> /*
->>  * Copyright 2011 Benjamin Tissoires <benjamin.tissoires@gmail.com>
->>  *
->>  * This program is free software: you can redistribute it and/or modify
->>  * it under the terms of the GNU General Public License as published by
->>  * the Free Software Foundation, either version 3 of the License, or
->>  * (at your option) any later version.
->>  *
->>  * This program is distributed in the hope that it will be useful,
->>  * but WITHOUT ANY WARRANTY; without even the implied warranty of
->>  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->>  * GNU General Public License for more details.
->>  *
->>  * You should have received a copy of the GNU General Public License
->>  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
->>  */
->>
->> #include <linux/input.h>
->> #include <linux/hidraw.h>
->> #include <sys/ioctl.h>
->> #include <fcntl.h>
->> #include <unistd.h>
->> #include <stdio.h>
->> #include <errno.h>
->>
->> #define USB_VENDOR_ID_LOGITECH			(__u32)0x046d
->> #define USB_DEVICE_ID_UNIFYING_RECEIVER		(__s16)0xc52b
->> #define USB_DEVICE_ID_UNIFYING_RECEIVER_2	(__s16)0xc532
->>
->> int main(int argc, char **argv)
->> {
->> 	int fd;
->> 	int res;
->> 	struct hidraw_devinfo info;
->> 	char magic_sequence[] = {0x10, 0xFF, 0x80, 0xB2, 0x01, 0x00, 0x00};
->>
->> 	if (argc == 1) {
->> 		errno = EINVAL;
->> 		perror("No hidraw device given");
->> 		return 1;
->> 	}
->>
->> 	/* Open the Device with non-blocking reads. */
->> 	fd = open(argv[1], O_RDWR|O_NONBLOCK);
->>
->> 	if (fd < 0) {
->> 		perror("Unable to open device");
->> 		return 1;
->> 	}
->>
->> 	/* Get Raw Info */
->> 	res = ioctl(fd, HIDIOCGRAWINFO, &info);
->> 	if (res < 0) {
->> 		perror("error while getting info from device");
->> 	} else {
->> 		if (info.bustype != BUS_USB ||
->> 		    info.vendor != USB_VENDOR_ID_LOGITECH ||
->> 		    (info.product != USB_DEVICE_ID_UNIFYING_RECEIVER &&
->> 		     info.product != USB_DEVICE_ID_UNIFYING_RECEIVER_2)) {
->> 			errno = EPERM;
->> 			perror("The given device is not a Logitech "
->> 				"Unifying Receiver");
->> 			return 1;
->> 		}
->> 	}
->>
->> 	/* Send the magic sequence to the Device */
->> 	res = write(fd, magic_sequence, sizeof(magic_sequence));
->> 	if (res < 0) {
->> 		printf("Error: %d\n", errno);
->> 		perror("write");
->> 	} else if (res == sizeof(magic_sequence)) {
->> 		printf("The receiver is ready to pair a new device.\n"
->> 		"Switch your device on to pair it.\n");
->> 	} else {
->> 		errno = ENOMEM;
->> 		printf("write: %d were written instead of %ld.\n", res,
->> 			sizeof(magic_sequence));
->> 		perror("write");
->> 	}
->> 	close(fd);
->> 	return 0;
->> }
->
-> --
-> Jiri Kosina
-> SUSE Labs
->
->
+This isn't sufficient for what the driver is doing - it also needs to
+enable the regulator.  Regulator enables are reference counted (since
+the regulator can be shared by many device supplies) so if this driver
+doesn't reference the regulator when it's needed then it could get
+powered off.
+
+If this regulator is the actual LED then the current default of assuming
+the regulator is off on boot isn't ideal either as it means that if the
+regulator is enabled on boot then the LED may be left on even though the
+driver thinks it's off.
+
+--gr/z0/N6AeWAPJVB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPlThSAAoJEBus8iNuMP3dkKcP/1MLihvyLBwYw944NwuK1q5S
+p/VioYkkjrvAJZrvP/J5/X0DEXEWj8V8GFnFO+58DkgLDl8HbSRqkNn39M+PconA
+t1h9BV8NPPNpG/hWXOR8GYCmJew8iaosSfpz5t9YySxACox+P0sgqTLtw2rwlrw6
+cw5X1LTcGZIYLr+cP8esru5U33q4WvAJAF+CU5PlcYwrsZml0nn+QDu52MhyTbCH
+RvKIzwuCzeSHwwx/EBf25Ycala10fQr9+B1SxAHJmZICItgu6NtINZ+zSBSp7gNm
+TpW+6uE/uu0Uvr88RnbWX+rsPGQU6CkyZXyYw1rgrfe6MhzLeDt/pUwO2JxiVPgo
+YmQivoxmIUFJrTGlcB1ljs+o9llv9OjBN6XNgSEPiljbJAAwjobKs6CgFFD9N4Fn
+oKobzrGXhDJaBueXzQnJsPo5WVhqNle/wmgQFz+h7YLOTWNp9XSUiaGQ3Qah9sKo
+ei4UDIVTYUIQBaKv1SyENRNBTTckgDYXN7lLio0Dh8Nn0q7tLTF0t1sCIzN+MIva
+Zw0dgDpegc0LjiwzBbeDnUkMX0QO02EvVbFSLjNcVGO5dY4tx2eyW2yvO3Ue8D5/
+RsRC4nfUkSXuXGiT9SLB6TUUogQ30+apolg0uQpJmh5uwYVh8RhiOQ028eTdZ9td
+716hnIXE3Tndbw28EC85
+=6kUH
+-----END PGP SIGNATURE-----
+
+--gr/z0/N6AeWAPJVB--
