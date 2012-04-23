@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab2DWDFR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 23:05:17 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55100 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab2DWDFP (ORCPT
+	id S1753633Ab2DWDIi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 23:08:38 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:50755 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753336Ab2DWDIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 23:05:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1335142545.12741.8.camel@deneb.redhat.com>
-References: <1334958476-6296-1-git-send-email-msalter@redhat.com>
- <CAMjpGUe+CMkHP7owZym_6c2RDvgLzj8t+ZpLBuqQ0euk+ArV2Q@mail.gmail.com>
- <1335129679.12741.4.camel@deneb.redhat.com> <20120422213534.GA6570@merkur.ravnborg.org>
- <1335142545.12741.8.camel@deneb.redhat.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sun, 22 Apr 2012 23:04:53 -0400
-Message-ID: <CAMjpGUd+m5sQbTVUrOi7vZ6q+9JZHPMKoG10ZNyHpXzkGqm7TA@mail.gmail.com>
-Subject: Re: [PATCH] C6X: add support to build with BINFMT_ELF_FDPIC
-To: Mark Salter <msalter@redhat.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 22 Apr 2012 23:08:34 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        hpa@zytor.com, x86@kernel.org, rjw@sisk.pl
+Subject: [GIT PULL/PATCH] gts and bfs fixes (v5).
+Date: Sun, 22 Apr 2012 23:03:16 -0400
+Message-Id: <1335150198-21899-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 22, 2012 at 20:55, Mark Salter wrote:
-> On Sun, 2012-04-22 at 23:35 +0200, Sam Ravnborg wrote:
->> Allow TMS320C6X for a sinel relase along with C6X - and drop it
->> when all users outside your arch has switched over.
->
-> I'm not sure we need to carry TMS320C6X for even a single release. As
-> Mike pointed out, there are few references, actually no references
-> right now, so now would be a good time to correct it. I'll make a patch
-> to do just that.
+Please git pull (or use the patches that follow this email) the following branch:
 
-thx!
--mike
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-x86-for-3.4
+
+Changes since v4 [https://lkml.org/lkml/2012/4/18/396]
+ - Added Acked and Reviewed-by
+v2 [https://lkml.org/lkml/2012/4/9/474]
+ - ditched the assembler version and used a C wrapper
+
+With git commit a2ef5c4fd44ce3922435139393b89f2cce47f576
+"ACPI: Move module parameter gts and bfs to sleep.c" the
+sampling of gts/bfs module parameters flag by acpi_enter_sleep_state
+has been moved. It has been moved out of the inner ACPI code and
+out in the more x86 specific. This means that any caller of
+the exported acpi_enter_sleep_state function needs to provide
+two parameters now: sleep state and the bit flag whether to us _GTS|_BFS.
+
+All of the callers of acpi_enter_sleep_state did that, with
+the exception of the assembler version and as well any
+third-party callers of acpi_enter_sleep_state.
+
+These two patches expose 'wake_sleep_flags' as the product
+of the gts/bfs module parameter invocation. And also use said
+flag in the assembler 'do_suspend_lowlevel()' function.
+
+Konrad Rzeszutek Wilk (2):
+      ACPI: Convert wake_sleep_flags to a value instead of function (v5)
+      x86/acpi: Call acpi_enter_sleep_state via an asmlinkage C function from assembler (v2).
+
+ arch/x86/kernel/acpi/sleep.c     |    4 +++
+ arch/x86/kernel/acpi/sleep.h     |    4 +++
+ arch/x86/kernel/acpi/wakeup_32.S |    4 +--
+ arch/x86/kernel/acpi/wakeup_64.S |    4 +--
+ drivers/acpi/sleep.c             |   52 ++++++++++++++++++++-----------------
+ 5 files changed, 38 insertions(+), 30 deletions(-)
+
+
