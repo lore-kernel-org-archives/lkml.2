@@ -1,91 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725Ab2DWQRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:17:12 -0400
-Received: from mga14.intel.com ([143.182.124.37]:1876 "EHLO mga14.intel.com"
+	id S1753949Ab2DWQRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:17:23 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:36992 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab2DWQRK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:17:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="134250431"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Borislav Petkov <bp@amd64.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "Luck, Tony" <tony.luck@intel.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jan Beulich <jbeulich@suse.com>
-Subject: RE: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
-Thread-Topic: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
-Thread-Index: AQHNIRekE+T8UaKT7UOvaY1icgqRWJaoiIsA
-Date: Mon, 23 Apr 2012 16:17:03 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335168E54@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com>
- <20120421041454.GA29704@phenom.dumpdata.com>
- <20120421104502.GB17005@aftab.osrc.amd.com>
- <20120423021827.GA13840@phenom.dumpdata.com>
- <20120423060921.GA29378@aftab.osrc.amd.com>
-In-Reply-To: <20120423060921.GA29378@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753699Ab2DWQRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 12:17:20 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 4/4] rcu: Ensure that RCU_FAST_NO_HZ timers expire on correct CPU
+Date: Mon, 23 Apr 2012 09:16:01 -0700
+Message-Id: <1335197761-6577-4-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1335197761-6577-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120423161539.GA6467@linux.vnet.ibm.com>
+ <1335197761-6577-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042316-5112-0000-0000-00000756476B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> 
->> This driver is not that much different from the APEI bridge to MCE
->> code - 
->> it just that instead of reading APEI blob data it reads it from an
->> hypercall. 
-> 
-> Let me ask you this: is APEI a virtualization solution of some sort?
-> 
-> No, it is the old windoze RAS crap but I guess Linux has to support it
-> now too through BIOS. And x86 vendors will have to support it too.
-> 
-> So it is piece of the firmware we'd have to deal with too.
-> 
-> Now xen is a whole another deal - it is purely a piece of software.
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-But the role of xen (in fact, including other virtual solution like lguest/kvm) is virtual 'platform', equal to native h/w 'platform'.
+Timers are subject to migration, which can lead to the following
+system-hang scenario when CONFIG_RCU_FAST_NO_HZ=y:
 
-> 
-> Now I keep wondering, why don't you guys simply create your own mcelog
-> ring buffer and interface on the userspace tool side instead of
-> hooking into lowlevel kernel stuff? I mean, the code is there, you
-> simply have to copy it into arch/xen/ or whatever you have there. Why
-> do you have to hook into arch/x86/ instead of doing your own stuff?
-> 
->>> So, my suggestion is to copy the pieces you need and create your
->>> own xen version of /dev/mcelog and add it to dom0 so that there's
->>> no hooking into baremetal code and whenever a dom0 kernel is
->>> running, you can reroute the mcelog userspace tool to read
->>> /dev/xen_mcelog or whatever and not hook into the x86 versions.
+1.	CPU 0 executes synchronize_rcu(), which posts an RCU callback.
 
-That would make distro camp confusing -- i.e. SLES10/11 unifiedly use /dev/mcelog for both native and xen mcelog, w/ almost same dom0 mcelog logic as this patch.
+2.	CPU 0 then goes idle.  It cannot immediately invoke the callback,
+	but there is nothing RCU needs from ti, so it enters dyntick-idle
+	mode after posting a timer.
 
->>> 
->>> Because, if you'd hooked into it, just imagine one fine day, when we
->>> remove mcelog support, what screaming the xen people will be doing
->>> when mcelog doesn't work anymore.
->> 
->> You would have more screaming from the distro camp about removing
->> /dev/mcelog.
-> 
-> How do you know that? Don't you think that we probably would've talked
-> to them already and made preparations for conversion first?
+3.	The timer gets migrated to CPU 1.
 
-I guess Novell Suse doubt this.
+4.	CPU 0 never wakes up, so the synchronize_rcu() never returns, so
+	the system hangs.
 
-Thanks,
-Jinsong
+This commit fixes this problem by using add_timer_on() to ensure that
+the timer remains on the CPU that posted it.
+
+Reported-by: Dipankar Sarma <dipankar@in.ibm.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutree_plugin.h |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 50c1797..90b3de5 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2109,6 +2109,8 @@ static void rcu_cleanup_after_idle(int cpu)
+  */
+ static void rcu_prepare_for_idle(int cpu)
+ {
++	struct timer_list *tp;
++
+ 	/*
+ 	 * If this is an idle re-entry, for example, due to use of
+ 	 * RCU_NONIDLE() or the new idle-loop tracing API within the idle
+@@ -2120,9 +2122,11 @@ static void rcu_prepare_for_idle(int cpu)
+ 	if (!per_cpu(rcu_idle_first_pass, cpu) &&
+ 	    (per_cpu(rcu_nonlazy_posted, cpu) ==
+ 	     per_cpu(rcu_nonlazy_posted_snap, cpu))) {
+-		if (rcu_cpu_has_callbacks(cpu))
+-			mod_timer(&per_cpu(rcu_idle_gp_timer, cpu),
+-				  per_cpu(rcu_idle_gp_timer_expires, cpu));
++		if (rcu_cpu_has_callbacks(cpu)) {
++			tp = &per_cpu(rcu_idle_gp_timer, cpu);
++			tp->expires = per_cpu(rcu_idle_gp_timer_expires, cpu);
++			add_timer_on(tp, cpu);
++		}
+ 		return;
+ 	}
+ 	per_cpu(rcu_idle_first_pass, cpu) = 0;
+@@ -2166,8 +2170,9 @@ static void rcu_prepare_for_idle(int cpu)
+ 		else
+ 			per_cpu(rcu_idle_gp_timer_expires, cpu) =
+ 					   jiffies + RCU_IDLE_LAZY_GP_DELAY;
+-		mod_timer(&per_cpu(rcu_idle_gp_timer, cpu),
+-			  per_cpu(rcu_idle_gp_timer_expires, cpu));
++		tp = &per_cpu(rcu_idle_gp_timer, cpu);
++		tp->expires = per_cpu(rcu_idle_gp_timer_expires, cpu);
++		add_timer_on(tp, cpu);
+ 		per_cpu(rcu_nonlazy_posted_snap, cpu) =
+ 			per_cpu(rcu_nonlazy_posted, cpu);
+ 		return; /* Nothing more to do immediately. */
+-- 
+1.7.8
+
