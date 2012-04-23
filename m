@@ -1,72 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab2DWQ71 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:59:27 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35769 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab2DWQ7Z (ORCPT
+	id S1753703Ab2DWQ7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:59:31 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:46527 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300Ab2DWQ73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:59:25 -0400
-Date: Mon, 23 Apr 2012 18:58:47 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        "Jean Delvare (PC drivers core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>, linux-i2c@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH v3 2/2] i2c/of: Automatically populate i2c mux busses
- from device tree data.
-Message-ID: <20120423165847.GF27321@pengutronix.de>
-References: <1334265263-13549-1-git-send-email-ddaney.cavm@gmail.com>
- <1334265263-13549-3-git-send-email-ddaney.cavm@gmail.com>
- <20120422162008.GA4201@pengutronix.de>
- <4F9587E8.1050702@gmail.com>
+	Mon, 23 Apr 2012 12:59:29 -0400
+Date: Mon, 23 Apr 2012 12:54:01 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "Liu, Jinsong" <jinsong.liu@intel.com>, tony.luck@intel.com,
+        x86@kernel.org, linux-edac@vger.kernel.org,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
+Message-ID: <20120423165401.GB22364@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com>
+ <20120421041454.GA29704@phenom.dumpdata.com>
+ <20120421104502.GB17005@aftab.osrc.amd.com>
+ <20120423021827.GA13840@phenom.dumpdata.com>
+ <20120423060921.GA29378@aftab.osrc.amd.com>
+ <20120423150657.GA24481@phenom.dumpdata.com>
+ <20120423155957.GA6147@aftab.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Bqc0IY4JZZt50bUr"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F9587E8.1050702@gmail.com>
+In-Reply-To: <20120423155957.GA6147@aftab.osrc.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > > Now xen is a whole another deal - it is purely a piece of software.
+> > 
+> > Perfect. Software is more elastic than hardware - so the Xen ABI
+> > for the MCE can be changed then to reflect the new format if required.
+> 
+> And this "elastic" piece of software is yet another thing I have to deal
+> with when working on MCE which is strictly doing _hardware_ support. And
+> I don't want to do that - if you hook in the mce_log() interface, you're
+> practically becoming yet another user of it which I have to account for
+> when doing changes to the core MCE code.
 
---Bqc0IY4JZZt50bUr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Or you can delegate.
+> 
+> [..]
+> 
+> > Delegate testing to sub-maintainers. In this case that would be me and
+> > Liu.
+> 
+> Ok, just purely hypothetically, what happens if there's no one to update
+> this code anymore? What if Oracle or Citrix or whoever it is, is not
+> interested in maintaining xen anymore, or those drivers or whatever?
+> I'm stuck with users of this which I can't shake off because there's no
+> upstream development. Oh, and then there's the distros which already
+> have their installs and they'd never update their setup because it works
+> and why touch it... and so on and so on...
 
-> I can send a new patch set with those corrections, or if you prefer,
-> you could commit these making the changes yourself.
+In case I get hit by a bus and nobody steps up from the Xen community shortly
+after that or Intel is not interested anymore in this driver, then you:
+ 1) mark it as CONFIG_BROKEN
+ 2) wait some time until somebody elects themselves as the maintainer.
+ 3) And if that does not become true, then you do 'git rm ..'. 
 
-I'll do it, probably faster for both of us :)
+Distros are in the business of providing maintainship services. That is
+after all how they make their money. The Kconfig by default is set to 'n'
+and the wording can be written further to inhibit folks from using.
 
-Thanks.
+But I do follow Fedora Core and Ubuntu bugs that have the word 'xen' in
+them to fix the issues they encounter. You are probably doing the same
+thing (s/xen/mce)- so why don't you point the sub-maintainer to the
+distro bug so he/she can fix it?
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
---Bqc0IY4JZZt50bUr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+.. snip..
+> > I am not sure I see why we cannot fix the practical problems as they pop
+> > up?
+> 
+> See above.
+> 
+> [..]
+> 
+> > > hook into arch/x86/ instead of doing your own stuff?
+> > 
+> > I think what you are suggesting is to _not_ reuse existing APIs. That
+> > seems counter-intuive to general software development. There are
+> > exceptions of course - when the existing API needs to change a lot
+> > (or needs to be thrown out), and there is this one little driver that
+> > keeps on using the old interface and can't change - at that point I can
+> > see the purpose of forking it. But until then - using existing APIs is
+> > the way to go.
+> 
+> I just love it when guys left and right start teaching me about stuff,
+> it's like I even begged for it...
+> 
+> You're not reusing the existing API because mce_log is not an API to
+> anything - it is an internal x86 MCE logging thing to put a struct mce
+> into a static ring buffer.
+> 
+> The API is /dev/mcelog and there you should interface, not hook into
+> internal stuff and cripple it from developing any further.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I mentioned on a couple of occasions that we would be keeping the implementation
+in lock-step and testing as neccessary. And if you choose to omit this
+driver and asked us to develop the appropiate patch, we can surely
+do that too.
 
-iEYEARECAAYFAk+VikcACgkQD27XaX1/VRthzQCgrsSj0Znag3hwJFNEA9ruNW4x
-5cgAnjDMmscysGhSCPJhl8hZaIOEeks4
-=4sKg
------END PGP SIGNATURE-----
+> 
+> [snip more senseless drivel]
+> 
+> > > Now, with your own buffer solution, nothing breaks and all is happy,
+> > > a win-win, if you wish. I think this is much simpler and easier a
+> > > solution.
+> > 
+> > Not sure what you mean by 'own buffer solution'. Are you talking about
+> > using the trace_mce_record or the ras_printk instead of the mce_log?
+> > I would think that is the job of the MCE decoders?
+> 
+> No, I mean to copy the mce_log() code along with the functions that
+> create the char device /dev/mcelog - mce_chrdev_*.
+> 
+> Btw, you'd probably be done with it if you'd taken the time to do that
+> instead of arguing your cause.
 
---Bqc0IY4JZZt50bUr--
+I am not advocating that we stick a ground in stone and say: "this is
+how mce_log(x)" from now on MUST be used. If that is impression left by
+my wording - my mistake. I would want the driver to change to adhere
+to the new function calls/structures.
+
+> 
+> > Please keep in mind that this driver is not trying to decode anything -
+> 
+> I know that.
+> 
+> > it just lifting raw events, massaging them a bit, and sending them
+> > downstream. Similar to how the APEI does it.
+> 
+> Please stop talking about APEI - I told you why it doesn't apply here in
+> a previous mail.
+
+Right, b/c it is hardware and is set in stone.
+> 
+> -- 
+> Regards/Gruss,
+> Boris.
+> 
+> Advanced Micro Devices GmbH
+> Einsteinring 24, 85609 Dornach
+> GM: Alberto Bozzo
+> Reg: Dornach, Landkreis Muenchen
+> HRB Nr. 43632 WEEE Registernr: 129 19551
