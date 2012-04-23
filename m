@@ -1,57 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab2DWLef (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 07:34:35 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49618 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab2DWLed (ORCPT
+	id S1753302Ab2DWLhf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 07:37:35 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12241 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab2DWLhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 07:34:33 -0400
-Date: Mon, 23 Apr 2012 12:34:25 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Jonas Aberg <jonas.aberg@stericsson.com>,
-        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 5/9 v2] gpio/nomadik: use ioremap() instead of static
-	mappings
-Message-ID: <20120423113425.GN24211@n2100.arm.linux.org.uk>
-References: <1335180632-21381-1-git-send-email-linus.walleij@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335180632-21381-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 23 Apr 2012 07:37:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 23 Apr 2012 04:37:33 -0700
+From: Hiroshi DOYU <hdoyu@nvidia.com>
+To: hdoyu@nvidia.com
+Cc: linux-tegra@vger.kernel.org, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] ARM: tegra: Add AHB driver
+Date: Mon, 23 Apr 2012 14:37:21 +0300
+Message-Id: <1335181043-15348-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 01:30:32PM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> We were using a custom io_p2v() (physical-to-virtual) translation
-> macro, but it's fully possible to just ioremap() this memory
-> now, so skip use of static addresses altogether.
-> 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/gpio/gpio-nomadik.c |   14 +++++++++++---
->  1 file changed, 11 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-nomadik.c b/drivers/gpio/gpio-nomadik.c
-> index 7b45d88..bddc3dd 100644
-> --- a/drivers/gpio/gpio-nomadik.c
-> +++ b/drivers/gpio/gpio-nomadik.c
-> @@ -28,7 +28,6 @@
->  
->  #include <plat/pincfg.h>
->  #include <plat/gpio-nomadik.h>
-> -#include <mach/hardware.h>
->  #include <asm/gpio.h>
+The AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
+High-performance Bus (AHB) architecture.
 
-While you're here, please replace this with linux/gpio.h - which will give
-us one less direct dependency on asm/ or mach/ includes from drivers.
+Both Tegra20/30 have this.
+
+Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+---
+ arch/arm/mach-tegra/Makefile    |    1 +
+ arch/arm/mach-tegra/ahb.h       |   19 ++++
+ arch/arm/mach-tegra/common.c    |    3 +
+ arch/arm/mach-tegra/tegra-ahb.c |  212 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 235 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+index 2eb4445..f6c8237 100644
+--- a/arch/arm/mach-tegra/Makefile
++++ b/arch/arm/mach-tegra/Makefile
+@@ -1,3 +1,4 @@
++obj-y                                   += tegra-ahb.o
+ obj-y                                   += board-pinmux.o
+ obj-y                                   += common.o
+ obj-y                                   += devices.o
+diff --git a/arch/arm/mach-tegra/ahb.h b/arch/arm/mach-tegra/ahb.h
+new file mode 100644
+index 0000000..21cd82c
+--- /dev/null
++++ b/arch/arm/mach-tegra/ahb.h
+@@ -0,0 +1,19 @@
++/*
++ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ */
++
++#ifndef __AHB_H__
++#define __AHB_H__
++
++extern void tegra_ahb_gizmo_init(void);
++
++#endif	/* __AHB_H__ */
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index c50f2ee..ccaa5a6 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -33,6 +33,7 @@
+ #include "clock.h"
+ #include "fuse.h"
+ #include "pmc.h"
++#include "ahb.h"
+ 
+ /*
+  * Storage for debug-macro.S's state.
+@@ -122,6 +123,7 @@ void __init tegra20_init_early(void)
+ 	tegra_init_cache(0x331, 0x441);
+ 	tegra_pmc_init();
+ 	tegra_powergate_init();
++	tegra_ahb_gizmo_init();
+ }
+ #endif
+ #ifdef CONFIG_ARCH_TEGRA_3x_SOC
+@@ -132,5 +134,6 @@ void __init tegra30_init_early(void)
+ 	tegra_init_cache(0x441, 0x551);
+ 	tegra_pmc_init();
+ 	tegra_powergate_init();
++	tegra_ahb_gizmo_init();
+ }
+ #endif
+diff --git a/arch/arm/mach-tegra/tegra-ahb.c b/arch/arm/mach-tegra/tegra-ahb.c
+new file mode 100644
+index 0000000..411b51f
+--- /dev/null
++++ b/arch/arm/mach-tegra/tegra-ahb.c
+@@ -0,0 +1,212 @@
++/*
++ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
++ * Copyright (C) 2011 Google, Inc.
++ *
++ * Author:
++ *	Jay Cheng <jacheng@nvidia.com>
++ *	James Wylder <james.wylder@motorola.com>
++ *	Benoit Goby <benoit@android.com>
++ *	Colin Cross <ccross@android.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/io.h>
++#include <linux/syscore_ops.h>
++
++#include <mach/iomap.h>
++
++#define AHB_ARBITRATION_DISABLE		0x00
++#define AHB_ARBITRATION_PRIORITY_CTRL	0x04
++#define   AHB_PRIORITY_WEIGHT(x)	(((x) & 0x7) << 29)
++#define   PRIORITY_SELECT_USB BIT(6)
++#define   PRIORITY_SELECT_USB2 BIT(18)
++#define   PRIORITY_SELECT_USB3 BIT(17)
++
++#define AHB_GIZMO_AHB_MEM		0x0c
++#define   ENB_FAST_REARBITRATE BIT(2)
++#define   DONT_SPLIT_AHB_WR     BIT(7)
++
++#define AHB_GIZMO_APB_DMA		0x10
++#define AHB_GIZMO_IDE			0x18
++#define AHB_GIZMO_USB			0x1c
++#define AHB_GIZMO_AHB_XBAR_BRIDGE	0x20
++#define AHB_GIZMO_CPU_AHB_BRIDGE	0x24
++#define AHB_GIZMO_COP_AHB_BRIDGE	0x28
++#define AHB_GIZMO_XBAR_APB_CTLR		0x2c
++#define AHB_GIZMO_VCP_AHB_BRIDGE	0x30
++#define AHB_GIZMO_NAND			0x3c
++#define AHB_GIZMO_SDMMC4		0x44
++#define AHB_GIZMO_XIO			0x48
++#define AHB_GIZMO_BSEV			0x60
++#define AHB_GIZMO_BSEA			0x70
++#define AHB_GIZMO_NOR			0x74
++#define AHB_GIZMO_USB2			0x78
++#define AHB_GIZMO_USB3			0x7c
++#define   IMMEDIATE	BIT(18)
++
++#define AHB_GIZMO_SDMMC1		0x80
++#define AHB_GIZMO_SDMMC2		0x84
++#define AHB_GIZMO_SDMMC3		0x88
++#define AHB_MEM_PREFETCH_CFG_X		0xd8
++#define AHB_ARBITRATION_XBAR_CTRL	0xdc
++#define AHB_MEM_PREFETCH_CFG3		0xe0
++#define AHB_MEM_PREFETCH_CFG4		0xe4
++#define AHB_MEM_PREFETCH_CFG1		0xec
++#define AHB_MEM_PREFETCH_CFG2		0xf0
++#define   PREFETCH_ENB	BIT(31)
++#define   MST_ID(x)	(((x) & 0x1f) << 26)
++#define   AHBDMA_MST_ID	MST_ID(5)
++#define   USB_MST_ID	MST_ID(6)
++#define   USB2_MST_ID	MST_ID(18)
++#define   USB3_MST_ID	MST_ID(17)
++#define   ADDR_BNDRY(x)	(((x) & 0xf) << 21)
++#define   INACTIVITY_TIMEOUT(x)	(((x) & 0xffff) << 0)
++
++#define AHB_ARBITRATION_AHB_MEM_WRQUE_MST_ID	0xf8
++
++static inline unsigned long gizmo_readl(unsigned long offset)
++{
++	return readl(IO_TO_VIRT(TEGRA_AHB_GIZMO_BASE + offset));
++}
++
++static inline void gizmo_writel(unsigned long value, unsigned long offset)
++{
++	writel(value, IO_TO_VIRT(TEGRA_AHB_GIZMO_BASE + offset));
++}
++
++#ifdef CONFIG_PM
++
++struct __ahb_gizmo {
++	unsigned long offset;
++	unsigned long data;
++};
++
++static struct __ahb_gizmo ahb_gizmo[] = {
++	{ .offset = AHB_ARBITRATION_DISABLE, },
++	{ .offset = AHB_ARBITRATION_PRIORITY_CTRL, },
++	{ .offset = AHB_GIZMO_AHB_MEM, },
++	{ .offset = AHB_GIZMO_APB_DMA, },
++	{ .offset = AHB_GIZMO_IDE, },
++	{ .offset = AHB_GIZMO_USB, },
++	{ .offset = AHB_GIZMO_AHB_XBAR_BRIDGE, },
++	{ .offset = AHB_GIZMO_CPU_AHB_BRIDGE, },
++	{ .offset = AHB_GIZMO_COP_AHB_BRIDGE, },
++	{ .offset = AHB_GIZMO_XBAR_APB_CTLR, },
++	{ .offset = AHB_GIZMO_VCP_AHB_BRIDGE, },
++	{ .offset = AHB_GIZMO_NAND, },
++	{ .offset = AHB_GIZMO_SDMMC4, },
++	{ .offset = AHB_GIZMO_XIO, },
++	{ .offset = AHB_GIZMO_BSEV, },
++	{ .offset = AHB_GIZMO_BSEA, },
++	{ .offset = AHB_GIZMO_NOR, },
++	{ .offset = AHB_GIZMO_USB2, },
++	{ .offset = AHB_GIZMO_USB3, },
++	{ .offset = AHB_GIZMO_SDMMC1, },
++	{ .offset = AHB_GIZMO_SDMMC2, },
++	{ .offset = AHB_GIZMO_SDMMC3, },
++	{ .offset = AHB_MEM_PREFETCH_CFG_X, },
++	{ .offset = AHB_ARBITRATION_XBAR_CTRL, },
++	{ .offset = AHB_MEM_PREFETCH_CFG3, },
++	{ .offset = AHB_MEM_PREFETCH_CFG4, },
++	{ .offset = AHB_MEM_PREFETCH_CFG1, },
++	{ .offset = AHB_MEM_PREFETCH_CFG2, },
++	{ .offset = AHB_ARBITRATION_AHB_MEM_WRQUE_MST_ID, },
++};
++
++static int tegra_ahbgizmo_suspend(void)
++{
++	int i;
++	for (i = 0; i < ARRAY_SIZE(ahb_gizmo); i++)
++		ahb_gizmo[i].data = gizmo_readl(ahb_gizmo[i].offset);
++	return 0;
++}
++
++static void tegra_ahbgizmo_resume(void)
++{
++	int i;
++	for (i = 0; i < ARRAY_SIZE(ahb_gizmo); i++)
++		gizmo_writel(ahb_gizmo[i].data, ahb_gizmo[i].offset);
++	return;
++}
++
++#else
++#define tegra_ahbgizmo_suspend NULL
++#define tegra_ahbgizmo_resume NULL
++#endif	/* CONFIG_PM */
++
++static struct syscore_ops tegra_ahbgizmo_syscore_ops = {
++	.suspend = tegra_ahbgizmo_suspend,
++	.resume = tegra_ahbgizmo_resume,
++};
++
++void __init tegra_ahb_gizmo_init(void)
++{
++	unsigned long val;
++
++	val = gizmo_readl(AHB_GIZMO_AHB_MEM);
++	val |= ENB_FAST_REARBITRATE | IMMEDIATE | DONT_SPLIT_AHB_WR;
++	gizmo_writel(val, AHB_GIZMO_AHB_MEM);
++
++	val = gizmo_readl(AHB_GIZMO_USB);
++	val |= IMMEDIATE;
++	gizmo_writel(val, AHB_GIZMO_USB);
++
++	val = gizmo_readl(AHB_GIZMO_USB2);
++	val |= IMMEDIATE;
++	gizmo_writel(val, AHB_GIZMO_USB2);
++
++	val = gizmo_readl(AHB_GIZMO_USB3);
++	val |= IMMEDIATE;
++	gizmo_writel(val, AHB_GIZMO_USB3);
++
++	val = gizmo_readl(AHB_ARBITRATION_PRIORITY_CTRL);
++	val |= PRIORITY_SELECT_USB |
++		PRIORITY_SELECT_USB2 |
++		PRIORITY_SELECT_USB3 |
++		AHB_PRIORITY_WEIGHT(7);
++	gizmo_writel(val, AHB_ARBITRATION_PRIORITY_CTRL);
++
++	val = gizmo_readl(AHB_MEM_PREFETCH_CFG1);
++	val &= ~MST_ID(~0);
++	val |= PREFETCH_ENB |
++		AHBDMA_MST_ID |
++		ADDR_BNDRY(0xc) |
++		INACTIVITY_TIMEOUT(0x1000);
++	gizmo_writel(val, AHB_MEM_PREFETCH_CFG1);
++
++	val = gizmo_readl(AHB_MEM_PREFETCH_CFG2);
++	val &= ~MST_ID(~0);
++	val |= PREFETCH_ENB |
++		USB_MST_ID |
++		ADDR_BNDRY(0xc) |
++		INACTIVITY_TIMEOUT(0x1000);
++	gizmo_writel(val, AHB_MEM_PREFETCH_CFG2);
++
++	val = gizmo_readl(AHB_MEM_PREFETCH_CFG3);
++	val &= ~MST_ID(~0);
++	val |= PREFETCH_ENB |
++		USB3_MST_ID |
++		ADDR_BNDRY(0xc) |
++		INACTIVITY_TIMEOUT(0x1000);
++	gizmo_writel(val, AHB_MEM_PREFETCH_CFG3);
++
++	val = gizmo_readl(AHB_MEM_PREFETCH_CFG4);
++	val &= ~MST_ID(~0);
++	val |= PREFETCH_ENB |
++		USB2_MST_ID |
++		ADDR_BNDRY(0xc) |
++		INACTIVITY_TIMEOUT(0x1000);
++	gizmo_writel(val, AHB_MEM_PREFETCH_CFG4);
++
++	register_syscore_ops(&tegra_ahbgizmo_syscore_ops);
++}
+-- 
+1.7.5.4
+
