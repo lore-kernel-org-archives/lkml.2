@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab2DWPJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 11:09:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48573 "EHLO
+	id S1753988Ab2DWPL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 11:11:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48592 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557Ab2DWPJN convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751840Ab2DWPL2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 11:09:13 -0400
-Message-ID: <1335193719.28150.171.camel@twins>
-Subject: Re: Our failure on tracing tools unification (Was: Re: [RFC][PATCH
- 00/15] tools: Unify perf and trace-cmd trace event format parsing v2)
+	Mon, 23 Apr 2012 11:11:28 -0400
+Message-ID: <1335193863.28150.172.camel@twins>
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
 From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
-Date: Mon, 23 Apr 2012 17:08:39 +0200
-In-Reply-To: <20120423144743.GB29985@somewhere>
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
-	 <20120423144743.GB29985@somewhere>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Date: Mon, 23 Apr 2012 17:11:03 +0200
+In-Reply-To: <4F956A95.5030304@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	  <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
+	 <1335182113.28150.132.camel@twins> <4F956A95.5030304@gmail.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -33,19 +33,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 16:47 +0200, Frederic Weisbecker wrote:
-> Ingo doesn't seem to want this library outside perf in order to avoid
-> the fragmentation of the efforts on tracing tools.
+On Mon, 2012-04-23 at 16:43 +0200, Juri Lelli wrote:
+> 
+> >  From what I can see there are no constraints on the values in
+> > __setparam_dl() so the above left term can be constructed to be an
+> > overflow.
+> >
+> 
+> Yes, could happen :-\.
+> 
+> > Ideally we'd use u128 here, but I don't think people will let us :/
+> >
+> 
+> Do we need to do something about that? If we cannot go for bigger space
+> probably limit dl_deadline (or warn the user).. 
 
-I really don't see the point.. parsing /debug/tracing/events/*/format
-gunk really is separate, furthermore things like powertop et al already
-are separate projects and really need this lib.
+Depends on what happens, if only this task gets screwy, no real problem,
+they supplied funny input, they get funny output. If OTOH it affects
+other tasks we should do something.
 
-I mean, who gives a bother where all that crap lives, if its in the
-kernel tree its all close enough to keep an eye on.. its not like
-kernel/events/ and kernel/trace/ are the same directory.
-
-Ingo, please could you lighten up and let people get stuff done? Merging
-the two implementations, wherever the result lives, is a better
-situation that two dis-joint implementations. So either let Frederic
-work or do it yourself but don't hand-wave and road-block stuff.
+Ideally we'd avoid the situation by some clever maths, second best would
+be rejecting the parameters up front.
