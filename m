@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab2DWLRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 07:17:20 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48143 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751957Ab2DWLRT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 07:17:19 -0400
+	id S1752146Ab2DWLSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 07:18:40 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64655 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab2DWLSj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 07:18:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <1335178132.28150.117.camel@twins>
-References: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
-	<1335178132.28150.117.camel@twins>
-Date: Mon, 23 Apr 2012 13:17:17 +0200
-Message-ID: <CABPqkBQ2w3RLRwq3fsaJQ_L=_=H+5kounBeuxUv_fk1ksimTOQ@mail.gmail.com>
-Subject: Re: [BUG] perf stat: useless output for raw events with new event parser
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@elte.hu,
-        David Ahern <dsahern@gmail.com>,
-        Robert Richter <robert.richter@amd.com>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <20120420162710.GA6416@kroah.com>
+References: <20120420033209.GA17930@kroah.com>
+	<1334898987-7800-1-git-send-email-myungjoo.ham@samsung.com>
+	<20120420162710.GA6416@kroah.com>
+Date: Mon, 23 Apr 2012 20:18:38 +0900
+X-Google-Sender-Auth: qqoOj5fhLcIVm1j-AH14XziBlr4
+Message-ID: <CAJ0PZbQu6NCo=nYWr_D3yMF5ypaz_SDr6mFWxyN04VO13VmW=Q@mail.gmail.com>
+Subject: Re: [PATCH v8 resend 0/6] Introduce External Connector Class (extcon)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        John Stultz <john.stultz@linaro.org>, cw00.choi@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 12:48 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2012-04-23 at 12:45 +0200, Stephane Eranian wrote:
->> Hi,
->>
->> With the new event parser, one can express raw events field by field:
->>
->> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
->>
->> The problem with this is that the output of perf stat becomes useless:
->>
->> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
->> noploop for 1 seconds
->>
->>  Performance counter stats for 'noploop 1':
->>
->>         2395038678 pmu
->>             10787 pmu
->>                        ^^^^^^
->>        1.000802603 seconds time elapsed
+On Sat, Apr 21, 2012 at 1:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Apr 20, 2012 at 02:16:21PM +0900, MyungJoo Ham wrote:
+>> In order to address such issues, Android kernel's "Switch" class seems to
+>> be a good basis and we have implemented "Multistate Switch Class" based on
+>> it. The "Switch" class code of Android kernel is GPL as well.
 >
-> Yeah, I already complained about that.. Jolsa proposed adding a name=
-> parameter so you could explicitly name your events. I think I've seen a
-> patch adding that, but can't atm seem to locate it.
+> Ok, I've applied these patches to my driver-core tree, thanks so much
+> for working to clean this up and get it merged, very nice job.
 >
-If the proposed solution is to add a pseudo field called "name", then I don't
-see the point of this new parser compared to directly using my libpfm4
-library which already allows:
+> Now, does this mean I can delete the drivers/staging/android/switch/
+> directory from the tree as well?
 
- perf stat -e inst_retired:any,wsm_unc:unc_cycles:u ...
-And
- perf record -e instr_retired:period=200000,cpu_clk_unhalted:freq=100 ...
+Yes, I think we can now delete switch directory because switch_gpio.c
+was the only driver in the directory and it also appears with extcon.
+In fact, there was an RFC patch to do so w/ v7 patchset.
 
-If you have to make up names, you might as well, use the actual PMU
-event names, but if you do so, why would you have to bother breaking
-down the encoding into fields?
+I'll send the patch as a reply to this message.
+
+
+Cheers!
+MyungJoo.
+
+>
+> If so, I will be glad to do that.
+>
+> If not, what is left to do in order for it to be removed?
+>
+> thanks,
+>
+> greg k-h
+
+
+
+
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
