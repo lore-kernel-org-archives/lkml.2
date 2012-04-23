@@ -1,72 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab2DWPNK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 11:13:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:35657 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753396Ab2DWPNH (ORCPT
+	id S1754327Ab2DWPNy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 11:13:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38403 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452Ab2DWPNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 11:13:07 -0400
-Date: Mon, 23 Apr 2012 11:13:06 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Wang YanQing <udknight@gmail.com>
-cc: Anil Nair <anilcoll90@gmail.com>, Greg KH <greg@kroah.com>,
-        lkml <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [RFC]Is usb port number fixed?
-In-Reply-To: <20120423015212.GA7547@udknight>
-Message-ID: <Pine.LNX.4.44L0.1204231109380.1612-100000@iolanthe.rowland.org>
+	Mon, 23 Apr 2012 11:13:52 -0400
+Date: Mon, 23 Apr 2012 23:13:27 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <lenb@kernel.org>, Lin Ming <ming.m.lin@intel.com>,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
+Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
+Message-ID: <20120423151327.GA4019@fedora>
+References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
+ <20120423010929.GA13246@ladygaga>
+ <201204231343.03382.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201204231343.03382.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Apr 2012, Wang YanQing wrote:
-
-> On Sun, Apr 22, 2012 at 08:47:24AM -0400, Alan Stern wrote:
-> > On Sun, 22 Apr 2012, Anil Nair wrote:
+On Mon, Apr 23, 2012 at 01:43:03PM +0200, Rafael J. Wysocki wrote:
+> On Monday, April 23, 2012, Aaron Lu wrote:
+> > Hi Rafael and Ming,
 > > 
-> > > The port number comes from root hub managed by the host controller. Its
-> > > fixed dynamically during enumeration, and can change.
-> > > Please correct me if i am wrong.
+> > Do you have any more comments on this patch?
+> > If not, can I have your ack? Thanks.
 > > 
-> > You are indeed wrong.  Port numbers are not fixed dynamically and they 
-> > cannot change.
-> Right?
-
-Right.
-
-> Could you pin out the codes in kernel?
-
-I don't understand the question.  What code in the kernel do you want 
-to see?
-
-> > On the other hand, bus numbers _are_ assigned dynamically and they can 
-> > (and do) change.
+> > -Aaron
 > > 
-> Indeed, I never meat the situation lspci output different bus number on the same machine.
-> Any more comment?
+> > On Sun, Apr 01, 2012 at 02:18:30AM +0800, Aaron Lu wrote:
+> > > When entering D3 Cold from a higher device state, evaluate _PS3 first
+> > > and then make the proper power transition.
+> > > This is used to solve the ZPODD problem on AMD's platform, _PS3 on such
+> > > platforms will power off the ODD device and thus make the device enter
+> > > D3 cold state.
+> > > 
+> > > Signed-off-by: Aaron Lu <aaron.lu@amd.com>
+> > > Cc: Andiry Xu <andiry.xu@amd.com>
+> > > Cc: Alex He <alex.he@amd.com>
+> > > ---
+> > >  drivers/acpi/bus.c |   17 ++++++++++++++---
+> > >  1 file changed, 14 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+> > > index 3263b68..68e593f 100644
+> > > --- a/drivers/acpi/bus.c
+> > > +++ b/drivers/acpi/bus.c
+> > > @@ -227,6 +227,8 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+> > >  	int result = 0;
+> > >  	acpi_status status = AE_OK;
+> > >  	char object_name[5] = { '_', 'P', 'S', '0' + state, '\0' };
+> > > +	struct acpi_device_power_state *ps;
+> > > +	u8 explicit_set;
+> > >  
+> > >  	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
+> > >  		return -EINVAL;
+> > > @@ -239,7 +241,8 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+> > >  		return 0;
+> > >  	}
+> > >  
+> > > -	if (!device->power.states[state].flags.valid) {
+> > > +	ps = &device->power.states[state];
+> > > +	if (!ps->flags.valid) {
+> > >  		printk(KERN_WARNING PREFIX "Device does not support D%d\n", state);
+> > >  		return -ENODEV;
+> > >  	}
+> > > @@ -263,7 +266,7 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+> > >  			if (result)
+> > >  				goto end;
+> > >  		}
+> > > -		if (device->power.states[state].flags.explicit_set) {
+> > > +		if (ps->flags.explicit_set) {
+> > >  			status = acpi_evaluate_object(device->handle,
+> > >  						      object_name, NULL, NULL);
+> > >  			if (ACPI_FAILURE(status)) {
+> > > @@ -272,7 +275,15 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+> > >  			}
+> > >  		}
+> > >  	} else {
+> > > -		if (device->power.states[state].flags.explicit_set) {
+> > > +		/* If state is D3 Cold, try to evaluate _PS3 first */
+> > > +		if (state == ACPI_STATE_D3_COLD) {
+> > > +			explicit_set = (ps - 1)->flags.explicit_set;
+> > > +			object_name[3] -= 1;
+> > > +		}
+> > > +		else {
+> > > +			explicit_set = ps->flags.explicit_set;
+> > > +		}
+> 
+> I really don't like this.  I think you should modify acpi_bus_get_power_flags(),
+> on top of the recent Lin Ming's patch, so that it sets flags.explicit_set for
+> D3_COLD if _PS3 is present and _PR3 is not.
+> 
 
-Try unloading ehci-hcd, uhci-hcd, and ohci-hcd, and then reloading them 
-in different orders.  Depending on what sort of hardware you have, the 
-bus numbers will change.
+Thanks for your comments.
+
+> I'm not sure you'll need the $subject patch any more then.
+> 
+
+A little change is still required. I attached the code below.
+BTW, I think _PS3 will also need be executed if both _PS3 and _PR3
+available when putting a device into D3cold.
+
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index 3263b68..187433f 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -273,6 +273,9 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+ 		}
+ 	} else {
+ 		if (device->power.states[state].flags.explicit_set) {
++			/* evaluate _PS3 instead of _PS4 when entering D3Cold */
++			if (state == ACPI_STATE_D3)
++				object_name[3] -= 1;
+ 			status = acpi_evaluate_object(device->handle,
+ 						      object_name, NULL, NULL);
+ 			if (ACPI_FAILURE(status)) {
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 7417267..de2ae10 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -887,8 +887,12 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+ 		/* Evaluate "_PSx" to see if we can do explicit sets */
+ 		object_name[2] = 'S';
+ 		status = acpi_get_handle(device->handle, object_name, &handle);
+-		if (ACPI_SUCCESS(status))
++		if (ACPI_SUCCESS(status)) {
+ 			ps->flags.explicit_set = 1;
++			/* Also set D3Cold's explicit flag when _PS3 exists */
++			if (i == ACPI_STATE_D3_HOT)
++				(ps+1)->flags.explicit_set = 1;
++		}
+ 
+ 		/*
+ 		 * State is valid if there are means to put the device into it.
 
 
-On Mon, 23 Apr 2012, Anil Nair wrote:
+Do you like this?
 
->   You meant to say port numbers are fixed but bus address changes
-> dynamically, also does the host controller
->   fixes the port number?
+Thanks,
+Aaron
 
-Yes.
-
-> If USB Bus bandwidth is not available, how does it
-> assign port numbers?
-
-The port numbers are determined by the hardware -- each set of wires
-has its own port number.  The numbers have nothing to do with
-bandwidth.
-
-Alan Stern
-
+> > > +		if (explicit_set) {
+> > >  			status = acpi_evaluate_object(device->handle,
+> > >  						      object_name, NULL, NULL);
+> > >  			if (ACPI_FAILURE(status)) {
+> 
+> Thanks,
+> Rafael
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
