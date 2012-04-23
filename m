@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab2DWLSk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 07:18:40 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64655 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab2DWLSj (ORCPT
+	id S1752271Ab2DWLTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 07:19:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44240 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925Ab2DWLTH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 07:18:39 -0400
+	Mon, 23 Apr 2012 07:19:07 -0400
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <20120420162710.GA6416@kroah.com>
-References: <20120420033209.GA17930@kroah.com>
-	<1334898987-7800-1-git-send-email-myungjoo.ham@samsung.com>
-	<20120420162710.GA6416@kroah.com>
-Date: Mon, 23 Apr 2012 20:18:38 +0900
-X-Google-Sender-Auth: qqoOj5fhLcIVm1j-AH14XziBlr4
-Message-ID: <CAJ0PZbQu6NCo=nYWr_D3yMF5ypaz_SDr6mFWxyN04VO13VmW=Q@mail.gmail.com>
-Subject: Re: [PATCH v8 resend 0/6] Introduce External Connector Class (extcon)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        John Stultz <john.stultz@linaro.org>, cw00.choi@samsung.com
+In-Reply-To: <20120423091733.GJ24211@n2100.arm.linux.org.uk>
+References: <1335172482-27648-1-git-send-email-linus.walleij@stericsson.com>
+	<20120423091733.GJ24211@n2100.arm.linux.org.uk>
+Date: Mon, 23 Apr 2012 13:19:07 +0200
+Message-ID: <CACRpkdaBePuSE555c5iN9uF9no+2zHDSYp=sMMmevC9ei6R+kA@mail.gmail.com>
+Subject: Re: [PATCH 5/9] gpio/nomadik: use typesafe __io_address()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Jonas Aberg <jonas.aberg@stericsson.com>,
+        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 21, 2012 at 1:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Apr 20, 2012 at 02:16:21PM +0900, MyungJoo Ham wrote:
->> In order to address such issues, Android kernel's "Switch" class seems to
->> be a good basis and we have implemented "Multistate Switch Class" based on
->> it. The "Switch" class code of Android kernel is GPL as well.
+On Mon, Apr 23, 2012 at 11:17 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Apr 23, 2012 at 11:14:42AM +0200, Linus Walleij wrote:
+>> From: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> We were using a custom io_p2v() (physical-to-virtual) translation
+>> macro, but with the advent of the cross-platform __io_address()
+>> let us try to get rid of this. Inspired by a similar patch by
+>> Jonas Aberg.
 >
-> Ok, I've applied these patches to my driver-core tree, thanks so much
-> for working to clean this up and get it merged, very nice job.
->
-> Now, does this mean I can delete the drivers/staging/android/switch/
-> directory from the tree as well?
+> Is there any point to io_p2v() or __io_address() anymore?  Won't ioremap()
+> do here?
 
-Yes, I think we can now delete switch directory because switch_gpio.c
-was the only driver in the directory and it also appears with extcon.
-In fact, there was an RFC patch to do so w/ v7 patchset.
+Hey it works, I'll delete the static maps as well and send an updated patch.
 
-I'll send the patch as a reply to this message.
-
-
-Cheers!
-MyungJoo.
-
->
-> If so, I will be glad to do that.
->
-> If not, what is left to do in order for it to be removed?
->
-> thanks,
->
-> greg k-h
-
-
-
-
--- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab, DMC Business, Samsung Electronics
+Thanks Russell,
+Linus Walleij
