@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab2DWSex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 14:34:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5825 "EHLO mga11.intel.com"
+	id S1754841Ab2DWSfM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 14:35:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11612 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752687Ab2DWSew convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 14:34:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="144960673"
-From: "Heasley, Seth" <seth.heasley@intel.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ralston, James D" <james.d.ralston@intel.com>
-Subject: RE: [PATCH 3/3] lpc_sch: Add Intel Centerton Multifunction Device
- support
-Thread-Topic: [PATCH 3/3] lpc_sch: Add Intel Centerton Multifunction Device
- support
-Thread-Index: AQHNHN7OVZLDEVRYmEOs38aIQI0D4Zag1K0A///ovoCAB9AOAIAAOAFg
-Date: Mon, 23 Apr 2012 18:34:51 +0000
-Message-ID: <DEC3922D1904474A8862C7BFF516EA9A41A6795A@ORSMSX101.amr.corp.intel.com>
-References: <1334696962-3642-1-git-send-email-seth.heasley@intel.com>
- <20120418101802.GD1204@sortiz-mobl>
- <DEC3922D1904474A8862C7BFF516EA9A41A5CB9B@ORSMSX102.amr.corp.intel.com>
- <20120423081316.GA14577@sortiz-mobl>
-In-Reply-To: <20120423081316.GA14577@sortiz-mobl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754718Ab2DWSfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 14:35:10 -0400
+Date: Mon, 23 Apr 2012 14:33:45 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Steve Dickson <SteveD@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, miklos@szeredi.hu,
+        viro@ZenIV.linux.org.uk, hch@infradead.org,
+        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
+        chuck.lever@oracle.com, pstaubach@exagrid.com, malahal@us.ibm.com,
+        bfields@fieldses.org, trond.myklebust@fys.uio.no, rees@umich.edu
+Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
+ from getattr call
+Message-ID: <20120423143345.0388fcc5@tlielax.poochiereds.net>
+In-Reply-To: <4F959A36.2080402@RedHat.com>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+	<1334749927-26138-1-git-send-email-jlayton@redhat.com>
+	<20120420104055.511e15bc@tlielax.poochiereds.net>
+	<4F91C49D.8070908@RedHat.com>
+	<20120420171300.326d6e36@corrin.poochiereds.net>
+	<4F956D5C.5050801@RedHat.com>
+	<20120423113216.01992555@tlielax.poochiereds.net>
+	<4F959A36.2080402@RedHat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On Mon, 23 Apr 2012 14:06:46 -0400
+Steve Dickson <SteveD@redhat.com> wrote:
 
->> >Is the pci_ids.h change already in ? If not, I should take it at the
->> >same time so that we don't break compilation.
->>
->> It was submitted just prior to my sending this patch.
->Please send it to me as your MFD patch build depends on it and it should
->be committed first.
 
-Done.
+> > 
+> > It'd be preferable to me if we didn't require a new error code, but if
+> > different filesystems require different semantics from the VFS on an
+> > ESTALE return, then that is one way to achieve it.
+> > 
+> Well I thought the use of the fs_flags to register for this type
+> of semantics was a good one...
+> 
 
->> I'm actually not submitting a watchdog patch.  The maintainer already
->has code for this driver and is converting it to the new watchdog API.
->In discussions with him, we agreed to the renaming of the driver, which
->was submitted for a previous platform.  He'll be committing the new code
->in the next couple of weeks, so I made this change in anticipation of
->the driver making it upstream.
->>
->That's reasonable, but I'd prefer this naming change to happen when the
->watchdog patch is submitted as well, as a separate MFD one liner patch.
+The problem with that is that you don't have a way to know whether the
+fs wants you to retry or not on a lookup. When you get back an ESTALE
+on a lookup, then that's all you have. You don't know what fs was
+involved. The ERETRYLOOKUP return solves that case nicely.
 
-Okay, that's no problem.  Do you need this patch resubmitted, or will you just nix the one line?
+The problem with the ERETRYLOOKUP idea in other codepaths is that we'll
+have a bunch of this kind of crap all over the place in the vfs code:
 
-Regards,
-Seth
+    return rc == -ERETRYLOOKUP ? -ESTALE : rc;
+
+...in order to deal with those codepaths that might call down into the
+fs, get that error back and then not actually be able to retry. For
+instance, vfs_getattr is called from both vfs_fstat and vfs_fstatat.
+The latter can and should retry on an ESTALE, but the former cannot.
+
+That's a relatively simple case though. The real PITA will be stuff
+like the inode_permission codepaths which branch out very widely. It'll
+be hard to ensure that ERETRYLOOKUP doesn't leak out from there.
+
+Another possibility is a hybrid approach. Have only the lookup codepath
+return ERETRYLOOKUP to indicate that the fs wants to retry more than
+once. Once you have a pointer to the sb, then you can look at the FS_*
+flag and use that to indicate that you want to retry on an ESTALE
+return.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
