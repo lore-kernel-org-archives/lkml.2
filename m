@@ -1,102 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab2DWMlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 08:41:12 -0400
-Received: from smtp04.bis7.eu.blackberry.com ([178.239.85.9]:12752 "EHLO
-	smtp04.bis7.eu.blackberry.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752257Ab2DWMlL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 08:41:11 -0400
-X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Apr 2012 08:41:10 EDT
-X-rim-org-msg-ref-id: 1584530163
-Message-ID: <1584530163-1335184291-cardhu_decombobulator_blackberry.rim.net-1176781515-@b4.c16.bise7.blackberry>
-Reply-To: cucinotta@sssup.it
-X-Priority: Normal
-Sensitivity: Normal
-Importance: Normal
-Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
-To: "Peter Zijlstra" <peterz@infradead.org>,
-        "Juri Lelli" <juri.lelli@gmail.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
-        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, "Fabio Checconi" <fchecconi@gmail.com>,
-        "Tommaso Cucinotta" <tommaso.cucinotta@sssup.it>,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        "Dario Faggioli" <raistlin@linux.it>, insop.song@ericsson.com,
-        liming.wang@windriver.com
-From: cucinotta@sssup.it
-Date: Mon, 23 Apr 2012 12:31:30 +0000
-Content-Type: text/plain; charset="Windows-1252"
-MIME-Version: 1.0
+	id S1754208Ab2DWMm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 08:42:26 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32256 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752397Ab2DWMmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 08:42:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="144837817"
+Subject: Re: [PATCH 0/2] dmaengine fixes for the -rc:s
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Philippe Langlais <philippe.langlais@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <1334247139-17316-1-git-send-email-linus.walleij@stericsson.com>
+References: <1334247139-17316-1-git-send-email-linus.walleij@stericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 Apr 2012 18:08:58 +0530
+Message-ID: <1335184738.31825.113.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3NCfcLQ020971
 
-How would it be to add an unlikely() to the check of the while () condition ?
-Guess the point of subtractions vs division and multiplications was that the former was supposed to be faster than the latter, especially in view of the fact that the while () loop body is likely to be executed just once, if at all.
-However, removing a while () loop from the scheduler path doesn't seem a bad idea either.
-
-  T.
-------Original Message------
-From: Peter Zijlstra
-To: Juri Lelli
-Cc: tglx@linutronix.de
-Cc: mingo@redhat.com
-Cc: rostedt@goodmis.org
-Cc: cfriesen@nortel.com
-Cc: oleg@redhat.com
-Cc: fweisbec@gmail.com
-Cc: darren@dvhart.com
-Cc: johan.eker@ericsson.com
-Cc: p.faure@akatech.ch
-Cc: linux-kernel@vger.kernel.org
-Cc: claudio@evidence.eu.com
-Cc: michael@amarulasolutions.com
-Cc: Fabio Checconi
-Cc: Tommaso Cucinotta
-Cc: nicola.manica@disi.unitn.it
-Cc: luca.abeni@unitn.it
-Cc: dhaval.giani@gmail.com
-Cc: hgu1972@gmail.com
-Cc: paulmck@linux.vnet.ibm.com
-Cc: Dario Faggioli
-Cc: insop.song@ericsson.com
-Cc: liming.wang@windriver.com
-Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
-Sent: 23 Apr 2012 13:22
-
-On Mon, 2012-04-23 at 14:13 +0200, Juri Lelli wrote:
-> On 04/23/2012 01:32 PM, Peter Zijlstra wrote:
-> > On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
-> >> +       /*
-> >> +        * We Keep moving the deadline away until we get some
-> >> +        * available runtime for the entity. This ensures correct
-> >> +        * handling of situations where the runtime overrun is
-> >> +        * arbitrary large.
-> >> +        */
-> >> +       while (dl_se->runtime<= 0) {
-> >> +               dl_se->deadline += dl_se->dl_deadline;
-> >> +               dl_se->runtime += dl_se->dl_runtime;
-> >> +       }
-> >
-> > Does gcc 'optimize' that into a division? If so, it might need special
-> > glue to make it not do that.
+On Thu, 2012-04-12 at 18:12 +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> I got two adds and a jle, no div here..
+> These two fixes are critical for the ux500 to work on the v3.4-rc2
+> series. Enjoy!
+> 
+> Linus Walleij (2):
+>   dma/ste_dma40: explicitly include regulator consumer header
+>   dma/ste_dma40: fix erroneous comparison
+> 
+>  drivers/dma/ste_dma40.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+Both Applied, Thanks
 
-Gcc is known to change such loops to something like:
-
- if (runtime <= 0) {
-   tmp = 1 - runtime / dl_runtime;
-   deadline += tmp * dl_deadline;
-   runtime += tmp * dl_runtime;
- }
+And will send for rc5 in couple of days.
 
 
+-- 
+~Vinod
 
-Sent from my BlackBerry® smartphone from eMobileÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
