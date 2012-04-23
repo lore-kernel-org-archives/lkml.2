@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab2DWQ3h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:29:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55831 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab2DWQ3f (ORCPT
+	id S1754032Ab2DWQaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:30:08 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:41223 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814Ab2DWQaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:29:35 -0400
-Subject: Patch "Perf: fix build breakage" has been added to the 3.0-stable tree
+	Mon, 23 Apr 2012 12:30:06 -0400
+Subject: Patch "Perf: fix build breakage" has been added to the 3.3-stable tree
 To: zeev.tarantov@gmail.com, acme@redhat.com, davem@davemloft.net,
         gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
 Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
 From: <gregkh@linuxfoundation.org>
-Date: Mon, 23 Apr 2012 09:29:32 -0700
+Date: Mon, 23 Apr 2012 09:29:52 -0700
 In-Reply-To: <20120423063704.GA3465@myhost>
-Message-ID: <1335198572696@kroah.org>
+Message-ID: <13351985923099@kroah.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ASCII
 Content-Transfer-Encoding: 8bit
@@ -27,12 +27,12 @@ This is a note to let you know that I've just added the patch titled
 
     Perf: fix build breakage
 
-to the 3.0-stable tree which can be found at:
+to the 3.3-stable tree which can be found at:
     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
 
 The filename of the patch is:
      perf-fix-build-breakage.patch
-and it can be found in the queue-3.0 subdirectory.
+and it can be found in the queue-3.3 subdirectory.
 
 If you, or anyone else, feels it should not be added to the stable tree,
 please let <stable@vger.kernel.org> know about it.
@@ -81,7 +81,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/tools/perf/util/hist.c
 +++ b/tools/perf/util/hist.c
-@@ -165,8 +165,8 @@ struct hist_entry *__hists__add_entry(st
+@@ -237,8 +237,8 @@ struct hist_entry *__hists__add_entry(st
  			 * mis-adjust symbol addresses when computing
  			 * the history counter to increment.
  			 */
@@ -96,4 +96,4 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 Patches currently in stable-queue which might be from zeev.tarantov@gmail.com are
 
-queue-3.0/perf-fix-build-breakage.patch
+queue-3.3/perf-fix-build-breakage.patch
