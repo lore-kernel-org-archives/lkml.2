@@ -1,189 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab2DWOGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 10:06:07 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:38552 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755365Ab2DWOGE (ORCPT
+	id S1753048Ab2DWOMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 10:12:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53897 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab2DWOMS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 10:06:04 -0400
-Date: Mon, 23 Apr 2012 16:05:59 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: [PATCH] edac: rewrite edac_align_ptr()
-Message-ID: <20120423140559.GA30677@aftab.osrc.amd.com>
-References: <20120418140640.GF20813@aftab>
- <1334773174-11332-1-git-send-email-mchehab@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334773174-11332-1-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Apr 2012 10:12:18 -0400
+Message-ID: <1335190308.28150.146.camel@twins>
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Date: Mon, 23 Apr 2012 16:11:48 +0200
+In-Reply-To: <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	 <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 03:19:34PM -0300, Mauro Carvalho Chehab wrote:
-> The edac_align_ptr() function is used to prepare data for a single
-> memory allocation kzalloc() call. It counts how many bytes are needed
-> by some data structure.
-> 
-> Using it as-is is not that trivial, as the quantity of memory elements
-> reserved is not there, but, instead, it is on a next call.
-> 
-> In order to avoid mistakes when using it, move the number of allocated
-> elements into it, making easier to use it.
-> 
-> Cc: Aristeu Rozanski <arozansk@redhat.com>
-> Cc: Doug Thompson <norsk5@yahoo.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
-> 
-> v14: fixes a badly-solved rebase conflict, uses NULL instead of 0, adds more comments
->      and renames the counter for the number of structures to "count"
-> 
->  drivers/edac/edac_device.c |   27 +++++++++++----------------
->  drivers/edac/edac_mc.c     |   31 +++++++++++++++++++++++--------
->  drivers/edac/edac_module.h |    2 +-
->  drivers/edac/edac_pci.c    |    6 +++---
->  4 files changed, 38 insertions(+), 28 deletions(-)
-> 
-> diff --git a/drivers/edac/edac_device.c b/drivers/edac/edac_device.c
-> index 4b15459..cb397d9 100644
-> --- a/drivers/edac/edac_device.c
-> +++ b/drivers/edac/edac_device.c
-> @@ -79,7 +79,7 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
->  	unsigned total_size;
->  	unsigned count;
->  	unsigned instance, block, attr;
-> -	void *pvt;
-> +	void *pvt, *p;
->  	int err;
->  
->  	debugf4("%s() instances=%d blocks=%d\n",
-> @@ -92,35 +92,30 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
->  	 * to be at least as stringent as what the compiler would
->  	 * provide if we could simply hardcode everything into a single struct.
->  	 */
-> -	dev_ctl = (struct edac_device_ctl_info *)NULL;
-> +	p = NULL;
-> +	dev_ctl = edac_align_ptr(&p, sizeof(*dev_ctl), 1);
->  
->  	/* Calc the 'end' offset past end of ONE ctl_info structure
->  	 * which will become the start of the 'instance' array
->  	 */
-> -	dev_inst = edac_align_ptr(&dev_ctl[1], sizeof(*dev_inst));
-> +	dev_inst = edac_align_ptr(&p, sizeof(*dev_inst), nr_instances);
->  
->  	/* Calc the 'end' offset past the instance array within the ctl_info
->  	 * which will become the start of the block array
->  	 */
-> -	dev_blk = edac_align_ptr(&dev_inst[nr_instances], sizeof(*dev_blk));
-> +	count = nr_instances * nr_blocks;
-> +	dev_blk = edac_align_ptr(&p, sizeof(*dev_blk), count);
->  
->  	/* Calc the 'end' offset past the dev_blk array
->  	 * which will become the start of the attrib array, if any.
->  	 */
-> -	count = nr_instances * nr_blocks;
-> -	dev_attrib = edac_align_ptr(&dev_blk[count], sizeof(*dev_attrib));
-> -
-> -	/* Check for case of when an attribute array is specified */
-> -	if (nr_attrib > 0) {
-> -		/* calc how many nr_attrib we need */
-> +	/* calc how many nr_attrib we need */
-> +	if (nr_attrib > 0)
->  		count *= nr_attrib;
-> +	dev_attrib = edac_align_ptr(&p, sizeof(*dev_attrib), count);
->  
-> -		/* Calc the 'end' offset past the attributes array */
-> -		pvt = edac_align_ptr(&dev_attrib[count], sz_private);
-> -	} else {
-> -		/* no attribute array specificed */
-> -		pvt = edac_align_ptr(dev_attrib, sz_private);
-> -	}
-> +	/* Calc the 'end' offset past the attributes array */
-> +	pvt = edac_align_ptr(&p, sz_private, 1);
->  
->  	/* 'pvt' now points to where the private data area is.
->  	 * At this point 'pvt' (like dev_inst,dev_blk and dev_attrib)
-> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-> index ffedae9..775a3ff 100644
-> --- a/drivers/edac/edac_mc.c
-> +++ b/drivers/edac/edac_mc.c
-> @@ -101,16 +101,28 @@ const char *edac_mem_types[] = {
->  };
->  EXPORT_SYMBOL_GPL(edac_mem_types);
->  
-> -/* 'ptr' points to a possibly unaligned item X such that sizeof(X) is 'size'.
-> +/**
-> + * edac_align_ptr - Prepares the pointer offsets for a single-shot allocation
-> + * @p:		pointer to a pointer with the memory offset to be used. At
-> + *		return, this will be incremented to point to the next offset
-> + * @size:	Size of the data structure to be reserved
-> + * @count:	Number of elements that should be reserved
-> + *
-> + * 'ptr' points to a possibly unaligned item X such that sizeof(X) is 'size'.
-
-There's no 'ptr' argument anymore. Also, the text doesn't apply anymore
-since the ptr is not possibly unaligned but the returned pointer *p is
-properly aligned to size * count.
-
-Also, this pointer is absolutely needed to keep the proper advancing
-further in memory to the proper offsets when allocating the struct along
-with its embedded structs, as edac_device_alloc_ctl_info() does it
-above, for example.
-
->   * Adjust 'ptr' so that its alignment is at least as stringent as what the
->   * compiler would provide for X and return the aligned result.
->   *
->   * If 'size' is a constant, the compiler will optimize this whole function
-> - * down to either a no-op or the addition of a constant to the value of 'ptr'.
-> + * down to either a no-op or the addition of a constant to the value of '*p'.
-> + *
-> + * At return, the pointer 'p' will be incremented.
->   */
-> -void *edac_align_ptr(void *ptr, unsigned size)
-> +void *edac_align_ptr(void **p, unsigned size, int count)
-
-'count' is non-descriptive and at least ambiguous as to what it relates
-to - call it 'n_elems' instead.
-
->  {
->  	unsigned align, r;
-> +	void *ptr = *p;
+On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+> +static int start_dl_timer(struct sched_dl_entity *dl_se)
+> +{
+> +       struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
+> +       struct rq *rq = rq_of_dl_rq(dl_rq);
+> +       ktime_t now, act;
+> +       ktime_t soft, hard;
+> +       unsigned long range;
+> +       s64 delta;
 > +
-> +	*p += size * count;
->  
->  	/* Here we assume that the alignment of a "long long" is the most
->  	 * stringent alignment that the compiler will ever provide by default.
-> @@ -132,6 +144,8 @@ void *edac_align_ptr(void *ptr, unsigned size)
->  	if (r == 0)
->  		return (char *)ptr;
->  
-> +	*p += align - r;
+> +       /*
+> +        * We want the timer to fire at the deadline, but considering
+> +        * that it is actually coming from rq->clock and not from
+> +        * hrtimer's time base reading.
+> +        */
+> +       act = ns_to_ktime(dl_se->deadline);
+> +       now = hrtimer_cb_get_time(&dl_se->dl_timer);
+> +       delta = ktime_to_ns(now) - rq->clock;
+> +       act = ktime_add_ns(act, delta);
+
+
+Right, this all is very sad.. but I guess we'll have to like live with
+it. The only other option is adding another timer base that tries to
+keep itself in sync with rq->clock but that all sounds very painful
+indeed.
+
+Keeping up with rq->clock_task would be even more painful since it slows
+the clock down in random fashion making the timer fire early.
+Compensating that is going to be both fun and expensive.
+
+> +       /*
+> +        * If the expiry time already passed, e.g., because the value
+> +        * chosen as the deadline is too small, don't even try to
+> +        * start the timer in the past!
+> +        */
+> +       if (ktime_us_delta(act, now) < 0)
+> +               return 0;
 > +
->  	return (void *)(((unsigned long)ptr) + align - r);
->  }
+> +       hrtimer_set_expires(&dl_se->dl_timer, act);
+> +
+> +       soft = hrtimer_get_softexpires(&dl_se->dl_timer);
+> +       hard = hrtimer_get_expires(&dl_se->dl_timer);
+> +       range = ktime_to_ns(ktime_sub(hard, soft));
+> +       __hrtimer_start_range_ns(&dl_se->dl_timer, soft,
+> +                                range, HRTIMER_MODE_ABS, 0);
+> +
+> +       return hrtimer_active(&dl_se->dl_timer);
+> +} 
 
-In general, this edac_align_ptr is not really helpful because it requres
-the caller to know the exact layout of the struct it allocates memory
-for and what structs it has embedded. And frankly, I don't know how much
-it would help but I hear unaligned pointers are something bad on some
-!x86 architectures.
-
-Oh well...
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+/me reminds himself to make __hrtimer_start_range_ns() return -ETIME.
