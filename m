@@ -1,67 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab2DWI1E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 04:27:04 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:46150 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab2DWI1B (ORCPT
+	id S1754230Ab2DWI3z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 04:29:55 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52460 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab2DWI3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 04:27:01 -0400
-X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Apr 2012 04:27:01 EDT
-Message-ID: <4F9510FF.9060604@atmel.com>
-Date: Mon, 23 Apr 2012 10:21:19 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Mon, 23 Apr 2012 04:29:53 -0400
+Date: Mon, 23 Apr 2012 01:28:35 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: cgroups@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        John Stultz <john.stultz@linaro.org>, linaro-kernel@lists.linaro.org,
+        patches@linaro.org
+Subject: [PATCH RFC] memcg: MEMCG_NR_FILE_MAPPED should update _STAT_CACHE as
+ well
+Message-ID: <20120423082835.GA32359@lizard>
+References: <20120302162753.GA11748@oksana.dev.rtsoft.ru>
+ <20120305091934.588c160b.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <arnd@arndb.de>, <olof@lixom.net>,
-        <plagnioj@jcrosoft.com>, <ludovic.desroches@atmel.com>,
-        <linux-kernel@vger.kernel.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>
-Subject: Re: [PATCH 10/12] leds-atmel-pwm.c: Make pwmled_probe() __devinit
-References: <cover.1334567594.git.nicolas.ferre@atmel.com> <23f8dba8a3e1ae21a5953747b63dc0a21fcba868.1334567594.git.nicolas.ferre@atmel.com> <20120420143427.97c08ee5.akpm@linux-foundation.org>
-In-Reply-To: <20120420143427.97c08ee5.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.159.245.112]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120305091934.588c160b.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2012 11:34 PM, Andrew Morton :
-> On Mon, 16 Apr 2012 11:20:54 +0200
-> Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+...otherwise the we're getting the wrong numbers in usage_in_bytes.
+
+On Mon, Mar 05, 2012 at 09:19:34AM +0900, KAMEZAWA Hiroyuki wrote:
+[...]
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 228d646..c8abdc5 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -3812,6 +3812,9 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
+> >  
+> >         val = mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_CACHE);
+> >         val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_RSS);
+> > +       val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
+> > 
+> > 1. Is there any particular reason we don't currently account file mapped
+> >    memory in usage_in_bytes?
+> > 
+> >    To me, MEM_CGROUP_STAT_FILE_MAPPED hunk seems logical even if we
+> >    don't use it for lowmemory notifications.
+> > 
+> >    Plus, it seems that FILE_MAPPED _is_ accounted for the non-root
+> >    cgroups, so I guess it's clearly a bug for the root memcg?
 > 
->> Commit 892a884 (leds: convert led platform drivers to module_platform_driver)
->> is omitting the section mismatch error: so change annotation of the probe
->> function to __devinit instead of __init.
->>
->> ...
->>
->> --- a/drivers/leds/leds-atmel-pwm.c
->> +++ b/drivers/leds/leds-atmel-pwm.c
->> @@ -35,7 +35,7 @@ static void pwmled_brightness(struct led_classdev *cdev, enum led_brightness b)
->>   * NOTE:  we reuse the platform_data structure of GPIO leds,
->>   * but repurpose its "gpio" number as a PWM channel number.
->>   */
->> -static int __init pwmled_probe(struct platform_device *pdev)
->> +static int __devinit pwmled_probe(struct platform_device *pdev)
->>  {
->>  	const struct gpio_led_platform_data	*pdata;
->>  	struct pwmled				*leds;
-> 
-> This is theoretically oopsable and the patch is probably needed in 3.4
-> and 3.3.x.
+> CACHE includes all file caches. Why do you think FILE_MAPPED is not included in CACHE ?
 
-Absolutely, I will request it to be included in stable tree then.
+There were tons of changes in the memcg lately, but I believe the issue
+is still there.
 
-> But you've applied it to linu-next via your own tree so I won't be
-> merging it.
+For example, looking into this code flow:
 
-Ok, thanks for having taken this patch into account Andrew.
+-> page_add_file_rmap() (mm/rmap.c)
+ -> mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_MAPPED) (include/linux/memcontrol.h)
+  -> void mem_cgroup_update_page_stat(page, MEMCG_NR_FILE_MAPPED, 1) (mm/memcontrol.c)
 
-Best regards,
+And then:
+
+void mem_cgroup_update_page_stat(struct page *page,
+                                 enum mem_cgroup_page_stat_item idx, int val)
+{
+        ...
+        switch (idx) {
+        case MEMCG_NR_FILE_MAPPED:
+                idx = MEM_CGROUP_STAT_FILE_MAPPED;
+                break;
+        default:
+                BUG();
+        }
+
+        this_cpu_add(memcg->stat->count[idx], val);
+        ...
+}
+
+So, clearly, this function only bothers updating _FILE_MAPPED only,
+leaving _CACHE alone.
+
+If you're saying that _CACHE meant to include _FILE_MAPPED, then
+I guess the patch down below would be a proper fix then... Otherwise
+we need to be consistent on stats reporting, and either fall-back
+to my original fix (in mem_cgroup_usage()), or think about doing it
+some other way...
+
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+
+The patch is against current -next.
+
+Thanks,
+
+ mm/memcontrol.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 884e936..760ecf5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1958,6 +1958,8 @@ void mem_cgroup_update_page_stat(struct page *page,
+ 
+ 	switch (idx) {
+ 	case MEMCG_NR_FILE_MAPPED:
++		idx = MEM_CGROUP_STAT_CACHE;
++		this_cpu_add(memcg->stat->count[idx], val);
+ 		idx = MEM_CGROUP_STAT_FILE_MAPPED;
+ 		break;
+ 	default:
 -- 
-Nicolas Ferre
+1.7.9.2
+
