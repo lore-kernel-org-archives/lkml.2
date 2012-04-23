@@ -1,81 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528Ab2DWJec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 05:34:32 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63280 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754365Ab2DWJea (ORCPT
+	id S1754345Ab2DWJe0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 05:34:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49389 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753686Ab2DWJeZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 05:34:30 -0400
-Date: Mon, 23 Apr 2012 02:33:11 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: cgroups@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        John Stultz <john.stultz@linaro.org>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org
-Subject: Re: [PATCH RFC] memcg: MEMCG_NR_FILE_MAPPED should update
- _STAT_CACHE as well
-Message-ID: <20120423093311.GA17412@lizard>
-References: <20120302162753.GA11748@oksana.dev.rtsoft.ru>
- <20120305091934.588c160b.kamezawa.hiroyu@jp.fujitsu.com>
- <20120423082835.GA32359@lizard>
- <4F951440.7040704@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4F951440.7040704@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Apr 2012 05:34:25 -0400
+Message-ID: <1335173641.28150.104.camel@twins>
+Subject: Re: [PATCH 03/16] sched: SCHED_DEADLINE data structures.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Date: Mon, 23 Apr 2012 11:34:01 +0200
+In-Reply-To: <1333696481-3433-4-git-send-email-juri.lelli@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	 <1333696481-3433-4-git-send-email-juri.lelli@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 05:35:12PM +0900, KAMEZAWA Hiroyuki wrote:
-[...]
-> > For example, looking into this code flow:
-> > 
-> > -> page_add_file_rmap() (mm/rmap.c)
-> >  -> mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_MAPPED) (include/linux/memcontrol.h)
-> >   -> void mem_cgroup_update_page_stat(page, MEMCG_NR_FILE_MAPPED, 1) (mm/memcontrol.c)
-> > 
-> > And then:
-> > 
-> > void mem_cgroup_update_page_stat(struct page *page,
-> >                                  enum mem_cgroup_page_stat_item idx, int val)
-> > {
-> >         ...
-> >         switch (idx) {
-> >         case MEMCG_NR_FILE_MAPPED:
-> >                 idx = MEM_CGROUP_STAT_FILE_MAPPED;
-> >                 break;
-> >         default:
-> >                 BUG();
-> >         }
-> > 
-> >         this_cpu_add(memcg->stat->count[idx], val);
-> >         ...
-> > }
-> > 
-> > So, clearly, this function only bothers updating _FILE_MAPPED only,
-> > leaving _CACHE alone.
-[...]
-> 
-> NACK.
-> CACHE is updated at charge()/uncharge()...inserting/removing page cache to radix-tree.
+On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+> +               p->sched_class = &dl_sched_class;
 
-Interesting; true, we have charge/uncharge in __do_fault()/do_wp_page
-and friends. So, we seem to update FILE_MAPPED in the rmap via
-cgroup_dec/inc_page_stat, and CACHE is updated via charge/uncharge. Hm.
-
-The code in memory.c is full of if/else ifs, and I wonder if there's 
-some discrepancy in there, but briefly looking it looks fine. The
-code looks correct indeed, but I'm getting the wrong stats. :-/
-
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Does this patch actually compile? I've only seen a fwd declaration of
+this variable but here you take an actual reference to it.
