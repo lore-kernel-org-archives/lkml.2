@@ -1,208 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab2DWM60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 08:58:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6685 "EHLO mga01.intel.com"
+	id S1754172Ab2DWNAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 09:00:19 -0400
+Received: from fieldses.org ([174.143.236.118]:50983 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab2DWM6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 08:58:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="157068759"
-Subject: Re: [PATCH 2/2 v3] dma/amba-pl08x: add support for the Nomadik
- variant
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Alim Akhtar <alim.akhtar@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1334214109-15644-1-git-send-email-linus.walleij@linaro.org>
-References: <1334214109-15644-1-git-send-email-linus.walleij@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Apr 2012 18:24:58 +0530
-Message-ID: <1335185698.31825.116.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752454Ab2DWNAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 09:00:16 -0400
+Date: Mon, 23 Apr 2012 09:00:09 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Malahal Naineni <malahal@us.ibm.com>,
+        Steve Dickson <SteveD@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, hch@infradead.org,
+        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
+        chuck.lever@oracle.com, pstaubach@exagrid.com,
+        trond.myklebust@fys.uio.no, rees@umich.edu
+Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
+ from getattr call
+Message-ID: <20120423130009.GA13681@fieldses.org>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+ <1334749927-26138-1-git-send-email-jlayton@redhat.com>
+ <20120420104055.511e15bc@tlielax.poochiereds.net>
+ <4F91C49D.8070908@RedHat.com>
+ <20120420203725.GA3512@us.ibm.com>
+ <20120420171314.73801874@corrin.poochiereds.net>
+ <CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
+ <20120423080012.7c23ef24@tlielax.poochiereds.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120423080012.7c23ef24@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-12 at 09:01 +0200, Linus Walleij wrote:
-> The Nomadik PL080 variant has some extra protection bits that
-> may be set, so we need to check these bits to see if the
-> channels are actually available for the DMAengine to use.
+On Mon, Apr 23, 2012 at 08:00:12AM -0400, Jeff Layton wrote:
+> On Sun, 22 Apr 2012 07:40:57 +0200
+> Miklos Szeredi <miklos@szeredi.hu> wrote:
 > 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Alim Akhtar <alim.akhtar@gmail.com>
-> Cc: Alessandro Rubini <rubini@gnudd.com>
-> Reviewed-by: Viresh Kumar <viresh.kumar@st.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Applied both thanks
-> ---
-> ChangeLog v1->v2:
-> - Fixed these review comments from Viresh Kumar
-> - Use kzalloc to allocate the physical channel structs so
->   we don't have to assign values to everything and can assume
->   booleans are default false
-> - unbreak long error message.
-> ChangeLog v2->v3:
-> - Remove an extraneous NULL assignment now that we have
->   kzalloc for the physical channel info.
-> ---
->  arch/arm/include/asm/hardware/pl080.h |    2 +
->  drivers/dma/amba-pl08x.c              |   44 +++++++++++++++++++++++++++-----
->  include/linux/amba/pl08x.h            |    3 ++
->  3 files changed, 42 insertions(+), 7 deletions(-)
+> > On Fri, Apr 20, 2012 at 11:13 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> > > On Fri, 20 Apr 2012 15:37:26 -0500
+> > > Malahal Naineni <malahal@us.ibm.com> wrote:
+> > >
+> > >> Steve Dickson [SteveD@redhat.com] wrote:
+> > >> > > 2) if we assume that it is fairly representative of one, how can we
+> > >> > > achieve retrying indefinitely with NFS, or at least some large finite
+> > >> > > amount?
+> > >> > The amount of looping would be peer speculation. If the problem can
+> > >> > not be handled by one simple retry I would say we simply pass the
+> > >> > error up to the app... Its an application issue...
+> > >>
+> > >> As someone said, ESTALE is an incorrect errno for a path based call.
+> > >> How about turning ESTALE into ENOENT after a retry or few retries?
+> > >>
+> > >
+> > > It's not really the same thing. One could envision an application
+> > > that's repeatedly renaming a new file on top of another one. The file
+> > > is never missing from the namespace of the server, but you could still
+> > > end up getting an ESTALE.
+> > >
+> > > That would break other atomicity guarantees in an even worse way, IMO...
+> > 
+> > For directory operations ESTALE *is* equivalent to ENOENT if already
+> > retrying with LOOKUP_REVAL.  Think about it.  Atomic replacement by
+> > another directory with rename(2) is not an excuse here actually.
+> > Local filesystems too can end up with IS_DEAD directory after lookup
+> > in that case.
+> > 
 > 
-> diff --git a/arch/arm/include/asm/hardware/pl080.h b/arch/arm/include/asm/hardware/pl080.h
-> index 33c78d7..4eea210 100644
-> --- a/arch/arm/include/asm/hardware/pl080.h
-> +++ b/arch/arm/include/asm/hardware/pl080.h
-> @@ -102,6 +102,8 @@
->  #define PL080_WIDTH_16BIT			(0x1)
->  #define PL080_WIDTH_32BIT			(0x2)
->  
-> +#define PL080N_CONFIG_ITPROT			(1 << 20)
-> +#define PL080N_CONFIG_SECPROT			(1 << 19)
->  #define PL080_CONFIG_HALT			(1 << 18)
->  #define PL080_CONFIG_ACTIVE			(1 << 17)  /* RO */
->  #define PL080_CONFIG_LOCK			(1 << 16)
-> diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-> index 08589c6..629250e 100644
-> --- a/drivers/dma/amba-pl08x.c
-> +++ b/drivers/dma/amba-pl08x.c
-> @@ -95,10 +95,14 @@ static struct amba_driver pl08x_amba_driver;
->   * struct vendor_data - vendor-specific config parameters for PL08x derivatives
->   * @channels: the number of channels available in this variant
->   * @dualmaster: whether this version supports dual AHB masters or not.
-> + * @nomadik: whether the channels have Nomadik security extension bits
-> + *	that need to be checked for permission before use and some registers are
-> + *	missing
->   */
->  struct vendor_data {
->  	u8 channels;
->  	bool dualmaster;
-> +	bool nomadik;
->  };
->  
->  /*
-> @@ -385,7 +389,7 @@ pl08x_get_phy_channel(struct pl08x_driver_data *pl08x,
->  
->  		spin_lock_irqsave(&ch->lock, flags);
->  
-> -		if (!ch->serving) {
-> +		if (!ch->locked && !ch->serving) {
->  			ch->serving = virt_chan;
->  			ch->signal = -1;
->  			spin_unlock_irqrestore(&ch->lock, flags);
-> @@ -1483,6 +1487,9 @@ bool pl08x_filter_id(struct dma_chan *chan, void *chan_id)
->   */
->  static void pl08x_ensure_on(struct pl08x_driver_data *pl08x)
->  {
-> +	/* The Nomadik variant does not have the config register */
-> +	if (pl08x->vd->nomadik)
-> +		return;
->  	writel(PL080_CONFIG_ENABLE, pl08x->base + PL080_CONFIG);
->  }
->  
-> @@ -1772,8 +1779,10 @@ static int pl08x_debugfs_show(struct seq_file *s, void *data)
->  		spin_lock_irqsave(&ch->lock, flags);
->  		virt_chan = ch->serving;
->  
-> -		seq_printf(s, "%d\t\t%s\n",
-> -			   ch->id, virt_chan ? virt_chan->name : "(none)");
-> +		seq_printf(s, "%d\t\t%s%s\n",
-> +			   ch->id,
-> +			   virt_chan ? virt_chan->name : "(none)",
-> +			   ch->locked ? " LOCKED" : "");
->  
->  		spin_unlock_irqrestore(&ch->lock, flags);
->  	}
-> @@ -1917,7 +1926,7 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
->  	}
->  
->  	/* Initialize physical channels */
-> -	pl08x->phy_chans = kmalloc((vd->channels * sizeof(*pl08x->phy_chans)),
-> +	pl08x->phy_chans = kzalloc((vd->channels * sizeof(*pl08x->phy_chans)),
->  			GFP_KERNEL);
->  	if (!pl08x->phy_chans) {
->  		dev_err(&adev->dev, "%s failed to allocate "
-> @@ -1932,8 +1941,23 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
->  		ch->id = i;
->  		ch->base = pl08x->base + PL080_Cx_BASE(i);
->  		spin_lock_init(&ch->lock);
-> -		ch->serving = NULL;
->  		ch->signal = -1;
-> +
-> +		/*
-> +		 * Nomadik variants can have channels that are locked
-> +		 * down for the secure world only. Lock up these channels
-> +		 * by perpetually serving a dummy virtual channel.
-> +		 */
-> +		if (vd->nomadik) {
-> +			u32 val;
-> +
-> +			val = readl(ch->base + PL080_CH_CONFIG);
-> +			if (val & (PL080N_CONFIG_ITPROT | PL080N_CONFIG_SECPROT)) {
-> +				dev_info(&adev->dev, "physical channel %d reserved for secure access only\n", i);
-> +				ch->locked = true;
-> +			}
-> +		}
-> +
->  		dev_dbg(&adev->dev, "physical channel %d is %s\n",
->  			i, pl08x_phy_channel_busy(ch) ? "BUSY" : "FREE");
->  	}
-> @@ -2016,6 +2040,12 @@ static struct vendor_data vendor_pl080 = {
->  	.dualmaster = true,
->  };
->  
-> +static struct vendor_data vendor_nomadik = {
-> +	.channels = 8,
-> +	.dualmaster = true,
-> +	.nomadik = true,
-> +};
-> +
->  static struct vendor_data vendor_pl081 = {
->  	.channels = 2,
->  	.dualmaster = false,
-> @@ -2036,9 +2066,9 @@ static struct amba_id pl08x_ids[] = {
->  	},
->  	/* Nomadik 8815 PL080 variant */
->  	{
-> -		.id	= 0x00280880,
-> +		.id	= 0x00280080,
->  		.mask	= 0x00ffffff,
-> -		.data	= &vendor_pl080,
-> +		.data	= &vendor_nomadik,
->  	},
->  	{ 0, 0 },
->  };
-> diff --git a/include/linux/amba/pl08x.h b/include/linux/amba/pl08x.h
-> index e64ce2c..0254901 100644
-> --- a/include/linux/amba/pl08x.h
-> +++ b/include/linux/amba/pl08x.h
-> @@ -92,6 +92,8 @@ struct pl08x_bus_data {
->   * right now
->   * @serving: the virtual channel currently being served by this physical
->   * channel
-> + * @locked: channel unavailable for the system, e.g. dedicated to secure
-> + * world
->   */
->  struct pl08x_phy_chan {
->  	unsigned int id;
-> @@ -99,6 +101,7 @@ struct pl08x_phy_chan {
->  	spinlock_t lock;
->  	int signal;
->  	struct pl08x_dma_chan *serving;
-> +	bool locked;
->  };
->  
->  /**
+> Doesn't that violate POSIX? rename(2) is supposed to be atomic, and I
+> can't see where there's any exception for that for directories.
 
+Hm, but that only allows atomic replacement of the last component of a
+path.
 
--- 
-~Vinod
+Suppose you're looking up a path, you've so far reached intermediate
+directory "D", and the next step of the lookup (of some entry in D)
+returns ESTALE.  Then either:
 
+	- D has since been unlinked, and ENOENT is obviously right.
+	- D was unlinked and then replaced by something else, in which
+	  case there was still a moment when ENOENT was correct.
+	- D was replaced atomically by a rename.  But for the rename to
+	  work it must have been replacing an empty directory, so there
+	  was still a moment when ENOENT would have been correct.
+	  (Exception: if D was actually a regular file or some other
+	  non-directory object, then ENOTDIR would be the right error:
+	  but if you're able to get at least object type atomically with
+	  a lookup, then you should have noticed this already on lookup
+	  of D.)
+
+I think that's what Miklos meant?
+
+--b.
