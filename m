@@ -1,88 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab2DWWpl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 18:45:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35143 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753640Ab2DWWpj (ORCPT
+	id S1756033Ab2DWWrU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 18:47:20 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:38266 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab2DWWrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 18:45:39 -0400
-Date: Mon, 23 Apr 2012 15:45:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V6 12/14] memcg: move HugeTLB resource count to parent
- cgroup on memcg removal
-Message-Id: <20120423154537.675d490c.akpm@linux-foundation.org>
-In-Reply-To: <1334573091-18602-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1334573091-18602-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Apr 2012 18:47:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6690"; a="181992002"
+From: David Brown <davidb@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH] ARM: msm: Fix gic irqdomain support
+Date: Mon, 23 Apr 2012 15:47:02 -0700
+Message-Id: <1335221222-30879-1-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Apr 2012 16:14:49 +0530
-"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+As of
 
-> This add support for memcg removal with HugeTLB resource usage.
+    commit 75294957be1dee7d22dd7d90bd31334ba410e836
+    Author: Grant Likely <grant.likely@secretlab.ca>
+    Date:   Tue Feb 14 14:06:57 2012 -0700
 
-include/linux/memcontrol.h:504: warning: 'struct cgroup' declared inside parameter list
-include/linux/memcontrol.h:504: warning: its scope is only this definition or declaration, which is probably not what you want
-include/linux/memcontrol.h:509: warning: 'struct cgroup' declared inside parameter list
+        irq_domain: Remove 'new' irq_domain in favour of the ppc one
 
-Documentation/SubmitChecklist, section 2.  Please do these things -
-what you have done here is to send untested code, for some
-configuration options.
+the ARM gic controller uses proper irq domains.  Fix the MSM gic
+initialization and DT so that it works again.
 
+Signed-off-by: David Brown <davidb@codeaurora.org>
+---
+ arch/arm/boot/dts/msm8660-surf.dts |    4 ++--
+ arch/arm/mach-msm/board-msm8x60.c  |   25 +++++++++++++++----------
+ 2 files changed, 17 insertions(+), 12 deletions(-)
 
-I'll try this:
-
- include/linux/hugetlb.h    |    6 +-----
- include/linux/memcontrol.h |   11 -----------
- 2 files changed, 1 insertion(+), 16 deletions(-)
-
---- a/include/linux/memcontrol.h~memcg-move-hugetlb-resource-count-to-parent-cgroup-on-memcg-removal-fix
-+++ a/include/linux/memcontrol.h
-@@ -499,17 +499,6 @@ static inline int mem_cgroup_hugetlb_fil
- 	return 0;
+diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
+index 15ded0d..45bc4bb 100644
+--- a/arch/arm/boot/dts/msm8660-surf.dts
++++ b/arch/arm/boot/dts/msm8660-surf.dts
+@@ -10,7 +10,7 @@
+ 	intc: interrupt-controller@02080000 {
+ 		compatible = "qcom,msm-8660-qgic";
+ 		interrupt-controller;
+-		#interrupt-cells = <1>;
++		#interrupt-cells = <3>;
+ 		reg = < 0x02080000 0x1000 >,
+ 		      < 0x02081000 0x1000 >;
+ 	};
+@@ -19,6 +19,6 @@
+ 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+ 		reg = <0x19c40000 0x1000>,
+ 		      <0x19c00000 0x1000>;
+-		interrupts = <195>;
++		interrupts = <0 195 0x0>;
+ 	};
+ };
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index 962e711..fb3496a 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -17,6 +17,7 @@
+ #include <linux/irqdomain.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+ #include <linux/memblock.h>
+ 
+@@ -49,10 +50,22 @@ static void __init msm8x60_map_io(void)
+ 	msm_map_msm8x60_io();
  }
  
--static inline int
--mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
--			       struct page *page)
--{
--	return 0;
--}
--
--static inline bool mem_cgroup_have_hugetlb_usage(struct cgroup *cgroup)
--{
--	return 0;
--}
- #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
- #endif /* _LINUX_MEMCONTROL_H */
- 
---- a/include/linux/hugetlb.h~memcg-move-hugetlb-resource-count-to-parent-cgroup-on-memcg-removal-fix
-+++ a/include/linux/hugetlb.h
-@@ -337,10 +337,6 @@ static inline unsigned int pages_per_hug
- 
- #ifdef CONFIG_MEM_RES_CTLR_HUGETLB
- extern int hugetlb_force_memcg_empty(struct cgroup *cgroup);
--#else
--static inline int hugetlb_force_memcg_empty(struct cgroup *cgroup)
--{
--	return 0;
--}
- #endif
++#ifdef CONFIG_OF
++static struct of_device_id msm_dt_gic_match[] __initdata = {
++	{ .compatible = "qcom,msm-8660-qgic", .data = gic_of_init },
++	{}
++};
++#endif
 +
- #endif /* _LINUX_HUGETLB_H */
-_
+ static void __init msm8x60_init_irq(void)
+ {
+-	gic_init(0, GIC_PPI_START, MSM_QGIC_DIST_BASE,
+-		 (void *)MSM_QGIC_CPU_BASE);
++	if (!of_have_populated_dt())
++		gic_init(0, GIC_PPI_START, MSM_QGIC_DIST_BASE,
++			 (void *)MSM_QGIC_CPU_BASE);
++#ifdef CONFIG_OF
++	else
++		of_irq_init(msm_dt_gic_match);
++#endif
  
+ 	/* Edge trigger PPIs except AVS_SVICINT and AVS_SVICINTSWDONE */
+ 	writel(0xFFFFD7FF, MSM_QGIC_DIST_BASE + GIC_DIST_CONFIG + 4);
+@@ -73,16 +86,8 @@ static struct of_dev_auxdata msm_auxdata_lookup[] __initdata = {
+ 	{}
+ };
+ 
+-static struct of_device_id msm_dt_gic_match[] __initdata = {
+-	{ .compatible = "qcom,msm-8660-qgic", },
+-	{}
+-};
+-
+ static void __init msm8x60_dt_init(void)
+ {
+-	irq_domain_generate_simple(msm_dt_gic_match, MSM8X60_QGIC_DIST_PHYS,
+-				GIC_SPI_START);
+-
+ 	if (of_machine_is_compatible("qcom,msm8660-surf")) {
+ 		printk(KERN_INFO "Init surf UART registers\n");
+ 		msm8x60_init_uart12dm();
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-We shouldn't be calling these functions if CONFIG_MEM_RES_CTLR_HUGETLB=n?
