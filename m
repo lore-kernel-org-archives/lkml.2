@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab2DWE1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 00:27:31 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:52522 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962Ab2DWE13 (ORCPT
+	id S1751653Ab2DWEpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 00:45:01 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64268 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab2DWEpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 00:27:29 -0400
-Date: Mon, 23 Apr 2012 00:25:20 -0400 (EDT)
-Message-Id: <20120423.002520.995859309070448490.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com
-Subject: Re: linux-next: build failure after merge of the net-next tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120423121451.c88c9bfaaf4d79313f7219f3@canb.auug.org.au>
-References: <20120423121451.c88c9bfaaf4d79313f7219f3@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 22 Apr 2012 21:25:25 -0700 (PDT)
+	Mon, 23 Apr 2012 00:45:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120420020816.GH22219@S2101-09.ap.freescale.net>
+References: <1334620214-25803-1-git-send-email-rob.lee@linaro.org>
+ <1334620214-25803-2-git-send-email-rob.lee@linaro.org> <20120417074301.GM20478@pengutronix.de>
+ <CAMXH7KH41kWMPu_dEpetZc8OUD3C0-mtxGbXX0Vqd4EODPWJUg@mail.gmail.com>
+ <20120417174213.GD3852@pengutronix.de> <CAMXH7KFYA24sPUcwgKfwVLNPA0jWQ-QG02y+SfPNnAqdiv0+gg@mail.gmail.com>
+ <CAMXH7KGgSmvfqUTC1bufBz0QXbt01dHsPo1cbRA9jLj9mGmfjg@mail.gmail.com>
+ <20120419064308.GH3852@pengutronix.de> <20120420020816.GH22219@S2101-09.ap.freescale.net>
+From: Rob Lee <rob.lee@linaro.org>
+Date: Sun, 22 Apr 2012 23:44:39 -0500
+Message-ID: <CAMXH7KE2RtdNy3G61guZb2uWy3rn267Z3eEVEgN5e==tHHsiuA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Amit Kucheria <amit.kucheria@linaro.org>, kernel@pengutronix.de,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 23 Apr 2012 12:14:51 +1000
+>> I don't think we need a cpu_is_imx6q(), but having some i.MX6 specific
+>> hook at device_initcall time can't be too wrong. Shawn?
+>>
+> Yep, it works for me.
+>
+Sascha, Shawn, thanks for the response.
 
-> After merging the net-next tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> net/ax25/af_ax25.c: In function 'ax25_exit':
-> net/ax25/af_ax25.c:2015:2: error: implicit declaration of function 'ax25_unregister_sysctl' [-Werror=implicit-function-declaration]
-> 
-> Caused by a mismerge between commit 3adadc08cc1e ("net ax25: Reorder
-> ax25_exit to remove races") from the net tree and commit 0ca7a4c87d27
-> ("net ax25: Simplify and cleanup the ax25 sysctl handling") from the
-> net-next tree.
-> 
-> I have applied the following merge fix patch:
+Since device_initcall isn't platform specific, it seems I would still
+need a cpu_is_imx6q() function or similiar functionality from a device
+tree call.  Or do you have something else in mind that I'm not seeing?
 
-Looks correct, and I'll resolve this the next time I pull
-net into net-next.
+Thanks,
+Rob
 
-Thanks!
+
+> --
+> Regards,
+> Shawn
