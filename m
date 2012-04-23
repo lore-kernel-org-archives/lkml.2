@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab2DWOut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 10:50:49 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44808 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab2DWOur (ORCPT
+	id S1753867Ab2DWOwN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 10:52:13 -0400
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:12041 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751812Ab2DWOwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 10:50:47 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Jeff Layton <jlayton@redhat.com>, Malahal Naineni <malahal@us.ibm.com>,
-        Steve Dickson <SteveD@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, hch@infradead.org,
-        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
-        chuck.lever@oracle.com, pstaubach@exagrid.com,
-        trond.myklebust@fys.uio.no, rees@umich.edu
-Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
-References: <20120420104055.511e15bc@tlielax.poochiereds.net>
-	<4F91C49D.8070908@RedHat.com> <20120420203725.GA3512@us.ibm.com>
-	<20120420171314.73801874@corrin.poochiereds.net>
-	<CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
-	<20120423080012.7c23ef24@tlielax.poochiereds.net>
-	<20120423130009.GA13681@fieldses.org>
-	<20120423091255.00f926c4@tlielax.poochiereds.net>
-	<20120423133412.GB13681@fieldses.org>
-	<20120423095021.1a91a23b@tlielax.poochiereds.net>
-	<20120423135456.GC13681@fieldses.org>
-Date: Mon, 23 Apr 2012 16:51:04 +0200
-In-Reply-To: <20120423135456.GC13681@fieldses.org> (J. Bruce Fields's message
-	of "Mon, 23 Apr 2012 09:54:56 -0400")
-Message-ID: <87hawasdrb.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 23 Apr 2012 10:52:12 -0400
+Message-ID: <4F9545FF.8050502@blueyonder.co.uk>
+Date: Mon, 23 Apr 2012 13:07:27 +0100
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: LKML Mailing List <linux-kernel@vger.kernel.org>,
+        opensuse factory list <opensuse-factory@opensuse.org>
+Subject: Recent hardware incompatibilities
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=5XsFQGJ3Uf0A:10 a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=8nJEP1OIZ-IA:10 a=HHGDmE7w67jggAgikYAA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J. Bruce Fields" <bfields@fieldses.org> writes:
+Recently I have tried using Asus Sabertooth 990FX and Gigabyte 990FX 
+motherboards and experienced problems.
 
->
-> I also wonder whether it would be making too many assumptions about the
-> server or filesystem: just because ordinary posix interfaces don't allow
-> atomic replacement of a whole directory tree doesn't mean the server
-> might not have some way to do it.
+They both need IOMMU disabled in the BIOS in order to boot.
 
-Exactly because posix limits the atomic replacement to empty directories
-is that this feature is not useful and is why linux can get away with
-the dead directory behavior in this case.  And thinking about fixing
-this in NFS is completely pointless since no one will rely on the atomic
-replacement behavior.  Fixing local filesystems is also pointless for
-the same reason.
+The Sabertooth will work with the nouveau driver but the proprietary 
+NVidia driver won't work as the NVidia card is detected as a AMD Radeon. 
+I learned later that the Sabertooth BIOS says Windows, other boards have 
+Windows and Other OS's support.
+I took this up with the Asus Tech Support dummies but they seemed like 
+dumb dummies rather than smart dummies (Tm Amdahl).
 
-Atomic replacement of whole directory trees would indeed be more useful,
-but it's highly unlikely to be used anywhere since applications relying
-on this feature would be limited to special filesystems that allow this.
+The Gigabyte board works with both the nouveau and the proprietary 
+NVidia driver.
 
-So my statement is "ENOENT is equivalent to ESTALE if already retrying
-path lookup with LOOKUP_REVAL on any operation that takes an parent
-directory and a name (lookup, create, link, unlink, symlink, mkdir,
-rmdir, mknod, rename)."
+I suspect these quirks are due to incompatibilities in the BIOS for 
+these new motherboards.
 
-This equivalence is in the sense that it doesn't change behavior
-compared to local filesystems.
+Any comments or recommendations on Linux compatible motherboards with 
+modern chipsets.
 
-For other operations ENOENT is not equivalent to ESTALE.
+Intel a better solution that AMD perhaps?
+Regards
+Sid.
 
-Thanks,
-Miklos
+-- 
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
+Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
+Senior Staff Specialist, Cricket Coach
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
+
