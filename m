@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab2DWRFA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 13:05:00 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54778 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab2DWRE7 (ORCPT
+	id S1754057Ab2DWRIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 13:08:09 -0400
+Received: from haggis.mythic-beasts.com ([93.93.131.52]:55678 "EHLO
+	haggis.mythic-beasts.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690Ab2DWRIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 13:04:59 -0400
-Message-ID: <4F958BB7.2060007@gmail.com>
-Date: Mon, 23 Apr 2012 10:04:55 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: David Daney <ddaney.cavm@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Jean Delvare (PC drivers core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH v3 2/2] i2c/of: Automatically populate i2c mux busses
- from device tree data.
-References: <1334265263-13549-1-git-send-email-ddaney.cavm@gmail.com> <1334265263-13549-3-git-send-email-ddaney.cavm@gmail.com> <20120422162008.GA4201@pengutronix.de> <4F9587E8.1050702@gmail.com> <20120423165847.GF27321@pengutronix.de>
-In-Reply-To: <20120423165847.GF27321@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 23 Apr 2012 13:08:07 -0400
+X-Greylist: delayed 636 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Apr 2012 13:08:07 EDT
+Subject: Fixing NFS over OpenVPN
+From: Toby Goodwin <toby@mythic-beasts.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 23 Apr 2012 17:57:28 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1335200249.5607.41.camel@rocinante.mythic-beasts.com>
+Mime-Version: 1.0
+X-BlackCat-Spam-Score: -10
+X-Mythic-Debug: Threshold =  On = 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 09:58 AM, Wolfram Sang wrote:
->> I can send a new patch set with those corrections, or if you prefer,
->> you could commit these making the changes yourself.
->
-> I'll do it, probably faster for both of us :)
->
+NFS over OpenVPN is unreliable. On systems with modest RAM, it quite
+quickly locks up in a nasty way, with unkillable processes, and the
+system unable even to shutdown or reboot. Ouch.
 
-Great!
+I've been looking at this for some time, and have finally made some
+progress. The problem is that if the openvpn process needs any more
+kernel memory, the kernel will sometimes ask nfs to release some pages,
+nfs calls commit_inode(), which wants to write to the openvpn tunnel,
+and we have deadlock.
 
-Thank you for reviewing this,
-David Daney
+I believe I know how to fix this, but would appreciate some guidance.
+Part of the solution is to specify the "--mlock" flag to openvpn -- this
+exists so that secrets are never written to swap, but as a side effect
+it prevents openvpn from ever page faulting.
+
+The other kernel allocation culprits are the sockets that openvpn holds.
+To prevent them triggering the deadlock, we need to set sk_allocation =
+GFP_NOIO. For the socket created by the tun driver it's a simple change
+to drivers/net/tun.c. (This is the socket that applications use when
+they want to communicate with the tunnel.)
+
+The other socket created by openvpn is trickier, as it's just a normal
+userland AF_INET socket. (This is the socket through which OpenVPN sends
+its encrypted packets to the remote end of the tunnel.) I haven't
+discovered any way for userland to request a particular allocation
+policy for a socket, please let me know if I've missed something.
+
+So I've added a setsockopt() call that can do it:
+
+--- net/core/sock.c.orig	2012-03-18 23:15:34.000000000 +0000
++++ net/core/sock.c	2012-04-22 22:55:34.320023377 +0100
+@@ -793,6 +793,10 @@
+ 		sock_valbool_flag(sk, SOCK_WIFI_STATUS, valbool);
+ 		break;
+ 
++	case SO_RECURSIVE:
++		sk->sk_allocation = GFP_NOIO;
++		break;
++
+ 	default:
+ 		ret = -ENOPROTOOPT;
+ 		break;
+
+(I picked the SO_RECURSIVE name late at night -- suggestions for a
+better name are very welcome!)
+
+I've dealt with these three troublesome memory allocations as I've
+discovered them, and initial testing shows that I can now keep nfs over
+openvpn going, even on a system with limited memory that is also
+thrashing with a large compile.
+
+But this seems like a fragile process: I don't know if there are other
+troublespots lurking. Really I'd like openvpn to say to the kernel
+"whenever you allocate memory for me, use GFP_NOIO", but I haven't
+discovered a way to do this: none of the process flags quite seem to fit
+the bill. (I did consider PF_KSWAPD, but thought better of it. :-)
+
+Is there a better way to solve this?
+
+Thanks,
+
+Toby.
+
+
