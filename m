@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab2DWJiQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 05:38:16 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:58524 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753872Ab2DWJiP (ORCPT
+	id S1754631Ab2DWJji (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 05:39:38 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:57593 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab2DWJjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 05:38:15 -0400
-From: Ulf Hansson <ulf.hansson@stericsson.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>
-Cc: Mattias Wallin <mattias.wallin@stericsson.com>,
-        Jonas Aberg <jonas.aberg@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Ulf Hansson <ulf.hansson@stericsson.com>
-Subject: [PATCH] regulator: core: Keep boot_on regulators powered during init
-Date: Mon, 23 Apr 2012 11:37:53 +0200
-Message-ID: <1335173873-24301-1-git-send-email-ulf.hansson@stericsson.com>
-X-Mailer: git-send-email 1.7.9
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 23 Apr 2012 05:39:37 -0400
+X-Greylist: delayed 695 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Apr 2012 05:39:37 EDT
+From: JJ Ding <jj_ding@emc.com.tw>
+To: ubase133@gmail.com
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, JJ Ding <jj_ding@emc.com.tw>
+Subject: [PATCH] Input: elantech - make synaptics_send_cmd() retry for 3 times
+Date: Mon, 23 Apr 2012 17:30:00 +0800
+Message-Id: <1335173400-15719-1-git-send-email-jj_ding@emc.com.tw>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regulators which has boot_on constraints set, will now remain
-powered after regulator_init_complete is done.
+synaptics_send_cmd() doesn't seem to be very reliable with Elan touchapds,
+so people could see infrequent failures when it is called in elantech_detect(),
+resulting touchpads fail to be recognized as Elan.
 
-In this case we leave the enable->disable operation to be
-handled by the regulator consumer instead.
+Teach synaptics_send_cmd() to retry for 3 times to make sure we are properly
+detected.
 
-Signed-off-by: Ulf Hansson <ulf.hansson@stericsson.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43136
+Reported-by: ubase133@gmail.com
+Signed-off-by: JJ Ding <jj_ding@emc.com.tw>
 ---
- drivers/regulator/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Hi ubase133,
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 1caada2..c5af6d2 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3393,7 +3393,7 @@ static int __init regulator_init_complete(void)
- 		ops = rdev->desc->ops;
- 		c = rdev->constraints;
+Dmitry forwarded your bugzilla report to me.
+
+I used to see rare cases when this also happened on my test machine, but we
+don't really know why. Does this always happen on your machine?
+
+Anyway, could you please try this patch out? This is really the only fix I can
+think of. If it doesn't work for you, then I will have to dig deeper.
+
+P.S. Patch is against 3.4-rc4.
+
+Thanks,
+JJ
+
+ drivers/input/mouse/elantech.c |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index 4790110..6b8df09 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -30,7 +30,7 @@
+ /*
+  * Send a Synaptics style sliced query command
+  */
+-static int synaptics_send_cmd(struct psmouse *psmouse, unsigned char c,
++static int __synaptics_send_cmd(struct psmouse *psmouse, unsigned char c,
+ 				unsigned char *param)
+ {
+ 	if (psmouse_sliced_command(psmouse, c) ||
+@@ -42,6 +42,23 @@ static int synaptics_send_cmd(struct psmouse *psmouse, unsigned char c,
+ 	return 0;
+ }
  
--		if (!ops->disable || (c && c->always_on))
-+		if (!ops->disable || (c && (c->always_on || c->boot_on)))
- 			continue;
- 
- 		mutex_lock(&rdev->mutex);
++static int synaptics_send_cmd(struct psmouse *psmouse, unsigned char c,
++				unsigned char *param)
++{
++	int rc;
++	int tries = ETP_PS2_COMMAND_TRIES;
++
++	do {
++		rc = __synaptics_send_cmd(psmouse, c, param);
++		if (rc == 0)
++			break;
++		tries--;
++		msleep(ETP_PS2_COMMAND_DELAY);
++	} while (tries > 0);
++
++	return rc;
++}
++
+ /*
+  * V3 and later support this fast command
+  */
 -- 
-1.7.9
+1.7.10
 
