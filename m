@@ -1,78 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab2DWXLd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 19:11:33 -0400
-Received: from mga14.intel.com ([143.182.124.37]:57538 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753996Ab2DWXLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 19:11:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="134409892"
-Date: Mon, 23 Apr 2012 16:11:19 -0700
-From: Jesse Brandeburg <jesse.brandeburg@intel.com>
-To: Chris Boot <bootc@bootc.net>
-Cc: <e1000-devel@lists.sourceforge.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <nix@esperi.org.uk>,
-        <carolyn.wyborny@intel.com>
-Subject: Re: [PATCH RFC 0/2] e1000e: 82574 also needs ASPM L1 completely
- disabled
-Message-ID: <20120423161119.0000022f@unknown>
-In-Reply-To: <1335216578-21542-1-git-send-email-bootc@bootc.net>
-References: <9BBC4E0CF881AA4299206E2E1412B6260E512E0C@ORSMSX102.amr.corp.intel.com>
-	<1335216578-21542-1-git-send-email-bootc@bootc.net>
-X-Mailer: Claws Mail 3.7.10cvs7 (GTK+ 2.16.6; i586-pc-mingw32msvc)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/_GqVr+9M/caExEfma/f495s"; protocol="application/pgp-signature"
+	id S1755737Ab2DWXNz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 19:13:55 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:20044 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab2DWXNy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 19:13:54 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-127.messagelabs.com!1335222829!3820725!9
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: refactor aio_iiro_16 driver to remove forward declarations
+Date: Mon, 23 Apr 2012 16:13:43 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204231613.43681.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/_GqVr+9M/caExEfma/f495s
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Move the struct comedi_driver variable and the associated
+attach/detach routines to remove the need for the forward
+declarations.
 
-On Mon, 23 Apr 2012 22:29:36 +0100
-Chris Boot <bootc@bootc.net> wrote:
-> Please note I haven't as-yet tested this code at all, but I do know that
-> disabling ASPM L1 on these NICs (using setpci) fixes the hangs that I
-> have been seeing on my Supermicro servers with X9SCL-F boards. I hope to
-> get the chance to install an updated kernel on my two afftected servers
-> later this week.
->=20
-> Chris Boot (2):
->   e1000e: Disable ASPM L1 on 82574
->   e1000e: Remove special case for 82573/82574 ASPM L1 disablement
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Thanks Chris, we are going to take a look over the patches and Jeff
-Kirsher should apply them to our internal testing tree.
+---
 
-Please let us know the results of your testing, we will let you know if
-we see any issues as well.
-
-Jesse
-
---Sig_/_GqVr+9M/caExEfma/f495s
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (MingW32)
-
-iQIbBAEBCAAGBQJPleGgAAoJEFi+OMPmMDUeSNUP+Ii9bDfh3tR9tSrzW18siof+
-hhzeqsMCieSXFUdEEVYJBb/R9EHFVU/KJ09Nw/mNgU7F1hQOcvfxxFkgJrKzWCes
-9eqKHksn5x3xxDO5vVd799i+yc01RU7pb5D+IXYH2S+kWkGYuQs6NDOj513gtZso
-ablX5SPE/WvpxXlRwQa6l8eQskwZO0l9bNjD7KirawPj4+DAt96QWrTY+wyiJmG1
-XySJxWor9zQiCq02sEjBRh6tTX1kHsGT439yKXzqDyDND8BWmlBD0M6W0jpFwcWL
-UhvYSV6XVgR7KQdlfMkWKW1uRvwMQtMBmWnXP2fUMkNiOYb49VbnXf087pl2Z+vK
-qcubjq6S65tYZSgOUJ0drTn7h5L1nlp016r0pzHQWlh6+hhySkLcrjU27a7DTckx
-1odkZMSkzttABmFJXvoQ+Eji8KIuu4tM/zxAEOnZqysFqWqc12FPs6J0XHxcnrNo
-pxts3+xDR/ZPGJw6lQCKQiRYiDCWgApFGBgF+OW7KN+QMB1CDBAs9IGE0CJjTqD1
-8ZUc4myGBFDinQ8nzIy1rS2YSMw97fNtpzv/6ziwMAA/7URxpOjvAmT4oMzsVEJj
-/UP/GdpvjakdcZ5DBhQYEvoa58eShuNEdft5SobKIc2RdqONuPb6/QwmirAVNwMy
-LW8wLAIlpaATr91vAo8=
-=TiZl
------END PGP SIGNATURE-----
-
---Sig_/_GqVr+9M/caExEfma/f495s--
+diff --git a/drivers/staging/comedi/drivers/aio_iiro_16.c b/drivers/staging/comedi/drivers/aio_iiro_16.c
+index 160b0a0..763461a 100644
+--- a/drivers/staging/comedi/drivers/aio_iiro_16.c
++++ b/drivers/staging/comedi/drivers/aio_iiro_16.c
+@@ -67,30 +67,41 @@ struct aio_iiro_16_private {
+ 
+ #define	devpriv	((struct aio_iiro_16_private *) dev->private)
+ 
+-static int aio_iiro_16_attach(struct comedi_device *dev,
+-			      struct comedi_devconfig *it);
++static int aio_iiro_16_dio_insn_bits_write(struct comedi_device *dev,
++					   struct comedi_subdevice *s,
++					   struct comedi_insn *insn,
++					   unsigned int *data)
++{
++	if (insn->n != 2)
++		return -EINVAL;
+ 
+-static int aio_iiro_16_detach(struct comedi_device *dev);
++	if (data[0]) {
++		s->state &= ~data[0];
++		s->state |= data[0] & data[1];
++		outb(s->state & 0xff, dev->iobase + AIO_IIRO_16_RELAY_0_7);
++		outb((s->state >> 8) & 0xff,
++		     dev->iobase + AIO_IIRO_16_RELAY_8_15);
++	}
+ 
+-static struct comedi_driver driver_aio_iiro_16 = {
+-	.driver_name = "aio_iiro_16",
+-	.module = THIS_MODULE,
+-	.attach = aio_iiro_16_attach,
+-	.detach = aio_iiro_16_detach,
+-	.board_name = &aio_iiro_16_boards[0].name,
+-	.offset = sizeof(struct aio_iiro_16_board),
+-	.num_names = ARRAY_SIZE(aio_iiro_16_boards),
+-};
++	data[1] = s->state;
++
++	return 2;
++}
+ 
+ static int aio_iiro_16_dio_insn_bits_read(struct comedi_device *dev,
+ 					  struct comedi_subdevice *s,
+ 					  struct comedi_insn *insn,
+-					  unsigned int *data);
++					  unsigned int *data)
++{
++	if (insn->n != 2)
++		return -EINVAL;
+ 
+-static int aio_iiro_16_dio_insn_bits_write(struct comedi_device *dev,
+-					   struct comedi_subdevice *s,
+-					   struct comedi_insn *insn,
+-					   unsigned int *data);
++	data[1] = 0;
++	data[1] |= inb(dev->iobase + AIO_IIRO_16_INPUT_0_7);
++	data[1] |= inb(dev->iobase + AIO_IIRO_16_INPUT_8_15) << 8;
++
++	return 2;
++}
+ 
+ static int aio_iiro_16_attach(struct comedi_device *dev,
+ 			      struct comedi_devconfig *it)
+@@ -148,53 +159,26 @@ static int aio_iiro_16_detach(struct comedi_device *dev)
+ 	return 0;
+ }
+ 
+-static int aio_iiro_16_dio_insn_bits_write(struct comedi_device *dev,
+-					   struct comedi_subdevice *s,
+-					   struct comedi_insn *insn,
+-					   unsigned int *data)
+-{
+-	if (insn->n != 2)
+-		return -EINVAL;
+-
+-	if (data[0]) {
+-		s->state &= ~data[0];
+-		s->state |= data[0] & data[1];
+-		outb(s->state & 0xff, dev->iobase + AIO_IIRO_16_RELAY_0_7);
+-		outb((s->state >> 8) & 0xff,
+-		     dev->iobase + AIO_IIRO_16_RELAY_8_15);
+-	}
+-
+-	data[1] = s->state;
+-
+-	return 2;
+-}
+-
+-static int aio_iiro_16_dio_insn_bits_read(struct comedi_device *dev,
+-					  struct comedi_subdevice *s,
+-					  struct comedi_insn *insn,
+-					  unsigned int *data)
+-{
+-	if (insn->n != 2)
+-		return -EINVAL;
+-
+-	data[1] = 0;
+-	data[1] |= inb(dev->iobase + AIO_IIRO_16_INPUT_0_7);
+-	data[1] |= inb(dev->iobase + AIO_IIRO_16_INPUT_8_15) << 8;
+-
+-	return 2;
+-}
++static struct comedi_driver driver_aio_iiro_16 = {
++	.driver_name	= "aio_iiro_16",
++	.module		= THIS_MODULE,
++	.attach		= aio_iiro_16_attach,
++	.detach		= aio_iiro_16_detach,
++	.board_name	= &aio_iiro_16_boards[0].name,
++	.offset		= sizeof(struct aio_iiro_16_board),
++	.num_names	= ARRAY_SIZE(aio_iiro_16_boards),
++};
+ 
+ static int __init driver_aio_iiro_16_init_module(void)
+ {
+ 	return comedi_driver_register(&driver_aio_iiro_16);
+ }
++module_init(driver_aio_iiro_16_init_module);
+ 
+ static void __exit driver_aio_iiro_16_cleanup_module(void)
+ {
+ 	comedi_driver_unregister(&driver_aio_iiro_16);
+ }
+-
+-module_init(driver_aio_iiro_16_init_module);
+ module_exit(driver_aio_iiro_16_cleanup_module);
+ 
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
