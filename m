@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab2DWGRF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 02:17:05 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:36414 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752971Ab2DWGRD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 02:17:03 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/WeB9OayLWYAZo2AKAMQsW8s5XsMP+dyV4NJT371
-	l3ypJRiL0bxuIo
-Message-ID: <4F94F3D7.5030904@gmx.de>
-Date: Mon, 23 Apr 2012 06:16:55 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
+	id S1753762Ab2DWGRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 02:17:30 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:58482 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753684Ab2DWGR2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 02:17:28 -0400
 MIME-Version: 1.0
-To: David Brown <davidb@codeaurora.org>
-CC: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 1/2] video: msm: Fix section mismatches in mddi.c
-References: <1334256334-8234-1-git-send-email-davidb@codeaurora.org>
-In-Reply-To: <1334256334-8234-1-git-send-email-davidb@codeaurora.org>
+In-Reply-To: <1335114510-29413-1-git-send-email-agust@denx.de>
+References: <1335114510-29413-1-git-send-email-agust@denx.de>
+Date: Mon, 23 Apr 2012 11:47:25 +0530
+Message-ID: <CAP05o4JpwtERvLRitBKztrcr_9N+Kxm+SgU=yptUu9VfL3avkg@mail.gmail.com>
+Subject: Re: [PATCH] mfd: omap-ush-host: Fix build breakage
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Anatolij Gustschin <agust@denx.de>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2012 06:45 PM, David Brown wrote:
-> The change
->     commit 461cbe77d0a4f887c33a3a95ea68a7daf23b4302
->     Author: Gregory Bean <gbean@codeaurora.org>
->     Date:   Wed Jul 28 10:22:13 2010 -0700
-> 
->         video: msm: Fix section mismatch in mddi.c.
-> 
-> fixes a section mismatch between the board file and the driver's probe
-> function, however, it misses the additional mismatches between the
-> probe function and some routines it calls.  Fix these up as well.
-> 
-> Signed-off-by: David Brown <davidb@codeaurora.org>
-
-Applied.
-
-
-Thanks,
-
-Florian Tobias Schandinat
-
+On Sun, Apr 22, 2012 at 10:38 PM, Anatolij Gustschin <agust@denx.de> wrote:
+> Commit 1fcb57d0f6e1150003d222051aaaf4bc4a9ccc94 (ARM: OMAP3: USB: Fix
+> the EHCI ULPI PHY reset issue) removed #include <linux/gpio.h> which
+> indirectly includes 'plat/cpu.h'. This caused build breakage:
+>
+> drivers/mfd/omap-usb-host.c: In function 'omap_usbhs_init':
+> drivers/mfd/omap-usb-host.c:525:3: error: implicit declaration of function 'cpu_is_omap3430'
+> drivers/mfd/omap-usb-host.c:525:3: error: implicit declaration of function 'omap_rev'
+> drivers/mfd/omap-usb-host.c:525:43: error: 'OMAP3430_REV_ES2_1' undeclared (first use in this function)
+>
+> Include <plat/cpu.h> to fix it.
+>
+> Signed-off-by: Anatolij Gustschin <agust@denx.de>
+> Cc: Keshava Munegowda <Keshava_mgowda@ti.com>
 > ---
->  drivers/video/msm/mddi.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/video/msm/mddi.c b/drivers/video/msm/mddi.c
-> index 4527cbf..b061d70 100644
-> --- a/drivers/video/msm/mddi.c
-> +++ b/drivers/video/msm/mddi.c
-> @@ -420,7 +420,7 @@ static void mddi_resume(struct msm_mddi_client_data *cdata)
->  	mddi_set_auto_hibernate(&mddi->client_data, 1);
->  }
->  
-> -static int __init mddi_get_client_caps(struct mddi_info *mddi)
-> +static int __devinit mddi_get_client_caps(struct mddi_info *mddi)
->  {
->  	int i, j;
->  
-> @@ -622,9 +622,9 @@ uint32_t mddi_remote_read(struct msm_mddi_client_data *cdata, uint32_t reg)
->  
->  static struct mddi_info mddi_info[2];
->  
-> -static int __init mddi_clk_setup(struct platform_device *pdev,
-> -				 struct mddi_info *mddi,
-> -				 unsigned long clk_rate)
-> +static int __devinit mddi_clk_setup(struct platform_device *pdev,
-> +				    struct mddi_info *mddi,
-> +				    unsigned long clk_rate)
->  {
->  	int ret;
->  
+>  drivers/mfd/omap-usb-host.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+> index c8aae66..7e96bb2 100644
+> --- a/drivers/mfd/omap-usb-host.c
+> +++ b/drivers/mfd/omap-usb-host.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/clk.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/spinlock.h>
+> +#include <plat/cpu.h>
+>  #include <plat/usb.h>
+>  #include <linux/pm_runtime.h>
+>
+> --
+> 1.7.1
+>
 
+Yes, this seems correct!
+But, on which config you are seeing this error?
+
+regards
+keshava
