@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab2DWBMo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 21:12:44 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60140 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076Ab2DWBMn (ORCPT
+	id S1753229Ab2DWBRW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 21:17:22 -0400
+Received: from science.horizon.com ([71.41.210.146]:26677 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753062Ab2DWBRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 21:12:43 -0400
-X-AuditID: 9c930197-b7ca1ae0000069e6-6c-4f94ac88a8d2
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] tracing: Check return value of tracing_dentry_percpu()
-Date: Mon, 23 Apr 2012 10:11:57 +0900
-Message-Id: <1335143517-2285-1-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.10
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 22 Apr 2012 21:17:21 -0400
+Date: 22 Apr 2012 21:17:19 -0400
+Message-ID: <20120423011719.24546.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: acme@ghostprotocols.net
+Subject: Re: [GIT PULL 00/13] Annotation improvements (G+ edition)
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If tracing_dentry_percpu() failed, tracing_init_debugfs_percpu()
-will try to create each cpu directories on debugfs' root directory
-as d_percpu is NULL.
+A simpler way might just be to use the gas syntax of appending a "b" or
+"f" to the branch number, indicating whether the target is in front
+or behind.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- kernel/trace/trace.c |    3 +++
- 1 file changed, 3 insertions(+)
+Gas permits integer branch labels to be re-used, so it's necessary to
+specify a direction.
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index ed7b5d1e12f4..54df9a672fd9 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4367,6 +4367,9 @@ static void tracing_init_debugfs_percpu(long cpu)
- 	struct dentry *d_cpu;
- 	char cpu_dir[30]; /* 30 characters should be more than enough */
- 
-+	if (!d_percpu)
-+		return;
-+
- 	snprintf(cpu_dir, 30, "cpu%ld", cpu);
- 	d_cpu = debugfs_create_dir(cpu_dir, d_percpu);
- 	if (!d_cpu) {
--- 
-1.7.10
+Another thing that might help a reader is a comment indicating the number
+of branches to a target, divided by direction.  Targets of backward
+branches are obviously more interesting from a performance standpoint,
+as they're likely to be the start of loops.
 
+
+If you *want* to re-use branch target labels, there's a simple algorithm
+for assigning them, given a list of all branch origins for each target:
+
+First, collapse the list of all branch origins into a range, listing
+the first and last reference to the target.  (The target itself counts
+as a reference.)
+
+Then repeat the following for n=0, 1, 2, ... until there are
+no more targets left:
+
+In some arbitrary order (I suggest increasing order of range size),
+consider each of the remaining targets.  If there are no other targets
+within its range, it may be assigned the label n.  If there are other
+targets within its range, postpone this target for a later pass, and
+remove it from the list of remaining targets.
+
+Once the decision has been made to postpone a target to a later pass, it
+no longer counts as "in the range" for other targets considered this pass.
+This resolves the intersecting branches case:
+
+	je 1f
+0:
+	foo
+1:
+	jbe 0b
+
+Here, the 1: target was considered first, and had to be postponed
+because the 0: target was in its range.  Then the 0: target saw nothing
+conflicting it its range, and so was assigned.
+
+Because it's not possible to postpone every target (if this were about
+to happen, there will be no remaining targets within the range of the
+last target considered, so it will be assigned and not postponed),
+each iteration will assign at least one target.
+
+After considering all remaining targets, forget about the assigned ones,
+incrmeent n, and go back and re-consider the postponed ones.
+
+While the algorithm is potentially inefficient in contrived cases,
+I don't think it'll be a huge problem in practice.
+
+Even if you don't want to assign labels this way, a similar algorithm
+can assign columns to branching arrows so they do not overlap.
