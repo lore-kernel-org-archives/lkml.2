@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab2DWSp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 14:45:28 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:58908 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550Ab2DWSp1 (ORCPT
+	id S1754727Ab2DWSrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 14:47:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11059 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab2DWSrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 14:45:27 -0400
-Date: Mon, 23 Apr 2012 20:45:09 +0200
-From: Anatolij Gustschin <agust@denx.de>
-To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] mfd: omap-ush-host: Fix build breakage
-Message-ID: <20120423204509.587bf0b2@wker>
-In-Reply-To: <CAP05o4JpwtERvLRitBKztrcr_9N+Kxm+SgU=yptUu9VfL3avkg@mail.gmail.com>
-References: <1335114510-29413-1-git-send-email-agust@denx.de>
-	<CAP05o4JpwtERvLRitBKztrcr_9N+Kxm+SgU=yptUu9VfL3avkg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 23 Apr 2012 14:47:31 -0400
+X-Authority-Analysis: v=2.0 cv=XbcLPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=WomB85Q-PKsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=57SyGIRnAAAA:8 a=qnMPPnmNQjRLvb204ZkA:9 a=PUjeQqilurYA:10 a=TIV7c6GJmisA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1335206848.28106.115.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 08/11] parse-events: Fix some comments
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 23 Apr 2012 14:47:28 -0400
+In-Reply-To: <1335157118-14658-9-git-send-email-namhyung.kim@lge.com>
+References: <1335157118-14658-1-git-send-email-namhyung.kim@lge.com>
+	 <1335157118-14658-9-git-send-email-namhyung.kim@lge.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Apr 2012 11:47:25 +0530
-"Munegowda, Keshava" <keshava_mgowda@ti.com> wrote:
-...
-> Yes, this seems correct!
-> But, on which config you are seeing this error?
+On Mon, 2012-04-23 at 13:58 +0900, Namhyung Kim wrote:
+> Update and add missing argument descriptions and fix some typo
+> on function comments.
+> 
 
-I was working on some drivers for am3517 based board and I'm seeing
-this error since I rebased by patches on v3.4-rc4.
+Applied, thanks!
 
-Thanks,
-Anatolij
+> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> ---
+
+>   *
+> - * Returns: 0 on success, -1 field not fould, or 1 if buffer is full.
+> + * Returns: 0 on success, -1 field not found, or 1 if buffer is full.
+
+Must have been some dvorak/qwerty brain fart (I use dvorak). As, the
+qwerty 'l' is the dvorak 'n'.
+
+-- Steve
+
+>   */
+>  int pevent_print_num_field(struct trace_seq *s, const char *fmt,
+>  			   struct event_format *event, const char *name,
+
+
