@@ -1,101 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab2DWTqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 15:46:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48009 "EHLO mx1.redhat.com"
+	id S1755183Ab2DWTqY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 15:46:24 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:60480 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752397Ab2DWTqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 15:46:07 -0400
-Message-ID: <4F95B17B.3030401@redhat.com>
-Date: Mon, 23 Apr 2012 15:46:03 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+	id S1752397Ab2DWTqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 15:46:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Aaron Lu <aaron.lu@amd.com>
+Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
+Date: Mon, 23 Apr 2012 21:50:57 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, Lin Ming <ming.m.lin@intel.com>,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
+References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com> <201204231343.03382.rjw@sisk.pl> <20120423151327.GA4019@fedora>
+In-Reply-To: <20120423151327.GA4019@fedora>
 MIME-Version: 1.0
-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: One problem in reassign pci bus number?
-References: <20120410090306.GA7056@richard> <20120422155202.GA13540@richard>
-In-Reply-To: <20120422155202.GA13540@richard>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201204232150.57812.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2012 11:52 AM, Richard Yang wrote:
-> All,
->
-> I am reading the pci_scan_bridge() and not sure what will happen in
-> following situation.
->
-> Suppose the kernel is not passed the pci=assign-busses.
->
-> Below is a picture about the pci system.
->
->                     +-------+
->                     |       | root bridge(0,255)
->                     +---+---+
->                         |          Bus 0
->        -----+-----------+------------------------------+--
->             |                                          |
->             |                                          |
->             |                                          |
->        +----+----+                               +-----+-----+
->        |         |  B1(1,15)                     |           |B2(16,28)
->        +----+----+                               +-----+-----+
->             |  Bus 1                                   |    Bus 16
->        -----+-----------------------         ----------+----------------
->                              |
->                         +----+----+
->                         |         | B3
->                         +---------+
->
-> Suppose B1 and B2 works fine with the BIOS, which get the right bus
-> number and range.
->
-> B3 does not works fine with the BIOS, which doesn't get the bus number.
->
-> So in pci_scan_bridge(), B3 will be met in the second pass and get bus
-> number 16?
+On Monday, April 23, 2012, Aaron Lu wrote:
+> On Mon, Apr 23, 2012 at 01:43:03PM +0200, Rafael J. Wysocki wrote:
+> > On Monday, April 23, 2012, Aaron Lu wrote:
+> > > Hi Rafael and Ming,
+> > > 
+> > > Do you have any more comments on this patch?
+> > > If not, can I have your ack? Thanks.
+> > > 
+> > > -Aaron
+> > > 
+> > > On Sun, Apr 01, 2012 at 02:18:30AM +0800, Aaron Lu wrote:
+> > > > When entering D3 Cold from a higher device state, evaluate _PS3 first
+> > > > and then make the proper power transition.
+> > > > This is used to solve the ZPODD problem on AMD's platform, _PS3 on such
+> > > > platforms will power off the ODD device and thus make the device enter
+> > > > D3 cold state.
+> > > > 
+> > > > Signed-off-by: Aaron Lu <aaron.lu@amd.com>
+> > > > Cc: Andiry Xu <andiry.xu@amd.com>
+> > > > Cc: Alex He <alex.he@amd.com>
+> > > > ---
+> > > >  drivers/acpi/bus.c |   17 ++++++++++++++---
+> > > >  1 file changed, 14 insertions(+), 3 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+> > > > index 3263b68..68e593f 100644
+> > > > --- a/drivers/acpi/bus.c
+> > > > +++ b/drivers/acpi/bus.c
+> > > > @@ -227,6 +227,8 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+> > > >  	int result = 0;
+> > > >  	acpi_status status = AE_OK;
+> > > >  	char object_name[5] = { '_', 'P', 'S', '0' + state, '\0' };
+> > > > +	struct acpi_device_power_state *ps;
+> > > > +	u8 explicit_set;
+> > > >  
+> > > >  	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
+> > > >  		return -EINVAL;
+> > > > @@ -239,7 +241,8 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+> > > >  		return 0;
+> > > >  	}
+> > > >  
+> > > > -	if (!device->power.states[state].flags.valid) {
+> > > > +	ps = &device->power.states[state];
+> > > > +	if (!ps->flags.valid) {
+> > > >  		printk(KERN_WARNING PREFIX "Device does not support D%d\n", state);
+> > > >  		return -ENODEV;
+> > > >  	}
+> > > > @@ -263,7 +266,7 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+> > > >  			if (result)
+> > > >  				goto end;
+> > > >  		}
+> > > > -		if (device->power.states[state].flags.explicit_set) {
+> > > > +		if (ps->flags.explicit_set) {
+> > > >  			status = acpi_evaluate_object(device->handle,
+> > > >  						      object_name, NULL, NULL);
+> > > >  			if (ACPI_FAILURE(status)) {
+> > > > @@ -272,7 +275,15 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+> > > >  			}
+> > > >  		}
+> > > >  	} else {
+> > > > -		if (device->power.states[state].flags.explicit_set) {
+> > > > +		/* If state is D3 Cold, try to evaluate _PS3 first */
+> > > > +		if (state == ACPI_STATE_D3_COLD) {
+> > > > +			explicit_set = (ps - 1)->flags.explicit_set;
+> > > > +			object_name[3] -= 1;
+> > > > +		}
+> > > > +		else {
+> > > > +			explicit_set = ps->flags.explicit_set;
+> > > > +		}
+> > 
+> > I really don't like this.  I think you should modify acpi_bus_get_power_flags(),
+> > on top of the recent Lin Ming's patch, so that it sets flags.explicit_set for
+> > D3_COLD if _PS3 is present and _PR3 is not.
+> > 
+> 
+> Thanks for your comments.
+> 
+> > I'm not sure you'll need the $subject patch any more then.
+> > 
+> 
+> A little change is still required. I attached the code below.
+> BTW, I think _PS3 will also need be executed if both _PS3 and _PR3
+> available when putting a device into D3cold.
 
-unfortunately, today, the answer is yes.
-I have run into a similar problem recently when trying to use pci=assign-busses
-with an SRIOV device behind a non-ARI-capable PCIe switch.
-In this scenario, the assign-busses code assigned the next bus number,
-which conflicted with an existing one on the system, and hangs the
-system -- two bridges responding to the same PCI bus num evidently
-confuses the hw! ;-)
+Yes, ACPI 5.0 seems to indicate so at least.
 
-The PCI code is suppose to do two bus scans -- pass=0: to see what the BIOS
-has setup, and then pass=1 to assign non-BIOS setup devices.
-But, what I'm finding is that when pci=assign-busses is set, the
-pass=0 scan is not doing a full PCI tree scan and registering all
-the BIOS-setup busses first, and it tries to do extended bus assignment in pass=0,
-not pass=1; in the above configuration, it expands B1's bus num range from (1,15)
-to (1,16), then tries to scan behind it.  that creates an overlap btwn
-B1 & B2's sec/sub bus-num ranges, and they both respond to a Type1 config cycle
-with a bus-number of 16 (typically when trying to read the VID register of 16:0.0
-in this case).... boom! ... or more like silence due to system hang...
+> diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+> index 3263b68..187433f 100644
+> --- a/drivers/acpi/bus.c
+> +++ b/drivers/acpi/bus.c
+> @@ -273,6 +273,9 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+>  		}
+>  	} else {
+>  		if (device->power.states[state].flags.explicit_set) {
+> +			/* evaluate _PS3 instead of _PS4 when entering D3Cold */
+> +			if (state == ACPI_STATE_D3)
+> +				object_name[3] -= 1;
 
-*If* the system spaces bus ranges apart, e.g., in your config above,
-if the BIOS setup B1(1,15) and B2(24,32), then pci=assign-busses will
-work because bus num 16 is free, and two bridges won't think they both
-respond to type1 pci config cycle (with bus-number=16 lying in their sec/sub-bus num range),
-and all will (luckily) work.
+Can you just put '3' here directly?  That'll be much cleaner than the
+subtraction (that could have been -- as well).
 
-Unfortunately, I'm in & out of work due to at-home time requirements,
-so I haven't had a chance to work out a proper patch.
-What should happen in the above case, is the kernel prints a warning saying
-it couldn't do needed assign-busses operations due to configuration constraints...
-and continue to do pci (pass=1) bridge scanning.... and not wedge the system
-as it does now.
-The base problem is that
-(a)pass=0 is doing bus-assigning, and it shouldn't be done
-     until pass=1, after all known BIOS-setup busses are known
-(b) the code doesn't have a nice warning and continuation when this
-     conflict occurs.
+>  			status = acpi_evaluate_object(device->handle,
+>  						      object_name, NULL, NULL);
+>  			if (ACPI_FAILURE(status)) {
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 7417267..de2ae10 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -887,8 +887,12 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+>  		/* Evaluate "_PSx" to see if we can do explicit sets */
+>  		object_name[2] = 'S';
+>  		status = acpi_get_handle(device->handle, object_name, &handle);
+> -		if (ACPI_SUCCESS(status))
+> +		if (ACPI_SUCCESS(status)) {
+>  			ps->flags.explicit_set = 1;
+> +			/* Also set D3Cold's explicit flag when _PS3 exists */
+> +			if (i == ACPI_STATE_D3_HOT)
+> +				(ps+1)->flags.explicit_set = 1;
 
-> Would this be a conflict?
->
-summary: yes.
+Please don't use pointer arithmetics here.  I know it _happens_ to work,
+but I don't think it's appropriate in this situation at all.
 
+> +		}
+>  
+>  		/*
+>  		 * State is valid if there are means to put the device into it.
+
+Thanks,
+Rafael
