@@ -1,151 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab2DWDYg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 23:24:36 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:50733 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121Ab2DWDYe (ORCPT
+	id S1753487Ab2DWDmX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 23:42:23 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:45628 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121Ab2DWDmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 23:24:34 -0400
-X-AuditID: b753bd60-99794ba000007b1b-34-4f94cb6fca8b
-X-AuditID: b753bd60-99794ba000007b1b-34-4f94cb6fca8b
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip ] perf probe: Fix finder to find lines of given function
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Mon, 23 Apr 2012 12:24:36 +0900
-Message-ID: <20120423032435.8737.80064.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 22 Apr 2012 23:42:21 -0400
+Date: Mon, 23 Apr 2012 13:42:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: linux-next: build failure after merge of the drm tree
+Message-Id: <20120423134211.3456f8acf83dfb3d38d44905@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__23_Apr_2012_13_42_11_+1000_3mNhX1g.A42QCeez"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit ba28c59bc9ed8fb7b9a753cd88ee54a2c4f6265b fixed
-a declaration entry bug in probe_point_search_cb().
-There are same bugs in line finder and call_probe_finder().
-This introduces a new dwarf utility function to determine
-given DIE is a function definition, not declaration.
+--Signature=_Mon__23_Apr_2012_13_42_11_+1000_3mNhX1g.A42QCeez
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
+Hi Dave,
 
- tools/perf/util/dwarf-aux.c    |   19 +++++++++++++++++++
- tools/perf/util/dwarf-aux.h    |    3 +++
- tools/perf/util/probe-finder.c |   12 +++++-------
- 3 files changed, 27 insertions(+), 7 deletions(-)
+After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
-index ee51e9b..66a76e5 100644
---- a/tools/perf/util/dwarf-aux.c
-+++ b/tools/perf/util/dwarf-aux.c
-@@ -263,6 +263,21 @@ bool die_is_signed_type(Dwarf_Die *tp_die)
- }
- 
- /**
-+ * die_is_func_def - Ensure that this DIE is a subprogram and definition
-+ * @dw_die: a DIE
-+ *
-+ * Ensure that this DIE is a subprogram and NOT a declaration. This
-+ * returns true if @dw_die is a function definition.
-+ **/
-+bool die_is_func_def(Dwarf_Die *dw_die)
-+{
-+	Dwarf_Attribute attr;
-+
-+	return (dwarf_tag(dw_die) == DW_TAG_subprogram &&
-+		dwarf_attr(dw_die, DW_AT_declaration, &attr) == NULL);
-+}
-+
-+/**
-  * die_get_data_member_location - Get the data-member offset
-  * @mb_die: a DIE of a member of a data structure
-  * @offs: The offset of the member in the data structure
-@@ -392,6 +407,10 @@ static int __die_search_func_cb(Dwarf_Die *fn_die, void *data)
- {
- 	struct __addr_die_search_param *ad = data;
- 
-+	/*
-+	 * Since a declaration entry doesn't has given pc, this always returns
-+	 * function definition entry.
-+	 */
- 	if (dwarf_tag(fn_die) == DW_TAG_subprogram &&
- 	    dwarf_haspc(fn_die, ad->addr)) {
- 		memcpy(ad->die_mem, fn_die, sizeof(Dwarf_Die));
-diff --git a/tools/perf/util/dwarf-aux.h b/tools/perf/util/dwarf-aux.h
-index 6ce1717..8658d41 100644
---- a/tools/perf/util/dwarf-aux.h
-+++ b/tools/perf/util/dwarf-aux.h
-@@ -38,6 +38,9 @@ extern int cu_find_lineinfo(Dwarf_Die *cudie, unsigned long addr,
- extern int cu_walk_functions_at(Dwarf_Die *cu_die, Dwarf_Addr addr,
- 			int (*callback)(Dwarf_Die *, void *), void *data);
- 
-+/* Ensure that this DIE is a subprogram and definition (not declaration) */
-+extern bool die_is_func_def(Dwarf_Die *dw_die);
-+
- /* Compare diename and tname */
- extern bool die_compare_name(Dwarf_Die *dw_die, const char *tname);
- 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index d448984..d793c0a 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -726,7 +726,7 @@ static int call_probe_finder(Dwarf_Die *sc_die, struct probe_finder *pf)
- 	}
- 
- 	/* If not a real subprogram, find a real one */
--	if (dwarf_tag(sc_die) != DW_TAG_subprogram) {
-+	if (!die_is_func_def(sc_die)) {
- 		if (!die_find_realfunc(&pf->cu_die, pf->addr, &pf->sp_die)) {
- 			pr_warning("Failed to find probe point in any "
- 				   "functions.\n");
-@@ -972,12 +972,10 @@ static int probe_point_search_cb(Dwarf_Die *sp_die, void *data)
- 	struct dwarf_callback_param *param = data;
- 	struct probe_finder *pf = param->data;
- 	struct perf_probe_point *pp = &pf->pev->point;
--	Dwarf_Attribute attr;
- 
- 	/* Check tag and diename */
--	if (dwarf_tag(sp_die) != DW_TAG_subprogram ||
--	    !die_compare_name(sp_die, pp->function) ||
--	    dwarf_attr(sp_die, DW_AT_declaration, &attr))
-+	if (!die_is_func_def(sp_die) ||
-+	    !die_compare_name(sp_die, pp->function))
- 		return DWARF_CB_OK;
- 
- 	/* Check declared file */
-@@ -1466,7 +1464,7 @@ static int line_range_inline_cb(Dwarf_Die *in_die, void *data)
- 	return 0;
- }
- 
--/* Search function from function name */
-+/* Search function definition from function name */
- static int line_range_search_cb(Dwarf_Die *sp_die, void *data)
- {
- 	struct dwarf_callback_param *param = data;
-@@ -1477,7 +1475,7 @@ static int line_range_search_cb(Dwarf_Die *sp_die, void *data)
- 	if (lr->file && strtailcmp(lr->file, dwarf_decl_file(sp_die)))
- 		return DWARF_CB_OK;
- 
--	if (dwarf_tag(sp_die) == DW_TAG_subprogram &&
-+	if (die_is_func_def(sp_die) &&
- 	    die_compare_name(sp_die, lr->function)) {
- 		lf->fname = dwarf_decl_file(sp_die);
- 		dwarf_decl_line(sp_die, &lr->offset);
+ERROR: "vga_default_device" [arch/x86/video/fbdev.ko] undefined!
 
+Caused by commit 49c33b97c5f4 ("x86: Use vga_default_device() when
+determining whether an fb is primary").
+
+I have used the drm tree from next-20120420 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__23_Apr_2012_13_42_11_+1000_3mNhX1g.A42QCeez
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPlM+TAAoJEECxmPOUX5FE6IsP/3Nr5KyV0OC+ze15XkhyWqQ9
+g2e+fQWjQCNkKg0vN8FYk1vi17RCWRleI0fEqts2KYhiLJK2tfaGvzrVqDPspR/8
+hr3MlHCF4xM+rrpy44rkuH98Pb2U61VcQyxM8HocjYWoqSZhZrrQRseJf794DDyH
+L+RGlxQcHpNCeTnOr/A6PgyX9+nt1LkEBFenAhqUk+cjFoPgzL9NOTqEkYayXo9w
+FuorZ/ZSXEZfOO/l4L7EXnHY83qBGM61V+SJtZjTewg5oNSEZ3JaiOjnfLvR904h
+Qo8fHJ6FngVE7ZrU9CD1lVt53QZ35GSQr0j67VwERf4eKAoqOTdBC1og4UJclQUn
+Y4WTk2diIo2zFb9qJ/mar7oCJt9cuvxCk+1tnxvcS2GZ9195S9PsACxdGd/7Jxab
+GEt1qzVr8pTDNMTLjPLjo+fmwfwT+vqgN1H65oKip0n3n+AhLYaQazgtmeaTAiI2
+BXjYIS3F93gXyNgtCCTuvv0ILyfa4r0KGB6N1K/cbUI30eycWZc2yg0ENuLBUkcn
+gX85dH+jKAlXhr/HV0exryivfFc1OwbWYmvWVL3CExPT+s4ktDwWlm8LKPksn7yZ
+tAr4+ZjeSSRrcF+9vSNNYDHRNSGishKLU4Lf3iTpwR8SXLDi0xF1hDQualnxhorf
+jiD3iM0B80T+eGGdD/am
+=Sj0f
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__23_Apr_2012_13_42_11_+1000_3mNhX1g.A42QCeez--
