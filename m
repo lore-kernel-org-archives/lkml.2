@@ -1,88 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab2DWQoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:44:12 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:56829 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692Ab2DWQnN (ORCPT
+	id S1754167Ab2DWQrJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:47:09 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:21456 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900Ab2DWQrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:43:13 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        Jan Engelhardt <jengelh@medozas.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 5/6] rcu: Make __kfree_rcu() less dependent on compiler choices
-Date: Mon, 23 Apr 2012 09:42:26 -0700
-Message-Id: <1335199347-13926-5-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120423164159.GA13819@linux.vnet.ibm.com>
- <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042316-6148-0000-0000-000005413E39
+	Mon, 23 Apr 2012 12:47:07 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-209.messagelabs.com!1335199611!3890515!22
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: refactor 8255 driver to remove forward declarations
+Date: Mon, 23 Apr 2012 09:38:24 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204230938.25701.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Engelhardt <jengelh@medozas.de>
+Move the module_init/module_exit routines and the associated
+struct comedi_driver variable to the end of the source. This is
+more typical of how other drivers are written and removes the
+need for the forward declarations.
 
-Currently, __kfree_rcu() is implemented as an inline function, and
-contains a BUILD_BUG_ON() that malfunctions if __kfree_rcu() is compiled
-as an out-of-line function.  Unfortunately, there are compiler settings
-(e.g., -O0) that can result in __kfree_rcu() being compiled out of line,
-resulting in annoying build breakage.  This commit therefore converts
-both __kfree_rcu() and __is_kfree_rcu_offset() from inline functions to
-macros to prevent such misbehavior on the part of the compiler.
+Also, move the do_config function to remove needing to have
+a forward declaration for that routine.
 
-Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- include/linux/rcupdate.h |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 20fb776..d5dfb10 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -922,6 +922,21 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
- 	kfree_call_rcu(head, (rcu_callback)offset);
+diff --git a/drivers/staging/comedi/drivers/8255.c b/drivers/staging/comedi/drivers/8255.c
+index 6c26ac8..ed80397 100644
+--- a/drivers/staging/comedi/drivers/8255.c
++++ b/drivers/staging/comedi/drivers/8255.c
+@@ -107,31 +107,6 @@ struct subdev_8255_struct {
+ #define CALLBACK_FUNC	(((struct subdev_8255_struct *)s->private)->cb_func)
+ #define subdevpriv	((struct subdev_8255_struct *)s->private)
+ 
+-static int dev_8255_attach(struct comedi_device *dev,
+-			   struct comedi_devconfig *it);
+-static int dev_8255_detach(struct comedi_device *dev);
+-static struct comedi_driver driver_8255 = {
+-	.driver_name = "8255",
+-	.module = THIS_MODULE,
+-	.attach = dev_8255_attach,
+-	.detach = dev_8255_detach,
+-};
+-
+-static int __init driver_8255_init_module(void)
+-{
+-	return comedi_driver_register(&driver_8255);
+-}
+-
+-static void __exit driver_8255_cleanup_module(void)
+-{
+-	comedi_driver_unregister(&driver_8255);
+-}
+-
+-module_init(driver_8255_init_module);
+-module_exit(driver_8255_cleanup_module);
+-
+-static void do_config(struct comedi_device *dev, struct comedi_subdevice *s);
+-
+ void subdev_8255_interrupt(struct comedi_device *dev,
+ 			   struct comedi_subdevice *s)
+ {
+@@ -185,6 +160,23 @@ static int subdev_8255_insn(struct comedi_device *dev,
+ 	return 2;
  }
  
-+/*
-+ * Does the specified offset indicate that the corresponding rcu_head
-+ * structure can be handled by kfree_rcu()?
-+ */
-+#define __is_kfree_rcu_offset(offset) ((offset) < 4096)
++static void do_config(struct comedi_device *dev, struct comedi_subdevice *s)
++{
++	int config;
 +
-+/*
-+ * Helper macro for kfree_rcu() to prevent argument-expansion eyestrain.
-+ */
-+#define __kfree_rcu(head, offset) \
-+	do { \
-+		BUILD_BUG_ON(!__is_kfree_rcu_offset(offset)); \
-+		call_rcu(head, (void (*)(struct rcu_head *))(unsigned long)(offset)); \
-+	} while (0)
++	config = CR_CW;
++	/* 1 in io_bits indicates output, 1 in config indicates input */
++	if (!(s->io_bits & 0x0000ff))
++		config |= CR_A_IO;
++	if (!(s->io_bits & 0x00ff00))
++		config |= CR_B_IO;
++	if (!(s->io_bits & 0x0f0000))
++		config |= CR_C_LO_IO;
++	if (!(s->io_bits & 0xf00000))
++		config |= CR_C_HI_IO;
++	CALLBACK_FUNC(1, _8255_CR, config, CALLBACK_ARG);
++}
 +
- /**
-  * kfree_rcu() - kfree an object after a grace period.
-  * @ptr:	pointer to kfree
-@@ -944,6 +959,9 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
-  *
-  * Note that the allowable offset might decrease in the future, for example,
-  * to allow something like kmem_cache_free_rcu().
-+ *
-+ * The BUILD_BUG_ON check must not involve any function calls, hence the
-+ * checks are done in macros here.
-  */
- #define kfree_rcu(ptr, rcu_head)					\
- 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
--- 
-1.7.8
-
+ static int subdev_8255_insn_config(struct comedi_device *dev,
+ 				   struct comedi_subdevice *s,
+ 				   struct comedi_insn *insn, unsigned int *data)
+@@ -222,23 +214,6 @@ static int subdev_8255_insn_config(struct comedi_device *dev,
+ 	return 1;
+ }
+ 
+-static void do_config(struct comedi_device *dev, struct comedi_subdevice *s)
+-{
+-	int config;
+-
+-	config = CR_CW;
+-	/* 1 in io_bits indicates output, 1 in config indicates input */
+-	if (!(s->io_bits & 0x0000ff))
+-		config |= CR_A_IO;
+-	if (!(s->io_bits & 0x00ff00))
+-		config |= CR_B_IO;
+-	if (!(s->io_bits & 0x0f0000))
+-		config |= CR_C_LO_IO;
+-	if (!(s->io_bits & 0xf00000))
+-		config |= CR_C_HI_IO;
+-	CALLBACK_FUNC(1, _8255_CR, config, CALLBACK_ARG);
+-}
+-
+ static int subdev_8255_cmdtest(struct comedi_device *dev,
+ 			       struct comedi_subdevice *s,
+ 			       struct comedi_cmd *cmd)
+@@ -462,6 +437,25 @@ static int dev_8255_detach(struct comedi_device *dev)
+ 	return 0;
+ }
+ 
++static struct comedi_driver driver_8255 = {
++	.driver_name	= "8255",
++	.module		= THIS_MODULE,
++	.attach		= dev_8255_attach,
++	.detach		= dev_8255_detach,
++};
++
++static int __init driver_8255_init_module(void)
++{
++	return comedi_driver_register(&driver_8255);
++}
++module_init(driver_8255_init_module);
++
++static void __exit driver_8255_cleanup_module(void)
++{
++	comedi_driver_unregister(&driver_8255);
++}
++module_exit(driver_8255_cleanup_module);
++
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
+ MODULE_DESCRIPTION("Comedi low-level driver");
+ MODULE_LICENSE("GPL");
