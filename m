@@ -1,202 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2DWUHk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 16:07:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754535Ab2DWUHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 16:07:33 -0400
-Message-ID: <4F95B67D.7020706@redhat.com>
-Date: Mon, 23 Apr 2012 16:07:25 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+	id S1754723Ab2DWUJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 16:09:26 -0400
+Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:51802 "EHLO
+	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754269Ab2DWUJZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 16:09:25 -0400
+Message-ID: <4F95B6F3.3010303@calxeda.com>
+Date: Mon, 23 Apr 2012 15:09:23 -0500
+From: Rob Herring <rob.herring@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mikko Vinni <mmvinni@yahoo.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Allen Kay <allen.m.kay@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] PCI: Fix regression in pci_restore_state()
-References: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com> <201204152140.40747.rjw@sisk.pl> <CAErSpo4St6zBBz7131Ne3BEHNO8Xcq8sCy3T5HV1F0B1B1u1cg@mail.gmail.com> <201204232153.57351.rjw@sisk.pl>
-In-Reply-To: <201204232153.57351.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+CC: linux-kernel@vger.kernel.org, tcminyard@gmail.com
+Subject: Re: [BISECTED] ipmi_si not loading since 2.6.39
+References: <20120420223833.GA7855@nik-comp.lan> <20120421072056.GA2033@nik-comp.lan>
+In-Reply-To: <20120421072056.GA2033@nik-comp.lan>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 03:53 PM, Rafael J. Wysocki wrote:
-> On Monday, April 23, 2012, Bjorn Helgaas wrote:
->> On Sun, Apr 15, 2012 at 1:40 PM, Rafael J. Wysocki<rjw@sisk.pl>  wrote:
->>> On Sunday, April 15, 2012, Linus Torvalds wrote:
->>>> On Sun, Apr 15, 2012 at 11:47 AM, Rafael J. Wysocki<rjw@sisk.pl>  wrote:
->>>>>
->>>>> mdelay(10) doesn't really look good either to me in this case, though.
->>>>
->>>> Oh, I agree. What kind of ass-backwards device actually needs that
->>>> kind of crazy delays? It is almost certainly buggy.
->>>>
->>>> With retries, 10ms delays are totally unacceptable. There's something wrong.
->>>>
->>>> A single ms *may* be ok.
->>>>
->>>> Anyway, can you also split the actual "write _one_ register with
->>>> retry" into a function of its own? The code looks like crap with those
->>>> multiple levels of looping, with conditionals inside them etc. With a
->>>> simple helper function, you could change the break into return, and it
->>>> would look much better, I bet.
->>>
->>> Sure.  It appears cleaner this way.
->>>
->>> ---
->>> From: Rafael J. Wysocki<rjw@sisk.pl>
->>> Subject: PCI: Fix regression in pci_restore_state(), v3
->>>
->>> Commit 26f41062f28de65e11d3cf353e52d0be73442be1
->>>
->>>     PCI: check for pci bar restore completion and retry
->>>
->>> attempted to address problems with PCI BAR restoration on systems
->>> where FLR had not been completed before pci_restore_state() was
->>> called, but it did that in an utterly wrong way.
->>>
->>> First off, instead of retrying the writes for the BAR registers
->>> only, it did that for all of the PCI config space of the device,
->>> including the status register (whose value after the write quite
->>> obviously need not be the same as the written one).  Second, it
->>> added arbitrary delay to pci_restore_state() even for systems
->>> where the PCI config space restoration was successful at first
->>> attempt.  Finally, the mdelay(10) it added to every iteration of the
->>> writing loop was way too much of a delay for any reasonable device.
->>>
->>> All of this actually caused resume failures for some devices on
->>> the Mikko's system.
->>>
->>> To fix the regression, make pci_restore_state() only retry the
->>> writes for BAR registers and only wait if the first read from
->>> the register doesn't return the written value.  Additionaly, make
->>> it wait for 1 ms, instead of 10 ms, after every failing attempt
->>> to write into config space.
->>>
->>> Reported-by: Mikko Vinni<mmvinni@yahoo.com>
->>> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
->>> ---
->>>   drivers/pci/pci.c |   57 ++++++++++++++++++++++++++++++++++++------------------
->>>   1 file changed, 39 insertions(+), 18 deletions(-)
->>>
->>> Index: linux/drivers/pci/pci.c
->>> ===================================================================
->>> --- linux.orig/drivers/pci/pci.c
->>> +++ linux/drivers/pci/pci.c
->>> @@ -967,16 +967,47 @@ pci_save_state(struct pci_dev *dev)
->>>         return 0;
->>>   }
->>>
->>> +static void pci_restore_config_dword(struct pci_dev *pdev, int offset,
->>> +                                    u32 saved_val, int retry)
->>> +{
->>> +       u32 val;
->>> +
->>> +       pci_read_config_dword(pdev, offset,&val);
->>> +       if (val == saved_val)
->>> +               return;
->>> +
->>> +       for (;;) {
->>> +               dev_dbg(&pdev->dev, "restoring config space at offset "
->>> +                       "%#x (was %#x, writing %#x)\n", offset, val, saved_val);
->>> +               pci_write_config_dword(pdev, offset, saved_val);
->>> +               if (retry--<= 0)
->>> +                       return;
->>> +
->>> +               pci_read_config_dword(pdev, offset,&val);
->>> +               if (val == saved_val)
->>> +                       return;
->>> +
->>> +               mdelay(1);
->>> +       }
->>> +}
->>> +
->>> +static void pci_restore_config_space(struct pci_dev *pdev, int start, int end,
->>> +                                    int retry)
->>> +{
->>> +       int index;
->>> +
->>> +       for (index = end; index>= start; index--)
->>> +               pci_restore_config_dword(pdev, 4 * index,
->>> +                                        pdev->saved_config_space[index],
->>> +                                        retry);
->>> +}
->>> +
->>>   /**
->>>   * pci_restore_state - Restore the saved state of a PCI device
->>>   * @dev: - PCI device that we're dealing with
->>>   */
->>>   void pci_restore_state(struct pci_dev *dev)
->>>   {
->>> -       int i;
->>> -       u32 val;
->>> -       int tries;
->>> -
->>>         if (!dev->state_saved)
->>>                 return;
->>>
->>> @@ -984,24 +1015,14 @@ void pci_restore_state(struct pci_dev *d
->>>         pci_restore_pcie_state(dev);
->>>         pci_restore_ats_state(dev);
->>>
->>> +       pci_restore_config_space(dev, 10, 15, 0);
->>>         /*
->>>          * The Base Address register should be programmed before the command
->>>          * register(s)
->>>          */
->>> -       for (i = 15; i>= 0; i--) {
->>> -               pci_read_config_dword(dev, i * 4,&val);
->>> -               tries = 10;
->>> -               while (tries&&  val != dev->saved_config_space[i]) {
->>> -                       dev_dbg(&dev->dev, "restoring config "
->>> -                               "space at offset %#x (was %#x, writing %#x)\n",
->>> -                               i, val, (int)dev->saved_config_space[i]);
->>> -                       pci_write_config_dword(dev,i * 4,
->>> -                               dev->saved_config_space[i]);
->>> -                       pci_read_config_dword(dev, i * 4,&val);
->>> -                       mdelay(10);
->>> -                       tries--;
->>> -               }
->>> -       }
->>> +       pci_restore_config_space(dev, 4, 9, 10);
->>> +       pci_restore_config_space(dev, 0, 3, 0);
->>> +
->>>         pci_restore_pcix_state(dev);
->>>         pci_restore_msi_state(dev);
->>>         pci_restore_iov_state(dev);
->>
->> I'd feel better about this if there were a way to delay in the FLR
->> path instead.  If we delay in the restore path, we're only fixing one
->> of the many ways config space can be written.  Other paths that write
->> config space will just silently fail.
->>
->> The PCIe spec (r3.0, sec 6.6.2) mentions waiting for the "pre-FLR
->> value for Completion Timeout," but I don't see anything that looks
->> like that in pcie_flr() or pci_af_flr().  Are there any other direct
->> ways we can detect when the FLR is complete?
->
-> I'm not aware of any.
->
-> Thanks,
-> Rafael
-I don't think so, either.
-I believe an ECN is being worked in the PCI-SIG
-to add such a notification, though.
-Even if adopted, need to wait for another crank of the hw before
-the notification can be used.
+On 04/21/2012 02:20 AM, Nikola Ciprich wrote:
+> Hi,
+> 
+> here's further information Rob and Corey requested:
+> 
+> on working system:
+> 
+> [root@vbox4 ~]# cat /proc/ipmi/0/params
+> kcs,i/o,0xca2,rsp=1,rsi=1,rsh=0,irq=0,ipmb=0
+> 
+> dmesg snippet:
+> 
+> [   41.759319] ipmi message handler version 39.2
+> [   41.760690] ipmi device interface
+> [   42.765334] IPMI System Interface driver.
+> [   42.765336] ipmi_si: probing via hardcoded address
+> [   42.765337] ipmi_si: Adding hardcoded-specified kcs state machine
+> [   42.765340] ipmi_si: Trying hardcoded-specified kcs state machine at i/o address 0xca8, slave address 0x0, irq 0
+> [   42.765344] ipmi_si: Interface detection failed
+> [   42.770823] ipmi_si: probing via SMBIOS
+> [   42.770834] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 irq 0
+> [   42.770836] ipmi_si: Adding SMBIOS-specified kcs state machine
+> [   42.770838] ipmi_si: probing via SPMI
+> [   42.770840] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
+> [   42.770841] ipmi_si: Adding SPMI-specified kcs state machine
+> [   42.770843] ipmi_si: Trying SMBIOS-specified kcs state machine at i/o address 0xca2, slave address 0x0, irq 0
+> [   42.798137] ipmi_si ipmi_si.0: Error clearing flags: cc
+> [   42.801011] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x002a7c, prod_id: 0x0624, dev_id: 0x20)
+> [   42.801068] ipmi_si ipmi_si.0: IPMI kcs interface initialized
+> 
+> 
+> dmidecode:
+> 
+> IPMI Device Information
+>         Interface Type: KCS (Keyboard Control Style)
+>         Specification Version: 2.0
+>         I2C Slave Address: 0x00
+>         NV Storage Device: Not Present
+>         Base Address: 0x0000000000000CA2 (I/O)
+>         Register Spacing: Successive Byte Boundaries
+> 
+> Base Board Information
+>         Manufacturer: Supermicro
+>         Product Name: X9SCL/X9SCM
+> 
+> (but we're experiencing this on various supermicro bords, ie X8DTL)
+> 
+> Tried setting parameters by hand didn't help:
+> 
+> modprobe ipmi_si type=kcs addrs=0xca8 regspacings=1 regsizes=1 regshifts=0 irqs=0 slave_addrs=0x0
+> 
+> (not sure whether I got them correct though, and values mostly seem to me to be defaults anyways..)
+> 
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+It is working for me on a SuperMicro system with ubuntu oneiric (3.0
+based).
 
+[597160.259728] ipmi_si: probing via SMBIOS
+[597160.259730] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 irq 0
+[597160.259731] ipmi_si: Adding SMBIOS-specified kcs state machine
+[597160.259734] ipmi_si: probing via SPMI
+[597160.259735] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
+[597160.259737] ipmi_si: Adding SPMI-specified kcs state machine
+[597160.259739] ipmi_si: Trying SMBIOS-specified kcs state machine at
+i/o address 0xca2, slave address 0x0, irq 0
+[597160.378757] ipmi_si: Invalid return from get global enables command,
+cannot enable the event buffer.
+[597160.382032] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x00b980,
+prod_id: 0x0624, dev_id: 0x20)
+[597160.382040] ipmi_si ipmi_si.0: IPMI kcs interface initialized
+[597179.973960] ipmi device interface
+localadm@sandy1:~$ ipmitool bmc info
+Could not open device at /dev/ipmi0 or /dev/ipmi/0 or /dev/ipmidev/0: No
+such file or directory
+Get Device ID command failed
+localadm@sandy1:~$ sudo ipmitool bmc info
+Device ID                 : 32
+Device Revision           : 1
+Firmware Revision         : 1.1
+IPMI Version              : 2.0
+Manufacturer ID           : 47488
+Manufacturer Name         : Unknown (0xB980)
+Product ID                : 1572 (0x0624)
+Product Name              : Unknown (0x624)
+Device Available          : yes
+Provides Device SDRs      : no
+Additional Device Support :
+    Sensor Device
+    SDR Repository Device
+    SEL Device
+    FRU Inventory Device
+    IPMB Event Receiver
+    IPMB Event Generator
+    Chassis Device
+Aux Firmware Rev Info     :
+    0x06
+    0x00
+    0x00
+    0x00
+localadm@sandy1:~$ uname -a
+Linux sandy1 3.0.0-16-generic #28-Ubuntu SMP Fri Jan 27 17:44:39 UTC
+2012 x86_64 x86_64 x86_64 GNU/Linux
+
+Rob
+
+> nik
+> 
+> 
+> On Sat, Apr 21, 2012 at 12:38:33AM +0200, Nikola Ciprich wrote:
+>> Hello,
+>>
+>> I was trying to find out why IPMI stopped working on new kernels. Since 2.6.39
+>> module loading ends with following message:
+>>
+>>  ipmi_si: Interface detection failed
+>>
+>> Then ipmitool is unable to control IPMI device. 
+>>
+>> Works for 2.6.38, doesn't work for 2.6.39, 3.0.28, 3.4-rc1.
+>>
+>> I got this bisected to following commit:
+>>
+>> commit a1e9c9dd3383e6a1a762464ad604b1081774dbda
+>> Author: Rob Herring <rob.herring@calxeda.com>
+>> Date:   Wed Feb 23 15:37:59 2011 -0600
+>>
+>>     ipmi: convert OF driver to platform driver
+>>     
+>>     of_bus is deprecated in favor of the plain platform bus. This patch
+>>     merges the ipmi OF driver with the existing platform driver.
+>>     
+>>     CONFIG_PPC_OF occurrances are removed or replaced with CONFIG_OF.
+>>     
+>>     Compile tested with and without CONFIG_OF. Tested OF probe and
+>>     default probe cases.
+>>     
+>>     Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>>     Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>>
+>> I wonder whether this is a bug, or I'm doing something wrong?
+>>
+>> Thanks in advance!
+>>
+>> with best regards
+>>
+>> nik
+>>
+>>
+>> -- 
+>> -------------------------------------
+>> Ing. Nikola CIPRICH
+>> LinuxBox.cz, s.r.o.
+>> 28. rijna 168, 709 01 Ostrava
+>>
+>> tel.:   +420 596 603 142
+>> fax:    +420 596 621 273
+>> mobil:  +420 777 093 799
+>>
+>> www.linuxbox.cz
+>>
+>> mobil servis: +420 737 238 656
+>> email servis: servis@linuxbox.cz
+>> -------------------------------------
+> 
+> 
+> 
