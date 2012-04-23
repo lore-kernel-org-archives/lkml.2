@@ -1,26 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab2DWNsW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 09:48:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50372 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786Ab2DWNsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 09:48:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANQmPXjoLvYe+X=TripkZi2s8JDG5pRYRYWS7FAMK_oixcHL7g@mail.gmail.com>
-References: <CANQmPXh-cu9tOJfceNZRHCBKFwR1-D5gQJOdMsnjty_LeLAADw@mail.gmail.com>
-	<CAJd=RBD4KaXtqiShWtDk3AWJb+ZQFEYEw41dZna=7am31jWVCw@mail.gmail.com>
-	<CANQmPXjoLvYe+X=TripkZi2s8JDG5pRYRYWS7FAMK_oixcHL7g@mail.gmail.com>
-Date: Mon, 23 Apr 2012 21:48:20 +0800
-Message-ID: <CANQmPXgVoVH_nW_FLJatp33bXBF83b1DKFMkphu8opVJ56vZEw@mail.gmail.com>
-Subject: Re: [PATCH] RIFS cpu scheduler
-From: mou Chen <hi3766691@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755453Ab2DWNu5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 09:50:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10558 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755183Ab2DWNuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 09:50:55 -0400
+Date: Mon, 23 Apr 2012 09:50:21 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Malahal Naineni <malahal@us.ibm.com>,
+        Steve Dickson <SteveD@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, hch@infradead.org,
+        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
+        chuck.lever@oracle.com, pstaubach@exagrid.com,
+        trond.myklebust@fys.uio.no, rees@umich.edu
+Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
+ from getattr call
+Message-ID: <20120423095021.1a91a23b@tlielax.poochiereds.net>
+In-Reply-To: <20120423133412.GB13681@fieldses.org>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+	<1334749927-26138-1-git-send-email-jlayton@redhat.com>
+	<20120420104055.511e15bc@tlielax.poochiereds.net>
+	<4F91C49D.8070908@RedHat.com>
+	<20120420203725.GA3512@us.ibm.com>
+	<20120420171314.73801874@corrin.poochiereds.net>
+	<CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
+	<20120423080012.7c23ef24@tlielax.poochiereds.net>
+	<20120423130009.GA13681@fieldses.org>
+	<20120423091255.00f926c4@tlielax.poochiereds.net>
+	<20120423133412.GB13681@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This scheduler is designed for desktop user only.It won't work well on
-Batch task scheduling.
+On Mon, 23 Apr 2012 09:34:12 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
+
+> On Mon, Apr 23, 2012 at 09:12:55AM -0400, Jeff Layton wrote:
+> > On Mon, 23 Apr 2012 09:00:09 -0400
+> > "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > 
+> > > On Mon, Apr 23, 2012 at 08:00:12AM -0400, Jeff Layton wrote:
+> > > > On Sun, 22 Apr 2012 07:40:57 +0200
+> > > > Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > > > 
+> > > > > On Fri, Apr 20, 2012 at 11:13 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> > > > > > On Fri, 20 Apr 2012 15:37:26 -0500
+> > > > > > Malahal Naineni <malahal@us.ibm.com> wrote:
+> > > > > >
+> > > > > >> Steve Dickson [SteveD@redhat.com] wrote:
+> > > > > >> > > 2) if we assume that it is fairly representative of one, how can we
+> > > > > >> > > achieve retrying indefinitely with NFS, or at least some large finite
+> > > > > >> > > amount?
+> > > > > >> > The amount of looping would be peer speculation. If the problem can
+> > > > > >> > not be handled by one simple retry I would say we simply pass the
+> > > > > >> > error up to the app... Its an application issue...
+> > > > > >>
+> > > > > >> As someone said, ESTALE is an incorrect errno for a path based call.
+> > > > > >> How about turning ESTALE into ENOENT after a retry or few retries?
+> > > > > >>
+> > > > > >
+> > > > > > It's not really the same thing. One could envision an application
+> > > > > > that's repeatedly renaming a new file on top of another one. The file
+> > > > > > is never missing from the namespace of the server, but you could still
+> > > > > > end up getting an ESTALE.
+> > > > > >
+> > > > > > That would break other atomicity guarantees in an even worse way, IMO...
+> > > > > 
+> > > > > For directory operations ESTALE *is* equivalent to ENOENT if already
+> > > > > retrying with LOOKUP_REVAL.  Think about it.  Atomic replacement by
+> > > > > another directory with rename(2) is not an excuse here actually.
+> > > > > Local filesystems too can end up with IS_DEAD directory after lookup
+> > > > > in that case.
+> > > > > 
+> > > > 
+> > > > Doesn't that violate POSIX? rename(2) is supposed to be atomic, and I
+> > > > can't see where there's any exception for that for directories.
+> > > 
+> > > Hm, but that only allows atomic replacement of the last component of a
+> > > path.
+> > > 
+> > > Suppose you're looking up a path, you've so far reached intermediate
+> > > directory "D", and the next step of the lookup (of some entry in D)
+> > > returns ESTALE.  Then either:
+> > > 
+> > > 	- D has since been unlinked, and ENOENT is obviously right.
+> > > 	- D was unlinked and then replaced by something else, in which
+> > > 	  case there was still a moment when ENOENT was correct.
+> > > 	- D was replaced atomically by a rename.  But for the rename to
+> > > 	  work it must have been replacing an empty directory, so there
+> > > 	  was still a moment when ENOENT would have been correct.
+> > 
+> > I don't think so...D should always exist in the namespace, so ENOENT
+> > would not be correct.
+> 
+> The operation above is a lookup in D, not a lookup of D.
+>
+> > Just because it was empty doesn't mean that it
+> > didn't exist...
+> > 
+> > > 	  (Exception: if D was actually a regular file or some other
+> > > 	  non-directory object, then ENOTDIR would be the right error:
+> > > 	  but if you're able to get at least object type atomically with
+> > > 	  a lookup, then you should have noticed this already on lookup
+> > > 	  of D.)
+> > > 
+> > > I think that's what Miklos meant?
+> > > 
+> > > --b.
+> > 
+> > Here's an example -- suppose we have two directories: /foo
+> > and /bar. /bar is empty. We call:
+> > 
+> >     rename("/foo","/bar");
+> > 
+> > ...and at the same time, someone is calling:
+> > 
+> >     stat("/bar");
+> > 
+> > ...the calls race and in this condition the stat() gets ESTALE back
+> > -- /bar got replaced after we did the lookup.
+> > 
+> > According to POSIX, the name "/bar" should never be absent from the
+> > namespace in this situation, so I'm not sure I understand why returning
+> > ENOENT here would be acceptable.
+> 
+> Yes, agreed, my assertion was just that an ESTALE on a lookup of a
+> non-final component is probably equivalent to ENOENT.
+> 
+> I'm not sure if that's what Miklos meant.
+> 
+
+Ahh ok, sorry I misunderstood. Yeah in that case I suppose it would
+be ok to replace ESTALE with ENOENT. Ok, so to illustrate...
+
+Suppose we're trying to stat("/bar/baz") instead in the above example.
+Then we could just return ENOENT instead on an ESTALE return for the
+reasons that Bruce outlined. If the dir was stale, then there was a
+at least one point in time where we *know* that "baz" didn't exist.
+
+That doesn't seem like it'll work as a general solution though since it
+wouldn't apply to an ESTALE on the last component. For that we'd need
+to do something different -- retry the operation in some form, but it
+might be potential optimization in the path walking code to avoid
+retrying in some cases.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
