@@ -1,129 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab2DWKBV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:01:21 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48151 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463Ab2DWKBT (ORCPT
+	id S1754725Ab2DWKDp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:03:45 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:60594 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273Ab2DWKDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:01:19 -0400
-Date: Mon, 23 Apr 2012 12:01:06 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, ben-linux@fluff.org,
-        thomas.abraham@linaro.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-samsung-soc@vger.kernel.org,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        kyungmin.park@samsung.com, broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 3/3] i2c-s3c2410: Add HDMIPHY quirk for S3C2440
-Message-ID: <20120423100106.GB19192@pengutronix.de>
-References: <1332357113-2973-1-git-send-email-k.lewandowsk@samsung.com>
- <1332357113-2973-4-git-send-email-k.lewandowsk@samsung.com>
- <20120417174029.GC22406@pengutronix.de>
- <00dd01cd1d5c$57ce7f80$076b7e80$%szyprowski@samsung.com>
- <20120418134644.GB19220@pengutronix.de>
- <4F8EEC60.2080603@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="i0/AhcQY5QxfSsSZ"
-Content-Disposition: inline
-In-Reply-To: <4F8EEC60.2080603@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 23 Apr 2012 06:03:43 -0400
+X-SENDER-IP: [85.230.169.225]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqxdAMcnlU9V5qnhPGdsb2JhbABEiiqnGRkBAQEBHhkNJ4JmIxgRcQoaiCa5dBORIASbfY0m
+X-IronPort-AV: E=Sophos;i="4.75,466,1330902000"; 
+   d="scan'208";a="23553109"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH v3 0/6] hid: Introduce device groups
+Date: Mon, 23 Apr 2012 12:07:01 +0200
+Message-Id: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jiri,
 
---i0/AhcQY5QxfSsSZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Here is the third version of the extension to the device-driver
+matching mechanism. AFAICT, there are no outstanding issues. I think
+we are getting close. :-)
 
-Hi Karol,
+Building on the report fixup patches, this patchset brings a bit of
+transparency to the hid bus, by the addition of device groups.  This
+allows a more versatile handling of hid drivers in userland, and
+simplifies the logic in the kernel.
 
-> >>> ... and this one, if we declare a new compatible-entry for exynos4?
-> >>
-> >> It is not strictly related to Exynos4 SoCs. Exynos4 SoC has 8 standard=
- s3c2440 style
-> >> i2c controllers and one additional, internal controller for HDMIPHY, w=
-hich needs=20
-> >> some workarounds in the driver. Maybe the quirk should be named 'broke=
-n timeout=20
-> >> detection'
-> >=20
-> > I was wondering since you do what I suggested for platform devices alre=
-ady:
-> >=20
-> > +               .name           =3D "s3c2440-hdmiphy-i2c",
-> > +               .driver_data    =3D QUIRK_S3C2440 | QUIRK_HDMIPHY | QUI=
-RK_NO_GPIO,
->=20
->=20
-> Here I've done it this way for compatibility with legacy driver and
-> board(s).
+In particular, there can be one generic module per device group, and
+those modules are handled automatically by udev. Dynamic rebinding of
+drivers is fully supported. For instance, to load a special
+out-of-tree driver instead of the a generic one, simply unbind the
+device and load the new module. One can also keep _all_ generic
+drivers as modules, significantly simplifying the process of adding
+and testing new features.
 
-Understood.
+And, of course, auto-loading of new multitouch drivers works, since
+that was what triggered this patchset to begin with. :-)
 
-> Device tree is new interface, and I thought that it would be better
-> to describe things explicitly and separately from device type.
->=20
-> Right now these properties are used only on S3C2440, but I don't
-> consider it highly unlikely to see these on S3C**** in future.
+The second patch contains a simple descriptor scanner that is
+new. The last patch unifies the generic drivers into a single,
+loadable module.
 
-My experience also says that it easily can get even worse :(
+Enjoy,
+Henrik
 
-> Tomasz had similar doubts when I've posted patch that checked these
-> quirks only for S3C2440:
->=20
->   http://permalink.gmane.org/gmane.linux.drivers.i2c/10305
->=20
-> Thus, I've chosen properties and not separate type.
+Henrik Rydberg (6):
+  hid: Add device group to modalias
+  hid: Scan the device for group info before adding it
+  hid: Allow bus wildcard matching
+  hid: Create a generic device group
+  hid-multitouch: Switch to device groups
+  hid: Create a common generic driver
 
-I understand this reasoning. I still differ, though. Think about my
-above example about things getting worse. Then, you'd need another
-quirk-property for $FLAW. Later, $FLAW is still there, but the timeout
-issue was fixed. That would mean, the poor device-tree making person has
-to know which quirks to select for this version of the controller. Just
-specifying that it is the HDMI-phy and not a regular I2C controller is
-much more convenient, and the driver will figure the rest.
+ drivers/hid/Kconfig             |   12 +++
+ drivers/hid/Makefile            |    2 +
+ drivers/hid/hid-core.c          |  172 ++++++++++++++++++++-------------------
+ drivers/hid/hid-generic.c       |   53 ++++++++++++
+ drivers/hid/hid-input.c         |   11 ---
+ drivers/hid/hid-multitouch.c    |    3 +-
+ drivers/hid/usbhid/hid-core.c   |   16 ----
+ include/linux/hid.h             |   20 +++--
+ include/linux/mod_devicetable.h |    4 +-
+ net/bluetooth/hidp/core.c       |   27 +-----
+ scripts/mod/file2alias.c        |    5 +-
+ 11 files changed, 180 insertions(+), 145 deletions(-)
+ create mode 100644 drivers/hid/hid-generic.c
 
-> It's easy to introduce compat string (see below), but given above
-> I'm afraid that we might end up adding -hdmiphy- variant for every
-> new version of i2c controller.
-
-I'd be fine with that, given that the upcoming hdmiphy versions will not
-need all the same set of quirk-flags. I think we want that "quirk lookup
-table" fixed in the driver and not encoded in the device tree where
-people could get it wrong. Also, the quirks are nothing a board maker
-can select from; it is implicit as soons as you want the HDMIPHY on that
-SoC, thus the compatible-entry should be enough of a description.
-
-I am not the ultimate expert about bindings, though, and am open for
-corrections (I feel kinda confident on this issue, though ;))
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---i0/AhcQY5QxfSsSZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+VKGIACgkQD27XaX1/VRs/3gCfaJYb7/C+CZeqJPVdH2tbSFk2
-POQAoL60oVexMDsHMPZY/04TUAk4p9nU
-=DI+t
------END PGP SIGNATURE-----
-
---i0/AhcQY5QxfSsSZ--
+-- 
+1.7.10
