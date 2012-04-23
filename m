@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab2DWV3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 17:29:47 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:57346 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755193Ab2DWV3o (ORCPT
+	id S1755720Ab2DWVaM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 17:30:12 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:56646 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755614Ab2DWVaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 17:29:44 -0400
-From: Chris Boot <bootc@bootc.net>
-To: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, nix@esperi.org.uk, carolyn.wyborny@intel.com,
-        Chris Boot <bootc@bootc.net>
-Subject: [PATCH RFC 0/2] e1000e: 82574 also needs ASPM L1 completely disabled
-Date: Mon, 23 Apr 2012 22:29:36 +0100
-Message-Id: <1335216578-21542-1-git-send-email-bootc@bootc.net>
-X-Mailer: git-send-email 1.7.10
-References: <9BBC4E0CF881AA4299206E2E1412B6260E512E0C@ORSMSX102.amr.corp.intel.com>
+	Mon, 23 Apr 2012 17:30:08 -0400
+From: Sasikantha babu <sasikanth.v19@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sasikantha babu <sasikanth.v19@gmail.com>
+Subject: [PATCH v2] mm:vmstat - Removed debug fs entries on failure of file creation and made extfrag_debug_root dentry local
+Date: Tue, 24 Apr 2012 02:59:53 +0530
+Message-Id: <1335216593-8890-1-git-send-email-sasikanth.v19@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After much toing and froing on LKML, netdev and the e1000 mailing lists
-over the past few months we've determined that the 82574L needs to have
-both ASPM L0s and L1 disabled or else it's likely to lock up. This
-little series does just that, also cleaning up some now-unnecessary code
-that disables L1 on the 82573 and 82574 if the MTU is greater than 1500
-bytes.
+Removed debug fs files and directory on failure. Since no one using "extfrag_debug_root" dentry outside of function
+extfrag_debug_init made it local to the function.
 
-Please note I haven't as-yet tested this code at all, but I do know that
-disabling ASPM L1 on these NICs (using setpci) fixes the hangs that I
-have been seeing on my Supermicro servers with X9SCL-F boards. I hope to
-get the chance to install an updated kernel on my two afftected servers
-later this week.
+Signed-off-by: Sasikantha babu <sasikanth.v19@gmail.com>
+---
+ mm/vmstat.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-Chris Boot (2):
-  e1000e: Disable ASPM L1 on 82574
-  e1000e: Remove special case for 82573/82574 ASPM L1 disablement
-
- drivers/net/ethernet/intel/e1000e/82571.c  |    3 ++-
- drivers/net/ethernet/intel/e1000e/netdev.c |    8 --------
- 2 files changed, 2 insertions(+), 9 deletions(-)
-
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index f600557..41447fc 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -1220,7 +1220,6 @@ module_init(setup_vmstat)
+ #if defined(CONFIG_DEBUG_FS) && defined(CONFIG_COMPACTION)
+ #include <linux/debugfs.h>
+ 
+-static struct dentry *extfrag_debug_root;
+ 
+ /*
+  * Return an index indicating how much of the available free memory is
+@@ -1358,19 +1357,24 @@ static const struct file_operations extfrag_file_ops = {
+ 
+ static int __init extfrag_debug_init(void)
+ {
++	struct dentry *extfrag_debug_root;
++
+ 	extfrag_debug_root = debugfs_create_dir("extfrag", NULL);
+ 	if (!extfrag_debug_root)
+ 		return -ENOMEM;
+ 
+ 	if (!debugfs_create_file("unusable_index", 0444,
+ 			extfrag_debug_root, NULL, &unusable_file_ops))
+-		return -ENOMEM;
++		goto fail;
+ 
+ 	if (!debugfs_create_file("extfrag_index", 0444,
+ 			extfrag_debug_root, NULL, &extfrag_file_ops))
+-		return -ENOMEM;
++		goto fail;
+ 
+ 	return 0;
++fail:
++	debugfs_remove_recursive(extfrag_debug_root);
++	return -ENOMEM;
+ }
+ 
+ module_init(extfrag_debug_init);
 -- 
-1.7.10
+1.7.3.4
 
