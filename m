@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab2DWTIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 15:08:15 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33282 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287Ab2DWTIO (ORCPT
+	id S1755207Ab2DWTIX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 15:08:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44497 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755162Ab2DWTIV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 15:08:14 -0400
+	Mon, 23 Apr 2012 15:08:21 -0400
 MIME-Version: 1.0
-Date: Mon, 23 Apr 2012 12:08:13 -0700
-Message-ID: <CAMe9rOqy4g9QeOC7xWRmi3Wr=97qbUXm1G69pWgdcfykJQgMPQ@mail.gmail.com>
-Subject: Incomplete cherry-pick on linux-3.3.y branch
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: David Miller <davem@davemloft.net>
+In-Reply-To: <1335207012-25133-1-git-send-email-sasikanth.v19@gmail.com>
+References: <1335207012-25133-1-git-send-email-sasikanth.v19@gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Mon, 23 Apr 2012 15:08:01 -0400
+X-Google-Sender-Auth: L6yoWiDBIRuMk3NnK32KV9RA6kg
+Message-ID: <CAHGf_=rKK_s=cMTKcaAsyjVgKCoBHPyPfBdHaGo_FiigCMezRg@mail.gmail.com>
+Subject: Re: [PATCH] mm:vmstat - Removed debug fs entries on failure of file
+ creation and made extfrag_debug_root dentry local
+To: Sasikanth V <sasikanth.v19@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Apr 23, 2012 at 2:50 PM, Sasikanth V <sasikanth.v19@gmail.com> wrote:
+> Removed debug fs files and directory on failure. Since no one using "extfrag_debug_root" dentry outside of function
+> extfrag_debug_init made it local to the function.
+>
+> Signed-off-by: Sasikanth V <sasikanth.v19@gmail.com>
+> ---
+>  mm/vmstat.c |   11 ++++++++---
+>  1 files changed, 8 insertions(+), 3 deletions(-)
+>
+> diff --git a/mm/vmstat.c b/mm/vmstat.c
+> index f600557..ddae476 100644
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -1220,7 +1220,6 @@ module_init(setup_vmstat)
+>  #if defined(CONFIG_DEBUG_FS) && defined(CONFIG_COMPACTION)
+>  #include <linux/debugfs.h>
+>
+> -static struct dentry *extfrag_debug_root;
+>
+>  /*
+>  * Return an index indicating how much of the available free memory is
+> @@ -1358,17 +1357,23 @@ static const struct file_operations extfrag_file_ops = {
+>
+>  static int __init extfrag_debug_init(void)
+>  {
+> +       struct dentry *extfrag_debug_root;
+> +
+>        extfrag_debug_root = debugfs_create_dir("extfrag", NULL);
+>        if (!extfrag_debug_root)
+>                return -ENOMEM;
+>
+>        if (!debugfs_create_file("unusable_index", 0444,
+> -                       extfrag_debug_root, NULL, &unusable_file_ops))
+> +                       extfrag_debug_root, NULL, &unusable_file_ops)) {
+> +               debugfs_remove (extfrag_debug_root);
+>                return -ENOMEM;
+> +       }
+>
+>        if (!debugfs_create_file("extfrag_index", 0444,
+> -                       extfrag_debug_root, NULL, &extfrag_file_ops))
+> +                       extfrag_debug_root, NULL, &extfrag_file_ops)) {
+> +               debugfs_remove_recursive (extfrag_debug_root);
+>                return -ENOMEM;
+> +       }
 
-This cherry-pick commit:
-
-http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commit;h=1cb41fe7e34a43a1d27dfdb6d65699786dd44c20
-
-doesn't work on 3.3 branch since it misses other commits
-required.  On 3.3 branch, there are
-
-struct hist_entry *__hists__add_entry(struct hists *hists,
-                                      struct addr_location *al,
-                                      struct symbol *sym_parent, u64 period)
-{
-        struct rb_node **p;
-        struct rb_node *parent = NULL;
-        struct hist_entry *he;
-        struct hist_entry entry = {
-                .thread = al->thread,
-
-It doesn't work with
-
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index e11e482..a47a6f1 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -230,6 +230,18 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 		if (!cmp) {
- 			he->period += period;
- 			++he->nr_events;
-+
-+			/* If the map of an existing hist_entry has
-+			 * become out-of-date due to an exec() or
-+			 * similar, update it.  Otherwise we will
-+			 * mis-adjust symbol addresses when computing
-+			 * the history counter to increment.
-+			 */
-+			if (he->ms.map != entry->ms.map) {
-+				he->ms.map = entry->ms.map;
-+				if (he->ms.map)
-+					he->ms.map->referenced = true;
-+			}
- 			goto out;
- 		}
-
-since entry isn't a pointer on 3.3 branch.
-
-
--- 
-H.J.
+Looks good.
