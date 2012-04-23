@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab2DWUVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 16:21:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60488 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755283Ab2DWUVK (ORCPT
+	id S1755247Ab2DWUWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 16:22:54 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:33540 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753995Ab2DWUWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 16:21:10 -0400
-Subject: Re: Inconsistent load average on tickless kernels
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: =?UTF-8?Q?Les=C5=82aw_Kope=C4=87?= <leslaw.kopec@nasza-klasa.pl>,
-        Aman Gupta <aman@tmm1.net>, linux-kernel@vger.kernel.org,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Damien Wyart <damien.wyart@free.fr>, Kyle McMartin <kyle@redhat.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Doug Smythies <dsmythies@telus.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20120423175715.GD9635@burratino>
-References: <1330532667.11248.153.camel@twins>
-	 <1330534998.11248.158.camel@twins> <4F551ABE.5080605@nasza-klasa.pl>
-	 <CAK=uwuxvzGwes4ffy9EXVReG95U3HQaKmPPKgFnHzo_MwaO_NA@mail.gmail.com>
-	 <1330989903.11248.261.camel@twins> <1330990360.11248.264.camel@twins>
-	 <1330990413.11248.265.camel@twins> <4F8D678C.6050104@nasza-klasa.pl>
-	 <20120417153032.GB21534@burratino> <4F958141.2000505@nasza-klasa.pl>
-	 <20120423175715.GD9635@burratino>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Apr 2012 22:21:06 +0200
-Message-ID: <1335212466.2463.85.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 23 Apr 2012 16:22:52 -0400
+Date: Mon, 23 Apr 2012 13:22:48 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: sam@ravnborg.org, mmarek@suse.cz, torvalds@linux-foundation.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [GIT] modpost fix for newer toolchain
+Message-ID: <20120423202248.GA24548@kroah.com>
+References: <20120423184918.GA27862@sepie.suse.cz>
+ <20120423192201.GA18512@merkur.ravnborg.org>
+ <20120423201226.GA22593@kroah.com>
+ <20120423.161353.876914987115892015.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120423.161353.876914987115892015.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 12:57 -0500, Jonathan Nieder wrote:
-> Lesław Kopeć wrote:
+On Mon, Apr 23, 2012 at 04:13:53PM -0400, David Miller wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
+> Date: Mon, 23 Apr 2012 13:12:26 -0700
 > 
-> > 2.6.32.55-hz-0f004f5a69			9.88
-> > 2.6.32.55-no-hz-74f5187ac8		2.48
-> > 2.6.32.55-no-hz-c308b56b53		2.22
-> > 3.0.28-hz				10.66
-> > 3.0.28-no-hz				0.60
-> > 3.0.28-no-hz-c308b56b53			4.09
-> > 3.0.28-no-hz-c308b56b53 nohz=off	6.78
-> > 3.2.12-hz				10.16
-> > 3.2.12-no-hz				0.66
-> > 3.2.12-no-hz-c308b56b53			4.36
-> >
-> > What's worth noting is that I haven't seen any nasty side effects of the
-> > latest patch on all kernel versions that I've tested. Hope that helps.
+> > On Mon, Apr 23, 2012 at 09:22:01PM +0200, Sam Ravnborg wrote:
+> >> On Mon, Apr 23, 2012 at 08:49:18PM +0200, Michal Marek wrote:
+> >> > Hi Linus,
+> >> > 
+> >> > Please pull this modpost patch. It fixes build failure with newer gcc that adds
+> >> > some internal symbols that end in "__mod_*_device_table", but are not
+> >> > actually the tables themselves.
+> >> > 
+> >> > Michal
+> >> > 
+> >> > The following changes since commit 0eb043d0eec44cd083ea6910b1db2f77eb212ebd:
+> >> > 
+> >> >   Subject: [PATCH] tags.sh: Add missing quotes (2012-04-02 11:28:17 +0200)
+> >> > 
+> >> > are available in the git repository at:
+> >> > 
+> >> >   git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
+> >> > 
+> >> > for you to fetch changes up to e88aa7bbbe3046a125ea1936b16bb921cc9c6349:
+> >> > 
+> >> >   Fix modpost failures in fedora 17 (2012-04-18 21:42:07 +0200)
+> >> 
+> >> Hi Michal.
+> >> 
+> >> The patch missed a "Cc: stable..." as discussed in the thread about
+> >> said patch.
+> > 
+> > What is the git commit id of the patch in Linus's tree that I should add
+> > to stable?
 > 
-> Ok.
-> 
-> Peter, do you think it would make sense to add c308b56b53987 to 3.0.y
-> and newer stable kernels?
+> He didn't pull this in yet, so such commit ID doesn't yet exist :-)
 
-If anybody is still maintaining those and cares enough to do the work,
-sure whatever.. ;)
+Then why is someone emailing stable@ about this patch yet?  :)
 
