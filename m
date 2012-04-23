@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab2DWHw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 03:52:57 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:64930 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab2DWHw4 (ORCPT
+	id S1753841Ab2DWH5Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 03:57:16 -0400
+Received: from anubis.se.axis.com ([195.60.68.12]:36150 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab2DWH5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 03:52:56 -0400
-Message-ID: <4F950A4B.6080508@gmail.com>
-Date: Mon, 23 Apr 2012 10:52:43 +0300
-From: Nikolai Kondrashov <spbnick@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+	Mon, 23 Apr 2012 03:57:15 -0400
+Date: Mon, 23 Apr 2012 09:57:08 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [patch 14/18] cris: Use generic idle thread allocation
+Message-ID: <20120423075708.GP16861@axis.com>
+References: <20120420122120.097464672@linutronix.de> <20120420124557.789657793@linutronix.de>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] hid: Enable report fixup on rebind
-References: <1335097300-11881-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1204222325380.1856@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1204222325380.1856@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120420124557.789657793@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 12:27 AM, Jiri Kosina wrote:
-> On Sun, 22 Apr 2012, Henrik Rydberg wrote:
->> This patchset contains a resolution to the problem with
->> driver-specific modification of the report descriptor. The core of the
->> problem lies with the dual semantics of hid_parse_report(), which is
->> therefore split into two functions. As a consequence, the hid core can
->> handle the rebind case internally, with no changes to the
->> drivers. Out-of-tree drivers will work fine as long as they operate in
->> the same way as the in-kernel drivers.
->>
->> The first two patches are bug fixes found in the process. I am hoping
->> for some test feedback on those. The third patch is the main one.
->
-> Hi Henrik,
->
-> thanks a lot for looking into this. I will look into the patches in more
-> detail tomorrow. I am now just adding Nikolai to CC, as he was the first
-> one to bring this up and actually has a driver that exposed the fact that
-> just freeing/reinstatiating rdesc is not enough.
+On Fri, Apr 20, 2012 at 03:05:53PM +0200, Thomas Gleixner wrote:
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Thanks Henrik, Jiri!
+Looks good:
 
-I'll be testing this as soon as I can.
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
-Sincerely,
-Nick
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
