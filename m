@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab2DWN4F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 09:56:05 -0400
+	id S1755490Ab2DWN4Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 09:56:16 -0400
 Received: from mail-pz0-f51.google.com ([209.85.210.51]:45199 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab2DWN4D (ORCPT
+	with ESMTP id S1752454Ab2DWN4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 09:56:03 -0400
+	Mon, 23 Apr 2012 09:56:13 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Keping Chen <chenkeping@huawei.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v1 0/8] enhance dmaengine core to support DMA device hotplug
-Date: Mon, 23 Apr 2012 21:51:41 +0800
-Message-Id: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH v1 1/8] dmaengine: enhance DMA channel reference count management
+Date: Mon, 23 Apr 2012 21:51:42 +0800
+Message-Id: <1335189109-4871-2-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
+References: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-From: Jiang Liu <liuj97@gmail.com>
-
-This patchset tries to enhance the dmaengine and its clients to support
-hot-removal of DMA devices at runtime, especially for IOAT devices.
 
 When hot-removing IOH (PCI host bridge) on Intel Nehalem/Westmere platform,
 we need to remove all IOAT devices embedded in the IOH. For future Intel
@@ -35,79 +33,352 @@ deregistered when there's no any clients making use of the dmaengine.
 So dma_async_device_unregister() is designed to be called by DMA driver's
 exit routines only. But the ioatdma driver doesn't conform to that design,
 it calls dma_async_device_unregister() from dma_async_device_unregister(),
-which is called in the driver detaching path. Following simple test could
-unveil the issue.
+which is called in the driver detaching path.
 
-The proposed solution is to get rid of the assumption and enhance
-dma_async_device_unregister(), so it could be called from DMA driver's
-detach routines. It will also introduce several interfaces and enhance
-dmaengine clients to support hot-removal of DMA devices at runtime.
+This patch enhances dmaengine so dma_async_device_unregister() could be called
+by DMA driver's detach routines when hot-removing DMA devices at runtime.
 
-This patchset applies to the mainline kernel at
-cdd5983 Merge tag 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost
+With currently implementation, variable dmaengine_ref_count is used to track
+how many clients are making use of the dmaengine. There's also a per-channel
+reference count named client_count in struct dma_chan.  For successfully
+initialized channels, dma_chan->client_count is set to dmaengine_ref_count.
+That means all channels can't be released/removed if there are still clients.
+So the solution here is to use dma_chan->client_count to track channel
+reference count instead of tracking dmaengine_ref_count.
 
----------------------------------------------------------------------
-echo 0000:80:16.7 > /sys/bus/pci/drivers/ioatdma/unbind
-ioatdma 0000:80:16.7: Removing dma and dca services
-------------[ cut here ]------------
-WARNING: at drivers/dma/dmaengine.c:831 dma_async_device_unregister+0xd5/0xf0() (Tainted: G           ---------------- T)
-Hardware name: System x3850 X5 -[7143O3G]-
-dma_async_device_unregister called while 17 clients hold a reference
-Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vfat fat vhost_net macvtap macvlan tun kvm_intel kvm uinput microcode sg serio_raw cdc_ether usbnet mii be2net i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp i7core_edac edac_core ioatdma igb dca e1000e bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif qla2xxx pmcraid pata_acpi ata_generic ata_piix bfa(T) scsi_transport_fc scsi_tgt megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
-Pid: 5143, comm: bash Tainted: G           ---------------- T 2.6.32-220.el6.x86_64 #1
-Call Trace:
- [<ffffffff81069b77>] ? warn_slowpath_common+0x87/0xc0
- [<ffffffff81069c66>] ? warn_slowpath_fmt+0x46/0x50
- [<ffffffff813fe465>] ? dma_async_device_unregister+0xd5/0xf0
- [<ffffffffa00ec5e9>] ? ioat_dma_remove+0x28/0x4a [ioatdma]
- [<ffffffffa00ec5b9>] ? ioat_remove+0x82/0x8a [ioatdma]
- [<ffffffff8128ab37>] ? pci_device_remove+0x37/0x70
- [<ffffffff8134623f>] ? __device_release_driver+0x6f/0xe0
- [<ffffffff813463ad>] ? device_release_driver+0x2d/0x40
- [<ffffffff81345711>] ? driver_unbind+0xa1/0xc0
- [<ffffffff81344b7c>] ? drv_attr_store+0x2c/0x30
- [<ffffffff811eb445>] ? sysfs_write_file+0xe5/0x170
- [<ffffffff811765d8>] ? vfs_write+0xb8/0x1a0
- [<ffffffff810d46e2>] ? audit_syscall_entry+0x272/0x2a0
- [<ffffffff81176fe1>] ? sys_write+0x51/0x90
- [<ffffffff8100b0f2>] ? system_call_fastpath+0x16/0x1b
----[ end trace 436e184dbc830d94 ]---
-ioatdma 0000:80:16.7: dma_pool_destroy dma_desc_pool, ffff881073536000 busy
-ioatdma 0000:80:16.7: dma_pool_destroy dma_desc_pool, ffff881073533000 busy
-ioatdma 0000:80:16.7: dma_pool_destroy dma_desc_pool, ffff88107352f000 busy
-ioatdma 0000:80:16.7: dma_pool_destroy dma_desc_pool, ffff88107352c000 busy
-ioatdma 0000:80:16.7: dma_pool_destroy dma_desc_pool, ffff881073529000 busy
-ioatdma 0000:80:16.7: dma_pool_destroy completion_pool, ffff881073527000 busy
----------------------------------------------------------------------
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+---
+ drivers/dma/dmaengine.c |  186 +++++++++++++++++------------------------------
+ 1 files changed, 66 insertions(+), 120 deletions(-)
 
-Jiang Liu (8):
-  dmaengine: enhance DMA channel reference count management
-  dmaengine: rebalance DMA channels when CPU hotplug happens
-  dmaengine: introduce CONFIG_DMA_ENGINE_HOTPLUG for DMA device hotplug
-  dmaengine: use atomic_t for struct dma_chan->client_count field
-  dmaengine: enhance dma_async_device_unregister() to be called by
-    drv->remove()
-  dmaengine: enhance network subsystem to support DMA device hotplug
-  dmaengine: enhance ASYNC_TX subsystem to support DMA device hotplug
-  dmaengine: assign DMA channel to CPU according to NUMA affinity
-
- crypto/async_tx/async_memcpy.c      |    2 +
- crypto/async_tx/async_memset.c      |    2 +
- crypto/async_tx/async_pq.c          |   10 +-
- crypto/async_tx/async_raid6_recov.c |    8 +-
- crypto/async_tx/async_tx.c          |    6 +-
- crypto/async_tx/async_xor.c         |   13 +-
- drivers/dma/Kconfig                 |    6 +
- drivers/dma/dmaengine.c             |  384 ++++++++++++++++++++++-------------
- include/linux/async_tx.h            |   13 ++
- include/linux/dmaengine.h           |   30 +++
- include/net/netdma.h                |   26 +++
- net/ipv4/tcp.c                      |   10 +-
- net/ipv4/tcp_input.c                |    5 +-
- net/ipv4/tcp_ipv4.c                 |    4 +-
- net/ipv6/tcp_ipv6.c                 |    4 +-
- 15 files changed, 357 insertions(+), 166 deletions(-)
-
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index 2397f6f..5b6ad58 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -186,22 +186,6 @@ static struct module *dma_chan_to_owner(struct dma_chan *chan)
+ }
+ 
+ /**
+- * balance_ref_count - catch up the channel reference count
+- * @chan - channel to balance ->client_count versus dmaengine_ref_count
+- *
+- * balance_ref_count must be called under dma_list_mutex
+- */
+-static void balance_ref_count(struct dma_chan *chan)
+-{
+-	struct module *owner = dma_chan_to_owner(chan);
+-
+-	while (chan->client_count < dmaengine_ref_count) {
+-		__module_get(owner);
+-		chan->client_count++;
+-	}
+-}
+-
+-/**
+  * dma_chan_get - try to grab a dma channel's parent driver module
+  * @chan - channel to grab
+  *
+@@ -209,28 +193,24 @@ static void balance_ref_count(struct dma_chan *chan)
+  */
+ static int dma_chan_get(struct dma_chan *chan)
+ {
+-	int err = -ENODEV;
++	int err = 0;
+ 	struct module *owner = dma_chan_to_owner(chan);
+ 
+-	if (chan->client_count) {
+-		__module_get(owner);
+-		err = 0;
+-	} else if (try_module_get(owner))
+-		err = 0;
++	/* Device driver module has been unloaded */
++	if (!try_module_get(owner))
++		return -ENODEV;
+ 
+-	if (err == 0)
+-		chan->client_count++;
++	chan->client_count++;
+ 
+ 	/* allocate upon first client reference */
+-	if (chan->client_count == 1 && err == 0) {
++	if (chan->client_count == 1) {
+ 		int desc_cnt = chan->device->device_alloc_chan_resources(chan);
+ 
+ 		if (desc_cnt < 0) {
+ 			err = desc_cnt;
+ 			chan->client_count = 0;
+ 			module_put(owner);
+-		} else if (!dma_has_cap(DMA_PRIVATE, chan->device->cap_mask))
+-			balance_ref_count(chan);
++		}
+ 	}
+ 
+ 	return err;
+@@ -244,12 +224,11 @@ static int dma_chan_get(struct dma_chan *chan)
+  */
+ static void dma_chan_put(struct dma_chan *chan)
+ {
+-	if (!chan->client_count)
+-		return; /* this channel failed alloc_chan_resources */
++	BUG_ON(chan->client_count <= 0);
+ 	chan->client_count--;
+-	module_put(dma_chan_to_owner(chan));
+ 	if (chan->client_count == 0)
+ 		chan->device->device_free_chan_resources(chan);
++	module_put(dma_chan_to_owner(chan));
+ }
+ 
+ enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie)
+@@ -278,9 +257,11 @@ static dma_cap_mask_t dma_cap_mask_all;
+ /**
+  * dma_chan_tbl_ent - tracks channel allocations per core/operation
+  * @chan - associated channel for this entry
++ * @prev_chan - previous associated channel for this entry
+  */
+ struct dma_chan_tbl_ent {
+ 	struct dma_chan *chan;
++	struct dma_chan *prev_chan;
+ };
+ 
+ /**
+@@ -367,7 +348,7 @@ void dma_issue_pending_all(void)
+ EXPORT_SYMBOL(dma_issue_pending_all);
+ 
+ /**
+- * nth_chan - returns the nth channel of the given capability
++ * nth_chan - grab a reference to the nth channel of the given capability
+  * @cap: capability to match
+  * @n: nth channel desired
+  *
+@@ -387,17 +368,19 @@ static struct dma_chan *nth_chan(enum dma_transaction_type cap, int n)
+ 		    dma_has_cap(DMA_PRIVATE, device->cap_mask))
+ 			continue;
+ 		list_for_each_entry(chan, &device->channels, device_node) {
+-			if (!chan->client_count)
++			if (dma_chan_get(chan))
+ 				continue;
+-			if (!min)
+-				min = chan;
+-			else if (chan->table_count < min->table_count)
+-				min = chan;
+-
+ 			if (n-- == 0) {
+ 				ret = chan;
+ 				break; /* done */
+ 			}
++			if (!min)
++				min = chan;
++			else if (chan->table_count < min->table_count) {
++				dma_chan_put(min);
++				min = chan;
++			} else
++				dma_chan_put(chan);
+ 		}
+ 		if (ret)
+ 			break; /* done */
+@@ -405,6 +388,8 @@ static struct dma_chan *nth_chan(enum dma_transaction_type cap, int n)
+ 
+ 	if (!ret)
+ 		ret = min;
++	else if (min)
++		dma_chan_put(min);
+ 
+ 	if (ret)
+ 		ret->table_count++;
+@@ -423,37 +408,39 @@ static struct dma_chan *nth_chan(enum dma_transaction_type cap, int n)
+ static void dma_channel_rebalance(void)
+ {
+ 	struct dma_chan *chan;
+-	struct dma_device *device;
++	struct dma_chan_tbl_ent *entry;
+ 	int cpu;
+ 	int cap;
+-	int n;
++	int n = 0;
+ 
+-	/* undo the last distribution */
++	/* save the last distribution */
+ 	for_each_dma_cap_mask(cap, dma_cap_mask_all)
+-		for_each_possible_cpu(cpu)
+-			per_cpu_ptr(channel_table[cap], cpu)->chan = NULL;
+-
+-	list_for_each_entry(device, &dma_device_list, global_node) {
+-		if (dma_has_cap(DMA_PRIVATE, device->cap_mask))
+-			continue;
+-		list_for_each_entry(chan, &device->channels, device_node)
+-			chan->table_count = 0;
+-	}
++		for_each_possible_cpu(cpu) {
++			entry = per_cpu_ptr(channel_table[cap], cpu);
++			entry->prev_chan = entry->chan;
++			entry->chan = NULL;
++			if (entry->prev_chan)
++				entry->prev_chan->table_count--;
++		}
+ 
+-	/* don't populate the channel_table if no clients are available */
+-	if (!dmaengine_ref_count)
+-		return;
++	/* redistribute available channels if there are clients */
++	if (dmaengine_ref_count)
++		for_each_dma_cap_mask(cap, dma_cap_mask_all)
++			for_each_online_cpu(cpu) {
++				if (num_possible_cpus() > 1)
++					chan = nth_chan(cap, n++);
++				else
++					chan = nth_chan(cap, -1);
++				entry = per_cpu_ptr(channel_table[cap], cpu);
++				entry->chan = chan;
++			}
+ 
+-	/* redistribute available channels */
+-	n = 0;
++	/* undo the last distribution */
+ 	for_each_dma_cap_mask(cap, dma_cap_mask_all)
+-		for_each_online_cpu(cpu) {
+-			if (num_possible_cpus() > 1)
+-				chan = nth_chan(cap, n++);
+-			else
+-				chan = nth_chan(cap, -1);
+-
+-			per_cpu_ptr(channel_table[cap], cpu)->chan = chan;
++		for_each_possible_cpu(cpu) {
++			chan = per_cpu(channel_table[cap]->prev_chan, cpu);
++			if (chan)
++				dma_chan_put(chan);
+ 		}
+ }
+ 
+@@ -511,19 +498,16 @@ struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask, dma_filter_fn fn, v
+ 		chan = private_candidate(mask, device, fn, fn_param);
+ 		if (chan) {
+ 			/* Found a suitable channel, try to grab, prep, and
+-			 * return it.  We first set DMA_PRIVATE to disable
+-			 * balance_ref_count as this channel will not be
+-			 * published in the general-purpose allocator
++			 * return it.
+ 			 */
+ 			dma_cap_set(DMA_PRIVATE, device->cap_mask);
+ 			device->privatecnt++;
+ 			err = dma_chan_get(chan);
+ 
+-			if (err == -ENODEV) {
++			if (err == -ENODEV)
+ 				pr_debug("%s: %s module removed\n", __func__,
+ 					 dma_chan_name(chan));
+-				list_del_rcu(&device->global_node);
+-			} else if (err)
++			else if (err)
+ 				pr_debug("%s: failed to get %s: (%d)\n",
+ 					__func__, dma_chan_name(chan), err);
+ 			else
+@@ -560,57 +544,26 @@ EXPORT_SYMBOL_GPL(dma_release_channel);
+  */
+ void dmaengine_get(void)
+ {
+-	struct dma_device *device, *_d;
+-	struct dma_chan *chan;
+-	int err;
+-
+ 	mutex_lock(&dma_list_mutex);
+-	dmaengine_ref_count++;
+-
+-	/* try to grab channels */
+-	list_for_each_entry_safe(device, _d, &dma_device_list, global_node) {
+-		if (dma_has_cap(DMA_PRIVATE, device->cap_mask))
+-			continue;
+-		list_for_each_entry(chan, &device->channels, device_node) {
+-			err = dma_chan_get(chan);
+-			if (err == -ENODEV) {
+-				/* module removed before we could use it */
+-				list_del_rcu(&device->global_node);
+-				break;
+-			} else if (err)
+-				pr_err("%s: failed to get %s: (%d)\n",
+-					__func__, dma_chan_name(chan), err);
+-		}
+-	}
+-
+ 	/* if this is the first reference and there were channels
+ 	 * waiting we need to rebalance to get those channels
+ 	 * incorporated into the channel table
+ 	 */
+-	if (dmaengine_ref_count == 1)
++	if (++dmaengine_ref_count == 1)
+ 		dma_channel_rebalance();
+ 	mutex_unlock(&dma_list_mutex);
+ }
+ EXPORT_SYMBOL(dmaengine_get);
+ 
+ /**
+- * dmaengine_put - let dma drivers be removed when ref_count == 0
++ * dmaengine_put - deregister interest in dma_channels
+  */
+ void dmaengine_put(void)
+ {
+-	struct dma_device *device;
+-	struct dma_chan *chan;
+-
+ 	mutex_lock(&dma_list_mutex);
+-	dmaengine_ref_count--;
+-	BUG_ON(dmaengine_ref_count < 0);
+-	/* drop channel references */
+-	list_for_each_entry(device, &dma_device_list, global_node) {
+-		if (dma_has_cap(DMA_PRIVATE, device->cap_mask))
+-			continue;
+-		list_for_each_entry(chan, &device->channels, device_node)
+-			dma_chan_put(chan);
+-	}
++	BUG_ON(dmaengine_ref_count <= 0);
++	if (--dmaengine_ref_count == 0)
++		dma_channel_rebalance();
+ 	mutex_unlock(&dma_list_mutex);
+ }
+ EXPORT_SYMBOL(dmaengine_put);
+@@ -773,26 +726,11 @@ int dma_async_device_register(struct dma_device *device)
+ 	device->chancnt = chancnt;
+ 
+ 	mutex_lock(&dma_list_mutex);
+-	/* take references on public channels */
+-	if (dmaengine_ref_count && !dma_has_cap(DMA_PRIVATE, device->cap_mask))
+-		list_for_each_entry(chan, &device->channels, device_node) {
+-			/* if clients are already waiting for channels we need
+-			 * to take references on their behalf
+-			 */
+-			if (dma_chan_get(chan) == -ENODEV) {
+-				/* note we can only get here for the first
+-				 * channel as the remaining channels are
+-				 * guaranteed to get a reference
+-				 */
+-				rc = -ENODEV;
+-				mutex_unlock(&dma_list_mutex);
+-				goto err_out;
+-			}
+-		}
+ 	list_add_tail_rcu(&device->global_node, &dma_device_list);
+ 	if (dma_has_cap(DMA_PRIVATE, device->cap_mask))
+ 		device->privatecnt++;	/* Always private */
+-	dma_channel_rebalance();
++	else
++		dma_channel_rebalance();
+ 	mutex_unlock(&dma_list_mutex);
+ 
+ 	return 0;
+@@ -836,6 +774,14 @@ void dma_async_device_unregister(struct dma_device *device)
+ 	dma_channel_rebalance();
+ 	mutex_unlock(&dma_list_mutex);
+ 
++	/* Check whether it's called from module exit function. */
++	if (try_module_get(device->dev->driver->owner)) {
++		dev_warn(device->dev,
++			"%s isn't called from module exit function.\n",
++			__func__);
++		module_put(device->dev->driver->owner);
++	}
++
+ 	list_for_each_entry(chan, &device->channels, device_node) {
+ 		WARN_ONCE(chan->client_count,
+ 			  "%s called while %d clients hold a reference\n",
 -- 
 1.7.5.4
 
