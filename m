@@ -1,115 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab2DWMbH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 08:31:07 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.180]:49872 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754483Ab2DWMbD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 08:31:03 -0400
-X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
-X-RZG-CLASS-ID: mo05
-Message-Id: <201204231230.q3NCUbbP015327@gatekeeper.vosshq.de>
-From: Nikolaus Voss <n.voss@weinmann.de>
-Date: Mon, 23 Apr 2012 12:51:23 +0200
-Subject: [PATCH] drivers/rtc/rtc-m41t93.c: don't let get_time() reset error state
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Cc: akpm@linux-foundation.org, a.zummo@towertech.it, grant.likely@secretlab.ca
+	id S1755337Ab2DWMcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 08:32:46 -0400
+Received: from mga14.intel.com ([143.182.124.37]:52708 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754427Ab2DWMcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 08:32:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="134168591"
+Subject: Re: [PATCHv3] dma40: Improve the logic of stopping logical chan
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Narayanan G <narayanan.gopalakrishnan@stericsson.com>,
+        linux-kernel@vger.kernel.org, rabin.vincent@stericsson.com,
+        linus.walleij@stericsson.com, shreshthakumar.sahu@stericsson.com,
+        mathieu poirier <mathieu.poirier@linaro.org>
+In-Reply-To: <CACRpkdaXRJVtqgnrkuJ8YUPDp3QSPQR9LmAX=ePdYxzZagKa=w@mail.gmail.com>
+References: <1328771497-3032-1-git-send-email-narayanan.gopalakrishnan@stericsson.com>
+	 <CACRpkdaXRJVtqgnrkuJ8YUPDp3QSPQR9LmAX=ePdYxzZagKa=w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 Apr 2012 17:59:17 +0530
+Message-ID: <1335184157.31825.111.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the rtc reports the time might be invalid due to oscillator
-failure, this flags must not be reset by get_time() as the read
-operation doesn't make the time valid.
+On Tue, 2012-04-10 at 10:12 +0200, Linus Walleij wrote:
+> On Thu, Feb 9, 2012 at 8:11 AM, Narayanan G
+> <narayanan.gopalakrishnan@stericsson.com> wrote:
+> 
+> > From the V2 version of the controller a logical channel
+> > can be directly stopped by issuing a SUSPEND_REQ on the EE
+> > bits. There is no need to suspend the physical channel and
+> > restart it.
+> >
+> > Also, the support for pre-V2 hw is discontinued.
+> >
+> > EE bits for writing:
+> >
+> > 00: disable only if AS=11 or AS=00
+> > 01: enable
+> > 10: suspend_req only if AS=01 & EE=01 or EE=11
+> > 11: round / no change for writing
+> >
+> > Signed-off-by: Narayanan G <narayanan.gopalakrishnan@stericsson.com>
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Vinod what happened to this patch?
+> 
+> Can you please push it for the -rc:s since it's solving a real problem
+> for us...
+Sorry, Looks like it got missed.
+Applied now, Thanks
 
-Instead, the flag is reset in set_time() when a valid time is
-to be written.
 
-Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
----
- drivers/rtc/rtc-m41t93.c |   46 +++++++++++++++++++++++++++-------------------
- 1 files changed, 27 insertions(+), 19 deletions(-)
-
-diff --git a/drivers/rtc/rtc-m41t93.c b/drivers/rtc/rtc-m41t93.c
-index ef71132..f19f45c 100644
---- a/drivers/rtc/rtc-m41t93.c
-+++ b/drivers/rtc/rtc-m41t93.c
-@@ -48,6 +48,7 @@ static inline int m41t93_set_reg(struct spi_device *spi, u8 addr, u8 data)
- static int m41t93_set_time(struct device *dev, struct rtc_time *tm)
- {
- 	struct spi_device *spi = to_spi_device(dev);
-+	int tmp;
- 	u8 buf[9] = {0x80};        /* write cmd + 8 data bytes */
- 	u8 * const data = &buf[1]; /* ptr to first data byte */
- 
-@@ -62,6 +63,30 @@ static int m41t93_set_time(struct device *dev, struct rtc_time *tm)
- 		return -EINVAL;
- 	}
- 
-+	tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
-+	if (tmp < 0)
-+		return tmp;
-+
-+	if (tmp & M41T93_FLAG_OF) {
-+		dev_warn(&spi->dev, "OF bit is set, resetting.\n");
-+		m41t93_set_reg(spi, M41T93_REG_FLAGS, tmp & ~M41T93_FLAG_OF);
-+
-+		tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
-+		if (tmp < 0) {
-+			return tmp;
-+		} else if (tmp & M41T93_FLAG_OF) {
-+			/* OF cannot be immediately reset: oscillator has to be
-+			 * restarted. */
-+			u8 reset_osc = buf[M41T93_REG_ST_SEC] | M41T93_FLAG_ST;
-+
-+			dev_warn(&spi->dev,
-+				 "OF bit is still set, kickstarting clock.\n");
-+			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
-+			reset_osc &= ~M41T93_FLAG_ST;
-+			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
-+		}
-+	}
-+
- 	data[M41T93_REG_SSEC]		= 0;
- 	data[M41T93_REG_ST_SEC]		= bin2bcd(tm->tm_sec);
- 	data[M41T93_REG_MIN]		= bin2bcd(tm->tm_min);
-@@ -89,10 +114,7 @@ static int m41t93_get_time(struct device *dev, struct rtc_time *tm)
- 	   1. halt bit (HT) is set: the clock is running but update of readout
- 	      registers has been disabled due to power failure. This is normal
- 	      case after poweron. Time is valid after resetting HT bit.
--	   2. oscillator fail bit (OF) is set. Oscillator has be stopped and
--	      time is invalid:
--	      a) OF can be immeditely reset.
--	      b) OF cannot be immediately reset: oscillator has to be restarted.
-+	   2. oscillator fail bit (OF) is set: time is invalid.
- 	*/
- 	tmp = spi_w8r8(spi, M41T93_REG_ALM_HOUR_HT);
- 	if (tmp < 0)
-@@ -110,21 +132,7 @@ static int m41t93_get_time(struct device *dev, struct rtc_time *tm)
- 
- 	if (tmp & M41T93_FLAG_OF) {
- 		ret = -EINVAL;
--		dev_warn(&spi->dev, "OF bit is set, resetting.\n");
--		m41t93_set_reg(spi, M41T93_REG_FLAGS, tmp & ~M41T93_FLAG_OF);
--
--		tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
--		if (tmp < 0)
--			return tmp;
--		else if (tmp & M41T93_FLAG_OF) {
--			u8 reset_osc = buf[M41T93_REG_ST_SEC] | M41T93_FLAG_ST;
--
--			dev_warn(&spi->dev,
--				 "OF bit is still set, kickstarting clock.\n");
--			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
--			reset_osc &= ~M41T93_FLAG_ST;
--			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
--		}
-+		dev_warn(&spi->dev, "OF bit is set, write time to restart.\n");
- 	}
- 
- 	if (tmp & M41T93_FLAG_BL)
 -- 
-1.7.5.4
+~Vinod
 
