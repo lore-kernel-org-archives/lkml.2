@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab2DWRca (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 13:32:30 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44666 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421Ab2DWRc3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 13:32:29 -0400
+	id S1754414Ab2DWRf6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 13:35:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55044 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753064Ab2DWRf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 13:35:56 -0400
+References: <1335150198-21899-1-git-send-email-konrad.wilk@oracle.com> <201204231334.51376.rjw@sisk.pl>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <201204231334.51376.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <1334982460.28106.90.camel@gandalf.stny.rr.com>
-References: <1318382410-14967-1-git-send-email-vnagarnaik@google.com>
- <1328212844-11889-1-git-send-email-vnagarnaik@google.com> <1328212844-11889-2-git-send-email-vnagarnaik@google.com>
- <1334982460.28106.90.camel@gandalf.stny.rr.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Mon, 23 Apr 2012 10:31:58 -0700
-Message-ID: <CAL26m8LCAx07BffXTZMWtvLRMOBbksaHSu1-Dw403+WD+_3L0A@mail.gmail.com>
-Subject: Re: [PATCH v5 2/4] trace: Make removal of ring buffer pages atomic
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        Justin Teravest <teravest@google.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [GIT PULL/PATCH] gts and bfs fixes (v5).
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 23 Apr 2012 10:34:44 -0700
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        x86@kernel.org
+Message-ID: <b4633284-02f7-454b-a35a-2bf844db05c6@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 9:27 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 2012-02-02 at 12:00 -0800, Vaibhav Nagarnaik wrote:
->> +rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned int
->> nr_pages)
->>  {
->> -       struct buffer_page *bpage;
->> -       struct list_head *p;
->> -       unsigned i;
->> +       unsigned int nr_removed;
->> +       int page_entries;
->> +       struct list_head *tail_page, *to_remove, *next_page;
->> +       unsigned long head_bit;
->> +       struct buffer_page *last_page, *first_page;
->> +       struct buffer_page *to_remove_page, *tmp_iter_page;
->>
-> Also, please use the "upside down x-mas tree" for the declarations:
->
-> ie.
->
->       struct list_head *tail_page, *to_remove, *next_page;
->       struct buffer_page *to_remove_page, *tmp_iter_page;
->       struct buffer_page *last_page, *first_page;
->       unsigned int nr_removed;
->       unsigned long head_bit;
->       int page_entries;
->
-> See, it looks easier to read then what you had.
->
->> +             /* fire off all the required work handlers */
->> +             for_each_buffer_cpu(buffer, cpu) {
->> +                     cpu_buffer = buffer->buffers[cpu];
->> +                     if (!cpu_buffer->nr_pages_to_update)
->> +                             continue;
->> +                     schedule_work_on(cpu, &cpu_buffer->update_pages_work);
->
-> This locks up. I just tried the following, and it hung the task.
->
-> Here:
->
-> # cd /sys/kernel/debug/tracing
-> # echo 1 > events/enable
-> # sleep 10
-> # echo 0 > event/enable
-> # echo 0 > /sys/devices/system/cpu/cpu1/online
-> # echo 100 > buffer_size_kb
->
-> <locked!>
->
-> I guess you could test if the cpu is online. And if so, then do the
-> schedule_work_on(). You will need to get_online_cpus first.
->
-> If the cpu is offline, just change it.
->
-> -- Steve
->
-> PS. The first patch looks good, but I think you need to add some more
-> blank lines in your patches. You like to bunch a lot of text together,
-> and that causes some eye strain.
+Do I have your ACK?
 
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-Thanks for the feedback. I will update the patch with your suggestions.
+>On Monday, April 23, 2012, Konrad Rzeszutek Wilk wrote:
+>> Please git pull (or use the patches that follow this email) the
+>following branch:
+>> 
+>> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
+>stable/for-x86-for-3.4
+>> 
+>> Changes since v4 [https://lkml.org/lkml/2012/4/18/396]
+>>  - Added Acked and Reviewed-by
+>> v2 [https://lkml.org/lkml/2012/4/9/474]
+>>  - ditched the assembler version and used a C wrapper
+>> 
+>> With git commit a2ef5c4fd44ce3922435139393b89f2cce47f576
+>> "ACPI: Move module parameter gts and bfs to sleep.c" the
+>> sampling of gts/bfs module parameters flag by acpi_enter_sleep_state
+>> has been moved. It has been moved out of the inner ACPI code and
+>> out in the more x86 specific. This means that any caller of
+>> the exported acpi_enter_sleep_state function needs to provide
+>> two parameters now: sleep state and the bit flag whether to us
+>_GTS|_BFS.
+>> 
+>> All of the callers of acpi_enter_sleep_state did that, with
+>> the exception of the assembler version and as well any
+>> third-party callers of acpi_enter_sleep_state.
+>> 
+>> These two patches expose 'wake_sleep_flags' as the product
+>> of the gts/bfs module parameter invocation. And also use said
+>> flag in the assembler 'do_suspend_lowlevel()' function.
+>> 
+>> Konrad Rzeszutek Wilk (2):
+>>       ACPI: Convert wake_sleep_flags to a value instead of function
+>(v5)
+>>       x86/acpi: Call acpi_enter_sleep_state via an asmlinkage C
+>function from assembler (v2).
+>> 
+>>  arch/x86/kernel/acpi/sleep.c     |    4 +++
+>>  arch/x86/kernel/acpi/sleep.h     |    4 +++
+>>  arch/x86/kernel/acpi/wakeup_32.S |    4 +--
+>>  arch/x86/kernel/acpi/wakeup_64.S |    4 +--
+>>  drivers/acpi/sleep.c             |   52
+>++++++++++++++++++++-----------------
+>>  5 files changed, 38 insertions(+), 30 deletions(-)
+>
+>Peter, are you going to take this?
+>
+>Rafael
 
-
-
-Vaibhav Nagarnaik
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
