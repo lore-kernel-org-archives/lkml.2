@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab2DWOie (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 10:38:34 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:52635 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431Ab2DWOib (ORCPT
+	id S1755724Ab2DWOiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 10:38:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56437 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755679Ab2DWOiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 10:38:31 -0400
+	Mon, 23 Apr 2012 10:38:51 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Paul Gortmaker <paul.gortmaker@windriver.com>,
         Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
@@ -15,9 +15,9 @@ To: Paul Gortmaker <paul.gortmaker@windriver.com>,
 Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v1 1/3] DCA, x86: fix invalid memory access in DCA core
-Date: Mon, 23 Apr 2012 22:34:00 +0800
-Message-Id: <1335191642-6869-2-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH v1 3/3] DCA, x86: support mutitple PCI root complexes in DCA core logic
+Date: Mon, 23 Apr 2012 22:34:02 +0800
+Message-Id: <1335191642-6869-4-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335191642-6869-1-git-send-email-jiang.liu@huawei.com>
 References: <1335191642-6869-1-git-send-email-jiang.liu@huawei.com>
@@ -25,112 +25,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When unregister_dca_providers() is called, it will remove all registered
-providers from the dca_providrers list by calling list_del(&dca->node).
-list_del(node) poisons node->next and node->prev as 0xDEADBEEF and 0xBEEFDEAD.
-Later when unregister_dca_provider() is called to remove a DCA provier,
-it calls list_del(&dca->node) to remove the dca from the list again,
-but dca->node has already been poisoned, then causes invalid memory access.
+To maintain backward compatibility with old interface dca_get_tag(), currently
+the DCA core logic is limited to support only one domain (PCI root complex).
+This effectively disables DCA on systems with multiple PCI root complexes,
+such as IBM x3850, Quantan S4R etc.
 
-The solution here is to use list_del_init(&dca->node) instead of
-list_del(&dca->node) in function unregister_dca_providers(), so it won't
-cause invalid memory access in unregister_dca_provider() later.
-
-This issue is triggered when hot-removing IOHs on Intel platforms, which
-will remove all IOAT devices built in the IOHs.
-
-------------------------------------------------------
-ioatdma 0000:80:16.7: Removing dma and dca services
-ioatdma 0000:80:16.7: PCI INT D disabled
-ioatdma 0000:80:16.6: Removing dma and dca services
-ioatdma 0000:80:16.7: Removing dma and dca services
-ioatdma 0000:80:16.7: PCI INT D disabled
-ioatdma 0000:80:16.6: Removing dma and dca services
-ioatdma 0000:80:16.6: PCI INT C disabled
-ioatdma 0000:00:16.0: Removing dma and dca services
-------------[ cut here ]------------
-WARNING: at lib/list_debug.c:47 __list_del_entry+0x63/0xd0()
-Hardware name: System x3850 X5 -[7143O3G]-
-list_del corruption, ffff880463540bc0->next is LIST_POISON1 (dead000000100100)
-Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vfat fat vhost_net macvtap macvlan tun kvm_intel kvm uinput microcode pcspkr serio_raw pmcraid sg be2net cdc_ether usbnet mii i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma i7core_edac edac_core igb dca e1000e bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif qla2xxx pata_acpi ata_generic ata_piix bfa scsi_transport_fc scsi_tgt megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
-Pid: 10049, comm: bash.sh Not tainted 3.2.0IOAT+ #5
-Call Trace:
- [<ffffffff8106426f>] warn_slowpath_common+0x7f/0xc0
- [<ffffffff81064366>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff8108c675>] ? __blocking_notifier_call_chain+0x65/0x80
- [<ffffffff81256073>] __list_del_entry+0x63/0xd0
- [<ffffffff812560f1>] list_del+0x11/0x40
- [<ffffffffa001b2e2>] unregister_dca_provider+0x42/0xe0 [dca]
- [<ffffffffa021f87d>] ioat_remove+0x43/0x67 [ioatdma]
- [<ffffffff8126b1a2>] pci_device_remove+0x52/0x120
- [<ffffffff8132b2dc>] __device_release_driver+0x7c/0xe0
- [<ffffffff8132b42d>] device_release_driver+0x2d/0x40
- [<ffffffff8132a871>] driver_unbind+0xa1/0xc0
- [<ffffffff81329cbc>] drv_attr_store+0x2c/0x30
- [<ffffffff811d72ef>] sysfs_write_file+0xef/0x170
- [<ffffffff81167338>] vfs_write+0xc8/0x190
- [<ffffffff81167501>] sys_write+0x51/0x90
- [<ffffffff814fa382>] system_call_fastpath+0x16/0x1b
----[ end trace b81b51e7c494ec0d ]---
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-IP: [<ffffffffa001b360>] unregister_dca_provider+0xc0/0xe0 [dca]
-PGD 1465b48067 PUD 1465035067 PMD 0
-Oops: 0000 [#1] SMP
-CPU 57
-Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vfat fat vhost_net macvtap macvlan tun kvm_intel kvm uinput microcode pcspkr serio_raw pmcraid sg be2net cdc_ether usbnet mii i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma i7core_edac edac_core igb dca e1000e bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif qla2xxx pata_acpi ata_generic ata_piix bfa scsi_transport_fc scsi_tgt megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
-
-Pid: 10049, comm: bash.sh Tainted: G        W    3.2.0IOAT+ #5 IBM System x3850 X5 -[7143O3G]-/Node 1, Processor Card
-RIP: 0010:[<ffffffffa001b360>]  [<ffffffffa001b360>] unregister_dca_provider+0xc0/0xe0 [dca]
-RSP: 0018:ffff880c4eafbdb8  EFLAGS: 00010046
-RAX: 0000000000000010 RBX: ffff880463540bc0 RCX: 0000000000002288
-RDX: ffff881465a51800 RSI: 0000000000000046 RDI: 0000000000000009
-RBP: ffff880c4eafbdd8 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000010 R11: 000000000000000b R12: 0000000000000000
-R13: 0000000000000257 R14: ffff881465abe000 R15: ffff881464199840
-FS:  00007f91d8314700(0000) GS:ffff88147fd20000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000010 CR3: 0000001457b07000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process bash.sh (pid: 10049, threadinfo ffff880c4eafa000, task ffff880c4e3b8af0)
-Stack:
- 0000000000000206 ffff88046133a218 ffff881465abe090 ffffffffa0222560
- ffff880c4eafbdf8 ffffffffa021f87d ffff881465abe090 ffff881465abe208
- ffff880c4eafbe28 ffffffff8126b1a2 ffff881465abe090 ffffffffa02225c0
-Call Trace:
- [<ffffffffa021f87d>] ioat_remove+0x43/0x67 [ioatdma]
- [<ffffffff8126b1a2>] pci_device_remove+0x52/0x120
- [<ffffffff8132b2dc>] __device_release_driver+0x7c/0xe0
- [<ffffffff8132b42d>] device_release_driver+0x2d/0x40
- [<ffffffff8132a871>] driver_unbind+0xa1/0xc0
- [<ffffffff81329cbc>] drv_attr_store+0x2c/0x30
- [<ffffffff811d72ef>] sysfs_write_file+0xef/0x170
- [<ffffffff81167338>] vfs_write+0xc8/0x190
- [<ffffffff81167501>] sys_write+0x51/0x90
- [<ffffffff814fa382>] system_call_fastpath+0x16/0x1b
-Code: c7 20 c0 01 a0 e8 51 6c 4d e1 48 89 df e8 c9 05 00 00 48 83 c4 08 5b 41 5c 41 5d c9 c3 66 0f 1f 44 00 00 45 31 e4 49 8d 44 24 10 <49> 39 44 24 10 75 c9 4c 89 e7 e8 71 ad 23 e1 4c 89 e7 e8 19 7b
-RIP  [<ffffffffa001b360>] unregister_dca_provider+0xc0/0xe0 [dca]
- RSP <ffff880c4eafbdb8>
-CR2: 0000000000000010
----[ end trace b81b51e7c494ec0e ]---
+This patch enhances the DCA core logic only to disable DCA operations when
+both dca_get_tag() has been used and there are multiple PCI root complexes
+in the system.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/dca/dca-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/dca/dca-core.c |  138 ++++++++++++++++++++++--------------------------
+ 1 files changed, 64 insertions(+), 74 deletions(-)
 
 diff --git a/drivers/dca/dca-core.c b/drivers/dca/dca-core.c
-index bc6f5fa..075c4bd 100644
+index f8cfa58..ff9017d 100644
 --- a/drivers/dca/dca-core.c
 +++ b/drivers/dca/dca-core.c
-@@ -121,7 +121,7 @@ static void unregister_dca_providers(void)
+@@ -42,7 +42,14 @@ static LIST_HEAD(dca_domains);
+ 
+ static BLOCKING_NOTIFIER_HEAD(dca_provider_chain);
+ 
+-static int dca_providers_blocked;
++static enum {
++	DCA_COMPAT_INITIAL = 0,		/* Initial state */
++	DCA_COMPAT_MULTI_DOMAINS = 1,	/* Multiple Root Complexes detected */
++	DCA_COMPAT_LEGACY_INTERFACE = 2,/* Legacy interface has been used */
++	DCA_COMPAT_DISABLED = 3		/* DCA disabled due to legacy interface
++					 * has been used and there are multiple
++					 * RCs in the system */
++} dca_compat_state;
+ 
+ static struct pci_bus *dca_pci_rc_from_dev(struct device *dev)
+ {
+@@ -75,26 +82,11 @@ static void dca_free_domain(struct dca_domain *domain)
+ 	kfree(domain);
+ }
+ 
+-static int dca_provider_ioat_ver_3_0(struct device *dev)
+-{
+-	struct pci_dev *pdev = to_pci_dev(dev);
+-
+-	return ((pdev->vendor == PCI_VENDOR_ID_INTEL) &&
+-		((pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG0) ||
+-		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG1) ||
+-		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG2) ||
+-		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG3) ||
+-		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG4) ||
+-		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG5) ||
+-		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG6) ||
+-		(pdev->device == PCI_DEVICE_ID_INTEL_IOAT_TBG7)));
+-}
+-
+ static void unregister_dca_providers(void)
+ {
+ 	struct dca_provider *dca, *_dca;
+ 	struct list_head unregistered_providers;
+-	struct dca_domain *domain;
++	struct dca_domain *domain, *_domain;
+ 	unsigned long flags;
+ 
+ 	blocking_notifier_call_chain(&dca_provider_chain,
+@@ -103,20 +95,11 @@ static void unregister_dca_providers(void)
+ 	INIT_LIST_HEAD(&unregistered_providers);
+ 
+ 	raw_spin_lock_irqsave(&dca_lock, flags);
+-
+-	if (list_empty(&dca_domains)) {
+-		raw_spin_unlock_irqrestore(&dca_lock, flags);
+-		return;
++	list_for_each_entry_safe(domain, _domain, &dca_domains, node) {
++		list_splice_init(&domain->dca_providers,
++				 &unregistered_providers);
++		dca_free_domain(domain);
+ 	}
+-
+-	/* at this point only one domain in the list is expected */
+-	domain = list_first_entry(&dca_domains, struct dca_domain, node);
+-
+-	list_for_each_entry_safe(dca, _dca, &domain->dca_providers, node)
+-		list_move(&dca->node, &unregistered_providers);
+-
+-	dca_free_domain(domain);
+-
+ 	raw_spin_unlock_irqrestore(&dca_lock, flags);
  
  	list_for_each_entry_safe(dca, _dca, &unregistered_providers, node) {
- 		dca_sysfs_remove_provider(dca);
--		list_del(&dca->node);
-+		list_del_init(&dca->node);
- 	}
+@@ -136,22 +119,6 @@ static struct dca_domain *dca_find_domain(struct pci_bus *rc)
+ 	return NULL;
  }
+ 
+-static struct dca_domain *dca_get_domain(struct device *dev)
+-{
+-	struct pci_bus *rc;
+-	struct dca_domain *domain;
+-
+-	rc = dca_pci_rc_from_dev(dev);
+-	domain = dca_find_domain(rc);
+-
+-	if (!domain) {
+-		if (dca_provider_ioat_ver_3_0(dev) && !list_empty(&dca_domains))
+-			dca_providers_blocked = 1;
+-	}
+-
+-	return domain;
+-}
+-
+ static struct dca_provider *dca_find_provider_by_dev(struct device *dev)
+ {
+ 	struct dca_provider *dca;
+@@ -278,6 +245,11 @@ u8 dca_common_get_tag(struct device *dev, int cpu)
+ 
+ 	raw_spin_lock_irqsave(&dca_lock, flags);
+ 
++	if (dca_compat_state == DCA_COMPAT_DISABLED) {
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
++		return -ENODEV;
++	}
++
+ 	dca = dca_find_provider_by_dev(dev);
+ 	if (!dca) {
+ 		raw_spin_unlock_irqrestore(&dca_lock, flags);
+@@ -311,6 +283,21 @@ EXPORT_SYMBOL_GPL(dca3_get_tag);
+ u8 dca_get_tag(int cpu)
+ {
+ 	struct device *dev = NULL;
++	unsigned long flags;
++
++	if (unlikely(dca_compat_state == DCA_COMPAT_INITIAL)) {
++		raw_spin_lock_irqsave(&dca_lock, flags);
++		if (dca_compat_state == DCA_COMPAT_INITIAL)
++			dca_compat_state = DCA_COMPAT_LEGACY_INTERFACE;
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
++	}
++	if (unlikely(dca_compat_state == DCA_COMPAT_MULTI_DOMAINS)) {
++		unregister_dca_providers();
++		raw_spin_lock_irqsave(&dca_lock, flags);
++		if (dca_compat_state == DCA_COMPAT_MULTI_DOMAINS)
++			dca_compat_state = DCA_COMPAT_DISABLED;
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
++	}
+ 
+ 	return dca_common_get_tag(dev, cpu);
+ }
+@@ -357,43 +344,38 @@ int register_dca_provider(struct dca_provider *dca, struct device *dev)
+ 	int err;
+ 	unsigned long flags;
+ 	struct dca_domain *domain, *newdomain = NULL;
++	struct pci_bus *rc;
+ 
+-	raw_spin_lock_irqsave(&dca_lock, flags);
+-	if (dca_providers_blocked) {
+-		raw_spin_unlock_irqrestore(&dca_lock, flags);
+-		return -ENODEV;
+-	}
+-	raw_spin_unlock_irqrestore(&dca_lock, flags);
++	rc = dca_pci_rc_from_dev(dev);
++	newdomain = dca_allocate_domain(rc);
++	if (!newdomain)
++		return -ENOMEM;
+ 
+ 	err = dca_sysfs_add_provider(dca, dev);
+ 	if (err)
+-		return err;
++		goto out_free;
+ 
+ 	raw_spin_lock_irqsave(&dca_lock, flags);
+-	domain = dca_get_domain(dev);
+-	if (!domain) {
+-		struct pci_bus *rc;
++	if (dca_compat_state == DCA_COMPAT_DISABLED) {
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
++		goto out_remove_sysfs;
++	}
+ 
+-		if (dca_providers_blocked) {
+-			raw_spin_unlock_irqrestore(&dca_lock, flags);
+-			dca_sysfs_remove_provider(dca);
+-			unregister_dca_providers();
+-			return -ENODEV;
++	domain = dca_find_domain(rc);
++	if (!domain) {
++		if (!list_empty(&dca_domains)) {
++			if (dca_compat_state == DCA_COMPAT_LEGACY_INTERFACE) {
++				dca_compat_state = DCA_COMPAT_DISABLED;
++				raw_spin_unlock_irqrestore(&dca_lock, flags);
++				err = -ENODEV;
++				goto out_unregister_dca;
++			} else if (dca_compat_state == DCA_COMPAT_INITIAL)
++				dca_compat_state = DCA_COMPAT_MULTI_DOMAINS;
+ 		}
+ 
+-		raw_spin_unlock_irqrestore(&dca_lock, flags);
+-		rc = dca_pci_rc_from_dev(dev);
+-		newdomain = dca_allocate_domain(rc);
+-		if (!newdomain)
+-			return -ENODEV;
+-		raw_spin_lock_irqsave(&dca_lock, flags);
+-		/* Recheck, we might have raced after dropping the lock */
+-		domain = dca_get_domain(dev);
+-		if (!domain) {
+-			domain = newdomain;
+-			newdomain = NULL;
+-			list_add(&domain->node, &dca_domains);
+-		}
++		domain = newdomain;
++		newdomain = NULL;
++		list_add(&domain->node, &dca_domains);
+ 	}
+ 	list_add(&dca->node, &domain->dca_providers);
+ 	raw_spin_unlock_irqrestore(&dca_lock, flags);
+@@ -402,6 +384,14 @@ int register_dca_provider(struct dca_provider *dca, struct device *dev)
+ 				     DCA_PROVIDER_ADD, NULL);
+ 	kfree(newdomain);
+ 	return 0;
++
++out_unregister_dca:
++	unregister_dca_providers();
++out_remove_sysfs:
++	dca_sysfs_remove_provider(dca);
++out_free:
++	kfree(newdomain);
++	return err;
+ }
+ EXPORT_SYMBOL_GPL(register_dca_provider);
  
 -- 
 1.7.5.4
