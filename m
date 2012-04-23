@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab2DWRbe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 13:31:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61805 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753300Ab2DWRbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 13:31:33 -0400
-Date: Mon, 23 Apr 2012 19:29:57 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
-Message-ID: <20120423172957.GA29708@redhat.com>
-References: <20120415195351.GA22095@redhat.com> <1334526513.28150.23.camel@twins> <20120415234401.GA32662@redhat.com> <1334571419.28150.30.camel@twins> <20120416214707.GA27639@redhat.com> <1334916861.2463.50.camel@laptop> <20120420183718.GA2236@redhat.com> <1335165240.28150.89.camel@twins> <20120423072445.GC8357@linux.vnet.ibm.com> <1335166842.28150.92.camel@twins>
+	id S1754026Ab2DWRca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 13:32:30 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44666 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753421Ab2DWRc3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 13:32:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335166842.28150.92.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1334982460.28106.90.camel@gandalf.stny.rr.com>
+References: <1318382410-14967-1-git-send-email-vnagarnaik@google.com>
+ <1328212844-11889-1-git-send-email-vnagarnaik@google.com> <1328212844-11889-2-git-send-email-vnagarnaik@google.com>
+ <1334982460.28106.90.camel@gandalf.stny.rr.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Mon, 23 Apr 2012 10:31:58 -0700
+Message-ID: <CAL26m8LCAx07BffXTZMWtvLRMOBbksaHSu1-Dw403+WD+_3L0A@mail.gmail.com>
+Subject: Re: [PATCH v5 2/4] trace: Make removal of ring buffer pages atomic
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        Justin Teravest <teravest@google.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23, Peter Zijlstra wrote:
+On Fri, Apr 20, 2012 at 9:27 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 2012-02-02 at 12:00 -0800, Vaibhav Nagarnaik wrote:
+>> +rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned int
+>> nr_pages)
+>>  {
+>> -       struct buffer_page *bpage;
+>> -       struct list_head *p;
+>> -       unsigned i;
+>> +       unsigned int nr_removed;
+>> +       int page_entries;
+>> +       struct list_head *tail_page, *to_remove, *next_page;
+>> +       unsigned long head_bit;
+>> +       struct buffer_page *last_page, *first_page;
+>> +       struct buffer_page *to_remove_page, *tmp_iter_page;
+>>
+> Also, please use the "upside down x-mas tree" for the declarations:
 >
-> On Mon, 2012-04-23 at 12:54 +0530, Srikar Dronamraju wrote:
-> > * Peter Zijlstra <peterz@infradead.org> [2012-04-23 09:14:00]:
-> >
-> > > On Fri, 2012-04-20 at 20:37 +0200, Oleg Nesterov wrote:
-> > > > Say, a user wants to probe /sbin/init only. What if init forks?
-> > > > We should remove breakpoints from child->mm somehow.
-> > >
-> > > How is that hard? dup_mmap() only copies the VMAs, this doesn't actually
-> > > copy the breakpoint. So the child doesn't have a breakpoint to be
-> > > removed.
-> > >
-> >
-> > Because the pages are COWED, the breakpoint gets copied over to the
-> > child. If we dont want the breakpoints to be not visible to the child,
-> > then we would have to remove them explicitly based on the filter (i.e if
-> > and if we had inserted breakpoints conditionally based on filter).
+> ie.
 >
-> I thought we didn't COW shared maps since the fault handler will fill in
-> the pages right and only anon stuff gets copied.
-
-Confused...
-
-Do you mean the "Don't copy ptes where a page fault will fill them correctly"
-check in copy_page_range() ? Yes, but this vma should have ->anon_vma != NULL
-if it has the breakpoint installed by uprobes.
-
-Yes, we do not COW this page during dup_mmap(), but the new child's pte
-should point to the same page with bp.
-
-OK, I guess I misunderstood.
-
-> > Once we add the conditional breakpoint insertion (which is tricky),
+>       struct list_head *tail_page, *to_remove, *next_page;
+>       struct buffer_page *to_remove_page, *tmp_iter_page;
+>       struct buffer_page *last_page, *first_page;
+>       unsigned int nr_removed;
+>       unsigned long head_bit;
+>       int page_entries;
 >
-> How so?
-
-I agree with Srikar this doesn't look simple to me. First of all,
-currently it is not easy to find the tasks which use this ->mm.
-OK, we can simply do for_each_process() under tasklist, but this is
-not very nice.
-
-But again, to me this is not the main problem.
-
-> > Conditional removal
-> > of breakpoints in fork path would just be an extension of the
-> > conditional breakpoint insertion.
+> See, it looks easier to read then what you had.
 >
-> Right, I don't think that removal is particularly hard if needed.
+>> +             /* fire off all the required work handlers */
+>> +             for_each_buffer_cpu(buffer, cpu) {
+>> +                     cpu_buffer = buffer->buffers[cpu];
+>> +                     if (!cpu_buffer->nr_pages_to_update)
+>> +                             continue;
+>> +                     schedule_work_on(cpu, &cpu_buffer->update_pages_work);
+>
+> This locks up. I just tried the following, and it hung the task.
+>
+> Here:
+>
+> # cd /sys/kernel/debug/tracing
+> # echo 1 > events/enable
+> # sleep 10
+> # echo 0 > event/enable
+> # echo 0 > /sys/devices/system/cpu/cpu1/online
+> # echo 100 > buffer_size_kb
+>
+> <locked!>
+>
+> I guess you could test if the cpu is online. And if so, then do the
+> schedule_work_on(). You will need to get_online_cpus first.
+>
+> If the cpu is offline, just change it.
+>
+> -- Steve
+>
+> PS. The first patch looks good, but I think you need to add some more
+> blank lines in your patches. You like to bunch a lot of text together,
+> and that causes some eye strain.
 
-I agree that remove_breakpoint() itself is not that hard, probably.
 
-But the whole idea of filtering is not clear to me. I mean, when/how
-we should call the filter, and what should be the argument.
-task_struct? Probably, but I am not sure.
+Thanks for the feedback. I will update the patch with your suggestions.
 
-And btw fork()->dup_mmap() should call the filter too. Suppose that
-uprobe_consumer wants to trace the task T and its children, this looks
-very natural.
 
-And we need to rework uprobe_register(). It can't simply return if
-this (inode, offset) already has the consumer.
 
-So far I think this needs more thinking. And imho we should merge the
-working code Srikar already has, then try to add this (agreed, very
-important) optimization.
-
-Oleg.
-
+Vaibhav Nagarnaik
