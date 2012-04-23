@@ -1,124 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab2DWNN1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 09:13:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34561 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752454Ab2DWNNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 09:13:25 -0400
-Date: Mon, 23 Apr 2012 09:12:55 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Malahal Naineni <malahal@us.ibm.com>,
-        Steve Dickson <SteveD@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, hch@infradead.org,
-        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
-        chuck.lever@oracle.com, pstaubach@exagrid.com,
-        trond.myklebust@fys.uio.no, rees@umich.edu
-Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
- from getattr call
-Message-ID: <20120423091255.00f926c4@tlielax.poochiereds.net>
-In-Reply-To: <20120423130009.GA13681@fieldses.org>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<1334749927-26138-1-git-send-email-jlayton@redhat.com>
-	<20120420104055.511e15bc@tlielax.poochiereds.net>
-	<4F91C49D.8070908@RedHat.com>
-	<20120420203725.GA3512@us.ibm.com>
-	<20120420171314.73801874@corrin.poochiereds.net>
-	<CAJfpegt40cgMJQQo3JuNaaS1w957Y2a_NxVoyvx3bmTMj1TGOA@mail.gmail.com>
-	<20120423080012.7c23ef24@tlielax.poochiereds.net>
-	<20120423130009.GA13681@fieldses.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755288Ab2DWNPS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 09:15:18 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50720 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab2DWNPQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 09:15:16 -0400
+Message-ID: <4F9555C5.6040601@linux.vnet.ibm.com>
+Date: Mon, 23 Apr 2012 18:44:45 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+Subject: Re: [PATCH bisected regression] sched: rebuild sched domains at suspend/resume
+References: <20120306204357.13169.90791.stgit@zurg> <1331067743.11248.333.camel@twins> <CA+55aFxPiW=T8iNy=Fb_fuO2DYV9+sQL-mr8=Uc7cWymTyVt6A@mail.gmail.com> <1331084302.11248.338.camel@twins> <CA+55aFx6NXjLpAz_Bu1wvaxFB-2zrYGkfBeN_8rM5q7MkYuNEQ@mail.gmail.com> <4F5D00AE.8000602@openvz.org>
+In-Reply-To: <4F5D00AE.8000602@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12042313-5564-0000-0000-000002527C9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Apr 2012 09:00:09 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
+On 03/12/2012 01:14 AM, Konstantin Khlebnikov wrote:
 
-> On Mon, Apr 23, 2012 at 08:00:12AM -0400, Jeff Layton wrote:
-> > On Sun, 22 Apr 2012 07:40:57 +0200
-> > Miklos Szeredi <miklos@szeredi.hu> wrote:
-> > 
-> > > On Fri, Apr 20, 2012 at 11:13 PM, Jeff Layton <jlayton@redhat.com> wrote:
-> > > > On Fri, 20 Apr 2012 15:37:26 -0500
-> > > > Malahal Naineni <malahal@us.ibm.com> wrote:
-> > > >
-> > > >> Steve Dickson [SteveD@redhat.com] wrote:
-> > > >> > > 2) if we assume that it is fairly representative of one, how can we
-> > > >> > > achieve retrying indefinitely with NFS, or at least some large finite
-> > > >> > > amount?
-> > > >> > The amount of looping would be peer speculation. If the problem can
-> > > >> > not be handled by one simple retry I would say we simply pass the
-> > > >> > error up to the app... Its an application issue...
-> > > >>
-> > > >> As someone said, ESTALE is an incorrect errno for a path based call.
-> > > >> How about turning ESTALE into ENOENT after a retry or few retries?
-> > > >>
-> > > >
-> > > > It's not really the same thing. One could envision an application
-> > > > that's repeatedly renaming a new file on top of another one. The file
-> > > > is never missing from the namespace of the server, but you could still
-> > > > end up getting an ESTALE.
-> > > >
-> > > > That would break other atomicity guarantees in an even worse way, IMO...
-> > > 
-> > > For directory operations ESTALE *is* equivalent to ENOENT if already
-> > > retrying with LOOKUP_REVAL.  Think about it.  Atomic replacement by
-> > > another directory with rename(2) is not an excuse here actually.
-> > > Local filesystems too can end up with IS_DEAD directory after lookup
-> > > in that case.
-> > > 
-> > 
-> > Doesn't that violate POSIX? rename(2) is supposed to be atomic, and I
-> > can't see where there's any exception for that for directories.
+> Linus Torvalds wrote:
+>> On Tue, Mar 6, 2012 at 5:38 PM, Peter
+>> Zijlstra<a.p.zijlstra@chello.nl>  wrote:
+>>> On Tue, 2012-03-06 at 16:54 -0800, Linus Torvalds wrote:
+>>>> I do agree that reverting is probably safer at this point, but can we
+>>>> get agreement on this?
+>>>
+>>> I agree with reverting, shoot it in the head :-) Do you want a git
+>>> thingy?
+>>
+>> Well, it's less a "git thingy" and more that there are tons of people
+>> involved with the original commit that haven't even piped up.
+>>
+>> Srivatsa, Ingo, Prashanth..
+>>
+>> In fact, I notice that Prashanth doesn't even seem to have been cc'd,
+>> even if he's the original reporter of the commit that gets reverted.
+>> Added (see lkml)
 > 
-> Hm, but that only allows atomic replacement of the last component of a
-> path.
+> I forget to mention my kernel boot options. I live with them for a
+> while, so I just forget about it.
+> "debug threadirqs i915.i915_enable_rc6=1 i915.i915_enable_fbc=1
+> i915.lvds_downclock=1 crashkernel=128M"
 > 
-> Suppose you're looking up a path, you've so far reached intermediate
-> directory "D", and the next step of the lookup (of some entry in D)
-> returns ESTALE.  Then either:
+> So, "threadirqs" is a lost piece of the puzzle -- without it I cannot
+> reproduce the bug.
+> However, I have no idea how this is connected to sched-domains. =)
 > 
-> 	- D has since been unlinked, and ENOENT is obviously right.
-> 	- D was unlinked and then replaced by something else, in which
-> 	  case there was still a moment when ENOENT was correct.
-> 	- D was replaced atomically by a rename.  But for the rename to
-> 	  work it must have been replacing an empty directory, so there
-> 	  was still a moment when ENOENT would have been correct.
 
-I don't think so...D should always exist in the namespace, so ENOENT
-would not be correct. Just because it was empty doesn't mean that it
-didn't exist...
 
-> 	  (Exception: if D was actually a regular file or some other
-> 	  non-directory object, then ENOTDIR would be the right error:
-> 	  but if you're able to get at least object type atomically with
-> 	  a lookup, then you should have noticed this already on lookup
-> 	  of D.)
-> 
-> I think that's what Miklos meant?
-> 
-> --b.
+I know this is a pretty old thread now, but I managed to do some debugging
+and get some insight on what might have gone wrong. (The original thread
+can be found in [1]. Oh, by the way, this is no longer a problem in the
+current mainline because commit 4293f20 (Revert "CPU hotplug, cpusets,
+suspend: Don't touch cpusets during suspend/resume") reverted the buggy
+commit. So what follows here, is just an analysis of why the original
+commit caused suspend hangs in some cases.
 
-Here's an example -- suppose we have two directories: /foo
-and /bar. /bar is empty. We call:
+The Problem :
+  Commit 8f2f748b0656 (CPU hotplug, cpusets, suspend: Don't touch cpusets
+  during suspend/resume) caused suspend hangs, and this hang was much more
+  reproducible when "threadirqs" was passed as a kernel parameter.
+  This hang was observed irrespective of whether cpusets was enabled or
+  disabled at compile time. Also, this hang was always at the processors
+  level of pm_test, that is, during the CPU Hotplug (offlining) in the
+  suspend path.
 
-    rename("/foo","/bar");
 
-...and at the same time, someone is calling:
+Preliminary analysis (what we already knew):
+  This commit had removed the call to partition_sched_domains() in the CPU
+  Hotplug path that was initiated as part of the suspend/resume sequence.
+  But this was done under the assumption that the scheduler would look up
+  the cpu_active_mask (in which the dying cpu wouldn't be present) to
+  make decisions and hence the lost call to partition_sched_domains()
+  wouldn't really matter.
 
-    stat("/bar");
+  However, Konstantin found experimentally that restoring the call to
+  partition_sched_domains() fixed the suspend hang.
 
-...the calls race and in this condition the stat() gets ESTALE back
--- /bar got replaced after we did the lookup.
 
-According to POSIX, the name "/bar" should never be absent from the
-namespace in this situation, so I'm not sure I understand why returning
-ENOENT here would be acceptable.
+The unanswered questions (so far):
+  o	Why is that call to partition_sched_domains() so important?
+  o	What are those places in which the scheduler doesn't revalidate all
+ 	its decisions based on the cpu_active_mask, and hence having a stale
+        sched domain around is troublesome and leads to hangs during CPU
+        offlining?
+  o	And why is the "threadirqs" parameter playing any role in all this
+        business?
 
--- 
-Jeff Layton <jlayton@redhat.com>
+
+After some rounds of experiments and debugging, I believe I have found some
+reasonable explanations to the above questions.
+
+Basically, our assumption that we are good to go (even with stale sched
+domains) as long as the dying cpu was not in the cpu_active_mask, was wrong.
+There are several places where the scheduler code doesn't really check the
+cpu_active_mask, but instead traverses the sched domains to do stuff.
+
+Examples:
+1. kernel/sched/core.c and fair.c:
+   schedule()
+	__schedule()
+		idle_balance()
+
+
+idle_balance() can end up doing:
+
+for_each_domain(dying_cpu, sd) {
+	...
+}
+
+
+2. kernel/sched/core.c and rt.c:
+
+migration_call()
+	sched_ttwu_pending()
+		ttwu_do_activate()
+			ttwu_do_wakeup()
+				task_woken()
+					task_woken_rt()
+						push_rt_tasks()
+							find_lowest_rq()
+
+
+find_lowest_rq() can end up doing:
+
+for_each_domain(dying_cpu, sd) {
+	...
+}
+
+
+In the original (good) code, the call to partition_sched_domains in the
+CPU offline path would set the cpu_rq(dying_cpu)->sd to NULL. And hence,
+in both the examples above, the for_each_domain() traversal simply wouldn't
+occur because the sched domain pointer is NULL.
+
+
+However, with commit 8f2f748b0656 applied, since the sd pointer would be
+non-NULL, the above code paths would go into the for_each_domain() path and
+get confused.
+
+Specifically, in example 1, it would result in the dying cpu having trouble
+going to idle in some circumstances, because it does:
+
+__schedule():
+        if (unlikely(!rq->nr_running))
+	        idle_balance(cpu, rq); 
+
+And we have the following code in the cpu_down path:
+	while(!idle_cpu(dying_cpu))
+		cpu_relax();
+
+[One such schedule() invocation is from the workqueues' trustee_thread in
+the cpu_down path - I saw this in the hung task panic stack trace.]
+
+
+And example 2 becomes more and more prominent as the number of RT tasks
+in the system increases - and "threadirqs" parameter does exactly that, as
+far as this scenario is concerned - it force-threads irq handlers and
+makes them as RT tasks. And hence the chances that we end up in the code
+shown in example 2 increases.
+
+I have experimentally verified some of these things:
+
+1. With commit 8f2f748b0656, suspend and CPU Hotplug almost always hung.
+
+2. I altered the above 2 code paths to ensure we don't do the traversal of
+   the sched domains of the dying cpu and found that suspend and CPU hotplug
+   work without hang with much higher probability than plain commit 8f2f748b.
+
+3. Then I set cpu_rq(dying_cpu)->sd to NULL on top of commit 8f2f748b (still
+   without calling partition_sched_domains) and observed that suspend and
+   CPU hotplug worked beautifully, with *absolutely* no hangs. 
+
+So I think the above 2 examples are only _some_ of the many more places where
+stale sched domains can mean trouble to CPU hotplug (offlining). [If these
+were the only 2 places, then 2 would have worked as good as 3, but it did not.]
+
+So, now that we have a reasonably convincing explanation (I hope) to some of
+the previously unanswered questions, I think I can go back to implementing a
+proper fix for the cpusets/cpu hotplug issue :-) [which commit 8f2f748b set
+out to solve in the first place.] This time, I think I have a better solution
+in mind ;-)
+
+[1]. http://thread.gmane.org/gmane.linux.kernel/1262802
+
+Regards,
+Srivatsa S. Bhat
+
