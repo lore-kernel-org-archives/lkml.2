@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab2DWKeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:34:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754708Ab2DWKeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:34:18 -0400
-Date: Mon, 23 Apr 2012 12:33:50 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, rostedt@goodmis.org,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com
-Subject: Re: [PATCH 02/16] perf: Unified API to record selective sets of arch
- registers
-Message-ID: <20120423103350.GB1720@m.brq.redhat.com>
-References: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
- <1334661441-4420-3-git-send-email-jolsa@redhat.com>
- <CABPqkBRqG5WhWYY5viVW3j89WUrpmkk1j7VA=oUhY_TGXg=14g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABPqkBRqG5WhWYY5viVW3j89WUrpmkk1j7VA=oUhY_TGXg=14g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755094Ab2DWKhD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:37:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50407 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754744Ab2DWKhC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 06:37:02 -0400
+Message-ID: <1335177409.28150.115.camel@twins>
+Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS for
+ AMD CPUs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 23 Apr 2012 12:36:49 +0200
+In-Reply-To: <20120423084128.GR9747@erda.amd.com>
+References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
+	 <1333390758-10893-7-git-send-email-robert.richter@amd.com>
+	 <1334398930.2528.50.camel@twins> <20120423084128.GR9747@erda.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 12:10:57PM +0200, Stephane Eranian wrote:
-> On Tue, Apr 17, 2012 at 1:17 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> > This brings a new API to help the selective dump of registers on
-> > event sampling, and its implementation in x86.
-> >
-> > - The informations about the desired registers will be passed
-> >  to a single u64 mask. It's up to the architecture to map the
-> >  registers into the mask bits.
-> >
-> > - The architecture must provide a non-zero and unique id to
-> >  identify the origin of a register set because interpreting a
-> >  register dump requires to know from which architecture it comes.
-> >  The achitecture is considered different between the 32 and 64 bits
-> >  version. x86-32 has the id 1, x86-64 has the id 2.
-> >
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > ---
-> >  arch/x86/include/asm/perf_regs.h    |   16 ++++++
-> >  arch/x86/include/asm/perf_regs_32.h |   84 +++++++++++++++++++++++++++++
-> >  arch/x86/include/asm/perf_regs_64.h |  101 +++++++++++++++++++++++++++++++++++
-> >  include/asm-generic/perf_regs.h     |   23 ++++++++
-> >  4 files changed, 224 insertions(+), 0 deletions(-)
-> >  create mode 100644 arch/x86/include/asm/perf_regs.h
-> >  create mode 100644 arch/x86/include/asm/perf_regs_32.h
-> >  create mode 100644 arch/x86/include/asm/perf_regs_64.h
-> >  create mode 100644 include/asm-generic/perf_regs.h
-> >
-> > diff --git a/arch/x86/include/asm/perf_regs.h b/arch/x86/include/asm/perf_regs.h
-> > new file mode 100644
-> > index 0000000..80b7fbe
-> > --- /dev/null
-> > +++ b/arch/x86/include/asm/perf_regs.h
-> > @@ -0,0 +1,16 @@
-> > +#ifndef _ASM_X86_PERF_REGS_H
-> > +#define _ASM_X86_PERF_REGS_H
-> > +
-> > +enum {
-> > +       PERF_REGS_VERSION_NONE   = 0UL,
-> > +       PERF_REGS_VERSION_X86_32 = 1UL,
-> > +       PERF_REGS_VERSION_X86_64 = 2UL,
-> > +};
-> > +
-> I don't really like the term VERSION here. It's not a versioning
-> problem you're trying to solve. It's an ABI problem, unless I am
-> mistaken. You should rename to PERF_REGS_ABI_X86_32 and
-> PERF_REGS_ABI_X86_64.
+On Mon, 2012-04-23 at 10:41 +0200, Robert Richter wrote:
+> On 14.04.12 12:22:10, Peter Zijlstra wrote:
+> > On Mon, 2012-04-02 at 20:19 +0200, Robert Richter wrote:
+> > > + * IbsOpCntCtl (bit 19) of IBS Execution Control Register (IbsOpCtl,
+> > > + * MSRC001_1033) is used to select either cycle or micro-ops counting
+> > > + * mode. 
+> > 
+> > Ah is that what it does.. the BKDG doesn't appear to say this.
 > 
-> I assume the NONE is here to cover the case where you don't
-> have a user machine state, i.e., hit a kernel thread. Is that right?
-
-right
-
+> "19 IbsOpCntCtl: periodic op counter count control. Revision B:
+>     Reserved. Revision C: Read-write. Reset 0b. 1=Count dispatched ops
+>     0=Count clock cycles."
 > 
+> It's here:
 > 
-> > +#ifdef CONFIG_X86_32
-> > +#include "perf_regs_32.h"
-> > +#else
-> > +#include "perf_regs_64.h"
-> > +#endif
-> > +
-> How are you going to deal with 32-bit binaries sampled on a 64-bit system?
+>  MSRC001_1033 IBS Execution Control Register (IbsOpCtl)
+>  http://support.amd.com/us/Processor_TechDocs/31116.pdf
+> 
+> Ok, it might not be quite clear that "dispatched ops" is related to
+> EventSelect 0C1h Retired uops, but there is an exact mapping.
 
-I dont have the solution right now... but seems like compat tasks need more
-thinking even before go ahead with this patchset.. since it's going affect
-the perf_event_attr and could bite us in future.
+Ah, looks like my docs are stale.. my fam10 doc didn't have it specified
+at all and my fam12 doc just listed the bit 19 as "periodic op counter
+count control. Read-write." Which isn't very helpful.
 
-I'll see what I can do about that and send out new patchset
-
-jirka
+Thanks!
