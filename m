@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab2DWQYF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:24:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14836 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752292Ab2DWQYC convert rfc822-to-8bit (ORCPT
+	id S1753670Ab2DWQXu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:23:50 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:38427 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab2DWQXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:24:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="92150009"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "Liu, Jinsong" <jinsong.liu@intel.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: RE: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
-Thread-Topic: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
-Thread-Index: AQHNH3YMj31i2PR/lkqeiia+nqwVVJaljggAgAKXIICAAECDgIAAljWAgAAOzoD//4+fQA==
-Date: Mon, 23 Apr 2012 16:23:59 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F170EF92E@ORSMSX104.amr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com>
- <20120421041454.GA29704@phenom.dumpdata.com>
- <20120421104502.GB17005@aftab.osrc.amd.com>
- <20120423021827.GA13840@phenom.dumpdata.com>
- <20120423060921.GA29378@aftab.osrc.amd.com>
- <20120423150657.GA24481@phenom.dumpdata.com>
- <20120423155957.GA6147@aftab.osrc.amd.com>
-In-Reply-To: <20120423155957.GA6147@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 23 Apr 2012 12:23:48 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Mon, 23 Apr 2012 18:23:59 +0200
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: [PATCH v4 0/2] i2c-s3c2410: Updates for exynos4210 and DT-based systems
+To: w.sang@pengutronix.de
+Cc: m.szyprowski@samsung.com, ben-linux@fluff.org, thomas.abraham@linaro.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
+        t.stanislaws@samsung.com, kyungmin.park@samsung.com,
+        broonie@opensource.wolfsonmicro.com,
+        Karol Lewandowski <k.lewandowsk@samsung.com>
+Message-id: <1335198241-19344-1-git-send-email-k.lewandowsk@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Perfect. Software is more elastic than hardware - so the Xen ABI
-> for the MCE can be changed then to reflect the new format if required.
+Changes since v3:
+ - Replace DT-visible quirks with new controller type
+   [Suggested by Wolfram Sang]
+ - Dropped already merged of_match_ptr()-patch
 
-To developers working upstream in open source projects ... yes, software
-does look like it is easy to change.  But in the long term software is
-very difficult to change. Enterprise versions for Linux now come with
-up to ten years of support ... and they are expected to be updated with
-support for new hardware for much of their support lifetime. So what goes
-into upstream now will be a support burden for somebody until around 2022.
+Changes since v2:
+ - Merge device type and flags into flat bitmask named quirks -
+   Consequently, treat s3c24xx as baseline hardware platform and
+   support all hw variations via quirks [Suggested by Mark Brown]
 
-So please look at the suggestions that Boris has provided, and think about
-if there is a cleaner, more maintainable way to pass error data around.
+Changes since v1:
+ - Move unrelated code fragment to separate patch (of_match_ptr())
+   [Suggested by Thomas Abracham]
+ - Move device-type handling to separate function and rework its
+   internals a bit [likewise]
 
--Tony
+This patchset reworks i2c-s3c2410 driver a bit to better handle
+device tree-enabled platforms and adds two quirks required by
+exynos4210-specific I2C controller used by s5p-hdmi driver.
+
+This patchset is based on "i2c-bjdooks/for-34/i2c/i2c-samsung" branch
+taken from:
+
+  git://git.fluff.org/bjdooks/linux.git
+
+
+Karol Lewandowski (2):
+  i2c-s3c2410: Rework device type handling
+  i2c-s3c2410: Add HDMIPHY quirk for S3C2440
+
+ .../devicetree/bindings/i2c/samsung-i2c.txt        |    8 +-
+ drivers/i2c/busses/i2c-s3c2410.c                   |  105 ++++++++++++--------
+ 2 files changed, 70 insertions(+), 43 deletions(-)
+
+-- 
+1.7.9.5
+
