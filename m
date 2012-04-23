@@ -1,188 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab2DWWnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 18:43:31 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:52776 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017Ab2DWWna (ORCPT
+	id S1755505Ab2DWWoR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 18:44:17 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:37227 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753570Ab2DWWoQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 18:43:30 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-132.messagelabs.com!1335221008!9482173!3
-X-Originating-IP: [216.166.12.178]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor adl_pci9111 driver to remove forward declarations
-Date: Mon, 23 Apr 2012 15:43:22 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Mon, 23 Apr 2012 18:44:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201204231543.22770.hartleys@visionengravers.com>
+Date: Tue, 24 Apr 2012 00:44:15 +0200
+Message-ID: <CAP145pgsaAN7uvj29Di6Qwtgrr54WvGL6X4rqU-fre8z_zJh4Q@mail.gmail.com>
+Subject: NULL-ptr deref in mmput via sys_migrate_pages in 3.4-rc4 (proly
+ missing mm==NULL check)
+From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the module_init/module_exit routines and variables to the
-end of the source as is more typically done with other drivers.
-Then rearrange the attach/detach and probe/remove functions,
-this removes the need for all the forward declarations.
+mm/mempolicy.c
+1362         mm = get_task_mm(task);
+1363         put_task_struct(task);
+1364         if (mm)
+1365                 err = do_migrate_pages(mm, old, new,
+1366                         capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL
+: MPOL_MF_MOVE);
+1367         else
+1368                 err = -EINVAL;
+1369
+1370         mmput(mm);
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Where mmput doesn't check for mm
 
----
+kernel/fork.c
+567 void mmput(struct mm_struct *mm)
+568 {
+569         might_sleep();
+570
+571         if (atomic_dec_and_test(&mm->mm_users)) {
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci9111.c b/drivers/staging/comedi/drivers/adl_pci9111.c
-index 6b4d98a..4e4e5fd 100644
---- a/drivers/staging/comedi/drivers/adl_pci9111.c
-+++ b/drivers/staging/comedi/drivers/adl_pci9111.c
-@@ -289,16 +289,6 @@ TODO:
- 			PCI9111_IO_BASE+PCI9111_REGISTER_8254_COUNTER_2); \
- 	} while (0)
- 
--/*  Function prototypes */
--
--static int pci9111_attach(struct comedi_device *dev,
--			  struct comedi_devconfig *it);
--static int pci9111_detach(struct comedi_device *dev);
--static void pci9111_ai_munge(struct comedi_device *dev,
--			     struct comedi_subdevice *s, void *data,
--			     unsigned int num_bytes,
--			     unsigned int start_chan_index);
--
- static const struct comedi_lrange pci9111_hr_ai_range = {
- 	5,
- 	{
-@@ -310,14 +300,6 @@ static const struct comedi_lrange pci9111_hr_ai_range = {
- 	 }
- };
- 
--static DEFINE_PCI_DEVICE_TABLE(pci9111_pci_table) = {
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI9111_HR_DEVICE_ID) },
--	/* { PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI9111_HG_DEVICE_ID) }, */
--	{ 0 }
--};
--
--MODULE_DEVICE_TABLE(pci, pci9111_pci_table);
--
- /*  */
- /*  Board specification structure */
- /*  */
-@@ -354,51 +336,6 @@ static const struct pci9111_board pci9111_boards[] = {
- #define pci9111_board_nbr \
- 	(sizeof(pci9111_boards)/sizeof(struct pci9111_board))
- 
--static struct comedi_driver pci9111_driver = {
--	.driver_name = PCI9111_DRIVER_NAME,
--	.module = THIS_MODULE,
--	.attach = pci9111_attach,
--	.detach = pci9111_detach,
--};
--
--static int __devinit pci9111_driver_pci_probe(struct pci_dev *dev,
--					      const struct pci_device_id *ent)
--{
--	return comedi_pci_auto_config(dev, &pci9111_driver);
--}
--
--static void __devexit pci9111_driver_pci_remove(struct pci_dev *dev)
--{
--	comedi_pci_auto_unconfig(dev);
--}
--
--static struct pci_driver pci9111_driver_pci_driver = {
--	.id_table = pci9111_pci_table,
--	.probe = &pci9111_driver_pci_probe,
--	.remove = __devexit_p(&pci9111_driver_pci_remove)
--};
--
--static int __init pci9111_driver_init_module(void)
--{
--	int retval;
--
--	retval = comedi_driver_register(&pci9111_driver);
--	if (retval < 0)
--		return retval;
--
--	pci9111_driver_pci_driver.name = (char *)pci9111_driver.driver_name;
--	return pci_register_driver(&pci9111_driver_pci_driver);
--}
--
--static void __exit pci9111_driver_cleanup_module(void)
--{
--	pci_unregister_driver(&pci9111_driver_pci_driver);
--	comedi_driver_unregister(&pci9111_driver);
--}
--
--module_init(pci9111_driver_init_module);
--module_exit(pci9111_driver_cleanup_module);
--
- /*  Private data structure */
- 
- struct pci9111_private_data {
-@@ -1470,6 +1407,57 @@ static int pci9111_detach(struct comedi_device *dev)
- 	return 0;
- }
- 
-+static struct comedi_driver pci9111_driver = {
-+	.driver_name	= PCI9111_DRIVER_NAME,
-+	.module		= THIS_MODULE,
-+	.attach		= pci9111_attach,
-+	.detach		= pci9111_detach,
-+};
-+
-+static int __devinit pci9111_driver_pci_probe(struct pci_dev *dev,
-+					      const struct pci_device_id *ent)
-+{
-+	return comedi_pci_auto_config(dev, &pci9111_driver);
-+}
-+
-+static void __devexit pci9111_driver_pci_remove(struct pci_dev *dev)
-+{
-+	comedi_pci_auto_unconfig(dev);
-+}
-+
-+static DEFINE_PCI_DEVICE_TABLE(pci9111_pci_table) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI9111_HR_DEVICE_ID) },
-+	/* { PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI9111_HG_DEVICE_ID) }, */
-+	{ 0 }
-+};
-+MODULE_DEVICE_TABLE(pci, pci9111_pci_table);
-+
-+static struct pci_driver pci9111_driver_pci_driver = {
-+	.id_table	= pci9111_pci_table,
-+	.probe		= pci9111_driver_pci_probe,
-+	.remove		= __devexit_p(pci9111_driver_pci_remove),
-+};
-+
-+static int __init pci9111_driver_init_module(void)
-+{
-+	int retval;
-+
-+	retval = comedi_driver_register(&pci9111_driver);
-+	if (retval < 0)
-+		return retval;
-+
-+	pci9111_driver_pci_driver.name = (char *)pci9111_driver.driver_name;
-+	return pci_register_driver(&pci9111_driver_pci_driver);
-+}
-+module_init(pci9111_driver_init_module);
-+
-+static void __exit pci9111_driver_cleanup_module(void)
-+{
-+	pci_unregister_driver(&pci9111_driver_pci_driver);
-+	comedi_driver_unregister(&pci9111_driver);
-+}
-+module_exit(pci9111_driver_cleanup_module);
-+
- MODULE_AUTHOR("Comedi http://www.comedi.org");
- MODULE_DESCRIPTION("Comedi low-level driver");
- MODULE_LICENSE("GPL");
+
+causes NULL-ptr deref
+
+(gdb) target remote /dev/ttyS0
+Remote debugging using /dev/ttyS0
+mmput (mm=0x0) at kernel/fork.c:571
+571		if (atomic_dec_and_test(&mm->mm_users)) {
+
+(gdb) bt
+#0  mmput (mm=0x0) at kernel/fork.c:571
+#1  0xffffffff8116a1e0 in sys_migrate_pages (pid=<optimized out>,
+maxnode=<optimized out>, old_nodes=<optimized out>,
+new_nodes=<optimized out>) at mm/mempolicy.c:1370
+#2  0xffffffff820726c9 in ?? () at arch/x86/ia32/ia32entry.S:425
+
+
+(gdb) up
+#1  0xffffffff8116a1e0 in sys_migrate_pages (pid=<optimized out>,
+maxnode=<optimized out>, old_nodes=<optimized out>,
+new_nodes=<optimized out>) at mm/mempolicy.c:1370
+1370		mmput(mm);
+(gdb) p mm
+$1 = (struct mm_struct *) 0x0
+(gdb) p task->mm
+$2 = (struct mm_struct *) 0x0
+
+
+-- 
+Robert Święcki
