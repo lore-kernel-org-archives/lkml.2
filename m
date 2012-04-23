@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab2DWLt3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 07:49:29 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52662 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab2DWLt2 (ORCPT
+	id S1753202Ab2DWLzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 07:55:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51574 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840Ab2DWLzi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 07:49:28 -0400
-MIME-Version: 1.0
-Date: Mon, 23 Apr 2012 13:49:26 +0200
-Message-ID: <CAEiBgeAukAdZv1WNcJQ6DByP7Yy63gvRS0cY6q6yU27p+XRi4A@mail.gmail.com>
-Subject: MIPS ASID type conflicts
-From: Jean-Christophe PINCE <jcpince@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 23 Apr 2012 07:55:38 -0400
+Message-ID: <1335182113.28150.132.camel@twins>
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Date: Mon, 23 Apr 2012 13:55:13 +0200
+In-Reply-To: <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	 <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+> +/*
+> + * Here we check if --at time t-- an entity (which is probably being
+> + * [re]activated or, in general, enqueued) can use its remaining runtime
+> + * and its current deadline _without_ exceeding the bandwidth it is
+> + * assigned (function returns true if it can).
+> + *
+> + * For this to hold, we must check if:
+> + *   runtime / (deadline - t) < dl_runtime / dl_deadline .
 
-I am analyzing Linux MIPS tasks memory spaces and found out what I
-think is a bug in the ASID management.
+It might be good to put a few words in as to why that is.. I know I
+always forget (but know where to find it by now), also might be good to
+refer those papers Tommaso listed when Steven asked this a while back.
 
-The structure "struct cpuinfo_mips" defined in
-arch/mips/include/asm/cpu-info.h uses a "unsigned int" field for
-asid_cache while the context field defined in
-arch/mips/include/asm/mmu.h is a "unsigned long".
+> + */
+> +static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
+> +{
+> +       u64 left, right;
+> +
+> +       /*
+> +        * left and right are the two sides of the equation above,
+> +        * after a bit of shuffling to use multiplications instead
+> +        * of divisions.
+> +        *
+> +        * Note that none of the time values involved in the two
+> +        * multiplications are absolute: dl_deadline and dl_runtime
+> +        * are the relative deadline and the maximum runtime of each
+> +        * instance, runtime is the runtime left for the last instance
+> +        * and (deadline - t), since t is rq->clock, is the time left
+> +        * to the (absolute) deadline. Therefore, overflowing the u64
+> +        * type is very unlikely to occur in both cases.
+> +        */
+> +       left = dl_se->dl_deadline * dl_se->runtime;
+> +       right = (dl_se->deadline - t) * dl_se->dl_runtime;
 
-This is ok with 32bits kernel but leads to 4bytes vs 8bytes fields
-with a 64bits kernel. And when the scheduler checks if the ASID is of
-an older ASID_VERSION, the test will always return that the version
-differs when the context bits above bit31 will be set.
 
-I imagine this should be a quite rare issue but could likely happen on
-devices running for very long and starting processes very often (or
-running more than 256 processes per cpu). When this condition (bit 32
-or above of asid_cache is set), the effect should be that the TLB will
-be flushed on each context_switch required by the scheduler but there
-shouldn't be any crash.
+>From what I can see there are no constraints on the values in
+__setparam_dl() so the above left term can be constructed to be an
+overflow.
 
-Hope this helps,
-Thanks and regards,
-JC
+Ideally we'd use u128 here, but I don't think people will let us :/
+
+> +       return dl_time_before(right, left);
+> +} 
