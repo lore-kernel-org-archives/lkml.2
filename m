@@ -1,81 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab2DWRf6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 13:35:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55044 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753064Ab2DWRf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 13:35:56 -0400
-References: <1335150198-21899-1-git-send-email-konrad.wilk@oracle.com> <201204231334.51376.rjw@sisk.pl>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <201204231334.51376.rjw@sisk.pl>
+	id S1753408Ab2DWRn2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 13:43:28 -0400
+Received: from p02c11o148.mxlogic.net ([208.65.144.81]:54833 "EHLO
+	p02c11o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547Ab2DWRn0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 13:43:26 -0400
+X-MXL-Hash: 4f9594be78c9dd60-c55ecf1d0c72b8f4df616e0321d5737b367bb788
+X-MXL-Hash: 4f9594bc00fab34d-32277ad238f027831ead38a7102828077c6f75d1
+From: Peter Staubach <pstaubach@exagrid.com>
+To: Steve Dickson <SteveD@redhat.com>, Jeff Layton <jlayton@redhat.com>
+CC: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "miklos@szeredi.hu" <miklos@szeredi.hu>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
+        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>,
+        "chuck.lever@oracle.com" <chuck.lever@oracle.com>,
+        "malahal@us.ibm.com" <malahal@us.ibm.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "trond.myklebust@fys.uio.no" <trond.myklebust@fys.uio.no>,
+        "rees@umich.edu" <rees@umich.edu>
+Date: Mon, 23 Apr 2012 13:43:12 -0400
+Subject: RE: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
+ from getattr call
+Thread-Topic: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
+ from getattr call
+Thread-Index: Ac0hYSV5hL3tLs+yQCWSXPcI/SaHvgAFh+sw
+Message-ID: <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E603@IT-1874.Isys.com>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+ <1334749927-26138-1-git-send-email-jlayton@redhat.com>
+ <20120420104055.511e15bc@tlielax.poochiereds.net>
+ <4F91C49D.8070908@RedHat.com>
+ <20120420171300.326d6e36@corrin.poochiereds.net>
+ <4F956D5C.5050801@RedHat.com>
+In-Reply-To: <4F956D5C.5050801@RedHat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [GIT PULL/PATCH] gts and bfs fixes (v5).
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 23 Apr 2012 10:34:44 -0700
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        x86@kernel.org
-Message-ID: <b4633284-02f7-454b-a35a-2bf844db05c6@email.android.com>
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010122901)]
+X-MAIL-FROM: <pstaubach@exagrid.com>
+X-SOURCE-IP: [69.84.133.248]
+X-AnalysisOut: [v=1.0 c=1 a=lnpZ504GmfQA:10 a=ooaBVg03rvgA:10 a=BLceEmwcHo]
+X-AnalysisOut: [wA:10 a=kj9zAlcOel0A:10 a=YmXeKoonWU0GTmr6cORa5w==:17 a=20]
+X-AnalysisOut: [KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=drOt6m5kAAAA:8 a=JfrnYn6hA]
+X-AnalysisOut: [AAA:8 a=sHqLhEVXAAAA:8 a=yPCof4ZbAAAA:8 a=VnNF1IyMAAAA:8 a]
+X-AnalysisOut: [=mJjC6ScEAAAA:8 a=uYNK62N8hAROh-eNRbQA:9 a=D-dEXuG72VSUNd-]
+X-AnalysisOut: [z3w8A:7 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=3Rfx1nUSh_UA]
+X-AnalysisOut: [:10 a=tIBAwYQmwVgA:10 a=7DSvI1NPTFQA:10 a=2NEUOfxDfW4A:10 ]
+X-AnalysisOut: [a=QwNme6u36fnNrXW1:21 a=T6UanXlwzL7_U_vi:21]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do I have your ACK?
+The test program runs and expects many, many ENOENTS to be returned.  It just doesn't expect ESTALE to be returned.  It doesn't see ESTALE from local file systems.
 
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+To answer a question asked earlier -- the test program does not mimic any particular application behavior, except in the extreme.  It is designed to create as stressful a situation as might be ever seen.
 
->On Monday, April 23, 2012, Konrad Rzeszutek Wilk wrote:
->> Please git pull (or use the patches that follow this email) the
->following branch:
->> 
->> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
->stable/for-x86-for-3.4
->> 
->> Changes since v4 [https://lkml.org/lkml/2012/4/18/396]
->>  - Added Acked and Reviewed-by
->> v2 [https://lkml.org/lkml/2012/4/9/474]
->>  - ditched the assembler version and used a C wrapper
->> 
->> With git commit a2ef5c4fd44ce3922435139393b89f2cce47f576
->> "ACPI: Move module parameter gts and bfs to sleep.c" the
->> sampling of gts/bfs module parameters flag by acpi_enter_sleep_state
->> has been moved. It has been moved out of the inner ACPI code and
->> out in the more x86 specific. This means that any caller of
->> the exported acpi_enter_sleep_state function needs to provide
->> two parameters now: sleep state and the bit flag whether to us
->_GTS|_BFS.
->> 
->> All of the callers of acpi_enter_sleep_state did that, with
->> the exception of the assembler version and as well any
->> third-party callers of acpi_enter_sleep_state.
->> 
->> These two patches expose 'wake_sleep_flags' as the product
->> of the gts/bfs module parameter invocation. And also use said
->> flag in the assembler 'do_suspend_lowlevel()' function.
->> 
->> Konrad Rzeszutek Wilk (2):
->>       ACPI: Convert wake_sleep_flags to a value instead of function
->(v5)
->>       x86/acpi: Call acpi_enter_sleep_state via an asmlinkage C
->function from assembler (v2).
->> 
->>  arch/x86/kernel/acpi/sleep.c     |    4 +++
->>  arch/x86/kernel/acpi/sleep.h     |    4 +++
->>  arch/x86/kernel/acpi/wakeup_32.S |    4 +--
->>  arch/x86/kernel/acpi/wakeup_64.S |    4 +--
->>  drivers/acpi/sleep.c             |   52
->++++++++++++++++++++-----------------
->>  5 files changed, 38 insertions(+), 30 deletions(-)
->
->Peter, are you going to take this?
->
->Rafael
+Has anyone explained why the full solution won't work from a technical viewpoint?
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+	Thanx...
+
+		ps
+
+
+-----Original Message-----
+From: Steve Dickson [mailto:SteveD@redhat.com] 
+Sent: Monday, April 23, 2012 10:55 AM
+To: Jeff Layton
+Cc: linux-fsdevel@vger.kernel.org; linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org; miklos@szeredi.hu; viro@ZenIV.linux.org.uk; hch@infradead.org; michael.brantley@deshaw.com; sven.breuner@itwm.fraunhofer.de; chuck.lever@oracle.com; Peter Staubach; malahal@us.ibm.com; bfields@fieldses.org; trond.myklebust@fys.uio.no; rees@umich.edu
+Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
+
+
+
+On 04/20/2012 05:13 PM, Jeff Layton wrote:
+> On Fri, 20 Apr 2012 16:18:37 -0400
+> Steve Dickson <SteveD@redhat.com> wrote:
+> 
+>> On 04/20/2012 10:40 AM, Jeff Layton wrote:
+>>> I guess the questions at this point is:
+>>>
+>>> 1) How representative is Peter's mkdir_test() of a real-world workload?
+>> Reading your email I had to wonder the same thing... What application 
+>> removes hierarchy of directories in a loop from two different clients?
+>> I would suspect not many, if any... esp over NFS... 
+>>  
+> 
+> Peter's test just happens to demonstrate the problem well, but one 
+> could envision someone removing a heirarchy of directories on the 
+> server while we're trying to do other operations in it. At that point, 
+> we can easily end up hitting an ESTALE twice while doing the lookup 
+> and returning ESTALE back to userspace.
+Just curious, what happens when you run Peter's mkdir_test() on a local file system? Any errors returned? 
+
+I would think removing hierarchy of directories while they are being accessed has to even cause local fs some type of havoc
+
+> 
+>>>
+>>> 2) if we assume that it is fairly representative of one, how can we 
+>>> achieve retrying indefinitely with NFS, or at least some large 
+>>> finite amount?
+>> The amount of looping would be peer speculation. If the problem can 
+>> not be handled by one simple retry I would say we simply pass the 
+>> error up to the app... Its an application issue...
+>>  
+> 
+> It's not an application issue. The application just asked the kernel 
+> to do an operation on a pathname. The only reason you're getting an 
+> ESTALE back in this situation is a shortcoming of the implementation.
+> 
+> We passed it a pathname after all, not a filehandle. ESTALE really has 
+> no place as a return code in that situation...
+We'll have to agree to disagree... I think any application that is removing hierarchies of file and directory w/out taking any precautionary locking is a shortcoming of the application implementation.
+    
+> 
+>>>
+>>> I have my doubts as to whether it would really be as big a problem 
+>>> for other filesystems as Miklos and others have asserted, but I'll 
+>>> take their word for it at the moment. What's the best way to contain 
+>>> this behavior to just those filesystems that want to retry 
+>>> indefinitely when they get an ESTALE? Would we need to go with an 
+>>> entirely new ESTALERETRY after all?
+>>>
+>> Introducing a new errno to handle this problem would be overkill IMHO...
+>>
+>> If we have to go to the looping approach, I would strong suggest we 
+>> make the file systems register for this type of behavior...
+>>
+> 
+> Returning ESTALERETRY would be registering for it in a way and it is 
+> somewhat cleaner than having to go all the way back up to the fstype 
+> to figure out whether you want to retry it or not.
+How would legacy apps handle this new errno, esp if they have logic to take care of ESTALE errors?
+
+steved.
