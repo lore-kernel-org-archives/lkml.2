@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab2DWMpg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 08:45:36 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:43067 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752936Ab2DWMpe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 08:45:34 -0400
-Message-ID: <4F954ED6.2040201@stericsson.com>
-Date: Mon, 23 Apr 2012 14:45:10 +0200
-From: Ulf Hansson <ulf.hansson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Jonas ABERG <jonas.aberg@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH] regulator: core: Keep boot_on regulators powered during
- init
-References: <1335173873-24301-1-git-send-email-ulf.hansson@stericsson.com> <20120423101804.GA8318@opensource.wolfsonmicro.com> <4F953455.3080002@stericsson.com> <20120423110522.GB8318@opensource.wolfsonmicro.com> <4F95495D.4050508@stericsson.com> <20120423122555.GM8318@opensource.wolfsonmicro.com>
-In-Reply-To: <20120423122555.GM8318@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1754892Ab2DWMpt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 08:45:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59466 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754387Ab2DWMps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 08:45:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="132824441"
+Subject: Re: [PATCH] dmaengine/amba-pl08x : reset phychan_hold on terminate
+ all
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: ciminaghi@gnudd.com, Linus Walleij <linus.walleij@linaro.org>,
+        Viresh Kumar <viresh.kumar@st.com>
+Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        pgeninatti@soft-in.com, acolosimo@soft-in.com,
+        alarosa@openintellect.eu
+In-Reply-To: <1334830824-10908-1-git-send-email-ciminaghi@gnudd.com>
+References: <1334830824-10908-1-git-send-email-ciminaghi@gnudd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 Apr 2012 18:12:20 +0530
+Message-ID: <1335184940.31825.115.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 02:25 PM, Mark Brown wrote:
-> On Mon, Apr 23, 2012 at 02:21:49PM +0200, Ulf Hansson wrote:
->> On 04/23/2012 01:05 PM, Mark Brown wrote:
->
->>> To be honest I don't entirely understand what your goal is at the system
->>> level - the current idea is that either the regulator will be marked as
->>> always_on or it should be enabled by a consumer.  What is the scenario
->>> in which neither of these is sufficient?
->
->> The consumer do not want to enable the regulator directly from its
->> device probe routine, it is handled through a scheduled work.
->
->> Moreover the regulator shall not be switched off unless the consumer
->> work decides that this is OK.
->
-> Cann you be a bit more concrete?  What is this device and why does it
-> have these requirements?  The most obvious thing to do here is to run
-> the work in the probe routine.
+On Thu, 2012-04-19 at 12:20 +0200, ciminaghi@gnudd.com wrote:
+> From: Davide Ciminaghi <ciminaghi@gnudd.com>
+> 
+> When a client calls pl08x_control with DMA_TERMINATE_ALL, it is correct
+> to terminate and release the phy channel currently in use (if one is in use),
+> but the phychan_hold counter must also be reset (otherwise it could get
+> trapped in an unbalanced state).
+> 
+> Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+> ---
+>  drivers/dma/amba-pl08x.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+> index c301a8e..3d704ab 100644
+> --- a/drivers/dma/amba-pl08x.c
+> +++ b/drivers/dma/amba-pl08x.c
+> @@ -1429,6 +1429,7 @@ static int pl08x_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>  			 * signal
+>  			 */
+>  			release_phy_channel(plchan);
+> +			plchan->phychan_hold = 0;
+>  		}
+>  		/* Dequeue jobs and free LLIs */
+>  		if (plchan->at) {
 
-This issue is related to how eMMC cards is working and powered.
+Linus, Viresh... Any tested-by for this before I apply to fixes.
 
-A typical mmc host driver is when finished it's probe routine, trigger 
-of a so called mmc_rescan work which is taking care of detecting and 
-initializing the eMMC card. It is a quite complicated procedure which 
-preferably not to be handled from the host driver's probe function.
+-- 
+~Vinod
 
-If the platform already have booted from the eMMC card, the card is 
-already powered an initialized from a bootloader. Cutting the power 
-without first notifying the card by sending commands to it, must be 
-prevented and also violates the eMMC specification. In the end, it will 
-mean that the detect and initialization procedure fails.
-
-Kind regards
-Ulf Hansson
