@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab2DWXV1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 19:21:27 -0400
-Received: from ms01.sssup.it ([193.205.80.99]:48264 "EHLO sssup.it"
+	id S1755636Ab2DWXZk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 19:25:40 -0400
+Received: from ms01.sssup.it ([193.205.80.99]:48395 "EHLO sssup.it"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752055Ab2DWXV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 19:21:26 -0400
-Message-ID: <4F95E3F1.3030407@sssup.it>
-Date: Tue, 24 Apr 2012 00:21:21 +0100
+	id S1754516Ab2DWXZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 19:25:39 -0400
+Message-ID: <4F95E4EF.2080802@sssup.it>
+Date: Tue, 24 Apr 2012 00:25:35 +0100
 From: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
@@ -21,34 +21,28 @@ CC: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
         dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
         raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com
 Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>   <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>  <1335182113.28150.132.camel@twins> <4F95CFBF.1050000@sssup.it> <1335218328.28150.181.camel@twins>
-In-Reply-To: <1335218328.28150.181.camel@twins>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>   <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>  <1335177104.28150.113.camel@twins> <4F9530F7.9010400@gmail.com>  <4F95C8AF.2040606@sssup.it> <1335217531.28150.179.camel@twins>
+In-Reply-To: <1335217531.28150.179.camel@twins>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 23/04/2012 22:58, Peter Zijlstra ha scritto:
-> On Mon, 2012-04-23 at 22:55 +0100, Tommaso Cucinotta wrote:
->> why not write this straight in asm, i.e., multiply 64*64 then divide by
->> 64 keeping the intermediate result on 128 bits?
-> If you know of a way to do this for all 30 odd architectures supported
-> by our beloved kernel, do let me know ;-)
+Il 23/04/2012 22:45, Peter Zijlstra ha scritto:
+> On Mon, 2012-04-23 at 22:25 +0100, Tommaso Cucinotta wrote:
+>> I cannot get the real difference between rq->clock and rq->task_clock.
+> One runs at wall-time (rq->clock) the other excludes time in irq-context
+> and steal-time (rq->clock_task).
+>
+> The idea is that ->clock_task gives the time as observed by schedulable
+> tasks and excludes other muck.
 
-:-)
-> Yes I can do it for x86_64, but people tend to get mighty upset if you
-> break the compile for all other arches...
+so clock_task might be better to compute the consumed budget at task 
+deschedule, but for setting deadlines one period ahead in the future 
+guess the regular wall-time rq->clock is the one to be used?
 
-rather than breaking compile, I was thinking more of using the 
-optimization for a more accurate comparison on archs that have 64-bit 
-mul and 128-bit cmp, and leaving the overflow on other archs. Though, 
-that would imply a difference in behavior on those borderline cases 
-(very big periods I guess).
-
-However, I'm also puzzled from what would happen by compiling the 
-current code on mostly 16-bit micros which have very limited 32-bit 
-operations...
+Thx,
 
      T.
 
