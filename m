@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab2DWV3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 17:29:45 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:57338 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab2DWV3o (ORCPT
+	id S1755674Ab2DWVb5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 17:31:57 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:50030 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755047Ab2DWVbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 17:29:44 -0400
-From: Chris Boot <bootc@bootc.net>
-To: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, nix@esperi.org.uk, carolyn.wyborny@intel.com,
-        Chris Boot <bootc@bootc.net>
-Subject: [PATCH 2/2] e1000e: Remove special case for 82573/82574 ASPM L1 disablement
-Date: Mon, 23 Apr 2012 22:29:38 +0100
-Message-Id: <1335216578-21542-3-git-send-email-bootc@bootc.net>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1335216578-21542-1-git-send-email-bootc@bootc.net>
-References: <1335216578-21542-1-git-send-email-bootc@bootc.net>
+	Mon, 23 Apr 2012 17:31:55 -0400
+Message-ID: <1335216712.2187.17.camel@shrek.rexursive.com>
+Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for
+ hibernate/thaw buffering
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Per Olofsson <pelle@debian.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Date: Tue, 24 Apr 2012 07:31:52 +1000
+In-Reply-To: <1335133792.2187.8.camel@shrek.rexursive.com>
+References: <1334267969.2573.14.camel@shrek.rexursive.com>
+	 <201204221347.52883.rjw@sisk.pl>
+	 <22aaaccf-5898-460c-b1e4-a87c153d9e0c@email.android.com>
+	 <201204222229.47160.rjw@sisk.pl> <4F946B86.4000509@debian.org>
+	 <1335133792.2187.8.camel@shrek.rexursive.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the 82573, ASPM L1 gets disabled wholesale so this special-case code
-is not required. For the 82574 the previous patch does the same as for
-the 82573, disabling L1 on the adapter. Thus, this code is no longer
-required and can be removed.
+On Mon, 2012-04-23 at 08:29 +1000, Bojan Smojver wrote:
+> Hibernation regression fix, since 3.2
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
----
- drivers/net/ethernet/intel/e1000e/netdev.c |    8 --------
- 1 file changed, 8 deletions(-)
+Rafael,
 
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index 19ab215..ea96cfd 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -5293,14 +5293,6 @@ static int e1000_change_mtu(struct net_device *netdev, int new_mtu)
- 		return -EINVAL;
- 	}
- 
--	/* 82573 Errata 17 */
--	if (((adapter->hw.mac.type == e1000_82573) ||
--	     (adapter->hw.mac.type == e1000_82574)) &&
--	    (max_frame > ETH_FRAME_LEN + ETH_FCS_LEN)) {
--		adapter->flags2 |= FLAG2_DISABLE_ASPM_L1;
--		e1000e_disable_aspm(adapter->pdev, PCIE_LINK_STATE_L1);
--	}
--
- 	while (test_and_set_bit(__E1000_RESETTING, &adapter->state))
- 		usleep_range(1000, 2000);
- 	/* e1000e_down -> e1000e_reset dependent on max_frame_size & mtu */
+Any chance of queuing up this simpler patch for stable? We don't want
+people's computers to hang on hibernation when there is a fix, right?
+
 -- 
-1.7.10
+Bojan
 
