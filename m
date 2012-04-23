@@ -1,58 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab2DWV0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 17:26:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53850 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753511Ab2DWV0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 17:26:45 -0400
-Date: Mon, 23 Apr 2012 23:25:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
-Message-ID: <20120423212536.GA8700@redhat.com>
-References: <1334571419.28150.30.camel@twins> <20120416214707.GA27639@redhat.com> <1334916861.2463.50.camel@laptop> <20120420183718.GA2236@redhat.com> <1335165240.28150.89.camel@twins> <20120423072445.GC8357@linux.vnet.ibm.com> <1335166842.28150.92.camel@twins> <20120423172957.GA29708@redhat.com> <1335208690.2463.84.camel@laptop> <20120423205049.GA7831@redhat.com>
+	id S1755577Ab2DWV1H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 17:27:07 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:35444 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719Ab2DWV1G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 17:27:06 -0400
+Date: Mon, 23 Apr 2012 18:26:59 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/6] hid: Create a generic device group
+Message-ID: <20120423212659.GD18564@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+ <1335175627-2270-5-git-send-email-rydberg@euromail.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120423205049.GA7831@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1335175627-2270-5-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-forgot to mention,
+Hi Henrik,
 
-On 04/23, Oleg Nesterov wrote:
->
-> Just it seems to me there are to many "details"
-> we should discuss to make the filtering reasonable.
+* Henrik Rydberg <rydberg@euromail.se> [2012-04-23 12:07:05 +0200]:
 
-And so far we assumed that consumer->filter() is "stable" and never
-changes its mind.
+> Devices that do not have a special driver are handled by the generic
+> driver. This patch does the same thing using device groups; Instead of
+> forcing a particular driver, the appropriate driver is picked up by
+> udev. As a consequence, one can now move a device from generic to
+> specific handling by a simple rebind. By adding a new device id to the
+> generic driver, the same thing can be done in reverse.
+> 
+> Cc: Gustavo Padovan <gustavo@padovan.org>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>  drivers/hid/hid-core.c        |    9 +--------
+>  drivers/hid/usbhid/hid-core.c |    2 +-
+>  include/linux/hid.h           |   12 ++++++------
+>  net/bluetooth/hidp/core.c     |    2 +-
+>  4 files changed, 9 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 20daee5..cb5a103 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1800,14 +1800,7 @@ static int hid_bus_match(struct device *dev, struct device_driver *drv)
+>  		!strncmp(hdrv->name, "hid-multitouch", 14))
+>  		return 1;
+>  
+> -	if (!hid_match_device(hdev, hdrv))
+> -		return 0;
+> -
+> -	/* generic wants all that don't have specialized driver */
+> -	if (!strncmp(hdrv->name, "generic-", 8) && !hid_ignore_special_drivers)
+> -		return !hid_match_id(hdev, hid_have_special_driver);
+> -
+> -	return 1;
+> +	return hid_match_device(hdev, hdrv) != NULL;
+>  }
+>  
+>  static int hid_device_probe(struct device *dev)
+> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+> index 5bf91db..9abf718 100644
+> --- a/drivers/hid/usbhid/hid-core.c
+> +++ b/drivers/hid/usbhid/hid-core.c
+> @@ -1505,7 +1505,7 @@ static struct usb_driver hid_driver = {
+>  };
+>  
+>  static const struct hid_device_id hid_usb_table[] = {
+> -	{ HID_USB_DEVICE(HID_ANY_ID, HID_ANY_ID) },
+> +	{ HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, HID_ANY_ID, HID_ANY_ID) },
+>  	{ }
+>  };
+>  
+> diff --git a/include/linux/hid.h b/include/linux/hid.h
+> index f45d33d..dd694fb 100644
+> --- a/include/linux/hid.h
+> +++ b/include/linux/hid.h
+> @@ -586,12 +586,12 @@ struct hid_descriptor {
+>  	struct hid_class_descriptor desc[1];
+>  } __attribute__ ((packed));
+>  
+> -#define HID_DEVICE(b, ven, prod) \
+> -	.bus = (b), \
+> -	.vendor = (ven), .product = (prod)
+> -
+> -#define HID_USB_DEVICE(ven, prod)	HID_DEVICE(BUS_USB, ven, prod)
+> -#define HID_BLUETOOTH_DEVICE(ven, prod)	HID_DEVICE(BUS_BLUETOOTH, ven, prod)
+> +#define HID_DEVICE(b, g, ven, prod)					\
+> +	.bus = (b), .group = (g), .vendor = (ven), .product = (prod)
+> +#define HID_USB_DEVICE(ven, prod)				\
+> +	.bus = BUS_USB, .vendor = (ven), .product = (prod)
+> +#define HID_BLUETOOTH_DEVICE(ven, prod)					\
+> +	.bus = BUS_BLUETOOTH, .vendor = (ven), .product = (prod)
 
-Perhaps this is fine, but I am not sure. May we need need some
-interface to add/del the task. Probably not, but unregister + register
-doesn't look very convenient and can miss a hit.
+It seems we don't use this macro anywhere else, why did you keep it?
 
-> Yes, and probably this makes sense for handler_chain(). Although otoh
-> I do not really understand what this filter buys us at this point.
-
-But if we change the rules so that ->filter() or ->handler() itself can
-return the "please remove this bp from ->mm" then perhaps it makes more
-sense for the filtering. Again, not sure.
-
-Oleg.
-
+	Gustavo
