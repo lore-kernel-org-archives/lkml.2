@@ -1,63 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab2DWPbo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 11:31:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27832 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab2DWPbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 11:31:43 -0400
-X-Authority-Analysis: v=2.0 cv=MNHiabll c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=CwwbBQyXtmIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=xqmvskA9eSf5JdJbXC0A:9 a=Jw7HWJvadDMPWtbgsAYA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1335195100.28106.100.camel@gandalf.stny.rr.com>
-Subject: Re: Our failure on tracing tools unification (Was: Re: [RFC][PATCH
- 00/15] tools: Unify perf and trace-cmd trace event format parsing v2)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
-Date: Mon, 23 Apr 2012 11:31:40 -0400
-In-Reply-To: <1335193719.28150.171.camel@twins>
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
-	 <20120423144743.GB29985@somewhere> <1335193719.28150.171.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	id S1752858Ab2DWPct (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 11:32:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42257 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751579Ab2DWPcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 11:32:48 -0400
+Date: Mon, 23 Apr 2012 11:32:16 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Steve Dickson <SteveD@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, miklos@szeredi.hu,
+        viro@ZenIV.linux.org.uk, hch@infradead.org,
+        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
+        chuck.lever@oracle.com, pstaubach@exagrid.com, malahal@us.ibm.com,
+        bfields@fieldses.org, trond.myklebust@fys.uio.no, rees@umich.edu
+Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
+ from getattr call
+Message-ID: <20120423113216.01992555@tlielax.poochiereds.net>
+In-Reply-To: <4F956D5C.5050801@RedHat.com>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+	<1334749927-26138-1-git-send-email-jlayton@redhat.com>
+	<20120420104055.511e15bc@tlielax.poochiereds.net>
+	<4F91C49D.8070908@RedHat.com>
+	<20120420171300.326d6e36@corrin.poochiereds.net>
+	<4F956D5C.5050801@RedHat.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 17:08 +0200, Peter Zijlstra wrote:
-> On Mon, 2012-04-23 at 16:47 +0200, Frederic Weisbecker wrote:
-> > Ingo doesn't seem to want this library outside perf in order to avoid
-> > the fragmentation of the efforts on tracing tools.
-> 
-> I really don't see the point.. parsing /debug/tracing/events/*/format
-> gunk really is separate, furthermore things like powertop et al already
-> are separate projects and really need this lib.
-
-Note, powertop has already pulled in the lib into itself, thus we now
-have 3 dis-joint locations. I can imagine it getting worse soon.
-
--- Steve
+On Mon, 23 Apr 2012 10:55:24 -0400
+Steve Dickson <SteveD@redhat.com> wrote:
 
 > 
-> I mean, who gives a bother where all that crap lives, if its in the
-> kernel tree its all close enough to keep an eye on.. its not like
-> kernel/events/ and kernel/trace/ are the same directory.
 > 
-> Ingo, please could you lighten up and let people get stuff done? Merging
-> the two implementations, wherever the result lives, is a better
-> situation that two dis-joint implementations. So either let Frederic
-> work or do it yourself but don't hand-wave and road-block stuff.
+> On 04/20/2012 05:13 PM, Jeff Layton wrote:
+> > On Fri, 20 Apr 2012 16:18:37 -0400
+> > Steve Dickson <SteveD@redhat.com> wrote:
+> > 
+> >> On 04/20/2012 10:40 AM, Jeff Layton wrote:
+> >>> I guess the questions at this point is:
+> >>>
+> >>> 1) How representative is Peter's mkdir_test() of a real-world workload?
+> >> Reading your email I had to wonder the same thing... What application 
+> >> removes hierarchy of directories in a loop from two different clients?
+> >> I would suspect not many, if any... esp over NFS... 
+> >>  
+> > 
+> > Peter's test just happens to demonstrate the problem well, but one
+> > could envision someone removing a heirarchy of directories on the
+> > server while we're trying to do other operations in it. At that point,
+> > we can easily end up hitting an ESTALE twice while doing the lookup and
+> > returning ESTALE back to userspace.
+> Just curious, what happens when you run Peter's mkdir_test() on a
+> local file system? Any errors returned? 
+> 
+> I would think removing hierarchy of directories while they are being 
+> accessed has to even cause local fs some type of havoc
+> 
 
+Peter's test only treats an ESTALE error as a failure since it was
+specifically designed to ensure that those didn't make it in to
+userspace.
 
+If you run 2 copies on the same local fs and strace it, then you'll see
+the syscalls get back things like ENOENT or EEXIST as they step on each
+others' toes in the mkdir()/rmdir() calls.
+
+> > 
+> >>>
+> >>> 2) if we assume that it is fairly representative of one, how can we
+> >>> achieve retrying indefinitely with NFS, or at least some large finite
+> >>> amount?
+> >> The amount of looping would be peer speculation. If the problem can
+> >> not be handled by one simple retry I would say we simply pass the
+> >> error up to the app... Its an application issue... 
+> >>  
+> > 
+> > It's not an application issue. The application just asked the kernel
+> > to do an operation on a pathname. The only reason you're getting an
+> > ESTALE back in this situation is a shortcoming of the implementation.
+> > 
+> > We passed it a pathname after all, not a filehandle. ESTALE really has
+> > no place as a return code in that situation...
+> We'll have to agree to disagree... I think any application that is 
+> removing hierarchies of file and directory w/out taking any 
+> precautionary locking is a shortcoming of the application
+> implementation.
+> 
+
+I'm not saying they should never get an error in that situation. I'm
+just saying that an ESTALE return in this situation is wrong (or at
+least not helpful) since the syscall was provided a pathname not a
+filehandle or open fd or anything. When we still have the pathname,
+then we have the ability to reattempt on an ESTALE, and it would be
+preferable to do so.
+
+> > 
+> >>>
+> >>> I have my doubts as to whether it would really be as big a problem for
+> >>> other filesystems as Miklos and others have asserted, but I'll take
+> >>> their word for it at the moment. What's the best way to contain this
+> >>> behavior to just those filesystems that want to retry indefinitely when
+> >>> they get an ESTALE? Would we need to go with an entirely new
+> >>> ESTALERETRY after all?
+> >>>
+> >> Introducing a new errno to handle this problem would be overkill IMHO...
+> >>
+> >> If we have to go to the looping approach, I would strong suggest we
+> >> make the file systems register for this type of behavior...
+> >>
+> > 
+> > Returning ESTALERETRY would be registering for it in a way and it is
+> > somewhat cleaner than having to go all the way back up to the fstype to
+> > figure out whether you want to retry it or not.
+> How would legacy apps handle this new errno, esp if they have logic
+> to take care of ESTALE errors?
+> 
+
+Userspace should never see that error. The idea is that this would be a
+kernel-internal error code that indicates to the VFS that it should
+retry the lookup and operation. If the kernel decides to give up after
+the FS returns ESTALERETRY, then we'd have to convert that error
+into ESTALE.
+
+It'd be preferable to me if we didn't require a new error code, but if
+different filesystems require different semantics from the VFS on an
+ESTALE return, then that is one way to achieve it.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
