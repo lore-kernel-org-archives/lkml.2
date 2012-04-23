@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab2DWQUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:20:34 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37461 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479Ab2DWQUc (ORCPT
+	id S1753974Ab2DWQVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:21:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9943 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752824Ab2DWQVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:20:32 -0400
-Message-ID: <4F958141.2000505@nasza-klasa.pl>
-Date: Mon, 23 Apr 2012 18:20:17 +0200
-From: =?UTF-8?B?TGVzxYJhdyBLb3BlxIc=?= <leslaw.kopec@nasza-klasa.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Jonathan Nieder <jrnieder@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Aman Gupta <aman@tmm1.net>,
-        linux-kernel@vger.kernel.org,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Damien Wyart <damien.wyart@free.fr>, Kyle McMartin <kyle@redhat.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Doug Smythies <dsmythies@telus.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Inconsistent load average on tickless kernels
-References: <4F465F6E.9070605@nasza-klasa.pl> <1330517195.11248.148.camel@twins> <1330532667.11248.153.camel@twins> <1330534998.11248.158.camel@twins> <4F551ABE.5080605@nasza-klasa.pl> <CAK=uwuxvzGwes4ffy9EXVReG95U3HQaKmPPKgFnHzo_MwaO_NA@mail.gmail.com> <1330989903.11248.261.camel@twins> <1330990360.11248.264.camel@twins> <1330990413.11248.265.camel@twins> <4F8D678C.6050104@nasza-klasa.pl> <20120417153032.GB21534@burratino>
-In-Reply-To: <20120417153032.GB21534@burratino>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig304664AF2F9108198CDD441A"
+	Mon, 23 Apr 2012 12:21:08 -0400
+X-Authority-Analysis: v=2.0 cv=MNHiabll c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=80hrJ0BkZmIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=57SyGIRnAAAA:8 a=w7Y4ZMMjj58VspLjX1EA:9 a=8FwbeBcvHrydgZL5OgcA:7 a=PUjeQqilurYA:10 a=TIV7c6GJmisA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1335198066.28106.103.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 01/11] parse-events: Free flag/sym field on failure path
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 23 Apr 2012 12:21:06 -0400
+In-Reply-To: <1335157118-14658-2-git-send-email-namhyung.kim@lge.com>
+References: <1335157118-14658-1-git-send-email-namhyung.kim@lge.com>
+	 <1335157118-14658-2-git-send-email-namhyung.kim@lge.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig304664AF2F9108198CDD441A
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-04-23 at 13:58 +0900, Namhyung Kim wrote:
+> If parsing flag/sym field failed after allocating it, it
+> should be freed.
+> 
+> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> ---
+>  parse-events.c |   14 +++++++++-----
+>  1 file changed, 9 insertions(+), 5 deletions(-)
+> 
+> diff --git a/parse-events.c b/parse-events.c
+> index bd078ba..81e6581 100644
+> --- a/parse-events.c
+> +++ b/parse-events.c
+> @@ -2166,10 +2166,10 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+>  
+>  		value = arg_eval(arg);
+>  		if (value == NULL)
+> -			goto out_free;
+> +			goto out_free_field;
 
-On 04/17/2012 05:30 PM, Jonathan Nieder wrote:
+Instead of adding more goto's what, before the first goto "out_free"
+add:
 
->> Looking at results for 2.6.32.55 branch it seems that we're back at
->> 74f5187ac8 patch - the values are almost the same. The difference
->> between NO_HZ and HZ versions is noticeable.
->=20
-> How does 3.0.y + c308b56b53 do?  (I ask because the usual flow of
-> fixes is mainline -> 3.3.y -> 3.2.y -> 3.0.y -> 2.6.32.y with the
-> first three steps happening pretty quickly, so it we can get this
-> working on 3.0.y then that would be progress.  Also because, like
-> 2.6.32.y, 3.0.y is longterm maintained, so it might be useful in the
-> meantime.)
+	field = NULL;
 
-It seems that load reported by 3.0.28 with and without c308b56b53 patch
-is almost identical to 3.2.12. This might be more clearly visible on a
-comparison chart. [1]
+and since the field is allocated and also memset to zero, we could do in
+the out_free:
 
-2.6.32.55-hz-0f004f5a69			9.88
-2.6.32.55-no-hz-74f5187ac8		2.48
-2.6.32.55-no-hz-c308b56b53		2.22
-3.0.28-hz				10.66
-3.0.28-no-hz				0.60
-3.0.28-no-hz-c308b56b53			4.09
-3.0.28-no-hz-c308b56b53 nohz=3Doff	6.78
-3.2.12-hz				10.16
-3.2.12-no-hz				0.66
-3.2.12-no-hz-c308b56b53			4.36
+	if (field) {
+		free(field->value);
+		free(field);
+	}
 
-What's worth noting is that I haven't seen any nasty side effects of the
-latest patch on all kernel versions that I've tested. Hope that helps.
+I think that would be cleaner.
+
+-- Steve
+
+>  		field->value = strdup(value);
+>  		if (field->value == NULL)
+> -			goto out_free;
+> +			goto out_free_field;
+>  
+>  		free_arg(arg);
+>  		arg = alloc_arg();
+> @@ -2177,14 +2177,14 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+>  		free_token(token);
+>  		type = process_arg(event, arg, &token);
+>  		if (test_type_token(type, token, EVENT_OP, "}"))
+> -			goto out_free;
+> +			goto out_free_field_value;
+>  
+>  		value = arg_eval(arg);
+>  		if (value == NULL)
+> -			goto out_free;
+> +			goto out_free_field_value;
+>  		field->str = strdup(value);
+>  		if (field->str == NULL)
+> -			goto out_free;
+> +			goto out_free_field_value;
+>  		free_arg(arg);
+>  		arg = NULL;
+>  
+> @@ -2198,6 +2198,10 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+>  	*tok = token;
+>  	return type;
+>  
+> +out_free_field_value:
+> +	free(field->value);
+> +out_free_field:
+> +	free(field);
+>  out_free:
+>  	free_arg(arg);
+>  	free_token(token);
 
 
-[1] http://img855.imageshack.us/img855/2204/kernelload.png
-
---=20
-Les=C5=82aw Kope=C4=87
-
-
---------------enig304664AF2F9108198CDD441A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk+VgUIACgkQNZJfI+JDs2KUVgCgjoFizlcQxCGKGM8vMJ9lMS53
-oI0AoIp22+KnHvw+WZbJmLt1PJNw7r/u
-=01Qc
------END PGP SIGNATURE-----
-
---------------enig304664AF2F9108198CDD441A--
