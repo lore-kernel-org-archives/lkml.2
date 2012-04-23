@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab2DWKhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:37:03 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50407 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab2DWKhC convert rfc822-to-8bit (ORCPT
+	id S1755166Ab2DWKhu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:37:50 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37085 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab2DWKhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:37:02 -0400
-Message-ID: <1335177409.28150.115.camel@twins>
-Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS for
- AMD CPUs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 23 Apr 2012 12:36:49 +0200
-In-Reply-To: <20120423084128.GR9747@erda.amd.com>
-References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
-	 <1333390758-10893-7-git-send-email-robert.richter@amd.com>
-	 <1334398930.2528.50.camel@twins> <20120423084128.GR9747@erda.amd.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 23 Apr 2012 06:37:48 -0400
+Message-ID: <4F9530F7.9010400@gmail.com>
+Date: Mon, 23 Apr 2012 12:37:43 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>  <1333696481-3433-6-git-send-email-juri.lelli@gmail.com> <1335177104.28150.113.camel@twins>
+In-Reply-To: <1335177104.28150.113.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 10:41 +0200, Robert Richter wrote:
-> On 14.04.12 12:22:10, Peter Zijlstra wrote:
-> > On Mon, 2012-04-02 at 20:19 +0200, Robert Richter wrote:
-> > > + * IbsOpCntCtl (bit 19) of IBS Execution Control Register (IbsOpCtl,
-> > > + * MSRC001_1033) is used to select either cycle or micro-ops counting
-> > > + * mode. 
-> > 
-> > Ah is that what it does.. the BKDG doesn't appear to say this.
-> 
-> "19 IbsOpCntCtl: periodic op counter count control. Revision B:
->     Reserved. Revision C: Read-write. Reset 0b. 1=Count dispatched ops
->     0=Count clock cycles."
-> 
-> It's here:
-> 
->  MSRC001_1033 IBS Execution Control Register (IbsOpCtl)
->  http://support.amd.com/us/Processor_TechDocs/31116.pdf
-> 
-> Ok, it might not be quite clear that "dispatched ops" is related to
-> EventSelect 0C1h Retired uops, but there is an exact mapping.
+On 04/23/2012 12:31 PM, Peter Zijlstra wrote:
+> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+>> +       dl_se->deadline = rq->clock + dl_se->dl_deadline;
+>
+> You might want to use rq->clock_task, this clock excludes times spend in
+> hardirq context and steal-time (when paravirt).
+>
+> Then again, it might not want to use that.. but its something you might
+> want to consider and make explicit by means of a comment.
 
-Ah, looks like my docs are stale.. my fam10 doc didn't have it specified
-at all and my fam12 doc just listed the bit 19 as "periodic op counter
-count control. Read-write." Which isn't very helpful.
+Yes, I planned a consistency check for the use of clock/clock_task
+throughout the code, but it seems I then forgot it.
+Planned for the next iteration :-).
 
-Thanks!
+Thanks,
+
+- Juri
