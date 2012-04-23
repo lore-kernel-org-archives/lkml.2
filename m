@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab2DWQk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:40:59 -0400
-Received: from mga10.intel.com ([192.55.52.92]:39549 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751840Ab2DWQk6 (ORCPT
+	id S1754235Ab2DWQlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:41:18 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56958 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840Ab2DWQlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:40:58 -0400
+	Mon, 23 Apr 2012 12:41:16 -0400
+Message-ID: <4F958627.8070109@gmail.com>
+Date: Mon, 23 Apr 2012 18:41:11 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
-References: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
-Date: Mon, 23 Apr 2012 09:40:55 -0700
-Message-ID: <CABE8wwsrPg0br1hEK8eLYNNd+a0r5qsVkpRnVqpvPnz03_OELg@mail.gmail.com>
-Subject: Re: [PATCH v1 0/8] enhance dmaengine core to support DMA device hotplug
-From: Dan Williams <dan.j.williams@intel.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Keping Chen <chenkeping@huawei.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>   <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>  <1335191701.28150.155.camel@twins> <4F9577CF.2020400@gmail.com> <1335195826.28150.177.camel@twins>
+In-Reply-To: <1335195826.28150.177.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 6:51 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> From: Jiang Liu <liuj97@gmail.com>
+On 04/23/2012 05:43 PM, Peter Zijlstra wrote:
+> On Mon, 2012-04-23 at 17:39 +0200, Juri Lelli wrote:
+>> On 04/23/2012 04:35 PM, Peter Zijlstra wrote:
+>>> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+>>>> +static void init_dl_task_timer(struct sched_dl_entity *dl_se)
+>>>> +{
+>>>> +       struct hrtimer *timer =&dl_se->dl_timer;
+>>>> +
+>>>> +       if (hrtimer_active(timer)) {
+>>>> +               hrtimer_try_to_cancel(timer);
+>>>> +               return;
+>>>> +       }
+>>>
+>>> Same question I guess, how can it be active here? Also, just letting it
+>>> run doesn't seem like the best way out..
+>>>
+>>
+>> Probably s/hrtimer_try_to_cancel/hrtimer_cancel is better.
 >
-> This patchset tries to enhance the dmaengine and its clients to support
-> hot-removal of DMA devices at runtime, especially for IOAT devices.
+> Yeah, not sure you can do hrtimer_cancel() there though, you're holding
+> ->pi_lock and rq->lock and have IRQs disabled. That sounds like asking
+> for trouble.
 >
-> When hot-removing IOH (PCI host bridge) on Intel Nehalem/Westmere platform,
-> we need to remove all IOAT devices embedded in the IOH. For future Intel
-> processor with IIO (Embedded IOH), we need to remove IOAT devices even
-> when hot-removing a physical processor. But current dmaengine implementation
-> doesn't support hot-removal of IOAT devices at runtime.
+> Anyway, if it can't happen, we don't have to fix it.. so lets answer
+> that first ;-)
 
-Removal of the host bridge means several devices disappear at once.
-Is it safe to assume that this action is coordinated by userspace?
-I.e. is the kernel given a chance to shut everything down and remove
-drivers, or is this a "surprise" unplug?
+The user could call __setparam_dl on a throttled task through
+__sched_setscheduler.
 
---
-Dan
+BTW, I noticed that we should change this (inside __sched_setscheduler):
+
+         /*
+          * If not changing anything there's no need to proceed further
+          */
+         if (unlikely(policy == p->policy && (!rt_policy(policy) ||
+                         param->sched_priority == p->rt_priority))) {
+
+                 __task_rq_unlock(rq);
+                 raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+                 return 0;
+         }
+
+to something like this:
+
+	if (unlikely(policy == p->policy && (!rt_policy(policy) ||
+                         param->sched_priority == p->rt_priority) &&
+			!dl_policy(policy)))
+
+Thanks,
+
+- Juri
