@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab2DWLhf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 07:37:35 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12241 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab2DWLhe (ORCPT
+	id S1753403Ab2DWLhn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 07:37:43 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10130 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352Ab2DWLhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 07:37:34 -0400
+	Mon, 23 Apr 2012 07:37:42 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 23 Apr 2012 04:37:33 -0700
+	by hqnvupgp06.nvidia.com on Mon, 23 Apr 2012 04:37:41 -0700
 From: Hiroshi DOYU <hdoyu@nvidia.com>
 To: hdoyu@nvidia.com
 Cc: linux-tegra@vger.kernel.org, Colin Cross <ccross@android.com>,
         Olof Johansson <olof@lixom.net>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Rob Herring <rob.herring@calxeda.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] ARM: tegra: Add AHB driver
-Date: Mon, 23 Apr 2012 14:37:21 +0300
-Message-Id: <1335181043-15348-1-git-send-email-hdoyu@nvidia.com>
+Subject: [PATCH 2/3] ARM: tegra: Add SMMU enabler in AHB
+Date: Mon, 23 Apr 2012 14:37:22 +0300
+Message-Id: <1335181043-15348-2-git-send-email-hdoyu@nvidia.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1335181043-15348-1-git-send-email-hdoyu@nvidia.com>
+References: <1335181043-15348-1-git-send-email-hdoyu@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
-High-performance Bus (AHB) architecture.
-
-Both Tegra20/30 have this.
+Add extern func, "tegra_ahb_enable_smmu()" to inform AHB that SMMU is
+ready.
 
 Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
 ---
- arch/arm/mach-tegra/Makefile    |    1 +
- arch/arm/mach-tegra/ahb.h       |   19 ++++
- arch/arm/mach-tegra/common.c    |    3 +
- arch/arm/mach-tegra/tegra-ahb.c |  212 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 235 insertions(+), 0 deletions(-)
+ arch/arm/mach-tegra/include/mach/tegra-ahb.h |   19 +++++++++++++++++++
+ arch/arm/mach-tegra/tegra-ahb.c              |   19 +++++++++++++++++++
+ 2 files changed, 38 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index 2eb4445..f6c8237 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -1,3 +1,4 @@
-+obj-y                                   += tegra-ahb.o
- obj-y                                   += board-pinmux.o
- obj-y                                   += common.o
- obj-y                                   += devices.o
-diff --git a/arch/arm/mach-tegra/ahb.h b/arch/arm/mach-tegra/ahb.h
+diff --git a/arch/arm/mach-tegra/include/mach/tegra-ahb.h b/arch/arm/mach-tegra/include/mach/tegra-ahb.h
 new file mode 100644
-index 0000000..21cd82c
+index 0000000..51a5800
 --- /dev/null
-+++ b/arch/arm/mach-tegra/ahb.h
++++ b/arch/arm/mach-tegra/include/mach/tegra-ahb.h
 @@ -0,0 +1,19 @@
 +/*
 + * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
@@ -65,257 +58,56 @@ index 0000000..21cd82c
 + * more details.
 + */
 +
-+#ifndef __AHB_H__
-+#define __AHB_H__
++#ifndef __MACH_TEGRA_AHB_H__
++#define __MACH_TEGRA_AHB_H__
 +
-+extern void tegra_ahb_gizmo_init(void);
++extern void tegra_ahb_enable_smmu(void);
 +
-+#endif	/* __AHB_H__ */
-diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
-index c50f2ee..ccaa5a6 100644
---- a/arch/arm/mach-tegra/common.c
-+++ b/arch/arm/mach-tegra/common.c
-@@ -33,6 +33,7 @@
- #include "clock.h"
- #include "fuse.h"
- #include "pmc.h"
-+#include "ahb.h"
- 
- /*
-  * Storage for debug-macro.S's state.
-@@ -122,6 +123,7 @@ void __init tegra20_init_early(void)
- 	tegra_init_cache(0x331, 0x441);
- 	tegra_pmc_init();
- 	tegra_powergate_init();
-+	tegra_ahb_gizmo_init();
- }
- #endif
- #ifdef CONFIG_ARCH_TEGRA_3x_SOC
-@@ -132,5 +134,6 @@ void __init tegra30_init_early(void)
- 	tegra_init_cache(0x441, 0x551);
- 	tegra_pmc_init();
- 	tegra_powergate_init();
-+	tegra_ahb_gizmo_init();
- }
- #endif
++#endif	/* __MACH_TEGRA_AHB_H__ */
 diff --git a/arch/arm/mach-tegra/tegra-ahb.c b/arch/arm/mach-tegra/tegra-ahb.c
-new file mode 100644
-index 0000000..411b51f
---- /dev/null
+index 411b51f..40877fa 100644
+--- a/arch/arm/mach-tegra/tegra-ahb.c
 +++ b/arch/arm/mach-tegra/tegra-ahb.c
-@@ -0,0 +1,212 @@
-+/*
-+ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ * Copyright (C) 2011 Google, Inc.
-+ *
-+ * Author:
-+ *	Jay Cheng <jacheng@nvidia.com>
-+ *	James Wylder <james.wylder@motorola.com>
-+ *	Benoit Goby <benoit@android.com>
-+ *	Colin Cross <ccross@android.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
+@@ -20,6 +20,7 @@
+  */
+ 
+ #include <linux/kernel.h>
++#include <linux/module.h>
+ #include <linux/io.h>
+ #include <linux/syscore_ops.h>
+ 
+@@ -74,6 +75,9 @@
+ 
+ #define AHB_ARBITRATION_AHB_MEM_WRQUE_MST_ID	0xf8
+ 
++#define AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_DONE	1
++#define AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_SHIFT	17
 +
-+#include <linux/kernel.h>
-+#include <linux/io.h>
-+#include <linux/syscore_ops.h>
+ static inline unsigned long gizmo_readl(unsigned long offset)
+ {
+ 	return readl(IO_TO_VIRT(TEGRA_AHB_GIZMO_BASE + offset));
+@@ -84,6 +88,21 @@ static inline void gizmo_writel(unsigned long value, unsigned long offset)
+ 	writel(value, IO_TO_VIRT(TEGRA_AHB_GIZMO_BASE + offset));
+ }
+ 
++#ifdef CONFIG_ARCH_TEGRA_3x_SOC
 +
-+#include <mach/iomap.h>
-+
-+#define AHB_ARBITRATION_DISABLE		0x00
-+#define AHB_ARBITRATION_PRIORITY_CTRL	0x04
-+#define   AHB_PRIORITY_WEIGHT(x)	(((x) & 0x7) << 29)
-+#define   PRIORITY_SELECT_USB BIT(6)
-+#define   PRIORITY_SELECT_USB2 BIT(18)
-+#define   PRIORITY_SELECT_USB3 BIT(17)
-+
-+#define AHB_GIZMO_AHB_MEM		0x0c
-+#define   ENB_FAST_REARBITRATE BIT(2)
-+#define   DONT_SPLIT_AHB_WR     BIT(7)
-+
-+#define AHB_GIZMO_APB_DMA		0x10
-+#define AHB_GIZMO_IDE			0x18
-+#define AHB_GIZMO_USB			0x1c
-+#define AHB_GIZMO_AHB_XBAR_BRIDGE	0x20
-+#define AHB_GIZMO_CPU_AHB_BRIDGE	0x24
-+#define AHB_GIZMO_COP_AHB_BRIDGE	0x28
-+#define AHB_GIZMO_XBAR_APB_CTLR		0x2c
-+#define AHB_GIZMO_VCP_AHB_BRIDGE	0x30
-+#define AHB_GIZMO_NAND			0x3c
-+#define AHB_GIZMO_SDMMC4		0x44
-+#define AHB_GIZMO_XIO			0x48
-+#define AHB_GIZMO_BSEV			0x60
-+#define AHB_GIZMO_BSEA			0x70
-+#define AHB_GIZMO_NOR			0x74
-+#define AHB_GIZMO_USB2			0x78
-+#define AHB_GIZMO_USB3			0x7c
-+#define   IMMEDIATE	BIT(18)
-+
-+#define AHB_GIZMO_SDMMC1		0x80
-+#define AHB_GIZMO_SDMMC2		0x84
-+#define AHB_GIZMO_SDMMC3		0x88
-+#define AHB_MEM_PREFETCH_CFG_X		0xd8
-+#define AHB_ARBITRATION_XBAR_CTRL	0xdc
-+#define AHB_MEM_PREFETCH_CFG3		0xe0
-+#define AHB_MEM_PREFETCH_CFG4		0xe4
-+#define AHB_MEM_PREFETCH_CFG1		0xec
-+#define AHB_MEM_PREFETCH_CFG2		0xf0
-+#define   PREFETCH_ENB	BIT(31)
-+#define   MST_ID(x)	(((x) & 0x1f) << 26)
-+#define   AHBDMA_MST_ID	MST_ID(5)
-+#define   USB_MST_ID	MST_ID(6)
-+#define   USB2_MST_ID	MST_ID(18)
-+#define   USB3_MST_ID	MST_ID(17)
-+#define   ADDR_BNDRY(x)	(((x) & 0xf) << 21)
-+#define   INACTIVITY_TIMEOUT(x)	(((x) & 0xffff) << 0)
-+
-+#define AHB_ARBITRATION_AHB_MEM_WRQUE_MST_ID	0xf8
-+
-+static inline unsigned long gizmo_readl(unsigned long offset)
-+{
-+	return readl(IO_TO_VIRT(TEGRA_AHB_GIZMO_BASE + offset));
-+}
-+
-+static inline void gizmo_writel(unsigned long value, unsigned long offset)
-+{
-+	writel(value, IO_TO_VIRT(TEGRA_AHB_GIZMO_BASE + offset));
-+}
-+
-+#ifdef CONFIG_PM
-+
-+struct __ahb_gizmo {
-+	unsigned long offset;
-+	unsigned long data;
-+};
-+
-+static struct __ahb_gizmo ahb_gizmo[] = {
-+	{ .offset = AHB_ARBITRATION_DISABLE, },
-+	{ .offset = AHB_ARBITRATION_PRIORITY_CTRL, },
-+	{ .offset = AHB_GIZMO_AHB_MEM, },
-+	{ .offset = AHB_GIZMO_APB_DMA, },
-+	{ .offset = AHB_GIZMO_IDE, },
-+	{ .offset = AHB_GIZMO_USB, },
-+	{ .offset = AHB_GIZMO_AHB_XBAR_BRIDGE, },
-+	{ .offset = AHB_GIZMO_CPU_AHB_BRIDGE, },
-+	{ .offset = AHB_GIZMO_COP_AHB_BRIDGE, },
-+	{ .offset = AHB_GIZMO_XBAR_APB_CTLR, },
-+	{ .offset = AHB_GIZMO_VCP_AHB_BRIDGE, },
-+	{ .offset = AHB_GIZMO_NAND, },
-+	{ .offset = AHB_GIZMO_SDMMC4, },
-+	{ .offset = AHB_GIZMO_XIO, },
-+	{ .offset = AHB_GIZMO_BSEV, },
-+	{ .offset = AHB_GIZMO_BSEA, },
-+	{ .offset = AHB_GIZMO_NOR, },
-+	{ .offset = AHB_GIZMO_USB2, },
-+	{ .offset = AHB_GIZMO_USB3, },
-+	{ .offset = AHB_GIZMO_SDMMC1, },
-+	{ .offset = AHB_GIZMO_SDMMC2, },
-+	{ .offset = AHB_GIZMO_SDMMC3, },
-+	{ .offset = AHB_MEM_PREFETCH_CFG_X, },
-+	{ .offset = AHB_ARBITRATION_XBAR_CTRL, },
-+	{ .offset = AHB_MEM_PREFETCH_CFG3, },
-+	{ .offset = AHB_MEM_PREFETCH_CFG4, },
-+	{ .offset = AHB_MEM_PREFETCH_CFG1, },
-+	{ .offset = AHB_MEM_PREFETCH_CFG2, },
-+	{ .offset = AHB_ARBITRATION_AHB_MEM_WRQUE_MST_ID, },
-+};
-+
-+static int tegra_ahbgizmo_suspend(void)
-+{
-+	int i;
-+	for (i = 0; i < ARRAY_SIZE(ahb_gizmo); i++)
-+		ahb_gizmo[i].data = gizmo_readl(ahb_gizmo[i].offset);
-+	return 0;
-+}
-+
-+static void tegra_ahbgizmo_resume(void)
-+{
-+	int i;
-+	for (i = 0; i < ARRAY_SIZE(ahb_gizmo); i++)
-+		gizmo_writel(ahb_gizmo[i].data, ahb_gizmo[i].offset);
-+	return;
-+}
-+
-+#else
-+#define tegra_ahbgizmo_suspend NULL
-+#define tegra_ahbgizmo_resume NULL
-+#endif	/* CONFIG_PM */
-+
-+static struct syscore_ops tegra_ahbgizmo_syscore_ops = {
-+	.suspend = tegra_ahbgizmo_suspend,
-+	.resume = tegra_ahbgizmo_resume,
-+};
-+
-+void __init tegra_ahb_gizmo_init(void)
++void tegra_ahb_enable_smmu(void)
 +{
 +	unsigned long val;
 +
-+	val = gizmo_readl(AHB_GIZMO_AHB_MEM);
-+	val |= ENB_FAST_REARBITRATE | IMMEDIATE | DONT_SPLIT_AHB_WR;
-+	gizmo_writel(val, AHB_GIZMO_AHB_MEM);
-+
-+	val = gizmo_readl(AHB_GIZMO_USB);
-+	val |= IMMEDIATE;
-+	gizmo_writel(val, AHB_GIZMO_USB);
-+
-+	val = gizmo_readl(AHB_GIZMO_USB2);
-+	val |= IMMEDIATE;
-+	gizmo_writel(val, AHB_GIZMO_USB2);
-+
-+	val = gizmo_readl(AHB_GIZMO_USB3);
-+	val |= IMMEDIATE;
-+	gizmo_writel(val, AHB_GIZMO_USB3);
-+
-+	val = gizmo_readl(AHB_ARBITRATION_PRIORITY_CTRL);
-+	val |= PRIORITY_SELECT_USB |
-+		PRIORITY_SELECT_USB2 |
-+		PRIORITY_SELECT_USB3 |
-+		AHB_PRIORITY_WEIGHT(7);
-+	gizmo_writel(val, AHB_ARBITRATION_PRIORITY_CTRL);
-+
-+	val = gizmo_readl(AHB_MEM_PREFETCH_CFG1);
-+	val &= ~MST_ID(~0);
-+	val |= PREFETCH_ENB |
-+		AHBDMA_MST_ID |
-+		ADDR_BNDRY(0xc) |
-+		INACTIVITY_TIMEOUT(0x1000);
-+	gizmo_writel(val, AHB_MEM_PREFETCH_CFG1);
-+
-+	val = gizmo_readl(AHB_MEM_PREFETCH_CFG2);
-+	val &= ~MST_ID(~0);
-+	val |= PREFETCH_ENB |
-+		USB_MST_ID |
-+		ADDR_BNDRY(0xc) |
-+		INACTIVITY_TIMEOUT(0x1000);
-+	gizmo_writel(val, AHB_MEM_PREFETCH_CFG2);
-+
-+	val = gizmo_readl(AHB_MEM_PREFETCH_CFG3);
-+	val &= ~MST_ID(~0);
-+	val |= PREFETCH_ENB |
-+		USB3_MST_ID |
-+		ADDR_BNDRY(0xc) |
-+		INACTIVITY_TIMEOUT(0x1000);
-+	gizmo_writel(val, AHB_MEM_PREFETCH_CFG3);
-+
-+	val = gizmo_readl(AHB_MEM_PREFETCH_CFG4);
-+	val &= ~MST_ID(~0);
-+	val |= PREFETCH_ENB |
-+		USB2_MST_ID |
-+		ADDR_BNDRY(0xc) |
-+		INACTIVITY_TIMEOUT(0x1000);
-+	gizmo_writel(val, AHB_MEM_PREFETCH_CFG4);
-+
-+	register_syscore_ops(&tegra_ahbgizmo_syscore_ops);
++	val = gizmo_readl(AHB_ARBITRATION_XBAR_CTRL);
++	val |= AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_DONE <<
++		AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_SHIFT;
++	gizmo_writel(val, AHB_ARBITRATION_XBAR_CTRL);
 +}
++EXPORT_SYMBOL(tegra_ahb_enable_smmu);
++
++#endif
++
+ #ifdef CONFIG_PM
+ 
+ struct __ahb_gizmo {
 -- 
 1.7.5.4
 
