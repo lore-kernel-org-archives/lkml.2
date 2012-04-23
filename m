@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab2DWQeG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:34:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6895 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754013Ab2DWQeE (ORCPT
+	id S1753686Ab2DWQiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:38:20 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:52457 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752292Ab2DWQiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:34:04 -0400
-X-Authority-Analysis: v=2.0 cv=XbcLPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=bakr5X8eLoMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=57SyGIRnAAAA:8 a=J5q0bf_KwSudDpSF-2oA:9 a=PUjeQqilurYA:10 a=TIV7c6GJmisA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1335198843.28106.106.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 02/11] parse-events: Fix freeing arg on
- process_dynamic_array()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 23 Apr 2012 12:34:03 -0400
-In-Reply-To: <1335157118-14658-3-git-send-email-namhyung.kim@lge.com>
-References: <1335157118-14658-1-git-send-email-namhyung.kim@lge.com>
-	 <1335157118-14658-3-git-send-email-namhyung.kim@lge.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Mon, 23 Apr 2012 12:38:18 -0400
+Message-ID: <4F958598.6080305@xenotime.net>
+Date: Mon, 23 Apr 2012 09:38:48 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        ebiederm@xmission.com, netdev@vger.kernel.org
+Subject: Re: linux-next: Tree for Apr 23 (phonet sysctl)
+References: <20120423170701.c96e402234b1387dece11dda@canb.auug.org.au>
+In-Reply-To: <20120423170701.c96e402234b1387dece11dda@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 13:58 +0900, Namhyung Kim wrote:
-> The @arg paremeter should not be freed inside of process_XXX(),
-> because it'd be freed from the caller of process_arg(). We can
-> free it only after it was reused for local usage.
+On 04/23/2012 12:07 AM, Stephen Rothwell wrote:
+
+> Hi all,
 > 
-> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-
-Applied, thanks!
-
--- Steve
+> Changes since 20120420:
 
 
+
+ERROR: "unregister_net_sysctl_table" [net/phonet/phonet.ko] undefined!
+ERROR: "register_net_sysctl" [net/phonet/phonet.ko] undefined!
+
+when CONFIG_SYSCTL is not enabled.
+
+-- 
+~Randy
