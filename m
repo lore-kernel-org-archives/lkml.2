@@ -1,326 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab2DWW55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 18:57:57 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:60691 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017Ab2DWW54 (ORCPT
+	id S1755708Ab2DWXAV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 19:00:21 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:57159 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab2DWXAS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 18:57:56 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-132.messagelabs.com!1335221874!6596638!1
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor adq12b driver to remove forward declarations
-Date: Mon, 23 Apr 2012 15:57:48 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Mon, 23 Apr 2012 19:00:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201204231557.49076.hartleys@visionengravers.com>
+In-Reply-To: <1334757146-28335-1-git-send-email-daniel.vetter@ffwll.ch>
+References: <1334757146-28335-1-git-send-email-daniel.vetter@ffwll.ch>
+Date: Mon, 23 Apr 2012 16:00:17 -0700
+X-Google-Sender-Auth: U4ctZ9XqYnjNKHXza9J1b73xJEk
+Message-ID: <CALJcvx6eOuZoYrMixsjZEs=VuF_bmtThp8qtCKGHRyQPffTW3A@mail.gmail.com>
+Subject: Re: [PATCH] dma-buf: mmap support
+From: Rebecca Schultz Zavin <rebecca@android.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: linaro-mm-sig@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        linux-media@vger.kernel.org, Rob Clark <rob.clark@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the module_init/module_exit routines and the associated
-struct comedi_driver and struct boardtype variables to the end
-of the source as is more typically done with other drivers. Then
-rearrange the attach/detach functions, this removes the need
-for all the forward declarations.
+I'd still rather see some form of explicit cache flusing api, but I
+can do that through my exporter (and probably will to get started).
+Otherwise this looks good to me except for comment inline.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
+On Wed, Apr 18, 2012 at 6:52 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> Compared to Rob Clark's RFC I've ditched the prepare/finish hooks
+> and corresponding ioctls on the dma_buf file. The major reason for
+> that is that many people seem to be under the impression that this is
+> also for synchronization with outstanding asynchronous processsing.
+> I'm pretty massively opposed to this because:
+>
+> - It boils down reinventing a new rather general-purpose userspace
+>  synchronization interface. If we look at things like futexes, this
+>  is hard to get right.
+> - Furthermore a lot of kernel code has to interact with this
+>  synchronization primitive. This smells a look like the dri1 hw_lock,
+>  a horror show I prefer not to reinvent.
+> - Even more fun is that multiple different subsystems would interact
+>  here, so we have plenty of opportunities to create funny deadlock
+>  scenarios.
+>
+> I think synchronization is a wholesale different problem from data
+> sharing and should be tackled as an orthogonal problem.
+>
+> Now we could demand that prepare/finish may only ensure cache
+> coherency (as Rob intended), but that runs up into the next problem:
+> We not only need mmap support to facilitate sw-only processing nodes
+> in a pipeline (without jumping through hoops by importing the dma_buf
+> into some sw-access only importer), which allows for a nicer
+> ION->dma-buf upgrade path for existing Android userspace. We also need
+> mmap support for existing importing subsystems to support existing
+> userspace libraries. And a loot of these subsystems are expected to
+> export coherent userspace mappings.
+>
+> So prepare/finish can only ever be optional and the exporter /needs/
+> to support coherent mappings. Given that mmap access is always
+> somewhat fallback-y in nature I've decided to drop this optimization,
+> instead of just making it optional. If we demonstrate a clear need for
+> this, supported by benchmark results, we can always add it in again
+> later as an optional extension.
+>
+> Other differences compared to Rob's RFC is the above mentioned support
+> for mapping a dma-buf through facilities provided by the importer.
+> Which results in mmap support no longer being optional.
+>
+> Note that this dma-buf mmap patch does _not_ support every possible
+> insanity an existing subsystem could pull of with mmap: Because it
+> does not allow to intercept pagefaults and shoot down ptes importing
+> subsystems can't add some magic of their own at these points (e.g. to
+> automatically synchronize with outstanding rendering or set up some
+> special resources). I've done a cursory read through a few mmap
+> implementions of various subsytems and I'm hopeful that we can avoid
+> this (and the complexity it'd bring with it).
+>
+> Additonally I've extended the documentation a bit to explain the hows
+> and whys of this mmap extension.
+>
+> In case we ever want to add support for explicitly cache maneged
+> userspace mmap with a prepare/finish ioctl pair, we could specify that
+> userspace needs to mmap a different part of the dma_buf, e.g. the
+> range starting at dma_buf->size up to dma_buf->size*2. This works
+> because the size of a dma_buf is invariant over it's lifetime. The
+> exporter would obviously need to fall back to coherent mappings for
+> both ranges if a legacy clients maps the coherent range and the
+> architecture cannot suppor conflicting caching policies. Also, this
+> would obviously be optional and userspace needs to be able to fall
+> back to coherent mappings.
+>
+> v2:
+> - Spelling fixes from Rob Clark.
+> - Compile fix for !DMA_BUF from Rob Clark.
+> - Extend commit message to explain how explicitly cache managed mmap
+>  support could be added later.
+> - Extend the documentation with implementations notes for exporters
+>  that need to manually fake coherency.
+>
+> Cc: Rob Clark <rob.clark@linaro.org>
+> Cc: Rebecca Schultz Zavin <rebecca@android.com>
+> Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> ---
+>  Documentation/dma-buf-sharing.txt |   98 ++++++++++++++++++++++++++++++++++---
+>  drivers/base/dma-buf.c            |   64 +++++++++++++++++++++++-
+>  include/linux/dma-buf.h           |   16 ++++++
+>  3 files changed, 170 insertions(+), 8 deletions(-)
+>
+> diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
+> index 3bbd5c5..5ff4d2b 100644
+> --- a/Documentation/dma-buf-sharing.txt
+> +++ b/Documentation/dma-buf-sharing.txt
+> @@ -29,13 +29,6 @@ The buffer-user
+>    in memory, mapped into its own address space, so it can access the same area
+>    of memory.
+>
+> -*IMPORTANT*: [see https://lkml.org/lkml/2011/12/20/211 for more details]
+> -For this first version, A buffer shared using the dma_buf sharing API:
+> -- *may* be exported to user space using "mmap" *ONLY* by exporter, outside of
+> -  this framework.
+> -- with this new iteration of the dma-buf api cpu access from the kernel has been
+> -  enable, see below for the details.
+> -
+>  dma-buf operations for device dma only
+>  --------------------------------------
+>
+> @@ -313,6 +306,83 @@ Access to a dma_buf from the kernel context involves three steps:
+>                                  enum dma_data_direction dir);
+>
+>
+> +Direct Userspace Access/mmap Support
+> +------------------------------------
+> +
+> +Being able to mmap an export dma-buf buffer object has 2 main use-cases:
+> +- CPU fallback processing in a pipeline and
+> +- supporting existing mmap interfaces in importers.
+> +
+> +1. CPU fallback processing in a pipeline
+> +
+> +   In many processing pipelines it is sometimes required that the cpu can access
+> +   the data in a dma-buf (e.g. for thumbnail creation, snapshots, ...). To avoid
+> +   the need to handle this specially in userspace frameworks for buffer sharing
+> +   it's ideal if the dma_buf fd itself can be used to access the backing storage
+> +   from userspace using mmap.
+> +
+> +   Furthermore Android's ION framework already supports this (and is otherwise
+> +   rather similar to dma-buf from a userspace consumer side with using fds as
+> +   handles, too). So it's beneficial to support this in a similar fashion on
+> +   dma-buf to have a good transition path for existing Android userspace.
+> +
+> +   No special interfaces, userspace simply calls mmap on the dma-buf fd.
+> +
+> +2. Supporting existing mmap interfaces in exporters
+> +
+> +   Similar to the motivation for kernel cpu access it is again important that
+> +   the userspace code of a given importing subsystem can use the same interfaces
+> +   with a imported dma-buf buffer object as with a native buffer object. This is
+> +   especially important for drm where the userspace part of contemporary OpenGL,
+> +   X, and other drivers is huge, and reworking them to use a different way to
+> +   mmap a buffer rather invasive.
+> +
+> +   The assumption in the current dma-buf interfaces is that redirecting the
+> +   initial mmap is all that's needed. A survey of some of the existing
+> +   subsystems shows that no driver seems to do any nefarious thing like syncing
+> +   up with outstanding asynchronous processing on the device or allocating
+> +   special resources at fault time. So hopefully this is good enough, since
+> +   adding interfaces to intercept pagefaults and allow pte shootdowns would
+> +   increase the complexity quite a bit.
+> +
+> +   Interface:
+> +      int dma_buf_mmap(struct dma_buf *, struct vm_area_struct *,
+> +                      unsigned long);
+> +
+> +   If the importing subsystem simply provides a special-purpose mmap call to set
+> +   up a mapping in userspace, calling do_mmap with dma_buf->file will equally
+> +   achieve that for a dma-buf object.
+> +
+> +3. Implementation notes for exporters
+> +
+> +   Because dma-buf buffers have invariant size over their lifetime, the dma-buf
+> +   core checks whether a vma is too large and rejects such mappings. The
+> +   exporter hence does not need to duplicate this check.
+> +
+> +   Because existing importing subsystems might presume coherent mappings for
+> +   userspace, the exporter needs to set up a coherent mapping. If that's not
+> +   possible, it needs to fake coherency by manually shooting down ptes when
+> +   leaving the cpu domain and flushing caches at fault time. Note that all the
+> +   dma_buf files share the same anon inode, hence the exporter needs to replace
+> +   the dma_buf file stored in vma->vm_file with it's own if pte shootdown is
+> +   requred. This is because the kernel uses the underlying inode's address_space
+> +   for vma tracking (and hence pte tracking at shootdown time with
+> +   unmap_mapping_range).
+> +
+> +   If the above shootdown dance turns out to be too expensive in certain
+> +   scenarios, we can extend dma-buf with a more explicit cache tracking scheme
+> +   for userspace mappings. But the current assumption is that using mmap is
+> +   always a slower path, so some inefficiencies should be acceptable.
+> +
+> +   Exporters that shoot down mappings (for any reasons) shall not do any
+> +   synchronization at fault time with outstanding device operations.
+> +   Synchronization is an orthogonal issue to sharing the backing storage of a
+> +   buffer and hence should not be handled by dma-buf itself. This is explictly
+> +   mentioned here because many people seem to want something like this, but if
+> +   different exporters handle this differently, buffer sharing can fail in
+> +   interesting ways depending upong the exporter (if userspace starts depending
+> +   upon this implicit synchronization).
+> +
+>  Miscellaneous notes
+>  -------------------
+>
+> @@ -336,6 +406,20 @@ Miscellaneous notes
+>   the exporting driver to create a dmabuf fd must provide a way to let
+>   userspace control setting of O_CLOEXEC flag passed in to dma_buf_fd().
+>
+> +- If an exporter needs to manually flush caches and hence needs to fake
+> +  coherency for mmap support, it needs to be able to zap all the ptes pointing
+> +  at the backing storage. Now linux mm needs a struct address_space associated
+> +  with the struct file stored in vma->vm_file to do that with the function
+> +  unmap_mapping_range. But the dma_buf framework only backs every dma_buf fd
+> +  with the anon_file struct file, i.e. all dma_bufs share the same file.
+> +
+> +  Hence exporters need to setup their own file (and address_space) association
+> +  by setting vma->vm_file and adjusting vma->vm_pgoff in the dma_buf mmap
+> +  callback. In the specific case of a gem driver the exporter could use the
+> +  shmem file already provided by gem (and set vm_pgoff = 0). Exporters can then
+> +  zap ptes by unmapping the corresponding range of the struct address_space
+> +  associated with their own file.
+> +
+>  References:
+>  [1] struct dma_buf_ops in include/linux/dma-buf.h
+>  [2] All interfaces mentioned above defined in include/linux/dma-buf.h
+> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
+> index 07cbbc6..8a573b9 100644
+> --- a/drivers/base/dma-buf.c
+> +++ b/drivers/base/dma-buf.c
+> @@ -44,8 +44,26 @@ static int dma_buf_release(struct inode *inode, struct file *file)
+>        return 0;
+>  }
+>
+> +static int dma_buf_mmap_internal(struct file *file, struct vm_area_struct *vma)
+> +{
+> +       struct dma_buf *dmabuf;
+> +
+> +       if (!is_dma_buf_file(file))
+> +               return -EINVAL;
+> +
+> +       /* check for overflowing the buffer's size */
+> +       if (vma->vm_pgoff + ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) >
+> +           dmabuf->size >> PAGE_SHIFT)
+> +               return -EINVAL;
+> +
+> +       dmabuf = file->private_data;
 
-diff --git a/drivers/staging/comedi/drivers/adq12b.c b/drivers/staging/comedi/drivers/adq12b.c
-index 5361f31..275cb77 100644
---- a/drivers/staging/comedi/drivers/adq12b.c
-+++ b/drivers/staging/comedi/drivers/adq12b.c
-@@ -125,24 +125,6 @@ struct adq12b_board {
- 	int do_chans;
- };
- 
--static const struct adq12b_board adq12b_boards[] = {
--	{
--	 .name = "adq12b",
--	 .ai_se_chans = 16,
--	 .ai_diff_chans = 8,
--	 .ai_bits = 12,
--	 .di_chans = 5,
--	 .do_chans = 8}
--/* potentially, more adq-based deviced will be added */
--/*,
--	.name = "adq12b",
--	.ai_chans = 16,  // this is just for reference, hardcoded again later
--	.ai_bits = 12,
--	.di_chans = 8,
--	.do_chans = 5
--	}*/
--};
--
- #define thisboard ((const struct adq12b_board *)dev->board_ptr)
- 
- struct adq12b_private {
-@@ -156,41 +138,88 @@ struct adq12b_private {
- #define devpriv ((struct adq12b_private *)dev->private)
- 
- /*
-- * The struct comedi_driver structure tells the Comedi core module
-- * which functions to call to configure/deconfigure (attach/detach)
-- * the board, and also about the kernel module that contains
-- * the device code.
-+ * "instructions" read/write data in "one-shot" or "software-triggered"
-+ * mode.
-  */
--static int adq12b_attach(struct comedi_device *dev,
--			 struct comedi_devconfig *it);
--static int adq12b_detach(struct comedi_device *dev);
--
--static struct comedi_driver driver_adq12b = {
--	.driver_name = "adq12b",
--	.module = THIS_MODULE,
--	.attach = adq12b_attach,
--	.detach = adq12b_detach,
--	.board_name = &adq12b_boards[0].name,
--	.offset = sizeof(struct adq12b_board),
--	.num_names = ARRAY_SIZE(adq12b_boards),
--};
- 
- static int adq12b_ai_rinsn(struct comedi_device *dev,
- 			   struct comedi_subdevice *s, struct comedi_insn *insn,
--			   unsigned int *data);
-+			   unsigned int *data)
-+{
-+	int n, i;
-+	int range, channel;
-+	unsigned char hi, lo, status;
-+
-+	/* change channel and range only if it is different from the previous */
-+	range = CR_RANGE(insn->chanspec);
-+	channel = CR_CHAN(insn->chanspec);
-+	if (channel != devpriv->last_channel || range != devpriv->last_range) {
-+		outb((range << 4) | channel, dev->iobase + ADQ12B_CTREG);
-+		udelay(50);	/* wait for the mux to settle */
-+	}
-+
-+	/* trigger conversion */
-+	status = inb(dev->iobase + ADQ12B_ADLOW);
-+
-+	/* convert n samples */
-+	for (n = 0; n < insn->n; n++) {
-+
-+		/* wait for end of conversion */
-+		i = 0;
-+		do {
-+			/* udelay(1); */
-+			status = inb(dev->iobase + ADQ12B_STINR);
-+			status = status & ADQ12B_EOC;
-+		} while (status == 0 && ++i < TIMEOUT);
-+		/* } while (++i < 10); */
-+
-+		/* read data */
-+		hi = inb(dev->iobase + ADQ12B_ADHIG);
-+		lo = inb(dev->iobase + ADQ12B_ADLOW);
-+
-+		/* printk("debug: chan=%d range=%d status=%d hi=%d lo=%d\n",
-+		       channel, range, status,  hi, lo); */
-+		data[n] = (hi << 8) | lo;
-+
-+	}
-+
-+	/* return the number of samples read/written */
-+	return n;
-+}
-+
- static int adq12b_di_insn_bits(struct comedi_device *dev,
- 			       struct comedi_subdevice *s,
--			       struct comedi_insn *insn, unsigned int *data);
-+			       struct comedi_insn *insn, unsigned int *data)
-+{
-+
-+	/* only bits 0-4 have information about digital inputs */
-+	data[1] = (inb(dev->iobase + ADQ12B_STINR) & (0x1f));
-+
-+	return 2;
-+}
-+
- static int adq12b_do_insn_bits(struct comedi_device *dev,
- 			       struct comedi_subdevice *s,
--			       struct comedi_insn *insn, unsigned int *data);
-+			       struct comedi_insn *insn, unsigned int *data)
-+{
-+	int channel;
-+
-+	for (channel = 0; channel < 8; channel++)
-+		if (((data[0] >> channel) & 0x01) != 0)
-+			outb((((data[1] >> channel) & 0x01) << 3) | channel,
-+			     dev->iobase + ADQ12B_OUTBR);
-+
-+	/* store information to retrieve when asked for reading */
-+	if (data[0]) {
-+		devpriv->digital_state &= ~data[0];
-+		devpriv->digital_state |= (data[0] & data[1]);
-+	}
-+
-+	data[1] = devpriv->digital_state;
-+
-+	return 2;
-+}
- 
--/*
-- * Attach is called by the Comedi core to configure the driver
-- * for a particular board.  If you specified a board_name array
-- * in the driver structure, dev->board_ptr contains that
-- * address.
-- */
- static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- {
- 	struct comedi_subdevice *s;
-@@ -295,14 +324,6 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	return 0;
- }
- 
--/*
-- * _detach is called to deconfigure a device.  It should deallocate
-- * resources.
-- * This function is also called when _attach() fails, so it should be
-- * careful not to release resources that were not necessarily
-- * allocated by _attach().  dev->private and dev->subdevices are
-- * deallocated automatically by the core.
-- */
- static int adq12b_detach(struct comedi_device *dev)
- {
- 	if (dev->iobase)
-@@ -315,104 +336,37 @@ static int adq12b_detach(struct comedi_device *dev)
- 	return 0;
- }
- 
--/*
-- * "instructions" read/write data in "one-shot" or "software-triggered"
-- * mode.
-- */
--
--static int adq12b_ai_rinsn(struct comedi_device *dev,
--			   struct comedi_subdevice *s, struct comedi_insn *insn,
--			   unsigned int *data)
--{
--	int n, i;
--	int range, channel;
--	unsigned char hi, lo, status;
--
--	/* change channel and range only if it is different from the previous */
--	range = CR_RANGE(insn->chanspec);
--	channel = CR_CHAN(insn->chanspec);
--	if (channel != devpriv->last_channel || range != devpriv->last_range) {
--		outb((range << 4) | channel, dev->iobase + ADQ12B_CTREG);
--		udelay(50);	/* wait for the mux to settle */
--	}
--
--	/* trigger conversion */
--	status = inb(dev->iobase + ADQ12B_ADLOW);
--
--	/* convert n samples */
--	for (n = 0; n < insn->n; n++) {
--
--		/* wait for end of conversion */
--		i = 0;
--		do {
--			/* udelay(1); */
--			status = inb(dev->iobase + ADQ12B_STINR);
--			status = status & ADQ12B_EOC;
--		} while (status == 0 && ++i < TIMEOUT);
--		/* } while (++i < 10); */
--
--		/* read data */
--		hi = inb(dev->iobase + ADQ12B_ADHIG);
--		lo = inb(dev->iobase + ADQ12B_ADLOW);
--
--		/* printk("debug: chan=%d range=%d status=%d hi=%d lo=%d\n",
--		       channel, range, status,  hi, lo); */
--		data[n] = (hi << 8) | lo;
--
--	}
--
--	/* return the number of samples read/written */
--	return n;
--}
--
--static int adq12b_di_insn_bits(struct comedi_device *dev,
--			       struct comedi_subdevice *s,
--			       struct comedi_insn *insn, unsigned int *data)
--{
--
--	/* only bits 0-4 have information about digital inputs */
--	data[1] = (inb(dev->iobase + ADQ12B_STINR) & (0x1f));
--
--	return 2;
--}
--
--static int adq12b_do_insn_bits(struct comedi_device *dev,
--			       struct comedi_subdevice *s,
--			       struct comedi_insn *insn, unsigned int *data)
--{
--	int channel;
--
--	for (channel = 0; channel < 8; channel++)
--		if (((data[0] >> channel) & 0x01) != 0)
--			outb((((data[1] >> channel) & 0x01) << 3) | channel,
--			     dev->iobase + ADQ12B_OUTBR);
--
--	/* store information to retrieve when asked for reading */
--	if (data[0]) {
--		devpriv->digital_state &= ~data[0];
--		devpriv->digital_state |= (data[0] & data[1]);
--	}
--
--	data[1] = devpriv->digital_state;
-+static const struct adq12b_board adq12b_boards[] = {
-+	{
-+		.name		= "adq12b",
-+		.ai_se_chans	= 16,
-+		.ai_diff_chans	= 8,
-+		.ai_bits	= 12,
-+		.di_chans	= 5,
-+		.do_chans	= 8,
-+	},
-+};
- 
--	return 2;
--}
-+static struct comedi_driver driver_adq12b = {
-+	.driver_name	= "adq12b",
-+	.module		= THIS_MODULE,
-+	.attach		= adq12b_attach,
-+	.detach		= adq12b_detach,
-+	.board_name	= &adq12b_boards[0].name,
-+	.offset		= sizeof(struct adq12b_board),
-+	.num_names	= ARRAY_SIZE(adq12b_boards),
-+};
- 
--/*
-- * A convenient macro that defines init_module() and cleanup_module(),
-- * as necessary.
-- */
- static int __init driver_adq12b_init_module(void)
- {
- 	return comedi_driver_register(&driver_adq12b);
- }
-+module_init(driver_adq12b_init_module);
- 
- static void __exit driver_adq12b_cleanup_module(void)
- {
- 	comedi_driver_unregister(&driver_adq12b);
- }
--
--module_init(driver_adq12b_init_module);
- module_exit(driver_adq12b_cleanup_module);
- 
- MODULE_AUTHOR("Comedi http://www.comedi.org");
+Better move this above the if statement where you deref the pointer...
+
+> +
+> +       return dmabuf->ops->mmap(dmabuf, vma);
+> +}
+> +
+>  static const struct file_operations dma_buf_fops = {
+>        .release        = dma_buf_release,
+> +       .mmap           = dma_buf_mmap_internal,
+>  };
+>
+>  /*
+> @@ -82,7 +100,8 @@ struct dma_buf *dma_buf_export(void *priv, const struct dma_buf_ops *ops,
+>                          || !ops->unmap_dma_buf
+>                          || !ops->release
+>                          || !ops->kmap_atomic
+> -                         || !ops->kmap)) {
+> +                         || !ops->kmap
+> +                         || !ops->mmap)) {
+>                return ERR_PTR(-EINVAL);
+>        }
+>
+> @@ -406,3 +425,46 @@ void dma_buf_kunmap(struct dma_buf *dmabuf, unsigned long page_num,
+>                dmabuf->ops->kunmap(dmabuf, page_num, vaddr);
+>  }
+>  EXPORT_SYMBOL_GPL(dma_buf_kunmap);
+> +
+> +
+> +/**
+> + * dma_buf_mmap - Setup up a userspace mmap with the given vma
+> + * @dma_buf:   [in]    buffer that should back the vma
+> + * @vma:       [in]    vma for the mmap
+> + * @pgoff:     [in]    offset in pages where this mmap should start within the
+> + *                     dma-buf buffer.
+> + *
+> + * This function adjusts the passed in vma so that it points at the file of the
+> + * dma_buf operation. It alsog adjusts the starting pgoff and does bounds
+> + * checking on the size of the vma. Then it calls the exporters mmap function to
+> + * set up the mapping.
+> + *
+> + * Can return negative error values, returns 0 on success.
+> + */
+> +int dma_buf_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma,
+> +                unsigned long pgoff)
+> +{
+> +       if (WARN_ON(!dmabuf || !vma))
+> +               return -EINVAL;
+> +
+> +       /* check for offset overflow */
+> +       if (pgoff + ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) < pgoff)
+> +               return -EOVERFLOW;
+> +
+> +       /* check for overflowing the buffer's size */
+> +       if (pgoff + ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) >
+> +           dmabuf->size >> PAGE_SHIFT)
+> +               return -EINVAL;
+> +
+> +       /* readjust the vma */
+> +       if (vma->vm_file)
+> +               fput(vma->vm_file);
+> +
+> +       vma->vm_file = dmabuf->file;
+> +       get_file(vma->vm_file);
+> +
+> +       vma->vm_pgoff = pgoff;
+> +
+> +       return dmabuf->ops->mmap(dmabuf, vma);
+> +}
+> +EXPORT_SYMBOL_GPL(dma_buf_mmap);
+> diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
+> index 3efbfc2..1f78d15 100644
+> --- a/include/linux/dma-buf.h
+> +++ b/include/linux/dma-buf.h
+> @@ -61,6 +61,10 @@ struct dma_buf_attachment;
+>  *                This Callback must not sleep.
+>  * @kmap: maps a page from the buffer into kernel address space.
+>  * @kunmap: [optional] unmaps a page from the buffer.
+> + * @mmap: used to expose the backing storage to userspace. Note that the
+> + *       mapping needs to be coherent - if the exporter doesn't directly
+> + *       support this, it needs to fake coherency by shooting down any ptes
+> + *       when transitioning away from the cpu domain.
+>  */
+>  struct dma_buf_ops {
+>        int (*attach)(struct dma_buf *, struct device *,
+> @@ -92,6 +96,8 @@ struct dma_buf_ops {
+>        void (*kunmap_atomic)(struct dma_buf *, unsigned long, void *);
+>        void *(*kmap)(struct dma_buf *, unsigned long);
+>        void (*kunmap)(struct dma_buf *, unsigned long, void *);
+> +
+> +       int (*mmap)(struct dma_buf *, struct vm_area_struct *vma);
+>  };
+>
+>  /**
+> @@ -167,6 +173,9 @@ void *dma_buf_kmap_atomic(struct dma_buf *, unsigned long);
+>  void dma_buf_kunmap_atomic(struct dma_buf *, unsigned long, void *);
+>  void *dma_buf_kmap(struct dma_buf *, unsigned long);
+>  void dma_buf_kunmap(struct dma_buf *, unsigned long, void *);
+> +
+> +int dma_buf_mmap(struct dma_buf *, struct vm_area_struct *,
+> +                unsigned long);
+>  #else
+>
+>  static inline struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+> @@ -248,6 +257,13 @@ static inline void dma_buf_kunmap(struct dma_buf *dmabuf,
+>                                  unsigned long pnum, void *vaddr)
+>  {
+>  }
+> +
+> +static inline int dma_buf_mmap(struct dma_buf *dmabuf,
+> +                              struct vm_area_struct *vma,
+> +                              unsigned long pgoff)
+> +{
+> +       return -ENODEV;
+> +}
+>  #endif /* CONFIG_DMA_SHARED_BUFFER */
+>
+>  #endif /* __DMA_BUF_H__ */
+> --
+> 1.7.10
+>
