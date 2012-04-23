@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab2DWMOB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 08:14:01 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15349 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754387Ab2DWMNS (ORCPT
+	id S1754699Ab2DWMOU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 08:14:20 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57571 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab2DWMNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 08:13:18 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 23 Apr 2012 05:13:10 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, jic23@cam.ac.uk, gregkh@linuxfoundation.org,
-        swarren@nvidia.com, olof@lixom.net,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 3/4] ARM: dt: tegra: enable als and proximity sensor
-Date: Mon, 23 Apr 2012 17:41:36 +0530
-Message-Id: <1335183097-21104-5-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1335183097-21104-1-git-send-email-ldewangan@nvidia.com>
-References: <1335183097-21104-1-git-send-email-ldewangan@nvidia.com>
+	Mon, 23 Apr 2012 08:13:17 -0400
+Message-ID: <4F954757.3020003@gmail.com>
+Date: Mon, 23 Apr 2012 14:13:11 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>  <1333696481-3433-6-git-send-email-juri.lelli@gmail.com> <1335180743.28150.119.camel@twins>
+In-Reply-To: <1335180743.28150.119.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the device info for ALS and proximity sensor for tegra
-boards cardhu, ventana and seabridge.
+On 04/23/2012 01:32 PM, Peter Zijlstra wrote:
+> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+>> +       /*
+>> +        * We Keep moving the deadline away until we get some
+>> +        * available runtime for the entity. This ensures correct
+>> +        * handling of situations where the runtime overrun is
+>> +        * arbitrary large.
+>> +        */
+>> +       while (dl_se->runtime<= 0) {
+>> +               dl_se->deadline += dl_se->dl_deadline;
+>> +               dl_se->runtime += dl_se->dl_runtime;
+>> +       }
+>
+> Does gcc 'optimize' that into a division? If so, it might need special
+> glue to make it not do that.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-- remove labels.
-- added interrupt numbers.
+I got two adds and a jle, no div here..
 
- arch/arm/boot/dts/tegra-cardhu.dts   |    8 ++++++++
- arch/arm/boot/dts/tegra-seaboard.dts |    8 ++++++++
- arch/arm/boot/dts/tegra-ventana.dts  |    8 ++++++++
- 3 files changed, 24 insertions(+), 0 deletions(-)
+Thanks,
 
-diff --git a/arch/arm/boot/dts/tegra-cardhu.dts b/arch/arm/boot/dts/tegra-cardhu.dts
-index ab8d901..facb950 100644
---- a/arch/arm/boot/dts/tegra-cardhu.dts
-+++ b/arch/arm/boot/dts/tegra-cardhu.dts
-@@ -93,6 +93,14 @@
- 
- 	i2c@7000c500 {
- 		clock-frequency = <100000>;
-+
-+		/* ALS and Proximity sensor */
-+		isl29028@44 {
-+			compatible = "isil,isl29028";
-+			reg = <0x44>;
-+			interrupt-parent = <&gpio>;
-+			interrupts = <88 0x04>; /*gpio PL0 */
-+		};
- 	};
- 
- 	i2c@7000c700 {
-diff --git a/arch/arm/boot/dts/tegra-seaboard.dts b/arch/arm/boot/dts/tegra-seaboard.dts
-index ed0a2f5..a114183 100644
---- a/arch/arm/boot/dts/tegra-seaboard.dts
-+++ b/arch/arm/boot/dts/tegra-seaboard.dts
-@@ -270,6 +270,14 @@
- 			micdet-delay = <100>;
- 			gpio-cfg = < 0xffffffff 0xffffffff 0 0xffffffff 0xffffffff >;
- 		};
-+
-+		/* ALS and proximity sensor */
-+		isl29018@44 {
-+			compatible = "isil,isl29018";
-+			reg = <0x44>;
-+			interrupt-parent = <&gpio>;
-+			interrupts = < 202 0x04 >; /* GPIO PZ02 */
-+		};
- 	};
- 
- 	i2c@7000c400 {
-diff --git a/arch/arm/boot/dts/tegra-ventana.dts b/arch/arm/boot/dts/tegra-ventana.dts
-index bd074cf..6ea41df 100644
---- a/arch/arm/boot/dts/tegra-ventana.dts
-+++ b/arch/arm/boot/dts/tegra-ventana.dts
-@@ -256,6 +256,14 @@
- 			micdet-delay = <100>;
- 			gpio-cfg = < 0xffffffff 0xffffffff 0 0xffffffff 0xffffffff >;
- 		};
-+
-+		/* ALS and proximity sensor */
-+		isl29018@44 {
-+			compatible = "isil,isl29018";
-+			reg = <0x44>;
-+			interrupt-parent = <&gpio>;
-+			interrupts = <202 0x04>; /*gpio PZ02 */
-+		};
- 	};
- 
- 	i2c@7000c400 {
--- 
-1.7.1.1
-
+- Juri
