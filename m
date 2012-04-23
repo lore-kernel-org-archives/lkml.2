@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab2DWLhn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 07:37:43 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10130 "EHLO
+	id S1753502Ab2DWLhv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 07:37:51 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10148 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752352Ab2DWLhm (ORCPT
+	with ESMTP id S1752352Ab2DWLht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 07:37:42 -0400
+	Mon, 23 Apr 2012 07:37:49 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 23 Apr 2012 04:37:41 -0700
+	by hqnvupgp05.nvidia.com on Mon, 23 Apr 2012 04:37:49 -0700
 From: Hiroshi DOYU <hdoyu@nvidia.com>
 To: hdoyu@nvidia.com
-Cc: linux-tegra@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] ARM: tegra: Add SMMU enabler in AHB
-Date: Mon, 23 Apr 2012 14:37:22 +0300
-Message-Id: <1335181043-15348-2-git-send-email-hdoyu@nvidia.com>
+Cc: linux-tegra@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] iommu/tegra: smmu: Refrain from accessing to AHB registers
+Date: Mon, 23 Apr 2012 14:37:23 +0300
+Message-Id: <1335181043-15348-3-git-send-email-hdoyu@nvidia.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335181043-15348-1-git-send-email-hdoyu@nvidia.com>
 References: <1335181043-15348-1-git-send-email-hdoyu@nvidia.com>
@@ -30,84 +24,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add extern func, "tegra_ahb_enable_smmu()" to inform AHB that SMMU is
-ready.
+Use "tegra_ahb_enable_smmu()" to inform AHB that SMMU is
+ready, instead of directly aceessing AHB registers.
 
 Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
 ---
- arch/arm/mach-tegra/include/mach/tegra-ahb.h |   19 +++++++++++++++++++
- arch/arm/mach-tegra/tegra-ahb.c              |   19 +++++++++++++++++++
- 2 files changed, 38 insertions(+), 0 deletions(-)
+ drivers/iommu/tegra-smmu.c |   40 ++++++++--------------------------------
+ 1 files changed, 8 insertions(+), 32 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/include/mach/tegra-ahb.h b/arch/arm/mach-tegra/include/mach/tegra-ahb.h
-new file mode 100644
-index 0000000..51a5800
---- /dev/null
-+++ b/arch/arm/mach-tegra/include/mach/tegra-ahb.h
-@@ -0,0 +1,19 @@
-+/*
-+ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#ifndef __MACH_TEGRA_AHB_H__
-+#define __MACH_TEGRA_AHB_H__
-+
-+extern void tegra_ahb_enable_smmu(void);
-+
-+#endif	/* __MACH_TEGRA_AHB_H__ */
-diff --git a/arch/arm/mach-tegra/tegra-ahb.c b/arch/arm/mach-tegra/tegra-ahb.c
-index 411b51f..40877fa 100644
---- a/arch/arm/mach-tegra/tegra-ahb.c
-+++ b/arch/arm/mach-tegra/tegra-ahb.c
-@@ -20,6 +20,7 @@
+diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
+index ecd6790..de9fafe 100644
+--- a/drivers/iommu/tegra-smmu.c
++++ b/drivers/iommu/tegra-smmu.c
+@@ -36,6 +36,7 @@
+ 
+ #include <mach/iomap.h>
+ #include <mach/smmu.h>
++#include <mach/tegra-ahb.h>
+ 
+ /* bitmap of the page sizes currently supported */
+ #define SMMU_IOMMU_PGSIZES	(SZ_4K)
+@@ -111,11 +112,6 @@
+ 
+ #define SMMU_PDE_NEXT_SHIFT		28
+ 
+-/* AHB Arbiter Registers */
+-#define AHB_XBAR_CTRL				0xe0
+-#define AHB_XBAR_CTRL_SMMU_INIT_DONE_DONE	1
+-#define AHB_XBAR_CTRL_SMMU_INIT_DONE_SHIFT	17
+-
+ #define SMMU_NUM_ASIDS				4
+ #define SMMU_TLB_FLUSH_VA_SECTION__MASK		0xffc00000
+ #define SMMU_TLB_FLUSH_VA_SECTION__SHIFT	12 /* right shift */
+@@ -235,7 +231,7 @@ struct smmu_as {
+  * Per SMMU device - IOMMU device
   */
+ struct smmu_device {
+-	void __iomem	*regs, *regs_ahbarb;
++	void __iomem	*regs;
+ 	unsigned long	iovmm_base;	/* remappable base address */
+ 	unsigned long	page_count;	/* total remappable size */
+ 	spinlock_t	lock;
+@@ -257,7 +253,7 @@ struct smmu_device {
+ static struct smmu_device *smmu_handle; /* unique for a system */
  
- #include <linux/kernel.h>
-+#include <linux/module.h>
- #include <linux/io.h>
- #include <linux/syscore_ops.h>
- 
-@@ -74,6 +75,9 @@
- 
- #define AHB_ARBITRATION_AHB_MEM_WRQUE_MST_ID	0xf8
- 
-+#define AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_DONE	1
-+#define AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_SHIFT	17
-+
- static inline unsigned long gizmo_readl(unsigned long offset)
+ /*
+- *	SMMU/AHB register accessors
++ *	SMMU register accessors
+  */
+ static inline u32 smmu_read(struct smmu_device *smmu, size_t offs)
  {
- 	return readl(IO_TO_VIRT(TEGRA_AHB_GIZMO_BASE + offset));
-@@ -84,6 +88,21 @@ static inline void gizmo_writel(unsigned long value, unsigned long offset)
- 	writel(value, IO_TO_VIRT(TEGRA_AHB_GIZMO_BASE + offset));
+@@ -268,15 +264,6 @@ static inline void smmu_write(struct smmu_device *smmu, u32 val, size_t offs)
+ 	writel(val, smmu->regs + offs);
  }
  
-+#ifdef CONFIG_ARCH_TEGRA_3x_SOC
-+
-+void tegra_ahb_enable_smmu(void)
-+{
-+	unsigned long val;
-+
-+	val = gizmo_readl(AHB_ARBITRATION_XBAR_CTRL);
-+	val |= AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_DONE <<
-+		AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_SHIFT;
-+	gizmo_writel(val, AHB_ARBITRATION_XBAR_CTRL);
-+}
-+EXPORT_SYMBOL(tegra_ahb_enable_smmu);
-+
-+#endif
-+
- #ifdef CONFIG_PM
+-static inline u32 ahb_read(struct smmu_device *smmu, size_t offs)
+-{
+-	return readl(smmu->regs_ahbarb + offs);
+-}
+-static inline void ahb_write(struct smmu_device *smmu, u32 val, size_t offs)
+-{
+-	writel(val, smmu->regs_ahbarb + offs);
+-}
+-
+ #define VA_PAGE_TO_PA(va, page)	\
+ 	(page_to_phys(page) + ((unsigned long)(va) & ~PAGE_MASK))
  
- struct __ahb_gizmo {
+@@ -397,11 +384,7 @@ static void smmu_setup_regs(struct smmu_device *smmu)
+ 	smmu_write(smmu, SMMU_PTC_CONFIG_RESET_VAL, SMMU_PTC_CONFIG);
+ 
+ 	smmu_flush_regs(smmu, 1);
+-
+-	val = ahb_read(smmu, AHB_XBAR_CTRL);
+-	val |= AHB_XBAR_CTRL_SMMU_INIT_DONE_DONE <<
+-		AHB_XBAR_CTRL_SMMU_INIT_DONE_SHIFT;
+-	ahb_write(smmu, val, AHB_XBAR_CTRL);
++	tegra_ahb_enable_smmu();
+ }
+ 
+ static void flush_ptc_and_tlb(struct smmu_device *smmu,
+@@ -883,7 +866,7 @@ static int tegra_smmu_resume(struct device *dev)
+ static int tegra_smmu_probe(struct platform_device *pdev)
+ {
+ 	struct smmu_device *smmu;
+-	struct resource *regs, *regs2, *window;
++	struct resource *regs, *window;
+ 	struct device *dev = &pdev->dev;
+ 	int i, err = 0;
+ 
+@@ -893,9 +876,8 @@ static int tegra_smmu_probe(struct platform_device *pdev)
+ 	BUILD_BUG_ON(PAGE_SHIFT != SMMU_PAGE_SHIFT);
+ 
+ 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	regs2 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-	window = platform_get_resource(pdev, IORESOURCE_MEM, 2);
+-	if (!regs || !regs2 || !window) {
++	window = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	if (!regs || !window) {
+ 		dev_err(dev, "No SMMU resources\n");
+ 		return -ENODEV;
+ 	}
+@@ -911,9 +893,7 @@ static int tegra_smmu_probe(struct platform_device *pdev)
+ 	smmu->iovmm_base = (unsigned long)window->start;
+ 	smmu->page_count = resource_size(window) >> SMMU_PAGE_SHIFT;
+ 	smmu->regs = devm_ioremap(dev, regs->start, resource_size(regs));
+-	smmu->regs_ahbarb = devm_ioremap(dev, regs2->start,
+-					 resource_size(regs2));
+-	if (!smmu->regs || !smmu->regs_ahbarb) {
++	if (!smmu->regs) {
+ 		dev_err(dev, "failed to remap SMMU registers\n");
+ 		err = -ENXIO;
+ 		goto fail;
+@@ -960,8 +940,6 @@ fail:
+ 		__free_page(smmu->avp_vector_page);
+ 	if (smmu->regs)
+ 		devm_iounmap(dev, smmu->regs);
+-	if (smmu->regs_ahbarb)
+-		devm_iounmap(dev, smmu->regs_ahbarb);
+ 	if (smmu && smmu->as) {
+ 		for (i = 0; i < smmu->num_as; i++) {
+ 			if (smmu->as[i].pdir_page) {
+@@ -993,8 +971,6 @@ static int tegra_smmu_remove(struct platform_device *pdev)
+ 		__free_page(smmu->avp_vector_page);
+ 	if (smmu->regs)
+ 		devm_iounmap(dev, smmu->regs);
+-	if (smmu->regs_ahbarb)
+-		devm_iounmap(dev, smmu->regs_ahbarb);
+ 	devm_kfree(dev, smmu);
+ 	smmu_handle = NULL;
+ 	return 0;
 -- 
 1.7.5.4
 
