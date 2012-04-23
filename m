@@ -1,93 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab2DWNTA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 09:19:00 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2848 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257Ab2DWNS7 (ORCPT
+	id S1755378Ab2DWNWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 09:22:12 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57609 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754995Ab2DWNWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 09:18:59 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 23 Apr 2012 06:18:58 -0700
-Message-ID: <4F95567E.3090605@nvidia.com>
-Date: Mon, 23 Apr 2012 18:47:50 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Mon, 23 Apr 2012 09:22:11 -0400
+Date: Mon, 23 Apr 2012 16:22:06 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2] Add kabs()
+Message-ID: <20120423132206.GA2516@p183.telecom.by>
+References: <20120423131106.GA27574@p183.telecom.by>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Vinod Koul <vinod.koul@linux.intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V1] dmaengine: tegra: add dma driver
-References: <1334912896-4614-1-git-send-email-ldewangan@nvidia.com> <1334920487.31825.98.camel@vkoul-udesk3> <4F9153AF.7020901@nvidia.com> <1335170491.31825.104.camel@vkoul-udesk3> <4F95483F.5020005@nvidia.com> <20120423130659.GA22186@n2100.arm.linux.org.uk>
-In-Reply-To: <20120423130659.GA22186@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120423131106.GA27574@p183.telecom.by>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 23 April 2012 06:36 PM, Russell King - ARM Linux wrote:
-> On Mon, Apr 23, 2012 at 05:47:03PM +0530, Laxman Dewangan wrote:
->> Hi Russell,
->> On Monday 23 April 2012 02:11 PM, Vinod Koul wrote:
->>> On Fri, 2012-04-20 at 17:46 +0530, Laxman Dewangan wrote:
->>>> Thanks Vinod for quick review.
->>> Since I was on vacation, I hadn't noticed Russell has already sent the
->>> patches for omap dma support.
->>> http://permalink.gmane.org/gmane.linux.ports.arm.omap/75034
->>>
->>> It would be nice if both the efforts are coordinated.
->>>
->>> Btw I like the virtual channel support introduced by Russell
->>>
->> Can you please point me the virtual channel related change? I am not
->> able to locate this like search for function vchan_* ().
->> My driver is also on same line but not used vchan_* and also having
->> support for cyclic transfer.
-> It's only been posted in RFC form on linux-arm-kernel and linux-omap
-> lists.  The specific patch is:
->
-> http://lists.arm.linux.org.uk/lurker/message/20120418.101116.082b350f.en.html
->
-> I wouldn't call it perfected yet, but usable.  It doesn't have any
-> knowledge about cyclic transfers either.
+There is abs() and abs64().
+They have following unwanted or suprising properties:
+1) They return signed value
+	in math norms et al are unsigned
 
-For simple dma, it is straight to use the virt_chan and it reduce lots 
-of code from tegra_dma as most of it moved to the virt_dma.
+2) In finest Unix tradition they do not work reliably.
+   Quoting abs(3).
+	"Trying to take the absolute value of the most negative integer is not defined."
 
-Some points which I am looking are:
-1. Extending this for cyclic support:
-In cyclic mode, we need to call callback after period_len but do not 
-want to free descriptors. So either I need to add flag on the desctiptor 
-to no delet and so when vc->desc_free(vd); is called from callback, it 
-will not delete the descriptor.
+3) They expand type needlessly
 
-2. With very prep call, we are allocating descriptor. Is it is possible 
-to allocate some desc in advance and then keep using them. The 
-complexity is that if we allocate the desc in advance, we need to 
-allocate the desc and sq_req list and maintain the two different lists 
-as we dont know the sg_len in advance.
+4) There are 2 of them with different names
+	with gcc extensions __builtin_choose_expr(),
+	__builtin_types_compatible_p() we can mimic type dispatch as found
+	in modern programming languages.
 
-3. vchan_cookie_complete()  is not possible in the cyclic mode as we 
-dont want to call dma_cookie_complete() but just want to do following 
-two thing:
+Enter kabs().
 
-list_add_tail(&vd->node, &vc->desc_completed);
-tasklet_schedule(&vc->task);
+kabs() has the following nice properties which should have been there
+from day 1.
 
-if we extend this function to bypass dma_cookie_complete(&vd->tx); or 
-rather than calling this api, directly call the above apis.
+kabs() return unsigned value.
+kabs() works for all integer types and return correct result.
+sizeof(kabs(x)) == sizeof(x)
 
+Mention kabs() in checkpatch.pl so people would gradually convert.
+abs() and abs64() will eventually dissapear.
 
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
 
+ This one will actually compile.
 
+ include/linux/kernel.h |   29 +++++++++++++++++++++++++++++
+ scripts/checkpatch.pl  |    6 ++++++
+ 2 files changed, 35 insertions(+)
 
-
-
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -188,6 +188,35 @@ extern int _cond_resched(void);
+ 		(__x < 0) ? -__x : __x;		\
+ 	})
+ 
++#define kabs(x)								\
++({									\
++	typeof(x) _x = (x);						\
++									\
++	/*								\
++	 * "char", "signed char", "unsigned char" aren't compatible	\
++	 * regardless of -f{un,}signed-char.				\
++	 */								\
++	__builtin_choose_expr(						\
++		__builtin_types_compatible_p(typeof(_x), signed char),	\
++		(unsigned char)({ _x < 0 ? -_x : _x; }),		\
++	__builtin_choose_expr(						\
++		__builtin_types_compatible_p(typeof(_x), char),		\
++		(unsigned char)({ _x < 0 ? -_x : _x; }),		\
++	__builtin_choose_expr(						\
++		__builtin_types_compatible_p(typeof(_x), short),	\
++		(unsigned short)({ _x < 0 ? -_x : _x; }),		\
++	__builtin_choose_expr(						\
++		__builtin_types_compatible_p(typeof(_x), int),		\
++		(unsigned int)({ _x < 0 ? -_x : _x; }),			\
++	__builtin_choose_expr(						\
++		__builtin_types_compatible_p(typeof(_x), long),		\
++		(unsigned long)({ _x < 0 ? -_x : _x; }),		\
++	__builtin_choose_expr(						\
++		__builtin_types_compatible_p(typeof(_x), long long),	\
++		(unsigned long long)({ _x < 0 ? -_x : _x; }),		\
++	_x))))));							\
++})
++
+ #ifdef CONFIG_PROVE_LOCKING
+ void might_fault(void);
+ #else
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3347,6 +3347,12 @@ sub process {
+ 			     "__func__ should be used instead of gcc specific __FUNCTION__\n"  . $herecurr);
+ 		}
+ 
++# check for abs(), abs64()
++		if ($line =~ /\b(abs64|abs)\s*\(/) {
++			WARN("CONSIDER_KABS",
++			     "$1 is obsolete, use kabs\n" . $herecurr);
++		}
++
+ # check for use of yield()
+ 		if ($line =~ /\byield\s*\(\s*\)/) {
+ 			WARN("YIELD",
