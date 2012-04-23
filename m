@@ -1,56 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab2DWMay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 08:30:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754483Ab2DWMaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 08:30:52 -0400
-Date: Mon, 23 Apr 2012 08:30:11 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120423123011.GA8103@redhat.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404175124.GA8931@localhost>
- <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120406095934.GA10465@localhost>
- <20120417223854.GG19975@google.com>
- <20120419142343.GA12684@localhost>
- <20120419183118.GM10216@redhat.com>
- <20120420124518.GA7133@localhost>
- <20120420192930.GR22419@redhat.com>
- <20120420213301.GA29134@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420213301.GA29134@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755346Ab2DWMbH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 08:31:07 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.180]:49872 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754483Ab2DWMbD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 08:31:03 -0400
+X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
+X-RZG-CLASS-ID: mo05
+Message-Id: <201204231230.q3NCUbbP015327@gatekeeper.vosshq.de>
+From: Nikolaus Voss <n.voss@weinmann.de>
+Date: Mon, 23 Apr 2012 12:51:23 +0200
+Subject: [PATCH] drivers/rtc/rtc-m41t93.c: don't let get_time() reset error state
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Cc: akpm@linux-foundation.org, a.zummo@towertech.it, grant.likely@secretlab.ca
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 02:33:01PM -0700, Tejun Heo wrote:
-> On Fri, Apr 20, 2012 at 03:29:30PM -0400, Vivek Goyal wrote:
-> > I am personally is not too excited about the case of putting async IO
-> > in separate groups due to the reason that async IO of one group will
-> > start impacting latencies of sync IO of another group and in practice
-> > it might not be desirable. But there are others who have use cases for
-> > separate async IO queue. So as long as switch is there to change the
-> > behavior, I am not too worried.
-> 
-> Why not just fix cfq so that it prefers groups w/ sync IOs?
+If the rtc reports the time might be invalid due to oscillator
+failure, this flags must not be reset by get_time() as the read
+operation doesn't make the time valid.
 
-Yes that could possibly be done but now that's change of requirements. Now
-we are saying that I want one buffered write to go faster than other
-buffered write only if there is no sync IO present in any of the groups.
+Instead, the flag is reset in set_time() when a valid time is
+to be written.
 
-Thanks
-Vivek
+Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+---
+ drivers/rtc/rtc-m41t93.c |   46 +++++++++++++++++++++++++++-------------------
+ 1 files changed, 27 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/rtc/rtc-m41t93.c b/drivers/rtc/rtc-m41t93.c
+index ef71132..f19f45c 100644
+--- a/drivers/rtc/rtc-m41t93.c
++++ b/drivers/rtc/rtc-m41t93.c
+@@ -48,6 +48,7 @@ static inline int m41t93_set_reg(struct spi_device *spi, u8 addr, u8 data)
+ static int m41t93_set_time(struct device *dev, struct rtc_time *tm)
+ {
+ 	struct spi_device *spi = to_spi_device(dev);
++	int tmp;
+ 	u8 buf[9] = {0x80};        /* write cmd + 8 data bytes */
+ 	u8 * const data = &buf[1]; /* ptr to first data byte */
+ 
+@@ -62,6 +63,30 @@ static int m41t93_set_time(struct device *dev, struct rtc_time *tm)
+ 		return -EINVAL;
+ 	}
+ 
++	tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
++	if (tmp < 0)
++		return tmp;
++
++	if (tmp & M41T93_FLAG_OF) {
++		dev_warn(&spi->dev, "OF bit is set, resetting.\n");
++		m41t93_set_reg(spi, M41T93_REG_FLAGS, tmp & ~M41T93_FLAG_OF);
++
++		tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
++		if (tmp < 0) {
++			return tmp;
++		} else if (tmp & M41T93_FLAG_OF) {
++			/* OF cannot be immediately reset: oscillator has to be
++			 * restarted. */
++			u8 reset_osc = buf[M41T93_REG_ST_SEC] | M41T93_FLAG_ST;
++
++			dev_warn(&spi->dev,
++				 "OF bit is still set, kickstarting clock.\n");
++			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
++			reset_osc &= ~M41T93_FLAG_ST;
++			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
++		}
++	}
++
+ 	data[M41T93_REG_SSEC]		= 0;
+ 	data[M41T93_REG_ST_SEC]		= bin2bcd(tm->tm_sec);
+ 	data[M41T93_REG_MIN]		= bin2bcd(tm->tm_min);
+@@ -89,10 +114,7 @@ static int m41t93_get_time(struct device *dev, struct rtc_time *tm)
+ 	   1. halt bit (HT) is set: the clock is running but update of readout
+ 	      registers has been disabled due to power failure. This is normal
+ 	      case after poweron. Time is valid after resetting HT bit.
+-	   2. oscillator fail bit (OF) is set. Oscillator has be stopped and
+-	      time is invalid:
+-	      a) OF can be immeditely reset.
+-	      b) OF cannot be immediately reset: oscillator has to be restarted.
++	   2. oscillator fail bit (OF) is set: time is invalid.
+ 	*/
+ 	tmp = spi_w8r8(spi, M41T93_REG_ALM_HOUR_HT);
+ 	if (tmp < 0)
+@@ -110,21 +132,7 @@ static int m41t93_get_time(struct device *dev, struct rtc_time *tm)
+ 
+ 	if (tmp & M41T93_FLAG_OF) {
+ 		ret = -EINVAL;
+-		dev_warn(&spi->dev, "OF bit is set, resetting.\n");
+-		m41t93_set_reg(spi, M41T93_REG_FLAGS, tmp & ~M41T93_FLAG_OF);
+-
+-		tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
+-		if (tmp < 0)
+-			return tmp;
+-		else if (tmp & M41T93_FLAG_OF) {
+-			u8 reset_osc = buf[M41T93_REG_ST_SEC] | M41T93_FLAG_ST;
+-
+-			dev_warn(&spi->dev,
+-				 "OF bit is still set, kickstarting clock.\n");
+-			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
+-			reset_osc &= ~M41T93_FLAG_ST;
+-			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
+-		}
++		dev_warn(&spi->dev, "OF bit is set, write time to restart.\n");
+ 	}
+ 
+ 	if (tmp & M41T93_FLAG_BL)
+-- 
+1.7.5.4
+
