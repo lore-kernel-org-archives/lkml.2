@@ -1,103 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab2DWOFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 10:05:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18811 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755439Ab2DWOE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 10:04:29 -0400
-Date: Mon, 23 Apr 2012 17:04:33 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: x86@kernel.org, kvm@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RFC 4/5] x86: eoi micro-optimization
-Message-ID: <33b3aa018de3309ce6eb1ccf51d5f91db7536fec.1334833141.git.mst@redhat.com>
-References: <cover.1334833140.git.mst@redhat.com>
+	id S1755559Ab2DWOGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 10:06:07 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:38552 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755365Ab2DWOGE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 10:06:04 -0400
+Date: Mon, 23 Apr 2012 16:05:59 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>
+Subject: Re: [PATCH] edac: rewrite edac_align_ptr()
+Message-ID: <20120423140559.GA30677@aftab.osrc.amd.com>
+References: <20120418140640.GF20813@aftab>
+ <1334773174-11332-1-git-send-email-mchehab@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1334833140.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
+In-Reply-To: <1334773174-11332-1-git-send-email-mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We know both register and value for eoi beforehand,
-so there's no need to check it and no need to do math
-to calculate the msr. Saves instructions/branches
-on each EOI when using x2apic.
+On Wed, Apr 18, 2012 at 03:19:34PM -0300, Mauro Carvalho Chehab wrote:
+> The edac_align_ptr() function is used to prepare data for a single
+> memory allocation kzalloc() call. It counts how many bytes are needed
+> by some data structure.
+> 
+> Using it as-is is not that trivial, as the quantity of memory elements
+> reserved is not there, but, instead, it is on a next call.
+> 
+> In order to avoid mistakes when using it, move the number of allocated
+> elements into it, making easier to use it.
+> 
+> Cc: Aristeu Rozanski <arozansk@redhat.com>
+> Cc: Doug Thompson <norsk5@yahoo.com>
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> ---
+> 
+> v14: fixes a badly-solved rebase conflict, uses NULL instead of 0, adds more comments
+>      and renames the counter for the number of structures to "count"
+> 
+>  drivers/edac/edac_device.c |   27 +++++++++++----------------
+>  drivers/edac/edac_mc.c     |   31 +++++++++++++++++++++++--------
+>  drivers/edac/edac_module.h |    2 +-
+>  drivers/edac/edac_pci.c    |    6 +++---
+>  4 files changed, 38 insertions(+), 28 deletions(-)
+> 
+> diff --git a/drivers/edac/edac_device.c b/drivers/edac/edac_device.c
+> index 4b15459..cb397d9 100644
+> --- a/drivers/edac/edac_device.c
+> +++ b/drivers/edac/edac_device.c
+> @@ -79,7 +79,7 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
+>  	unsigned total_size;
+>  	unsigned count;
+>  	unsigned instance, block, attr;
+> -	void *pvt;
+> +	void *pvt, *p;
+>  	int err;
+>  
+>  	debugf4("%s() instances=%d blocks=%d\n",
+> @@ -92,35 +92,30 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
+>  	 * to be at least as stringent as what the compiler would
+>  	 * provide if we could simply hardcode everything into a single struct.
+>  	 */
+> -	dev_ctl = (struct edac_device_ctl_info *)NULL;
+> +	p = NULL;
+> +	dev_ctl = edac_align_ptr(&p, sizeof(*dev_ctl), 1);
+>  
+>  	/* Calc the 'end' offset past end of ONE ctl_info structure
+>  	 * which will become the start of the 'instance' array
+>  	 */
+> -	dev_inst = edac_align_ptr(&dev_ctl[1], sizeof(*dev_inst));
+> +	dev_inst = edac_align_ptr(&p, sizeof(*dev_inst), nr_instances);
+>  
+>  	/* Calc the 'end' offset past the instance array within the ctl_info
+>  	 * which will become the start of the block array
+>  	 */
+> -	dev_blk = edac_align_ptr(&dev_inst[nr_instances], sizeof(*dev_blk));
+> +	count = nr_instances * nr_blocks;
+> +	dev_blk = edac_align_ptr(&p, sizeof(*dev_blk), count);
+>  
+>  	/* Calc the 'end' offset past the dev_blk array
+>  	 * which will become the start of the attrib array, if any.
+>  	 */
+> -	count = nr_instances * nr_blocks;
+> -	dev_attrib = edac_align_ptr(&dev_blk[count], sizeof(*dev_attrib));
+> -
+> -	/* Check for case of when an attribute array is specified */
+> -	if (nr_attrib > 0) {
+> -		/* calc how many nr_attrib we need */
+> +	/* calc how many nr_attrib we need */
+> +	if (nr_attrib > 0)
+>  		count *= nr_attrib;
+> +	dev_attrib = edac_align_ptr(&p, sizeof(*dev_attrib), count);
+>  
+> -		/* Calc the 'end' offset past the attributes array */
+> -		pvt = edac_align_ptr(&dev_attrib[count], sz_private);
+> -	} else {
+> -		/* no attribute array specificed */
+> -		pvt = edac_align_ptr(dev_attrib, sz_private);
+> -	}
+> +	/* Calc the 'end' offset past the attributes array */
+> +	pvt = edac_align_ptr(&p, sz_private, 1);
+>  
+>  	/* 'pvt' now points to where the private data area is.
+>  	 * At this point 'pvt' (like dev_inst,dev_blk and dev_attrib)
+> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+> index ffedae9..775a3ff 100644
+> --- a/drivers/edac/edac_mc.c
+> +++ b/drivers/edac/edac_mc.c
+> @@ -101,16 +101,28 @@ const char *edac_mem_types[] = {
+>  };
+>  EXPORT_SYMBOL_GPL(edac_mem_types);
+>  
+> -/* 'ptr' points to a possibly unaligned item X such that sizeof(X) is 'size'.
+> +/**
+> + * edac_align_ptr - Prepares the pointer offsets for a single-shot allocation
+> + * @p:		pointer to a pointer with the memory offset to be used. At
+> + *		return, this will be incremented to point to the next offset
+> + * @size:	Size of the data structure to be reserved
+> + * @count:	Number of elements that should be reserved
+> + *
+> + * 'ptr' points to a possibly unaligned item X such that sizeof(X) is 'size'.
 
-I checked the generated code to verify that it
-actually is shorter, but haven't done any
-performance testing. What's appropriate here
-and what kind of test makes the most sense?
+There's no 'ptr' argument anymore. Also, the text doesn't apply anymore
+since the ptr is not possibly unaligned but the returned pointer *p is
+properly aligned to size * count.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- arch/x86/include/asm/apic.h           |    5 +++++
- arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
- arch/x86/kernel/apic/x2apic_phys.c    |    2 +-
- arch/x86/kernel/apic/x2apic_uv_x.c    |    2 +-
- 4 files changed, 8 insertions(+), 3 deletions(-)
+Also, this pointer is absolutely needed to keep the proper advancing
+further in memory to the proper offsets when allocating the struct along
+with its embedded structs, as edac_device_alloc_ctl_info() does it
+above, for example.
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 74efb8d..5eb6d56 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -138,6 +138,11 @@ static inline void native_apic_msr_write(u32 reg, u32 v)
- 	wrmsr(APIC_BASE_MSR + (reg >> 4), v, 0);
- }
- 
-+static inline void native_apic_msr_eoi_write(u32 reg, u32 v)
-+{
-+	wrmsr(APIC_BASE_MSR + (APIC_EOI >> 4), APIC_EOI_ACK, 0);
-+}
-+
- static inline u32 native_apic_msr_read(u32 reg)
- {
- 	u64 msr;
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index a5baa78..ff35cff 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -260,7 +260,7 @@ static struct apic apic_x2apic_cluster = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index aac165b..06a0812 100644
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -166,7 +166,7 @@ static struct apic apic_x2apic_phys = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 5b0e3d0..c6d03f7 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -404,7 +404,7 @@ static struct apic __refdata apic_x2apic_uv_x = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
+>   * Adjust 'ptr' so that its alignment is at least as stringent as what the
+>   * compiler would provide for X and return the aligned result.
+>   *
+>   * If 'size' is a constant, the compiler will optimize this whole function
+> - * down to either a no-op or the addition of a constant to the value of 'ptr'.
+> + * down to either a no-op or the addition of a constant to the value of '*p'.
+> + *
+> + * At return, the pointer 'p' will be incremented.
+>   */
+> -void *edac_align_ptr(void *ptr, unsigned size)
+> +void *edac_align_ptr(void **p, unsigned size, int count)
+
+'count' is non-descriptive and at least ambiguous as to what it relates
+to - call it 'n_elems' instead.
+
+>  {
+>  	unsigned align, r;
+> +	void *ptr = *p;
+> +
+> +	*p += size * count;
+>  
+>  	/* Here we assume that the alignment of a "long long" is the most
+>  	 * stringent alignment that the compiler will ever provide by default.
+> @@ -132,6 +144,8 @@ void *edac_align_ptr(void *ptr, unsigned size)
+>  	if (r == 0)
+>  		return (char *)ptr;
+>  
+> +	*p += align - r;
+> +
+>  	return (void *)(((unsigned long)ptr) + align - r);
+>  }
+
+In general, this edac_align_ptr is not really helpful because it requres
+the caller to know the exact layout of the struct it allocates memory
+for and what structs it has embedded. And frankly, I don't know how much
+it would help but I hear unaligned pointers are something bad on some
+!x86 architectures.
+
+Oh well...
+
 -- 
-1.7.9.111.gf3fb0
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
