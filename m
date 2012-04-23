@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab2DWWH0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 18:07:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54431 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab2DWWHY convert rfc822-to-8bit (ORCPT
+	id S1755861Ab2DWWJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 18:09:04 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:56893 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab2DWWJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 18:07:24 -0400
+	Mon, 23 Apr 2012 18:09:01 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Miller <davem@davemloft.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>
+References: <20120423170701.c96e402234b1387dece11dda@canb.auug.org.au>
+	<4F958598.6080305@xenotime.net>
+Date: Mon, 23 Apr 2012 15:13:02 -0700
+In-Reply-To: <4F958598.6080305@xenotime.net> (Randy Dunlap's message of "Mon,
+	23 Apr 2012 09:38:48 -0700")
+Message-ID: <m1lilmt7v5.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <4F95C50C.4060203@redhat.com>
-References: <20120410090306.GA7056@richard>
-	<20120422155202.GA13540@richard>
-	<4F95B17B.3030401@redhat.com>
-	<CAE9FiQX52eL6ZFQ_X3uL5DukK03sPhByZpPh0++o6L=WF8BGXg@mail.gmail.com>
-	<4F95C50C.4060203@redhat.com>
-Date: Mon, 23 Apr 2012 15:07:23 -0700
-X-Google-Sender-Auth: u9nubek9XDJEPY88Y1g55Zv9pIA
-Message-ID: <CAE9FiQVNYC1e_cHpLqsUcTCHWhzV_w0W=hVF8vkxtadjN45CWg@mail.gmail.com>
-Subject: Re: One problem in reassign pci bus number?
-From: Yinghai Lu <yinghai@kernel.org>
-To: Don Dutile <ddutile@redhat.com>
-Cc: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18uWFnuy+tzupSkyfimOaOtqOCfjbuD27g=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  8.5 XMNoUri_00 BODY: domains not in uri format
+	*  0.1 XMSubLong Long Subject
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *****;David Miller <davem@davemloft.net>
+X-Spam-Relay-Country: 
+Subject: [PATCH] net sysctl: Add place holder functions for when sysctl support is compiled out of the kernel.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 2:09 PM, Don Dutile <ddutile@redhat.com> wrote:
-> On 04/23/2012 04:19 PM, Yinghai Lu wrote:
+
+Randy Dunlap <rdunlap@xenotime.net> reported:
+> On 04/23/2012 12:07 AM, Stephen Rothwell wrote:
+>
+>> Hi all,
 >>
->> On Mon, Apr 23, 2012 at 12:46 PM, Don Dutile<ddutile@redhat.com>  wrote:
->>>
->>> I have run into a similar problem recently when trying to use
->>> pci=assign-busses
->>> with an SRIOV device behind a non-ARI-capable PCIe switch.
->>> In this scenario, the assign-busses code assigned the next bus number,
->>> which conflicted with an existing one on the system, and hangs the
->>> system -- two bridges responding to the same PCI bus num evidently
->>> confuses the hw! ;-)
->>
->>
->> can you post boot log and lspci -vvxxx?
->>
->> Yinghai
+>> Changes since 20120420:
 >
 >
-> Attached requested logs of linux-3.4-rc2 booted on RHEL6.2 installation.
 >
-> I don't have a boot log of failing condition (pci=assign-devices)
-
-what is pci=assign-devices ? you have own local patches to handle that?
-
-or you mean pci=assign-busses?
-
-> b/c it wedges at boot, and the serial line doesn't output anything
-> even though I've tried every magic trick known with grub & kernel boot
-> params.
-> ... the PCI log btwn early boot and until the console is reconfigured is
-> 'lost'
-> on the serial line, and that's when the hang occurs.
-> It's been 'fun' to debug w/o that serial output...
+> ERROR: "unregister_net_sysctl_table" [net/phonet/phonet.ko] undefined!
+> ERROR: "register_net_sysctl" [net/phonet/phonet.ko] undefined!
 >
-> Let me know if you need something else. (lspci -t ?)
+> when CONFIG_SYSCTL is not enabled.
 
-can you check busn_alloc patchset fix the overlapping problem for you?
-It already split scan bus to two pass, also it  will double check not
-scanned peer bridges.
+Add static inline stub functions to gracefully handle the case when sysctl
+support is not present.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-pci-busn-alloc
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ include/net/net_namespace.h |   15 ++++++++++++---
+ 1 files changed, 12 insertions(+), 3 deletions(-)
 
-you can merge them to your 3.4-rc2...
+diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
+index 3ee4a3d..ac9195e 100644
+--- a/include/net/net_namespace.h
++++ b/include/net/net_namespace.h
+@@ -284,11 +284,20 @@ struct ctl_table_header;
+ 
+ #ifdef CONFIG_SYSCTL
+ extern int net_sysctl_init(void);
+-#else
+-static inline int net_sysctl_init(void) { return 0; }
+-#endif
+ extern struct ctl_table_header *register_net_sysctl(struct net *net,
+ 	const char *path, struct ctl_table *table);
+ extern void unregister_net_sysctl_table(struct ctl_table_header *header);
++#else
++static inline int net_sysctl_init(void) { return 0; }
++static inline struct ctl_table_header *register_net_sysctl(struct net *net,
++	const char *path, struct ctl_table *table)
++{
++	return NULL;
++}
++static inline void unregister_net_sysctl_table(struct ctl_table_header *header)
++{
++}
++#endif
++
+ 
+ #endif /* __NET_NET_NAMESPACE_H */
+-- 
+1.7.2.5
 
-Thanks
-
-Yinghai
