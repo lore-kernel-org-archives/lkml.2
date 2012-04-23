@@ -1,303 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab2DWN5H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 09:57:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46808 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755618Ab2DWN5C (ORCPT
+	id S1754819Ab2DWOBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 10:01:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43693 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab2DWOBg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 09:57:02 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v1 7/8] dmaengine: enhance ASYNC_TX subsystem to support DMA device hotplug
-Date: Mon, 23 Apr 2012 21:51:48 +0800
-Message-Id: <1335189109-4871-8-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
-References: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
+	Mon, 23 Apr 2012 10:01:36 -0400
+Message-ID: <1335189664.28150.142.camel@twins>
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 23 Apr 2012 16:01:04 +0200
+In-Reply-To: <4F955B02.7040304@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	   <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
+	  <1335180743.28150.119.camel@twins> <4F954757.3020003@gmail.com>
+	 <1335183740.28150.135.camel@twins> <4F955B02.7040304@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance ASYNC_TX subsystem to correctly update DMA channel reference counts,
-so it won't break DMA device hotplug logic.
+On Mon, 2012-04-23 at 15:37 +0200, Juri Lelli wrote:
+> 
+> This is what I got for that snippet:
+> 
+> ffffffff81062826 <enqueue_task_dl>:
+> [...]
+> ffffffff81062885:       49 03 44 24 20          add    0x20(%r12),%rax
+> ffffffff8106288a:       49 8b 54 24 28          mov    0x28(%r12),%rdx
+> ffffffff8106288f:       49 01 54 24 38          add    %rdx,0x38(%r12)
+> ffffffff81062894:       49 89 44 24 30          mov    %rax,0x30(%r12)
+> ffffffff81062899:       49 8b 44 24 30          mov    0x30(%r12),%rax
+> ffffffff8106289e:       48 85 c0                test   %rax,%rax
+> ffffffff810628a1:       7e e2                   jle    ffffffff81062885 <enqueue_task_dl+0x5f>
+> 
+> So it seems we are fine in this case, right?
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Yep.
+
+> It is anyway better to enforce this Gcc behaviour, just to be
+> on the safe side? 
+
+Dunno, the 'fix' is somewhat hideous (although we could make it suck
+less), we've only ever bothered with it if caused problems, so I guess
+we'll just wait and see until it breaks.
+
+
 ---
- crypto/async_tx/async_memcpy.c      |    2 ++
- crypto/async_tx/async_memset.c      |    2 ++
- crypto/async_tx/async_pq.c          |   10 ++++++++--
- crypto/async_tx/async_raid6_recov.c |    8 ++++++--
- crypto/async_tx/async_tx.c          |    6 +++---
- crypto/async_tx/async_xor.c         |   13 +++++++++----
- include/linux/async_tx.h            |   13 +++++++++++++
- include/linux/dmaengine.h           |   14 ++++++++++++++
- 8 files changed, 57 insertions(+), 11 deletions(-)
+Subject: kernel,sched,time: Clean up gcc work-arounds
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon Apr 23 15:55:48 CEST 2012
 
-diff --git a/crypto/async_tx/async_memcpy.c b/crypto/async_tx/async_memcpy.c
-index 361b5e8..0cbd90e 100644
---- a/crypto/async_tx/async_memcpy.c
-+++ b/crypto/async_tx/async_memcpy.c
-@@ -90,6 +90,8 @@ async_memcpy(struct page *dest, struct page *src, unsigned int dest_offset,
- 		async_tx_sync_epilog(submit);
- 	}
- 
-+	async_tx_put_channel(chan);
-+
- 	return tx;
- }
- EXPORT_SYMBOL_GPL(async_memcpy);
-diff --git a/crypto/async_tx/async_memset.c b/crypto/async_tx/async_memset.c
-index 58e4a87..ec568bb 100644
---- a/crypto/async_tx/async_memset.c
-+++ b/crypto/async_tx/async_memset.c
-@@ -79,6 +79,8 @@ async_memset(struct page *dest, int val, unsigned int offset, size_t len,
- 		async_tx_sync_epilog(submit);
- 	}
- 
-+	async_tx_put_channel(chan);
-+
- 	return tx;
- }
- EXPORT_SYMBOL_GPL(async_memset);
-diff --git a/crypto/async_tx/async_pq.c b/crypto/async_tx/async_pq.c
-index 91d5d38..ae2070c 100644
---- a/crypto/async_tx/async_pq.c
-+++ b/crypto/async_tx/async_pq.c
-@@ -203,6 +203,7 @@ async_gen_syndrome(struct page **blocks, unsigned int offset, int disks,
- 						      blocks, src_cnt, len);
- 	struct dma_device *device = chan ? chan->device : NULL;
- 	dma_addr_t *dma_src = NULL;
-+	struct dma_async_tx_descriptor *tx;
- 
- 	BUG_ON(disks > 255 || !(P(blocks, disks) || Q(blocks, disks)));
- 
-@@ -218,12 +219,15 @@ async_gen_syndrome(struct page **blocks, unsigned int offset, int disks,
- 		/* run the p+q asynchronously */
- 		pr_debug("%s: (async) disks: %d len: %zu\n",
- 			 __func__, disks, len);
--		return do_async_gen_syndrome(chan, blocks, raid6_gfexp, offset,
--					     disks, len, dma_src, submit);
-+		tx = do_async_gen_syndrome(chan, blocks, raid6_gfexp, offset,
-+					   disks, len, dma_src, submit);
-+		async_tx_put_channel(chan);
-+		return tx;
- 	}
- 
- 	/* run the pq synchronously */
- 	pr_debug("%s: (sync) disks: %d len: %zu\n", __func__, disks, len);
-+	async_tx_put_channel(chan);
- 
- 	/* wait for any prerequisite operations */
- 	async_tx_quiesce(&submit->depend_tx);
-@@ -331,6 +335,7 @@ async_syndrome_val(struct page **blocks, unsigned int offset, int disks,
- 			dma_async_issue_pending(chan);
- 		}
- 		async_tx_submit(chan, tx, submit);
-+		async_tx_put_channel(chan);
- 
- 		return tx;
- 	} else {
-@@ -344,6 +349,7 @@ async_syndrome_val(struct page **blocks, unsigned int offset, int disks,
- 
- 		pr_debug("%s: (sync) disks: %d len: %zu\n",
- 			 __func__, disks, len);
-+		async_tx_put_channel(chan);
- 
- 		/* caller must provide a temporary result buffer and
- 		 * allow the input parameters to be preserved
-diff --git a/crypto/async_tx/async_raid6_recov.c b/crypto/async_tx/async_raid6_recov.c
-index a9f08a6..0f54d7c 100644
---- a/crypto/async_tx/async_raid6_recov.c
-+++ b/crypto/async_tx/async_raid6_recov.c
-@@ -54,6 +54,7 @@ async_sum_product(struct page *dest, struct page **srcs, unsigned char *coef,
- 					     len, dma_flags);
- 		if (tx) {
- 			async_tx_submit(chan, tx, submit);
-+			async_tx_put_channel(chan);
- 			return tx;
- 		}
- 
-@@ -66,6 +67,7 @@ async_sum_product(struct page *dest, struct page **srcs, unsigned char *coef,
- 	}
- 
- 	/* run the operation synchronously */
-+	async_tx_put_channel(chan);
- 	async_tx_quiesce(&submit->depend_tx);
- 	amul = raid6_gfmul[coef[0]];
- 	bmul = raid6_gfmul[coef[1]];
-@@ -107,6 +109,7 @@ async_mult(struct page *dest, struct page *src, u8 coef, size_t len,
- 					     len, dma_flags);
- 		if (tx) {
- 			async_tx_submit(chan, tx, submit);
-+			async_tx_put_channel(chan);
- 			return tx;
- 		}
- 
-@@ -120,6 +123,7 @@ async_mult(struct page *dest, struct page *src, u8 coef, size_t len,
- 	/* no channel available, or failed to allocate a descriptor, so
- 	 * perform the operation synchronously
- 	 */
-+	async_tx_put_channel(chan);
- 	async_tx_quiesce(&submit->depend_tx);
- 	qmul  = raid6_gfmul[coef];
- 	d = page_address(dest);
-@@ -339,7 +343,7 @@ async_raid6_2data_recov(int disks, size_t bytes, int faila, int failb,
- 	 * available' case be sure to use the scribble buffer to
- 	 * preserve the content of 'blocks' as the caller intended.
- 	 */
--	if (!async_dma_find_channel(DMA_PQ) || !scribble) {
-+	if (!async_tx_has_capability(DMA_PQ) || !scribble) {
- 		void **ptrs = scribble ? scribble : (void **) blocks;
- 
- 		async_tx_quiesce(&submit->depend_tx);
-@@ -415,7 +419,7 @@ async_raid6_datap_recov(int disks, size_t bytes, int faila,
- 	 * available' case be sure to use the scribble buffer to
- 	 * preserve the content of 'blocks' as the caller intended.
- 	 */
--	if (!async_dma_find_channel(DMA_PQ) || !scribble) {
-+	if (!async_tx_has_capability(DMA_PQ) || !scribble) {
- 		void **ptrs = scribble ? scribble : (void **) blocks;
- 
- 		async_tx_quiesce(&submit->depend_tx);
-diff --git a/crypto/async_tx/async_tx.c b/crypto/async_tx/async_tx.c
-index 8421209..6fe6561 100644
---- a/crypto/async_tx/async_tx.c
-+++ b/crypto/async_tx/async_tx.c
-@@ -47,8 +47,8 @@ module_init(async_tx_init);
- module_exit(async_tx_exit);
- 
- /**
-- * __async_tx_find_channel - find a channel to carry out the operation or let
-- *	the transaction execute synchronously
-+ * __async_tx_find_channel - find and hold a channel to carry out the
-+ * operation or let the transaction execute synchronously
-  * @submit: transaction dependency and submission modifiers
-  * @tx_type: transaction type
+We've grown various copies of a particular gcc work-around, consolidate
+them into one and add a larger comment.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/linux/compiler.h |   12 ++++++++++++
+ include/linux/math64.h   |    4 +---
+ kernel/sched/core.c      |    8 ++------
+ kernel/sched/fair.c      |    8 ++------
+ kernel/time.c            |   11 ++++-------
+ 5 files changed, 21 insertions(+), 22 deletions(-)
+
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -310,4 +310,16 @@ void ftrace_likely_update(struct ftrace_
   */
-@@ -61,7 +61,7 @@ __async_tx_find_channel(struct async_submit_ctl *submit,
- 	/* see if we can keep the chain on one channel */
- 	if (depend_tx &&
- 	    dma_has_cap(tx_type, depend_tx->chan->device->cap_mask))
--		return depend_tx->chan;
-+		return async_dma_get_channel(depend_tx->chan);
- 	return async_dma_find_channel(tx_type);
- }
- EXPORT_SYMBOL_GPL(__async_tx_find_channel);
-diff --git a/crypto/async_tx/async_xor.c b/crypto/async_tx/async_xor.c
-index 154cc84..056e248 100644
---- a/crypto/async_tx/async_xor.c
-+++ b/crypto/async_tx/async_xor.c
-@@ -190,6 +190,7 @@ async_xor(struct page *dest, struct page **src_list, unsigned int offset,
- 						      &dest, 1, src_list,
- 						      src_cnt, len);
- 	dma_addr_t *dma_src = NULL;
-+	struct dma_async_tx_descriptor *tx = NULL;
+ #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
  
- 	BUG_ON(src_cnt <= 1);
++/*
++ * Avoid gcc loop optimization by clobbering a variable, forcing a reload
++ * and invalidating the optimization.
++ *
++ * The optimization in question transforms various loops into divisions/modulo
++ * operations, this is a problem when either the resulting operation generates
++ * unimplemented libgcc functions (u64 divisions for example) or the loop is
++ * known not to contain a lot of iterations and the division is in fact more
++ * expensive.
++ */
++#define __gcc_dont_optimize_loop(var) asm("" "+rm" (var))
++
+ #endif /* __LINUX_COMPILER_H */
+--- a/include/linux/math64.h
++++ b/include/linux/math64.h
+@@ -105,9 +105,7 @@ __iter_div_u64_rem(u64 dividend, u32 div
+ 	u32 ret = 0;
  
-@@ -202,8 +203,8 @@ async_xor(struct page *dest, struct page **src_list, unsigned int offset,
- 		/* run the xor asynchronously */
- 		pr_debug("%s (async): len: %zu\n", __func__, len);
+ 	while (dividend >= divisor) {
+-		/* The following asm() prevents the compiler from
+-		   optimising this loop into a modulo operation.  */
+-		asm("" : "+rm"(dividend));
++		__gcc_dont_optimize_loop(dividend);
  
--		return do_async_xor(chan, dest, src_list, offset, src_cnt, len,
--				    dma_src, submit);
-+		tx = do_async_xor(chan, dest, src_list, offset, src_cnt, len,
-+				  dma_src, submit);
- 	} else {
- 		/* run the xor synchronously */
- 		pr_debug("%s (sync): len: %zu\n", __func__, len);
-@@ -222,9 +223,11 @@ async_xor(struct page *dest, struct page **src_list, unsigned int offset,
- 		async_tx_quiesce(&submit->depend_tx);
+ 		dividend -= divisor;
+ 		ret++;
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -628,12 +628,8 @@ void sched_avg_update(struct rq *rq)
+ 	s64 period = sched_avg_period();
  
- 		do_sync_xor(dest, src_list, offset, src_cnt, len, submit);
--
--		return NULL;
+ 	while ((s64)(rq->clock - rq->age_stamp) > period) {
+-		/*
+-		 * Inline assembly required to prevent the compiler
+-		 * optimising this loop into a divmod call.
+-		 * See __iter_div_u64_rem() for another example of this.
+-		 */
+-		asm("" : "+rm" (rq->age_stamp));
++		__gcc_dont_optimize_loop(rq->age_stamp);
++
+ 		rq->age_stamp += period;
+ 		rq->rt_avg /= 2;
  	}
-+
-+	async_tx_put_channel(chan);
-+
-+	return tx;
- }
- EXPORT_SYMBOL_GPL(async_xor);
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -853,12 +853,8 @@ static void update_cfs_load(struct cfs_r
+ 		update_cfs_rq_load_contribution(cfs_rq, global_update);
  
-@@ -330,6 +333,8 @@ async_xor_val(struct page *dest, struct page **src_list, unsigned int offset,
- 		submit->flags = flags_orig;
+ 	while (cfs_rq->load_period > period) {
+-		/*
+-		 * Inline assembly required to prevent the compiler
+-		 * optimising this loop into a divmod call.
+-		 * See __iter_div_u64_rem() for another example of this.
+-		 */
+-		asm("" : "+rm" (cfs_rq->load_period));
++		__gcc_dont_optimize_loop(cfs_rq->load_period);
++
+ 		cfs_rq->load_period /= 2;
+ 		cfs_rq->load_avg /= 2;
  	}
- 
-+	async_tx_put_channel(chan);
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -349,17 +349,14 @@ EXPORT_SYMBOL(mktime);
+ void set_normalized_timespec(struct timespec *ts, time_t sec, s64 nsec)
+ {
+ 	while (nsec >= NSEC_PER_SEC) {
+-		/*
+-		 * The following asm() prevents the compiler from
+-		 * optimising this loop into a modulo operation. See
+-		 * also __iter_div_u64_rem() in include/linux/time.h
+-		 */
+-		asm("" : "+rm"(nsec));
++		__gcc_dont_optimize_loop(nsec);
 +
- 	return tx;
- }
- EXPORT_SYMBOL_GPL(async_xor_val);
-diff --git a/include/linux/async_tx.h b/include/linux/async_tx.h
-index a1c486a..35dea72 100644
---- a/include/linux/async_tx.h
-+++ b/include/linux/async_tx.h
-@@ -104,6 +104,10 @@ static inline void async_tx_issue_pending(struct dma_async_tx_descriptor *tx)
- 		dma->device_issue_pending(chan);
+ 		nsec -= NSEC_PER_SEC;
+ 		++sec;
  	}
- }
+ 	while (nsec < 0) {
+-		asm("" : "+rm"(nsec));
++		__gcc_dont_optimize_loop(nsec);
 +
-+#define async_tx_put_channel(c)		async_dma_put_channel(c)
-+#define async_tx_has_capability(c)	async_dma_has_capability(c)
-+
- #ifdef CONFIG_ARCH_HAS_ASYNC_TX_FIND_CHANNEL
- #include <asm/async_tx.h>
- #else
-@@ -132,6 +136,15 @@ async_tx_find_channel(struct async_submit_ctl *submit,
- {
- 	return NULL;
- }
-+
-+static inline void async_tx_put_channel(struct dma_chan *chan)
-+{
-+}
-+
-+static inline bool async_tx_has_capability(enum dma_transaction_type type)
-+{
-+	return false;
-+}
- #endif
- 
- /**
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 874f8de..99762a2 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -789,6 +789,9 @@ static inline void net_dmaengine_put(void)
- #else
- #define async_dma_find_channel(type) dma_find_channel(type)
- #endif /* CONFIG_ASYNC_TX_ENABLE_CHANNEL_SWITCH */
-+#define async_dma_get_channel(chan) dma_get_channel(chan)
-+#define async_dma_put_channel(chan) dma_put_channel(chan)
-+#define async_dma_has_capability(c) dma_has_capability(c)
- #else
- static inline void async_dmaengine_get(void)
- {
-@@ -801,6 +804,17 @@ async_dma_find_channel(enum dma_transaction_type type)
- {
- 	return NULL;
- }
-+static inline struct dma_chan *async_dma_get_channel(struct dma_chan *chan)
-+{
-+	return chan;
-+}
-+static inline void async_dma_put_channel(struct dma_chan *chan)
-+{
-+}
-+static inline bool async_dma_has_capability(enum dma_transaction_type type)
-+{
-+	return false;
-+}
- #endif /* CONFIG_ASYNC_TX_DMA */
- 
- dma_cookie_t dma_async_memcpy_buf_to_buf(struct dma_chan *chan,
--- 
-1.7.5.4
+ 		nsec += NSEC_PER_SEC;
+ 		--sec;
+ 	}
 
