@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522Ab2DWP03 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 11:26:29 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44640 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579Ab2DWP01 (ORCPT
+	id S1752738Ab2DWP1g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 11:27:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34501 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752248Ab2DWP1e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 11:26:27 -0400
-Message-ID: <4F95749E.40708@wwwdotorg.org>
-Date: Mon, 23 Apr 2012 09:26:22 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Mon, 23 Apr 2012 11:27:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="135697709"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "Liu, Jinsong" <jinsong.liu@intel.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: RE: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
+Thread-Topic: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
+Thread-Index: AQHNH3YMj31i2PR/lkqeiia+nqwVVJaljggAgAL9hUA=
+Date: Mon, 23 Apr 2012 15:27:32 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F170EF841@ORSMSX104.amr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com>
+ <20120421041454.GA29704@phenom.dumpdata.com>
+ <20120421104502.GB17005@aftab.osrc.amd.com>
+In-Reply-To: <20120421104502.GB17005@aftab.osrc.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Sourav Poddar <sourav.poddar@ti.com>
-CC: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Benoit Cousson <b-cousson@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCHv3 1/2] drivers: input: keypad: Add device tree support
-References: <1335194839-30193-1-git-send-email-sourav.poddar@ti.com>
-In-Reply-To: <1335194839-30193-1-git-send-email-sourav.poddar@ti.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 09:27 AM, Sourav Poddar wrote:
-> Update the Documentation with omap4 keypad device tree
-> binding information.
-> Add device tree support for omap4 keypad driver.
+> Because, if you'd hooked into it, just imagine one fine day, when we
+> remove mcelog support, what screaming the xen people will be doing when
+> mcelog doesn't work anymore.
 
-Shouldn't this use the already-defined matrix keyboard bindings at
-Documentation/devicetree/bindings/input/matrix-keymap.txt?
+Agreed. Even before we get to deleting mcelog, "struct mce" can change (new
+fields could be added) ... and you don't want to have your hypervisor to
+have to know which version of Linux it is talking to.
 
-(I asked this before, but don't recall seeing any response explaining
-why a new binding was needed. Sorry if I missed it.)
+-Tony
