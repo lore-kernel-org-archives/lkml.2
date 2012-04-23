@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab2DWJ2i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 05:28:38 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43462 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab2DWJ2h (ORCPT
+	id S1754128Ab2DWJa2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 05:30:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57011 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab2DWJa1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 05:28:37 -0400
-Message-ID: <4F9520BF.1010102@gmail.com>
-Date: Mon, 23 Apr 2012 11:28:31 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+	Mon, 23 Apr 2012 05:30:27 -0400
+Message-ID: <1335173405.28150.102.camel@twins>
+Subject: Re: [PATCH 03/16] sched: SCHED_DEADLINE data structures.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
         cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
         darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
         linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
@@ -22,26 +20,29 @@ CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
         luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
         paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
         liming.wang@windriver.com
-Subject: Re: [PATCH 03/16] sched: SCHED_DEADLINE data structures.
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>  <1333696481-3433-4-git-send-email-juri.lelli@gmail.com> <1335172435.28150.101.camel@twins>
-In-Reply-To: <1335172435.28150.101.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Mon, 23 Apr 2012 11:30:05 +0200
+In-Reply-To: <1333696481-3433-4-git-send-email-juri.lelli@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	 <1333696481-3433-4-git-send-email-juri.lelli@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 11:13 AM, Peter Zijlstra wrote:
-> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
->> +       if (unlikely(prio>= MAX_DL_PRIO&&  prio<  MAX_RT_PRIO))
->
-> You could write that as:
->
->   if ((unsigned)prio<  MAX_RT_PRIO)
->
+On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+>  /*
+> + * This function validates the new parameters of a -deadline task.
+> + * We ask for the deadline not being zero, and greater or equal
+> + * than the runtime.
+> + */
+> +static bool
+> +__checkparam_dl(const struct sched_param2 *prm)
+> +{
+> +       return prm && (&prm->sched_deadline) != 0 &&
+> +              (s64)(&prm->sched_deadline - &prm->sched_runtime) >= 0;
+> +} 
 
-Right, I'll do :-).
-
-Thanks,
-
-- Juri
+Shouldn't this also include deadline == period for now?
