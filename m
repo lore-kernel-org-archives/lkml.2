@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab2DWRIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 13:08:09 -0400
-Received: from haggis.mythic-beasts.com ([93.93.131.52]:55678 "EHLO
-	haggis.mythic-beasts.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab2DWRIH (ORCPT
+	id S1753755Ab2DWRJH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 13:09:07 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:19094 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754668Ab2DWRJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 13:08:07 -0400
-X-Greylist: delayed 636 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Apr 2012 13:08:07 EDT
-Subject: Fixing NFS over OpenVPN
-From: Toby Goodwin <toby@mythic-beasts.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 23 Apr 2012 17:57:28 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1335200249.5607.41.camel@rocinante.mythic-beasts.com>
-Mime-Version: 1.0
-X-BlackCat-Spam-Score: -10
-X-Mythic-Debug: Threshold =  On = 
+	Mon, 23 Apr 2012 13:09:03 -0400
+Date: Mon, 23 Apr 2012 13:03:27 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, "Liu, Jinsong" <jinsong.liu@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@amd64.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
+Message-ID: <20120423170327.GC22364@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com>
+ <20120421041454.GA29704@phenom.dumpdata.com>
+ <20120421104502.GB17005@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F170EF841@ORSMSX104.amr.corp.intel.com>
+ <4F958098.1050402@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F958098.1050402@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NFS over OpenVPN is unreliable. On systems with modest RAM, it quite
-quickly locks up in a nasty way, with unkillable processes, and the
-system unable even to shutdown or reboot. Ouch.
+On Mon, Apr 23, 2012 at 09:17:28AM -0700, H. Peter Anvin wrote:
+> On 04/23/2012 08:27 AM, Luck, Tony wrote:
+> >> Because, if you'd hooked into it, just imagine one fine day, when we
+> >> remove mcelog support, what screaming the xen people will be doing when
+> >> mcelog doesn't work anymore.
+> > 
+> > Agreed. Even before we get to deleting mcelog, "struct mce" can change (new
+> > fields could be added) ... and you don't want to have your hypervisor to
+> > have to know which version of Linux it is talking to.
+> 
+> This is a great example on the fundamental problem with Xen, or rather
+> the approach that Xen has taken of grabbing random kernel internals and
+> claiming them as APIs (or, in some cases even as ABIs.)  A lot of these
 
-I've been looking at this for some time, and have finally made some
-progress. The problem is that if the openvpn process needs any more
-kernel memory, the kernel will sometimes ask nfs to release some pages,
-nfs calls commit_inode(), which wants to write to the openvpn tunnel,
-and we have deadlock.
+I am _not_ claiming that. If I left you with that impression from my
+responses - my fault for not getting my point across (the sleep deprevation
+is probably not helping either).
 
-I believe I know how to fix this, but would appreciate some guidance.
-Part of the solution is to specify the "--mlock" flag to openvpn -- this
-exists so that secrets are never written to swap, but as a side effect
-it prevents openvpn from ever page faulting.
+I am _not_ stating that the usage of 'mce_log' or 'struct mce' MUST
+remain the same from now on. No. I am saying that the driver will be
+changed lock-step as Tony and Boris see fit in changing the functions.
 
-The other kernel allocation culprits are the sockets that openvpn holds.
-To prevent them triggering the deadlock, we need to set sk_allocation =
-GFP_NOIO. For the socket created by the tun driver it's a simple change
-to drivers/net/tun.c. (This is the socket that applications use when
-they want to communicate with the tunnel.)
+And currently the way the existing MCE drivers do this - is by using
+mce_log. This driver does is too - since the in-tree drivers do it this way.
+When they change to use a different mechanism - this driver will as well.
 
-The other socket created by openvpn is trickier, as it's just a normal
-userland AF_INET socket. (This is the socket through which OpenVPN sends
-its encrypted packets to the remote end of the tunnel.) I haven't
-discovered any way for userland to request a particular allocation
-policy for a socket, please let me know if I've missed something.
+> have had problems that are now very nearly unfixable, and that has
+> seriously stalled out the ability of evolve the Linux kernel in some
+> areas.  Note that the cost of this is borne by the development
+> community, not by the Xen maintainers.
 
-So I've added a setsockopt() call that can do it:
+The ones I know that you are unhappy about are the MMU paravirt interfaces
+and I did mention to you that once some prototype work is done and
+it showed success, I will work on removing said support.
 
---- net/core/sock.c.orig	2012-03-18 23:15:34.000000000 +0000
-+++ net/core/sock.c	2012-04-22 22:55:34.320023377 +0100
-@@ -793,6 +793,10 @@
- 		sock_valbool_flag(sk, SOCK_WIFI_STATUS, valbool);
- 		break;
- 
-+	case SO_RECURSIVE:
-+		sk->sk_allocation = GFP_NOIO;
-+		break;
-+
- 	default:
- 		ret = -ENOPROTOOPT;
- 		break;
+Why don't you send me your unhappy list so that is on my radar as well please?
 
-(I picked the SO_RECURSIVE name late at night -- suggestions for a
-better name are very welcome!)
-
-I've dealt with these three troublesome memory allocations as I've
-discovered them, and initial testing shows that I can now keep nfs over
-openvpn going, even on a system with limited memory that is also
-thrashing with a large compile.
-
-But this seems like a fragile process: I don't know if there are other
-troublespots lurking. Really I'd like openvpn to say to the kernel
-"whenever you allocate memory for me, use GFP_NOIO", but I haven't
-discovered a way to do this: none of the process flags quite seem to fit
-the bill. (I did consider PF_KSWAPD, but thought better of it. :-)
-
-Is there a better way to solve this?
-
-Thanks,
-
-Toby.
-
-
+> 
+> 	-hpa
+> 
+> -- 
+> H. Peter Anvin, Intel Open Source Technology Center
+> I work for Intel.  I don't speak on their behalf.
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
