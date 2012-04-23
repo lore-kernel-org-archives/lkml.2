@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab2DWUOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 16:14:08 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:60033 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535Ab2DWUOG (ORCPT
+	id S1754930Ab2DWUPw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 16:15:52 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60328 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753995Ab2DWUPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 16:14:06 -0400
-Date: Mon, 23 Apr 2012 16:13:53 -0400 (EDT)
-Message-Id: <20120423.161353.876914987115892015.davem@davemloft.net>
-To: gregkh@linuxfoundation.org
-Cc: sam@ravnborg.org, mmarek@suse.cz, torvalds@linux-foundation.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [GIT] modpost fix for newer toolchain
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120423201226.GA22593@kroah.com>
-References: <20120423184918.GA27862@sepie.suse.cz>
-	<20120423192201.GA18512@merkur.ravnborg.org>
-	<20120423201226.GA22593@kroah.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 23 Apr 2012 16:15:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: Sharing header files -- arch/arm/mach-generic  ?
+Date: Mon, 23 Apr 2012 20:15:41 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Pavel Machek <pavel@denx.de>, kernel list <linux-kernel@vger.kernel.org>,
+        wd@denx.de
+References: <20120423194042.GA5734@elf.ucw.cz>
+In-Reply-To: <20120423194042.GA5734@elf.ucw.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 23 Apr 2012 13:13:55 -0700 (PDT)
+Message-Id: <201204232015.41963.arnd@arndb.de>
+X-Provags-ID: V02:K0:SfCNOM6NeAH01oKl2WBzMiYFCGp5jb1eDPWfbBCy5ZZ
+ 86pMqm7M0ftTLGsnYFsF7fJFR6LTAQv5deJ0JJMZZ3B1HIsvk4
+ eifLWSYsWTvGqck+xClOsMtRPK17XFSn96j/lmIbT0o7pdYP8e
+ Phcd8Ztjtn/KkCohYZO1xHsy9BsmvbRayk0hvYxvu4rRvOoarJ
+ HRu8wgmP42xLRocqekNWoGK6/hqmWIU/nGAx92WaFcNGx/LF1x
+ h2GB2T7mqcVZRSwCvKYIjZ9oXreICiRWkujHL4Dmt9xv4QAX3g
+ Loe//4UM9OJ+d41HsXoVCZSUzXK1Ho8cy2//o943CDOIzWo1P3
+ Ill76XNavliao9Z/qWtM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
-Date: Mon, 23 Apr 2012 13:12:26 -0700
-
-> On Mon, Apr 23, 2012 at 09:22:01PM +0200, Sam Ravnborg wrote:
->> On Mon, Apr 23, 2012 at 08:49:18PM +0200, Michal Marek wrote:
->> > Hi Linus,
->> > 
->> > Please pull this modpost patch. It fixes build failure with newer gcc that adds
->> > some internal symbols that end in "__mod_*_device_table", but are not
->> > actually the tables themselves.
->> > 
->> > Michal
->> > 
->> > The following changes since commit 0eb043d0eec44cd083ea6910b1db2f77eb212ebd:
->> > 
->> >   Subject: [PATCH] tags.sh: Add missing quotes (2012-04-02 11:28:17 +0200)
->> > 
->> > are available in the git repository at:
->> > 
->> >   git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
->> > 
->> > for you to fetch changes up to e88aa7bbbe3046a125ea1936b16bb921cc9c6349:
->> > 
->> >   Fix modpost failures in fedora 17 (2012-04-18 21:42:07 +0200)
->> 
->> Hi Michal.
->> 
->> The patch missed a "Cc: stable..." as discussed in the thread about
->> said patch.
+On Monday 23 April 2012, Pavel Machek wrote:
+> I have new architecture I'd like to merge into the mainline. It has
+> some code very similar to existing plaforms (for example
+> real differences to mach-realview/platsmp.c are two lines.)
 > 
-> What is the git commit id of the patch in Linus's tree that I should add
-> to stable?
+> Is that a problem?
+> 
+> Should mach-generic/platsmp.c be created, so code can be better
+> shared? Or are the code pieces small enough that this duplication can
+> be ignored?
 
-He didn't pull this in yet, so such commit ID doesn't yet exist :-)
+Hi Pavel,
+
+I'd suggest you just post the code with the duplicate files
+for review at first, and then we can discuss what to do with them.
+As Russell mentioned, the code might not actually be ideal
+in the duplicate version so you end up rewriting it, or there
+might be a different solution that someone finds when we see the
+patches.
+
+	Arnd
