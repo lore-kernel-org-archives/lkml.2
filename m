@@ -1,109 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab2DWUMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 16:12:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37457 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754093Ab2DWUL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 16:11:59 -0400
-Date: Mon, 23 Apr 2012 16:11:31 -0400
-From: Jarod Wilson <jarod@redhat.com>
-To: Ravi Kumar V <kumarrav@codeaurora.org>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Anssi Hannula <anssi.hannula@iki.fi>,
-        "Juan J. Garcia de Soria" <skandalfo@gmail.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tsoni@codeaurora.org, davidb@codeaurora.org, bryanh@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/1] rc: Add support for GPIO based IR Receiver driver.
-Message-ID: <20120423201131.GG31244@redhat.com>
-References: <1330408300-21939-1-git-send-email-kumarrav@codeaurora.org>
+	id S1755224Ab2DWUMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 16:12:32 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:40035 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754617Ab2DWUMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 16:12:30 -0400
+Date: Mon, 23 Apr 2012 13:12:26 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>, davem@davemloft.net,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [GIT] modpost fix for newer toolchain
+Message-ID: <20120423201226.GA22593@kroah.com>
+References: <20120423184918.GA27862@sepie.suse.cz>
+ <20120423192201.GA18512@merkur.ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330408300-21939-1-git-send-email-kumarrav@codeaurora.org>
+In-Reply-To: <20120423192201.GA18512@merkur.ravnborg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 11:21:40AM +0530, Ravi Kumar V wrote:
-> Adds GPIO based IR Receiver driver. It decodes signals using decoders
-> available in rc framework.
+On Mon, Apr 23, 2012 at 09:22:01PM +0200, Sam Ravnborg wrote:
+> On Mon, Apr 23, 2012 at 08:49:18PM +0200, Michal Marek wrote:
+> > Hi Linus,
+> > 
+> > Please pull this modpost patch. It fixes build failure with newer gcc that adds
+> > some internal symbols that end in "__mod_*_device_table", but are not
+> > actually the tables themselves.
+> > 
+> > Michal
+> > 
+> > The following changes since commit 0eb043d0eec44cd083ea6910b1db2f77eb212ebd:
+> > 
+> >   Subject: [PATCH] tags.sh: Add missing quotes (2012-04-02 11:28:17 +0200)
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
+> > 
+> > for you to fetch changes up to e88aa7bbbe3046a125ea1936b16bb921cc9c6349:
+> > 
+> >   Fix modpost failures in fedora 17 (2012-04-18 21:42:07 +0200)
+> 
+> Hi Michal.
+> 
+> The patch missed a "Cc: stable..." as discussed in the thread about
+> said patch.
 
-Been meaning to look at this, but it looks like its already merged
-upstream. Just one question though, inlined below.
+What is the git commit id of the patch in Linus's tree that I should add
+to stable?
 
-> --- /dev/null
-> +++ b/drivers/media/rc/gpio-ir-recv.c
-> @@ -0,0 +1,205 @@
-> +/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/module.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/gpio.h>
-> +#include <linux/slab.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/irq.h>
-> +#include <media/rc-core.h>
-> +#include <media/gpio-ir-recv.h>
-> +
-> +#define GPIO_IR_DRIVER_NAME	"gpio-rc-recv"
-> +#define GPIO_IR_DEVICE_NAME	"gpio_ir_recv"
-> +
-> +struct gpio_rc_dev {
-> +	struct rc_dev *rcdev;
-> +	unsigned int gpio_nr;
-> +	bool active_low;
-> +};
-> +
-> +static irqreturn_t gpio_ir_recv_irq(int irq, void *dev_id)
-> +{
-> +	struct gpio_rc_dev *gpio_dev = dev_id;
-> +	unsigned int gval;
-> +	int rc = 0;
-> +	enum raw_event_type type = IR_SPACE;
-> +
-> +	gval = gpio_get_value_cansleep(gpio_dev->gpio_nr);
-> +
-> +	if (gval < 0)
-> +		goto err_get_value;
-> +
-> +	if (gpio_dev->active_low)
-> +		gval = !gval;
-> +
-> +	if (gval == 1)
-> +		type = IR_PULSE;
+thanks,
 
-What happens if gval is > 1?
-
-> +	rc = ir_raw_event_store_edge(gpio_dev->rcdev, type);
-> +	if (rc < 0)
-> +		goto err_get_value;
-> +
-> +	ir_raw_event_handle(gpio_dev->rcdev);
-> +
-> +err_get_value:
-> +	return IRQ_HANDLED;
-> +}
-
-Looks like you'll store a space any time you get gval > 1, which may or
-may not be intended here...
-
-
--- 
-Jarod Wilson
-jarod@redhat.com
-
+greg k-h
