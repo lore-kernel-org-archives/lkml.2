@@ -1,126 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab2DWWYm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 18:24:42 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:11637 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab2DWWYl (ORCPT
+	id S1755428Ab2DWW0F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 18:26:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60338 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab2DWW0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 18:24:41 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-160.messagelabs.com!1335219872!4586399!4
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor adl_pci7296 driver to remove forward declarations
-Date: Mon, 23 Apr 2012 15:24:24 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Mon, 23 Apr 2012 18:26:03 -0400
+Date: Mon, 23 Apr 2012 15:25:59 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Glauber Costa <glommer@parallels.com>
+cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        fweisbec@gmail.com, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 17/23] kmem controller charge/uncharge infrastructure
+In-Reply-To: <1335138820-26590-6-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1204231522320.13535@chino.kir.corp.google.com>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1335138820-26590-6-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201204231524.25318.hartleys@visionengravers.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the struct comedi_driver variable and the associated
-attach/detach routines to remove the need for the forward
-declarations.
+On Sun, 22 Apr 2012, Glauber Costa wrote:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> +/*
+> + * Return the kmem_cache we're supposed to use for a slab allocation.
+> + * If we are in interrupt context or otherwise have an allocation that
+> + * can't fail, we return the original cache.
+> + * Otherwise, we will try to use the current memcg's version of the cache.
+> + *
+> + * If the cache does not exist yet, if we are the first user of it,
+> + * we either create it immediately, if possible, or create it asynchronously
+> + * in a workqueue.
+> + * In the latter case, we will let the current allocation go through with
+> + * the original cache.
+> + *
+> + * This function returns with rcu_read_lock() held.
+> + */
+> +struct kmem_cache *__mem_cgroup_get_kmem_cache(struct kmem_cache *cachep,
+> +					     gfp_t gfp)
+> +{
+> +	struct mem_cgroup *memcg;
+> +	int idx;
+> +
+> +	gfp |=  cachep->allocflags;
+> +
+> +	if ((current->mm == NULL))
+> +		return cachep;
+> +
+> +	if (cachep->memcg_params.memcg)
+> +		return cachep;
+> +
+> +	idx = cachep->memcg_params.id;
+> +	VM_BUG_ON(idx == -1);
+> +
+> +	memcg = mem_cgroup_from_task(current);
+> +	if (!mem_cgroup_kmem_enabled(memcg))
+> +		return cachep;
+> +
+> +	if (rcu_access_pointer(memcg->slabs[idx]) == NULL) {
+> +		memcg_create_cache_enqueue(memcg, cachep);
+> +		return cachep;
+> +	}
+> +
+> +	return rcu_dereference(memcg->slabs[idx]);
+> +}
+> +EXPORT_SYMBOL(__mem_cgroup_get_kmem_cache);
+> +
+> +void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id)
+> +{
+> +	rcu_assign_pointer(cachep->memcg_params.memcg->slabs[id], NULL);
+> +}
+> +
+> +bool __mem_cgroup_charge_kmem(gfp_t gfp, size_t size)
+> +{
+> +	struct mem_cgroup *memcg;
+> +	bool ret = true;
+> +
+> +	rcu_read_lock();
+> +	memcg = mem_cgroup_from_task(current);
 
----
+This seems horribly inconsistent with memcg charging of user memory since 
+it charges to p->mm->owner and you're charging to p.  So a thread attached 
+to a memcg can charge user memory to one memcg while charging slab to 
+another memcg?
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci7296.c b/drivers/staging/comedi/drivers/adl_pci7296.c
-index bd18865..2bd749b 100644
---- a/drivers/staging/comedi/drivers/adl_pci7296.c
-+++ b/drivers/staging/comedi/drivers/adl_pci7296.c
-@@ -48,13 +48,6 @@ Configuration Options:
- 
- #define PCI_DEVICE_ID_PCI7296 0x7296
- 
--static DEFINE_PCI_DEVICE_TABLE(adl_pci7296_pci_table) = {
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7296) },
--	{0}
--};
--
--MODULE_DEVICE_TABLE(pci, adl_pci7296_pci_table);
--
- struct adl_pci7296_private {
- 	int data;
- 	struct pci_dev *pci_dev;
-@@ -63,16 +56,6 @@ struct adl_pci7296_private {
- #define devpriv ((struct adl_pci7296_private *)dev->private)
- 
- static int adl_pci7296_attach(struct comedi_device *dev,
--			      struct comedi_devconfig *it);
--static int adl_pci7296_detach(struct comedi_device *dev);
--static struct comedi_driver driver_adl_pci7296 = {
--	.driver_name = "adl_pci7296",
--	.module = THIS_MODULE,
--	.attach = adl_pci7296_attach,
--	.detach = adl_pci7296_detach,
--};
--
--static int adl_pci7296_attach(struct comedi_device *dev,
- 			      struct comedi_devconfig *it)
- {
- 	struct pci_dev *pcidev = NULL;
-@@ -172,6 +155,13 @@ static int adl_pci7296_detach(struct comedi_device *dev)
- 	return 0;
- }
- 
-+static struct comedi_driver driver_adl_pci7296 = {
-+	.driver_name	= "adl_pci7296",
-+	.module		= THIS_MODULE,
-+	.attach		= adl_pci7296_attach,
-+	.detach		= adl_pci7296_detach,
-+};
-+
- static int __devinit driver_adl_pci7296_pci_probe(struct pci_dev *dev,
- 						  const struct pci_device_id
- 						  *ent)
-@@ -184,10 +174,16 @@ static void __devexit driver_adl_pci7296_pci_remove(struct pci_dev *dev)
- 	comedi_pci_auto_unconfig(dev);
- }
- 
-+static DEFINE_PCI_DEVICE_TABLE(adl_pci7296_pci_table) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7296) },
-+	{0}
-+};
-+MODULE_DEVICE_TABLE(pci, adl_pci7296_pci_table);
-+
- static struct pci_driver driver_adl_pci7296_pci_driver = {
--	.id_table = adl_pci7296_pci_table,
--	.probe = &driver_adl_pci7296_pci_probe,
--	.remove = __devexit_p(&driver_adl_pci7296_pci_remove)
-+	.id_table	= adl_pci7296_pci_table,
-+	.probe		= driver_adl_pci7296_pci_probe,
-+	.remove		= __devexit_p(driver_adl_pci7296_pci_remove)
- };
- 
- static int __init driver_adl_pci7296_init_module(void)
-@@ -202,14 +198,13 @@ static int __init driver_adl_pci7296_init_module(void)
- 	    (char *)driver_adl_pci7296.driver_name;
- 	return pci_register_driver(&driver_adl_pci7296_pci_driver);
- }
-+module_init(driver_adl_pci7296_init_module);
- 
- static void __exit driver_adl_pci7296_cleanup_module(void)
- {
- 	pci_unregister_driver(&driver_adl_pci7296_pci_driver);
- 	comedi_driver_unregister(&driver_adl_pci7296);
- }
--
--module_init(driver_adl_pci7296_init_module);
- module_exit(driver_adl_pci7296_cleanup_module);
- 
- MODULE_AUTHOR("Comedi http://www.comedi.org");
+> +
+> +	if (!mem_cgroup_kmem_enabled(memcg))
+> +		goto out;
+> +
+> +	mem_cgroup_get(memcg);
+> +	ret = memcg_charge_kmem(memcg, gfp, size) == 0;
+> +	if (ret)
+> +		mem_cgroup_put(memcg);
+> +out:
+> +	rcu_read_unlock();
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(__mem_cgroup_charge_kmem);
+> +
+> +void __mem_cgroup_uncharge_kmem(size_t size)
+> +{
+> +	struct mem_cgroup *memcg;
+> +
+> +	rcu_read_lock();
+> +	memcg = mem_cgroup_from_task(current);
+> +
+> +	if (!mem_cgroup_kmem_enabled(memcg))
+> +		goto out;
+> +
+> +	mem_cgroup_put(memcg);
+> +	memcg_uncharge_kmem(memcg, size);
+> +out:
+> +	rcu_read_unlock();
+> +}
+> +EXPORT_SYMBOL(__mem_cgroup_uncharge_kmem);
