@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab2DWKD5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:03:57 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:60652 "EHLO
+	id S1754800Ab2DWKEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:04:08 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:60688 "EHLO
 	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273Ab2DWKDz (ORCPT
+	with ESMTP id S1754273Ab2DWKEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:03:55 -0400
+	Mon, 23 Apr 2012 06:04:05 -0400
 X-SENDER-IP: [85.230.169.225]
 X-LISTENER: [smtp.bredband.net]
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArldAAQolU9V5qnhPGdsb2JhbABEiiqnGRkBAQEBHhkNJ4IKAQUnLxMBDxAIETg5ChQGE4gTuXQTkSAEm32NJg
+X-IronPort-Anti-Spam-Result: ArldAMcnlU9V5qnhPGdsb2JhbABEiiqnGRkBAQEBHhkNJ4IKAQUnLxMBDxAIETg5ChQGExuHeLl0E5EgBJt9jSY
 X-IronPort-AV: E=Sophos;i="4.75,466,1330902000"; 
-   d="scan'208";a="318165865"
+   d="scan'208";a="23553297"
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Jiri Kosina <jkosina@suse.cz>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH v2 1/6] hid: Add device group to modalias
-Date: Mon, 23 Apr 2012 12:07:02 +0200
-Message-Id: <1335175627-2270-2-git-send-email-rydberg@euromail.se>
+Subject: [PATCH 2/6] hid: Scan the device for group info before adding it
+Date: Mon, 23 Apr 2012 12:07:03 +0200
+Message-Id: <1335175627-2270-3-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
 References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
@@ -27,135 +27,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HID devices are only partially presented to userland.  Hotplugged
-devices emit events containing a modalias based on the basic bus,
-vendor and product entities. However, in practise a hid device can
-depend on details such as a single usb interface or a particular item
-in a report descriptor.
-
-This patch adds a device group to the hid device id, and broadcasts it
-using uevent and the device modalias.  The module alias generation is
-modified to match. As a consequence, a device with a non-zero group
-will be processed by the corresponding group driver instead of by the
-generic hid driver.
+In order to allow the report descriptor to influence the hid device
+properties, one needs to parse the descriptor early, without reference
+to any driver. Scan the descriptor for group information during device
+add, before the device has been broadcast to userland. The device
+modalias will contain group information which can be used to
+differentiate between modules. For starters, just handle the generic
+group.
 
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/hid/hid-core.c          |   24 ++++++++++++++++++++++--
- include/linux/hid.h             |    1 +
- include/linux/mod_devicetable.h |    3 ++-
- scripts/mod/file2alias.c        |    2 ++
- 4 files changed, 27 insertions(+), 3 deletions(-)
+ drivers/hid/hid-core.c |   62 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/hid.h    |    5 ++++
+ 2 files changed, 67 insertions(+)
 
 diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 9ed4ff3..cfcb69e 100644
+index cfcb69e..f932cd5 100644
 --- a/drivers/hid/hid-core.c
 +++ b/drivers/hid/hid-core.c
-@@ -1222,6 +1222,7 @@ static bool hid_match_one_id(struct hid_device *hdev,
- 		const struct hid_device_id *id)
- {
- 	return id->bus == hdev->bus &&
-+		(id->group == HID_GROUP_ANY || id->group == hdev->group) &&
- 		(id->vendor == HID_ANY_ID || id->vendor == hdev->vendor) &&
- 		(id->product == HID_ANY_ID || id->product == hdev->product);
- }
-@@ -1694,6 +1695,7 @@ static ssize_t store_new_id(struct device_driver *drv, const char *buf,
- 		return -ENOMEM;
- 
- 	dynid->id.bus = bus;
-+	dynid->id.group = HID_GROUP_ANY;
- 	dynid->id.vendor = vendor;
- 	dynid->id.product = product;
- 	dynid->id.driver_data = driver_data;
-@@ -1817,6 +1819,23 @@ static int hid_device_remove(struct device *dev)
- 	return 0;
+@@ -658,6 +658,58 @@ static u8 *fetch_item(__u8 *start, __u8 *end, struct hid_item *item)
+ 	return NULL;
  }
  
-+static ssize_t modalias_show(struct device *dev, struct device_attribute *a,
-+			     char *buf)
++static void hid_scan_usage(struct hid_device *hid, u32 usage)
 +{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	int len;
-+
-+	len = snprintf(buf, PAGE_SIZE, "hid:b%04Xg%04Xv%08Xp%08X\n",
-+		       hdev->bus, hdev->group, hdev->vendor, hdev->product);
-+
-+	return (len >= PAGE_SIZE) ? (PAGE_SIZE - 1) : len;
 +}
 +
-+static struct device_attribute hid_dev_attrs[] = {
-+	__ATTR_RO(modalias),
-+	__ATTR_NULL,
-+};
++/*
++ * Scan a report descriptor before the device is added to the bus.
++ * Sets device groups and other properties that determine what driver
++ * to load.
++ */
++static int hid_scan_report(struct hid_device *hid)
++{
++	unsigned int page = 0, delim = 0;
++	__u8 *start = hid->dev_rdesc;
++	__u8 *end = start + hid->dev_rsize;
++	unsigned int u, u_min = 0, u_max = 0;
++	struct hid_item item;
 +
- static int hid_uevent(struct device *dev, struct kobj_uevent_env *env)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-@@ -1834,8 +1853,8 @@ static int hid_uevent(struct device *dev, struct kobj_uevent_env *env)
- 	if (add_uevent_var(env, "HID_UNIQ=%s", hdev->uniq))
- 		return -ENOMEM;
++	hid->group = HID_GROUP_GENERIC;
++	while ((start = fetch_item(start, end, &item)) != NULL) {
++		if (item.format != HID_ITEM_FORMAT_SHORT)
++			return -EINVAL;
++		if (item.type == HID_ITEM_TYPE_GLOBAL) {
++			if (item.tag == HID_GLOBAL_ITEM_TAG_USAGE_PAGE)
++				page = item_udata(&item) << 16;
++		} else if (item.type == HID_ITEM_TYPE_LOCAL) {
++			if (delim > 1)
++				break;
++			u = item_udata(&item);
++			if (item.size <= 2)
++				u += page;
++			switch (item.tag) {
++			case HID_LOCAL_ITEM_TAG_DELIMITER:
++				delim += !!u;
++				break;
++			case HID_LOCAL_ITEM_TAG_USAGE:
++				hid_scan_usage(hid, u);
++				break;
++			case HID_LOCAL_ITEM_TAG_USAGE_MINIMUM:
++				u_min = u;
++				break;
++			case HID_LOCAL_ITEM_TAG_USAGE_MAXIMUM:
++				u_max = u;
++				for (u = u_min; u <= u_max; u++)
++					hid_scan_usage(hid, u);
++				break;
++			}
++		}
++	}
++
++	return 0;
++}
++
+ /**
+  * hid_parse_report - parse device report
+  *
+@@ -2171,6 +2223,16 @@ int hid_add_device(struct hid_device *hdev)
+ 	if (!hdev->dev_rdesc)
+ 		return -ENODEV;
  
--	if (add_uevent_var(env, "MODALIAS=hid:b%04Xv%08Xp%08X",
--			hdev->bus, hdev->vendor, hdev->product))
-+	if (add_uevent_var(env, "MODALIAS=hid:b%04Xg%04Xv%08Xp%08X",
-+			   hdev->bus, hdev->group, hdev->vendor, hdev->product))
- 		return -ENOMEM;
- 
- 	return 0;
-@@ -1843,6 +1862,7 @@ static int hid_uevent(struct device *dev, struct kobj_uevent_env *env)
- 
- static struct bus_type hid_bus_type = {
- 	.name		= "hid",
-+	.dev_attrs	= hid_dev_attrs,
- 	.match		= hid_bus_match,
- 	.probe		= hid_device_probe,
- 	.remove		= hid_device_remove,
++	/*
++	 * Scan generic devices for group information
++	 */
++	if (hid_ignore_special_drivers ||
++	    !hid_match_id(hdev, hid_have_special_driver)) {
++		ret = hid_scan_report(hdev);
++		if (ret)
++			hid_warn(hdev, "bad device descriptor (%d)\n", ret);
++	}
++
+ 	/* XXX hack, any other cleaner solution after the driver core
+ 	 * is converted to allow more than 20 bytes as the device name? */
+ 	dev_set_name(&hdev->dev, "%04X:%04X:%04X.%04X", hdev->bus,
 diff --git a/include/linux/hid.h b/include/linux/hid.h
-index d8e7cc7..a0e27dd 100644
+index a0e27dd..f45d33d 100644
 --- a/include/linux/hid.h
 +++ b/include/linux/hid.h
-@@ -476,6 +476,7 @@ struct hid_device {							/* device report descriptor */
- 	unsigned maxcollection;						/* Number of parsed collections */
- 	unsigned maxapplication;					/* Number of applications */
- 	__u16 bus;							/* BUS ID */
-+	__u16 group;							/* Report group */
- 	__u32 vendor;							/* Vendor ID */
- 	__u32 product;							/* Product ID */
- 	__u32 version;							/* HID version */
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index 501da4c..55ed0b0 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -132,10 +132,11 @@ struct usb_device_id {
- #define USB_DEVICE_ID_MATCH_INT_PROTOCOL	0x0200
+@@ -325,6 +325,11 @@ struct hid_item {
+ #define HID_QUIRK_NO_INPUT_SYNC			0x80000000
  
- #define HID_ANY_ID				(~0)
-+#define HID_GROUP_ANY				0x0000
- 
- struct hid_device_id {
- 	__u16 bus;
--	__u16 pad1;
-+	__u16 group;
- 	__u32 vendor;
- 	__u32 product;
- 	kernel_ulong_t driver_data
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index 8e730cc..fe967ce 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -336,10 +336,12 @@ static int do_hid_entry(const char *filename,
- 			     struct hid_device_id *id, char *alias)
- {
- 	id->bus = TO_NATIVE(id->bus);
-+	id->group = TO_NATIVE(id->group);
- 	id->vendor = TO_NATIVE(id->vendor);
- 	id->product = TO_NATIVE(id->product);
- 
- 	sprintf(alias, "hid:b%04X", id->bus);
-+	ADD(alias, "g", id->group != HID_GROUP_ANY, id->group);
- 	ADD(alias, "v", id->vendor != HID_ANY_ID, id->vendor);
- 	ADD(alias, "p", id->product != HID_ANY_ID, id->product);
- 
+ /*
++ * HID device groups
++ */
++#define HID_GROUP_GENERIC			0x0001
++
++/*
+  * This is the global environment of the parser. This information is
+  * persistent for main-items. The global environment can be saved and
+  * restored with PUSH/POP statements.
 -- 
 1.7.10
 
