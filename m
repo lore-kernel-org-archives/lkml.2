@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab2DWQRX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:17:23 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:36992 "EHLO e2.ny.us.ibm.com"
+	id S1754009Ab2DWQRr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:17:47 -0400
+Received: from mga11.intel.com ([192.55.52.93]:33373 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753699Ab2DWQRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:17:20 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 4/4] rcu: Ensure that RCU_FAST_NO_HZ timers expire on correct CPU
-Date: Mon, 23 Apr 2012 09:16:01 -0700
-Message-Id: <1335197761-6577-4-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1335197761-6577-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120423161539.GA6467@linux.vnet.ibm.com>
- <1335197761-6577-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042316-5112-0000-0000-00000756476B
+	id S1753649Ab2DWQRP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 12:17:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="157154835"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Borislav Petkov <bp@amd64.org>, "Liu, Jinsong" <jinsong.liu@intel.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: RE: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
+Thread-Topic: [Xen-devel] [PATCH 1/3] Add mcelog support for xen platform
+Thread-Index: AQHNH3YMj31i2PR/lkqeiia+nqwVVJaljggAgAL9hUCAAHdtAP//ln5w
+Date: Mon, 23 Apr 2012 16:17:14 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F170EF914@ORSMSX104.amr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335154EFC@SHSMSX101.ccr.corp.intel.com>
+ <20120421041454.GA29704@phenom.dumpdata.com>
+ <20120421104502.GB17005@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F170EF841@ORSMSX104.amr.corp.intel.com>
+ <20120423153222.GE24481@phenom.dumpdata.com>
+In-Reply-To: <20120423153222.GE24481@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> This driver is _not_ doing a strict bit-by-bit copy of 'struct mcinfo'
+> to 'struct mce'. It is plucking the right bits and setting them in
+> 'struct mce'.
 
-Timers are subject to migration, which can lead to the following
-system-hang scenario when CONFIG_RCU_FAST_NO_HZ=y:
+That isn't any worse that what we currently have ... but what we currently
+have is ugly, and doing more ugly things just because we did them before
+generally isn't a winning argument on the mailing lists.
 
-1.	CPU 0 executes synchronize_rcu(), which posts an RCU callback.
-
-2.	CPU 0 then goes idle.  It cannot immediately invoke the callback,
-	but there is nothing RCU needs from ti, so it enters dyntick-idle
-	mode after posting a timer.
-
-3.	The timer gets migrated to CPU 1.
-
-4.	CPU 0 never wakes up, so the synchronize_rcu() never returns, so
-	the system hangs.
-
-This commit fixes this problem by using add_timer_on() to ensure that
-the timer remains on the CPU that posted it.
-
-Reported-by: Dipankar Sarma <dipankar@in.ibm.com>
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutree_plugin.h |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 50c1797..90b3de5 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -2109,6 +2109,8 @@ static void rcu_cleanup_after_idle(int cpu)
-  */
- static void rcu_prepare_for_idle(int cpu)
- {
-+	struct timer_list *tp;
-+
- 	/*
- 	 * If this is an idle re-entry, for example, due to use of
- 	 * RCU_NONIDLE() or the new idle-loop tracing API within the idle
-@@ -2120,9 +2122,11 @@ static void rcu_prepare_for_idle(int cpu)
- 	if (!per_cpu(rcu_idle_first_pass, cpu) &&
- 	    (per_cpu(rcu_nonlazy_posted, cpu) ==
- 	     per_cpu(rcu_nonlazy_posted_snap, cpu))) {
--		if (rcu_cpu_has_callbacks(cpu))
--			mod_timer(&per_cpu(rcu_idle_gp_timer, cpu),
--				  per_cpu(rcu_idle_gp_timer_expires, cpu));
-+		if (rcu_cpu_has_callbacks(cpu)) {
-+			tp = &per_cpu(rcu_idle_gp_timer, cpu);
-+			tp->expires = per_cpu(rcu_idle_gp_timer_expires, cpu);
-+			add_timer_on(tp, cpu);
-+		}
- 		return;
- 	}
- 	per_cpu(rcu_idle_first_pass, cpu) = 0;
-@@ -2166,8 +2170,9 @@ static void rcu_prepare_for_idle(int cpu)
- 		else
- 			per_cpu(rcu_idle_gp_timer_expires, cpu) =
- 					   jiffies + RCU_IDLE_LAZY_GP_DELAY;
--		mod_timer(&per_cpu(rcu_idle_gp_timer, cpu),
--			  per_cpu(rcu_idle_gp_timer_expires, cpu));
-+		tp = &per_cpu(rcu_idle_gp_timer, cpu);
-+		tp->expires = per_cpu(rcu_idle_gp_timer_expires, cpu);
-+		add_timer_on(tp, cpu);
- 		per_cpu(rcu_nonlazy_posted_snap, cpu) =
- 			per_cpu(rcu_nonlazy_posted, cpu);
- 		return; /* Nothing more to do immediately. */
--- 
-1.7.8
-
+-Tony
