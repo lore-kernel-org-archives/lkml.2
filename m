@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab2DWTGb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 15:06:31 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:45563 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab2DWTG3 (ORCPT
+	id S1755102Ab2DWTIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 15:08:15 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33282 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab2DWTIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 15:06:29 -0400
-Date: Mon, 23 Apr 2012 14:06:22 -0500
-From: Malahal Naineni <malahal@us.ibm.com>
-To: Steve Dickson <SteveD@redhat.com>
-Cc: Jeff Layton <jlayton@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        miklos@szeredi.hu, viro@ZenIV.linux.org.uk, hch@infradead.org,
-        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
-        chuck.lever@oracle.com, pstaubach@exagrid.com, bfields@fieldses.org,
-        trond.myklebust@fys.uio.no, rees@umich.edu
-Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
- from getattr call
-Message-ID: <20120423190622.GA1175@us.ibm.com>
-Mail-Followup-To: Steve Dickson <SteveD@redhat.com>,
-	Jeff Layton <jlayton@redhat.com>, linux-fsdevel@vger.kernel.org,
-	linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-	miklos@szeredi.hu, viro@ZenIV.linux.org.uk, hch@infradead.org,
-	michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
-	chuck.lever@oracle.com, pstaubach@exagrid.com, bfields@fieldses.org,
-	trond.myklebust@fys.uio.no, rees@umich.edu
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
- <1334749927-26138-1-git-send-email-jlayton@redhat.com>
- <20120420104055.511e15bc@tlielax.poochiereds.net>
- <4F91C49D.8070908@RedHat.com>
- <20120420171300.326d6e36@corrin.poochiereds.net>
- <4F956D5C.5050801@RedHat.com>
+	Mon, 23 Apr 2012 15:08:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F956D5C.5050801@RedHat.com>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042319-4242-0000-0000-0000016E2A0F
+Date: Mon, 23 Apr 2012 12:08:13 -0700
+Message-ID: <CAMe9rOqy4g9QeOC7xWRmi3Wr=97qbUXm1G69pWgdcfykJQgMPQ@mail.gmail.com>
+Subject: Incomplete cherry-pick on linux-3.3.y branch
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steve Dickson [SteveD@redhat.com] wrote:
-> > Returning ESTALERETRY would be registering for it in a way and it is
-> > somewhat cleaner than having to go all the way back up to the fstype to
-> > figure out whether you want to retry it or not.
-> How would legacy apps handle this new errno, esp if they have logic
-> to take care of ESTALE errors?
-> 
-> steved.
+Hi,
 
-As I understand, there is no new errno for the apps. This new
-ESTALERETRY is produced and consumed by kernel only.
+This cherry-pick commit:
 
+http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commit;h=1cb41fe7e34a43a1d27dfdb6d65699786dd44c20
+
+doesn't work on 3.3 branch since it misses other commits
+required.  On 3.3 branch, there are
+
+struct hist_entry *__hists__add_entry(struct hists *hists,
+                                      struct addr_location *al,
+                                      struct symbol *sym_parent, u64 period)
+{
+        struct rb_node **p;
+        struct rb_node *parent = NULL;
+        struct hist_entry *he;
+        struct hist_entry entry = {
+                .thread = al->thread,
+
+It doesn't work with
+
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index e11e482..a47a6f1 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -230,6 +230,18 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 		if (!cmp) {
+ 			he->period += period;
+ 			++he->nr_events;
++
++			/* If the map of an existing hist_entry has
++			 * become out-of-date due to an exec() or
++			 * similar, update it.  Otherwise we will
++			 * mis-adjust symbol addresses when computing
++			 * the history counter to increment.
++			 */
++			if (he->ms.map != entry->ms.map) {
++				he->ms.map = entry->ms.map;
++				if (he->ms.map)
++					he->ms.map->referenced = true;
++			}
+ 			goto out;
+ 		}
+
+since entry isn't a pointer on 3.3 branch.
+
+
+-- 
+H.J.
