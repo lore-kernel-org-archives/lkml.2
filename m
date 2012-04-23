@@ -1,99 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab2DWQaI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:30:08 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:41223 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753814Ab2DWQaG (ORCPT
+	id S1753876Ab2DWQb1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:31:27 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45587 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab2DWQbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:30:06 -0400
-Subject: Patch "Perf: fix build breakage" has been added to the 3.3-stable tree
-To: zeev.tarantov@gmail.com, acme@redhat.com, davem@davemloft.net,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
-From: <gregkh@linuxfoundation.org>
-Date: Mon, 23 Apr 2012 09:29:52 -0700
-In-Reply-To: <20120423063704.GA3465@myhost>
-Message-ID: <13351985923099@kroah.org>
+	Mon, 23 Apr 2012 12:31:25 -0400
+Message-ID: <4F9583DA.2090107@wwwdotorg.org>
+Date: Mon, 23 Apr 2012 10:31:22 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ASCII
-Content-Transfer-Encoding: 8bit
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: Initialize pll_p_out1
+References: <1335169910-29403-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1335169910-29403-1-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/23/2012 02:31 AM, Peter De Schrijver wrote:
+> pll_a uses pll_p_out1 as its parent. Therefore this clock needs to be
+> initialized to make sure pll_a has a known input clock. Failure to do so
+> will cause the system to crash early in the bootup.
+> 
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 
-This is a note to let you know that I've just added the patch titled
+Thanks, applied.
 
-    Perf: fix build breakage
-
-to the 3.3-stable tree which can be found at:
-    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
-
-The filename of the patch is:
-     perf-fix-build-breakage.patch
-and it can be found in the queue-3.3 subdirectory.
-
-If you, or anyone else, feels it should not be added to the stable tree,
-please let <stable@vger.kernel.org> know about it.
+> --
+> 
+> Changes in v2:
 
 
->From zeev.tarantov@gmail.com Sun Apr 22 23:38:36 2012
-From: Zeev Tarantov <zeev.tarantov@gmail.com>
-Date: Mon, 23 Apr 2012 09:37:04 +0300
-Subject: Perf: fix build breakage
-To: "David S. Miller" <davem@davemloft.net>, Arnaldo Carvalho de Melo <acme@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <20120423063704.GA3465@myhost>
-Content-Disposition: inline
-
-
-From: Zeev Tarantov <zeev.tarantov@gmail.com>
-
-[Patch not needed upstream as this is a backport build bugfix - gregkh
-
-gcc correctly complains:
-
-util/hist.c: In function ‘__hists__add_entry’:
-util/hist.c:240:27: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
-util/hist.c:241:23: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
-
-for this new code:
-
-+                       if (he->ms.map != entry->ms.map) {
-+                               he->ms.map = entry->ms.map;
-+                               if (he->ms.map)
-+                                       he->ms.map->referenced = true;
-+                       }
-
-because "entry" is a "struct hist_entry", not a pointer to a struct.
-
-In mainline, "entry" is a pointer to struct passed as argument to the function.
-So this is broken during backporting. But obviously not compile tested.
-
-Signed-off-by: Zeev Tarantov <zeev.tarantov@gmail.com>
-Cc: Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- tools/perf/util/hist.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -237,8 +237,8 @@ struct hist_entry *__hists__add_entry(st
- 			 * mis-adjust symbol addresses when computing
- 			 * the history counter to increment.
- 			 */
--			if (he->ms.map != entry->ms.map) {
--				he->ms.map = entry->ms.map;
-+			if (he->ms.map != entry.ms.map) {
-+				he->ms.map = entry.ms.map;
- 				if (he->ms.map)
- 					he->ms.map->referenced = true;
- 			}
-
-
-Patches currently in stable-queue which might be from zeev.tarantov@gmail.com are
-
-queue-3.3/perf-fix-build-breakage.patch
+BTW, that "--" needs to be "---" if you don't intend the changelog to
+end up in git when I apply the patch.
