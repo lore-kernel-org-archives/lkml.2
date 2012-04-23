@@ -1,350 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab2DWKPN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 06:15:13 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:39825 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753Ab2DWKPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 06:15:10 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org, KVM <kvm@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        X86 <x86@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Xen <xen-devel@lists.xensource.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Date: Mon, 23 Apr 2012 15:30:23 +0530
-Message-Id: <20120423100023.30893.53020.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com>
-References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH RFC V6 4/5] kvm : pv-ticketlocks support for linux guests running on KVM hypervisor
-x-cbid: 12042310-9574-0000-0000-00000251E9AC
+	id S1754920Ab2DWKPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 06:15:30 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:56621 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754591Ab2DWKP1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 06:15:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <1334661441-4420-4-git-send-email-jolsa@redhat.com>
+References: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
+	<1334661441-4420-4-git-send-email-jolsa@redhat.com>
+Date: Mon, 23 Apr 2012 12:15:25 +0200
+Message-ID: <CABPqkBSupk4vizQ0t2CsgbNUtZLrQtKbSaLicO+hiXOfK52zQA@mail.gmail.com>
+Subject: Re: [PATCH 03/16] perf: Add ability to dump user regs
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, rostedt@goodmis.org,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+On Tue, Apr 17, 2012 at 1:17 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> Add new attr->user_regs bitmap that lets a user choose a set
+> of user registers to dump to the sample. The layout of this
+> bitmap is described in asm/perf_regs.h for archs that
+> support register dump.
+>
+> The perf syscall will fail if attr->user_regs is non zero.
+>
+> The register value here are those of the user space context as
+> it was before the user entered the kernel for whatever reason
+> (syscall, irq, exception, or a PMI happening in userspace).
+>
+> This is going to be useful to bring Dwarf CFI based stack unwinding
+> on top of samples.
+>
+> TODO handle compat tasks
+>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  include/linux/perf_event.h |    8 +++++
+>  kernel/events/core.c       |   63 ++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 71 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index ddbb6a9..c63b807 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -272,6 +272,12 @@ struct perf_event_attr {
+>                __u64           config2; /* extension of config1 */
+>        };
+>        __u64   branch_sample_type; /* enum branch_sample_type */
+> +
+> +       /*
+> +        * Arch specific mask that defines a set of user regs to dump on
+> +        * samples. See asm/perf_regs.h for details.
+> +        */
+> +       __u64                   user_regs;
+>  };
+>
+Don't like the name of the field too much. You be more explicit.
+Something like user_sample_regs.
 
-During smp_boot_cpus  paravirtualied KVM guest detects if the hypervisor has
-required feature (KVM_FEATURE_PV_UNHALT) to support pv-ticketlocks. If so,
- support for pv-ticketlocks is registered via pv_lock_ops.
+>  /*
+> @@ -608,6 +614,7 @@ struct perf_guest_info_callbacks {
+>  #include <linux/atomic.h>
+>  #include <linux/sysfs.h>
+>  #include <asm/local.h>
+> +#include <asm/perf_regs.h>
+>
+>  #define PERF_MAX_STACK_DEPTH           255
+>
+> @@ -1130,6 +1137,7 @@ struct perf_sample_data {
+>        struct perf_callchain_entry     *callchain;
+>        struct perf_raw_record          *raw;
+>        struct perf_branch_stack        *br_stack;
+> +       struct pt_regs                  *uregs;
+>  };
+>
+>  static inline void perf_sample_data_init(struct perf_sample_data *data, u64 addr)
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index a6a9ec4..9f29fc3 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -3751,6 +3751,37 @@ int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs)
+>  }
+>  EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
+>
+> +static void
+> +perf_output_sample_regs(struct perf_output_handle *handle,
+> +                       struct pt_regs *regs, u64 mask)
+> +{
+> +       int i = 0;
+> +
+> +       do {
+> +               u64 val;
+> +
+> +               if (mask & 1) {
+> +                       val = perf_reg_value(regs, i);
+> +                       perf_output_put(handle, val);
+> +               }
+> +
+> +               mask >>= 1;
+> +               i++;
+> +       } while (mask);
+> +}
+> +
+> +static struct pt_regs *perf_sample_uregs(struct pt_regs *regs)
+> +{
+> +       if (!user_mode(regs)) {
+> +               if (current->mm)
+> +                       regs = task_pt_regs(current);
+> +               else
+> +                       regs = NULL;
+> +       }
+> +
+> +       return regs;
+> +}
+> +
+You are assuming the user app is running the same ABI than that of the
+kernel. That's not correct on X86 and possibly other architectures.
 
-Use KVM_HC_KICK_CPU hypercall to wakeup waiting/halted vcpu.
+>  static void __perf_event_header__init_id(struct perf_event_header *header,
+>                                         struct perf_sample_data *data,
+>                                         struct perf_event *event)
+> @@ -4011,6 +4042,21 @@ void perf_output_sample(struct perf_output_handle *handle,
+>                        perf_output_put(handle, nr);
+>                }
+>        }
+> +
+> +       if (event->attr.user_regs) {
+> +               u64 id;
+> +
+> +               /*
+> +                * If there are no regs to dump, notice it through a
+> +                * PERF_REGS_VERSION_NONE version.
+> +                */
+> +               id = data->uregs ? perf_reg_version() : PERF_REGS_VERSION_NONE;
+> +               perf_output_put(handle, id);
+> +
+> +               if (id)
+> +                       perf_output_sample_regs(handle, data->uregs,
+> +                                               event->attr.user_regs);
+> +       }
+>  }
+>
+>  void perf_prepare_sample(struct perf_event_header *header,
+> @@ -4062,6 +4108,16 @@ void perf_prepare_sample(struct perf_event_header *header,
+>                }
+>                header->size += size;
+>        }
+> +
+> +       if (event->attr.user_regs) {
+> +               int size = sizeof(u64); /* the version size */
+> +
+> +               data->uregs = perf_sample_uregs(regs);
+> +               if (data->uregs)
+> +                       size += hweight64(event->attr.user_regs) * sizeof(u64);
+> +
+> +               header->size += size;
+> +       }
+>  }
+>
+>  static void perf_event_output(struct perf_event *event,
+> @@ -6112,6 +6168,13 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+>                        attr->branch_sample_type = mask;
+>                }
+>        }
+> +
+> +       /*
+> +        * Don't let throught invalid register mask (i.e. the architecture
+> +        * does not support register dump at all).
+> +        */
+> +       ret = perf_reg_validate(attr->user_regs);
+> +
+Again, how do you deal with 32-bit apps vs. 64-bit kernel?
 
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 5b647ea..77266d3 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -195,10 +195,20 @@ void kvm_async_pf_task_wait(u32 token);
- void kvm_async_pf_task_wake(u32 token);
- u32 kvm_read_and_reset_pf_reason(void);
- extern void kvm_disable_steal_time(void);
--#else
--#define kvm_guest_init() do { } while (0)
-+
-+#ifdef CONFIG_PARAVIRT_SPINLOCKS
-+void __init kvm_spinlock_init(void);
-+#else /* !CONFIG_PARAVIRT_SPINLOCKS */
-+static inline void kvm_spinlock_init(void)
-+{
-+}
-+#endif /* CONFIG_PARAVIRT_SPINLOCKS */
-+
-+#else /* CONFIG_KVM_GUEST */
-+#define kvm_guest_init() do {} while (0)
- #define kvm_async_pf_task_wait(T) do {} while(0)
- #define kvm_async_pf_task_wake(T) do {} while(0)
-+
- static inline u32 kvm_read_and_reset_pf_reason(void)
- {
- 	return 0;
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index b8ba6e4..98f0378 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -33,6 +33,7 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/kprobes.h>
-+#include <linux/debugfs.h>
- #include <asm/timer.h>
- #include <asm/cpu.h>
- #include <asm/traps.h>
-@@ -368,6 +369,7 @@ static void __init kvm_smp_prepare_boot_cpu(void)
- #endif
- 	kvm_guest_cpu_init();
- 	native_smp_prepare_boot_cpu();
-+	kvm_spinlock_init();
- }
- 
- static void __cpuinit kvm_guest_cpu_online(void *dummy)
-@@ -450,3 +452,255 @@ static __init int activate_jump_labels(void)
- 	return 0;
- }
- arch_initcall(activate_jump_labels);
-+
-+#ifdef CONFIG_PARAVIRT_SPINLOCKS
-+
-+enum kvm_contention_stat {
-+	TAKEN_SLOW,
-+	TAKEN_SLOW_PICKUP,
-+	RELEASED_SLOW,
-+	RELEASED_SLOW_KICKED,
-+	NR_CONTENTION_STATS
-+};
-+
-+#ifdef CONFIG_KVM_DEBUG_FS
-+#define HISTO_BUCKETS	30
-+
-+static struct kvm_spinlock_stats
-+{
-+	u32 contention_stats[NR_CONTENTION_STATS];
-+	u32 histo_spin_blocked[HISTO_BUCKETS+1];
-+	u64 time_blocked;
-+} spinlock_stats;
-+
-+static u8 zero_stats;
-+
-+static inline void check_zero(void)
-+{
-+	u8 ret;
-+	u8 old;
-+
-+	old = ACCESS_ONCE(zero_stats);
-+	if (unlikely(old)) {
-+		ret = cmpxchg(&zero_stats, old, 0);
-+		/* This ensures only one fellow resets the stat */
-+		if (ret == old)
-+			memset(&spinlock_stats, 0, sizeof(spinlock_stats));
-+	}
-+}
-+
-+static inline void add_stats(enum kvm_contention_stat var, u32 val)
-+{
-+	check_zero();
-+	spinlock_stats.contention_stats[var] += val;
-+}
-+
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return sched_clock();
-+}
-+
-+static void __spin_time_accum(u64 delta, u32 *array)
-+{
-+	unsigned index;
-+
-+	index = ilog2(delta);
-+	check_zero();
-+
-+	if (index < HISTO_BUCKETS)
-+		array[index]++;
-+	else
-+		array[HISTO_BUCKETS]++;
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+	u32 delta;
-+
-+	delta = sched_clock() - start;
-+	__spin_time_accum(delta, spinlock_stats.histo_spin_blocked);
-+	spinlock_stats.time_blocked += delta;
-+}
-+
-+static struct dentry *d_spin_debug;
-+static struct dentry *d_kvm_debug;
-+
-+struct dentry *kvm_init_debugfs(void)
-+{
-+	d_kvm_debug = debugfs_create_dir("kvm", NULL);
-+	if (!d_kvm_debug)
-+		printk(KERN_WARNING "Could not create 'kvm' debugfs directory\n");
-+
-+	return d_kvm_debug;
-+}
-+
-+static int __init kvm_spinlock_debugfs(void)
-+{
-+	struct dentry *d_kvm;
-+
-+	d_kvm = kvm_init_debugfs();
-+	if (d_kvm == NULL)
-+		return -ENOMEM;
-+
-+	d_spin_debug = debugfs_create_dir("spinlocks", d_kvm);
-+
-+	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
-+
-+	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[TAKEN_SLOW]);
-+	debugfs_create_u32("taken_slow_pickup", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[TAKEN_SLOW_PICKUP]);
-+
-+	debugfs_create_u32("released_slow", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[RELEASED_SLOW]);
-+	debugfs_create_u32("released_slow_kicked", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[RELEASED_SLOW_KICKED]);
-+
-+	debugfs_create_u64("time_blocked", 0444, d_spin_debug,
-+			   &spinlock_stats.time_blocked);
-+
-+	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
-+		     spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
-+
-+	return 0;
-+}
-+fs_initcall(kvm_spinlock_debugfs);
-+#else  /* !CONFIG_KVM_DEBUG_FS */
-+#define TIMEOUT			(1 << 10)
-+static inline void add_stats(enum kvm_contention_stat var, u32 val)
-+{
-+}
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return 0;
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+}
-+#endif  /* CONFIG_KVM_DEBUG_FS */
-+
-+struct kvm_lock_waiting {
-+	struct arch_spinlock *lock;
-+	__ticket_t want;
-+};
-+
-+/* cpus 'waiting' on a spinlock to become available */
-+static cpumask_t waiting_cpus;
-+
-+/* Track spinlock on which a cpu is waiting */
-+static DEFINE_PER_CPU(struct kvm_lock_waiting, lock_waiting);
-+
-+static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-+{
-+	struct kvm_lock_waiting *w;
-+	int cpu;
-+	u64 start;
-+	unsigned long flags;
-+
-+	w = &__get_cpu_var(lock_waiting);
-+	cpu = smp_processor_id();
-+	start = spin_time_start();
-+
-+	/*
-+	 * Make sure an interrupt handler can't upset things in a
-+	 * partially setup state.
-+	 */
-+	local_irq_save(flags);
-+
-+	/*
-+	 * The ordering protocol on this is that the "lock" pointer
-+	 * may only be set non-NULL if the "want" ticket is correct.
-+	 * If we're updating "want", we must first clear "lock".
-+	 */
-+	w->lock = NULL;
-+	smp_wmb();
-+	w->want = want;
-+	smp_wmb();
-+	w->lock = lock;
-+
-+	add_stats(TAKEN_SLOW, 1);
-+
-+	/*
-+	 * This uses set_bit, which is atomic but we should not rely on its
-+	 * reordering gurantees. So barrier is needed after this call.
-+	 */
-+	cpumask_set_cpu(cpu, &waiting_cpus);
-+
-+	barrier();
-+
-+	/*
-+	 * Mark entry to slowpath before doing the pickup test to make
-+	 * sure we don't deadlock with an unlocker.
-+	 */
-+	__ticket_enter_slowpath(lock);
-+
-+	/*
-+	 * check again make sure it didn't become free while
-+	 * we weren't looking.
-+	 */
-+	if (ACCESS_ONCE(lock->tickets.head) == want) {
-+		add_stats(TAKEN_SLOW_PICKUP, 1);
-+		goto out;
-+	}
-+
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+
-+	/* halt until it's our turn and kicked. */
-+	halt();
-+
-+	local_irq_save(flags);
-+out:
-+	cpumask_clear_cpu(cpu, &waiting_cpus);
-+	w->lock = NULL;
-+	local_irq_restore(flags);
-+	spin_time_accum_blocked(start);
-+}
-+PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
-+
-+/* Kick a cpu by its apicid*/
-+static inline void kvm_kick_cpu(int cpu)
-+{
-+	int apicid;
-+
-+	apicid = per_cpu(x86_cpu_to_apicid, cpu);
-+	kvm_hypercall1(KVM_HC_KICK_CPU, apicid);
-+}
-+
-+/* Kick vcpu waiting on @lock->head to reach value @ticket */
-+static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
-+{
-+	int cpu;
-+
-+	add_stats(RELEASED_SLOW, 1);
-+	for_each_cpu(cpu, &waiting_cpus) {
-+		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
-+		if (ACCESS_ONCE(w->lock) == lock &&
-+		    ACCESS_ONCE(w->want) == ticket) {
-+			add_stats(RELEASED_SLOW_KICKED, 1);
-+			kvm_kick_cpu(cpu);
-+			break;
-+		}
-+	}
-+}
-+
-+/*
-+ * Setup pv_lock_ops to exploit KVM_FEATURE_PV_UNHALT if present.
-+ */
-+void __init kvm_spinlock_init(void)
-+{
-+	if (!kvm_para_available())
-+		return;
-+	/* Does host kernel support KVM_FEATURE_PV_UNHALT? */
-+	if (!kvm_para_has_feature(KVM_FEATURE_PV_UNHALT))
-+		return;
-+
-+	static_key_slow_inc(&paravirt_ticketlocks_enabled);
-+
-+	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(kvm_lock_spinning);
-+	pv_lock_ops.unlock_kick = kvm_unlock_kick;
-+}
-+#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
-
+>  out:
+>        return ret;
+>
+> --
+> 1.7.7.6
+>
