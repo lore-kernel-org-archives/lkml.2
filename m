@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab2DWAF7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Apr 2012 20:05:59 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:30013 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752895Ab2DWAF6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Apr 2012 20:05:58 -0400
-Date: Sun, 22 Apr 2012 20:05:54 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        Martin Peres <martin.peres@labri.fr>, dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.4-rc4
-Message-ID: <20120423000554.GA893@elliptictech.com>
-References: <CA+55aFzQD4UyPVDQesrWq7JkM=BoQevdJpQt1YyaG10MtfM-Pw@mail.gmail.com>
- <20120422040715.GA30689@elliptictech.com>
- <CA+55aFwGrb_sOjHFWe6tYwf8mmNsFbqKAhz=bq2ofiU+F+wVvA@mail.gmail.com>
- <20120422164023.GA32342@elliptictech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120422164023.GA32342@elliptictech.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753167Ab2DWASM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Apr 2012 20:18:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42728 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752913Ab2DWASK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Apr 2012 20:18:10 -0400
+Date: Mon, 23 Apr 2012 10:18:02 +1000
+From: NeilBrown <neilb@suse.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (md
+ tree related)
+Message-ID: <20120423101802.45d59ffc@notabene.brown>
+In-Reply-To: <20120420153448.2257c33126add9118757791a@canb.auug.org.au>
+References: <20120420153448.2257c33126add9118757791a@canb.auug.org.au>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/=unAAIkUdK1NBToVWU0=4XQ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-22 12:40 -0400, Nick Bowler wrote:
-> On 2012-04-21 21:51 -0700, Linus Torvalds wrote:
-> > Nick, I realize you had trouble with a bisection already, but it might
-> > really be worth trying again. Do a
-> > 
-> >     git bisect visualize
-> > 
-> > and try to pick a good commit (avoding the problems you hit) when you
-> > hit a problem, and then do
-> > 
-> >    git reset --hard <that-point>
-> > 
-> > to force bisection to try another place. That way you can sometimes
-> > avoid the problem spots, and continue the bisection.
-> 
-> Unfortunately, I think the whole swath of commits bisect wants to test
-> are broken (as in, they panic before I get to see whether or not the VGA
-> is working), because the commit from which most of the drm trees were
-> based appears to be broken.  Nevertheless, I've included the new bisect
-> log (four new commits marked skip as opposed to last time).  I've also
-> included the boot log from a crashing kernel, in case someone recognizes
-> how I can avoid this during bisection.  Note that this crash is *not* a
-> regression that exists in current mainline -- bisecting this issue was
-> the first time I had ever seen it.
+--Sig_/=unAAIkUdK1NBToVWU0=4XQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Following up on the above, the commit which introduces the panics during
-boot is this one:
+On Fri, 20 Apr 2012 15:34:48 +1000 Stephen Rothwell <sfr@canb.auug.org.au>
+wrote:
 
-commit 8e7e70522d760c4ccd4cd370ebfa0ba69e006c6e
-Author: Jerome Glisse <jglisse@redhat.com>
-Date:   Wed Nov 9 17:15:26 2011 -0500
+> Hi Neil,
+>=20
+> After merging the final tree, today's linux-next build (i386 defconfig)
+> failed like this:
+>=20
+> drivers/built-in.o: In function `bitmap_resize':
+> (.text+0x202b76): undefined reference to `__udivdi3'
+> drivers/built-in.o: In function `bitmap_resize':
+> (.text+0x202bac): undefined reference to `__udivdi3'
+>=20
+> Caused by commit 6c5cb1922cca ("md/bitmap: add bitmap_resize function to
+> allow bitmap resizing").
+>=20
+> I also get these warnings:
+>=20
+> drivers/md/bitmap.c: In function 'bitmap_resize':
+> drivers/md/bitmap.c:1878:11: warning: comparison of distinct pointer type=
+s lacks a cast [enabled by default]
+> drivers/md/bitmap.c:1887:11: warning: passing argument 3 of 'bitmap_get_c=
+ounter' from incompatible pointer type [enabled by default]
+> drivers/md/bitmap.c:1225:26: note: expected 'sector_t *' but argument is =
+of type 'long int *'
+> drivers/md/bitmap.c:1892:12: warning: passing argument 3 of 'bitmap_get_c=
+ounter' from incompatible pointer type [enabled by default]
+> drivers/md/bitmap.c:1225:26: note: expected 'sector_t *' but argument is =
+of type 'long int *'
+> drivers/md/bitmap.c:1920:8: warning: passing argument 3 of 'bitmap_get_co=
+unter' from incompatible pointer type [enabled by default]
+> drivers/md/bitmap.c:1225:26: note: expected 'sector_t *' but argument is =
+of type 'long int *'
+>=20
+> I applied the patch below for the link failure, but the above warnings
+> should be addressed as well.
 
-    drm/ttm: isolate dma data from ttm_tt V4
-    
-    Move dma data to a superset ttm_dma_tt structure which herit
-    from ttm_tt. This allow driver that don't use dma functionalities
-    to not have to waste memory for it.
-    
-    V2 Rebase on top of no memory account changes (where/when is my
-       delorean when i need it ?)
-    V3 Make sure page list is initialized empty
-    V4 typo/syntax fixes
-    
-    Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-    Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+Thanks Stephen.  I've fixed all that up now - and done a test 32-bit
+compile :-)
 
-and the previous commit (3230cfc34fca: "drm/nouveau: enable the ttm dma
-pool when swiotlb is active V3") works properly.
+Thanks,
+NeilBrown
 
-Sometime this week I suppose I'll try to track down the commit which
-fixed the crashes...
+--Sig_/=unAAIkUdK1NBToVWU0=4XQ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
+iQIVAwUBT5Sfujnsnt1WYoG5AQJbJg//VGvQKmJRcXDeHH6hdt30wIuAaeBsxGfN
+Dc+w85BD0MDU3pFgm8fL64SfhHIpidQWTlh+eQ7Vs/ikbU/7y/40JnJaPBAP+DE1
+Mi7ZfRftIkpc6mlE3OJBmP2V7K7VZwjHRtBU8uQX3Prh0TJEf0zlh7z0SMx/GFI/
+yR7ZK+VZE0cSZmRNCX8GjrR2T0Kco3lCGuR0y1yYKMSOVFqCWGHC1FkKQYSkaM1o
+Bvx/yHvNDcQZ+ssceWgiiZXMOEjt3ZwX9Ny0za4vTY6A6qj9HmfCMNtGoYmnsFKF
+wb/qBcK4uJfvjLYn2oKOjFxIWnzNxwE0lUl+2T5it6R9gNSX42xnTwQ6uYS6UtQL
+ywEBQ2yIV5cpNNrOYMHz/QrY4Ve/V7nZAQ8QCygcEDgpUw6HzCHzLyMjPqBfZqsj
+DuHW5VI032Q7NlgK78Q5wKSYLsJ7F6DErPdNmaosYGWhbGLjxe75SWUrWTpbFlqk
+V2Mf+aOPB2jGnATeFzfA9s2BiZ0qE3wnZPkExDqI+D3YGeTCKoiTMfHAdP1L6Eo6
+KdKCCQtUGbf+cUcupXlW/8Az/mAngSEQVfENZ0uQBUC4XbPdsGQ3VTDYdR3ZaH9I
+ZWz5sIQHCuca8dlLujQix/6BskNPo6OOJaBj3eaZAa6JNbC7ENbsij/86sxgtKgn
+j44lW7I20Ms=
+=kQQS
+-----END PGP SIGNATURE-----
+
+--Sig_/=unAAIkUdK1NBToVWU0=4XQ--
