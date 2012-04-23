@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab2DWQZS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 12:25:18 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:48528 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753802Ab2DWQZQ (ORCPT
+	id S1753920Ab2DWQZx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 12:25:53 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:61206 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070Ab2DWQZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 12:25:16 -0400
-Message-ID: <4F95828A.8050403@xenotime.net>
-Date: Mon, 23 Apr 2012 09:25:46 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 23 Apr 2012 12:25:52 -0400
+Date: Mon, 23 Apr 2012 09:25:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Zeev Tarantov <zeev.tarantov@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: commit 1cb41fe7e34a43a1d27dfdb6d65699786dd44c20 in stable
+ (v3.3.3) breaks perf
+Message-ID: <20120423162547.GA27669@kroah.com>
+References: <20120423063704.GA3465@myhost>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org, linux-hams@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: linux-next: Tree for Apr 23 (ax.25 sysctl)
-References: <20120423170701.c96e402234b1387dece11dda@canb.auug.org.au>
-In-Reply-To: <20120423170701.c96e402234b1387dece11dda@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120423063704.GA3465@myhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 12:07 AM, Stephen Rothwell wrote:
-
-> Hi all,
+On Mon, Apr 23, 2012 at 09:37:04AM +0300, Zeev Tarantov wrote:
+> gcc correctly complains:
 > 
-> Changes since 20120420:
+> util/hist.c: In function ‘__hists__add_entry’:
+> util/hist.c:240:27: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
+> util/hist.c:241:23: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
+> 
+> for this new code:
+> 
+> +                       if (he->ms.map != entry->ms.map) {
+> +                               he->ms.map = entry->ms.map;
+> +                               if (he->ms.map)
+> +                                       he->ms.map->referenced = true;
+> +                       }
+> 
+> because "entry" is a "struct hist_entry", not a pointer to a struct.
+> 
+> In mainline, "entry" is a pointer to struct passed as argument to the function.
+> So this is broken during backporting. But obviously not compile tested. 
+> Greg wrote on G+ that those who did not test 3.3.3-rc1 have no right to complain, but I'm complaining anyway. :P
+> 
+> See trivial patch to fix this.
+> -Z.T.
+> 
+> P.S.
+> I don't need credit for the patch so it's ok if my diff doesn't apply because of messed up whitespace.
+> Just fix it.
 
+Patch looks good to me, thanks for doing this, you are right in that I
+didn't test perf.  I'll go queue this up right now.
 
-
-include/net/ax25.h:447:75: error: expected ';' before '}' token
-
-
-static inline int ax25_register_dev_sysctl(ax25_dev *ax25_dev) { return 0 };
-static inline void ax25_unregister_dev_sysctl(ax25_dev *ax25_dev) {};
-
-Is this from Eric B.'s sysctl patches?
-
-First function:  move ';' inside braces.
-Second function:  drop the ';'.
-
-
--- 
-~Randy
+greg k-h
