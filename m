@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab2DWHJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 03:09:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45494 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab2DWHJy (ORCPT
+	id S1754088Ab2DWHKM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 03:10:12 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:53775 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab2DWHKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 03:09:54 -0400
-Date: Mon, 23 Apr 2012 00:08:38 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Mike Frysinger <vapier@gentoo.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        linaro-kernel@lists.linaro.org, patches@linaro.org, linux-mm@kvack.org
-Subject: [PATCH 3/9] powerpc: Use clear_tasks_mm_cpumask()
-Message-ID: <20120423070838.GC30752@lizard>
-References: <20120423070641.GA27702@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120423070641.GA27702@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Apr 2012 03:10:05 -0400
+Date: Mon, 23 Apr 2012 09:09:58 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [patch 12/18] s390: Use generic idle thread allocation
+Message-ID: <20120423090958.6904ae7b@de.ibm.com>
+In-Reply-To: <20120420124557.652574928@linutronix.de>
+References: <20120420122120.097464672@linutronix.de>
+	<20120420124557.652574928@linutronix.de>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12042307-4966-0000-0000-0000021AFBDE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current CPU hotplug code has some task->mm handling issues:
+On Fri, 20 Apr 2012 13:05:52 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-1. Working with task->mm w/o getting mm or grabing the task lock is
-   dangerous as ->mm might disappear (exit_mm() assigns NULL under
-   task_lock(), so tasklist lock is not enough).
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> ---
+>  arch/s390/Kconfig      |    1 +
+>  arch/s390/kernel/smp.c |   33 ++-------------------------------
+>  2 files changed, 3 insertions(+), 31 deletions(-)
 
-   We can't use get_task_mm()/mmput() pair as mmput() might sleep,
-   so we must take the task lock while handle its mm.
+Compile, boots & survives a few rounds of cpu hotplug stress.
+Looks good.
+Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-2. Checking for process->mm is not enough because process' main
-   thread may exit or detach its mm via use_mm(), but other threads
-   may still have a valid mm.
-
-   To fix this we would need to use find_lock_task_mm(), which would
-   walk up all threads and returns an appropriate task (with task
-   lock held).
-
-clear_tasks_mm_cpumask() has all the issues fixed, so let's use it.
-
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- arch/powerpc/mm/mmu_context_nohash.c |   11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
-
-diff --git a/arch/powerpc/mm/mmu_context_nohash.c b/arch/powerpc/mm/mmu_context_nohash.c
-index 5b63bd3..e779642 100644
---- a/arch/powerpc/mm/mmu_context_nohash.c
-+++ b/arch/powerpc/mm/mmu_context_nohash.c
-@@ -333,9 +333,7 @@ static int __cpuinit mmu_context_cpu_notify(struct notifier_block *self,
- 					    unsigned long action, void *hcpu)
- {
- 	unsigned int cpu = (unsigned int)(long)hcpu;
--#ifdef CONFIG_HOTPLUG_CPU
--	struct task_struct *p;
--#endif
-+
- 	/* We don't touch CPU 0 map, it's allocated at aboot and kept
- 	 * around forever
- 	 */
-@@ -358,12 +356,7 @@ static int __cpuinit mmu_context_cpu_notify(struct notifier_block *self,
- 		stale_map[cpu] = NULL;
- 
- 		/* We also clear the cpu_vm_mask bits of CPUs going away */
--		read_lock(&tasklist_lock);
--		for_each_process(p) {
--			if (p->mm)
--				cpumask_clear_cpu(cpu, mm_cpumask(p->mm));
--		}
--		read_unlock(&tasklist_lock);
-+		clear_tasks_mm_cpumask(cpu);
- 	break;
- #endif /* CONFIG_HOTPLUG_CPU */
- 	}
 -- 
-1.7.9.2
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
