@@ -1,151 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab2DWWak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 18:30:40 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:53530 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753640Ab2DWWaH (ORCPT
+	id S1755937Ab2DWWbY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 18:31:24 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:25985 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753549Ab2DWWbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 18:30:07 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH v2 1/2] powerpc/8xx: Fix NR_IRQ bugs and refactor 8xx interrupt controller
-Date: Mon, 23 Apr 2012 16:30:01 -0600
-Message-Id: <1335220202-32533-2-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1335220202-32533-1-git-send-email-grant.likely@secretlab.ca>
-References: <1335220202-32533-1-git-send-email-grant.likely@secretlab.ca>
+	Mon, 23 Apr 2012 18:31:22 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-7.tower-127.messagelabs.com!1335220226!3828114!57
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: refactor adl_pci7432 driver to remove forward declarations
+Date: Mon, 23 Apr 2012 15:31:08 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204231531.09059.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mpc8xx driver uses a reference to NR_IRQS that is buggy.  It uses
-NR_IRQs for the array size of the ppc_cached_irq_mask bitmap, but
-NR_IRQs could be smaller than the number of hardware irqs that
-ppc_cached_irq_mask tracks.
+Move the struct comedi_driver variable and the associated
+attach/detach routines to remove the need for the forward
+declarations.
 
-Also, while fixing that problem, it became apparent that the interrupt
-controller only supports 32 interrupt numbers, but it is written as if
-it supports multiple register banks which is more complicated.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-This patch pulls out the buggy reference to NR_IRQs and fixes the size
-of the ppc_cached_irq_mask to match the number of HW irqs.  It also
-drops the now-unnecessary code since ppc_cached_irq_mask is no longer
-an array.
-
-v2: - Rename ppc_cached_irq_mask to mpc8xx_cached_irq_mask
-    - Drop duplicate forward declaration
-
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- arch/powerpc/sysdev/mpc8xx_pic.c |   61 +++++++++++++-------------------------
- 1 file changed, 20 insertions(+), 41 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/mpc8xx_pic.c b/arch/powerpc/sysdev/mpc8xx_pic.c
-index d5f5416..b724622 100644
---- a/arch/powerpc/sysdev/mpc8xx_pic.c
-+++ b/arch/powerpc/sysdev/mpc8xx_pic.c
-@@ -18,69 +18,45 @@
- extern int cpm_get_irq(struct pt_regs *regs);
+diff --git a/drivers/staging/comedi/drivers/adl_pci7432.c b/drivers/staging/comedi/drivers/adl_pci7432.c
+index 1e0db48..db15ec6e 100644
+--- a/drivers/staging/comedi/drivers/adl_pci7432.c
++++ b/drivers/staging/comedi/drivers/adl_pci7432.c
+@@ -43,13 +43,6 @@ Configuration Options:
  
- static struct irq_domain *mpc8xx_pic_host;
--#define NR_MASK_WORDS   ((NR_IRQS + 31) / 32)
--static unsigned long ppc_cached_irq_mask[NR_MASK_WORDS];
-+static unsigned long mpc8xx_cached_irq_mask;
- static sysconf8xx_t __iomem *siu_reg;
+ #define PCI_DEVICE_ID_PCI7432 0x7432
  
--int cpm_get_irq(struct pt_regs *regs);
-+static inline unsigned long mpc8xx_irqd_to_bit(struct irq_data *d)
+-static DEFINE_PCI_DEVICE_TABLE(adl_pci7432_pci_table) = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7432) },
+-	{0}
+-};
+-
+-MODULE_DEVICE_TABLE(pci, adl_pci7432_pci_table);
+-
+ struct adl_pci7432_private {
+ 	int data;
+ 	struct pci_dev *pci_dev;
+@@ -57,29 +50,44 @@ struct adl_pci7432_private {
+ 
+ #define devpriv ((struct adl_pci7432_private *)dev->private)
+ 
+-static int adl_pci7432_attach(struct comedi_device *dev,
+-			      struct comedi_devconfig *it);
+-static int adl_pci7432_detach(struct comedi_device *dev);
+-static struct comedi_driver driver_adl_pci7432 = {
+-	.driver_name = "adl_pci7432",
+-	.module = THIS_MODULE,
+-	.attach = adl_pci7432_attach,
+-	.detach = adl_pci7432_detach,
+-};
++static int adl_pci7432_do_insn_bits(struct comedi_device *dev,
++				    struct comedi_subdevice *s,
++				    struct comedi_insn *insn,
++				    unsigned int *data)
 +{
-+	return 0x80000000 >> irqd_to_hwirq(d);
++	printk(KERN_DEBUG "comedi: pci7432_do_insn_bits called\n");
++	printk(KERN_DEBUG "comedi: data0: %8x data1: %8x\n", data[0], data[1]);
++
++	if (insn->n != 2)
++		return -EINVAL;
+ 
+-/* Digital IO */
++	if (data[0]) {
++		s->state &= ~data[0];
++		s->state |= (data[0] & data[1]);
++
++		printk(KERN_DEBUG "comedi: out: %8x on iobase %4lx\n", s->state,
++		       dev->iobase + PCI7432_DO);
++		outl(s->state & 0xffffffff, dev->iobase + PCI7432_DO);
++	}
++	return 2;
 +}
  
- static void mpc8xx_unmask_irq(struct irq_data *d)
- {
--	int	bit, word;
--	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
--
--	bit = irq_nr & 0x1f;
--	word = irq_nr >> 5;
--
--	ppc_cached_irq_mask[word] |= (1 << (31-bit));
--	out_be32(&siu_reg->sc_simask, ppc_cached_irq_mask[word]);
-+	mpc8xx_cached_irq_mask |= mpc8xx_irqd_to_bit(d);
-+	out_be32(&siu_reg->sc_simask, mpc8xx_cached_irq_mask);
- }
+ static int adl_pci7432_di_insn_bits(struct comedi_device *dev,
+ 				    struct comedi_subdevice *s,
+ 				    struct comedi_insn *insn,
+-				    unsigned int *data);
++				    unsigned int *data)
++{
++	printk(KERN_DEBUG "comedi: pci7432_di_insn_bits called\n");
++	printk(KERN_DEBUG "comedi: data0: %8x data1: %8x\n", data[0], data[1]);
  
- static void mpc8xx_mask_irq(struct irq_data *d)
- {
--	int	bit, word;
--	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
--
--	bit = irq_nr & 0x1f;
--	word = irq_nr >> 5;
--
--	ppc_cached_irq_mask[word] &= ~(1 << (31-bit));
--	out_be32(&siu_reg->sc_simask, ppc_cached_irq_mask[word]);
-+	mpc8xx_cached_irq_mask &= ~mpc8xx_irqd_to_bit(d);
-+	out_be32(&siu_reg->sc_simask, mpc8xx_cached_irq_mask);
- }
+-static int adl_pci7432_do_insn_bits(struct comedi_device *dev,
+-				    struct comedi_subdevice *s,
+-				    struct comedi_insn *insn,
+-				    unsigned int *data);
++	if (insn->n != 2)
++		return -EINVAL;
  
- static void mpc8xx_ack(struct irq_data *d)
- {
--	int	bit;
--	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
--
--	bit = irq_nr & 0x1f;
--	out_be32(&siu_reg->sc_sipend, 1 << (31-bit));
-+	out_be32(&siu_reg->sc_sipend, mpc8xx_irqd_to_bit(d));
- }
+-/*            */
++	data[1] = inl(dev->iobase + PCI7432_DI) & 0xffffffff;
++	printk(KERN_DEBUG "comedi: data1 %8x\n", data[1]);
++
++	return 2;
++}
  
- static void mpc8xx_end_irq(struct irq_data *d)
- {
--	int bit, word;
--	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
--
--	bit = irq_nr & 0x1f;
--	word = irq_nr >> 5;
--
--	ppc_cached_irq_mask[word] |= (1 << (31-bit));
--	out_be32(&siu_reg->sc_simask, ppc_cached_irq_mask[word]);
-+	mpc8xx_cached_irq_mask |= mpc8xx_irqd_to_bit(d);
-+	out_be32(&siu_reg->sc_simask, mpc8xx_cached_irq_mask);
- }
- 
- static int mpc8xx_set_irq_type(struct irq_data *d, unsigned int flow_type)
- {
--	if (flow_type & IRQ_TYPE_EDGE_FALLING) {
--		irq_hw_number_t hw = (unsigned int)irqd_to_hwirq(d);
-+	/* only external IRQ senses are programmable */
-+	if ((flow_type & IRQ_TYPE_EDGE_FALLING) && !(irqd_to_hwirq(d) & 1)) {
- 		unsigned int siel = in_be32(&siu_reg->sc_siel);
--
--		/* only external IRQ senses are programmable */
--		if ((hw & 1) == 0) {
--			siel |= (0x80000000 >> hw);
--			out_be32(&siu_reg->sc_siel, siel);
--			__irq_set_handler_locked(d->irq, handle_edge_irq);
--		}
-+		siel |= mpc8xx_irqd_to_bit(d);
-+		out_be32(&siu_reg->sc_siel, siel);
-+		__irq_set_handler_locked(d->irq, handle_edge_irq);
- 	}
+ static int adl_pci7432_attach(struct comedi_device *dev,
+ 			      struct comedi_devconfig *it)
+@@ -166,44 +174,12 @@ static int adl_pci7432_detach(struct comedi_device *dev)
  	return 0;
  }
-@@ -132,6 +108,9 @@ static int mpc8xx_pic_host_xlate(struct irq_domain *h, struct device_node *ct,
- 		IRQ_TYPE_EDGE_FALLING,
- 	};
  
-+	if (intspec[0] > 0x1f)
-+		return 0;
+-static int adl_pci7432_do_insn_bits(struct comedi_device *dev,
+-				    struct comedi_subdevice *s,
+-				    struct comedi_insn *insn,
+-				    unsigned int *data)
+-{
+-	printk(KERN_DEBUG "comedi: pci7432_do_insn_bits called\n");
+-	printk(KERN_DEBUG "comedi: data0: %8x data1: %8x\n", data[0], data[1]);
+-
+-	if (insn->n != 2)
+-		return -EINVAL;
+-
+-	if (data[0]) {
+-		s->state &= ~data[0];
+-		s->state |= (data[0] & data[1]);
+-
+-		printk(KERN_DEBUG "comedi: out: %8x on iobase %4lx\n", s->state,
+-		       dev->iobase + PCI7432_DO);
+-		outl(s->state & 0xffffffff, dev->iobase + PCI7432_DO);
+-	}
+-	return 2;
+-}
+-
+-static int adl_pci7432_di_insn_bits(struct comedi_device *dev,
+-				    struct comedi_subdevice *s,
+-				    struct comedi_insn *insn,
+-				    unsigned int *data)
+-{
+-	printk(KERN_DEBUG "comedi: pci7432_di_insn_bits called\n");
+-	printk(KERN_DEBUG "comedi: data0: %8x data1: %8x\n", data[0], data[1]);
+-
+-	if (insn->n != 2)
+-		return -EINVAL;
+-
+-	data[1] = inl(dev->iobase + PCI7432_DI) & 0xffffffff;
+-	printk(KERN_DEBUG "comedi: data1 %8x\n", data[1]);
+-
+-	return 2;
+-}
++static struct comedi_driver driver_adl_pci7432 = {
++	.driver_name	= "adl_pci7432",
++	.module		= THIS_MODULE,
++	.attach		= adl_pci7432_attach,
++	.detach		= adl_pci7432_detach,
++};
+ 
+ static int __devinit driver_adl_pci7432_pci_probe(struct pci_dev *dev,
+ 						  const struct pci_device_id
+@@ -217,10 +193,16 @@ static void __devexit driver_adl_pci7432_pci_remove(struct pci_dev *dev)
+ 	comedi_pci_auto_unconfig(dev);
+ }
+ 
++static DEFINE_PCI_DEVICE_TABLE(adl_pci7432_pci_table) = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7432) },
++	{0}
++};
++MODULE_DEVICE_TABLE(pci, adl_pci7432_pci_table);
 +
- 	*out_hwirq = intspec[0];
- 	if (intsize > 1 && intspec[1] < 4)
- 		*out_flags = map_pic_senses[intspec[1]];
--- 
-1.7.9.5
-
+ static struct pci_driver driver_adl_pci7432_pci_driver = {
+-	.id_table = adl_pci7432_pci_table,
+-	.probe = &driver_adl_pci7432_pci_probe,
+-	.remove = __devexit_p(&driver_adl_pci7432_pci_remove)
++	.id_table	= adl_pci7432_pci_table,
++	.probe		= driver_adl_pci7432_pci_probe,
++	.remove		= __devexit_p(driver_adl_pci7432_pci_remove)
+ };
+ 
+ static int __init driver_adl_pci7432_init_module(void)
+@@ -235,14 +217,13 @@ static int __init driver_adl_pci7432_init_module(void)
+ 	    (char *)driver_adl_pci7432.driver_name;
+ 	return pci_register_driver(&driver_adl_pci7432_pci_driver);
+ }
++module_init(driver_adl_pci7432_init_module);
+ 
+ static void __exit driver_adl_pci7432_cleanup_module(void)
+ {
+ 	pci_unregister_driver(&driver_adl_pci7432_pci_driver);
+ 	comedi_driver_unregister(&driver_adl_pci7432);
+ }
+-
+-module_init(driver_adl_pci7432_init_module);
+ module_exit(driver_adl_pci7432_cleanup_module);
+ 
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
