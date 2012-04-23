@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab2DWSci (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 14:32:38 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62897 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943Ab2DWScg (ORCPT
+	id S1754618Ab2DWSex (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 14:34:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5825 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752687Ab2DWSew convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 14:32:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 1/3] ARM: tegra: Add AHB driver
-Date: Mon, 23 Apr 2012 18:32:15 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Hiroshi DOYU <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1335181043-15348-1-git-send-email-hdoyu@nvidia.com> <201204231233.09423.arnd@arndb.de> <4F9598AD.2030308@wwwdotorg.org>
-In-Reply-To: <4F9598AD.2030308@wwwdotorg.org>
+	Mon, 23 Apr 2012 14:34:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="144960673"
+From: "Heasley, Seth" <seth.heasley@intel.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ralston, James D" <james.d.ralston@intel.com>
+Subject: RE: [PATCH 3/3] lpc_sch: Add Intel Centerton Multifunction Device
+ support
+Thread-Topic: [PATCH 3/3] lpc_sch: Add Intel Centerton Multifunction Device
+ support
+Thread-Index: AQHNHN7OVZLDEVRYmEOs38aIQI0D4Zag1K0A///ovoCAB9AOAIAAOAFg
+Date: Mon, 23 Apr 2012 18:34:51 +0000
+Message-ID: <DEC3922D1904474A8862C7BFF516EA9A41A6795A@ORSMSX101.amr.corp.intel.com>
+References: <1334696962-3642-1-git-send-email-seth.heasley@intel.com>
+ <20120418101802.GD1204@sortiz-mobl>
+ <DEC3922D1904474A8862C7BFF516EA9A41A5CB9B@ORSMSX102.amr.corp.intel.com>
+ <20120423081316.GA14577@sortiz-mobl>
+In-Reply-To: <20120423081316.GA14577@sortiz-mobl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204231832.16268.arnd@arndb.de>
-X-Provags-ID: V02:K0:9XD1Y/vl1ukHt09TaFTGRcKgwAFZygU1QMpcWoSfrlV
- 10mP10MImeBI3aGffoxXQ0WyEK+gT1icXpKkncdNHLgqYTIh+N
- gXfjX+MG1Sk7//TQr2pP291SwsMrZkE0vRFYMYqRwilCWplmgV
- ZESVt8rGc0HGaRqp84z1IplOGKmghHwS+dRwiWyHrqZrTGjUFr
- Te9ZZqAtDiVzsa9LNF7cE+i8JtGPpZmXymAU19tHGXbpwQBBmw
- yRcCvveb3NpEQvMBm4S2LKSRqIbvmdKpsXbNuX6ihO2YkUVhGx
- 2NG/5BK7vdidxyHIAeYbLySx6cChB4EzeN7gU/N1d/JTlAHxds
- TTZNBmMGFdRLURtJD6e4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 23 April 2012, Stephen Warren wrote:
-> I don't know whether it has to be early, but if this driver isn't going
-> to be instantiated from device tree, I'd prefer it to be initialized by
-> an explicit function call from the boards or common code rather than an
-> initcall. It seems a lot easier to keep track of all the initialization
-> by doing it explicitly. That said, it's quite possible this API couuld
-> be called from say init_machine instead of init_early though.
+Hi Samuel,
 
-Having it called from init_machine sounds ok, as long as it still
-scans the device tree for the addresses rather than hardcoding.
+>> >Is the pci_ids.h change already in ? If not, I should take it at the
+>> >same time so that we don't break compilation.
+>>
+>> It was submitted just prior to my sending this patch.
+>Please send it to me as your MFD patch build depends on it and it should
+>be committed first.
 
-	Arnd
+Done.
+
+>> I'm actually not submitting a watchdog patch.  The maintainer already
+>has code for this driver and is converting it to the new watchdog API.
+>In discussions with him, we agreed to the renaming of the driver, which
+>was submitted for a previous platform.  He'll be committing the new code
+>in the next couple of weeks, so I made this change in anticipation of
+>the driver making it upstream.
+>>
+>That's reasonable, but I'd prefer this naming change to happen when the
+>watchdog patch is submitted as well, as a separate MFD one liner patch.
+
+Okay, that's no problem.  Do you need this patch resubmitted, or will you just nix the one line?
+
+Regards,
+Seth
