@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964877Ab2DXWjS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:39:18 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:56299 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964864Ab2DXWjP (ORCPT
+	id S964880Ab2DXWkN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:40:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964869Ab2DXWjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:39:15 -0400
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH v4] leds: heartbeat: stop on shutdown, reboot or panic
-Date: Wed, 25 Apr 2012 00:38:57 +0200
-Message-Id: <1335307137-5732-1-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1335306610-5549-1-git-send-email-holler@ahsoftware.de>
-References: <1335306610-5549-1-git-send-email-holler@ahsoftware.de>
+	Tue, 24 Apr 2012 18:39:17 -0400
+Message-Id: <20120424223257.121245734@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Tue, 24 Apr 2012 15:33:35 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 42/42] lockd: fix the endianness bug
+In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A halted kernel should not show a heartbeat.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+------------------
+
+From: Al Viro <viro@zeniv.linux.org.uk>
+
+commit e847469bf77a1d339274074ed068d461f0c872bc upstream.
+
+comparing be32 values for < is not doing the right thing...
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/leds/ledtrig-heartbeat.c |   27 ++++++++++++++++++++++++++-
- 1 files changed, 26 insertions(+), 1 deletions(-)
+ fs/lockd/clnt4xdr.c |    2 +-
+ fs/lockd/clntxdr.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
-index 759c0bb..31c234c 100644
---- a/drivers/leds/ledtrig-heartbeat.c
-+++ b/drivers/leds/ledtrig-heartbeat.c
-@@ -18,6 +18,7 @@
- #include <linux/timer.h>
- #include <linux/sched.h>
- #include <linux/leds.h>
-+#include <linux/reboot.h>
- #include "leds.h"
- 
- struct heartbeat_trig_data {
-@@ -101,13 +102,37 @@ static struct led_trigger heartbeat_led_trigger = {
- 	.deactivate = heartbeat_trig_deactivate,
- };
- 
-+static int heartbeat_reboot_notifier(struct notifier_block *nb,
-+				     unsigned long code, void *unused)
-+{
-+	led_trigger_unregister(&heartbeat_led_trigger);
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block heartbeat_reboot_nb = {
-+	.notifier_call = heartbeat_reboot_notifier,
-+};
-+
-+static struct notifier_block heartbeat_panic_nb = {
-+	.notifier_call = heartbeat_reboot_notifier,
-+};
-+
- static int __init heartbeat_trig_init(void)
- {
--	return led_trigger_register(&heartbeat_led_trigger);
-+	int rc = led_trigger_register(&heartbeat_led_trigger);
-+	if (!rc) {
-+		atomic_notifier_chain_register(&panic_notifier_list,
-+					       &heartbeat_panic_nb);
-+		register_reboot_notifier(&heartbeat_reboot_nb);
-+	}
-+	return rc;
- }
- 
- static void __exit heartbeat_trig_exit(void)
- {
-+	unregister_reboot_notifier(&heartbeat_reboot_nb);
-+	atomic_notifier_chain_unregister(&panic_notifier_list,
-+					 &heartbeat_panic_nb);
- 	led_trigger_unregister(&heartbeat_led_trigger);
- }
- 
--- 
-1.7.6.5
+--- a/fs/lockd/clnt4xdr.c
++++ b/fs/lockd/clnt4xdr.c
+@@ -241,7 +241,7 @@ static int decode_nlm4_stat(struct xdr_s
+ 	p = xdr_inline_decode(xdr, 4);
+ 	if (unlikely(p == NULL))
+ 		goto out_overflow;
+-	if (unlikely(*p > nlm4_failed))
++	if (unlikely(ntohl(*p) > ntohl(nlm4_failed)))
+ 		goto out_bad_xdr;
+ 	*stat = *p;
+ 	return 0;
+--- a/fs/lockd/clntxdr.c
++++ b/fs/lockd/clntxdr.c
+@@ -236,7 +236,7 @@ static int decode_nlm_stat(struct xdr_st
+ 	p = xdr_inline_decode(xdr, 4);
+ 	if (unlikely(p == NULL))
+ 		goto out_overflow;
+-	if (unlikely(*p > nlm_lck_denied_grace_period))
++	if (unlikely(ntohl(*p) > ntohl(nlm_lck_denied_grace_period)))
+ 		goto out_enum;
+ 	*stat = *p;
+ 	return 0;
+
 
