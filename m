@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab2DXGJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 02:09:38 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:56847 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753282Ab2DXGJY (ORCPT
+	id S1753609Ab2DXGJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 02:09:34 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:40392 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753238Ab2DXGJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 02:09:24 -0400
+	Tue, 24 Apr 2012 02:09:15 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <akpm@linux-foundation.org>
 Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <mturquette@linaro.org>, <sshtylyov@mvista.com>, <jgarzik@redhat.com>,
         <linux@arm.linux.org.uk>, <spear-devel@list.st.com>,
         <viresh.linux@gmail.com>, Viresh Kumar <viresh.kumar@st.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>
-Subject: [PATCH V2 8/9] gadget/r8a66597: Remove conditional compilation of clk code
-Date: Tue, 24 Apr 2012 11:26:16 +0530
-Message-ID: <6db56e071d4862de74887de6c695d2f4fa72ffa9.1335246730.git.viresh.kumar@st.com>
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH V2 6/9] net/stmmac: Remove conditional compilation of clk code
+Date: Tue, 24 Apr 2012 11:26:14 +0530
+Message-ID: <4336df4e231467d253e25bbd41dbce6d189ed1e8.1335246730.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <cover.1335246730.git.viresh.kumar@st.com>
 References: <cover.1335246730.git.viresh.kumar@st.com>
@@ -32,106 +32,177 @@ there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #endif
 macros.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Cc: David S. Miller <davem@davemloft.net>
 ---
- drivers/usb/gadget/r8a66597-udc.c |   21 +++++++--------------
- drivers/usb/gadget/r8a66597-udc.h |    5 -----
- 2 files changed, 7 insertions(+), 19 deletions(-)
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h      |   41 ---------------------
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   31 ++++++++++------
+ 2 files changed, 19 insertions(+), 53 deletions(-)
 
-diff --git a/drivers/usb/gadget/r8a66597-udc.c b/drivers/usb/gadget/r8a66597-udc.c
-index c4401e7..85aa56d 100644
---- a/drivers/usb/gadget/r8a66597-udc.c
-+++ b/drivers/usb/gadget/r8a66597-udc.c
-@@ -1818,12 +1818,11 @@ static int __exit r8a66597_remove(struct platform_device *pdev)
- 		iounmap(r8a66597->sudmac_reg);
- 	free_irq(platform_get_irq(pdev, 0), r8a66597);
- 	r8a66597_free_request(&r8a66597->ep[0].ep, r8a66597->ep0_req);
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+index db2de9a..7f85895 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+@@ -81,9 +81,7 @@ struct stmmac_priv {
+ 	struct stmmac_counters mmc;
+ 	struct dma_features dma_cap;
+ 	int hw_cap_support;
 -#ifdef CONFIG_HAVE_CLK
--	if (r8a66597->pdata->on_chip) {
-+
-+	if (r8a66597->pdata->on_chip && !IS_ERR(r8a66597->clk)) {
- 		clk_disable(r8a66597->clk);
- 		clk_put(r8a66597->clk);
- 	}
+ 	struct clk *stmmac_clk;
 -#endif
- 	device_unregister(&r8a66597->gadget.dev);
- 	kfree(r8a66597);
- 	return 0;
-@@ -1855,9 +1854,7 @@ static int __init r8a66597_sudmac_ioremap(struct r8a66597 *r8a66597,
+ 	int clk_csr;
+ };
  
- static int __init r8a66597_probe(struct platform_device *pdev)
+@@ -103,42 +101,3 @@ int stmmac_dvr_remove(struct net_device *ndev);
+ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+ 				     struct plat_stmmacenet_data *plat_dat,
+ 				     void __iomem *addr);
+-
+-#ifdef CONFIG_HAVE_CLK
+-static inline int stmmac_clk_enable(struct stmmac_priv *priv)
+-{
+-	if (!IS_ERR(priv->stmmac_clk))
+-		return clk_enable(priv->stmmac_clk);
+-
+-	return 0;
+-}
+-
+-static inline void stmmac_clk_disable(struct stmmac_priv *priv)
+-{
+-	if (IS_ERR(priv->stmmac_clk))
+-		return;
+-
+-	clk_disable(priv->stmmac_clk);
+-}
+-static inline int stmmac_clk_get(struct stmmac_priv *priv)
+-{
+-	priv->stmmac_clk = clk_get(priv->device, NULL);
+-
+-	if (IS_ERR(priv->stmmac_clk))
+-		return PTR_ERR(priv->stmmac_clk);
+-
+-	return 0;
+-}
+-#else
+-static inline int stmmac_clk_enable(struct stmmac_priv *priv)
+-{
+-	return 0;
+-}
+-static inline void stmmac_clk_disable(struct stmmac_priv *priv)
+-{
+-}
+-static inline int stmmac_clk_get(struct stmmac_priv *priv)
+-{
+-	return 0;
+-}
+-#endif /* CONFIG_HAVE_CLK */
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 1a4cf81..18ce287 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -28,6 +28,7 @@
+ 	https://bugzilla.stlinux.com/
+ *******************************************************************************/
+ 
++#include <linux/clk.h>
+ #include <linux/kernel.h>
+ #include <linux/interrupt.h>
+ #include <linux/ip.h>
+@@ -165,7 +166,6 @@ static void stmmac_verify_args(void)
+ 
+ static void stmmac_clk_csr_set(struct stmmac_priv *priv)
  {
 -#ifdef CONFIG_HAVE_CLK
- 	char clk_name[8];
--#endif
- 	struct resource *res, *ires;
- 	int irq;
- 	void __iomem *reg = NULL;
-@@ -1921,19 +1918,17 @@ static int __init r8a66597_probe(struct platform_device *pdev)
- 	r8a66597->timer.data = (unsigned long)r8a66597;
- 	r8a66597->reg = reg;
+ 	u32 clk_rate;
  
--#ifdef CONFIG_HAVE_CLK
- 	if (r8a66597->pdata->on_chip) {
- 		snprintf(clk_name, sizeof(clk_name), "usb%d", pdev->id);
- 		r8a66597->clk = clk_get(&pdev->dev, clk_name);
- 		if (IS_ERR(r8a66597->clk)) {
- 			dev_err(&pdev->dev, "cannot get clock \"%s\"\n",
- 				clk_name);
--			ret = PTR_ERR(r8a66597->clk);
--			goto clean_up_dev;
-+		} else {
-+			clk_enable(r8a66597->clk);
- 		}
--		clk_enable(r8a66597->clk);
- 	}
+ 	if (IS_ERR(priv->stmmac_clk))
+@@ -192,7 +192,6 @@ static void stmmac_clk_csr_set(struct stmmac_priv *priv)
+ 	   * we can not estimate the proper divider as it is not known
+ 	   * the frequency of clk_csr_i. So we do not change the default
+ 	   * divider. */
 -#endif
+ }
+ 
+ #if defined(STMMAC_XMIT_DEBUG) || defined(STMMAC_RX_DEBUG)
+@@ -971,7 +970,8 @@ static int stmmac_open(struct net_device *dev)
+ 	} else
+ 		priv->tm->enable = 1;
+ #endif
+-	stmmac_clk_enable(priv);
++	if (!IS_ERR(priv->stmmac_clk))
++		clk_enable(priv->stmmac_clk);
+ 
+ 	stmmac_check_ether_addr(priv);
+ 
+@@ -1075,7 +1075,8 @@ open_error:
+ 	if (priv->phydev)
+ 		phy_disconnect(priv->phydev);
+ 
+-	stmmac_clk_disable(priv);
++	if (!IS_ERR(priv->stmmac_clk))
++		clk_disable(priv->stmmac_clk);
+ 
+ 	return ret;
+ }
+@@ -1128,7 +1129,9 @@ static int stmmac_release(struct net_device *dev)
+ #ifdef CONFIG_STMMAC_DEBUG_FS
+ 	stmmac_exit_fs();
+ #endif
+-	stmmac_clk_disable(priv);
 +
- 	if (r8a66597->pdata->sudmac) {
- 		ret = r8a66597_sudmac_ioremap(r8a66597, pdev);
- 		if (ret < 0)
-@@ -1993,13 +1988,11 @@ err_add_udc:
- clean_up3:
- 	free_irq(irq, r8a66597);
- clean_up2:
--#ifdef CONFIG_HAVE_CLK
--	if (r8a66597->pdata->on_chip) {
-+	if (r8a66597->pdata->on_chip && !IS_ERR(r8a66597->clk)) {
- 		clk_disable(r8a66597->clk);
- 		clk_put(r8a66597->clk);
++	if (!IS_ERR(priv->stmmac_clk))
++		clk_disable(priv->stmmac_clk);
+ 
+ 	return 0;
+ }
+@@ -1925,7 +1928,8 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+ 		goto error;
  	}
--clean_up_dev:
--#endif
-+
- 	device_unregister(&r8a66597->gadget.dev);
- clean_up:
- 	if (r8a66597) {
-diff --git a/drivers/usb/gadget/r8a66597-udc.h b/drivers/usb/gadget/r8a66597-udc.h
-index 8e3de61..d2a5ad2 100644
---- a/drivers/usb/gadget/r8a66597-udc.h
-+++ b/drivers/usb/gadget/r8a66597-udc.h
-@@ -13,10 +13,7 @@
- #ifndef __R8A66597_H__
- #define __R8A66597_H__
  
--#ifdef CONFIG_HAVE_CLK
- #include <linux/clk.h>
--#endif
--
- #include <linux/usb/r8a66597.h>
+-	if (stmmac_clk_get(priv))
++	priv->stmmac_clk = clk_get(priv->device, NULL);
++	if (IS_ERR(priv->stmmac_clk))
+ 		pr_warning("%s: warning: cannot get CSR clock\n", __func__);
  
- #define R8A66597_MAX_SAMPLING	10
-@@ -92,9 +89,7 @@ struct r8a66597 {
- 	void __iomem		*reg;
- 	void __iomem		*sudmac_reg;
+ 	/* If a specific clk_csr value is passed from the platform
+@@ -1934,10 +1938,12 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+ 	 * set the MDC clock dynamically according to the csr actual
+ 	 * clock input.
+ 	 */
+-	if (!priv->plat->clk_csr)
+-		stmmac_clk_csr_set(priv);
+-	else
++	if (!priv->plat->clk_csr) {
++		if (!IS_ERR(priv->stmmac_clk))
++			stmmac_clk_csr_set(priv);
++	} else {
+ 		priv->clk_csr = priv->plat->clk_csr;
++	}
  
--#ifdef CONFIG_HAVE_CLK
- 	struct clk *clk;
--#endif
- 	struct r8a66597_platdata	*pdata;
+ 	/* MDIO bus Registration */
+ 	ret = stmmac_mdio_register(ndev);
+@@ -2020,7 +2026,8 @@ int stmmac_suspend(struct net_device *ndev)
+ 	else {
+ 		stmmac_set_mac(priv->ioaddr, false);
+ 		/* Disable clock in case of PWM is off */
+-		stmmac_clk_disable(priv);
++		if (!IS_ERR(priv->stmmac_clk))
++			clk_disable(priv->stmmac_clk);
+ 	}
+ 	spin_unlock(&priv->lock);
+ 	return 0;
+@@ -2042,9 +2049,9 @@ int stmmac_resume(struct net_device *ndev)
+ 	 * from another devices (e.g. serial console). */
+ 	if (device_may_wakeup(priv->device))
+ 		priv->hw->mac->pmt(priv->ioaddr, 0);
+-	else
++	else if (!IS_ERR(priv->stmmac_clk))
+ 		/* enable the clk prevously disabled */
+-		stmmac_clk_enable(priv);
++			clk_enable(priv->stmmac_clk);
  
- 	struct usb_gadget		gadget;
+ 	netif_device_attach(ndev);
+ 
 -- 
 1.7.9
 
