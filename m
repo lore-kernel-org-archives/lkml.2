@@ -1,116 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276Ab2DXCGZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 22:06:25 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47889 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756259Ab2DXCGU (ORCPT
+	id S1756308Ab2DXCHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 22:07:23 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:30770
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756185Ab2DXCHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 22:06:20 -0400
-Date: Tue, 24 Apr 2012 12:06:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org,
-        Parav Pandit <parav.pandit@emulex.com>,
-        Ajit Khaparde <ajitkhaparde@gmail.com>
-Subject: linux-next: manual merge of the net-next tree with the infiniband
- tree
-Message-Id: <20120424120611.cce0e2cdee61b60c700725a8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__24_Apr_2012_12_06_11_+1000_QBc0z=7ZcH=PXpsO"
+	Mon, 23 Apr 2012 22:07:21 -0400
+X-SpamScore: -15
+X-BigFish: VPS-15(zz1432N98dK4015I1447Mzz1202hzzz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M2YOK3-02-022-02
+X-M-MSG: 
+Date: Tue, 24 Apr 2012 10:07:09 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Len Brown <lenb@kernel.org>, Lin Ming <ming.m.lin@intel.com>,
+        <linux-acpi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
+Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
+Message-ID: <20120424020708.GA10397@localhost.amd.com>
+References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
+ <201204231343.03382.rjw@sisk.pl>
+ <20120423151327.GA4019@fedora>
+ <201204232150.57812.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <201204232150.57812.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 24 Apr 2012 02:07:08.0996 (UTC) FILETIME=[F44F6840:01CD21BE]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__24_Apr_2012_12_06_11_+1000_QBc0z=7ZcH=PXpsO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Apr 23, 2012 at 09:50:57PM +0200, Rafael J. Wysocki wrote:
+> > diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+> > index 3263b68..187433f 100644
+> > --- a/drivers/acpi/bus.c
+> > +++ b/drivers/acpi/bus.c
+> > @@ -273,6 +273,9 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+> >  		}
+> >  	} else {
+> >  		if (device->power.states[state].flags.explicit_set) {
+> > +			/* evaluate _PS3 instead of _PS4 when entering D3Cold */
+> > +			if (state == ACPI_STATE_D3)
+> > +				object_name[3] -= 1;
+> 
+> Can you just put '3' here directly?  That'll be much cleaner than the
+> subtraction (that could have been -- as well).
+> 
+> >  			status = acpi_evaluate_object(device->handle,
+> >  						      object_name, NULL, NULL);
+> >  			if (ACPI_FAILURE(status)) {
+> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > index 7417267..de2ae10 100644
+> > --- a/drivers/acpi/scan.c
+> > +++ b/drivers/acpi/scan.c
+> > @@ -887,8 +887,12 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+> >  		/* Evaluate "_PSx" to see if we can do explicit sets */
+> >  		object_name[2] = 'S';
+> >  		status = acpi_get_handle(device->handle, object_name, &handle);
+> > -		if (ACPI_SUCCESS(status))
+> > +		if (ACPI_SUCCESS(status)) {
+> >  			ps->flags.explicit_set = 1;
+> > +			/* Also set D3Cold's explicit flag when _PS3 exists */
+> > +			if (i == ACPI_STATE_D3_HOT)
+> > +				(ps+1)->flags.explicit_set = 1;
+> 
+> Please don't use pointer arithmetics here.  I know it _happens_ to work,
+> but I don't think it's appropriate in this situation at all.
+> 
 
-Hi all,
+Thanks for the suggestions.
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/ethernet/emulex/benet/be.h between commit c72adfd767af
-("be2net: Add functionality to support RoCE driver") from the infiniband
-tree and commit 42f11cf20cc5 ("be2net: fix ethtool get settings") from
-the net-next tree.
+What about this?
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index 3263b68..3a7860f 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -273,6 +273,9 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+ 		}
+ 	} else {
+ 		if (device->power.states[state].flags.explicit_set) {
++			/* Evaluate _PS3 when entering D3cold */
++			if (state == ACPI_STATE_D3)
++				object_name[3] = '3';
+ 			status = acpi_evaluate_object(device->handle,
+ 						      object_name, NULL, NULL);
+ 			if (ACPI_FAILURE(status)) {
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 7417267..734d946 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -908,6 +908,10 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+ 	device->power.states[ACPI_STATE_D3].flags.valid = 1;
+ 	device->power.states[ACPI_STATE_D3].power = 0;
+ 
++	/* Also set D3cold's explicit flag when _PS3 exists */
++	if (device->power.states[ACPI_STATE_D3_HOT].flags.explicit_set)
++		device->power.states[ACPI_STATE_D3].flags.explicit_set = 1;
++
+ 	acpi_bus_init_power(device);
+ 
+ 	return 0;
 
-diff --cc drivers/net/ethernet/emulex/benet/be.h
-index 7bb2e97,ad69cf8..0000000
---- a/drivers/net/ethernet/emulex/benet/be.h
-+++ b/drivers/net/ethernet/emulex/benet/be.h
-@@@ -379,22 -394,7 +396,18 @@@ struct be_adapter=20
-  	u32 rx_fc;		/* Rx flow control */
-  	u32 tx_fc;		/* Tx flow control */
-  	bool stats_cmd_sent;
-- 	int link_speed;
-- 	u8 port_type;
-- 	u8 transceiver;
-- 	u8 autoneg;
-  	u8 generation;		/* BladeEngine ASIC generation */
- +	u32 if_type;
- +	struct {
- +		u8 __iomem *base;	/* Door Bell */
- +		u32 size;
- +		u32 total_size;
- +		u64 io_addr;
- +	} roce_db;
- +	u32 num_msix_roce_vec;
- +	struct ocrdma_dev *ocrdma_dev;
- +	struct list_head entry;
- +
-  	u32 flash_status;
-  	struct completion flash_compl;
- =20
-@@@ -606,17 -597,5 +620,18 @@@ extern void be_link_status_update(struc
-  extern void be_parse_stats(struct be_adapter *adapter);
-  extern int be_load_fw(struct be_adapter *adapter, u8 *func);
-  extern bool be_is_wol_supported(struct be_adapter *adapter);
-+ extern bool be_pause_supported(struct be_adapter *adapter);
- +
- +/*
- + * internal function to initialize-cleanup roce device.
- + */
- +extern void be_roce_dev_add(struct be_adapter *);
- +extern void be_roce_dev_remove(struct be_adapter *);
- +
- +/*
- + * internal function to open-close roce device during ifup-ifdown.
- + */
- +extern void be_roce_dev_open(struct be_adapter *);
- +extern void be_roce_dev_close(struct be_adapter *);
- +
-  #endif				/* BE_H */
+Thanks,
+Aaron
 
---Signature=_Tue__24_Apr_2012_12_06_11_+1000_QBc0z=7ZcH=PXpsO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPlgqTAAoJEECxmPOUX5FEbUAP/jIf5CKRfbZXwM2tRgh1wg+Z
-kipdXKoFPouQoHLtyyOx3Vcs39j0wL12qQqa2O2bhHO+vQzmTyEtOMczGPytbEd5
-XPmv2w8Qoi4ZexbCi6eVPhJYlwRP3cluQZhH7pAIvEaJt9VWg2q0In4VSXUhKggY
-iydQAYBhyFx55wQ5ZqahGdx4UKFeP/wyjDYImXXGvJ9gn86PRW8qXw1QsrVPSoPR
-uNp2EOKZBW0Q9NMUkuqzHtgpz3TSiO30A/2IxmN6GB6HSJcyIylyMVGQWzMyv5df
-8v9SjAS0k8BITNJOsoFcJytkzCv/5Tv2Hme4uVaBGQLkdPyYjvqnJ+A/jOoyKGXI
-TEwhr4/HSRwbQOJZwIfswLTZIgFMkiCHzn5icxpbK/bLTS3K7BYno+awGxzcv9YF
-C/sh8738jthBUzvimDGqUKakc2bVvs9owHowAvcokKcgzAZDdTGOae/Dnz7hC6o3
-r5jEvpnD0SthlOQjilO09D1ke4vCbk35K9G5jON6+PQ1YZd5F1ft+a2HIIcaYmqq
-gVMX+td4sCj4RFzaqoG0mxS5GsNgQs3haYvF3lv+qGOIx4AMDzP0yfDn3M5b58Vc
-aQ6gVU/uPEyJV/SSxRUMtvX6cCXI8KfXk1LKImSVq3DMP29f5fhvvcPWhupK18Yu
-UkPngkPoiG9LnCXrrrqe
-=H1b7
------END PGP SIGNATURE-----
-
---Signature=_Tue__24_Apr_2012_12_06_11_+1000_QBc0z=7ZcH=PXpsO--
