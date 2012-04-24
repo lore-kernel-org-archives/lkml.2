@@ -1,90 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab2DXRby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 13:31:54 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:37084 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755811Ab2DXRbx (ORCPT
+	id S1756875Ab2DXRcg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 13:32:36 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:53957 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755811Ab2DXRce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 13:31:53 -0400
-Message-ID: <1335288711.2347.20.camel@lorien2>
-Subject: Re: [PATCH v2] leds: heartbeat: stop on shutdown
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: shuahkhan@gmail.com, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 24 Apr 2012 11:31:51 -0600
-In-Reply-To: <4F96E26C.3060302@ahsoftware.de>
-References: <1335275034-22135-1-git-send-email-holler@ahsoftware.de>
-	 <1335280022-16308-1-git-send-email-holler@ahsoftware.de>
-	 <1335281074.2347.4.camel@lorien2> <4F96D58A.3070008@ahsoftware.de>
-	 <1335286810.2347.18.camel@lorien2> <4F96E26C.3060302@ahsoftware.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 24 Apr 2012 13:32:34 -0400
+Date: Tue, 24 Apr 2012 17:33:47 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        linux-security-module@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 16/43] userns: Simplify the user_namespace by making
+ userns->creator a kuid.
+Message-ID: <20120424173347.GA14017@mail.hallyn.com>
+References: <m11unyn70b.fsf@fess.ebiederm.org>
+ <1333862139-31737-16-git-send-email-ebiederm@xmission.com>
+ <20120418184847.GA4984@mail.hallyn.com>
+ <m1aa266meh.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1aa266meh.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-24 at 19:27 +0200, Alexander Holler wrote:
-> Am 24.04.2012 19:00, schrieb Shuah Khan:
-> > On Tue, 2012-04-24 at 18:32 +0200, Alexander Holler wrote:
-> >> Am 24.04.2012 17:24, schrieb Shuah Khan:
-> >>> On Tue, 2012-04-24 at 17:07 +0200, Alexander Holler wrote:
-> >>>> A halted kernel should not show a heartbeat.
-> >>>>
-> >>>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-> >>>> ---
-> >>>>  drivers/leds/ledtrig-heartbeat.c |   18 +++++++++++++++++-
-> >>>>  1 files changed, 17 insertions(+), 1 deletions(-)
-> >>>>
-> >>>> diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
-> >>>> index 759c0bb..1c05bd9 100644
-> >>>> --- a/drivers/leds/ledtrig-heartbeat.c
-> >>>> +++ b/drivers/leds/ledtrig-heartbeat.c
-> >>>> @@ -18,6 +18,7 @@
-> >>>>  #include <linux/timer.h>
-> >>>>  #include <linux/sched.h>
-> >>>>  #include <linux/leds.h>
-> >>>> +#include <linux/reboot.h>
-> >>>>  #include "leds.h"
-> >>>>  
-> >>>>  struct heartbeat_trig_data {
-> >>>> @@ -101,13 +102,28 @@ static struct led_trigger heartbeat_led_trigger = {
-> >>>>  	.deactivate = heartbeat_trig_deactivate,
-> >>>>  };
-> >>>>  
-> >>>> +static int heartbeat_reboot_notifier(struct notifier_block *nb,
-> >>>> +				     unsigned long code, void *unused)
-> >>>> +{
-> >>>> +	led_trigger_unregister(&heartbeat_led_trigger);
-> >>>> +	return NOTIFY_DONE;
-> >>>> +}
-> > I am sorry I didn't catch this the last time. Do you need to call
-> > unregister here? Looks like trigger is going away with a registered
-> > reboot notifier. Might be fine, since reboot is going to happen.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> "Serge E. Hallyn" <serge@hallyn.com> writes:
 > 
-> That unregister is the whole reason of the patch because it disables all
-> running heartbeats on reboot/shutdown. ;)
+> > Quoting Eric W. Beiderman (ebiederm@xmission.com):
+> >> From: Eric W. Biederman <ebiederm@xmission.com>
+> >> 
+> >> - Transform userns->creator from a user_struct reference to a simple
+> >>   kuid_t, kgid_t pair.
+> >> 
+> >>   In cap_capable this allows the check to see if we are the creator of
+> >>   a namespace to become the classic suser style euid permission check.
+> >> 
+> >>   This allows us to remove the need for a struct cred in the mapping
+> >>   functions and still be able to dispaly the user namespace creators
+> >>   uid and gid as 0.
+> >> 
+> >> - Remove the now unnecessary delayed_work in free_user_ns.
+> >> 
+> >>   All that is left for free_user_ns to do is to call kmem_cache_free
+> >>   and put_user_ns.  Those functions can be called in any context
+> >>   so call them directly from free_user_ns removing the need for delayed work.
+> >> 
+> >> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> >> ---
+> >>  include/linux/user_namespace.h |    4 ++--
+> >>  kernel/user.c                  |    7 ++++---
+> >>  kernel/user_namespace.c        |   39 ++++++++++++++++++---------------------
+> >>  security/commoncap.c           |    5 +++--
+> >>  4 files changed, 27 insertions(+), 28 deletions(-)
+> >> 
+> >> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+> >> index d767508..8a391bd 100644
+> >> --- a/include/linux/user_namespace.h
+> >> +++ b/include/linux/user_namespace.h
+> >> @@ -9,8 +9,8 @@
+> >>  struct user_namespace {
+> >>  	struct kref		kref;
+> >>  	struct user_namespace	*parent;
+> >> -	struct user_struct	*creator;
+> >> -	struct work_struct	destroyer;
+> >> +	kuid_t			owner;
+> >> +	kgid_t			group;
+> >>  };
+> >>  
+> >>  extern struct user_namespace init_user_ns;
+> >> diff --git a/kernel/user.c b/kernel/user.c
+> >> index 025077e..cff3856 100644
+> >> --- a/kernel/user.c
+> >> +++ b/kernel/user.c
+> >> @@ -25,7 +25,8 @@ struct user_namespace init_user_ns = {
+> >>  	.kref = {
+> >>  		.refcount	= ATOMIC_INIT(3),
+> >>  	},
+> >> -	.creator = &root_user,
+> >> +	.owner = GLOBAL_ROOT_UID,
+> >> +	.group = GLOBAL_ROOT_GID,
+> >>  };
+> >>  EXPORT_SYMBOL_GPL(init_user_ns);
+> >>  
+> >> @@ -54,9 +55,9 @@ struct hlist_head uidhash_table[UIDHASH_SZ];
+> >>   */
+> >>  static DEFINE_SPINLOCK(uidhash_lock);
+> >>  
+> >> -/* root_user.__count is 2, 1 for init task cred, 1 for init_user_ns->user_ns */
+> >> +/* root_user.__count is 1, for init task cred */
+> >>  struct user_struct root_user = {
+> >> -	.__count	= ATOMIC_INIT(2),
+> >> +	.__count	= ATOMIC_INIT(1),
+> >>  	.processes	= ATOMIC_INIT(1),
+> >>  	.files		= ATOMIC_INIT(0),
+> >>  	.sigpending	= ATOMIC_INIT(0),
+> >> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+> >> index 898e973..f69741a 100644
+> >> --- a/kernel/user_namespace.c
+> >> +++ b/kernel/user_namespace.c
+> >> @@ -27,6 +27,16 @@ int create_user_ns(struct cred *new)
+> >>  {
+> >>  	struct user_namespace *ns, *parent_ns = new->user_ns;
+> >>  	struct user_struct *root_user;
+> >> +	kuid_t owner = make_kuid(new->user_ns, new->euid);
+> >> +	kgid_t group = make_kgid(new->user_ns, new->egid);
+> >> +
+> >> +	/* The creator needs a mapping in the parent user namespace
+> >> +	 * or else we won't be able to reasonably tell userspace who
+> >> +	 * created a user_namespace.
+> >> +	 */
+> >> +	if (!kuid_has_mapping(parent_ns, owner) ||
+> >> +	    !kgid_has_mapping(parent_ns, group))
+> >> +		return -EPERM;
+> >>  
+> >>  	ns = kmem_cache_alloc(user_ns_cachep, GFP_KERNEL);
+> >>  	if (!ns)
+> >> @@ -43,7 +53,9 @@ int create_user_ns(struct cred *new)
+> >>  
+> >>  	/* set the new root user in the credentials under preparation */
+> >>  	ns->parent = parent_ns;
+> >
+> > I think in the past the creator cred pinned the ns->parent.  Do you now
+> > need to explicitly pin ns->parent (and release it in free_user_ns())?
+> 
+> Yes we do have to explicitly reference count the parent namespace.
+> But that happened in the patch 7:
+> "userns: Add an explicit reference to the parent user namespace"
 
-Sorry I should have been clear about which unregister. I meant
-unregister_reboot_notifier()
-> 
-> I still wonder why the timers are running after a kernel halted (so the
-> heardbeat was still alive), but there might be a good reason not just to
-> disable all running timers unconditionally on shutdown.
-> 
-> Regards,
-> 
-> Alexander
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Perhaps that suffices, but I'm not convinced.  The struct cred is
+pinning it's own ns, but if t1 does clone(CLONE_NEWUSER) to produce
+t2, which does the same to procduce t3, and then t2 exits, I'm not
+seeing what will pin t2's userns.
 
-
+-serge
