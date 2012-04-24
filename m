@@ -1,123 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab2DXIgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 04:36:12 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.182]:57915 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065Ab2DXIgI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932104Ab2DXIgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 04:36:11 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:24637 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932066Ab2DXIgI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Apr 2012 04:36:08 -0400
-X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
-X-RZG-CLASS-ID: mo05
-Message-Id: <201204240835.q3O8ZO5h009576@gatekeeper.vosshq.de>
-From: Nikolaus Voss <n.voss@weinmann.de>
-Date: Tue, 24 Apr 2012 10:29:56 +0200
-Subject: [PATCH v3] drivers/rtc/rtc-m41t93.c: don't let get_time() reset
- M41T93_FLAG_OF
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Cc: akpm@linux-foundation.org, a.zummo@towertech.it, grant.likely@secretlab.ca
+X-SpamScore: -7
+X-BigFish: VS-7(zcb8kz9371I1432N98dKzz1202hzz8275bhz2dh2a8h668h839hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 24 Apr 2012 16:46:17 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <dongas86@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/3] ARM: imx6q: switch to use pinctrl driver
+Message-ID: <20120424084616.GA24122@shlinux2.ap.freescale.net>
+References: <1334333915-1174-1-git-send-email-b29396@freescale.com>
+ <1334333915-1174-3-git-send-email-b29396@freescale.com>
+ <20120414135331.GB3852@pengutronix.de>
+ <CAA+hA=QhSUZg0bWTss_4ROwZ--OOQfcP=mpt+MP7-ZKPkEwXyA@mail.gmail.com>
+ <20120415073751.GF24997@S2101-09.ap.freescale.net>
+ <20120416033519.GA17173@shlinux2.ap.freescale.net>
+ <CACRpkdZWNNz3+LbPtkV4rS4BJpqQdZio0qLkedLamSisgDkm6Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZWNNz3+LbPtkV4rS4BJpqQdZio0qLkedLamSisgDkm6Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the rtc reports the time might be invalid due to oscillator
-failure, M41T93_FLAG_OF flag must not be reset by get_time() as
-the read operation doesn't make the time valid.
+On Tue, Apr 24, 2012 at 04:23:34PM +0800, Linus Walleij wrote:
+> On Mon, Apr 16, 2012 at 5:35 AM, Dong Aisheng
+> <aisheng.dong@freescale.com> wrote:
+> > On Sun, Apr 15, 2012 at 03:37:54PM +0800, Shawn Guo wrote:
+> >> On Sun, Apr 15, 2012 at 12:03:16PM +0800, Dong Aisheng wrote:
+> >> ...
+> >> > For MX3 and MX5, before their pinctrl driver are available, user may
+> >> > need to define a dummy in dt to avoid such an error.
+> >> >
+> >> That is insane, and will not work.
+> >>
+> >> 1) We do not have device tree support for MX3 yet.
+> >> 2) It's not practical to add dummy entries in dt to avoid the error.
+> >> 3) There are still so many non-dt board files support in the tree.
+> >> How will they work with that?
+> >>
+> >> My suggestion is to not make it an error but a dev_dbg, assuming that
+> >> the pins are already set up by platform code if we do not find the
+> >> entry from pinctrl system.  We can take it as a transition solution,
+> >> and turn the dev_dbg back to error when all the users of the device
+> >> driver are converted to device tree.
+> >>
+> > My thinking is let pinctrl core handle dummy state as regulator subsystem
+> > and does not depend on dt.
+> > Linus, Stephen, any comment?
+> 
+> I think this was discussed in another thread and Sascha agreed that
+> wee need dummy pinctrl to copy with a smooth transition in i.MX.
+> 
+> So I'm happy with that, we just need to finalize a patch, poke
+> me if I missed some patch...
+> 
+I'm revising that patch based on your suggestion,
+will send out soon. :-)
 
-Without this patch, only the first get_time() reported an invalid
-time, the second get_time() reported a valid time althought the
-reported time is probably wrong due to oscillator failure.
-
-Instead of resetting in get_time(), with this patch M41T93_FLAG_OF
-is reset in set_time() when a valid time is to be written.
-
-Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
----
-v3: removed accidentally included i2c patch
-v2: better commit description
-
- drivers/rtc/rtc-m41t93.c |   46 +++++++++++++++++++++++++++-------------------
- 1 files changed, 27 insertions(+), 19 deletions(-)
-
-diff --git a/drivers/rtc/rtc-m41t93.c b/drivers/rtc/rtc-m41t93.c
-index ef71132..f19f45c 100644
---- a/drivers/rtc/rtc-m41t93.c
-+++ b/drivers/rtc/rtc-m41t93.c
-@@ -48,6 +48,7 @@ static inline int m41t93_set_reg(struct spi_device *spi, u8 addr, u8 data)
- static int m41t93_set_time(struct device *dev, struct rtc_time *tm)
- {
- 	struct spi_device *spi = to_spi_device(dev);
-+	int tmp;
- 	u8 buf[9] = {0x80};        /* write cmd + 8 data bytes */
- 	u8 * const data = &buf[1]; /* ptr to first data byte */
- 
-@@ -62,6 +63,30 @@ static int m41t93_set_time(struct device *dev, struct rtc_time *tm)
- 		return -EINVAL;
- 	}
- 
-+	tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
-+	if (tmp < 0)
-+		return tmp;
-+
-+	if (tmp & M41T93_FLAG_OF) {
-+		dev_warn(&spi->dev, "OF bit is set, resetting.\n");
-+		m41t93_set_reg(spi, M41T93_REG_FLAGS, tmp & ~M41T93_FLAG_OF);
-+
-+		tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
-+		if (tmp < 0) {
-+			return tmp;
-+		} else if (tmp & M41T93_FLAG_OF) {
-+			/* OF cannot be immediately reset: oscillator has to be
-+			 * restarted. */
-+			u8 reset_osc = buf[M41T93_REG_ST_SEC] | M41T93_FLAG_ST;
-+
-+			dev_warn(&spi->dev,
-+				 "OF bit is still set, kickstarting clock.\n");
-+			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
-+			reset_osc &= ~M41T93_FLAG_ST;
-+			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
-+		}
-+	}
-+
- 	data[M41T93_REG_SSEC]		= 0;
- 	data[M41T93_REG_ST_SEC]		= bin2bcd(tm->tm_sec);
- 	data[M41T93_REG_MIN]		= bin2bcd(tm->tm_min);
-@@ -89,10 +114,7 @@ static int m41t93_get_time(struct device *dev, struct rtc_time *tm)
- 	   1. halt bit (HT) is set: the clock is running but update of readout
- 	      registers has been disabled due to power failure. This is normal
- 	      case after poweron. Time is valid after resetting HT bit.
--	   2. oscillator fail bit (OF) is set. Oscillator has be stopped and
--	      time is invalid:
--	      a) OF can be immeditely reset.
--	      b) OF cannot be immediately reset: oscillator has to be restarted.
-+	   2. oscillator fail bit (OF) is set: time is invalid.
- 	*/
- 	tmp = spi_w8r8(spi, M41T93_REG_ALM_HOUR_HT);
- 	if (tmp < 0)
-@@ -110,21 +132,7 @@ static int m41t93_get_time(struct device *dev, struct rtc_time *tm)
- 
- 	if (tmp & M41T93_FLAG_OF) {
- 		ret = -EINVAL;
--		dev_warn(&spi->dev, "OF bit is set, resetting.\n");
--		m41t93_set_reg(spi, M41T93_REG_FLAGS, tmp & ~M41T93_FLAG_OF);
--
--		tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
--		if (tmp < 0)
--			return tmp;
--		else if (tmp & M41T93_FLAG_OF) {
--			u8 reset_osc = buf[M41T93_REG_ST_SEC] | M41T93_FLAG_ST;
--
--			dev_warn(&spi->dev,
--				 "OF bit is still set, kickstarting clock.\n");
--			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
--			reset_osc &= ~M41T93_FLAG_ST;
--			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
--		}
-+		dev_warn(&spi->dev, "OF bit is set, write time to restart.\n");
- 	}
- 
- 	if (tmp & M41T93_FLAG_BL)
--- 
-1.7.5.4
+Regards
+Dong Aisheng
 
