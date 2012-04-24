@@ -1,53 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab2DXOg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 10:36:29 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:52792 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752901Ab2DXOg2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 10:36:28 -0400
-Date: Tue, 24 Apr 2012 07:36:24 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: Re: [PATCH RESEND] driver core: always handle dpm_order
-Message-ID: <20120424143624.GB3438@kroah.com>
-References: <1335165396-23604-1-git-send-email-linus.walleij@stericsson.com>
- <20120423154342.GB23990@kroah.com>
- <CACRpkdabgGFCLGNFtje2efXoRHtk_uvb3yo6FTkH2pVGpHGB1A@mail.gmail.com>
+	id S1755324Ab2DXOkc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 10:40:32 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:49750 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752901Ab2DXOkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 10:40:23 -0400
+Message-ID: <4F96BAC7.4000709@parallels.com>
+Date: Tue, 24 Apr 2012 11:37:59 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdabgGFCLGNFtje2efXoRHtk_uvb3yo6FTkH2pVGpHGB1A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 13/23] slub: create duplicate cache
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1335138820-26590-2-git-send-email-glommer@parallels.com> <20120424141845.GB8626@somewhere>
+In-Reply-To: <20120424141845.GB8626@somewhere>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.19.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 02:11:09PM +0200, Linus Walleij wrote:
-> On Mon, Apr 23, 2012 at 5:43 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Apr 23, 2012 at 09:16:36AM +0200, Linus Walleij wrote:
-> >> From: Rabin Vincent <rabin.vincent@stericsson.com>
-> >>
-> >> If !dev->class, device_move() does not respect the dpm_order.
-> >> Fix it to do so.
-> >>
-> >> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> >> Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-> >> Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-> >> [Fixed a small dangling label compile warning]
-> >> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> >> ---
-> >>  drivers/base/core.c |   36 ++++++++++++++++++------------------
-> >>  1 file changed, 18 insertions(+), 18 deletions(-)
-> >
-> > Is this a problem in 3.4?  Older kernels?  Or can it wait for 3.5?
-> 
-> Rabin said earlier that it could wait for 3.4 atleast.
+On 04/24/2012 11:18 AM, Frederic Weisbecker wrote:
+> On Sun, Apr 22, 2012 at 08:53:30PM -0300, Glauber Costa wrote:
+>> This patch provides kmem_cache_dup(), that duplicates
+>> a cache for a memcg, preserving its creation properties.
+>> Object size, alignment and flags are all respected.
+>>
+>> When a duplicate cache is created, the parent cache cannot
+>> be destructed during the child lifetime. To assure this,
+>> its reference count is increased if the cache creation
+>> succeeds.
+>>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> CC: Christoph Lameter<cl@linux.com>
+>> CC: Pekka Enberg<penberg@cs.helsinki.fi>
+>> CC: Michal Hocko<mhocko@suse.cz>
+>> CC: Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Johannes Weiner<hannes@cmpxchg.org>
+>> CC: Suleiman Souhlal<suleiman@google.com>
+>> ---
+>>   include/linux/memcontrol.h |    3 +++
+>>   include/linux/slab.h       |    3 +++
+>>   mm/memcontrol.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>>   mm/slub.c                  |   37 +++++++++++++++++++++++++++++++++++++
+>>   4 files changed, 87 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> index 99e14b9..493ecdd 100644
+>> --- a/include/linux/memcontrol.h
+>> +++ b/include/linux/memcontrol.h
+>> @@ -445,6 +445,9 @@ int memcg_css_id(struct mem_cgroup *memcg);
+>>   void mem_cgroup_register_cache(struct mem_cgroup *memcg,
+>>   				      struct kmem_cache *s);
+>>   void mem_cgroup_release_cache(struct kmem_cache *cachep);
+>> +extern char *mem_cgroup_cache_name(struct mem_cgroup *memcg,
+>> +				   struct kmem_cache *cachep);
+>> +
+>>   #else
+>>   static inline void mem_cgroup_register_cache(struct mem_cgroup *memcg,
+>>   					     struct kmem_cache *s)
+>> diff --git a/include/linux/slab.h b/include/linux/slab.h
+>> index c7a7e05..909b508 100644
+>> --- a/include/linux/slab.h
+>> +++ b/include/linux/slab.h
+>> @@ -323,6 +323,9 @@ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
+>>
+>>   #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>>   #define MAX_KMEM_CACHE_TYPES 400
+>> +extern struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+>> +					 struct kmem_cache *cachep);
+>> +void kmem_cache_drop_ref(struct kmem_cache *cachep);
+>>   #else
+>>   #define MAX_KMEM_CACHE_TYPES 0
+>>   #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 0015ed0..e881d83 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -467,6 +467,50 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
+>>   EXPORT_SYMBOL(tcp_proto_cgroup);
+>>   #endif /* CONFIG_INET */
+>>
+>> +/*
+>> + * This is to prevent races againt the kmalloc cache creations.
+>> + * Should never be used outside the core memcg code. Therefore,
+>> + * copy it here, instead of letting it in lib/
+>> + */
+>> +static char *kasprintf_no_account(gfp_t gfp, const char *fmt, ...)
+>> +{
+>> +	unsigned int len;
+>> +	char *p = NULL;
+>> +	va_list ap, aq;
+>> +
+>> +	va_start(ap, fmt);
+>> +	va_copy(aq, ap);
+>> +	len = vsnprintf(NULL, 0, fmt, aq);
+>> +	va_end(aq);
+>> +
+>> +	p = kmalloc_no_account(len+1, gfp);
+>
+> I can't seem to find kmalloc_no_account() in this patch or may be
+> I missed it in a previous one?
 
-That didn't answer my question at all.  Oh well, 3.5 it is...
+It is in a previous one (actually two, one for the slab, one for the 
+slub). They are bundled in the cache creation, but I could separate it
+for clarity, if you prefer.
+
+
+>> +	if (!p)
+>> +		goto out;
+>> +
+>> +	vsnprintf(p, len+1, fmt, ap);
+>> +
+>> +out:
+>> +	va_end(ap);
+>> +	return p;
+>> +}
+>> +
+>> +char *mem_cgroup_cache_name(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+>> +{
+>> +	char *name;
+>> +	struct dentry *dentry = memcg->css.cgroup->dentry;
+>> +
+>> +	BUG_ON(dentry == NULL);
+>> +
+>> +	/* Preallocate the space for "dead" at the end */
+>> +	name = kasprintf_no_account(GFP_KERNEL, "%s(%d:%s)dead",
+>> +	    cachep->name, css_id(&memcg->css), dentry->d_name.name);
+>> +
+>> +	if (name)
+>> +		/* Remove "dead" */
+>> +		name[strlen(name) - 4] = '\0';
+>
+> Why this space for "dead" ?
+
+Ok, sorry. Since I didn't include the destruction part, it got too easy 
+for whoever wasn't following the last discussion on this to get lost - 
+My bad. So here it is:
+
+When we destroy the memcg, some objects may still hold the cache in 
+memory. It is like a reference count, in a sense, which each object 
+being a reference.
+
+In typical cases, like non-shrinkable caches that has create - destroy 
+patterns, the caches will go away as soon as the tasks using them.
+
+But in cache-like structure like the dentry cache, the objects may hang 
+around until a shrinker pass takes them out. And even then, some of them 
+will live on.
+
+In this case, we will display them with "dead" in the name.
+
+We could hide them, but then it gets weirder because it would be hard to 
+understand where is your used memory when you need to inspect your system.
+
+Creating another file, slabinfo_deadcaches, and keeping the names, is 
+also a possibility, if people think that the string append is way too ugly.
