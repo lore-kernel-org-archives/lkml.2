@@ -1,135 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599Ab2DXUxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 16:53:05 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:59395 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757466Ab2DXUxC (ORCPT
+	id S1757619Ab2DXUz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 16:55:57 -0400
+Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:50933 "EHLO
+	smtp121.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756096Ab2DXUz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 16:53:02 -0400
-Date: Tue, 24 Apr 2012 21:52:55 +0100
-From: Julie Sullivan <kernelmail.jms@gmail.com>
-To: platform-driver-x86@vger.kernel.org
-Cc: martin.nyhus@gmx.com, Matthew Garrett <mjg@redhat.com>,
-        kernelmail.jms@gmail.com, linux-kernel@vger.kernel.org
-Subject: Oops in -rc series fixed by [PATCH] dell-laptop: Terminate quirks
- list properly
-Message-ID: <20120424205255.GB3766@gmail.com>
+	Tue, 24 Apr 2012 16:55:56 -0400
+Message-ID: <4F97135A.2060801@calxeda.com>
+Date: Tue, 24 Apr 2012 15:55:54 -0500
+From: Rob Herring <rob.herring@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+CC: minyard@acm.org, linux-kernel@vger.kernel.org, tcminyard@gmail.com
+Subject: Re: [BISECTED] ipmi_si not loading since 2.6.39
+References: <20120420223833.GA7855@nik-comp.lan> <20120421072056.GA2033@nik-comp.lan> <4F95B6F3.3010303@calxeda.com> <4F96AD8C.9010105@acm.org> <20120424203745.GB2152@nik-comp.lan>
+In-Reply-To: <20120424203745.GB2152@nik-comp.lan>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/24/2012 03:37 PM, Nikola Ciprich wrote:
+> Hi Corey,
+> 
+> I have this problem with 3.4-rc4 as well and it already contains
+> b1608d69cb804e414d0887140ba08a9398e4e638, so this doesn't fix this problem..
+> 
 
-Hi guys,
+Can you send the kernel log for the failing case.
 
-This is to confirm that Martin's change which is now in -next fixes an oops on
-my Dell MXG071 (also known as the XPS M1730):
+Rob
 
-
-
-[PATCH] dell-laptop: Terminate quirks list properly
-
-Martin Nyhus
-Thu, 15 Mar 2012 10:28:34 -0700
-
-Add missing DMI_NONE entry to end of the quirks list so
-dmi_check_system() won't read past the end of the list.
-
-Signed-off-by: Martin Nyhus <martin.ny...@gmx.com>
----
- drivers/platform/x86/dell-laptop.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/platform/x86/dell-laptop.c 
-b/drivers/platform/x86/dell-laptop.c
-index a05fc9c..e6c08ee 100644
---- a/drivers/platform/x86/dell-laptop.c
-+++ b/drivers/platform/x86/dell-laptop.c
-@@ -212,6 +212,7 @@ static struct dmi_system_id __devinitdata dell_quirks[] = {
-                },
-                .driver_data = &quirk_dell_vostro_v130,
-        },
-+       { }
- };
- 
- static struct calling_interface_buffer *buffer;
--- 
-1.7.7.6
-
-
-
-
-This oops is in the current -rc series originally appearing in -rc1 and I 
-had bisected it to Acelan's commit:
-
-commit 2a748853ca395c48ea75baa250f7cea6f0f23dbf
-Author: AceLan Kao <acelan.kao@canonical.com>
-Date:   Thu Nov 17 15:30:42 2011 +0800
-
-    dell-laptop: add 3 machines that has touchpad LED
-
-    Add "Vostro 3555", "Inspiron N311z", and "Inspiron M5110" into quirks,
-    so that they could have touchpad LED function work.
-
-    Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-    Signed-off-by: Matthew Garrett <mjg@redhat.com>
-
-
-
-Reverting this patch or adding my machine to the quirk array also fixes it
-but obviously terminating the list properly is preferable ;-)
-
-
-
-Sample oops below.
-
-
-[   16.083634] BUG: unable to handle kernel paging request at 000000400fb00000
-[   16.083663] IP: [<ffffffff812375a4>] strstr+0x30/0x68
-[   16.083677] PGD 13472f067 PUD 0
-[   16.083686] Oops: 0000 [#1] SMP
-[   16.083695] CPU 1
-[   16.083699] Modules linked in: dell_laptop(+) nand(+) iwlegacy nand_ids mtd nand_ecc sdhci_pci sdhci firewire_ohci mmc_core firewire_core nouveau ttm drm_kms_helper intel_agp intel_gtt mxm_wmi
-[   16.083750]
-[   16.083755] Pid: 1644, comm: modprobe Not tainted 3.4.0-rc2 #121 Dell Inc. MXG071                          /0KX412
-[   16.083773] RIP: 0010:[<ffffffff812375a4>]  [<ffffffff812375a4>] strstr+0x30/0x68
-[   16.083787] RSP: 0018:ffff880131855d98  EFLAGS: 00010217
-[   16.083795] RAX: 0000000000000000 RBX: 000000400fb00000 RCX: ffffffffffffffff
-[   16.083804] RDX: 000000000000000e RSI: ffffffffa0115aa1 RDI: 000000400fb00000
-[   16.083814] RBP: ffff880131855db8 R08: 0000000000000049 R09: 0000000000000001
-[   16.083823] R10: ffff88013b40b000 R11: 00000000000014b6 R12: 0000000000000011
-[   16.083833] R13: ffffffffa0115aa1 R14: ffffffffffffffff R15: 0000000000000001
-[   16.083844] FS:  00007fbe5c729720(0000) GS:ffff88013b400000(0000) knlGS:0000000000000000
-[   16.083855] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   16.083863] CR2: 000000400fb00000 CR3: 000000013472b000 CR4: 00000000000007e0
-[   16.083873] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   16.083883] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   16.083893] Process modprobe (pid: 1644, threadinfo ffff880131854000, task ffff880134710000)
-[   16.083904] Stack:
-[   16.083908]  ffffffffa0115a90 0000000000000000 ffffffffa0115ae0 0000000000000001
-[   16.083929]  ffff880131855de8 ffffffff813c9e9b 0000000000000049 ffffffffa0115a90
-[   16.083944]  0000000000000000 0000000000000000 ffff880131855e08 ffffffff813c9f07
-[   16.083960] Call Trace:
-[   16.083970]  [<ffffffff813c9e9b>] dmi_matches+0x69/0x85
-[   16.083979]  [<ffffffff813c9f07>] dmi_check_system+0x1c/0x49
-[   16.083992]  [<ffffffffa011809d>] ? find_tokens+0x9d/0x9d [dell_laptop]
-[   16.084003]  [<ffffffffa01180da>] dell_init+0x3d/0x4d6 [dell_laptop]
-[   16.084015]  [<ffffffff81052a7d>] ? up_read+0x21/0x38
-[   16.084024]  [<ffffffffa011809d>] ? find_tokens+0x9d/0x9d [dell_laptop]
-[   16.084036]  [<ffffffff8100020f>] do_one_initcall+0x7f/0x134
-[   16.084046]  [<ffffffff8108729c>] sys_init_module+0x17c0/0x1a21
-[   16.084058]  [<ffffffff815df412>] system_call_fastpath+0x16/0x1b
-[   16.084066] Code: e5 41 56 49 83 ce ff 4c 89 f1 41 55 49 89 f5 41 54 53 48 89 fb 48 89 f7 f2 ae 48 f7 d1 49 89 cc 4d 01 f4 74 32 4c 89 f1 48 89 df <f2> ae 49 89 ce 49 f7 d6 49 ff ce eb 18 4c 89 e2 4c 89 ee 48 89
-[   16.084186] RIP  [<ffffffff812375a4>] strstr+0x30/0x68
-[   16.084186]  RSP <ffff880131855d98>
-[   16.084186] CR2: 000000400fb00000
-[   16.092359] ---[ end trace fcf966b4631646a9 ]---
-
-
-Cheers,
-Julie
-
+> BR
+> 
+> nik
+> 
+> 
+> On Tue, Apr 24, 2012 at 08:41:32AM -0500, Corey Minyard wrote:
+>> Looks like you might need change b1608d69cb804e414d0887140ba08a9398e4e638
+>>
+>> -corey
+>>
+>> On 04/23/2012 03:09 PM, Rob Herring wrote:
+>>> On 04/21/2012 02:20 AM, Nikola Ciprich wrote:
+>>>> Hi,
+>>>>
+>>>> here's further information Rob and Corey requested:
+>>>>
+>>>> on working system:
+>>>>
+>>>> [root@vbox4 ~]# cat /proc/ipmi/0/params
+>>>> kcs,i/o,0xca2,rsp=1,rsi=1,rsh=0,irq=0,ipmb=0
+>>>>
+>>>> dmesg snippet:
+>>>>
+>>>> [   41.759319] ipmi message handler version 39.2
+>>>> [   41.760690] ipmi device interface
+>>>> [   42.765334] IPMI System Interface driver.
+>>>> [   42.765336] ipmi_si: probing via hardcoded address
+>>>> [   42.765337] ipmi_si: Adding hardcoded-specified kcs state machine
+>>>> [   42.765340] ipmi_si: Trying hardcoded-specified kcs state machine at i/o address 0xca8, slave address 0x0, irq 0
+>>>> [   42.765344] ipmi_si: Interface detection failed
+>>>> [   42.770823] ipmi_si: probing via SMBIOS
+>>>> [   42.770834] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 irq 0
+>>>> [   42.770836] ipmi_si: Adding SMBIOS-specified kcs state machine
+>>>> [   42.770838] ipmi_si: probing via SPMI
+>>>> [   42.770840] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
+>>>> [   42.770841] ipmi_si: Adding SPMI-specified kcs state machine
+>>>> [   42.770843] ipmi_si: Trying SMBIOS-specified kcs state machine at i/o address 0xca2, slave address 0x0, irq 0
+>>>> [   42.798137] ipmi_si ipmi_si.0: Error clearing flags: cc
+>>>> [   42.801011] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x002a7c, prod_id: 0x0624, dev_id: 0x20)
+>>>> [   42.801068] ipmi_si ipmi_si.0: IPMI kcs interface initialized
+>>>>
+>>>>
+>>>> dmidecode:
+>>>>
+>>>> IPMI Device Information
+>>>>          Interface Type: KCS (Keyboard Control Style)
+>>>>          Specification Version: 2.0
+>>>>          I2C Slave Address: 0x00
+>>>>          NV Storage Device: Not Present
+>>>>          Base Address: 0x0000000000000CA2 (I/O)
+>>>>          Register Spacing: Successive Byte Boundaries
+>>>>
+>>>> Base Board Information
+>>>>          Manufacturer: Supermicro
+>>>>          Product Name: X9SCL/X9SCM
+>>>>
+>>>> (but we're experiencing this on various supermicro bords, ie X8DTL)
+>>>>
+>>>> Tried setting parameters by hand didn't help:
+>>>>
+>>>> modprobe ipmi_si type=kcs addrs=0xca8 regspacings=1 regsizes=1 regshifts=0 irqs=0 slave_addrs=0x0
+>>>>
+>>>> (not sure whether I got them correct though, and values mostly seem to me to be defaults anyways..)
+>>>>
+>>> It is working for me on a SuperMicro system with ubuntu oneiric (3.0
+>>> based).
+>>>
+>>> [597160.259728] ipmi_si: probing via SMBIOS
+>>> [597160.259730] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 irq 0
+>>> [597160.259731] ipmi_si: Adding SMBIOS-specified kcs state machine
+>>> [597160.259734] ipmi_si: probing via SPMI
+>>> [597160.259735] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
+>>> [597160.259737] ipmi_si: Adding SPMI-specified kcs state machine
+>>> [597160.259739] ipmi_si: Trying SMBIOS-specified kcs state machine at
+>>> i/o address 0xca2, slave address 0x0, irq 0
+>>> [597160.378757] ipmi_si: Invalid return from get global enables command,
+>>> cannot enable the event buffer.
+>>> [597160.382032] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x00b980,
+>>> prod_id: 0x0624, dev_id: 0x20)
+>>> [597160.382040] ipmi_si ipmi_si.0: IPMI kcs interface initialized
+>>> [597179.973960] ipmi device interface
+>>> localadm@sandy1:~$ ipmitool bmc info
+>>> Could not open device at /dev/ipmi0 or /dev/ipmi/0 or /dev/ipmidev/0: No
+>>> such file or directory
+>>> Get Device ID command failed
+>>> localadm@sandy1:~$ sudo ipmitool bmc info
+>>> Device ID                 : 32
+>>> Device Revision           : 1
+>>> Firmware Revision         : 1.1
+>>> IPMI Version              : 2.0
+>>> Manufacturer ID           : 47488
+>>> Manufacturer Name         : Unknown (0xB980)
+>>> Product ID                : 1572 (0x0624)
+>>> Product Name              : Unknown (0x624)
+>>> Device Available          : yes
+>>> Provides Device SDRs      : no
+>>> Additional Device Support :
+>>>      Sensor Device
+>>>      SDR Repository Device
+>>>      SEL Device
+>>>      FRU Inventory Device
+>>>      IPMB Event Receiver
+>>>      IPMB Event Generator
+>>>      Chassis Device
+>>> Aux Firmware Rev Info     :
+>>>      0x06
+>>>      0x00
+>>>      0x00
+>>>      0x00
+>>> localadm@sandy1:~$ uname -a
+>>> Linux sandy1 3.0.0-16-generic #28-Ubuntu SMP Fri Jan 27 17:44:39 UTC
+>>> 2012 x86_64 x86_64 x86_64 GNU/Linux
+>>>
+>>> Rob
+>>>
+>>>> nik
+>>>>
+>>>>
+>>>> On Sat, Apr 21, 2012 at 12:38:33AM +0200, Nikola Ciprich wrote:
+>>>>> Hello,
+>>>>>
+>>>>> I was trying to find out why IPMI stopped working on new kernels. Since 2.6.39
+>>>>> module loading ends with following message:
+>>>>>
+>>>>>   ipmi_si: Interface detection failed
+>>>>>
+>>>>> Then ipmitool is unable to control IPMI device.
+>>>>>
+>>>>> Works for 2.6.38, doesn't work for 2.6.39, 3.0.28, 3.4-rc1.
+>>>>>
+>>>>> I got this bisected to following commit:
+>>>>>
+>>>>> commit a1e9c9dd3383e6a1a762464ad604b1081774dbda
+>>>>> Author: Rob Herring<rob.herring@calxeda.com>
+>>>>> Date:   Wed Feb 23 15:37:59 2011 -0600
+>>>>>
+>>>>>      ipmi: convert OF driver to platform driver
+>>>>>
+>>>>>      of_bus is deprecated in favor of the plain platform bus. This patch
+>>>>>      merges the ipmi OF driver with the existing platform driver.
+>>>>>
+>>>>>      CONFIG_PPC_OF occurrances are removed or replaced with CONFIG_OF.
+>>>>>
+>>>>>      Compile tested with and without CONFIG_OF. Tested OF probe and
+>>>>>      default probe cases.
+>>>>>
+>>>>>      Signed-off-by: Rob Herring<rob.herring@calxeda.com>
+>>>>>      Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
+>>>>>
+>>>>> I wonder whether this is a bug, or I'm doing something wrong?
+>>>>>
+>>>>> Thanks in advance!
+>>>>>
+>>>>> with best regards
+>>>>>
+>>>>> nik
+>>>>>
+>>>>>
+>>>>> -- 
+>>>>> -------------------------------------
+>>>>> Ing. Nikola CIPRICH
+>>>>> LinuxBox.cz, s.r.o.
+>>>>> 28. rijna 168, 709 01 Ostrava
+>>>>>
+>>>>> tel.:   +420 596 603 142
+>>>>> fax:    +420 596 621 273
+>>>>> mobil:  +420 777 093 799
+>>>>>
+>>>>> www.linuxbox.cz
+>>>>>
+>>>>> mobil servis: +420 737 238 656
+>>>>> email servis: servis@linuxbox.cz
+>>>>> -------------------------------------
+>>>>
+>>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
