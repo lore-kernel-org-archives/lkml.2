@@ -1,65 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608Ab2DXJWa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 05:22:30 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4646 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831Ab2DXJW2 (ORCPT
+	id S932154Ab2DXJXg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 05:23:36 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:19624
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755632Ab2DXJXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 05:22:28 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 24 Apr 2012 02:22:27 -0700
-Message-ID: <4F967089.3050004@nvidia.com>
-Date: Tue, 24 Apr 2012 14:51:13 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Tue, 24 Apr 2012 05:23:35 -0400
+X-SpamScore: -2
+X-BigFish: VS-2(zz154dMzz1202h1082kzz8275bh8275dhz2dh2a8h668h839hd24he5bh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng <b29396@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
+        <swarren@wwwdotorg.org>, <s.hauer@pengutronix.de>
+Subject: [PATCH v2 1/2] pinctrl: add pinctrl_provide_dummies interface for platforms to use
+Date: Tue, 24 Apr 2012 17:33:42 +0800
+Message-ID: <1335260023-15859-1-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH V1 2/2] i2c: tegra: support for I2C_M_NOSTART protocol
- mangling
-References: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>	<1335251976-31925-3-git-send-email-ldewangan@nvidia.com> <20120424105557.7ac07232@endymion.delvare>
-In-Reply-To: <20120424105557.7ac07232@endymion.delvare>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 April 2012 02:25 PM, Jean Delvare wrote:
-> On Tue, 24 Apr 2012 12:49:36 +0530, Laxman Dewangan wrote:
->> Adding support for protocol mangling I2C_M_NOSTART.
->> When multiple message transfer request made through i2c
->> and if any message is flagged with I2C_M_NOSTART then
->> it will not send the start/repeat start/address of that
->> message i.e. send the data directly.
->>
->> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
->> ---
->>   drivers/i2c/busses/i2c-tegra.c |   32 +++++++++++++++++++++++++++-----
->>   1 files changed, 27 insertions(+), 5 deletions(-)
-> What do you need this for?
->
+From: Dong Aisheng <dong.aisheng@linaro.org>
 
-The primary use-case here is scatter-gather of multiple I2C messages; 
-the first message will contain the START and perhaps some transfers, 
-then subsequent messages will continue with more data transfers. This 
-removes the need to put all the data transfers into a single message, 
-and hence avoids some copying of commands/data.
+Add a interface pinctrl_provide_dummies for platform to indicate
+whether it needs use pinctrl dummy state and dummy gpio.
 
-Mark Brown says this is important for regmap. This feature is implement 
-gather support for I2C transfers - the resulting I2C transfer is 
-entirely normal but this ends up being implemented by the controller 
-doing two transfers back to back with no start on the second transfer. 
-To the outside world it looks like a perfectly normal transfer. This 
-behaviour can be emulated by allocating a buffer and coalescing the data 
-into that buffer before sending it to the hardware but this introduces 
-an avoidable and sometimes noticeable overhead.
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+---
+ChangeLog v1->v2:
+* Based on sascha's suggestion, drop using kconfig since it will hide
+  pinctrl errors on all other boards.
+  See: https://lkml.org/lkml/2012/4/18/282
+  It seemed both Linus and Stephen agreed with this way, so i'm ok
+  with it too.
+* add dummy gpio support.
+  pinctrl gpio in the same situation as state.
+* patch name changed.
+  Original is pinctrl: handle dummy state in core.
+* split removing old dt dummy interface into a separate patch
+---
+ drivers/pinctrl/core.c          |   35 ++++++++++++++++++++++++++++++++---
+ include/linux/pinctrl/machine.h |    5 ++++-
+ 2 files changed, 36 insertions(+), 4 deletions(-)
 
-Including Mark B here for more comment/insight.
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 5cd5a5a..c6d0fdb 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -43,6 +43,9 @@ struct pinctrl_maps {
+ 	unsigned num_maps;
+ };
+ 
++static bool pinctrl_dummy_state;
++static bool pinctrl_dummy_gpio;
++
+ /* Mutex taken by all entry points */
+ DEFINE_MUTEX(pinctrl_mutex);
+ 
+@@ -61,6 +64,17 @@ static LIST_HEAD(pinctrl_maps);
+ 			_i_ < _maps_node_->num_maps; \
+ 			i++, _map_ = &_maps_node_->maps[_i_])
+ 
++/**
++ * pinctrl_provide_dummies() - indicate if provide dummies for state and gpio
++ * @state - provide dummy state
++ * @gpio - provide dummy gpio
++ */
++void pinctrl_provide_dummies(bool state, bool gpio)
++{
++	pinctrl_dummy_state = state;
++	pinctrl_dummy_gpio = gpio;
++}
++
+ const char *pinctrl_dev_get_name(struct pinctrl_dev *pctldev)
+ {
+ 	/* We're not allowed to register devices without name */
+@@ -382,7 +396,12 @@ int pinctrl_request_gpio(unsigned gpio)
+ 	ret = pinctrl_get_device_gpio_range(gpio, &pctldev, &range);
+ 	if (ret) {
+ 		mutex_unlock(&pinctrl_mutex);
+-		return -EINVAL;
++		if (pinctrl_dummy_gpio) {
++			pr_debug("pinctrl: using dummy gpio(%u)\n", gpio);
++			return 0;
++		} else {
++			return -EINVAL;
++		}
+ 	}
+ 
+ 	/* Convert to the pin controllers number space */
+@@ -719,8 +738,18 @@ static struct pinctrl_state *pinctrl_lookup_state_locked(struct pinctrl *p,
+ 	struct pinctrl_state *state;
+ 
+ 	state = find_state(p, name);
+-	if (!state)
+-		return ERR_PTR(-ENODEV);
++	if (!state) {
++		if (pinctrl_dummy_state) {
++			/* create dummy state */
++			dev_dbg(p->dev, "using pinctrl dummy state (%s)\n",
++				name);
++			state = create_state(p, name);
++			if (IS_ERR(state))
++				return state;
++		} else {
++			return ERR_PTR(-ENODEV);
++		}
++	}
+ 
+ 	return state;
+ }
+diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
+index e4d1de7..849a844 100644
+--- a/include/linux/pinctrl/machine.h
++++ b/include/linux/pinctrl/machine.h
+@@ -154,7 +154,7 @@ struct pinctrl_map {
+ 
+ extern int pinctrl_register_mappings(struct pinctrl_map const *map,
+ 				unsigned num_maps);
+-
++extern void pinctrl_provide_dummies(bool state, bool gpio);
+ #else
+ 
+ static inline int pinctrl_register_mappings(struct pinctrl_map const *map,
+@@ -163,5 +163,8 @@ static inline int pinctrl_register_mappings(struct pinctrl_map const *map,
+ 	return 0;
+ }
+ 
++static inline void pinctrl_provide_dummies(bool state, bool gpio)
++{
++}
+ #endif /* !CONFIG_PINMUX */
+ #endif
+-- 
+1.7.0.4
+
+
