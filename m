@@ -1,87 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab2DXO4V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 10:56:21 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51369 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754641Ab2DXO4U convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 10:56:20 -0400
+	id S1755405Ab2DXO5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 10:57:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41410 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754788Ab2DXO5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 10:57:04 -0400
+Date: Tue, 24 Apr 2012 16:56:55 +0200
+From: Jan Kara <jack@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
+        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
+        lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120424145655.GA1474@quack.suse.cz>
+References: <20120410210505.GE4936@quack.suse.cz>
+ <20120410212041.GP21801@redhat.com>
+ <20120410222425.GF4936@quack.suse.cz>
+ <20120411154005.GD16692@redhat.com>
+ <20120411192231.GF16008@quack.suse.cz>
+ <20120412203719.GL2207@redhat.com>
+ <20120412205148.GA24056@google.com>
+ <20120414143639.GA31241@localhost>
+ <20120416145744.GA15437@redhat.com>
+ <20120424113340.GA12509@localhost>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXoUcUw5kOcBmsbBu_hJ+GbKk--qFt+WyUHbjJPwY+8Pw@mail.gmail.com>
-References: <20120410090306.GA7056@richard>
-	<20120422155202.GA13540@richard>
-	<CAE9FiQXoUcUw5kOcBmsbBu_hJ+GbKk--qFt+WyUHbjJPwY+8Pw@mail.gmail.com>
-Date: Tue, 24 Apr 2012 22:56:19 +0800
-Message-ID: <CADLM8XNdfByjCXuEX3pmuUun_qTSZqeARO_vPGy7gc+DoOGxog@mail.gmail.com>
-Subject: Re: One problem in reassign pci bus number?
-From: Wei Yang <weiyang.kernel@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120424113340.GA12509@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/4/24 Yinghai Lu <yinghai@kernel.org>:
-> On Sun, Apr 22, 2012 at 8:52 AM, Richard Yang
-> <weiyang@linux.vnet.ibm.com> wrote:
->> All,
->>
->> I am reading the pci_scan_bridge() and not sure what will happen in
->> following situation.
->>
->> Suppose the kernel is not passed the pci=assign-busses.
->>
->> Below is a picture about the pci system.
->>
->>                   +-------+
->>                   |       | root bridge(0,255)
->>                   +---+---+
->>                       |          Bus 0
->>      -----+-----------+------------------------------+--
->>           |                                          |
->>           |                                          |
->>           |                                          |
->>      +----+----+                               +-----+-----+
->>      |         |  B1(1,15)                     |           |B2(16,28)
->>      +----+----+                               +-----+-----+
->>           |  Bus 1                                   |    Bus 16
->>      -----+-----------------------         ----------+----------------
->>                            |
->>                       +----+----+
->>                       |         | B3
->>                       +---------+
->>
->> Suppose B1 and B2 works fine with the BIOS, which get the right bus
->> number and range.
->>
->> B3 does not works fine with the BIOS, which doesn't get the bus number.
->>
->> So in pci_scan_bridge(), B3 will be met in the second pass and get bus
->> number 16?
->> Would this be a conflict?
->
-> busn_alloc patchset should address your concern.
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-> for-pci-busn-alloc
->
-hmm... the code changes too much...
-I need more time to understanding it.
+On Tue 24-04-12 19:33:40, Wu Fengguang wrote:
+> On Mon, Apr 16, 2012 at 10:57:45AM -0400, Vivek Goyal wrote:
+> > On Sat, Apr 14, 2012 at 10:36:39PM +0800, Fengguang Wu wrote:
+> > 
+> > [..]
+> > > Yeah the backpressure idea would work nicely with all possible
+> > > intermediate stacking between the bdi and leaf devices. In my attempt
+> > > to do combined IO bandwidth control for
+> > > 
+> > > - buffered writes, in balance_dirty_pages()
+> > > - direct IO, in the cfq IO scheduler
+> > > 
+> > > I have to look into the cfq code in the past days to get an idea how
+> > > the two throttling layers can cooperate (and suffer from the pains
+> > > arise from the violations of layers). It's also rather tricky to get
+> > > two previously independent throttling mechanisms to work seamlessly
+> > > with each other for providing the desired _unified_ user interface. It
+> > > took a lot of reasoning and experiments to work the basic scheme out...
+> > > 
+> > > But here is the first result. The attached graph shows progress of 4
+> > > tasks:
+> > > - cgroup A: 1 direct dd + 1 buffered dd
+> > > - cgroup B: 1 direct dd + 1 buffered dd
+> > > 
+> > > The 4 tasks are mostly progressing at the same pace. The top 2
+> > > smoother lines are for the buffered dirtiers. The bottom 2 lines are
+> > > for the direct writers. As you may notice, the two direct writers are
+> > > somehow stalled for 1-2 times, which increases the gaps between the
+> > > lines. Otherwise, the algorithm is working as expected to distribute
+> > > the bandwidth to each task.
+> > > 
+> > > The current code's target is to satisfy the more realistic user demand
+> > > of distributing bandwidth equally to each cgroup, and inside each
+> > > cgroup, distribute bandwidth equally to buffered/direct writes. On top
+> > > of which, weights can be specified to change the default distribution.
+> > > 
+> > > The implementation involves adding "weight for direct IO" to the cfq
+> > > groups and "weight for buffered writes" to the root cgroup. Note that
+> > > current cfq proportional IO conroller does not offer explicit control
+> > > over the direct:buffered ratio.
+> > > 
+> > > When there are both direct/buffered writers in the cgroup,
+> > > balance_dirty_pages() will kick in and adjust the weights for cfq to
+> > > execute. Note that cfq will continue to send all flusher IOs to the
+> > > root cgroup.  balance_dirty_pages() will compute the overall async
+> > > weight for it so that in the above test case, the computed weights
+> > > will be
+> > 
+> > I think having separate weigths for sync IO groups and async IO is not
+> > very appealing. There should be one notion of group weight and bandwidth
+> > distrubuted among groups according to their weight.
+> 
+> There have to be some scheme, either explicitly or implicitly. Maybe
+> you are baring in mind some "equal split among queues" policy? For
+> example, if the cgroup has 9 active sync queues and 1 async queue,
+> split the weight equally to the 10 queues?  So the sync IOs get 90%
+> share, and the async writes get 10% share.
+  Maybe I misunderstand but there doesn't have to be (and in fact isn't)
+any split among sync / async IO in CFQ. At each moment, we choose a queue
+with the highest score and dispatch a couple of requests from it. Then we
+go and choose again. The score of the queue depends on several factors
+(like age of requests, whether the queue is sync or async, IO priority,
+etc.).
 
-while the case i found is different from that reported by Don.
+Practically, over a longer period system will stabilize on some ratio
+but that's dependent on the load so your system should not impose some
+artificial direct/buffered split but rather somehow deal with the reality
+how IO scheduler decides to dispatch requests...
 
-> Yinghai
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> For dirty throttling w/o cgroup awareness, balance_dirty_pages()
+> splits the writeout bandwidth equally among all dirtier tasks. Since
+> cfq works with queues, it seems most natural for it to do equal split
+> among all queues (inside the cgroup).
+  Well, but we also have IO priorities which change which queue should get
+preference.
 
+> I'm not sure when there are N dd tasks doing direct IO, cfq will
+> continuously run N sync queues for them (without many dynamic queue
+> deletion and recreations). If that is the case, it should be trivial
+> to support the queue based fair split in the global async queue
+> scheme. Otherwise I'll have some trouble detecting the N value when
+> trying to do the N:1 sync:async weight split.
+  And also sync queues for several processes can get merged when CFQ
+observes these processes cooperate together on one area of disk and get
+split again when processes stop cooperating. I don't think you really want
+to second-guess what CFQ does inside...
 
+> Look at this graph, the 4 dd tasks are granted the same weight (2 of
+> them are buffered writes). I guess the 2 buffered dd tasks managed to
+> progress much faster than the 2 direct dd tasks just because the async
+> IOs are much more efficient than the bs=64k direct IOs.
+  Likely because 64k is too low to get good bandwidth with direct IO. If
+it was 4M, I believe you would get similar throughput for buffered and
+direct IO. So essentially you are right, small IO benefits from caching
+effects since they allow you to submit larger requests to the device which
+is more efficient.
 
+								Honza
 -- 
-Richard Yang
-Help You, Help Me
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
