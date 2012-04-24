@@ -1,52 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab2DXMql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 08:46:41 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:45823 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753967Ab2DXMqk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 08:46:40 -0400
-X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Apr 2012 08:46:40 EDT
-From: Reinhard Tartler <tartler@cs.fau.de>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Reinhard Tartler <siretart@tauware.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        vamos-dev@lists.cs.fau.de, Reinhard Tartler <tartler@cs.fau.de>
-Subject: [PATCH] ARM: mach-iop13xx: fix parameter declaration of iq81340sc_atux_map_irq
-Date: Tue, 24 Apr 2012 14:36:16 +0200
-Message-Id: <1335270976-5553-1-git-send-email-tartler@cs.fau.de>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754161Ab2DXMuI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 08:50:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753728Ab2DXMuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 08:50:06 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>
+Subject: [PATCH] edac.h: Add generic layers for describing a memory location
+Date: Tue, 24 Apr 2012 09:49:59 -0300
+Message-Id: <1335271799-6263-1-git-send-email-mchehab@redhat.com>
+In-Reply-To: <4F969FC4.9080307@redhat.com>
+References: <4F969FC4.9080307@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Reinhard Tartler <siretart@tauware.de>
+The edac core were written with the idea that memory controllers
+are able to directly access csrows, and that the channels are
+used inside a csrows select.
 
-Fixes the following compiler warning:
-arch/arm/mach-iop13xx/iq81340sc.c:63: warning: initialization from incompatible pointer type | warning: (near initialization for ‘iq81340sc_pci.map_irq’)
+This is not true for FB-DIMM and RAMBUS memory controllers.
 
-Signed-off-by: Reinhard Tartler <tartler@cs.fau.de>
+Also, some recent advanced memory controllers don't present a per-csrows
+view. Instead, they view memories as DIMMs, instead of ranks, accessed
+via csrow/channel.
+
+So, changes are needed in order to allow the EDAC core to
+work with all types of architectures.
+
+In preparation for handling non-csrows based memory controllers,
+add some memory structs and a macro:
+
+enum hw_event_mc_err_type: describes the type of error
+			   (corrected, uncorrected, fatal)
+
+To be used by the new edac_mc_handle_error function;
+
+enum edac_mc_layer: describes the type of a given memory
+architecture layer (branch, channel, slot, csrow).
+
+struct edac_mc_layer: describes the properties of a memory
+		      layer (type, size, and if the layer
+		      will be used on a virtual csrow.
+
+EDAC_DIMM_PTR() - as the number of layers can vary from 1 to 3,
+this macro converts from an address with up to 3 layers into
+a linear address.
+
+Cc: Doug Thompson <norsk5@yahoo.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- arch/arm/mach-iop13xx/iq81340sc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/edac.h |  102 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 101 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-iop13xx/iq81340sc.c b/arch/arm/mach-iop13xx/iq81340sc.c
-index cd9e274..70e8db0 100644
---- a/arch/arm/mach-iop13xx/iq81340sc.c
-+++ b/arch/arm/mach-iop13xx/iq81340sc.c
-@@ -30,7 +30,7 @@
- extern int init_atu;
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index 8b78bd0..671b27b 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -67,6 +67,25 @@ enum dev_type {
+ #define DEV_FLAG_X64		BIT(DEV_X64)
  
- static int __init
--iq81340sc_atux_map_irq(struct pci_dev *dev, u8 idsel, u8 pin)
-+iq81340sc_atux_map_irq(const struct pci_dev *dev, u8 idsel, u8 pin)
- {
- 	WARN_ON(idsel < 1 || idsel > 2);
+ /**
++ * enum hw_event_mc_err_type - type of the detected error
++ *
++ * @HW_EVENT_ERR_CORRECTED:	Corrected Error - Indicates that an ECC
++ *				corrected error was detected
++ * @HW_EVENT_ERR_UNCORRECTED:	Uncorrected Error - Indicates an error that
++ *				can't be corrected by ECC, but it is not
++ *				fatal (maybe it is on an unused memory area,
++ *				or the memory controller could recover from
++ *				it for example, by re-trying the operation).
++ * @HW_EVENT_ERR_FATAL:		Fatal Error - Uncorrected error that could not
++ *				be recovered.
++ */
++enum hw_event_mc_err_type {
++	HW_EVENT_ERR_CORRECTED,
++	HW_EVENT_ERR_UNCORRECTED,
++	HW_EVENT_ERR_FATAL,
++};
++
++/**
+  * enum mem_type - memory types. For a more detailed reference, please see
+  *			http://en.wikipedia.org/wiki/DRAM
+  *
+@@ -308,7 +327,88 @@ enum scrub_type {
+  * PS - I enjoyed writing all that about as much as you enjoyed reading it.
+  */
  
+-/* FIXME: add a per-dimm ce error count */
++/**
++ * enum edac_mc_layer - memory controller hierarchy layer
++ *
++ * @EDAC_MC_LAYER_BRANCH:	memory layer is named "branch"
++ * @EDAC_MC_LAYER_CHANNEL:	memory layer is named "channel"
++ * @EDAC_MC_LAYER_SLOT:		memory layer is named "slot"
++ * @EDAC_MC_LAYER_CHIP_SELECT:	memory layer is named "chip select"
++ *
++ * This enum is used by the drivers to tell edac_mc_sysfs what name should
++ * be used when describing a memory stick location.
++ */
++enum edac_mc_layer_type {
++	EDAC_MC_LAYER_BRANCH,
++	EDAC_MC_LAYER_CHANNEL,
++	EDAC_MC_LAYER_SLOT,
++	EDAC_MC_LAYER_CHIP_SELECT,
++};
++
++/**
++ * struct edac_mc_layer - describes the memory controller hierarchy
++ * @layer:		layer type
++ * @size:maximum size of the layer
++ * @is_virt_csrow:	This layer is part of the "csrow" when old API
++ *			compatibility mode is enabled. Otherwise, it is
++ *			a channel
++ */
++struct edac_mc_layer {
++	enum edac_mc_layer_type	type;
++	unsigned		size;
++	bool			is_virt_csrow;
++};
++
++/*
++ * Maximum number of layers used by the memory controller to uniquely
++ * identify a single memory stick.
++ * NOTE: Changing this constant requires not only to change the constant
++ * below, but also to change the existing code at the core, as there are
++ * some code there that are optimized for 3 layers.
++ */
++#define EDAC_MAX_LAYERS		3
++
++/**
++ * EDAC_DIMM_PTR - Macro responsible to find a pointer inside a pointer array
++ *		   for the element given by [lay0,lay1,lay2] position
++ *
++ * @layers:	a struct edac_mc_layer array, describing how many elements
++ *		were allocated for each layer
++ * @var:	name of the var where we want to get the pointer
++ *		(like mci->dimms)
++ * @n_layers:	Number of layers at the @layers array
++ * @lay0:	layer0 position
++ * @lay1:	layer1 position. Unused if n_layers < 2
++ * @lay2:	layer2 position. Unused if n_layers < 3
++ *
++ * For 1 layer, this macro returns &var[lay0]
++ * For 2 layers, this macro is similar to allocate a bi-dimensional array
++ *		and to return "&var[lay0][lay1]"
++ * For 3 layers, this macro is similar to allocate a tri-dimensional array
++ *		and to return "&var[lay0][lay1][lay2]"
++ *
++ * A loop could be used here to make it more generic, but, as we only have
++ * 3 layers, this is a little faster.
++ * By design, layers can never be 0 or more than 3. If that ever happens,
++ * a NULL is returned, causing an OOPS during the memory allocation routine,
++ * with would point to the developer that he's doing something wrong.
++ */
++#define EDAC_DIMM_PTR(layers, var, nlayers, lay0, lay1, lay2) ({	\
++	typeof(var) __p;						\
++	if ((nlayers) == 1)						\
++		__p = &var[lay0];					\
++	else if ((nlayers) == 2)					\
++		__p = &var[(lay1) + ((layers[1]).size * (lay0))];	\
++	else if ((nlayers) == 3)					\
++		__p = &var[(lay2) + ((layers[2]).size * ((lay1) +	\
++			    ((layers[1]).size * (lay0))))];		\
++	else								\
++		__p = NULL;						\
++	__p;								\
++})
++
++
++/* FIXME: add the proper per-location error counts */
+ struct dimm_info {
+ 	char label[EDAC_MC_LABEL_LEN + 1];	/* DIMM label on motherboard */
+ 	unsigned memory_controller;
 -- 
-1.7.9.5
+1.7.8
 
