@@ -1,64 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666Ab2DXWhI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:37:08 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
+	id S932700Ab2DXWhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:37:17 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758195Ab2DXWhB (ORCPT
+	with ESMTP id S932686Ab2DXWhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:37:01 -0400
-Message-Id: <20120424223247.203509213@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:37:13 -0400
+Message-Id: <20120424223253.715186078@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:42 -0700
+Date: Tue, 24 Apr 2012 15:32:56 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
-Subject: [ 61/62] ocfs2: ->e_leaf_clusters endianness breakage
-In-Reply-To: <20120424223305.GA7748@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [ 03/42] hwmon: fam15h_power: fix bogus values with current BIOSes
+In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Andre Przywara <andre.przywara@amd.com>
 
-commit 72094e43e3af5020510f920321d71f1798fa896d upstream.
+commit 00250ec90963b7ef6678438888f3244985ecde14 upstream.
 
-le16, not le32...
+Newer BKDG[1] versions recommend a different initialization value for
+the running average range register in the northbridge. This improves
+the power reading by avoiding counter saturations resulting in bogus
+values for anything below about 80% of TDP power consumption.
+Updated BIOSes will have this new value set up from the beginning,
+but meanwhile we correct this value ourselves.
+This needs to be done on all northbridges, even on those where the
+driver itself does not register at.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
+This fixes the driver on all current machines to provide proper
+values for idle load.
+
+[1]
+http://support.amd.com/us/Processor_TechDocs/42301_15h_Mod_00h-0Fh_BKDG.pdf
+Chapter 3.8: D18F5xE0 Processor TDP Running Average (p. 452)
+
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+[guenter.roeck@ericsson.com: Removed unnecessary return statement]
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/suballoc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/hwmon/fam15h_power.c |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
---- a/fs/ocfs2/suballoc.c
-+++ b/fs/ocfs2/suballoc.c
-@@ -600,7 +600,7 @@ static void ocfs2_bg_alloc_cleanup(handl
- 		ret = ocfs2_free_clusters(handle, cluster_ac->ac_inode,
- 					  cluster_ac->ac_bh,
- 					  le64_to_cpu(rec->e_blkno),
--					  le32_to_cpu(rec->e_leaf_clusters));
-+					  le16_to_cpu(rec->e_leaf_clusters));
- 		if (ret)
- 			mlog_errno(ret);
- 		/* Try all the clusters to free */
-@@ -1628,7 +1628,7 @@ static int ocfs2_bg_discontig_fix_by_rec
- {
- 	unsigned int bpc = le16_to_cpu(cl->cl_bpc);
- 	unsigned int bitoff = le32_to_cpu(rec->e_cpos) * bpc;
--	unsigned int bitcount = le32_to_cpu(rec->e_leaf_clusters) * bpc;
-+	unsigned int bitcount = le16_to_cpu(rec->e_leaf_clusters) * bpc;
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -122,6 +122,38 @@ static bool __devinit fam15h_power_is_in
+ 	return true;
+ }
  
- 	if (res->sr_bit_offset < bitoff)
- 		return 0;
++/*
++ * Newer BKDG versions have an updated recommendation on how to properly
++ * initialize the running average range (was: 0xE, now: 0x9). This avoids
++ * counter saturations resulting in bogus power readings.
++ * We correct this value ourselves to cope with older BIOSes.
++ */
++static void __devinit tweak_runavg_range(struct pci_dev *pdev)
++{
++	u32 val;
++	const struct pci_device_id affected_device = {
++		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
++
++	/*
++	 * let this quirk apply only to the current version of the
++	 * northbridge, since future versions may change the behavior
++	 */
++	if (!pci_match_id(&affected_device, pdev))
++		return;
++
++	pci_bus_read_config_dword(pdev->bus,
++		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
++		REG_TDP_RUNNING_AVERAGE, &val);
++	if ((val & 0xf) != 0xe)
++		return;
++
++	val &= ~0xf;
++	val |=  0x9;
++	pci_bus_write_config_dword(pdev->bus,
++		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
++		REG_TDP_RUNNING_AVERAGE, val);
++}
++
+ static void __devinit fam15h_power_init_data(struct pci_dev *f4,
+ 					     struct fam15h_power_data *data)
+ {
+@@ -155,6 +187,13 @@ static int __devinit fam15h_power_probe(
+ 	struct device *dev;
+ 	int err;
+ 
++	/*
++	 * though we ignore every other northbridge, we still have to
++	 * do the tweaking on _each_ node in MCM processors as the counters
++	 * are working hand-in-hand
++	 */
++	tweak_runavg_range(pdev);
++
+ 	if (!fam15h_power_is_internal_node0(pdev)) {
+ 		err = -ENODEV;
+ 		goto exit;
 
 
