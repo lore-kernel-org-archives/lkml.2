@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab2DXXgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 19:36:33 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16931 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758221Ab2DXXg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758343Ab2DXXg0 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Apr 2012 19:36:26 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16921 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756636Ab2DXXgX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 19:36:23 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 24 Apr 2012 16:36:15 -0700
+	by hqnvupgp06.nvidia.com on Tue, 24 Apr 2012 16:36:13 -0700
 From: Rhyland Klein <rklein@nvidia.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Samuel Ortiz <sameo@linux.intel.com>,
@@ -16,9 +16,9 @@ To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Rob Herring <rob.herring@calxeda.com>, Liam Girdwood <lrg@ti.com>
 CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH 7/8 v2] mfd: tps65910-irq: Add devicetree init support
-Date: Tue, 24 Apr 2012 16:36:09 -0700
-Message-ID: <1335310570-12455-8-git-send-email-rklein@nvidia.com>
+Subject: [PATCH 4/8 v2] regulator: tps65910: Add device tree bindings
+Date: Tue, 24 Apr 2012 16:36:06 -0700
+Message-ID: <1335310570-12455-5-git-send-email-rklein@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1335310570-12455-1-git-send-email-rklein@nvidia.com>
 References: <1335310570-12455-1-git-send-email-rklein@nvidia.com>
@@ -29,55 +29,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for initializing when boot using devicetree. The main difference
-is that the irq_base will not be setup, so it needs to be manually handled.
+Add device tree bindings for TI's tps65910 pmic.
 
 Signed-off-by: Rhyland Klein <rklein@nvidia.com>
 ---
- v2: split off irq specific changes based on previous review comments
+ v2: Moved ext-sleep-control into regulator nodes
 
- drivers/mfd/tps65910-irq.c |   21 +++++++++++++++------
- 1 files changed, 15 insertions(+), 6 deletions(-)
+ Documentation/devicetree/bindings/mfd/tps65910.txt |  133 ++++++++++++++++++++
+ 1 files changed, 133 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/tps65910.txt
 
-diff --git a/drivers/mfd/tps65910-irq.c b/drivers/mfd/tps65910-irq.c
-index 0f1ff7f..066a30f 100644
---- a/drivers/mfd/tps65910-irq.c
-+++ b/drivers/mfd/tps65910-irq.c
-@@ -180,12 +180,6 @@ int tps65910_irq_init(struct tps65910 *tps65910, int irq,
- 		return -EINVAL;
- 	}
- 
--	tps65910->irq_mask = 0xFFFFFF;
--
--	mutex_init(&tps65910->irq_lock);
--	tps65910->chip_irq = irq;
--	tps65910->irq_base = pdata->irq_base;
--
- 	switch (tps65910_chip_id(tps65910)) {
- 	case TPS65910:
- 		tps65910->irq_num = TPS65910_NUM_IRQ;
-@@ -195,6 +189,21 @@ int tps65910_irq_init(struct tps65910 *tps65910, int irq,
- 		break;
- 	}
- 
-+	if (pdata->irq_base <= 0)
-+		pdata->irq_base = irq_alloc_descs(-1, 0, tps65910->irq_num, -1);
+diff --git a/Documentation/devicetree/bindings/mfd/tps65910.txt b/Documentation/devicetree/bindings/mfd/tps65910.txt
+new file mode 100644
+index 0000000..645f5ea
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/tps65910.txt
+@@ -0,0 +1,133 @@
++TPS65910 Power Management Integrated Circuit
 +
-+	if (pdata->irq_base <= 0) {
-+		dev_err(tps65910->dev, "Failed to allocate irq descs: %d\n",
-+			pdata->irq_base);
-+		return pdata->irq_base;
-+	}
++Required properties:
++- compatible: "ti,tps65910" or "ti,tps65911"
++- reg: I2C slave address
++- interrupts: the interrupt outputs of the controller
++- #gpio-cells: number of cells to describe a GPIO, this should be 2.
++  The first cell is the GPIO number.
++  The second cell is used to specify additional options <unused>.
++- gpio-controller: mark the device as a GPIO controller
++- #interrupt-cells: the number of cells to describe an IRQ, this should be 2.
++  The first cell is the IRQ number.
++  The second cell is the flags, encoded as the trigger masks from
++  Documentation/devicetree/bindings/interrupts.txt
++- regulators: This is the list of child nodes that specify the regulator
++  initialization data for defined regulators. Not all regulators for the given
++  device need to be present. The definition for each of these nodes is defined
++  using the standard binding for regulators found at
++  Documentation/devicetree/bindings/regulator/regulator.txt.
 +
-+	tps65910->irq_mask = 0xFFFFFF;
++  The valid names for regulators are:
++  tps65910: vrtc, vio, vdd1, vdd2, vdd3, vdig1, vdig2, vpll, vdac, vaux1,
++            vaux2, vaux33, vmmc
++  tps65911: vrtc, vio, vdd1, vdd3, vddctrl, ldo1, ldo2, ldo3, ldo4, ldo5,
++            ldo6, ldo7, ldo8
 +
-+	mutex_init(&tps65910->irq_lock);
-+	tps65910->chip_irq = irq;
-+	tps65910->irq_base = pdata->irq_base;
++Optional properties:
++- ti,vmbch-threshold: (tps65911) main battery charged threshold
++  comparator. (see VMBCH_VSEL in TPS65910 datasheet)
++- ti,vmbch2-threshold: (tps65911) main battery discharged threshold
++  comparator. (see VMBCH_VSEL in TPS65910 datasheet)
++- ti,en-gpio-sleep: enable sleep control for gpios
++  There should be 9 entries here, one for each gpio.
 +
- 	/* Register with genirq */
- 	for (cur_irq = tps65910->irq_base;
- 	     cur_irq < tps65910->irq_num + tps65910->irq_base;
++Regulator Optional properties:
++- ti,regulator-ext-sleep-control: enable external sleep
++  control through external inputs [0 (not enabled), 1 (EN1), 2 (EN2) or 4(EN3)]
++  If this property is not defined, it defaults to 0 (not enabled).
++
++Example:
++
++	pmu: tps65910@d2 {
++		compatible = "ti,tps65910";
++		reg = <0xd2>;
++		interrupt-parent = <&intc>;
++		interrupts = < 0 118 0x04 >;
++
++		#gpio-cells = <2>;
++		gpio-controller;
++
++		#interrupt-cells = <2>;
++		interrupt-controller;
++
++		ti,vmbch-threshold = 0;
++		ti,vmbch2-threshold = 0;
++
++		ti,en-gpio-sleep = <0 0 1 0 0 0 0 0 0>;
++
++		regulators {
++			vdd1_reg: vdd1 {
++				regulator-min-microvolt = < 600000>;
++				regulator-max-microvolt = <1500000>;
++				regulator-always-on;
++				regulator-boot-on;
++				ti,regulator-ext-sleep-control = <0>;
++			};
++			vdd2_reg: vdd2 {
++				regulator-min-microvolt = < 600000>;
++				regulator-max-microvolt = <1500000>;
++				regulator-always-on;
++				regulator-boot-on;
++				ti,regulator-ext-sleep-control = <4>;
++			};
++			vddctrl_reg: vddctrl {
++				regulator-min-microvolt = < 600000>;
++				regulator-max-microvolt = <1400000>;
++				regulator-always-on;
++				regulator-boot-on;
++				ti,regulator-ext-sleep-control = <0>;
++			};
++			vio_reg: vio {
++				regulator-min-microvolt = <1500000>;
++				regulator-max-microvolt = <1800000>;
++				regulator-always-on;
++				regulator-boot-on;
++				ti,regulator-ext-sleep-control = <1>;
++			};
++			ldo1_reg: ldo1 {
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <3300000>;
++				ti,regulator-ext-sleep-control = <0>;
++			};
++			ldo2_reg: ldo2 {
++				regulator-min-microvolt = <1050000>;
++				regulator-max-microvolt = <1050000>;
++				ti,regulator-ext-sleep-control = <0>;
++			};
++			ldo3_reg: ldo3 {
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <3300000>;
++				ti,regulator-ext-sleep-control = <0>;
++			};
++			ldo4_reg: ldo4 {
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++				ti,regulator-ext-sleep-control = <0>;
++			};
++			ldo5_reg: ldo5 {
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <3300000>;
++				ti,regulator-ext-sleep-control = <0>;
++			};
++			ldo6_reg: ldo6 {
++				regulator-min-microvolt = <1200000>;
++				regulator-max-microvolt = <1200000>;
++				ti,regulator-ext-sleep-control = <0>;
++			};
++			ldo7_reg: ldo7 {
++				regulator-min-microvolt = <1200000>;
++				regulator-max-microvolt = <1200000>;
++				regulator-always-on;
++				regulator-boot-on;
++				ti,regulator-ext-sleep-control = <1>;
++			};
++			ldo8_reg: ldo8 {
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++				ti,regulator-ext-sleep-control = <1>;
++			};
++		};
++	};
 -- 
 1.7.0.4
 
