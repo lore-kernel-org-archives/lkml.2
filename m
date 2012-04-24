@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab2DXBEG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 21:04:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11573 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756050Ab2DXBEC (ORCPT
+	id S1755806Ab2DXBIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 21:08:39 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48061 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab2DXBIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 21:04:02 -0400
-X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=unLN5eZtZcEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=BuleduMwnqcLhVulvM8A:9 a=elNPHhPqOPENFrO53C4A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1335229437.28106.131.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de,
-        mingo@redhat.com, cfriesen@nortel.com, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com
-Date: Mon, 23 Apr 2012 21:03:57 -0400
-In-Reply-To: <1335218328.28150.181.camel@twins>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	 <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
-	 <1335182113.28150.132.camel@twins> <4F95CFBF.1050000@sssup.it>
-	 <1335218328.28150.181.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 23 Apr 2012 21:08:38 -0400
+X-AuditID: 9c93016f-b7cfcae00000449e-49-4f95fd146bf4
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] parse-events: Free flag/sym field on failure path
+Date: Tue, 24 Apr 2012 10:07:49 +0900
+Message-Id: <1335229669-6989-1-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <87ty0aro42.fsf@sejong.aot.lge.com>
+References: <87ty0aro42.fsf@sejong.aot.lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 23:58 +0200, Peter Zijlstra wrote:
-> On Mon, 2012-04-23 at 22:55 +0100, Tommaso Cucinotta wrote:
-> > why not write this straight in asm, i.e., multiply 64*64 then divide by 
-> > 64 keeping the intermediate result on 128 bits? 
-> 
-> If you know of a way to do this for all 30 odd architectures supported
-> by our beloved kernel, do let me know ;-)
-> 
-> Yes I can do it for x86_64, but people tend to get mighty upset if you
-> break the compile for all other arches...
+If parsing flag/sym field failed after allocating it, it
+should be freed. As Steven advises, make the field NULL
+and check it at out_free instead of adding more goto labels.
 
-Use the draconian method. Make SCHED_DEADLINE dependent on
-"ARCH_HAS_128_MULT" and any arch maintainer that wants SCHED_DEADLINE
-for their arch will be responsible for implementing it ;-)
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+---
+ parse-events.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
--- Steve
-
+diff --git a/parse-events.c b/parse-events.c
+index bd078ba..3ccedd9 100644
+--- a/parse-events.c
++++ b/parse-events.c
+@@ -2147,6 +2147,7 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 		if (test_type_token(type, token, EVENT_OP, "{"))
+ 			break;
+ 
++		field = NULL;
+ 		arg = alloc_arg();
+ 
+ 		free_token(token);
+@@ -2199,6 +2200,10 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 	return type;
+ 
+ out_free:
++	if (field) {
++		free(field->value);
++		free(field);
++	}
+ 	free_arg(arg);
+ 	free_token(token);
+ 	*tok = NULL;
+-- 
+1.7.10
 
