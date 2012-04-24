@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053Ab2DXOXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 10:23:14 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:58411 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab2DXOXB convert rfc822-to-8bit (ORCPT
+	id S1754836Ab2DXOXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 10:23:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47601 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759Ab2DXOW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 10:23:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAP145pgsaAN7uvj29Di6Qwtgrr54WvGL6X4rqU-fre8z_zJh4Q@mail.gmail.com>
-References: <CAP145pgsaAN7uvj29Di6Qwtgrr54WvGL6X4rqU-fre8z_zJh4Q@mail.gmail.com>
-Date: Tue, 24 Apr 2012 16:23:00 +0200
-Message-ID: <CAP145pjuQ=Ja6bQLBFdOptzRG29qL2BRvMw=Qz7ub1TOjOn2XQ@mail.gmail.com>
-Subject: Re: NULL-ptr deref in mmput via sys_migrate_pages in 3.4-rc4 (proly
- missing mm==NULL check)
-From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-To: linux-kernel@vger.kernel.org
-Cc: Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Apr 2012 10:22:58 -0400
+Subject: Re: [RFC]Is usb port number fixed?
+From: anil <anilcoll90@gmail.com>
+To: Wang YanQing <udknight@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Greg KH <greg@kroah.com>,
+        lkml <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+In-Reply-To: <20120424021600.GA5283@udknight>
+References: <20120423015212.GA7547@udknight>
+	 <Pine.LNX.4.44L0.1204231109380.1612-100000@iolanthe.rowland.org>
+	 <20120424021600.GA5283@udknight>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Apr 2012 19:52:44 +0530
+Message-ID: <1335277364.2094.13.camel@anil-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 12:44 AM, Robert Święcki <robert@swiecki.net> wrote:
-> mm/mempolicy.c
-> 1362         mm = get_task_mm(task);
-> 1363         put_task_struct(task);
-> 1364         if (mm)
-> 1365                 err = do_migrate_pages(mm, old, new,
-> 1366                         capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL
-> : MPOL_MF_MOVE);
-> 1367         else
-> 1368                 err = -EINVAL;
-> 1369
-> 1370         mmput(mm);
->
-> Where mmput doesn't check for mm
->
-> kernel/fork.c
-> 567 void mmput(struct mm_struct *mm)
-> 568 {
-> 569         might_sleep();
-> 570
-> 571         if (atomic_dec_and_test(&mm->mm_users)) {
->
->
-> causes NULL-ptr deref
->
-> (gdb) target remote /dev/ttyS0
-> Remote debugging using /dev/ttyS0
-> mmput (mm=0x0) at kernel/fork.c:571
-> 571             if (atomic_dec_and_test(&mm->mm_users)) {
->
-> (gdb) bt
-> #0  mmput (mm=0x0) at kernel/fork.c:571
-> #1  0xffffffff8116a1e0 in sys_migrate_pages (pid=<optimized out>,
-> maxnode=<optimized out>, old_nodes=<optimized out>,
-> new_nodes=<optimized out>) at mm/mempolicy.c:1370
-> #2  0xffffffff820726c9 in ?? () at arch/x86/ia32/ia32entry.S:425
->
->
-> (gdb) up
-> #1  0xffffffff8116a1e0 in sys_migrate_pages (pid=<optimized out>,
-> maxnode=<optimized out>, old_nodes=<optimized out>,
-> new_nodes=<optimized out>) at mm/mempolicy.c:1370
-> 1370            mmput(mm);
-> (gdb) p mm
-> $1 = (struct mm_struct *) 0x0
-> (gdb) p task->mm
-> $2 = (struct mm_struct *) 0x0
+On Tue, 2012-04-24 at 10:16 +0800, Wang YanQing wrote:
+> On Mon, Apr 23, 2012 at 11:13:06AM -0400, Alan Stern wrote:
+> > The port numbers are determined by the hardware -- each set of wires
+> > has its own port number.  The numbers have nothing to do with
+> > bandwidth.
+> Could you figure out the codes in kernel that read out the port number from
+> hub, if there is a piece of codes do that things?
 
-Most likely caused by this patch:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=3268c63eded4612a3d07b56d1e02ce7731e6608e
+The USB specification Table 11-13 describes the hub descriptor in
+detail.
+The following data structure struct usb_hub_descriptor defined in
+"drivers/usb/core/hub.h" of Linux  Kernel source contains information
+about the hub descriptor,
 
--- 
-Robert Święcki
+                      struct usb_hub_descriptor {
+                            _u8 bDescLength;
+                          _u8 bDescriptorType;
+                             _u8 bNbrPorts;
+                       _le16 wHubCharacteristics;
+                          _u8 bPwrOn2PwrGood;
+                         _u8 bHubContrCurrent;
+                                   }
+
+The bNbrPorts  member contains information on the number of
+downstream-facing ports the hub supports. The structure which i have
+provided is in reference to Linux Kernel Version 2.6 series for Linux
+Kernel Version 3.0+, Please consult an expert.
+  	Is this information you wanted?
+
+Regards
+Anil Nair
+--
+
+
