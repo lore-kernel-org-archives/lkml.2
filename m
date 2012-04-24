@@ -1,184 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab2DXMuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 08:50:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40313 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab2DXMuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 08:50:06 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: [PATCH] edac.h: Add generic layers for describing a memory location
-Date: Tue, 24 Apr 2012 09:49:59 -0300
-Message-Id: <1335271799-6263-1-git-send-email-mchehab@redhat.com>
-In-Reply-To: <4F969FC4.9080307@redhat.com>
-References: <4F969FC4.9080307@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1753728Ab2DXMvE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 08:51:04 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:34917 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752752Ab2DXMvB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 08:51:01 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org
+References: <m1aa22rllb.fsf@fess.ebiederm.org> <4F96705C.5030901@suse.cz>
+	<m1aa21nxzg.fsf_-_@fess.ebiederm.org>
+	<20120424123305.GA30068@sepie.suse.cz>
+Date: Tue, 24 Apr 2012 05:54:44 -0700
+In-Reply-To: <20120424123305.GA30068@sepie.suse.cz> (Michal Marek's message of
+	"Tue, 24 Apr 2012 14:33:05 +0200")
+Message-ID: <m1k415mgrv.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19BXH6pV8kmL3cuItEbvnehrjD5tQq/DyU=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Michal Marek <mmarek@suse.cz>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH] kbuild: Add error handling to KCONFIG_ALL_CONFIG
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The edac core were written with the idea that memory controllers
-are able to directly access csrows, and that the channels are
-used inside a csrows select.
+Michal Marek <mmarek@suse.cz> writes:
 
-This is not true for FB-DIMM and RAMBUS memory controllers.
+> On Tue, Apr 24, 2012 at 04:57:39AM -0700, Eric W. Biederman wrote:
+>>  		name = getenv("KCONFIG_ALLCONFIG");
+>> -		if (name && !stat(name, &tmpstat)) {
+>> -			conf_read_simple(name, S_DEF_USER);
+>> +		if (name && name[0] != '\0') {
+>> +			if (conf_read_simple(name, S_DEF_USER)) {
+>> +				fprintf(stderr,
+>> +					_("*** Can't read seed configuration \"%s\"!\n"),
+>> +					name);
+>> +				exit(1);
+>> +			}
+>>  			break;
+>>  		}
+>>  		switch (input_mode) {
+>
+>
+> Before this patch, the code would fall back to a file named
+> all{no,yes,mod,def,random}.config and then to all.config. Now you require
+> $KCONFIG_ALLCONFIG to always be a file. I suggest we keep the fallback at
+> least for KCONFIG_ALLCONFIG=1, like this:
 
-Also, some recent advanced memory controllers don't present a per-csrows
-view. Instead, they view memories as DIMMs, instead of ranks, accessed
-via csrow/channel.
+I don't require KCONFIG_ALLCONFIG to always be a file if it is an
+empty string we continue to fallback to the predefined file names.
+Which is the currently documented behavior.
 
-So, changes are needed in order to allow the EDAC core to
-work with all types of architectures.
+As for KCONFIG_ALLCONFIG=1 if people are a actually doing that the
+complexity seems worth it (to not break muscle memory and/or scripts).
+I was just aiming for an absolutely trivial and simple implementation.
 
-In preparation for handling non-csrows based memory controllers,
-add some memory structs and a macro:
+Why do you think people have been specifying KCONFIG_ALLCONFIG=1?
+instead of simply exporting KCONFIG_ALLCONFIG with an empty string?
 
-enum hw_event_mc_err_type: describes the type of error
-			   (corrected, uncorrected, fatal)
+Eric
 
-To be used by the new edac_mc_handle_error function;
 
-enum edac_mc_layer: describes the type of a given memory
-architecture layer (branch, channel, slot, csrow).
-
-struct edac_mc_layer: describes the properties of a memory
-		      layer (type, size, and if the layer
-		      will be used on a virtual csrow.
-
-EDAC_DIMM_PTR() - as the number of layers can vary from 1 to 3,
-this macro converts from an address with up to 3 layers into
-a linear address.
-
-Cc: Doug Thompson <norsk5@yahoo.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- include/linux/edac.h |  102 +++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 101 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/edac.h b/include/linux/edac.h
-index 8b78bd0..671b27b 100644
---- a/include/linux/edac.h
-+++ b/include/linux/edac.h
-@@ -67,6 +67,25 @@ enum dev_type {
- #define DEV_FLAG_X64		BIT(DEV_X64)
- 
- /**
-+ * enum hw_event_mc_err_type - type of the detected error
-+ *
-+ * @HW_EVENT_ERR_CORRECTED:	Corrected Error - Indicates that an ECC
-+ *				corrected error was detected
-+ * @HW_EVENT_ERR_UNCORRECTED:	Uncorrected Error - Indicates an error that
-+ *				can't be corrected by ECC, but it is not
-+ *				fatal (maybe it is on an unused memory area,
-+ *				or the memory controller could recover from
-+ *				it for example, by re-trying the operation).
-+ * @HW_EVENT_ERR_FATAL:		Fatal Error - Uncorrected error that could not
-+ *				be recovered.
-+ */
-+enum hw_event_mc_err_type {
-+	HW_EVENT_ERR_CORRECTED,
-+	HW_EVENT_ERR_UNCORRECTED,
-+	HW_EVENT_ERR_FATAL,
-+};
-+
-+/**
-  * enum mem_type - memory types. For a more detailed reference, please see
-  *			http://en.wikipedia.org/wiki/DRAM
-  *
-@@ -308,7 +327,88 @@ enum scrub_type {
-  * PS - I enjoyed writing all that about as much as you enjoyed reading it.
-  */
- 
--/* FIXME: add a per-dimm ce error count */
-+/**
-+ * enum edac_mc_layer - memory controller hierarchy layer
-+ *
-+ * @EDAC_MC_LAYER_BRANCH:	memory layer is named "branch"
-+ * @EDAC_MC_LAYER_CHANNEL:	memory layer is named "channel"
-+ * @EDAC_MC_LAYER_SLOT:		memory layer is named "slot"
-+ * @EDAC_MC_LAYER_CHIP_SELECT:	memory layer is named "chip select"
-+ *
-+ * This enum is used by the drivers to tell edac_mc_sysfs what name should
-+ * be used when describing a memory stick location.
-+ */
-+enum edac_mc_layer_type {
-+	EDAC_MC_LAYER_BRANCH,
-+	EDAC_MC_LAYER_CHANNEL,
-+	EDAC_MC_LAYER_SLOT,
-+	EDAC_MC_LAYER_CHIP_SELECT,
-+};
-+
-+/**
-+ * struct edac_mc_layer - describes the memory controller hierarchy
-+ * @layer:		layer type
-+ * @size:maximum size of the layer
-+ * @is_virt_csrow:	This layer is part of the "csrow" when old API
-+ *			compatibility mode is enabled. Otherwise, it is
-+ *			a channel
-+ */
-+struct edac_mc_layer {
-+	enum edac_mc_layer_type	type;
-+	unsigned		size;
-+	bool			is_virt_csrow;
-+};
-+
-+/*
-+ * Maximum number of layers used by the memory controller to uniquely
-+ * identify a single memory stick.
-+ * NOTE: Changing this constant requires not only to change the constant
-+ * below, but also to change the existing code at the core, as there are
-+ * some code there that are optimized for 3 layers.
-+ */
-+#define EDAC_MAX_LAYERS		3
-+
-+/**
-+ * EDAC_DIMM_PTR - Macro responsible to find a pointer inside a pointer array
-+ *		   for the element given by [lay0,lay1,lay2] position
-+ *
-+ * @layers:	a struct edac_mc_layer array, describing how many elements
-+ *		were allocated for each layer
-+ * @var:	name of the var where we want to get the pointer
-+ *		(like mci->dimms)
-+ * @n_layers:	Number of layers at the @layers array
-+ * @lay0:	layer0 position
-+ * @lay1:	layer1 position. Unused if n_layers < 2
-+ * @lay2:	layer2 position. Unused if n_layers < 3
-+ *
-+ * For 1 layer, this macro returns &var[lay0]
-+ * For 2 layers, this macro is similar to allocate a bi-dimensional array
-+ *		and to return "&var[lay0][lay1]"
-+ * For 3 layers, this macro is similar to allocate a tri-dimensional array
-+ *		and to return "&var[lay0][lay1][lay2]"
-+ *
-+ * A loop could be used here to make it more generic, but, as we only have
-+ * 3 layers, this is a little faster.
-+ * By design, layers can never be 0 or more than 3. If that ever happens,
-+ * a NULL is returned, causing an OOPS during the memory allocation routine,
-+ * with would point to the developer that he's doing something wrong.
-+ */
-+#define EDAC_DIMM_PTR(layers, var, nlayers, lay0, lay1, lay2) ({	\
-+	typeof(var) __p;						\
-+	if ((nlayers) == 1)						\
-+		__p = &var[lay0];					\
-+	else if ((nlayers) == 2)					\
-+		__p = &var[(lay1) + ((layers[1]).size * (lay0))];	\
-+	else if ((nlayers) == 3)					\
-+		__p = &var[(lay2) + ((layers[2]).size * ((lay1) +	\
-+			    ((layers[1]).size * (lay0))))];		\
-+	else								\
-+		__p = NULL;						\
-+	__p;								\
-+})
-+
-+
-+/* FIXME: add the proper per-location error counts */
- struct dimm_info {
- 	char label[EDAC_MC_LABEL_LEN + 1];	/* DIMM label on motherboard */
- 	unsigned memory_controller;
--- 
-1.7.8
-
+> diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
+> index f208f90..36efc8f 100644
+> --- a/scripts/kconfig/conf.c
+> +++ b/scripts/kconfig/conf.c
+> @@ -574,9 +574,17 @@ int main(int ac, char **av)
+>  	case alldefconfig:
+>  	case randconfig:
+>  		name = getenv("KCONFIG_ALLCONFIG");
+> -		if (name && !stat(name, &tmpstat)) {
+> -			conf_read_simple(name, S_DEF_USER);
+> -			break;
+> +		if (name && name[0] != '\0') {
+> +			if (conf_read_simple(name, S_DEF_USER)) {
+> +				if (strcmp(name, "1") != 0) {
+> +					fprintf(stderr,
+> +						_("*** Can't read seed configuration \"%s\"!\n"),
+> +						name);
+> +					exit(1);
+> +				}
+> +			} else {
+> +				break;
+> +			}
+>  		}
+>  		switch (input_mode) {
+>  		case allnoconfig:	name = "allno.config"; break;
+> @@ -586,10 +594,13 @@ int main(int ac, char **av)
+>  		case randconfig:	name = "allrandom.config"; break;
+>  		default: break;
+>  		}
+> -		if (!stat(name, &tmpstat))
+> -			conf_read_simple(name, S_DEF_USER);
+> -		else if (!stat("all.config", &tmpstat))
+> -			conf_read_simple("all.config", S_DEF_USER);
+> +		if (conf_read_simple(name, S_DEF_USER) &&
+> +				conf_read_simple("all.config", S_DEF_USER)) {
+> +			fprintf(stderr,
+> +				_("*** KCONFIG_ALLCONFIG=1 set, but no \"%s\" or \"all.config\" file found\n"),
+> +				name);
+> +			exit(1);
+> +		}
+>  		break;
+>  	default:
+>  		break;
+>
+>
+> And update Documentation/kbuild/kconfig.txt.
+>
+> Michal
