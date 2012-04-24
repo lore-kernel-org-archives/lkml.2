@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab2DXXb0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 19:31:26 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45357 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755168Ab2DXXbZ (ORCPT
+	id S1757918Ab2DXXgJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 19:36:09 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16809 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756636Ab2DXXgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 19:31:25 -0400
-X-AuditID: cbfee61a-b7b8eae00000534b-a3-4f9737cb537e
-Message-id: <4F9737CC.6010703@samsung.com>
-Date: Wed, 25 Apr 2012 08:31:24 +0900
-From: Minho Ban <mhban@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
- Thunderbird/11.0.1
-MIME-version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [RFC/PATCH] Prevent wasting time to find out get_parent_ip
-References: <4F969E53.9080307@samsung.com> <1335272025.28150.193.camel@twins>
-In-reply-to: <1335272025.28150.193.camel@twins>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Tue, 24 Apr 2012 19:36:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 24 Apr 2012 16:36:06 -0700
+From: Rhyland Klein <rklein@nvidia.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Liam Girdwood <lrg@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH 0/8 v2] Update TPS65910 to boot using devicetree
+Date: Tue, 24 Apr 2012 16:36:02 -0700
+Message-ID: <1335310570-12455-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2012 09:53 PM, Peter Zijlstra wrote:
-> On Tue, 2012-04-24 at 21:36 +0900, Minho Ban wrote:
->> trace_preempt_on/off looks empty if PREEMPT_TRACER is off. But actually it is
->> spending time to find out get_parent_ip(even CALLER_ADDR for some ARCH) which is
->> in argument. This seems not fair for those who expect to do nothing but increase
->> or decrease count.
-> 
-> You can do the same by making them CPP macros and adding a comment as to
-> why they're macros instead of inlines..
-> 
+This patch set updates the tps65910 driver to boot using devicetree.
 
-Thank you for pointing this out, certainly macros look better. I'll amend this.
+This patch set now includes an addition to the of_regulator code which will
+parse out all the regulator init data for a device given a list of the
+regulator names it is expecting and a pointer to the array of where to store
+the pointers to the regulator_init_data structures.
+
+Rhyland Klein (8):
+  regulator: add generic of node parsing for regulators
+  regulator: add node validation checks
+  mfd: tps65910: Commonize regmap access through header
+  regulator: tps65910: Add device tree bindings
+  mfd: tps65910: Add device-tree support
+  regulator: tps65910 regulator: add device tree support
+  mfd: tps65910-irq: Add devicetree init support
+  ARM: Tegra: Add support for TPS65910 PMIC
+
+ Documentation/devicetree/bindings/mfd/tps65910.txt |  133 +++++++++++++
+ arch/arm/boot/dts/tegra-cardhu.dts                 |   91 +++++++++
+ drivers/gpio/gpio-tps65910.c                       |   14 +-
+ drivers/mfd/tps65910-irq.c                         |   55 ++++---
+ drivers/mfd/tps65910.c                             |  107 ++++++++---
+ drivers/regulator/of_regulator.c                   |   80 ++++++++
+ drivers/regulator/tps65910-regulator.c             |  195 +++++++++++++++-----
+ include/linux/mfd/tps65910.h                       |   29 +++-
+ include/linux/regulator/of_regulator.h             |    9 +
+ 9 files changed, 606 insertions(+), 107 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/tps65910.txt
+
