@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758298Ab2DXWuA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:50:00 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758132Ab2DXWgk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:36:40 -0400
-Message-Id: <20120424223246.518489951@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:34 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 53/62] nfsd: fix b0rken error value for setattr on read-only mount
-In-Reply-To: <20120424223305.GA7748@kroah.com>
+	id S1758153Ab2DXWul (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:50:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23243 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757457Ab2DXWuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 18:50:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="136324504"
+Subject: Re: [PATCH 1/1] x86: Use x2apic physical mode based on FADT setting
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Greg Pearson <greg.pearson@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 24 Apr 2012 15:53:26 -0700
+In-Reply-To: <1335307115-15480-1-git-send-email-greg.pearson@hp.com>
+References: <1335307115-15480-1-git-send-email-greg.pearson@hp.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1335308006.28674.266.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2012-04-24 at 16:38 -0600, Greg Pearson wrote:
+> Provide systems that do not support x2apic cluster mode
+> a mechanism to select x2apic physical mode using the
+> FADT FORCE_APIC_PHYSICAL_DESTINATION_MODE bit.
+> 
+> Signed-off-by: Greg Pearson <greg.pearson@hp.com>
+> ---
+>  arch/x86/kernel/apic/x2apic_phys.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
+> index 8a778db..c372926 100644
+> --- a/arch/x86/kernel/apic/x2apic_phys.c
+> +++ b/arch/x86/kernel/apic/x2apic_phys.c
+> @@ -6,6 +6,10 @@
+>  #include <linux/init.h>
+>  #include <linux/dmar.h>
+>  
+> +#ifdef CONFIG_ACPI
+> +#include <linux/acpi.h>
+> +#endif
 
-------------------
+dmar.h already includes acpi.h
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+> +
+>  #include <asm/smp.h>
+>  #include <asm/x2apic.h>
+>  
+> @@ -24,6 +28,14 @@ static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+>  {
+>  	if (x2apic_phys)
+>  		return x2apic_enabled();
+> +#ifdef CONFIG_ACPI
+> +	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
+> +		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
+> +		x2apic_enabled()) {
+> +		printk(KERN_DEBUG "System requires x2apic physical mode\n");
+> +		return 1;
+> +	}
+> +#endif
 
-commit 96f6f98501196d46ce52c2697dd758d9300c63f5 upstream.
+x2apic is already dependent on irq-remapping which depends on ACPI. So I
+think you can do away with those ifdef CONFIG_ACPI.
 
-..._want_write() returns -EROFS on failure, _not_ an NFS error value.
+Also, which system requires this? If you can include the information in
+the changelog that will be great.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nfsd/nfs4proc.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -826,6 +826,7 @@ nfsd4_setattr(struct svc_rqst *rqstp, st
- 	      struct nfsd4_setattr *setattr)
- {
- 	__be32 status = nfs_ok;
-+	int err;
- 
- 	if (setattr->sa_iattr.ia_valid & ATTR_SIZE) {
- 		nfs4_lock_state();
-@@ -837,9 +838,9 @@ nfsd4_setattr(struct svc_rqst *rqstp, st
- 			return status;
- 		}
- 	}
--	status = fh_want_write(&cstate->current_fh);
--	if (status)
--		return status;
-+	err = fh_want_write(&cstate->current_fh);
-+	if (err)
-+		return nfserrno(err);
- 	status = nfs_ok;
- 
- 	status = check_attr_support(rqstp, cstate, setattr->sa_bmval,
-
+thanks,
+suresh
 
