@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757640Ab2DXVCU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 17:02:20 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:59005 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756881Ab2DXVCT (ORCPT
+	id S1757670Ab2DXVCu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 17:02:50 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55889 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757595Ab2DXVCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 17:02:19 -0400
+	Tue, 24 Apr 2012 17:02:49 -0400
+Message-ID: <4F9714F4.2060400@wwwdotorg.org>
+Date: Tue, 24 Apr 2012 15:02:44 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-In-Reply-To: <1335300159.1393.13.camel@localhost.localdomain>
-References: <4F94222C.6080608@msgid.tls.msk.ru> <1335172741.2226.10.camel@perseus.themaw.net>
- <4F958352.7050106@msgid.tls.msk.ru> <4F95897B.2040103@msgid.tls.msk.ru>
- <4F959A5A.8070907@msgid.tls.msk.ru> <CA+55aFyQ4y9jyRXyejKwtf3yXJX52hQkLuwJ5=jfQM+yLkBNMw@mail.gmail.com>
- <4F96D0E7.9060000@msgid.tls.msk.ru> <CA+55aFw=cfYZO7PWDRRuZw1nYxvUk-63qfVVwfdJWevtmZoOig@mail.gmail.com>
- <1335300159.1393.13.camel@localhost.localdomain>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 Apr 2012 14:01:57 -0700
-X-Google-Sender-Auth: 2tXGl4yAOyCDdzlMQVBSaxB1vDI
-Message-ID: <CA+55aFx9hATsnANWYSoagycc2HnXO=5Oa3gtqBjMr9eoe1obpA@mail.gmail.com>
-Subject: Re: Breaking userspace? Re: 3.0.24 broke aufofs on mixed 32/64bit environment
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Michael Tokarev <mjt@tls.msk.ru>, Ian Kent <raven@themaw.net>,
-        "stable@kernel.org" <stable@kernel.org>, autofs@vger.kernel.org,
-        Linux-kernel <linux-kernel@vger.kernel.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V2] i2c: Add generic I2C multiplexer using pinctrl API
+References: <1335289664-21383-1-git-send-email-swarren@wwwdotorg.org> <20120424200929.GC30172@pengutronix.de>
+In-Reply-To: <20120424200929.GC30172@pengutronix.de>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 1:42 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
->
-> It broke the autofs feature of systemd (32bit) on a 64bit kernel, which
-> resulted in an endless wait in the boot process. I don't use the autofs
-> tools. I guess the fix in the autofs package to compensate the kernel
-> bug, which has now been fixed, breaks the autofs package.
-> The fix in the kernel makes systemd work correctly.
+On 04/24/2012 02:09 PM, Wolfram Sang wrote:
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/i2c/pinctrl-i2cmux.txt
+>> @@ -0,0 +1,79 @@
+>> +Pinctrl-based I2C Bus Mux
+>> +
+>> +This binding describes an I2C bus multiplexer that uses pin multiplexing to
+>> +route the I2C signals, and represents the pin multiplexing configuration
+>> +using the pinctrl device tree bindings.
+>> +
+>> +Required properties:
+>> +- compatible: pinctrl-i2cmux
+> 
+> From what I know, compatible-properties should not be linux-specific
+> since devicetrees are OS independent. pinctrl-i2cmux sounds
+> linux-specific to me.
+> 
+> So, is such a binding acceptable meanwhile?
 
-Oh damn, I'd forgotten the details. Ok.
+To my mind, "pinctrl" has two meanings: (1) is the Linux internal API
+(2) is the pinctrl bindings in
+Documentation/devicetree/bindings/pinctrl, which were admittedly
+developed strongly based on Linux's pinctrl API needs, but I believe
+should be completely agnostic to the pinctrl API, SW, OS, etc., and
+hence can be considered a pure representation of hardware.
 
-That does mean that we probably just have to do a kernel command line
-option for this. And then the autofs4 code that currently does
-
-    sbi->compat_daemon = is_compat_task();
-
-needs to change that to take the command line option into account too.
-
-We could make it a mount option, but since the whole point is that we
-want to be compatible with existing binaries that don't *use* special
-mount options, I suspect the only reasonable point is at the kernel
-command line.
-
-That is, unless somebody can figure out a way to auto-detect how big
-the user space read is. The problem with that really is that the
-autofs read() system call isn't done directly to some "real autofs"
-file descriptor, autofs literally is using the standard pipe code.
-
-So the code in fs/pipe.c does actually see the size of the read. But
-the code in fs/autofs4/ does not. And we can't change the interface,
-because the whole pipe is opened in user space iirc.
-
-Ugly.
-
-Anybody willing to write the patch?
-
-                 Linus
-
-Damn.
+As such, the "pinctrl" in "pinctrl-i2cmux" above refers to (2) above,
+and can be considered a pure HW/binding term.
