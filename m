@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab2DXRVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 13:21:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10666 "EHLO mx1.redhat.com"
+	id S1756831Ab2DXRWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 13:22:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35932 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755811Ab2DXRVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 13:21:13 -0400
-Message-ID: <4F96E102.9000904@redhat.com>
-Date: Tue, 24 Apr 2012 13:21:06 -0400
-From: Rik van Riel <riel@redhat.com>
+	id S1756668Ab2DXRWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 13:22:39 -0400
+Message-ID: <4F96E154.2060100@zytor.com>
+Date: Tue, 24 Apr 2012 10:22:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: lwoodman@redhat.com
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Motohiro Kosaki <mkosaki@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH -mm V2] do_migrate_pages() calls migrate_to_node() even
- if task is already on a correct node
-References: <4F96CDE1.5000909@redhat.com> <4F96D27A.2050005@gmail.com> <4F96DFE0.6040306@redhat.com>
-In-Reply-To: <4F96DFE0.6040306@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [RFC][PATCH 0/3] gcc work-around and math128
+References: <20120424161039.293018424@chello.nl>
+In-Reply-To: <20120424161039.293018424@chello.nl>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2012 01:16 PM, Larry Woodman wrote:
-> On 04/24/2012 12:19 PM, KOSAKI Motohiro wrote:
+On 04/24/2012 09:10 AM, Peter Zijlstra wrote:
+> 
+> So far its just mult, add and cmp for u128, no divisions quite yet. I realize
+> that on 32bit archs mult_u128 will result in like 8 multiplication
+> instructions that's still nowhere near the most expensive thing ever.
+> 
 
->> Please use
->>
->> /*
->> * foo bar
->> */
->>
->> style comment. and this comment only explain how code work but don't
->> explain why.
->> I hope the comment describe HPC usecase require to migrate if src and
->> dest have the
->> same weight.
+Please add shifts, at the very least.
 
-> How does this look:
+	-hpa
 
-Still does not explain the "why"...
-
--- 
-All rights reversed
