@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab2DXWhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:37:37 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
+	id S932773Ab2DXWhl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:37:41 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932742Ab2DXWhb (ORCPT
+	with ESMTP id S932760Ab2DXWhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:37:31 -0400
-Message-Id: <20120424223254.250893094@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:37:38 -0400
+Message-Id: <20120424223254.419272643@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:02 -0700
+Date: Tue, 24 Apr 2012 15:33:04 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
-Subject: [ 09/42] USB: yurex: Fix missing URB_NO_TRANSFER_DMA_MAP flag in urb
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
+Subject: [ 11/42] uwb: fix error handling
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,31 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit 532f17b5d59bf0deb6f1ff9bc1fb27d5b5011c09 upstream.
+commit 5bd7b419ef2eb4989b207753e088c3437159618a upstream.
 
-Current probing code is setting URB_NO_TRANSFER_DMA_MAP flag into a wrong urb
-structure, and this causes BUG_ON with some USB host implementations.
-This patch fixes the issue.
+Fatal errors such as a device disconnect must not trigger
+error handling. The error returns must be checked.
 
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/misc/yurex.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/uwb/hwa-rc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/misc/yurex.c
-+++ b/drivers/usb/misc/yurex.c
-@@ -282,7 +282,7 @@ static int yurex_probe(struct usb_interf
- 			 usb_rcvintpipe(dev->udev, dev->int_in_endpointAddr),
- 			 dev->int_buffer, YUREX_BUF_SIZE, yurex_interrupt,
- 			 dev, 1);
--	dev->cntl_urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
-+	dev->urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
- 	if (usb_submit_urb(dev->urb, GFP_KERNEL)) {
- 		retval = -EIO;
- 		err("Could not submitting URB");
+--- a/drivers/uwb/hwa-rc.c
++++ b/drivers/uwb/hwa-rc.c
+@@ -645,7 +645,8 @@ void hwarc_neep_cb(struct urb *urb)
+ 		dev_err(dev, "NEEP: URB error %d\n", urb->status);
+ 	}
+ 	result = usb_submit_urb(urb, GFP_ATOMIC);
+-	if (result < 0) {
++	if (result < 0 && result != -ENODEV && result != -EPERM) {
++		/* ignoring unrecoverable errors */
+ 		dev_err(dev, "NEEP: Can't resubmit URB (%d) resetting device\n",
+ 			result);
+ 		goto error;
 
 
