@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab2DXKMJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 06:12:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41369 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756625Ab2DXKMH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 06:12:07 -0400
-Message-ID: <1335262311.28150.192.camel@twins>
-Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>
-Date: Tue, 24 Apr 2012 12:11:51 +0200
-In-Reply-To: <1335231007.14538.71.camel@ymzhang.sh.intel.com>
-References: <EE928378561BF1449699C96571234A740FCE3704@SHSMSX102.ccr.corp.intel.com>
-	 <1334915073.2463.36.camel@laptop>
-	 <1335231007.14538.71.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932268Ab2DXKMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 06:12:21 -0400
+Received: from mga14.intel.com ([143.182.124.37]:53906 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756625Ab2DXKMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 06:12:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="134588548"
+Date: Tue, 24 Apr 2012 13:13:34 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linus.walleij@stericsson.com
+Subject: Re: [PATCH 2/3] gpio: langwell: allocate IRQ descriptors dynamically
+ for SPARSE_IRQ
+Message-ID: <20120424101334.GA16266@intel.com>
+References: <1333617317-28437-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1333617317-28437-2-git-send-email-mika.westerberg@linux.intel.com>
+ <20120406043414.3B8FF3E0DD7@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120406043414.3B8FF3E0DD7@localhost>
+Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-24 at 09:30 +0800, Yanmin Zhang wrote:
-> Would you like to point out the workable userspace stack walker?
-> If there is, we would check if we could reuse it.
+On Thu, Apr 05, 2012 at 09:34:14PM -0700, Grant Likely wrote:
+> On Thu,  5 Apr 2012 12:15:16 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+> > Since x86 is using SPARSE_IRQ by default nowadays it means that we need to
+> > allocate IRQ descriptors dynamically using irq_alloc_descs() otherwise the
+> > genirq code fails to convert our irq numbers to suitable descriptors.
+> > 
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > 
+> Applied, thakns.
 > 
-arch/x86/kernel/cpu/perf_event.c:perf_callchain_user(), it also deals
-with compat stuffs.
+
+Grant, is there any change getting this particular patch merged for 3.4 as
+well? Without this the driver will fail on 3.4.
