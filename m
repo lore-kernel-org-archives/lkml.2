@@ -1,120 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab2DXHsa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 03:48:30 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33386 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753973Ab2DXHs3 (ORCPT
+	id S1755339Ab2DXHyk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 03:54:40 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45583 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190Ab2DXHyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 03:48:29 -0400
+	Tue, 24 Apr 2012 03:54:39 -0400
+Date: Tue, 24 Apr 2012 08:54:26 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Rob Lee <rob.lee@linaro.org>, Sascha Hauer <s.hauer@pengutronix.de>,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init
+	functionality.
+Message-ID: <20120424075426.GP24211@n2100.arm.linux.org.uk>
+References: <20120420020816.GH22219@S2101-09.ap.freescale.net> <CAMXH7KE2RtdNy3G61guZb2uWy3rn267Z3eEVEgN5e==tHHsiuA@mail.gmail.com> <20120423051813.GM26306@S2101-09.ap.freescale.net> <20120423062739.GX3852@pengutronix.de> <20120423065259.GR26306@S2101-09.ap.freescale.net> <20120423065623.GA3852@pengutronix.de> <20120423071013.GS26306@S2101-09.ap.freescale.net> <20120423074856.GU20478@pengutronix.de> <CAMXH7KH1pwh7hJ=T30zxcWcx19wjXvr6Ff4OLy7fzqY5p79Fwg@mail.gmail.com> <20120424013841.GB26306@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-In-Reply-To: <4F965413.9010305@kernel.org>
-References: <1335171318-4838-1-git-send-email-minchan@kernel.org>
-	<4F963742.2030607@jp.fujitsu.com>
-	<4F963B8E.9030105@kernel.org>
-	<CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com>
-	<4F965413.9010305@kernel.org>
-Date: Tue, 24 Apr 2012 17:48:29 +1000
-Message-ID: <CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com>
-Subject: Re: [RFC] propagate gfp_t to page table alloc functions
-From: Nick Piggin <npiggin@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120424013841.GB26306@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 April 2012 17:19, Minchan Kim <minchan@kernel.org> wrote:
-> On 04/24/2012 03:13 PM, Nick Piggin wrote:
->
->> 2012/4/24 Minchan Kim <minchan@kernel.org>:
->>> On 04/24/2012 02:16 PM, KAMEZAWA Hiroyuki wrote:
->>>
->>>> (2012/04/23 17:55), Minchan Kim wrote:
->>>>
->>>>> As I test some code, I found a problem about deadlock by lockdep.
->>>>> The reason I saw the message is __vmalloc calls map_vm_area which calls
->>>>> pud/pmd_alloc without gfp_t. so although we call __vmalloc with
->>>>> GFP_ATOMIC or GFP_NOIO, it ends up allocating pages with GFP_KERNEL.
->>>>> The should be a BUG. This patch fixes it by passing gfp_to to low page
->>>>> table allocate functions.
->>>>>
->>>>> Signed-off-by: Minchan Kim <minchan@kernel.org>
->>>>
->>>>
->>>> Hmm ? vmalloc should support GFP_ATOMIC ?
->>>
->>>
->>> I'm not sure but alloc_large_system_hash already has used.
->>> And it's not specific on GFP_ATOMIC.
->>> We have to care of GFP_NOFS and GFP_NOIO to prevent deadlock on reclaim
->>> context.
->>> There are some places to use GFP_NOFS and we don't emit any warning
->>> message in case of that.
->>
->> What's the lockdep warning?
->
->
-> It's just some private-test code, not-mainlined and lockdep warning is like this.
->
-> [ INFO: inconsistent lock state ]
-> 3.4.0-rc3-next-20120417+ #80 Not tainted
-> ---------------------------------
-> inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
->
-> It seems test code calls vmalloc inside reclaim context so that it enters
-> reclaim context, again by map_vm_area which allocates pages with GFP_KERNEL.
->
-> Of course, I can avoid this problem by fixing the caller but during I look into
-> this problem, found other places to use gfp_t with "context restriction".
->
->
->>
->
->> vmalloc was never supposed to use gfp flags for allocation "context"
->> restriction. I.e., it
->> was always supposed to have blocking, fs, and io capable allocation
->> context. The flags
->> were supposed to be a memory type modifier.
->
->
-> You mean "zone modifiers"?
+On Tue, Apr 24, 2012 at 09:38:43AM +0800, Shawn Guo wrote:
+> On Mon, Apr 23, 2012 at 10:45:02AM -0500, Rob Lee wrote:
+> > >> Let me try last time.  What about having a late_initcall hook in
+> > >> machine_desc?
+> > >
+> > > Also fine with me.
+> > >
+> > 
+> > Shall I add Shawn's patch to my imx cpuidle patchset or should the
+> > arch/arm/kernel/setup.c and arch.h changes be submitted separately?
+> > If separately, Shawn, did you want to submit this patch or should I?
+> > 
+> Strange.  Russell is not in the Cc list.  I remember I added Russell
+> into Cc when I propose the idea.  Added him again.
 
-Yeah, things like that.
+I didn't see any message in this thread cc'd to me, but that's not to
+say I hadn't already read this patch.  I don't have any comment against
+it, but I do wonder how often this hook would be used.
 
->> These different classes of flags is a bit of a problem and source of
->> confusion we have.
->> We should be doing more checks for them, of course.
->
->
-> It might need some warning in __vmalloc and family which use gfp_t
-> if the caller use context flags.
-
-I think that would be a good idea.
-
-
->> I suspect you need to fix the caller?
->
->
-> Hmm, there are several places to use GFP_NOIO and GFP_NOFS even, GFP_ATOMIC.
-> I believe it's not trivial now.
-
-They're all buggy then. Unfortunately not through any real fault of their own.
-
-I would say add a bit of warnings and documentation, and see what can be done
-about callers.
-
-We should not take lightly the decision to make the API more permissive, because
-as you can see it's more work for implementation. Making it ATOMIC safe is even
-harder, requiring irqsafe locks and such, and it might be tricky for some
-architectures.
-
-Thanks,
-Nick
+We do seem to have quite a number of late_initcall()s in arch/arm/mach-*,
+so it seems to be a good idea - provided someone's willing to convert all
+those users of late_initcall()s.
