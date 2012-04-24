@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2DXPyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 11:54:41 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47728 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab2DXPyi (ORCPT
+	id S1755921Ab2DXP6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 11:58:16 -0400
+Received: from relay.parallels.com ([195.214.232.42]:42778 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195Ab2DXP6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 11:54:38 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Peter Staubach <pstaubach@exagrid.com>, Steve Dickson <SteveD@redhat.com>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "viro\@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch\@infradead.org" <hch@infradead.org>,
-        "michael.brantley\@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner\@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>,
-        "chuck.lever\@oracle.com" <chuck.lever@oracle.com>,
-        "malahal\@us.ibm.com" <malahal@us.ibm.com>,
-        "bfields\@fieldses.org" <bfields@fieldses.org>,
-        "trond.myklebust\@fys.uio.no" <trond.myklebust@fys.uio.no>,
-        "rees\@umich.edu" <rees@umich.edu>
-Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<1334749927-26138-1-git-send-email-jlayton@redhat.com>
-	<20120420104055.511e15bc@tlielax.poochiereds.net>
-	<4F91C49D.8070908@RedHat.com>
-	<20120420171300.326d6e36@corrin.poochiereds.net>
-	<4F956D5C.5050801@RedHat.com>
-	<20120423113216.01992555@tlielax.poochiereds.net>
-	<4F959A36.2080402@RedHat.com>
-	<FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E64B@IT-1874.Isys.com>
-	<20120424105049.5ed96b40@tlielax.poochiereds.net>
-Date: Tue, 24 Apr 2012 17:54:56 +0200
-In-Reply-To: <20120424105049.5ed96b40@tlielax.poochiereds.net> (Jeff Layton's
-	message of "Tue, 24 Apr 2012 10:50:49 -0400")
-Message-ID: <87lillktv3.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 24 Apr 2012 11:58:15 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: "Venkatesh Pallipadi (Venki)" <venki@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Vladimir Davydov <vdavydov@parallels.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch: x86: init hpet event_handler to noop
+Date: Tue, 24 Apr 2012 19:57:11 +0400
+Message-ID: <1335283031-12942-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Layton <jlayton@redhat.com> writes:
+If hpet is enabled by hpet_late_init() - this usually occurs on systems
+with buggy BIOS, which does not report about hpet presence through ACPI,
+hpet_clockevent's event_handler can be left uninitialized by
+clockevents_register_device() because of hpet_clockevent low rating (by
+the time hpet_late_init() is called, high prio apic timers have already
+been setup). The event_handler is then initialized a bit later by the
+clocksource_done_booting() procedure.
 
-> On Mon, 23 Apr 2012 16:38:00 -0400
-> Peter Staubach <pstaubach@exagrid.com> wrote:
->
->> I don't really like the idea of introducing another errno as well.  It seems like too much complexity and represents complexity that no one has really justified needing.
->> 
->
-> I tend to agree here. Miklos, can you elaborate a bit on what fuse
-> filesystems you're particularly concerned about here? Which ones return
-> ESTALE and under what conditions. Maybe we can try to tailor this
-> solution to avoid the complexity without impacting them.
+Normally, timer interrupts should not be delivered between these two
+calls, but if e.g. the kernel is booted using kexec, there might be some
+pending interrupts from the previous kernel's context, which can lead to
+a NULL pointer dereference in timer_interrupt().
 
-It is not just fuse I'm concerned about.  Grep for -ESTALE, there are
-about 120 hits about 20 of which come from NFS.  There's no guarantee
-that any of those ESTALE errors will go away on retry, which for an
-unlimited retry means a hung OS.  If you limit the number of retries
-then in the best case it's just lots of wasted CPU cycles.
+Avoid this by initializing hpet's event_handler to noop in its definition.
 
-And an audit would still not ensure safety against future additions of
-ESTALE.
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ arch/x86/kernel/hpet.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-And a simple audit won't find things like fuse, where the error comes
-from outside the kernel.  Fixing that is not trivial either.  Turning
-ESTALE into some other error prevents looping but breaks the return
-value.
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index ad0de0c..a736a6e 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -238,6 +238,7 @@ static struct clock_event_device hpet_clockevent = {
+ 	.set_next_event = hpet_legacy_next_event,
+ 	.irq		= 0,
+ 	.rating		= 50,
++	.event_handler	= clockevents_handle_noop,
+ };
+ 
+ static void hpet_stop_counter(void)
+-- 
+1.7.1
 
-Thanks,
-Miklos
