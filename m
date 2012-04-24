@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758384Ab2DXXLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 19:11:54 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:61440 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758074Ab2DXXLt (ORCPT
+	id S1753898Ab2DXXM5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 19:12:57 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:3501 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab2DXXMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 19:11:49 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Glauber Costa <glommer@parallels.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH 2/2] res_counter: Account max_usage when calling res_counter_charge_nofail()
-Date: Wed, 25 Apr 2012 01:11:36 +0200
-Message-Id: <1335309096-12886-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1335309096-12886-1-git-send-email-fweisbec@gmail.com>
-References: <1335309096-12886-1-git-send-email-fweisbec@gmail.com>
+	Tue, 24 Apr 2012 19:12:55 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-160.messagelabs.com!1335309174!4683563!1
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] media: videobuf2-dma-contig: quiet sparse noise about plain integer as NULL pointer
+Date: Tue, 24 Apr 2012 16:12:48 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-media@vger.kernel.org>, <pawel@osciak.com>,
+        <m.szyprowski@samsung.com>, <kyungmin.park@samsung.com>,
+        <mchehab@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204241612.49058.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updating max_usage is something one would expect when we reach
-a new maximum usage value even when we do this by forcing through
-the limit with res_counter_charge_nofail().
+The function vb2_dma_contig_vaddr returns a void * not an integer.
 
-(Whether we want to account failcnt when we force through the limit
-is another debate).
+Quiets the sparse noise:
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Glauber Costa <glommer@parallels.com>
-Cc: Kirill A. Shutemov <kirill@shutemov.name>
+warning: Using plain integer as NULL pointer
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Pawel Osciak <pawel@osciak.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
 ---
- kernel/res_counter.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-index 07a2992..bebe2b1 100644
---- a/kernel/res_counter.c
-+++ b/kernel/res_counter.c
-@@ -35,7 +35,7 @@ int res_counter_charge_locked(struct res_counter *counter, unsigned long val,
- 	}
+diff --git a/drivers/media/video/videobuf2-dma-contig.c b/drivers/media/video/videobuf2-dma-contig.c
+index f17ad98..7de6843 100644
+--- a/drivers/media/video/videobuf2-dma-contig.c
++++ b/drivers/media/video/videobuf2-dma-contig.c
+@@ -85,7 +85,7 @@ static void *vb2_dma_contig_vaddr(void *buf_priv)
+ {
+ 	struct vb2_dc_buf *buf = buf_priv;
+ 	if (!buf)
+-		return 0;
++		return NULL;
  
- 	counter->usage += val;
--	if (!force && counter->usage > counter->max_usage)
-+	if (counter->usage > counter->max_usage)
- 		counter->max_usage = counter->usage;
- 	return ret;
+ 	return buf->vaddr;
  }
--- 
-1.7.5.4
-
