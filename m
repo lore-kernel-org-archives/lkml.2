@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab2DXWiU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:38:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
+	id S964825Ab2DXWoY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:44:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932602Ab2DXWiQ (ORCPT
+	with ESMTP id S932874Ab2DXWiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:38:16 -0400
-Message-Id: <20120424223255.365387564@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:38:19 -0400
+Message-Id: <20120424223255.456705238@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:15 -0700
+Date: Tue, 24 Apr 2012 15:33:16 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 22/42] USB: fix deadlock in bConfigurationValue attribute method
+        alan@lxorguk.ukuu.org.uk,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 23/42] usb: gadget: eliminate NULL pointer dereference (bugfix)
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,110 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
 
-commit 8963c487a80b4688c9e68dcc504a90074aacc145 upstream.
+commit 92b0abf80c5c5f0e0d71d1309688a330fd74731b upstream.
 
-This patch (as154) fixes a self-deadlock that occurs when userspace
-writes to the bConfigurationValue sysfs attribute for a hub with
-children.  The task tries to lock the bandwidth_mutex at a time when
-it already owns the lock:
+usb: gadget: eliminate NULL pointer dereference (bugfix)
 
-	The attribute's method calls usb_set_configuration(),
-	which calls usb_disable_device() with the bandwidth_mutex
-	held.
+This patch fixes a bug which causes NULL pointer dereference in
+ffs_ep0_ioctl. The bug happens when the FunctionFS is not bound (either
+has not been bound yet or has been bound and then unbound) and can be
+reproduced with running the following commands:
 
-	usb_disable_device() unregisters the existing interfaces,
-	which causes the hub driver to be unbound.
+$ insmod g_ffs.ko
+$ mount -t functionfs func /dev/usbgadget
+$ ./null
 
-	The hub_disconnect() routine calls hub_quiesce(), which
-	calls usb_disconnect() for each of the hub's children.
+where null.c is:
 
-	usb_disconnect() attempts to acquire the bandwidth_mutex
-	around a call to usb_disable_device().
+#include <fcntl.h>
+#include <linux/usb/functionfs.h>
 
-The solution is to make usb_disable_device() acquire the mutex for
-itself instead of requiring the caller to hold it.  Then the mutex can
-cover only the bandwidth deallocation operation and not the region
-where the interfaces are unregistered.
+int main(void)
+{
+	int fd = open("/dev/usbgadget/ep0", O_RDWR);
+	ioctl(fd, FUNCTIONFS_CLEAR_HALT);
 
-This has the potential to change system behavior slightly when a
-config change races with another config or altsetting change.  Some of
-the bandwidth released from the old config might get claimed by the
-other config or altsetting, make it impossible to restore the old
-config in case of a failure.  But since we don't try to recover from
-config-change failures anyway, this doesn't matter.
+	return 0;
+}
 
-[This should be marked for stable kernels that contain the commit
-fccf4e86200b8f5edd9a65da26f150e32ba79808 "USB: Free bandwidth when
-usb_disable_device is called."
-That commit was marked for stable kernels as old as 2.6.32.]
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c     |    3 ---
- drivers/usb/core/message.c |    6 +++---
- 2 files changed, 3 insertions(+), 6 deletions(-)
+ drivers/usb/gadget/f_fs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1644,7 +1644,6 @@ void usb_disconnect(struct usb_device **
- {
- 	struct usb_device	*udev = *pdev;
- 	int			i;
--	struct usb_hcd		*hcd = bus_to_hcd(udev->bus);
- 
- 	if (!udev) {
- 		pr_debug ("%s nodev\n", __func__);
-@@ -1672,9 +1671,7 @@ void usb_disconnect(struct usb_device **
- 	 * so that the hardware is now fully quiesced.
- 	 */
- 	dev_dbg (&udev->dev, "unregistering device\n");
--	mutex_lock(hcd->bandwidth_mutex);
- 	usb_disable_device(udev, 0);
--	mutex_unlock(hcd->bandwidth_mutex);
- 	usb_hcd_synchronize_unlinks(udev);
- 
- 	usb_remove_ep_devs(&udev->ep0);
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1136,8 +1136,6 @@ void usb_disable_interface(struct usb_de
-  * Deallocates hcd/hardware state for the endpoints (nuking all or most
-  * pending urbs) and usbcore state for the interfaces, so that usbcore
-  * must usb_set_configuration() before any interfaces could be used.
-- *
-- * Must be called with hcd->bandwidth_mutex held.
-  */
- void usb_disable_device(struct usb_device *dev, int skip_ep0)
- {
-@@ -1190,7 +1188,9 @@ void usb_disable_device(struct usb_devic
- 			usb_disable_endpoint(dev, i + USB_DIR_IN, false);
- 		}
- 		/* Remove endpoints from the host controller internal state */
-+		mutex_lock(hcd->bandwidth_mutex);
- 		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
-+		mutex_unlock(hcd->bandwidth_mutex);
- 		/* Second pass: remove endpoint pointers */
- 	}
- 	for (i = skip_ep0; i < 16; ++i) {
-@@ -1750,7 +1750,6 @@ free_interfaces:
- 	/* if it's already configured, clear out old state first.
- 	 * getting rid of old interfaces means unbinding their drivers.
- 	 */
--	mutex_lock(hcd->bandwidth_mutex);
- 	if (dev->state != USB_STATE_ADDRESS)
- 		usb_disable_device(dev, 1);	/* Skip ep0 */
- 
-@@ -1763,6 +1762,7 @@ free_interfaces:
- 	 * host controller will not allow submissions to dropped endpoints.  If
- 	 * this call fails, the device state is unchanged.
- 	 */
-+	mutex_lock(hcd->bandwidth_mutex);
- 	ret = usb_hcd_alloc_bandwidth(dev, cp, NULL, NULL);
- 	if (ret < 0) {
- 		mutex_unlock(hcd->bandwidth_mutex);
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -720,7 +720,7 @@ static long ffs_ep0_ioctl(struct file *f
+ 	if (code == FUNCTIONFS_INTERFACE_REVMAP) {
+ 		struct ffs_function *func = ffs->func;
+ 		ret = func ? ffs_func_revmap_intf(func, value) : -ENODEV;
+-	} else if (gadget->ops->ioctl) {
++	} else if (gadget && gadget->ops->ioctl) {
+ 		ret = gadget->ops->ioctl(gadget, code, value);
+ 	} else {
+ 		ret = -ENOTTY;
 
 
