@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab2DXGL4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 02:11:56 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:56133 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752771Ab2DXGLm (ORCPT
+	id S1753397Ab2DXGNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 02:13:08 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:44847 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab2DXGNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 02:11:42 -0400
-Message-ID: <4F9643AD.6000906@st.com>
-Date: Tue, 24 Apr 2012 11:39:49 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Tue, 24 Apr 2012 02:13:05 -0400
 MIME-Version: 1.0
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Cc: Viresh Kumar <viresh.linux@gmail.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        spear-devel <spear-devel@list.st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "jgarzik@redhat.com" <jgarzik@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 08/13] net/stmmac: Remove conditional compilation of clk
- code
-References: <cover.1335008617.git.viresh.kumar@st.com> <03d5825c44251e6cbbdb3c3d8e67208f0fd4619d.1335008617.git.viresh.kumar@st.com> <4F964099.7030401@st.com>
-In-Reply-To: <4F964099.7030401@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F963B8E.9030105@kernel.org>
+References: <1335171318-4838-1-git-send-email-minchan@kernel.org>
+	<4F963742.2030607@jp.fujitsu.com>
+	<4F963B8E.9030105@kernel.org>
+Date: Tue, 24 Apr 2012 16:13:05 +1000
+Message-ID: <CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com>
+Subject: Re: [RFC] propagate gfp_t to page table alloc functions
+From: Nick Piggin <npiggin@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/24/2012 11:26 AM, Giuseppe CAVALLARO wrote:
-> I like this patch also because reduces ifdef in the code :-)
+2012/4/24 Minchan Kim <minchan@kernel.org>:
+> On 04/24/2012 02:16 PM, KAMEZAWA Hiroyuki wrote:
+>
+>> (2012/04/23 17:55), Minchan Kim wrote:
+>>
+>>> As I test some code, I found a problem about deadlock by lockdep.
+>>> The reason I saw the message is __vmalloc calls map_vm_area which calls
+>>> pud/pmd_alloc without gfp_t. so although we call __vmalloc with
+>>> GFP_ATOMIC or GFP_NOIO, it ends up allocating pages with GFP_KERNEL.
+>>> The should be a BUG. This patch fixes it by passing gfp_to to low page
+>>> table allocate functions.
+>>>
+>>> Signed-off-by: Minchan Kim <minchan@kernel.org>
+>>
+>>
+>> Hmm ? vmalloc should support GFP_ATOMIC ?
+>
+>
+> I'm not sure but alloc_large_system_hash already has used.
+> And it's not specific on GFP_ATOMIC.
+> We have to care of GFP_NOFS and GFP_NOIO to prevent deadlock on reclaim
+> context.
+> There are some places to use GFP_NOFS and we don't emit any warning
+> message in case of that.
 
-thanks.
+What's the lockdep warning?
 
-> Anyway this patch doesn't apply fine either in net-next and in net.git.
-> Also I wonder if you had already tested the driver build on arch w/o
-> HAVE_CLK ... just to avoid kernel build failures on other platforms.
-> 
-> Let me know if I can help you on that.
+vmalloc was never supposed to use gfp flags for allocation "context"
+restriction. I.e., it
+was always supposed to have blocking, fs, and io capable allocation
+context. The flags
+were supposed to be a memory type modifier.
 
-I already sent V2, before i saw this mail. V2 will get rebased cleanly.
-Yes i have tried that.
+These different classes of flags is a bit of a problem and source of
+confusion we have.
+We should be doing more checks for them, of course.
 
-BTW, this series must go through Andrew, instead of your tree as it
-has dependency patches. Just for info.
+I suspect you need to fix the caller?
 
--- 
-viresh
+Thanks,
+Nick
