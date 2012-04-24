@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab2DXOAk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 10:00:40 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:39974 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052Ab2DXOAj (ORCPT
+	id S1753341Ab2DXODj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 10:03:39 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:43126 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab2DXODh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 10:00:39 -0400
-From: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] wireless: Release struct returned by cfg80211_inform_bss to avoid potential memory leak.
-Date: Tue, 24 Apr 2012 15:00:34 +0100
-Message-Id: <1335276034-12735-1-git-send-email-krzysztof.wilczynski@linux.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 24 Apr 2012 10:03:37 -0400
+Date: Tue, 24 Apr 2012 16:03:31 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 11/23] slub: consider a memcg parameter in
+ kmem_create_cache
+Message-ID: <20120424140326.GA8626@somewhere>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+ <1334959051-18203-12-git-send-email-glommer@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334959051-18203-12-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function cfg80211_inform_bss returns a pointer to a referenced struct cfg80211_bss
-but no information is needed from this struct in function prism2_scan and therefore
-we release it by calling cfg80211_put_bss.
+On Fri, Apr 20, 2012 at 06:57:19PM -0300, Glauber Costa wrote:
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 2652e7c..86e40cc 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/prefetch.h>
+>  
+>  #include <trace/events/kmem.h>
+> +#include <linux/memcontrol.h>
+>  
+>  /*
+>   * Lock order:
+> @@ -3880,7 +3881,7 @@ static int slab_unmergeable(struct kmem_cache *s)
+>  	return 0;
+>  }
+>  
+> -static struct kmem_cache *find_mergeable(size_t size,
+> +static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+>  		size_t align, unsigned long flags, const char *name,
+>  		void (*ctor)(void *))
+>  {
+> @@ -3916,21 +3917,29 @@ static struct kmem_cache *find_mergeable(size_t size,
+>  		if (s->size - size >= sizeof(void *))
+>  			continue;
+>  
+> +		if (memcg && s->memcg_params.memcg != memcg)
+> +			continue;
+> +
 
-Signed-off-by: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
----
- drivers/staging/wlan-ng/cfg80211.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+This probably won't build without CONFIG_CGROUP_MEM_RES_CTLR_KMEM ?
 
-diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
-index 4cd3ba5..8bc562b 100644
---- a/drivers/staging/wlan-ng/cfg80211.c
-+++ b/drivers/staging/wlan-ng/cfg80211.c
-@@ -332,6 +332,7 @@ int prism2_scan(struct wiphy *wiphy, struct net_device *dev,
- 	wlandevice_t *wlandev = dev->ml_priv;
- 	struct p80211msg_dot11req_scan msg1;
- 	struct p80211msg_dot11req_scan_results msg2;
-+	struct cfg80211_bss *bss;
- 	int result;
- 	int err = 0;
- 	int numbss = 0;
-@@ -401,7 +402,7 @@ int prism2_scan(struct wiphy *wiphy, struct net_device *dev,
- 		ie_buf[1] = msg2.ssid.data.len;
- 		ie_len = ie_buf[1] + 2;
- 		memcpy(&ie_buf[2], &(msg2.ssid.data.data), msg2.ssid.data.len);
--		cfg80211_inform_bss(wiphy,
-+		bss = cfg80211_inform_bss(wiphy,
- 			ieee80211_get_channel(wiphy, ieee80211_dsss_chan_to_freq(msg2.dschannel.data)),
- 			(const u8 *) &(msg2.bssid.data.data),
- 			msg2.timestamp.data, msg2.capinfo.data,
-@@ -411,6 +412,13 @@ int prism2_scan(struct wiphy *wiphy, struct net_device *dev,
- 			(msg2.signal.data - 65536) * 100, /* Conversion to signed type */
- 			GFP_KERNEL
- 		);
-+
-+		if (!bss) {
-+			err = -ENOMEM;
-+			goto exit;
-+		}
-+
-+		cfg80211_put_bss(bss);
- 	}
- 
- 	if (result)
--- 
-1.7.2.5
+>  		return s;
+>  	}
+>  	return NULL;
+>  }
+>  
+> -struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+> -		size_t align, unsigned long flags, void (*ctor)(void *))
+> +struct kmem_cache *
+> +kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
 
+Does that build without CONFIG_CGROUP_MEM_RES_CTLR ?
+
+> +			size_t align, unsigned long flags, void (*ctor)(void *))
+>  {
+>  	struct kmem_cache *s;
+>  
+>  	if (WARN_ON(!name))
+>  		return NULL;
+>  
+> +#ifndef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +	WARN_ON(memcg != NULL);
+> +#endif
+> +
+>  	down_write(&slub_lock);
+> -	s = find_mergeable(size, align, flags, name, ctor);
+> +	s = find_mergeable(memcg, size, align, flags, name, ctor);
+>  	if (s) {
+>  		s->refcount++;
+>  		/*
+> @@ -3954,12 +3963,15 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+>  				size, align, flags, ctor)) {
+>  			list_add(&s->list, &slab_caches);
+>  			up_write(&slub_lock);
+> +			mem_cgroup_register_cache(memcg, s);
+
+How do you handle when the memcg cgroup gets destroyed? Also that means only one
+memcg cgroup can be accounted for a given slab cache? What if that memcg cgroup has
+children? Hmm, perhaps this is handled in a further patch in the series, I saw a
+patch title with "children" inside :)
+
+Also my knowledge on memory allocators is near zero, so I may well be asking weird
+questions...
