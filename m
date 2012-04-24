@@ -1,61 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab2DXLea (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 07:34:30 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:54632 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753565Ab2DXLe0 (ORCPT
+	id S1754131Ab2DXLei (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 07:34:38 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:48920 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753951Ab2DXLef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 07:34:26 -0400
-From: Vlad Zolotarov <vlad@scalemp.com>
-Organization: ScaleMP Ltd.
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] x86: Move x86_cpu_to_apicid to the __read_mostly section
-Date: Tue, 24 Apr 2012 14:29:53 +0300
-User-Agent: KMail/1.13.5 (Linux/2.6.32-40-generic; KDE/4.4.5; i686; ; )
-Cc: alan@lxorguk.ukuu.org.uk,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
+	Tue, 24 Apr 2012 07:34:35 -0400
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <akpm@linux-foundation.org>
+Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <mturquette@linaro.org>, <sshtylyov@mvista.com>, <jgarzik@redhat.com>,
+        <linux@arm.linux.org.uk>, Viresh Kumar <viresh.kumar@st.com>,
+        <linux-ide@vger.kernel.org>
+Subject: [PATCH V3 06/12] ata/pata_arasan: Remove conditional compilation of clk code
+Date: Tue, 24 Apr 2012 16:51:28 +0530
+Message-ID: <240f710aa4a9802fd35c8fe40c84585eeea78bdb.1335266056.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <cover.1335266056.git.viresh.kumar@st.com>
+References: <cover.1335266056.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204241429.54089.vlad@scalemp.com>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shai Fultheim <shai@scalemp.com>
+With addition of dummy clk_*() calls for non CONFIG_HAVE_CLK cases in clk.h,
+there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #endif
+macros.
 
-x86_cpu_to_apicid is only written to during initialization. Benchmarks
-show that moving it to the __read_mostly section helps avoid false
-sharing on large multiprocessing systems.
-
-Signed-off-by: Shai Fultheim <shai@scalemp.com>
-Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Cc: Jeff Garzik <jgarzik@redhat.com>
+Cc: linux-ide@vger.kernel.org
 ---
- arch/x86/include/asm/smp.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/ata/pata_arasan_cf.c |   14 +-------------
+ 1 files changed, 1 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 0434c40..b9d6c1e 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -53,7 +53,7 @@ static inline struct cpumask *cpu_llc_shared_mask(int cpu)
- 	return per_cpu(cpu_llc_shared_map, cpu);
+diff --git a/drivers/ata/pata_arasan_cf.c b/drivers/ata/pata_arasan_cf.c
+index fc2db2a..09f0729 100644
+--- a/drivers/ata/pata_arasan_cf.c
++++ b/drivers/ata/pata_arasan_cf.c
+@@ -184,10 +184,8 @@
+ struct arasan_cf_dev {
+ 	/* pointer to ata_host structure */
+ 	struct ata_host *host;
+-	/* clk structure, only if HAVE_CLK is defined */
+-#ifdef CONFIG_HAVE_CLK
++	/* clk structure */
+ 	struct clk *clk;
+-#endif
+ 
+ 	/* physical base address of controller */
+ 	dma_addr_t pbase;
+@@ -312,13 +310,11 @@ static int cf_init(struct arasan_cf_dev *acdev)
+ 	unsigned long flags;
+ 	int ret = 0;
+ 
+-#ifdef CONFIG_HAVE_CLK
+ 	ret = clk_enable(acdev->clk);
+ 	if (ret) {
+ 		dev_dbg(acdev->host->dev, "clock enable failed");
+ 		return ret;
+ 	}
+-#endif
+ 
+ 	spin_lock_irqsave(&acdev->host->lock, flags);
+ 	/* configure CF interface clock */
+@@ -344,9 +340,7 @@ static void cf_exit(struct arasan_cf_dev *acdev)
+ 	writel(readl(acdev->vbase + OP_MODE) & ~CFHOST_ENB,
+ 			acdev->vbase + OP_MODE);
+ 	spin_unlock_irqrestore(&acdev->host->lock, flags);
+-#ifdef CONFIG_HAVE_CLK
+ 	clk_disable(acdev->clk);
+-#endif
  }
  
--DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
-+DECLARE_EARLY_PER_CPU_READ_MOSTLY(u16, x86_cpu_to_apicid);
- DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
- #if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86_32)
- DECLARE_EARLY_PER_CPU(int, x86_cpu_to_logical_apicid);
+ static void dma_callback(void *dev)
+@@ -828,13 +822,11 @@ static int __devinit arasan_cf_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-#ifdef CONFIG_HAVE_CLK
+ 	acdev->clk = clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(acdev->clk)) {
+ 		dev_warn(&pdev->dev, "Clock not found\n");
+ 		return PTR_ERR(acdev->clk);
+ 	}
+-#endif
+ 
+ 	/* allocate host */
+ 	host = ata_host_alloc(&pdev->dev, 1);
+@@ -899,9 +891,7 @@ static int __devinit arasan_cf_probe(struct platform_device *pdev)
+ 			&arasan_cf_sht);
+ 
+ free_clk:
+-#ifdef CONFIG_HAVE_CLK
+ 	clk_put(acdev->clk);
+-#endif
+ 	return ret;
+ }
+ 
+@@ -912,9 +902,7 @@ static int __devexit arasan_cf_remove(struct platform_device *pdev)
+ 
+ 	ata_host_detach(host);
+ 	cf_exit(acdev);
+-#ifdef CONFIG_HAVE_CLK
+ 	clk_put(acdev->clk);
+-#endif
+ 
+ 	return 0;
+ }
 -- 
-1.7.7.6
+1.7.9
 
