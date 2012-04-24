@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab2DXFIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 01:08:24 -0400
-Received: from portal.weinmann.de ([62.8.140.122]:33273 "EHLO
-	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab2DXFIP convert rfc822-to-8bit (ORCPT
+	id S1752077Ab2DXFS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 01:18:58 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60771 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604Ab2DXFS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 01:08:15 -0400
-X-Greylist: delayed 995 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Apr 2012 01:08:15 EDT
-From: "Voss, Nikolaus" <N.Voss@weinmann.de>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-CC: "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'rtc-linux@googlegroups.com'" <rtc-linux@googlegroups.com>,
-        "'a.zummo@towertech.it'" <a.zummo@towertech.it>,
-        "'grant.likely@secretlab.ca'" <grant.likely@secretlab.ca>
-Date: Tue, 24 Apr 2012 06:51:03 +0200
-Subject: RE: [PATCH] drivers/rtc/rtc-m41t93.c: don't let get_time() reset
- error state
-Thread-Topic: [PATCH] drivers/rtc/rtc-m41t93.c: don't let get_time() reset
- error state
-Thread-Index: Ac0hkyY4NeY7YIfPRkekxVRvNaP6/AAPyylg
-Message-ID: <EF2E73589CA71846A15D0B2CDF79505D0905DB4A4A@wm021.weinmann.com>
-References: <201204231230.q3NCUbbP015327@gatekeeper.vosshq.de>
- <20120423135322.5b9b1635.akpm@linux-foundation.org>
-In-Reply-To: <20120423135322.5b9b1635.akpm@linux-foundation.org>
-Accept-Language: en-US, de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, de-DE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Apr 2012 01:18:57 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F963742.2030607@jp.fujitsu.com>
+Date: Tue, 24 Apr 2012 14:16:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] propagate gfp_t to page table alloc functions
+References: <1335171318-4838-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1335171318-4838-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote on 2012-04-23:
-> On Mon, 23 Apr 2012 12:51:23 +0200
-> Nikolaus Voss <n.voss@weinmann.de> wrote:
+(2012/04/23 17:55), Minchan Kim wrote:
+
+> As I test some code, I found a problem about deadlock by lockdep.
+> The reason I saw the message is __vmalloc calls map_vm_area which calls
+> pud/pmd_alloc without gfp_t. so although we call __vmalloc with
+> GFP_ATOMIC or GFP_NOIO, it ends up allocating pages with GFP_KERNEL.
+> The should be a BUG. This patch fixes it by passing gfp_to to low page
+> table allocate functions.
 > 
->> If the rtc reports the time might be invalid due to oscillator
->> failure, this flags must not be reset by get_time() as the read
->> operation doesn't make the time valid.
->> 
->> Instead, the flag is reset in set_time() when a valid time is
->> to be written.
-> 
-> This is rather vague - what is/are "these flags"?
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-Sorry, that's true. I speak of the M41T93_FLAG_OF
-(Oscillator Fail) flag.
 
-[...]
-> Secondly, you provided no description of the user-visible effects of
-> the bug.  Hence I cannot work out which kernel version(s) this patch
-> should be merged into.
+Hmm ? vmalloc should support GFP_ATOMIC ?
 
-What the user sees is that the first get_time() read reports
-an error (invalid time) and the second reports no error, so the
-first read magically heals the rtc time.
+And, do we need to change all pud_,pgd_,pmd_,pte_alloc() for users pgtables ?
 
-The patch applies to all kernel versions with support for m41t93 rtc.
-
-I'll repost the patch with a proper description.
-
-Niko
-
+Thanks,
+-Kame
 
