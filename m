@@ -1,60 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757137Ab2DXT1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 15:27:15 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48525 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757015Ab2DXT1O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 15:27:14 -0400
-Date: Tue, 24 Apr 2012 21:27:09 +0200
-From: =?iso-8859-1?Q?St=E9phane?= Pajot <pajot.stephane@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: rdunlap@xenotime.net, fmhess@users.sourceforge.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: comedi: fix trailing whitespace and quoted
- string split across lines in ni_labpc.c
-Message-ID: <20120424192709.GA4717@stef-pc>
-References: <1335286210-3150-1-git-send-email-pajot.stephane@gmail.com>
- <20120424184642.GA20004@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120424184642.GA20004@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757249Ab2DXTbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 15:31:07 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:35210 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757112Ab2DXTbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 15:31:06 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch] mm: memcg: move pc lookup point to commit_charge()
+Date: Tue, 24 Apr 2012 21:31:00 +0200
+Message-Id: <1335295860-28919-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 11:46:42AM -0700, Greg KH wrote:
-> On Tue, Apr 24, 2012 at 06:50:10PM +0200, Stéphane Pajot wrote:
-> > This is a patch to the ni_labpc.c file that fixes up trailing whitespace error and quoted string split across lines warning
-> > found by the checkpatch.pl tool
-> 
-> Please only fix one type of thing per patch, so this should be a two
-> patch series at the least.
-Ok for that.
-> 
-> But...
-> 
-> > @@ -738,7 +738,7 @@ static int labpc_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-> >  		irq = it->options[1];
-> >  		dma_chan = it->options[2];
-> >  #else
-> > -		printk(KERN_ERR " this driver has not been built with ISA DMA "
-> > +		printk(KERN_ERR " this driver has not been built with ISA DMA\n"
-> >  								"support.\n");
-> 
-> What?  Why did you do this?  Do you understand what you just did to the
-> message printed out?
+None of the callsites actually need the page_cgroup descriptor
+themselves, so just pass the page and do the look up in there.
 
-... It was just to patch this "quoted string split across lines
-warning", i saw this solution on the web. Now i think i understand that
-i cannot modify AT ALL a printk(KERN_ERR* even if it's just with a \n ?
+We already had two bugs (6568d4a 'mm: memcg: update the correct soft
+limit tree during migration' and 'memcg: fix Bad page state after
+replace_page_cache') where the passed page and pc were not referring
+to the same page frame.
 
-Stef
-> 
-> greg k-h
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   17 +++++------------
+ 1 files changed, 5 insertions(+), 12 deletions(-)
 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 884e936..1a28dd8 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2461,10 +2461,10 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 				       struct page *page,
+ 				       unsigned int nr_pages,
+-				       struct page_cgroup *pc,
+ 				       enum charge_type ctype,
+ 				       bool lrucare)
+ {
++	struct page_cgroup *pc = lookup_page_cgroup(page);
+ 	struct zone *uninitialized_var(zone);
+ 	bool was_on_lru = false;
+ 	bool anon;
+@@ -2701,7 +2701,6 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+ {
+ 	struct mem_cgroup *memcg = NULL;
+ 	unsigned int nr_pages = 1;
+-	struct page_cgroup *pc;
+ 	bool oom = true;
+ 	int ret;
+ 
+@@ -2715,11 +2714,10 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+ 		oom = false;
+ 	}
+ 
+-	pc = lookup_page_cgroup(page);
+ 	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
+ 	if (ret == -ENOMEM)
+ 		return ret;
+-	__mem_cgroup_commit_charge(memcg, page, nr_pages, pc, ctype, false);
++	__mem_cgroup_commit_charge(memcg, page, nr_pages, ctype, false);
+ 	return 0;
+ }
+ 
+@@ -2816,16 +2814,13 @@ static void
+ __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *memcg,
+ 					enum charge_type ctype)
+ {
+-	struct page_cgroup *pc;
+-
+ 	if (mem_cgroup_disabled())
+ 		return;
+ 	if (!memcg)
+ 		return;
+ 	cgroup_exclude_rmdir(&memcg->css);
+ 
+-	pc = lookup_page_cgroup(page);
+-	__mem_cgroup_commit_charge(memcg, page, 1, pc, ctype, true);
++	__mem_cgroup_commit_charge(memcg, page, 1, ctype, true);
+ 	/*
+ 	 * Now swap is on-memory. This means this page may be
+ 	 * counted both as mem and swap....double count.
+@@ -3254,14 +3249,13 @@ int mem_cgroup_prepare_migration(struct page *page,
+ 	 * page. In the case new page is migrated but not remapped, new page's
+ 	 * mapcount will be finally 0 and we call uncharge in end_migration().
+ 	 */
+-	pc = lookup_page_cgroup(newpage);
+ 	if (PageAnon(page))
+ 		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
+ 	else if (page_is_file_cache(page))
+ 		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
+ 	else
+ 		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+-	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, ctype, false);
++	__mem_cgroup_commit_charge(memcg, newpage, 1, ctype, false);
+ 	return ret;
+ }
+ 
+@@ -3348,8 +3342,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
+ 	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
+ 	 * LRU while we overwrite pc->mem_cgroup.
+ 	 */
+-	pc = lookup_page_cgroup(newpage);
+-	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type, true);
++	__mem_cgroup_commit_charge(memcg, newpage, 1, type, true);
+ }
+ 
+ #ifdef CONFIG_DEBUG_VM
+-- 
+1.7.7.6
 
