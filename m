@@ -1,108 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab2DXLik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 07:38:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46895 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752948Ab2DXLii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 07:38:38 -0400
-Date: Tue, 24 Apr 2012 12:38:35 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V1 2/2] i2c: tegra: support for I2C_M_NOSTART protocol
- mangling
-Message-ID: <20120424113834.GE12063@opensource.wolfsonmicro.com>
-References: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
- <1335251976-31925-3-git-send-email-ldewangan@nvidia.com>
- <20120424105557.7ac07232@endymion.delvare>
- <4F967089.3050004@nvidia.com>
+	id S1753729Ab2DXLjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 07:39:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43501 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752187Ab2DXLi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 07:38:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="145231678"
+Date: Tue, 24 Apr 2012 19:33:40 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
+        andrea@betterlinux.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120424113340.GA12509@localhost>
+References: <20120410180653.GJ21801@redhat.com>
+ <20120410210505.GE4936@quack.suse.cz>
+ <20120410212041.GP21801@redhat.com>
+ <20120410222425.GF4936@quack.suse.cz>
+ <20120411154005.GD16692@redhat.com>
+ <20120411192231.GF16008@quack.suse.cz>
+ <20120412203719.GL2207@redhat.com>
+ <20120412205148.GA24056@google.com>
+ <20120414143639.GA31241@localhost>
+ <20120416145744.GA15437@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4Epv4kl9IRBfg3rk"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F967089.3050004@nvidia.com>
-X-Cookie: Be careful!  Is it classified?
+In-Reply-To: <20120416145744.GA15437@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Vivek,
 
---4Epv4kl9IRBfg3rk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Apr 16, 2012 at 10:57:45AM -0400, Vivek Goyal wrote:
+> On Sat, Apr 14, 2012 at 10:36:39PM +0800, Fengguang Wu wrote:
+> 
+> [..]
+> > Yeah the backpressure idea would work nicely with all possible
+> > intermediate stacking between the bdi and leaf devices. In my attempt
+> > to do combined IO bandwidth control for
+> > 
+> > - buffered writes, in balance_dirty_pages()
+> > - direct IO, in the cfq IO scheduler
+> > 
+> > I have to look into the cfq code in the past days to get an idea how
+> > the two throttling layers can cooperate (and suffer from the pains
+> > arise from the violations of layers). It's also rather tricky to get
+> > two previously independent throttling mechanisms to work seamlessly
+> > with each other for providing the desired _unified_ user interface. It
+> > took a lot of reasoning and experiments to work the basic scheme out...
+> > 
+> > But here is the first result. The attached graph shows progress of 4
+> > tasks:
+> > - cgroup A: 1 direct dd + 1 buffered dd
+> > - cgroup B: 1 direct dd + 1 buffered dd
+> > 
+> > The 4 tasks are mostly progressing at the same pace. The top 2
+> > smoother lines are for the buffered dirtiers. The bottom 2 lines are
+> > for the direct writers. As you may notice, the two direct writers are
+> > somehow stalled for 1-2 times, which increases the gaps between the
+> > lines. Otherwise, the algorithm is working as expected to distribute
+> > the bandwidth to each task.
+> > 
+> > The current code's target is to satisfy the more realistic user demand
+> > of distributing bandwidth equally to each cgroup, and inside each
+> > cgroup, distribute bandwidth equally to buffered/direct writes. On top
+> > of which, weights can be specified to change the default distribution.
+> > 
+> > The implementation involves adding "weight for direct IO" to the cfq
+> > groups and "weight for buffered writes" to the root cgroup. Note that
+> > current cfq proportional IO conroller does not offer explicit control
+> > over the direct:buffered ratio.
+> > 
+> > When there are both direct/buffered writers in the cgroup,
+> > balance_dirty_pages() will kick in and adjust the weights for cfq to
+> > execute. Note that cfq will continue to send all flusher IOs to the
+> > root cgroup.  balance_dirty_pages() will compute the overall async
+> > weight for it so that in the above test case, the computed weights
+> > will be
+> 
+> I think having separate weigths for sync IO groups and async IO is not
+> very appealing. There should be one notion of group weight and bandwidth
+> distrubuted among groups according to their weight.
 
-On Tue, Apr 24, 2012 at 02:51:13PM +0530, Laxman Dewangan wrote:
-> On Tuesday 24 April 2012 02:25 PM, Jean Delvare wrote:
+There have to be some scheme, either explicitly or implicitly. Maybe
+you are baring in mind some "equal split among queues" policy? For
+example, if the cgroup has 9 active sync queues and 1 async queue,
+split the weight equally to the 10 queues?  So the sync IOs get 90%
+share, and the async writes get 10% share.
 
-> >>Adding support for protocol mangling I2C_M_NOSTART.
-> >>When multiple message transfer request made through i2c
-> >>and if any message is flagged with I2C_M_NOSTART then
-> >>it will not send the start/repeat start/address of that
-> >>message i.e. send the data directly.
+For dirty throttling w/o cgroup awareness, balance_dirty_pages()
+splits the writeout bandwidth equally among all dirtier tasks. Since
+cfq works with queues, it seems most natural for it to do equal split
+among all queues (inside the cgroup).
 
-> >What do you need this for?
+I'm not sure when there are N dd tasks doing direct IO, cfq will
+continuously run N sync queues for them (without many dynamic queue
+deletion and recreations). If that is the case, it should be trivial
+to support the queue based fair split in the global async queue
+scheme. Otherwise I'll have some trouble detecting the N value when
+trying to do the N:1 sync:async weight split.
 
-> The primary use-case here is scatter-gather of multiple I2C
-> messages; the first message will contain the START and perhaps some
-> transfers, then subsequent messages will continue with more data
-> transfers. This removes the need to put all the data transfers into
-> a single message, and hence avoids some copying of commands/data.
+> Now one can argue that with-in a group, there might be one knob in CFQ
+> which allows to change the share or sync/async IO.
 
-> Mark Brown says this is important for regmap. This feature is
-> implement gather support for I2C transfers - the resulting I2C
-> transfer is entirely normal but this ends up being implemented by
-> the controller doing two transfers back to back with no start on the
-> second transfer. To the outside world it looks like a perfectly
-> normal transfer. This behaviour can be emulated by allocating a
-> buffer and coalescing the data into that buffer before sending it to
-> the hardware but this introduces an avoidable and sometimes
-> noticeable overhead.
+Yeah. I suspect typical users don't care about the split policy or
+fairness inside the cgroup, otherwise there may be complains on any
+existing policies: "I want split this way" "I want that way"... ;-)
 
-I'm sure I've seen that block of text somewhere before :)
+Anyway I'm not sure about the possible use cases..
 
-This is it, you've got some big blob like a firmware image somewhere=20
-or perhaps even just a small block of data to write in one and you want
-to put a register address on the front and send it.  It's much easier
-and slightly faster if you can avoid having to allocate a temporary
-buffer - not so much for I2C per se (it's generally very slow after all)
-as for the overall system, often when you're doing this stuff when the
-system is generally very busy so it's helpful to avoid introducing
-needless extra work.
+> Also Tejun and Jan have expressed the desire that once we have figured
+> out a way to communicate the submitter's context for async IO, we would
+> like to account that IO in associated cgroup instead of root cgroup (as
+> we do today).
 
-In the grand scheme it's not the end of the world if it's missing but
-if the hardware supports it we may as well use it, it's usually just
-setting a single register bit.
+Understand. Accounting should always be attributed to the corresponding
+cgroup. I'll also need this to send feedback information to the async
+IO submitter's cgroups.
 
---4Epv4kl9IRBfg3rk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> > - 1000 async weight for the root cgroup (2 buffered dds)
+> > - 500 dio weight for cgroup A (1 direct dd)
+> > - 500 dio weight for cgroup B (1 direct dd)
+> > 
+> > The second graph shows result for another test case:
+> > - cgroup A, weight 300: 1 buffered cp
+> > - cgroup B, weight 600: 1 buffered dd + 1 direct dd
+> > - cgroup C, weight 300: 1 direct dd
+> > which is also working as expected.
+> > 
+> > Once the cfq properly grants total async IO share to the flusher,
+> > balance_dirty_pages() will then do its original job of distributing
+> > the buffered write bandwidth among the buffered dd tasks.
+> > 
+> > It will have to assume that the devices under the same bdi are
+> > "symmetry". It also needs further stats feedback on IOPS or disk time
+> > in order to do IOPS/time based IO distribution. Anyway it would be
+> > interesting to see how far this scheme can go. I'll cleanup the code
+> > and post it soon.
+> 
+> Your proposal relies on few things.
+> 
+> - Bandwidth needs to be divided eually among sync and async IO.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Yeah balance_dirty_pages() always works on the basis of bandwidth. The
+plan is that once we get the feedback information on each stream's
+bandwidth:disk_time (or IOPS) ratio, the bandwidth target can be
+adjusted to achieve disk time or IOPS based fair share among the
+buffered dirtiers.
 
-iQIcBAEBAgAGBQJPlpCOAAoJEBus8iNuMP3d1TQQAIZp0Z0T74cWQ+75VBj7FKKZ
-ie39Zbam6fRlZYxfERAmUTi38uL5gDNRuEWDYIAB+WkpxxRMmxUwmPt7wCNLRf5D
-gVI/WyNERwla6fiqIA2G4gB8UqQPOmTKujaX8XyB0/RBqdxcbjp6Au+GmbLnqyd6
-ZnW8vOkCvTShiGXawkiFnHVk/tpIcmoaahHjXfxikgyNlFRKxb9LLy4UjbSp3rMX
-xyCthylB3bwDtMGKzjxQ+MXpdblvF5EKjopPr8+nSbwDmrABSZvmd9dkOE2gZhQl
-gJsl7KqOPIM4UytF67OlZdzux58BoygT9QhZWilNXJ2BxTIaAWf2+eWj6zBQw8Ct
-suyawO2G37p0GJeQAtIahFh3ZLXnesx0hoxMN9N0qHAQBzSDC43H2jJ1yGDuUjSf
-/RbR9lpp4BcMcusndyqnYjUU5wAwzzq4JAu92PvM7h5SUgg2gBlc69znmSrpxt3E
-rk8Vn9gdZQ4EAVZqQMacVze6qMrwUhxh/vZkJyTAczPInvre4Ob8MgyXZ2eo9Oor
-vrHMeHeg9IE4IqQo/C+87erNQoifiNg/uKdkzNf9n3neRRgen+L9l0kwyb0d1i9W
-dHJheNrMk5l8wGWRX5f3MFI6NFSOE0sb4BVTiVn2nPsZkICZF52XH30RwspKNq+O
-4DN39W1CXyMC/Bwg57Q6
-=/foX
------END PGP SIGNATURE-----
+For the sync:async split, it's operating on the cfqg->weight. So it's
+automatically disk time based.
 
---4Epv4kl9IRBfg3rk--
+Look at this graph, the 4 dd tasks are granted the same weight (2 of
+them are buffered writes). I guess the 2 buffered dd tasks managed to
+progress much faster than the 2 direct dd tasks just because the async
+IOs are much more efficient than the bs=64k direct IOs.
+
+https://github.com/fengguang/io-controller-tests/raw/master/log/bay/xfs/mixed-write-2.2012-04-19-10-42/balance_dirty_pages-task-bw.png
+
+> - Flusher thread async IO will always to go to root cgroup.
+
+Right. This is actually my main target: to avoid splitting up the
+async streams throughout the IO path, for the good of performance.
+
+> - I am not sure how this scheme is going to work when we introduce
+>   hierarchical blkio cgroups.
+
+I think it's still viable. balance_dirty_pages() works by estimating
+the N (number of dd tasks) value and splitting the writeout bandwidth
+equally among the tasks:
+
+        task_ratelimit = write_bandwidth / N
+
+It becomes a proportional weight IO controller if change the formula
+to
+        task_ratelimit = weight * write_bandwidth / N_w
+
+Here lies the beauty of the bdi_update_dirty_ratelimit() algorithm:
+it can automatically adapt N to the proper "weighted" N_w to keep
+things in balance, given whatever weights applied to each task.
+
+If further use 
+
+        blkcg_ratelimit = weight * write_bandwidth / N_w
+        task_ratelimit  = weight * blkcg_ratelimit / M_w
+
+It's turned into a cgroup IO controller.
+
+This change further makes it a hierarchical IO controller:
+
+        blkcg_ratelimit = weight * parent_blkcg_ratelimit / M_w
+
+We'll also need to hierarchically de-compose the async weights from
+inner cgroup levels to outer levels, and finally add them to the root
+cgroup that holds the async queue. This looks feasible, too.
+
+> - cgroup weights for sync IO seems to be being controlled by user and
+>   somehow root cgroup weight seems to be controlled by this async IO
+>   logic silently.
+
+In the current state I do assume no IO tasks in the root cgroup except
+for the flusher. However in general the root cgroup can be treated the
+same as other cgroups: its weight can also be split up into dio_weight
+and async weight.
+
+The general idea is
+- cfqg->weight is given by user
+- cfqg->dio_weight is used for sync slices on vdisktime calculation.
+- total_async_weight collects all async IO weights from each cgroup,
+  including the root cgroup. They are the "credits" for the flusher
+  for doing the async IOs in delegate of all the cgroups.
+
+> Overall sounds very odd design to me. I am not sure what are we achieving
+> by this. In current scheme one should be able to just adjust the weight
+> of root cgroup using cgroup interface and achieve same results which you
+> are showing. So where is the need of dynamically changing it inside
+> kernel.
+
+The "dynamically changing weights" are for the in-cgroup equal split
+between sync/async IOs. It does feel like an arbitrary added policy..
+
+Thanks,
+Fengguang
