@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab2DXNBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 09:01:38 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48944 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab2DXNBh (ORCPT
+	id S1754352Ab2DXNDa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 09:03:30 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4499 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753927Ab2DXND2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 09:01:37 -0400
-Date: Tue, 24 Apr 2012 15:01:18 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jean Delvare <khali@linux-fr.org>, Laxman Dewangan <ldewangan@nvidia.com>,
-        ben-linux@fluff.org, swarren@wwwdotorg.org, olof@lixom.net,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V1 2/2] i2c: tegra: support for I2C_M_NOSTART protocol
- mangling
-Message-ID: <20120424130118.GD4030@pengutronix.de>
-References: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
- <1335251976-31925-3-git-send-email-ldewangan@nvidia.com>
- <20120424105557.7ac07232@endymion.delvare>
- <4F967089.3050004@nvidia.com>
- <20120424143241.0d66fd2e@endymion.delvare>
- <20120424124030.GD13747@opensource.wolfsonmicro.com>
+	Tue, 24 Apr 2012 09:03:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 24 Apr 2012 06:03:25 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "balbi@ti.com" <balbi@ti.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Apr 2012 15:03:19 +0200
+Subject: Re: [PATCH v2 2/3] ARM: tegra: Add SMMU enabler in AHB
+Thread-Topic: [PATCH v2 2/3] ARM: tegra: Add SMMU enabler in AHB
+Thread-Index: Ac0iGp/FadhhH4F2Qfqdo1s37vAXCg==
+Message-ID: <20120424.160319.1903472399760352200.hdoyu@nvidia.com>
+References: <20120424123248.GG8444@arwen.pp.htv.fi><20120424.153930.1438573079107186567.hdoyu@nvidia.com><20120424124115.GL8444@arwen.pp.htv.fi>
+In-Reply-To: <20120424124115.GL8444@arwen.pp.htv.fi>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Hf61M2y+wYpnELGG"
-Content-Disposition: inline
-In-Reply-To: <20120424124030.GD13747@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH v2 2/3] ARM: tegra: Add SMMU enabler in AHB
+Date: Tue, 24 Apr 2012 14:41:18 +0200
+Message-ID: <20120424124115.GL8444@arwen.pp.htv.fi>
 
---Hf61M2y+wYpnELGG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> * PGP Signed by an unknown key
+> 
+> On Tue, Apr 24, 2012 at 02:39:30PM +0200, Hiroshi Doyu wrote:
+> > From: Felipe Balbi <balbi@ti.com>
+> > Subject: Re: [PATCH v2 2/3] ARM: tegra: Add SMMU enabler in AHB
+> > Date: Tue, 24 Apr 2012 14:32:52 +0200
+> > Message-ID: <20120424123248.GG8444@arwen.pp.htv.fi>
+> > 
+> > > > Old Signed by an unknown key
+> > > 
+> > > Hi,
+> > > 
+> > > On Tue, Apr 24, 2012 at 03:05:15PM +0300, Hiroshi DOYU wrote:
+> > > > @@ -95,6 +98,21 @@ static inline void gizmo_writel(unsigned long value, unsigned long offset)
+> > > >  	writel(value, tegra_ahb->regs + offset);
+> > > >  }
+> > > >  
+> > > > +#ifdef CONFIG_ARCH_TEGRA_3x_SOC
+> > > > +
+> > > > +void tegra_ahb_enable_smmu(void)
+> > > > +{
+> > > > +	unsigned long val;
+> > > > +
+> > > > +	val = gizmo_readl(AHB_ARBITRATION_XBAR_CTRL);
+> > > > +	val |= AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_DONE <<
+> > > > +		AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_SHIFT;
+> > > > +	gizmo_writel(val, AHB_ARBITRATION_XBAR_CTRL);
+> > > > +}
+> > > > +EXPORT_SYMBOL(tegra_ahb_enable_smmu);
+> > > 
+> > > ok, so this is the only place where you need that global pointer. Who
+> > > would call this ? Can you do runtime detection of the SoC and enable
+> > > SMMU based on that ?
+> > > 
+> > > I mean, will this function always be called for TEGRA 3 SoCs or is there
+> > > another condition to that ?
+> > 
+> > Only Tegra3 has SMMU.
+> 
+> but all of them ? In that case, you could call this from probe itself,
+> right ? But an ifdef won't work in all cases, so you need to do runtime
+> detection based on some revision register or cpu detection...
 
-> > * We should allocate a new functionality flag for it.
-> > * We should update the documentation to reflect the two use cases.
->=20
-> That sounds like a good plan.  I'll try to get round to it if nobody
-> beats me to it.
-
-Would it make sense to make all four I2C_M_* mangling features seperate
-I2C_FUNC_* options? The old I2C_FUNC_PROTOCOL_MANGLING could then be all
-four (seperately) exposed mangling features ORed. That's what I was
-wondering when looking at the patch.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---Hf61M2y+wYpnELGG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+WpB4ACgkQD27XaX1/VRsiywCeJwDI97Dx6+k0XxHuduZw3cbt
-se8AmgPy9Y767S2+rssNea6vqblhRIr/
-=EQLA
------END PGP SIGNATURE-----
-
---Hf61M2y+wYpnELGG--
+So far we don't have so many variants, and presently TEGRA_3x_SOC
+always has a SMMU. If there were some variants of TEGRA_3x_SOC, where
+some might not have SMMU, then runtime detection would make sense
+there. Now it's something like TEGRA_3x_SOC == SMMU.
