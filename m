@@ -1,81 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab2DXMkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 08:40:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59999 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752752Ab2DXMke (ORCPT
+	id S1754042Ab2DXMmf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 08:42:35 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:54987 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752752Ab2DXMmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 08:40:34 -0400
-Date: Tue, 24 Apr 2012 13:40:31 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, w.sang@pengutronix.de,
-        ben-linux@fluff.org, swarren@wwwdotorg.org, olof@lixom.net,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V1 2/2] i2c: tegra: support for I2C_M_NOSTART protocol
- mangling
-Message-ID: <20120424124030.GD13747@opensource.wolfsonmicro.com>
-References: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
- <1335251976-31925-3-git-send-email-ldewangan@nvidia.com>
- <20120424105557.7ac07232@endymion.delvare>
- <4F967089.3050004@nvidia.com>
- <20120424143241.0d66fd2e@endymion.delvare>
+	Tue, 24 Apr 2012 08:42:33 -0400
+Date: Tue, 24 Apr 2012 15:41:18 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] ARM: tegra: Add SMMU enabler in AHB
+Message-ID: <20120424124115.GL8444@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1335269116-9578-1-git-send-email-hdoyu@nvidia.com>
+ <1335269116-9578-2-git-send-email-hdoyu@nvidia.com>
+ <20120424123248.GG8444@arwen.pp.htv.fi>
+ <20120424.153930.1438573079107186567.hdoyu@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HWvPVVuAAfuRc6SZ"
+	protocol="application/pgp-signature"; boundary="K9FEQnHYtEQyKlzu"
 Content-Disposition: inline
-In-Reply-To: <20120424143241.0d66fd2e@endymion.delvare>
-X-Cookie: Beware of Bigfoot!
+In-Reply-To: <20120424.153930.1438573079107186567.hdoyu@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---HWvPVVuAAfuRc6SZ
+--K9FEQnHYtEQyKlzu
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Apr 24, 2012 at 02:32:41PM +0200, Jean Delvare wrote:
+On Tue, Apr 24, 2012 at 02:39:30PM +0200, Hiroshi Doyu wrote:
+> From: Felipe Balbi <balbi@ti.com>
+> Subject: Re: [PATCH v2 2/3] ARM: tegra: Add SMMU enabler in AHB
+> Date: Tue, 24 Apr 2012 14:32:52 +0200
+> Message-ID: <20120424123248.GG8444@arwen.pp.htv.fi>
+>=20
+> > * PGP Signed by an unknown key
+> >=20
+> > Hi,
+> >=20
+> > On Tue, Apr 24, 2012 at 03:05:15PM +0300, Hiroshi DOYU wrote:
+> > > @@ -95,6 +98,21 @@ static inline void gizmo_writel(unsigned long valu=
+e, unsigned long offset)
+> > >  	writel(value, tegra_ahb->regs + offset);
+> > >  }
+> > > =20
+> > > +#ifdef CONFIG_ARCH_TEGRA_3x_SOC
+> > > +
+> > > +void tegra_ahb_enable_smmu(void)
+> > > +{
+> > > +	unsigned long val;
+> > > +
+> > > +	val =3D gizmo_readl(AHB_ARBITRATION_XBAR_CTRL);
+> > > +	val |=3D AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_DONE <<
+> > > +		AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_SHIFT;
+> > > +	gizmo_writel(val, AHB_ARBITRATION_XBAR_CTRL);
+> > > +}
+> > > +EXPORT_SYMBOL(tegra_ahb_enable_smmu);
+> >=20
+> > ok, so this is the only place where you need that global pointer. Who
+> > would call this ? Can you do runtime detection of the SoC and enable
+> > SMMU based on that ?
+> >=20
+> > I mean, will this function always be called for TEGRA 3 SoCs or is there
+> > another condition to that ?
+>=20
+> Only Tegra3 has SMMU.
 
-> Please keep in mind that support for I2C_M_NOSTART at the bus driver
-> level is optional. This means that device drivers are encouraged to not
-> rely on it unconditionally. Originally the flag was meant to workaround
+but all of them ? In that case, you could call this from probe itself,
+right ? But an ifdef won't work in all cases, so you need to do runtime
+detection based on some revision register or cpu detection...
 
-Yeah, for regmap we certainly have a fallback to kmalloc() a buffer as
-needed in there already.  Like I say it's just an optimisation.
+--=20
+balbi
 
-> If you want to do scatter-gather for I2C messages, I understand the
-> benefit and I have no objection, and I agree that I2C_M_NOSTART lets
-> you do that, but then:
-
-> * We should allocate a new functionality flag for it.
-> * We should update the documentation to reflect the two use cases.
-
-That sounds like a good plan.  I'll try to get round to it if nobody
-beats me to it.
-
---HWvPVVuAAfuRc6SZ
+--K9FEQnHYtEQyKlzu
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPlp84AAoJEBus8iNuMP3dWhMP/RMauyCf8KQimGtVYPRtZ1nJ
-WSig+GyXQX+AQ/XB1glFzyasV9byJJCrHTZRf314y7tfVnggcEq0Ar+McfFofmCW
-ZV1d/9U2MlVRysASiBUgiG2BRaWY20nfXvFHw2zKeByKjYBruxX1gyWGdvVJoQkF
-lkdQ8CBG60lGj15YYkJRit6x19bghT2VjKiGWKnNj1sEpaFaeD9XK9PBvqmkEyJ1
-8vxsS/2IFsUYSZ6/dXkMx7/ka1NBCZDeMY7vvReG6MnG27BQJpDezx/nvmKV+I7r
-Q9z18wMTCFw+DGN3Akqxn90eh0R6sMCheJmJ6mtaWWg3LjVFbol0Pvlk7iQCX35z
-hBzsXM3jeeRbvzbfE3+F2b0GAJE98C5tYHnqya7NIjfOTx3tuYsOx48ApMbDr7iP
-Iml8MpmiGAC1+Jj4BI6glEDTXdXCX8UJH7Zp5Xc+KFpQw+ZgHLLZoNkWHFZX/Slm
-/9dFCWSPnpek4yoItHlFpc5ah5gdIp8aZommb1Uv8tAh/5VV6d3jhfFB3Sb5t8Zm
-CzgTQsIvvOD0fwjChztBddyLx9gsmBZo8u+GTryTTzw2l9sNMurS06s6YD7Htg2T
-dtaXx6oQ9ZvpX7cttoDIcWgmgh5z/v3Zkt/upDvX3eVW9vl/DaRvkjGQcS6zo2qm
-12ztE4SHX9gHBLu7g59r
-=3dCN
+iQIcBAEBAgAGBQJPlp9rAAoJEIaOsuA1yqRE+2QP/jDyBkm8Ub9HSwXxpmxE4lCS
+4f7fcDnuQHy/gUBmOJ6dqHUOKWL0UnsJD5gfvQbcgEpuDPcuazFJ9WwXU8iZlGFY
+2j8zbAGSDs5XXIe1sTEAiQJ3i+suvFdg3eublaX9iKsr83rjNA9VFxmOjH7XfHLA
+pA0BEtNK/RLK3mezR/lmfSSwhCTlqhhyljW3q8sX9iCJA98qmbX/bVRoxxljz0kI
+V9AysChjuG5eml40pv1tDG2Jg1GKUf6uFb0ObYVipw72vd3UFIhneFdHlpF72odp
+qG94NuDXBCYG/7RYMYOUrLNNqM4anU19x1K2ok6L8QJ7RX52gugB8ooOXuOYtUD3
+pQXbUsb2HsaIZCTPMzpz1rwXHPh64sl8j9CONilFEdU6+Il+6t1oU5w0E7eDJuDJ
+59p4SwZZYtC9yPvXF0DeyMRgilAErTzZlIqByOFHeGegUaS4iguquEHADTk1WawN
+v9npVlFqcMfoGIfVZ7828RPbAvOxYyEga50IYfsrMx7+aJZPlYQItpOW/z1H88Dh
+GLQVqyy5MskK5zB7/7B5Slm3kOpBuLZZUhKV9zbFPkLVT3H6VlmKlxcBQPxhKap9
+M3nyBkZ4FMB6f4E7Qgvrxx+aD9esk8sfAjo2GdpMBqwd/tVlouOGF8dwB7bYeuiO
+hu49iefejH+O4XDglmhL
+=OPEs
 -----END PGP SIGNATURE-----
 
---HWvPVVuAAfuRc6SZ--
+--K9FEQnHYtEQyKlzu--
