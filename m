@@ -1,246 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab2DXUfL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 16:35:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36301 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab2DXUfJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 16:35:09 -0400
+	id S1757534Ab2DXUh6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 16:37:58 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:52163 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757017Ab2DXUh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 16:37:57 -0400
+Date: Tue, 24 Apr 2012 22:37:45 +0200
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: minyard@acm.org
+Cc: Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        tcminyard@gmail.com
+Subject: Re: [BISECTED] ipmi_si not loading since 2.6.39
+Message-ID: <20120424203745.GB2152@nik-comp.lan>
+References: <20120420223833.GA7855@nik-comp.lan> <20120421072056.GA2033@nik-comp.lan> <4F95B6F3.3010303@calxeda.com> <4F96AD8C.9010105@acm.org>
 MIME-Version: 1.0
-Date: Tue, 24 Apr 2012 22:35:08 +0200
-X-Google-Sender-Auth: DXEYj8ZAbW0b5UU8rufi3c7ZIcE
-Message-ID: <CAEe-dwgnLDzO_r4FAL4=6oggOQ8M2sPJYTERKwF6M2jR31uRUg@mail.gmail.com>
-Subject: [RFC PATCH 001/001] ACPI: Ignore invalid _PSS entries, but use valid ones
-From: Marco Aurelio da Costa <costa@gamic.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Y7xTucakfITjPcLV"
+Content-Disposition: inline
+In-Reply-To: <4F96AD8C.9010105@acm.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 7508613 records (last update: 20120424)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Aurelio da Costa <costa@gamic.com>
-Signed-off-by: Marco Aurelio da Costa <costa@gamic.com>
 
-The EliteBook 8560W has non-initialized entries in its _PSS ACPI
-table. Instead of
-bailing out when the first non-initialized entry is found, ignore it
-and use only  the
-valid entries. Only bail out if there is no valid entry at all.
+--Y7xTucakfITjPcLV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
----
---- linux-3.3.3/drivers/acpi/processor_perflib.c.orig	2012-04-24
-22:18:23.288041268 +0200
-+++ linux-3.3.3/drivers/acpi/processor_perflib.c	2012-04-24
-22:19:25.912042603 +0200
-@@ -311,6 +311,7 @@ static int acpi_processor_get_performanc
- 	struct acpi_buffer state = { 0, NULL };
- 	union acpi_object *pss = NULL;
- 	int i;
-+	int last_invalid = -1;
+Hi Corey,
+
+I have this problem with 3.4-rc4 as well and it already contains
+b1608d69cb804e414d0887140ba08a9398e4e638, so this doesn't fix this problem..
+
+BR
+
+nik
 
 
- 	status = acpi_evaluate_object(pr->handle, "_PSS", NULL, &buffer);
-@@ -374,12 +375,30 @@ static int acpi_processor_get_performanc
- 			printk(KERN_ERR FW_BUG PREFIX
- 			       "Invalid BIOS _PSS frequency: 0x%llx MHz\n",
- 			       px->core_frequency);
--			result = -EFAULT;
--			kfree(pr->performance->states);
--			goto end;
-+			if (-1 == last_invalid)
-+				last_invalid = i;
-+		} else {
-+			if (last_invalid != -1) {
-+				/*
-+				 * Copy this valid entry over last_invalid entry
-+				 */
-+				memcpy(&(pr->performance->states[last_invalid]),
-+				       px, sizeof(struct acpi_processor_px));
-+				++last_invalid;
-+			}
- 		}
- 	}
+On Tue, Apr 24, 2012 at 08:41:32AM -0500, Corey Minyard wrote:
+> Looks like you might need change b1608d69cb804e414d0887140ba08a9398e4e638
+>
+> -corey
+>
+> On 04/23/2012 03:09 PM, Rob Herring wrote:
+>> On 04/21/2012 02:20 AM, Nikola Ciprich wrote:
+>>> Hi,
+>>>
+>>> here's further information Rob and Corey requested:
+>>>
+>>> on working system:
+>>>
+>>> [root@vbox4 ~]# cat /proc/ipmi/0/params
+>>> kcs,i/o,0xca2,rsp=3D1,rsi=3D1,rsh=3D0,irq=3D0,ipmb=3D0
+>>>
+>>> dmesg snippet:
+>>>
+>>> [   41.759319] ipmi message handler version 39.2
+>>> [   41.760690] ipmi device interface
+>>> [   42.765334] IPMI System Interface driver.
+>>> [   42.765336] ipmi_si: probing via hardcoded address
+>>> [   42.765337] ipmi_si: Adding hardcoded-specified kcs state machine
+>>> [   42.765340] ipmi_si: Trying hardcoded-specified kcs state machine at=
+ i/o address 0xca8, slave address 0x0, irq 0
+>>> [   42.765344] ipmi_si: Interface detection failed
+>>> [   42.770823] ipmi_si: probing via SMBIOS
+>>> [   42.770834] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 irq 0
+>>> [   42.770836] ipmi_si: Adding SMBIOS-specified kcs state machine
+>>> [   42.770838] ipmi_si: probing via SPMI
+>>> [   42.770840] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
+>>> [   42.770841] ipmi_si: Adding SPMI-specified kcs state machine
+>>> [   42.770843] ipmi_si: Trying SMBIOS-specified kcs state machine at i/=
+o address 0xca2, slave address 0x0, irq 0
+>>> [   42.798137] ipmi_si ipmi_si.0: Error clearing flags: cc
+>>> [   42.801011] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x002a7c, prod=
+_id: 0x0624, dev_id: 0x20)
+>>> [   42.801068] ipmi_si ipmi_si.0: IPMI kcs interface initialized
+>>>
+>>>
+>>> dmidecode:
+>>>
+>>> IPMI Device Information
+>>>          Interface Type: KCS (Keyboard Control Style)
+>>>          Specification Version: 2.0
+>>>          I2C Slave Address: 0x00
+>>>          NV Storage Device: Not Present
+>>>          Base Address: 0x0000000000000CA2 (I/O)
+>>>          Register Spacing: Successive Byte Boundaries
+>>>
+>>> Base Board Information
+>>>          Manufacturer: Supermicro
+>>>          Product Name: X9SCL/X9SCM
+>>>
+>>> (but we're experiencing this on various supermicro bords, ie X8DTL)
+>>>
+>>> Tried setting parameters by hand didn't help:
+>>>
+>>> modprobe ipmi_si type=3Dkcs addrs=3D0xca8 regspacings=3D1 regsizes=3D1 =
+regshifts=3D0 irqs=3D0 slave_addrs=3D0x0
+>>>
+>>> (not sure whether I got them correct though, and values mostly seem to =
+me to be defaults anyways..)
+>>>
+>> It is working for me on a SuperMicro system with ubuntu oneiric (3.0
+>> based).
+>>
+>> [597160.259728] ipmi_si: probing via SMBIOS
+>> [597160.259730] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 irq 0
+>> [597160.259731] ipmi_si: Adding SMBIOS-specified kcs state machine
+>> [597160.259734] ipmi_si: probing via SPMI
+>> [597160.259735] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
+>> [597160.259737] ipmi_si: Adding SPMI-specified kcs state machine
+>> [597160.259739] ipmi_si: Trying SMBIOS-specified kcs state machine at
+>> i/o address 0xca2, slave address 0x0, irq 0
+>> [597160.378757] ipmi_si: Invalid return from get global enables command,
+>> cannot enable the event buffer.
+>> [597160.382032] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x00b980,
+>> prod_id: 0x0624, dev_id: 0x20)
+>> [597160.382040] ipmi_si ipmi_si.0: IPMI kcs interface initialized
+>> [597179.973960] ipmi device interface
+>> localadm@sandy1:~$ ipmitool bmc info
+>> Could not open device at /dev/ipmi0 or /dev/ipmi/0 or /dev/ipmidev/0: No
+>> such file or directory
+>> Get Device ID command failed
+>> localadm@sandy1:~$ sudo ipmitool bmc info
+>> Device ID                 : 32
+>> Device Revision           : 1
+>> Firmware Revision         : 1.1
+>> IPMI Version              : 2.0
+>> Manufacturer ID           : 47488
+>> Manufacturer Name         : Unknown (0xB980)
+>> Product ID                : 1572 (0x0624)
+>> Product Name              : Unknown (0x624)
+>> Device Available          : yes
+>> Provides Device SDRs      : no
+>> Additional Device Support :
+>>      Sensor Device
+>>      SDR Repository Device
+>>      SEL Device
+>>      FRU Inventory Device
+>>      IPMB Event Receiver
+>>      IPMB Event Generator
+>>      Chassis Device
+>> Aux Firmware Rev Info     :
+>>      0x06
+>>      0x00
+>>      0x00
+>>      0x00
+>> localadm@sandy1:~$ uname -a
+>> Linux sandy1 3.0.0-16-generic #28-Ubuntu SMP Fri Jan 27 17:44:39 UTC
+>> 2012 x86_64 x86_64 x86_64 GNU/Linux
+>>
+>> Rob
+>>
+>>> nik
+>>>
+>>>
+>>> On Sat, Apr 21, 2012 at 12:38:33AM +0200, Nikola Ciprich wrote:
+>>>> Hello,
+>>>>
+>>>> I was trying to find out why IPMI stopped working on new kernels. Sinc=
+e 2.6.39
+>>>> module loading ends with following message:
+>>>>
+>>>>   ipmi_si: Interface detection failed
+>>>>
+>>>> Then ipmitool is unable to control IPMI device.
+>>>>
+>>>> Works for 2.6.38, doesn't work for 2.6.39, 3.0.28, 3.4-rc1.
+>>>>
+>>>> I got this bisected to following commit:
+>>>>
+>>>> commit a1e9c9dd3383e6a1a762464ad604b1081774dbda
+>>>> Author: Rob Herring<rob.herring@calxeda.com>
+>>>> Date:   Wed Feb 23 15:37:59 2011 -0600
+>>>>
+>>>>      ipmi: convert OF driver to platform driver
+>>>>
+>>>>      of_bus is deprecated in favor of the plain platform bus. This pat=
+ch
+>>>>      merges the ipmi OF driver with the existing platform driver.
+>>>>
+>>>>      CONFIG_PPC_OF occurrances are removed or replaced with CONFIG_OF.
+>>>>
+>>>>      Compile tested with and without CONFIG_OF. Tested OF probe and
+>>>>      default probe cases.
+>>>>
+>>>>      Signed-off-by: Rob Herring<rob.herring@calxeda.com>
+>>>>      Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
+>>>>
+>>>> I wonder whether this is a bug, or I'm doing something wrong?
+>>>>
+>>>> Thanks in advance!
+>>>>
+>>>> with best regards
+>>>>
+>>>> nik
+>>>>
+>>>>
+>>>> --=20
+>>>> -------------------------------------
+>>>> Ing. Nikola CIPRICH
+>>>> LinuxBox.cz, s.r.o.
+>>>> 28. rijna 168, 709 01 Ostrava
+>>>>
+>>>> tel.:   +420 596 603 142
+>>>> fax:    +420 596 621 273
+>>>> mobil:  +420 777 093 799
+>>>>
+>>>> www.linuxbox.cz
+>>>>
+>>>> mobil servis: +420 737 238 656
+>>>> email servis: servis@linuxbox.cz
+>>>> -------------------------------------
+>>>
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" =
+in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-+	if (0 == last_invalid) {
-+		printk(KERN_ERR FW_BUG PREFIX
-+		       "No valid BIOS _PSS frequency found\n");
-+		result = -EFAULT;
-+		kfree(pr->performance->states);
-+	}
-+
-+	if (last_invalid > 0)
-+		pr->performance->state_count = last_invalid;
-+
-       end:
- 	kfree(buffer.pointer);
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
 
---
-I tested this change on my notebook, using the debian source 3.2.12,
-but there where no changes in this file from that version to the
-3.3.3.
-Result from cpufreq-info after the patch:
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
 
-cpufrequtils 007: cpufreq-info (C) Dominik Brodowski 2004-2009
-Report errors and bugs to cpufreq@vger.kernel.org, please.
-analyzing CPU 0:
-  driver: acpi-cpufreq
-  CPUs which run at the same hardware frequency: 0 1 2 3 4 5 6 7
-  CPUs which need to have their frequency coordinated by software: 0
-  maximum transition latency: 10.0 us.
-  hardware limits: 800 MHz - 2.20 GHz
-  available frequency steps: 2.20 GHz, 2.20 GHz, 2.10 GHz, 2.00 GHz,
-1.90 GHz, 1.80 GHz, 1.70 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz,
-1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
-  available cpufreq governors: powersave, conservative, userspace,
-ondemand, performance
-  current policy: frequency should be within 800 MHz and 2.20 GHz.
-                  The governor "ondemand" may decide which speed to use
-                  within this range.
-  current CPU frequency is 800 MHz.
-  cpufreq stats: 2.20 GHz:1.62%, 2.20 GHz:3.28%, 2.10 GHz:0.04%, 2.00
-GHz:0.09%, 1.90 GHz:0.07%, 1.80 GHz:0.06%, 1.70 GHz:0.04%, 1.60
-GHz:0.10%, 1.50 GHz:0.13%, 1.40 GHz:0.11%, 1.30 GHz:0.18%, 1.20
-GHz:0.13%, 1.10 GHz:0.15%, 1000 MHz:0.13%, 900 MHz:0.16%, 800
-MHz:93.70%  (11691)
-analyzing CPU 1:
-  driver: acpi-cpufreq
-  CPUs which run at the same hardware frequency: 0 1 2 3 4 5 6 7
-  CPUs which need to have their frequency coordinated by software: 1
-  maximum transition latency: 10.0 us.
-  hardware limits: 800 MHz - 2.20 GHz
-  available frequency steps: 2.20 GHz, 2.20 GHz, 2.10 GHz, 2.00 GHz,
-1.90 GHz, 1.80 GHz, 1.70 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz,
-1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
-  available cpufreq governors: powersave, conservative, userspace,
-ondemand, performance
-  current policy: frequency should be within 800 MHz and 2.20 GHz.
-                  The governor "ondemand" may decide which speed to use
-                  within this range.
-  current CPU frequency is 800 MHz.
-  cpufreq stats: 2.20 GHz:3.97%, 2.20 GHz:0.12%, 2.10 GHz:0.00%, 2.00
-GHz:0.00%, 1.90 GHz:0.00%, 1.80 GHz:0.02%, 1.70 GHz:0.00%, 1.60
-GHz:0.01%, 1.50 GHz:0.02%, 1.40 GHz:0.04%, 1.30 GHz:0.03%, 1.20
-GHz:0.05%, 1.10 GHz:0.12%, 1000 MHz:0.06%, 900 MHz:0.03%, 800
-MHz:95.53%  (530)
-analyzing CPU 2:
-  driver: acpi-cpufreq
-  CPUs which run at the same hardware frequency: 0 1 2 3 4 5 6 7
-  CPUs which need to have their frequency coordinated by software: 2
-  maximum transition latency: 10.0 us.
-  hardware limits: 800 MHz - 2.20 GHz
-  available frequency steps: 2.20 GHz, 2.20 GHz, 2.10 GHz, 2.00 GHz,
-1.90 GHz, 1.80 GHz, 1.70 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz,
-1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
-  available cpufreq governors: powersave, conservative, userspace,
-ondemand, performance
-  current policy: frequency should be within 800 MHz and 2.20 GHz.
-                  The governor "ondemand" may decide which speed to use
-                  within this range.
-  current CPU frequency is 800 MHz.
-  cpufreq stats: 2.20 GHz:5.85%, 2.20 GHz:0.12%, 2.10 GHz:0.00%, 2.00
-GHz:0.03%, 1.90 GHz:0.02%, 1.80 GHz:0.05%, 1.70 GHz:0.04%, 1.60
-GHz:0.04%, 1.50 GHz:0.04%, 1.40 GHz:0.12%, 1.30 GHz:0.09%, 1.20
-GHz:0.19%, 1.10 GHz:0.13%, 1000 MHz:0.11%, 900 MHz:0.08%, 800
-MHz:93.10%  (2971)
-analyzing CPU 3:
-  driver: acpi-cpufreq
-  CPUs which run at the same hardware frequency: 0 1 2 3 4 5 6 7
-  CPUs which need to have their frequency coordinated by software: 3
-  maximum transition latency: 10.0 us.
-  hardware limits: 800 MHz - 2.20 GHz
-  available frequency steps: 2.20 GHz, 2.20 GHz, 2.10 GHz, 2.00 GHz,
-1.90 GHz, 1.80 GHz, 1.70 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz,
-1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
-  available cpufreq governors: powersave, conservative, userspace,
-ondemand, performance
-  current policy: frequency should be within 800 MHz and 2.20 GHz.
-                  The governor "ondemand" may decide which speed to use
-                  within this range.
-  current CPU frequency is 800 MHz.
-  cpufreq stats: 2.20 GHz:3.24%, 2.20 GHz:0.11%, 2.10 GHz:0.00%, 2.00
-GHz:0.00%, 1.90 GHz:0.00%, 1.80 GHz:0.02%, 1.70 GHz:0.00%, 1.60
-GHz:0.00%, 1.50 GHz:0.00%, 1.40 GHz:0.00%, 1.30 GHz:0.01%, 1.20
-GHz:0.02%, 1.10 GHz:0.00%, 1000 MHz:0.01%, 900 MHz:0.01%, 800
-MHz:96.57%  (368)
-analyzing CPU 4:
-  driver: acpi-cpufreq
-  CPUs which run at the same hardware frequency: 0 1 2 3 4 5 6 7
-  CPUs which need to have their frequency coordinated by software: 4
-  maximum transition latency: 10.0 us.
-  hardware limits: 800 MHz - 2.20 GHz
-  available frequency steps: 2.20 GHz, 2.20 GHz, 2.10 GHz, 2.00 GHz,
-1.90 GHz, 1.80 GHz, 1.70 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz,
-1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
-  available cpufreq governors: powersave, conservative, userspace,
-ondemand, performance
-  current policy: frequency should be within 800 MHz and 2.20 GHz.
-                  The governor "ondemand" may decide which speed to use
-                  within this range.
-  current CPU frequency is 800 MHz.
-  cpufreq stats: 2.20 GHz:7.67%, 2.20 GHz:0.12%, 2.10 GHz:0.01%, 2.00
-GHz:0.04%, 1.90 GHz:0.03%, 1.80 GHz:0.02%, 1.70 GHz:0.03%, 1.60
-GHz:0.07%, 1.50 GHz:0.04%, 1.40 GHz:0.06%, 1.30 GHz:0.16%, 1.20
-GHz:0.26%, 1.10 GHz:0.08%, 1000 MHz:0.05%, 900 MHz:0.13%, 800
-MHz:91.25%  (2605)
-analyzing CPU 5:
-  driver: acpi-cpufreq
-  CPUs which run at the same hardware frequency: 0 1 2 3 4 5 6 7
-  CPUs which need to have their frequency coordinated by software: 5
-  maximum transition latency: 10.0 us.
-  hardware limits: 800 MHz - 2.20 GHz
-  available frequency steps: 2.20 GHz, 2.20 GHz, 2.10 GHz, 2.00 GHz,
-1.90 GHz, 1.80 GHz, 1.70 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz,
-1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
-  available cpufreq governors: powersave, conservative, userspace,
-ondemand, performance
-  current policy: frequency should be within 800 MHz and 2.20 GHz.
-                  The governor "ondemand" may decide which speed to use
-                  within this range.
-  current CPU frequency is 800 MHz.
-  cpufreq stats: 2.20 GHz:0.96%, 2.20 GHz:0.11%, 2.10 GHz:0.00%, 2.00
-GHz:0.00%, 1.90 GHz:0.00%, 1.80 GHz:0.00%, 1.70 GHz:0.00%, 1.60
-GHz:0.00%, 1.50 GHz:0.00%, 1.40 GHz:0.01%, 1.30 GHz:0.01%, 1.20
-GHz:0.01%, 1.10 GHz:0.01%, 1000 MHz:0.01%, 900 MHz:0.00%, 800
-MHz:98.86%  (273)
-analyzing CPU 6:
-  driver: acpi-cpufreq
-  CPUs which run at the same hardware frequency: 0 1 2 3 4 5 6 7
-  CPUs which need to have their frequency coordinated by software: 6
-  maximum transition latency: 10.0 us.
-  hardware limits: 800 MHz - 2.20 GHz
-  available frequency steps: 2.20 GHz, 2.20 GHz, 2.10 GHz, 2.00 GHz,
-1.90 GHz, 1.80 GHz, 1.70 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz,
-1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
-  available cpufreq governors: powersave, conservative, userspace,
-ondemand, performance
-  current policy: frequency should be within 800 MHz and 2.20 GHz.
-                  The governor "ondemand" may decide which speed to use
-                  within this range.
-  current CPU frequency is 800 MHz.
-  cpufreq stats: 2.20 GHz:9.34%, 2.20 GHz:0.11%, 2.10 GHz:0.03%, 2.00
-GHz:0.09%, 1.90 GHz:0.01%, 1.80 GHz:0.10%, 1.70 GHz:0.04%, 1.60
-GHz:0.02%, 1.50 GHz:0.02%, 1.40 GHz:0.01%, 1.30 GHz:0.05%, 1.20
-GHz:0.13%, 1.10 GHz:0.16%, 1000 MHz:0.07%, 900 MHz:0.12%, 800
-MHz:89.69%  (2883)
-analyzing CPU 7:
-  driver: acpi-cpufreq
-  CPUs which run at the same hardware frequency: 0 1 2 3 4 5 6 7
-  CPUs which need to have their frequency coordinated by software: 7
-  maximum transition latency: 10.0 us.
-  hardware limits: 800 MHz - 2.20 GHz
-  available frequency steps: 2.20 GHz, 2.20 GHz, 2.10 GHz, 2.00 GHz,
-1.90 GHz, 1.80 GHz, 1.70 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz,
-1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
-  available cpufreq governors: powersave, conservative, userspace,
-ondemand, performance
-  current policy: frequency should be within 800 MHz and 2.20 GHz.
-                  The governor "ondemand" may decide which speed to use
-                  within this range.
-  current CPU frequency is 800 MHz.
-  cpufreq stats: 2.20 GHz:4.60%, 2.20 GHz:0.11%, 2.10 GHz:0.00%, 2.00
-GHz:0.00%, 1.90 GHz:0.00%, 1.80 GHz:0.01%, 1.70 GHz:0.00%, 1.60
-GHz:0.00%, 1.50 GHz:0.00%, 1.40 GHz:0.00%, 1.30 GHz:0.00%, 1.20
-GHz:0.00%, 1.10 GHz:0.01%, 1000 MHz:0.01%, 900 MHz:0.03%, 800
-MHz:95.22%  (502)
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--Y7xTucakfITjPcLV
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+XDxkACgkQ3xdJJrLygV750ACgqmnMYl0i7dMjppnVknbMIGkE
+Bk0AoNILzeXGqwNzBMt4KVzeWFcQ5w3F
+=XHvo
+-----END PGP SIGNATURE-----
+
+--Y7xTucakfITjPcLV--
