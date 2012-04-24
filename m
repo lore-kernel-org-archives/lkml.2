@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab2DXLe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 07:34:57 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:45828 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753565Ab2DXLen (ORCPT
+	id S1754533Ab2DXLep (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 07:34:45 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:38415 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753951Ab2DXLel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 07:34:43 -0400
+	Tue, 24 Apr 2012 07:34:41 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <akpm@linux-foundation.org>
 Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <mturquette@linaro.org>, <sshtylyov@mvista.com>, <jgarzik@redhat.com>,
         <linux@arm.linux.org.uk>, Viresh Kumar <viresh.kumar@st.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>
-Subject: [PATCH V3 10/12] gadget/m66592: Remove conditional compilation of clk code
-Date: Tue, 24 Apr 2012 16:51:32 +0530
-Message-ID: <e5a35cbdb9ef16b457516b01bc68780e2e573f91.1335266056.git.viresh.kumar@st.com>
+        Andrew Lunn <andrew@lunn.ch>, <linux-ide@vger.kernel.org>
+Subject: [PATCH V3 07/12] ata/sata_mv: Remove conditional compilation of clk code
+Date: Tue, 24 Apr 2012 16:51:29 +0530
+Message-ID: <abbcf661dc58948794839eb0fba1d5a0950ec848.1335266056.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <cover.1335266056.git.viresh.kumar@st.com>
 References: <cover.1335266056.git.viresh.kumar@st.com>
@@ -32,95 +31,81 @@ there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #endif
 macros.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
+Cc: Jeff Garzik <jgarzik@redhat.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: linux-ide@vger.kernel.org
 ---
- drivers/usb/gadget/m66592-udc.c |    9 +--------
- drivers/usb/gadget/m66592-udc.h |    5 -----
- 2 files changed, 1 insertions(+), 13 deletions(-)
+ drivers/ata/sata_mv.c |   32 ++++++++++----------------------
+ 1 files changed, 10 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/usb/gadget/m66592-udc.c b/drivers/usb/gadget/m66592-udc.c
-index 3608b3b..51c24d2 100644
---- a/drivers/usb/gadget/m66592-udc.c
-+++ b/drivers/usb/gadget/m66592-udc.c
-@@ -1583,12 +1583,10 @@ static int __exit m66592_remove(struct platform_device *pdev)
- 	iounmap(m66592->reg);
- 	free_irq(platform_get_irq(pdev, 0), m66592);
- 	m66592_free_request(&m66592->ep[0].ep, m66592->ep0_req);
--#ifdef CONFIG_HAVE_CLK
- 	if (m66592->pdata->on_chip) {
- 		clk_disable(m66592->clk);
- 		clk_put(m66592->clk);
- 	}
+diff --git a/drivers/ata/sata_mv.c b/drivers/ata/sata_mv.c
+index 7336d4a..2b37b93 100644
+--- a/drivers/ata/sata_mv.c
++++ b/drivers/ata/sata_mv.c
+@@ -551,9 +551,7 @@ struct mv_host_priv {
+ 	u32			irq_mask_offset;
+ 	u32			unmask_all_irqs;
+ 
+-#if defined(CONFIG_HAVE_CLK)
+ 	struct clk		*clk;
 -#endif
- 	kfree(m66592);
+ 	/*
+ 	 * These consistent DMA memory pools give us guaranteed
+ 	 * alignment for hardware-accessed data structures,
+@@ -4063,13 +4061,13 @@ static int mv_platform_probe(struct platform_device *pdev)
+ 				   resource_size(res));
+ 	hpriv->base -= SATAHC0_REG_BASE;
+ 
+-#if defined(CONFIG_HAVE_CLK)
+ 	hpriv->clk = clk_get(&pdev->dev, NULL);
+-	if (IS_ERR(hpriv->clk))
+-		dev_notice(&pdev->dev, "cannot get clkdev\n");
+-	else
+-		clk_enable(hpriv->clk);
+-#endif
++	if (IS_ERR(hpriv->clk)) {
++		dev_err(&pdev->dev, "cannot get clkdev\n");
++		return PTR_ERR(hpriv->clk);
++	}
++
++	clk_enable(hpriv->clk);
+ 
+ 	/*
+ 	 * (Re-)program MBUS remapping windows if we are asked to.
+@@ -4096,12 +4094,8 @@ static int mv_platform_probe(struct platform_device *pdev)
+ 		return 0;
+ 
+ err:
+-#if defined(CONFIG_HAVE_CLK)
+-	if (!IS_ERR(hpriv->clk)) {
+-		clk_disable(hpriv->clk);
+-		clk_put(hpriv->clk);
+-	}
+-#endif
++	clk_disable(hpriv->clk);
++	clk_put(hpriv->clk);
+ 
+ 	return rc;
+ }
+@@ -4117,17 +4111,11 @@ err:
+ static int __devexit mv_platform_remove(struct platform_device *pdev)
+ {
+ 	struct ata_host *host = platform_get_drvdata(pdev);
+-#if defined(CONFIG_HAVE_CLK)
+ 	struct mv_host_priv *hpriv = host->private_data;
+-#endif
+ 	ata_host_detach(host);
+ 
+-#if defined(CONFIG_HAVE_CLK)
+-	if (!IS_ERR(hpriv->clk)) {
+-		clk_disable(hpriv->clk);
+-		clk_put(hpriv->clk);
+-	}
+-#endif
++	clk_disable(hpriv->clk);
++	clk_put(hpriv->clk);
  	return 0;
  }
-@@ -1602,9 +1600,7 @@ static int __init m66592_probe(struct platform_device *pdev)
- 	struct resource *res, *ires;
- 	void __iomem *reg = NULL;
- 	struct m66592 *m66592 = NULL;
--#ifdef CONFIG_HAVE_CLK
- 	char clk_name[8];
--#endif
- 	int ret = 0;
- 	int i;
- 
-@@ -1671,7 +1667,6 @@ static int __init m66592_probe(struct platform_device *pdev)
- 		goto clean_up;
- 	}
- 
--#ifdef CONFIG_HAVE_CLK
- 	if (m66592->pdata->on_chip) {
- 		snprintf(clk_name, sizeof(clk_name), "usbf%d", pdev->id);
- 		m66592->clk = clk_get(&pdev->dev, clk_name);
-@@ -1683,7 +1678,7 @@ static int __init m66592_probe(struct platform_device *pdev)
- 		}
- 		clk_enable(m66592->clk);
- 	}
--#endif
-+
- 	INIT_LIST_HEAD(&m66592->gadget.ep_list);
- 	m66592->gadget.ep0 = &m66592->ep[0].ep;
- 	INIT_LIST_HEAD(&m66592->gadget.ep0->ep_list);
-@@ -1731,13 +1726,11 @@ err_add_udc:
- 	m66592_free_request(&m66592->ep[0].ep, m66592->ep0_req);
- 
- clean_up3:
--#ifdef CONFIG_HAVE_CLK
- 	if (m66592->pdata->on_chip) {
- 		clk_disable(m66592->clk);
- 		clk_put(m66592->clk);
- 	}
- clean_up2:
--#endif
- 	free_irq(ires->start, m66592);
- clean_up:
- 	if (m66592) {
-diff --git a/drivers/usb/gadget/m66592-udc.h b/drivers/usb/gadget/m66592-udc.h
-index 9d9f7e3..a044ad3 100644
---- a/drivers/usb/gadget/m66592-udc.h
-+++ b/drivers/usb/gadget/m66592-udc.h
-@@ -13,10 +13,7 @@
- #ifndef __M66592_UDC_H__
- #define __M66592_UDC_H__
- 
--#ifdef CONFIG_HAVE_CLK
- #include <linux/clk.h>
--#endif
--
- #include <linux/usb/m66592.h>
- 
- #define M66592_SYSCFG		0x00
-@@ -468,9 +465,7 @@ struct m66592_ep {
- struct m66592 {
- 	spinlock_t		lock;
- 	void __iomem		*reg;
--#ifdef CONFIG_HAVE_CLK
- 	struct clk *clk;
--#endif
- 	struct m66592_platdata	*pdata;
- 	unsigned long		irq_trigger;
  
 -- 
 1.7.9
