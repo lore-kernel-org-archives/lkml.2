@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab2DXUiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 16:38:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58862 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757566Ab2DXUiJ (ORCPT
+	id S1757576Ab2DXUmy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 16:42:54 -0400
+Received: from www17.your-server.de ([213.133.104.17]:49393 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151Ab2DXUmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 16:38:09 -0400
-Date: Tue, 24 Apr 2012 13:37:35 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: "Ted Ts'o" <tytso@mit.edu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Anton Blanchard <anton@au1.ibm.com>
-Subject: Re: [git pull] vfs and fs fixes
-Message-ID: <20120424203735.GA11680@kroah.com>
-References: <20120417052511.GU6589@ZenIV.linux.org.uk>
- <1334805798.3143.25.camel@pasglop>
- <20120419145007.GD6317@thunk.org>
- <20120424174006.GA28788@kroah.com>
- <20120424174502.GC6871@ZenIV.linux.org.uk>
- <20120424175911.GA22958@kroah.com>
- <20120424180407.GD6871@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120424180407.GD6871@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 24 Apr 2012 16:42:53 -0400
+Message-ID: <1335300159.1393.13.camel@localhost.localdomain>
+Subject: Re: Breaking userspace? Re: 3.0.24 broke aufofs on mixed 32/64bit
+ environment
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michael Tokarev <mjt@tls.msk.ru>, Ian Kent <raven@themaw.net>,
+        "stable@kernel.org" <stable@kernel.org>, autofs@vger.kernel.org,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Apr 2012 22:42:39 +0200
+In-Reply-To: <CA+55aFw=cfYZO7PWDRRuZw1nYxvUk-63qfVVwfdJWevtmZoOig@mail.gmail.com>
+References: <4F94222C.6080608@msgid.tls.msk.ru>
+	 <1335172741.2226.10.camel@perseus.themaw.net>
+	 <4F958352.7050106@msgid.tls.msk.ru> <4F95897B.2040103@msgid.tls.msk.ru>
+	 <4F959A5A.8070907@msgid.tls.msk.ru>
+	 <CA+55aFyQ4y9jyRXyejKwtf3yXJX52hQkLuwJ5=jfQM+yLkBNMw@mail.gmail.com>
+	 <4F96D0E7.9060000@msgid.tls.msk.ru>
+	 <CA+55aFw=cfYZO7PWDRRuZw1nYxvUk-63qfVVwfdJWevtmZoOig@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 07:04:07PM +0100, Al Viro wrote:
-> On Tue, Apr 24, 2012 at 10:59:11AM -0700, Greg KH wrote:
+Am Dienstag, den 24.04.2012, 12:53 -0700 schrieb Linus Torvalds:
+> On Tue, Apr 24, 2012 at 9:12 AM, Michael Tokarev <mjt@tls.msk.ru> wrote:
+> >
+> > The userspace is running debian stable (squeeze).  Debian has autofs
+> > package based on upstream 5.0.4 version.  That (upstream) version has
+> > the "bug-compat" code in it, in daemon/automount.c:
+> >
+> > static size_t get_kpkt_len(void)
+> > {
+> >        size_t pkt_len = sizeof(struct autofs_v5_packet);
+> >        struct utsname un;
+> >
+> >        uname(&un);
+> >
+> >        if (pkt_len % 8) {
+> >                if (strcmp(un.machine, "alpha") == 0 ||
+> >                    strcmp(un.machine, "ia64") == 0 ||
+> >                    strcmp(un.machine, "x86_64") == 0 ||
+> >                    strcmp(un.machine, "ppc64") == 0)
+> >                        pkt_len += 4;
 > 
-> > So that would be commits
-> > 96f6f98501196d46ce52c2697dd758d9300c63f5..e847469bf77a1d339274074ed068d461f0c872bc
-> > inclusive?
+> Ugh.
 > 
-> Yes.
+> So how did this break for Thomas Mayer (there was another person
+> involved too, I forget the details)? Is this code somehow
+> config-dependent so that it doesn't even get compiled for some cases?
 
-Wonderful, now queued up, thanks for letting me know.
+It broke the autofs feature of systemd (32bit) on a 64bit kernel, which
+resulted in an endless wait in the boot process. I don't use the autofs
+tools. I guess the fix in the autofs package to compensate the kernel
+bug, which has now been fixed, breaks the autofs package.
+The fix in the kernel makes systemd work correctly.
 
-greg k-h
+thomas
+
+
