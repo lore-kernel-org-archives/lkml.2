@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964899Ab2DXWkl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:40:41 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964853Ab2DXWjL (ORCPT
+	id S964915Ab2DXWlF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:41:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964838Ab2DXWjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:39:11 -0400
-Message-Id: <20120424223256.227976314@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:39:05 -0400
+Message-Id: <20120424223256.752310329@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:25 -0700
+Date: Tue, 24 Apr 2012 15:33:31 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eduardo Bacchi Kienetz <eduardo@kienetz.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 32/42] rt2800usb: Add new device ID for Belkin
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
+Subject: [ 38/42] ocfs2: ->l_next_free_req breakage on big-endian
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,35 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eduardo Bacchi Kienetz <eduardo@kienetz.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 43bf8c245237b8309153aa39d4e8f1586cf56af0 upstream.
+commit 3a251f04fe97c3d335b745c98e4b377e3c3899f2 upstream.
 
-Belkin's Connect N150 Wireless USB Adapter, model F7D1101 version 2, uses ID 0x945b.
-Chipset info: rt: 3390, rf: 000b, rev: 3213.
-I have just bought one, which started to work perfectly after the ID was added through this patch.
+It's le16, not le32...
 
-Signed-off-by: Eduardo Bacchi Kienetz <eduardo@kienetz.com>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/ocfs2/alloc.c        |    2 +-
+ fs/ocfs2/refcounttree.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -976,6 +976,8 @@ static struct usb_device_id rt2800usb_de
- 	{ USB_DEVICE(0x0586, 0x341e) },
- 	{ USB_DEVICE(0x0586, 0x343e) },
- #ifdef CONFIG_RT2800USB_RT33XX
-+	/* Belkin */
-+	{ USB_DEVICE(0x050d, 0x945b) },
- 	/* Ralink */
- 	{ USB_DEVICE(0x148f, 0x3370) },
- 	{ USB_DEVICE(0x148f, 0x8070) },
+--- a/fs/ocfs2/alloc.c
++++ b/fs/ocfs2/alloc.c
+@@ -1134,7 +1134,7 @@ static int ocfs2_adjust_rightmost_branch
+ 	}
+ 
+ 	el = path_leaf_el(path);
+-	rec = &el->l_recs[le32_to_cpu(el->l_next_free_rec) - 1];
++	rec = &el->l_recs[le16_to_cpu(el->l_next_free_rec) - 1];
+ 
+ 	ocfs2_adjust_rightmost_records(handle, et, path, rec);
+ 
+--- a/fs/ocfs2/refcounttree.c
++++ b/fs/ocfs2/refcounttree.c
+@@ -1036,14 +1036,14 @@ static int ocfs2_get_refcount_cpos_end(s
+ 
+ 	tmp_el = left_path->p_node[subtree_root].el;
+ 	blkno = left_path->p_node[subtree_root+1].bh->b_blocknr;
+-	for (i = 0; i < le32_to_cpu(tmp_el->l_next_free_rec); i++) {
++	for (i = 0; i < le16_to_cpu(tmp_el->l_next_free_rec); i++) {
+ 		if (le64_to_cpu(tmp_el->l_recs[i].e_blkno) == blkno) {
+ 			*cpos_end = le32_to_cpu(tmp_el->l_recs[i+1].e_cpos);
+ 			break;
+ 		}
+ 	}
+ 
+-	BUG_ON(i == le32_to_cpu(tmp_el->l_next_free_rec));
++	BUG_ON(i == le16_to_cpu(tmp_el->l_next_free_rec));
+ 
+ out:
+ 	ocfs2_free_path(left_path);
 
 
