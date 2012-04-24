@@ -1,105 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab2DXRAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 13:00:13 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:2645 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755721Ab2DXRAM (ORCPT
+	id S1755847Ab2DXRBt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 13:01:49 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56080 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755443Ab2DXRBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 13:00:12 -0400
-Message-ID: <1335286810.2347.18.camel@lorien2>
-Subject: Re: [PATCH v2] leds: heartbeat: stop on shutdown
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: shuahkhan@gmail.com, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 24 Apr 2012 11:00:10 -0600
-In-Reply-To: <4F96D58A.3070008@ahsoftware.de>
-References: <1335275034-22135-1-git-send-email-holler@ahsoftware.de>
-	 <1335280022-16308-1-git-send-email-holler@ahsoftware.de>
-	 <1335281074.2347.4.camel@lorien2> <4F96D58A.3070008@ahsoftware.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 24 Apr 2012 13:01:47 -0400
+Date: Tue, 24 Apr 2012 19:02:44 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: InKi Dae <daeinki@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, linaro-mm-sig@lists.linaro.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Rob Clark <rob.clark@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH] dma-buf: mmap support
+Message-ID: <20120424170244.GD2017@phenom.ffwll.local>
+Mail-Followup-To: InKi Dae <daeinki@gmail.com>,
+	linaro-mm-sig@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	Rob Clark <rob.clark@linaro.org>,
+	Rebecca Schultz Zavin <rebecca@android.com>,
+	linux-media@vger.kernel.org
+References: <1335258532-20739-1-git-send-email-daniel.vetter@ffwll.ch>
+ <CAAQKjZMgcxWc44xknM+eZhon4QgvWd92Ci4snwBv2Ziyw1Recw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAQKjZMgcxWc44xknM+eZhon4QgvWd92Ci4snwBv2Ziyw1Recw@mail.gmail.com>
+X-Operating-System: Linux phenom 3.2.0-2-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-24 at 18:32 +0200, Alexander Holler wrote:
-> Am 24.04.2012 17:24, schrieb Shuah Khan:
-> > On Tue, 2012-04-24 at 17:07 +0200, Alexander Holler wrote:
-> >> A halted kernel should not show a heartbeat.
-> >>
-> >> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-> >> ---
-> >>  drivers/leds/ledtrig-heartbeat.c |   18 +++++++++++++++++-
-> >>  1 files changed, 17 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
-> >> index 759c0bb..1c05bd9 100644
-> >> --- a/drivers/leds/ledtrig-heartbeat.c
-> >> +++ b/drivers/leds/ledtrig-heartbeat.c
-> >> @@ -18,6 +18,7 @@
-> >>  #include <linux/timer.h>
-> >>  #include <linux/sched.h>
-> >>  #include <linux/leds.h>
-> >> +#include <linux/reboot.h>
-> >>  #include "leds.h"
-> >>  
-> >>  struct heartbeat_trig_data {
-> >> @@ -101,13 +102,28 @@ static struct led_trigger heartbeat_led_trigger = {
-> >>  	.deactivate = heartbeat_trig_deactivate,
-> >>  };
-> >>  
-> >> +static int heartbeat_reboot_notifier(struct notifier_block *nb,
-> >> +				     unsigned long code, void *unused)
-> >> +{
-> >> +	led_trigger_unregister(&heartbeat_led_trigger);
-> >> +	return NOTIFY_DONE;
-> >> +}
-I am sorry I didn't catch this the last time. Do you need to call
-unregister here? Looks like trigger is going away with a registered
-reboot notifier. Might be fine, since reboot is going to happen.
-
-> >> +
-> >> +static struct notifier_block heartbeat_reboot_nb = {
-> >> +	.notifier_call = heartbeat_reboot_notifier,
-> >> +};
-> >> +
-> >>  static int __init heartbeat_trig_init(void)
-> >>  {
-> >> -	return led_trigger_register(&heartbeat_led_trigger);
-> >> +	int rc = led_trigger_register(&heartbeat_led_trigger);
-> >> +	if( ! rc )
-> >> +		register_reboot_notifier(&heartbeat_reboot_nb);
-> > 
-> > Do you need to check return value here? I see return value being checked
-> > in some places in the kernel and not in others. Not checking is fine for
-> > now since register_reboot_notifier() always returns 0.
-> > 
-> > Maybe adding return handling might not be a bad idea to be consistent
-> > with other places that do check.
+On Wed, Apr 25, 2012 at 01:37:51AM +0900, InKi Dae wrote:
+> Hi,
 > 
-> What to do if it fails? As long as unregister_reboot_notifier() doesn't
-> do something bad with non-registered notifiers (which it doesn't), I
-> would let the init still succeed. 
+> >
+> > +static int dma_buf_mmap_internal(struct file *file, struct vm_area_struct *vma)
+> > +{
+> > +       struct dma_buf *dmabuf;
+> > +
+> > +       if (!is_dma_buf_file(file))
+> > +               return -EINVAL;
+> > +
+> > +       dmabuf = file->private_data;
+> > +
+> > +       /* check for overflowing the buffer's size */
+> > +       if (vma->vm_pgoff + ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) >
+> > +           dmabuf->size >> PAGE_SHIFT)
+> 
+> is this condition right? your intention is for checking buffer's size
+> is valid or not. by the way why is vma->vm_pgoff added to vm region
+> size?
 
-Yes I agree that init should still succeed. It might be helpful to throw
-out a kernel message when this occurs though since register shouldn't
-fail unless there is an error.
+This check here is to ensure that userspace cannot mmap beyong the end of
+the dma_buf object. vm_pgoff is the offset userspace passed in at mmap
+time and hence needs to be added. Note that vm_end and vm_start are in
+bytes, wheres vm_pgoff is in pages.
 
-> And to not unregister a
-> non-registered-reboot_notifier, a long-living bool would be needed.
+> > +               return -EINVAL;
+> > +
+> > +       return dmabuf->ops->mmap(dmabuf, vma);
+> > +}
+> > +
+> >  static const struct file_operations dma_buf_fops = {
+> >        .release        = dma_buf_release,
+> > +       .mmap           = dma_buf_mmap_internal,
+> >  };
+> >
+> >  /*
+> > @@ -82,7 +100,8 @@ struct dma_buf *dma_buf_export(void *priv, const struct dma_buf_ops *ops,
+> >                          || !ops->unmap_dma_buf
+> >                          || !ops->release
+> >                          || !ops->kmap_atomic
+> > -                         || !ops->kmap)) {
+> > +                         || !ops->kmap
+> > +                         || !ops->mmap)) {
+> >                return ERR_PTR(-EINVAL);
+> >        }
+> >
+> > @@ -406,3 +425,46 @@ void dma_buf_kunmap(struct dma_buf *dmabuf, unsigned long page_num,
+> >                dmabuf->ops->kunmap(dmabuf, page_num, vaddr);
+> >  }
+> >  EXPORT_SYMBOL_GPL(dma_buf_kunmap);
+> > +
+> > +
+> > +/**
+> > + * dma_buf_mmap - Setup up a userspace mmap with the given vma
+> > + * @dma_buf:   [in]    buffer that should back the vma
+> > + * @vma:       [in]    vma for the mmap
+> > + * @pgoff:     [in]    offset in pages where this mmap should start within the
+> > + *                     dma-buf buffer.
+> > + *
+> > + * This function adjusts the passed in vma so that it points at the file of the
+> > + * dma_buf operation. It alsog adjusts the starting pgoff and does bounds
+> > + * checking on the size of the vma. Then it calls the exporters mmap function to
+> > + * set up the mapping.
+> > + *
+> > + * Can return negative error values, returns 0 on success.
+> > + */
+> > +int dma_buf_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma,
+> > +                unsigned long pgoff)
+> > +{
+> > +       if (WARN_ON(!dmabuf || !vma))
+> > +               return -EINVAL;
+> > +
+> > +       /* check for offset overflow */
+> > +       if (pgoff + ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) < pgoff)
+> 
+> ditto. isn't it checked whether page offset to be mmaped is placed
+> within vm region or not with the condition, if ((vma->vm_end -
+> vma->vm_start) >> PAGE_SHIFT) < pgoff)?
 
-Yes keeping state is probably required to unregister conditionally.
-Since unregistering is safe (simply returns -ENOENT) when called after
-register fails. So I would think you can call unregister even when
-register fails. 
+Nope, this check only checks for overflow. The pgoff is the offset within
+the dma_buf object. E.g. a drm driver splits up it mmap space into pieces,
+which map to individual buffers. If userspace just mmaps parts of such a
+buffer, the importer can pass the offset in pgoff. But I expect this to be
+0 for almost all cases.
 
--- Shuah
+Note that we don't need this overflow check in the internal mmap function
+because do_mmap will do it for us. But here the importer potentially sets
+a completely different pgoff, so we need to do it. dma_buf documentation
+also mentions this (and that importers do not have to do these checks).
 
+Yours, Daniel
 
+> 
+> > +               return -EOVERFLOW;
+> > +
+> > +       /* check for overflowing the buffer's size */
+> > +       if (pgoff + ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) >
+> > +           dmabuf->size >> PAGE_SHIFT)
+> > +               return -EINVAL;
+> > +
+> > +       /* readjust the vma */
+> > +       if (vma->vm_file)
+> > +               fput(vma->vm_file);
+> > +
+> > +       vma->vm_file = dmabuf->file;
+> > +       get_file(vma->vm_file);
+> > +
+> > +       vma->vm_pgoff = pgoff;
+> > +
+> > +       return dmabuf->ops->mmap(dmabuf, vma);
+> > +}
+> > +EXPORT_SYMBOL_GPL(dma_buf_mmap);
+> > diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
+> > index 3efbfc2..1f78d15 100644
+> > --- a/include/linux/dma-buf.h
+> > +++ b/include/linux/dma-buf.h
+> > @@ -61,6 +61,10 @@ struct dma_buf_attachment;
+> >  *                This Callback must not sleep.
+> >  * @kmap: maps a page from the buffer into kernel address space.
+> >  * @kunmap: [optional] unmaps a page from the buffer.
+> > + * @mmap: used to expose the backing storage to userspace. Note that the
+> > + *       mapping needs to be coherent - if the exporter doesn't directly
+> > + *       support this, it needs to fake coherency by shooting down any ptes
+> > + *       when transitioning away from the cpu domain.
+> >  */
+> >  struct dma_buf_ops {
+> >        int (*attach)(struct dma_buf *, struct device *,
+> > @@ -92,6 +96,8 @@ struct dma_buf_ops {
+> >        void (*kunmap_atomic)(struct dma_buf *, unsigned long, void *);
+> >        void *(*kmap)(struct dma_buf *, unsigned long);
+> >        void (*kunmap)(struct dma_buf *, unsigned long, void *);
+> > +
+> > +       int (*mmap)(struct dma_buf *, struct vm_area_struct *vma);
+> >  };
+> >
+> >  /**
+> > @@ -167,6 +173,9 @@ void *dma_buf_kmap_atomic(struct dma_buf *, unsigned long);
+> >  void dma_buf_kunmap_atomic(struct dma_buf *, unsigned long, void *);
+> >  void *dma_buf_kmap(struct dma_buf *, unsigned long);
+> >  void dma_buf_kunmap(struct dma_buf *, unsigned long, void *);
+> > +
+> > +int dma_buf_mmap(struct dma_buf *, struct vm_area_struct *,
+> > +                unsigned long);
+> >  #else
+> >
+> >  static inline struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+> > @@ -248,6 +257,13 @@ static inline void dma_buf_kunmap(struct dma_buf *dmabuf,
+> >                                  unsigned long pnum, void *vaddr)
+> >  {
+> >  }
+> > +
+> > +static inline int dma_buf_mmap(struct dma_buf *dmabuf,
+> > +                              struct vm_area_struct *vma,
+> > +                              unsigned long pgoff)
+> > +{
+> > +       return -ENODEV;
+> > +}
+> >  #endif /* CONFIG_DMA_SHARED_BUFFER */
+> >
+> >  #endif /* __DMA_BUF_H__ */
+> > --
+> > 1.7.10
+> >
+> > _______________________________________________
+> > dri-devel mailing list
+> > dri-devel@lists.freedesktop.org
+> > http://lists.freedesktop.org/mailman/listinfo/dri-devel
 
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
