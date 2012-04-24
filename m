@@ -1,219 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab2DXGS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 02:18:57 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:48358 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751515Ab2DXGS4 (ORCPT
+	id S1752588Ab2DXGYv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 02:24:51 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17108 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab2DXGYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 02:18:56 -0400
-Message-ID: <4F964551.4050507@st.com>
-Date: Tue, 24 Apr 2012 08:16:49 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 24 Apr 2012 02:24:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 23 Apr 2012 23:24:49 -0700
+Message-ID: <4F9646E7.4000103@nvidia.com>
+Date: Tue, 24 Apr 2012 11:53:35 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Viresh KUMAR <viresh.kumar@st.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
-        sshtylyov@mvista.com, jgarzik@redhat.com, linux@arm.linux.org.uk,
-        spear-devel@list.st.com, viresh.linux@gmail.com,
-        "David S. Miller" <davem@davemloft.net>,
-        ML netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH V2 6/9] net/stmmac: Remove conditional compilation of
- clk code
-References: <cover.1335246730.git.viresh.kumar@st.com> <4336df4e231467d253e25bbd41dbce6d189ed1e8.1335246730.git.viresh.kumar@st.com>
-In-Reply-To: <4336df4e231467d253e25bbd41dbce6d189ed1e8.1335246730.git.viresh.kumar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gerard Snitselaar <dev@snitselaar.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mfd/tps65910: section mismatch for tps65910_sleepinit()
+References: <20120424015916.GC2321@cantor.Home>
+In-Reply-To: <20120424015916.GC2321@cantor.Home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/24/2012 7:56 AM, Viresh KUMAR wrote:
-> With addition of dummy clk_*() calls for non CONFIG_HAVE_CLK cases in clk.h,
-> there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #endif
-> macros.
+On Tuesday 24 April 2012 07:29 AM, Gerard Snitselaar wrote:
+> While looking into another problem I noticed a section mismatch with
+> tps65910_i2c_probe() calling tps65910_sleepinit() which is annotated
+> __init. Should tps65910_i2c_probe() be annotated __init as well?
+>
+Yes, that should be __init. Let me know if you are sending patch or I 
+need to do.
 
-Hello Viresh
-
-patch only applies fine against the net-next repository so on top of the
-diver version: March_2012 and it builds fine on arch w/ w/o HAVE_CLK
-(just tested).
-
-Thanks a lot.
-
-Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> ---
->  drivers/net/ethernet/stmicro/stmmac/stmmac.h      |   41 ---------------------
->  drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   31 ++++++++++------
->  2 files changed, 19 insertions(+), 53 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-> index db2de9a..7f85895 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-> @@ -81,9 +81,7 @@ struct stmmac_priv {
->  	struct stmmac_counters mmc;
->  	struct dma_features dma_cap;
->  	int hw_cap_support;
-> -#ifdef CONFIG_HAVE_CLK
->  	struct clk *stmmac_clk;
-> -#endif
->  	int clk_csr;
->  };
->  
-> @@ -103,42 +101,3 @@ int stmmac_dvr_remove(struct net_device *ndev);
->  struct stmmac_priv *stmmac_dvr_probe(struct device *device,
->  				     struct plat_stmmacenet_data *plat_dat,
->  				     void __iomem *addr);
-> -
-> -#ifdef CONFIG_HAVE_CLK
-> -static inline int stmmac_clk_enable(struct stmmac_priv *priv)
-> -{
-> -	if (!IS_ERR(priv->stmmac_clk))
-> -		return clk_enable(priv->stmmac_clk);
-> -
-> -	return 0;
-> -}
-> -
-> -static inline void stmmac_clk_disable(struct stmmac_priv *priv)
-> -{
-> -	if (IS_ERR(priv->stmmac_clk))
-> -		return;
-> -
-> -	clk_disable(priv->stmmac_clk);
-> -}
-> -static inline int stmmac_clk_get(struct stmmac_priv *priv)
-> -{
-> -	priv->stmmac_clk = clk_get(priv->device, NULL);
-> -
-> -	if (IS_ERR(priv->stmmac_clk))
-> -		return PTR_ERR(priv->stmmac_clk);
-> -
-> -	return 0;
-> -}
-> -#else
-> -static inline int stmmac_clk_enable(struct stmmac_priv *priv)
-> -{
-> -	return 0;
-> -}
-> -static inline void stmmac_clk_disable(struct stmmac_priv *priv)
-> -{
-> -}
-> -static inline int stmmac_clk_get(struct stmmac_priv *priv)
-> -{
-> -	return 0;
-> -}
-> -#endif /* CONFIG_HAVE_CLK */
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> index 1a4cf81..18ce287 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> @@ -28,6 +28,7 @@
->  	https://bugzilla.stlinux.com/
->  *******************************************************************************/
->  
-> +#include <linux/clk.h>
->  #include <linux/kernel.h>
->  #include <linux/interrupt.h>
->  #include <linux/ip.h>
-> @@ -165,7 +166,6 @@ static void stmmac_verify_args(void)
->  
->  static void stmmac_clk_csr_set(struct stmmac_priv *priv)
->  {
-> -#ifdef CONFIG_HAVE_CLK
->  	u32 clk_rate;
->  
->  	if (IS_ERR(priv->stmmac_clk))
-> @@ -192,7 +192,6 @@ static void stmmac_clk_csr_set(struct stmmac_priv *priv)
->  	   * we can not estimate the proper divider as it is not known
->  	   * the frequency of clk_csr_i. So we do not change the default
->  	   * divider. */
-> -#endif
->  }
->  
->  #if defined(STMMAC_XMIT_DEBUG) || defined(STMMAC_RX_DEBUG)
-> @@ -971,7 +970,8 @@ static int stmmac_open(struct net_device *dev)
->  	} else
->  		priv->tm->enable = 1;
->  #endif
-> -	stmmac_clk_enable(priv);
-> +	if (!IS_ERR(priv->stmmac_clk))
-> +		clk_enable(priv->stmmac_clk);
->  
->  	stmmac_check_ether_addr(priv);
->  
-> @@ -1075,7 +1075,8 @@ open_error:
->  	if (priv->phydev)
->  		phy_disconnect(priv->phydev);
->  
-> -	stmmac_clk_disable(priv);
-> +	if (!IS_ERR(priv->stmmac_clk))
-> +		clk_disable(priv->stmmac_clk);
->  
->  	return ret;
->  }
-> @@ -1128,7 +1129,9 @@ static int stmmac_release(struct net_device *dev)
->  #ifdef CONFIG_STMMAC_DEBUG_FS
->  	stmmac_exit_fs();
->  #endif
-> -	stmmac_clk_disable(priv);
-> +
-> +	if (!IS_ERR(priv->stmmac_clk))
-> +		clk_disable(priv->stmmac_clk);
->  
->  	return 0;
->  }
-> @@ -1925,7 +1928,8 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
->  		goto error;
->  	}
->  
-> -	if (stmmac_clk_get(priv))
-> +	priv->stmmac_clk = clk_get(priv->device, NULL);
-> +	if (IS_ERR(priv->stmmac_clk))
->  		pr_warning("%s: warning: cannot get CSR clock\n", __func__);
->  
->  	/* If a specific clk_csr value is passed from the platform
-> @@ -1934,10 +1938,12 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
->  	 * set the MDC clock dynamically according to the csr actual
->  	 * clock input.
->  	 */
-> -	if (!priv->plat->clk_csr)
-> -		stmmac_clk_csr_set(priv);
-> -	else
-> +	if (!priv->plat->clk_csr) {
-> +		if (!IS_ERR(priv->stmmac_clk))
-> +			stmmac_clk_csr_set(priv);
-> +	} else {
->  		priv->clk_csr = priv->plat->clk_csr;
-> +	}
->  
->  	/* MDIO bus Registration */
->  	ret = stmmac_mdio_register(ndev);
-> @@ -2020,7 +2026,8 @@ int stmmac_suspend(struct net_device *ndev)
->  	else {
->  		stmmac_set_mac(priv->ioaddr, false);
->  		/* Disable clock in case of PWM is off */
-> -		stmmac_clk_disable(priv);
-> +		if (!IS_ERR(priv->stmmac_clk))
-> +			clk_disable(priv->stmmac_clk);
->  	}
->  	spin_unlock(&priv->lock);
->  	return 0;
-> @@ -2042,9 +2049,9 @@ int stmmac_resume(struct net_device *ndev)
->  	 * from another devices (e.g. serial console). */
->  	if (device_may_wakeup(priv->device))
->  		priv->hw->mac->pmt(priv->ioaddr, 0);
-> -	else
-> +	else if (!IS_ERR(priv->stmmac_clk))
->  		/* enable the clk prevously disabled */
-> -		stmmac_clk_enable(priv);
-> +			clk_enable(priv->stmmac_clk);
->  
->  	netif_device_attach(ndev);
->  
-
+Thanks,
+Laxman
