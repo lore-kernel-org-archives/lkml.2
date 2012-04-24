@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab2DXWgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:36:37 -0400
+	id S1758176Ab2DXWgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:36:50 -0400
 Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758095Ab2DXWge (ORCPT
+	with ESMTP id S1758157Ab2DXWgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:36:34 -0400
-Message-Id: <20120424223246.431838920@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:36:46 -0400
+Message-Id: <20120424223246.691328006@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:33 -0700
+Date: Tue, 24 Apr 2012 15:33:36 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, AceLan Kao <acelan.kao@canonical.com>,
-        Gustavo Padovan <gustavo@padovan.org>
-Subject: [ 52/62] Bluetooth: Add support for Atheros [04ca:3005]
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: [ 55/62] nfsd: fix endianness breakage in TEST_STATEID handling
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 55ed7d4d1469eafbe3ad7e8fcd44f5af27845a81 upstream.
+commit 02f5fde5df0ea930e70f93763dd48beff182b208 upstream.
 
-Add another vendor specific ID for Atheros AR3012 device.
-This chip is wrapped by Lite-On Technology Corp.
+->ts_id_status gets nfs errno, i.e. it's already big-endian; no need
+to apply htonl() to it.  Broken by commit 174568 (NFSD: Added TEST_STATEID
+operation) last year...
 
-output of usb-devices:
-T:  Bus=04 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#=  2 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=04ca ProdID=3005 Rev=00.02
-S:  Manufacturer=Atheros Communications
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=Alaska Day 2006
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Gustavo Padovan <gustavo@padovan.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ fs/nfsd/nfs4xdr.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -74,6 +74,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x0CF3, 0x3004) },
- 	{ USB_DEVICE(0x0CF3, 0x311D) },
- 	{ USB_DEVICE(0x13d3, 0x3375) },
-+	{ USB_DEVICE(0x04CA, 0x3005) },
- 
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE02C) },
-@@ -92,6 +93,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
- 
- 	{ }	/* Terminating entry */
- };
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -130,6 +130,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
- 
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -3410,7 +3410,7 @@ nfsd4_encode_test_stateid(struct nfsd4_c
+ 		nfsd4_decode_stateid(argp, &si);
+ 		valid = nfs4_validate_stateid(cl, &si);
+ 		RESERVE_SPACE(4);
+-		*p++ = htonl(valid);
++		*p++ = valid;
+ 		resp->p = p;
+ 	}
+ 	nfs4_unlock_state();
 
 
