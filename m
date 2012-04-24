@@ -1,73 +1,550 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab2DXToH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 15:44:07 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:46818 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757332Ab2DXToF (ORCPT
+	id S1757422Ab2DXTog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 15:44:36 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:37038 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757112Ab2DXToc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 15:44:05 -0400
-Message-ID: <4F97023F.7070109@linaro.org>
-Date: Tue, 24 Apr 2012 12:42:55 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Tue, 24 Apr 2012 15:44:32 -0400
+Date: Tue, 24 Apr 2012 21:44:31 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: linux arch <linux-arch@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>
+Cc: Richard Weinberger <richard@nod.at>,
+        "David S. Miller" <davem@davemloft.net>,
+        Arnaud Lacombe <lacombar@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3/4] kbuild: link of vmlinux moved to a script
+Message-ID: <20120424194431.GC2311@merkur.ravnborg.org>
+References: <20120424194148.GA2216@merkur.ravnborg.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/3] [RFC] ashmem: Convert ashmem to use volatile ranges
-References: <1335289787-11089-1-git-send-email-john.stultz@linaro.org> <1335289787-11089-4-git-send-email-john.stultz@linaro.org> <1335295291.28150.222.camel@twins>
-In-Reply-To: <1335295291.28150.222.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042419-5518-0000-0000-000003E40910
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120424194148.GA2216@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2012 12:21 PM, Peter Zijlstra wrote:
-> On Tue, 2012-04-24 at 10:49 -0700, John Stultz wrote:
->> First pass attempt at getting ashmem to utilize the volatile range
->> code.
-> One would think the purpose of the previous patches was to entirely do
-> away with the ashmem interface.. this patch is a temporary band-aid to
-> assist in testing without having to modify userspace?
->
-So in a way, yes. I'm trying to iteratively chip away at the staging 
-drivers, providing a smooth transition path. This patch is just to show 
-(or determine, depending on if the GET_PIN_STATUS is critical) that the 
-fadvise volatile functionality is sufficient to replace the ashmem 
-unpinning feature.
+>From 988727cf128a7439b28ddbbee11ee068d007cb00 Mon Sep 17 00:00:00 2001
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Mon, 23 Apr 2012 22:55:04 +0200
+Subject: [PATCH 3/4] kbuild: link of vmlinux moved to a script
 
-Part of the trouble with pushing the Android drivers upstream is that 
-each driver doesn't just solve one issue, but usually handles a number 
-of problems. Thus discussion about alternative solutions gets muddled as 
-no one alternative is sufficient.
+Move the final link of vmlinux to a script to improve
+readability and maintainability of the code.
+The Makefil fragments used to link vmlinux has over the
+years seen far too much changes and the logic was very
+hard to follow.
 
-For the ashmem driver, one big use case is a way to provide fds to 
-anonymous memory that can be shared between processes. This is the same 
-as an unlinked tmpfs file, but allows them to not have tmpfs mounts, 
-which could potentially be cluttered with poorly written or malicious 
-applications.  There is also the feature of being able to unpin memory 
-ranges of that fd, which I thought was interesting for wider use.
+As the process by nature is serialized there was
+nothing gained including this in the Makefile.
 
-The fadivse volatile work provides that unpinning feature, but doesn't 
-do anything to try to provide atomically unlinked tmpfs fds. To solve 
-that problem,  we'll have to revisit if the simplified ashmem interface 
-makes sense, or if there should be something like a permissions based 
-userspace solution with a deamon that does the create/unlink and hands 
-the fds out.  But hopefully that discussion will be more clear, as it 
-will be only about one feature.
+"um" has special link requirments - and the
+only was to handle this was to hard-code the linking
+of "um" in the script.
+This was better than trying to modularize it only for the
+benefit of "um" anyway.
 
-thanks
--john
+The shell script has been improved after input from:
+Arnaud Lacombe <lacombar@gmail.com>
+
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Cc: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>
+---
+ Makefile                |  211 ++---------------------------------------------
+ arch/um/Makefile        |   11 +--
+ scripts/link-vmlinux.sh |  204 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 215 insertions(+), 211 deletions(-)
+ create mode 100644 scripts/link-vmlinux.sh
+
+diff --git a/Makefile b/Makefile
+index 00bf5b1..9cbf8bd 100644
+--- a/Makefile
++++ b/Makefile
+@@ -341,7 +341,6 @@ AWK		= awk
+ GENKSYMS	= scripts/genksyms/genksyms
+ INSTALLKERNEL  := installkernel
+ DEPMOD		= /sbin/depmod
+-KALLSYMS	= scripts/kallsyms
+ PERL		= perl
+ CHECK		= sparse
+ 
+@@ -727,191 +726,18 @@ libs-y1		:= $(patsubst %/, %/lib.a, $(libs-y))
+ libs-y2		:= $(patsubst %/, %/built-in.o, $(libs-y))
+ libs-y		:= $(libs-y1) $(libs-y2)
+ 
+-# externally visible symbols
++# Externally visible symbols (used by link-vmlinux.sh)
+ export KBUILD_VMLINUX_INIT := $(head-y) $(init-y)
+ export KBUILD_VMLINUX_MAIN := $(core-y) $(libs-y) $(drivers-y) $(net-y)
+ export KBUILD_LDS          := arch/$(SRCARCH)/kernel/vmlinux.lds
++export LDFLAGS_vmlinux
+ 
+-# Build vmlinux
+-# ---------------------------------------------------------------------------
+-# vmlinux is built from the objects selected by $(vmlinux-init) and
+-# $(vmlinux-main). Most are built-in.o files from top-level directories
+-# in the kernel tree, others are specified in arch/$(ARCH)/Makefile.
+-# Ordering when linking is important, and $(vmlinux-init) must be first.
+-#
+-# vmlinux
+-#   ^
+-#   |
+-#   +-< $(vmlinux-init)
+-#   |   +--< init/version.o + more
+-#   |
+-#   +--< $(vmlinux-main)
+-#   |    +--< driver/built-in.o mm/built-in.o + more
+-#   |
+-#   +-< kallsyms.o (see description in CONFIG_KALLSYMS section)
+-#
+-# vmlinux version (uname -v) cannot be updated during normal
+-# descending-into-subdirs phase since we do not yet know if we need to
+-# update vmlinux.
+-# Therefore this step is delayed until just before final link of vmlinux -
+-# except in the kallsyms case where it is done just before adding the
+-# symbols to the kernel.
+-#
+-# System.map is generated to document addresses of all kernel symbols
+-
+-vmlinux-init := $(head-y) $(init-y)
+-vmlinux-main := $(core-y) $(libs-y) $(drivers-y) $(net-y)
+-vmlinux-all  := $(vmlinux-init) $(vmlinux-main)
+-vmlinux-lds  := arch/$(SRCARCH)/kernel/vmlinux.lds
+-
+-# Rule to link vmlinux - also used during CONFIG_KALLSYMS
+-# May be overridden by arch/$(ARCH)/Makefile
+-quiet_cmd_vmlinux__ ?= LD      $@
+-      cmd_vmlinux__ ?= $(LD) $(LDFLAGS) $(LDFLAGS_vmlinux) -o $@ \
+-      -T $(vmlinux-lds) $(vmlinux-init)                          \
+-      --start-group $(vmlinux-main) --end-group                  \
+-      $(filter-out $(vmlinux-lds) $(vmlinux-init) $(vmlinux-main) vmlinux.o FORCE ,$^)
+-
+-# Generate new vmlinux version
+-quiet_cmd_vmlinux_version = GEN     .version
+-      cmd_vmlinux_version = set -e;                     \
+-	if [ ! -r .version ]; then			\
+-	  rm -f .version;				\
+-	  echo 1 >.version;				\
+-	else						\
+-	  mv .version .old_version;			\
+-	  expr 0$$(cat .old_version) + 1 >.version;	\
+-	fi;						\
+-	$(MAKE) $(build)=init
+-
+-# Generate System.map
+-quiet_cmd_sysmap = SYSMAP
+-      cmd_sysmap = $(CONFIG_SHELL) $(srctree)/scripts/mksysmap
+-
+-# Link of vmlinux
+-# If CONFIG_KALLSYMS is set .version is already updated
+-# Generate System.map and verify that the content is consistent
+-# Use + in front of the vmlinux_version rule to silent warning with make -j2
+-# First command is ':' to allow us to use + in front of the rule
+-define rule_vmlinux__
+-	:
+-	$(if $(CONFIG_KALLSYMS),,+$(call cmd,vmlinux_version))
+-
+-	$(call cmd,vmlinux__)
+-	$(Q)echo 'cmd_$@ := $(cmd_vmlinux__)' > $(@D)/.$(@F).cmd
+-
+-	$(Q)$(if $($(quiet)cmd_sysmap),                                      \
+-	  echo '  $($(quiet)cmd_sysmap)  System.map' &&)                     \
+-	$(cmd_sysmap) $@ System.map;                                         \
+-	if [ $$? -ne 0 ]; then                                               \
+-		rm -f $@;                                                    \
+-		/bin/false;                                                  \
+-	fi;
+-	$(verify_kallsyms)
+-endef
+-
+-
+-ifdef CONFIG_KALLSYMS
+-# Generate section listing all symbols and add it into vmlinux $(kallsyms.o)
+-# It's a three stage process:
+-# o .tmp_vmlinux1 has all symbols and sections, but __kallsyms is
+-#   empty
+-#   Running kallsyms on that gives us .tmp_kallsyms1.o with
+-#   the right size - vmlinux version (uname -v) is updated during this step
+-# o .tmp_vmlinux2 now has a __kallsyms section of the right size,
+-#   but due to the added section, some addresses have shifted.
+-#   From here, we generate a correct .tmp_kallsyms2.o
+-# o The correct .tmp_kallsyms2.o is linked into the final vmlinux.
+-# o Verify that the System.map from vmlinux matches the map from
+-#   .tmp_vmlinux2, just in case we did not generate kallsyms correctly.
+-# o If 'make KALLSYMS_EXTRA_PASS=1" was used, do an extra pass using
+-#   .tmp_vmlinux3 and .tmp_kallsyms3.o.  This is only meant as a
+-#   temporary bypass to allow the kernel to be built while the
+-#   maintainers work out what went wrong with kallsyms.
+-
+-last_kallsyms := 2
+-
+-ifdef KALLSYMS_EXTRA_PASS
+-ifneq ($(KALLSYMS_EXTRA_PASS),0)
+-last_kallsyms := 3
+-endif
+-endif
+-
+-kallsyms.o := .tmp_kallsyms$(last_kallsyms).o
+-
+-define verify_kallsyms
+-	$(Q)$(if $($(quiet)cmd_sysmap),                                      \
+-	  echo '  $($(quiet)cmd_sysmap)  .tmp_System.map' &&)                \
+-	  $(cmd_sysmap) .tmp_vmlinux$(last_kallsyms) .tmp_System.map
+-	$(Q)cmp -s System.map .tmp_System.map ||                             \
+-		(echo Inconsistent kallsyms data;                            \
+-		 echo This is a bug - please report about it;                \
+-		 echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround;      \
+-		 rm .tmp_kallsyms* ; /bin/false )
+-endef
+-
+-# Update vmlinux version before link
+-# Use + in front of this rule to silent warning about make -j1
+-# First command is ':' to allow us to use + in front of this rule
+-cmd_ksym_ld = $(cmd_vmlinux__)
+-define rule_ksym_ld
+-	: 
+-	+$(call cmd,vmlinux_version)
+-	$(call cmd,vmlinux__)
+-	$(Q)echo 'cmd_$@ := $(cmd_vmlinux__)' > $(@D)/.$(@F).cmd
+-endef
+-
+-# Generate .S file with all kernel symbols
+-quiet_cmd_kallsyms = KSYM    $@
+-      cmd_kallsyms = $(NM) -n $< | $(KALLSYMS) \
+-                     $(if $(CONFIG_KALLSYMS_ALL),--all-symbols) > $@
+-
+-.tmp_kallsyms1.o .tmp_kallsyms2.o .tmp_kallsyms3.o: %.o: %.S scripts FORCE
+-	$(call if_changed_dep,as_o_S)
+-
+-.tmp_kallsyms%.S: .tmp_vmlinux% $(KALLSYMS)
+-	$(call cmd,kallsyms)
++vmlinux-deps := $(KBUILD_LDS) $(KBUILD_VMLINUX_INIT) $(KBUILD_VMLINUX_MAIN)
+ 
+-# .tmp_vmlinux1 must be complete except kallsyms, so update vmlinux version
+-.tmp_vmlinux1: $(vmlinux-lds) $(vmlinux-all) FORCE
+-	$(call if_changed_rule,ksym_ld)
+-
+-.tmp_vmlinux2: $(vmlinux-lds) $(vmlinux-all) .tmp_kallsyms1.o FORCE
+-	$(call if_changed,vmlinux__)
+-
+-.tmp_vmlinux3: $(vmlinux-lds) $(vmlinux-all) .tmp_kallsyms2.o FORCE
+-	$(call if_changed,vmlinux__)
+-
+-# Needs to visit scripts/ before $(KALLSYMS) can be used.
+-$(KALLSYMS): scripts ;
+-
+-# Generate some data for debugging strange kallsyms problems
+-debug_kallsyms: .tmp_map$(last_kallsyms)
+-
+-.tmp_map%: .tmp_vmlinux% FORCE
+-	($(OBJDUMP) -h $< | $(AWK) '/^ +[0-9]/{print $$4 " 0 " $$2}'; $(NM) $<) | sort > $@
+-
+-.tmp_map3: .tmp_map2
+-
+-.tmp_map2: .tmp_map1
+-
+-endif # ifdef CONFIG_KALLSYMS
+-
+-# Do modpost on a prelinked vmlinux. The finally linked vmlinux has
+-# relevant sections renamed as per the linker script.
+-quiet_cmd_vmlinux-modpost = LD      $@
+-      cmd_vmlinux-modpost = $(LD) $(LDFLAGS) -r -o $@                          \
+-	 $(vmlinux-init) --start-group $(vmlinux-main) --end-group             \
+-	 $(filter-out $(vmlinux-init) $(vmlinux-main) FORCE ,$^)
+-define rule_vmlinux-modpost
+-	:
+-	+$(call cmd,vmlinux-modpost)
+-	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modpost $@
+-	$(Q)echo 'cmd_$@ := $(cmd_vmlinux-modpost)' > $(dot-target).cmd
+-endef
+-
+-# vmlinux image - including updated kernel symbols
+-vmlinux: $(vmlinux-lds) $(vmlinux-init) $(vmlinux-main) vmlinux.o $(kallsyms.o) FORCE
++# Final link of vmlinux
++# Include targets which we want to
++# execute if the rest of the kernel build went well.
++vmlinux: scripts/link-vmlinux.sh $(vmlinux-deps)
+ ifdef CONFIG_HEADERS_CHECK
+ 	$(Q)$(MAKE) -f $(srctree)/Makefile headers_check
+ endif
+@@ -921,22 +747,11 @@ endif
+ ifdef CONFIG_BUILD_DOCSRC
+ 	$(Q)$(MAKE) $(build)=Documentation
+ endif
+-	$(call vmlinux-modpost)
+-	$(call if_changed_rule,vmlinux__)
+-	$(Q)rm -f .old_version
+-
+-# build vmlinux.o first to catch section mismatch errors early
+-ifdef CONFIG_KALLSYMS
+-.tmp_vmlinux1: vmlinux.o
+-endif
+-
+-modpost-init := $(filter-out init/built-in.o, $(vmlinux-init))
+-vmlinux.o: $(modpost-init) $(vmlinux-main) FORCE
+-	$(call if_changed_rule,vmlinux-modpost)
++	+$(Q)$(CONFIG_SHELL) $<
+ 
+ # The actual objects are generated when descending, 
+ # make sure no implicit rule kicks in
+-$(sort $(vmlinux-init) $(vmlinux-main)) $(vmlinux-lds): $(vmlinux-dirs) ;
++$(sort $(vmlinux-deps)): $(vmlinux-dirs) ;
+ 
+ # Handle descending into subdirectories listed in $(vmlinux-dirs)
+ # Preset locale variables to speed up the build process. Limit locale
+@@ -1540,14 +1355,6 @@ quiet_cmd_depmod = DEPMOD  $(KERNELRELEASE)
+ cmd_crmodverdir = $(Q)mkdir -p $(MODVERDIR) \
+                   $(if $(KBUILD_MODULES),; rm -f $(MODVERDIR)/*)
+ 
+-a_flags = -Wp,-MD,$(depfile) $(KBUILD_AFLAGS) $(AFLAGS_KERNEL) \
+-	  $(KBUILD_AFLAGS_KERNEL)                              \
+-	  $(NOSTDINC_FLAGS) $(LINUXINCLUDE) $(KBUILD_CPPFLAGS) \
+-	  $(modkern_aflags) $(EXTRA_AFLAGS) $(AFLAGS_$(basetarget).o)
+-
+-quiet_cmd_as_o_S = AS      $@
+-cmd_as_o_S       = $(CC) $(a_flags) -c -o $@ $<
+-
+ # read all saved command lines
+ 
+ targets := $(wildcard $(sort $(targets)))
+diff --git a/arch/um/Makefile b/arch/um/Makefile
+index 55c0661..0970910 100644
+--- a/arch/um/Makefile
++++ b/arch/um/Makefile
+@@ -121,15 +121,8 @@ LINK_WRAPS = -Wl,--wrap,malloc -Wl,--wrap,free -Wl,--wrap,calloc
+ 
+ LD_FLAGS_CMDLINE = $(foreach opt,$(LDFLAGS),-Wl,$(opt))
+ 
+-CFLAGS_vmlinux := $(LINK-y) $(LINK_WRAPS) $(LD_FLAGS_CMDLINE)
+-define cmd_vmlinux__
+-	$(CC) $(CFLAGS_vmlinux) -o $@ \
+-	-Wl,-T,$(vmlinux-lds) $(vmlinux-init) \
+-	-Wl,--start-group $(vmlinux-main) -Wl,--end-group \
+-	-lutil \
+-	$(filter-out $(vmlinux-lds) $(vmlinux-init) $(vmlinux-main) vmlinux.o \
+-	FORCE ,$^) ; rm -f linux
+-endef
++# Used by link-vmlinux.sh which has special support for um link
++export CFLAGS_vmlinux := $(LINK-y) $(LINK_WRAPS) $(LD_FLAGS_CMDLINE)
+ 
+ # When cleaning we don't include .config, so we don't include
+ # TT or skas makefiles and don't clean skas_ptregs.h.
+diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
+new file mode 100644
+index 0000000..afd0b96
+--- /dev/null
++++ b/scripts/link-vmlinux.sh
+@@ -0,0 +1,204 @@
++#!/bin/sh
++#
++# link vmlinux
++#
++# vmlinux is linked from the objects selected by $(KBUILD_VMLINUX_INIT) and
++# $(KBUILD_VMLINUX_MAIN). Most are built-in.o files from top-level directories
++# in the kernel tree, others are specified in arch/$(ARCH)/Makefile.
++# Ordering when linking is important, and $(KBUILD_VMLINUX_INIT) must be first.
++#
++# vmlinux
++#   ^
++#   |
++#   +-< $(KBUILD_VMLINUX_INIT)
++#   |   +--< init/version.o + more
++#   |
++#   +--< $(KBUILD_VMLINUX_MAIN)
++#   |    +--< drivers/built-in.o mm/built-in.o + more
++#   |
++#   +-< ${kallsymso} (see description in KALLSYMS section)
++#
++# vmlinux version (uname -v) cannot be updated during normal
++# descending-into-subdirs phase since we do not yet know if we need to
++# update vmlinux.
++# Therefore this step is delayed until just before final link of vmlinux.
++#
++# System.map is generated to document addresses of all kernel symbols
++
++# We need access to CONFIG_ symbols
++source ./.config
++
++# Error out on error
++set -e
++
++# Nice output in kbuild format
++# Will be supressed by "make -s"
++info()
++{
++	if [ "${quiet}" != "silent_" ]; then
++		printf "  %-7s %s\n" ${1} ${2}
++	fi
++}
++
++# Link of vmlinux.o used for section mismatch analysis
++# ${1} output file
++modpost_link()
++{
++	${LD} ${LDFLAGS} -r -o ${1} ${KBUILD_VMLINUX_INIT}                   \
++		--start-group ${KBUILD_VMLINUX_MAIN} --end-group
++}
++
++# Link of vmlinux
++# ${1} - optional extra .o files
++# ${2} - output file
++vmlinux_link()
++{
++	local lds="${objtree}/${KBUILD_LDS}"
++
++	if [ "${SRCARCH}" != "um" ]; then
++		${LD} ${LDFLAGS} ${LDFLAGS_vmlinux} -o ${2}                  \
++			-T ${lds} ${KBUILD_VMLINUX_INIT}                     \
++			--start-group ${KBUILD_VMLINUX_MAIN} --end-group ${1}
++	else
++		${CC} ${CFLAGS_vmlinux} -o ${2}                              \
++			-Wl,-T,${lds} ${KBUILD_VMLINUX_INIT}                 \
++			-Wl,--start-group                                    \
++				 ${KBUILD_VMLINUX_MAIN}                      \
++			-Wl,--end-group                                      \
++			-lutil ${1}
++		rm -f linux
++	fi
++}
++
++
++# Create ${2} .o file with all symbols from the ${1} object file
++kallsyms()
++{
++	info KSYM ${2}
++	local kallsymopt;
++
++	if [ -n "${CONFIG_KALLSYMS_ALL}" ]; then
++		kallsymopt=--all-symbols
++	fi
++
++	local aflags="${KBUILD_AFLAGS} ${NOSTDINC_FLAGS}                     \
++		      ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
++
++	${NM} -n ${1} | \
++		scripts/kallsyms ${kallsymopt} | \
++		${CC} ${aflags} -c -o ${2} -x assembler-with-cpp -
++}
++
++# Create map file with all symbols from ${1}
++# See mksymap for additional details
++mksysmap()
++{
++	${CONFIG_SHELL} "${srctree}/scripts/mksysmap" ${1} ${2}
++}
++
++# Delete output files in case of error
++trap cleanup SIGHUP SIGINT SIGQUIT SIGTERM ERR
++cleanup()
++{
++	rm -f vmlinux.o
++	rm -f .old_version
++	rm -f .tmp_vmlinux*
++	rm -f .tmp_kallsyms*
++	rm -f vmlinux
++	rm -f .tmp_System.map
++	rm -f System.map
++}
++
++#
++#
++# Use "make V=1" to debug this script
++case "${KBUILD_VERBOSE}" in
++*1*)
++	set -x
++	;;
++esac
++
++#link vmlinux.o
++info LD vmlinux.o
++modpost_link vmlinux.o
++
++# modpost vmlinux.o to check for section mismatches
++${MAKE} -f "${srctree}/scripts/Makefile.modpost" vmlinux.o
++
++# Update version
++info GEN .version
++if [ ! -r .version ]; then
++	rm -f .version;
++	echo 1 >.version;
++else
++	mv .version .old_version;
++	expr 0$(cat .old_version) + 1 >.version;
++fi;
++
++# final build of init/
++${MAKE} -f "${srctree}/scripts/Makefile.build" obj=init
++
++kallsymso=""
++kallsyms_vmlinux=""
++if [ -n "${CONFIG_KALLSYMS}" ]; then
++
++	# kallsyms support
++	# Generate section listing all symbols and add it into vmlinux
++	# It's a three step process:
++	# 1)  Link .tmp_vmlinux1 so it has all symbols and sections,
++	#     but __kallsyms is empty.
++	#     Running kallsyms on that gives us .tmp_kallsyms1.o with
++	#     the right size
++	# 2)  Link .tmp_vmlinux2 so it now has a __kallsyms section of
++	#     the right size, but due to the added section, some
++	#     addresses have shifted.
++	#     From here, we generate a correct .tmp_kallsyms2.o
++	# 2a) We may use an extra pass as this has been necessary to
++	#     woraround some alignment related bugs.
++	#     KALLSYMS_EXTRA_PASS=1 is used to trigger this.
++	# 3)  The correct ${kallsymso} is linked into the final vmlinux.
++	#
++	# a)  Verify that the System.map from vmlinux matches the map from
++	#     ${kallsymso}.
++
++	kallsymso=.tmp_kallsyms2.o
++	kallsyms_vmlinux=.tmp_vmlinux2
++
++	# step 1
++	vmlinux_link "" .tmp_vmlinux1
++	kallsyms .tmp_vmlinux1 .tmp_kallsyms1.o
++
++	# step 2
++	vmlinux_link .tmp_kallsyms1.o .tmp_vmlinux2
++	kallsyms .tmp_vmlinux2 .tmp_kallsyms2.o
++
++	# step 2a
++	if [ -n "${KALLSYMS_EXTRA_PASS}" ]; then
++		kallsymso=.tmp_kallsyms3.o
++		kallsyms_vmlinux=.tmp_vmlinux2
++
++		vmlinux_link .tmp_kallsyms2.o .tmp_vmlinux3
++
++		kallsyms .tmp_vmlinux3 .tmp_kallsyms3.o
++	fi
++fi
++
++vmlinux_link "${kallsymso}" vmlinux
++
++info SYSMAP System.map
++mksysmap vmlinux System.map
++
++# step a (see comment above)
++if [ -n "${CONFIG_KALLSYMS}" ]; then
++	mksysmap ${kallsyms_vmlinux} .tmp_System.map
++
++	if [ $(cmp -s System.map .tmp_System.map) ]; then
++		echo Inconsistent kallsyms data
++		echo echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
++		cleanup
++		exit 1
++	fi
++fi
++
++# We made a new kernel - delete old version file
++rm -f .old_version
+-- 
+1.7.10
 
