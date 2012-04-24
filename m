@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758264Ab2DXWqo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:46:44 -0400
+	id S1758273Ab2DXWq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:46:59 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932744Ab2DXWhf (ORCPT
+	with ESMTP id S932731Ab2DXWh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:37:35 -0400
-Message-Id: <20120424223254.331759146@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:37:28 -0400
+Message-Id: <20120424223254.169533997@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:03 -0700
+Date: Tue, 24 Apr 2012 15:33:01 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
-Subject: [ 10/42] uwb: fix use of del_timer_sync() in interrupt
+        alan@lxorguk.ukuu.org.uk, Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
+Subject: [ 08/42] USB: yurex: Remove allocation of coherent buffer for setup-packet buffer
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,61 +24,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
 
-commit 9426cd05682745d1024dbabdec5631309bd2f480 upstream.
+commit 523fc5c14f6cad283e5a266eba0e343aed6e73d5 upstream.
 
-del_timer_sync() cannot be used in interrupt.
-Replace it with del_timer() and a flag
+Removes allocation of coherent buffer for the control-request setup-packet
+buffer from the yurex driver. Using coherent buffers for setup-packet is
+obsolete and does not work with some USB host implementations.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/uwb/neh.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/usb/misc/yurex.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/drivers/uwb/neh.c
-+++ b/drivers/uwb/neh.c
-@@ -106,6 +106,7 @@ struct uwb_rc_neh {
- 	u8 evt_type;
- 	__le16 evt;
- 	u8 context;
-+	u8 completed;
- 	uwb_rc_cmd_cb_f cb;
- 	void *arg;
+--- a/drivers/usb/misc/yurex.c
++++ b/drivers/usb/misc/yurex.c
+@@ -99,9 +99,7 @@ static void yurex_delete(struct kref *kr
+ 	usb_put_dev(dev->udev);
+ 	if (dev->cntl_urb) {
+ 		usb_kill_urb(dev->cntl_urb);
+-		if (dev->cntl_req)
+-			usb_free_coherent(dev->udev, YUREX_BUF_SIZE,
+-				dev->cntl_req, dev->cntl_urb->setup_dma);
++		kfree(dev->cntl_req);
+ 		if (dev->cntl_buffer)
+ 			usb_free_coherent(dev->udev, YUREX_BUF_SIZE,
+ 				dev->cntl_buffer, dev->cntl_urb->transfer_dma);
+@@ -234,9 +232,7 @@ static int yurex_probe(struct usb_interf
+ 	}
  
-@@ -408,6 +409,7 @@ static void uwb_rc_neh_grok_event(struct
- 	struct device *dev = &rc->uwb_dev.dev;
- 	struct uwb_rc_neh *neh;
- 	struct uwb_rceb *notif;
-+	unsigned long flags;
- 
- 	if (rceb->bEventContext == 0) {
- 		notif = kmalloc(size, GFP_ATOMIC);
-@@ -421,7 +423,11 @@ static void uwb_rc_neh_grok_event(struct
- 	} else {
- 		neh = uwb_rc_neh_lookup(rc, rceb);
- 		if (neh) {
--			del_timer_sync(&neh->timer);
-+			spin_lock_irqsave(&rc->neh_lock, flags);
-+			/* to guard against a timeout */
-+			neh->completed = 1;
-+			del_timer(&neh->timer);
-+			spin_unlock_irqrestore(&rc->neh_lock, flags);
- 			uwb_rc_neh_cb(neh, rceb, size);
- 		} else
- 			dev_warn(dev, "event 0x%02x/%04x/%02x (%zu bytes): nobody cared\n",
-@@ -567,6 +573,10 @@ static void uwb_rc_neh_timer(unsigned lo
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&rc->neh_lock, flags);
-+	if (neh->completed) {
-+		spin_unlock_irqrestore(&rc->neh_lock, flags);
-+		return;
-+	}
- 	if (neh->context)
- 		__uwb_rc_neh_rm(rc, neh);
- 	else
+ 	/* allocate buffer for control req */
+-	dev->cntl_req = usb_alloc_coherent(dev->udev, YUREX_BUF_SIZE,
+-					   GFP_KERNEL,
+-					   &dev->cntl_urb->setup_dma);
++	dev->cntl_req = kmalloc(YUREX_BUF_SIZE, GFP_KERNEL);
+ 	if (!dev->cntl_req) {
+ 		err("Could not allocate cntl_req");
+ 		goto error;
 
 
