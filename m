@@ -1,417 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab2DXJFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 05:05:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22979 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754543Ab2DXJE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 05:04:59 -0400
-Date: Tue, 24 Apr 2012 11:04:27 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, ming.m.lin@intel.com
-Subject: Re: [PATCH 4/6] perf tool: Parse general events from sysfs
-Message-ID: <20120424090427.GA2125@m.brq.redhat.com>
-References: <1333244495-1020-1-git-send-email-zheng.z.yan@intel.com>
- <1333244495-1020-5-git-send-email-zheng.z.yan@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1333244495-1020-5-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756593Ab2DXJII (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 05:08:08 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33988 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756457Ab2DXJID (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 05:08:03 -0400
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: linaro-mm-sig@lists.linaro.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        linux-media@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Rob Clark <rob.clark@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>
+Subject: [PATCH] dma-buf: mmap support
+Date: Tue, 24 Apr 2012 11:08:52 +0200
+Message-Id: <1335258532-20739-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 01, 2012 at 09:41:33AM +0800, Yan, Zheng wrote:
-> From: "Yan, Zheng" <zheng.z.yan@intel.com>
-> 
-> PMU can export general events to sysfs, for example:
-> 
-> /sys/bus/event_source/devices/uncore_nhm/events
+Compared to Rob Clark's RFC I've ditched the prepare/finish hooks
+and corresponding ioctls on the dma_buf file. The major reason for
+that is that many people seem to be under the impression that this is
+also for synchronization with outstanding asynchronous processsing.
+I'm pretty massively opposed to this because:
 
-hi,
-so the point is to have an alias support for pmu event definition.
-Seems like good idea to improve usability/readability, I have some
-general comments though..
+- It boils down reinventing a new rather general-purpose userspace
+  synchronization interface. If we look at things like futexes, this
+  is hard to get right.
+- Furthermore a lot of kernel code has to interact with this
+  synchronization primitive. This smells a look like the dri1 hw_lock,
+  a horror show I prefer not to reinvent.
+- Even more fun is that multiple different subsystems would interact
+  here, so we have plenty of opportunities to create funny deadlock
+  scenarios.
 
-- you suggest to have sysfs files having contents like:
-    event=0x2c,umask=0xf
-  when we were adding the formats stuff into sysfs, we had to cut off
-  the sysfs file contents to bare minimum to obey the sysfs rule:
-    single file = single value
-  so you might have some troubles pushing that through.. not sure ;)
+I think synchronization is a wholesale different problem from data
+sharing and should be tackled as an orthogonal problem.
 
-- I haven't read the whole patchset, but seems like the "events"
-  directory is now specific to a 'Intel uncore pmu'. If thats the
-  case I think there should be generic way for each pmu to define
-  this stuff.
+Now we could demand that prepare/finish may only ensure cache
+coherency (as Rob intended), but that runs up into the next problem:
+We not only need mmap support to facilitate sw-only processing nodes
+in a pipeline (without jumping through hoops by importing the dma_buf
+into some sw-access only importer), which allows for a nicer
+ION->dma-buf upgrade path for existing Android userspace. We also need
+mmap support for existing importing subsystems to support existing
+userspace libraries. And a loot of these subsystems are expected to
+export coherent userspace mappings.
 
-- as for the tools/pmu.c change I'd like to see more consistent
-  way of parsing this, than via 'newcfg' variable.. but none
-  is comming to me so far ;) I'll think about that..
+So prepare/finish can only ever be optional and the exporter /needs/
+to support coherent mappings. Given that mmap access is always
+somewhat fallback-y in nature I've decided to drop this optimization,
+instead of just making it optional. If we demonstrate a clear need for
+this, supported by benchmark results, we can always add it in again
+later as an optional extension.
 
-wbr,
-jirka
+Other differences compared to Rob's RFC is the above mentioned support
+for mapping a dma-buf through facilities provided by the importer.
+Which results in mmap support no longer being optional.
 
+Note that this dma-buf mmap patch does _not_ support every possible
+insanity an existing subsystem could pull of with mmap: Because it
+does not allow to intercept pagefaults and shoot down ptes importing
+subsystems can't add some magic of their own at these points (e.g. to
+automatically synchronize with outstanding rendering or set up some
+special resources). I've done a cursory read through a few mmap
+implementions of various subsytems and I'm hopeful that we can avoid
+this (and the complexity it'd bring with it).
 
-> └── CLOCKTICKS
-> 
-> Then we can specify the event as "<pmu>/<event>/", for example:
-> 
-> perf stat -a -C 0 -e "uncore_nhm/CLOCKTICKS/" sleep 1
-> 
-> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-> ---
->  tools/perf/util/parse-events.c |   24 ++++++--
->  tools/perf/util/parse-events.h |    6 +-
->  tools/perf/util/parse-events.y |    6 +-
->  tools/perf/util/pmu.c          |  140 +++++++++++++++++++++++++++++++++++++++-
->  tools/perf/util/pmu.h          |   11 +++-
->  5 files changed, 172 insertions(+), 15 deletions(-)
-> 
-> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-> index 5b3a0ef..fdac544 100644
-> --- a/tools/perf/util/parse-events.c
-> +++ b/tools/perf/util/parse-events.c
-> @@ -24,7 +24,7 @@ struct event_symbol {
->  };
->  
->  int parse_events_parse(struct list_head *list, struct list_head *list_tmp,
-> -		       int *idx);
-> +			int *idx, char **newcfg);
->  
->  #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
->  #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-> @@ -648,8 +648,8 @@ int parse_events_add_numeric(struct list_head *list, int *idx,
->  			 (char *) __event_name(type, config));
->  }
->  
-> -int parse_events_add_pmu(struct list_head *list, int *idx,
-> -			 char *name, struct list_head *head_config)
-> +int parse_events_add_pmu(struct list_head *list, char **newcfg,
-> +			int *idx, char *name, struct list_head *head_config)
->  {
->  	struct perf_event_attr attr;
->  	struct perf_pmu *pmu;
-> @@ -666,9 +666,12 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
->  	 */
->  	config_attr(&attr, head_config, 0);
->  
-> -	if (perf_pmu__config(pmu, &attr, head_config))
-> +	if (perf_pmu__config(pmu, head_config, &attr, newcfg))
->  		return -EINVAL;
->  
-> +	if (newcfg && *newcfg)
-> +		return 0;
-> +
->  	return add_event(list, idx, &attr, (char *) "pmu");
->  }
->  
-> @@ -753,14 +756,25 @@ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
->  	LIST_HEAD(list_tmp);
->  	YY_BUFFER_STATE buffer;
->  	int ret, idx = evlist->nr_entries;
-> +	char *newcfg = NULL;
->  
->  	buffer = parse_events__scan_string(str);
->  
-> -	ret = parse_events_parse(&list, &list_tmp, &idx);
-> +	ret = parse_events_parse(&list, &list_tmp, &idx, &newcfg);
->  
->  	parse_events__flush_buffer(buffer);
->  	parse_events__delete_buffer(buffer);
->  
-> +	if (!ret && newcfg) {
-> +		buffer = parse_events__scan_string(newcfg);
-> +
-> +		ret = parse_events_parse(&list, &list_tmp, &idx, NULL);
-> +
-> +		parse_events__flush_buffer(buffer);
-> +		parse_events__delete_buffer(buffer);
-> +		free(newcfg);
-> +	}
-> +
->  	if (!ret) {
->  		int entries = idx - evlist->nr_entries;
->  		perf_evlist__splice_list_tail(evlist, &list, entries);
-> diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-> index ca069f8..24924fd 100644
-> --- a/tools/perf/util/parse-events.h
-> +++ b/tools/perf/util/parse-events.h
-> @@ -74,13 +74,13 @@ int parse_events_add_cache(struct list_head *list, int *idx,
->  			   char *type, char *op_result1, char *op_result2);
->  int parse_events_add_breakpoint(struct list_head *list, int *idx,
->  				void *ptr, char *type);
-> -int parse_events_add_pmu(struct list_head *list, int *idx,
-> -			 char *pmu , struct list_head *head_config);
-> +int parse_events_add_pmu(struct list_head *list, char **newcfg,
-> +			 int *idx, char *pmu , struct list_head *head_config);
->  void parse_events_update_lists(struct list_head *list_event,
->  			       struct list_head *list_all);
->  void parse_events_error(struct list_head *list_all,
->  			struct list_head *list_event,
-> -			int *idx, char const *msg);
-> +			int *idx, char **newcfg, char const *msg);
->  
->  void print_events(const char *event_glob);
->  void print_events_type(u8 type);
-> diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-> index d9637da..5f569f2 100644
-> --- a/tools/perf/util/parse-events.y
-> +++ b/tools/perf/util/parse-events.y
-> @@ -3,6 +3,7 @@
->  %parse-param {struct list_head *list_all}
->  %parse-param {struct list_head *list_event}
->  %parse-param {int *idx}
-> +%parse-param {char **newcfg}
->  
->  %{
->  
-> @@ -82,7 +83,7 @@ event_def: event_pmu |
->  event_pmu:
->  PE_NAME '/' event_config '/'
->  {
-> -	ABORT_ON(parse_events_add_pmu(list_event, idx, $1, $3));
-> +	ABORT_ON(parse_events_add_pmu(list_event, newcfg, idx, $1, $3));
->  	parse_events__free_terms($3);
->  }
->  
-> @@ -194,7 +195,7 @@ PE_NAME
->  {
->  	struct parse_events__term *term;
->  
-> -	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_NUM,
-> +	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_STR,
->  		 $1, NULL, 1));
->  	$$ = term;
->  }
-> @@ -224,6 +225,7 @@ sep_slash_dc: '/' | ':' |
->  void parse_events_error(struct list_head *list_all __used,
->  			struct list_head *list_event __used,
->  			int *idx __used,
-> +			char **newcfg __used,
->  			char const *msg __used)
->  {
->  }
-> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-> index cb08a11..71244b6 100644
-> --- a/tools/perf/util/pmu.c
-> +++ b/tools/perf/util/pmu.c
-> @@ -80,6 +80,89 @@ static int pmu_format(char *name, struct list_head *format)
->  	return 0;
->  }
->  
-> +static int perf_pmu__new_event(struct list_head *list, char *name, FILE *file)
-> +{
-> +	struct perf_pmu__event *event;
-> +	char buf[256];
-> +	int ret;
-> +
-> +	ret = fread(buf, 1, sizeof(buf), file);
-> +	if (ret == 0)
-> +		return -EINVAL;
-> +
-> +	event = zalloc(sizeof(*event));
-> +	if (!event)
-> +		return -ENOMEM;
-> +
-> +	event->name = strdup(name);
-> +	event->config = strndup(buf, ret);
-> +
-> +	list_add_tail(&event->list, list);
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Process all the sysfs attributes located under the directory
-> + * specified in 'dir' parameter.
-> + */
-> +static int pmu_events_parse(char *dir, struct list_head *head)
-> +{
-> +	struct dirent *evt_ent;
-> +	DIR *event_dir;
-> +	int ret = 0;
-> +
-> +	event_dir = opendir(dir);
-> +	if (!event_dir)
-> +		return -EINVAL;
-> +
-> +	while (!ret && (evt_ent = readdir(event_dir))) {
-> +		char path[PATH_MAX];
-> +		char *name = evt_ent->d_name;
-> +		FILE *file;
-> +
-> +		if (!strcmp(name, ".") || !strcmp(name, ".."))
-> +			continue;
-> +
-> +		snprintf(path, PATH_MAX, "%s/%s", dir, name);
-> +
-> +		ret = -EINVAL;
-> +		file = fopen(path, "r");
-> +		if (!file)
-> +			break;
-> +		ret = perf_pmu__new_event(head, name, file);
-> +		fclose(file);
-> +	}
-> +
-> +	closedir(event_dir);
-> +	return ret;
-> +}
-> +
-> +/*
-> + * Reading the pmu event definition, which should be located at:
-> + * /sys/bus/event_source/devices/<dev>/events as sysfs group attributes.
-> + */
-> +static int pmu_events(char *name, struct list_head *events)
-> +{
-> +	struct stat st;
-> +	char path[PATH_MAX];
-> +	const char *sysfs;
-> +
-> +	sysfs = sysfs_find_mountpoint();
-> +	if (!sysfs)
-> +		return -1;
-> +
-> +	snprintf(path, PATH_MAX,
-> +		 "%s/bus/event_source/devices/%s/events", sysfs, name);
-> +
-> +	if (stat(path, &st) < 0)
-> +		return -1;
-> +
-> +	if (pmu_events_parse(path, events))
-> +		return -1;
-> +
-> +	return 0;
-> +}
-> +
->  /*
->   * Reading/parsing the default pmu type value, which should be
->   * located at:
-> @@ -118,6 +201,7 @@ static struct perf_pmu *pmu_lookup(char *name)
->  {
->  	struct perf_pmu *pmu;
->  	LIST_HEAD(format);
-> +	LIST_HEAD(events);
->  	__u32 type;
->  
->  	/*
-> @@ -135,8 +219,12 @@ static struct perf_pmu *pmu_lookup(char *name)
->  	if (!pmu)
->  		return NULL;
->  
-> +	pmu_events(name, &events);
-> +
->  	INIT_LIST_HEAD(&pmu->format);
-> +	INIT_LIST_HEAD(&pmu->events);
->  	list_splice(&format, &pmu->format);
-> +	list_splice(&events, &pmu->events);
->  	pmu->name = strdup(name);
->  	pmu->type = type;
->  	return pmu;
-> @@ -262,16 +350,62 @@ static int pmu_config(struct list_head *formats, struct perf_event_attr *attr,
->  	return 0;
->  }
->  
-> +
-> +static struct perf_pmu__event*
-> +pmu_find_event(struct list_head *events, char *name)
-> +{
-> +	struct perf_pmu__event *event;
-> +
-> +	list_for_each_entry(event, events, list)
-> +		if (!strcmp(event->name, name))
-> +			return event;
-> +
-> +	return NULL;
-> +}
-> +
-> +static int pmu_event(struct perf_pmu *pmu, struct list_head *head_terms,
-> +		     char **newcfg)
-> +{
-> +	struct parse_events__term *term;
-> +	struct perf_pmu__event *event;
-> +	char *buf;
-> +
-> +	if (!list_is_singular(head_terms))
-> +		return -EINVAL;
-> +
-> +	term = list_entry(head_terms->next, struct parse_events__term, list);
-> +
-> +	if (term->type != PARSE_EVENTS__TERM_TYPE_STR || term->val.str)
-> +		return -EINVAL;
-> +
-> +	event = pmu_find_event(&pmu->events, term->config);
-> +	if (!event)
-> +		return -EINVAL;
-> +
-> +	buf = malloc(strlen(pmu->name) + strlen(event->config) + 3);
-> +	if (!buf)
-> +		return -ENOMEM;
-> +
-> +	sprintf(buf, "%s/%s/", pmu->name, event->config);
-> +	*newcfg = buf;
-> +
-> +	return 0;
-> +}
-> +
->  /*
->   * Configures event's 'attr' parameter based on the:
->   * 1) users input - specified in terms parameter
->   * 2) pmu format definitions - specified by pmu parameter
->   */
-> -int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
-> -		     struct list_head *head_terms)
-> +int perf_pmu__config(struct perf_pmu *pmu, struct list_head *head_terms,
-> +		     struct perf_event_attr *attr, char **newcfg)
->  {
-> +	int ret;
->  	attr->type = pmu->type;
-> -	return pmu_config(&pmu->format, attr, head_terms);
-> +	ret = pmu_config(&pmu->format, attr, head_terms);
-> +	if (ret == -EINVAL && newcfg)
-> +		ret = pmu_event(pmu, head_terms, newcfg);
-> +	return ret;
->  }
->  
->  int perf_pmu__new_format(struct list_head *list, char *name,
-> diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-> index 68c0db9..2052b3f 100644
-> --- a/tools/perf/util/pmu.h
-> +++ b/tools/perf/util/pmu.h
-> @@ -19,16 +19,23 @@ struct perf_pmu__format {
->  	struct list_head list;
->  };
->  
-> +struct perf_pmu__event {
-> +	char *name;
-> +	char *config;
-> +	struct list_head list;
-> +};
-> +
->  struct perf_pmu {
->  	char *name;
->  	__u32 type;
->  	struct list_head format;
-> +	struct list_head events;
->  	struct list_head list;
->  };
->  
->  struct perf_pmu *perf_pmu__find(char *name);
-> -int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
-> -		     struct list_head *head_terms);
-> +int perf_pmu__config(struct perf_pmu *pmu, struct list_head *head_terms,
-> +		     struct perf_event_attr *attr, char **newcfg);
->  
->  int perf_pmu_wrap(void);
->  void perf_pmu_error(struct list_head *list, char *name, char const *msg);
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Additonally I've extended the documentation a bit to explain the hows
+and whys of this mmap extension.
+
+In case we ever want to add support for explicitly cache maneged
+userspace mmap with a prepare/finish ioctl pair, we could specify that
+userspace needs to mmap a different part of the dma_buf, e.g. the
+range starting at dma_buf->size up to dma_buf->size*2. This works
+because the size of a dma_buf is invariant over it's lifetime. The
+exporter would obviously need to fall back to coherent mappings for
+both ranges if a legacy clients maps the coherent range and the
+architecture cannot suppor conflicting caching policies. Also, this
+would obviously be optional and userspace needs to be able to fall
+back to coherent mappings.
+
+v2:
+- Spelling fixes from Rob Clark.
+- Compile fix for !DMA_BUF from Rob Clark.
+- Extend commit message to explain how explicitly cache managed mmap
+  support could be added later.
+- Extend the documentation with implementations notes for exporters
+  that need to manually fake coherency.
+
+v3:
+- dma_buf pointer initialization goof-up noticed by Rebecca Schultz
+  Zavin.
+
+Cc: Rob Clark <rob.clark@linaro.org>
+Cc: Rebecca Schultz Zavin <rebecca@android.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ Documentation/dma-buf-sharing.txt |   98 ++++++++++++++++++++++++++++++++++---
+ drivers/base/dma-buf.c            |   64 +++++++++++++++++++++++-
+ include/linux/dma-buf.h           |   16 ++++++
+ 3 files changed, 170 insertions(+), 8 deletions(-)
+
+diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
+index 3bbd5c5..5ff4d2b 100644
+--- a/Documentation/dma-buf-sharing.txt
++++ b/Documentation/dma-buf-sharing.txt
+@@ -29,13 +29,6 @@ The buffer-user
+    in memory, mapped into its own address space, so it can access the same area
+    of memory.
+ 
+-*IMPORTANT*: [see https://lkml.org/lkml/2011/12/20/211 for more details]
+-For this first version, A buffer shared using the dma_buf sharing API:
+-- *may* be exported to user space using "mmap" *ONLY* by exporter, outside of
+-  this framework.
+-- with this new iteration of the dma-buf api cpu access from the kernel has been
+-  enable, see below for the details.
+-
+ dma-buf operations for device dma only
+ --------------------------------------
+ 
+@@ -313,6 +306,83 @@ Access to a dma_buf from the kernel context involves three steps:
+ 				  enum dma_data_direction dir);
+ 
+ 
++Direct Userspace Access/mmap Support
++------------------------------------
++
++Being able to mmap an export dma-buf buffer object has 2 main use-cases:
++- CPU fallback processing in a pipeline and
++- supporting existing mmap interfaces in importers.
++
++1. CPU fallback processing in a pipeline
++
++   In many processing pipelines it is sometimes required that the cpu can access
++   the data in a dma-buf (e.g. for thumbnail creation, snapshots, ...). To avoid
++   the need to handle this specially in userspace frameworks for buffer sharing
++   it's ideal if the dma_buf fd itself can be used to access the backing storage
++   from userspace using mmap.
++
++   Furthermore Android's ION framework already supports this (and is otherwise
++   rather similar to dma-buf from a userspace consumer side with using fds as
++   handles, too). So it's beneficial to support this in a similar fashion on
++   dma-buf to have a good transition path for existing Android userspace.
++
++   No special interfaces, userspace simply calls mmap on the dma-buf fd.
++
++2. Supporting existing mmap interfaces in exporters
++
++   Similar to the motivation for kernel cpu access it is again important that
++   the userspace code of a given importing subsystem can use the same interfaces
++   with a imported dma-buf buffer object as with a native buffer object. This is
++   especially important for drm where the userspace part of contemporary OpenGL,
++   X, and other drivers is huge, and reworking them to use a different way to
++   mmap a buffer rather invasive.
++
++   The assumption in the current dma-buf interfaces is that redirecting the
++   initial mmap is all that's needed. A survey of some of the existing
++   subsystems shows that no driver seems to do any nefarious thing like syncing
++   up with outstanding asynchronous processing on the device or allocating
++   special resources at fault time. So hopefully this is good enough, since
++   adding interfaces to intercept pagefaults and allow pte shootdowns would
++   increase the complexity quite a bit.
++
++   Interface:
++      int dma_buf_mmap(struct dma_buf *, struct vm_area_struct *,
++		       unsigned long);
++
++   If the importing subsystem simply provides a special-purpose mmap call to set
++   up a mapping in userspace, calling do_mmap with dma_buf->file will equally
++   achieve that for a dma-buf object.
++
++3. Implementation notes for exporters
++
++   Because dma-buf buffers have invariant size over their lifetime, the dma-buf
++   core checks whether a vma is too large and rejects such mappings. The
++   exporter hence does not need to duplicate this check.
++
++   Because existing importing subsystems might presume coherent mappings for
++   userspace, the exporter needs to set up a coherent mapping. If that's not
++   possible, it needs to fake coherency by manually shooting down ptes when
++   leaving the cpu domain and flushing caches at fault time. Note that all the
++   dma_buf files share the same anon inode, hence the exporter needs to replace
++   the dma_buf file stored in vma->vm_file with it's own if pte shootdown is
++   requred. This is because the kernel uses the underlying inode's address_space
++   for vma tracking (and hence pte tracking at shootdown time with
++   unmap_mapping_range).
++
++   If the above shootdown dance turns out to be too expensive in certain
++   scenarios, we can extend dma-buf with a more explicit cache tracking scheme
++   for userspace mappings. But the current assumption is that using mmap is
++   always a slower path, so some inefficiencies should be acceptable.
++
++   Exporters that shoot down mappings (for any reasons) shall not do any
++   synchronization at fault time with outstanding device operations.
++   Synchronization is an orthogonal issue to sharing the backing storage of a
++   buffer and hence should not be handled by dma-buf itself. This is explictly
++   mentioned here because many people seem to want something like this, but if
++   different exporters handle this differently, buffer sharing can fail in
++   interesting ways depending upong the exporter (if userspace starts depending
++   upon this implicit synchronization).
++
+ Miscellaneous notes
+ -------------------
+ 
+@@ -336,6 +406,20 @@ Miscellaneous notes
+   the exporting driver to create a dmabuf fd must provide a way to let
+   userspace control setting of O_CLOEXEC flag passed in to dma_buf_fd().
+ 
++- If an exporter needs to manually flush caches and hence needs to fake
++  coherency for mmap support, it needs to be able to zap all the ptes pointing
++  at the backing storage. Now linux mm needs a struct address_space associated
++  with the struct file stored in vma->vm_file to do that with the function
++  unmap_mapping_range. But the dma_buf framework only backs every dma_buf fd
++  with the anon_file struct file, i.e. all dma_bufs share the same file.
++
++  Hence exporters need to setup their own file (and address_space) association
++  by setting vma->vm_file and adjusting vma->vm_pgoff in the dma_buf mmap
++  callback. In the specific case of a gem driver the exporter could use the
++  shmem file already provided by gem (and set vm_pgoff = 0). Exporters can then
++  zap ptes by unmapping the corresponding range of the struct address_space
++  associated with their own file.
++
+ References:
+ [1] struct dma_buf_ops in include/linux/dma-buf.h
+ [2] All interfaces mentioned above defined in include/linux/dma-buf.h
+diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
+index 07cbbc6..7cfb405 100644
+--- a/drivers/base/dma-buf.c
++++ b/drivers/base/dma-buf.c
+@@ -44,8 +44,26 @@ static int dma_buf_release(struct inode *inode, struct file *file)
+ 	return 0;
+ }
+ 
++static int dma_buf_mmap_internal(struct file *file, struct vm_area_struct *vma)
++{
++	struct dma_buf *dmabuf;
++
++	if (!is_dma_buf_file(file))
++		return -EINVAL;
++
++	dmabuf = file->private_data;
++
++	/* check for overflowing the buffer's size */
++	if (vma->vm_pgoff + ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) >
++	    dmabuf->size >> PAGE_SHIFT)
++		return -EINVAL;
++
++	return dmabuf->ops->mmap(dmabuf, vma);
++}
++
+ static const struct file_operations dma_buf_fops = {
+ 	.release	= dma_buf_release,
++	.mmap		= dma_buf_mmap_internal,
+ };
+ 
+ /*
+@@ -82,7 +100,8 @@ struct dma_buf *dma_buf_export(void *priv, const struct dma_buf_ops *ops,
+ 			  || !ops->unmap_dma_buf
+ 			  || !ops->release
+ 			  || !ops->kmap_atomic
+-			  || !ops->kmap)) {
++			  || !ops->kmap
++			  || !ops->mmap)) {
+ 		return ERR_PTR(-EINVAL);
+ 	}
+ 
+@@ -406,3 +425,46 @@ void dma_buf_kunmap(struct dma_buf *dmabuf, unsigned long page_num,
+ 		dmabuf->ops->kunmap(dmabuf, page_num, vaddr);
+ }
+ EXPORT_SYMBOL_GPL(dma_buf_kunmap);
++
++
++/**
++ * dma_buf_mmap - Setup up a userspace mmap with the given vma
++ * @dma_buf:	[in]	buffer that should back the vma
++ * @vma:	[in]	vma for the mmap
++ * @pgoff:	[in]	offset in pages where this mmap should start within the
++ * 			dma-buf buffer.
++ *
++ * This function adjusts the passed in vma so that it points at the file of the
++ * dma_buf operation. It alsog adjusts the starting pgoff and does bounds
++ * checking on the size of the vma. Then it calls the exporters mmap function to
++ * set up the mapping.
++ *
++ * Can return negative error values, returns 0 on success.
++ */
++int dma_buf_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma,
++		 unsigned long pgoff)
++{
++	if (WARN_ON(!dmabuf || !vma))
++		return -EINVAL;
++
++	/* check for offset overflow */
++	if (pgoff + ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) < pgoff)
++		return -EOVERFLOW;
++
++	/* check for overflowing the buffer's size */
++	if (pgoff + ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) >
++	    dmabuf->size >> PAGE_SHIFT)
++		return -EINVAL;
++
++	/* readjust the vma */
++	if (vma->vm_file)
++		fput(vma->vm_file);
++
++	vma->vm_file = dmabuf->file;
++	get_file(vma->vm_file);
++
++	vma->vm_pgoff = pgoff;
++
++	return dmabuf->ops->mmap(dmabuf, vma);
++}
++EXPORT_SYMBOL_GPL(dma_buf_mmap);
+diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
+index 3efbfc2..1f78d15 100644
+--- a/include/linux/dma-buf.h
++++ b/include/linux/dma-buf.h
+@@ -61,6 +61,10 @@ struct dma_buf_attachment;
+  * 		   This Callback must not sleep.
+  * @kmap: maps a page from the buffer into kernel address space.
+  * @kunmap: [optional] unmaps a page from the buffer.
++ * @mmap: used to expose the backing storage to userspace. Note that the
++ * 	  mapping needs to be coherent - if the exporter doesn't directly
++ * 	  support this, it needs to fake coherency by shooting down any ptes
++ * 	  when transitioning away from the cpu domain.
+  */
+ struct dma_buf_ops {
+ 	int (*attach)(struct dma_buf *, struct device *,
+@@ -92,6 +96,8 @@ struct dma_buf_ops {
+ 	void (*kunmap_atomic)(struct dma_buf *, unsigned long, void *);
+ 	void *(*kmap)(struct dma_buf *, unsigned long);
+ 	void (*kunmap)(struct dma_buf *, unsigned long, void *);
++
++	int (*mmap)(struct dma_buf *, struct vm_area_struct *vma);
+ };
+ 
+ /**
+@@ -167,6 +173,9 @@ void *dma_buf_kmap_atomic(struct dma_buf *, unsigned long);
+ void dma_buf_kunmap_atomic(struct dma_buf *, unsigned long, void *);
+ void *dma_buf_kmap(struct dma_buf *, unsigned long);
+ void dma_buf_kunmap(struct dma_buf *, unsigned long, void *);
++
++int dma_buf_mmap(struct dma_buf *, struct vm_area_struct *,
++		 unsigned long);
+ #else
+ 
+ static inline struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+@@ -248,6 +257,13 @@ static inline void dma_buf_kunmap(struct dma_buf *dmabuf,
+ 				  unsigned long pnum, void *vaddr)
+ {
+ }
++
++static inline int dma_buf_mmap(struct dma_buf *dmabuf,
++			       struct vm_area_struct *vma,
++			       unsigned long pgoff)
++{
++	return -ENODEV;
++}
+ #endif /* CONFIG_DMA_SHARED_BUFFER */
+ 
+ #endif /* __DMA_BUF_H__ */
+-- 
+1.7.10
+
