@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758373Ab2DXWy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:54:28 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53962 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757988Ab2DXWyY (ORCPT
+	id S1758387Ab2DXWyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:54:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932436Ab2DXWfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:54:24 -0400
-Date: Tue, 24 Apr 2012 15:54:20 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Glauber Costa <glommer@parallels.com>
-cc: Frederic Weisbecker <fweisbec@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, devel@openvz.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 17/23] kmem controller charge/uncharge infrastructure
-In-Reply-To: <4F971CC2.3090109@parallels.com>
-Message-ID: <alpine.DEB.2.00.1204241550110.2537@chino.kir.corp.google.com>
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1335138820-26590-6-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1204231522320.13535@chino.kir.corp.google.com> <20120424142232.GC8626@somewhere> <4F96BB62.1030900@parallels.com>
- <alpine.DEB.2.00.1204241322390.753@chino.kir.corp.google.com> <4F971CC2.3090109@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 24 Apr 2012 18:35:40 -0400
+Message-Id: <20120424223244.206782703@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Tue, 24 Apr 2012 15:33:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 26/62] media: drxk: Does not unlock mutex if sanity check failed in scu_command()
+In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Apr 2012, Glauber Costa wrote:
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-> > Yes, for user memory, I see charging to p->mm->owner as allowing that
-> > process to eventually move and be charged to a different memcg and there's
-> > no way to do proper accounting if the charge is split amongst different
-> > memcgs because of thread membership to a set of memcgs.  This is
-> > consistent with charges for shared memory being moved when a thread
-> > mapping it moves to a new memcg, as well.
-> 
-> But that's the problem.
-> 
-> When we are dealing with kernel memory, we are allocating a whole slab page.
-> It is essentially impossible to track, given a page, which task allocated
-> which object.
-> 
+------------------
 
-Right, so you have to make the distinction that slab charges cannot be 
-migrated by memory.move_charge_at_immigrate (and it's not even specified 
-to do anything beyond user pages in Documentation/cgroups/memory.txt), but 
-it would be consistent to charge the same memcg for a process's slab 
-allocations as the process's user allocations.
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-My response was why we shouldn't be charging user pages to 
-mem_cgroup_from_task(current) rather than 
-mem_cgroup_from_task(current->mm->owner) which is what is currently 
-implemented.
+commit e4459e1682c107d7ee1bf102c1ba534230e9b50b upstream.
 
-If that can't be changed so that we can still migrate user memory amongst 
-memcgs for memory.move_charge_at_immigrate, then it seems consistent to 
-have all allocations done by a task to be charged to the same memcg.  
-Hence, I suggested current->mm->owner for slab charging as well.
+If sanity check fails in scu_command(), goto error leads to unlock of
+an unheld mutex. The check should not fail in reality, but it nevertheless
+worth fixing.
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/media/dvb/frontends/drxk_hard.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/media/dvb/frontends/drxk_hard.c
++++ b/drivers/media/dvb/frontends/drxk_hard.c
+@@ -1525,8 +1525,10 @@ static int scu_command(struct drxk_state
+ 	dprintk(1, "\n");
+ 
+ 	if ((cmd == 0) || ((parameterLen > 0) && (parameter == NULL)) ||
+-	    ((resultLen > 0) && (result == NULL)))
+-		goto error;
++	    ((resultLen > 0) && (result == NULL))) {
++		printk(KERN_ERR "drxk: Error %d on %s\n", status, __func__);
++		return status;
++	}
+ 
+ 	mutex_lock(&state->mutex);
+ 
+
+
