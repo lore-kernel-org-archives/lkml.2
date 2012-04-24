@@ -1,173 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268Ab2DXMUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 08:20:12 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18746 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab2DXMUK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 08:20:10 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 24 Apr 2012 05:20:09 -0700
-From: Hiroshi DOYU <hdoyu@nvidia.com>
-To: hdoyu@nvidia.com
-Cc: linux-tegra@vger.kernel.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/1] dt: Add general DMA window parser
-Date: Tue, 24 Apr 2012 15:20:04 +0300
-Message-Id: <1335270004-15652-1-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1753616Ab2DXMbR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 08:31:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59963 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751694Ab2DXMbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 08:31:16 -0400
+Date: Tue, 24 Apr 2012 14:31:13 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] hid: Scan the device for group info before adding
+ it
+In-Reply-To: <1335175627-2270-3-git-send-email-rydberg@euromail.se>
+Message-ID: <alpine.LNX.2.00.1204241430190.1856@pobox.suse.cz>
+References: <1335175627-2270-1-git-send-email-rydberg@euromail.se> <1335175627-2270-3-git-send-email-rydberg@euromail.se>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code was based on:
-	"arch/microblaze/kernel/prom_parse.c"
-	"arch/powerpc/kernel/prom_parse.c"
+On Mon, 23 Apr 2012, Henrik Rydberg wrote:
 
-"ibm," prefix could be supported with some modification.
+> In order to allow the report descriptor to influence the hid device
+> properties, one needs to parse the descriptor early, without reference
+> to any driver. Scan the descriptor for group information during device
+> add, before the device has been broadcast to userland. The device
+> modalias will contain group information which can be used to
+> differentiate between modules. For starters, just handle the generic
+> group.
+> 
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>  drivers/hid/hid-core.c |   62 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/hid.h    |    5 ++++
+>  2 files changed, 67 insertions(+)
+> 
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index cfcb69e..f932cd5 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -658,6 +658,58 @@ static u8 *fetch_item(__u8 *start, __u8 *end, struct hid_item *item)
+>  	return NULL;
+>  }
+>  
+> +static void hid_scan_usage(struct hid_device *hid, u32 usage)
+> +{
+> +}
+> +
+> +/*
+> + * Scan a report descriptor before the device is added to the bus.
+> + * Sets device groups and other properties that determine what driver
+> + * to load.
+> + */
+> +static int hid_scan_report(struct hid_device *hid)
+> +{
+> +	unsigned int page = 0, delim = 0;
+> +	__u8 *start = hid->dev_rdesc;
+> +	__u8 *end = start + hid->dev_rsize;
 
-Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>
----
- drivers/of/Kconfig         |    4 ++
- drivers/of/Makefile        |    1 +
- drivers/of/of_dma.c        |   70 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of_address.h |   13 ++++++++
- 4 files changed, 88 insertions(+), 0 deletions(-)
+Where do these dev_rdesc and dev_rsize come from? Your patchset doesn't 
+seem to be changing the corresponding struct device members (which are 
+rdesc and rsize currently), right?
 
-diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-index dfba3e6..3b0298b 100644
---- a/drivers/of/Kconfig
-+++ b/drivers/of/Kconfig
-@@ -83,4 +83,8 @@ config OF_MTD
- 	depends on MTD
- 	def_bool y
- 
-+config OF_DMA
-+	depends on HAS_DMA
-+	def_bool y
-+
- endmenu # OF
-diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-index e027f44..711ff5b 100644
---- a/drivers/of/Makefile
-+++ b/drivers/of/Makefile
-@@ -11,3 +11,4 @@ obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
- obj-$(CONFIG_OF_PCI)	+= of_pci.o
- obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
- obj-$(CONFIG_OF_MTD)	+= of_mtd.o
-+obj-$(CONFIG_OF_DMA)	+= of_dma.o
-diff --git a/drivers/of/of_dma.c b/drivers/of/of_dma.c
-new file mode 100644
-index 0000000..4869e29
---- /dev/null
-+++ b/drivers/of/of_dma.c
-@@ -0,0 +1,70 @@
-+/*
-+ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * Based on:
-+ *	"arch/microblaze/kernel/prom_parse.c"
-+ *	"arch/powerpc/kernel/prom_parse.c"
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/of_address.h>
-+
-+int of_get_dma_window(struct device_node *dn,
-+			const char *propname, int index,
-+			unsigned long *busno,
-+			dma_addr_t *addr, size_t *size)
-+{
-+	const __be32 *dma_window, *end;
-+	int bytes, cur_index = 0;
-+
-+	if (!dn || !addr || !size)
-+		return -EINVAL;
-+
-+	if (!propname)
-+		propname = "dma-window";
-+
-+	dma_window = of_get_property(dn, propname, &bytes);
-+	if (!dma_window)
-+		return -ENODEV;
-+	end = dma_window + bytes / sizeof(*dma_window);
-+
-+	while (dma_window < end) {
-+		u32 cells;
-+		const void *prop;
-+
-+		/* busno is always one cell */
-+		if (busno)
-+			*busno = be32_to_cpup(dma_window++);
-+
-+		prop = of_get_property(dn, "#dma-address-cells", NULL);
-+		if (!prop)
-+			prop = of_get_property(dn, "#address-cells", NULL);
-+
-+		cells = prop ? be32_to_cpup(prop) : of_n_addr_cells(dn);
-+		if (!cells)
-+			return -EINVAL;
-+		*addr = of_read_number(dma_window, cells);
-+		dma_window += cells;
-+
-+		prop = of_get_property(dn, "#dma-size-cells", NULL);
-+		cells = prop ? be32_to_cpup(prop) : of_n_size_cells(dn);
-+		if (!cells)
-+			return -EINVAL;
-+		*size = of_read_number(dma_window, cells);
-+		dma_window += cells;
-+
-+		if (cur_index++ == index)
-+			break;
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL(of_parse_dma_window);
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index 01b925a..9d9da9d 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -21,6 +21,11 @@ extern void __iomem *of_iomap(struct device_node *device, int index);
- extern const u32 *of_get_address(struct device_node *dev, int index,
- 			   u64 *size, unsigned int *flags);
- 
-+extern int of_get_dma_window(struct device_node *dev,
-+			       const char *propname, int index,
-+			       unsigned long *busno,
-+			       dma_addr_t *phys, size_t *size);
-+
- #ifndef pci_address_to_pio
- static inline unsigned long pci_address_to_pio(phys_addr_t addr) { return -1; }
- #define pci_address_to_pio pci_address_to_pio
-@@ -48,6 +53,14 @@ static inline const u32 *of_get_address(struct device_node *dev, int index,
- {
- 	return NULL;
- }
-+
-+extern int of_get_dma_window(struct device_node *dev,
-+			       const char *propname, int index,
-+			       unsigned long *busno,
-+			       dma_addr_t *phys, size_t *size)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_OF_ADDRESS */
- 
- 
 -- 
-1.7.5.4
-
+Jiri Kosina
+SUSE Labs
