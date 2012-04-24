@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab2DXLwi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 07:52:38 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36157 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738Ab2DXLwh (ORCPT
+	id S1753283Ab2DXLxj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 07:53:39 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:56080 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab2DXLxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 07:52:37 -0400
-Date: Tue, 24 Apr 2012 13:52:02 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: akpm@linux-foundation.org, spear-devel@list.st.com, viresh.linux@gmail.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        mturquette@linaro.org, sshtylyov@mvista.com, jgarzik@redhat.com,
-        linux@arm.linux.org.uk, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V3 03/12] i2c/i2c-pxa: Remove conditional compilation of
- clk code
-Message-ID: <20120424115202.GB4030@pengutronix.de>
-References: <cover.1335266056.git.viresh.kumar@st.com>
- <08a0a53dde1958a395a9950d5e910bcb6e3b02b6.1335266056.git.viresh.kumar@st.com>
+	Tue, 24 Apr 2012 07:53:38 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org
+References: <m1aa22rllb.fsf@fess.ebiederm.org> <4F96705C.5030901@suse.cz>
+Date: Tue, 24 Apr 2012 04:57:39 -0700
+In-Reply-To: <4F96705C.5030901@suse.cz> (Michal Marek's message of "Tue, 24
+	Apr 2012 11:20:28 +0200")
+Message-ID: <m1aa21nxzg.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="v9Ux+11Zm5mwPlX6"
-Content-Disposition: inline
-In-Reply-To: <08a0a53dde1958a395a9950d5e910bcb6e3b02b6.1335266056.git.viresh.kumar@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/7pxRGe98Bx2kOq6wgln+C1J0qwojAmts=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0002]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 SUBJ_OBFU_PUNCT_FEW Possible punctuation-obfuscated Subject: header
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Michal Marek <mmarek@suse.cz>
+X-Spam-Relay-Country: 
+Subject: [PATCH] kbuild: Add error handling to KCONFIG_ALL_CONFIG
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---v9Ux+11Zm5mwPlX6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+- Only try to read the file specified if KCONFIG_ALL_CONFIG is set to
+  something other than the empty string.
 
-On Tue, Apr 24, 2012 at 04:51:25PM +0530, Viresh Kumar wrote:
-> From: Viresh Kumar <viresh.linux@gmail.com>
->=20
-> With addition of dummy clk_*() calls for non CONFIG_HAVE_CLK cases in clk=
-=2Eh,
-> there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #en=
-dif
-> macros.
->=20
-> pxa i2c also has these dummy macros defined locally. Remove them as they =
-aren't
-> required anymore.
->=20
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> Cc: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: linux-i2c@vger.kernel.org
+- Don't use stat to check the name passed to conf_read_simple so that
+  zconf_fopen can find the file in the current directory or in SRCTREE
+  removing a extremely confusing failure mode, where KCONFIG_ALL_CONFIG
+  was not interpreted with respect to the directory make was called in.
 
-Shall probably not go in via I2C-tree, so:
+- If conf_read_simple fails complain clearly and stop processing.
+  Allowing the simple discovery and debugging of command line typos.
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ scripts/kconfig/conf.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
+index 28910ea..af6a2db 100644
+--- a/scripts/kconfig/conf.c
++++ b/scripts/kconfig/conf.c
+@@ -579,8 +579,13 @@ int main(int ac, char **av)
+ 	case alldefconfig:
+ 	case randconfig:
+ 		name = getenv("KCONFIG_ALLCONFIG");
+-		if (name && !stat(name, &tmpstat)) {
+-			conf_read_simple(name, S_DEF_USER);
++		if (name && name[0] != '\0') {
++			if (conf_read_simple(name, S_DEF_USER)) {
++				fprintf(stderr,
++					_("*** Can't read seed configuration \"%s\"!\n"),
++					name);
++				exit(1);
++			}
+ 			break;
+ 		}
+ 		switch (input_mode) {
+-- 
+1.7.2.5
 
---v9Ux+11Zm5mwPlX6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+Wk+IACgkQD27XaX1/VRs8hACfYH8ozEhmJJw/R20q9c61RpKT
-9DAAnRNyWKUS2NUoYsJwFG4dnMKLBTiM
-=R4kO
------END PGP SIGNATURE-----
-
---v9Ux+11Zm5mwPlX6--
