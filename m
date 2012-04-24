@@ -1,89 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab2DXOor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 10:44:47 -0400
-Received: from [124.207.24.138] ([124.207.24.138]:39710 "EHLO
-	mail.ss.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab2DXOoq convert rfc822-to-8bit (ORCPT
+	id S1755346Ab2DXOpK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 10:45:10 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:44116 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754588Ab2DXOpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 10:44:46 -0400
+	Tue, 24 Apr 2012 10:45:08 -0400
+X-Sasl-enc: Nok01oiFju9fK2PciZ5rrnSLU8N5Y1mwGNxdVodqlctT 1335278706
+Date: Tue, 24 Apr 2012 07:45:04 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the staging tree with the usb tree
+Message-ID: <20120424144504.GB3532@kroah.com>
+References: <20120424144820.326e86452826927b86aaf0f5@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20120423151123.GC24481@phenom.dumpdata.com>
-References: <1334913957.2863.1.camel@hp6530s>
-	<4F913340.4000202@citrix.com>
-	<1334920396.2863.16.camel@hp6530s>
-	<1334925508.28331.63.camel@zakaz.uk.xensource.com>
-	<20120420164150.GC31062@phenom.dumpdata.com>
-	<CAF1ivSamaYzQDwjFqRGrnQ+fCr0D4vLGuG4JRBZ3_GD_y8yY=A@mail.gmail.com>
-	<20120423151123.GC24481@phenom.dumpdata.com>
-Date: Tue, 24 Apr 2012 22:43:53 +0800
-Message-ID: <CAF1ivSY1GAkqU2gN0P22Tb0pmwagam5UUVMABSgnoH3+C+TY+A@mail.gmail.com>
-Subject: Re: [Xen-devel] [PATCH] xen/apic: implement io apic read with hypercall
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        Andrew Cooper <Andrew.Cooper3@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120424144820.326e86452826927b86aaf0f5@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 11:11 PM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
->> >> > How about return -1 on error?
->> >> > The calling function can check -1 for error.
->> >>
->> >> Isn't -1 potentially (at least theoretically) a valid value to read from
->> >> one of these registers?
->> >
->> > Yeah, but then we are back to crashing at bootup (with dom0) :-)
->> >
->> > Perhaps the fallback is to emulate (so retain some of the original code)
->> > as we have been since .. uh 3.0?
->>
->> Do you mean the return value of io_apic_read in 3.0?
->
-> No. I meant that we would continue to emulate. The improvement
-> is that now we do:
->
->       if (reg == 0x1)
->               return 0x00170020;
->       else if (reg == 0x0)
->               return apic << 24;
->
-> instead of 0xfdfdfdfd.
->
->> It's 0xffffffff.
->
-> Now it is 0xfdfdfdfd.
->
-> I am suggesting that instead of BUG_ON(), we fallback to do returning
-> an emulatated IO_APIC values - like the ones that this original patch
-> cooked up..
+On Tue, Apr 24, 2012 at 02:48:20PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/line6/driver.c between commit 2b8dec323d34 ("USB:
+> driver.c: remove err() usage") from the usb tree and commit c46b8a6567fb
+> ("Staging: line6: only allocate a buffer if it is needed") (and later)
+> from the staging tree.
+> 
+> The latter supercedes the former, so I used that.
 
-But we still need to return some value if the register is not emulated.
+Thanks, that is correct.
 
-How about below?
-
-unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
-{
-        struct physdev_apic apic_op;
-        int ret;
-
-        apic_op.apic_physbase = mpc_ioapic_addr(apic);
-        apic_op.reg = reg;
-        ret = HYPERVISOR_physdev_op(PHYSDEVOP_apic_read, &apic_op);
-        if (!ret)
-                return apic_op.value;
-
-        /* emulate register */
-        if (reg == 0x1)
-                return 0x00170020;
-        else if (reg == 0x0)
-                return apic << 24;
-        else
-                return -1;
-}
+greg k-h
