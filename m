@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab2DXLei (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 07:34:38 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:48920 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753951Ab2DXLef (ORCPT
+	id S1753837Ab2DXLeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 07:34:23 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:58765 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753565Ab2DXLeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 07:34:35 -0400
+	Tue, 24 Apr 2012 07:34:15 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <akpm@linux-foundation.org>
 Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <mturquette@linaro.org>, <sshtylyov@mvista.com>, <jgarzik@redhat.com>,
         <linux@arm.linux.org.uk>, Viresh Kumar <viresh.kumar@st.com>,
-        <linux-ide@vger.kernel.org>
-Subject: [PATCH V3 06/12] ata/pata_arasan: Remove conditional compilation of clk code
-Date: Tue, 24 Apr 2012 16:51:28 +0530
-Message-ID: <240f710aa4a9802fd35c8fe40c84585eeea78bdb.1335266056.git.viresh.kumar@st.com>
+        Wolfram Sang <w.sang@pengutronix.de>, <linux-i2c@vger.kernel.org>
+Subject: [PATCH V3 03/12] i2c/i2c-pxa: Remove conditional compilation of clk code
+Date: Tue, 24 Apr 2012 16:51:25 +0530
+Message-ID: <08a0a53dde1958a395a9950d5e910bcb6e3b02b6.1335266056.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <cover.1335266056.git.viresh.kumar@st.com>
 References: <cover.1335266056.git.viresh.kumar@st.com>
@@ -26,91 +26,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Viresh Kumar <viresh.linux@gmail.com>
+
 With addition of dummy clk_*() calls for non CONFIG_HAVE_CLK cases in clk.h,
 there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #endif
 macros.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-Cc: Jeff Garzik <jgarzik@redhat.com>
-Cc: linux-ide@vger.kernel.org
----
- drivers/ata/pata_arasan_cf.c |   14 +-------------
- 1 files changed, 1 insertions(+), 13 deletions(-)
+pxa i2c also has these dummy macros defined locally. Remove them as they aren't
+required anymore.
 
-diff --git a/drivers/ata/pata_arasan_cf.c b/drivers/ata/pata_arasan_cf.c
-index fc2db2a..09f0729 100644
---- a/drivers/ata/pata_arasan_cf.c
-+++ b/drivers/ata/pata_arasan_cf.c
-@@ -184,10 +184,8 @@
- struct arasan_cf_dev {
- 	/* pointer to ata_host structure */
- 	struct ata_host *host;
--	/* clk structure, only if HAVE_CLK is defined */
--#ifdef CONFIG_HAVE_CLK
-+	/* clk structure */
- 	struct clk *clk;
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org
+---
+ drivers/i2c/busses/i2c-pxa.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+index a997c7d..1034d93 100644
+--- a/drivers/i2c/busses/i2c-pxa.c
++++ b/drivers/i2c/busses/i2c-pxa.c
+@@ -41,13 +41,6 @@
+ 
+ #include <asm/irq.h>
+ 
+-#ifndef CONFIG_HAVE_CLK
+-#define clk_get(dev, id)	NULL
+-#define clk_put(clk)		do { } while (0)
+-#define clk_disable(clk)	do { } while (0)
+-#define clk_enable(clk)		do { } while (0)
 -#endif
- 
- 	/* physical base address of controller */
- 	dma_addr_t pbase;
-@@ -312,13 +310,11 @@ static int cf_init(struct arasan_cf_dev *acdev)
- 	unsigned long flags;
- 	int ret = 0;
- 
--#ifdef CONFIG_HAVE_CLK
- 	ret = clk_enable(acdev->clk);
- 	if (ret) {
- 		dev_dbg(acdev->host->dev, "clock enable failed");
- 		return ret;
- 	}
--#endif
- 
- 	spin_lock_irqsave(&acdev->host->lock, flags);
- 	/* configure CF interface clock */
-@@ -344,9 +340,7 @@ static void cf_exit(struct arasan_cf_dev *acdev)
- 	writel(readl(acdev->vbase + OP_MODE) & ~CFHOST_ENB,
- 			acdev->vbase + OP_MODE);
- 	spin_unlock_irqrestore(&acdev->host->lock, flags);
--#ifdef CONFIG_HAVE_CLK
- 	clk_disable(acdev->clk);
--#endif
- }
- 
- static void dma_callback(void *dev)
-@@ -828,13 +822,11 @@ static int __devinit arasan_cf_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--#ifdef CONFIG_HAVE_CLK
- 	acdev->clk = clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(acdev->clk)) {
- 		dev_warn(&pdev->dev, "Clock not found\n");
- 		return PTR_ERR(acdev->clk);
- 	}
--#endif
- 
- 	/* allocate host */
- 	host = ata_host_alloc(&pdev->dev, 1);
-@@ -899,9 +891,7 @@ static int __devinit arasan_cf_probe(struct platform_device *pdev)
- 			&arasan_cf_sht);
- 
- free_clk:
--#ifdef CONFIG_HAVE_CLK
- 	clk_put(acdev->clk);
--#endif
- 	return ret;
- }
- 
-@@ -912,9 +902,7 @@ static int __devexit arasan_cf_remove(struct platform_device *pdev)
- 
- 	ata_host_detach(host);
- 	cf_exit(acdev);
--#ifdef CONFIG_HAVE_CLK
- 	clk_put(acdev->clk);
--#endif
- 
- 	return 0;
- }
+-
+ struct pxa_reg_layout {
+ 	u32 ibmr;
+ 	u32 idbr;
 -- 
 1.7.9
 
