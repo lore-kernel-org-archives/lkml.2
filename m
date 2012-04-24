@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758319Ab2DXWsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:48:45 -0400
+	id S1758346Ab2DXWtR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:49:17 -0400
 Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758151Ab2DXWhE (ORCPT
+	with ESMTP id S1758122Ab2DXWgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:37:04 -0400
-Message-Id: <20120424223247.292438351@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:36:49 -0400
+Message-Id: <20120424223246.771431902@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:43 -0700
+Date: Tue, 24 Apr 2012 15:33:37 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 62/62] lockd: fix the endianness bug
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: [ 56/62] nfsd: fix compose_entry_fh() failure exits
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,41 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit e847469bf77a1d339274074ed068d461f0c872bc upstream.
+commit efe39651f08813180f37dc508d950fc7d92b29a8 upstream.
 
-comparing be32 values for < is not doing the right thing...
+Restore the original logics ("fail on mountpoints, negatives and in
+case of fh_compose() failures").  Since commit 8177e (nfsd: clean up
+readdirplus encoding) that got broken -
+	rv = fh_compose(fhp, exp, dchild, &cd->fh);
+	if (rv)
+	       goto out;
+	if (!dchild->d_inode)
+		goto out;
+	rv = 0;
+out:
+is equivalent to
+	rv = fh_compose(fhp, exp, dchild, &cd->fh);
+out:
+and the second check has no effect whatsoever...
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/clnt4xdr.c |    2 +-
- fs/lockd/clntxdr.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs3xdr.c |   22 ++++++++--------------
+ 1 file changed, 8 insertions(+), 14 deletions(-)
 
---- a/fs/lockd/clnt4xdr.c
-+++ b/fs/lockd/clnt4xdr.c
-@@ -241,7 +241,7 @@ static int decode_nlm4_stat(struct xdr_s
- 	p = xdr_inline_decode(xdr, 4);
- 	if (unlikely(p == NULL))
- 		goto out_overflow;
--	if (unlikely(*p > nlm4_failed))
-+	if (unlikely(ntohl(*p) > ntohl(nlm4_failed)))
- 		goto out_bad_xdr;
- 	*stat = *p;
- 	return 0;
---- a/fs/lockd/clntxdr.c
-+++ b/fs/lockd/clntxdr.c
-@@ -236,7 +236,7 @@ static int decode_nlm_stat(struct xdr_st
- 	p = xdr_inline_decode(xdr, 4);
- 	if (unlikely(p == NULL))
- 		goto out_overflow;
--	if (unlikely(*p > nlm_lck_denied_grace_period))
-+	if (unlikely(ntohl(*p) > ntohl(nlm_lck_denied_grace_period)))
- 		goto out_enum;
- 	*stat = *p;
- 	return 0;
+--- a/fs/nfsd/nfs3xdr.c
++++ b/fs/nfsd/nfs3xdr.c
+@@ -803,13 +803,13 @@ encode_entry_baggage(struct nfsd3_readdi
+ 	return p;
+ }
+ 
+-static int
++static __be32
+ compose_entry_fh(struct nfsd3_readdirres *cd, struct svc_fh *fhp,
+ 		const char *name, int namlen)
+ {
+ 	struct svc_export	*exp;
+ 	struct dentry		*dparent, *dchild;
+-	int rv = 0;
++	__be32 rv = nfserr_noent;
+ 
+ 	dparent = cd->fh.fh_dentry;
+ 	exp  = cd->fh.fh_export;
+@@ -817,26 +817,20 @@ compose_entry_fh(struct nfsd3_readdirres
+ 	if (isdotent(name, namlen)) {
+ 		if (namlen == 2) {
+ 			dchild = dget_parent(dparent);
+-			if (dchild == dparent) {
+-				/* filesystem root - cannot return filehandle for ".." */
+-				dput(dchild);
+-				return -ENOENT;
+-			}
++			/* filesystem root - cannot return filehandle for ".." */
++			if (dchild == dparent)
++				goto out;
+ 		} else
+ 			dchild = dget(dparent);
+ 	} else
+ 		dchild = lookup_one_len(name, dparent, namlen);
+ 	if (IS_ERR(dchild))
+-		return -ENOENT;
+-	rv = -ENOENT;
++		return rv;
+ 	if (d_mountpoint(dchild))
+ 		goto out;
+-	rv = fh_compose(fhp, exp, dchild, &cd->fh);
+-	if (rv)
+-		goto out;
+ 	if (!dchild->d_inode)
+ 		goto out;
+-	rv = 0;
++	rv = fh_compose(fhp, exp, dchild, &cd->fh);
+ out:
+ 	dput(dchild);
+ 	return rv;
+@@ -845,7 +839,7 @@ out:
+ static __be32 *encode_entryplus_baggage(struct nfsd3_readdirres *cd, __be32 *p, const char *name, int namlen)
+ {
+ 	struct svc_fh	fh;
+-	int err;
++	__be32 err;
+ 
+ 	fh_init(&fh, NFS3_FHSIZE);
+ 	err = compose_entry_fh(cd, &fh, name, namlen);
 
 
