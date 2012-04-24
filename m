@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757739Ab2DXVLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 17:11:06 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:6576 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757697Ab2DXVLF (ORCPT
+	id S1757711Ab2DXVPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 17:15:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51224 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754233Ab2DXVP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 17:11:05 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-160.messagelabs.com!1335301849!4683276!30
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: linux-next: allyesconfig build failure in drivers/usb/gadget
-Date: Tue, 24 Apr 2012 14:10:36 -0700
-User-Agent: KMail/1.9.9
-CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>
+	Tue, 24 Apr 2012 17:15:29 -0400
+Message-ID: <4F9717E6.8030506@amacapital.net>
+Date: Tue, 24 Apr 2012 14:15:18 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [RFC][PATCH 0/3] gcc work-around and math128
+References: <20120424161039.293018424@chello.nl>
+In-Reply-To: <20120424161039.293018424@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201204241410.37561.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+On 04/24/2012 09:10 AM, Peter Zijlstra wrote:
+> Hi all,
+> 
+> The SCHED_DEADLINE review resulted in the following three patches;
+> 
+> The first is a cleanup of various copies of the same GCC loop optimization
+> work-around. I don't think this patch is too controversial, at worst I've
+> picked a wrong name, but I wanted to get it out there in case people
+> know more sites.
+> 
+> The second two implement a few u128 operations so we can do 128bit math.. I
+> know a few people will die a little inside, but having nanosecond granularity
+> time accounting leads to very big numbers very quickly and when you need to
+> multiply them 64bit really isn't that much.
 
-I'm not sure if this is a known issue or not...
+I played with some of this stuff awhile ago, and for timekeeping, it
+seemed like a 64x32->96 bit multiply followed by a right shift was
+enough, and that operation is a lot faster on 32-bit architectures than
+a full 64x64->128 multiply.  Something like:
 
-I was trying an allyesconfig build of linux-next (next-20120224) and got this:
+uint64_t mul_64_32_shift(uint64_t a, uint32_t mult, uint32_t shift)
+{
+  return (uint64_t)( ((__uint128_t)a * (__uint128_t)mult) >> shift );
+}
 
-drivers/usb/built-in.o: In function `usb_descriptor_fillbuf':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:38: multiple definition of `usb_descriptor_fillbuf'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:38: first defined here
-drivers/usb/built-in.o: In function `usb_string_ids_n':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:994: multiple definition of `usb_string_ids_n'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:994: first defined here
-drivers/usb/built-in.o: In function `usb_interface_id':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:341: multiple definition of `usb_interface_id'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:341: first defined here
-drivers/usb/built-in.o: In function `usb_string_id':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:932: multiple definition of `usb_string_id'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:932: first defined here
-drivers/usb/built-in.o: In function `usb_string_ids_tab':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:960: multiple definition of `usb_string_ids_tab'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:960: first defined here
-drivers/usb/built-in.o: In function `usb_copy_descriptors':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:124: multiple definition of `usb_copy_descriptors'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:124: first defined here
-drivers/usb/built-in.o: In function `usb_composite_unregister':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1602: multiple definition of `usb_composite_unregister'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1602: first defined here
-drivers/usb/built-in.o: In function `config_ep_by_speed':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:119: multiple definition of `config_ep_by_speed'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:119: first defined here
-drivers/usb/built-in.o: In function `usb_gadget_get_string':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/usbstring.c:41: multiple definition of `usb_gadget_get_string'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/usbstring.c:41: first defined here
-drivers/usb/built-in.o: In function `usb_add_function':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:209: multiple definition of `usb_add_function'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:209: first defined here
-drivers/usb/built-in.o: In function `usb_composite_probe':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1576: multiple definition of `usb_composite_probe'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1576: first defined here
-drivers/usb/built-in.o: In function `usb_composite_setup_continue':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1619: multiple definition of `usb_composite_setup_continue'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1619: first defined here
-drivers/usb/built-in.o: In function `usb_gadget_config_buf':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:84: multiple definition of `usb_gadget_config_buf'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:84: first defined here
-drivers/usb/built-in.o: In function `usb_ep_autoconfig':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:367: multiple definition of `usb_ep_autoconfig'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:367: first defined here
-drivers/usb/built-in.o: In function `usb_function_activate':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:298: multiple definition of `usb_function_activate'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:298: first defined here
-drivers/usb/built-in.o: In function `usb_ep_autoconfig_reset':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:382: multiple definition of `usb_ep_autoconfig_reset'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:382: first defined here
-drivers/usb/built-in.o: In function `usb_add_config':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:713: multiple definition of `usb_add_config'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:713: first defined here
-drivers/usb/built-in.o: In function `usb_ep_autoconfig_ss':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:265: multiple definition of `usb_ep_autoconfig_ss'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:265: first defined here
-drivers/usb/built-in.o: In function `usb_function_deactivate':
-/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:271: multiple definition of `usb_function_deactivate'
-drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:271: first defined here
-make[1]: *** [drivers/built-in.o] Error 1
-make: *** [drivers] Error 2
+or (untested, but compilable 32-bit gcc)
 
-It appears config.c, composite.c, usbstring.c, and epautoconf.c are not
-actually built separately during the make but are #include'd by various
-other sources. All of these files have functions that are not marked static
-so we end up with the 'multiple definition' errors.
+uint64_t mul_64_32_shift(uint64_t a, uint32_t mult, uint32_t shift)
+{
+  uint64_t part1 = ((a & 0xFFFFFFFFULL) * mult) >> shift;
+  uint64_t part2 = ((a >> 32) * mult) << (32 - shift);
+  return part1 + part2;
+}
 
-Should these files be compiled separately and treated as a gadget library?
-
-Regards,
-Hartley
+--Andy
