@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235Ab2DXJv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 05:51:29 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:22686
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932198Ab2DXJv0 (ORCPT
+	id S932230Ab2DXJwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 05:52:05 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:57887 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932170Ab2DXJwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 05:51:26 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zcb8kz1432Nzz1202hzzz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 24 Apr 2012 17:51:17 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: Dong Aisheng <b29396@freescale.com>
-CC: <linux-kernel@vger.kernel.org>, <linus.walleij@stericsson.com>,
-        <swarren@wwwdotorg.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
-        <linux-arm-kernel@lists.infradead.org>, <kernel@pengutronix.de>,
-        <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>
-Subject: Re: [PATCH v2 3/3] ARM: imx6q: switch to use pinctrl driver
-Message-ID: <20120424095116.GA28063@b20223-02.ap.freescale.net>
-References: <1334933916-12971-1-git-send-email-b29396@freescale.com>
- <1334933916-12971-3-git-send-email-b29396@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1334933916-12971-3-git-send-email-b29396@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Tue, 24 Apr 2012 05:52:01 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: dmitry.torokhov@gmail.com, axel.lin@gmail.com, riyer@nvidia.com,
+        michael.hennerich@analog.com, grant.likely@secretlab.ca,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 2/2] ARM: LPC32xx: Make platform use key driver
+Date: Tue, 24 Apr 2012 11:51:08 +0200
+Message-Id: <1335261068-18640-2-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1335261068-18640-1-git-send-email-stigge@antcom.de>
+References: <1335261068-18640-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> --- a/drivers/mmc/host/sdhci-esdhc-imx.c
-> +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-> @@ -24,6 +24,7 @@
->  #include <linux/of.h>
->  #include <linux/of_device.h>
->  #include <linux/of_gpio.h>
-> +#include <linux/pinctrl/consumer.h>
->  #include <mach/esdhc.h>
->  #include "sdhci-pltfm.h"
->  #include "sdhci-esdhc.h"
-> @@ -68,6 +69,7 @@ struct pltfm_imx_data {
->  	int flags;
->  	u32 scratchpad;
->  	enum imx_esdhc_type devtype;
-> +	struct pinctrl *p;
->  	struct esdhc_platform_data boarddata;
->  };
->  
-> @@ -467,6 +469,12 @@ static int __devinit sdhci_esdhc_imx_probe(struct platform_device *pdev)
->  	clk_prepare_enable(clk);
->  	pltfm_host->clk = clk;
->  
-> +	imx_data->p = pinctrl_get_select_default(&pdev->dev);
-devm_xxx version?
+This patch connects the lpc32xx-key driver to the LPC32xx platform (via
+lpc32xx.dtsi), and more specifically to the reference board via its dts file.
+The clock.c file needs to be changed to match the automatic device name to its
+clock.
 
-Thanks
-Richard 
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
+---
+Applies to v3.4-rc4 + LPC32xx DT patches
+
+Please pick this patch for the arm-soc subsystem.
+
+ arch/arm/boot/dts/lpc32xx.dtsi |    2 ++
+ arch/arm/boot/dts/phy3250.dts  |   10 ++++++++++
+ arch/arm/mach-lpc32xx/clock.c  |    2 +-
+ 3 files changed, 13 insertions(+), 1 deletion(-)
+
+--- linux-2.6.orig/arch/arm/boot/dts/lpc32xx.dtsi
++++ linux-2.6/arch/arm/boot/dts/lpc32xx.dtsi
+@@ -285,6 +285,8 @@
+ 			key@40050000 {
+ 				compatible = "nxp,lpc3220-key";
+ 				reg = <0x40050000 0x1000>;
++				interrupts = <54 0>;
++				status = "disable";
+ 			};
+ 
+ 		};
+--- linux-2.6.orig/arch/arm/boot/dts/phy3250.dts
++++ linux-2.6/arch/arm/boot/dts/phy3250.dts
+@@ -124,6 +124,16 @@
+ 			tsc@40048000 {
+ 				status = "okay";
+ 			};
++
++			key@40050000 {
++				status = "okay";
++				nxp,matrix-size = <1>;
++				nxp,debounce-delay-ms = <3>;
++				nxp,scan-delay-ms = <34>;
++				key_1 {
++					linux,code = <2>;
++				};
++			};
+ 		};
+ 	};
+ 
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/clock.c
++++ linux-2.6/arch/arm/mach-lpc32xx/clock.c
+@@ -1131,7 +1131,7 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_INIT("31020300.i2c", NULL, &clk_i2c2),
+ 	CLKDEV_INIT("dev:ssp0", NULL, &clk_ssp0),
+ 	CLKDEV_INIT("dev:ssp1", NULL, &clk_ssp1),
+-	CLKDEV_INIT("lpc32xx_keys.0", NULL, &clk_kscan),
++	CLKDEV_INIT("40050000.key", NULL, &clk_kscan),
+ 	CLKDEV_INIT("lpc32xx-nand.0", "nand_ck", &clk_nand),
+ 	CLKDEV_INIT("200b0000.flash", "nand_ck_mlc", &clk_nand_mlc),
+ 	CLKDEV_INIT("40048000.adc", NULL, &clk_adc),
