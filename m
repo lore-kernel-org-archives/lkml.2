@@ -1,139 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab2DXAzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 20:55:51 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:38361 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029Ab2DXAz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 20:55:28 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Arnaud Lacombe <lacombar@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org, <linux-kernel@vger.kernel.org>
-Date: Mon, 23 Apr 2012 17:59:28 -0700
-Message-ID: <m1aa22rllb.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18oQmS6IoIS+UwWrh4orVTWN4kqwWtiZWs=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1011]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.0 LONGWORDS Long string of long words
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;<linux-kernel@vger.kernel.org>
-X-Spam-Relay-Country: **
-Subject: [PATCH] kbuld: Implement oldmodconfig
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1756080Ab2DXA4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 20:56:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25167 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755222Ab2DXA43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 20:56:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="145068909"
+Message-ID: <1335229007.14538.43.camel@ymzhang.sh.intel.com>
+Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>, Lin Ming <mlin@ss.pku.edu.cn>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>
+Date: Tue, 24 Apr 2012 08:56:47 +0800
+In-Reply-To: <1334914719.2463.32.camel@laptop>
+References: <EE928378561BF1449699C96571234A740FCED62F@SHSMSX101.ccr.corp.intel.com>
+	 <4F8F8B9E.3040107@gmail.com>
+	 <1334812653.14538.29.camel@ymzhang.sh.intel.com>
+	 <1334914719.2463.32.camel@laptop>
+Organization: MCG
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-04-20 at 11:38 +0200, Peter Zijlstra wrote:
+> On Thu, 2012-04-19 at 13:17 +0800, Yanmin Zhang wrote:
+> > Although not checking the source codes of pstack (sorry, I'm busy in debugging
+> > many critical issues), I think pstack is based on ptrace interface, which means:
+> > 1) It need traps into system for many times to collect call frames of one
+> > task.
+> > 2) It need send signal to the ptraced process to stop it. Such behavior
+> > might have some impact if the ptraced process also processes many signals.
+> 
+> Yeah, but who cares.. its debugging stuff..
+Real developers, real debuggers care it. End users don't care it.
 
-While verifying that my user namespace patches are as complete as I
-expect them to be I came a came across the need to build kernel
-configurations with a few choice settings disabled and everything else
-enabled.  Adding a make oldmodconfig made generating those
-configurations straight forward, as now I can set the options I care
-about and the oldmodconfig can answering everything else for me in a
-consistent way.
+> 
+> > 3) The data parsing to get symbols might not be split from data collection.
+> > I mean, it collects call frames of one process, then parses it; then collects the 2nd
+> > task's. If there are many processes, it couldn't collect the data just at the monitor
+> > time point. 
+> 
+> This is equally true for your silly patch.
+Not true for my patch. We did many experiments. Originally, we used
+the similar method like pstack based on ptrace and found it's
+very slow to do so when getting all the stacks of all processes
+when system reports an issue.
 
-Respond with mod/yes/default to every question for every unset symbol
-depending if the symbol is tristate, boolean or something else.
+Anyway, thanks for taking your time to look at it.
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- scripts/kconfig/Makefile |    5 +++--
- scripts/kconfig/conf.c   |    8 ++++++++
- 2 files changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 7966265..4de07d4 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -76,9 +76,9 @@ PHONY += allnoconfig allyesconfig allmodconfig alldefconfig randconfig
- allnoconfig allyesconfig allmodconfig alldefconfig randconfig: $(obj)/conf
- 	$< --$@ $(Kconfig)
- 
--PHONY += listnewconfig oldnoconfig savedefconfig defconfig
-+PHONY += listnewconfig oldnoconfig oldmodconfig savedefconfig defconfig
- 
--listnewconfig oldnoconfig: $(obj)/conf
-+listnewconfig oldnoconfig oldmodconfig: $(obj)/conf
- 	$< --$@ $(Kconfig)
- 
- savedefconfig: $(obj)/conf
-@@ -115,6 +115,7 @@ help:
- 	@echo  '  randconfig	  - New config with random answer to all options'
- 	@echo  '  listnewconfig   - List new options'
- 	@echo  '  oldnoconfig     - Same as silentoldconfig but set new symbols to n (unset)'
-+	@echo  '  oldmodconfig    - Same as silentoldconfig but set new symbols to m (module)'
- 
- # lxdialog stuff
- check-lxdialog  := $(srctree)/$(src)/lxdialog/check-lxdialog.sh
-diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
-index f208f90..28910ea 100644
---- a/scripts/kconfig/conf.c
-+++ b/scripts/kconfig/conf.c
-@@ -33,6 +33,7 @@ enum input_mode {
- 	savedefconfig,
- 	listnewconfig,
- 	oldnoconfig,
-+	oldmodconfig,
- } input_mode = oldaskconfig;
- 
- static int indent = 1;
-@@ -455,6 +456,7 @@ static struct option long_opts[] = {
- 	{"randconfig",      no_argument,       NULL, randconfig},
- 	{"listnewconfig",   no_argument,       NULL, listnewconfig},
- 	{"oldnoconfig",     no_argument,       NULL, oldnoconfig},
-+	{"oldmodconfig",    no_argument,       NULL, oldmodconfig},
- 	{NULL, 0, NULL, 0}
- };
- 
-@@ -468,6 +470,7 @@ static void conf_usage(const char *progname)
- 	printf("  --oldconfig             Update a configuration using a provided .config as base\n");
- 	printf("  --silentoldconfig       Same as oldconfig, but quietly, additionally update deps\n");
- 	printf("  --oldnoconfig           Same as silentoldconfig but set new symbols to no\n");
-+	printf("  --oldmodconfig          Same as silentoldconfig but set new symbols to mod\n");
- 	printf("  --defconfig <file>      New config with default defined in <file>\n");
- 	printf("  --savedefconfig <file>  Save the minimal current configuration to <file>\n");
- 	printf("  --allnoconfig           New config where all options are answered with no\n");
-@@ -521,6 +524,7 @@ int main(int ac, char **av)
- 		case alldefconfig:
- 		case listnewconfig:
- 		case oldnoconfig:
-+		case oldmodconfig:
- 			break;
- 		case '?':
- 			conf_usage(progname);
-@@ -566,6 +570,7 @@ int main(int ac, char **av)
- 	case oldconfig:
- 	case listnewconfig:
- 	case oldnoconfig:
-+	case oldmodconfig:
- 		conf_read(NULL);
- 		break;
- 	case allnoconfig:
-@@ -626,6 +631,9 @@ int main(int ac, char **av)
- 	case defconfig:
- 		conf_set_all_new_symbols(def_default);
- 		break;
-+	case oldmodconfig:
-+		conf_set_all_new_symbols(def_mod);
-+		break;
- 	case savedefconfig:
- 		break;
- 	case oldaskconfig:
--- 
-1.7.2.5
 
