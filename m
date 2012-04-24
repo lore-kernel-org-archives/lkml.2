@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab2DXRF3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 13:05:29 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61983 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755490Ab2DXRF1 (ORCPT
+	id S1755919Ab2DXRIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 13:08:09 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58883 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755481Ab2DXRIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 13:05:27 -0400
+	Tue, 24 Apr 2012 13:08:06 -0400
+Date: Tue, 24 Apr 2012 22:37:43 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1] sched: steer waking task to empty cfs_rq for better
+ latencies
+Message-ID: <20120424170743.GA18799@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <20120424165619.GA28701@linux.vnet.ibm.com>
+ <1335286696.28150.206.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <20120424142939.GG24089@lunn.ch>
-References: <cover.1335266056.git.viresh.kumar@st.com>
-	<abbcf661dc58948794839eb0fba1d5a0950ec848.1335266056.git.viresh.kumar@st.com>
-	<20120424120019.GE24089@lunn.ch>
-	<CAOh2x==YaPxYxigyE=n2weoKHhu4ktGRHHGdzgs2+d1_Lo-D4Q@mail.gmail.com>
-	<20120424142939.GG24089@lunn.ch>
-Date: Tue, 24 Apr 2012 22:35:26 +0530
-Message-ID: <CAOh2x==itVxwPAFaHgDW4L6FHZrBjWKSV2u4RCEqXHCEWgqHsg@mail.gmail.com>
-Subject: Re: [PATCH V3 07/12] ata/sata_mv: Remove conditional compilation of
- clk code
-From: viresh kumar <viresh.linux@gmail.com>
-To: viresh kumar <viresh.linux@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        Viresh Kumar <viresh.kumar@st.com>, akpm@linux-foundation.org,
-        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
-        sshtylyov@mvista.com, jgarzik@redhat.com, linux@arm.linux.org.uk,
-        linux-ide@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1335286696.28150.206.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12042417-5816-0000-0000-00000246D00A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/24/12, Andrew Lunn <andrew@lunn.ch> wrote:
-> static int __clk_enable(struct clk *clk)
-> {
->         int ret = 0;
->
->         if (!clk)
->                 return 0;
->
->         if (WARN_ON(clk->prepare_count == 0))
->                 return -ESHUTDOWN;
->
->    this should actually be clk_prepare_enable(). Did you see my
->    patches adding generic clk framework support for Orion. I fixed
->    this as part of that patch set.
+* Peter Zijlstra <peterz@infradead.org> [2012-04-24 18:58:16]:
 
-Sorry for missing it earlier. Ya i know it must be clk_prepare_enable(),
-but it wasn't motive of my patchset.
+> On Tue, 2012-04-24 at 22:26 +0530, Srivatsa Vaddagiri wrote:
+> > Steer a waking task towards a cpu where its cgroup has zero tasks (in
+> > order to provide it better sleeper credits and hence reduce its wakeup
+> > latency). 
+> 
+> That's just vile.. pjt could you post your global vruntime stuff so
+> vatsa can have a go at that?
 
-Sorry, i haven't gone through your patches for Orion.
+The workload I am up against does experience tons of wakeup (after very short 
+(microsecond range) bursts of sleeps) and so am skeptical how the global 
+vruntime would keep up with this kind of workload. I'd be happy to test patches 
+and give feedback!
 
---
-viresh
+- vatsa
+
