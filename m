@@ -1,146 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab2DXIFU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 04:05:20 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55726 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755580Ab2DXIFP (ORCPT
+	id S1755930Ab2DXIKS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 04:10:18 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:55940 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755823Ab2DXIKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 04:05:15 -0400
+	Tue, 24 Apr 2012 04:10:15 -0400
+Message-ID: <4F965FC4.7010502@stericsson.com>
+Date: Tue, 24 Apr 2012 10:09:40 +0200
+From: Ulf Hansson <ulf.hansson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <4F965DCC.2000501@kernel.org>
-References: <1335171318-4838-1-git-send-email-minchan@kernel.org>
-	<4F963742.2030607@jp.fujitsu.com>
-	<4F963B8E.9030105@kernel.org>
-	<CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com>
-	<4F965413.9010305@kernel.org>
-	<CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com>
-	<4F965DCC.2000501@kernel.org>
-Date: Tue, 24 Apr 2012 18:05:14 +1000
-Message-ID: <CAPa8GCC+BOLdMFzoYAVBUBxXm0yKgr4D1A81XBRk08y7DGWTsA@mail.gmail.com>
-Subject: Re: [RFC] propagate gfp_t to page table alloc functions
-From: Nick Piggin <npiggin@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Jonas ABERG <jonas.aberg@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] regulator: core: Keep boot_on regulators powered during
+ init
+References: <1335173873-24301-1-git-send-email-ulf.hansson@stericsson.com> <20120423101804.GA8318@opensource.wolfsonmicro.com> <4F953455.3080002@stericsson.com> <20120423110522.GB8318@opensource.wolfsonmicro.com> <4F95495D.4050508@stericsson.com> <20120423122555.GM8318@opensource.wolfsonmicro.com> <4F954ED6.2040201@stericsson.com> <20120423180140.GR8318@opensource.wolfsonmicro.com>
+In-Reply-To: <20120423180140.GR8318@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 April 2012 18:01, Minchan Kim <minchan@kernel.org> wrote:
-> On 04/24/2012 04:48 PM, Nick Piggin wrote:
+On 04/23/2012 08:01 PM, Mark Brown wrote:
+> On Mon, Apr 23, 2012 at 02:45:10PM +0200, Ulf Hansson wrote:
 >
->> On 24 April 2012 17:19, Minchan Kim <minchan@kernel.org> wrote:
->>> On 04/24/2012 03:13 PM, Nick Piggin wrote:
->>>
->>>> 2012/4/24 Minchan Kim <minchan@kernel.org>:
->>>>> On 04/24/2012 02:16 PM, KAMEZAWA Hiroyuki wrote:
->>>>>
->>>>>> (2012/04/23 17:55), Minchan Kim wrote:
->>>>>>
->>>>>>> As I test some code, I found a problem about deadlock by lockdep.
->>>>>>> The reason I saw the message is __vmalloc calls map_vm_area which calls
->>>>>>> pud/pmd_alloc without gfp_t. so although we call __vmalloc with
->>>>>>> GFP_ATOMIC or GFP_NOIO, it ends up allocating pages with GFP_KERNEL.
->>>>>>> The should be a BUG. This patch fixes it by passing gfp_to to low page
->>>>>>> table allocate functions.
->>>>>>>
->>>>>>> Signed-off-by: Minchan Kim <minchan@kernel.org>
->>>>>>
->>>>>>
->>>>>> Hmm ? vmalloc should support GFP_ATOMIC ?
->>>>>
->>>>>
->>>>> I'm not sure but alloc_large_system_hash already has used.
->>>>> And it's not specific on GFP_ATOMIC.
->>>>> We have to care of GFP_NOFS and GFP_NOIO to prevent deadlock on reclaim
->>>>> context.
->>>>> There are some places to use GFP_NOFS and we don't emit any warning
->>>>> message in case of that.
->>>>
->>>> What's the lockdep warning?
->>>
->>>
->>> It's just some private-test code, not-mainlined and lockdep warning is like this.
->>>
->>> [ INFO: inconsistent lock state ]
->>> 3.4.0-rc3-next-20120417+ #80 Not tainted
->>> ---------------------------------
->>> inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
->>>
->>> It seems test code calls vmalloc inside reclaim context so that it enters
->>> reclaim context, again by map_vm_area which allocates pages with GFP_KERNEL.
->>>
->>> Of course, I can avoid this problem by fixing the caller but during I look into
->>> this problem, found other places to use gfp_t with "context restriction".
->>>
->>>
->>>>
->>>
->>>> vmalloc was never supposed to use gfp flags for allocation "context"
->>>> restriction. I.e., it
->>>> was always supposed to have blocking, fs, and io capable allocation
->>>> context. The flags
->>>> were supposed to be a memory type modifier.
->>>
->>>
->>> You mean "zone modifiers"?
->>
->> Yeah, things like that.
->>
->>>> These different classes of flags is a bit of a problem and source of
->>>> confusion we have.
->>>> We should be doing more checks for them, of course.
->>>
->>>
->>> It might need some warning in __vmalloc and family which use gfp_t
->>> if the caller use context flags.
->>
->> I think that would be a good idea.
->>
->>
->>>> I suspect you need to fix the caller?
->>>
->>>
->>> Hmm, there are several places to use GFP_NOIO and GFP_NOFS even, GFP_ATOMIC.
->>> I believe it's not trivial now.
->>
->> They're all buggy then. Unfortunately not through any real fault of their own.
+>> A typical mmc host driver is when finished it's probe routine,
+>> trigger of a so called mmc_rescan work which is taking care of
+>> detecting and initializing the eMMC card. It is a quite complicated
+>> procedure which preferably not to be handled from the host driver's
+>> probe function.
 >
+>> If the platform already have booted from the eMMC card, the card is
+>> already powered an initialized from a bootloader. Cutting the power
+>> without first notifying the card by sending commands to it, must be
+>> prevented and also violates the eMMC specification. In the end, it
+>> will mean that the detect and initialization procedure fails.
 >
-> That's why I send it with RFC before I have to make all architecture change.
-> Nick, Thanks!
->
->>
->> I would say add a bit of warnings and documentation, and see what can be done
->> about callers.
->
->>
->
->> We should not take lightly the decision to make the API more permissive, because
->> as you can see it's more work for implementation. Making it ATOMIC safe is even
->
->
-> Agree. Will add waring and Cced all maintainers.
+> Can the driver use is_enabled() in the probe routine to check the
+> current status during probe and hand off appropriately?  The issue here
+> seems like it's the fact that the driver isn't managing to bootstrapping
+> of its state well.
 
-Thanks very much!
+Well, it is not as simple as that. An mmc host driver is just a driver 
+for handling a certain mmc IP. Uper layers handles the (e)MMC/SD/SDIO 
+protocol including controlling power the card. Moreover the complicated 
+detect procedure is handled in a work.
+
+In principle what you are proposing will mean that each mmc host driver 
+will have to "flush" the rescan work from probe. This will have horrid 
+impact on boot time since rescan can take several hundred of 
+milliseconds for each eMMC/SD/SDIO card. Is is far better to handle the 
+rescan in parallel works.
+
+I really think it would be much beneficial to be able to tell the late 
+init call (regulator_init_completet) to back off from disabling this 
+regulator. If not using boot_on, we can invent another regulator 
+constraint for this. What do you think of this?
 
 >
->> harder, requiring irqsafe locks and such, and it might be tricky for some
->
->
-> irqsafe? Why should we consider it?
-> Just out of curiosity.
+> Worst case seems to be that the card will be briefly powered during boot
+> then turned off again after enumeration which doesn't seem like the end
+> of the world to me.
 
-I don't think we should just yet. It is an example of something that callers
-have wanted in the past, but have solved in other ways when we have
-objected.
+It is really crucial that the regulator is not switched off in an 
+uncontrolled manner. It will mean viloating eMMC spec and in many cases 
+the hw is not able to reset the eMMC and thus the detect procedure will 
+fail. Likely the eMMC holds root file system then the platform wont boot...
 
-Thanks,
-Nick
+Kind regards
+Ulf Hansson
