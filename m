@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab2DXWeO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:34:14 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
+	id S932294Ab2DXWeV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:34:21 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758031Ab2DXWeH (ORCPT
+	with ESMTP id S932234Ab2DXWeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:34:07 -0400
-Message-Id: <20120424223242.251771207@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:34:18 -0400
+Message-Id: <20120424223242.602121112@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:44 -0700
+Date: Tue, 24 Apr 2012 15:32:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [ 03/62] hwmon: fam15h_power: fix bogus values with current BIOSes
+        alan@lxorguk.ukuu.org.uk, Alexander Shiyan <shc_work@mail.ru>
+Subject: [ 07/62] ARM: clps711x: serial driver hungs are a result of call disable_irq within ISR
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,90 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Przywara <andre.przywara@amd.com>
+From: Alexander Shiyan <shc_work@mail.ru>
 
-commit 00250ec90963b7ef6678438888f3244985ecde14 upstream.
+commit 7a6fbc9a887193a1e9f8658703881c528040afbc upstream.
 
-Newer BKDG[1] versions recommend a different initialization value for
-the running average range register in the northbridge. This improves
-the power reading by avoiding counter saturations resulting in bogus
-values for anything below about 80% of TDP power consumption.
-Updated BIOSes will have this new value set up from the beginning,
-but meanwhile we correct this value ourselves.
-This needs to be done on all northbridges, even on those where the
-driver itself does not register at.
+Since 2.6.30-rc1 clps711x serial driver hungs system. This is a result
+of call disable_irq from ISR. synchronize_irq waits for end of interrupt
+and goes to infinite loop. This patch fix this problem.
 
-This fixes the driver on all current machines to provide proper
-values for idle load.
-
-[1]
-http://support.amd.com/us/Processor_TechDocs/42301_15h_Mod_00h-0Fh_BKDG.pdf
-Chapter 3.8: D18F5xE0 Processor TDP Running Average (p. 452)
-
-Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-[guenter.roeck@ericsson.com: Removed unnecessary return statement]
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/fam15h_power.c |   39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+ drivers/tty/serial/clps711x.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -122,6 +122,38 @@ static bool __devinit fam15h_power_is_in
- 	return true;
+--- a/drivers/tty/serial/clps711x.c
++++ b/drivers/tty/serial/clps711x.c
+@@ -154,10 +154,9 @@ static irqreturn_t clps711xuart_int_tx(i
+ 		port->x_char = 0;
+ 		return IRQ_HANDLED;
+ 	}
+-	if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
+-		clps711xuart_stop_tx(port);
+-		return IRQ_HANDLED;
+-	}
++
++	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
++		goto disable_tx_irq;
+ 
+ 	count = port->fifosize >> 1;
+ 	do {
+@@ -171,8 +170,11 @@ static irqreturn_t clps711xuart_int_tx(i
+ 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+ 		uart_write_wakeup(port);
+ 
+-	if (uart_circ_empty(xmit))
+-		clps711xuart_stop_tx(port);
++	if (uart_circ_empty(xmit)) {
++	disable_tx_irq:
++		disable_irq_nosync(TX_IRQ(port));
++		tx_enabled(port) = 0;
++	}
+ 
+ 	return IRQ_HANDLED;
  }
- 
-+/*
-+ * Newer BKDG versions have an updated recommendation on how to properly
-+ * initialize the running average range (was: 0xE, now: 0x9). This avoids
-+ * counter saturations resulting in bogus power readings.
-+ * We correct this value ourselves to cope with older BIOSes.
-+ */
-+static void __devinit tweak_runavg_range(struct pci_dev *pdev)
-+{
-+	u32 val;
-+	const struct pci_device_id affected_device = {
-+		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
-+
-+	/*
-+	 * let this quirk apply only to the current version of the
-+	 * northbridge, since future versions may change the behavior
-+	 */
-+	if (!pci_match_id(&affected_device, pdev))
-+		return;
-+
-+	pci_bus_read_config_dword(pdev->bus,
-+		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
-+		REG_TDP_RUNNING_AVERAGE, &val);
-+	if ((val & 0xf) != 0xe)
-+		return;
-+
-+	val &= ~0xf;
-+	val |=  0x9;
-+	pci_bus_write_config_dword(pdev->bus,
-+		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
-+		REG_TDP_RUNNING_AVERAGE, val);
-+}
-+
- static void __devinit fam15h_power_init_data(struct pci_dev *f4,
- 					     struct fam15h_power_data *data)
- {
-@@ -155,6 +187,13 @@ static int __devinit fam15h_power_probe(
- 	struct device *dev;
- 	int err;
- 
-+	/*
-+	 * though we ignore every other northbridge, we still have to
-+	 * do the tweaking on _each_ node in MCM processors as the counters
-+	 * are working hand-in-hand
-+	 */
-+	tweak_runavg_range(pdev);
-+
- 	if (!fam15h_power_is_internal_node0(pdev)) {
- 		err = -ENODEV;
- 		goto exit;
 
 
