@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab2DXBLh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 21:11:37 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:41547 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab2DXBLf (ORCPT
+	id S1756135Ab2DXBTy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 21:19:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58079 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755210Ab2DXBTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 21:11:35 -0400
-Date: Mon, 23 Apr 2012 21:06:15 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <nitingupta910@gmail.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: Tree for Apr 19 (zcache)
-Message-ID: <20120424010615.GA4393@phenom.dumpdata.com>
-References: <20120419164643.d9f918d44c890722b7707508@canb.auug.org.au>
- <4F909200.6070104@xenotime.net>
- <0b74f96b-8450-4dfb-8798-36edd0e06a64@default>
- <4F90E7CA.6080201@linux.vnet.ibm.com>
- <20120420163745.GB31062@phenom.dumpdata.com>
- <4F91B3C1.5080507@linux.vnet.ibm.com>
+	Mon, 23 Apr 2012 21:19:52 -0400
+Date: Mon, 23 Apr 2012 18:19:38 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-89b8835ec865dddd6673a8dd7003581bf2377176@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        bruce.j.beare@intel.com, arnd@arndb.de, tglx@linutronix.de,
+        hjl.rools@gmail.com, hpa@linux.intel.com
+Reply-To: arnd@arndb.de, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, bruce.j.beare@intel.com,
+        hjl.rools@gmail.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU+G53hwBbSD4iA2UzyxuA@mail.gmail.com>
+References: <CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU+G53hwBbSD4iA2UzyxuA@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x32, siginfo:
+  Provide proper overrides for x32 siginfo_t
+Git-Commit-ID: 89b8835ec865dddd6673a8dd7003581bf2377176
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4F91B3C1.5080507@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 23 Apr 2012 18:19:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 02:06:41PM -0500, Seth Jennings wrote:
-> On 04/20/2012 11:37 AM, Konrad Rzeszutek Wilk wrote:
-> > On Thu, Apr 19, 2012 at 11:36:26PM -0500, Seth Jennings wrote:
-> >> One fix is this:
-> >>
-> >> diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
-> >> index 3ed2c8f..7048e01 100644
-> >> --- a/drivers/staging/zcache/Kconfig
-> >> +++ b/drivers/staging/zcache/Kconfig
-> >> @@ -2,7 +2,7 @@ config ZCACHE
-> >>         bool "Dynamic compression of swap pages and clean pagecache pages"
-> >>         # X86 dependency is because zsmalloc uses non-portable pte/tlb
-> >>         # functions
-> >> -       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO && X86
-> >> +       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && X86
-> >>         select ZSMALLOC
-> >>         select CRYPTO_LZO
-> >>         default n
-> >>
-> >> I think this is the best way since ZCACHE is a bool and CRYPTO is the only
-> >> one of the dependencies that is a tristate.  This forces both ZSMALLOC and
-> >> CRYPTO_LZO to be builtin if ZCACHE is selected.
-> >>
-> >> Any other suggestions?
-> > 
-> > Could you do:
-> > 
-> > default y if (CRYPTO=y || ZSMALLOC=m)
-> > default m if (CRYPTO=m || ZSMALLOC=y)
-> 
-> ZCACHE is a bool and can't be built as a module.
+Commit-ID:  89b8835ec865dddd6673a8dd7003581bf2377176
+Gitweb:     http://git.kernel.org/tip/89b8835ec865dddd6673a8dd7003581bf2377176
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Mon, 23 Apr 2012 16:34:12 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Mon, 23 Apr 2012 18:11:40 -0700
 
-Duh!
-> 
-> The requirement is the if ZCACHE=y, then ZSMALLOC and
-> CRYPTO must also =y.
+x32, siginfo: Provide proper overrides for x32 siginfo_t
 
-OK, your patch makes sense then. Can you repost it please with
-Greg KH on it so he can add it in the staging tree?
+Provide the proper override macros for x32 siginfo_t.  The combination
+of a special type here and an overall alignment constraint actually
+ends up with all the types being properly aligned, but the hack is
+needed to keep the substructures inside siginfo_t from adding padding.
+
+Note: use __attribute__((aligned())) since __aligned() is not exported
+to user space.
+
+[ v2: fix stray semicolon ]
+
+Reported-by: H.J. Lu <hjl.rools@gmail.com>
+Cc: Bruce J. Beare <bruce.j.beare@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Link: http://lkml.kernel.org/r/CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU%2BG53hwBbSD4iA2UzyxuA@mail.gmail.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/siginfo.h |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/include/asm/siginfo.h b/arch/x86/include/asm/siginfo.h
+index fc1aa55..34c47b3 100644
+--- a/arch/x86/include/asm/siginfo.h
++++ b/arch/x86/include/asm/siginfo.h
+@@ -2,7 +2,13 @@
+ #define _ASM_X86_SIGINFO_H
+ 
+ #ifdef __x86_64__
+-# define __ARCH_SI_PREAMBLE_SIZE	(4 * sizeof(int))
++# ifdef __ILP32__ /* x32 */
++typedef long long __kernel_si_clock_t __attribute__((aligned(4)));
++#  define __ARCH_SI_CLOCK_T		__kernel_si_clock_t
++#  define __ARCH_SI_ATTRIBUTES		__attribute__((aligned(8)))
++# else /* x86-64 */
++#  define __ARCH_SI_PREAMBLE_SIZE	(4 * sizeof(int))
++# endif
+ #endif
+ 
+ #include <asm-generic/siginfo.h>
