@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab2DXOff (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 10:35:35 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16219 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773Ab2DXOfe convert rfc822-to-8bit (ORCPT
+	id S1755289Ab2DXOfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 10:35:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53618 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab2DXOfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 10:35:34 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 95.21.35.138
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19nk1ybg0m5FdBv1qq/ID1z
-Date: Tue, 24 Apr 2012 16:35:29 +0200
-From: =?iso-8859-1?Q?Llu=EDs?= Batlle i Rossell <viric@viric.name>
-To: linux-kernel@vger.kernel.org
-Subject: perf fails to build on 3.2.16 and 3.3.3
-Message-ID: <20120424143529.GP1927@vicerveza.homeunix.net>
+	Tue, 24 Apr 2012 10:35:54 -0400
+Date: Tue, 24 Apr 2012 07:35:49 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: devel@driverdev.osuosl.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Autif Khan <autif.mlist@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] drivers: staging: zcache: fix Kconfig crypto dependency
+Message-ID: <20120424143549.GA3438@kroah.com>
+References: <1335231230-29344-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20120424022702.GA6573@kroah.com>
+ <4F96AAF4.2000402@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Accept-Language: ca, es, eo, ru, en, jbo, tokipona
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4F96AAF4.2000402@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I looked a bit at the archives, and I have not seen this reported.
+On Tue, Apr 24, 2012 at 08:30:28AM -0500, Seth Jennings wrote:
+> On 04/23/2012 09:27 PM, Greg Kroah-Hartman wrote:
+> > Ok, this fixes one of the build problems reported, what about the other
+> > one?
+> 
+> Both problems that I heard about were caused by same issue;
+> the issue fixed in this patch.
+> 
+> ZSMALLOC=m was only allowed because CRYPTO=m was allowed.
+> This patch requires CRYPTO=y, which also requires ZSMALLOC=y
+> when ZCACHE=y.
+> 
+> https://lkml.org/lkml/2012/4/19/588
+> 
+> https://lkml.org/lkml/2012/4/23/481
 
-I imagine it won't be overseen for long, but at least it got into the stable
-releases.
+Ah, ok, I didn't realize that, thanks for letting me know, I'll queue
+this up later today.
 
-Does anybody know a patch that fixes the build?
-
-...
-    CC util/hist.o
-util/hist.c: In function '__hists__add_entry':
-util/hist.c:240:27: error: invalid type argument of '->' (have 'struct hist_entry')
-util/hist.c:241:23: error: invalid type argument of '->' (have 'struct hist_entry')
-make: *** [util/hist.o] Error 1
-
-
-Regards,
-Lluís.
+greg k-h
