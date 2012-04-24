@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772Ab2DXEIE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 00:08:04 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:50824 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751219Ab2DXEIC (ORCPT
+	id S1751885Ab2DXESv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 00:18:51 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:35190 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959Ab2DXESu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 00:08:02 -0400
-Message-ID: <4F9626AF.9030203@st.com>
-Date: Tue, 24 Apr 2012 09:36:07 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: "ciminaghi@gnudd.com" <ciminaghi@gnudd.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "pgeninatti@soft-in.com" <pgeninatti@soft-in.com>,
-        "acolosimo@soft-in.com" <acolosimo@soft-in.com>,
-        "alarosa@openintellect.eu" <alarosa@openintellect.eu>
-Subject: Re: [PATCH] dmaengine/amba-pl08x : reset phychan_hold on terminate
- all
-References: <1334830824-10908-1-git-send-email-ciminaghi@gnudd.com> <1335184940.31825.115.camel@vkoul-udesk3>
-In-Reply-To: <1335184940.31825.115.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 24 Apr 2012 00:18:50 -0400
+Date: Tue, 24 Apr 2012 00:17:35 -0400 (EDT)
+Message-Id: <20120424.001735.1975136616657606100.davem@davemloft.net>
+To: peter.huangpeng@huawei.com
+Cc: shemminger@vyatta.com, netdev@vger.kernel.org, eric.dumazet@gmail.com,
+        peter.huangpeng@gmail.com, linux-kernel@vger.kernel.org,
+        harry.majun@huawei.com, ctrix+debianbugs@navynet.it
+Subject: Re: [PATCH v4] set fake_rtable's dst to NULL to avoid kernel Oops
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F90FE63.9060800@huawei.com>
+References: <4F90FE63.9060800@huawei.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 23 Apr 2012 21:17:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/23/2012 6:12 PM, Vinod Koul wrote:
-> On Thu, 2012-04-19 at 12:20 +0200, ciminaghi@gnudd.com wrote:
->> > From: Davide Ciminaghi <ciminaghi@gnudd.com>
->> > 
->> > When a client calls pl08x_control with DMA_TERMINATE_ALL, it is correct
->> > to terminate and release the phy channel currently in use (if one is in use),
->> > but the phychan_hold counter must also be reset (otherwise it could get
->> > trapped in an unbalanced state).
->> > 
->> > Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
->> > ---
->> >  drivers/dma/amba-pl08x.c |    1 +
->> >  1 files changed, 1 insertions(+), 0 deletions(-)
->> > 
->> > diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
->> > index c301a8e..3d704ab 100644
->> > --- a/drivers/dma/amba-pl08x.c
->> > +++ b/drivers/dma/amba-pl08x.c
->> > @@ -1429,6 +1429,7 @@ static int pl08x_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->> >  			 * signal
->> >  			 */
->> >  			release_phy_channel(plchan);
->> > +			plchan->phychan_hold = 0;
->> >  		}
->> >  		/* Dequeue jobs and free LLIs */
->> >  		if (plchan->at) {
-> Linus, Viresh... Any tested-by for this before I apply to fixes.
+From: "Peter Huang(Peng)" <peter.huangpeng@huawei.com>
+Date: Fri, 20 Apr 2012 14:12:51 +0800
 
-Looks good.
+> bridge: set fake_rtable's dst to NULL to avoid kernel Oops
+> 
+> when bridge is deleted before tap/vif device's delete, kernel may
+> encounter an oops because of NULL reference to fake_rtable's dst.
+> Set fake_rtable's dst to NULL before sending packets out can solve
+> this problem.
+> 
+> v4 reformat, change br_drop_fake_rtable(skb) to {}
+> 
+> v3 enrich commit header
+> 
+> v2 introducing new flag DST_FAKE_RTABLE to dst_entry struct.
+> 
+> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+> Signed-off-by: Peter Huang <peter.huangpeng@huawei.com>
 
-Reviewed-by: Viresh Kumar <viresh.kumar@st.com>
-
--- 
-viresh
+Applied, although I changed to nop br_drop_fake_rtable() implementation
+to use "do { } while (0)" instead of just plain "{ }".
