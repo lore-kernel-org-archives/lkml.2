@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294Ab2DXWeV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:34:21 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
+	id S932313Ab2DXWe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:34:26 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932234Ab2DXWeS (ORCPT
+	with ESMTP id S932288Ab2DXWeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:34:18 -0400
-Message-Id: <20120424223242.602121112@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:34:21 -0400
+Message-Id: <20120424223242.772599478@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:48 -0700
+Date: Tue, 24 Apr 2012 15:32:50 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alexander Shiyan <shc_work@mail.ru>
-Subject: [ 07/62] ARM: clps711x: serial driver hungs are a result of call disable_irq within ISR
+        alan@lxorguk.ukuu.org.uk, Paul Walmsley <paul@pwsan.com>,
+        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [ 09/62] ARM: OMAP1: DMTIMER: fix broken timer clock source selection
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,50 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Shiyan <shc_work@mail.ru>
+From: Paul Walmsley <paul@pwsan.com>
 
-commit 7a6fbc9a887193a1e9f8658703881c528040afbc upstream.
+commit 6aaec67da1e41a0752a2b903b989e73b9f02e182 upstream.
 
-Since 2.6.30-rc1 clps711x serial driver hungs system. This is a result
-of call disable_irq from ISR. synchronize_irq waits for end of interrupt
-and goes to infinite loop. This patch fix this problem.
+DMTIMER source selection on OMAP1 is broken.  omap1_dm_timer_set_src()
+tries to use __raw_{read,write}l() to read from and write to physical
+addresses, but those functions take virtual addresses.
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+sparse caught this:
+
+arch/arm/mach-omap1/timer.c:50:13: warning: incorrect type in argument 1 (different base types)
+arch/arm/mach-omap1/timer.c:50:13:    expected void const volatile [noderef] <asn:2>*<noident>
+arch/arm/mach-omap1/timer.c:50:13:    got unsigned int
+arch/arm/mach-omap1/timer.c:52:9: warning: incorrect type in argument 1 (different base types)
+arch/arm/mach-omap1/timer.c:52:9:    expected void const volatile [noderef] <asn:2>*<noident>
+arch/arm/mach-omap1/timer.c:52:9:    got unsigned int
+
+Fix by using omap_{read,writel}(), just like the other users of the
+MOD_CONF_CTRL_1 register in the OMAP1 codebase.  Of course, in the long term,
+removing omap_{read,write}l() is the appropriate thing to do; but
+this will take some work to do this cleanly.
+
+Looks like this was caused by 97933d6 (ARM: OMAP1: dmtimer: conversion
+to platform devices) that dangerously moved code and changed it in
+the same patch.
+
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Cc: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+[tony@atomide.com: updated comments to include the breaking commit]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/clps711x.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ arch/arm/mach-omap1/timer.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/clps711x.c
-+++ b/drivers/tty/serial/clps711x.c
-@@ -154,10 +154,9 @@ static irqreturn_t clps711xuart_int_tx(i
- 		port->x_char = 0;
- 		return IRQ_HANDLED;
- 	}
--	if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
--		clps711xuart_stop_tx(port);
--		return IRQ_HANDLED;
--	}
-+
-+	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
-+		goto disable_tx_irq;
+--- a/arch/arm/mach-omap1/timer.c
++++ b/arch/arm/mach-omap1/timer.c
+@@ -47,9 +47,9 @@ static int omap1_dm_timer_set_src(struct
+ 	int n = (pdev->id - 1) << 1;
+ 	u32 l;
  
- 	count = port->fifosize >> 1;
- 	do {
-@@ -171,8 +170,11 @@ static irqreturn_t clps711xuart_int_tx(i
- 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
- 		uart_write_wakeup(port);
+-	l = __raw_readl(MOD_CONF_CTRL_1) & ~(0x03 << n);
++	l = omap_readl(MOD_CONF_CTRL_1) & ~(0x03 << n);
+ 	l |= source << n;
+-	__raw_writel(l, MOD_CONF_CTRL_1);
++	omap_writel(l, MOD_CONF_CTRL_1);
  
--	if (uart_circ_empty(xmit))
--		clps711xuart_stop_tx(port);
-+	if (uart_circ_empty(xmit)) {
-+	disable_tx_irq:
-+		disable_irq_nosync(TX_IRQ(port));
-+		tx_enabled(port) = 0;
-+	}
- 
- 	return IRQ_HANDLED;
+ 	return 0;
  }
 
 
