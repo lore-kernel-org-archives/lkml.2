@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758123Ab2DXXp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 19:45:28 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46848 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab2DXXp1 (ORCPT
+	id S1758062Ab2DXXvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 19:51:15 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54419 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907Ab2DXXvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 19:45:27 -0400
-X-Originating-IP: 217.70.178.131
-X-Originating-IP: 50.43.46.74
-Date: Tue, 24 Apr 2012 16:45:14 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Minho Ban <mhban@samsung.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC/PATCH] Prevent wasting time to find out get_parent_ip
-Message-ID: <20120424234513.GA11841@leaf>
-References: <4F969E53.9080307@samsung.com>
- <1335272025.28150.193.camel@twins>
- <4F9737CC.6010703@samsung.com>
+	Tue, 24 Apr 2012 19:51:14 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F973BF2.4080406@jp.fujitsu.com>
+Date: Wed, 25 Apr 2012 08:49:06 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9737CC.6010703@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Nick Piggin <npiggin@gmail.com>, Minchan Kim <minchan@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC] propagate gfp_t to page table alloc functions
+References: <1335171318-4838-1-git-send-email-minchan@kernel.org> <4F963742.2030607@jp.fujitsu.com> <4F963B8E.9030105@kernel.org> <CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com> <4F965413.9010305@kernel.org> <CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com> <20120424143015.99fd8d4a.akpm@linux-foundation.org>
+In-Reply-To: <20120424143015.99fd8d4a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 08:31:24AM +0900, Minho Ban wrote:
-> On 04/24/2012 09:53 PM, Peter Zijlstra wrote:
-> > On Tue, 2012-04-24 at 21:36 +0900, Minho Ban wrote:
-> >> trace_preempt_on/off looks empty if PREEMPT_TRACER is off. But actually it is
-> >> spending time to find out get_parent_ip(even CALLER_ADDR for some ARCH) which is
-> >> in argument. This seems not fair for those who expect to do nothing but increase
-> >> or decrease count.
-> > 
-> > You can do the same by making them CPP macros and adding a comment as to
-> > why they're macros instead of inlines..
-> > 
+(2012/04/25 6:30), Andrew Morton wrote:
+
+> On Tue, 24 Apr 2012 17:48:29 +1000
+> Nick Piggin <npiggin@gmail.com> wrote:
 > 
-> Thank you for pointing this out, certainly macros look better. I'll amend this.
+>>> Hmm, there are several places to use GFP_NOIO and GFP_NOFS even, GFP_ATOMIC.
+>>> I believe it's not trivial now.
+>>
+>> They're all buggy then. Unfortunately not through any real fault of their own.
+> 
+> There are gruesome problems in block/blk-throttle.c (thread "mempool,
+> percpu, blkcg: fix percpu stat allocation and remove stats_lock").  It
+> wants to do an alloc_percpu()->vmalloc() from the IO submission path,
+> under GFP_NOIO.
+> 
+> Changing vmalloc() to take a gfp_t does make lots of sense, although I
+> worry a bit about making vmalloc() easier to use!
+> 
+> I do wonder whether the whole scheme of explicitly passing a gfp_t was
+> a mistake and that the allocation context should be part of the task
+> context.  ie: pass the allocation mode via *current.  
 
-As an alternative, how about making get_parent_ip and its called
-functions static inlines?  Then the compiler can eliminate them via dead
-code elimination.
 
-Or, how about declaring get_parent_ip with the GCC "pure" attribute?
-That would tell GCC that it can safely eliminate calls to the function.
+yes...that's very interesting. 
 
-- Josh Triplett
+Regards,
+-Kame
+
