@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab2DXXAs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 19:00:48 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
+	id S932359Ab2DXWej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:34:39 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932379Ab2DXWeq (ORCPT
+	with ESMTP id S932318Ab2DXWeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:34:46 -0400
-Message-Id: <20120424223242.684756150@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:34:36 -0400
+Message-Id: <20120424223243.200037983@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:49 -0700
+Date: Tue, 24 Apr 2012 15:32:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [ 08/62] ARM: at91: fix at91sam9261ek Ethernet dm9000 irq
+        =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, Chris Ball <cjb@laptop.org>
+Subject: [ 14/62] mmc: unbreak sdhci-esdhc-imx on i.MX25
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+From: Eric Bénard <eric@eukrea.com>
 
-commit ee9dd7631af6fb5c02964ed5b496217cd4ced059 upstream.
+commit b89152824f993a9572b47eb31f4579feadeac34c upstream.
 
-You need to setup the dm9000 irq via gpio_to_irq() since
-d0fbda9add (ARM: at91/gpio: drop PIN_BASE).
+This was broken by me in 37865fe91582582a6f6c00652f6a2b1ff71f8a78
+("mmc: sdhci-esdhc-imx: fix timeout on i.MX's sdhci") where more
+extensive tests would have shown that read or write of data to the
+card were failing (even if the partition table was correctly read).
 
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Eric Bénard <eric@eukrea.com>
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-at91/board-sam9261ek.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/mmc/host/sdhci-esdhc-imx.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/arm/mach-at91/board-sam9261ek.c
-+++ b/arch/arm/mach-at91/board-sam9261ek.c
-@@ -85,8 +85,6 @@ static struct resource dm9000_resource[]
- 		.flags	= IORESOURCE_MEM
- 	},
- 	[2] = {
--		.start	= AT91_PIN_PC11,
--		.end	= AT91_PIN_PC11,
- 		.flags	= IORESOURCE_IRQ
- 			| IORESOURCE_IRQ_LOWEDGE | IORESOURCE_IRQ_HIGHEDGE,
- 	}
-@@ -130,6 +128,8 @@ static struct sam9_smc_config __initdata
+--- a/drivers/mmc/host/sdhci-esdhc-imx.c
++++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+@@ -467,8 +467,7 @@ static int __devinit sdhci_esdhc_imx_pro
+ 	clk_enable(clk);
+ 	pltfm_host->clk = clk;
  
- static void __init ek_add_device_dm9000(void)
- {
-+	struct resource *r = &dm9000_resource[2];
-+
- 	/* Configure chip-select 2 (DM9000) */
- 	sam9_smc_configure(0, 2, &dm9000_smc_config);
+-	if (!is_imx25_esdhc(imx_data))
+-		host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
++	host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
  
-@@ -139,6 +139,7 @@ static void __init ek_add_device_dm9000(
- 	/* Configure Interrupt pin as input, no pull-up */
- 	at91_set_gpio_input(AT91_PIN_PC11, 0);
- 
-+	r->start = r->end = gpio_to_irq(AT91_PIN_PC11);
- 	platform_device_register(&dm9000_device);
- }
- #else
+ 	if (is_imx25_esdhc(imx_data) || is_imx35_esdhc(imx_data))
+ 		/* Fix errata ENGcm07207 present on i.MX25 and i.MX35 */
 
 
