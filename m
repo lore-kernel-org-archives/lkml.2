@@ -1,61 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab2DXHpe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 03:45:34 -0400
-Received: from sag.gob.hn ([65.167.26.67]:43056 "EHLO mail.sag.gob.hn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755024Ab2DXHpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 03:45:33 -0400
-Message-ID: <5a2a34f4b0834e7d49429f59b0242360.squirrel@mail.sag.gob.hn>
-Date: Mon, 23 Apr 2012 08:03:38 -0000 (GMT)
-Subject: Attn: Account User
-From: "Web Admin" <info@webmaster.org>
-Reply-To: webmaster2012@admin.in.th
-User-Agent: Webmail-Version999
+	id S1754932Ab2DXHsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 03:48:30 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33386 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753973Ab2DXHs3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 03:48:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-SAG-MailScanner-Information: Please contact the ISP for more information
-X-SAG-MailScanner-ID: B8BD81E64582.BF531
-X-SAG-MailScanner: Found to be clean
-X-SAG-MailScanner-MCPCheck: MCP-Clean (MCP-Whitelisted),
-	MCP-Checker (puntaje=0, requerido 2)
-X-SAG-MailScanner-From: info@webmaster.org
+In-Reply-To: <4F965413.9010305@kernel.org>
+References: <1335171318-4838-1-git-send-email-minchan@kernel.org>
+	<4F963742.2030607@jp.fujitsu.com>
+	<4F963B8E.9030105@kernel.org>
+	<CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com>
+	<4F965413.9010305@kernel.org>
+Date: Tue, 24 Apr 2012 17:48:29 +1000
+Message-ID: <CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com>
+Subject: Re: [RFC] propagate gfp_t to page table alloc functions
+From: Nick Piggin <npiggin@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 24 April 2012 17:19, Minchan Kim <minchan@kernel.org> wrote:
+> On 04/24/2012 03:13 PM, Nick Piggin wrote:
+>
+>> 2012/4/24 Minchan Kim <minchan@kernel.org>:
+>>> On 04/24/2012 02:16 PM, KAMEZAWA Hiroyuki wrote:
+>>>
+>>>> (2012/04/23 17:55), Minchan Kim wrote:
+>>>>
+>>>>> As I test some code, I found a problem about deadlock by lockdep.
+>>>>> The reason I saw the message is __vmalloc calls map_vm_area which calls
+>>>>> pud/pmd_alloc without gfp_t. so although we call __vmalloc with
+>>>>> GFP_ATOMIC or GFP_NOIO, it ends up allocating pages with GFP_KERNEL.
+>>>>> The should be a BUG. This patch fixes it by passing gfp_to to low page
+>>>>> table allocate functions.
+>>>>>
+>>>>> Signed-off-by: Minchan Kim <minchan@kernel.org>
+>>>>
+>>>>
+>>>> Hmm ? vmalloc should support GFP_ATOMIC ?
+>>>
+>>>
+>>> I'm not sure but alloc_large_system_hash already has used.
+>>> And it's not specific on GFP_ATOMIC.
+>>> We have to care of GFP_NOFS and GFP_NOIO to prevent deadlock on reclaim
+>>> context.
+>>> There are some places to use GFP_NOFS and we don't emit any warning
+>>> message in case of that.
+>>
+>> What's the lockdep warning?
+>
+>
+> It's just some private-test code, not-mainlined and lockdep warning is like this.
+>
+> [ INFO: inconsistent lock state ]
+> 3.4.0-rc3-next-20120417+ #80 Not tainted
+> ---------------------------------
+> inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
+>
+> It seems test code calls vmalloc inside reclaim context so that it enters
+> reclaim context, again by map_vm_area which allocates pages with GFP_KERNEL.
+>
+> Of course, I can avoid this problem by fixing the caller but during I look into
+> this problem, found other places to use gfp_t with "context restriction".
+>
+>
+>>
+>
+>> vmalloc was never supposed to use gfp flags for allocation "context"
+>> restriction. I.e., it
+>> was always supposed to have blocking, fs, and io capable allocation
+>> context. The flags
+>> were supposed to be a memory type modifier.
+>
+>
+> You mean "zone modifiers"?
 
-Attn: Account User,
+Yeah, things like that.
 
-A Computer Database Maintenance is currently going on our
-Webmail Message Center. Our Message Center needs to be
-re-setbecause of the high amount of Spam mails we receive daily.
-A Quarantine Maintenance will help us prevent this everyday
-dilemma. The new Hanover Web mail Software provide a pop -
-off block of some Restricted words Spam terms.
+>> These different classes of flags is a bit of a problem and source of
+>> confusion we have.
+>> We should be doing more checks for them, of course.
+>
+>
+> It might need some warning in __vmalloc and family which use gfp_t
+> if the caller use context flags.
 
-You are instructed to login to your account and verify if
-your Account is still valid and sends immediately the
-following:
-
-Email:
-User-name:
-Password:
-
-Note that if your account do Login, send us the details or
-otherwise it Means it has been deleted. Sorry for the
-inconveniences his might cause You we are only trying to make sure you
-don't loose
-
-informations in your Accounts.
-
-Thanks for bearing with us.
-Warning Code: ASPH8B02AXV
-All Right Reserved Copyright C 2012
+I think that would be a good idea.
 
 
+>> I suspect you need to fix the caller?
+>
+>
+> Hmm, there are several places to use GFP_NOIO and GFP_NOFS even, GFP_ATOMIC.
+> I believe it's not trivial now.
 
+They're all buggy then. Unfortunately not through any real fault of their own.
+
+I would say add a bit of warnings and documentation, and see what can be done
+about callers.
+
+We should not take lightly the decision to make the API more permissive, because
+as you can see it's more work for implementation. Making it ATOMIC safe is even
+harder, requiring irqsafe locks and such, and it might be tricky for some
+architectures.
+
+Thanks,
+Nick
