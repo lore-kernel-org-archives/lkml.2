@@ -1,121 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab2DXOm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 10:42:57 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:50327 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217Ab2DXOm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 10:42:56 -0400
-Message-ID: <4F96BB62.1030900@parallels.com>
-Date: Tue, 24 Apr 2012 11:40:34 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1754989Ab2DXOoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 10:44:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33390 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338Ab2DXOoU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 10:44:20 -0400
+Date: Tue, 24 Apr 2012 16:44:07 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+Cc: m.szyprowski@samsung.com, ben-linux@fluff.org, thomas.abraham@linaro.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
+        t.stanislaws@samsung.com, kyungmin.park@samsung.com,
+        broonie@opensource.wolfsonmicro.com,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/2] i2c-s3c2410: Rework device type handling
+Message-ID: <20120424144407.GA9007@pengutronix.de>
+References: <1335198241-19344-1-git-send-email-k.lewandowsk@samsung.com>
+ <1335198241-19344-2-git-send-email-k.lewandowsk@samsung.com>
+ <20120423182033.GB2767@pengutronix.de>
+ <4F966711.7080608@samsung.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: David Rientjes <rientjes@google.com>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <devel@openvz.org>, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 17/23] kmem controller charge/uncharge infrastructure
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1335138820-26590-6-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1204231522320.13535@chino.kir.corp.google.com> <20120424142232.GC8626@somewhere>
-In-Reply-To: <20120424142232.GC8626@somewhere>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.19.44]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
+Content-Disposition: inline
+In-Reply-To: <4F966711.7080608@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2012 11:22 AM, Frederic Weisbecker wrote:
-> On Mon, Apr 23, 2012 at 03:25:59PM -0700, David Rientjes wrote:
->> On Sun, 22 Apr 2012, Glauber Costa wrote:
->>
->>> +/*
->>> + * Return the kmem_cache we're supposed to use for a slab allocation.
->>> + * If we are in interrupt context or otherwise have an allocation that
->>> + * can't fail, we return the original cache.
->>> + * Otherwise, we will try to use the current memcg's version of the cache.
->>> + *
->>> + * If the cache does not exist yet, if we are the first user of it,
->>> + * we either create it immediately, if possible, or create it asynchronously
->>> + * in a workqueue.
->>> + * In the latter case, we will let the current allocation go through with
->>> + * the original cache.
->>> + *
->>> + * This function returns with rcu_read_lock() held.
->>> + */
->>> +struct kmem_cache *__mem_cgroup_get_kmem_cache(struct kmem_cache *cachep,
->>> +					     gfp_t gfp)
->>> +{
->>> +	struct mem_cgroup *memcg;
->>> +	int idx;
->>> +
->>> +	gfp |=  cachep->allocflags;
->>> +
->>> +	if ((current->mm == NULL))
->>> +		return cachep;
->>> +
->>> +	if (cachep->memcg_params.memcg)
->>> +		return cachep;
->>> +
->>> +	idx = cachep->memcg_params.id;
->>> +	VM_BUG_ON(idx == -1);
->>> +
->>> +	memcg = mem_cgroup_from_task(current);
->>> +	if (!mem_cgroup_kmem_enabled(memcg))
->>> +		return cachep;
->>> +
->>> +	if (rcu_access_pointer(memcg->slabs[idx]) == NULL) {
->>> +		memcg_create_cache_enqueue(memcg, cachep);
->>> +		return cachep;
->>> +	}
->>> +
->>> +	return rcu_dereference(memcg->slabs[idx]);
->>> +}
->>> +EXPORT_SYMBOL(__mem_cgroup_get_kmem_cache);
->>> +
->>> +void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id)
->>> +{
->>> +	rcu_assign_pointer(cachep->memcg_params.memcg->slabs[id], NULL);
->>> +}
->>> +
->>> +bool __mem_cgroup_charge_kmem(gfp_t gfp, size_t size)
->>> +{
->>> +	struct mem_cgroup *memcg;
->>> +	bool ret = true;
->>> +
->>> +	rcu_read_lock();
->>> +	memcg = mem_cgroup_from_task(current);
->>
->> This seems horribly inconsistent with memcg charging of user memory since
->> it charges to p->mm->owner and you're charging to p.  So a thread attached
->> to a memcg can charge user memory to one memcg while charging slab to
->> another memcg?
->
-> Charging to the thread rather than the process seem to me the right behaviour:
-> you can have two threads of a same process attached to different cgroups.
->
-> Perhaps it is the user memory memcg that needs to be fixed?
->
 
-Hi David,
+--y0ulUmNC+osPPQO6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I just saw all the answers, so I will bundle here since Frederic also 
-chimed in...
+On Tue, Apr 24, 2012 at 10:40:49AM +0200, Karol Lewandowski wrote:
+> On 23.04.2012 20:20, Wolfram Sang wrote:
+>=20
+> Hi!
+>=20
+> >> -static inline int s3c24xx_i2c_is2440(struct s3c24xx_i2c *i2c)
+> >> +static inline unsigned int s3c24xx_get_device_quirks(struct platform_=
+device *pdev)
+> >>  {
+> >> -	struct platform_device *pdev =3D to_platform_device(i2c->dev);
+> >> -	enum s3c24xx_i2c_type type;
+> >> -
+> >> -#ifdef CONFIG_OF
+> >> -	if (i2c->dev->of_node)
+> >> -		return of_device_is_compatible(i2c->dev->of_node,
+> >> -				"samsung,s3c2440-i2c");
+> >> -#endif
+> >> +	if (pdev->dev.of_node) {
+> >> +		const struct of_device_id *match;
+> >> +		match =3D of_match_node(&s3c24xx_i2c_match, pdev->dev.of_node);
+> >=20
+> > I'd appreciate a comment explaining why match can't be NULL here (as to
+> > my understanding, it can't). Or just check for it, but this way it looks
+> > a bit fishy and people (hopefully ;)) will ask about it.
+>=20
+>=20
+> My understanding is that it can't be null for exactly same reason why
+> platform_get_device_id(pdev) can't be null either (see below).
+>=20
+> I.e. prerequisite for this code to be run at all (as it's called from
+> driver's .probe()) is to be already matched against very same match
+> table.
 
-I think memcg is not necessarily wrong. That is because threads in a 
-process share an address space, and you will eventually need to map a 
-page to deliver it to userspace. The mm struct points you to the owner 
-of that.
+Yes, I agree. Yet, this is not obvious and people might try to fix it
+(especially since programs like smatch report it as potentially
+dangerous). Ah, whatever, I could simply apply the fix then :) OK.
 
-But that is not necessarily true for things that live in the kernel 
-address space.
+Regards,
 
-Do you view this differently ?
+   Wolfram
 
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
+--y0ulUmNC+osPPQO6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+WvDcACgkQD27XaX1/VRtfRwCfWhhvxIvD1njgpI9TcTD9rkO6
+u9YAoKTCSavc1yBC7fSYosfqcBM3L/DE
+=sVaK
+-----END PGP SIGNATURE-----
+
+--y0ulUmNC+osPPQO6--
