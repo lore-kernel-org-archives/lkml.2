@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab2DXK0G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 06:26:06 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:15501 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756632Ab2DXK0F (ORCPT
+	id S1752682Ab2DXKdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 06:33:44 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:48564 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab2DXKdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 06:26:05 -0400
-X-SpamScore: -6
-X-BigFish: VS-6(zcb8kz1432N98dKzz1202hzzz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 24 Apr 2012 18:36:11 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Richard Zhao <richard.zhao@freescale.com>
-CC: Dong Aisheng <b29396@freescale.com>, <linux-kernel@vger.kernel.org>,
-        <linus.walleij@stericsson.com>, <swarren@wwwdotorg.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <rob.herring@calxeda.com>,
-        <grant.likely@secretlab.ca>, <linux-arm-kernel@lists.infradead.org>,
-        <kernel@pengutronix.de>, <s.hauer@pengutronix.de>,
-        <shawn.guo@freescale.com>
-Subject: Re: [PATCH v2 3/3] ARM: imx6q: switch to use pinctrl driver
-Message-ID: <20120424103610.GE32166@shlinux2.ap.freescale.net>
-References: <1334933916-12971-1-git-send-email-b29396@freescale.com>
- <1334933916-12971-3-git-send-email-b29396@freescale.com>
- <20120424095116.GA28063@b20223-02.ap.freescale.net>
+	Tue, 24 Apr 2012 06:33:43 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org
+References: <m1aa22rllb.fsf@fess.ebiederm.org> <4F96705C.5030901@suse.cz>
+Date: Tue, 24 Apr 2012 03:37:46 -0700
+In-Reply-To: <4F96705C.5030901@suse.cz> (Michal Marek's message of "Tue, 24
+	Apr 2012 11:20:28 +0200")
+Message-ID: <m11undpg91.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120424095116.GA28063@b20223-02.ap.freescale.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+z/G15z5o+MsoJGHLHK/c78bx1O6oEx7c=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0036]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Michal Marek <mmarek@suse.cz>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH] kbuld: Implement oldmodconfig
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 05:51:17PM +0800, Richard Zhao wrote:
-> > --- a/drivers/mmc/host/sdhci-esdhc-imx.c
-> > +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-> > @@ -24,6 +24,7 @@
-> >  #include <linux/of.h>
-> >  #include <linux/of_device.h>
-> >  #include <linux/of_gpio.h>
-> > +#include <linux/pinctrl/consumer.h>
-> >  #include <mach/esdhc.h>
-> >  #include "sdhci-pltfm.h"
-> >  #include "sdhci-esdhc.h"
-> > @@ -68,6 +69,7 @@ struct pltfm_imx_data {
-> >  	int flags;
-> >  	u32 scratchpad;
-> >  	enum imx_esdhc_type devtype;
-> > +	struct pinctrl *p;
-> >  	struct esdhc_platform_data boarddata;
-> >  };
-> >  
-> > @@ -467,6 +469,12 @@ static int __devinit sdhci_esdhc_imx_probe(struct platform_device *pdev)
-> >  	clk_prepare_enable(clk);
-> >  	pltfm_host->clk = clk;
-> >  
-> > +	imx_data->p = pinctrl_get_select_default(&pdev->dev);
-> devm_xxx version?
-> 
-Yes, Stephen also mentioned it.
-Will update it.
+Michal Marek <mmarek@suse.cz> writes:
 
-Regards
-Dong Aisheng
+> Dne 24.4.2012 02:59, Eric W. Biederman napsal(a):
+>> 
+>> While verifying that my user namespace patches are as complete as I
+>> expect them to be I came a came across the need to build kernel
+>> configurations with a few choice settings disabled and everything else
+>> enabled.  Adding a make oldmodconfig made generating those
+>> configurations straight forward, as now I can set the options I care
+>> about and the oldmodconfig can answering everything else for me in a
+>> consistent way.
+>
+> Doesn't
+>
+> KCONFIG_ALLCONFIG=base.config make allmodconfig
+>
+> do the same thing? If not, the difference should be explained in the
+> changelog.
 
+The only difference apparently is that KCONFIG_ALLCONFIG... allmodconfig 
+does not show up in the help and is rather unintuitively named so I
+totally missed it's presence.
+
+If I get ambitious I might fix the bug that KCONFIG_ALLCONFIG uses some
+other working directory when reading a file than the directory that make
+was run in.  Which is compounded by the fact that if KCONFIG_ALLCONFIG
+can't find your file it treats it as if you had not specified the file
+and does this all silently making it just about impossible to debug
+without instrumenting up conf.c and confdata.c
+
+So please feel free to drop my patch.
+
+Eric
