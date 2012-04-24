@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758491Ab2DXW67 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:58:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50559 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757468Ab2DXW65 (ORCPT
+	id S1758530Ab2DXW7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:59:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932443Ab2DXWfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:58:57 -0400
-Message-ID: <4F973026.3020103@lwfinger.net>
-Date: Tue, 24 Apr 2012 17:58:46 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-CC: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Regression in 32-bit ppc kernel
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Apr 2012 18:35:05 -0400
+Message-Id: <20120424223243.950806348@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Tue, 24 Apr 2012 15:33:04 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Francesco Saverio Schiavarelli <fschiava@libero.it>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Brett Rudley <brudley@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 23/62] brcm80211: smac: resume transmit fifo upon receiving frames
+In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-Somewhere between v3.2 and v3.3, the kernel in my Powerbook G4 started issuing 
-the following traceback on bootup:
+------------------
 
-[   40.264006] irq 23: nobody cared (try booting with the "irqpoll" option)
-[   40.264031] Call Trace:
-[   40.264070] [dfff3f00] [c000984c] show_stack+0x7c/0x194 (unreliable)
-[   40.264102] [dfff3f40] [c00a6840] __report_bad_irq+0x44/0xf4
-[   40.264119] [dfff3f60] [c00a6adc] note_interrupt+0x1ec/0x2ac
-[   40.264135] [dfff3f80] [c00a48a8] handle_irq_event_percpu+0x250/0x2b8
-[   40.264152] [dfff3fd0] [c00a4944] handle_irq_event+0x34/0x54
-[   40.264169] [dfff3fe0] [c00a7514] handle_fasteoi_irq+0xb4/0x124
-[   40.264192] [dfff3ff0] [c000f5bc] call_handle_irq+0x18/0x28
-[   40.264208] [dec85ce0] [c000719c] do_IRQ+0x114/0x1cc
-[   40.264226] [dec85d10] [c0015868] ret_from_except+0x0/0x1c
-[   40.264254] --- Exception: 501 at find_vma+0x10/0x80
-[   40.264259]     LR = do_page_fault+0x26c/0x6ac
-[   40.264272] [dec85dd0] [c03f0128] do_page_fault+0x25c/0x6ac (unreliable)
-[   40.264289] [dec85f40] [c00155e4] handle_page_fault+0xc/0x80
-[   40.264327] --- Exception: 301 at 0x4800a174
+From: Arend van Spriel <arend@broadcom.com>
 
-The problem still exists in v3.4-rc3. I am currently doing a bisection of this 
-problem, but it will take a long time to complete.
+commit badc4f07622f0f7093a201638f45e85765f1b5e4 upstream.
 
-Note: IRQ 23 is not active in v3.2.
+There have been reports about not being able to use access-points
+on channel 12 and 13 or having connectivity issues when these channels
+were part of the selected regulatory domain. Upon switching to these
+channels the brcmsmac driver suspends the transmit dma fifos. This
+patch resumes them upon handing over the first received beacon to
+mac80211.
 
-Thanks,
+This patch is to be applied to the stable tree for kernel versions
+3.2 and 3.3.
 
-Larry
+Tested-by: Francesco Saverio Schiavarelli <fschiava@libero.it>
+Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Reviewed-by: Brett Rudley <brudley@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/brcm80211/brcmsmac/main.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
+@@ -7629,6 +7629,7 @@ brcms_c_recvctl(struct brcms_c_info *wlc
+ {
+ 	int len_mpdu;
+ 	struct ieee80211_rx_status rx_status;
++	struct ieee80211_hdr *hdr;
+ 
+ 	memset(&rx_status, 0, sizeof(rx_status));
+ 	prep_mac80211_status(wlc, rxh, p, &rx_status);
+@@ -7638,6 +7639,13 @@ brcms_c_recvctl(struct brcms_c_info *wlc
+ 	skb_pull(p, D11_PHY_HDR_LEN);
+ 	__skb_trim(p, len_mpdu);
+ 
++	/* unmute transmit */
++	if (wlc->hw->suspended_fifos) {
++		hdr = (struct ieee80211_hdr *)p->data;
++		if (ieee80211_is_beacon(hdr->frame_control))
++			brcms_b_mute(wlc->hw, false);
++	}
++
+ 	memcpy(IEEE80211_SKB_RXCB(p), &rx_status, sizeof(rx_status));
+ 	ieee80211_rx_irqsafe(wlc->pub->ieee_hw, p);
+ }
+
 
