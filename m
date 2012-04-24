@@ -1,98 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab2DXHjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 03:39:47 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:60891 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754706Ab2DXHjq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 03:39:46 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Jonas Aberg <jonas.aberg@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 5/9 v3] gpio/nomadik: use ioremap() instead of static mappings
-Date: Tue, 24 Apr 2012 09:39:27 +0200
-Message-ID: <1335253167-31905-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
+	id S1755276Ab2DXHlz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 03:41:55 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:44533 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754399Ab2DXHly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 03:41:54 -0400
+In-Reply-To: <1335237195.24897.0.camel@pasglop>
+References: <1335220202-32533-1-git-send-email-grant.likely@secretlab.ca>	 <1335220202-32533-2-git-send-email-grant.likely@secretlab.ca> <1335237195.24897.0.camel@pasglop>
+Subject: Re: [PATCH v2 1/2] powerpc/8xx: Fix NR_IRQ bugs and refactor 8xx interrupt
+ controller
+X-KeepSent: 4123672B:F86C969F-C12579EA:002A2C1F;
+ type=4; name=$KeepSent
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+Message-ID: <OF4123672B.F86C969F-ONC12579EA.002A2C1F-C12579EA.002A48C2@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Tue, 24 Apr 2012 09:41:51 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP1|March 07, 2012) at
+ 24/04/2012 09:41:51
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote on 2012/04/24 05:13:15:
+>
+> On Mon, 2012-04-23 at 16:30 -0600, Grant Likely wrote:
+> > The mpc8xx driver uses a reference to NR_IRQS that is buggy.  It uses
+> > NR_IRQs for the array size of the ppc_cached_irq_mask bitmap, but
+> > NR_IRQs could be smaller than the number of hardware irqs that
+> > ppc_cached_irq_mask tracks.
+>
+> Joakim, any chance you can test this ASAP ? :-)
 
-We were using a custom io_p2v() (physical-to-virtual) translation
-macro, but it's fully possible to just ioremap() this memory
-now, so skip use of static addresses altogether.
-
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpio-nomadik.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/gpio/gpio-nomadik.c b/drivers/gpio/gpio-nomadik.c
-index 7b45d88..b35eb25 100644
---- a/drivers/gpio/gpio-nomadik.c
-+++ b/drivers/gpio/gpio-nomadik.c
-@@ -28,8 +28,6 @@
- 
- #include <plat/pincfg.h>
- #include <plat/gpio-nomadik.h>
--#include <mach/hardware.h>
--#include <asm/gpio.h>
- 
- /*
-  * The GPIO module in the Nomadik family of Systems-on-Chip is an
-@@ -1139,6 +1137,7 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
- 	struct resource *res;
- 	struct clk *clk;
- 	int secondary_irq;
-+	void __iomem *base;
- 	int irq;
- 	int ret;
- 
-@@ -1169,10 +1168,16 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
- 		goto out;
- 	}
- 
-+	base = ioremap(res->start, resource_size(res));
-+	if (!base) {
-+		ret = -ENOMEM;
-+		goto out_release;
-+	}
-+
- 	clk = clk_get(&dev->dev, NULL);
- 	if (IS_ERR(clk)) {
- 		ret = PTR_ERR(clk);
--		goto out_release;
-+		goto out_unmap;
- 	}
- 
- 	nmk_chip = kzalloc(sizeof(*nmk_chip), GFP_KERNEL);
-@@ -1186,7 +1191,7 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
- 	 */
- 	nmk_chip->bank = dev->id;
- 	nmk_chip->clk = clk;
--	nmk_chip->addr = io_p2v(res->start);
-+	nmk_chip->addr = base;
- 	nmk_chip->chip = nmk_gpio_template;
- 	nmk_chip->parent_irq = irq;
- 	nmk_chip->secondary_parent_irq = secondary_irq;
-@@ -1226,6 +1231,8 @@ out_free:
- out_clk:
- 	clk_disable(clk);
- 	clk_put(clk);
-+out_unmap:
-+	iounmap(base);
- out_release:
- 	release_mem_region(res->start, resource_size(res));
- out:
--- 
-1.7.9.2
+Sorry, but no.  We have not moved our 8xx boards to 3.x as it in maintenance
+and takes too much space.
 
