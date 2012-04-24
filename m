@@ -1,114 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab2DXC3l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 22:29:41 -0400
-Received: from mga11.intel.com ([192.55.52.93]:9500 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756345Ab2DXC3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 22:29:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="145095158"
-Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
-From: Lin Ming <ming.m.lin@intel.com>
-To: Aaron Lu <aaron.lu@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
-In-Reply-To: <20120424020708.GA10397@localhost.amd.com>
-References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
-	 <201204231343.03382.rjw@sisk.pl> <20120423151327.GA4019@fedora>
-	 <201204232150.57812.rjw@sisk.pl> <20120424020708.GA10397@localhost.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Apr 2012 10:29:36 +0800
-Message-ID: <1335234576.15942.19.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756421Ab2DXCcT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 22:32:19 -0400
+Received: from szxga01-in.huawei.com ([58.251.152.64]:57089 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756165Ab2DXCcR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 22:32:17 -0400
+Date: Tue, 24 Apr 2012 10:30:25 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: [PATCH v1 6/8] dmaengine: enhance network subsystem to support DMA
+ device hotplug
+In-reply-to: <CABE8wwvi_Yz8AyALr1-uDW9xSgrSqfrYWhB_22NQ2ydTa81+mg@mail.gmail.com>
+X-Originating-IP: [10.107.208.49]
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        Keping Chen <chenkeping@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-id: <4F961041.7010106@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222
+ Thunderbird/9.0.1
+X-CFilter-Loop: Reflected
+References: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
+ <1335189109-4871-7-git-send-email-jiang.liu@huawei.com>
+ <CABE8wwvi_Yz8AyALr1-uDW9xSgrSqfrYWhB_22NQ2ydTa81+mg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-24 at 10:07 +0800, Aaron Lu wrote:
-> On Mon, Apr 23, 2012 at 09:50:57PM +0200, Rafael J. Wysocki wrote:
-> > > diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-> > > index 3263b68..187433f 100644
-> > > --- a/drivers/acpi/bus.c
-> > > +++ b/drivers/acpi/bus.c
-> > > @@ -273,6 +273,9 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
-> > >  		}
-> > >  	} else {
-> > >  		if (device->power.states[state].flags.explicit_set) {
-> > > +			/* evaluate _PS3 instead of _PS4 when entering D3Cold */
-> > > +			if (state == ACPI_STATE_D3)
-> > > +				object_name[3] -= 1;
-> > 
-> > Can you just put '3' here directly?  That'll be much cleaner than the
-> > subtraction (that could have been -- as well).
-> > 
-> > >  			status = acpi_evaluate_object(device->handle,
-> > >  						      object_name, NULL, NULL);
-> > >  			if (ACPI_FAILURE(status)) {
-> > > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > > index 7417267..de2ae10 100644
-> > > --- a/drivers/acpi/scan.c
-> > > +++ b/drivers/acpi/scan.c
-> > > @@ -887,8 +887,12 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
-> > >  		/* Evaluate "_PSx" to see if we can do explicit sets */
-> > >  		object_name[2] = 'S';
-> > >  		status = acpi_get_handle(device->handle, object_name, &handle);
-> > > -		if (ACPI_SUCCESS(status))
-> > > +		if (ACPI_SUCCESS(status)) {
-> > >  			ps->flags.explicit_set = 1;
-> > > +			/* Also set D3Cold's explicit flag when _PS3 exists */
-> > > +			if (i == ACPI_STATE_D3_HOT)
-> > > +				(ps+1)->flags.explicit_set = 1;
-> > 
-> > Please don't use pointer arithmetics here.  I know it _happens_ to work,
-> > but I don't think it's appropriate in this situation at all.
-> > 
-> 
-> Thanks for the suggestions.
-> 
-> What about this?
-> 
-> diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-> index 3263b68..3a7860f 100644
-> --- a/drivers/acpi/bus.c
-> +++ b/drivers/acpi/bus.c
-> @@ -273,6 +273,9 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
->  		}
->  	} else {
->  		if (device->power.states[state].flags.explicit_set) {
-> +			/* Evaluate _PS3 when entering D3cold */
-> +			if (state == ACPI_STATE_D3)
-> +				object_name[3] = '3';
->  			status = acpi_evaluate_object(device->handle,
->  						      object_name, NULL, NULL);
->  			if (ACPI_FAILURE(status)) {
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 7417267..734d946 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -908,6 +908,10 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
->  	device->power.states[ACPI_STATE_D3].flags.valid = 1;
->  	device->power.states[ACPI_STATE_D3].power = 0;
->  
-> +	/* Also set D3cold's explicit flag when _PS3 exists */
-> +	if (device->power.states[ACPI_STATE_D3_HOT].flags.explicit_set)
-> +		device->power.states[ACPI_STATE_D3].flags.explicit_set = 1;
+Hi Dan,
+	Thanks for your great comments!
+	gerry
+On 2012-4-24 2:30, Dan Williams wrote:
+> On Mon, Apr 23, 2012 at 6:51 AM, Jiang Liu<liuj97@gmail.com>  wrote:
+>> Enhance network subsystem to correctly update DMA channel reference counts,
+>> so it won't break DMA device hotplug logic.
+>>
+>> Signed-off-by: Jiang Liu<liuj97@gmail.com>
+>
+> This introduces an atomic action on every channel touch, which is more
+> expensive than what we had previously.  There has always been a
+> concern about the overhead of offload that sometimes makes ineffective
+> or a loss compared to cpu copies.  In the cases where net_dma shows
+> improvement this will eat into / maybe eliminate that advantage.
+Good point, we should avoid pollute a shared cacheline here, otherwise
+it may eat the benefits of IOAT acceleration.
 
-We should use ACPI_STATE_D3_COLD instead of ACPI_STATE_D3 to make thing
-clear.
+>
+> Take a look at where dmaengine started [1].  It was from the beginning
+> going through contortions to avoid something like this.  We made it
+> simpler here [2], but still kept the principle of not dirtying a
+> shared cacheline on every channel touch, and certainly not locking it.
+Thanks for the great background information, especially the second one.
+The check-in log message as below.
+ >Why?, beyond reducing complication:
+ >1/ Tracking reference counts per-transaction in an efficient manner, as
+ >   is currently done, requires a complicated scheme to avoid cache-line
+ >   bouncing effects.
+The really issue here is polluting shared cachelines here, right?
+Will it help to use percpu counter instead of atomic operations here?
+I will have a try to use percpu counter for reference count.
+BTW, do you have any DMAEngine benchmarks so we could use them to
+compare the performance difference?
 
-> +
->  	acpi_bus_init_power(device);
->  
->  	return 0;
-> 
-> Thanks,
-> Aaron
-> 
+ >2/ Per-transaction ref-counting gives the false impression that a
+ >   dma-driver can be gracefully removed ahead of its user (net, md, or
+ >   dma-slave)
+ >3/ None of the in-tree dma-drivers talk to hot pluggable hardware, but
+Seems the situation has changed now:)
+Intel 7500 (Boxboro) chipset supports hotplug. And we are working on
+a system, which adopts Boxboro chipset and supports node hotplug.
+So we try to enhance the DMAEngine to support IOAT hotplug.
+
+On the other hand, Intel next generation processor Ivybridge has
+embedded IOH, so we need to support IOH/IOAT hotplug when supporting
+processor hotplug.
+
+ >   if such an engine were built one day we still would not need to >notify
+ >   clients of remove events.  The driver can simply return NULL to a
+ >   ->prep() request, something that is much easier for a client to 
+ >handle.
+Could you please help to give more explanations about "The driver can
+simply return NULL to a ->prep() request", I have gotten the idea yet.
+
+>
+> If you are going to hotplug the entire IOH, then you are probably ok
+> with network links going down, so could you just down the links and
+> remove the driver with the existing code?
+I feel it's a little risky to shut down/restart all network interfaces
+for hot-removal of IOH, that may disturb the applications. And there
+are also other kinds of clients, such as ASYNC_TX, seems we can't
+adopt this method to reclaim DMA channels from ASYNC_TX subsystem.
+
+>
+> --
+> Dan
+>
+> [1]: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=c13c826
+> [2]: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=6f49a57a
+>
+> .
+>
 
 
