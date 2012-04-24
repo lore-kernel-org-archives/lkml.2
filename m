@@ -1,361 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab2DXQb0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 12:31:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48083 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754957Ab2DXQbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 12:31:25 -0400
-From: Jan Kara <jack@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-mm@kvack.org, Peter Zijlstra <peterz@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH RFC v2] lib: Proportions with flexible period
-Date: Tue, 24 Apr 2012 18:30:33 +0200
-Message-Id: <1335285033-7347-2-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1335285033-7347-1-git-send-email-jack@suse.cz>
-References: <1335285033-7347-1-git-send-email-jack@suse.cz>
+	id S1755855Ab2DXQc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 12:32:28 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:45343 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755443Ab2DXQc0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 12:32:26 -0400
+Message-ID: <4F96D58A.3070008@ahsoftware.de>
+Date: Tue, 24 Apr 2012 18:32:10 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120303 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: shuahkhan@gmail.com
+CC: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] leds: heartbeat: stop on shutdown
+References: <1335275034-22135-1-git-send-email-holler@ahsoftware.de>  <1335280022-16308-1-git-send-email-holler@ahsoftware.de> <1335281074.2347.4.camel@lorien2>
+In-Reply-To: <1335281074.2347.4.camel@lorien2>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement code computing proportions of events of different type (like code in
-lib/proportions.c) but allowing periods to have different lengths. This allows
-us to have aging periods of fixed wallclock time which gives better proportion
-estimates given the hugely varying throughput of different devices - previous
-measuring of aging period by number of events has the problem that a reasonable
-period length for a system with low-end USB stick is not a reasonable period
-length for a system with high-end storage array resulting either in too slow
-proportion updates or too fluctuating proportion updates.
+Am 24.04.2012 17:24, schrieb Shuah Khan:
+> On Tue, 2012-04-24 at 17:07 +0200, Alexander Holler wrote:
+>> A halted kernel should not show a heartbeat.
+>>
+>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+>> ---
+>>  drivers/leds/ledtrig-heartbeat.c |   18 +++++++++++++++++-
+>>  1 files changed, 17 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
+>> index 759c0bb..1c05bd9 100644
+>> --- a/drivers/leds/ledtrig-heartbeat.c
+>> +++ b/drivers/leds/ledtrig-heartbeat.c
+>> @@ -18,6 +18,7 @@
+>>  #include <linux/timer.h>
+>>  #include <linux/sched.h>
+>>  #include <linux/leds.h>
+>> +#include <linux/reboot.h>
+>>  #include "leds.h"
+>>  
+>>  struct heartbeat_trig_data {
+>> @@ -101,13 +102,28 @@ static struct led_trigger heartbeat_led_trigger = {
+>>  	.deactivate = heartbeat_trig_deactivate,
+>>  };
+>>  
+>> +static int heartbeat_reboot_notifier(struct notifier_block *nb,
+>> +				     unsigned long code, void *unused)
+>> +{
+>> +	led_trigger_unregister(&heartbeat_led_trigger);
+>> +	return NOTIFY_DONE;
+>> +}
+>> +
+>> +static struct notifier_block heartbeat_reboot_nb = {
+>> +	.notifier_call = heartbeat_reboot_notifier,
+>> +};
+>> +
+>>  static int __init heartbeat_trig_init(void)
+>>  {
+>> -	return led_trigger_register(&heartbeat_led_trigger);
+>> +	int rc = led_trigger_register(&heartbeat_led_trigger);
+>> +	if( ! rc )
+>> +		register_reboot_notifier(&heartbeat_reboot_nb);
+> 
+> Do you need to check return value here? I see return value being checked
+> in some places in the kernel and not in others. Not checking is fine for
+> now since register_reboot_notifier() always returns 0.
+> 
+> Maybe adding return handling might not be a bad idea to be consistent
+> with other places that do check.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- include/linux/flex_proportions.h |   89 ++++++++++++++++
- lib/flex_proportions.c           |  218 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 307 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/flex_proportions.h
- create mode 100644 lib/flex_proportions.c
+What to do if it fails? As long as unregister_reboot_notifier() doesn't
+do something bad with non-registered notifiers (which it doesn't), I
+would let the init still succeed. And to not unregister a
+non-registered-reboot_notifier, a long-living bool would be needed.
 
-diff --git a/include/linux/flex_proportions.h b/include/linux/flex_proportions.h
-new file mode 100644
-index 0000000..ba92c9b
---- /dev/null
-+++ b/include/linux/flex_proportions.h
-@@ -0,0 +1,89 @@
-+/*
-+ * Floating proportions with flexible aging period
-+ *
-+ *  Copyright (C) 2011, SUSE, Jan Kara <jack@suse.cz>
-+ */
-+
-+#ifndef _LINUX_FLEX_PROPORTIONS_H
-+#define _LINUX_FLEX_PROPORTIONS_H
-+
-+#include <linux/percpu_counter.h>
-+#include <linux/spinlock.h>
-+#include <linux/seqlock.h>
-+
-+/*
-+ * ---- Global proportion definitions ----
-+ */
-+struct fprop_global {
-+	/* Number of events in the current period */
-+	struct percpu_counter events;
-+	/* Current period */
-+	unsigned int period;
-+	/* Synchronization with period transitions */
-+	seqcount_t sequence;
-+};
-+
-+int fprop_global_init(struct fprop_global *p);
-+void fprop_global_destroy(struct fprop_global *p);
-+void fprop_new_period(struct fprop_global *p);
-+
-+/*
-+ *  ---- SINGLE ----
-+ */
-+struct fprop_local_single {
-+	/* the local events counter */
-+	unsigned long events;
-+	/* Period in which we last updated events */
-+	unsigned int period;
-+	raw_spinlock_t lock;	/* Protect period and numerator */
-+};
-+
-+#define INIT_FPROP_LOCAL_SINGLE(name)			\
-+{	.lock = __RAW_SPIN_LOCK_UNLOCKED(name.lock),	\
-+}
-+
-+int fprop_local_init_single(struct fprop_local_single *pl);
-+void __fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl);
-+void fprop_fraction_single(struct fprop_global *p,
-+	struct fprop_local_single *pl, unsigned long *numerator,
-+	unsigned long *denominator);
-+
-+static inline
-+void fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	__fprop_inc_single(p, pl);
-+	local_irq_restore(flags);
-+}
-+
-+/*
-+ * ---- PERCPU ----
-+ */
-+struct fprop_local_percpu {
-+	/* the local events counter */
-+	struct percpu_counter events;
-+	/* Period in which we last updated events */
-+	unsigned int period;
-+	raw_spinlock_t lock;	/* Protect period and numerator */
-+};
-+
-+int fprop_local_init_percpu(struct fprop_local_percpu *pl);
-+void fprop_local_destroy_percpu(struct fprop_local_percpu *pl);
-+void __fprop_inc_percpu(struct fprop_global *p, struct fprop_local_percpu *pl);
-+void fprop_fraction_percpu(struct fprop_global *p,
-+	struct fprop_local_percpu *pl, unsigned long *numerator,
-+	unsigned long *denominator);
-+
-+static inline
-+void fprop_inc_percpu(struct fprop_global *p, struct fprop_local_percpu *pl)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	__fprop_inc_percpu(p, pl);
-+	local_irq_restore(flags);
-+}
-+
-+#endif
-diff --git a/lib/flex_proportions.c b/lib/flex_proportions.c
-new file mode 100644
-index 0000000..fffb01b
---- /dev/null
-+++ b/lib/flex_proportions.c
-@@ -0,0 +1,218 @@
-+/*
-+ *  Floating proportions with flexible aging period
-+ *
-+ *   Copyright (C) 2011, SUSE, Jan Kara <jack@suse.cz>
-+ *
-+ * The goal of this code is: Given different types of event, measure proportion
-+ * of each type of event over time. The proportions are measured with
-+ * exponentially decaying history to give smooth transitions. A formula
-+ * expressing proportion of event of type 'j' is:
-+ *
-+ *   p_{j} = (\Sum_{i>=0} x_{i,j}/2^{i+1})/(\Sum_{i>=0} x_i/2^{i+1})
-+ *
-+ * Where x_{i,j} is j's number of events in i-th last time period and x_i is
-+ * total number of events in i-th last time period.
-+ *
-+ * Note that p_{j}'s are normalised, i.e.
-+ *
-+ *   \Sum_{j} p_{j} = 1,
-+ *
-+ * This formula can be straightforwardly computed by maintaing denominator
-+ * (let's call it 'd') and for each event type its numerator (let's call it
-+ * 'n_j'). When an event of type 'j' happens, we simply need to do:
-+ *   n_j++; d++;
-+ *
-+ * When a new period is declared, we could do:
-+ *   d /= 2
-+ *   for each j
-+ *     n_j /= 2
-+ *
-+ * To avoid iteration over all event types, we instead shift numerator of event
-+ * j lazily when someone asks for a proportion of event j or when event j
-+ * occurs. This can bit trivially implemented by remembering last period in
-+ * which something happened with proportion of type j.
-+ */
-+#include <linux/flex_proportions.h>
-+
-+int fprop_global_init(struct fprop_global *p)
-+{
-+	int err;
-+
-+	p->period = 0;
-+	/* Use 1 to avoid dealing with periods with 0 events... */
-+	err = percpu_counter_init(&p->events, 1);
-+	if (err)
-+		return err;
-+	seqcount_init(&p->sequence);
-+	return 0;
-+}
-+
-+void fprop_global_destroy(struct fprop_global *p)
-+{
-+	percpu_counter_destroy(&p->events);
-+}
-+
-+/*
-+ * Declare new period. It is upto the caller to make sure two period
-+ * transitions cannot happen in parallel.
-+ */
-+void fprop_new_period(struct fprop_global *p)
-+{
-+	u64 events = percpu_counter_sum(&p->events);
-+
-+	/*
-+	 * Don't do anything if there are no events.
-+	 */
-+	if (events <= 1)
-+		return;
-+	write_seqcount_begin(&p->sequence);
-+	 /* We use addition to avoid losing events happening between sum and set. */
-+	percpu_counter_add(&p->events, -(events >> 1));
-+	p->period++;
-+	write_seqcount_end(&p->sequence);
-+}
-+
-+/*
-+ * ---- SINGLE ----
-+ */
-+
-+int fprop_local_init_single(struct fprop_local_single *pl)
-+{
-+	pl->events = 0;
-+	pl->period = 0;
-+	raw_spin_lock_init(&pl->lock);
-+	return 0;
-+}
-+
-+void fprop_local_destroy_single(struct fprop_local_single *pl)
-+{
-+}
-+
-+static void fprop_reflect_period_single(struct fprop_global *p,
-+					struct fprop_local_single *pl)
-+{
-+	unsigned int period = p->period;
-+	unsigned long flags;
-+
-+	/* Fast path - period didn't change */
-+	if (pl->period == period)
-+		return;
-+	raw_spin_lock_irqsave(&pl->lock, flags);
-+	/* Someone updated pl->period while we were spinning? */
-+	if (pl->period >= period) {
-+		raw_spin_unlock_irqrestore(&pl->lock, flags);
-+		return;
-+	}
-+	/* Aging zeroed our fraction? */
-+	if (period - pl->period < BITS_PER_LONG)
-+		pl->events >>= period - pl->period;
-+	else
-+		pl->events = 0;
-+	pl->period = period;
-+	raw_spin_unlock_irqrestore(&pl->lock, flags);
-+}
-+
-+/* Event of type pl happened */
-+void __fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl)
-+{
-+	fprop_reflect_period_single(p, pl);
-+	pl->events++;
-+	percpu_counter_add(&p->events, 1);
-+}
-+
-+/* Return fraction of events of type pl */
-+void fprop_fraction_single(struct fprop_global *p,
-+			   struct fprop_local_single *pl,
-+			   unsigned long *numerator, unsigned long *denominator)
-+{
-+	unsigned int seq;
-+	s64 den;
-+
-+	do {
-+		seq = read_seqcount_begin(&p->sequence);
-+		fprop_reflect_period_single(p, pl);
-+		*numerator = pl->events;
-+		den = percpu_counter_read(&p->events);
-+		if (den <= 0)
-+			den = percpu_counter_sum(&p->events);
-+		*denominator = den;
-+	} while (read_seqcount_retry(&p->sequence, seq));
-+}
-+
-+/*
-+ * ---- PERCPU ----
-+ */
-+#define PROP_BATCH (8*(1+ilog2(nr_cpu_ids)))
-+
-+int fprop_local_init_percpu(struct fprop_local_percpu *pl)
-+{
-+	int err;
-+
-+	err = percpu_counter_init(&pl->events, 0);
-+	if (err)
-+		return err;
-+	pl->period = 0;
-+	raw_spin_lock_init(&pl->lock);
-+	return 0;
-+}
-+
-+void fprop_local_destroy_percpu(struct fprop_local_percpu *pl)
-+{
-+	percpu_counter_destroy(&pl->events);
-+}
-+
-+static void fprop_reflect_period_percpu(struct fprop_global *p,
-+					struct fprop_local_percpu *pl)
-+{
-+	unsigned int period = p->period;
-+	unsigned long flags;
-+
-+	/* Fast path - period didn't change */
-+	if (pl->period == period)
-+		return;
-+	raw_spin_lock_irqsave(&pl->lock, flags);
-+	/* Someone updated pl->period while we were spinning? */
-+	if (pl->period >= period) {
-+		raw_spin_unlock_irqrestore(&pl->lock, flags);
-+		return;
-+	}
-+	/* Aging zeroed our fraction? */
-+	if (period - pl->period < BITS_PER_LONG) {
-+		s64 val = percpu_counter_read(&pl->events);
-+
-+		if (val < (nr_cpu_ids * PROP_BATCH))
-+			val = percpu_counter_sum(&pl->events);
-+
-+		__percpu_counter_add(&pl->events,
-+			-val + (val >> (period-pl->period)), PROP_BATCH);
-+	} else
-+		percpu_counter_set(&pl->events, 0);
-+	pl->period = period;
-+	raw_spin_unlock_irqrestore(&pl->lock, flags);
-+}
-+
-+/* Event of type pl happened */
-+void __fprop_inc_percpu(struct fprop_global *p, struct fprop_local_percpu *pl)
-+{
-+	fprop_reflect_period_percpu(p, pl);
-+	__percpu_counter_add(&pl->events, 1, PROP_BATCH);
-+	percpu_counter_add(&p->events, 1);
-+}
-+
-+void fprop_fraction_percpu(struct fprop_global *p,
-+			   struct fprop_local_percpu *pl,
-+			   unsigned long *numerator, unsigned long *denominator)
-+{
-+	unsigned int seq;
-+	s64 den;
-+
-+	do {
-+		seq = read_seqcount_begin(&p->sequence);
-+		fprop_reflect_period_percpu(p, pl);
-+		*numerator = percpu_counter_read_positive(&pl->events);
-+		den = percpu_counter_read(&p->events);
-+		if (den <= 0)
-+			den = percpu_counter_sum(&p->events);
-+		*denominator = den;
-+	} while (read_seqcount_retry(&p->sequence, seq));
-+}
--- 
-1.7.1
+> FYI - Andrew Morton is handling led patches these days. You might want
+> to send include him  <akpm@linux-foundation.org>
 
+I have added him to CC, thanks.
+
+Regards,
+
+Alexander
