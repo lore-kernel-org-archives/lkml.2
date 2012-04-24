@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab2DXIUu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 04:20:50 -0400
-Received: from alpha.arachsys.com ([91.203.57.7]:52785 "EHLO
-	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab2DXIUc (ORCPT
+	id S1755880Ab2DXIXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 04:23:38 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56832 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab2DXIXf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 04:20:32 -0400
-Date: Tue, 24 Apr 2012 09:20:19 +0100
-From: Richard Davies <richard@arachsys.com>
-To: Satoru Moriya <satoru.moriya@hds.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "jweiner@redhat.com" <jweiner@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "shaohua.li@intel.com" <shaohua.li@intel.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [RFC][PATCH] avoid swapping out with swappiness==0
-Message-ID: <20120424082019.GA18395@alpha.arachsys.com>
+	Tue, 24 Apr 2012 04:23:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB951A45F@USINDEVS02.corp.hds.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120416033519.GA17173@shlinux2.ap.freescale.net>
+References: <1334333915-1174-1-git-send-email-b29396@freescale.com>
+	<1334333915-1174-3-git-send-email-b29396@freescale.com>
+	<20120414135331.GB3852@pengutronix.de>
+	<CAA+hA=QhSUZg0bWTss_4ROwZ--OOQfcP=mpt+MP7-ZKPkEwXyA@mail.gmail.com>
+	<20120415073751.GF24997@S2101-09.ap.freescale.net>
+	<20120416033519.GA17173@shlinux2.ap.freescale.net>
+Date: Tue, 24 Apr 2012 10:23:34 +0200
+Message-ID: <CACRpkdZWNNz3+LbPtkV4rS4BJpqQdZio0qLkedLamSisgDkm6Q@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: imx6q: switch to use pinctrl driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dong Aisheng <aisheng.dong@freescale.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <dongas86@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linus.walleij@stericsson.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2012 18:18 PM, Satoru Moriya wrote:
-> On 03/07/2012 12:19 PM, KOSAKI Motohiro wrote:
->> On 3/5/2012 4:56 PM, Johannes Weiner wrote:
->>> On Fri, Mar 02, 2012 at 12:36:40PM -0500, Satoru Moriya wrote:
->>>>
->>>> This patch changes the behavior with swappiness==0. If we set 
->>>> swappiness==0, the kernel does not swap out completely (for global 
->>>> reclaim until the amount of free pages and filebacked pages in a 
->>>> zone has been reduced to something very very small (nr_free + 
->>>> nr_filebacked < high watermark)).
->>>>
->>>> Any comments are welcome.
->>>
->>> Last time I tried that (getting rid of sc->may_swap, using 
->>> !swappiness), it was rejected it as there were users who relied on 
->>> swapping very slowly with this setting.
->>>
->>> KOSAKI-san, do I remember correctly?  Do you still think it's an 
->>> issue?
->>>
->>> Personally, I still think it's illogical that !swappiness allows 
->>> swapping and would love to see this patch go in.
->> 
->> Thank you. I brought back to memory it. Unfortunately DB folks are 
->> still mainly using RHEL5 generation distros. At that time, swapiness=0 
->> doesn't mean disabling swap.
->> 
->> They want, "don't swap as far as kernel has any file cache page". but 
->> linux don't have such feature. then they used swappiness for emulate 
->> it. So, I think this patch clearly make userland harm. Because of, we 
->> don't have an alternative way.
->
-> If they expect the behavior that "don't swap as far as kernel
-> has any file cache page", this patch definitely helps them
-> because if we set swappiness==0, kernel does not swap out
-> *until* nr_free + nr_filebacked < high watermark in the zone.
-> It means kernel begins to swap out when nr_free + nr_filebacked
-> becomes less than high watermark.
->
-> But, yes, this patch actually changes the behavior with
-> swappiness==0 and so it may make userland harm. 
->
-> How about introducing new value e.g -1 to avoid swap and
-> maintain compatibility?
+On Mon, Apr 16, 2012 at 5:35 AM, Dong Aisheng
+<aisheng.dong@freescale.com> wrote:
+> On Sun, Apr 15, 2012 at 03:37:54PM +0800, Shawn Guo wrote:
+>> On Sun, Apr 15, 2012 at 12:03:16PM +0800, Dong Aisheng wrote:
+>> ...
+>> > For MX3 and MX5, before their pinctrl driver are available, user may
+>> > need to define a dummy in dt to avoid such an error.
+>> >
+>> That is insane, and will not work.
+>>
+>> 1) We do not have device tree support for MX3 yet.
+>> 2) It's not practical to add dummy entries in dt to avoid the error.
+>> 3) There are still so many non-dt board files support in the tree.
+>> How will they work with that?
+>>
+>> My suggestion is to not make it an error but a dev_dbg, assuming that
+>> the pins are already set up by platform code if we do not find the
+>> entry from pinctrl system.  We can take it as a transition solution,
+>> and turn the dev_dbg back to error when all the users of the device
+>> driver are converted to device tree.
+>>
+> My thinking is let pinctrl core handle dummy state as regulator subsystem
+> and does not depend on dt.
+> Linus, Stephen, any comment?
 
-I have run into problems with heavy swapping with swappiness==0 and was
-pointed to this thread ( http://marc.info/?l=linux-mm&m=133522782307215 )
+I think this was discussed in another thread and Sascha agreed that
+wee need dummy pinctrl to copy with a smooth transition in i.MX.
 
-I strongly believe that Linux should have a way to turn off swapping unless
-absolutely necessary. This means that users like us can run with swap
-present for emergency use, rather than having to disable it because of the
-side effects.
+So I'm happy with that, we just need to finalize a patch, poke
+me if I missed some patch...
 
-Personally, I feel that swappiness==0 should have this (intuitive) meaning,
-and that people running RHEL5 are extremely unlikely to run 3.5 kernels(!)
-
-However, swappiness==-1 or some other hack is definitely better than no
-patch.
-
-Richard.
+Yours,
+Linus Walleij
