@@ -1,107 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab2DXODj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 10:03:39 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43126 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773Ab2DXODh (ORCPT
+	id S1754290Ab2DXOIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 10:08:35 -0400
+Received: from relay.parallels.com ([195.214.232.42]:41475 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab2DXOIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 10:03:37 -0400
-Date: Tue, 24 Apr 2012 16:03:31 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 11/23] slub: consider a memcg parameter in
- kmem_create_cache
-Message-ID: <20120424140326.GA8626@somewhere>
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
- <1334959051-18203-12-git-send-email-glommer@parallels.com>
+	Tue, 24 Apr 2012 10:08:34 -0400
+Message-ID: <4F96B3DD.3070909@parallels.com>
+Date: Tue, 24 Apr 2012 18:08:29 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120314 Thunderbird/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334959051-18203-12-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@mit.edu>,
+        Jan Beulich <jbeulich@suse.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch: x86: take precautions against spurious timer interrupts
+References: <1335183494-19645-1-git-send-email-vdavydov@parallels.com> <4F96B0EB.1010601@windriver.com>
+In-Reply-To: <4F96B0EB.1010601@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 06:57:19PM -0300, Glauber Costa wrote:
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 2652e7c..86e40cc 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -32,6 +32,7 @@
->  #include <linux/prefetch.h>
->  
->  #include <trace/events/kmem.h>
-> +#include <linux/memcontrol.h>
->  
->  /*
->   * Lock order:
-> @@ -3880,7 +3881,7 @@ static int slab_unmergeable(struct kmem_cache *s)
->  	return 0;
->  }
->  
-> -static struct kmem_cache *find_mergeable(size_t size,
-> +static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
->  		size_t align, unsigned long flags, const char *name,
->  		void (*ctor)(void *))
->  {
-> @@ -3916,21 +3917,29 @@ static struct kmem_cache *find_mergeable(size_t size,
->  		if (s->size - size >= sizeof(void *))
->  			continue;
->  
-> +		if (memcg && s->memcg_params.memcg != memcg)
-> +			continue;
-> +
+On 04/24/2012 05:55 PM, Paul Gortmaker wrote:
+> On 12-04-23 08:18 AM, Vladimir Davydov wrote:
+>> If hpet is enabled by hpet_late_init() - this usually occurs on systems
+>> with buggy BIOS, which does not report about hpet presence through ACPI,
+>> hpet_clockevent's event_handler can be left uninitialized by
+>> clockevents_register_device() because of hpet_clockevent low rating (by
+>> the time hpet_late_init() is called, high prio apic timers have already
+>> been setup). The event_handler is then initialized a bit later by the
+>> clocksource_done_booting() procedure.
+>>
+>> Normally, timer interrupts should not be delivered between these two
+>> calls, but if e.g. the kernel is booted using kexec, there might be some
+>> pending interrupts from the previous kernel's context, which can lead to
+>> a NULL pointer dereference.
+> Reading between the lines here, I'm guessing that this is specific
+> to the kexec use case, and never seen anywhere else?
 
-This probably won't build without CONFIG_CGROUP_MEM_RES_CTLR_KMEM ?
+Yes, you're right. I've caught it several times while using kexec.
 
->  		return s;
->  	}
->  	return NULL;
->  }
->  
-> -struct kmem_cache *kmem_cache_create(const char *name, size_t size,
-> -		size_t align, unsigned long flags, void (*ctor)(void *))
-> +struct kmem_cache *
-> +kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+> In which case,
+> it seems a shame to add another conditional to the main timer_interrupt
+> for an event that may only happen once at boot, and even then, only
+> in a corner use-case.  Can you deal with the invalid state somewhere
+> in an _init section instead, perhaps even within CONFIG_KEXEC?  Or
+> at least ensure a dummy no-op handler is attached early enough?
+>
+> Paul.
+> --
 
-Does that build without CONFIG_CGROUP_MEM_RES_CTLR ?
+Agree.
 
-> +			size_t align, unsigned long flags, void (*ctor)(void *))
->  {
->  	struct kmem_cache *s;
->  
->  	if (WARN_ON(!name))
->  		return NULL;
->  
-> +#ifndef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> +	WARN_ON(memcg != NULL);
-> +#endif
-> +
->  	down_write(&slub_lock);
-> -	s = find_mergeable(size, align, flags, name, ctor);
-> +	s = find_mergeable(memcg, size, align, flags, name, ctor);
->  	if (s) {
->  		s->refcount++;
->  		/*
-> @@ -3954,12 +3963,15 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
->  				size, align, flags, ctor)) {
->  			list_add(&s->list, &slab_caches);
->  			up_write(&slub_lock);
-> +			mem_cgroup_register_cache(memcg, s);
+I can init hpet_clockevent.event_handler with clockevents_handle_noop() 
+in its definition.
 
-How do you handle when the memcg cgroup gets destroyed? Also that means only one
-memcg cgroup can be accounted for a given slab cache? What if that memcg cgroup has
-children? Hmm, perhaps this is handled in a further patch in the series, I saw a
-patch title with "children" inside :)
+Will rework and resend.
 
-Also my knowledge on memory allocators is near zero, so I may well be asking weird
-questions...
+Thanks for replying.
+
+>
+>> So, take precautions against spurious timer interrupts by checking the
+>> event_handler value before calling it.
+>> ---
+>>   arch/x86/kernel/time.c |   18 +++++++++++++++++-
+>>   1 files changed, 17 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+>> index c6eba2b..43bdd3a 100644
+>> --- a/arch/x86/kernel/time.c
+>> +++ b/arch/x86/kernel/time.c
+>> @@ -57,7 +57,23 @@ EXPORT_SYMBOL(profile_pc);
+>>    */
+>>   static irqreturn_t timer_interrupt(int irq, void *dev_id)
+>>   {
+>> -	global_clock_event->event_handler(global_clock_event);
+>> +	/*
+>> +	 * If hpet is enabled by hpet_late_init(), event_handler can be left
+>> +	 * uninitialized by clockevents_register_device() because of
+>> +	 * hpet_clockevent low rating (by the time hpet_late_init() is called,
+>> +	 * high prio apic timers have already been setup). The event_handler is
+>> +	 * then initialized a bit later by the clocksource_done_booting()
+>> +	 * procedure.
+>> +	 *
+>> +	 * Normally, timer interrupts should not be delivered between these two
+>> +	 * calls, but if e.g. the kernel is booted using kexec, there might be
+>> +	 * some pending interrupts from the previous kernel's context, which
+>> +	 * can lead to a NULL pointer dereference.
+>> +	 *
+>> +	 * So, take precautions against spurious timer interrupts.
+>> +	 */
+>> +	if (global_clock_event->event_handler)
+>> +		global_clock_event->event_handler(global_clock_event);
+>>
+>>   	/* MCA bus quirk: Acknowledge irq0 by setting bit 7 in port 0x61 */
+>>   	if (MCA_bus)
+
