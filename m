@@ -1,121 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab2DXH0W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 03:26:22 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54876 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab2DXH0U (ORCPT
+	id S1755162Ab2DXH33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 03:29:29 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:51128 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab2DXH32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 03:26:20 -0400
-Date: Tue, 24 Apr 2012 08:26:17 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-arch@vger.kernel.org,
+	Tue, 24 Apr 2012 03:29:28 -0400
+Date: Tue, 24 Apr 2012 15:29:18 +0800
+From: Richard Yang <weiyang@linux.vnet.ibm.com>
+To: Don Dutile <ddutile@redhat.com>
+Cc: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120424072617.GB6871@ZenIV.linux.org.uk>
-References: <CA+55aFxQR8g3TycW7nOVjjnnsaWWW-Gh74-bV6rUm+7SRTm25g@mail.gmail.com>
- <20120420025438.GD6871@ZenIV.linux.org.uk>
- <CA+55aFzinX_6DVvDTyxrsP6VEHVY2Q+Y=e+qksnAjR+oT3GZew@mail.gmail.com>
- <20120420080914.GF6871@ZenIV.linux.org.uk>
- <CA+55aFxia+u3VAf0qN-2wv7DyAQZK-Z8=n=cqUvo--+C905aFg@mail.gmail.com>
- <20120420160848.GG6871@ZenIV.linux.org.uk>
- <20120420164239.GH6871@ZenIV.linux.org.uk>
- <CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com>
- <20120420180748.GI6871@ZenIV.linux.org.uk>
- <20120423180150.GA6871@ZenIV.linux.org.uk>
+Subject: Re: One problem in reassign pci bus number?
+Message-ID: <20120424072918.GA9138@richard>
+Reply-To: Richard Yang <weiyang@linux.vnet.ibm.com>
+References: <20120410090306.GA7056@richard>
+ <20120422155202.GA13540@richard>
+ <4F95B17B.3030401@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120423180150.GA6871@ZenIV.linux.org.uk>
+In-Reply-To: <4F95B17B.3030401@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12042407-4790-0000-0000-000002529400
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 07:01:50PM +0100, Al Viro wrote:
-> BTW, I've looked into dealing with that; I think I have a tentative solution
-> for all these architectures.
-> 	* hexagon: just needs tracehook_notify_resume() added, everything
-> else is already in place
-> 	* score: TIF_NOTIFY_RESUME is defined *and* included into the
-> "we need to call do_notify_resume()" logics in assembler glue; just need
-> to add the usual boilerplate into said do_notify_resume()
-> 	* um: glue in question is in C; easily dealt with, I can do that
-> (and test the results) tonight
-> 	* m68k: that'll need some glue changes; AFAICS, the easiest solution
-> is to put TIF_NOTIFY_RESUME into bit 5 - then nommu glue needs no changes
-> at all, and entry_mm.S needs two "jmi do_signal_return" replaced with
-> "jne do_signal_return"; the code before those shifts bit 6 to MSBit and
-> currently bits 0--5 are unused.  Replacing "most significant bit is set" with
-> "some bits are set" would do the right thing, AFAICT - make the sucker
-> go into do_signal() handling if either TIF_SIGPENDING (bit 6) or
-> TIF_NOTIFY_RESUME (bit 5) is set (at that point it has already checked that
-> TIF_NEED_RESCHEDULE is not set).  On top of that it will need the obvious
-> changes in do_signal() itself - boilerplate added and current contents
-> made conditional on TIF_SIGPENDING being set.  I can only test that
-> on aranym, though - all real m68k hardware I have is pining for fjords right
-> now.
-> 	* microblaze: TIF_NOTIFY_RESUME is defined, but not hooked anywhere.
-> Fortunately, the glue is easy enough there - all relevant spots have the
-> same form
->         lwi     r11, r11, TI_FLAGS;     /* get flags in thread info */
->         andi    r11, r11, _TIF_SIGPENDING;
->         beqi    r11, 1f;                /* Signals to handle, handle them */
-> and replacing that _TIF_SIGPENDING with _TIF_SIGPENDING | _TIF_NOTIFY_RESUME
-> will do the right thing; of course, do_signal() itself will need to be
-> taught about TIF_NOTIFY_RESUME - same as in case of m68k.  No hardware, no
-> emulators set up, but then it's less intrusive in the glue part than m68k
-> counterpart.
-> 	* xtensa: TIF_NOTIFY_RESUME needs to be defined (bit 7 would do,
-> AFAICS) and there the glue does need some change:
->         l32i    a4, a2, TI_FLAGS
-> 
->         _bbsi.l a4, TIF_NEED_RESCHED, 3f
->         _bbci.l a4, TIF_SIGPENDING, 4f
-> should be replaced with (if I'm not misreading their ISA documentation)
->         l32i    a4, a2, TI_FLAGS
-> 
->         _bbsi.l a4, TIF_NEED_RESCHED, 3f
->         _bbsi.l a4, TIF_SIGPENDING, 2f
->         _bbci.l a4, TIF_NOTIFY_RESUME, 4f
-> 2:
-> (and do_signal() changes, of course).  That's the most intrusive one and
-> again, I've neither hw nor emulators for that sucker.
-> 
-> I'll post the patches for all of those tonight; if everything ends up working,
-> at least we can get rid of the ifdefs on TIF_NOTIFY_RESUME.
+On Mon, Apr 23, 2012 at 03:46:03PM -0400, Don Dutile wrote:
+>On 04/22/2012 11:52 AM, Richard Yang wrote:
+>>All,
+>>
+>>I am reading the pci_scan_bridge() and not sure what will happen in
+>>following situation.
+>>
+>>Suppose the kernel is not passed the pci=assign-busses.
+>>
+>>Below is a picture about the pci system.
+>>
+>>                    +-------+
+>>                    |       | root bridge(0,255)
+>>                    +---+---+
+>>                        |          Bus 0
+>>       -----+-----------+------------------------------+--
+>>            |                                          |
+>>            |                                          |
+>>            |                                          |
+>>       +----+----+                               +-----+-----+
+>>       |         |  B1(1,15)                     |           |B2(16,28)
+>>       +----+----+                               +-----+-----+
+>>            |  Bus 1                                   |    Bus 16
+>>       -----+-----------------------         ----------+----------------
+>>                             |
+>>                        +----+----+
+>>                        |         | B3
+>>                        +---------+
+>>
+>>Suppose B1 and B2 works fine with the BIOS, which get the right bus
+>>number and range.
+>>
+>>B3 does not works fine with the BIOS, which doesn't get the bus number.
+>>
+>>So in pci_scan_bridge(), B3 will be met in the second pass and get bus
+>>number 16?
+>
+>unfortunately, today, the answer is yes.
+>I have run into a similar problem recently when trying to use pci=assign-busses
+>with an SRIOV device behind a non-ARI-capable PCIe switch.
+>In this scenario, the assign-busses code assigned the next bus number,
+>which conflicted with an existing one on the system, and hangs the
+>system -- two bridges responding to the same PCI bus num evidently
+>confuses the hw! ;-)
+Hmm... seems we are not talking about the same case.
+My case is the kernel not passed with pci=assign-busses.
 
-Untested variants pushed into signal.git#master; will test tomorrow.  In
-the meanwhile, any code review (and testing of the entire thing on as many
-targets as possible) would be very welcome.
+I think, if pci=assign-busses is used, kernel will just ignore the bus
+number assigned by BIOS, and do the assignment itself.
+>
+>The PCI code is suppose to do two bus scans -- pass=0: to see what the BIOS
+>has setup, and then pass=1 to assign non-BIOS setup devices.
+>But, what I'm finding is that when pci=assign-busses is set, the
+>pass=0 scan is not doing a full PCI tree scan and registering all
+>the BIOS-setup busses first, and it tries to do extended bus assignment in pass=0,
+>not pass=1; in the above configuration, it expands B1's bus num range from (1,15)
+>to (1,16), then tries to scan behind it.  that creates an overlap btwn
+>B1 & B2's sec/sub bus-num ranges, and they both respond to a Type1 config cycle
+>with a bus-number of 16 (typically when trying to read the VID register of 16:0.0
+>in this case).... boom! ... or more like silence due to system hang...
+>
+>*If* the system spaces bus ranges apart, e.g., in your config above,
+>if the BIOS setup B1(1,15) and B2(24,32), then pci=assign-busses will
+>work because bus num 16 is free, and two bridges won't think they both
+>respond to type1 pci config cycle (with bus-number=16 lying in their sec/sub-bus num range),
+>and all will (luckily) work.
+>
+>Unfortunately, I'm in & out of work due to at-home time requirements,
+>so I haven't had a chance to work out a proper patch.
+>What should happen in the above case, is the kernel prints a warning saying
+>it couldn't do needed assign-busses operations due to configuration constraints...
+>and continue to do pci (pass=1) bridge scanning.... and not wedge the system
+>as it does now.
+>The base problem is that
+>(a)pass=0 is doing bus-assigning, and it shouldn't be done
+>    until pass=1, after all known BIOS-setup busses are known
+>(b) the code doesn't have a nice warning and continuation when this
+>    conflict occurs.
+>
+>>Would this be a conflict?
+>>
+>summary: yes.
 
-Next target in signal fixes: handling of multiple signal arrivals.  We really
-need to handle all of them (i.e. build a stack frame for each, with sigcontext
-pointing to the entry into the previous one); otherwise we are risking to get
-things like e.g. SIGSEGV on failure to build a sigframe being handled at
-random point - we handle one arriving signal, send ourselves SIGSEGV in
-process and return to userland (without actually going into the signal
-handler stack frame we'd failed to build).  Broken architectures: blackfin,
-cris, h8300, hexagon, microblaze and probably ia64...
+-- 
+Richard Yang
+Help you, Help me
 
-And then there's a lovely issue of what syscall restarts - both on multiple
-arriving signals (we want the restart to apply on the _first_ signal being
-processed, TYVM, since the rest of those signals are not interrupting
-a syscall - conceptually, they are interrupting the previous signal handlers
-at the point of entry) and on {rt_,}sigreturn(2) (where we might get a value
-in the register normally used to return sys_whatever() value that would look
-like one of restart-related special errors, except that it's simply what that
-register used to have when e.g. a timer interrupt had hit while we had a signal
-pending; hell to debug, since it looks e.g. like one register in userland
-process getting its value randomly replaced with -EINTR if it happened to
-contain -ERESTARTSYS when an interrupt had happened).  I'd fixed one like
-that on arm a couple of years ago, but AFAICS we still have several on
-other architectures ;-/
-
-BTW, another fun issue is FUBAR assembler variant of rt_sigprocmask() on
-itanic; it's missing the fixes done to set_current_blocked() in commit
-e6fa16ab "signal: sigprocmask() should do retarget_shared_pending()".
-I'm _not_ about to transpose those fixes into ia64 assembler, thank you
-very much - Itanic maintainers are whole-heartedly welcome to deal with
-that one.  The horror in question is fsys_rt_sigprocmask()...
