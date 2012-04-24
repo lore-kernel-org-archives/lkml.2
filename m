@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244Ab2DXSX3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 14:23:29 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:50813 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815Ab2DXSX0 (ORCPT
+	id S1757230Ab2DXSX2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 14:23:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62964 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755956Ab2DXSX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Apr 2012 14:23:26 -0400
 From: David Daney <ddaney.cavm@gmail.com>
@@ -15,32 +15,37 @@ To: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
         Andrew Morton <akpm@linux-foundation.org>,
         David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH 0/2] Buildtime exception table sorting for relative entries.
-Date: Tue, 24 Apr 2012 11:23:13 -0700
-Message-Id: <1335291795-26693-1-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH 2/2] Revert "x86, extable: Disable presorted exception table for now"
+Date: Tue, 24 Apr 2012 11:23:15 -0700
+Message-Id: <1335291795-26693-3-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1335291795-26693-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1335291795-26693-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <ddaney@caviumnetworks.com>
 
-These are against HPA's x86/extable branch in the tip repo.
+sortextable now works with relative entries, re-enable it.
 
-Light testing indicates that it works for x86_64, and MIPS64.  x86_32
-looks good, but I didn't try to boot the resulting kernel.  But really,
-what could go wrong with something so simple?
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+---
+ arch/x86/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-David Daney (2):
-  scripts/sortextable: Handle relative entries, and other cleanups.
-  Revert "x86, extable: Disable presorted exception table for now"
-
- arch/x86/Kconfig      |    1 +
- scripts/Makefile      |    2 +
- scripts/sortextable.c |  171 ++++++++++++++++++++++++++++++++-----------------
- scripts/sortextable.h |   79 +++++++++++++++--------
- 4 files changed, 165 insertions(+), 88 deletions(-)
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 1d14cc6..2f925cc 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -82,6 +82,7 @@ config X86
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_IOMAP
+ 	select DCACHE_WORD_ACCESS if !DEBUG_PAGEALLOC
++	select BUILDTIME_EXTABLE_SORT
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS)
 -- 
 1.7.7.6
 
