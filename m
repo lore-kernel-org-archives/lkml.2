@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964906Ab2DXWjb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:39:31 -0400
-Received: from d1.icnet.pl ([212.160.220.21]:53252 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964840Ab2DXWj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:39:27 -0400
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
-Cc: linux-omap@vger.kernel.org, grant.likely@secretlab.ca, khilman@ti.com,
-        tony@atomide.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Charulatha V <charu@ti.com>
-Subject: Re: [PATCH v9 11/25] gpio/omap: cleanup omap_gpio_mod_init function
-Date: Wed, 25 Apr 2012 00:37:42 +0200
-Message-ID: <2991865.CRb195aGPQ@acer>
-Organization: Tele-Info-System, Poznan, PL
-User-Agent: KMail/4.7.4 (Linux/3.1.10-gentoo-r1; KDE/4.7.4; i686; ; )
-In-Reply-To: <CAC83ZvJDDvCu8NKTOYh75USA3fvSAKEGaXXi9PtCM955K_keSA@mail.gmail.com>
-References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com> <CAC83ZvK630=6B-k2TfV3XBg8w7ZosLVDNE4ezjDYnn=hcXA48Q@mail.gmail.com> <CAC83ZvJDDvCu8NKTOYh75USA3fvSAKEGaXXi9PtCM955K_keSA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+	id S964919Ab2DXWjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:39:46 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964885Ab2DXWjV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 18:39:21 -0400
+Message-Id: <20120424223256.930908381@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Tue, 24 Apr 2012 15:33:33 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
+Subject: [ 40/42] ocfs2: ->rl_count endianness breakage
+In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dnia wtorek, 24 kwietnia 2012 21:06:59 DebBarma, Tarun Kanti pisze:
-> Hi Janusz,
-> 
-> Here is the patch, with attachment as well. I have just tested on
-> OMAP4 platform.
-> Testing on other OMAP2+ platforms is pending. In the meantime can you please
-> validate on OMAP1 platform and confirm? Thanks.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Hi,
-Please give me a day or two.
-Thanks,
-Janusz
+------------------
+
+From: Al Viro <viro@zeniv.linux.org.uk>
+
+commit 28748b325dc2d730ccc312830a91c4ae0c0d9379 upstream.
+
+le16, not le32...
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ocfs2/refcounttree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/ocfs2/refcounttree.c
++++ b/fs/ocfs2/refcounttree.c
+@@ -1468,7 +1468,7 @@ static int ocfs2_divide_leaf_refcount_bl
+ 
+ 	trace_ocfs2_divide_leaf_refcount_block(
+ 		(unsigned long long)ref_leaf_bh->b_blocknr,
+-		le32_to_cpu(rl->rl_count), le16_to_cpu(rl->rl_used));
++		le16_to_cpu(rl->rl_count), le16_to_cpu(rl->rl_used));
+ 
+ 	/*
+ 	 * XXX: Improvement later.
+
+
