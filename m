@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab2DXNdR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 09:33:17 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:49437 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab2DXNdP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 09:33:15 -0400
-References: <1334935921-13016-1-git-send-email-jeff.dagenais@gmail.com> <20120421064710.GC2360@core.coreip.homeip.net>
-In-Reply-To: <20120421064710.GC2360@core.coreip.homeip.net>
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=iso-8859-1
-Message-Id: <6E61B4B4-D654-41E0-ACF3-FA9F2D4B8C0F@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        michael.hennerich@analog.com
-From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Subject: Re: [PATCH 1/2] input: adp5588-keys - get value from data out when dir out
-Date: Tue, 24 Apr 2012 09:33:11 -0400
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-X-Mailer: Apple Mail (2.1084)
+	id S1754892Ab2DXNg0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 09:36:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35122 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754038Ab2DXNgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 09:36:25 -0400
+Message-ID: <4F96AC7F.6080603@suse.cz>
+Date: Tue, 24 Apr 2012 15:37:03 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] kbuild: Add error handling to KCONFIG_ALL_CONFIG
+References: <m1aa22rllb.fsf@fess.ebiederm.org> <4F96705C.5030901@suse.cz> <m1aa21nxzg.fsf_-_@fess.ebiederm.org> <20120424123305.GA30068@sepie.suse.cz> <m1k415mgrv.fsf@fess.ebiederm.org>
+In-Reply-To: <m1k415mgrv.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dne 24.4.2012 14:54, Eric W. Biederman napsal(a):
+> Michal Marek <mmarek@suse.cz> writes:
+> 
+>> On Tue, Apr 24, 2012 at 04:57:39AM -0700, Eric W. Biederman wrote:
+>>>  		name = getenv("KCONFIG_ALLCONFIG");
+>>> -		if (name && !stat(name, &tmpstat)) {
+>>> -			conf_read_simple(name, S_DEF_USER);
+>>> +		if (name && name[0] != '\0') {
+>>> +			if (conf_read_simple(name, S_DEF_USER)) {
+>>> +				fprintf(stderr,
+>>> +					_("*** Can't read seed configuration \"%s\"!\n"),
+>>> +					name);
+>>> +				exit(1);
+>>> +			}
+>>>  			break;
+>>>  		}
+>>>  		switch (input_mode) {
+>>
+>>
+>> Before this patch, the code would fall back to a file named
+>> all{no,yes,mod,def,random}.config and then to all.config. Now you require
+>> $KCONFIG_ALLCONFIG to always be a file. I suggest we keep the fallback at
+>> least for KCONFIG_ALLCONFIG=1, like this:
+> 
+> I don't require KCONFIG_ALLCONFIG to always be a file if it is an
+> empty string we continue to fallback to the predefined file names.
+> Which is the currently documented behavior.
 
-On Apr 21, 2012, at 2:47, Dmitry Torokhov wrote:
+Ah, right, it says "If KCONFIG_ALLCONFIG is used without a filename, ...".
 
-> Hi Jean-François,
-> 
-> On Fri, Apr 20, 2012 at 11:32:00AM -0400, Jean-François Dagenais wrote:
->> As discussed here: http://ez.analog.com/message/35852,
->> the 5587 revC and 5588 revB spec sheets contain a mistake
->> in the GPIO_DAT_STATx register description.
->> 
->> According to R.Shnell at ADI, as well as my own
->> observations, it should read:
->> "GPIO data status (shows GPIO state when read for inputs)".
->> 
->> This commit changes the get value function accordingly.
->> 
->> A similar patch for gpio-adp5588 follows.
->> 
->> Signed-off-by: Jean-François Dagenais <jeff.dagenais@gmail.com>
->> Acked-by: Michael Hennerich <michael.hennerich@analog.com>
->> ---
->> drivers/input/keyboard/adp5588-keys.c |    7 +++++++
->> 1 files changed, 7 insertions(+), 0 deletions(-)
->> 
->> diff --git a/drivers/input/keyboard/adp5588-keys.c b/drivers/input/keyboard/adp5588-keys.c
->> index 6412ced..b7a0f1a 100644
->> --- a/drivers/input/keyboard/adp5588-keys.c
->> +++ b/drivers/input/keyboard/adp5588-keys.c
->> @@ -78,6 +78,13 @@ static int adp5588_gpio_get_value(struct gpio_chip *chip, unsigned off)
->> 	unsigned int bank = ADP5588_BANK(kpad->gpiomap[off]);
->> 	unsigned int bit = ADP5588_BIT(kpad->gpiomap[off]);
->> 
->> +	mutex_lock(&kpad->gpio_lock);
->> +	if (kpad->dir[bank] & bit) {
->> +		int result = !!(kpad->dat_out[bank] & bit);
->> +		mutex_unlock(&kpad->gpio_lock);
->> +		return result;
->> +	}
->> +	mutex_unlock(&kpad->gpio_lock);
->> 	return !!(adp5588_read(kpad->client, GPIO_DAT_STAT1 + bank) & bit);
-> 
-> This locking looks wrong as it is possible for adp5588_gpio_get_value()
-> to get scheduled out after checking kpad->dir[bank] and releasing
-> kpad->gpio_lock while another thread executes
-> adp5588_gpio_direction_output() and modifies kpad->dir[bank].
-> 
-> You should keep mutex for the entire duration; something like this:
-> 
-> 	mutex_lock(&kpad->gpio_lock);
-> 	if (kpad->dir[bank] & bit)
-> 		val = kpad->dat_out[bank];
-> 	else
-> 		val = adp5588_read(kpad->client, GPIO_DAT_STAT1 + bank);
-> 	mutex_unlock(&kpad->gpio_lock);
-> 
-> 	return !!(val & bit);
-> 
-Agreed, I think I wanted to minimize refactoring a bit too much and got distracted. I will send V2 shortly for both drivers.
-> Thanks.
-Thank you!
-> 
-> -- 
-> Dmitry
 
+> As for KCONFIG_ALLCONFIG=1 if people are a actually doing that the
+> complexity seems worth it (to not break muscle memory and/or scripts).
+> I was just aiming for an absolutely trivial and simple implementation.
+> 
+> Why do you think people have been specifying KCONFIG_ALLCONFIG=1?
+> instead of simply exporting KCONFIG_ALLCONFIG with an empty string?
+
+I have been using KCONFIG_ALLCONFIG=1 :). It's quite natural to set env
+variables to "1" to enable something. But I don't insist that this is
+retained.
+
+Michal
