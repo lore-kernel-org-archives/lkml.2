@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab2DXMeK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 08:34:10 -0400
-Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:60337 "EHLO
-	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753586Ab2DXMeI (ORCPT
+	id S1753836Ab2DXMfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 08:35:31 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64315 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711Ab2DXMfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 08:34:08 -0400
-Date: Tue, 24 Apr 2012 15:32:52 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Hiroshi DOYU <hdoyu@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] ARM: tegra: Add SMMU enabler in AHB
-Message-ID: <20120424123248.GG8444@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1335269116-9578-1-git-send-email-hdoyu@nvidia.com>
- <1335269116-9578-2-git-send-email-hdoyu@nvidia.com>
+	Tue, 24 Apr 2012 08:35:30 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J3rqiH0DIeiRD2zz"
-Content-Disposition: inline
-In-Reply-To: <1335269116-9578-2-git-send-email-hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <DD6B9D658496A2488636C8C75B9C0CB601DA3AF6@EXMAIL04.scwf.nsc.com>
+References: <1335107508.6261.3.camel@phoenix> <20120423110912.GC8318@opensource.wolfsonmicro.com>
+ <CAF+7xWkzy5e0rcpwprEE3VWTikOu2+qtsgfdhTN12-yonDxadA@mail.gmail.com>
+ <DD6B9D658496A2488636C8C75B9C0CB601DA3984@EXMAIL04.scwf.nsc.com>
+ <CAF+7xWmB1YWjwmQmf9gk0DX7DH5euBD1QH8d7VW6r_nat8FwYQ@mail.gmail.com> <DD6B9D658496A2488636C8C75B9C0CB601DA3AF6@EXMAIL04.scwf.nsc.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 24 Apr 2012 20:35:09 +0800
+Message-ID: <CAF+7xWnf6QMg5QeXyoRJH76xjprGW7B3pMXeS-f=uiwPdsMoLQ@mail.gmail.com>
+Subject: Re: [PATCH] leds: lm3530: fix handling of already enabled regulators
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Girdwood, Liam" <lrg@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Could you explain what 'enabled on boot' means ?
+> 1) The regulator_enable() is called in initial time
+> or
+> 2) boot_on = 1 in regulator_init_data ?
+>
+> If you mean 'boot_on = 1' in regulator_init_data, then no use_count increase.
 
---J3rqiH0DIeiRD2zz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I mean boot_on = 1 in regulator_init_data.
 
-Hi,
+I just checked the regulator core, and you are right that
+no use_count increase if boot_on = 1 in this case.
 
-On Tue, Apr 24, 2012 at 03:05:15PM +0300, Hiroshi DOYU wrote:
-> @@ -95,6 +98,21 @@ static inline void gizmo_writel(unsigned long value, u=
-nsigned long offset)
->  	writel(value, tegra_ahb->regs + offset);
->  }
-> =20
-> +#ifdef CONFIG_ARCH_TEGRA_3x_SOC
-> +
-> +void tegra_ahb_enable_smmu(void)
-> +{
-> +	unsigned long val;
-> +
-> +	val =3D gizmo_readl(AHB_ARBITRATION_XBAR_CTRL);
-> +	val |=3D AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_DONE <<
-> +		AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_SHIFT;
-> +	gizmo_writel(val, AHB_ARBITRATION_XBAR_CTRL);
-> +}
-> +EXPORT_SYMBOL(tegra_ahb_enable_smmu);
+use_count will be increased if boot_on = 1 && using regulator_get_exclusive.
 
-ok, so this is the only place where you need that global pointer. Who
-would call this ? Can you do runtime detection of the SoC and enable
-SMMU based on that ?
-
-I mean, will this function always be called for TEGRA 3 SoCs or is there
-another condition to that ?
-
---=20
-balbi
-
---J3rqiH0DIeiRD2zz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPlp1wAAoJEIaOsuA1yqREm7QP/2hqstAY6K8zz6WsdgQkB9/r
-HIAUlH7WKJ7LVHGC1fAIBa1A4okL3fS9bebTCGp9cfertmUM3KGY/7MV4mJM+vKP
-YdoebyEz+ENXYHgt9KSNOErPuKKCJaU58/g8Zz0Q0iHCtsz8/zUvWSSCBZepIADL
-MLz7pgpxAwsOVJmV7OpmGHFb9SBRpLSj1rrckH5N1PtLpbH3phw4uqNbPSQH2Sw1
-SNL40zAXpENHx1EPmjk08giZ2G5AsMVyRfJCZBYI4XS8/bBoIlvK76/Xvj/u2E3a
-ft/KS45ZYxMr4KbfhVygnqBc+bNOBkm7a12u9siCznjHg9FpxA8bZLkC2Lo7dmxw
-gcRD6XdqqFdmBZ8fRNWvXdHQAH3eyMjpxfmG+kc2HzZZUynxCm9VnOZj9/n/u5TF
-9Dwt76P84EVjwAt7UFaAEAoarFPbNwQZ1AXEKd1CYRQtHzesg1HrcEsGdyfA5HjV
-vZBjCxfOXLBG1QYwxvadoSMAiaV3erTDyNVQLuYXmmzUgRZ0Qe7pK8A/Wvqq+610
-Bt9IoSbV4/DC2yFgoTiXRlbHSON1ENnaAimObEx0OwTqp+EolnT0cBsEJWaREe5K
-a/QfcHNhVutN5vXdZRn9hZtxmsvvRArVCeUlkT6pKfuxCLvttPHrzhYk1ADzdWrI
-wKDq2Ib/7OumQP9YwjsC
-=8Pes
------END PGP SIGNATURE-----
-
---J3rqiH0DIeiRD2zz--
+Regards,
+Axel
