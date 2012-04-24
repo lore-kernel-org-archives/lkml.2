@@ -1,151 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab2DXKlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 06:41:08 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:43014 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab2DXKlG (ORCPT
+	id S1752606Ab2DXKmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 06:42:23 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:49892 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab2DXKmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 06:41:06 -0400
-Date: Tue, 24 Apr 2012 12:40:59 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: [EDAC PATCH v13 6/7] edac.h: Prepare to handle with generic
- layers
-Message-ID: <20120424104059.GA11559@aftab.osrc.amd.com>
-References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
- <1334607133-30039-1-git-send-email-mchehab@redhat.com>
- <1334607133-30039-7-git-send-email-mchehab@redhat.com>
- <20120423174955.GH6147@aftab.osrc.amd.com>
- <4F959FDE.2070304@redhat.com>
+	Tue, 24 Apr 2012 06:42:21 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andi Kleen <andi@firstfloor.org>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com
+References: <20120416021951.9303.58568.stgit@localhost6.localdomain6>
+	<20120416022139.9303.56284.stgit@localhost6.localdomain6>
+	<m2ipgqoh90.fsf@firstfloor.org>
+	<20120424.110518.434300178.d.hatayama@jp.fujitsu.com>
+	<20120424080420.GA27374@one.firstfloor.org>
+Date: Tue, 24 Apr 2012 03:46:24 -0700
+In-Reply-To: <20120424080420.GA27374@one.firstfloor.org> (Andi Kleen's message
+	of "Tue, 24 Apr 2012 10:04:20 +0200")
+Message-ID: <m1ipgpo1a7.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F959FDE.2070304@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19cDCLDM6POiAvunKITVAFZMGw9OMkGG4I=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andi Kleen <andi@firstfloor.org>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH 2/2] Enter 2nd kernel with BSP
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 06:30:54PM +0000, Mauro Carvalho Chehab wrote:
-> >> +};
-> >> +
-> >> +/**
-> >> + * struct edac_mc_layer - describes the memory controller hierarchy
-> >> + * @layer:		layer type
-> >> + * @size:maximum size of the layer
-> >> + * @is_csrow:		This layer is part of the "csrow" when old API
-> >> + *			compatibility mode is enabled. Otherwise, it is
-> >> + *			a channel
-> >> + */
-> >> +struct edac_mc_layer {
-> >> +	enum edac_mc_layer_type	type;
-> >> +	unsigned		size;
-> >> +	bool			is_csrow;
-> >> +};
-> > 
-> > Huh, why do you need is_csrow? Can't do
-> > 
-> > 	type = EDAC_MC_LAYER_CHIP_SELECT;
-> > 
-> > ?
-> 
-> No, that's different. For a csrow-based memory controller, is_csrow is equal to
-> type == EDAC_MC_LAYER_CHIP_SELECT, but, for the other memory controllers, this
-> is used to mark with layers will be used for the "fake csrow" exported by the
-> EDAC core by the legacy API.
+Andi Kleen <andi@firstfloor.org> writes:
 
-I don't understand this, do you mean: "this will be used to mark which
-layer will be used to fake a csrow"...?
+>> native_cpu_up avoids to wake up cpu with boot_cpu_physical_apicid, but
+>
+> Ok so that check needs to go then. I wonder why it is there.
 
-[..]
+As I remember we had a check to avoid waking up the current cpu
+we are running on, and there was something about the value for
+the current cpu coming from BIOS tables etc.  Because of all of the
+silliness in how we get the apicid for the current cpu I seem to
+remember the case where we start all of our secondary processors
+to periodically regress.
 
-> With regards to the changes at edac_mc_sysfs,  it will likely affect all per-dimm
-> routines, plus the counters reset logic. The problem of pointing to a set of
-> routines that need changes is that this list can/will change with time.
-> 
-> So, the intention behind this note is not to give an exhaustive list of what should
-> be changed, if EDAC_MAX_LAYERS is incremented. Instead, it is meant to give a
-> clue that incrementing the number of layers is not as easy as just changing
-> it: it would require to change the number of layers also at the code.
+>> the boot_cpu_physical_apicid would be just a boot cpu now, which could
+>> be non-BSP on the 2nd kernel; equal to crashing cpu on the 1st
+>> kernel. It would need to check explicitly whether a given cpu is BSP
+>> or not and this would be better fix here. This is suggested by Eric.
 
-Then write that instead of adding a clueless note which only confuses readers.
+Yes.  My two reasons for designing the crash path the way I did was
+that we might have offlined/hot-unplugged the boot cpu, or the bootcpu
+might have gotten itself into a terrible state.  Since we want as much
+reliability in kexec on panic we don't bother trying to restore it.
 
-> 
-> > 
-> >> + */
-> >> +#define EDAC_MAX_LAYERS		3
-> >> +
-> >> +/*
-> >> + * A loop could be used here to make it more generic, but, as we only have
-> >> + * 3 layers, this is a little faster. By design, layers can never be 0 or
-> >> + * more than 3. If that ever happens, a NULL is returned, causing an OOPS
-> >> + * during the memory allocation routine, with would point to the developer
-> >> + * that he's doing something wrong.
-> >> + */
-> >> +#define GET_POS(layers, var, nlayers, lay0, lay1, lay2) ({		\
-> > 
-> > This is returning size per layers so it cannot be GET_POS(), AFAICT.
-> > EDAC_GET_SIZE or similar maybe?
-> 
-> This is not returning the size, per layers. It is returning a pointer to the
-> structure that holds the dimm.
-> 
-> > 
-> >> +	typeof(var) __p;						\
-> >> +	if ((nlayers) == 1)						\
-> >> +		__p = &var[lay0];					\
-> >> +	else if ((nlayers) == 2)					\
-> >> +		__p = &var[(lay1) + ((layers[1]).size * (lay0))];	\
-> >> +	else if ((nlayers) == 3)					\
-> >> +		__p = &var[(lay2) + ((layers[2]).size * ((lay1) +	\
-> >> +			    ((layers[1]).size * (lay0))))];		\
-> >> +	else								\
-> >> +		__p = NULL;						\
-> >> +	__p;								\
-> >> +})
+The normal reboot path, and a normal kexec tries to reboot on the boot
+cpu primarily because there are a lot of BIOS's out there that if you
+talk to them on anything other than the boot cpu they get confused.
 
-Ok, I'm looking at your next patch trying to understand this thing:
-
-+	/*
-+	 * Fills the dimm struct
-+	 */
-+	memset(&pos, 0, sizeof(pos));
-+	row = 0;
-+	chn = 0;
-+	debugf4("%s: initializing %d dimms\n", __func__, tot_dimms);
-+	for (i = 0; i < tot_dimms; i++) {
-+		chan = &csi[row].channels[chn];
-+		dimm = GET_POS(lay, mci->dimms, n_layers,
-+			       pos[0], pos[1], pos[2]);
-
-pos is an unsigned[3] array with all its elements set to 0 in the memset
-above. Which means I need a run-variable like that all the time whenever
-I iterate over the layers.
-
-Now, say nlayers == 3, then your macro does this:
-
-	__p = &var[(lay2) + ((layers[2]).size * ((lay1) + ((layers[1]).size * (lay0))))];
-
-So I'm multiplying a loop variable with layers[i].size which is the
-maximum size of the layer. What does that mean, where is this size
-initialized?
-
-I can imagine that I'll get an element in the mci->dimms array in the
-end but this is very confusing.
-
-So please explain what each argument of this macro exactly means.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Eric
