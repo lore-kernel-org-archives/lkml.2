@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604Ab2DXWgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:36:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932559Ab2DXWf6 (ORCPT
+	id S1758069Ab2DXWgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:36:08 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932608Ab2DXWgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:35:58 -0400
-Message-Id: <20120424223245.408768204@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:36:04 -0400
+Message-Id: <20120424223244.871618184@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:21 -0700
+Date: Tue, 24 Apr 2012 15:33:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 40/62] EHCI: always clear the STS_FLR status bit
+        alan@lxorguk.ukuu.org.uk, Shaohua Li <shli@fusionio.com>,
+        Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
+Subject: [ 34/62] jbd2: use GFP_NOFS for blkdev_issue_flush
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,43 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Shaohua Li <shli@kernel.org>
 
-commit 2fbe2bf1fd37f9d99950bd8d8093623cf22cf08b upstream.
+commit 99aa78466777083255b876293e9e83dec7cd809a upstream.
 
-This patch (as1544) fixes a problem affecting some EHCI controllers.
-They can generate interrupts whenever the STS_FLR status bit is turned
-on, even though that bit is masked out in the Interrupt Enable
-register.
+flush request is issued in transaction commit code path, so looks using
+GFP_KERNEL to allocate memory for flush request bio falls into the classic
+deadlock issue.  I saw btrfs and dm get it right, but ext4, xfs and md are
+using GFP.
 
-Since the driver doesn't use STS_FLR anyway, the patch changes the
-interrupt routine to clear that bit whenever it is set, rather than
-leaving it alone.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-hcd.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/jbd2/commit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -857,8 +857,13 @@ static irqreturn_t ehci_irq (struct usb_
- 		goto dead;
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -689,7 +689,7 @@ start_journal_io:
+ 	if (commit_transaction->t_need_data_flush &&
+ 	    (journal->j_fs_dev != journal->j_dev) &&
+ 	    (journal->j_flags & JBD2_BARRIER))
+-		blkdev_issue_flush(journal->j_fs_dev, GFP_KERNEL, NULL);
++		blkdev_issue_flush(journal->j_fs_dev, GFP_NOFS, NULL);
+ 
+ 	/* Done it all: now write the commit record asynchronously. */
+ 	if (JBD2_HAS_INCOMPAT_FEATURE(journal,
+@@ -825,7 +825,7 @@ wait_for_iobuf:
+ 	if (JBD2_HAS_INCOMPAT_FEATURE(journal,
+ 				      JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT) &&
+ 	    journal->j_flags & JBD2_BARRIER) {
+-		blkdev_issue_flush(journal->j_dev, GFP_KERNEL, NULL);
++		blkdev_issue_flush(journal->j_dev, GFP_NOFS, NULL);
  	}
  
-+	/*
-+	 * We don't use STS_FLR, but some controllers don't like it to
-+	 * remain on, so mask it out along with the other status bits.
-+	 */
-+	masked_status = status & (INTR_MASK | STS_FLR);
-+
- 	/* Shared IRQ? */
--	masked_status = status & INTR_MASK;
- 	if (!masked_status || unlikely(ehci->rh_state == EHCI_RH_HALTED)) {
- 		spin_unlock(&ehci->lock);
- 		return IRQ_NONE;
+ 	if (err)
 
 
