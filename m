@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab2DXNln (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 09:41:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53851 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754699Ab2DXNlk (ORCPT
+	id S1754963Ab2DXNmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 09:42:14 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:48278 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab2DXNmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 09:41:40 -0400
-From: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
-To: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>
-CC: <linux-kernel@vger.kernel.org>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
-Subject: [PATCH] inline, GPIO: Add support for TI TCA6424
-Date: Tue, 24 Apr 2012 15:41:02 +0200
-X-Mailer: git-send-email 1.7.3.4
+	Tue, 24 Apr 2012 09:42:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-KSE-AntiSpam-Interceptor-Info: protection disabled
-X-KSE-Antivirus-Interceptor-Info: scan successful
-X-KSE-Antivirus-Info: Clean
-Message-Id: <0MTePA-1Sn6qg3jeK-00QVLP@mrelayeu.kundenserver.de>
-X-Provags-ID: V02:K0:9LMmVPkWzy2ln3ajNqtsHF1wEDkPzqzo0lvbE0c9hBO
- ZU1GZ3xdMJxQuHugf4HGdVyCbrVPU1EJcj2fKYWDblzxsGPN9e
- s+vl1b8yW2Q1+CKaMBpcUnqpqXozdk0aSWojBZI+O6o2CHP6CW
- R9SNnow2zurymFT+wXgUmFYIXZehZ8QKa2AOlcjh4uOyeGIJhn
- vWmabQwzErUAIERGAFAuh8ADRKXhdxpj6zSh8VGGRh7fUwqNRP
- 4zaWEDHXJbtI6JQIzZu6JVYugdPQ1FYwdQu2DhGW32q7ujuxCO
- pmOI50g+yiP+YsdTaQDpT+KcLUh/rnYA3K/3JM+aI4h6qGNGD1
- dHLYh1A/sqrupZm4HfzAFU3HVaG8pWjL5aS9uNFlNoh2dvaZvT
- cyX6d0ddSGe/A==
+In-Reply-To: <20120424120019.GE24089@lunn.ch>
+References: <cover.1335266056.git.viresh.kumar@st.com>
+	<abbcf661dc58948794839eb0fba1d5a0950ec848.1335266056.git.viresh.kumar@st.com>
+	<20120424120019.GE24089@lunn.ch>
+Date: Tue, 24 Apr 2012 19:12:10 +0530
+Message-ID: <CAOh2x==YaPxYxigyE=n2weoKHhu4ktGRHHGdzgs2+d1_Lo-D4Q@mail.gmail.com>
+Subject: Re: [PATCH V3 07/12] ata/sata_mv: Remove conditional compilation of
+ clk code
+From: viresh kumar <viresh.linux@gmail.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Viresh Kumar <viresh.kumar@st.com>, akpm@linux-foundation.org,
+        spear-devel@list.st.com, viresh.linux@gmail.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        mturquette@linaro.org, sshtylyov@mvista.com, jgarzik@redhat.com,
+        linux@arm.linux.org.uk, linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends the PCA953x driver to support TI's TCA6424.
-It is based on code by Michele Bevilacqua. Please review.
+On 4/24/12, Andrew Lunn <andrew@lunn.ch> wrote:
+> Sorry, but still wrong.
+>
+> The clock is optional. If we can find a clock, turn it on. If not,
+> keep going....
+>
+> You patch causes the missing clock to become a fatal error.
+>
+> This sata_mv exists in multiple forms. It can be part of a SoC. It can
+> also be on a PCI bus. In the PCI form, it is unlikely to have a clk
+> which can be controlled. When built into a SoC, namely one of the
+> Orion family, dove, orion5x, mv78xx0 do not have a clock which can be
+> controlled. However kirkwood does have a clock.
+>
+> So, kirkwood will provide a clock and expects that sata_mv will turn
+> it on. All the other ways of using sata_mv will not provide a clock,
+> but still expect the driver to be happy.
 
-Signed-off-by: Andreas Schallenberg<Andreas.Schallenberg@3alitytechnica.com>
+Hmm. What this code does now is:
+If HAVE_CLK is selected, then there must be a clock for the device. Otherwise
+it will always pass.
 
+You want not to return error if a platform does have HAVE_CLK, but doesn't
+have a clock for sata? That would be simple to fix, but want to confirm if this
+is actually required.
+
+@Russell: Can we have your view also?
+
+--
+viresh
