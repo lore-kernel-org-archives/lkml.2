@@ -1,119 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757406Ab2DXTnr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 15:43:47 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:42011 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757337Ab2DXTnq (ORCPT
+	id S1757413Ab2DXToH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 15:44:07 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:46818 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757332Ab2DXToF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 15:43:46 -0400
-Date: Tue, 24 Apr 2012 21:43:45 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: linux arch <linux-arch@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>
-Cc: Richard Weinberger <richard@nod.at>,
-        "David S. Miller" <davem@davemloft.net>,
-        Arnaud Lacombe <lacombar@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 2/4] kbuild: refactor final link of sparc32
-Message-ID: <20120424194345.GB2311@merkur.ravnborg.org>
-References: <20120424194148.GA2216@merkur.ravnborg.org>
+	Tue, 24 Apr 2012 15:44:05 -0400
+Message-ID: <4F97023F.7070109@linaro.org>
+Date: Tue, 24 Apr 2012 12:42:55 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120424194148.GA2216@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/3] [RFC] ashmem: Convert ashmem to use volatile ranges
+References: <1335289787-11089-1-git-send-email-john.stultz@linaro.org> <1335289787-11089-4-git-send-email-john.stultz@linaro.org> <1335295291.28150.222.camel@twins>
+In-Reply-To: <1335295291.28150.222.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042419-5518-0000-0000-000003E40910
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 8716c7f473ec65c57811bb21095354b813b48898 Mon Sep 17 00:00:00 2001
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Mon, 23 Apr 2012 20:29:07 +0200
-Subject: [PATCH 2/4] kbuild: refactor final link of sparc32
+On 04/24/2012 12:21 PM, Peter Zijlstra wrote:
+> On Tue, 2012-04-24 at 10:49 -0700, John Stultz wrote:
+>> First pass attempt at getting ashmem to utilize the volatile range
+>> code.
+> One would think the purpose of the previous patches was to entirely do
+> away with the ashmem interface.. this patch is a temporary band-aid to
+> assist in testing without having to modify userspace?
+>
+So in a way, yes. I'm trying to iteratively chip away at the staging 
+drivers, providing a smooth transition path. This patch is just to show 
+(or determine, depending on if the GET_PIN_STATUS is critical) that the 
+fadvise volatile functionality is sufficient to replace the ashmem 
+unpinning feature.
 
-sparc32 uses an additional final link to support btfix.
-Introduce a new set of exported variables in the top-level Makefile
-to make the extra linking step simpler.
+Part of the trouble with pushing the Android drivers upstream is that 
+each driver doesn't just solve one issue, but usually handles a number 
+of problems. Thus discussion about alternative solutions gets muddled as 
+no one alternative is sufficient.
 
-sparc32 have hardcoded knowledge of kallsyms support. This fix
-include support for EXTRA_KALLSYM_PASS=1.
-The ugly part is that it is hardcoded in the arch/sparc/boot
-Makefile.
+For the ashmem driver, one big use case is a way to provide fds to 
+anonymous memory that can be shared between processes. This is the same 
+as an unlinked tmpfs file, but allows them to not have tmpfs mounts, 
+which could potentially be cluttered with poorly written or malicious 
+applications.  There is also the feature of being able to unpin memory 
+ranges of that fd, which I thought was interesting for wider use.
 
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: "David S. Miller" <davem@davemloft.net>
----
- Makefile                 |    5 +++++
- arch/sparc/Makefile      |   11 -----------
- arch/sparc/boot/Makefile |   14 +++++++++-----
- 3 files changed, 14 insertions(+), 16 deletions(-)
+The fadivse volatile work provides that unpinning feature, but doesn't 
+do anything to try to provide atomically unlinked tmpfs fds. To solve 
+that problem,  we'll have to revisit if the simplified ashmem interface 
+makes sense, or if there should be something like a permissions based 
+userspace solution with a deamon that does the create/unlink and hands 
+the fds out.  But hopefully that discussion will be more clear, as it 
+will be only about one feature.
 
-diff --git a/Makefile b/Makefile
-index 287aee4..00bf5b1 100644
---- a/Makefile
-+++ b/Makefile
-@@ -727,6 +727,11 @@ libs-y1		:= $(patsubst %/, %/lib.a, $(libs-y))
- libs-y2		:= $(patsubst %/, %/built-in.o, $(libs-y))
- libs-y		:= $(libs-y1) $(libs-y2)
- 
-+# externally visible symbols
-+export KBUILD_VMLINUX_INIT := $(head-y) $(init-y)
-+export KBUILD_VMLINUX_MAIN := $(core-y) $(libs-y) $(drivers-y) $(net-y)
-+export KBUILD_LDS          := arch/$(SRCARCH)/kernel/vmlinux.lds
-+
- # Build vmlinux
- # ---------------------------------------------------------------------------
- # vmlinux is built from the objects selected by $(vmlinux-init) and
-diff --git a/arch/sparc/Makefile b/arch/sparc/Makefile
-index eddcfb3..3195f77 100644
---- a/arch/sparc/Makefile
-+++ b/arch/sparc/Makefile
-@@ -72,17 +72,6 @@ libs-y                 += arch/sparc/lib/
- 
- drivers-$(CONFIG_OPROFILE)	+= arch/sparc/oprofile/
- 
--# Export what is needed by arch/sparc/boot/Makefile
--export VMLINUX_INIT VMLINUX_MAIN
--VMLINUX_INIT := $(head-y) $(init-y)
--VMLINUX_MAIN := $(core-y) kernel/ mm/ fs/ ipc/ security/ crypto/ block/
--VMLINUX_MAIN += $(patsubst %/, %/lib.a, $(libs-y)) $(libs-y)
--VMLINUX_MAIN += $(drivers-y) $(net-y)
--
--ifdef CONFIG_KALLSYMS
--export kallsyms.o := .tmp_kallsyms2.o
--endif
--
- boot := arch/sparc/boot
- 
- # Default target
-diff --git a/arch/sparc/boot/Makefile b/arch/sparc/boot/Makefile
-index d56d199..78f1994 100644
---- a/arch/sparc/boot/Makefile
-+++ b/arch/sparc/boot/Makefile
-@@ -39,11 +39,15 @@ define rule_image
- 	echo 'cmd_$@ := $(cmd_image)' > $(@D)/.$(@F).cmd
- endef
- 
--BTOBJS := $(patsubst %/, %/built-in.o, $(VMLINUX_INIT))
--BTLIBS := $(patsubst %/, %/built-in.o, $(VMLINUX_MAIN))
--LDFLAGS_image := -T arch/sparc/kernel/vmlinux.lds $(BTOBJS) \
--                  --start-group $(BTLIBS) --end-group \
--                  $(kallsyms.o) $(obj)/btfix.o
-+# Support for kallsyms
-+kallsyms-$(CONFIG_KALLSYMS) := .tmp_kallsyms2.o
-+ifdef KALLSYMS_EXTRA_PASS
-+        kallsyms-$(CONFIG_KALLSYMS) := .tmp_kallsyms3.o
-+endif
-+
-+LDFLAGS_image := -T $(KBUILD_LDS) $(KBUILD_VMLINUX_INIT)           \
-+                  --start-group $(KBUILD_VMLINUX_MAIN) --end-group \
-+                  $(kallsyms-y) $(obj)/btfix.o
- 
- # Link the final image including btfixup'ed symbols.
- # This is a replacement for the link done in the top-level Makefile.
--- 
-1.7.10
+thanks
+-john
 
