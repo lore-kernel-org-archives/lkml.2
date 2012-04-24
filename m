@@ -1,101 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab2DXQIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 12:08:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755787Ab2DXQIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 12:08:09 -0400
-Date: Tue, 24 Apr 2012 11:58:43 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120424155843.GG26708@redhat.com>
-References: <20120410212041.GP21801@redhat.com>
- <20120410222425.GF4936@quack.suse.cz>
- <20120411154005.GD16692@redhat.com>
- <20120411192231.GF16008@quack.suse.cz>
- <20120412203719.GL2207@redhat.com>
- <20120412205148.GA24056@google.com>
- <20120414143639.GA31241@localhost>
- <20120416145744.GA15437@redhat.com>
- <20120424113340.GA12509@localhost>
- <20120424145655.GA1474@quack.suse.cz>
+	id S1756081Ab2DXQI3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 12:08:29 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:20345 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755787Ab2DXQI2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 12:08:28 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: vTFuifcVM1lcAkGse4ANgMO0jWb.MBNNzfaGQv8uHMvpClc
+ aL7KbP3bTt2SCxH6mSOG4NXTAxO2dUzSSm22j88zIXOACgri0pClUvbnRu.p
+ KCKryf_.hrv_C9bpaDfRY2xca9KuNUwLRxiCH9OruFtlZxhur1wxqHD3crqM
+ V1R.BQTSx.et2gC_rP3jA7s7LYGgCe_3KE3mZMqADLTFpWz2pNEXz0ACHpir
+ UfU7yicRbGch1DQ9MGyjnRbiW0KIDpxf4ImvqpAN3AVVxKiLnPWqny4XjWdp
+ GtYZAkc3EG.UVGdCOsv9ONkBJeqMB4XXNsA15Ackexc52YTyI93aq_55UyYr
+ EAvMa8HH5BLzgOcU7iijyk5L3oiyNDtrAf3B88V5v_9XqaZ80Yo4yqFynd8M
+ 5
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 24 Apr 2012 11:08:25 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Larry Woodman <lwoodman@redhat.com>
+cc: linux-mm@kvack.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Motohiro Kosaki <mkosaki@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -mm V2] do_migrate_pages() calls migrate_to_node() even
+ if task is already on a correct node
+In-Reply-To: <4F96CDE1.5000909@redhat.com>
+Message-ID: <alpine.DEB.2.00.1204241106240.26005@router.home>
+References: <4F96CDE1.5000909@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120424145655.GA1474@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 04:56:55PM +0200, Jan Kara wrote:
+On Tue, 24 Apr 2012, Larry Woodman wrote:
 
-[..]
-> > > I think having separate weigths for sync IO groups and async IO is not
-> > > very appealing. There should be one notion of group weight and bandwidth
-> > > distrubuted among groups according to their weight.
-> > 
-> > There have to be some scheme, either explicitly or implicitly. Maybe
-> > you are baring in mind some "equal split among queues" policy? For
-> > example, if the cgroup has 9 active sync queues and 1 async queue,
-> > split the weight equally to the 10 queues?  So the sync IOs get 90%
-> > share, and the async writes get 10% share.
->   Maybe I misunderstand but there doesn't have to be (and in fact isn't)
-> any split among sync / async IO in CFQ. At each moment, we choose a queue
-> with the highest score and dispatch a couple of requests from it. Then we
-> go and choose again. The score of the queue depends on several factors
-> (like age of requests, whether the queue is sync or async, IO priority,
-> etc.).
-> 
-> Practically, over a longer period system will stabilize on some ratio
-> but that's dependent on the load so your system should not impose some
-> artificial direct/buffered split but rather somehow deal with the reality
-> how IO scheduler decides to dispatch requests...
+> While moving tasks between cpusets we noticed some strange behavior.
+> Specifically if the nodes of the destination
+> cpuset are a subset of the nodes of the source cpuset do_migrate_pages() will
+> move pages that are already on a node
+> in the destination cpuset.  The reason for this is do_migrate_pages() does not
+> check whether each node in the source
+> nodemask is in the destination nodemask before calling migrate_to_node().  If
+> we simply do this check and skip them
+> when the source is in the destination moving we wont move nodes that dont need
+> to be moved.
 
-Yes. CFQ does not have the notion of giving a fixed share to async
-requests. In fact right now it is so biased in favor of sync reqeusts,
-that in some cases it can starve async writes or introduce long delays
-resulting in "task hung for 120 second" warnings.
-
-So if there are issues w.r.t how disk is shared between sync/async IO
-with in a cgroup, that should be handled at IO scheduler level. Writeback
-code trying to dictate that ratio, sounds odd.
-
-> 
-> > For dirty throttling w/o cgroup awareness, balance_dirty_pages()
-> > splits the writeout bandwidth equally among all dirtier tasks. Since
-> > cfq works with queues, it seems most natural for it to do equal split
-> > among all queues (inside the cgroup).
->   Well, but we also have IO priorities which change which queue should get
-> preference.
-> 
-> > I'm not sure when there are N dd tasks doing direct IO, cfq will
-> > continuously run N sync queues for them (without many dynamic queue
-> > deletion and recreations). If that is the case, it should be trivial
-> > to support the queue based fair split in the global async queue
-> > scheme. Otherwise I'll have some trouble detecting the N value when
-> > trying to do the N:1 sync:async weight split.
->   And also sync queues for several processes can get merged when CFQ
-> observes these processes cooperate together on one area of disk and get
-> split again when processes stop cooperating. I don't think you really want
-> to second-guess what CFQ does inside...
-
-Agreed. Trying to predict what CFQ will do and then trying to influence
-sync/async ration based on root cgroup weight does not seem to be the
-right way. Especially that will also mean either assuming that everything
-in root group is sync or we shall have to split sync/async weight notion.
-
-sync/async ratio is a IO scheduler thing and is not fixed. So writeback
-layer making assumptions and changing weigths sounds very awkward to me.
-
-Thanks
-Vivek
+Acked-by: Christoph Lameter <cl@linux.com>
