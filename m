@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932700Ab2DXWhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:37:17 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
+	id S932739Ab2DXWh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:37:29 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932686Ab2DXWhN (ORCPT
+	with ESMTP id S932721Ab2DXWhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:37:13 -0400
-Message-Id: <20120424223253.715186078@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:37:25 -0400
+Message-Id: <20120424223254.082928315@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:56 -0700
+Date: Tue, 24 Apr 2012 15:33:00 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [ 03/42] hwmon: fam15h_power: fix bogus values with current BIOSes
+        alan@lxorguk.ukuu.org.uk,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 07/42] xen/xenbus: Add quirk to deal with misconfigured backends.
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,90 +26,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Przywara <andre.przywara@amd.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 00250ec90963b7ef6678438888f3244985ecde14 upstream.
+commit 3066616ce23aad5719c23a0f21f32676402cb44b upstream.
 
-Newer BKDG[1] versions recommend a different initialization value for
-the running average range register in the northbridge. This improves
-the power reading by avoiding counter saturations resulting in bogus
-values for anything below about 80% of TDP power consumption.
-Updated BIOSes will have this new value set up from the beginning,
-but meanwhile we correct this value ourselves.
-This needs to be done on all northbridges, even on those where the
-driver itself does not register at.
+A rather annoying and common case is when booting a PVonHVM guest
+and exposing the PV KBD and PV VFB - as broken toolstacks don't
+always initialize the backends correctly.
 
-This fixes the driver on all current machines to provide proper
-values for idle load.
+Normally The HVM guest is using the VGA driver and the emulated
+keyboard for this (though upstream version of QEMU implements
+PV KBD, but still uses a VGA driver). We provide a very basic
+two-stage wait mechanism - where we wait for 30 seconds for all
+devices, and then for 270 for all them except the two mentioned.
 
-[1]
-http://support.amd.com/us/Processor_TechDocs/42301_15h_Mod_00h-0Fh_BKDG.pdf
-Chapter 3.8: D18F5xE0 Processor TDP Running Average (p. 452)
+That allows us to wait for the essential devices, like network
+or disk for the full 6 minutes.
 
-Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-[guenter.roeck@ericsson.com: Removed unnecessary return statement]
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+To trigger this, put this in your guest config:
+
+vfb = [ 'vnc=1, vnclisten=0.0.0.0 ,vncunused=1']
+
+instead of this:
+vnc=1
+vnclisten="0.0.0.0"
+
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+[v3: Split delay in non-essential (30 seconds) and essential
+ devices per Ian and Stefano suggestion]
+[v4: Added comments per Stefano suggestion]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/fam15h_power.c |   39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+ drivers/xen/xenbus/xenbus_probe_frontend.c |   69 ++++++++++++++++++++++-------
+ 1 file changed, 53 insertions(+), 16 deletions(-)
 
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -122,6 +122,38 @@ static bool __devinit fam15h_power_is_in
- 	return true;
+--- a/drivers/xen/xenbus/xenbus_probe_frontend.c
++++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
+@@ -132,7 +132,7 @@ static int read_backend_details(struct x
+ 	return xenbus_read_otherend_details(xendev, "backend-id", "backend");
  }
  
-+/*
-+ * Newer BKDG versions have an updated recommendation on how to properly
-+ * initialize the running average range (was: 0xE, now: 0x9). This avoids
-+ * counter saturations resulting in bogus power readings.
-+ * We correct this value ourselves to cope with older BIOSes.
-+ */
-+static void __devinit tweak_runavg_range(struct pci_dev *pdev)
-+{
-+	u32 val;
-+	const struct pci_device_id affected_device = {
-+		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
-+
-+	/*
-+	 * let this quirk apply only to the current version of the
-+	 * northbridge, since future versions may change the behavior
-+	 */
-+	if (!pci_match_id(&affected_device, pdev))
-+		return;
-+
-+	pci_bus_read_config_dword(pdev->bus,
-+		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
-+		REG_TDP_RUNNING_AVERAGE, &val);
-+	if ((val & 0xf) != 0xe)
-+		return;
-+
-+	val &= ~0xf;
-+	val |=  0x9;
-+	pci_bus_write_config_dword(pdev->bus,
-+		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
-+		REG_TDP_RUNNING_AVERAGE, val);
-+}
-+
- static void __devinit fam15h_power_init_data(struct pci_dev *f4,
- 					     struct fam15h_power_data *data)
+-static int is_device_connecting(struct device *dev, void *data)
++static int is_device_connecting(struct device *dev, void *data, bool ignore_nonessential)
  {
-@@ -155,6 +187,13 @@ static int __devinit fam15h_power_probe(
- 	struct device *dev;
- 	int err;
+ 	struct xenbus_device *xendev = to_xenbus_device(dev);
+ 	struct device_driver *drv = data;
+@@ -149,16 +149,41 @@ static int is_device_connecting(struct d
+ 	if (drv && (dev->driver != drv))
+ 		return 0;
  
-+	/*
-+	 * though we ignore every other northbridge, we still have to
-+	 * do the tweaking on _each_ node in MCM processors as the counters
-+	 * are working hand-in-hand
-+	 */
-+	tweak_runavg_range(pdev);
++	if (ignore_nonessential) {
++		/* With older QEMU, for PVonHVM guests the guest config files
++		 * could contain: vfb = [ 'vnc=1, vnclisten=0.0.0.0']
++		 * which is nonsensical as there is no PV FB (there can be
++		 * a PVKB) running as HVM guest. */
 +
- 	if (!fam15h_power_is_internal_node0(pdev)) {
- 		err = -ENODEV;
- 		goto exit;
++		if ((strncmp(xendev->nodename, "device/vkbd", 11) == 0))
++			return 0;
++
++		if ((strncmp(xendev->nodename, "device/vfb", 10) == 0))
++			return 0;
++	}
+ 	xendrv = to_xenbus_driver(dev->driver);
+ 	return (xendev->state < XenbusStateConnected ||
+ 		(xendev->state == XenbusStateConnected &&
+ 		 xendrv->is_ready && !xendrv->is_ready(xendev)));
+ }
++static int essential_device_connecting(struct device *dev, void *data)
++{
++	return is_device_connecting(dev, data, true /* ignore PV[KBB+FB] */);
++}
++static int non_essential_device_connecting(struct device *dev, void *data)
++{
++	return is_device_connecting(dev, data, false);
++}
+ 
+-static int exists_connecting_device(struct device_driver *drv)
++static int exists_essential_connecting_device(struct device_driver *drv)
+ {
+ 	return bus_for_each_dev(&xenbus_frontend.bus, NULL, drv,
+-				is_device_connecting);
++				essential_device_connecting);
++}
++static int exists_non_essential_connecting_device(struct device_driver *drv)
++{
++	return bus_for_each_dev(&xenbus_frontend.bus, NULL, drv,
++				non_essential_device_connecting);
+ }
+ 
+ static int print_device_status(struct device *dev, void *data)
+@@ -189,6 +214,23 @@ static int print_device_status(struct de
+ /* We only wait for device setup after most initcalls have run. */
+ static int ready_to_wait_for_devices;
+ 
++static bool wait_loop(unsigned long start, unsigned int max_delay,
++		     unsigned int *seconds_waited)
++{
++	if (time_after(jiffies, start + (*seconds_waited+5)*HZ)) {
++		if (!*seconds_waited)
++			printk(KERN_WARNING "XENBUS: Waiting for "
++			       "devices to initialise: ");
++		*seconds_waited += 5;
++		printk("%us...", max_delay - *seconds_waited);
++		if (*seconds_waited == max_delay)
++			return true;
++	}
++
++	schedule_timeout_interruptible(HZ/10);
++
++	return false;
++}
+ /*
+  * On a 5-minute timeout, wait for all devices currently configured.  We need
+  * to do this to guarantee that the filesystems and / or network devices
+@@ -212,19 +254,14 @@ static void wait_for_devices(struct xenb
+ 	if (!ready_to_wait_for_devices || !xen_domain())
+ 		return;
+ 
+-	while (exists_connecting_device(drv)) {
+-		if (time_after(jiffies, start + (seconds_waited+5)*HZ)) {
+-			if (!seconds_waited)
+-				printk(KERN_WARNING "XENBUS: Waiting for "
+-				       "devices to initialise: ");
+-			seconds_waited += 5;
+-			printk("%us...", 300 - seconds_waited);
+-			if (seconds_waited == 300)
+-				break;
+-		}
+-
+-		schedule_timeout_interruptible(HZ/10);
+-	}
++	while (exists_non_essential_connecting_device(drv))
++		if (wait_loop(start, 30, &seconds_waited))
++			break;
++
++	/* Skips PVKB and PVFB check.*/
++	while (exists_essential_connecting_device(drv))
++		if (wait_loop(start, 270, &seconds_waited))
++			break;
+ 
+ 	if (seconds_waited)
+ 		printk("\n");
 
 
