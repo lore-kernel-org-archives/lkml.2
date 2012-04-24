@@ -1,128 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab2DXFpn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 01:45:43 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:44114 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751608Ab2DXFpm (ORCPT
+	id S1752859Ab2DXFve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 01:51:34 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56436 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab2DXFvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 01:45:42 -0400
-X-Authenticated: #787645
-X-Provags-ID: V01U2FsdGVkX18/vfYy/jM/Cf+dO9EkN6ZwnqP7S4/+Vf3oncGgX0
-	/GtclPInvXUQRJ
-Message-ID: <4F963DFD.3060809@gmx.net>
-Date: Tue, 24 Apr 2012 07:45:33 +0200
-From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
+	Tue, 24 Apr 2012 01:51:33 -0400
+Date: Tue, 24 Apr 2012 00:51:23 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Matt Turner <mattst88@gmail.com>
+Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Cree <mcree@orcon.net.nz>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        =?utf-8?B?UmHDumw=?= Porcel <armin76@gentoo.org>
+Subject: Re: [PATCH] alpha: add io{read,write}{16,32}be functions
+Message-ID: <20120424055123.GA7140@burratino>
+References: <1322640100-14534-1-git-send-email-mcree@orcon.net.nz>
 MIME-Version: 1.0
-To: bhelgaas@google.com, lenb@kernel.org
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 3/3] PNP: Handle IORESOURCE_BITS in resource allocation
-References: <4F85ED86.8010002@gmx.net> <4F85EED2.5040403@gmx.net>
-In-Reply-To: <4F85EED2.5040403@gmx.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322640100-14534-1-git-send-email-mcree@orcon.net.nz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One small correction: the subject line should read
+Hi Matt et al,
 
-   [PATCH V2 3/3] PNP: Handle IORESOURCE_BITS in resource allocation
+Michael Cree wrote:
 
-to reflect that this patch is part of the second version of this patch series.
-
-
---- Witold
-
-
-
-On 11/04/12 22:51, Witold Szczeponik wrote:
-
-> The patch copies the flags masked by IORESOURCE_BITS from a resource's
-> template.  This is necessary because the resource settings require proper
-> IORESOURCE_BITS which are not known during the definition of these
-> resources using the "/sys/bus/pnp/*/*/resources" interface.  (In fact,
-> they should not be set by the user as the resource templates define the
-> proper settings.)
-> 
-> If the patch is not applied, the resource flags are not initialized properly
-> and obscure messages in the kernel log have been seen ("invalid flags").
-> 
-> The patch is applied against Linux 3.3.x.
-> 
-> 
-> Signed-off-by: Witold Szczeponik<Witold.Szczeponik@gmx.net>
-> 
-> 
-> Index: linux/drivers/pnp/manager.c
-> ===================================================================
-> --- linux.orig/drivers/pnp/manager.c
-> +++ linux/drivers/pnp/manager.c
-> @@ -18,11 +18,27 @@
-> 
->   DEFINE_MUTEX(pnp_res_mutex);
-> 
-> +static struct resource *pnp_find_resource(struct pnp_dev *dev,
-> +					  unsigned char rule,
-> +					  unsigned long type,
-> +					  unsigned int bar)
-> +{
-> +	struct resource *res = pnp_get_resource(dev, type, bar);
+> These functions are used in some PCI drivers with big-endian
+> MMIO space.
+>
+> Admittedly it is almost certain that no one this side of the
+> Moon would use such a card in an Alpha but it does get us
+> closer to being able to build allyesconfig or allmodconfig,
+[...]
+> --- a/arch/alpha/include/asm/io.h
+> +++ b/arch/alpha/include/asm/io.h
+> @@ -490,6 +490,11 @@ extern inline void writeq(u64 b, volatile void __iomem *addr)
+>  }
+>  #endif
+>  
+> +#define ioread16be(p) be16_to_cpu(ioread16(p))
+> +#define ioread32be(p) be32_to_cpu(ioread32(p))
+> +#define iowrite16be(v,p) iowrite16(cpu_to_be16(v), (p))
+> +#define iowrite32be(v,p) iowrite32(cpu_to_be32(v), (p))
 > +
-> +	/* when the resource already exists, set its resource bits from rule */
-> +	if (res) {
-> +		res->flags&= ~IORESOURCE_BITS;
-> +		res->flags |= rule&  IORESOURCE_BITS;
-> +	}
-> +
-> +	return res;
-> +}
-> +
->   static int pnp_assign_port(struct pnp_dev *dev, struct pnp_port *rule, int idx)
->   {
->   	struct resource *res, local_res;
-> 
-> -	res = pnp_get_resource(dev, IORESOURCE_IO, idx);
-> +	res = pnp_find_resource(dev, rule->flags, IORESOURCE_IO, idx);
->   	if (res) {
->   		pnp_dbg(&dev->dev, "  io %d already set to %#llx-%#llx "
->   			"flags %#lx\n", idx, (unsigned long long) res->start,
-> @@ -65,7 +81,7 @@ static int pnp_assign_mem(struct pnp_dev
->   {
->   	struct resource *res, local_res;
-> 
-> -	res = pnp_get_resource(dev, IORESOURCE_MEM, idx);
-> +	res = pnp_find_resource(dev, rule->flags, IORESOURCE_MEM, idx);
->   	if (res) {
->   		pnp_dbg(&dev->dev, "  mem %d already set to %#llx-%#llx "
->   			"flags %#lx\n", idx, (unsigned long long) res->start,
-> @@ -78,6 +94,7 @@ static int pnp_assign_mem(struct pnp_dev
->   	res->start = 0;
->   	res->end = 0;
-> 
-> +	/* ??? rule->flags restricted to 8 bits, all tests bogus ??? */
->   	if (!(rule->flags&  IORESOURCE_MEM_WRITEABLE))
->   		res->flags |= IORESOURCE_READONLY;
->   	if (rule->flags&  IORESOURCE_MEM_CACHEABLE)
-> @@ -123,7 +140,7 @@ static int pnp_assign_irq(struct pnp_dev
->   		5, 10, 11, 12, 9, 14, 15, 7, 3, 4, 13, 0, 1, 6, 8, 2
->   	};
-> 
-> -	res = pnp_get_resource(dev, IORESOURCE_IRQ, idx);
-> +	res = pnp_find_resource(dev, rule->flags, IORESOURCE_IRQ, idx);
->   	if (res) {
->   		pnp_dbg(&dev->dev, "  irq %d already set to %d flags %#lx\n",
->   			idx, (int) res->start, res->flags);
-> @@ -182,7 +199,7 @@ static int pnp_assign_dma(struct pnp_dev
->   		1, 3, 5, 6, 7, 0, 2, 4
->   	};
-> 
-> -	res = pnp_get_resource(dev, IORESOURCE_DMA, idx);
-> +	res = pnp_find_resource(dev, rule->flags, IORESOURCE_DMA, idx);
->   	if (res) {
->   		pnp_dbg(&dev->dev, "  dma %d already set to %d flags %#lx\n",
->   			idx, (int) res->start, res->flags);
-> 
-> 
+>  #define inb_p		inb
+
+This patch has been in use in Debian's development branch since
+January.  Does it look sensible to you?  (If so, I'd like to see it in
+mainline eventually so we can more easily share bugfixes depending on
+it in the future.)
+
+Thanks,
+Jonathan
