@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947Ab2DXWDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:03:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38026 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757015Ab2DXWDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:03:31 -0400
-Message-ID: <4F972321.4010009@zytor.com>
-Date: Tue, 24 Apr 2012 15:03:13 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1757968Ab2DXWFW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:05:22 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:29233
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757877Ab2DXWFV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 18:05:21 -0400
+X-SpamScore: -14
+X-BigFish: VS-14(zzbb2dI9371I936eK1432N98dKzz1202hzz8275dhz2dh2a8h668h839hd25he5bh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4F972380.6030202@freescale.com>
+Date: Tue, 24 Apr 2012 17:04:48 -0500
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 3/3] math128, x86_64: Implement {mult,add}_u128 in
- 64bit asm
-References: <20120424161039.293018424@chello.nl>    <20120424162224.588822231@chello.nl> <4F96D604.5050709@zytor.com>   <1335285395.28150.204.camel@twins> <4F96E01E.6040109@zytor.com>  <1335287973.28150.213.camel@twins> <4F96E0EB.7030904@zytor.com> <1335304843.28150.246.camel@twins>
-In-Reply-To: <1335304843.28150.246.camel@twins>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] powerpc/8xx: Fix NR_IRQ bugs and refactor 8xx
+ interrupt controller
+References: <1335220202-32533-1-git-send-email-grant.likely@secretlab.ca> <1335220202-32533-2-git-send-email-grant.likely@secretlab.ca> <1335237195.24897.0.camel@pasglop> <OF4123672B.F86C969F-ONC12579EA.002A2C1F-C12579EA.002A48C2@transmode.se> <1335266570
+In-Reply-To: <1335266570.15830.11.camel@pasglop>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2012 03:00 PM, Peter Zijlstra wrote:
+On 04/24/2012 06:22 AM, Benjamin Herrenschmidt wrote:
+> On Tue, 2012-04-24 at 09:41 +0200, Joakim Tjernlund wrote:
+>> Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote on 2012/04/24 05:13:15:
+>>>
+>>> On Mon, 2012-04-23 at 16:30 -0600, Grant Likely wrote:
+>>>> The mpc8xx driver uses a reference to NR_IRQS that is buggy.  It uses
+>>>> NR_IRQs for the array size of the ppc_cached_irq_mask bitmap, but
+>>>> NR_IRQs could be smaller than the number of hardware irqs that
+>>>> ppc_cached_irq_mask tracks.
+>>>
+>>> Joakim, any chance you can test this ASAP ? :-)
+>>
+>> Sorry, but no.  We have not moved our 8xx boards to 3.x as it in maintenance
+>> and takes too much space.
 > 
-> I haven't been able to make add_u128 generate sane code using __int128,
-> the conversion between my struct and the __int128 layout makes a horrid
-> mess.
-> 
+> Ah ok... Anybody else on the list who still has some 8xx gear ?
 
-Use a union, or define your type simply as __int128 if you're on a
-suitable platform?
+Boots OK on ep88xc.
 
-	-hpa
+-Scott
 
