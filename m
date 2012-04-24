@@ -1,9700 +1,3111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab2DXNUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 09:20:16 -0400
-Received: from mail-pz0-f66.google.com ([209.85.210.66]:59194 "EHLO
-	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443Ab2DXNUN (ORCPT
+	id S1754708Ab2DXNUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 09:20:53 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:63892 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab2DXNUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 09:20:13 -0400
-Message-ID: <4F96A881.7050507@gmail.com>
-Date: Tue, 24 Apr 2012 21:20:01 +0800
-From: Hui Zhu <teawater@gmail.com>
+	Tue, 24 Apr 2012 09:20:51 -0400
+Message-ID: <4F96A89C.7080901@mentor.com>
+Date: Tue, 24 Apr 2012 21:20:28 +0800
+From: Hui Zhu <hui_zhu@mentor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: KGTP (Linux Kernel debugger and tracer) 20120424 release(doc update)[1/3]code
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: <linux-kernel@vger.kernel.org>
+Subject: KGTP (Linux Kernel debugger and tracer) 20120424 release(doc update)[2/3]doc
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 24 Apr 2012 13:20:40.0159 (UTC) FILETIME=[0B3D86F0:01CD221D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Hui Zhu <teawater@gmail.com>
 ---
-  arch/arm/include/asm/gtp.h  |   15
-  arch/mips/include/asm/gtp.h |   19
-  arch/x86/include/asm/gtp.h  |   22
-  include/linux/perf_event.h  |    3
-  kernel/events/core.c        |   14
-  lib/Kconfig.debug           |   10
-  lib/Makefile                |    4
-  lib/gtp.c                   | 8994 ++++++++++++++++++++++++++++++++++++++++++++
-  lib/gtp_rb.c                |  498 ++
-  9 files changed, 9577 insertions(+), 2 deletions(-)
+  Documentation/gtp/howto.txt      | 1503 +++++++++++++++++++++++++++++++++++++++
+  Documentation/gtp/howtocn.txt    | 1319 ++++++++++++++++++++++++++++++++++
+  Documentation/gtp/quickstart.txt |  250 ++++++
+  3 files changed, 3072 insertions(+)
 
 --- /dev/null
-+++ b/arch/arm/include/asm/gtp.h
-@@ -0,0 +1,15 @@
-+#ifndef _ASM_ARM_GTP_H_
-+#define _ASM_ARM_GTP_H_
++++ b/Documentation/gtp/howto.txt
+@@ -0,0 +1,1503 @@
++		Linux Kernel GDB tracepoint module (KGTP)
++		=========================================
++		By Hui Zhu <teawater@gmail.com>
++		https://code.google.com/p/kgtp/wiki/HOWTO
 +
-+#define ULONGEST		uint64_t
-+#define LONGEST			int64_t
-+#define CORE_ADDR		unsigned long
++Update in 2012-04-24
 +
-+#define GTP_REGS_PC(regs)	((regs)->uregs[15])
++Table of contents
++-----------------
 +
-+#define GTP_REG_ASCII_SIZE	336
-+#define GTP_REG_BIN_SIZE	168
++What is KGTP
++Get help or report issues about KGTP
++Preparatory work before use KGTP
++Linux kernel
++If your system use the Linux kernel that is built by yourself
++If your system use the Linux kernel from distribution
++Get KGTP
++Get KGTP through http
++Get KGTP through svn
++Config KGTP
++Compile KGTP
++Normal compile
++Compile KGTP with some special config
++Install and uninstall KGTP
++Use KGTP with DKMS
++Use KGTP patch for Linux kernel
++Install GDB for KGTP
++Howto use
++Exec it
++Make GDB connect to gtp
++GDB on the current machine
++If GDB on remote machine
++Add module symbols to GDB
++How to use getmod.py
++How to use getmod
++Access memory directly
++GDB tracepoint
++Howto use GDB tracepoint
++actions [num]
++Start and stop the tracepoint
++Enable and disable the tracepoint
++tfind
++Use tracepoint get register info from a point of kernel
++Use tracepoint get the value of variable from a point of kernel
++How to use use tracepoint condition
++How to handle "Unsupported operator (null) (52) in expression."
++Show all the traced data of current frame
++Get status of tracepoint
++Set the trace buffer into a circular buffer
++Do not stop tracepoint when the GDB disconnects
++kprobes-optimization and the execution speed of tracepoint
++How to use trace state variables
++Simple trace state variables
++Per_cpu trace state variables
++Special trace state variables $current_task, $current_task_pid,
++$current_thread_info, $cpu_id, $dump_stack, $printk_level,
++$printk_format, $printk_tmp ,$clock, $hardirq_count, $softirq_count and
++$irq_count
++Special trace state variable $no_self_trace
++Trace the function return with $kret
++Use $ignore_error and $last_errno to ignore the error of tstart
++Use $cooked_clock and $cooked_rdtsc the time without KGTP used
++Use $xtime_sec and $xtime_nsec get the timespec
++Howto backtrace (stack dump)
++Collect stack with $bt and use GDB command "backtrace"
++Collect stack of current function's caller with $_ret
++Use $dump_stack to output stack dump through printk
++How to use performance counters
++Define a perf event trace state variable
++Define a per_cpu perf event trace state variable
++The perf event type and config
++Enable and disable all the perf event in a CPU with $pc_pe_en
++GDB scripts to help with set and get the perf event trace state
++variables
++Howto let tracepoint output value directly
++Switch collect to output the value directly
++Howto show a variable whose value has been optimized away
++Update your GCC
++How to get the function pointer point to
++If the debug info of the function pointer is not optimized out
++If the debug info of the function pointer is optimized out
++/sys/kernel/debug/gtpframe and offline debug
++How to use /sys/kernel/debug/gtpframe_pipe
++Get the frame info with GDB
++Get the frame info with cat
++Get the frame info with getframe
++Use $pipe_trace
++How to use add-ons/hotcode.py
++What is KGTP
++KGTP is a realtime and lightweight Linux debugger and tracer.
 +
-+#define GTP_SP_NUM		13
++It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
++current machine or remote machine can debug and trace Linux through GDB
++tracepoint and some other functions without stopping the Linux Kernel.
++And even if the board doesn't have GDB on it and doesn't have interface
++for remote debug. It can debug the Linux Kernel using offline debug (See
++HOWTO#/sys/kernel/debug/gtpframe_and_offline_debug).
++And it can work with Android (See HowToUseKGTPinAndroid).
++Now, it supports X86-32, X86-64, MIPS and ARM.
 +
-+#endif
++For new user of KGTP, please go to see Quickstart.
++
++Please go to UPDATE to get more info about KGTP update.
++
++Get help or report issues about KGTP
++You can post it to http://code.google.com/p/kgtp/issues/list, write
++Email to kgtp@freelists.org or write Email to teawater@gmail.com.
++The KGTP team will try our best to help you.
++
++Preparatory work before use KGTP
++Linux kernel
++If your system use the Linux kernel that is built by yourself
++To use KGTP, your Linux kernel need open following options:
++
++General setup  --->
++        [*] Kprobes
++
++Kernel hacking  --->
++        [*] Debug Filesystem
++        [*] Compile the kernel with debug info
++If your system use the Linux kernel from distribution
++You need install some Linux kernel package.
++
++Ubuntu
++Install the Linux kernel debug image
++1) Add debug source to the sources list of Ubuntu.
++
++Create an /etc/apt/sources.list.d/ddebs.list by running the following
++line at a terminal:
++echo "deb http://ddebs.ubuntu.com $(lsb_release -cs) main restricted
++universe multiverse" | \
++sudo tee -a /etc/apt/sources.list.d/ddebs.list
++Stable releases (not alphas and betas) require three more lines adding
++to the same file, which is done by the following terminal command:
++echo "deb http://ddebs.ubuntu.com $(lsb_release -cs)-updates main
++restricted universe multiverse
++deb http://ddebs.ubuntu.com $(lsb_release -cs)-security main restricted
++universe multiverse
++deb http://ddebs.ubuntu.com $(lsb_release -cs)-proposed main restricted
++universe multiverse" | \
++sudo tee -a /etc/apt/sources.list.d/ddebs.list
++Import the debug symbol archive signing key:
++sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 428D7C01
++Then run:
++sudo apt-get update
++
++2) Get Linux kernel debug image.
++
++sudo apt-get install linux-image-$(uname -r)-dbgsym
++Install the Linux kernel headers
++sudo apt-get install linux-headers-generic
++Install the Linux kernel source
++Install the source package:
++sudo apt-get install linux-source
++Uncompress the source package:
++sudo mkdir -p /build/buildd/
++sudo tar vxjf /usr/src/linux-source-$(uname -r | sed 's/-.*//').tar.bz2
++-C /build/buildd/
++sudo mv /build/buildd/linux-source-$(uname -r | sed 's/-.*//')
++/build/buildd/linux-$(uname -r | sed 's/-.*//')
++Fedora
++Install the Linux kernel debug image
++sudo yum --enablerepo=fedora-debuginfo install kernel-debuginfo
++Install the Linux kernel devel package
++sudo yum install kernel-devel-$(uname -r)
++Others
++You need install the Linux kernel debug image package and the Linux
++Kernel source.
++
++Get KGTP
++Get KGTP through http
++Please goto http://code.google.com/p/kgtp/downloads/list OR UPDATE to
++download the package.
++
++Get KGTP through svn
++Some people have trouble with access to KGTP website. You can access
++kgtp through svn:
++
++svn checkout http://kgtp.googlecode.com/svn/ kgtp-read-only
++kgtp-read-only/tags/ Present for each release of KGTP.
++kgtp-read-only/trunk/ Present for the main trunk of KGTP.
++
++Config KGTP
++Following part is the default config of KGTP inside the Makefile. With
++this config, KGTP will build together with current kernel that running
++on this machine.
++
++KERNELDIR := /lib/modules/`uname -r`/build
++CROSS_COMPILE :=
++KERELDIR is set to the directory which holds the kernel you want to
++build for. By default, it is set to the kernel that you are running.
++CROSS_COMPILE is set to the prefix name of compiler that you want to
++build KGTP. Empty to compile with your default compiler.
++ARCH is the architecture.
++
++Or you can choose which kernel you want build with and which compiler
++you want use by change Makefile.
++For example:
++
++KERNELDIR := /home/teawater/kernel/bamd64
++CROSS_COMPILE :=x86_64-glibc_std-
++ARCH := x86_64
++KERNELDIR is set to /home/teawater/kernel/bamd64. Compiler will use
++x86_64-glibc_std-gcc.
++
++Compile KGTP
++Normal compile
++cd kgtp/
++make
++Compile KGTP with some special config
++Most of time, KGTP can auto select right options to build with Various
++versions of Linux kernel.
++But if you want config special options with yourself, you can read
++following part:
++With this option, KGTP will not auto select any build options.
++
++make AUTO=0
++With this option, KGTP will use simple frame instead of KGTP ring
++buffer.
++The simple frame doesn't support gtpframe_pipe. It just for debug KGTP.
++
++make AUTO=0 FRAME_SIMPLE=1
++With this option, $clock will return rdtsc value instead of local_clock.
++
++make AUTO=0 CLOCK_CYCLE=1
++With this option, KGTP will use procfs instead of debugfs.
++
++make AUTO=0 USE_PROC=1
++The options can use together, for example:
++
++make AUTO=0 FRAME_SIMPLE=1 CLOCK_CYCLE=1
++Install and uninstall KGTP
++KGTP don't need to be install because it can insmod directly inside its
++directory (See HOWTO#Exec_it). But if you need, you can install it to
++your system.
++Install:
++
++cd kgtp/
++sudo make install
++Uninstall:
++
++cd kgtp/
++sudo make uninstall
++Use KGTP with DKMS
++You can use KGTP with DKMS if you want it.
++Following commands will copy the files of KGTP to the directory that
++DKMS need.
++
++cd kgtp/
++sudo make dkms
++Then you can use DKMS commands to control KGTP. Please goto
++http://linux.dell.com/dkms/manpage.html to see how to use DKMS.
++
++Use KGTP patch for Linux kernel
++Most of time, you don't need KGTP patch because KGTP can build as a LKM
++and very easy to use. But to help some people include KGTP to them
++special Linux Kernel tree, KGTP supply patches for Linux kernel.
++In the KGTP directory:
++gtp_for_review.patch is the patch for Linux kernel upstream.
++gtp_3.0_to_upstream.patch is the patch for Linux kernel from 3.0 to
++upstream.
++gtp_2.6.39.patch is the patch for Linux kernel 2.6.39.
++gtp_2.6.33_to_2.6.38.patch is the patch for Linux kernel from 2.6.33 to
++2.6.38.
++gtp_older_to_2.6.32.patch is the patch for Linux kernel 2.6.32 and older
++version.
++Install GDB for KGTP
++The GDB that older than 7.3 have some bugs of tracepoint. And some
++functions of GDB are not very well.
++So if your GDB is older than 7.3 please go to
++https://code.google.com/p/gdbt/ to get howto install GDB for KGTP.
++If you have issue about GDB please get help according to
++HOWTO#Report_issues_about_KGTP.
++
++Howto use
++Exec it
++If you have installed KGTP in your system, you can:
++
++sudo modprobe gtp
++Or you can use the kgtp module in the directory.
++
++cd kgtp/
++sudo insmod gtp.ko
++Make GDB connect to gtp
++GDB on the current machine
++sudo gdb ./vmlinux
++(gdb) target remote /sys/kernel/debug/gtp
++Remote debugging using /sys/kernel/debug/gtp
++0x0000000000000000 in ?? ()
++After that, you can begin to use GDB command trace and debug the Linux
++Kernel.
++
++If GDB on remote machine
++#Open the KGTP interface in current machine.
++sudo su
++nc -l 1234 </sys/kernel/debug/gtp >/sys/kernel/debug/gtp
++(nc -l -p 1234 </sys/kernel/debug/gtp >/sys/kernel/debug/gtp for old
++version netcat.)
++#Let gdb connect to the port 1234
++gdb ./vmlinux
++(gdb) target remote xxx.xxx.xxx.xxx:1234
++After that, you can begin to use GDB command trace and debug the Linux
++Kernel.
++
++Add module symbols to GDB
++Sometimes you need to add a Linux kernel module's symbols to GDB to
++debug it.
++Add symbols with hand is not very easy, so KGTP package include an GDB
++python script "getmod.py" and a program "getmod" can help you.
++
++How to use getmod.py
++Connect to KGTP before use the getmod.py.
++
++(gdb) source ~/kgtp/getmod.py
++Then this script will auto load the Linux kernel module's symbols to
++GDB.
++
++How to use getmod
++"getmod" is written by C so you can use it anywhere even if in an
++embedded environment.
++For example:
++
++#Following command save Linux Kernel module info to the file ~/tmp/mi in
++GDB
++#command format.
++sudo getmod >~/tmp/mi
++#in gdb part:
++(gdb) source ~/tmp/mi
++add symbol table from file
++"/lib/modules/2.6.39-rc5+/kernel/fs/nls/nls_iso8859-1.ko" at
++        .text_addr = 0xf80de000
++        .note.gnu.build-id_addr = 0xf80de088
++        .exit.text_addr = 0xf80de074
++        .init.text_addr = 0xf8118000
++        .rodata.str1.1_addr = 0xf80de0ac
++        .rodata_addr = 0xf80de0c0
++        __mcount_loc_addr = 0xf80de9c0
++        .data_addr = 0xf80de9e0
++        .gnu.linkonce.this_module_addr = 0xf80dea00
++#After this GDB command, all the Linux Kernel module info is loaded into
++GDB.
++If you use remote debug or offline debug, maybe you need change the base
++directory. Following example is for it.
++
++#/lib/modules/2.6.39-rc5+/kernel is replaced to sudo ./getmod -r
++/home/teawater/kernel/b26
++sudo ./getmod -r /home/teawater/kernel/b26 >~/tmp/mi
++Access memory directly
++After connect the KGTP, you can access most of memory directly.
++For example, you can access to "jiffies_64" with following command:
++
++(gdb) p jiffies_64
++Or you can access to the first entry of "static LIST_HEAD(modules)" with
++following command:
++
++(gdb) p *((struct module *)((char *)modules->next - ((size_t) &(((struct
++module *)0)->list))))
++Or you can access to the CPU0 memory info of "DEFINE_PER_CPU(struct
++device , mce_device);":
++
++p *(struct device *)(__per_cpu_offset[0]+(uint64_t)(&mce_device))
++GDB tracepoint
++Tracepoint is that GDB define some addresses and some actions and put
++them to the target (KGTP). After tracepoint start, , KGTP will do these
++actions (Some of them will collect data and save them to tracepoint
++frame buffer) when Linux kernel execution to there addresses. After
++that, Linux kernel will keep execution.
++KGTP supply some interfaces that GDB or other programe can take the data
++of tracepoint frame buffer out to parse.
++About these interfaces, this doc have introduced
++"/sys/kernel/debug/gtp". And will introduce "/sys/kernel/debug/gtpframe"
++and "/sys/kernel/debug/gtpframe_pipe" later.
++
++Howto use GDB tracepoint
++Please goto
++http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoints.html.
++
++trace location
++The trace command is very similar to the break command. Its argument
++location can be a source line, a function name, or an address in the
++target program. The trace command defines a tracepoint, which is a
++address or some addresses that KGTP do some actions in it.
++Here are some examples of using the trace command:
++
++(gdb) trace foo.c:121    // a source file and line number
++
++(gdb) trace +2           // 2 lines forward
++
++(gdb) trace my_function  // first source line of function
++
++(gdb) trace *my_function // EXACT start address of function
++
++(gdb) trace *0x2117c4    // an address
++actions [num]
++This command will prompt for a list of actions to be taken when the
++tracepoint is hit. If the tracepoint number num is not specified, this
++command sets the actions for the one that was most recently defined (so
++that you can define a tracepoint and then say actions without bothering
++about its number). You specify the actions themselves on the following
++lines, one action at a time, and terminate the actions list with a line
++containing just end. So far, the only defined actions are collect,
++teval, and while-stepping.
++
++collect expr1, expr2, ...
++Collect values of the given expressions when the tracepoint is hit. This
++command accepts a comma-separated list of any valid expressions. In
++addition to global, static, or local variables, the following special
++arguments are supported:
++
++$regs   Collect all registers.
++$args   Collect all function arguments.
++$locals Collect all local variables.
++teval expr1, expr2, ...
++Evaluate the given expressions when the tracepoint is hit. This command
++accepts a comma-separated list of expressions. The results are
++discarded, so this is mainly useful for assigning values to trace state
++variables (see HOWTO#Simple_trace_state_variables) without adding those
++values to the trace buffer, as would be the case if the collect action
++were used.
++
++while-stepping n
++Please goto
++HOWTO#If_the_debug_info_of_the_function_pointer_is_optimized_out see
++howto use it.
++
++Start and stop the tracepoint
++Tracepoint will exec actions only when it is starting use this GDB
++command:
++
++(gdb) tstart
++It will stop by this GDB command:
++
++(gdb) tstop
++Enable and disable the tracepoint
++Like breakpoint, tracepoint can be control by GDB commands "enable" and
++"disable". But please note that it only useful when tracepoint stop.
++
++tfind
++GDB command "tfind" is used to select a entry of trace frame bufffer
++when tracepoint stop.
++Please goto http://sourceware.org/gdb/current/onlinedocs/gdb/tfind.html
++get more info about it.
++
++Use tracepoint get register info from a point of kernel
++The following is an example that records the value of all registers when
++"vfs_readdir" is called.
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) trace vfs_readdir
++Tracepoint 1 at 0xc01a1ac0: file
++/home/teawater/kernel/linux-2.6/fs/readdir.c, line 23.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>collect $reg
++>end
++(gdb) tstart
++(gdb) shell ls
++(gdb) tstop
++(gdb) tfind
++Found trace frame 0, tracepoint 1
++#0  0xc01a1ac1 in vfs_readdir (file=0xc5528d00, filler=0xc01a1900
++<filldir64>,
++   buf=0xc0d09f90) at /home/teawater/kernel/linux-2.6/fs/readdir.c:23
++23      /home/teawater/kernel/linux-2.6/fs/readdir.c: No such file or
++directory.
++       in /home/teawater/kernel/linux-2.6/fs/readdir.c
++(gdb) info reg
++eax            0xc5528d00       -984445696
++ecx            0xc0d09f90       -1060069488
++edx            0xc01a1900       -1072031488
++ebx            0xfffffff7       -9
++esp            0xc0d09f8c       0xc0d09f8c
++ebp            0x0      0x0
++esi            0x8061480        134616192
++edi            0xc5528d00       -984445696
++eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
++eflags         0x286    [ PF SF IF ]
++cs             0x60     96
++ss             0x8061480        134616192
++ds             0x7b     123
++es             0x7b     123
++fs             0x0      0
++gs             0x0      0
++(gdb) tfind
++Found trace frame 1, tracepoint 1
++0xc01a1ac1      23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
++(gdb) info reg
++eax            0xc5528d00       -984445696
++ecx            0xc0d09f90       -1060069488
++edx            0xc01a1900       -1072031488
++ebx            0xfffffff7       -9
++esp            0xc0d09f8c       0xc0d09f8c
++ebp            0x0      0x0
++esi            0x8061480        134616192
++edi            0xc5528d00       -984445696
++eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
++eflags         0x286    [ PF SF IF ]
++cs             0x60     96
++ss             0x8061480        134616192
++ds             0x7b     123
++es             0x7b     123
++fs             0x0      0
++gs             0x0      0
++Use tracepoint get the value of variable from a point of kernel
++The following is an example that records the value of "jiffies_64" when
++the function "vfs_readdir" is called:
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) trace vfs_readdir
++Tracepoint 1 at 0xc01ed740: file
++/home/teawater/kernel/linux-2.6/fs/readdir.c, line 24.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>collect jiffies_64
++>collect file->f_path.dentry->d_iname
++>end
++(gdb) tstart
++(gdb) shell ls
++arch    drivers   include  kernel    mm               Module.symvers
++security  System.map  virt
++block   firmware  init     lib       modules.builtin  net
++sound     t           vmlinux
++crypto  fs        ipc      Makefile  modules.order    scripts
++source    usr         vmlinux.o
++(gdb) tstop
++(gdb) tfind
++Found trace frame 0, tracepoint 1
++#0  0xc01ed741 in vfs_readdir (file=0xf4063000, filler=0xc01ed580
++<filldir64>, buf=0xd6dfdf90)
++    at /home/teawater/kernel/linux-2.6/fs/readdir.c:24
++24      {
++(gdb) p jiffies_64
++$1 = 4297248706
++(gdb) p file->f_path.dentry->d_iname
++$1 = "b26", '\000' <repeats 28 times>
++How to use use tracepoint condition
++http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoint-Conditions.
++html
++Like breakpoints, we can set conditions on tracepoints. The speed of
++tracepoints is faster than breakpoints because KGTP can do all the
++condition checks.
++For example:
++
++(gdb) trace handle_irq
++(gdb) condition 1 (irq == 47)
++This action of tracepoint 1 will work only when irq number is 47.
++
++How to handle "Unsupported operator (null) (52) in expression."
++If you use condition about string, you will got this error when you call
++"tstart".
++To handle it, you can convent the char to int to handle this issue, for
++example:
++
++(gdb) condition 1 (buf[0] == (int)'1')
++Show all the traced data of current frame
++After use "tfind" select an entry, you can use "tdump" to do it.
++
++(gdb) tdump
++Data collected at tracepoint 1, trace frame 0:
++$cr = void
++file->f_path.dentry->d_iname =
++"gtp\000.google.chrome.g05ZYO\000\235\337\000\000\000\000\200\067k\364\
++200\067", <incomplete sequence \364>
++jiffies_64 = 4319751455
++Get status of tracepoint
++Please use GDB command "tstatus".
++
++Set the trace buffer into a circular buffer
++http://sourceware.org/gdb/current/onlinedocs/gdb/Starting-and-Stopping-
++Trace-Experiments.html
++The frame buffer is not a circular buffer by default. When the buffer is
++full, the tracepoint will stop.
++Following command will set frame buffer to a circular buffer. When the
++buffer is full, it will auto discard traceframes (oldest first) and keep
++trace.
++
++(gdb) set circular-trace-buffer on
++Do not stop tracepoint when the GDB disconnects
++http://sourceware.org/gdb/current/onlinedocs/gdb/Starting-and-Stopping-
++Trace-Experiments.html
++KGTP will stop tracepoint and delete the trace frame when GDB
++disconnects with it by default.
++Following command will open the KGTP disconnect-trace. After that, when
++GDB disconnects with KGTP, KGTP will not stop tracepoint. And after GDB
++reconnects to KGTP, it can keep control of KGTP like nothing happened.
++
++(gdb) set disconnected-tracing on
++kprobes-optimization and the execution speed of tracepoint
++The tracepoint is execution together with Linux kernel. So it speed will
++affect the speed the system.
++The KGTP tracepoint base on Linux kernel kprobe. Because the normal
++kprobe base on breakpoint instruction, so it is not very fast.
++
++But if arch of kernel is X86_64 or X86_32 and kernel config didn't open
++"Preemptible Kernel" (PREEMPT), the kprobe is speed up by
++kprobes-optimization (CONFIG_OPTPROBES) that make kprobe very fast.
++To make sure about that, you can use following command in terminal:
++
++sysctl -A | grep kprobe
++debug.kprobes-optimization = 1
++That means that your kernel support kprobes-optimization.
++Please note that some KGTP functions will make this tracepoint use
++simple kprobe even if this Kernel support kprobes-optimization. This doc
++will add note when introduce these functions. Please avoid using them
++when you really care about the tracepoint speed.
++
++How to use trace state variables
++http://sourceware.org/gdb/current/onlinedocs/gdb/Trace-State-Variables.
++html
++Tracepoints have special variables. The variables can be traced
++directly, or used in tracepoint conditions.
++Please note that just GDB 7.2.1 and later versions support use trace
++state variables directly, the old version of GDB can show the value of
++trace state variables through command "info tvariables".
++
++Simple trace state variables
++Define a trace state variable $c.
++
++(gdb) tvariable $c
++Trace state variable $c is created with initial value 0. The following
++action uses $c to count how many irqs happened in the kernel.
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) trace handle_irq
++(gdb) actions
++Enter actions for tracepoint 3, one per line.
++End with a line saying just "end".
++>collect $c     #Save current value of $c to the trace frame buffer.
++>teval $c=$c+1  #Increase the $c.
++>end
++Also, you can set a value of variable to trace state variable, but don't
++forget covert variable to "uint64_t".
++
++>teval $c=(uint64_t)a
++You can get the current value of $c while the trace is running or
++stopped.
++
++(gdb) tstart
++(gdb) info tvariables
++$c              0           31554
++(gdb) p $c
++$5 = 33652
++(gdb) tstop
++(gdb) p $c
++$9 = 105559
++When using tfind, you can parse the trace frame buffer. If the value of
++a trace state variable is collected, you can parse it out.
++
++(gdb) tstop
++(gdb) tfind
++(gdb) info tvariables
++$c              0           0
++(gdb) p $c
++$6 = 0
++(gdb) tfind 100
++(gdb) p $c
++$7 = 100
++If need, the tracepoint action that access the simple trace state
++variables will auto lock a spin lock for trace state variables. So it
++can handle race condition issue about trace state variables.
++The following example is OK even if it running a machine that have more
++than one CPU.
++
++>teval $c=$c+1
++Per_cpu trace state variables
++Per_cpu trace state variables are special simple trace state variables.
++When tracepoint action access to it, it will access to this CPU special
++trace state variables.
++It have 2 advantages:
++1. The tracepoint actions that access to per_cpu trace state variables
++don't have the race conditon issue. So it don't need lock the spin lock
++for trace state variables. It is faster than simple trace state
++variables on multi-core machine. 2. Write the action that count some CPU
++special thing with it is easier than simple trace state variables.
++
++To define per_cpu trace state variables, you need named it in format:
++
++"per_cpu_"+string+CPU_id
++or
++
++"pc_"+string+CPU_id
++Following example will define a series of per_cpu trace state variables
++in a 4 COREs CPU machine with string "count":
++
++(gdb) tvariable $pc_count0
++(gdb) tvariable $pc_count1
++(gdb) tvariable $pc_count2
++(gdb) tvariable $pc_count3
++You can use compatibility better way to do it:
++
++(gdb) set $tmp=0
++(gdb) while $tmp<$cpu_number
++ >eval "tvariable $pc_count%d",$tmp
++ >set $tmp=$tmp+1
++ >end
++Tracepoint action can access anyone of a series of per_cpu trace state
++variables. KGTP will auto access the one of CPU that it running on.
++For example:
++
++(gdb) trace vfs_read
++(gdb) actions
++>teval $pc_count0=$pc_count0+1
++>end
++These GDB commands define a tracepoint that count the times that call
++vfs_read of each CPU.
++
++Special trace state variables $current_task, $current_task_pid,
++$current_thread_info, $cpu_id, $dump_stack, $printk_level,
++$printk_format, $printk_tmp ,$clock, $hardirq_count, $softirq_count and
++$irq_count
++KGTP special trace state variables $current_task, $current_thread_info,
++$cpu_id and $clock can very easy to access to some special value. You
++can see them when GDB connects to the KGTP. You can use them in
++tracepoint conditions or actions.
++Access $current_task in tracepoint condition and action will get that
++returns of get_current().
++Access $current_task_pid in tracepoint condition and action will get
++that returns of get_current()->pid.
++Access $current_thread_info in tracepoint condition and action will get
++that returns of current_thread_info().
++Access $cpu_id in tracepoint condition and action will get that returns
++of smp_processor_id().
++Access $clock in tracepoint condition and action will get that returns
++of local_clock() that return the timestamp in nanoseconds.
++$rdtsc is only available on X86 and X86_64 architecture. Access it in
++anytime will get current value of TSC with instruction RDTSC.
++Access $hardirq_count in tracepoint condition and action will get that
++returns of hardirq_count().
++Access $softirq_count in tracepoint condition and action will get that
++returns of softirq_count().
++Access $irq_count in tracepoint condition and action will get that
++returns of irq_count().
++And KGTP has other special trace state variables $dump_stack,
++$printk_level, $printk_format and $printk_tmp. All of them output their
++values directly, as can be seen in
++HOWTO#Howto_let_tracepoint_output_value_directly.
++The following example counts in $c how many vfs_read calls that process
++16663 does and collects the struct thread_info of current task:
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) trace vfs_read if (((struct task_struct *)$current_task)->pid ==
++16663)
++(gdb) tvariable $c
++(gdb) actions
++Enter actions for tracepoint 4, one per line.
++End with a line saying just "end".
++>teval $c=$c+1
++>collect (*(struct thread_info *)$current_thread_info)
++>end
++(gdb) tstart
++(gdb) info tvariables
++Name            Initial     Current
++$c              0           184
++$current_task   0           <unknown>
++$current_thread_info 0           <unknown>
++$cpu_id         0           <unknown>
++(gdb) tstop
++(gdb) tfind
++(gdb) p *(struct thread_info *)$current_thread_info
++$10 = {task = 0xf0ac6580, exec_domain = 0xc07b1400, flags = 0, status =
++0, cpu = 1, preempt_count = 2, addr_limit = {
++    seg = 4294967295}, restart_block = {fn = 0xc0159fb0
++<do_no_restart_syscall>, {{arg0 = 138300720, arg1 = 11,
++        arg2 = 1, arg3 = 78}, futex = {uaddr = 0x83e4d30, val = 11,
++flags = 1, bitset = 78, time = 977063750,
++        uaddr2 = 0x0}, nanosleep = {index = 138300720, rmtp = 0xb,
++expires = 335007449089}, poll = {
++        ufds = 0x83e4d30, nfds = 11, has_timeout = 1, tv_sec = 78,
++tv_nsec = 977063750}}},
++  sysenter_return = 0xb77ce424, previous_esp = 0, supervisor_stack =
++0xef340044 "", uaccess_err = 0}
++Another example shows how much sys_read() executes in each CPU.
++
++(gdb) tvariable $c0
++(gdb) tvariable $c1
++(gdb) trace sys_read
++(gdb) condition $bpnum ($cpu_id == 0)
++(gdb) actions
++>teval $c0=$c0+1
++>end
++(gdb) trace sys_read
++(gdb) condition $bpnum ($cpu_id == 1)
++(gdb) actions
++>teval $c1=$c1+1
++>end
++(gdb) info tvariables
++Name            Initial     Current
++$current_task   0           <unknown>
++$cpu_id         0           <unknown>
++$c0             0           3255
++$c1             0           1904
++sys_read() execute 3255 times in cpu0 and 1904 times in cpu1. Please
++note that this example just to howto use $cpu_id. Actially, this example
++use per_cpu trace state variables is better.
++
++Special trace state variable $no_self_trace
++$no_self_trace is different with the special trace state variables in
++the previous section. It is used to control the behavior of tracepoint.
++If the action of a tracepoint include a command access to the
++$no_self_trace. The tracepoint will not trace anything if the
++current_task is the a KGTP self process (GDB, netcat, getframe or some
++others process that access to the interface of KGTP).
++For example, if we want trace vfs_read or something that have process
++context, and we don't want trace the operation of KGTP self process. Add
++following command to the action:
++
++>collect $no_self_trace
++Please note that the code that doesn't about process context (Irq
++handler, softirq) doesn't need set this variable.
++
++Trace the function return with $kret
++Sometime, set the tracepoint to the end of function is hard because the
++Kernel is compiled with optimization. At this time, you can get help
++from $kret.
++$kret is a special trace state variable like $no_self_trace. When you
++set value of it inside the action of tracepoint, this tracepoint be set
++with kretprobe instead of kprobe. Then it can trace the end of this
++function.
++Please note that this tracepoint must set in the first address of the
++function in format "function_name".
++
++Following part is an example:
++
++#"*(function_name)" format can make certain that GDB send the first
++address of function to KGTP.
++(gdb) trace *vfs_read
++(gdb) actions
++>teval $kret=0
++#Following part you can set commands that you want.
++Use $ignore_error and $last_errno to ignore the error of tstart
++If KGTP got any error of tstart, this command will get fail.
++But sometime we need ignore this error and let KGTP keep work. For
++example: If you set tracepoint on the inline function spin_lock. This
++tracepoint will be set to a lot of addresses that some of them cannot be
++set kprobe. It will make tstart get fail. You can use "$ignore_error"
++ignore this error.
++And the last error number will available in "$last_errno".
++
++(gdb) tvariable $ignore_error=1
++This command will open ignore.
++
++(gdb) tvariable $ignore_error=0
++This command will close ignore.
++
++Use $cooked_clock and $cooked_rdtsc the time without KGTP used
++Access these two trace state variables can get the time without KGTP
++used. Then we can get more close to really time that a part of code used
++even if the actions of tracepoint is very complex. They will be
++introduce in Cookbook (coming soon).
++
++Use $xtime_sec and $xtime_nsec get the timespec
++Access these two trace state variables will return the time of day in a
++timespec that use getnstimeofday.
++$xtime_sec will access to the second part of a timespec.
++$xtime_nsec will access to the nanosecond part of a timespec.
++
++Howto backtrace (stack dump)
++Each time your program performs a function call, information about the
++call is generated. That information includes the location of the call in
++your program, the arguments of the call, and the local variables of the
++function being called. The information is saved in a block of data
++called a stack frame. The stack frames are allocated in a region of
++memory called the call stack.
++
++Collect stack with $bt and use GDB command "backtrace"
++Because this way is faster (just collect the stack when trace) and parse
++out most of info inside the call stack (it can show all the stack info
++that I introduce). So I suggest you use this way to do the stack dump.
++First we need add the collect the stack command to the tracepoint
++action.
++The general collect the stack command in GDB tracepoint is: In x86_32,
++following command will collect 512 bytes of stack.
++>collect (unsigned char )$esp@512
++In x86_64, following command will collect 512 bytes of stack.
++>collect (unsigned char )$rsp@512
++In MIPS or ARM, following command will collect 512 bytes of stack.
++>collect (unsigned char )$sp@512
++These commands is so hard to remember, and the different arch need
++different command.
++KGTP have an special tracepoint trace state variable $bt. If tracepoint
++action access it, KGTP will auto collect the $bt size (default value is
++512) stack. For example, this command will collect 512 bytes stack
++memory:
++
++>collect $bt
++If you want to change size of $bt, you can use following GDB command
++before "tstart":
++
++(gdb) tvariable $bt=1024
++Following part is an example about howto collect stack and howto use GDB
++parse it:
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) trace vfs_readdir
++Tracepoint 1 at 0xffffffff8118c300: file
++/home/teawater/kernel2/linux/fs/readdir.c, line 24.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>collect $bt
++>end
++(gdb) tstart
++(gdb) shell ls
++1      crypto    fs             include  kernel    mm
++Module.symvers  security  System.map  vmlinux
++arch   drivers   hotcode.html   init     lib       modules.builtin  net
++           sound     usr         vmlinux.o
++block  firmware  hotcode.html~  ipc      Makefile  modules.order
++scripts         source    virt
++(gdb) tstop
++(gdb) tfind
++Found trace frame 0, tracepoint 1
++#0  vfs_readdir (file=0xffff8800c5556d00, filler=0xffffffff8118c4b0
++<filldir>, buf=0xffff880108709f40)
++    at /home/teawater/kernel2/linux/fs/readdir.c:24
++24      {
++(gdb) bt
++#0  vfs_readdir (file=0xffff8800c5556d00, filler=0xffffffff8118c4b0
++<filldir>, buf=0xffff880108709f40)
++    at /home/teawater/kernel2/linux/fs/readdir.c:24
++#1  0xffffffff8118c689 in sys_getdents (fd=<optimized out>,
++dirent=0x1398c58, count=32768) at
++/home/teawater/kernel2/linux/fs/readdir.c:214
++#2  <signal handler called>
++#3  0x00007f00253848a5 in ?? ()
++#4  0x00003efd32cddfc9 in ?? ()
++#5  0x00002c15b7d04101 in ?? ()
++#6  0x000019c0c5704bf1 in ?? ()
++#7  0x0000000900000000 in ?? ()
++#8  0x000009988cc8d269 in ?? ()
++#9  0x000009988cc9b8d1 in ?? ()
++#10 0x0000000000000000 in ?? ()
++(gdb) up
++#1  0xffffffff8118c689 in sys_getdents (fd=<optimized out>,
++dirent=0x1398c58, count=32768) at
++/home/teawater/kernel2/linux/fs/readdir.c:214
++214             error = vfs_readdir(file, filldir, &buf);
++(gdb) p buf
++$1 = {current_dir = 0x1398c58, previous = 0x0, count = 32768, error = 0}
++(gdb) p error
++$3 = -9
++(gdb) frame 0
++#0  vfs_readdir (file=0xffff8800c5556d00, filler=0xffffffff8118c4b0
++<filldir>, buf=0xffff880108709f40)
++    at /home/teawater/kernel2/linux/fs/readdir.c:24
++24      {
++From this example, we can see some GDB commands that parse the the call
++stack:
++bt is the alias of GDB commands backtrace that print a backtrace of the
++entire stack: one line per frame for all frames in the stack.
++up n is move n frames up the stack. For positive numbers n, this
++advances toward the outermost frame, to higher frame numbers, to frames
++that have existed longer. n defaults to one.
++down n is move n frames down the stack. For positive numbers n, this
++advances toward the innermost frame, to lower frame numbers, to frames
++that were created more recently. n defaults to one. You may abbreviate
++down as do.
++frame n is select frame number n. Recall that frame zero is the
++innermost (currently executing) frame, frame one is the frame that
++called the innermost one, and so on. The highest-numbered frame is the
++one for main.
++You can see that when you use up, down or frame to the different calll
++stack frame, you can output the value of the arguments and local
++variables of different call stack frame.
++To get the more info about howto use GDB parse the call stack, please
++see http://sourceware.org/gdb/current/onlinedocs/gdb/Stack.html
++Collect stack of current function's caller with $_ret
++If you just want to collect stack of current function's caller, please
++use $_ret.
++Please note that set the tracepoint that collect $_ret cannot in the
++first address of function.
++For example:
++
++(gdb) list vfs_read
++360     }
++361
++362     EXPORT_SYMBOL(do_sync_read);
++363
++364     ssize_t vfs_read(struct file *file, char __user *buf, size_t
++count, loff_t *pos)
++365     {
++366             ssize_t ret;
++367
++368             if (!(file->f_mode & FMODE_READ))
++369                     return -EBADF;
++(gdb) trace 368
++Tracepoint 2 at 0xffffffff8117a244: file
++/home/teawater/kernel2/linux/fs/read_write.c, line 368.
++(gdb) actions
++Enter actions for tracepoint 2, one per line.
++End with a line saying just "end".
++>collect $_ret
++>end
++(gdb) tstart
++(gdb) tstop
++(gdb) tfind
++Found trace frame 0, tracepoint 2
++#0  vfs_read (file=0xffff880141c46000, buf=0x359bda0 <Address 0x359bda0
++out of bounds>, count=8192, pos=0xffff88012fa49f48)
++    at /home/teawater/kernel2/linux/fs/read_write.c:368
++368             if (!(file->f_mode & FMODE_READ))
++(gdb) bt
++#0  vfs_read (file=0xffff880141c46000, buf=0x359bda0 <Address 0x359bda0
++out of bounds>, count=8192, pos=0xffff88012fa49f48)
++    at /home/teawater/kernel2/linux/fs/read_write.c:368
++#1  0xffffffff8117a3ea in sys_read (fd=<optimized out>,
++buf=<unavailable>, count=<unavailable>)
++    at /home/teawater/kernel2/linux/fs/read_write.c:469
++Backtrace stopped: not enough registers or memory available to unwind
++further
++(gdb) up
++#1  0xffffffff8117a3ea in sys_read (fd=<optimized out>,
++buf=<unavailable>, count=<unavailable>)
++    at /home/teawater/kernel2/linux/fs/read_write.c:469
++469                     ret = vfs_read(file, buf, count, &pos);
++(gdb) p ret
++$2 = -9
++You see that the caller of function vfs_read is sys_read. And the local
++variable ret of sys_read is -9.
++
++Use $dump_stack to output stack dump through printk
++Because this way need parse the stack when tracing and call printk
++inside, so it will be slow, unsafe, unclear and cannot access a lot of
++info of call stack. So I suggest you use the prev way to do stack dump.
++KGTP has special trace state variable $dump_stack, "collect" it will let
++Linux Kernel output stack dump through printk.
++Following example lets Linux Kernel show the stack dump of vfs_readdir:
++
++target remote /sys/kernel/debug/gtp
++trace vfs_readdir
++  commands
++    collect $dump_stack
++  end
++Then your kernel will printk like:
++
++[22779.208064] gtp 1:Pid: 441, comm: python Not tainted 2.6.39-rc3+ #46
++[22779.208068] Call Trace:
++[22779.208072]  [<fe653cca>] gtp_get_var+0x4a/0xa0 [gtp]
++[22779.208076]  [<fe653d79>] gtp_collect_var+0x59/0xa0 [gtp]
++[22779.208080]  [<fe655974>] gtp_action_x+0x1bb4/0x1dc0 [gtp]
++[22779.208084]  [<c05b6408>] ? _raw_spin_unlock+0x18/0x40
++[22779.208088]  [<c023f152>] ? __find_get_block_slow+0xd2/0x160
++[22779.208091]  [<c01a8c56>] ? delayacct_end+0x96/0xb0
++[22779.208100]  [<c023f404>] ? __find_get_block+0x84/0x1d0
++[22779.208103]  [<c05b6408>] ? _raw_spin_unlock+0x18/0x40
++[22779.208106]  [<c02e0838>] ? find_revoke_record+0xa8/0xc0
++[22779.208109]  [<c02e0c45>] ? jbd2_journal_cancel_revoke+0xd5/0xe0
++[22779.208112]  [<c02db51f>] ?
++__jbd2_journal_temp_unlink_buffer+0x2f/0x110
++[22779.208115]  [<fe655c4c>] gtp_kp_pre_handler+0xcc/0x1c0 [gtp]
++[22779.208118]  [<c05b8a88>] kprobe_exceptions_notify+0x3d8/0x440
++[22779.208121]  [<c05b7d54>] ?
++hw_breakpoint_exceptions_notify+0x14/0x180
++[22779.208124]  [<c05b95eb>] ? sub_preempt_count+0x7b/0xb0
++[22779.208126]  [<c0227ac5>] ? vfs_readdir+0x15/0xb0
++[22779.208128]  [<c0227ac4>] ? vfs_readdir+0x14/0xb0
++[22779.208131]  [<c05b9743>] notifier_call_chain+0x43/0x60
++[22779.208134]  [<c05b9798>] __atomic_notifier_call_chain+0x38/0x50
++[22779.208137]  [<c05b97cf>] atomic_notifier_call_chain+0x1f/0x30
++[22779.208140]  [<c05b980d>] notify_die+0x2d/0x30
++[22779.208142]  [<c05b71c5>] do_int3+0x35/0xa0
++How to use performance counters
++Performance counters are special hardware registers available on most
++modern CPUs. These registers count the number of certain types of hw
++events: such as instructions executed, cachemisses suffered, or branches
++mis-predicted - without slowing down the kernel or applications. These
++registers can also trigger interrupts when a threshold number of events
++have passed - and can thus be used to profile the code that runs on that
++CPU.
++The Linux Performance Counter subsystem called perf event can get the
++value of performance counter. You can access it through KGTP perf event
++trace state variables.
++Please goto read the file tools/perf/design.txt in Linux Kernel to get
++more info about perf event.
++
++Define a perf event trace state variable
++Access an performance counter need define following trace state
++variable:
++
++"pe_cpu_"+tv_name       Define the the CPU id of the performance
++counter.
++"pe_type_"+tv_name      Define the the type of the performance counter.
++"pe_config_"+tv_name    Define the the config of the performance
++counter.
++"pe_en_"+tv_name        This the switch to enable or disable the
++performance counter.
++                        The performance counter is disable in default.
++"pe_val_"+tv_name       Access this variable can get the value of the
++performance counter.
++Define a per_cpu perf event trace state variable
++Define a per_cpu perf event trace state variable is same with define
++HOWTO#Per_cpu_trace_state_variables.
++
++"pc_pe_"+perf_event type+string+CPU_id
++Please note that if you define a per_cpu perf event trace state
++variable, you will not need define the cpu id("pe_cpu") because KGTP
++already get it.
++
++The perf event type and config
++The type of perf event can be:
++
++0       PERF_TYPE_HARDWARE
++1       PERF_TYPE_SOFTWARE
++2       PERF_TYPE_TRACEPOINT
++3       PERF_TYPE_HW_CACHE
++4       PERF_TYPE_RAW
++5       PERF_TYPE_BREAKPOINT
++If the type is 0(PERF_TYPE_HARDWARE), the config can be:
++
++0       PERF_COUNT_HW_CPU_CYCLES
++1       PERF_COUNT_HW_INSTRUCTIONS
++2       PERF_COUNT_HW_CACHE_REFERENCES
++3       PERF_COUNT_HW_CACHE_MISSES
++4       PERF_COUNT_HW_BRANCH_INSTRUCTIONS
++5       PERF_COUNT_HW_BRANCH_MISSES
++6       PERF_COUNT_HW_BUS_CYCLES
++7       PERF_COUNT_HW_STALLED_CYCLES_FRONTEND
++8       PERF_COUNT_HW_STALLED_CYCLES_BACKEND
++
++If the type is 3(PERF_TYPE_HW_CACHE), the config need to divide to 3
++parts: First one is cache id, it need be << 0 before set to config:
++
++0       PERF_COUNT_HW_CACHE_L1D
++1       PERF_COUNT_HW_CACHE_L1I
++2       PERF_COUNT_HW_CACHE_LL
++3       PERF_COUNT_HW_CACHE_DTLB
++4       PERF_COUNT_HW_CACHE_ITLB
++5       PERF_COUNT_HW_CACHE_BPU
++Second one is cache op id, it need be << 8 before set to config:
++
++0       PERF_COUNT_HW_CACHE_OP_READ
++1       PERF_COUNT_HW_CACHE_OP_WRITE
++2       PERF_COUNT_HW_CACHE_OP_PREFETCH
++Last one is cache op result id, it need be << 16 before set to config:
++
++0       PERF_COUNT_HW_CACHE_RESULT_ACCESS
++1       PERF_COUNT_HW_CACHE_RESULT_MISS
++If you want get the perf count of PERF_COUNT_HW_CACHE_L1I(1),
++PERF_COUNT_HW_CACHE_OP_WRITE(1) and PERF_COUNT_HW_CACHE_RESULT_MISS(1),
++you can use:
++
++(gdb) tvariable $pe_config_cache=1 | (1 << 8) | (1 << 16)
++tools/perf/design.txt in Linux Kernel have more info about type and
++config of perf event.
++
++Enable and disable all the perf event in a CPU with $pc_pe_en
++I think the best way that count a part of code with performance counters
++is enable all the count in the begin of the code and disable all of them
++in the end. You can do it with "pe_en". But if you have a lot of perf
++event trace state variables. That will make the tracepoint action very
++big. $pc_pe_en is for this issue. You can enable all the perf event
++trace state variables in current CPU with following action:
++
++>teval $pc_pe_en=1
++Disable them with set $pc_pe_en to 0.
++
++>teval $pc_pe_en=0
++GDB scripts to help with set and get the perf event trace state
++variables
++Following is a GDB script define two commands dpe and spe to help define
++and show the perf event trace state variables.
++You can put it to the ~/.gdbinit or your tracepoint script. Then you can
++use this two commands in GDB directly.
++
++define dpe
++  if ($argc < 2)
++    printf "Usage: dpe pe_type pe_config [enable]\n"
++  end
++  if ($argc >= 2)
++    set $tmp=0
++    while $tmp<$cpu_number
++      eval "tvariable $pc_pe_type_%d%d_%d=%d",$arg0, $arg1, $tmp, $arg0
++      eval "tvariable $pc_pe_config_%d%d_%d=%d",$arg0, $arg1, $tmp,
++$arg1
++      eval "tvariable $pc_pe_val_%d%d_%d=0",$arg0, $arg1, $tmp
++      if ($argc >= 3)
++        eval "tvariable $pc_pe_en_%d%d_%d=%d",$arg0, $arg1, $tmp, $arg2
++      end
++      set $tmp=$tmp+1
++    end
++  end
++end
++
++document dpe
++Usage: dpe pe_type pe_config [enable]
++end
++
++define spe
++  if ($argc != 2 && $argc != 3)
++    printf "Usage: spe pe_type pe_config [cpu_id]\n"
++  end
++  if ($argc == 2)
++    set $tmp=0
++    while $tmp<$cpu_number
++      eval "printf \"$pc_pe_val_%%d%%d_%%d=%%ld\\n\",$arg0, $arg1, $tmp,
++$pc_pe_val_%d%d_%d", $arg0, $arg1, $tmp
++      set $tmp=$tmp+1
++    end
++  end
++  if ($argc == 3)
++    eval "printf \"$pc_pe_val_%%d%%d_%%d=%%ld\\n\",$arg0, $arg1, $tmp,
++$pc_pe_val_%d%d_%d", $arg0, $arg1, $arg2
++  end
++end
++
++document spe
++Usage: spe pe_type pe_config [cpu_id]
++end
++Following is an example to use it get the performance counters of
++function tcp_v4_rcv:
++
++#Connect to KGTP
++(gdb) target remote /sys/kernel/debug/gtp
++#Define 3 pe tvs for PERF_COUNT_HW_CPU_CYCLES,
++PERF_COUNT_HW_CACHE_MISSES and PERF_COUNT_HW_BRANCH_MISSES.
++(gdb) dpe 0 0
++(gdb) dpe 0 3
++(gdb) dpe 0 5
++#enable the performance counters of this CPU in the begin of this
++function.
++(gdb) trace tcp_v4_rcv
++(gdb) action
++>teval $pc_pe_en=1
++>end
++#$kret make this hanler the end of function tcp_v4_rcv.
++(gdb) trace *(tcp_v4_rcv)
++(gdb) action
++>teval $kret=0
++#disable all performance counters of this CPU
++>teval $pc_pe_en=0
++#Access the per cpu perf event tv will access to the current cpu pe tv.
++>collect $pc_pe_val_00_0
++>collect $pc_pe_val_03_0
++>collect $pc_pe_val_05_0
++#Set all the pe tv to 0
++>teval $pc_pe_val_00_0=0
++>teval $pc_pe_val_03_0=0
++>teval $pc_pe_val_05_0=0
++>end
++tstart
++#Wait some time that current pc receive some tcp package.
++(gdb) tstop
++(gdb) tfind
++(gdb) spe 0 0 $cpu_id
++$pc_pe_val_00_2=12676
++(gdb) spe 0 3 $cpu_id
++$pc_pe_val_03_2=7
++(gdb) spe 0 5 $cpu_id
++$pc_pe_val_05_2=97
++Howto let tracepoint output value directly
++In the previous parts, you may understand that to get a value from Linux
++kernel, you need to use a tracepoint "collect" action to save the value
++to the tracepoint frame and use the GDB command "tfind" to parse the
++value from the frame data.
++But we want get the value directly sometimes, so KGTP supports two ways
++to output values directly.
++
++Switch collect to output the value directly
++KGTP has special trace state variables $printk_level, $printk_format and
++$printk_tmp to support this function.
++$printk_level: if its value is 8 (this is the default value), "collect"
++action will save value to the tracepoint frame in the simple behavior.
++If its value is 0-7, "collect" will output the value through "printk"
++directly, and value will be the level of printk. The level is:
++
++0       KERN_EMERG      system is unusable
++1       KERN_ALERT      action must be taken immediately
++2       KERN_CRIT       critical conditions
++3       KERN_ERR        error conditions
++4       KERN_WARNING    warning conditions
++5       KERN_NOTICE     normal but significant condition
++6       KERN_INFO       informational
++7       KERN_DEBUG      debug-level messages
++$printk_format, collect printk will output value in the format that is
++set by it. The format is:
++
++0       This is the default value.
++        If the size of collect value is 1, 2, 4 or 8, it will be output
++as an unsigned decimal.
++        If not, it will be output as a hexadecimal string.
++1       Output value in signed decimal.
++2       Output value in unsigned decimal.
++3       Output value in unsigned hexadecimal.
++4       Output value as a string.
++5       Output value as a hexadecimal string.
++$printk_tmp, to output the value of global variable need set to it
++first.
++
++Following example shows a count number, pid, jiffies_64 and the file
++name that call vfs_readdir:
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) tvariable $c
++(gdb) trace vfs_readdir
++(gdb) actions
++>teval $printk_level=0
++>collect $c=$c+1
++>collect ((struct task_struct *)$current_task)->pid
++>collect $printk_tmp=jiffies_64
++>teval $printk_format=4
++>collect file->f_path.dentry->d_iname
++>end
++Then your kernel will printk like:
++
++gtp 1:$c=$c+1=41
++gtp 1:((struct task_struct *)$current_task)->pid=12085
++gtp 1:$printk_tmp=jiffies_64=4322021438
++gtp 1:file->f_path.dentry->d_iname=b26
++gtp 1:$c=$c+1=42
++gtp 1:((struct task_struct *)$current_task)->pid=12085
++gtp 1:$printk_tmp=jiffies_64=4322021438
++gtp 1:file->f_path.dentry->d_iname=b26
++"gtp 1" means that it was output by tracepoint 1.
++
++Howto show a variable whose value has been optimized away
++Sometimes, GDB will output some value like:
++
++inode has been optimized out of existence.
++res has been optimized out of existence.
++That is because value of inode and res is optimized. Linux Kernel is
++built with -O2 so you will get this trouble sometimes.
++There are 2 ways to handle it:
++
++Update your GCC
++The VTA branch (http://gcc.gnu.org/wiki/Var_Tracking_Assignments) was
++merged for GCC 4.5. This helps a lot with generating dwarf for
++previously "optimized out" values.
++
++How to get the function pointer point to
++If the debug info of the function pointer is not optimized out
++You can collect it directly and print what it point to. For example:
++
++377                     count = ret;
++378                     if (file->f_op->read)
++379                             ret = file->f_op->read(file, buf, count,
++pos);
++(gdb)
++(gdb) trace 379
++Tracepoint 1 at 0xffffffff81173ba5: file
++/home/teawater/kernel/linux/fs/read_write.c, line 379.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>collect file->f_op->read
++>end
++(gdb) tstart
++(gdb) tstop
++(gdb) tfind
++(gdb) p file->f_op->read
++$5 = (ssize_t (*)(struct file *, char *, size_t, loff_t *))
++0xffffffff81173190 <do_sync_read>
++#Then you know file->f_op->read point to do_sync_read.
++If the debug info of the function pointer is optimized out
++You can use tracepoint step to handle it. For example:
++
++#Find out which instrunction that it is called.
++(gdb) disassemble /rm vfs_read
++379                             ret = file->f_op->read(file, buf, count,
++pos);
++   0xffffffff81173ba5 <+181>:   48 89 da        mov    %rbx,%rdx
++   0xffffffff81173ba8 <+184>:   4c 89 e9        mov    %r13,%rcx
++   0xffffffff81173bab <+187>:   4c 89 e6        mov    %r12,%rsi
++   0xffffffff81173bae <+190>:   4c 89 f7        mov    %r14,%rdi
++   0xffffffff81173bb1 <+193>:   ff d0   callq  *%rax
++   0xffffffff81173bb3 <+195>:   48 89 c3        mov    %rax,%rbx
++(gdb) trace *0xffffffff81173bb1
++Tracepoint 1 at 0xffffffff81173bb1: file
++/home/teawater/kernel/linux/fs/read_write.c, line 379.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>while-stepping 1
++ >collect $reg
++ >end
++>end
++(gdb) tstart
++(gdb) tstop
++(gdb) tfind
++#0  tty_read (file=0xffff88006ca74900, buf=0xb6b7dc <Address 0xb6b7dc
++out of bounds>, count=8176,
++    ppos=0xffff88006e197f48) at
++/home/teawater/kernel/linux/drivers/tty/tty_io.c:960
++960     {
++#Then you know file->f_op->read point to tty_read.
++Please note that while-stepping will make tracepoint cannot use
++kprobes-optimization.
++
++/sys/kernel/debug/gtpframe and offline debug
++/sys/kernel/debug/gtpframe supplies trace frame in tfile format (GDB can
++parse it) when KGTP is stop.
++In the PC that can run the GDB:
++Change the "target remote XXXX" to
++
++(gdb) target remote | perl ./getgtprsp.pl
++After that, set tracepoint and start it as usual:
++
++(gdb) trace vfs_readdir
++Tracepoint 1 at 0xffffffff8114f3c0: file
++/home/teawater/kernel/linux-2.6/fs/readdir.c, line 24.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++#If your GDB support tracepoint "printf" (see "Howto use tracepoint
++printf"), use it to show the value directly is better.
++>collect $reg
++>end
++(gdb) tstart
++(gdb) stop
++(gdb) quit
++Then you can find files gtpstart and gtpstop in current directory. Copy
++it to the machine that you want to debug.
++
++In the debugged machine after insmod the gtp.ko:
++Start the tracepoint:
++
++cat gtpstart > /sys/kernel/debug/gtp
++Stop the tracepoint:
++
++cat gtpstop > /sys/kernel/debug/gtp
++You can let Linux Kernel show the value directly, please see
++HOWTO#Howto_let_tracepoint_output_value_directly.
++
++If you want to save the value to the trace frame and parse later, you
++can use file "/sys/kernel/debug/gtpframe" that has the trace frame. Copy
++it to the PC that has GDB.
++Please note that some "cp" cannot handle it very well, please use "cat
++/sys/kernel/debug/gtpframe > ./gtpframe" to copy it.
++In the PC that can run the GDB:
++(gdb) target tfile ./gtpframe
++Tracepoint 1 at 0xffffffff8114f3dc: file
++/home/teawater/kernel/linux-2.6/fs/readdir.c, line 24.
++Created tracepoint 1 for target's tracepoint 1 at 0xffffffff8114f3c0.
++(gdb) tfind
++Found trace frame 0, tracepoint 1
++#0  vfs_readdir (file=0xffff880036e8f300, filler=0xffffffff8114f240
++<filldir>, buf=0xffff880001e5bf38)
++    at /home/teawater/kernel/linux-2.6/fs/readdir.c:24
++24      {
++How to use /sys/kernel/debug/gtpframe_pipe
++This interface supplies same format trace frame with "gtpframe". But it
++can work when KGTP is running. After data is read, it will auto deleted
++from trace frame like "trace_pipe" of ftrace.
++
++Get the frame info with GDB
++#connect to the interface
++(gdb) target tfile /sys/kernel/debug/gtpframe_pipe
++#Get one trace frame entry
++(gdb) tfind 0
++Found trace frame 0, tracepoint 1
++#Get the next one
++(gdb) tfind
++Target failed to find requested trace frame.
++(gdb) tfind 0
++Found trace frame 0, tracepoint 1
++This way is better to work with python to parse Kernel.
++add-ons/hotcode.py is an example of python script.
++
++Get the frame info with cat
++sudo cat /sys/kernel/debug/gtpframe_pipe > g
++Then all the trace frame will be saved in file "g".
++
++Get the frame info with getframe
++KGTP package include a program "getframe" can help you save the trace
++frame to files.
++Following part is the help of it:
++
++getframe -h
++Get the trace frame of KGTP and save them in current
++directory with tfile format.
++Usage: ./getframe [option]
++
++  -g n    Set the minimum free size limit to n G.
++          When free size of current disk is smaller than n G,
++          ./getframe will exit (-q) or wait some seconds (-w).
++          The default value of it is 2 G.
++
++  -q      Quit when current disk is smaller than
++          minimum free size limit (-g).
++
++  -w n    Wait n seconds when current disk is smaller
++          than minimum free size limit (-g).
++
++  -e n    Set the entry number of each tfile to n.
++          The default value of it is 1000.
++
++  -h      Display this information.
++Use $pipe_trace
++For the lock safe, KGTP will ignore the task that read the
++/sys/kernel/debug/gtpframe_pipe in default.
++If you really need trace this task, and be sure that is safe. You can
++use following command before call "tstart":
++
++(gdb) tvariable $pipe_trace=1
++Then KGTP will not ignore the task that read
++/sys/kernel/debug/gtpframe_pipe.
++
++How to use add-ons/hotcode.py
++This script can show the hotest code line in the Linux kernel or user
++space program through parse and record the pc address in the interrupt
++handler.
++Please goto http://code.google.com/p/kgtp/wiki/hotcode see howto use it.
 --- /dev/null
-+++ b/arch/mips/include/asm/gtp.h
-@@ -0,0 +1,19 @@
-+#ifndef _ASM_MIPS_GTP_H_
-+#define _ASM_MIPS_GTP_H_
++++ b/Documentation/gtp/howtocn.txt
+@@ -0,0 +1,1319 @@
++		Linux Kernel GDB tracepoint module (KGTP)
++		=========================================
++		By Hui Zhu <teawater@gmail.com>
++		https://code.google.com/p/kgtp/wiki/HOWTOCN
 +
-+#define ULONGEST		uint64_t
-+#define LONGEST			int64_t
-+#define CORE_ADDR		unsigned long
++Update in 2012-04-24
 +
-+#define GTP_REGS_PC(regs)	((regs)->cp0_epc)
++目录
++----
 +
-+#ifdef CONFIG_32BIT
-+#define GTP_REG_ASCII_SIZE	304
-+#define GTP_REG_BIN_SIZE	152
-+#else
-+#define GTP_REG_ASCII_SIZE	608
-+#define GTP_REG_BIN_SIZE	304
-+#endif
++什么是KGTP
++需要帮助或者汇报问题
++使用KGTP前的准备工作
++Linux内核
++如果你的系统内核是自己编译的
++如果你的系统内核是发行版自带的
++取得KGTP
++通过http下载KGTP
++通过svn下载KGTP
++配置KGTP
++编译KGTP
++普通编译
++用一些特殊选项编译KGTP
++安装和卸载 KGTP
++和DKMS一起使用KGTP
++使用KGTP Linux内核patch
++安装可以和KGTP一起使用的GDB
++如何使用
++执行
++让GDB连接到KGTP
++GDB在本地主机上
++如果GDB在远程主机上
++增加模块的符号信息到GDB
++如何使用getmod.py
++如何使用getmod
++直接访问内存
++GDB tracepoint
++如何使用GDB tracepoint
++actions [num]
++启动和停止 tracepoint
++Enable 和 disable tracepoint
++tfind
++用tracepoint从内核中某点取得寄存器信息
++用tracepoint从内核中某点取得变量的值
++如何设置条件tracepoint
++如何处理 "Unsupported operator (null) (52) in expression."
++显示当前这一条trace缓存里存储的所有信息
++取得 tracepoint 的状态
++设置trace缓存为循环缓存
++GDB断开的时候不要停止tracepoint
++kprobes-optimization和tracepoint的执行速度
++如果使用trace状态变量
++普通trace状态变量
++Per_cpu trace状态变量
++特殊trace状态变量
++$current_task，$current_task_pid，$current_thread_info，$cpu_id，$dump_stack
++，$printk_level，$printk_format，$printk_tmp，$clock，$hardirq_count，$softirq
++_count 和 $irq_count
++特殊trace状态变量 $no_self_trace
++用$kret trace函数的结尾
++用 $ignore_error 和 $last_errno 忽略tstart的错误
++使用 $cooked_clock 和 $cooked_rdtsc 取得不包含KGTP运行时间的时间信息
++使用 $xtime_sec 和 $xtime_nsec 取得 timespec
++如何 backtrace (stack dump)
++通过$bt收集栈并用GDB命令"backtrace"进行分析
++用 $_ret 来取得当前函数的调用函数的栈
++用 $dump_stack 输出栈分析到printk里
++如何使用性能计数器
++定义一个perf event trace状态变量
++定义一个per_cpu perf event trace状态变量
++perf event的类型和配置
++用$pc_pe_en打开和关闭一个CPU上所有的perf event
++用来帮助设置和取得perf event trace状态变量的GDB脚本
++如何让tracepoint直接输出信息
++切换collect为直接输出数据
++如何显示被优化掉的变量值
++升级你的GCC
++如何取得函数指针指向的函数
++如果函数指针没有被优化掉
++如果函数指针被优化掉了
++/sys/kernel/debug/gtpframe和离线调试
++如何使用 /sys/kernel/debug/gtpframe_pipe
++用GDB读帧信息
++用cat读帧信息
++用getframe读帧信息
++使用 $pipe_trace
++如何使用 add-ons/hotcode.py
++什么是KGTP
++KGTP 是一个 实时 轻量级 Linux 调试器 和 跟踪器 。
 +
-+#define GTP_SP_NUM		29
-+#endif
++其让Linux内核提供一个远程GDB调试接口，于是在本地或者远程的主机上的GDB可以在不需要停止内核的情况下用GDB
++tracepoint和其他一些功能 调试 和 跟踪 Linux。
++即使板子上没有GDB而且其没有可用的远程接口，KGTP也可以用离线调试的功能调试内核（见http://code.google.com/p/
++kgtp/wiki/HOWTOCN#/sys/kernel/debug/gtpframe和离线调试）。
++KGTP可以用在 Android 上 （见 HowToUseKGTPinAndroid）。
++现在，KGTP支持 X86-32，X86-64，MIPS 和 ARM。
++
++KGTP新用户可以去看一下 Quickstart 。
++
++请到 UPDATE 去看KGTP的更新信息。
++
++需要帮助或者汇报问题
++你可以把问题发到 http://code.google.com/p/kgtp/issues/list
++或者写信到kgtp@freelists.org或者写信到 teawater@gmail.com。
++KGTP小组将尽全力帮助你。
++
++使用KGTP前的准备工作
++Linux内核
++如果你的系统内核是自己编译的
++要使用KGTP，你需要打开下面这些内核选项：
++
++General setup  --->
++        [*] Kprobes
++
++Kernel hacking  --->
++        [*] Debug Filesystem
++        [*] Compile the kernel with debug info
++如果你的系统内核是发行版自带的
++你需要安装一些Linux内核软件包。
++
++Ubuntu
++安装Linux内核调试镜像
++1) 增加调试源到Ubuntu源列表。
++
++在命令行按照下面的命令创建文件 /etc/apt/sources.list.d/ddebs.list：
++echo "deb http://ddebs.ubuntu.com $(lsb_release -cs) main restricted
++universe multiverse" | \
++sudo tee -a /etc/apt/sources.list.d/ddebs.list
++稳定版本（不能是alpha或者betas）需要用命令行增加下面几行：
++echo "deb http://ddebs.ubuntu.com $(lsb_release -cs)-updates main
++restricted universe multiverse
++deb http://ddebs.ubuntu.com $(lsb_release -cs)-security main restricted
++universe multiverse
++deb http://ddebs.ubuntu.com $(lsb_release -cs)-proposed main restricted
++universe multiverse" | \
++sudo tee -a /etc/apt/sources.list.d/ddebs.list
++导入调试符号签名key：
++sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 428D7C01
++运行：
++sudo apt-get update
++
++2) 安装Linux内核调试镜像。
++
++sudo apt-get install linux-image-$(uname -r)-dbgsym
++安装内核头文件包
++sudo apt-get install linux-headers-generic
++安装内核源码
++安装源码包：
++sudo apt-get install linux-source
++解压缩源码：
++sudo mkdir -p /build/buildd/
++sudo tar vxjf /usr/src/linux-source-$(uname -r | sed 's/-.*//').tar.bz2
++-C /build/buildd/
++sudo mv /build/buildd/linux-source-$(uname -r | sed 's/-.*//')
++/build/buildd/linux-$(uname -r | sed 's/-.*//')
++Fedora
++安装Linux内核调试镜像
++sudo yum --enablerepo=fedora-debuginfo install kernel-debuginfo
++安装Linux内核开发包
++sudo yum install kernel-devel-$(uname -r)
++其他系统
++需要安装Linux内核调试镜像和Linux内核源码包。
++
++取得KGTP
++通过http下载KGTP
++请到 http://code.google.com/p/kgtp/downloads/list 或者 UPDATE 去下载源码包。
++
++通过svn下载KGTP
++有些人访问KGTP站点有问题，你可以通过svn访问KGTP。
++
++svn checkout http://kgtp.googlecode.com/svn/ kgtp-read-only
++kgtp-read-only/tags/ 这里是KGTP每个发布的版本。
++kgtp-read-only/trunk/ 这里是KGTP的主干。
++
++配置KGTP
++下面这部分是在KGTP Makefile里的配置。用这个配置，KGTP将自动和当前系统的内核一起编译。
++
++KERNELDIR := /lib/modules/`uname -r`/build
++CROSS_COMPILE :=
++KERELDIR 设置了你要一起编译的内核，默认情况下，KGTP会和当前的内核一起编译。
++CROSS_COMPILE 设置编译KGTP的编译器前缀名。留空则使用默认编译器。
++ARCH 是体系结构。
++
++或者你可以通过修改KGTP目录里的Makefile选择你要和哪个内核一起编译以及你用什么编译器编译KGTP。
++例如：
++
++KERNELDIR := /home/teawater/kernel/bamd64
++CROSS_COMPILE :=x86_64-glibc_std-
++ARCH := x86_64
++KERNELDIR 设置为 /home/teawater/kernel/bamd64。 Compiler 设置为
++x86_64-glibc_std-gcc。
++
++编译KGTP
++普通编译
++cd kgtp/
++make
++用一些特殊选项编译KGTP
++大部分时候，KGTP可以自动选择正确的参数和和各种版本的Linux内核一起编译。
++但是如果你想配置一些特殊选项，可以按照下面的介绍来做：
++用这个选项，KGTP将不自动选择任何编译选项。
++
++make AUTO=0
++用这个选项，KGTP将使用简单frame替代KGTP ring buffer。
++简单frame不支持gtpframe_pipe，它现在只用来调试KGTP。
++
++make AUTO=0 FRAME_SIMPLE=1
++用这个选项，$clock将返回rdtsc的值而不是local_clock。
++
++make AUTO=0 CLOCK_CYCLE=1
++用这个选项，KGTP可以用procfs替代debugfs。
++
++make AUTO=0 USE_PROC=1
++这些选线可以一起使用，例如：
++
++make AUTO=0 FRAME_SIMPLE=1 CLOCK_CYCLE=1
++安装和卸载 KGTP
++因为KGTP可以直接在编译目录里insmod，所以不编译后不安装也可以直接使用（见
++http://code.google.com/p/kgtp/wiki/HOWTOCN#执行）。但是如果需要也可以将其安装到系统中。 安装：
++
++cd kgtp/
++sudo make install
++卸载：
++
++cd kgtp/
++sudo make uninstall
++和DKMS一起使用KGTP
++如果你需要的话，你还可以让DKMS来使用KGTP。
++下面的命令将拷贝KGTP的文件到DKMS需要的目录中。
++
++cd kgtp/
++sudo make dkms
++于是你可以用DKMS命令控制KGTP。请到 http://linux.dell.com/dkms/manpage.html
++去看如何使用DKMS。
++
++使用KGTP Linux内核patch
++大多数时候，你不需要KGTP
++patch，因为KGTP以一个LKM的形式编译安装更为方便。但是为了帮助人们集成KGTP到他们自己的内核树，KGTP也提供了patch.
++在KGTP目录中：
++gtp_for_review.patch 是给Linux kernel upstream的patch。
++gtp_3.0_to_upstream.patch 是给Linux kernel 从3.0到upstream的patch。
++gtp_2.6.39.patch 是给Linux kernel 2.6.39的patch。
++gtp_2.6.33_to_2.6.38.patch 是给Linux kernel 从2.6.33到2.6.38的patch。
++gtp_older_to_2.6.32.patch 是给Linux kernel 2.6.32以及更早版本的patch。
++安装可以和KGTP一起使用的GDB
++早于7.3版本的GDB的tracepoint功能有一些bug，而且还有一些功能做的不是很好。
++所以如果你的GDB小于7.3请到 https://code.google.com/p/gdbt/ 去安装可以和KGTP一起使用的GDB。
++如果你有GDB的问题，请根据这里的信息HOWTO#Report_issues_about_KGTP取得帮助。
++
++如何使用
++执行
++如果你已经安装了KGTP在你的系统中，你可以：
++
++sudo modprobe gtp
++或者你可以直接使用KGTP目录里的文件：
++
++cd kgtp/
++sudo insmod gtp.ko
++让GDB连接到KGTP
++GDB在本地主机上
++sudo gdb ./vmlinux
++(gdb) target remote /sys/kernel/debug/gtp
++Remote debugging using /sys/kernel/debug/gtp
++0x0000000000000000 in ?? ()
++然后你就可以用GDB命令调试和跟踪Linux内核了。
++
++如果GDB在远程主机上
++#在当前主机打开KGTP
++sudo su
++nc -l 1234 </sys/kernel/debug/gtp >/sys/kernel/debug/gtp
++(nc -l -p 1234 </sys/kernel/debug/gtp >/sys/kernel/debug/gtp for old
++version netcat.)
++#让GDB连接1234端口
++gdb ./vmlinux
++(gdb) target remote xxx.xxx.xxx.xxx:1234
++然后你就可以用GDB命令调试和跟踪Linux内核了。
++
++增加模块的符号信息到GDB
++有时你需要添加一个Linux内核模块的符号信息到GDB好调试其。
++手动增加符号信息不太容易，所以KGTP包里包含了GDB Python脚本"getmod.py"和程序"getmod"可以帮到你。
++
++如何使用getmod.py
++在使用getmod.py前连接到KGTP。
++
++(gdb) source ~/kgtp/getmod.py
++于是这个脚本将自动装载Linux内核模块到GDB中。
++
++如何使用getmod
++"getmod" 是用C写的所以你可以把它用在任何地方即使是一个嵌入式环境。
++例如：
++
++#下面的命令将把Linux内核模块信息以GDB命令的格式保存到文件~/tmp/mi。
++sudo getmod >~/tmp/mi
++#在GDB那边：
++(gdb) source ~/tmp/mi
++add symbol table from file
++"/lib/modules/2.6.39-rc5+/kernel/fs/nls/nls_iso8859-1.ko" at
++        .text_addr = 0xf80de000
++        .note.gnu.build-id_addr = 0xf80de088
++        .exit.text_addr = 0xf80de074
++        .init.text_addr = 0xf8118000
++        .rodata.str1.1_addr = 0xf80de0ac
++        .rodata_addr = 0xf80de0c0
++        __mcount_loc_addr = 0xf80de9c0
++        .data_addr = 0xf80de9e0
++        .gnu.linkonce.this_module_addr = 0xf80dea00
++#这条GDB命令后，所有Linux内核模块信息都被装载进GDB了。
++#After this GDB command, all the Linux Kernel module info is loaded into
++GDB.
++如果你使用远程调试或者离线调试，你可以需要修改基本目录。下面是一个例子： If you use remote debug or offline
++debug, maybe you need change the base directory. Following example is
++for it.
++
++#/home/teawater/kernel/b26是GDB所在主机上内核模块所在的路径
++sudo ./getmod -r /home/teawater/kernel/b26 >~/tmp/mi
++直接访问内存
++连接上KGTP以后，你可以直接访问大部分内存。
++例如你可以用下面的命令访问"jiffies_64"：
++
++(gdb) p jiffies_64
++或者你可以用下面的命令访问"static LIST_HEAD(modules)"的第一条记录：
++
++(gdb) p *((struct module *)((char *)modules->next - ((size_t) &(((struct
++module *)0)->list))))
++Or you can access to the CPU0 memory info of "DEFINE_PER_CPU(struct
++device , mce_device);": 或者你可以访问"DEFINE_PER_CPU(struct device ,
++mce_device);"CPU0的数据：
++
++p *(struct device *)(__per_cpu_offset[0]+(uint64_t)(&mce_device))
++GDB tracepoint
++tracepoint就是GDB定义一些地址和一些动作。在tracepoint启动之后，当Linux内核执行到那些地址的时候，KGTP将执行这些动
++作(它们中的有些会收集数据并存入tracepoint帧缓冲)并把它们发给调试目标(KGTP)。而后，Linux内核将继续执行。
++KGTP提供了一些接口可以让GDB或者其他程序取出tracepoint帧缓冲的数据做分析。
++关于这些接口，文档前面已经介绍了"/sys/kernel/debug/gtp"，将在后面介绍"/sys/kernel/debug/
++gtpframe" 和 "/sys/kernel/debug/gtpframe_pipe"。
++
++如何使用GDB tracepoint
++请到 http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoints.html。
++
++trace 位置
++trace命令非常类似break命令，它的参数可以是文件行，函数名或者一个地址。trace将定义一个或者多个地址定义一个tracepoint，K
++GTP将在这个点做一些动作。
++这是一些使用trace命令的例子：
++
++(gdb) trace foo.c:121    // 一个文件和行号
++
++(gdb) trace +2           // 2行以后
++
++(gdb) trace my_function  // 函数的第一行
++
++(gdb) trace *my_function // 函数的第一个地址
++
++(gdb) trace *0x2117c4    // 一个地址
++actions [num]
++这个命令将设置一组action当tracepoint
++num触发的时候执行。如果没有设置num则将设置action到最近创建的tracepoint上(
++因此你可以定义一个tracepoint然后直接输入actions而不需要参数)
++。然后就要在后面输入action，最后以end为结束。到目前为止，支持的action有collect，teval和while-stepping。
++
++collect expr1, expr2, ...
++当tracepoint触发的时候，收集表达式的值。这个命令可接受用逗号分割的一组列表，这些列表除了可以是全局，局部或者本地变量，还可以是下面的这
++些参数：
++
++$regs   收集全部寄存器。
++$args   收集函数参数。
++$locals 收集全部局部变量。
++teval expr1, expr2, ...
++当tracepoint触发的时候，执行指定的表达式。这个命令可接受用逗号分割的一组列表。表达式的结果将被删除，所以最主要的作用是把值设置到tra
++ce状态变量中 (see
++http://code.google.com/p/kgtp/wiki/HOWTOCN#普通trace状态变量)
++，而不用想collect一样把这些值存到trace帧中。
++
++while-stepping n
++请到 http://code.google.com/p/kgtp/wiki/HOWTOCN#如果函数指针被优化掉了 去看如何使用它。
++
++启动和停止 tracepoint
++tracepoint只有在用下面的GDB命令启动后才可以执行action：
++
++(gdb) tstart
++它可以用下面的命令停止：
++
++(gdb) tstop
++Enable 和 disable tracepoint
++和breakpoint一样，tracepoint可以使用GDB命令 "enable" 和 "disable"。但是请 注意
++它们只在tracepoint停止的时候有效。
++
++tfind
++tracepoint停止的时候，GDB命令"tfind"可以用来选择trace帧缓存里面的条目。
++请到 http://sourceware.org/gdb/current/onlinedocs/gdb/tfind.html 取得它的详细信息。
++
++用tracepoint从内核中某点取得寄存器信息
++下面是记录内核调用函数"vfs_readdir"时的寄存器信息的例子：
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) trace vfs_readdir
++Tracepoint 1 at 0xc01a1ac0: file
++/home/teawater/kernel/linux-2.6/fs/readdir.c, line 23.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>collect $reg
++>end
++(gdb) tstart
++(gdb) shell ls
++(gdb) tstop
++(gdb) tfind
++Found trace frame 0, tracepoint 1
++#0  0xc01a1ac1 in vfs_readdir (file=0xc5528d00, filler=0xc01a1900
++<filldir64>,
++   buf=0xc0d09f90) at /home/teawater/kernel/linux-2.6/fs/readdir.c:23
++23      /home/teawater/kernel/linux-2.6/fs/readdir.c: No such file or
++directory.
++       in /home/teawater/kernel/linux-2.6/fs/readdir.c
++(gdb) info reg
++eax            0xc5528d00       -984445696
++ecx            0xc0d09f90       -1060069488
++edx            0xc01a1900       -1072031488
++ebx            0xfffffff7       -9
++esp            0xc0d09f8c       0xc0d09f8c
++ebp            0x0      0x0
++esi            0x8061480        134616192
++edi            0xc5528d00       -984445696
++eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
++eflags         0x286    [ PF SF IF ]
++cs             0x60     96
++ss             0x8061480        134616192
++ds             0x7b     123
++es             0x7b     123
++fs             0x0      0
++gs             0x0      0
++(gdb) tfind
++Found trace frame 1, tracepoint 1
++0xc01a1ac1      23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
++(gdb) info reg
++eax            0xc5528d00       -984445696
++ecx            0xc0d09f90       -1060069488
++edx            0xc01a1900       -1072031488
++ebx            0xfffffff7       -9
++esp            0xc0d09f8c       0xc0d09f8c
++ebp            0x0      0x0
++esi            0x8061480        134616192
++edi            0xc5528d00       -984445696
++eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
++eflags         0x286    [ PF SF IF ]
++cs             0x60     96
++ss             0x8061480        134616192
++ds             0x7b     123
++es             0x7b     123
++fs             0x0      0
++gs             0x0      0
++用tracepoint从内核中某点取得变量的值
++下面是记录内核调用函数"vfs_readdir"时"jiffies_64"的值的例子：
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) trace vfs_readdir
++Tracepoint 1 at 0xc01ed740: file
++/home/teawater/kernel/linux-2.6/fs/readdir.c, line 24.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>collect jiffies_64
++>collect file->f_path.dentry->d_iname
++>end
++(gdb) tstart
++(gdb) shell ls
++arch    drivers   include  kernel    mm               Module.symvers
++security  System.map  virt
++block   firmware  init     lib       modules.builtin  net
++sound     t           vmlinux
++crypto  fs        ipc      Makefile  modules.order    scripts
++source    usr         vmlinux.o
++(gdb) tstop
++(gdb) tfind
++Found trace frame 0, tracepoint 1
++#0  0xc01ed741 in vfs_readdir (file=0xf4063000, filler=0xc01ed580
++<filldir64>, buf=0xd6dfdf90)
++    at /home/teawater/kernel/linux-2.6/fs/readdir.c:24
++24      {
++(gdb) p jiffies_64
++$1 = 4297248706
++(gdb) p file->f_path.dentry->d_iname
++$1 = "b26", '\000' <repeats 28 times>
++如何设置条件tracepoint
++http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoint-Conditions.
++html
++和breakpoint一样，我们可以设置tracepoint的触发条件。而且因为条件检查是在KGTP执行的，所以速度比breakpoint的条件
++检查快很多。
++例如：
++
++(gdb) trace handle_irq
++(gdb) condition 1 (irq == 47)
++tracepoint 1的动作将只在irq是47的时候才被执行。
++
++如何处理 "Unsupported operator (null) (52) in expression."
++如果你使用关于字符串的条件tracepoint，你在调用"tstart"的时候可能得到这个出错信息。
++你可以转化char为int来处理这个问题，例如：
++
++(gdb) condition 1 (buf[0] == (int)'1')
++显示当前这一条trace缓存里存储的所有信息
++在用"tfind"选择好一个条目后，你可以用"tdump"。
++
++(gdb) tdump
++Data collected at tracepoint 1, trace frame 0:
++$cr = void
++file->f_path.dentry->d_iname =
++"gtp\000.google.chrome.g05ZYO\000\235\337\000\000\000\000\200\067k\364\
++200\067", <incomplete sequence \364>
++jiffies_64 = 4319751455
++取得 tracepoint 的状态
++请用GDB命令"tstatus"。
++
++设置trace缓存为循环缓存
++http://sourceware.org/gdb/current/onlinedocs/gdb/Starting-and-Stopping-
++Trace-Experiments.html
++帧缓存默认情况下不是循环缓存。当缓存满了的时候，tracepoint将停止。
++下面的命令将设置trace缓存为循环缓存，当缓存满了的时候，其将自动删除最早的数据并继续trace。
++
++(gdb) set circular-trace-buffer on
++GDB断开的时候不要停止tracepoint
++http://sourceware.org/gdb/current/onlinedocs/gdb/Starting-and-Stopping-
++Trace-Experiments.html
++默认情况下，当GDB断开KGTP的时候将自动停止tracepoint并删除trace帧。
++下面的命令将打开KGTP
++disconnect-
++trace。在设置之后，当GDB断开KGTP的时候，KGTP将不停止tracepoint。GDB重新连到KGTP的时候，其可以继续控制KGTP。
++
++(gdb) set disconnected-tracing on
++kprobes-optimization和tracepoint的执行速度
++因为tracepoint是和Linux内核一起执行，所以它的速度将影响到系统执行的速度。
++KGTP tracepoint是基于Linux内核kprobe。因为普通kprobe是基于断点指令，所以它的速度不是很快。
++
++但是如果你的arch是X86_64 或者 X86_32 而且内核配置没有打开"Preemptible Kernel"
++(PREEMPT)，kprobe的速度将被kprobes-optimization (CONFIG_OPTPROBES)提高很多。
++可以用下面的命令来确认：
++
++sysctl -A | grep kprobe
++debug.kprobes-optimization = 1
++这个的意思就是你的系统支持kprobes-optimization。
++请 注意
++一些KGTP的功能会导致tracepoint只能使用普通kprobe即使系统支持kprobes-
++optimization。文档将在介绍这些功能的时候增加提醒，如果你很介意tracepoint的速度就请避免使用这些功能。
++
++如果使用trace状态变量
++http://sourceware.org/gdb/current/onlinedocs/gdb/Trace-State-Variables.
++html
++Tracepoint 有特殊变量。这些变量可以被直接trace或者在tracepoint条件中使用。
++请 注意 GDB 7.2.1和更晚的版本直接访问trace状态变量，比他们老的GDB只能通过命令"info
++tvariables"取得trace状态变量的值。
++
++普通trace状态变量
++定义trace状态变量$c.
++
++(gdb) tvariable $c
++trace状态变量 $c 被创建并初始化0。 下面的action将使用$c记录内核里发生了多少次IRQ。
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) trace handle_irq
++(gdb) actions
++Enter actions for tracepoint 3, one per line.
++End with a line saying just "end".
++>collect $c     #Save current value of $c to the trace frame buffer.
++>teval $c=$c+1  #Increase the $c.
++>end
++你还可以将某个变量的值传到状态变量里，但是别忘记转化这个值为"uint64_t"。
++
++>teval $c=(uint64_t)a
++你可以取得$c的值当trace在运行或者停止的时候。
++
++(gdb) tstart
++(gdb) info tvariables
++$c              0           31554
++(gdb) p $c
++$5 = 33652
++(gdb) tstop
++(gdb) p $c
++$9 = 105559
++当使用tfind的时候，你可以分析trace frame buffer。如果trace状态变量被收集了，你可以把它取出来。
++
++(gdb) tstop
++(gdb) tfind
++(gdb) info tvariables
++$c              0           0
++(gdb) p $c
++$6 = 0
++(gdb) tfind 100
++(gdb) p $c
++$7 = 100
++如果需要的时候，访问trace状态变量的tracepoint action将自动加锁，所以其可以很好的处理trace状态变量的竞态条件问题。
++下面这个例子即使在一个多CPU的环境也可以正常使用。
++
++>teval $c=$c+1
++Per_cpu trace状态变量
++Per_cpu trace状态变量是一种特殊的普通trace状态变量。 当一个tracepoint
++action访问到其的时候，其将自动访问这个CPU的Per_cpu trace状态变量。
++它有两个优点：
++1. 访问Per_cpu trace状态变量的tracepoint
++actions不存在竞态条件问题，所以其不需要对trace状态变量加锁。所以其在多核的机器上速度更快。 2.
++写针对记录某个CPU的tracepoint actions比普通trace状态变量更容易。
++
++想定义一个Per_cpu trace状态变量你需要使用如下格式的命名：
++
++"per_cpu_"+string+CPU_id
++或者
++
++"pc_"+string+CPU_id
++下面是一个在4核的主机上用"count"命名一组per_cpu trace状态变量的例子：
++
++(gdb) tvariable $pc_count0
++(gdb) tvariable $pc_count1
++(gdb) tvariable $pc_count2
++(gdb) tvariable $pc_count3
++下面是一个兼容性更好的方法：
++
++(gdb) set $tmp=0
++(gdb) while $tmp<$cpu_number
++ >eval "tvariable $pc_count%d",$tmp
++ >set $tmp=$tmp+1
++ >end
++在tracepoint action可以访问这些per_cpu
++trace状态变量的任意一个，KGTP将自动访问当前CPU的那个trace状态变量。
++例如：
++
++(gdb) trace vfs_read
++(gdb) actions
++>teval $pc_count0=$pc_count0+1
++>end
++这些GDB命令定义了一个记录调用在每个CPU调用了vfs_read多少次的tracepoint。
++
++特殊trace状态变量
++$current_task，$current_task_pid，$current_thread_info，$cpu_id，$dump_stack
++，$printk_level，$printk_format，$printk_tmp，$clock，$hardirq_count，$softirq
++_count 和 $irq_count
++KGTP特殊trace状态变量$current_task，$current_thread_info，$cpu_id 和
++$clock可以很容易的访问各种特殊的值，当你用GDB连到KGTP后就可以访问到他们。
++你可以在tracepoint条件和actions里使用他们。
++在tracepoint条件和actions里访问$current_task可以取得get_current()的返回值。
++在tracepoint条件和actions里访问$current_task_pid可以取得get_current()->pid的值。
++在tracepoint条件和actions里访问$current_thread_info可以取得current_thread_info()
++的返回值。
++在tracepoint条件和actions里访问$cpu_id可以取得smp_processor_id()的返回值。
++在tracepoint条件和actions里访问$clock可以取得local_clock()的返回值，也就是取得纳秒为单位的时间戳。
++$rdtsc只在体系结构是X86或者X86_64的时候访问的到，任何时候访问它可以取得用指令RDTSC取得的TSC的值。
++在tracepoint条件和actions里访问$hardirq_count可以取得hardirq_count()的返回值。
++在tracepoint条件和actions里访问$softirq_count可以取得softirq_count()的返回值。
++在tracepoint条件和actions里访问$irq_count可以取得irq_count()的返回值。
++KGTP还有一些特殊trace状态变量$dump_stack，$printk_level，$printk_format 和
++$printk_tmp。他们可以用来直接显示值，请看http://code.google.com/p/kgtp/wiki/
++HOWTOCN#如何让tracepoint直接输出信息。
++下面是一个用$c记录进程16663调用多少次vfs_read并收集thread_info结构的例子：
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) trace vfs_read if (((struct task_struct *)$current_task)->pid ==
++16663)
++(gdb) tvariable $c
++(gdb) actions
++Enter actions for tracepoint 4, one per line.
++End with a line saying just "end".
++>teval $c=$c+1
++>collect (*(struct thread_info *)$current_thread_info)
++>end
++(gdb) tstart
++(gdb) info tvariables
++Name            Initial     Current
++$c              0           184
++$current_task   0           <unknown>
++$current_thread_info 0           <unknown>
++$cpu_id         0           <unknown>
++(gdb) tstop
++(gdb) tfind
++(gdb) p *(struct thread_info *)$current_thread_info
++$10 = {task = 0xf0ac6580, exec_domain = 0xc07b1400, flags = 0, status =
++0, cpu = 1, preempt_count = 2, addr_limit = {
++    seg = 4294967295}, restart_block = {fn = 0xc0159fb0
++<do_no_restart_syscall>, {{arg0 = 138300720, arg1 = 11,
++        arg2 = 1, arg3 = 78}, futex = {uaddr = 0x83e4d30, val = 11,
++flags = 1, bitset = 78, time = 977063750,
++        uaddr2 = 0x0}, nanosleep = {index = 138300720, rmtp = 0xb,
++expires = 335007449089}, poll = {
++        ufds = 0x83e4d30, nfds = 11, has_timeout = 1, tv_sec = 78,
++tv_nsec = 977063750}}},
++  sysenter_return = 0xb77ce424, previous_esp = 0, supervisor_stack =
++0xef340044 "", uaccess_err = 0}
++这是一个记录每个CPU调用了多少次sys_read()的例子。
++
++(gdb) tvariable $c0
++(gdb) tvariable $c1
++(gdb) trace sys_read
++(gdb) condition $bpnum ($cpu_id == 0)
++(gdb) actions
++>teval $c0=$c0+1
++>end
++(gdb) trace sys_read
++(gdb) condition $bpnum ($cpu_id == 1)
++(gdb) actions
++>teval $c1=$c1+1
++>end
++(gdb) info tvariables
++Name            Initial     Current
++$current_task   0           <unknown>
++$cpu_id         0           <unknown>
++$c0             0           3255
++$c1             0           1904
++sys_read() 在CPU0上被执行了3255次，CPU1上执行了1904次。请 注意
++这个例子只是为了显示如何使用$cpu_id，实际上用per_cpu trace状态变量写更好。
++
++特殊trace状态变量 $no_self_trace
++$no_self_trace和前面介绍的特殊trace状态变量不同，它是用来控制tracepoint的行为的。
++如果一个tracepoint包含一个访问到$no_self_trace的action，则当当前task是KGTP自己的进程（GDB，netcat
++，getframe或者其他访问KGTP接口的进程）的时候，其将不进行记录。
++例如，如果你要记录vfs_read或者其他有进程上下文的东西时候而且你不想trace KGTP自己的进程的时候，增加下面的命令到action里：
++
++>collect $no_self_trace
++请 注意 不和进程上下文（Irq handler, softirq）有关的部分不需要设置这个变量。
++
++用$kret trace函数的结尾
++有时，因为内核是用优化编译的，所以在函数结尾设置tracepoint有时很困难。这时你可以用$kret帮助你。
++$kret是一个类似$no_self_trace的特殊trace状态变量。当你在tracepoint
++action里设置它的值的时候，这个tracepoint将用kretprobe而不是kprobe注册。于是其就可以trace一个函数的结尾。
++请 注意 这个tracepoint 必须用 "function_name" 的格式设置在函数的第一个地址上。
++
++下面的部分是一个例子：
++
++#"*(function_name)" format can make certain that GDB send the first
++address of function to KGTP.
++(gdb) trace *vfs_read
++(gdb) actions
++>teval $kret=0
++#Following part you can set commands that you want.
++用 $ignore_error 和 $last_errno 忽略tstart的错误
++当KGTP在tstart取得错误，这个命令将失败。
++但有时我们需要忽略这个错误信息并让KGTP工作。例如：如果你在inline函数spin_lock设置tracepoint，这个tracepoin
++t将被设置到很多地址上，有一些地址不能设置kprobe，于是它就会让tstart出错。这时你就可以用"$ignore_error"忽略这些错误。
++最后一个错误信息将存在"$last_errno"中。
++
++(gdb) tvariable $ignore_error=1
++这个命令将打开忽略。
++
++(gdb) tvariable $ignore_error=0
++这个命令将关闭忽略。
++
++使用 $cooked_clock 和 $cooked_rdtsc 取得不包含KGTP运行时间的时间信息
++访问这两个trace状态变量可以取得不包含KGTP运行时间的时间信息，于是我们可以取得一段代码更真实的执行时间即使这个tracepoint的ac
++tion比较复杂。
++
++使用 $xtime_sec 和 $xtime_nsec 取得 timespec
++访问trace状态变量将返回用getnstimeofday取得的timespec时间信息。
++$xtime_sec 将返回timespec秒的部分。
++$xtime_nsec 将返回timespec纳秒的部分。
++
++如何 backtrace (stack dump)
++每次你的程序做一个函数调用的时候，
++这次调用的信息就会生成。这些信息包括调用函数的地址，调用参数，局部变量的值。这些信息被存储在我们称为栈帧的地方，栈帧是从调用栈中分配而来。
++
++通过$bt收集栈并用GDB命令"backtrace"进行分析
++因为这个方法更快（因为在trace的时候只收集）而且可以分析出大部分的调用栈中的信息（前面介绍的栈信息都可以分析出来），所以时间你使用这个方法做
++栈分析。
++首先我们需要在tracepoint action中增加命令收集栈。
++GDB收集栈的通常命令是： 在x86_32, 下面的命令将收集512字节的栈内容。
++>collect (unsigned char )$esp@512
++在x86_64, 下面的命令将收集512字节的栈内容。
++>collect (unsigned char )$rsp@512
++在MIPS或者ARM, 下面的命令将收集512字节的栈内容。
++>collect (unsigned char )$sp@512
++这些命令很难记，而且不同的体系结构需要不同的命令。
++KGTP有一个特殊trace状态变量$bt。如果tracepoint
++action访问到它，KGTP将自动收集$bt长度（默认值是512）的栈。下面这个action将收集512字节的栈内存：
++
++>collect $bt
++如果你想改变$bt的值，你可以在"tstart"使用下面这个GDB命令：
++
++(gdb) tvariable $bt=1024
++下面的部分是一个收集栈并用GDB进行分析的例子：
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) trace vfs_readdir
++Tracepoint 1 at 0xffffffff8118c300: file
++/home/teawater/kernel2/linux/fs/readdir.c, line 24.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>collect $bt
++>end
++(gdb) tstart
++(gdb) shell ls
++1      crypto    fs             include  kernel    mm
++Module.symvers  security  System.map  vmlinux
++arch   drivers   hotcode.html   init     lib       modules.builtin  net
++           sound     usr         vmlinux.o
++block  firmware  hotcode.html~  ipc      Makefile  modules.order
++scripts         source    virt
++(gdb) tstop
++(gdb) tfind
++Found trace frame 0, tracepoint 1
++#0  vfs_readdir (file=0xffff8800c5556d00, filler=0xffffffff8118c4b0
++<filldir>, buf=0xffff880108709f40)
++    at /home/teawater/kernel2/linux/fs/readdir.c:24
++24      {
++(gdb) bt
++#0  vfs_readdir (file=0xffff8800c5556d00, filler=0xffffffff8118c4b0
++<filldir>, buf=0xffff880108709f40)
++    at /home/teawater/kernel2/linux/fs/readdir.c:24
++#1  0xffffffff8118c689 in sys_getdents (fd=<optimized out>,
++dirent=0x1398c58, count=32768) at
++/home/teawater/kernel2/linux/fs/readdir.c:214
++#2  <signal handler called>
++#3  0x00007f00253848a5 in ?? ()
++#4  0x00003efd32cddfc9 in ?? ()
++#5  0x00002c15b7d04101 in ?? ()
++#6  0x000019c0c5704bf1 in ?? ()
++#7  0x0000000900000000 in ?? ()
++#8  0x000009988cc8d269 in ?? ()
++#9  0x000009988cc9b8d1 in ?? ()
++#10 0x0000000000000000 in ?? ()
++(gdb) up
++#1  0xffffffff8118c689 in sys_getdents (fd=<optimized out>,
++dirent=0x1398c58, count=32768) at
++/home/teawater/kernel2/linux/fs/readdir.c:214
++214             error = vfs_readdir(file, filldir, &buf);
++(gdb) p buf
++$1 = {current_dir = 0x1398c58, previous = 0x0, count = 32768, error = 0}
++(gdb) p error
++$3 = -9
++(gdb) frame 0
++#0  vfs_readdir (file=0xffff8800c5556d00, filler=0xffffffff8118c4b0
++<filldir>, buf=0xffff880108709f40)
++    at /home/teawater/kernel2/linux/fs/readdir.c:24
++24      {
++从这个例子，我们可以看到一些分析调用栈的GDB命令：
++bt 是GDB命令 backtrace 的别名，这个命令将打印stack中的信息：每一行是一个调用栈。
++up n 是向上移动n个帧。如果n是正数，则向外到更高的帧，一直到这个栈最大的一行。n的默认值是1。
++down n 是向下移动n个帧。如果n是正数，则向内到更低的帧，一直到最新创建的那个栈帧。n的默认值是1。
++is move n frames down the stack. For positive numbers n, this advances
++toward the innermost frame, to lower frame numbers, to frames that were
++created more recently. n defaults to one. 你可以把 down 缩写为 do。
++frame n 是选择帧n。帧0是最近创建的帧，帧1调用这个帧的帧。所以最高的帧是main。
++你还可以看到当你用up，down或者frame来选择调用栈帧的时候，你可以输出不同帧的参数和局部变量。
++要取得更多关于如何使用GDB分析调用栈的信息，请到http://sourceware.org/gdb/current/onlinedocs/
++gdb/Stack.html。
++用$_ret来取得当前函数的调用函数的栈
++如果你只想取得当前函数的调用函数的栈，可以用$_ret。
++请 注意 使用$_ret的tracepoint不能设置在函数的第一个地址上。
++例如：
++
++(gdb) list vfs_read
++360     }
++361
++362     EXPORT_SYMBOL(do_sync_read);
++363
++364     ssize_t vfs_read(struct file *file, char __user *buf, size_t
++count, loff_t *pos)
++365     {
++366             ssize_t ret;
++367
++368             if (!(file->f_mode & FMODE_READ))
++369                     return -EBADF;
++(gdb) trace 368
++Tracepoint 2 at 0xffffffff8117a244: file
++/home/teawater/kernel2/linux/fs/read_write.c, line 368.
++(gdb) actions
++Enter actions for tracepoint 2, one per line.
++End with a line saying just "end".
++>collect $_ret
++>end
++(gdb) tstart
++(gdb) tstop
++(gdb) tfind
++Found trace frame 0, tracepoint 2
++#0  vfs_read (file=0xffff880141c46000, buf=0x359bda0 <Address 0x359bda0
++out of bounds>, count=8192, pos=0xffff88012fa49f48)
++    at /home/teawater/kernel2/linux/fs/read_write.c:368
++368             if (!(file->f_mode & FMODE_READ))
++(gdb) bt
++#0  vfs_read (file=0xffff880141c46000, buf=0x359bda0 <Address 0x359bda0
++out of bounds>, count=8192, pos=0xffff88012fa49f48)
++    at /home/teawater/kernel2/linux/fs/read_write.c:368
++#1  0xffffffff8117a3ea in sys_read (fd=<optimized out>,
++buf=<unavailable>, count=<unavailable>)
++    at /home/teawater/kernel2/linux/fs/read_write.c:469
++Backtrace stopped: not enough registers or memory available to unwind
++further
++(gdb) up
++#1  0xffffffff8117a3ea in sys_read (fd=<optimized out>,
++buf=<unavailable>, count=<unavailable>)
++    at /home/teawater/kernel2/linux/fs/read_write.c:469
++469                     ret = vfs_read(file, buf, count, &pos);
++(gdb) p ret
++$2 = -9
++我们可以看到调用vfs_read的函数是sys_read，函数sys_read的局部变量ret的值是-9。
++
++用 $dump_stack 输出栈分析到printk里
++因为这个方法需要在trace的时候分析栈并调用printk，所以它比较慢，不安全，不清晰也不能访问调用栈中的很多内容，所以我建议你上一部分介绍的
++方法
++KGTP有一个特殊的trace状态变量$dump_stack，收集这个变量可以令GDB调用栈分析并用printk输出。
++下面是一个让内核输出vfs_readdir栈分析的例子：
++
++target remote /sys/kernel/debug/gtp
++trace vfs_readdir
++  commands
++    collect $dump_stack
++  end
++于是你的内核就会printk这样的信息：
++
++[22779.208064] gtp 1:Pid: 441, comm: python Not tainted 2.6.39-rc3+ #46
++[22779.208068] Call Trace:
++[22779.208072]  [<fe653cca>] gtp_get_var+0x4a/0xa0 [gtp]
++[22779.208076]  [<fe653d79>] gtp_collect_var+0x59/0xa0 [gtp]
++[22779.208080]  [<fe655974>] gtp_action_x+0x1bb4/0x1dc0 [gtp]
++[22779.208084]  [<c05b6408>] ? _raw_spin_unlock+0x18/0x40
++[22779.208088]  [<c023f152>] ? __find_get_block_slow+0xd2/0x160
++[22779.208091]  [<c01a8c56>] ? delayacct_end+0x96/0xb0
++[22779.208100]  [<c023f404>] ? __find_get_block+0x84/0x1d0
++[22779.208103]  [<c05b6408>] ? _raw_spin_unlock+0x18/0x40
++[22779.208106]  [<c02e0838>] ? find_revoke_record+0xa8/0xc0
++[22779.208109]  [<c02e0c45>] ? jbd2_journal_cancel_revoke+0xd5/0xe0
++[22779.208112]  [<c02db51f>] ?
++__jbd2_journal_temp_unlink_buffer+0x2f/0x110
++[22779.208115]  [<fe655c4c>] gtp_kp_pre_handler+0xcc/0x1c0 [gtp]
++[22779.208118]  [<c05b8a88>] kprobe_exceptions_notify+0x3d8/0x440
++[22779.208121]  [<c05b7d54>] ?
++hw_breakpoint_exceptions_notify+0x14/0x180
++[22779.208124]  [<c05b95eb>] ? sub_preempt_count+0x7b/0xb0
++[22779.208126]  [<c0227ac5>] ? vfs_readdir+0x15/0xb0
++[22779.208128]  [<c0227ac4>] ? vfs_readdir+0x14/0xb0
++[22779.208131]  [<c05b9743>] notifier_call_chain+0x43/0x60
++[22779.208134]  [<c05b9798>] __atomic_notifier_call_chain+0x38/0x50
++[22779.208137]  [<c05b97cf>] atomic_notifier_call_chain+0x1f/0x30
++[22779.208140]  [<c05b980d>] notify_die+0x2d/0x30
++[22779.208142]  [<c05b71c5>] do_int3+0x35/0xa0
++如何使用性能计数器
++性能计数器是大部分现代CPU都有的特殊硬件寄存器。这些寄存器对一些硬件事件进行计数：例如指令执行数量，cachemisses数量，分支预测失败数
++，而且这些计数不会让应用程序或者内核变慢。其还可以设置到达一定的值的时候发生中断，这些就可以用来分析在某CPU上执行程序的性能。
++Linux性能计数器子系统perf event可以用来取得性能计数器的值。你可以用KGTP perf event trace状态变量访问这些值。
++请读内核目录里的tools/perf/design.txt文件取得perf event的更多信息。
++
++定义一个perf event trace状态变量
++访问一个性能计数器需要定义下面的trace状态变量：
++
++"pe_cpu_"+tv_name       定义性能计数器的CPU ID。
++"pe_type_"+tv_name      定义性能计数器的类型。
++"pe_config_"+tv_name    定义性能计数器的配置。
++"pe_en_"+tv_name        定义性能计数器的启动开关。
++                        默认情况下性能计数器是关闭的。
++"pe_val_"+tv_name       访问这个变量能取得性能计数器的值。
++定义一个per_cpu perf event trace状态变量
++定义一个per_cpu perf event
++trace状态变量和http://code.google.com/p/kgtp/wiki/
++HOWTOCN#Per_cpu_trace状态变量一样。
++
++"pc_pe_"+perf_event type+string+CPU_id
++请 注意 如果定义一个per_cpu perf event trace状态变量，就不需要在定义cpu
++id("pe_cpu")因为KGTP已经取得了CPU的ID。
++
++perf event的类型和配置
++类型可以是：
++
++0       PERF_TYPE_HARDWARE
++1       PERF_TYPE_SOFTWARE
++2       PERF_TYPE_TRACEPOINT
++3       PERF_TYPE_HW_CACHE
++4       PERF_TYPE_RAW
++5       PERF_TYPE_BREAKPOINT
++如果类型是0(PERF_TYPE_HARDWARE)，配置可以是：
++
++0       PERF_COUNT_HW_CPU_CYCLES
++1       PERF_COUNT_HW_INSTRUCTIONS
++2       PERF_COUNT_HW_CACHE_REFERENCES
++3       PERF_COUNT_HW_CACHE_MISSES
++4       PERF_COUNT_HW_BRANCH_INSTRUCTIONS
++5       PERF_COUNT_HW_BRANCH_MISSES
++6       PERF_COUNT_HW_BUS_CYCLES
++7       PERF_COUNT_HW_STALLED_CYCLES_FRONTEND
++8       PERF_COUNT_HW_STALLED_CYCLES_BACKEND
++
++如果类型是3(PERF_TYPE_HW_CACHE)，配置要分为3部分： 第一部分是cache id，其在设置进配置的时候需要 << 0：
++
++0       PERF_COUNT_HW_CACHE_L1D
++1       PERF_COUNT_HW_CACHE_L1I
++2       PERF_COUNT_HW_CACHE_LL
++3       PERF_COUNT_HW_CACHE_DTLB
++4       PERF_COUNT_HW_CACHE_ITLB
++5       PERF_COUNT_HW_CACHE_BPU
++第二部分是cache op id，其在设置进配置的时候需要 << 8：
++
++0       PERF_COUNT_HW_CACHE_OP_READ
++1       PERF_COUNT_HW_CACHE_OP_WRITE
++2       PERF_COUNT_HW_CACHE_OP_PREFETCH
++第三部分是cache op result id，其在设置进配置的时候需要 << 16：
++
++0       PERF_COUNT_HW_CACHE_RESULT_ACCESS
++1       PERF_COUNT_HW_CACHE_RESULT_MISS
++如果你想取得PERF_COUNT_HW_CACHE_L1I(1), PERF_COUNT_HW_CACHE_OP_WRITE(1) and
++PERF_COUNT_HW_CACHE_RESULT_MISS(1)你需要使用：
++
++(gdb) tvariable $pe_config_cache=1 | (1 << 8) | (1 << 16)
++内核目录中的tools/perf/design.txt是关于perf event的类型和配置。
++
++用$pc_pe_en打开和关闭一个CPU上所有的perf event
++我认为取得一段代码的性能计数器信息比较好的办法是在函数开头打开计数器在函数结束的时候关闭计数器。你可以用"pe_en"设置他们，但是如果你有多个
++perf event trace状态变量的时候，这样会让tracepoint action很大。$pc_pe_en就是处理这种问题的。
++你可以打开所有perf event trace状态变量在当前CPU上用下面的action：
++
++>teval $pc_pe_en=1
++设置$pc_pe_en为0来关闭他们。
++
++>teval $pc_pe_en=0
++用来帮助设置和取得perf event trace状态变量的GDB脚本
++下面这个GDB脚本定义了2个命令dpe和spe来帮助定义和显示perf event trace状态变量。
++你可以把他们存在~/.gdbinit或者你自己的tracepoint脚本中。于是你就可以在GDB中直接使用这2个命令。
++
++define dpe
++  if ($argc < 2)
++    printf "Usage: dpe pe_type pe_config [enable]\n"
++  end
++  if ($argc >= 2)
++    set $tmp=0
++    while $tmp<$cpu_number
++      eval "tvariable $pc_pe_type_%d%d_%d=%d",$arg0, $arg1, $tmp, $arg0
++      eval "tvariable $pc_pe_config_%d%d_%d=%d",$arg0, $arg1, $tmp,
++$arg1
++      eval "tvariable $pc_pe_val_%d%d_%d=0",$arg0, $arg1, $tmp
++      if ($argc >= 3)
++        eval "tvariable $pc_pe_en_%d%d_%d=%d",$arg0, $arg1, $tmp, $arg2
++      end
++      set $tmp=$tmp+1
++    end
++  end
++end
++
++document dpe
++Usage: dpe pe_type pe_config [enable]
++end
++
++define spe
++  if ($argc != 2 && $argc != 3)
++    printf "Usage: spe pe_type pe_config [cpu_id]\n"
++  end
++  if ($argc == 2)
++    set $tmp=0
++    while $tmp<$cpu_number
++      eval "printf \"$pc_pe_val_%%d%%d_%%d=%%ld\\n\",$arg0, $arg1, $tmp,
++$pc_pe_val_%d%d_%d", $arg0, $arg1, $tmp
++      set $tmp=$tmp+1
++    end
++  end
++  if ($argc == 3)
++    eval "printf \"$pc_pe_val_%%d%%d_%%d=%%ld\\n\",$arg0, $arg1, $tmp,
++$pc_pe_val_%d%d_%d", $arg0, $arg1, $arg2
++  end
++end
++
++document spe
++Usage: spe pe_type pe_config [cpu_id]
++end
++下面是一个取得函数tcp_v4_rcv性能计数器的例子：
++
++#连接KGTP
++(gdb) target remote /sys/kernel/debug/gtp
++#定义3个perf event
++trace状态变量PERF_COUNT_HW_CPU_CYCLES，PERF_COUNT_HW_CACHE_MISSES和PERF_COUNT_
++HW_BRANCH_MISSES。
++(gdb) dpe 0 0
++(gdb) dpe 0 3
++(gdb) dpe 0 5
++#在函数开头打开这个CPU的性能寄存器
++(gdb) trace tcp_v4_rcv
++(gdb) action
++>teval $pc_pe_en=1
++>end
++#$kret 让我们可以处理到函数tcp_v4_rcv的结尾：
++(gdb) trace *(tcp_v4_rcv)
++(gdb) action
++>teval $kret=0
++#关闭这个CPU上的所有性能计数器
++>teval $pc_pe_en=0
++#访问这些perf event trace状态变量将取得他们的值
++>collect $pc_pe_val_00_0
++>collect $pc_pe_val_03_0
++>collect $pc_pe_val_05_0
++#设置这些perf event trace状态变量为0
++>teval $pc_pe_val_00_0=0
++>teval $pc_pe_val_03_0=0
++>teval $pc_pe_val_05_0=0
++>end
++tstart
++#等一会让每个CPU收一些TCP包
++(gdb) tstop
++(gdb) tfind
++(gdb) spe 0 0 $cpu_id
++$pc_pe_val_00_2=12676
++(gdb) spe 0 3 $cpu_id
++$pc_pe_val_03_2=7
++(gdb) spe 0 5 $cpu_id
++$pc_pe_val_05_2=97
++如何让tracepoint直接输出信息
++在前面的章节，你可以看到如果想取得Linux内核的信息，你需要用tracepoint "collect"
++action来保存信息到tracepoint帧中并用GDB tfind命来来分析这些数据帧。
++但是有时我们希望直接取得这些数据，所以KGTP提供了一种直接取得这些数据的方法。
++
++切换collect为直接输出数据
++KGTP有特殊trace状态变量$printk_level，$printk_format 和 $printk_tmp支持这个功能。
++$printk_level，如果这个值是8（这是默认值），"collect" action将是普通行为也就是保存数据到tracepoint帧中。
++如果值是0-7，"collect" 将以这个数字为printk级别输出信息，这些级别是：
++
++0       KERN_EMERG      system is unusable
++1       KERN_ALERT      action must be taken immediately
++2       KERN_CRIT       critical conditions
++3       KERN_ERR        error conditions
++4       KERN_WARNING    warning conditions
++5       KERN_NOTICE     normal but significant condition
++6       KERN_INFO       informational
++7       KERN_DEBUG      debug-level messages
++$printk_format，collect printk将按照这里设置的格式进行输出。 这些格式是：
++
++0       这是默认值。
++        如果collect的长度是1，2，4，8则其将输出一个无符号十进制数。
++        如果不是，则其将输出十六进制字串。
++1       输出值是有符号十进制数。
++2       输出值是无符号十进制数。
++3       输出值是无符号十六进制数。
++4       输出值是字符串。
++5       输出值是十六进制字串。
++如果要输出一个全局变量，需要将其先设置到$printk_tmp中。
++
++下面是一个显示调用vfs_readdir时的计数，pid，jiffies_64和文件名的例子：
++
++(gdb) target remote /sys/kernel/debug/gtp
++(gdb) tvariable $c
++(gdb) trace vfs_readdir
++(gdb) actions
++>teval $printk_level=0
++>collect $c=$c+1
++>collect ((struct task_struct *)$current_task)->pid
++>collect $printk_tmp=jiffies_64
++>teval $printk_format=4
++>collect file->f_path.dentry->d_iname
++>end
++于是内核将printk这些信息：
++
++gtp 1:$c=$c+1=41
++gtp 1:((struct task_struct *)$current_task)->pid=12085
++gtp 1:$printk_tmp=jiffies_64=4322021438
++gtp 1:file->f_path.dentry->d_iname=b26
++gtp 1:$c=$c+1=42
++gtp 1:((struct task_struct *)$current_task)->pid=12085
++gtp 1:$printk_tmp=jiffies_64=4322021438
++gtp 1:file->f_path.dentry->d_iname=b26
++"gtp 1" 的意思是数据是tracepoint 1输出的。
++
++如何显示被优化掉的变量值
++有时GDB会这样输出信息：
++
++inode has been optimized out of existence.
++res has been optimized out of existence.
++这是因为inode和res的值被优化掉了。内核用-O2编译的所以你有时会碰到这个问题。
++有两个方法处理这个问题：
++
++升级你的GCC
++VTA branch (http://gcc.gnu.org/wiki/Var_Tracking_Assignments)已经整合进GCC
++4.5，其可以帮助生成之前被标记为"optimized out"的值的调试信息。
++
++如何取得函数指针指向的函数
++如果函数指针没有被优化掉
++你可以直接collect这个指针，例如：
++
++377                     count = ret;
++378                     if (file->f_op->read)
++379                             ret = file->f_op->read(file, buf, count,
++pos);
++(gdb)
++(gdb) trace 379
++Tracepoint 1 at 0xffffffff81173ba5: file
++/home/teawater/kernel/linux/fs/read_write.c, line 379.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>collect file->f_op->read
++>end
++(gdb) tstart
++(gdb) tstop
++(gdb) tfind
++(gdb) p file->f_op->read
++$5 = (ssize_t (*)(struct file *, char *, size_t, loff_t *))
++0xffffffff81173190 <do_sync_read>
++#于是就知道file->f_op->read指向do_sync_read。
++如果函数指针被优化掉了
++可以用tracepoint step处理这个问题，例如：
++
++#找到调用指针的指令
++(gdb) disassemble /rm vfs_read
++379                             ret = file->f_op->read(file, buf, count,
++pos);
++   0xffffffff81173ba5 <+181>:   48 89 da        mov    %rbx,%rdx
++   0xffffffff81173ba8 <+184>:   4c 89 e9        mov    %r13,%rcx
++   0xffffffff81173bab <+187>:   4c 89 e6        mov    %r12,%rsi
++   0xffffffff81173bae <+190>:   4c 89 f7        mov    %r14,%rdi
++   0xffffffff81173bb1 <+193>:   ff d0   callq  *%rax
++   0xffffffff81173bb3 <+195>:   48 89 c3        mov    %rax,%rbx
++(gdb) trace *0xffffffff81173bb1
++Tracepoint 1 at 0xffffffff81173bb1: file
++/home/teawater/kernel/linux/fs/read_write.c, line 379.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>while-stepping 1
++ >collect $reg
++ >end
++>end
++(gdb) tstart
++(gdb) tstop
++(gdb) tfind
++#0  tty_read (file=0xffff88006ca74900, buf=0xb6b7dc <Address 0xb6b7dc
++out of bounds>, count=8176,
++    ppos=0xffff88006e197f48) at
++/home/teawater/kernel/linux/drivers/tty/tty_io.c:960
++960     {
++#于是就知道file->f_op->read指向tty_read。
++请 注意 while-stepping 将让tracepoint不能使用kprobes-optimization。
++
++/sys/kernel/debug/gtpframe和离线调试
++/sys/kernel/debug/gtpframe是一个当KGTP停止时的tfine格式（GDB可以读取它）的接口。
++在运行GDB的主机上：
++改变 "target remote XXXX" 为：
++
++(gdb) target remote | perl ./getgtprsp.pl
++之后像平时一样设置tracepoint：
++
++(gdb) trace vfs_readdir
++Tracepoint 1 at 0xffffffff8114f3c0: file
++/home/teawater/kernel/linux-2.6/fs/readdir.c, line 24.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++#If your GDB support tracepoint "printf" (see "Howto use tracepoint
++printf"), use it to show the value directly is better.
++>collect $reg
++>end
++(gdb) tstart
++(gdb) stop
++(gdb) quit
++于是你可以在当前目录找到文件gtpstart和gtpstop，把他们拷贝到你想调试的主机上。
++
++在被调试主机insmod gtp.ko之后：
++启动tracepoint：
++
++cat gtpstart > /sys/kernel/debug/gtp
++停止tracepoint：
++
++cat gtpstop > /sys/kernel/debug/gtp
++可以按照http://code.google.com/p/kgtp/wiki/
++HOWTOCN#如何让tracepoint直接输出信息直接在板子上显示信息。
++
++如果要保存trace帧之后再分析，你可以拷贝文件"/sys/kernel/debug/gtpframe"到有GDB的主机上。
++请 注意 有些"cp"不能很好的处理这个问题，可以用"cat /sys/kernel/debug/gtpframe >
++./gtpframe"拷贝它。
++在运行GDB的主机上：
++(gdb) target tfile ./gtpframe
++Tracepoint 1 at 0xffffffff8114f3dc: file
++/home/teawater/kernel/linux-2.6/fs/readdir.c, line 24.
++Created tracepoint 1 for target's tracepoint 1 at 0xffffffff8114f3c0.
++(gdb) tfind
++Found trace frame 0, tracepoint 1
++#0  vfs_readdir (file=0xffff880036e8f300, filler=0xffffffff8114f240
++<filldir>, buf=0xffff880001e5bf38)
++    at /home/teawater/kernel/linux-2.6/fs/readdir.c:24
++24      {
++如何使用 /sys/kernel/debug/gtpframe_pipe
++这个接口提供和"gtpframe"同样的数据，但是可以在KGTP
++tracepoint运行的时候也可以使用。在数据读出之后，其将自动从trace帧里删除类似ftrace "trace_pipe"。
++
++用GDB读帧信息
++#连接到接口上
++(gdb) target tfile /sys/kernel/debug/gtpframe_pipe
++#取得一个trace帧条目
++(gdb) tfind 0
++Found trace frame 0, tracepoint 1
++#取得下一个
++(gdb) tfind
++Target failed to find requested trace frame.
++(gdb) tfind 0
++Found trace frame 0, tracepoint 1
++这个方法和python一起分析内核比较好，add-ons/hotcode.py就是这样的例子。
++
++用cat读帧信息
++sudo cat /sys/kernel/debug/gtpframe_pipe > g
++于是所有帧信息都被存入了文件"g"。
++
++用getframe读帧信息
++KGTP包含一个"getframe"可以用来帮助取得trace帧。
++下面这里是它的帮助：
++
++getframe -h
++Get the trace frame of KGTP and save them in current
++directory with tfile format.
++Usage: ./getframe [option]
++
++  -g n    Set the minimum free size limit to n G.
++          When free size of current disk is smaller than n G,
++          ./getframe will exit (-q) or wait some seconds (-w).
++          The default value of it is 2 G.
++
++  -q      Quit when current disk is smaller than
++          minimum free size limit (-g).
++
++  -w n    Wait n seconds when current disk is smaller
++          than minimum free size limit (-g).
++
++  -e n    Set the entry number of each tfile to n.
++          The default value of it is 1000.
++
++  -h      Display this information.
++使用 $pipe_trace
++为了锁安全，KGTP默认将自动忽略读/sys/kernel/debug/gtpframe_pipe的任务。
++如果你真希望trace这个任务而且确定这是安全的，你可以使用"tstart"之前使用下面的命令：
++
++(gdb) tvariable $pipe_trace=1
++于是KGTP将不再忽略读/sys/kernel/debug/gtpframe_pipe的任务。
++
++如何使用 add-ons/hotcode.py
++这个脚本可以通过记录并分析中断处理时候的取得的PC值从而得到Linux kernel或者用户层程序的热点代码。
++请到 http://code.google.com/p/kgtp/wiki/hotcode 去看如何使用它。
 --- /dev/null
-+++ b/arch/x86/include/asm/gtp.h
-@@ -0,0 +1,22 @@
-+#ifndef _ASM_X86_GTP_H_
-+#define _ASM_X86_GTP_H_
++++ b/Documentation/gtp/quickstart.txt
+@@ -0,0 +1,250 @@
++		Linux Kernel GDB tracepoint module (KGTP) quick start
++		=====================================================
++		By Hui Zhu <teawater@gmail.com>
++		https://code.google.com/p/kgtp/wiki/Quickstart
++		2011-09-12
 +
-+#define ULONGEST		uint64_t
-+#define LONGEST			int64_t
-+#define CORE_ADDR		unsigned long
++Table of contents
++-----------------
++Ubuntu
++Fedora
 +
-+#define GTP_REGS_PC(regs)	((regs)->ip)
 +
-+#ifdef CONFIG_X86_32
-+#define GTP_REG_ASCII_SIZE	128
-+#define GTP_REG_BIN_SIZE	64
 +
-+#define GTP_SP_NUM		4
-+#else
-+#define GTP_REG_ASCII_SIZE	296
-+#define GTP_REG_BIN_SIZE	148
 +
-+#define GTP_SP_NUM		7
-+#endif
++Ubuntu
++------
 +
-+#endif
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1287,9 +1287,12 @@ extern void perf_output_copy(struct perf
-  			     const void *buf, unsigned int len);
-  extern int perf_swevent_get_recursion_context(void);
-  extern void perf_swevent_put_recursion_context(int rctx);
-+extern int __perf_event_enable(void *info);
-+extern int __perf_event_disable(void *info);
-  extern void perf_event_enable(struct perf_event *event);
-  extern void perf_event_disable(struct perf_event *event);
-  extern void perf_event_task_tick(void);
-+extern void perf_event_set(struct perf_event *event, u64 val);
-  #else
-  static inline void
-  perf_event_task_sched_in(struct task_struct *prev,
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1249,7 +1249,7 @@ retry:
-  /*
-   * Cross CPU call to disable a performance event
-   */
--static int __perf_event_disable(void *info)
-+int __perf_event_disable(void *info)
-  {
-  	struct perf_event *event = info;
-  	struct perf_event_context *ctx = event->ctx;
-@@ -1286,6 +1286,7 @@ static int __perf_event_disable(void *in
-  
-  	return 0;
-  }
-+EXPORT_SYMBOL_GPL(__perf_event_disable);
-  
-  /*
-   * Disable a event.
-@@ -1697,7 +1698,7 @@ static void __perf_event_mark_enabled(st
-  /*
-   * Cross CPU call to enable a performance event
-   */
--static int __perf_event_enable(void *info)
-+int __perf_event_enable(void *info)
-  {
-  	struct perf_event *event = info;
-  	struct perf_event_context *ctx = event->ctx;
-@@ -1761,6 +1762,7 @@ unlock:
-  
-  	return 0;
-  }
-+EXPORT_SYMBOL_GPL(__perf_event_enable);
-  
-  /*
-   * Enable a event.
-@@ -3151,6 +3153,14 @@ static void perf_event_reset(struct perf
-  	perf_event_update_userpage(event);
-  }
-  
-+void perf_event_set(struct perf_event *event, u64 val)
-+{
-+	(void)perf_event_read(event);
-+	local64_set(&event->count, val);
-+	perf_event_update_userpage(event);
-+}
-+EXPORT_SYMBOL_GPL(perf_event_set);
++Install GDB for KGTP
++--------------------
 +
-  /*
-   * Holding the top-level event's child_mutex means that any
-   * descendant process that has inherited this event will block
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1289,6 +1289,16 @@ config ASYNC_RAID6_TEST
-  
-  	  If unsure, say N.
-  
-+config GTP
-+	tristate "GDB tracepoint support"
-+	depends on X86 || ARM || MIPS
-+	select KPROBES
-+	select DEBUG_FS
-+	---help---
-+	  Supply GDB tracepoint interface in /sys/kernel/debug/gtp.
-+	  See Documentation/trace/gtp.txt or
-+	  https://code.google.com/p/kgtp/wiki/HOWTO for more info.
++This GDB's filename is different with the current GDB that you are using.
++So please don't worry that it affect current GDB that your are using.
 +
-  source "samples/Kconfig"
-  
-  source "lib/Kconfig.kgdb"
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -123,6 +123,8 @@ obj-$(CONFIG_SIGNATURE) += digsig.o
-  
-  obj-$(CONFIG_CLZ_TAB) += clz_tab.o
-  
-+obj-$(CONFIG_GTP) += gtp.o
++For the Ubuntu 10.04 or later, running the following line at a terminal:
++sudo add-apt-repository ppa:teawater/gdb-$(lsb_release -rs)
++sudo apt-get update
++sudo apt-get install gdb-release
 +
-  hostprogs-y	:= gen_crc32table
-  clean-files	:= crc32table.h
-  
-@@ -133,3 +135,5 @@ quiet_cmd_crc32 = GEN     $@
-  
-  $(obj)/crc32table.h: $(obj)/gen_crc32table
-  	$(call cmd,crc32)
++For the Ubuntu older than 10.04, please go to https://code.google.com/p/gdbt/
++get howto install GDB for KGTP from source.
 +
-+gtp.o: gtp_rb.c
---- /dev/null
-+++ b/lib/gtp.c
-@@ -0,0 +1,8994 @@
-+/*
-+ * Kernel GDB tracepoint module.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright(C) KGTP team (https://code.google.com/p/kgtp/), 2010, 2011, 2012
-+ *
-+ */
 +
-+/* If "* 10" means that this is not a release version.  */
-+#define GTP_VERSION			(20120424)
 +
-+#include <linux/version.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
-+#include <linux/vmalloc.h>
-+#include <linux/poll.h>
-+#include <linux/kprobes.h>
-+#include <linux/interrupt.h>
-+#include <linux/debugfs.h>
-+#include <linux/slab.h>
-+#include <asm/gtp.h>
++Install Linux kernel packages that KGTP need
++--------------------------------------------
 +
-+#define GTP_RB
++Please ignore this section if the Linux kernel of your system is built by
++yourself.
 +
-+/* If define GTP_FRAME_SIMPLE, KGTP will use simple frame allocer replace
-+   ring buffer.  */
-+/* #define GTP_FRAME_SIMPLE */
++Install the Linux kernel debug image
++------------------------------------
 +
-+/* If define GTP_CLOCK_CYCLE, $clock will return rdtscll.  */
-+/* #define GTP_CLOCK_CYCLE */
++Add debug source to the sources list of Ubuntu
++----------------------------------------------
 +
-+#ifdef GTP_FRAME_SIMPLE
-+/* This define is for simple frame alloc record, then we can get how many
-+   memory are weste by FRAME_ALIGN. */
-+/* #define FRAME_ALLOC_RECORD */
-+#endif
++Create an /etc/apt/sources.list.d/ddebs.list by running the following line at
++a terminal:
++echo "deb http://ddebs.ubuntu.com $(lsb_release -cs) main restricted universe multiverse" | \
++sudo tee -a /etc/apt/sources.list.d/ddebs.list
 +
-+#define KERN_NULL
++Stable releases (not alphas and betas) require three more lines adding to the
++same file, which is done by the following terminal command:
++echo "deb http://ddebs.ubuntu.com $(lsb_release -cs)-updates main restricted universe multiverse
++deb http://ddebs.ubuntu.com $(lsb_release -cs)-security main restricted universe multiverse
++deb http://ddebs.ubuntu.com $(lsb_release -cs)-proposed main restricted universe multiverse" | \
++sudo tee -a /etc/apt/sources.list.d/ddebs.list
 +
-+#ifdef GTPDEBUG
-+#define GTP_DEBUG		KERN_WARNING
-+#endif
++Import the debug symbol archive signing key:
++sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 428D7C01
 +
-+/* #define GTP_DEBUG_V */
++Then run:
++sudo apt-get update
 +
-+#define GTP_RW_MAX		16384
-+#define GTP_RW_BUFP_MAX		(GTP_RW_MAX - 4 - gtp_rw_size)
++Get Linux kernel debug image
++----------------------------
++sudo apt-get install linux-image-$(uname -r)-dbgsym
 +
-+#define FID_TYPE		unsigned int
-+#define FID_SIZE		sizeof(FID_TYPE)
-+#define FID(x)			(*((FID_TYPE *)x))
-+#define FID_HEAD		0
-+#define FID_REG			1
-+#define FID_MEM			2
-+#define FID_VAR			3
-+#define FID_END			4
-+#define FID_PAGE_BEGIN		5
-+#define FID_PAGE_END		6
 +
-+/* GTP_FRAME_SIZE must align with FRAME_ALIGN_SIZE if use GTP_FRAME_SIMPLE.  */
-+#define GTP_FRAME_SIZE		5242880
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_RB)
-+#define FRAME_ALIGN_SIZE	sizeof(unsigned int)
-+#define FRAME_ALIGN(x)		((x + FRAME_ALIGN_SIZE - 1) \
-+				 & (~(FRAME_ALIGN_SIZE - 1)))
-+#endif
-+#ifdef GTP_FRAME_SIMPLE
-+#define GTP_FRAME_HEAD_SIZE	(FID_SIZE + sizeof(char *) + sizeof(ULONGEST))
-+#define GTP_FRAME_REG_SIZE	(FID_SIZE + sizeof(char *) \
-+				 + sizeof(struct pt_regs))
-+#define GTP_FRAME_MEM_SIZE	(FID_SIZE + sizeof(char *) \
-+				 + sizeof(struct gtp_frame_mem))
-+#define GTP_FRAME_VAR_SIZE	(FID_SIZE + sizeof(char *) \
-+				 + sizeof(struct gtp_frame_var))
-+#endif
-+#ifdef GTP_RB
-+#define GTP_FRAME_HEAD_SIZE	(FID_SIZE + sizeof(u64) + sizeof(ULONGEST))
-+#define GTP_FRAME_PAGE_BEGIN_SIZE	(FID_SIZE + sizeof(u64))
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+#define GTP_FRAME_HEAD_SIZE	(FID_SIZE + sizeof(ULONGEST))
-+#endif
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+#define GTP_FRAME_REG_SIZE	(FID_SIZE + sizeof(struct pt_regs))
-+#define GTP_FRAME_MEM_SIZE	(FID_SIZE + sizeof(struct gtp_frame_mem))
-+#define GTP_FRAME_VAR_SIZE	(FID_SIZE + sizeof(struct gtp_frame_var))
-+#endif
-+#include <linux/perf_event.h>
++Install the Linux kernel headers
++--------------------------------
 +
-+#define INT2CHAR(h)		((h) > 9 ? (h) + 'a' - 10 : (h) + '0')
++Please ignore this section if the Linux kernel of your system is built by
++yourself.
++sudo apt-get install linux-headers-generic
 +
-+enum {
-+	op_check_add = 0xe5,
-+	op_check_sub,
-+	op_check_mul,
-+	op_check_div_signed,
-+	op_check_div_unsigned,
-+	op_check_rem_signed,
-+	op_check_rem_unsigned,
-+	op_check_lsh,
-+	op_check_rsh_signed,
-+	op_check_rsh_unsigned,
-+	op_check_trace,
-+	op_check_bit_and,
-+	op_check_bit_or,
-+	op_check_bit_xor,
-+	op_check_equal,
-+	op_check_less_signed,
-+	op_check_less_unsigned,
-+	op_check_pop,
-+	op_check_swap,
-+	op_check_if_goto,
-+	op_check_printf,	/* XXX: still not used.  */
 +
-+	op_special_getv = 0xfa,
-+	op_special_setv,
-+	op_special_tracev,
++Install the Linux kernel source
++-------------------------------
 +
-+	op_trace_printk = 0xfd,
-+	op_trace_quick_printk,
-+	op_tracev_printk,
-+};
++Install the source package:
++sudo apt-get install linux-source
 +
-+struct action_agent_exp {
-+	unsigned int	size;
-+	uint8_t		*buf;
-+	int		need_var_lock;
-+};
++Uncompress the source package:
++sudo mkdir -p /build/buildd/
++sudo tar vxjf /usr/src/linux-source-$(uname -r | sed 's/-.*//').tar.bz2 -C /build/buildd/
++sudo mv /build/buildd/linux-source-$(uname -r | sed 's/-.*//') /build/buildd/linux-$(uname -r | sed 's/-.*//')
 +
-+struct action_m {
-+	int		regnum;
-+	CORE_ADDR	offset;
-+	size_t		size;
-+};
 +
-+struct action {
-+	struct action	*next;
-+	unsigned char	type;
-+	union {
-+		ULONGEST		reg_mask;
-+		struct action_agent_exp	exp;
-+		struct action_m		m;
-+	} u;
-+};
 +
-+struct gtpsrc {
-+	struct gtpsrc	*next;
-+	char		*src;
-+};
++Install GCC
++-----------
 +
-+enum gtp_stop_type {
-+	gtp_stop_normal = 0,
-+	gtp_stop_frame_full,
-+	gtp_stop_efault,
-+	gtp_stop_access_wrong_reg,
-+	gtp_stop_agent_expr_code_error,
-+	gtp_stop_agent_expr_stack_overflow,
-+};
++sudo apt-get install gcc
 +
-+struct gtp_entry {
-+	int			kpreg;
-+	int			no_self_trace;
-+	int			nopass;
-+	int			have_printk;
-+	ULONGEST		num;
-+	struct action		*cond;
-+	struct action		*action_list;
-+	int			step;
-+	struct action		*step_action_list;
-+	atomic_t		current_pass;
-+	struct gtpsrc		*printk_str;
-+	enum gtp_stop_type	reason;
-+	struct tasklet_struct	tasklet;
-+	struct work_struct	work;
-+	struct gtp_entry	*next;
-+	struct kretprobe	kp;
-+	int			disable;
-+	int			is_kretprobe;
-+	ULONGEST		addr;
-+	ULONGEST		pass;
-+	struct gtpsrc		*src;
-+	/* Sometime, it will not same with action
-+	   because action will be deleted.  */
-+	struct gtpsrc		*action_cmd;
-+};
 +
-+#ifdef CONFIG_PERF_EVENTS
-+struct pe_tv_s	{
-+	struct pe_tv_s		*pc_next;
-+	int			en;
-+	struct perf_event	*event;
-+	int			cpu;
-+	u64			val;
-+	u64			enabled;	/* The perf inside timer */
-+	u64			running;	/* The perf inside timer */
-+	char			*name;
-+	struct perf_event_attr	attr;
-+};
-+#endif
 +
-+enum pe_tv_id {
-+	pe_tv_unknown = 0,
-+	pe_tv_cpu,
-+	pe_tv_type,
-+	pe_tv_config,
-+	pe_tv_en,
-+	pe_tv_val,
-+	pe_tv_enabled,
-+	pe_tv_running,
-+};
++Get and build KGTP
++------------------
 +
-+struct gtp_var {
-+	struct gtp_var	*next;
-+	unsigned int	num;
-+	uint64_t	val;
-+	char		*src;
-+	struct gtp_var	**per_cpu;
-+#ifdef CONFIG_PERF_EVENTS
-+	enum pe_tv_id	ptid;
-+	struct pe_tv_s	*pts;
-+#endif
-+};
++Install subversion:
++sudo apt-get install subversion
 +
-+struct gtp_frame_mem {
-+	CORE_ADDR	addr;
-+	size_t		size;
-+};
++Get the source of KGTP with subversion and put it to directory "kgtp":
++svn checkout https://kgtp.googlecode.com/svn/trunk kgtp
 +
-+struct gtp_frame_var {
-+	unsigned int	num;
-+	uint64_t	val;
-+};
++Build KGTP:
++cd kgtp
++make
 +
-+struct gtpro_entry {
-+	struct gtpro_entry	*next;
-+	CORE_ADDR		start;
-+	CORE_ADDR		end;
-+};
 +
-+static pid_t			gtp_gtp_pid;
-+static unsigned int		gtp_gtp_pid_count;
-+static pid_t			gtp_gtpframe_pid;
-+static unsigned int		gtp_gtpframe_pid_count;
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+static pid_t			gtp_gtpframe_pipe_pid;
-+#endif
 +
-+static struct gtp_entry		*gtp_list;
-+static struct gtp_entry		*current_gtp;
-+static struct gtpsrc		*current_gtp_action_cmd;
-+static struct gtpsrc		*current_gtp_src;
++Use KGTP
++--------
 +
-+static struct workqueue_struct	*gtp_wq;
++Mount the sysfs and debugfs:
++sudo mount -t sysfs none /sys/
++sudo mount -t debugfs none /sys/kernel/debug/
 +
-+static int			gtp_read_ack;
-+static char			*gtp_rw_buf;
-+static char			*gtp_rw_bufp;
-+static size_t			gtp_rw_size;
++Insert the KGTP module to the current Linux Kernel:
++cd kgtp
++sudo insmod gtp.ko
 +
-+static int			gtp_start;
++Use GDB connect to KGTP:
++sudo gdb-release /usr/lib/debug/boot/vmlinux-$(uname -r)
++(gdb) target remote /sys/kernel/debug/gtp
 +
-+static int			gtp_disconnected_tracing;
-+static int			gtp_circular;
++Do a very simple trace:
++(gdb) trace vfs_readdir
++Tracepoint 1 at 0xc02289f0: file /build/buildd/linux-2.6.35/fs/readdir.c, line 23.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>collect $reg
++>end
++(gdb) tstart
++(gdb) shell ls
++vmlinux-2.6.35-30-generic
++(gdb) tstop
++(gdb) tfind
++Found trace frame 0, tracepoint 1
++#0  vfs_readdir (file=0x0, filler=0x163d8ae3, buf=0x18c0) at readdir.c:23
++23      {
 +
-+static int			gtp_cpu_number;
 +
-+static DEFINE_SPINLOCK(gtp_var_lock);
-+static struct gtp_var		*gtp_var_list;
-+static unsigned int		gtp_var_head;
-+static unsigned int		gtp_var_tail;
-+static struct gtp_var		**gtp_var_array;
-+static struct gtp_var		*current_gtp_var;
 +
-+enum {
-+	GTP_VAR_SPECIAL_MIN = 1,
-+	GTP_VAR_VERSION_ID = GTP_VAR_SPECIAL_MIN,
-+	GTP_VAR_CPU_ID,
-+	GTP_VAR_CURRENT_TASK_ID,
-+	GTP_VAR_CURRENT_THREAD_INFO_ID,
-+	GTP_VAR_CLOCK_ID,
-+	GTP_VAR_COOKED_CLOCK_ID,
-+#ifdef CONFIG_X86
-+	GTP_VAR_RDTSC_ID,
-+	GTP_VAR_COOKED_RDTSC_ID,
-+#endif
-+#ifdef GTP_RB
-+	GTP_VAR_GTP_RB_DISCARD_PAGE_NUMBER,
-+#endif
-+	GTP_VAR_PRINTK_TMP_ID,
-+	GTP_VAR_PRINTK_LEVEL_ID,
-+	GTP_VAR_PRINTK_FORMAT_ID,
-+	GTP_VAR_DUMP_STACK_ID,
-+	GTP_VAR_NO_SELF_TRACE_ID,
-+	GTP_VAR_CPU_NUMBER_ID,
-+	GTP_VAR_PC_PE_EN_ID,
-+	GTP_VAR_KRET_ID,
-+	GTP_VAR_XTIME_SEC_ID,
-+	GTP_VAR_XTIME_NSEC_ID,
-+	GTP_VAR_IGNORE_ERROR_ID,
-+	GTP_VAR_LAST_ERRNO_ID,
-+	GTP_VAR_HARDIRQ_COUNT_ID,
-+	GTP_VAR_SOFTIRQ_COUNT_ID,
-+	GTP_VAR_IRQ_COUNT_ID,
-+	GTP_VAR_PIPE_TRACE_ID,
-+	GTP_VAR_CURRENT_TASK_PID_ID,
-+	GTP_VAR_BT_ID,
-+	GTP_VAR_SPECIAL_MAX = GTP_VAR_BT_ID,
-+};
++End
++---
 +
-+#define PREV_VAR	NULL
++Now, you can begin to rock and roll your Linux kernel with KGTP and GDB.
++Please go to see gtp.txt to get more message about howto use KGTP.
 +
-+static struct gtp_var		gtp_var_version = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_VERSION_ID,
-+	.src		= "0:1:6774705f76657273696f6e",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_version)
 +
-+static struct gtp_var		gtp_var_cpu_id = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_CPU_ID,
-+	.src		= "0:1:6370755f6964",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_cpu_id)
 +
-+static struct gtp_var		gtp_var_current_task = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_CURRENT_TASK_ID,
-+	.src		= "0:1:63757272656e745f7461736b",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_current_task)
 +
-+static struct gtp_var		gtp_var_current_task_pid = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_CURRENT_TASK_PID_ID,
-+	.src		= "0:1:63757272656e745f7461736b5f706964",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_current_task_pid)
++Fedora
++------
 +
-+static struct gtp_var		gtp_var_current_thread_info = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_CURRENT_THREAD_INFO_ID,
-+	.src		= "0:1:63757272656e745f7468726561645f696e666f",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_current_thread_info)
++Install GDB for KGTP
++--------------------
 +
-+static struct gtp_var		gtp_var_clock = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_CLOCK_ID,
-+	.src		= "0:1:636c6f636b",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_clock)
++Please go to https://code.google.com/p/gdbt/ get howto install GDB for KGTP
++from source.
 +
-+static struct gtp_var		gtp_var_cooked_clock = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_COOKED_CLOCK_ID,
-+	.src		= "0:1:636f6f6b65645f636c6f636b",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_cooked_clock)
 +
-+#ifdef CONFIG_X86
-+static struct gtp_var		gtp_var_rdtsc = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_RDTSC_ID,
-+	.src		= "0:1:7264747363",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_rdtsc)
-+static struct gtp_var		gtp_var_cooked_rdtsc = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_COOKED_RDTSC_ID,
-+	.src		= "0:1:636f6f6b65645f7264747363",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_cooked_rdtsc)
-+#endif
 +
-+#ifdef GTP_RB
-+static struct gtp_var		gtp_var_gtp_rb_discard_page_number = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_GTP_RB_DISCARD_PAGE_NUMBER,
-+	.src		= "0:1:646973636172645f706167655f6e756d",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_gtp_rb_discard_page_number)
-+#endif
++Install Linux kernel packages that KGTP need
++--------------------------------------------
 +
-+static struct gtp_var		gtp_var_printk_tmp = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_PRINTK_TMP_ID,
-+	.src		= "0:1:7072696e746b5f746d70",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_printk_tmp)
++Please ignore this section if the Linux kernel of your system is built
++by yourself.
 +
-+static struct gtp_var		gtp_var_printk_level = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_PRINTK_LEVEL_ID,
-+	.src		= "8:1:7072696e746b5f6c6576656c",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_printk_level)
 +
-+static struct gtp_var		gtp_var_printk_format = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_PRINTK_FORMAT_ID,
-+	.src		= "0:1:7072696e746b5f666f726d6174",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_printk_format)
++Install the Linux kernel debug image
++------------------------------------
 +
-+static struct gtp_var		gtp_var_dump_stack = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_DUMP_STACK_ID,
-+	.src		= "0:1:64756d705f737461636b",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_dump_stack)
++sudo yum --enablerepo=fedora-debuginfo install kernel-debuginfo
 +
-+static struct gtp_var		gtp_var_no_self_trace = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_NO_SELF_TRACE_ID,
-+	.src		= "0:1:6e6f5f73656c665f7472616365",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_no_self_trace)
 +
-+static struct gtp_var		gtp_var_pipe_trace = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_PIPE_TRACE_ID,
-+	.src		= "0:1:706970655f7472616365",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_pipe_trace)
++Install the Linux kernel devel package
++--------------------------------------
 +
-+static struct gtp_var		gtp_var_cpu_number = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_CPU_NUMBER_ID,
-+	.src		= "0:1:6370755f6e756d626572",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_cpu_number)
++sudo yum install kernel-devel-$(uname -r)
 +
-+static struct gtp_var		gtp_var_pc_pe_en = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_PC_PE_EN_ID,
-+	.src		= "0:1:70635f70655f656e",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_pc_pe_en)
 +
-+static struct gtp_var		gtp_var_kret = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_KRET_ID,
-+	.src		= "0:1:6b726574",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_kret)
 +
-+static struct gtp_var		gtp_var_xtime_sec = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_XTIME_SEC_ID,
-+	.src		= "0:1:7874696d655f736563",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_xtime_sec)
++Install GCC
++-----------
 +
-+static struct gtp_var		gtp_var_xtime_nsec = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_XTIME_NSEC_ID,
-+	.src		= "0:1:7874696d655f6e736563",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_xtime_nsec)
++sudo yum install gcc
 +
-+static struct gtp_var		gtp_var_ignore_error = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_IGNORE_ERROR_ID,
-+	.src		= "0:1:69676e6f72655f6572726f72",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_ignore_error)
 +
-+static struct gtp_var		gtp_var_last_errno = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_LAST_ERRNO_ID,
-+	.src		= "0:1:6c6173745f6572726e6f",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_last_errno)
 +
-+static struct gtp_var		gtp_var_hardirq_count = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_HARDIRQ_COUNT_ID,
-+	.src		= "0:1:686172646972715f636f756e74",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_hardirq_count)
++Get and build KGTP
++------------------
 +
-+static struct gtp_var		gtp_var_softirq_count = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_SOFTIRQ_COUNT_ID,
-+	.src		= "0:1:736f66746972715f636f756e74",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_softirq_count)
++Install subversion:
++sudo yum install subversion
 +
-+static struct gtp_var		gtp_var_irq_count = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_IRQ_COUNT_ID,
-+	.src		= "0:1:6972715f636f756e74",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define PREV_VAR	(&gtp_var_irq_count)
++Get the source of KGTP with subversion and put it to directory "kgtp":
++svn checkout https://kgtp.googlecode.com/svn/trunk kgtp
 +
-+static struct gtp_var		gtp_var_bt = {
-+	.next		= PREV_VAR,
-+	.num		= GTP_VAR_BT_ID,
-+	.src		= "200:1:6274",
-+	.per_cpu	= NULL,
-+#ifdef CONFIG_PERF_EVENTS
-+	.ptid		= 0,
-+	.pts		= NULL,
-+#endif
-+};
-+#undef PREV_VAR
-+#define GTP_VAR_LIST_FIRST		(&gtp_var_bt)
++Build KGTP:
++cd kgtp
++make
 +
-+#define GTP_VAR_IS_SPECIAL(x)		((x) >= GTP_VAR_SPECIAL_MIN \
-+					 && (x) <= GTP_VAR_SPECIAL_MAX)
-+#ifdef GTP_RB
-+#define GTP_VAR_AUTO_TRACEV(x)		((x) == GTP_VAR_CPU_ID)
-+#endif
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_FTRACE_RING_BUFFER)
-+#define GTP_VAR_AUTO_TRACEV(x)		((x) == GTP_VAR_CLOCK_ID \
-+					 || (x) == GTP_VAR_CPU_ID)
-+#endif
 +
-+/* Current number in the frame.  */
-+static int			gtp_frame_current_num;
-+/* Current tracepoint id.  */
-+static ULONGEST			gtp_frame_current_tpe;
-+static atomic_t			gtp_frame_create;
-+static char			*gtp_frame_file;
-+static size_t			gtp_frame_file_size;
-+static DECLARE_WAIT_QUEUE_HEAD(gtpframe_wq);
-+#ifdef GTP_FRAME_SIMPLE
-+static DEFINE_SPINLOCK(gtp_frame_lock);
-+static char			*gtp_frame;
-+static char			*gtp_frame_r_start;
-+static char			*gtp_frame_w_start;
-+static char			*gtp_frame_end;
-+static int			gtp_frame_is_circular;
-+static char			*gtp_frame_current;
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+static struct ring_buffer	*gtp_frame;
-+static struct ring_buffer_iter	*gtp_frame_iter[NR_CPUS];
-+static int			gtp_frame_current_cpu;
-+static u64			gtp_frame_current_clock;
-+#endif
 +
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+static DECLARE_WAIT_QUEUE_HEAD(gtpframe_pipe_wq);
-+static atomic_t			gtpframe_pipe_wq_v;
-+static struct tasklet_struct	gtpframe_pipe_wq_tasklet;
-+#endif
++Use KGTP
++--------
 +
-+static struct gtpro_entry	*gtpro_list;
++Mount the sysfs and debug fs:
++sudo mount -t sysfs none /sys/
++sudo mount -t debugfs none /sys/kernel/debug/
 +
-+#define GTP_PRINTF_MAX		256
-+static DEFINE_PER_CPU(char[GTP_PRINTF_MAX], gtp_printf);
++Insert the KGTP module to the current Linux Kernel:
++cd kgtp
++sudo insmod gtp.ko
 +
-+#ifdef CONFIG_X86
-+static DEFINE_PER_CPU(u64, rdtsc_current);
-+static DEFINE_PER_CPU(u64, rdtsc_offset);
-+#endif
-+static DEFINE_PER_CPU(u64, local_clock_current);
-+static DEFINE_PER_CPU(u64, local_clock_offset);
++Use GDB connect to KGTP:
++sudo gdb-release /usr/lib/debug/lib/modules/$(uname -r)/vmlinux
++(gdb) target remote /sys/kernel/debug/gtp
 +
-+static uint64_t			gtp_start_last_errno;
-+static int			gtp_start_ignore_error;
++Do a very simple trace:
++(gdb) trace vfs_readdir
++Tracepoint 1 at 0xffffffff8110ec9b: file fs/readdir.c, line 23.
++(gdb) actions
++Enter actions for tracepoint 1, one per line.
++End with a line saying just "end".
++>collect $reg
++>end
++(gdb) tstart
++(gdb) shell ls
++co.patch                  getframe      getmod.c   gtp.mod.c  gtp.txt         perf_event.c
++dkms.conf                 getframe.c    getmod.py  gtp.mod.o  Makefile        ring_buffer.c
++dkms_others_install.sh    getgtprsp.pl  gtp.c      gtp.o      modules.order   ring_buffer.h
++dkms_others_uninstall.sh  getmod        gtp.ko     gtp.patch  Module.symvers
++(gdb) tstop
++(gdb) tfind
++Found trace frame 0, tracepoint 1
++#0  vfs_readdir (file=0xffff880019d3df00, filler=0xffffffff8110eb16 <filldir>, buf=0xffff880003b39f38)
++    at fs/readdir.c:23
++23      {
 +
-+static int			gtp_pipe_trace;
 +
-+static int			gtp_bt_size;
 +
-+static int			gtp_noack_mode;
++End
++---
 +
-+#ifdef GTP_RB
-+#include "gtp_rb.c"
-+#endif
-+
-+#define GTP_LOCAL_CLOCK	local_clock()
-+
-+struct gtp_realloc_s {
-+	char	*buf;
-+	size_t	size;
-+	size_t	real_size;
-+};
-+
-+static int
-+gtp_realloc_alloc(struct gtp_realloc_s *grs, size_t size)
-+{
-+	if (size) {
-+		grs->buf = vmalloc(size);
-+		if (!grs->buf)
-+			return -ENOMEM;
-+	} else
-+		grs->buf = NULL;
-+
-+	grs->size = 0;
-+	grs->real_size = size;
-+
-+	return 0;
-+}
-+
-+static char *
-+gtp_realloc(struct gtp_realloc_s *grs, size_t size, int is_end)
-+{
-+	char	*tmp;
-+
-+	if (unlikely((grs->real_size < grs->size + size)
-+		     || (is_end && grs->real_size != grs->size + size))) {
-+		grs->real_size = grs->size + size;
-+		if (!is_end)
-+			grs->real_size += 100;
-+
-+		tmp = vmalloc(grs->real_size);
-+		if (!tmp) {
-+			vfree(grs->buf);
-+			memset(grs, 0, sizeof(struct gtp_realloc_s));
-+			return NULL;
-+		}
-+
-+		memcpy(tmp, grs->buf, grs->size);
-+		if (grs->buf)
-+			vfree(grs->buf);
-+		grs->buf = tmp;
-+	}
-+
-+	grs->size += size;
-+	return grs->buf + grs->size - size;
-+}
-+
-+static int
-+gtp_realloc_str(struct gtp_realloc_s *grs, char *str, int is_end)
-+{
-+	char	*wbuf;
-+	int	str_len = strlen(str);
-+
-+	wbuf = gtp_realloc(grs, str_len, is_end);
-+	if (wbuf == NULL)
-+		return -ENOMEM;
-+
-+	memcpy(wbuf, str, str_len);
-+
-+	return 0;
-+}
-+
-+static inline void
-+gtp_realloc_reset(struct gtp_realloc_s *grs)
-+{
-+	grs->size = 0;
-+}
-+
-+static inline int
-+gtp_realloc_is_alloced(struct gtp_realloc_s *grs)
-+{
-+	return (grs->buf != NULL);
-+}
-+
-+static inline int
-+gtp_realloc_is_empty(struct gtp_realloc_s *grs)
-+{
-+	return (grs->size == 0);
-+}
-+
-+static inline void
-+gtp_realloc_sub_size(struct gtp_realloc_s *grs, size_t size)
-+{
-+	grs->size -= size;
-+}
-+
-+#ifdef CONFIG_X86
-+static ULONGEST
-+gtp_action_reg_read(struct pt_regs *regs, struct gtp_entry *tpe, int num)
-+{
-+	ULONGEST	ret;
-+
-+	switch (num) {
-+#ifdef CONFIG_X86_32
-+	case 0:
-+		ret = regs->ax;
-+		break;
-+	case 1:
-+		ret = regs->cx;
-+		break;
-+	case 2:
-+		ret = regs->dx;
-+		break;
-+	case 3:
-+		ret = regs->bx;
-+		break;
-+	case 4:
-+		ret = (ULONGEST)(CORE_ADDR)&regs->sp;
-+		break;
-+	case 5:
-+		ret = regs->bp;
-+		break;
-+	case 6:
-+		ret = regs->si;
-+		break;
-+	case 7:
-+		ret = regs->di;
-+		break;
-+	case 8:
-+		if (tpe->step)
-+			ret = regs->ip;
-+		else
-+			ret = regs->ip - 1;
-+		break;
-+	case 9:
-+		ret = regs->flags;
-+		break;
-+	case 10:
-+		ret = regs->cs;
-+		break;
-+	case 11:
-+		ret = regs->ss;
-+		break;
-+	case 12:
-+		ret = regs->ds;
-+		break;
-+	case 13:
-+		ret = regs->es;
-+		break;
-+	case 14:
-+		ret = regs->fs;
-+		break;
-+	case 15:
-+		ret = regs->gs;
-+		break;
-+#else
-+	case 0:
-+		ret = regs->ax;
-+		break;
-+	case 1:
-+		ret = regs->bx;
-+		break;
-+	case 2:
-+		ret = regs->cx;
-+		break;
-+	case 3:
-+		ret = regs->dx;
-+		break;
-+	case 4:
-+		ret = regs->si;
-+		break;
-+	case 5:
-+		ret = regs->di;
-+		break;
-+	case 6:
-+		ret = regs->bp;
-+		break;
-+	case 7:
-+		ret = regs->sp;
-+		break;
-+	case 8:
-+		ret = regs->r8;
-+		break;
-+	case 9:
-+		ret = regs->r9;
-+		break;
-+	case 10:
-+		ret = regs->r10;
-+		break;
-+	case 11:
-+		ret = regs->r11;
-+		break;
-+	case 12:
-+		ret = regs->r12;
-+		break;
-+	case 13:
-+		ret = regs->r13;
-+		break;
-+	case 14:
-+		ret = regs->r14;
-+		break;
-+	case 15:
-+		ret = regs->r15;
-+		break;
-+	case 16:
-+		if (tpe->step)
-+			ret = regs->ip;
-+		else
-+			ret = regs->ip - 1;
-+		break;
-+	case 17:
-+		ret = regs->flags;
-+		break;
-+	case 18:
-+		ret = regs->cs;
-+		break;
-+	case 19:
-+		ret = regs->ss;
-+		break;
-+#endif
-+	default:
-+		ret = 0;
-+		tpe->reason = gtp_stop_access_wrong_reg;
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
-+static void
-+gtp_regs2ascii(struct pt_regs *regs, char *buf)
-+{
-+#ifdef CONFIG_X86_32
-+#ifdef GTP_DEBUG_V
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: ax = 0x%x\n",
-+		(unsigned int) regs->ax);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: cx = 0x%x\n",
-+		(unsigned int) regs->cx);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: dx = 0x%x\n",
-+		(unsigned int) regs->dx);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: bx = 0x%x\n",
-+		(unsigned int) regs->bx);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: sp = 0x%x\n",
-+		(unsigned int) regs->sp);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: bp = 0x%x\n",
-+		(unsigned int) regs->bp);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: si = 0x%x\n",
-+		(unsigned int) regs->si);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: di = 0x%x\n",
-+		(unsigned int) regs->di);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: ip = 0x%x\n",
-+		(unsigned int) regs->ip);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: flags = 0x%x\n",
-+		(unsigned int) regs->flags);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: cs = 0x%x\n",
-+		(unsigned int) regs->cs);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: ss = 0x%x\n",
-+		(unsigned int) regs->ss);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: ds = 0x%x\n",
-+		(unsigned int) regs->ds);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: es = 0x%x\n",
-+		(unsigned int) regs->es);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: fs = 0x%x\n",
-+		(unsigned int) regs->fs);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: gs = 0x%x\n",
-+		(unsigned int) regs->gs);
-+#endif
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->ax));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->cx));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->dx));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->bx));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->sp));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->bp));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->si));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->di));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->ip));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->flags));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->cs));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->ss));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->ds));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->es));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->fs));
-+	buf += 8;
-+	sprintf(buf, "%08x", (unsigned int) swab32(regs->gs));
-+	buf += 8;
-+#else
-+#ifdef GTP_DEBUG_V
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: ax = 0x%lx\n", regs->ax);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: bx = 0x%lx\n", regs->bx);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: cx = 0x%lx\n", regs->cx);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: dx = 0x%lx\n", regs->dx);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: si = 0x%lx\n", regs->si);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: di = 0x%lx\n", regs->di);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: bp = 0x%lx\n", regs->bp);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: sp = 0x%lx\n", regs->sp);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r8 = 0x%lx\n", regs->r8);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r9 = 0x%lx\n", regs->r9);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r10 = 0x%lx\n", regs->r10);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r11 = 0x%lx\n", regs->r11);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r12 = 0x%lx\n", regs->r12);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r13 = 0x%lx\n", regs->r13);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r14 = 0x%lx\n", regs->r14);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r15 = 0x%lx\n", regs->r15);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: ip = 0x%lx\n", regs->ip);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: flags = 0x%lx\n", regs->flags);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: cs = 0x%lx\n", regs->cs);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: ss = 0x%lx\n", regs->ss);
-+#endif
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->ax));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->bx));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->cx));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->dx));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->si));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->di));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->bp));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->sp));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->r8));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->r9));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->r10));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->r11));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->r12));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->r13));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->r14));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->r15));
-+	buf += 16;
-+	sprintf(buf, "%016lx", (unsigned long) swab64(regs->ip));
-+	buf += 16;
-+	sprintf(buf, "%08x",
-+		(unsigned int) swab32((unsigned int)regs->flags));
-+	buf += 8;
-+	sprintf(buf, "%08x",
-+		(unsigned int) swab32((unsigned int)regs->cs));
-+	buf += 8;
-+	sprintf(buf, "%08x",
-+		(unsigned int) swab32((unsigned int)regs->ss));
-+	buf += 8;
-+#endif
-+}
-+
-+static void
-+gtp_regs2bin(struct pt_regs *regs, char *buf)
-+{
-+#ifdef CONFIG_X86_32
-+#ifdef GTP_DEBUG_V_V
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: ax = 0x%x\n",
-+		(unsigned int) regs->ax);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: cx = 0x%x\n",
-+		(unsigned int) regs->cx);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: dx = 0x%x\n",
-+		(unsigned int) regs->dx);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: bx = 0x%x\n",
-+		(unsigned int) regs->bx);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: sp = 0x%x\n",
-+		(unsigned int) regs->sp);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: bp = 0x%x\n",
-+		(unsigned int) regs->bp);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: si = 0x%x\n",
-+		(unsigned int) regs->si);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: di = 0x%x\n",
-+		(unsigned int) regs->di);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: ip = 0x%x\n",
-+		(unsigned int) regs->ip);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: flags = 0x%x\n",
-+		(unsigned int) regs->flags);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: cs = 0x%x\n",
-+		(unsigned int) regs->cs);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: ss = 0x%x\n",
-+		(unsigned int) regs->ss);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: ds = 0x%x\n",
-+		(unsigned int) regs->ds);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: es = 0x%x\n",
-+		(unsigned int) regs->es);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: fs = 0x%x\n",
-+		(unsigned int) regs->fs);
-+	printk(GTP_DEBUG_V_V "gtp_regs2ascii: gs = 0x%x\n",
-+		(unsigned int) regs->gs);
-+#endif
-+	memcpy(buf, &regs->ax, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->cx, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->dx, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->bx, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->sp, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->bp, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->si, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->di, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->ip, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->flags, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->cs, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->ss, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->ds, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->es, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->fs, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->gs, 4);
-+	buf += 4;
-+#else
-+#ifdef GTP_DEBUG_V
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: ax = 0x%lx\n", regs->ax);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: bx = 0x%lx\n", regs->bx);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: cx = 0x%lx\n", regs->cx);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: dx = 0x%lx\n", regs->dx);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: si = 0x%lx\n", regs->si);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: di = 0x%lx\n", regs->di);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: bp = 0x%lx\n", regs->bp);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: sp = 0x%lx\n", regs->sp);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r8 = 0x%lx\n", regs->r8);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r9 = 0x%lx\n", regs->r9);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r10 = 0x%lx\n", regs->r10);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r11 = 0x%lx\n", regs->r11);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r12 = 0x%lx\n", regs->r12);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r13 = 0x%lx\n", regs->r13);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r14 = 0x%lx\n", regs->r14);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: r15 = 0x%lx\n", regs->r15);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: ip = 0x%lx\n", regs->ip);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: flags = 0x%lx\n", regs->flags);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: cs = 0x%lx\n", regs->cs);
-+	printk(GTP_DEBUG_V "gtp_regs2ascii: ss = 0x%lx\n", regs->ss);
-+#endif
-+	memcpy(buf, &regs->ax, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->bx, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->cx, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->dx, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->si, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->di, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->bp, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->sp, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->r8, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->r9, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->r10, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->r11, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->r12, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->r13, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->r14, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->r15, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->ip, 8);
-+	buf += 8;
-+	memcpy(buf, &regs->flags, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->cs, 4);
-+	buf += 4;
-+	memcpy(buf, &regs->ss, 4);
-+	buf += 4;
-+#endif
-+}
-+#endif
-+
-+#ifdef CONFIG_MIPS
-+static ULONGEST
-+gtp_action_reg_read(struct pt_regs *regs, struct gtp_entry *tpe, int num)
-+{
-+	ULONGEST	ret;
-+
-+	if (num > 90) {
-+		/* GDB convert the reg number to a GDB
-+		   [1 * gdbarch_num_regs .. 2 * gdbarch_num_regs) REGNUM
-+		   in function mips_dwarf_dwarf2_ecoff_reg_to_regnum.  */
-+		num -= 90;
-+	}
-+
-+	if (num >= 0 && num <= 31) {
-+		ret = regs->regs[num];
-+	} else {
-+		switch (num) {
-+		case 32:
-+			ret = regs->cp0_status;
-+			break;
-+		case 33:
-+			ret = regs->lo;
-+			break;
-+		case 34:
-+			ret = regs->hi;
-+			break;
-+		case 35:
-+			ret = regs->cp0_badvaddr;
-+			break;
-+		case 36:
-+			ret = regs->cp0_cause;
-+			break;
-+		case 37:
-+			ret = regs->cp0_epc;
-+			break;
-+		default:
-+			ret = 0;
-+			tpe->reason = gtp_stop_access_wrong_reg;
-+			break;
-+		}
-+	}
-+
-+	return ret;
-+};
-+
-+static void
-+gtp_regs2ascii(struct pt_regs *regs, char *buf)
-+{
-+#ifdef GTP_DEBUG_V
-+	{
-+		int	i;
-+
-+		for (i = 0; i < 32; i++)
-+			printk(GTP_DEBUG_V "gtp_gdbrsp_g: r%d = 0x%lx\n", i,
-+			       regs->regs[i]);
-+	}
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: status = 0x%lx\n",
-+	       regs->cp0_status);
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: lo = 0x%lx\n", regs->lo);
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: hi = 0x%lx\n", regs->hi);
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: badvaddr = 0x%lx\n",
-+	       regs->cp0_badvaddr);
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: cause = 0x%lx\n", regs->cp0_cause);
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: pc = 0x%lx\n", regs->cp0_epc);
-+#endif
-+
-+#ifdef CONFIG_32BIT
-+#define OUTFORMAT	"%08lx"
-+#define REGSIZE		8
-+#ifdef __LITTLE_ENDIAN
-+#define SWAB(a)		swab32(a)
-+#else
-+#define SWAB(a)		(a)
-+#endif
-+#else
-+#define OUTFORMAT	"%016lx"
-+#define REGSIZE		16
-+#ifdef __LITTLE_ENDIAN
-+#define SWAB(a)		swab64(a)
-+#else
-+#define SWAB(a)		(a)
-+#endif
-+#endif
-+	{
-+		int	i;
-+
-+		for (i = 0; i < 32; i++) {
-+			sprintf(buf, OUTFORMAT,
-+				 (unsigned long) SWAB(regs->regs[i]));
-+			buf += REGSIZE;
-+		}
-+	}
-+
-+	sprintf(buf, OUTFORMAT,
-+		 (unsigned long) SWAB(regs->cp0_status));
-+	buf += REGSIZE;
-+	sprintf(buf, OUTFORMAT,
-+		 (unsigned long) SWAB(regs->lo));
-+	buf += REGSIZE;
-+	sprintf(buf, OUTFORMAT,
-+		 (unsigned long) SWAB(regs->hi));
-+	buf += REGSIZE;
-+	sprintf(buf, OUTFORMAT,
-+		 (unsigned long) SWAB(regs->cp0_badvaddr));
-+	buf += REGSIZE;
-+	sprintf(buf, OUTFORMAT,
-+		 (unsigned long) SWAB(regs->cp0_cause));
-+	buf += REGSIZE;
-+	sprintf(buf, OUTFORMAT,
-+		 (unsigned long) SWAB(regs->cp0_epc));
-+	buf += REGSIZE;
-+#undef OUTFORMAT
-+#undef REGSIZE
-+#undef SWAB
-+}
-+
-+static void
-+gtp_regs2bin(struct pt_regs *regs, char *buf)
-+{
-+#ifdef GTP_DEBUG_V
-+	{
-+		int	i;
-+
-+		for (i = 0; i < 32; i++)
-+			printk(GTP_DEBUG_V "gtp_gdbrsp_g: r%d = 0x%lx\n", i,
-+			       regs->regs[i]);
-+	}
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: status = 0x%lx\n",
-+	       regs->cp0_status);
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: lo = 0x%lx\n", regs->lo);
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: hi = 0x%lx\n", regs->hi);
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: badvaddr = 0x%lx\n",
-+	       regs->cp0_badvaddr);
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: cause = 0x%lx\n", regs->cp0_cause);
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: pc = 0x%lx\n", regs->cp0_epc);
-+#endif
-+
-+#ifdef CONFIG_32BIT
-+#define REGSIZE		4
-+#else
-+#define REGSIZE		8
-+#endif
-+	{
-+		int	i;
-+
-+		for (i = 0; i < 32; i++) {
-+			memcpy(buf, &regs->regs[i], REGSIZE);
-+			buf += REGSIZE;
-+		}
-+	}
-+	memcpy(buf, &regs->cp0_status, REGSIZE);
-+	buf += REGSIZE;
-+	memcpy(buf, &regs->lo, REGSIZE);
-+	buf += REGSIZE;
-+	memcpy(buf, &regs->hi, REGSIZE);
-+	buf += REGSIZE;
-+	memcpy(buf, &regs->cp0_badvaddr, REGSIZE);
-+	buf += REGSIZE;
-+	memcpy(buf, &regs->cp0_cause, REGSIZE);
-+	buf += REGSIZE;
-+	memcpy(buf, &regs->cp0_epc, REGSIZE);
-+	buf += REGSIZE;
-+#undef REGSIZE
-+}
-+#endif
-+
-+#ifdef CONFIG_ARM
-+static ULONGEST
-+gtp_action_reg_read(struct pt_regs *regs, struct gtp_entry *tpe, int num)
-+{
-+	if (num >= 0 && num < 16)
-+		return regs->uregs[num];
-+	else if (num == 25)
-+		return regs->uregs[16];
-+
-+	tpe->reason = gtp_stop_access_wrong_reg;
-+	return 0;
-+}
-+
-+static void
-+gtp_regs2ascii(struct pt_regs *regs, char *buf)
-+{
-+#ifdef __LITTLE_ENDIAN
-+#define SWAB(a)		swab32(a)
-+#else
-+#define SWAB(a)		(a)
-+#endif
-+	int	i;
-+
-+	for (i = 0; i < 16; i++) {
-+#ifdef GTP_DEBUG_V
-+		printk(GTP_DEBUG_V "gtp_gdbrsp_g: r%d = 0x%lx\n",
-+		       i, regs->uregs[i]);
-+#endif
-+		sprintf(buf, "%08lx", (unsigned long) SWAB(regs->uregs[i]));
-+		buf += 8;
-+	}
-+
-+	/* f0-f7 fps */
-+	memset(buf, '0', 200);
-+	buf += 200;
-+
-+#ifdef GTP_DEBUG_V
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: cpsr = 0x%lx\n", regs->uregs[16]);
-+#endif
-+	sprintf(buf, "%08lx",
-+		 (unsigned long) SWAB(regs->uregs[16]));
-+	buf += 8;
-+#undef SWAB
-+}
-+
-+static void
-+gtp_regs2bin(struct pt_regs *regs, char *buf)
-+{
-+	int	i;
-+
-+	for (i = 0; i < 16; i++) {
-+#ifdef GTP_DEBUG_V
-+		printk(GTP_DEBUG_V "gtp_gdbrsp_g: r%d = 0x%lx\n",
-+		       i, regs->uregs[i]);
-+#endif
-+		memcpy(buf, &regs->uregs[i], 4);
-+		buf += 4;
-+	}
-+
-+	/* f0-f7 fps */
-+	memset(buf, '\0', 100);
-+	buf += 100;
-+
-+#ifdef GTP_DEBUG_V
-+	printk(GTP_DEBUG_V "gtp_gdbrsp_g: cpsr = 0x%lx\n", regs->uregs[16]);
-+#endif
-+	memcpy(buf, &regs->uregs[16], 4);
-+	buf += 4;
-+}
-+#endif
-+
-+#ifdef CONFIG_PERF_EVENTS
-+static DEFINE_PER_CPU(int, pc_pe_list_all_disabled);
-+static DEFINE_PER_CPU(struct pe_tv_s *, pc_pe_list);
-+
-+static void
-+pc_pe_list_disable(void)
-+{
-+	struct pe_tv_s *ppl;
-+
-+	if (__get_cpu_var(pc_pe_list_all_disabled))
-+		return;
-+
-+	for (ppl = __get_cpu_var(pc_pe_list); ppl; ppl = ppl->pc_next) {
-+		if (ppl->en)
-+			__perf_event_disable(ppl->event);
-+	}
-+}
-+
-+static void
-+pc_pe_list_enable(void)
-+{
-+	struct pe_tv_s *ppl;
-+
-+	if (__get_cpu_var(pc_pe_list_all_disabled))
-+		return;
-+
-+	for (ppl = __get_cpu_var(pc_pe_list); ppl; ppl = ppl->pc_next) {
-+		if (ppl->en)
-+			__perf_event_enable(ppl->event);
-+	}
-+}
-+
-+static void
-+gtp_pc_pe_en(int enable)
-+{
-+	struct pe_tv_s *ppl = __get_cpu_var(pc_pe_list);
-+
-+	for (ppl = __get_cpu_var(pc_pe_list); ppl; ppl = ppl->pc_next)
-+		ppl->en = enable;
-+
-+	__get_cpu_var(pc_pe_list_all_disabled) = !enable;
-+}
-+
-+static void
-+gtp_pe_set_en(struct pe_tv_s *pts, int enable)
-+{
-+	if (pts->event->cpu != smp_processor_id()) {
-+		if (enable)
-+			perf_event_enable(pts->event);
-+		else
-+			perf_event_disable(pts->event);
-+	}
-+	pts->en = enable;
-+}
-+#else
-+static void
-+gtp_pc_pe_en(int enable)
-+{
-+}
-+#endif	/* CONFIG_PERF_EVENTS */
-+
-+#ifdef GTP_FRAME_SIMPLE
-+static char *
-+gtp_frame_next(char *frame)
-+{
-+	switch (FID(frame)) {
-+	case FID_HEAD:
-+		frame += FRAME_ALIGN(GTP_FRAME_HEAD_SIZE);
-+		break;
-+	case FID_REG:
-+		frame += FRAME_ALIGN(GTP_FRAME_REG_SIZE);
-+		break;
-+	case FID_MEM: {
-+			struct gtp_frame_mem	*gfm;
-+
-+			gfm = (struct gtp_frame_mem *) (frame + FID_SIZE
-+							+ sizeof(char *));
-+			frame += FRAME_ALIGN(GTP_FRAME_MEM_SIZE + gfm->size);
-+		}
-+		break;
-+	case FID_VAR:
-+		frame += FRAME_ALIGN(GTP_FRAME_VAR_SIZE);
-+		break;
-+	case FID_END:
-+		frame = gtp_frame_end;
-+		break;
-+	default:
-+		return NULL;
-+		break;
-+	}
-+
-+	return frame;
-+}
-+#endif
-+
-+#ifdef GTP_FRAME_SIMPLE
-+#ifdef FRAME_ALLOC_RECORD
-+ULONGEST	frame_alloc_size;
-+ULONGEST	frame_alloc_size_hole;
-+#endif
-+
-+static char *
-+gtp_frame_alloc(size_t size)
-+{
-+	char	*ret = NULL;
-+
-+#ifdef FRAME_ALLOC_RECORD
-+	frame_alloc_size += size;
-+	frame_alloc_size_hole += (FRAME_ALIGN(size) - size);
-+#endif
-+
-+	size = FRAME_ALIGN(size);
-+
-+	if (size > GTP_FRAME_SIZE)
-+		return NULL;
-+
-+	spin_lock(&gtp_frame_lock);
-+
-+	if (gtp_frame_w_start + size > gtp_frame_end) {
-+		if (gtp_circular) {
-+			gtp_frame_is_circular = 1;
-+#ifdef FRAME_ALLOC_RECORD
-+			if (gtp_frame_w_start != gtp_frame_end
-+			    && gtp_frame_end - gtp_frame_w_start < FID_SIZE) {
-+				printk(KERN_WARNING "Frame align wrong."
-+						    "start = %p end = %p\n",
-+				       gtp_frame_w_start, gtp_frame_end);
-+				goto out;
-+			}
-+#endif
-+			if (gtp_frame_w_start != gtp_frame_end)
-+				FID(gtp_frame_w_start) = FID_END;
-+			gtp_frame_w_start = gtp_frame;
-+			gtp_frame_r_start = gtp_frame;
-+		} else
-+			goto out;
-+	}
-+
-+	if (gtp_frame_is_circular) {
-+		while (gtp_frame_w_start <= gtp_frame_r_start
-+		       && gtp_frame_w_start + size > gtp_frame_r_start) {
-+			char *tmp = gtp_frame_next(gtp_frame_r_start);
-+			if (tmp == NULL)
-+				goto out;
-+			if (tmp == gtp_frame_end)
-+				gtp_frame_r_start = gtp_frame;
-+			else
-+				gtp_frame_r_start = tmp;
-+		}
-+	}
-+
-+	ret = gtp_frame_w_start;
-+	gtp_frame_w_start += size;
-+
-+out:
-+	spin_unlock(&gtp_frame_lock);
-+	return ret;
-+}
-+#endif
-+
-+struct gtp_trace_s {
-+	struct gtp_entry		*tpe;
-+	struct pt_regs			*regs;
-+#ifdef GTP_FRAME_SIMPLE
-+	/* Next part set it to prev part.  */
-+	char				**next;
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	/* NULL means doesn't have head.  */
-+	char				*next;
-+#endif
-+#ifdef GTP_RB
-+	/* rb of current cpu.  */
-+	struct gtp_rb_s			*next;
-+	u64				id;
-+#endif
-+	int				step;
-+	struct kretprobe_instance	*ri;
-+	int				*run;
-+	struct timespec			xtime;
-+	ULONGEST			printk_tmp;
-+	unsigned int			printk_level;
-+	unsigned int			printk_format;
-+	struct gtpsrc			*printk_str;
-+};
-+
-+#define GTP_PRINTK_FORMAT_A	0
-+#define GTP_PRINTK_FORMAT_D	1
-+#define GTP_PRINTK_FORMAT_U	2
-+#define GTP_PRINTK_FORMAT_X	3
-+#define GTP_PRINTK_FORMAT_S	4
-+#define GTP_PRINTK_FORMAT_B	5
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+#define GTP_FRAME_RINGBUFFER_ALLOC(size)				\
-+	do {								\
-+		rbe = ring_buffer_lock_reserve(gtp_frame, size);	\
-+		if (rbe == NULL) {					\
-+			gts->tpe->reason = gtp_stop_frame_full;		\
-+			return -1;					\
-+		}							\
-+		tmp = ring_buffer_event_data(rbe);			\
-+	} while (0)
-+#endif
-+
-+static struct gtp_var	*gtp_gtp_var_array_find(unsigned int num);
-+static int		gtp_collect_var(struct gtp_trace_s *gts,
-+					struct gtp_var *tve);
-+
-+static int
-+gtp_action_head(struct gtp_trace_s *gts)
-+{
-+	char				*tmp;
-+	ULONGEST			*trace_nump;
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	struct ring_buffer_event	*rbe;
-+#endif
-+
-+#ifdef GTP_RB
-+	gts->next = (struct gtp_rb_s *)this_cpu_ptr(gtp_rb);
-+#endif
-+
-+	/* Get the head.  */
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	GTP_FRAME_RINGBUFFER_ALLOC(GTP_FRAME_HEAD_SIZE);
-+#endif
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_RB)
-+#ifdef GTP_RB
-+	GTP_RB_LOCK(gts->next);
-+	tmp = gtp_rb_alloc(gts->next, GTP_FRAME_HEAD_SIZE, 0);
-+#endif
-+#ifdef GTP_FRAME_SIMPLE
-+	tmp = gtp_frame_alloc(GTP_FRAME_HEAD_SIZE);
-+#endif
-+	if (!tmp) {
-+		gts->tpe->reason = gtp_stop_frame_full;
-+		return -1;
-+	}
-+#endif
-+
-+	FID(tmp) = FID_HEAD;
-+	tmp += FID_SIZE;
-+
-+#ifdef GTP_RB
-+	gts->id = gtp_rb_clock();
-+	*(u64 *)tmp = gts->id;
-+	tmp += sizeof(u64);
-+#endif
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	gts->next = (char **)tmp;
-+	*(gts->next) = NULL;
-+	tmp += sizeof(char *);
-+#endif
-+
-+	trace_nump = (ULONGEST *)tmp;
-+	*trace_nump = gts->tpe->num;
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	ring_buffer_unlock_commit(gtp_frame, rbe);
-+	gts->next = (char *)1;
-+#endif
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	/* Trace $cpu_id and $clock.  */
-+	{
-+		struct gtp_var	*tve;
-+
-+		tve = gtp_gtp_var_array_find(GTP_VAR_CLOCK_ID);
-+		if (!tve) {
-+			gts->tpe->reason = gtp_stop_agent_expr_code_error;
-+			return -1;
-+		}
-+		if (gtp_collect_var(gts, tve))
-+			return -1;
-+		tve = gtp_gtp_var_array_find(GTP_VAR_CPU_ID);
-+		if (!tve) {
-+			gts->tpe->reason = gtp_stop_agent_expr_code_error;
-+			return -1;
-+		}
-+		if (gtp_collect_var(gts, tve))
-+			return -1;
-+	}
-+#endif
-+
-+	atomic_inc(&gtp_frame_create);
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_action_printk(struct gtp_trace_s *gts, ULONGEST addr, size_t size)
-+{
-+	unsigned int	printk_format = gts->printk_format;
-+	char		*pbuf = __get_cpu_var(gtp_printf);
-+
-+	if (gts->printk_str == NULL) {
-+		gts->tpe->reason = gtp_stop_agent_expr_code_error;
-+		printk(KERN_WARNING "gtp_action_printk: id:%d addr:%p "
-+				    "printk doesn't have var name.  Please "
-+				    "check actions of it.\n",
-+			(int)gts->tpe->num, (void *)(CORE_ADDR)gts->tpe->addr);
-+		return -1;
-+	}
-+
-+	if (size) {
-+		if (size > GTP_PRINTF_MAX - 1)
-+			size = GTP_PRINTF_MAX - 1;
-+		if (gts->printk_format != GTP_PRINTK_FORMAT_S
-+		    && gts->printk_format != GTP_PRINTK_FORMAT_B
-+		    && size > 8)
-+			size = 8;
-+		if (probe_kernel_read(pbuf, (void *)(CORE_ADDR)addr, size)) {
-+			gts->tpe->reason = gtp_stop_efault;
-+			printk(KERN_WARNING "gtp_action_printk: id:%d addr:%p "
-+					    "read %p %u get error.\n",
-+			       (int)gts->tpe->num,
-+			       (void *)(CORE_ADDR)gts->tpe->addr,
-+			       (void *)(CORE_ADDR)addr,
-+			       (unsigned int)size);
-+			return -1;
-+		}
-+	} else {
-+		size = sizeof(ULONGEST);
-+		memcpy(pbuf, &addr, sizeof(ULONGEST));
-+	}
-+
-+	if (printk_format == GTP_PRINTK_FORMAT_A) {
-+		if (size == 1 || size == 2 || size == 4 || size == 8)
-+			printk_format = GTP_PRINTK_FORMAT_U;
-+		else
-+			printk_format = GTP_PRINTK_FORMAT_B;
-+	}
-+
-+	switch (printk_format) {
-+	case GTP_PRINTK_FORMAT_D:
-+		switch (size) {
-+		case 1:
-+			printk(KERN_NULL "<%d>%s%d\n", gts->printk_level,
-+			       gts->printk_str->src, pbuf[0]);
-+			break;
-+		case 2:
-+			printk(KERN_NULL "<%d>%s%d\n", gts->printk_level,
-+			       gts->printk_str->src, (int)(*(short *)pbuf));
-+			break;
-+		case 4:
-+			printk(KERN_NULL "<%d>%s%d\n", gts->printk_level,
-+			       gts->printk_str->src, *(int *)pbuf);
-+			break;
-+		case 8:
-+			printk(KERN_NULL "<%d>%s%lld\n", gts->printk_level,
-+			       gts->printk_str->src, *(long long *)pbuf);
-+			break;
-+		default:
-+			printk(KERN_WARNING "gtp_action_printk: id:%d addr:%p "
-+					    "size %d cannot printk.\n",
-+			       (int)gts->tpe->num,
-+			       (void *)(CORE_ADDR)gts->tpe->addr,
-+			       (unsigned int)size);
-+			gts->tpe->reason = gtp_stop_agent_expr_code_error;
-+			return -1;
-+			break;
-+		}
-+		break;
-+	case GTP_PRINTK_FORMAT_U:
-+		switch (size) {
-+		case 1:
-+			printk(KERN_NULL "<%d>%s%u\n", gts->printk_level,
-+			       gts->printk_str->src, pbuf[0]);
-+			break;
-+		case 2:
-+			printk(KERN_NULL "<%d>%s%u\n", gts->printk_level,
-+			       gts->printk_str->src, (int)(*(short *)pbuf));
-+			break;
-+		case 4:
-+			printk(KERN_NULL "<%d>%s%u\n", gts->printk_level,
-+			       gts->printk_str->src, *(int *)pbuf);
-+			break;
-+		case 8:
-+			printk(KERN_NULL "<%d>%s%llu\n", gts->printk_level,
-+			       gts->printk_str->src, *(long long *)pbuf);
-+			break;
-+		default:
-+			printk(KERN_WARNING "gtp_action_printk: id:%d addr:%p"
-+					    "size %d cannot printk.\n",
-+			       (int)gts->tpe->num,
-+			       (void *)(CORE_ADDR)gts->tpe->addr,
-+			       (unsigned int)size);
-+			gts->tpe->reason = gtp_stop_agent_expr_code_error;
-+			return -1;
-+			break;
-+		}
-+		break;
-+	case GTP_PRINTK_FORMAT_X:
-+		switch (size) {
-+		case 1:
-+			printk(KERN_NULL "<%d>%s0x%x\n", gts->printk_level,
-+			       gts->printk_str->src, pbuf[0]);
-+			break;
-+		case 2:
-+			printk(KERN_NULL "<%d>%s0x%x\n", gts->printk_level,
-+			       gts->printk_str->src, (int)(*(short *)pbuf));
-+			break;
-+		case 4:
-+			printk(KERN_NULL "<%d>%s0x%x\n", gts->printk_level,
-+			       gts->printk_str->src, *(int *)pbuf);
-+			break;
-+		case 8:
-+			printk(KERN_NULL "<%d>%s0x%llx\n", gts->printk_level,
-+			       gts->printk_str->src, *(long long *)pbuf);
-+			break;
-+		default:
-+			printk(KERN_WARNING "gtp_action_printk: id:%d addr:%p "
-+					    "size %d cannot printk.\n",
-+			       (int)gts->tpe->num,
-+			       (void *)(CORE_ADDR)gts->tpe->addr,
-+			       (unsigned int)size);
-+			gts->tpe->reason = gtp_stop_agent_expr_code_error;
-+			return -1;
-+			break;
-+		}
-+		break;
-+	case GTP_PRINTK_FORMAT_S:
-+		pbuf[GTP_PRINTF_MAX - 1] = '\0';
-+		printk("<%d>%s%s\n", gts->printk_level, gts->printk_str->src,
-+		       pbuf);
-+		break;
-+	case GTP_PRINTK_FORMAT_B: {
-+			size_t	i;
-+
-+			printk(KERN_NULL "<%d>%s", gts->printk_level,
-+			       gts->printk_str->src);
-+			for (i = 0; i < size; i++)
-+				printk("%02x", (unsigned int)pbuf[i]);
-+			printk("\n");
-+		}
-+		break;
-+	default:
-+		printk(KERN_WARNING "gtp_action_printk: id:%d addr:%p "
-+				    "printk format %u is not support.\n",
-+		       (int)gts->tpe->num, (void *)(CORE_ADDR)gts->tpe->addr,
-+		       gts->printk_format);
-+		gts->tpe->reason = gtp_stop_agent_expr_code_error;
-+		return -1;
-+		break;
-+	}
-+
-+	gts->printk_str = gts->printk_str->next;
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_action_memory_read(struct gtp_trace_s *gts, int reg, CORE_ADDR addr,
-+		       size_t size)
-+{
-+	char				*tmp;
-+	struct gtp_frame_mem		*fm;
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	struct ring_buffer_event	*rbe;
-+#endif
-+
-+	if (reg >= 0)
-+		addr += (CORE_ADDR) gtp_action_reg_read(gts->regs,
-+							gts->tpe, reg);
-+	if (gts->tpe->reason != gtp_stop_normal)
-+		return -1;
-+
-+	if (gts->next == NULL) {
-+		if (gtp_action_head(gts))
-+			return -1;
-+	}
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	GTP_FRAME_RINGBUFFER_ALLOC(GTP_FRAME_MEM_SIZE + size);
-+#endif
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_RB)
-+#ifdef GTP_RB
-+	tmp = gtp_rb_alloc(gts->next, GTP_FRAME_MEM_SIZE + size, gts->id);
-+#endif
-+#ifdef GTP_FRAME_SIMPLE
-+	tmp = gtp_frame_alloc(GTP_FRAME_MEM_SIZE + size);
-+#endif
-+	if (!tmp) {
-+		gts->tpe->reason = gtp_stop_frame_full;
-+		return -1;
-+	}
-+#ifdef GTP_FRAME_SIMPLE
-+	*gts->next = tmp;
-+#endif
-+#endif
-+
-+	FID(tmp) = FID_MEM;
-+	tmp += FID_SIZE;
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	gts->next = (char **)tmp;
-+	*gts->next = NULL;
-+	tmp += sizeof(char *);
-+#endif
-+
-+	fm = (struct gtp_frame_mem *)tmp;
-+	fm->addr = addr;
-+	fm->size = size;
-+	tmp += sizeof(struct gtp_frame_mem);
-+
-+#ifdef GTP_DEBUG_V
-+	printk(GTP_DEBUG_V "gtp_action_memory_read: id:%d addr:%p %p %u\n",
-+	       (int)gts->tpe->num, (void *)(CORE_ADDR)gts->tpe->addr,
-+	       (void *)addr, (unsigned int)size);
-+#endif
-+
-+	if (probe_kernel_read(tmp, (void *)addr, size)) {
-+		gts->tpe->reason = gtp_stop_efault;
-+#ifdef GTP_FRAME_SIMPLE
-+		memset(tmp, 0, size);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		ring_buffer_discard_commit(gtp_frame, rbe);
-+#endif
-+#ifdef GTP_RB
-+		GTP_RB_RELEASE(gts->next);
-+#endif
-+		printk(KERN_WARNING "gtp_action_memory_read: id:%d addr:%p "
-+				    "read %p %u get error.\n",
-+		       (int)gts->tpe->num, (void *)(CORE_ADDR)gts->tpe->addr,
-+		       (void *)addr, (unsigned int)size);
-+		return -1;
-+	}
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	ring_buffer_unlock_commit(gtp_frame, rbe);
-+#endif
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_action_r(struct gtp_trace_s *gts, struct action *ae)
-+{
-+	struct pt_regs			*regs;
-+	char				*tmp;
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	struct ring_buffer_event	*rbe;
-+#endif
-+
-+	if (gts->next == NULL) {
-+		if (gtp_action_head(gts))
-+			return -1;
-+	}
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	GTP_FRAME_RINGBUFFER_ALLOC(GTP_FRAME_REG_SIZE);
-+#endif
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_RB)
-+#ifdef GTP_RB
-+	tmp = gtp_rb_alloc(gts->next, GTP_FRAME_REG_SIZE, gts->id);
-+#endif
-+#ifdef GTP_FRAME_SIMPLE
-+	tmp = gtp_frame_alloc(GTP_FRAME_REG_SIZE);
-+#endif
-+	if (!tmp) {
-+		gts->tpe->reason = gtp_stop_frame_full;
-+		return -1;
-+	}
-+#ifdef GTP_FRAME_SIMPLE
-+	*gts->next = tmp;
-+#endif
-+#endif
-+
-+	FID(tmp) = FID_REG;
-+	tmp += FID_SIZE;
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	gts->next = (char **)tmp;
-+	*gts->next = NULL;
-+	tmp += sizeof(char *);
-+#endif
-+
-+	regs = (struct pt_regs *)tmp;
-+
-+	memcpy(regs, gts->regs, sizeof(struct pt_regs));
-+#ifdef CONFIG_X86_32
-+	regs->sp = (unsigned long)&regs->sp;
-+#endif	/* CONFIG_X86_32 */
-+
-+	if (gts->ri)
-+		GTP_REGS_PC(regs) = (CORE_ADDR)gts->ri->ret_addr;
-+#ifdef CONFIG_X86
-+	else if (!gts->step)
-+		GTP_REGS_PC(regs) -= 1;
-+#endif	/* CONFIG_X86 */
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	ring_buffer_unlock_commit(gtp_frame, rbe);
-+#endif
-+
-+	return 0;
-+}
-+
-+static struct gtp_var *
-+gtp_gtp_var_array_find(unsigned int num)
-+{
-+	struct gtp_var	*ret;
-+
-+#ifdef GTP_DEBUG_V
-+	printk(GTP_DEBUG_V "gtp_gtp_var_array_find: num:%u %u %u\n",
-+	       gtp_var_head, gtp_var_tail, num);
-+#endif
-+
-+	if (num < gtp_var_head || num > gtp_var_tail)
-+		return NULL;
-+
-+	ret = gtp_var_array[num - gtp_var_head];
-+	if (ret->per_cpu)
-+		ret = ret->per_cpu[smp_processor_id()];
-+
-+	return ret;
-+}
-+
-+static uint64_t
-+gtp_get_var_special(struct gtp_trace_s *gts, unsigned int num)
-+{
-+	uint64_t	ret;
-+
-+	switch (num) {
-+	case GTP_VAR_CURRENT_TASK_ID:
-+		if (gts->ri)
-+			ret = (uint64_t)(CORE_ADDR)gts->ri->task;
-+		else
-+			ret = (uint64_t)(CORE_ADDR)get_current();
-+		break;
-+	case GTP_VAR_CURRENT_TASK_PID_ID:
-+		if (gts->ri)
-+			ret = (uint64_t)(CORE_ADDR)gts->ri->task->pid;
-+		else
-+			ret = (uint64_t)(CORE_ADDR)get_current()->pid;
-+		break;
-+	case GTP_VAR_CURRENT_THREAD_INFO_ID:
-+		ret = (uint64_t)(CORE_ADDR)current_thread_info();
-+		break;
-+	case GTP_VAR_CLOCK_ID:
-+		ret = (uint64_t)GTP_LOCAL_CLOCK;
-+		break;
-+	case GTP_VAR_COOKED_CLOCK_ID:
-+		ret = (uint64_t)(__get_cpu_var(local_clock_current)
-+					- __get_cpu_var(local_clock_offset));
-+		break;
-+#ifdef CONFIG_X86
-+	case GTP_VAR_RDTSC_ID:
-+		{
-+			unsigned long long a;
-+			rdtscll(a);
-+			ret = (uint64_t)a;
-+		}
-+		break;
-+	case GTP_VAR_COOKED_RDTSC_ID:
-+		ret = (uint64_t)(__get_cpu_var(rdtsc_current)
-+					- __get_cpu_var(rdtsc_offset));
-+		break;
-+#endif
-+	case GTP_VAR_CPU_ID:
-+		ret = (uint64_t)(CORE_ADDR)smp_processor_id();
-+		break;
-+	case GTP_VAR_CPU_NUMBER_ID:
-+		ret = (uint64_t)gtp_cpu_number;
-+		break;
-+	case GTP_VAR_PRINTK_TMP_ID:
-+		ret = gts->printk_tmp;
-+		break;
-+	case GTP_VAR_DUMP_STACK_ID:
-+		printk(KERN_NULL "gtp %d %p:", (int)gts->tpe->num,
-+		       (void *)(CORE_ADDR)gts->tpe->addr);
-+		dump_stack();
-+		ret = 0;
-+		break;
-+	case GTP_VAR_XTIME_SEC_ID:
-+		if (gts->xtime.tv_sec == 0 && gts->xtime.tv_nsec == 0)
-+			getnstimeofday(&gts->xtime);
-+		ret = (uint64_t)gts->xtime.tv_sec;
-+		break;
-+	case GTP_VAR_XTIME_NSEC_ID:
-+		if (gts->xtime.tv_sec == 0 && gts->xtime.tv_nsec == 0)
-+			getnstimeofday(&gts->xtime);
-+		ret = (uint64_t)gts->xtime.tv_nsec;
-+		break;
-+	case GTP_VAR_HARDIRQ_COUNT_ID:
-+		ret = (uint64_t)hardirq_count();
-+		break;
-+	case GTP_VAR_SOFTIRQ_COUNT_ID:
-+		ret = (uint64_t)softirq_count();
-+		break;
-+	case GTP_VAR_IRQ_COUNT_ID:
-+		ret = (uint64_t)irq_count();
-+		break;
-+	default:
-+		ret = 0;
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
-+static void
-+gtp_set_var_special(struct gtp_trace_s *gts, unsigned int num, ULONGEST val)
-+{
-+	switch (num) {
-+	case GTP_VAR_PRINTK_TMP_ID:
-+		gts->printk_tmp = val;
-+		break;
-+	case GTP_VAR_PRINTK_LEVEL_ID:
-+		gts->printk_level = (unsigned int)val;
-+		break;
-+	case GTP_VAR_PRINTK_FORMAT_ID:
-+		gts->printk_format = (unsigned int)val;
-+		break;
-+	case GTP_VAR_PC_PE_EN_ID:
-+		gtp_pc_pe_en((int)val);
-+		break;
-+	}
-+}
-+
-+static int
-+gtp_collect_var_special(struct gtp_trace_s *gts, unsigned int num)
-+{
-+	struct gtp_frame_var		*fvar;
-+	char				*tmp;
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	struct ring_buffer_event	*rbe;
-+#endif
-+
-+	if (gts->next == NULL) {
-+		if (gtp_action_head(gts))
-+			return -1;
-+	}
-+
-+	if (GTP_VAR_AUTO_TRACEV(num))
-+		return 0;
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	GTP_FRAME_RINGBUFFER_ALLOC(GTP_FRAME_VAR_SIZE);
-+#endif
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_RB)
-+#ifdef GTP_RB
-+	tmp = gtp_rb_alloc(gts->next, GTP_FRAME_VAR_SIZE, gts->id);
-+#endif
-+#ifdef GTP_FRAME_SIMPLE
-+	tmp = gtp_frame_alloc(GTP_FRAME_VAR_SIZE);
-+#endif
-+	if (!tmp) {
-+		gts->tpe->reason = gtp_stop_frame_full;
-+		return -1;
-+	}
-+#ifdef GTP_FRAME_SIMPLE
-+	*gts->next = tmp;
-+#endif
-+#endif
-+
-+	FID(tmp) = FID_VAR;
-+	tmp += FID_SIZE;
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	gts->next = (char **)tmp;
-+	*gts->next = NULL;
-+	tmp += sizeof(char *);
-+#endif
-+
-+	fvar = (struct gtp_frame_var *) tmp;
-+	fvar->num = num;
-+	fvar->val = gtp_get_var_special(gts, num);
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	ring_buffer_unlock_commit(gtp_frame, rbe);
-+#endif
-+
-+	return 0;
-+}
-+
-+uint64_t
-+gtp_get_var(struct gtp_trace_s *gts, struct gtp_var *tve)
-+{
-+#ifdef CONFIG_PERF_EVENTS
-+	if (tve->ptid == pe_tv_val || tve->ptid == pe_tv_enabled
-+	    || tve->ptid == pe_tv_running) {
-+		tve->pts->val = perf_event_read_value(tve->pts->event,
-+						      &(tve->pts->enabled),
-+						      &(tve->pts->running));
-+		switch (tve->ptid) {
-+		case pe_tv_val:
-+			return (uint64_t)(tve->pts->val);
-+			break;
-+		case pe_tv_enabled:
-+			return (uint64_t)(tve->pts->enabled);
-+			break;
-+		case pe_tv_running:
-+			return (uint64_t)(tve->pts->running);
-+			break;
-+		default:
-+			return 0;
-+			break;
-+		}
-+	}
-+#endif
-+
-+	return tve->val;
-+}
-+
-+static int
-+gtp_collect_var(struct gtp_trace_s *gts, struct gtp_var *tve)
-+{
-+	struct gtp_frame_var		*fvar;
-+	char				*tmp;
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	struct ring_buffer_event	*rbe;
-+#endif
-+
-+	if (gts->next == NULL) {
-+		if (gtp_action_head(gts))
-+			return -1;
-+	}
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	GTP_FRAME_RINGBUFFER_ALLOC(GTP_FRAME_VAR_SIZE);
-+#endif
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_RB)
-+#ifdef GTP_RB
-+	tmp = gtp_rb_alloc(gts->next, GTP_FRAME_VAR_SIZE, gts->id);
-+#endif
-+#ifdef GTP_FRAME_SIMPLE
-+	tmp = gtp_frame_alloc(GTP_FRAME_VAR_SIZE);
-+#endif
-+	if (!tmp) {
-+		gts->tpe->reason = gtp_stop_frame_full;
-+		return -1;
-+	}
-+#ifdef GTP_FRAME_SIMPLE
-+	*gts->next = tmp;
-+#endif
-+#endif
-+
-+	FID(tmp) = FID_VAR;
-+	tmp += FID_SIZE;
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	gts->next = (char **)tmp;
-+	*gts->next = NULL;
-+	tmp += sizeof(char *);
-+#endif
-+
-+	fvar = (struct gtp_frame_var *) tmp;
-+	fvar->num = tve->num;
-+	fvar->val = gtp_get_var(gts, tve);
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	ring_buffer_unlock_commit(gtp_frame, rbe);
-+#endif
-+
-+	return 0;
-+}
-+
-+#define STACK_MAX	32
-+static DEFINE_PER_CPU(ULONGEST[STACK_MAX], action_x_stack);
-+
-+static int
-+gtp_action_x(struct gtp_trace_s *gts, struct action *ae)
-+{
-+	int		ret = 0;
-+	unsigned int	pc = 0, sp = 0;
-+	ULONGEST	top = 0;
-+	int		arg;
-+	union {
-+		union {
-+			uint8_t	bytes[1];
-+			uint8_t	val;
-+		} u8;
-+		union {
-+			uint8_t	bytes[2];
-+			uint16_t val;
-+		} u16;
-+		union {
-+			uint8_t bytes[4];
-+			uint32_t val;
-+		} u32;
-+		union {
-+			uint8_t bytes[8];
-+			ULONGEST val;
-+		} u64;
-+	} cnv;
-+	uint8_t		*ebuf = ae->u.exp.buf;
-+	int		psize = GTP_PRINTF_MAX;
-+	char		*pbuf = __get_cpu_var(gtp_printf);
-+	ULONGEST	*stack = __get_cpu_var(action_x_stack);
-+
-+	if (unlikely(ae->u.exp.need_var_lock))
-+		spin_lock(&gtp_var_lock);
-+
-+	while (1) {
-+#ifdef GTP_DEBUG_V
-+		printk(GTP_DEBUG_V "gtp_parse_x: cmd %x\n", ebuf[pc]);
-+#endif
-+
-+		switch (ebuf[pc++]) {
-+		/* add */
-+		case 0x02:
-+			top += stack[--sp];
-+			break;
-+
-+		case op_check_add:
-+			if (sp)
-+				top += stack[--sp];
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* sub */
-+		case 0x03:
-+			top = stack[--sp] - top;
-+			break;
-+
-+		case op_check_sub:
-+			if (sp)
-+				top = stack[--sp] - top;
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* mul */
-+		case 0x04:
-+			top *= stack[--sp];
-+			break;
-+
-+		case op_check_mul:
-+			if (sp)
-+				top *= stack[--sp];
-+			else
-+				goto code_error_out;
-+			break;
-+
-+#ifndef CONFIG_MIPS
-+		/* div_signed */
-+		case 0x05:
-+			if (top) {
-+				LONGEST l = (LONGEST) stack[--sp];
-+				do_div(l, (LONGEST) top);
-+				top = l;
-+			} else
-+				goto code_error_out;
-+			break;
-+
-+		case op_check_div_signed:
-+			if (top && sp) {
-+				LONGEST l = (LONGEST) stack[--sp];
-+				do_div(l, (LONGEST) top);
-+				top = l;
-+			} else
-+				goto code_error_out;
-+			break;
-+
-+		/* div_unsigned */
-+		case 0x06:
-+			if (top) {
-+				ULONGEST ul = stack[--sp];
-+				do_div(ul, top);
-+				top = ul;
-+			} else
-+				goto code_error_out;
-+			break;
-+
-+		case op_check_div_unsigned:
-+			if (top && sp) {
-+				ULONGEST ul = stack[--sp];
-+				do_div(ul, top);
-+				top = ul;
-+			} else
-+				goto code_error_out;
-+			break;
-+
-+		/* rem_signed */
-+		case 0x07:
-+			if (top) {
-+				LONGEST l1 = (LONGEST) stack[--sp];
-+				LONGEST l2 = (LONGEST) top;
-+				top = do_div(l1, l2);
-+			} else
-+				goto code_error_out;
-+			break;
-+
-+		case op_check_rem_signed:
-+			if (top && sp) {
-+				LONGEST l1 = (LONGEST) stack[--sp];
-+				LONGEST l2 = (LONGEST) top;
-+				top = do_div(l1, l2);
-+			} else
-+				goto code_error_out;
-+			break;
-+
-+		/* rem_unsigned */
-+		case 0x08:
-+			if (top) {
-+				ULONGEST ul1 = stack[--sp];
-+				ULONGEST ul2 = top;
-+				top = do_div(ul1, ul2);
-+			} else
-+				goto code_error_out;
-+			break;
-+
-+		case op_check_rem_unsigned:
-+			if (top && sp) {
-+				ULONGEST ul1 = stack[--sp];
-+				ULONGEST ul2 = top;
-+				top = do_div(ul1, ul2);
-+			} else
-+				goto code_error_out;
-+			break;
-+#endif
-+
-+		/* lsh */
-+		case 0x09:
-+			top = stack[--sp] << top;
-+			break;
-+
-+		case op_check_lsh:
-+			if (sp)
-+				top = stack[--sp] << top;
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* rsh_signed */
-+		case 0x0a:
-+			top = ((LONGEST) stack[--sp]) >> top;
-+			break;
-+
-+		case op_check_rsh_signed:
-+			if (sp)
-+				top = ((LONGEST) stack[--sp]) >> top;
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* rsh_unsigned */
-+		case 0x0b:
-+			top = stack[--sp] >> top;
-+			break;
-+
-+		case op_check_rsh_unsigned:
-+			if (sp)
-+				top = stack[--sp] >> top;
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* trace */
-+		case 0x0c:
-+			--sp;
-+			if (!gts->tpe->have_printk) {
-+				if (gtp_action_memory_read
-+					(gts, -1,
-+						(CORE_ADDR) stack[sp],
-+						(size_t) top))
-+					goto out;
-+			}
-+			top = stack[--sp];
-+			break;
-+
-+		case op_check_trace:
-+			if (sp > 1) {
-+				if (gtp_action_memory_read
-+					(gts, -1, (CORE_ADDR) stack[--sp],
-+					(size_t) top)) {
-+					/* gtp_action_memory_read will
-+						set error status with itself
-+						if it got error. */
-+					goto out;
-+				}
-+				top = stack[--sp];
-+			} else
-+				goto code_error_out;
-+			break;
-+
-+		/* trace_printk */
-+		case op_trace_printk:
-+			if (gtp_action_printk(gts,
-+						(ULONGEST)stack[--sp],
-+						(size_t) top))
-+				goto out;
-+			top = stack[--sp];
-+			break;
-+
-+		/* trace_quick */
-+		case 0x0d:
-+			if (!gts->tpe->have_printk) {
-+				if (gtp_action_memory_read
-+					(gts, -1, (CORE_ADDR) top,
-+						(size_t) ebuf[pc]))
-+					goto out;
-+			}
-+			pc++;
-+			break;
-+
-+		/* trace_quick_printk */
-+		case op_trace_quick_printk:
-+			if (gtp_action_printk(gts, (ULONGEST) top,
-+						(size_t) ebuf[pc++]))
-+				goto out;
-+			break;
-+
-+		/* log_not */
-+		case 0x0e:
-+			top = !top;
-+			break;
-+
-+		/* bit_and */
-+		case 0x0f:
-+			top &= stack[--sp];
-+			break;
-+
-+		case op_check_bit_and:
-+			if (sp)
-+				top &= stack[--sp];
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* bit_or */
-+		case 0x10:
-+			top |= stack[--sp];
-+			break;
-+
-+		case op_check_bit_or:
-+			if (sp)
-+				top |= stack[--sp];
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* bit_xor */
-+		case 0x11:
-+			top ^= stack[--sp];
-+			break;
-+
-+		case op_check_bit_xor:
-+			if (sp)
-+				top ^= stack[--sp];
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* bit_not */
-+		case 0x12:
-+			top = ~top;
-+			break;
-+
-+		/* equal */
-+		case 0x13:
-+			top = (stack[--sp] == top);
-+			break;
-+
-+		case op_check_equal:
-+			if (sp)
-+				top = (stack[--sp] == top);
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* less_signed */
-+		case 0x14:
-+			top = (((LONGEST) stack[--sp])
-+				< ((LONGEST) top));
-+			break;
-+
-+		case op_check_less_signed:
-+			if (sp)
-+				top = (((LONGEST) stack[--sp])
-+					< ((LONGEST) top));
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* less_unsigned */
-+		case 0x15:
-+			top = (stack[--sp] < top);
-+			break;
-+
-+		case op_check_less_unsigned:
-+			if (sp)
-+				top = (stack[--sp] < top);
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* ext */
-+		case 0x16:
-+			arg = ebuf[pc++];
-+			if (arg < (sizeof(LONGEST)*8)) {
-+				LONGEST mask = 1 << (arg - 1);
-+				top &= ((LONGEST) 1 << arg) - 1;
-+				top = (top ^ mask) - mask;
-+			}
-+			break;
-+
-+		/* ref8 */
-+		case 0x17:
-+			if (probe_kernel_read
-+				(cnv.u8.bytes,
-+				(void *)(CORE_ADDR)top, 1))
-+				goto code_error_out;
-+			top = (ULONGEST) cnv.u8.val;
-+			break;
-+
-+		/* ref16 */
-+		case 0x18:
-+			if (probe_kernel_read
-+				(cnv.u16.bytes,
-+				(void *)(CORE_ADDR)top, 2))
-+				goto code_error_out;
-+			top = (ULONGEST) cnv.u16.val;
-+			break;
-+
-+		/* ref32 */
-+		case 0x19:
-+			if (probe_kernel_read
-+				(cnv.u32.bytes,
-+				(void *)(CORE_ADDR)top, 4))
-+				goto code_error_out;
-+			top = (ULONGEST) cnv.u32.val;
-+			break;
-+
-+		/* ref64 */
-+		case 0x1a:
-+			if (probe_kernel_read
-+				(cnv.u64.bytes,
-+				(void *)(CORE_ADDR)top, 8))
-+				goto code_error_out;
-+			top = (ULONGEST) cnv.u64.val;
-+			break;
-+
-+		/* if_goto */
-+		case 0x20:
-+			if (top)
-+				pc = (ebuf[pc] << 8)
-+					+ (ebuf[pc + 1]);
-+			else
-+				pc += 2;
-+			/* pop */
-+			top = stack[--sp];
-+			break;
-+
-+		case op_check_if_goto:
-+			if (top)
-+				pc = (ebuf[pc] << 8)
-+					+ (ebuf[pc + 1]);
-+			else
-+				pc += 2;
-+			/* pop */
-+			if (sp)
-+				top = stack[--sp];
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* goto */
-+		case 0x21:
-+			pc = (ebuf[pc] << 8) + (ebuf[pc + 1]);
-+			break;
-+
-+		/* const8 */
-+		case 0x22:
-+			stack[sp++] = top;
-+			top = ebuf[pc++];
-+			break;
-+
-+		/* const16 */
-+		case 0x23:
-+			stack[sp++] = top;
-+			top = ebuf[pc++];
-+			top = (top << 8) + ebuf[pc++];
-+			break;
-+
-+		/* const32 */
-+		case 0x24:
-+			stack[sp++] = top;
-+			top = ebuf[pc++];
-+			top = (top << 8) + ebuf[pc++];
-+			top = (top << 8) + ebuf[pc++];
-+			top = (top << 8) + ebuf[pc++];
-+			break;
-+
-+		/* const64 */
-+		case 0x25:
-+			stack[sp++] = top;
-+			top = ebuf[pc++];
-+			top = (top << 8) + ebuf[pc++];
-+			top = (top << 8) + ebuf[pc++];
-+			top = (top << 8) + ebuf[pc++];
-+			top = (top << 8) + ebuf[pc++];
-+			top = (top << 8) + ebuf[pc++];
-+			top = (top << 8) + ebuf[pc++];
-+			top = (top << 8) + ebuf[pc++];
-+			break;
-+
-+		/* reg */
-+		case 0x26:
-+			stack[sp++] = top;
-+			arg = ebuf[pc++];
-+			arg = (arg << 8) + ebuf[pc++];
-+			top = gtp_action_reg_read(gts->regs, gts->tpe,
-+							arg);
-+			if (gts->tpe->reason != gtp_stop_normal)
-+				goto error_out;
-+			break;
-+
-+		/* end */
-+		case 0x27:
-+			if (gts->run)
-+				*(gts->run) = (int)top;
-+			goto out;
-+			break;
-+
-+		/* dup */
-+		case 0x28:
-+			stack[sp++] = top;
-+			break;
-+
-+		/* pop */
-+		case 0x29:
-+			top = stack[--sp];
-+			break;
-+
-+		case op_check_pop:
-+			if (sp)
-+				top = stack[--sp];
-+			else
-+				goto code_error_out;
-+			break;
-+
-+		/* zero_ext */
-+		case 0x2a:
-+			arg = ebuf[pc++];
-+			if (arg < (sizeof(LONGEST)*8))
-+				top &= ((LONGEST) 1 << arg) - 1;
-+			break;
-+
-+		/* swap */
-+		case 0x2b:
-+			stack[sp] = top;
-+			top = stack[sp - 1];
-+			stack[sp - 1] = stack[sp];
-+			break;
-+
-+		case op_check_swap:
-+			if (sp) {
-+				stack[sp] = top;
-+				top = stack[sp - 1];
-+				stack[sp - 1] = stack[sp];
-+			} else
-+				goto code_error_out;
-+			break;
-+
-+		/* getv */
-+		case 0x2c:
-+			arg = ebuf[pc++];
-+			arg = (arg << 8) + ebuf[pc++];
-+
-+			stack[sp++] = top;
-+
-+			top = gtp_get_var(gts, gtp_gtp_var_array_find(arg));
-+			break;
-+
-+		/* getv_sepecial */
-+		case op_special_getv:
-+			arg = ebuf[pc++];
-+			arg = (arg << 8) + ebuf[pc++];
-+			stack[sp++] = top;
-+			top = gtp_get_var_special(gts, arg);
-+			break;
-+
-+		/* setv */
-+		case 0x2d: {
-+				struct gtp_var	*tve;
-+
-+				arg = ebuf[pc++];
-+				arg = (arg << 8) + ebuf[pc++];
-+
-+				tve = gtp_gtp_var_array_find(arg);
-+#ifdef CONFIG_PERF_EVENTS
-+				if (tve->ptid == pe_tv_en)
-+					gtp_pe_set_en(tve->pts, (int)top);
-+				else if (tve->ptid == pe_tv_val)
-+					perf_event_set(tve->pts->event,
-+							(u64)top);
-+#endif
-+				tve->val = (uint64_t)top;
-+			}
-+			break;
-+
-+		/* setv_sepecial */
-+		case op_special_setv:
-+			arg = ebuf[pc++];
-+			arg = (arg << 8) + ebuf[pc++];
-+			gtp_set_var_special(gts, arg, top);
-+			break;
-+
-+		/* tracev */
-+		case 0x2e:
-+			arg = ebuf[pc++];
-+			arg = (arg << 8) + ebuf[pc++];
-+
-+			if (gtp_collect_var(gts, gtp_gtp_var_array_find(arg))) {
-+				/* gtp_collect_var will set error
-+				   status with itself if it got error. */
-+				goto out;
-+			}
-+			break;
-+
-+		/* tracev_special */
-+		case op_special_tracev:
-+			arg = ebuf[pc++];
-+			arg = (arg << 8) + ebuf[pc++];
-+			gtp_collect_var_special(gts, arg);
-+			break;
-+
-+		/* tracev_printk */
-+		case op_tracev_printk: {
-+				uint64_t	u64;
-+				arg = ebuf[pc++];
-+				arg = (arg << 8) + ebuf[pc++];
-+
-+				if (!GTP_VAR_IS_SPECIAL(arg))
-+					u64 = gtp_get_var(gts,
-+							  gtp_gtp_var_array_find
-+								(arg));
-+				else
-+					u64 = gtp_get_var_special(gts, arg);
-+				if (gtp_action_printk(gts, u64, 0)) {
-+					/* gtp_collect_var will set error status
-+					   with itself if it got error. */
-+					goto out;
-+				}
-+			}
-+			break;
-+		}
-+
-+		if (ae->type != 'X' && unlikely(sp > STACK_MAX - 5)) {
-+			printk(KERN_WARNING "gtp_action_x: stack overflow.\n");
-+			gts->tpe->reason
-+				= gtp_stop_agent_expr_stack_overflow;
-+			goto error_out;
-+		}
-+	}
-+code_error_out:
-+	gts->tpe->reason = gtp_stop_agent_expr_code_error;
-+error_out:
-+	ret = -1;
-+	printk(KERN_WARNING "gtp_action_x: tracepoint %d addr:%p"
-+			    "action X get error in pc %u.\n",
-+		(int)gts->tpe->num, (void *)(CORE_ADDR)gts->tpe->addr, pc);
-+out:
-+	if (unlikely(psize != GTP_PRINTF_MAX)) {
-+		unsigned long	flags;
-+
-+		local_irq_save(flags);
-+		printk("%s", pbuf - (GTP_PRINTF_MAX - psize));
-+		local_irq_restore(flags);
-+	}
-+	if (unlikely(ae->u.exp.need_var_lock))
-+		spin_unlock(&gtp_var_lock);
-+	return ret;
-+}
-+
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+static void
-+gtp_handler_wakeup(void)
-+{
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	FID_TYPE	eid = FID_END;
-+	ring_buffer_write(gtp_frame, FID_SIZE, &eid);
-+#endif
-+
-+	if (atomic_read(&gtpframe_pipe_wq_v) > 0) {
-+		atomic_dec(&gtpframe_pipe_wq_v);
-+		add_preempt_count(HARDIRQ_OFFSET);
-+		tasklet_schedule(&gtpframe_pipe_wq_tasklet);
-+		sub_preempt_count(HARDIRQ_OFFSET);
-+	}
-+}
-+#endif
-+
-+static void
-+gtp_handler(struct gtp_trace_s *gts)
-+{
-+	struct action		*ae;
-+
-+#ifdef GTP_DEBUG_V
-+	printk(GTP_DEBUG_V "gtp_handler: tracepoint %d %p\n",
-+	       (int)gts->tpe->num, (void *)(CORE_ADDR)gts->tpe->addr);
-+#endif
-+
-+	if (gts->tpe->kpreg == 0)
-+		return;
-+
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	if (!gtp_pipe_trace && get_current()->pid == gtp_gtpframe_pipe_pid)
-+		return;
-+#endif
-+
-+	if (gts->tpe->no_self_trace
-+	    && (get_current()->pid == gtp_gtp_pid
-+		|| get_current()->pid == gtp_gtpframe_pid)) {
-+			return;
-+	}
-+
-+	if (gts->tpe->have_printk) {
-+		gts->printk_level = 8;
-+		gts->printk_str = gts->tpe->printk_str;
-+	}
-+
-+	/* Condition.  */
-+	if (gts->tpe->cond) {
-+		int	run;
-+
-+		gts->run = &run;
-+		if (gtp_action_x(gts, gts->tpe->cond))
-+			goto tpe_stop;
-+		if (!run)
-+			return;
-+	}
-+
-+	gts->run = NULL;
-+
-+	/* Pass.  */
-+	if (!gts->tpe->nopass) {
-+		if (atomic_dec_return(&gts->tpe->current_pass) < 0)
-+			goto tpe_stop;
-+	}
-+
-+	/* Handle actions.  */
-+	if (gts->step)
-+		ae = gts->tpe->step_action_list;
-+	else
-+		ae = gts->tpe->action_list;
-+	for (; ae; ae = ae->next) {
-+		switch (ae->type) {
-+		case 'R':
-+			if (gtp_action_r(gts, ae))
-+				goto tpe_stop;
-+			break;
-+		case 'X':
-+		case 0xff:
-+			if (gtp_action_x(gts, ae))
-+				goto tpe_stop;
-+			break;
-+		case 'M':
-+			if (gtp_action_memory_read(gts, ae->u.m.regnum,
-+						   ae->u.m.offset,
-+						   ae->u.m.size))
-+				goto tpe_stop;
-+			break;
-+		}
-+	}
-+
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	if (gts->next) {
-+#ifdef GTP_RB
-+		GTP_RB_UNLOCK(gts->next);
-+#endif
-+		gtp_handler_wakeup();
-+	}
-+#endif
-+
-+	return;
-+
-+tpe_stop:
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	if (gts->next) {
-+#ifdef GTP_RB
-+		GTP_RB_UNLOCK(gts->next);
-+#endif
-+		gtp_handler_wakeup();
-+	}
-+#endif
-+	gts->tpe->kpreg = 0;
-+	add_preempt_count(HARDIRQ_OFFSET);
-+	tasklet_schedule(&gts->tpe->tasklet);
-+	sub_preempt_count(HARDIRQ_OFFSET);
-+#ifdef GTP_DEBUG_V
-+	printk(GTP_DEBUG_V "gtp_handler: tracepoint %d %p stop.\n",
-+		(int)gts->tpe->num, (void *)(CORE_ADDR)gts->tpe->addr);
-+#endif
-+	return;
-+}
-+
-+static DEFINE_PER_CPU(int, gtp_handler_began);
-+
-+#ifdef CONFIG_X86
-+static int	gtp_access_cooked_rdtsc;
-+#endif
-+static int	gtp_access_cooked_clock;
-+#ifdef CONFIG_PERF_EVENTS
-+static int	gtp_have_pc_pe;
-+#endif
-+
-+static void
-+gtp_handler_begin(void)
-+{
-+	if (!__get_cpu_var(gtp_handler_began)) {
-+#ifdef CONFIG_X86
-+		if (gtp_access_cooked_rdtsc) {
-+			u64	a;
-+
-+			rdtscll(a);
-+			__get_cpu_var(rdtsc_current) = a;
-+		}
-+#endif
-+
-+		if (gtp_access_cooked_clock)
-+			__get_cpu_var(local_clock_current) = GTP_LOCAL_CLOCK;
-+
-+#ifdef CONFIG_PERF_EVENTS
-+		if (gtp_have_pc_pe)
-+			pc_pe_list_disable();
-+#endif
-+
-+		__get_cpu_var(gtp_handler_began) = 1;
-+	}
-+}
-+
-+static void
-+gtp_handler_end(void)
-+{
-+	if (__get_cpu_var(gtp_handler_began)) {
-+#ifdef CONFIG_PERF_EVENTS
-+		if (gtp_have_pc_pe)
-+			pc_pe_list_enable();
-+#endif
-+
-+		if (gtp_access_cooked_clock) {
-+			__get_cpu_var(local_clock_offset) += GTP_LOCAL_CLOCK
-+					- __get_cpu_var(local_clock_current);
-+			__get_cpu_var(local_clock_current) = 0;
-+		}
-+
-+#ifdef CONFIG_X86
-+		if (gtp_access_cooked_rdtsc) {
-+			u64	a;
-+
-+			rdtscll(a);
-+			__get_cpu_var(rdtsc_offset) += a
-+					- __get_cpu_var(rdtsc_current);
-+			__get_cpu_var(rdtsc_current) = 0;
-+		}
-+#endif
-+
-+		__get_cpu_var(gtp_handler_began) = 0;
-+	}
-+}
-+
-+static inline void
-+gtp_kp_pre_handler_1(struct kprobe *p, struct pt_regs *regs)
-+{
-+	struct kretprobe	*kp;
-+	struct gtp_trace_s	gts;
-+
-+	memset(&gts, 0, sizeof(struct gtp_trace_s));
-+	kp = container_of(p, struct kretprobe, kp);
-+	gts.tpe = container_of(kp, struct gtp_entry, kp);
-+	gts.regs = regs;
-+
-+	gtp_handler(&gts);
-+}
-+
-+static inline void
-+gtp_kp_post_handler_1(struct kprobe *p, struct pt_regs *regs,
-+		      unsigned long flags)
-+{
-+	struct kretprobe	*kp;
-+	struct gtp_entry	*tpe;
-+	struct gtp_trace_s	gts;
-+
-+	kp = container_of(p, struct kretprobe, kp);
-+	tpe = container_of(kp, struct gtp_entry, kp);
-+
-+	memset(&gts, 0, sizeof(struct gtp_trace_s));
-+	gts.tpe = tpe;
-+	gts.regs = regs;
-+	gts.step = 1;
-+
-+	gtp_handler(&gts);
-+}
-+
-+static inline void
-+gtp_kp_ret_handler_1(struct kretprobe_instance *ri, struct pt_regs *regs)
-+{
-+	struct gtp_trace_s	gts;
-+
-+	memset(&gts, 0, sizeof(struct gtp_trace_s));
-+	gts.tpe = container_of(ri->rp, struct gtp_entry, kp);
-+	gts.regs = regs;
-+	gts.ri = ri;
-+
-+	gtp_handler(&gts);
-+}
-+
-+static int
-+gtp_kp_pre_handler_plus_step(struct kprobe *p, struct pt_regs *regs)
-+{
-+	gtp_handler_begin();
-+
-+	gtp_kp_pre_handler_1(p, regs);
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_kp_pre_handler_plus(struct kprobe *p, struct pt_regs *regs)
-+{
-+	gtp_handler_begin();
-+
-+	gtp_kp_pre_handler_1(p, regs);
-+
-+	gtp_handler_end();
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_kp_pre_handler(struct kprobe *p, struct pt_regs *regs)
-+{
-+	gtp_kp_pre_handler_1(p, regs);
-+
-+	return 0;
-+}
-+
-+/* Only available when tpe->step is true.  */
-+
-+static void
-+gtp_kp_post_handler_plus(struct kprobe *p, struct pt_regs *regs,
-+			 unsigned long flags)
-+{
-+	gtp_kp_post_handler_1(p, regs, flags);
-+
-+	gtp_handler_end();
-+}
-+
-+/* Only available when tpe->step is true.  */
-+
-+static void
-+gtp_kp_post_handler(struct kprobe *p, struct pt_regs *regs,
-+			 unsigned long flags)
-+{
-+	gtp_kp_post_handler_1(p, regs, flags);
-+}
-+
-+static int
-+gtp_kp_ret_handler_plus(struct kretprobe_instance *ri, struct pt_regs *regs)
-+{
-+	gtp_handler_begin();
-+
-+	gtp_kp_ret_handler_1(ri, regs);
-+
-+	gtp_handler_end();
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_kp_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
-+{
-+	gtp_kp_ret_handler_1(ri, regs);
-+
-+	return 0;
-+}
-+
-+static struct action *
-+gtp_action_alloc(char type)
-+{
-+	struct action	*ret;
-+
-+	ret = (struct action *)kcalloc(1, sizeof (struct action), GFP_KERNEL);
-+	if (ret)
-+		ret->type = type;
-+
-+	return ret;
-+}
-+
-+static void
-+gtp_action_release(struct action *ae)
-+{
-+	struct action	*ae2;
-+
-+	while (ae) {
-+		ae2 = ae;
-+		ae = ae->next;
-+		/* Release ae2.  */
-+		switch (ae2->type) {
-+		case 'X':
-+		case 0xff:
-+			kfree(ae2->u.exp.buf);
-+			break;
-+		}
-+		kfree(ae2);
-+	}
-+}
-+
-+static void
-+gtp_src_release(struct gtpsrc *src)
-+{
-+	struct gtpsrc	*src2;
-+
-+	while (src) {
-+		src2 = src;
-+		src = src->next;
-+		kfree(src2->src);
-+		kfree(src2);
-+	}
-+}
-+
-+static void
-+gtp_stop(struct work_struct *work)
-+{
-+	struct gtp_entry	*tpe = container_of(work,
-+						    struct gtp_entry, work);
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_stop: tracepoint %d %p\n", (int)tpe->num,
-+	       (void *)(CORE_ADDR)tpe->addr);
-+#endif
-+
-+	if (tpe->is_kretprobe)
-+		unregister_kretprobe(&tpe->kp);
-+	else
-+		unregister_kprobe(&tpe->kp.kp);
-+}
-+
-+static struct gtp_entry *
-+gtp_list_add(ULONGEST num, ULONGEST addr)
-+{
-+	struct gtp_entry	*ret = kcalloc(1, sizeof(struct gtp_entry),
-+					       GFP_KERNEL);
-+
-+	if (!ret)
-+		goto out;
-+	memset(ret, '\0', sizeof(struct gtp_entry));
-+	ret->num = num;
-+	ret->addr = addr;
-+	ret->kp.kp.addr = (kprobe_opcode_t *) (CORE_ADDR)addr;
-+	INIT_WORK(&ret->work, gtp_stop);
-+	ret->have_printk = 0;
-+
-+	/* Add to gtp_list.  */
-+	ret->next = gtp_list;
-+	gtp_list = ret;
-+
-+out:
-+	return ret;
-+}
-+
-+static struct gtp_entry *
-+gtp_list_find(ULONGEST num, ULONGEST addr)
-+{
-+	struct gtp_entry	*tpe;
-+
-+	for (tpe = gtp_list; tpe; tpe = tpe->next) {
-+		if (tpe->num == num && tpe->addr == addr)
-+			return tpe;
-+	}
-+
-+	return NULL;
-+}
-+
-+/* If more than one gtp entry have same num, return NULL.  */
-+
-+static struct gtp_entry *
-+gtp_list_find_without_addr(ULONGEST num)
-+{
-+	struct gtp_entry	*tpe, *ret = NULL;
-+
-+	for (tpe = gtp_list; tpe; tpe = tpe->next) {
-+		if (tpe->num == num) {
-+			if (ret)
-+				return NULL;
-+			else
-+				ret = tpe;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static void
-+gtp_list_release(void)
-+{
-+	struct gtp_entry	*tpe;
-+
-+	while (gtp_list) {
-+		tpe = gtp_list;
-+		gtp_list = gtp_list->next;
-+		gtp_action_release(tpe->cond);
-+		gtp_action_release(tpe->action_list);
-+		gtp_src_release(tpe->src);
-+		gtp_src_release(tpe->action_cmd);
-+		kfree(tpe);
-+	}
-+
-+	current_gtp = NULL;
-+	current_gtp_action_cmd = NULL;
-+	current_gtp_src = NULL;
-+}
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+static void
-+gtp_frame_iter_open(void)
-+{
-+	int	cpu;
-+
-+
-+	for_each_online_cpu(cpu)
-+		gtp_frame_iter[cpu] = ring_buffer_read_prepare(gtp_frame, cpu);
-+	ring_buffer_read_prepare_sync();
-+	for_each_online_cpu(cpu) {
-+		ring_buffer_read_start(gtp_frame_iter[cpu]);
-+	}
-+}
-+
-+static void
-+gtp_frame_iter_reset(void)
-+{
-+	int	cpu;
-+
-+	for_each_online_cpu(cpu)
-+		ring_buffer_iter_reset(gtp_frame_iter[cpu]);
-+	gtp_frame_current_num = -1;
-+}
-+
-+static int
-+gtp_frame_iter_peek_head(void)
-+{
-+	int	cpu;
-+	int	ret = -1;
-+	u64	min = 0;
-+
-+	for_each_online_cpu(cpu) {
-+		struct ring_buffer_event	*rbe;
-+		char				*tmp;
-+		u64				ts;
-+
-+		while (1) {
-+			rbe = ring_buffer_iter_peek(gtp_frame_iter[cpu], &ts);
-+			if (rbe == NULL)
-+				break;
-+			tmp = ring_buffer_event_data(rbe);
-+			if (FID(tmp) == FID_HEAD)
-+				break;
-+			ring_buffer_read(gtp_frame_iter[cpu], NULL);
-+		}
-+
-+		if (rbe) {
-+			if ((min && ts < min) || !min) {
-+				min = ts;
-+				ret = cpu;
-+			}
-+		}
-+	}
-+
-+	if (ret < 0)
-+		gtp_frame_current_num = -1;
-+	else
-+		gtp_frame_current_num++;
-+	return ret;
-+}
-+
-+static void
-+gtp_frame_iter_close(void)
-+{
-+	int	cpu;
-+
-+	for_each_online_cpu(cpu) {
-+		if (gtp_frame_iter[cpu]) {
-+			ring_buffer_read_finish(gtp_frame_iter[cpu]);
-+			gtp_frame_iter[cpu] = NULL;
-+		}
-+	}
-+}
-+#endif
-+
-+static void
-+gtp_frame_reset(void)
-+{
-+	gtp_frame_current_num = -1;
-+#ifdef GTP_FRAME_SIMPLE
-+	gtp_frame_r_start = gtp_frame;
-+	gtp_frame_w_start = gtp_frame;
-+	gtp_frame_end = gtp_frame + GTP_FRAME_SIZE;
-+	gtp_frame_is_circular = 0;
-+	gtp_frame_current = NULL;
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	gtp_frame_iter_close();
-+	if (gtp_frame)
-+		ring_buffer_reset(gtp_frame);
-+#endif
-+#ifdef GTP_RB
-+	gtp_rb_reset();
-+#endif
-+	atomic_set(&gtp_frame_create, 0);
-+	if (gtp_frame_file) {
-+		vfree(gtp_frame_file);
-+		gtp_frame_file = NULL;
-+		gtp_frame_file_size = 0;
-+	}
-+}
-+
-+static int
-+hex2int(char hex, int *i)
-+{
-+	if ((hex >= '0') && (hex <= '9')) {
-+		*i = hex - '0';
-+		return 1;
-+	}
-+	if ((hex >= 'a') && (hex <= 'f')) {
-+		*i = hex - 'a' + 10;
-+		return 1;
-+	}
-+	if ((hex >= 'A') && (hex <= 'F')) {
-+		*i = hex - 'A' + 10;
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+
-+static char *
-+hex2ulongest(char *pkg, ULONGEST *u64)
-+{
-+	int	i;
-+
-+	if (u64)
-+		*u64 = 0;
-+	while (hex2int(pkg[0], &i)) {
-+		pkg++;
-+		if (u64) {
-+			*u64 = (*u64) << 4;
-+			*u64 |= i & 0xf;
-+		}
-+	}
-+
-+	return pkg;
-+}
-+
-+static char *
-+string2hex(char *pkg, char *out)
-+{
-+	char	*ret = out;
-+
-+	while (pkg[0]) {
-+		sprintf(out, "%x", pkg[0]);
-+		pkg++;
-+		out += 2;
-+	}
-+
-+	return ret;
-+}
-+
-+static char *
-+hex2string(char *pkg, char *out)
-+{
-+	char	*ret = out;
-+	int	i, j;
-+
-+	while (hex2int(pkg[0], &i) && hex2int(pkg[1], &j)) {
-+		out[0] = i * 16 + j;
-+		pkg += 2;
-+		out += 1;
-+	}
-+	out[0] = '\0';
-+
-+	return ret;
-+}
-+
-+static char *
-+gtp_strdup(char *begin, char *end)
-+{
-+	int	len;
-+	char	*ret;
-+
-+	if (end)
-+		len = end - begin;
-+	else
-+		len = strlen(begin);
-+
-+	ret = kmalloc(len + 1, GFP_KERNEL);
-+	if (ret == NULL)
-+		return NULL;
-+
-+	strncpy(ret, begin, len);
-+	ret[len] = '\0';
-+
-+	return ret;
-+}
-+
-+static void
-+gtpro_list_clear(void)
-+{
-+	struct gtpro_entry	*e;
-+
-+	while (gtpro_list) {
-+		e = gtpro_list;
-+		gtpro_list = gtpro_list->next;
-+		kfree(e);
-+	}
-+}
-+
-+static struct gtpro_entry *
-+gtpro_list_add(CORE_ADDR start, CORE_ADDR end)
-+{
-+	struct gtpro_entry	*e;
-+
-+	e = kmalloc(sizeof(struct gtpro_entry), GFP_KERNEL);
-+	if (e == NULL)
-+		goto out;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtpro_list_add: %p %p\n", (void *)start, (void *)end);
-+#endif
-+
-+	e->start = start;
-+	e->end = end;
-+
-+	e->next = gtpro_list;
-+	gtpro_list = e;
-+
-+out:
-+	return e;
-+}
-+
-+#ifdef CONFIG_PERF_EVENTS
-+static struct gtp_var *
-+gtp_var_add(unsigned int num, uint64_t val, char *src,
-+	    struct gtp_var **per_cpu, int per_cpu_id,
-+	    enum pe_tv_id ptid, struct pe_tv_s *pts)
-+#else
-+static struct gtp_var *
-+gtp_var_add(unsigned int num, uint64_t val, char *src,
-+	    struct gtp_var **per_cpu, int per_cpu_id)
-+#endif
-+{
-+	struct gtp_var *var = kcalloc(1, sizeof(struct gtp_var), GFP_KERNEL);
-+	if (!var)
-+		goto out;
-+
-+	var->num = num;
-+	var->val = val;
-+
-+	var->src = gtp_strdup(src, NULL);
-+	if (var->src == NULL) {
-+		kfree(var);
-+		var = NULL;
-+		goto out;
-+	}
-+
-+	var->per_cpu = per_cpu;
-+	if (per_cpu)
-+		var->per_cpu[per_cpu_id] = var;
-+
-+#ifdef CONFIG_PERF_EVENTS
-+	var->ptid = ptid;
-+	var->pts = pts;
-+#endif
-+
-+	var->next = gtp_var_list;
-+	gtp_var_list = var;
-+	gtp_var_head = min(var->num, gtp_var_head);
-+	gtp_var_tail = max(var->num, gtp_var_tail);
-+
-+out:
-+	return var;
-+}
-+
-+static struct gtp_var *
-+gtp_var_find(unsigned int num)
-+{
-+	struct gtp_var	*ret = NULL;
-+
-+	if (num >= gtp_var_head && num <= gtp_var_tail) {
-+		for (ret = gtp_var_list; ret; ret = ret->next) {
-+			if (ret->num == num)
-+				break;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static void
-+gtp_var_release(void)
-+{
-+	struct gtp_var	*tve;
-+
-+	gtp_var_head = GTP_VAR_SPECIAL_MIN;
-+	gtp_var_tail = GTP_VAR_SPECIAL_MAX;
-+	current_gtp_var = NULL;
-+
-+	while (gtp_var_list != GTP_VAR_LIST_FIRST) {
-+		tve = gtp_var_list;
-+		gtp_var_list = gtp_var_list->next;
-+
-+		if (tve->per_cpu) {
-+			struct gtp_var	*tve1;
-+
-+			for (tve1 = gtp_var_list; tve1; tve1 = tve1->next) {
-+				if (tve1->per_cpu == tve->per_cpu)
-+					tve1->per_cpu = NULL;
-+			}
-+
-+			kfree(tve->per_cpu);
-+		}
-+
-+#ifdef CONFIG_PERF_EVENTS
-+		if (tve->pts) {
-+			struct gtp_var	*tve1;
-+
-+			for (tve1 = gtp_var_list; tve1; tve1 = tve1->next) {
-+				if (tve1->pts == tve->pts) {
-+					tve1->pts = NULL;
-+					tve1->ptid = pe_tv_unknown;
-+				}
-+			}
-+
-+			if (tve->pts->event)
-+				perf_event_release_kernel(tve->pts->event);
-+			kfree(tve->pts);
-+		}
-+#endif
-+
-+		kfree(tve->src);
-+		kfree(tve);
-+	}
-+
-+	gtp_start_ignore_error = 0;
-+}
-+
-+static int
-+gtp_src_add(char *begin, char *end, struct gtpsrc **src_list)
-+{
-+	struct gtpsrc	*src, *srctail;
-+
-+	src = kmalloc(sizeof(struct gtpsrc), GFP_KERNEL);
-+	if (src == NULL)
-+		return -ENOMEM;
-+	src->next = NULL;
-+	src->src = gtp_strdup(begin, end);
-+	if (src->src == NULL) {
-+		kfree(src);
-+		return -ENOMEM;
-+	}
-+
-+	if (*src_list) {
-+		for (srctail = *src_list; srctail->next;
-+		      srctail = srctail->next)
-+			;
-+		srctail->next = src;
-+	} else
-+		*src_list = src;
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_gdbrsp_qtstop(void)
-+{
-+	struct gtp_entry	*tpe;
-+#ifdef CONFIG_PERF_EVENTS
-+	struct gtp_var		*tve;
-+#endif
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_gdbrsp_qtstop\n");
-+#endif
-+
-+#ifdef FRAME_ALLOC_RECORD
-+	printk(KERN_WARNING "frame_alloc_size = %llu, "
-+			    "frame_alloc_size_hole = %llu\n",
-+	       frame_alloc_size, frame_alloc_size_hole);
-+	frame_alloc_size = 0;
-+	frame_alloc_size_hole = 0;
-+#endif
-+
-+	if (!gtp_start)
-+		return -EBUSY;
-+
-+	flush_workqueue(gtp_wq);
-+
-+	for (tpe = gtp_list; tpe; tpe = tpe->next) {
-+		if (tpe->kpreg) {
-+			if (tpe->is_kretprobe)
-+				unregister_kretprobe(&tpe->kp);
-+			else
-+				unregister_kprobe(&tpe->kp.kp);
-+			tpe->kpreg = 0;
-+		}
-+		tasklet_kill(&tpe->tasklet);
-+	}
-+
-+#ifdef CONFIG_PERF_EVENTS
-+	for (tve = gtp_var_list; tve; tve = tve->next) {
-+		if (tve->pts == NULL)
-+			continue;
-+		if (tve->pts->event == NULL)
-+			continue;
-+
-+		tve->pts->val = perf_event_read_value(tve->pts->event,
-+						      &(tve->pts->enabled),
-+						      &(tve->pts->running));
-+		perf_event_release_kernel(tve->pts->event);
-+		tve->pts->event = NULL;
-+	}
-+#endif
-+
-+	kfree(gtp_var_array);
-+	gtp_var_array = NULL;
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	if (gtp_frame) {
-+		gtp_frame_iter_open();
-+		gtp_frame_iter_reset();
-+	}
-+#endif
-+
-+	gtp_start = 0;
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	if (atomic_read(&gtpframe_pipe_wq_v) > 0) {
-+		atomic_dec(&gtpframe_pipe_wq_v);
-+		tasklet_schedule(&gtpframe_pipe_wq_tasklet);
-+	}
-+	tasklet_kill(&gtpframe_pipe_wq_tasklet);
-+#endif
-+	wake_up_interruptible_nr(&gtpframe_wq, 1);
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_gdbrsp_qtinit(void)
-+{
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_gdbrsp_qtinit\n");
-+#endif
-+
-+	if (gtp_start)
-+		gtp_gdbrsp_qtstop();
-+
-+	gtp_list_release();
-+
-+#ifdef GTP_RB
-+	if (!GTP_RB_PAGE_IS_EMPTY)
-+#elif defined(GTP_FRAME_SIMPLE) || defined(GTP_FTRACE_RING_BUFFER)
-+	if (gtp_frame)
-+#endif
-+		gtp_frame_reset();
-+
-+	gtpro_list_clear();
-+
-+	gtp_var_release();
-+
-+#ifdef CONFIG_X86
-+	gtp_access_cooked_rdtsc = 0;
-+#endif
-+	gtp_access_cooked_clock = 0;
-+#ifdef CONFIG_PERF_EVENTS
-+	gtp_have_pc_pe = 0;
-+#endif
-+
-+	return 0;
-+}
-+
-+struct gtp_x_loop {
-+	struct gtp_x_loop	*next;
-+	unsigned int		addr;
-+	int			non_goto_done;
-+};
-+
-+static struct gtp_x_loop *
-+gtp_x_loop_find(struct gtp_x_loop *list, unsigned int pc)
-+{
-+	struct gtp_x_loop	*ret = NULL;
-+
-+	for (ret = list; ret; ret = ret->next) {
-+		if (ret->addr == pc)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+static struct gtp_x_loop *
-+gtp_x_loop_add(struct gtp_x_loop **list, unsigned int pc, int non_goto_done)
-+{
-+	struct gtp_x_loop	*ret;
-+
-+	ret = kmalloc(sizeof(struct gtp_x_loop), GFP_KERNEL);
-+	if (!ret)
-+		goto out;
-+
-+	ret->addr = pc;
-+	ret->non_goto_done = non_goto_done;
-+
-+	ret->next = *list;
-+	*list = ret;
-+
-+out:
-+	return ret;
-+}
-+
-+struct gtp_x_if_goto {
-+	struct gtp_x_if_goto	*next;
-+	unsigned int		ip;
-+	unsigned int		sp;
-+};
-+
-+static struct gtp_x_if_goto *
-+gtp_x_if_goto_add(struct gtp_x_if_goto **list, unsigned int pc, unsigned int sp)
-+{
-+	struct gtp_x_if_goto	*ret;
-+
-+	ret = kmalloc(sizeof(struct gtp_x_loop), GFP_KERNEL);
-+	if (!ret)
-+		goto out;
-+
-+	ret->ip = pc;
-+	ret->sp = sp;
-+
-+	ret->next = *list;
-+	*list = ret;
-+
-+out:
-+	return ret;
-+}
-+
-+struct gtp_x_var {
-+	struct gtp_x_var	*next;
-+	unsigned int		num;
-+	unsigned int		flags;
-+};
-+
-+static int
-+gtp_x_var_add(struct gtp_x_var **list, unsigned int num, unsigned int flag)
-+{
-+	struct gtp_x_var	*curv;
-+
-+	for (curv = *list; curv; curv = curv->next) {
-+		if (curv->num == num)
-+			break;
-+	}
-+
-+	if (!curv) {
-+		curv = kmalloc(sizeof(struct gtp_x_var), GFP_KERNEL);
-+		if (!curv)
-+			return -ENOMEM;
-+		curv->num = num;
-+		curv->flags = 0;
-+		if (*list) {
-+			curv->next = *list;
-+			*list = curv;
-+		} else {
-+			curv->next = NULL;
-+			*list = curv;
-+		}
-+	}
-+
-+	curv->flags |= flag;
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_add_backtrace_actions(struct gtp_entry *tpe)
-+{
-+	struct action	*ae, *new_ae;
-+	int		got_r = 0, got_m = 0;
-+
-+	for (ae = tpe->action_list; ae; ae = ae->next) {
-+		if (ae->type == 'R')
-+			got_r = 1;
-+		else if (ae->type == 'M' && ae->u.m.regnum == GTP_SP_NUM
-+			  && ae->u.m.offset == 0 && ae->u.m.size >= gtp_bt_size)
-+			got_m = 1;
-+
-+		if (got_r && got_m)
-+			break;
-+		if (!ae->next)
-+			break;
-+	}
-+
-+	if (!got_r) {
-+		new_ae = gtp_action_alloc('R');
-+		if (!new_ae)
-+			return -ENOMEM;
-+		if (ae)
-+			ae->next = new_ae;
-+		else
-+			tpe->action_list = ae;
-+		ae = new_ae;
-+	}
-+
-+	if (!got_m) {
-+		new_ae = gtp_action_alloc('M');
-+		if (!new_ae)
-+			return -ENOMEM;
-+		new_ae->u.m.regnum = GTP_SP_NUM;
-+		new_ae->u.m.size = gtp_bt_size;
-+		if (ae)
-+			ae->next = new_ae;
-+		else
-+			tpe->action_list = ae;
-+	}
-+
-+	return 1;
-+}
-+
-+static int
-+gtp_check_x_simple(struct gtp_entry *tpe, struct action *ae)
-+{
-+	int			ret = -EINVAL;
-+	unsigned int		pc = 0, sp = 0;
-+	struct gtp_x_if_goto	*glist = NULL, *gtmp;
-+	struct gtp_x_var	*vlist = NULL, *vtmp;
-+	uint8_t			*ebuf = ae->u.exp.buf;
-+	int			last_trace_pc = -1;
-+	unsigned int		sp_max = 0;
-+
-+reswitch:
-+	while (pc < ae->u.exp.size) {
-+#ifdef GTP_DEBUG_V
-+		printk(GTP_DEBUG_V "gtp_check_x_simple: cmd %x\n", ebuf[pc]);
-+#endif
-+		switch (ebuf[pc++]) {
-+		/* add */
-+		case 0x02:
-+		/* sub */
-+		case 0x03:
-+		/* mul */
-+		case 0x04:
-+		/* lsh */
-+		case 0x09:
-+		/* rsh_signed */
-+		case 0x0a:
-+		/* rsh_unsigned */
-+		case 0x0b:
-+		/* bit_and */
-+		case 0x0f:
-+		/* bit_or */
-+		case 0x10:
-+		/* bit_xor */
-+		case 0x11:
-+		/* equal */
-+		case 0x13:
-+		/* less_signed */
-+		case 0x14:
-+		/* less_unsigned */
-+		case 0x15:
-+		/* pop */
-+		case 0x29:
-+		/* swap */
-+		case 0x2b:
-+			if (sp < 1) {
-+				printk(KERN_WARNING "gtp_check_x_simple: stack "
-+						    "overflow in %d.\n",
-+				       pc - 1);
-+				goto release_out;
-+			} else {
-+				if (ebuf[pc - 1] != 0x2b)
-+					sp--;
-+			}
-+			break;
-+
-+		/* trace */
-+		case 0x0c:
-+			if (tpe->have_printk)
-+				last_trace_pc = pc - 1;
-+
-+			if (sp < 2) {
-+				printk(KERN_WARNING "gtp_check_x_simple: stack "
-+						    "overflow in %d.\n",
-+				       pc - 1);
-+				goto release_out;
-+			} else
-+				sp -= 2;
-+			break;
-+
-+		/* log_not */
-+		case 0x0e:
-+		/* bit_not */
-+		case 0x12:
-+		/* ref8 */
-+		case 0x17:
-+		/* ref16 */
-+		case 0x18:
-+		/* ref32 */
-+		case 0x19:
-+		/* ref64 */
-+		case 0x1a:
-+			break;
-+
-+		/* dup */
-+		case 0x28:
-+			sp++;
-+			if (sp_max < sp)
-+				sp_max = sp;
-+			break;
-+
-+		/* const8 */
-+		case 0x22:
-+			sp++;
-+			if (sp_max < sp)
-+				sp_max = sp;
-+		/* ext */
-+		case 0x16:
-+		/* zero_ext */
-+		case 0x2a:
-+			if (pc >= ae->u.exp.size)
-+				goto release_out;
-+			pc++;
-+			break;
-+
-+		/* trace_quick */
-+		case 0x0d:
-+			if (tpe->have_printk)
-+				last_trace_pc = pc - 1;
-+
-+			if (pc >= ae->u.exp.size)
-+				goto release_out;
-+			pc++;
-+			break;
-+
-+		/* const16 */
-+		case 0x23:
-+		/* reg */
-+		case 0x26:
-+			if (pc + 1 >= ae->u.exp.size)
-+				goto release_out;
-+			pc += 2;
-+
-+			sp++;
-+			if (sp_max < sp)
-+				sp_max = sp;
-+			break;
-+
-+		/* const32 */
-+		case 0x24:
-+			if (pc + 3 >= ae->u.exp.size)
-+				goto release_out;
-+			pc += 4;
-+
-+			sp++;
-+			if (sp_max < sp)
-+				sp_max = sp;
-+			break;
-+
-+		/* const64 */
-+		case 0x25:
-+			if (pc + 7 >= ae->u.exp.size)
-+				goto release_out;
-+			pc += 8;
-+
-+			sp++;
-+			if (sp_max < sp)
-+				sp_max = sp;
-+			break;
-+
-+		/* if_goto */
-+		case 0x20:
-+			if (tpe->have_printk) {
-+				printk(KERN_WARNING "If_goto action doesn't"
-+				       "support printk.\n");
-+				goto release_out;
-+			}
-+			if (pc + 1 >= ae->u.exp.size)
-+				goto release_out;
-+
-+			{
-+				unsigned int	dpc = (ebuf[pc] << 8)
-+						      + ebuf[pc + 1];
-+
-+				if (dpc < pc) {
-+					/* This action X include loop. */
-+					ae->type = 0xff;
-+					ret = 0;
-+					goto release_out;
-+				}
-+
-+				if (!gtp_x_if_goto_add(&glist, dpc, sp)) {
-+					ret = -ENOMEM;
-+					goto release_out;
-+				}
-+			}
-+
-+			pc += 2;
-+			break;
-+
-+		/* goto */
-+		case 0x21:
-+			if (pc + 1 >= ae->u.exp.size)
-+				goto release_out;
-+
-+			{
-+				unsigned int	dpc = (ebuf[pc] << 8)
-+						      + ebuf[pc + 1];
-+
-+				if (dpc < pc) {
-+					/* This action X include loop. */
-+					ae->type = 0xff;
-+					ret = 0;
-+					goto release_out;
-+				}
-+
-+				pc = dpc;
-+			}
-+			break;
-+
-+		/* end */
-+		case 0x27:
-+			goto out;
-+			break;
-+
-+		/* getv */
-+		case 0x2c: {
-+				int	arg;
-+
-+				if (pc + 1 >= ae->u.exp.size)
-+					goto release_out;
-+				arg = ebuf[pc++];
-+				arg = (arg << 8) + ebuf[pc++];
-+
-+				if (!GTP_VAR_IS_SPECIAL(arg)) {
-+					if (gtp_x_var_add(&vlist, arg, 1)) {
-+						ret = -ENOMEM;
-+						goto release_out;
-+					}
-+				} else {
-+					if (arg == GTP_VAR_NO_SELF_TRACE_ID) {
-+						tpe->no_self_trace = 1;
-+						ret = 1;
-+						goto release_out;
-+					} else if (arg == GTP_VAR_BT_ID) {
-+						ret = gtp_add_backtrace_actions (tpe);
-+						goto release_out;
-+					}
-+
-+					if (arg == GTP_VAR_COOKED_CLOCK_ID)
-+						gtp_access_cooked_clock = 1;
-+#ifdef CONFIG_X86
-+					else if (arg == GTP_VAR_COOKED_RDTSC_ID)
-+						gtp_access_cooked_rdtsc = 1;
-+#endif
-+					ebuf[pc - 3] = op_special_getv;
-+				}
-+			}
-+			sp++;
-+			if (sp_max < sp)
-+				sp_max = sp;
-+			break;
-+
-+		/* setv */
-+		case 0x2d: {
-+				int	arg;
-+
-+				if (pc + 1 >= ae->u.exp.size)
-+					goto release_out;
-+				arg = ebuf[pc++];
-+				arg = (arg << 8) + ebuf[pc++];
-+
-+				if (!GTP_VAR_IS_SPECIAL(arg)) {
-+					if (gtp_x_var_add(&vlist, arg, 2)) {
-+						ret = -ENOMEM;
-+						goto release_out;
-+					}
-+				} else {
-+					if (arg == GTP_VAR_NO_SELF_TRACE_ID) {
-+						tpe->no_self_trace = 1;
-+						ret = 1;
-+						goto release_out;
-+					} else if (arg == GTP_VAR_KRET_ID) {
-+						/* XXX: still not set it
-+						value to maxactive.  */
-+						tpe->is_kretprobe = 1;
-+						ret = 1;
-+						goto release_out;
-+					} else if (arg == GTP_VAR_BT_ID) {
-+						ret = gtp_add_backtrace_actions (tpe);
-+						goto release_out;
-+					}
-+
-+					if (arg == GTP_VAR_PRINTK_LEVEL_ID)
-+						tpe->have_printk = 1;
-+
-+					ebuf[pc - 3] = op_special_setv;
-+				}
-+			}
-+			break;
-+
-+		/* tracev */
-+		case 0x2e: {
-+				int	arg;
-+
-+				if (tpe->have_printk)
-+					last_trace_pc = pc - 1;
-+
-+				if (pc + 1 >= ae->u.exp.size)
-+					goto release_out;
-+				arg = ebuf[pc++];
-+				arg = (arg << 8) + ebuf[pc++];
-+
-+				if (!GTP_VAR_IS_SPECIAL(arg)) {
-+					if (gtp_x_var_add(&vlist, arg, 4)) {
-+						ret = -ENOMEM;
-+						goto release_out;
-+					}
-+				} else {
-+					if (arg == GTP_VAR_NO_SELF_TRACE_ID) {
-+						tpe->no_self_trace = 1;
-+						ret = 1;
-+						goto release_out;
-+					} else if (arg == GTP_VAR_BT_ID) {
-+						ret = gtp_add_backtrace_actions (tpe);
-+						goto release_out;
-+					}
-+					if (arg == GTP_VAR_COOKED_CLOCK_ID)
-+						gtp_access_cooked_clock = 1;
-+#ifdef CONFIG_X86
-+					else if (arg == GTP_VAR_COOKED_RDTSC_ID)
-+						gtp_access_cooked_rdtsc = 1;
-+#endif
-+					ebuf[pc - 3] = op_special_tracev;
-+				}
-+			}
-+			break;
-+
-+		/* div_signed */
-+		case 0x05:
-+		/* div_unsigned */
-+		case 0x06:
-+		/* rem_signed */
-+		case 0x07:
-+		/* rem_unsigned */
-+		case 0x08:
-+#ifdef CONFIG_MIPS
-+			/* XXX, mips don't have 64 bit div.  */
-+			goto release_out;
-+#endif
-+			if (sp < 1) {
-+				printk(KERN_WARNING "gtp_check_x_simple: stack "
-+						    "overflow in %d.\n",
-+				       pc - 1);
-+				goto release_out;
-+			} else
-+				sp--;
-+			break;
-+
-+		/* float */
-+		case 0x01:
-+		/* ref_float */
-+		case 0x1b:
-+		/* ref_double */
-+		case 0x1c:
-+		/* ref_long_double */
-+		case 0x1d:
-+		/* l_to_d */
-+		case 0x1e:
-+		/* d_to_l */
-+		case 0x1f:
-+		/* trace16 */
-+		case 0x30:
-+		default:
-+			goto release_out;
-+			break;
-+		}
-+	}
-+	goto release_out;
-+
-+out:
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "sp_max = %d\n", sp_max);
-+#endif
-+	if (sp_max >= STACK_MAX) {
-+		printk(KERN_WARNING "gtp_check_x_simple: stack overflow, "
-+				    "current %d, max %d.\n",
-+		       sp_max, STACK_MAX);
-+		goto release_out;
-+	}
-+	if (glist) {
-+		pc = glist->ip;
-+		sp = glist->sp;
-+		gtmp = glist;
-+		glist = glist->next;
-+		kfree(gtmp);
-+		goto reswitch;
-+	}
-+	ret = 0;
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_check_x_simple: Code is OK. sp_max is %d.\n",
-+	       sp_max);
-+#endif
-+
-+release_out:
-+	while (glist) {
-+		gtmp = glist;
-+		glist = glist->next;
-+		kfree(gtmp);
-+	}
-+	while (vlist) {
-+		struct gtp_var *var;
-+
-+		vtmp = vlist;
-+		vlist = vlist->next;
-+
-+		/* Get the var of vtmp.  */
-+		var = gtp_var_find(vtmp->num);
-+		if (var == NULL) {
-+			printk(KERN_WARNING "gtp_check_x_simple: cannot find "
-+					    "tvar %d.\n", vtmp->num);
-+			ret = -EINVAL;
-+		} else {
-+			if (var->per_cpu == NULL) {
-+				if ((vtmp->flags & 2)
-+				    && ((vtmp->flags & 1) || (vtmp->flags & 4)))
-+					ae->u.exp.need_var_lock = 1;
-+			}
-+		}
-+		kfree(vtmp);
-+	}
-+
-+	if (tpe->have_printk && last_trace_pc > -1) {
-+		/* Set the last trace code to printk code.  */
-+		switch (ebuf[last_trace_pc]) {
-+		/* trace */
-+		case 0x0c:
-+			ebuf[last_trace_pc] = op_trace_printk;
-+			break;
-+		/* trace_quick */
-+		case 0x0d:
-+			ebuf[last_trace_pc] = op_trace_quick_printk;
-+			break;
-+		/* tracev */
-+		case 0x2e:
-+			ebuf[last_trace_pc] = op_tracev_printk;
-+			break;
-+		case op_special_tracev:
-+			ebuf[last_trace_pc] = op_tracev_printk;
-+			break;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static int
-+gtp_check_x_loop(struct gtp_entry *tpe, struct action *ae)
-+{
-+	int			ret = -EINVAL;
-+	unsigned int		pc = 0;
-+	struct gtp_x_loop	*glist = NULL, *gtmp;
-+	struct gtp_x_var	*vlist = NULL, *vtmp;
-+	uint8_t			*ebuf = ae->u.exp.buf;
-+
-+	printk(KERN_WARNING "Action of tracepoint %d have loop.\n",
-+	       (int)tpe->num);
-+
-+	tpe->have_printk = 0;
-+
-+reswitch:
-+	while (pc < ae->u.exp.size) {
-+#ifdef GTP_DEBUG
-+		printk(GTP_DEBUG "gtp_check_x_loop: cmd %x\n", ebuf[pc]);
-+#endif
-+		switch (ebuf[pc++]) {
-+		/* add */
-+		case 0x02:
-+			ebuf[pc - 1] = op_check_add;
-+			break;
-+		/* sub */
-+		case 0x03:
-+			ebuf[pc - 1] = op_check_sub;
-+			break;
-+		/* mul */
-+		case 0x04:
-+			ebuf[pc - 1] = op_check_mul;
-+			break;
-+		/* lsh */
-+		case 0x09:
-+			ebuf[pc - 1] = op_check_lsh;
-+			break;
-+		/* rsh_signed */
-+		case 0x0a:
-+			ebuf[pc - 1] = op_check_rsh_signed;
-+			break;
-+		/* rsh_unsigned */
-+		case 0x0b:
-+			ebuf[pc - 1] = op_check_rsh_unsigned;
-+			break;
-+		/* bit_and */
-+		case 0x0f:
-+			ebuf[pc - 1] = op_check_bit_and;
-+			break;
-+		/* bit_or */
-+		case 0x10:
-+			ebuf[pc - 1] = op_check_bit_or;
-+			break;
-+		/* bit_xor */
-+		case 0x11:
-+			ebuf[pc - 1] = op_check_bit_xor;
-+			break;
-+		/* equal */
-+		case 0x13:
-+			ebuf[pc - 1] = op_check_equal;
-+			break;
-+		/* less_signed */
-+		case 0x14:
-+			ebuf[pc - 1] = op_check_less_signed;
-+			break;
-+		/* less_unsigned */
-+		case 0x15:
-+			ebuf[pc - 1] = op_check_less_unsigned;
-+			break;
-+		/* pop */
-+		case 0x29:
-+			ebuf[pc - 1] = op_check_pop;
-+			break;
-+		/* swap */
-+		case 0x2b:
-+			ebuf[pc - 1] = op_check_swap;
-+			break;
-+
-+		/* trace */
-+		case 0x0c:
-+			ebuf[pc - 1] = op_check_trace;
-+			break;
-+
-+		/* log_not */
-+		case 0x0e:
-+		/* bit_not */
-+		case 0x12:
-+		/* ref8 */
-+		case 0x17:
-+		/* ref16 */
-+		case 0x18:
-+		/* ref32 */
-+		case 0x19:
-+		/* ref64 */
-+		case 0x1a:
-+		/* dup */
-+		case 0x28:
-+			break;
-+
-+		/* const8 */
-+		case 0x22:
-+		/* ext */
-+		case 0x16:
-+		/* zero_ext */
-+		case 0x2a:
-+		/* trace_quick */
-+		case 0x0d:
-+			if (pc >= ae->u.exp.size)
-+				goto release_out;
-+			pc++;
-+			break;
-+
-+		/* const16 */
-+		case 0x23:
-+		/* reg */
-+		case 0x26:
-+			if (pc + 1 >= ae->u.exp.size)
-+				goto release_out;
-+			pc += 2;
-+			break;
-+
-+		/* const32 */
-+		case 0x24:
-+			if (pc + 3 >= ae->u.exp.size)
-+				goto release_out;
-+			pc += 4;
-+			break;
-+
-+		/* const64 */
-+		case 0x25:
-+			if (pc + 7 >= ae->u.exp.size)
-+				goto release_out;
-+			pc += 8;
-+			break;
-+
-+		/* if_goto */
-+		case 0x20:
-+		case op_check_if_goto:
-+			ebuf[pc - 1] = op_check_if_goto;
-+
-+			if (pc + 1 >= ae->u.exp.size)
-+				goto release_out;
-+
-+			gtmp = gtp_x_loop_find(glist, pc);
-+			if (gtmp) {
-+				if (gtmp->non_goto_done)
-+					goto out;
-+				else {
-+					gtmp->non_goto_done = 1;
-+					pc += 2;
-+				}
-+			} else {
-+				if (!gtp_x_loop_add(&glist, pc, 0)) {
-+					ret = -ENOMEM;
-+					goto release_out;
-+				}
-+				pc = (ebuf[pc] << 8) + ebuf[pc + 1];
-+			}
-+			break;
-+
-+		/* goto */
-+		case 0x21:
-+			if (pc + 1 >= ae->u.exp.size)
-+				goto release_out;
-+
-+			gtmp = gtp_x_loop_find(glist, pc);
-+			if (gtmp)
-+				goto out;
-+			else {
-+				if (!gtp_x_loop_add(&glist, pc, 1)) {
-+					ret = -ENOMEM;
-+					goto release_out;
-+				}
-+			}
-+
-+			pc = (ebuf[pc] << 8) + (ebuf[pc + 1]);
-+			break;
-+
-+		/* end */
-+		case 0x27:
-+			goto out;
-+			break;
-+
-+		/* getv */
-+		case 0x2c: {
-+				int	arg;
-+
-+				if (pc + 1 >= ae->u.exp.size)
-+					goto release_out;
-+				arg = ebuf[pc++];
-+				arg = (arg << 8) + ebuf[pc++];
-+
-+				if (!GTP_VAR_IS_SPECIAL(arg)) {
-+					if (gtp_x_var_add(&vlist, arg, 1)) {
-+						ret = -ENOMEM;
-+						goto release_out;
-+					}
-+				} else {
-+					if (arg == GTP_VAR_NO_SELF_TRACE_ID) {
-+						tpe->no_self_trace = 1;
-+						ret = 1;
-+						goto release_out;
-+					} else if (arg == GTP_VAR_BT_ID) {
-+						ret = gtp_add_backtrace_actions (tpe);
-+						goto release_out;
-+					}
-+
-+					if (arg == GTP_VAR_COOKED_CLOCK_ID)
-+						gtp_access_cooked_clock = 1;
-+#ifdef CONFIG_X86
-+					else if (arg == GTP_VAR_COOKED_RDTSC_ID)
-+						gtp_access_cooked_rdtsc = 1;
-+#endif
-+					ebuf[pc - 3] = op_special_getv;
-+				}
-+			}
-+			break;
-+
-+		/* setv */
-+		case 0x2d: {
-+				int	arg;
-+
-+				if (pc + 1 >= ae->u.exp.size)
-+					goto release_out;
-+				arg = ebuf[pc++];
-+				arg = (arg << 8) + ebuf[pc++];
-+
-+				if (!GTP_VAR_IS_SPECIAL(arg)) {
-+					if (gtp_x_var_add(&vlist, arg, 2)) {
-+						ret = -ENOMEM;
-+						goto release_out;
-+					}
-+				} else {
-+					if (arg == GTP_VAR_NO_SELF_TRACE_ID) {
-+						tpe->no_self_trace = 1;
-+						ret = 1;
-+						goto release_out;
-+					} else if (arg == GTP_VAR_KRET_ID) {
-+						/* XXX: still not set it
-+						value to maxactive.  */
-+						tpe->is_kretprobe = 1;
-+						ret = 1;
-+						goto release_out;
-+					} else if (arg == GTP_VAR_BT_ID) {
-+						ret = gtp_add_backtrace_actions (tpe);
-+						goto release_out;
-+					}
-+
-+					if (arg == GTP_VAR_PRINTK_LEVEL_ID) {
-+						printk(KERN_WARNING "Loop "
-+						       "action doesn't"
-+						       "support printk.\n");
-+						goto release_out;
-+					}
-+
-+					ebuf[pc - 3] = op_special_setv;
-+				}
-+			}
-+			break;
-+
-+		/* tracev */
-+		case 0x2e: {
-+				int	arg;
-+
-+				if (pc + 1 >= ae->u.exp.size)
-+					goto release_out;
-+				arg = ebuf[pc++];
-+				arg = (arg << 8) + ebuf[pc++];
-+
-+				if (!GTP_VAR_IS_SPECIAL(arg)) {
-+					if (gtp_x_var_add(&vlist, arg, 4)) {
-+						ret = -ENOMEM;
-+						goto release_out;
-+					}
-+				} else {
-+					if (arg == GTP_VAR_NO_SELF_TRACE_ID) {
-+						tpe->no_self_trace = 1;
-+						ret = 1;
-+						goto release_out;
-+					} else if (arg == GTP_VAR_BT_ID) {
-+						ret = gtp_add_backtrace_actions (tpe);
-+						goto release_out;
-+					}
-+					if (arg == GTP_VAR_COOKED_CLOCK_ID)
-+						gtp_access_cooked_clock = 1;
-+#ifdef CONFIG_X86
-+					else if (arg == GTP_VAR_COOKED_RDTSC_ID)
-+						gtp_access_cooked_rdtsc = 1;
-+#endif
-+					ebuf[pc - 3] = op_special_tracev;
-+				}
-+			}
-+			break;
-+
-+		/* div_signed */
-+		case 0x05:
-+#ifdef CONFIG_MIPS
-+			/* XXX, mips don't have 64 bit div.  */
-+			printk(KERN_WARNING "MIPS don't have 64 bit div.\n");
-+			goto release_out;
-+#endif
-+			ebuf[pc - 1] = op_check_div_signed;
-+			break;
-+		/* div_unsigned */
-+		case 0x06:
-+#ifdef CONFIG_MIPS
-+			/* XXX, mips don't have 64 bit div.  */
-+			printk(KERN_WARNING "MIPS don't have 64 bit div.\n");
-+			goto release_out;
-+#endif
-+			ebuf[pc - 1] = op_check_div_unsigned;
-+			break;
-+		/* rem_signed */
-+		case 0x07:
-+#ifdef CONFIG_MIPS
-+			/* XXX, mips don't have 64 bit div.  */
-+			printk(KERN_WARNING "MIPS don't have 64 bit div.\n");
-+			goto release_out;
-+#endif
-+			ebuf[pc - 1] = op_check_rem_signed;
-+			break;
-+		/* rem_unsigned */
-+		case 0x08:
-+#ifdef CONFIG_MIPS
-+			/* XXX, mips don't have 64 bit div.  */
-+			printk(KERN_WARNING "MIPS don't have 64 bit div.\n");
-+			goto release_out;
-+#endif
-+			ebuf[pc - 1] = op_check_rem_unsigned;
-+			break;
-+
-+		/* float */
-+		case 0x01:
-+		/* ref_float */
-+		case 0x1b:
-+		/* ref_double */
-+		case 0x1c:
-+		/* ref_long_double */
-+		case 0x1d:
-+		/* l_to_d */
-+		case 0x1e:
-+		/* d_to_l */
-+		case 0x1f:
-+		/* trace16 */
-+		case 0x30:
-+		default:
-+			goto release_out;
-+			break;
-+		}
-+	}
-+	goto release_out;
-+
-+out:
-+	for (gtmp = glist; gtmp; gtmp = gtmp->next) {
-+		if (!gtmp->non_goto_done)
-+			break;
-+	}
-+	if (gtmp) {
-+		pc = gtmp->addr + 2;
-+		gtmp->non_goto_done = 1;
-+		goto reswitch;
-+	}
-+	ret = 0;
-+
-+release_out:
-+	while (glist) {
-+		gtmp = glist;
-+		glist = glist->next;
-+		kfree(gtmp);
-+	}
-+	while (vlist) {
-+		struct gtp_var *var;
-+
-+		vtmp = vlist;
-+		vlist = vlist->next;
-+
-+		/* Get the var of vtmp.  */
-+		var = gtp_var_find(vtmp->num);
-+		if (var == NULL) {
-+			printk(KERN_WARNING "gtp_check_x_loop: cannot find "
-+					    "tvar %d.\n", vtmp->num);
-+			ret = -EINVAL;
-+		} else {
-+			if (var->per_cpu == NULL) {
-+				if ((vtmp->flags & 2)
-+				    && ((vtmp->flags & 1) || (vtmp->flags & 4)))
-+					ae->u.exp.need_var_lock = 1;
-+			}
-+		}
-+		kfree(vtmp);
-+	}
-+
-+	return ret;
-+}
-+
-+static int
-+gtp_check_x(struct gtp_entry *tpe, struct action *ae)
-+{
-+	int	ret = gtp_check_x_simple(tpe, ae);
-+
-+	if (ret != 0 || ae->type == 'X')
-+		return ret;
-+
-+	return gtp_check_x_loop(tpe, ae);
-+}
-+
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+static void
-+gtpframe_pipe_wq_wake_up(unsigned long data)
-+{
-+	wake_up_interruptible_nr(&gtpframe_pipe_wq, 1);
-+}
-+#endif
-+
-+static void
-+gtp_wq_add_work(unsigned long data)
-+{
-+	queue_work(gtp_wq, (struct work_struct *)data);
-+}
-+
-+static int
-+gtp_gdbrsp_qtstart(void)
-+{
-+	int			cpu;
-+	struct gtp_entry	*tpe;
-+	struct gtp_var		*tve;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_gdbrsp_qtstart\n");
-+#endif
-+
-+	if (gtp_start)
-+		return -EBUSY;
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	if (!tracing_is_on()) {
-+		printk(KERN_WARNING "qtstart: Ring buffer is off.  Please use "
-+		       "command "
-+		       "\"echo 1 > /sys/kernel/debug/tracing/tracing_on\" "
-+		       "open it.\n");
-+		return -EIO;
-+	}
-+#endif
-+
-+	for (tpe = gtp_list; tpe; tpe = tpe->next) {
-+		int		ret;
-+		struct action	*ae, *prev_ae = NULL;
-+
-+		/* Check cond.  */
-+		if (tpe->cond) {
-+			ret = gtp_check_x(tpe, tpe->cond);
-+			if (ret > 0) {
-+				kfree(tpe->cond->u.exp.buf);
-+				kfree(tpe->cond);
-+				tpe->cond = NULL;
-+			} else if (ret < 0)
-+				return ret;
-+		}
-+
-+		/* Check X.  */
-+		for (ae = tpe->action_list; ae; ae = ae->next) {
-+re_check:
-+			if (ae->type == 'X' || ae->type == 0xff) {
-+				ret = gtp_check_x(tpe, ae);
-+				if (ret > 0) {
-+					struct action	*old_ae = ae;
-+
-+					/* Remove ae from action_list.  */
-+					ae = ae->next;
-+					if (prev_ae)
-+						prev_ae->next = ae;
-+					else
-+						tpe->action_list = ae;
-+
-+					kfree(old_ae->u.exp.buf);
-+					kfree(old_ae);
-+
-+					if (ae)
-+						goto re_check;
-+					else
-+						break;
-+				} else if (ret < 0)
-+					return ret;
-+			}
-+
-+			prev_ae = ae;
-+		}
-+
-+		/* Check the tracepoint that have printk.  */
-+		if (tpe->have_printk) {
-+			struct action	*ae, *prev_ae = NULL;
-+			struct gtpsrc	*src, *srctail = NULL;
-+
-+restart:
-+			for (ae = tpe->action_list; ae;
-+			     prev_ae = ae, ae = ae->next) {
-+				switch (ae->type) {
-+				case 'R':
-+					/* Remove it. */
-+					if (prev_ae)
-+						prev_ae->next = ae->next;
-+					else
-+						tpe->action_list = ae->next;
-+					kfree(ae);
-+					if (prev_ae)
-+						ae = prev_ae;
-+					else
-+						goto restart;
-+					break;
-+				case 'M':
-+					printk(KERN_WARNING "qtstart: action "
-+					       "of tp %d %p is not right.  "
-+					       "Please put global variable to "
-+					       "trace state variable "
-+					       "$printk_tmp before print it.\n",
-+					       (int)tpe->num,
-+					       (void *)(CORE_ADDR)tpe->addr);
-+					return -EINVAL;
-+					break;
-+				}
-+			}
-+
-+			for (src = tpe->src; src; src = src->next) {
-+				int		i;
-+				char		str[strlen(src->src) >> 1];
-+				char		*var = NULL;
-+				ULONGEST	num;
-+				char		tmp[30];
-+				struct gtpsrc	*ksrc;
-+
-+#ifdef GTP_DEBUG
-+				printk(GTP_DEBUG "gtp_gdbrsp_qtstart: action "
-+						 "%s\n", src->src);
-+#endif
-+				/* Get the action in str.  */
-+				if (strncmp("cmd:0:", src->src,
-+					    strlen("cmd:0:")))
-+					continue;
-+				var = hex2ulongest(src->src + 6, &num);
-+				if (var[0] == '\0')
-+					return -EINVAL;
-+				var++;
-+				hex2string(var, str);
-+				if (strlen(str) != num)
-+					return -EINVAL;
-+#ifdef GTP_DEBUG
-+				printk(GTP_DEBUG "gtp_gdbrsp_qtstart: action "
-+						 "command %s\n", str);
-+#endif
-+
-+				if (strncmp("collect ", str,
-+					    strlen("collect ")))
-+					continue;
-+				for (i = strlen("collect "); ; i++) {
-+					if (str[i] != ' ') {
-+						var = str + i;
-+						break;
-+					}
-+					if (str[i] == '\0')
-+						break;
-+				}
-+				if (!var) {
-+					printk(KERN_WARNING "qtstart: cannot "
-+							    "get the var name "
-+							    "from tp %d %p"
-+							    "command %s.\n",
-+					       (int)tpe->num,
-+					       (void *)(CORE_ADDR)tpe->addr,
-+					       str);
-+					return -EINVAL;
-+				}
-+				if (strcmp(var, "$args") == 0
-+				    || strcmp(var, "$local") == 0) {
-+					printk(KERN_WARNING "qtstart: cannot "
-+							    "print $args and "
-+							    "$local.\n");
-+					return -EINVAL;
-+				}
-+				if (strcmp(var, "$reg") == 0)
-+					continue;
-+
-+				ksrc = kmalloc(sizeof(struct gtpsrc),
-+					       GFP_KERNEL);
-+				if (ksrc == NULL)
-+					return -ENOMEM;
-+				ksrc->next = NULL;
-+
-+				snprintf(tmp, 30, "gtp %d %p:", (int)tpe->num,
-+					 (void *)(CORE_ADDR)tpe->addr);
-+				ksrc->src = kmalloc(strlen(tmp)
-+						   + strlen(var) + 2,
-+						   GFP_KERNEL);
-+				if (ksrc->src == NULL) {
-+					kfree(ksrc);
-+					return -ENOMEM;
-+				}
-+				sprintf(ksrc->src, "%s%s=", tmp, var);
-+
-+#ifdef GTP_DEBUG
-+				printk(GTP_DEBUG "gtp_gdbrsp_qtstart: new "
-+						 "printk var %s\n", ksrc->src);
-+#endif
-+
-+				if (tpe->printk_str)
-+					srctail->next = ksrc;
-+				else
-+					tpe->printk_str = ksrc;
-+				srctail = ksrc;
-+			}
-+		}
-+	}
-+
-+#ifdef GTP_RB
-+	if (GTP_RB_PAGE_IS_EMPTY) {
-+		if (gtp_rb_page_alloc(GTP_FRAME_SIZE) != 0) {
-+			gtp_rb_page_free();
-+			return -ENOMEM;
-+		}
-+#endif
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_FTRACE_RING_BUFFER)
-+	if (!gtp_frame) {
-+#ifdef GTP_FRAME_SIMPLE
-+		gtp_frame = vmalloc(GTP_FRAME_SIZE);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		gtp_frame = ring_buffer_alloc(GTP_FRAME_SIZE,
-+					      gtp_circular ? RB_FL_OVERWRITE
-+							     : 0);
-+#endif
-+		if (!gtp_frame)
-+			return -ENOMEM;
-+#endif
-+
-+		gtp_frame_reset();
-+	}
-+
-+	for_each_online_cpu(cpu) {
-+#ifdef CONFIG_X86
-+		per_cpu(rdtsc_current, cpu) = 0;
-+		per_cpu(rdtsc_offset, cpu) = 0;
-+#endif
-+		per_cpu(local_clock_current, cpu) = 0;
-+		per_cpu(local_clock_offset, cpu) = 0;
-+		per_cpu(gtp_handler_began, cpu) = 0;
-+	}
-+
-+	gtp_start = 1;
-+
-+	gtp_var_array = kmalloc(sizeof(struct gtp_var *)
-+				* (gtp_var_tail - gtp_var_head + 1),
-+				GFP_KERNEL);
-+	if (!gtp_var_array) {
-+		gtp_gdbrsp_qtstop();
-+		return -ENOMEM;
-+	}
-+	memset(gtp_var_array, '\0', sizeof(struct gtp_var *)
-+				    *(gtp_var_tail - gtp_var_head + 1));
-+	for (tve = gtp_var_list; tve; tve = tve->next)
-+		gtp_var_array[tve->num - gtp_var_head] = tve;
-+
-+#ifdef CONFIG_PERF_EVENTS
-+	/* Clear pc_pe_list.  */
-+	for_each_online_cpu(cpu) {
-+		per_cpu(pc_pe_list, cpu) = NULL;
-+		per_cpu(pc_pe_list_all_disabled, cpu) = 1;
-+	}
-+	for (tve = gtp_var_list; tve; tve = tve->next) {
-+		if (tve->ptid == pe_tv_unknown)
-+			continue;
-+		if (tve->pts->event)
-+			continue;
-+
-+		/* Get event.  */
-+		tve->pts->event =
-+			perf_event_create_kernel_counter(&(tve->pts->attr),
-+							 tve->pts->cpu,
-+							 NULL, NULL, NULL);
-+		if (IS_ERR(tve->pts->event)) {
-+			int	ret = PTR_ERR(tve->pts->event);
-+
-+			printk(KERN_WARNING "gtp_gdbrsp_qtstart:"
-+			       "create perf_event CPU%d %d %d got error.\n",
-+			       (int)tve->pts->cpu, (int)tve->pts->attr.type,
-+			       (int)tve->pts->attr.config);
-+			tve->pts->event = NULL;
-+			gtp_gdbrsp_qtstop();
-+			return ret;
-+		}
-+
-+		/* Add event to pc_pe_list.  */
-+		if (tve->pts->cpu >= 0) {
-+			struct pe_tv_s *ppl = per_cpu(pc_pe_list,
-+						      tve->pts->cpu);
-+			if (ppl == NULL) {
-+				per_cpu(pc_pe_list, tve->pts->cpu) = tve->pts;
-+				tve->pts->pc_next = NULL;
-+			} else {
-+				tve->pts->pc_next = ppl;
-+				per_cpu(pc_pe_list,
-+					tve->pts->cpu) = tve->pts;
-+			}
-+			if (tve->pts->en)
-+				per_cpu(pc_pe_list_all_disabled, tve->pts->cpu)
-+					= 0;
-+		}
-+	}
-+#endif
-+
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	tasklet_init(&gtpframe_pipe_wq_tasklet, gtpframe_pipe_wq_wake_up, 0);
-+#endif
-+
-+	gtp_start_last_errno = 0;
-+
-+	for (tpe = gtp_list; tpe; tpe = tpe->next) {
-+		tpe->reason = gtp_stop_normal;
-+		if (!tpe->disable && tpe->addr != 0) {
-+			int	ret;
-+
-+			if (!tpe->nopass)
-+				atomic_set(&tpe->current_pass, tpe->pass);
-+
-+			tasklet_init(&tpe->tasklet, gtp_wq_add_work,
-+				     (unsigned long)&tpe->work);
-+
-+			if (tpe->is_kretprobe) {
-+				if (gtp_access_cooked_clock
-+#ifdef CONFIG_X86
-+				    || gtp_access_cooked_rdtsc
-+#endif
-+#ifdef CONFIG_PERF_EVENTS
-+				    || gtp_have_pc_pe
-+#endif
-+				)
-+					tpe->kp.handler =
-+						gtp_kp_ret_handler_plus;
-+				else
-+					tpe->kp.handler = gtp_kp_ret_handler;
-+				ret = register_kretprobe(&tpe->kp);
-+			} else {
-+				if (gtp_access_cooked_clock
-+#ifdef CONFIG_X86
-+				    || gtp_access_cooked_rdtsc
-+#endif
-+#ifdef CONFIG_PERF_EVENTS
-+				    || gtp_have_pc_pe
-+#endif
-+				) {
-+					if (tpe->step) {
-+						tpe->kp.kp.pre_handler =
-+						  gtp_kp_pre_handler_plus_step;
-+						tpe->kp.kp.post_handler =
-+						    gtp_kp_post_handler_plus;
-+					} else
-+						tpe->kp.kp.pre_handler =
-+							gtp_kp_pre_handler_plus;
-+					ret = register_kprobe(&tpe->kp.kp);
-+				} else {
-+					tpe->kp.kp.pre_handler =
-+						gtp_kp_pre_handler;
-+					if (tpe->step)
-+						tpe->kp.kp.post_handler =
-+							gtp_kp_post_handler;
-+					ret = register_kprobe(&tpe->kp.kp);
-+				}
-+			}
-+			if (ret < 0) {
-+				printk(KERN_WARNING "gtp_gdbrsp_qtstart:"
-+				"register tracepoint %d %p got error.\n",
-+				(int)tpe->num, (void *)(CORE_ADDR)tpe->addr);
-+				if (gtp_start_ignore_error) {
-+					gtp_start_last_errno = (uint64_t)ret;
-+					continue;
-+				} else {
-+					gtp_gdbrsp_qtstop();
-+					return ret;
-+				}
-+			}
-+			tpe->kpreg = 1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_parse_x(struct gtp_entry *tpe, struct action *ae, char **pkgp)
-+{
-+	ULONGEST	size;
-+	int		ret = 0, i, h, l;
-+	char		*pkg = *pkgp;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_parse_x: %s\n", pkg);
-+#endif
-+
-+	if (pkg[0] == '\0') {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+	pkg = hex2ulongest(pkg, &size);
-+	if (pkg[0] != ',') {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+	ae->u.exp.size = (unsigned int)size;
-+	pkg++;
-+
-+	ae->u.exp.buf = kmalloc(ae->u.exp.size, GFP_KERNEL);
-+	if (!ae->u.exp.buf)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < ae->u.exp.size
-+		    && hex2int(pkg[0], &h) && hex2int(pkg[1], &l);
-+	     i++) {
-+#ifdef GTP_DEBUG
-+		printk(GTP_DEBUG "gtp_parse_x: %s %d %d\n", pkg, h, l);
-+#endif
-+		ae->u.exp.buf[i] = (h << 4) | l;
-+		pkg += 2;
-+#ifdef GTP_DEBUG
-+		printk(GTP_DEBUG "gtp_parse_x: %x\n", ae->u.exp.buf[i]);
-+#endif
-+	}
-+	if (i != ae->u.exp.size) {
-+		kfree(ae->u.exp.buf);
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	ae->u.exp.need_var_lock = 0;
-+
-+out:
-+	*pkgp = pkg;
-+	return ret;
-+}
-+
-+static int
-+gtp_gdbrsp_qtdp(char *pkg)
-+{
-+	int			addnew = 1;
-+	ULONGEST		num, addr;
-+	struct gtp_entry	*tpe;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_gdbrsp_qtdp: %s\n", pkg);
-+#endif
-+
-+	if (gtp_start)
-+		return -EBUSY;
-+
-+	if (pkg[0] == '-') {
-+		pkg++;
-+		addnew = 0;
-+	}
-+
-+	/* Get num and addr.  */
-+	if (pkg[0] == '\0')
-+		return -EINVAL;
-+	pkg = hex2ulongest(pkg, &num);
-+	if (pkg[0] == '\0')
-+		return -EINVAL;
-+	pkg++;
-+	pkg = hex2ulongest(pkg, &addr);
-+	if (pkg[0] == '\0')
-+		return -EINVAL;
-+	pkg++;
-+
-+	tpe = gtp_list_find(num, addr);
-+	if (addnew) {
-+		ULONGEST	ulongtmp;
-+
-+		if (tpe)
-+			return -EINVAL;
-+
-+		tpe = gtp_list_add(num, addr);
-+		if (tpe == NULL)
-+			return -ENOMEM;
-+
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		if (pkg[0] == 'D')
-+			tpe->disable = 1;
-+		pkg++;
-+
-+		/* Get step.  */
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		pkg++;
-+		pkg = hex2ulongest(pkg, &ulongtmp);
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		if (ulongtmp > 1) {
-+			printk(KERN_WARNING "KGTP only support one step.\n");
-+			return -EINVAL;
-+		}
-+		tpe->step = (int)ulongtmp;
-+
-+		/* Get pass.  */
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		pkg++;
-+		pkg = hex2ulongest(pkg, &tpe->pass);
-+		if (tpe->pass == 0)
-+			tpe->nopass = 1;
-+	}
-+
-+	if (tpe) {
-+		/* Add action to tpe.  */
-+		int	step_action = 0;
-+
-+		if (pkg[0] == 'S') {
-+			if (tpe->step == 0)
-+				return -EINVAL;
-+			pkg++;
-+			step_action = 1;
-+		} else if (tpe->step_action_list)
-+			step_action = 1;
-+
-+		while (pkg[0]) {
-+			struct action	*ae = NULL, *atail = NULL;
-+			char *pkg_cmd = pkg;
-+
-+#ifdef GTP_DEBUG
-+			printk(GTP_DEBUG "gtp_gdbrsp_qtdp: %s\n", pkg);
-+#endif
-+			switch (pkg[0]) {
-+			case ':':
-+				pkg++;
-+				break;
-+			case 'M': {
-+					int		is_neg = 0;
-+					ULONGEST	ulongtmp;
-+
-+					ae = gtp_action_alloc(pkg[0]);
-+					if (!ae)
-+						return -ENOMEM;
-+					pkg++;
-+					if (pkg[0] == '-') {
-+						is_neg = 1;
-+						pkg++;
-+					}
-+					pkg = hex2ulongest(pkg, &ulongtmp);
-+					ae->u.m.regnum = (int)ulongtmp;
-+					if (is_neg)
-+						ae->u.m.regnum
-+						  = -ae->u.m.regnum;
-+					if (pkg[0] == '\0') {
-+						kfree(ae);
-+						return -EINVAL;
-+					}
-+					pkg++;
-+					pkg = hex2ulongest(pkg, &ulongtmp);
-+					ae->u.m.offset = (CORE_ADDR)ulongtmp;
-+					if (pkg[0] == '\0') {
-+						kfree(ae);
-+						return -EINVAL;
-+					}
-+					pkg++;
-+					pkg = hex2ulongest(pkg, &ulongtmp);
-+					ae->u.m.size = (size_t)ulongtmp;
-+				}
-+				break;
-+			case 'R':
-+				/* XXX: reg_mask is ignore.  */
-+				ae = gtp_action_alloc(pkg[0]);
-+				if (!ae)
-+					return -ENOMEM;
-+				pkg++;
-+				pkg = hex2ulongest(pkg,
-+						   &ae->u.reg_mask);
-+				break;
-+			case 'X': {
-+					int	ret;
-+
-+					ae = gtp_action_alloc(pkg[0]);
-+					if (!ae)
-+						return -ENOMEM;
-+					pkg++;
-+					ret = gtp_parse_x(tpe, ae, &pkg);
-+					if (ret) {
-+						kfree(ae);
-+						ae = NULL;
-+
-+						if (ret < 0)
-+							return ret;
-+					}
-+				}
-+				break;
-+			case '-':
-+				pkg++;
-+				break;
-+			default:
-+				/* XXX: Not support.  */
-+				return 1;
-+			}
-+
-+			if (ae) {
-+				/* Save the cmd.  */
-+				if (gtp_src_add (pkg_cmd, pkg, &(tpe->action_cmd))) {
-+					kfree(ae);
-+					return -ENOMEM;
-+				}
-+				/* Add ae to tpe.  */
-+				if ((ae->type == 'X' || ae->type == 0xff)
-+				    && addnew && !tpe->cond) {
-+					tpe->cond = ae;
-+					tpe->cond->next = NULL;
-+				} else if (!step_action && !tpe->action_list) {
-+					tpe->action_list = ae;
-+					atail = ae;
-+				} else if (step_action
-+					   && !tpe->step_action_list) {
-+					tpe->step_action_list = ae;
-+					atail = ae;
-+				} else {
-+					if (atail == NULL) {
-+						if (step_action)
-+							atail =
-+							  tpe->step_action_list;
-+						else
-+							atail =
-+							  tpe->action_list;
-+						for (; atail->next;
-+						     atail = atail->next)
-+							;
-+					}
-+					atail->next = ae;
-+					atail = ae;
-+				}
-+			}
-+		}
-+	} else
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_gdbrsp_qtdpsrc(char *pkg)
-+{
-+	ULONGEST		num, addr;
-+	struct gtp_entry	*tpe;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_gdbrsp_qtdpsrc: %s\n", pkg);
-+#endif
-+
-+	if (gtp_start)
-+		return -EBUSY;
-+
-+	/* Get num and addr.  */
-+	if (pkg[0] == '\0')
-+		return -EINVAL;
-+	pkg = hex2ulongest(pkg, &num);
-+	if (pkg[0] == '\0')
-+		return -EINVAL;
-+	pkg++;
-+	pkg = hex2ulongest(pkg, &addr);
-+	if (pkg[0] == '\0')
-+		return -EINVAL;
-+	pkg++;
-+	tpe = gtp_list_find(num, addr);
-+	if (tpe == NULL)
-+		return -EINVAL;
-+
-+	return gtp_src_add(pkg, NULL, &(tpe->src));
-+}
-+
-+static int
-+gtp_gdbrsp_qtdisconnected(char *pkg)
-+{
-+	ULONGEST setting;
-+
-+	if (pkg[0] == '\0')
-+		return -EINVAL;
-+
-+	hex2ulongest(pkg, &setting);
-+	gtp_disconnected_tracing = (int)setting;
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_gdbrsp_qtbuffer(char *pkg)
-+{
-+	if (strncmp("circular:", pkg, 9) == 0) {
-+		ULONGEST setting;
-+
-+		pkg += 9;
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		hex2ulongest(pkg, &setting);
-+
-+		gtp_circular = (int)setting;
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		if (gtp_frame)
-+			ring_buffer_change_overwrite(gtp_frame, (int)setting);
-+#endif
-+
-+		return 0;
-+	}
-+
-+	return 1;
-+}
-+
-+static int
-+gtp_frame_head_find_num(int num)
-+{
-+#ifdef GTP_FRAME_SIMPLE
-+	int	tfnum = 0;
-+	char	*tmp = gtp_frame_r_start;
-+
-+	do {
-+		if (tmp == gtp_frame_end)
-+			tmp = gtp_frame;
-+
-+		if (FID(tmp) == FID_HEAD) {
-+			if (tfnum == num) {
-+				gtp_frame_current_num = num;
-+				gtp_frame_current = tmp;
-+				return 0;
-+			}
-+			tfnum++;
-+		}
-+
-+		tmp = gtp_frame_next(tmp);
-+		if (!tmp)
-+			break;
-+	} while (tmp != gtp_frame_w_start);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	if (gtp_frame_current_num >= num)
-+		gtp_frame_iter_reset();
-+
-+	while (1) {
-+		int	cpu;
-+
-+		cpu = gtp_frame_iter_peek_head();
-+		if (cpu < 0)
-+			break;
-+
-+		if (num == gtp_frame_current_num)
-+			return cpu;
-+
-+		ring_buffer_read(gtp_frame_iter[cpu], NULL);
-+	}
-+#endif
-+#ifdef GTP_RB
-+	if (num < gtp_frame_current_num)
-+		gtp_rb_read_reset();
-+
-+	while (1) {
-+		if (gtp_frame_current_num == num)
-+			return 0;
-+
-+		if (gtp_rb_read() != 0)
-+			break;
-+	}
-+#endif
-+
-+	return -1;
-+}
-+
-+static int
-+gtp_frame_head_find_addr(int inside, unsigned long lo,
-+			 unsigned long hi)
-+{
-+#ifdef GTP_FRAME_SIMPLE
-+	int	tfnum = gtp_frame_current_num;
-+	char	*tmp;
-+
-+	if (gtp_frame_current)
-+		tmp = gtp_frame_current;
-+	else
-+		tmp = gtp_frame_r_start;
-+
-+	do {
-+		if (tmp == gtp_frame_end)
-+			tmp = gtp_frame;
-+
-+		if (FID(tmp) == FID_HEAD) {
-+			if (tfnum != gtp_frame_current_num) {
-+				char		*next;
-+				struct pt_regs	*regs = NULL;
-+
-+				for (next = *(char **)(tmp + FID_SIZE); next;
-+				     next = *(char **)(next + FID_SIZE)) {
-+					if (FID(next) == FID_REG) {
-+						regs = (struct pt_regs *)
-+						       (next + FID_SIZE
-+							+ sizeof(char *));
-+						break;
-+					}
-+				}
-+				if (regs
-+				    && ((inside
-+					 && GTP_REGS_PC(regs) >= lo
-+					 && GTP_REGS_PC(regs) <= hi)
-+					|| (!inside
-+					    && (GTP_REGS_PC(regs) < lo
-+						|| GTP_REGS_PC(regs) > hi)))) {
-+					gtp_frame_current_num = tfnum;
-+					gtp_frame_current = tmp;
-+					return 0;
-+				}
-+			}
-+			tfnum++;
-+		}
-+
-+		tmp = gtp_frame_next(tmp);
-+		if (!tmp)
-+			break;
-+	} while (tmp != gtp_frame_w_start);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	while (1) {
-+		int				cpu;
-+		struct ring_buffer_event	*rbe;
-+		char				*tmp;
-+		struct pt_regs			*regs = NULL;
-+
-+		cpu = gtp_frame_iter_peek_head();
-+		if (cpu < 0)
-+			break;
-+
-+		while (1) {
-+			ring_buffer_read(gtp_frame_iter[cpu], NULL);
-+			rbe = ring_buffer_iter_peek(gtp_frame_iter[cpu], NULL);
-+			if (rbe == NULL)
-+				break;
-+
-+			tmp = ring_buffer_event_data(rbe);
-+			if (FID(tmp) == FID_HEAD)
-+				break;
-+			if (FID(tmp) == FID_REG) {
-+				regs = (struct pt_regs *)(tmp + FID_SIZE);
-+				break;
-+			}
-+		}
-+
-+		if (regs
-+		    && ((inside
-+			  && GTP_REGS_PC(regs) >= lo
-+			  && GTP_REGS_PC(regs) <= hi)
-+			|| (!inside
-+			    && (GTP_REGS_PC(regs) < lo
-+				|| GTP_REGS_PC(regs) > hi))))
-+			return gtp_frame_head_find_num(gtp_frame_current_num);
-+	}
-+#endif
-+#ifdef GTP_RB
-+	struct gtp_rb_walk_s	rbws;
-+
-+	if (gtp_frame_current_num < 0) {
-+		if (gtp_rb_read() != 0)
-+			return -1;
-+	}
-+
-+	rbws.flags = GTP_RB_WALK_PASS_PAGE | GTP_RB_WALK_CHECK_END
-+		     | GTP_RB_WALK_CHECK_ID | GTP_RB_WALK_CHECK_TYPE;
-+	rbws.type = FID_REG;
-+
-+	while (1) {
-+		char	*tmp;
-+
-+		rbws.end = gtp_frame_current_rb->w;
-+		rbws.id = gtp_frame_current_id;
-+		tmp = gtp_rb_walk(&rbws, gtp_frame_current_rb->rp);
-+		if (rbws.reason == gtp_rb_walk_type) {
-+			struct pt_regs	*regs
-+				= (struct pt_regs *)(tmp + FID_SIZE);
-+
-+			if ((inside && GTP_REGS_PC(regs) >= lo
-+			     && GTP_REGS_PC(regs) <= hi)
-+			    || (!inside && (GTP_REGS_PC(regs) < lo
-+					    || GTP_REGS_PC(regs) > hi))) {
-+				return 0;
-+			}
-+		}
-+
-+		if (gtp_rb_read() != 0)
-+			break;
-+	}
-+#endif
-+
-+	return -1;
-+}
-+
-+static int
-+gtp_frame_head_find_trace(ULONGEST trace)
-+{
-+#ifdef GTP_FRAME_SIMPLE
-+	int	tfnum = gtp_frame_current_num;
-+	char	*tmp;
-+
-+	if (gtp_frame_current)
-+		tmp = gtp_frame_current;
-+	else
-+		tmp = gtp_frame_r_start;
-+
-+	do {
-+		if (tmp == gtp_frame_end)
-+			tmp = gtp_frame;
-+
-+		if (FID(tmp) == FID_HEAD) {
-+			if (tfnum != gtp_frame_current_num) {
-+				if (trace == *(ULONGEST *) (tmp + FID_SIZE
-+							    + sizeof(char *))) {
-+					gtp_frame_current_num = tfnum;
-+					gtp_frame_current = tmp;
-+					return 0;
-+				}
-+			}
-+			tfnum++;
-+		}
-+
-+		tmp = gtp_frame_next(tmp);
-+		if (!tmp)
-+			break;
-+	} while (tmp != gtp_frame_w_start);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	while (1) {
-+		int				cpu;
-+		struct ring_buffer_event	*rbe;
-+		char				*tmp;
-+
-+		cpu = gtp_frame_iter_peek_head();
-+		if (cpu < 0)
-+			break;
-+
-+		rbe = ring_buffer_iter_peek(gtp_frame_iter[cpu], NULL);
-+		if (rbe == NULL) {
-+			/* It will not happen, just for safe.  */
-+			return -1;
-+		}
-+		tmp = ring_buffer_event_data(rbe);
-+		if (trace == *(ULONGEST *) (tmp + FID_SIZE))
-+			return cpu;
-+
-+		ring_buffer_read(gtp_frame_iter[cpu], NULL);
-+	}
-+#endif
-+#ifdef GTP_RB
-+	if (gtp_frame_current_num < 0) {
-+		if (gtp_rb_read() != 0)
-+			return -1;
-+	}
-+
-+	while (1) {
-+		if (gtp_frame_current_tpe == trace)
-+			return 0;
-+
-+		if (gtp_rb_read() != 0)
-+			break;
-+	}
-+#endif
-+
-+	return -1;
-+}
-+
-+static int
-+gtp_gdbrsp_qtframe(char *pkg)
-+{
-+	int	ret = -1;
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	int	old_num = gtp_frame_current_num;
-+#endif
-+
-+	if (gtp_start)
-+		return -EBUSY;
-+
-+	if (gtp_gtpframe_pipe_pid >= 0)
-+		return -EBUSY;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_gdbrsp_qtframe: %s\n", pkg);
-+#endif
-+
-+	if (atomic_read(&gtp_frame_create) == 0)
-+		goto out;
-+
-+	if (strncmp(pkg, "pc:", 3) == 0) {
-+		ULONGEST	addr;
-+
-+		pkg += 3;
-+
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		hex2ulongest(pkg, &addr);
-+
-+		ret = gtp_frame_head_find_addr(1, (unsigned long)addr,
-+					       (unsigned long)addr);
-+	} else if (strncmp(pkg, "tdp:", 4) == 0) {
-+		ULONGEST	trace;
-+
-+		pkg += 4;
-+
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		hex2ulongest(pkg, &trace);
-+
-+		ret = gtp_frame_head_find_trace(trace);
-+	} else if (strncmp(pkg, "range:", 6) == 0) {
-+		ULONGEST	start, end;
-+
-+		pkg += 6;
-+
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		pkg = hex2ulongest(pkg, &start);
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		pkg++;
-+		hex2ulongest(pkg, &end);
-+
-+		ret = gtp_frame_head_find_addr(1, (unsigned long)start,
-+					       (unsigned long)end);
-+	} else if (strncmp(pkg, "outside:", 8) == 0) {
-+		ULONGEST	start, end;
-+
-+		pkg += 8;
-+
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		pkg = hex2ulongest(pkg, &start);
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		pkg++;
-+		hex2ulongest(pkg, &end);
-+
-+		ret = gtp_frame_head_find_addr(0, (unsigned long)start,
-+					       (unsigned long)end);
-+	} else {
-+		ULONGEST	num;
-+
-+		if (pkg[0] == '\0')
-+			return -EINVAL;
-+		hex2ulongest(pkg, &num);
-+
-+		if (((int) num) < 0) {
-+			/* Return to current.  */
-+#ifdef GTP_FRAME_SIMPLE
-+			gtp_frame_current = NULL;
-+			gtp_frame_current_num = -1;
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+			gtp_frame_iter_reset();
-+#endif
-+#ifdef GTP_RB
-+			gtp_rb_read_reset();
-+#endif
-+
-+			return 0;
-+		}
-+		ret = gtp_frame_head_find_num((int) num);
-+	}
-+
-+out:
-+	if (ret < 0) {
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+		/* Set frame back to old_num.  */
-+		if (old_num < 0)
-+#ifdef GTP_FTRACE_RING_BUFFER
-+			gtp_frame_iter_reset();
-+#endif
-+#ifdef GTP_RB
-+			gtp_rb_read_reset();
-+#endif
-+		else
-+			gtp_frame_head_find_num(old_num);
-+#endif
-+		snprintf(gtp_rw_bufp, GTP_RW_BUFP_MAX, "F-1");
-+		gtp_rw_bufp += 3;
-+		gtp_rw_size += 3;
-+	} else {
-+#ifdef GTP_FRAME_SIMPLE
-+		gtp_frame_current_tpe = *(ULONGEST *)(gtp_frame_current
-+						      + FID_SIZE
-+						      + sizeof(char *));
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		struct ring_buffer_event	*rbe;
-+		char				*tmp;
-+
-+		rbe = ring_buffer_read(gtp_frame_iter[ret],
-+				       &gtp_frame_current_clock);
-+		if (rbe == NULL) {
-+			/* It will not happen, just for safe.  */
-+			ret = -1;
-+			goto out;
-+		}
-+		gtp_frame_current_cpu = ret;
-+		tmp = ring_buffer_event_data(rbe);
-+		gtp_frame_current_tpe = *(ULONGEST *)(tmp + FID_SIZE);
-+#endif
-+		snprintf(gtp_rw_bufp, GTP_RW_BUFP_MAX, "F%xT%x",
-+			 gtp_frame_current_num,
-+			 (unsigned int) gtp_frame_current_tpe);
-+		gtp_rw_size += strlen(gtp_rw_bufp);
-+		gtp_rw_bufp += strlen(gtp_rw_bufp);
-+	}
-+	return 1;
-+}
-+
-+static int
-+gtp_gdbrsp_qtro(char *pkg)
-+{
-+	ULONGEST	start, end;
-+
-+	gtpro_list_clear();
-+
-+	while (pkg[0]) {
-+		pkg = hex2ulongest(pkg, &start);
-+		if (pkg[0] != ',')
-+			return -EINVAL;
-+		pkg++;
-+		pkg = hex2ulongest(pkg, &end);
-+		if (pkg[0])
-+			pkg++;
-+
-+		if (gtpro_list_add((CORE_ADDR)start, (CORE_ADDR)end) == NULL)
-+			return -ENOMEM;
-+	}
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_gdbrsp_qtdv(char *pkg)
-+{
-+	ULONGEST	num, val;
-+	struct gtp_var	*var;
-+	char		*src;
-+	char		*src_no_val;
-+	int		src_no_val_size;
-+	int		per_cpu_id = 0;
-+	struct gtp_var	**per_cpu = NULL;
-+	int		per_cpu_alloced = 0;
-+	int		ret = -EINVAL;
-+#ifdef CONFIG_PERF_EVENTS
-+	enum pe_tv_id	ptid = pe_tv_unknown;
-+	struct pe_tv_s	*pts = NULL;
-+	int		pts_alloced = 0;
-+#endif
-+
-+	pkg = hex2ulongest(pkg, &num);
-+	if (pkg[0] != ':')
-+		goto error_out;
-+	pkg++;
-+	src = pkg;
-+	pkg = hex2ulongest(pkg, &val);
-+	if (pkg[0] != ':')
-+		goto error_out;
-+
-+	if (GTP_VAR_IS_SPECIAL(num)) {
-+		/* Change the value of special tv.  */
-+		var = gtp_var_find(num);
-+		if (var)
-+			var->val = val;
-+		if (num == GTP_VAR_IGNORE_ERROR_ID)
-+			gtp_start_ignore_error = (int)val;
-+		else if (num == GTP_VAR_PIPE_TRACE_ID)
-+			gtp_pipe_trace = (int)val;
-+		else if (num == GTP_VAR_BT_ID)
-+			gtp_bt_size = (int)val;
-+
-+		return 0;
-+	}
-+
-+	/* src_no_val is not include the val but the ':' after it. */
-+	src_no_val = pkg;
-+	src_no_val_size = strlen(src_no_val);
-+
-+	pkg++;
-+
-+	var = gtp_var_find(num);
-+	if (var)
-+		goto error_out;
-+
-+	/* Check if this is a "pc_" or "per_cpu_" trace state variable.  */
-+	if (strncasecmp(pkg, "0:70635f", 8) == 0
-+	    || strncasecmp(pkg, "0:7065725f6370755f", 18) == 0) {
-+		int		name_size;
-+		char		*id_s;
-+		int		mul = 1;
-+		struct gtp_var	*tve;
-+
-+		if (strncasecmp(pkg, "0:70635f", 8) == 0)
-+			pkg += 8;
-+		else
-+			pkg += 18;
-+		name_size = strlen(pkg);
-+
-+		/* Get the cpu id of this variable.  */
-+		if (name_size % 2 != 0)
-+			goto error_out;
-+		for (id_s = pkg + name_size - 2; id_s > pkg; id_s -= 2) {
-+			int	i, j;
-+
-+			if (!hex2int(id_s[0], &i))
-+				goto error_out;
-+			if (!hex2int(id_s[1], &j))
-+				goto error_out;
-+			j |= (i << 4);
-+			if (j < 0x30 || j > 0x39)
-+				break;
-+			j -= 0x30;
-+			per_cpu_id += mul * j;
-+			mul *= 10;
-+			/* src_no_val_size will not include the cpu id.  */
-+			src_no_val_size -= 2;
-+		}
-+		if (mul == 1)
-+			goto error_out;
-+		if (per_cpu_id >= gtp_cpu_number) {
-+			printk(KERN_WARNING "gtp_gdbrsp_qtdv: id %d is bigger "
-+					    "than cpu number %d.\n",
-+			       per_cpu_id, gtp_cpu_number);
-+			goto error_out;
-+		}
-+
-+		/* Find the per cpu array per_cpu.  */
-+		for (tve = gtp_var_list; tve; tve = tve->next) {
-+			if (tve->per_cpu) {
-+				char	*gtp_var_src;
-+				/* Let gtp_var_src point after the value.  */
-+				gtp_var_src = hex2ulongest(tve->src, NULL);
-+
-+				if (strncmp(gtp_var_src, src_no_val,
-+					    src_no_val_size) == 0) {
-+					per_cpu = tve->per_cpu;
-+					break;
-+				}
-+			}
-+		}
-+		if (per_cpu == NULL) {
-+			per_cpu = kcalloc(gtp_cpu_number,
-+					  sizeof(struct gtp_var *),
-+					  GFP_KERNEL);
-+			if (per_cpu == NULL) {
-+				ret = -ENOMEM;
-+				goto error_out;
-+			}
-+			per_cpu_alloced = 1;
-+#ifdef GTP_DEBUG
-+			printk(GTP_DEBUG "gtp_gdbrsp_qtdv: Create a "
-+					 "new per_cpu list for %s and set var "
-+					 "to cpu %d.\n",
-+			       src_no_val, per_cpu_id);
-+#endif
-+		} else {
-+#ifdef GTP_DEBUG
-+			printk(GTP_DEBUG "gtp_gdbrsp_qtdv: Find a "
-+					 "per_cpu list for %s and set var "
-+					 "to cpu %d.\n",
-+			       src_no_val, per_cpu_id);
-+#endif
-+		}
-+	} else {
-+		/* Remove first "0:" for following code.  */
-+		if (strlen(pkg) <= 2)
-+			goto error_out;
-+		pkg += 2;
-+	}
-+
-+	/* Check if this is a "pe_" OR "perf_event_" trace state variable.  */
-+	if (strncasecmp(pkg, "70655f", 6) == 0
-+	    || strncasecmp(pkg, "706572665f6576656e745f", 22) == 0) {
-+#ifdef CONFIG_PERF_EVENTS
-+		struct gtp_var	*tve;
-+
-+		if (strncasecmp(pkg, "70655f", 6) == 0)
-+			pkg += 6;
-+		else
-+			pkg += 22;
-+
-+		if (strncasecmp(pkg, "6370755f", 8) == 0) {
-+			/* "cpu_" */
-+			pkg += 8;
-+			ptid = pe_tv_cpu;
-+		} else if (strncasecmp(pkg, "747970655f", 10) == 0) {
-+			/* "type_" */
-+			pkg += 10;
-+			ptid = pe_tv_type;
-+		} else if (strncasecmp(pkg, "636f6e6669675f", 14) == 0) {
-+			/* "config_" */
-+			pkg += 14;
-+			ptid = pe_tv_config;
-+		} else if (strncasecmp(pkg, "656e5f", 6) == 0) {
-+			/* "en_" */
-+			pkg += 6;
-+			ptid = pe_tv_en;
-+		} else if (strncasecmp(pkg, "76616c5f", 8) == 0) {
-+			/* "val_" */
-+			pkg += 8;
-+			ptid = pe_tv_val;
-+		} else if (strncasecmp(pkg, "656e61626c65645f", 16) == 0) {
-+			/* "enabled_" */
-+			pkg += 16;
-+			ptid = pe_tv_enabled;
-+		} else if (strncasecmp(pkg, "72756e6e696e675f", 16) == 0) {
-+			/* "running_" */
-+			pkg += 16;
-+			ptid = pe_tv_running;
-+		} else
-+			goto pe_format_error;
-+
-+		if (strlen(pkg) <= 0)
-+			goto pe_format_error;
-+
-+		/* Find the pe_tv that name is pkg.  */
-+		for (tve = gtp_var_list; tve; tve = tve->next) {
-+			if (tve->ptid != pe_tv_unknown) {
-+				if (strcmp(tve->pts->name, pkg) == 0)
-+					break;
-+			}
-+		}
-+
-+		if (tve)
-+			pts = tve->pts;
-+		else {
-+			pts = kcalloc(1, sizeof(struct pe_tv_s), GFP_KERNEL);
-+			if (pts == NULL) {
-+				ret = -ENOMEM;
-+				goto error_out;
-+			}
-+			pts_alloced = 1;
-+			/* Init the value in pts to default value.  */
-+			pts->name = gtp_strdup(pkg, NULL);
-+			if (per_cpu)
-+				pts->cpu = per_cpu_id;
-+			else
-+				pts->cpu = -1;
-+			pts->en = 0;
-+			pts->attr.type = PERF_TYPE_HARDWARE;
-+			pts->attr.config = PERF_COUNT_HW_CPU_CYCLES;
-+			pts->attr.disabled = 1;
-+			pts->attr.pinned = 1;
-+			pts->attr.size = sizeof(struct perf_event_attr);
-+		}
-+
-+		/* Set current val to pts.  */
-+		switch (ptid) {
-+		case pe_tv_cpu:
-+			pts->cpu = (int)(LONGEST)val;
-+			break;
-+		case pe_tv_type:
-+			pts->attr.type = val;
-+			break;
-+		case pe_tv_config:
-+			pts->attr.config = val;
-+			break;
-+		case pe_tv_en:
-+			if (val) {
-+				pts->attr.disabled = 0;
-+				pts->en = 1;
-+			} else {
-+				pts->attr.disabled = 1;
-+				pts->en = 0;
-+			}
-+			break;
-+		case pe_tv_val:
-+		case pe_tv_enabled:
-+		case pe_tv_running:
-+			break;
-+		default:
-+			goto pe_format_error;
-+			break;
-+		}
-+
-+		gtp_have_pc_pe = 1;
-+#else
-+		printk(KERN_WARNING "Current Kernel doesn't open "
-+				    "CONFIG_PERF_EVENTS\n");
-+		ret = -ENXIO;
-+		goto error_out;
-+#endif
-+	}
-+
-+#ifdef CONFIG_PERF_EVENTS
-+	if (!gtp_var_add((unsigned int)num, (uint64_t)val, src,
-+			 per_cpu, per_cpu_id, ptid, pts)) {
-+#else
-+	if (!gtp_var_add((unsigned int)num, (uint64_t)val, src,
-+			 per_cpu, per_cpu_id)) {
-+#endif
-+		ret = -ENOMEM;
-+		goto error_out;
-+	}
-+
-+	return 0;
-+
-+#ifdef CONFIG_PERF_EVENTS
-+pe_format_error:
-+	printk(KERN_WARNING "The format of this perf event "
-+			    "trace state variables is not right.\n");
-+#endif
-+
-+error_out:
-+#ifdef CONFIG_PERF_EVENTS
-+	if (pts_alloced)
-+		kfree(pts);
-+#endif
-+	if (per_cpu_alloced)
-+		kfree(per_cpu);
-+	return ret;
-+}
-+
-+static int
-+gtp_gdbrsp_QT(char *pkg)
-+{
-+	int	ret = 1;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_gdbrsp_QT: %s\n", pkg);
-+#endif
-+
-+	if (strcmp("init", pkg) == 0)
-+		ret = gtp_gdbrsp_qtinit();
-+	else if (strcmp("Stop", pkg) == 0)
-+		ret = gtp_gdbrsp_qtstop();
-+	else if (strcmp("Start", pkg) == 0)
-+		ret = gtp_gdbrsp_qtstart();
-+	else if (strncmp("DP:", pkg, 3) == 0)
-+		ret = gtp_gdbrsp_qtdp(pkg + 3);
-+	else if (strncmp("DPsrc:", pkg, 6) == 0)
-+		ret = gtp_gdbrsp_qtdpsrc(pkg + 6);
-+	else if (strncmp("Disconnected:", pkg, 13) == 0)
-+		ret = gtp_gdbrsp_qtdisconnected(pkg + 13);
-+	else if (strncmp("Buffer:", pkg, 7) == 0)
-+		ret = gtp_gdbrsp_qtbuffer(pkg + 7);
-+	else if (strncmp("Frame:", pkg, 6) == 0)
-+		ret = gtp_gdbrsp_qtframe(pkg + 6);
-+	else if (strncmp("ro:", pkg, 3) == 0)
-+		ret = gtp_gdbrsp_qtro(pkg + 3);
-+	else if (strncmp("DV:", pkg, 3) == 0)
-+		ret = gtp_gdbrsp_qtdv(pkg + 3);
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_gdbrsp_QT: return %d\n", ret);
-+#endif
-+
-+	return ret;
-+}
-+
-+static int
-+gtp_get_status(struct gtp_entry *tpe, char *buf, int bufmax)
-+{
-+	int			size = 0;
-+	int			tfnum = 0;
-+	CORE_ADDR		tmpaddr;
-+
-+#ifdef GTP_RB
-+	if (GTP_RB_PAGE_IS_EMPTY) {
-+#endif
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_FTRACE_RING_BUFFER)
-+	if (!gtp_frame) {
-+#endif
-+		snprintf(buf, bufmax, "tnotrun:0;");
-+		buf += 10;
-+		size += 10;
-+		bufmax -= 10;
-+	} else if (!tpe || (tpe && tpe->reason == gtp_stop_normal)) {
-+		snprintf(buf, bufmax, "tstop:0;");
-+		buf += 8;
-+		size += 8;
-+		bufmax -= 8;
-+	} else {
-+		char	outtmp[100];
-+
-+		switch (tpe->reason) {
-+		case gtp_stop_frame_full:
-+			snprintf(buf, bufmax, "tfull:%lx;",
-+				 (unsigned long)tpe->num);
-+			break;
-+		case gtp_stop_efault:
-+			snprintf(buf, bufmax, "terror:%s:%lx;",
-+				 string2hex("read memory false", outtmp),
-+				 (unsigned long)tpe->num);
-+			break;
-+		case gtp_stop_access_wrong_reg:
-+			snprintf(buf, bufmax, "terror:%s:%lx;",
-+				 string2hex("access wrong register", outtmp),
-+				 (unsigned long)tpe->num);
-+			break;
-+		case gtp_stop_agent_expr_code_error:
-+			snprintf(buf, bufmax, "terror:%s:%lx;",
-+				 string2hex("agent expression code error",
-+					    outtmp),
-+				 (unsigned long)tpe->num);
-+			break;
-+		case gtp_stop_agent_expr_stack_overflow:
-+			snprintf(buf, bufmax, "terror:%s:%lx;",
-+				string2hex("agent expression stack overflow",
-+					   outtmp),
-+				(unsigned long)tpe->num);
-+			break;
-+		default:
-+			buf[0] = '\0';
-+			break;
-+		}
-+
-+		size += strlen(buf);
-+		bufmax -= strlen(buf);
-+		buf += strlen(buf);
-+	}
-+
-+	if (atomic_read(&gtp_frame_create)) {
-+#ifdef GTP_FRAME_SIMPLE
-+		char	*tmp = gtp_frame_r_start;
-+
-+		do {
-+			if (tmp == gtp_frame_end)
-+				tmp = gtp_frame;
-+
-+			if (FID(tmp) == FID_HEAD)
-+				tfnum++;
-+
-+			tmp = gtp_frame_next(tmp);
-+			if (!tmp)
-+				break;
-+		} while (tmp != gtp_frame_w_start);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		if (gtp_start) {
-+			/* XXX: It is just the number of entries.  */
-+			tfnum = (int)ring_buffer_entries(gtp_frame);
-+		} else {
-+			int	old_num = gtp_frame_current_num;
-+			int	cpu;
-+
-+			gtp_frame_iter_reset();
-+
-+			for_each_online_cpu(cpu) {
-+				char				*tmp;
-+				struct ring_buffer_event	*rbe;
-+
-+				while (1) {
-+					rbe = ring_buffer_read
-+						(gtp_frame_iter[cpu], NULL);
-+					if (rbe == NULL)
-+						break;
-+					tmp = ring_buffer_event_data(rbe);
-+					if (FID(tmp) == FID_HEAD)
-+						tfnum++;
-+				}
-+			}
-+
-+			if (old_num == -1)
-+				gtp_frame_iter_reset();
-+			else if (old_num >= 0) {
-+				gtp_frame_head_find_num(old_num);
-+				ring_buffer_read
-+					(gtp_frame_iter[gtp_frame_current_cpu],
-+					 NULL);
-+			}
-+		}
-+#endif
-+#ifdef GTP_RB
-+		int			cpu;
-+		struct gtp_rb_walk_s	rbws;
-+
-+		rbws.flags = GTP_RB_WALK_PASS_PAGE | GTP_RB_WALK_CHECK_END;
-+
-+		for_each_online_cpu(cpu) {
-+			struct gtp_rb_s	*rb
-+				= (struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu);
-+			void		*tmp;
-+			unsigned long	flags;
-+
-+			GTP_RB_LOCK_IRQ(rb, flags);
-+			rbws.end = rb->w;
-+			tmp = rb->r;
-+			while (1) {
-+				tmp = gtp_rb_walk(&rbws, tmp);
-+				if (rbws.reason != gtp_rb_walk_new_entry)
-+					break;
-+				tfnum++;
-+				tmp += FRAME_ALIGN(GTP_FRAME_HEAD_SIZE);
-+			}
-+			GTP_RB_UNLOCK_IRQ(rb, flags);
-+		}
-+#endif
-+	}
-+
-+	snprintf(buf, bufmax, "tframes:%x;", tfnum);
-+	size += strlen(buf);
-+	bufmax -= strlen(buf);
-+	buf += strlen(buf);
-+
-+	snprintf(buf, bufmax, "tcreated:%x;", atomic_read(&gtp_frame_create));
-+	size += strlen(buf);
-+	bufmax -= strlen(buf);
-+	buf += strlen(buf);
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	snprintf(buf, bufmax, "tsize:%x;", GTP_FRAME_SIZE);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	if (gtp_frame)
-+		snprintf(buf, bufmax, "tsize:%lx;",
-+			 ring_buffer_size(gtp_frame));
-+	else
-+		snprintf(buf, bufmax, "tsize:%x;",
-+			 GTP_FRAME_SIZE * num_online_cpus());
-+#endif
-+#ifdef GTP_RB
-+	snprintf(buf, bufmax, "tsize:%lx;",
-+		 gtp_rb_page_count * GTP_RB_DATA_MAX * num_online_cpus());
-+#endif
-+	size += strlen(buf);
-+	bufmax -= strlen(buf);
-+	buf += strlen(buf);
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	spin_lock(&gtp_frame_lock);
-+	if (gtp_frame_is_circular)
-+		tmpaddr = 0;
-+	else
-+		tmpaddr = GTP_FRAME_SIZE - (gtp_frame_w_start - gtp_frame);
-+	spin_unlock(&gtp_frame_lock);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	/* XXX: Ftrace ring buffer don't have interface to get the size of free
-+	   buffer. */
-+	tmpaddr = 0;
-+#endif
-+#ifdef GTP_RB
-+	if (atomic_read(&gtp_frame_create)) {
-+		int			cpu;
-+
-+		tmpaddr = 0;
-+		for_each_online_cpu(cpu) {
-+			struct gtp_rb_s	*rb
-+				= (struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu);
-+			void		*tmp;
-+			unsigned long	flags;
-+
-+			GTP_RB_LOCK_IRQ(rb, flags);
-+			tmpaddr += GTP_RB_END(rb->w) - rb->w;
-+			for (tmp = GTP_RB_NEXT(rb->w);
-+			     GTP_RB_HEAD(tmp) != GTP_RB_HEAD(rb->r);
-+			     tmp = GTP_RB_NEXT(tmp))
-+				tmpaddr += GTP_RB_DATA_MAX;
-+			tmpaddr += rb->r - GTP_RB_DATA(rb->r);
-+			GTP_RB_UNLOCK_IRQ(rb, flags);
-+		}
-+	} else {
-+		tmpaddr = gtp_rb_page_count * GTP_RB_DATA_MAX
-+			  * num_online_cpus();
-+	}
-+#endif
-+	snprintf(buf, bufmax, "tfree:%lx;", (unsigned long)tmpaddr);
-+	size += strlen(buf);
-+	bufmax -= strlen(buf);
-+	buf += strlen(buf);
-+
-+	snprintf(buf, bufmax, "circular:%x;", gtp_circular);
-+	size += strlen(buf);
-+	bufmax -= strlen(buf);
-+	buf += strlen(buf);
-+
-+	snprintf(buf, bufmax, "disconn:%x", gtp_disconnected_tracing);
-+	size += strlen(buf);
-+	bufmax -= strlen(buf);
-+	buf += strlen(buf);
-+
-+	return size;
-+}
-+
-+static int
-+gtp_gdbrsp_qtstatus(void)
-+{
-+	struct gtp_entry	*tpe;
-+	int			tmp;
-+
-+	for (tpe = gtp_list; tpe; tpe = tpe->next) {
-+		if (tpe->reason != gtp_stop_normal)
-+			break;
-+	}
-+
-+	if (gtp_start && tpe)	/* Tpe is stop, stop all tpes.  */
-+		gtp_gdbrsp_qtstop();
-+
-+	snprintf(gtp_rw_bufp, GTP_RW_BUFP_MAX, "T%x;", gtp_start ? 1 : 0);
-+	gtp_rw_bufp += 3;
-+	gtp_rw_size += 3;
-+
-+	tmp = gtp_get_status(tpe, gtp_rw_bufp, GTP_RW_BUFP_MAX);
-+	gtp_rw_bufp += tmp;
-+	gtp_rw_size += tmp;
-+
-+	return 1;
-+}
-+
-+#define GTP_REPORT_TRACEPOINT_MAX	(1 + 16 + 1 + 16 + 1 + 1 + 1 + \
-+					 20 + 1 + 16 + 1)
-+
-+static void
-+gtp_report_tracepoint(struct gtp_entry *gtp, char *buf, int bufmax)
-+{
-+	snprintf(buf, bufmax, "T%lx:%lx:%c:%d:%lx", (unsigned long)gtp->num,
-+		 (unsigned long)gtp->addr, (gtp->disable ? 'D' : 'E'),
-+		 gtp->step, (unsigned long)gtp->pass);
-+}
-+
-+static int
-+gtp_report_action_max(struct gtp_entry *gtp, struct gtpsrc *action)
-+{
-+	return 1 + 16 + 1 + 16 + 1 + strlen(action->src) + 1;
-+}
-+
-+static void
-+gtp_report_action(struct gtp_entry *gtp, struct gtpsrc *action, char *buf,
-+		  int bufmax)
-+{
-+	snprintf(buf, bufmax, "A%lx:%lx:%s", (unsigned long)gtp->num,
-+		 (unsigned long)gtp->addr, action->src);
-+}
-+
-+static int
-+gtp_report_src_max(struct gtp_entry *gtp, struct gtpsrc *src)
-+{
-+	return 1 + 16 + 1 + 16 + 1 + strlen(src->src) + 1;
-+}
-+
-+static void
-+gtp_report_src(struct gtp_entry *gtp, struct gtpsrc *src, char *buf, int bufmax)
-+{
-+	snprintf(buf, bufmax, "Z%lx:%lx:%s", (unsigned long)gtp->num,
-+		 (unsigned long)gtp->addr, src->src);
-+}
-+
-+static void
-+gtp_current_set_check(void)
-+{
-+	if (current_gtp_src == NULL)
-+		current_gtp = current_gtp->next;
-+}
-+
-+static void
-+gtp_current_action_check(void)
-+{
-+	if (current_gtp_action_cmd == NULL) {
-+		current_gtp_src = current_gtp->src;
-+		gtp_current_set_check();
-+	}
-+}
-+
-+static int
-+gtp_gdbrsp_qtfp(void)
-+{
-+	if (gtp_list) {
-+		current_gtp = gtp_list;
-+		gtp_report_tracepoint(current_gtp, gtp_rw_bufp,
-+				      GTP_RW_BUFP_MAX);
-+		gtp_rw_size += strlen(gtp_rw_bufp);
-+		gtp_rw_bufp += strlen(gtp_rw_bufp);
-+		current_gtp_action_cmd = current_gtp->action_cmd;
-+		gtp_current_action_check();
-+	} else {
-+		if (GTP_RW_BUFP_MAX > 1) {
-+			gtp_rw_bufp[0] = 'l';
-+			gtp_rw_size += 1;
-+			gtp_rw_bufp += 1;
-+		}
-+	}
-+
-+	return 1;
-+}
-+
-+static int
-+gtp_gdbrsp_qtsp(void)
-+{
-+	if (current_gtp_action_cmd) {
-+		gtp_report_action(current_gtp, current_gtp_action_cmd,
-+				  gtp_rw_bufp, GTP_RW_BUFP_MAX);
-+		gtp_rw_size += strlen(gtp_rw_bufp);
-+		gtp_rw_bufp += strlen(gtp_rw_bufp);
-+		current_gtp_action_cmd = current_gtp_action_cmd->next;
-+		gtp_current_action_check();
-+		goto out;
-+	}
-+
-+	if (current_gtp_src) {
-+		gtp_report_src(current_gtp, current_gtp_src, gtp_rw_bufp,
-+			       GTP_RW_BUFP_MAX);
-+		gtp_rw_size += strlen(gtp_rw_bufp);
-+		gtp_rw_bufp += strlen(gtp_rw_bufp);
-+		current_gtp_src = current_gtp_src->next;
-+		gtp_current_set_check();
-+		goto out;
-+	}
-+
-+	if (current_gtp) {
-+		gtp_report_tracepoint(current_gtp, gtp_rw_bufp,
-+				      GTP_RW_BUFP_MAX);
-+		gtp_rw_size += strlen(gtp_rw_bufp);
-+		gtp_rw_bufp += strlen(gtp_rw_bufp);
-+		current_gtp_action_cmd = current_gtp->action_cmd;
-+		gtp_current_action_check();
-+	} else {
-+		if (GTP_RW_BUFP_MAX > 1) {
-+			gtp_rw_bufp[0] = 'l';
-+			gtp_rw_size += 1;
-+			gtp_rw_bufp += 1;
-+		}
-+	}
-+out:
-+	return 1;
-+}
-+
-+static void
-+gtp_report_var(void)
-+{
-+	snprintf(gtp_rw_bufp, GTP_RW_BUFP_MAX, "%x:%s", current_gtp_var->num,
-+		 current_gtp_var->src);
-+	gtp_rw_size += strlen(gtp_rw_bufp);
-+	gtp_rw_bufp += strlen(gtp_rw_bufp);
-+}
-+
-+static int
-+gtp_gdbrsp_qtfsv(int f)
-+{
-+	if (f)
-+		current_gtp_var = gtp_var_list;
-+
-+	if (current_gtp_var) {
-+		gtp_report_var();
-+		current_gtp_var = current_gtp_var->next;
-+	} else {
-+		if (GTP_RW_BUFP_MAX > 1) {
-+			gtp_rw_bufp[0] = 'l';
-+			gtp_rw_size += 1;
-+			gtp_rw_bufp += 1;
-+		}
-+	}
-+
-+	return 1;
-+}
-+
-+static int
-+gtp_gdbrsp_qtv(char *pkg)
-+{
-+	ULONGEST		num;
-+	struct gtp_var		*var = NULL;
-+	struct gtp_frame_var	*vr = NULL;
-+	uint64_t		val = 0;
-+
-+	pkg = hex2ulongest(pkg, &num);
-+
-+	if (num == GTP_VAR_CPU_NUMBER_ID) {
-+		val = (uint64_t)gtp_cpu_number;
-+		goto output_value;
-+	} else if (num == GTP_VAR_LAST_ERRNO_ID) {
-+		val = (uint64_t)gtp_start_last_errno;
-+		goto output_value;
-+	} else if (num == GTP_VAR_IGNORE_ERROR_ID) {
-+		val = (uint64_t)gtp_start_ignore_error;
-+		goto output_value;
-+	} else if (num == GTP_VAR_PIPE_TRACE_ID) {
-+		val = (uint64_t)gtp_pipe_trace;
-+		goto output_value;
-+	} else if (num == GTP_VAR_VERSION_ID) {
-+		val = (uint64_t)GTP_VERSION;
-+		goto output_value;
-+	} else if (num == GTP_VAR_BT_ID) {
-+		val = (uint64_t)gtp_bt_size;
-+		goto output_value;
-+	}
-+#ifdef GTP_RB
-+	else if (num == GTP_VAR_GTP_RB_DISCARD_PAGE_NUMBER) {
-+		val = (uint64_t)atomic_read(&gtp_rb_discard_page_number);
-+		goto output_value;
-+	}
-+#endif
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	if (gtp_start || !gtp_frame_current) {
-+#elif defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	if (gtp_start || gtp_frame_current_num < 0) {
-+#endif
-+		if (num == GTP_VAR_CLOCK_ID) {
-+			val = (uint64_t)GTP_LOCAL_CLOCK;
-+			goto output_value;
-+#ifdef CONFIG_X86
-+		} else if (num == GTP_VAR_RDTSC_ID) {
-+			unsigned long long a;
-+			rdtscll(a);
-+			val = (uint64_t)a;
-+			goto output_value;
-+#endif
-+		} else if (num == GTP_VAR_XTIME_SEC_ID
-+			   || num == GTP_VAR_XTIME_NSEC_ID) {
-+			struct timespec	time;
-+
-+			getnstimeofday(&time);
-+			if (num == GTP_VAR_XTIME_SEC_ID)
-+				val = (uint64_t)time.tv_sec;
-+			else
-+				val = (uint64_t)time.tv_nsec;
-+
-+			goto output_value;
-+		}
-+
-+		if (GTP_VAR_IS_SPECIAL(num))
-+			goto out;
-+		var = gtp_var_find(num);
-+		if (var == NULL)
-+			goto out;
-+#ifdef CONFIG_PERF_EVENTS
-+		if (var->ptid == pe_tv_val
-+		    || var->ptid == pe_tv_enabled
-+		    || var->ptid == pe_tv_running) {
-+			if (gtp_start)
-+				var->pts->val =
-+					perf_event_read_value(var->pts->event,
-+							&(var->pts->enabled),
-+							&(var->pts->running));
-+			switch (var->ptid) {
-+			case pe_tv_val:
-+				val = (uint64_t)(var->pts->val);
-+				break;
-+			case pe_tv_enabled:
-+				val = (uint64_t)(var->pts->enabled);
-+				break;
-+			case pe_tv_running:
-+				val = (uint64_t)(var->pts->running);
-+				break;
-+			default:
-+				break;
-+			}
-+			goto out;
-+		}
-+#endif
-+		val = var->val;
-+	} else {
-+#ifdef GTP_FRAME_SIMPLE
-+		char	*next;
-+
-+		for (next = *(char **)(gtp_frame_current + FID_SIZE); next;
-+		     next = *(char **)(next + FID_SIZE)) {
-+			if (FID(next) == FID_VAR) {
-+				vr = (struct gtp_frame_var *)
-+				     (next + FID_SIZE + sizeof(char *));
-+				if (vr->num == (unsigned int)num)
-+					goto while_stop;
-+			}
-+		}
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		int				is_first = 1;
-+		struct ring_buffer_event	*rbe;
-+		char				*tmp;
-+
-+		/* Handle $cpu_id and $clock.  */
-+		if (GTP_VAR_AUTO_TRACEV(num)) {
-+			if (num == GTP_VAR_CLOCK_ID)
-+				val = gtp_frame_current_clock;
-+			else if (num == GTP_VAR_CPU_ID)
-+				val = gtp_frame_current_cpu;
-+			goto output_value;
-+		}
-+re_find:
-+		while (1) {
-+			rbe = ring_buffer_iter_peek
-+				(gtp_frame_iter[gtp_frame_current_cpu], NULL);
-+			if (rbe == NULL)
-+				break;
-+			tmp = ring_buffer_event_data(rbe);
-+			if (FID(tmp) == FID_HEAD)
-+				break;
-+			if (FID(tmp) == FID_VAR) {
-+				vr = (struct gtp_frame_var *)(tmp + FID_SIZE);
-+				if (vr->num == (unsigned int)num)
-+					goto while_stop;
-+			}
-+			ring_buffer_read(gtp_frame_iter[gtp_frame_current_cpu],
-+					 NULL);
-+		}
-+		if (is_first) {
-+			gtp_frame_head_find_num(gtp_frame_current_num);
-+			ring_buffer_read(gtp_frame_iter[gtp_frame_current_cpu],
-+					 NULL);
-+			is_first = 0;
-+			goto re_find;
-+		}
-+#endif
-+#ifdef GTP_RB
-+		struct gtp_rb_walk_s	rbws;
-+		char			*tmp;
-+
-+		/* Handle $cpu_id.  */
-+		if (GTP_VAR_AUTO_TRACEV(num)) {
-+			val = gtp_frame_current_rb->cpu;
-+			goto output_value;
-+		}
-+
-+		rbws.flags = GTP_RB_WALK_PASS_PAGE | GTP_RB_WALK_CHECK_END
-+			     | GTP_RB_WALK_CHECK_ID | GTP_RB_WALK_CHECK_TYPE;
-+		rbws.end = gtp_frame_current_rb->w;
-+		rbws.id = gtp_frame_current_id;
-+		rbws.type = FID_VAR;
-+		tmp = gtp_frame_current_rb->rp;
-+
-+		while (1) {
-+			tmp = gtp_rb_walk(&rbws, tmp);
-+			if (rbws.reason != gtp_rb_walk_type)
-+				break;
-+
-+			vr = (struct gtp_frame_var *)(tmp + FID_SIZE);
-+			if (vr->num == (unsigned int)num)
-+				goto while_stop;
-+
-+			tmp += FRAME_ALIGN(GTP_FRAME_VAR_SIZE);
-+		}
-+#endif
-+		vr = NULL;
-+while_stop:
-+		if (vr)
-+			val = vr->val;
-+	}
-+
-+out:
-+	if (var || vr) {
-+output_value:
-+		snprintf(gtp_rw_bufp, GTP_RW_BUFP_MAX, "V%08x%08x",
-+			 (unsigned int) (val >> 32),
-+			 (unsigned int) (val & 0xffffffff));
-+		gtp_rw_size += strlen(gtp_rw_bufp);
-+		gtp_rw_bufp += strlen(gtp_rw_bufp);
-+	} else {
-+		if (GTP_RW_BUFP_MAX > 1) {
-+			gtp_rw_bufp[0] = 'U';
-+			gtp_rw_size += 1;
-+			gtp_rw_bufp += 1;
-+		}
-+	}
-+
-+	return 1;
-+}
-+
-+static int
-+gtp_gdbrsp_qT(char *pkg)
-+{
-+	int	ret = 1;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_gdbrsp_qT: %s\n", pkg);
-+#endif
-+
-+	if (strcmp("Status", pkg) == 0)
-+		ret = gtp_gdbrsp_qtstatus();
-+	else if (strcmp("fP", pkg) == 0)
-+		ret = gtp_gdbrsp_qtfp();
-+	else if (strcmp("sP", pkg) == 0)
-+		ret = gtp_gdbrsp_qtsp();
-+	else if (strcmp("fV", pkg) == 0)
-+		ret = gtp_gdbrsp_qtfsv(1);
-+	else if (strcmp("sV", pkg) == 0)
-+		ret = gtp_gdbrsp_qtfsv(0);
-+	else if (strncmp("V:", pkg, 2) == 0)
-+		ret = gtp_gdbrsp_qtv(pkg + 2);
-+
-+	return ret;
-+}
-+
-+#ifdef GTP_RB
-+static char		*gtp_traceframe_info;
-+static unsigned int	gtp_traceframe_info_len;
-+
-+static int		gtp_modules_traceframe_info_need_get;
-+static char		*gtp_modules_traceframe_info;
-+static unsigned int	gtp_modules_traceframe_info_len;
-+
-+static int
-+gtp_modules_traceframe_info_get(void)
-+{
-+	struct module		*mod;
-+	struct gtp_realloc_s	grs;
-+	int			ret = 0;
-+
-+	gtp_realloc_alloc(&grs, 0);
-+
-+	if (gtp_modules_traceframe_info_len > 0) {
-+		vfree(gtp_modules_traceframe_info);
-+		gtp_modules_traceframe_info_len = 0;
-+	}
-+
-+	mutex_lock(&module_mutex);
-+	list_for_each_entry_rcu(mod, &(THIS_MODULE->list), list) {
-+		if (__module_address((unsigned long)mod)) {
-+			char	buf[70];
-+
-+			snprintf(buf, 70,
-+				 "<memory start=\"0x%llx\" length=\"0x%llx\"/>\n",
-+				 (ULONGEST)mod->module_core,
-+				 (ULONGEST)mod->core_text_size);
-+			ret = gtp_realloc_str(&grs, buf, 0);
-+			if (ret)
-+				goto out;
-+		}
-+	}
-+	gtp_modules_traceframe_info = grs.buf;
-+	gtp_modules_traceframe_info_len = grs.size;
-+out:
-+	mutex_unlock(&module_mutex);
-+	return ret;
-+}
-+
-+static int
-+gtp_traceframe_info_get(void)
-+{
-+	struct gtp_realloc_s	grs;
-+	int			ret;
-+	struct gtp_rb_walk_s	rbws;
-+	char			*tmp;
-+
-+	if (gtp_traceframe_info_len > 0) {
-+		vfree(gtp_traceframe_info);
-+		gtp_traceframe_info_len = 0;
-+	}
-+	/* 40 is size for "<traceframe-info>\n</traceframe-info>\n" */
-+	ret = gtp_realloc_alloc(&grs, 40);
-+	if (ret != 0)
-+		return ret;
-+
-+	ret = gtp_realloc_str(&grs, "<traceframe-info>\n", 0);
-+	if (ret != 0)
-+		return ret;
-+
-+	rbws.flags = GTP_RB_WALK_PASS_PAGE
-+			| GTP_RB_WALK_CHECK_END
-+			| GTP_RB_WALK_CHECK_ID
-+			| GTP_RB_WALK_CHECK_TYPE;
-+	rbws.end = gtp_frame_current_rb->w;
-+	rbws.id = gtp_frame_current_id;
-+	rbws.type = FID_MEM;
-+	tmp = gtp_frame_current_rb->rp;
-+
-+	while (1) {
-+		struct gtp_frame_mem	*mr;
-+		char			buf[70];
-+
-+		tmp = gtp_rb_walk(&rbws, tmp);
-+		if (rbws.reason != gtp_rb_walk_type)
-+			break;
-+		mr = (struct gtp_frame_mem *) (tmp + FID_SIZE);
-+		snprintf(buf, 70,
-+				"<memory start=\"0x%llx\" length=\"0x%llx\"/>\n",
-+				(ULONGEST)mr->addr, (ULONGEST)mr->size);
-+		ret = gtp_realloc_str(&grs, buf, 0);
-+		if (ret != 0)
-+			return ret;
-+		tmp += FRAME_ALIGN(GTP_FRAME_MEM_SIZE + mr->size);
-+	}
-+
-+	if (gtp_modules_traceframe_info_need_get) {
-+		int	ret = gtp_modules_traceframe_info_get();
-+		if (ret != 0)
-+			return ret;
-+		gtp_modules_traceframe_info_need_get = 0;
-+	}
-+	if (gtp_modules_traceframe_info_len > 0) {
-+		tmp = gtp_realloc(&grs, gtp_modules_traceframe_info_len, 0);
-+		if (tmp == NULL)
-+			return -ENOMEM;
-+		memcpy(tmp, gtp_modules_traceframe_info,
-+		       gtp_modules_traceframe_info_len);
-+	}
-+
-+	ret = gtp_realloc_str(&grs, "</traceframe-info>\n", 1);
-+	if (ret != 0)
-+		return ret;
-+
-+	gtp_traceframe_info = grs.buf;
-+	gtp_traceframe_info_len = grs.size;
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_gdbrsp_qxfer_traceframe_info_read(char *pkg)
-+{
-+	ULONGEST	offset, len;
-+
-+	if (gtp_start || gtp_frame_current_num < 0)
-+		return -EINVAL;
-+
-+	pkg = hex2ulongest(pkg, &offset);
-+	if (pkg[0] != ',')
-+		return -EINVAL;
-+	pkg++;
-+	pkg = hex2ulongest(pkg, &len);
-+	if (len == 0)
-+		return -EINVAL;
-+
-+	if (GTP_RW_BUFP_MAX < 10)
-+		return -EINVAL;
-+
-+	if (offset == 0) {
-+		int	ret = gtp_traceframe_info_get();
-+		if (ret != 0)
-+			return ret;
-+	}
-+
-+	if (len > GTP_RW_BUFP_MAX - 1)
-+		len = GTP_RW_BUFP_MAX - 1;
-+
-+	if (len >= gtp_traceframe_info_len - offset) {
-+		len = gtp_traceframe_info_len - offset;
-+		gtp_rw_bufp[0] = 'l';
-+		gtp_rw_size += 1;
-+		gtp_rw_bufp += 1;
-+	} else {
-+		if (GTP_RW_BUFP_MAX > 1) {
-+			gtp_rw_bufp[0] = 'm';
-+			gtp_rw_size += 1;
-+			gtp_rw_bufp += 1;
-+		}
-+	}
-+
-+	memcpy(gtp_rw_bufp, gtp_traceframe_info + offset, len);
-+	gtp_rw_size += len;
-+	gtp_rw_bufp += len;
-+
-+	return 1;
-+}
-+#endif
-+
-+static uint8_t	gtp_m_buffer[0xffff];
-+
-+static int
-+gtp_gdbrsp_m(char *pkg)
-+{
-+	int		i;
-+	ULONGEST	addr, len;
-+
-+	/* Get add and len.  */
-+	if (pkg[0] == '\0')
-+		return -EINVAL;
-+	pkg = hex2ulongest(pkg, &addr);
-+	if (pkg[0] != ',')
-+		return -EINVAL;
-+	pkg++;
-+	pkg = hex2ulongest(pkg, &len);
-+	if (len == 0)
-+		return -EINVAL;
-+	len &= 0xffff;
-+	len = (ULONGEST) min((int)(GTP_RW_BUFP_MAX / 2),
-+			     (int)len);
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_gdbrsp_m: addr = 0x%lx len = %d\n",
-+		(unsigned long) addr, (int) len);
-+#endif
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	if (gtp_start || !gtp_frame_current) {
-+#elif defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	if (gtp_start || gtp_frame_current_num < 0) {
-+#endif
-+		if (probe_kernel_read(gtp_m_buffer, (void *)(CORE_ADDR)addr,
-+					(size_t)len))
-+			return -EFAULT;
-+	} else {
-+#ifdef GTP_FRAME_SIMPLE
-+		char	*next;
-+#endif
-+		int	ret;
-+
-+		/* XXX: Issue 1: The following part is for gtpro support.
-+		   It is not available because it make disassemble cannot
-+		   work when select a trace frame. */
-+
-+#if 0
-+		struct gtpro_entry	*gtroe;
-+
-+		memset(gtp_m_buffer, 0, len);
-+
-+		/* Read the gtpro.  */
-+		for (gtroe = gtpro_list; gtroe; gtroe = gtroe->next) {
-+			CORE_ADDR	cur_start, cur_end;
-+
-+			cur_start = max(gtroe->start, (CORE_ADDR)addr);
-+			cur_end = min(gtroe->end, ((CORE_ADDR)(addr + len)));
-+			if (cur_start < cur_end) {
-+#ifdef GTP_DEBUG
-+				printk(GTP_DEBUG "gtp_gdbrsp_m: ro read "
-+						 "start = 0x%lx end = 0x%lx\n",
-+				       (unsigned long) cur_start,
-+				       (unsigned long) cur_end);
-+#endif
-+				if (probe_kernel_read(gtp_m_buffer,
-+						       (void *)cur_start,
-+						       (size_t)(cur_end
-+								- cur_start)))
-+					return -EFAULT;
-+			}
-+		}
-+#endif
-+		ret = probe_kernel_read(gtp_m_buffer, (void *)(CORE_ADDR)addr,
-+					(size_t)len);
-+#ifdef GTP_FRAME_SIMPLE
-+		for (next = *(char **)(gtp_frame_current + FID_SIZE); next;
-+		     next = *(char **)(next + FID_SIZE)) {
-+			if (FID(next) == FID_MEM) {
-+				struct gtp_frame_mem	*mr;
-+				ULONGEST		cur_start, cur_end;
-+				uint8_t			*buf;
-+
-+				mr = (struct gtp_frame_mem *)
-+				     (next + FID_SIZE + sizeof(char *));
-+				buf = next + GTP_FRAME_MEM_SIZE;
-+#ifdef GTP_DEBUG
-+				printk(GTP_DEBUG "gtp_gdbrsp_m: section "
-+						 "addr = 0x%lx size = %lu\n",
-+				       (unsigned long) mr->addr,
-+				       (unsigned long) mr->size);
-+#endif
-+				cur_start = max(((ULONGEST)mr->addr), addr);
-+				cur_end = min(((ULONGEST)mr->addr
-+						+ mr->size),
-+					       (addr + len));
-+#ifdef GTP_DEBUG
-+				printk(GTP_DEBUG "gtp_gdbrsp_m: read "
-+						 "start = 0x%lx end = 0x%lx\n",
-+				       (unsigned long) cur_start,
-+				       (unsigned long) cur_end);
-+#endif
-+				if (cur_start < cur_end) {
-+					memcpy(gtp_m_buffer,
-+						buf + cur_start - mr->addr,
-+						cur_end - cur_start);
-+					ret = 0;
-+				}
-+			}
-+		}
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		gtp_frame_head_find_num(gtp_frame_current_num);
-+		ring_buffer_read(gtp_frame_iter[gtp_frame_current_cpu], NULL);
-+
-+		while (1) {
-+			struct ring_buffer_event	*rbe;
-+			char				*tmp;
-+
-+			rbe = ring_buffer_iter_peek
-+				(gtp_frame_iter[gtp_frame_current_cpu], NULL);
-+			if (rbe == NULL)
-+				break;
-+			tmp = ring_buffer_event_data(rbe);
-+			if (FID(tmp) == FID_HEAD)
-+				break;
-+			if (FID(tmp) == FID_MEM) {
-+				struct gtp_frame_mem	*mr;
-+				ULONGEST		cur_start, cur_end;
-+				uint8_t			*buf;
-+
-+				mr = (struct gtp_frame_mem *)
-+				     (tmp + FID_SIZE);
-+				buf = tmp + GTP_FRAME_MEM_SIZE;
-+#ifdef GTP_DEBUG
-+				printk(GTP_DEBUG "gtp_gdbrsp_m: section "
-+						 "addr = 0x%lx size = %lu\n",
-+				       (unsigned long) mr->addr,
-+				       (unsigned long) mr->size);
-+#endif
-+				cur_start = max(((ULONGEST)mr->addr), addr);
-+				cur_end = min(((ULONGEST)mr->addr
-+						+ mr->size),
-+					       (addr + len));
-+#ifdef GTP_DEBUG
-+				printk(GTP_DEBUG "gtp_gdbrsp_m: read "
-+						 "start = 0x%lx end = 0x%lx\n",
-+				       (unsigned long) cur_start,
-+				       (unsigned long) cur_end);
-+#endif
-+				if (cur_start < cur_end) {
-+					memcpy(gtp_m_buffer,
-+						buf + cur_start - mr->addr,
-+						cur_end - cur_start);
-+					ret = 0;
-+				}
-+			}
-+			ring_buffer_read(gtp_frame_iter[gtp_frame_current_cpu],
-+					 NULL);
-+		}
-+#endif
-+#ifdef GTP_RB
-+		{
-+			struct gtp_rb_walk_s	rbws;
-+			char			*tmp;
-+
-+			rbws.flags = GTP_RB_WALK_PASS_PAGE
-+				     | GTP_RB_WALK_CHECK_END
-+				     | GTP_RB_WALK_CHECK_ID
-+				     | GTP_RB_WALK_CHECK_TYPE;
-+			rbws.end = gtp_frame_current_rb->w;
-+			rbws.id = gtp_frame_current_id;
-+			rbws.type = FID_MEM;
-+			tmp = gtp_frame_current_rb->rp;
-+
-+			while (1) {
-+				struct gtp_frame_mem	*mr;
-+				ULONGEST		cur_start, cur_end;
-+				uint8_t			*buf;
-+
-+				tmp = gtp_rb_walk(&rbws, tmp);
-+				if (rbws.reason != gtp_rb_walk_type)
-+					break;
-+
-+				mr = (struct gtp_frame_mem *) (tmp + FID_SIZE);
-+				buf = tmp + GTP_FRAME_MEM_SIZE;
-+#ifdef GTP_DEBUG
-+				printk(GTP_DEBUG "gtp_gdbrsp_m: section "
-+						 "addr = 0x%lx size = %lu\n",
-+				       (unsigned long) mr->addr,
-+				       (unsigned long) mr->size);
-+#endif
-+				cur_start = max(((ULONGEST)mr->addr), addr);
-+				cur_end = min(((ULONGEST)mr->addr
-+						+ mr->size),
-+					       (addr + len));
-+#ifdef GTP_DEBUG
-+				printk(GTP_DEBUG "gtp_gdbrsp_m: read "
-+						 "start = 0x%lx end = 0x%lx\n",
-+				       (unsigned long) cur_start,
-+				       (unsigned long) cur_end);
-+#endif
-+				if (cur_start < cur_end) {
-+					memcpy(gtp_m_buffer,
-+						buf + cur_start - mr->addr,
-+						cur_end - cur_start);
-+					ret = 0;
-+				}
-+
-+				tmp += FRAME_ALIGN(GTP_FRAME_MEM_SIZE
-+						   + mr->size);
-+			}
-+		}
-+#endif
-+		if (ret)
-+			return -EFAULT;
-+	}
-+
-+	for (i = 0; i < (int)len; i++) {
-+#ifdef GTP_DEBUG
-+		printk(GTP_DEBUG "gtp_gdbrsp_m: %d %02x\n", i, gtp_m_buffer[i]);
-+#endif
-+		sprintf(gtp_rw_bufp, "%02x", gtp_m_buffer[i]);
-+		gtp_rw_bufp += 2;
-+		gtp_rw_size += 2;
-+	}
-+
-+	return 1;
-+}
-+
-+static int
-+gtp_gdbrsp_g(void)
-+{
-+#ifdef GTP_FRAME_SIMPLE
-+	char		*next;
-+#endif
-+	struct pt_regs	*regs;
-+
-+	if (GTP_RW_BUFP_MAX < GTP_REG_ASCII_SIZE)
-+		return -E2BIG;
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	if (gtp_start || !gtp_frame_current) {
-+#elif defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	if (gtp_start || gtp_frame_current_num < 0) {
-+#endif
-+		memset(gtp_rw_bufp, '0', GTP_REG_ASCII_SIZE);
-+		goto out;
-+	}
-+
-+	/* Get the regs.  */
-+	regs = NULL;
-+#ifdef GTP_FRAME_SIMPLE
-+	for (next = *(char **)(gtp_frame_current + FID_SIZE); next;
-+	     next = *(char **)(next + FID_SIZE)) {
-+		if (FID(next) == FID_REG) {
-+			regs = (struct pt_regs *)
-+			       (next + FID_SIZE + sizeof(char *));
-+			break;
-+		}
-+	}
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	{
-+		int				is_first = 1;
-+		struct ring_buffer_event	*rbe;
-+		char				*tmp;
-+
-+re_find:
-+		while (1) {
-+			rbe = ring_buffer_iter_peek
-+				(gtp_frame_iter[gtp_frame_current_cpu], NULL);
-+			if (rbe == NULL)
-+				break;
-+			tmp = ring_buffer_event_data(rbe);
-+			if (FID(tmp) == FID_HEAD)
-+				break;
-+			if (FID(tmp) == FID_REG) {
-+				regs = (struct pt_regs *)(tmp + FID_SIZE);
-+				is_first = 0;
-+				break;
-+			}
-+			ring_buffer_read(gtp_frame_iter[gtp_frame_current_cpu],
-+					 NULL);
-+		}
-+		if (is_first) {
-+			gtp_frame_head_find_num(gtp_frame_current_num);
-+			ring_buffer_read(gtp_frame_iter[gtp_frame_current_cpu],
-+					 NULL);
-+			is_first = 0;
-+			goto re_find;
-+		}
-+	}
-+#endif
-+#ifdef GTP_RB
-+	{
-+		struct gtp_rb_walk_s	rbws;
-+		char			*tmp;
-+
-+		rbws.flags = GTP_RB_WALK_PASS_PAGE | GTP_RB_WALK_CHECK_END
-+			     | GTP_RB_WALK_CHECK_ID | GTP_RB_WALK_CHECK_TYPE;
-+		rbws.end = gtp_frame_current_rb->w;
-+		rbws.id = gtp_frame_current_id;
-+		rbws.type = FID_REG;
-+		tmp = gtp_rb_walk(&rbws, gtp_frame_current_rb->rp);
-+		if (rbws.reason == gtp_rb_walk_type)
-+			regs = (struct pt_regs *)(tmp + FID_SIZE);
-+	}
-+#endif
-+	if (regs)
-+		gtp_regs2ascii(regs, gtp_rw_bufp);
-+	else {
-+		struct pt_regs		pregs;
-+		struct gtp_entry	*tpe;
-+
-+		memset(&pregs, '\0', sizeof(struct pt_regs));
-+		tpe = gtp_list_find_without_addr(gtp_frame_current_tpe);
-+		if (tpe)
-+			GTP_REGS_PC(&pregs) = (unsigned long)tpe->addr;
-+		gtp_regs2ascii(&pregs, gtp_rw_bufp);
-+	}
-+out:
-+	gtp_rw_bufp += GTP_REG_ASCII_SIZE;
-+	gtp_rw_size += GTP_REG_ASCII_SIZE;
-+
-+	return 1;
-+}
-+
-+static DEFINE_SEMAPHORE(gtp_rw_lock);
-+static DECLARE_WAIT_QUEUE_HEAD(gtp_rw_wq);
-+static unsigned int	gtp_rw_count;
-+static unsigned int	gtp_frame_count;
-+
-+static void
-+gtp_frame_count_release(void)
-+{
-+	gtp_frame_count--;
-+	if (gtp_frame_count == 0) {
-+		if (!gtp_disconnected_tracing) {
-+			gtp_gdbrsp_qtstop();
-+			gtp_gdbrsp_qtinit();
-+#ifdef GTP_RB
-+			if (!GTP_RB_PAGE_IS_EMPTY)
-+				gtp_rb_page_free();
-+#endif
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_FTRACE_RING_BUFFER)
-+			if (gtp_frame) {
-+#ifdef GTP_FRAME_SIMPLE
-+				vfree(gtp_frame);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+				ring_buffer_free(gtp_frame);
-+#endif
-+				gtp_frame = NULL;
-+			}
-+#endif
-+		}
-+	}
-+}
-+
-+static int
-+gtp_open(struct inode *inode, struct file *file)
-+{
-+	int	ret = 0;
-+
-+	down(&gtp_rw_lock);
-+	if (gtp_gtp_pid >= 0) {
-+		if (get_current()->pid != gtp_gtp_pid) {
-+			ret = -EBUSY;
-+			goto out;
-+		}
-+	}
-+	gtp_noack_mode = 0;
-+
-+	if (gtp_rw_count == 0) {
-+		gtp_read_ack = 0;
-+		gtp_rw_buf = vmalloc(GTP_RW_MAX);
-+		if (!gtp_rw_buf) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+	}
-+	gtp_rw_count++;
-+
-+	gtp_frame_count++;
-+
-+	gtp_gtp_pid_count++;
-+	if (gtp_gtp_pid < 0)
-+		gtp_gtp_pid = get_current()->pid;
-+
-+out:
-+	up(&gtp_rw_lock);
-+	return ret;
-+}
-+
-+static int
-+gtp_release(struct inode *inode, struct file *file)
-+{
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_release\n");
-+#endif
-+
-+	down(&gtp_rw_lock);
-+	gtp_rw_count--;
-+	if (gtp_rw_count == 0)
-+		vfree(gtp_rw_buf);
-+
-+	gtp_frame_count_release();
-+
-+	gtp_gtp_pid_count--;
-+	if (gtp_gtp_pid_count == 0)
-+		gtp_gtp_pid = -1;
-+
-+	up(&gtp_rw_lock);
-+
-+	return 0;
-+}
-+
-+static long
-+gtp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_ioctl: %x\n", cmd);
-+#endif
-+
-+	return 0;
-+}
-+
-+static ssize_t
-+gtp_write(struct file *file, const char __user *buf, size_t size,
-+	  loff_t *ppos)
-+{
-+	char		*rsppkg = NULL;
-+	int		i, ret;
-+	unsigned char	csum;
-+
-+	if (down_interruptible(&gtp_rw_lock))
-+		return -EINTR;
-+
-+	if (size == 0) {
-+#ifdef GTP_DEBUG
-+		printk(GTP_DEBUG "gtp_write: try write 0 size.\n");
-+#endif
-+		goto error_out;
-+	}
-+
-+	size = min_t(size_t, size, GTP_RW_MAX);
-+	if (copy_from_user(gtp_rw_buf, buf, size)) {
-+		size = -EFAULT;
-+		goto error_out;
-+	}
-+
-+	if (gtp_rw_buf[0] == '+' || gtp_rw_buf[0] == '-'
-+	    || gtp_rw_buf[0] == '\3') {
-+		if (gtp_rw_buf[0] == '+')
-+			gtp_rw_size = 0;
-+		size = 1;
-+		goto out;
-+	}
-+
-+	if (size < 4) {
-+		size = -EINVAL;
-+		goto error_out;
-+	}
-+	/* Check format and get the rsppkg.  */
-+	for (i = 0; i < size - 2; i++) {
-+		if (gtp_rw_buf[i] == '$')
-+			rsppkg = gtp_rw_buf + i + 1;
-+		else if (gtp_rw_buf[i] == '#')
-+			break;
-+	}
-+	if (rsppkg && gtp_rw_buf[i] == '#') {
-+		/* Format is OK.  Check crc.  */
-+		if (gtp_noack_mode < 1)
-+			gtp_read_ack = 1;
-+		size = i + 3;
-+		gtp_rw_buf[i] = '\0';
-+	} else {
-+		printk(KERN_WARNING "gtp_write: format error\n");
-+		size = -EINVAL;
-+		goto error_out;
-+	}
-+
-+	wake_up_interruptible_nr(&gtp_rw_wq, 1);
-+
-+	up(&gtp_rw_lock);
-+	if (down_interruptible(&gtp_rw_lock))
-+		return -EINTR;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_write: %s\n", rsppkg);
-+#endif
-+
-+	/* Handle rsppkg and put return to gtp_rw_buf.  */
-+	gtp_rw_buf[0] = '$';
-+	gtp_rw_bufp = gtp_rw_buf + 1;
-+	gtp_rw_size = 0;
-+	ret = 1;
-+	switch (rsppkg[0]) {
-+	case '?':
-+		snprintf(gtp_rw_bufp, GTP_RW_BUFP_MAX, "S05");
-+		gtp_rw_bufp += 3;
-+		gtp_rw_size += 3;
-+		break;
-+	case 'g':
-+		ret = gtp_gdbrsp_g();
-+		break;
-+	case 'm':
-+		ret = gtp_gdbrsp_m(rsppkg + 1);
-+		break;
-+	case 'Q':
-+		if (rsppkg[1] == 'T')
-+			ret = gtp_gdbrsp_QT(rsppkg + 2);
-+		else if (strncmp("QStartNoAckMode", rsppkg, 15) == 0) {
-+			ret = 0;
-+			gtp_noack_mode = -1;
-+		}
-+		break;
-+	case 'q':
-+		if (rsppkg[1] == 'T')
-+			ret = gtp_gdbrsp_qT(rsppkg + 2);
-+		else if (strncmp("qSupported", rsppkg, 10) == 0) {
-+#ifdef GTP_RB
-+			snprintf(gtp_rw_bufp, GTP_RW_BUFP_MAX,
-+				 "QStartNoAckMode+;ConditionalTracepoints+;"
-+				 "TracepointSource+;DisconnectedTracing+;"
-+				 "qXfer:traceframe-info:read+;");
-+#endif
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_FTRACE_RING_BUFFER)
-+			snprintf(gtp_rw_bufp, GTP_RW_BUFP_MAX,
-+				 "QStartNoAckMode+;ConditionalTracepoints+;"
-+				 "TracepointSource+;DisconnectedTracing+;");
-+#endif
-+			gtp_rw_size += strlen(gtp_rw_bufp);
-+			gtp_rw_bufp += strlen(gtp_rw_bufp);
-+			ret = 1;
-+		}
-+#ifdef GTP_RB
-+		else if (strncmp("qXfer:traceframe-info:read::",
-+				   rsppkg, 28) == 0)
-+			ret = gtp_gdbrsp_qxfer_traceframe_info_read(rsppkg
-+								    + 28);
-+#endif
-+		break;
-+	case 's':
-+	case 'S':
-+	case 'c':
-+	case 'C':
-+		ret = -1;
-+		break;
-+	}
-+	if (ret == 0) {
-+		snprintf(gtp_rw_bufp, GTP_RW_BUFP_MAX, "OK");
-+		gtp_rw_bufp += 2;
-+		gtp_rw_size += 2;
-+	} else if (ret < 0) {
-+		snprintf(gtp_rw_bufp, GTP_RW_BUFP_MAX, "E%02x", -ret);
-+		gtp_rw_bufp += 3;
-+		gtp_rw_size += 3;
-+	}
-+
-+	gtp_rw_bufp[0] = '#';
-+	csum = 0;
-+	for (i = 1; i < gtp_rw_size + 1; i++)
-+		csum += gtp_rw_buf[i];
-+	gtp_rw_bufp[1] = INT2CHAR(csum >> 4);
-+	gtp_rw_bufp[2] = INT2CHAR(csum & 0x0f);
-+	gtp_rw_bufp = gtp_rw_buf;
-+	gtp_rw_size += 4;
-+
-+out:
-+	wake_up_interruptible_nr(&gtp_rw_wq, 1);
-+error_out:
-+	up(&gtp_rw_lock);
-+	return size;
-+}
-+
-+static ssize_t
-+gtp_read(struct file *file, char __user *buf, size_t size,
-+	 loff_t *ppos)
-+{
-+	int	err;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_read\n");
-+#endif
-+
-+	if (size == 0)
-+		goto out;
-+
-+	if (down_interruptible(&gtp_rw_lock))
-+		return -EINTR;
-+
-+	if (gtp_noack_mode < 1 && gtp_read_ack) {
-+		err = put_user('+', buf);
-+		if (err) {
-+			size = -err;
-+			goto out;
-+		}
-+		gtp_read_ack = 0;
-+		size = 1;
-+		if (gtp_noack_mode < 0)
-+			gtp_noack_mode = 1;
-+		goto out;
-+	}
-+
-+	size = min(gtp_rw_size, size);
-+	if (size == 0)
-+		goto out;
-+	if (copy_to_user(buf, gtp_rw_bufp, size)) {
-+		size = -EFAULT;
-+		goto out;
-+	}
-+	gtp_rw_bufp += size;
-+	gtp_rw_size -= size;
-+
-+out:
-+	up(&gtp_rw_lock);
-+	return size;
-+}
-+
-+static unsigned int
-+gtp_poll(struct file *file, poll_table *wait)
-+{
-+	unsigned int	mask = POLLOUT | POLLWRNORM;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtp_poll\n");
-+#endif
-+
-+	down(&gtp_rw_lock);
-+	poll_wait(file, &gtp_rw_wq, wait);
-+	if (gtp_read_ack || gtp_rw_size)
-+		mask |= POLLIN | POLLRDNORM;
-+	up(&gtp_rw_lock);
-+
-+	return mask;
-+}
-+
-+static int
-+gtp_frame2file_r(struct gtp_realloc_s *grs, uint32_t *data_size, char *frame)
-+{
-+	char	*wbuf;
-+
-+	wbuf = gtp_realloc(grs, GTP_REG_BIN_SIZE + 1, 0);
-+	if (!wbuf)
-+		return -1;
-+
-+	wbuf[0] = 'R';
-+#ifdef GTP_FRAME_SIMPLE
-+	gtp_regs2bin((struct pt_regs *)(frame + FID_SIZE + sizeof(char *)),
-+		     wbuf + 1);
-+#endif
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	gtp_regs2bin((struct pt_regs *)(frame + FID_SIZE), wbuf + 1);
-+#endif
-+
-+	*data_size += GTP_REG_BIN_SIZE + 1;
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_frame2file_m(struct gtp_realloc_s *grs, uint32_t *data_size, char *frame)
-+{
-+	struct gtp_frame_mem	*mr;
-+	uint8_t			*buf;
-+	ULONGEST		addr;
-+	size_t			remaining;
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	mr = (struct gtp_frame_mem *) (frame + FID_SIZE + sizeof(char *));
-+#endif
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	mr = (struct gtp_frame_mem *) (frame + FID_SIZE);
-+#endif
-+	buf = frame + GTP_FRAME_MEM_SIZE;
-+	addr = mr->addr;
-+	remaining = mr->size;
-+
-+	while (remaining > 0) {
-+		uint16_t	blocklen;
-+		char		*wbuf;
-+		size_t		sp;
-+
-+		blocklen = remaining > 65535 ? 65535 : remaining;
-+
-+		sp = 1 + sizeof(addr) + sizeof(blocklen) + blocklen;
-+		wbuf = gtp_realloc(grs, sp, 0);
-+		if (!wbuf)
-+			return -1;
-+
-+		wbuf[0] = 'M';
-+		wbuf += 1;
-+
-+		memcpy(wbuf, &addr, sizeof(addr));
-+		wbuf += sizeof(addr);
-+
-+		memcpy(wbuf, &blocklen, sizeof(blocklen));
-+		wbuf += sizeof(blocklen);
-+
-+		memcpy(wbuf, buf, blocklen);
-+
-+		addr += blocklen;
-+		remaining -= blocklen;
-+		buf += blocklen;
-+
-+		*data_size += sp;
-+	}
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_frame2file_v(struct gtp_realloc_s *grs, uint32_t *data_size, char *frame)
-+{
-+	struct gtp_frame_var	*vr;
-+	size_t			sp = 1 + sizeof(unsigned int)
-+				     + sizeof(uint64_t);
-+	char			*wbuf;
-+
-+	wbuf = gtp_realloc(grs, sp, 0);
-+	if (!wbuf)
-+		return -1;
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	vr = (struct gtp_frame_var *) (frame + FID_SIZE + sizeof(char *));
-+#endif
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	vr = (struct gtp_frame_var *) (frame + FID_SIZE);
-+#endif
-+
-+	wbuf[0] = 'V';
-+	wbuf += 1;
-+
-+	memcpy(wbuf, &vr->num, sizeof(unsigned int));
-+	wbuf += sizeof(unsigned int);
-+
-+	memcpy(wbuf, &vr->val, sizeof(uint64_t));
-+	wbuf += sizeof(uint64_t);
-+
-+	*data_size += sp;
-+
-+	return 0;
-+}
-+
-+static int
-+#ifdef GTP_FRAME_SIMPLE
-+gtp_frame2file(struct gtp_realloc_s *grs, char *frame)
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+gtp_frame2file(struct gtp_realloc_s *grs, int cpu)
-+#endif
-+#ifdef GTP_RB
-+/* gtp_frame_current_rb will step inside this function.  */
-+gtp_frame2file(struct gtp_realloc_s *grs)
-+#endif
-+{
-+	int16_t				*tmp16p;
-+	char				*next;
-+	char				*wbuf;
-+	uint32_t			data_size;
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	struct ring_buffer_event	*rbe;
-+	u64				clock;
-+#endif
-+#ifdef GTP_RB
-+	struct gtp_rb_walk_s		rbws;
-+#endif
-+
-+	/* Head.  */
-+	tmp16p = (int16_t *)gtp_realloc(grs, 2, 0);
-+	if (!tmp16p)
-+		return -1;
-+#ifdef GTP_FRAME_SIMPLE
-+	*tmp16p = (int16_t)*(ULONGEST *)(frame + FID_SIZE + sizeof(char *));
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	rbe = ring_buffer_read(gtp_frame_iter[cpu], &clock);
-+	if (rbe == NULL) {
-+		/* It will not happen, just for safe.  */
-+		return -1;
-+	}
-+	next = ring_buffer_event_data(rbe);
-+	*tmp16p = (int16_t)*(ULONGEST *)(next + FID_SIZE);
-+#endif
-+#ifdef GTP_RB
-+	*tmp16p = (int16_t)gtp_frame_current_tpe;
-+#endif
-+	/* This part is for the data_size.  */
-+	wbuf = gtp_realloc(grs, 4, 0);
-+	if (!wbuf)
-+		return -1;
-+
-+	/* Body.  */
-+	data_size = 0;
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	{
-+		/* Handle $cpu_id and $clock.  */
-+		struct gtp_frame_var	*vr;
-+		char			frame[GTP_FRAME_VAR_SIZE];
-+
-+		vr = (struct gtp_frame_var *) (frame + FID_SIZE);
-+		vr->num = GTP_VAR_CLOCK_ID;
-+		vr->val = clock;
-+		if (gtp_frame2file_v(grs, &data_size, frame))
-+			return -1;
-+		vr->num = GTP_VAR_CPU_ID;
-+		vr->val = cpu;
-+		if (gtp_frame2file_v(grs, &data_size, frame))
-+			return -1;
-+	}
-+#endif
-+
-+#ifdef GTP_RB
-+	{
-+		/* Handle $cpu_id.  */
-+		struct gtp_frame_var	*vr;
-+		char			tmp[GTP_FRAME_VAR_SIZE];
-+
-+		vr = (struct gtp_frame_var *) (tmp + FID_SIZE);
-+		vr->num = GTP_VAR_CPU_ID;
-+		vr->val = gtp_frame_current_rb->cpu;
-+		if (gtp_frame2file_v(grs, &data_size, tmp))
-+			return -1;
-+	}
-+#endif
-+
-+#ifdef GTP_FRAME_SIMPLE
-+	for (next = *(char **)(frame + FID_SIZE); next;
-+	     next = *(char **)(next + FID_SIZE)) {
-+#elif defined(GTP_FTRACE_RING_BUFFER)
-+	while (1) {
-+		rbe = ring_buffer_iter_peek(gtp_frame_iter[cpu], NULL);
-+		if (rbe == NULL)
-+			break;
-+		next = ring_buffer_event_data(rbe);
-+#endif
-+#ifdef GTP_RB
-+	rbws.flags = GTP_RB_WALK_PASS_PAGE | GTP_RB_WALK_CHECK_END
-+		     | GTP_RB_WALK_CHECK_ID | GTP_RB_WALK_STEP;
-+	rbws.end = gtp_frame_current_rb->w;
-+	rbws.id = gtp_frame_current_id;
-+	rbws.step = 0;
-+	next = gtp_rb_walk(&rbws, gtp_frame_current_rb->rp);
-+	rbws.step = 1;
-+	while (rbws.reason == gtp_rb_walk_step) {
-+#endif
-+		switch (FID(next)) {
-+		case FID_REG:
-+			if (gtp_frame2file_r(grs, &data_size, next))
-+				return -1;
-+			break;
-+		case FID_MEM:
-+			if (gtp_frame2file_m(grs, &data_size, next))
-+				return -1;
-+			break;
-+		case FID_VAR:
-+			if (gtp_frame2file_v(grs, &data_size, next))
-+				return -1;
-+			break;
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		case FID_HEAD:
-+			goto out;
-+			break;
-+#endif
-+		}
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		ring_buffer_read(gtp_frame_iter[cpu], NULL);
-+#endif
-+#ifdef GTP_RB
-+		next = gtp_rb_walk(&rbws, next);
-+#endif
-+	}
-+
-+#ifdef GTP_FTRACE_RING_BUFFER
-+out:
-+#endif
-+#ifdef GTP_RB
-+	gtp_frame_current_rb->rp = next;
-+#endif
-+	/* Set the data_size.  */
-+	memcpy(grs->buf + grs->size - data_size - 4,
-+	       &data_size, 4);
-+
-+	return 0;
-+}
-+
-+static int
-+gtp_frame_file_header(struct gtp_realloc_s *grs, int is_end)
-+{
-+	char			*wbuf;
-+	struct gtp_entry	*tpe;
-+	struct gtp_var		*tvar;
-+	int			tmpsize;
-+	int			ret = -1;
-+
-+	/* Head. */
-+	wbuf = gtp_realloc(grs, 8, 0);
-+	strcpy(wbuf, "\x7fTRACE0\n");
-+
-+	/* BUG: will be a new value.  */
-+	wbuf = gtp_realloc(grs, 100, 0);
-+	if (!wbuf)
-+		goto out;
-+	snprintf(wbuf, 100, "R %x\n", GTP_REG_BIN_SIZE);
-+	gtp_realloc_sub_size(grs, 100 - strlen(wbuf));
-+
-+	if (gtp_realloc_str(grs, "status 0;", 0))
-+		goto out;
-+
-+	wbuf = gtp_realloc(grs, 300, 0);
-+	if (!wbuf)
-+		goto out;
-+	for (tpe = gtp_list; tpe; tpe = tpe->next) {
-+		if (tpe->reason != gtp_stop_normal)
-+			break;
-+	}
-+	tmpsize = gtp_get_status(tpe, wbuf, 300);
-+	gtp_realloc_sub_size(grs, 300 - tmpsize);
-+
-+	if (gtp_realloc_str(grs, "\n", 0))
-+		goto out;
-+
-+	/* Tval. */
-+	for (tvar = gtp_var_list; tvar; tvar = tvar->next) {
-+		wbuf = gtp_realloc(grs, 200, 0);
-+		if (!wbuf)
-+			goto out;
-+		snprintf(wbuf, 200, "tsv %x:%s\n", tvar->num, tvar->src);
-+		gtp_realloc_sub_size(grs, 200 - strlen(wbuf));
-+	}
-+
-+	/* Tracepoint.  */
-+	for (tpe = gtp_list; tpe; tpe = tpe->next) {
-+		struct gtpsrc	*src;
-+
-+		/* Tpe.  */
-+		if (gtp_realloc_str(grs, "tp ", 0))
-+			goto out;
-+		wbuf = gtp_realloc(grs, GTP_REPORT_TRACEPOINT_MAX, 0);
-+		if (!wbuf)
-+			goto out;
-+		gtp_report_tracepoint(tpe, wbuf, GTP_REPORT_TRACEPOINT_MAX);
-+		gtp_realloc_sub_size(grs,
-+				     GTP_REPORT_TRACEPOINT_MAX - strlen(wbuf));
-+		if (gtp_realloc_str(grs, "\n", 0))
-+			goto out;
-+		/* Action.  */
-+		for (src = tpe->action_cmd; src; src = src->next) {
-+			if (gtp_realloc_str(grs, "tp ", 0))
-+				goto out;
-+			tmpsize = gtp_report_action_max(tpe, src);
-+			wbuf = gtp_realloc(grs, tmpsize, 0);
-+			if (!wbuf)
-+				goto out;
-+			gtp_report_action(tpe, src, wbuf, tmpsize);
-+			gtp_realloc_sub_size(grs, tmpsize - strlen(wbuf));
-+			if (gtp_realloc_str(grs, "\n", 0))
-+				goto out;
-+		}
-+		/* Src.  */
-+		for (src = tpe->src; src; src = src->next) {
-+			if (gtp_realloc_str(grs, "tp ", 0))
-+				goto out;
-+			tmpsize = gtp_report_src_max(tpe, src);
-+			wbuf = gtp_realloc(grs, tmpsize, 0);
-+			if (!wbuf)
-+				goto out;
-+			gtp_report_src(tpe, src, wbuf, tmpsize);
-+			gtp_realloc_sub_size(grs, tmpsize - strlen(wbuf));
-+			if (gtp_realloc_str(grs, "\n", 0))
-+				goto out;
-+		}
-+	}
-+
-+	if (gtp_realloc_str(grs, "\n", is_end))
-+		goto out;
-+
-+	ret = 0;
-+out:
-+	return ret;
-+}
-+
-+static ssize_t
-+gtpframe_read(struct file *file, char __user *buf, size_t size,
-+	      loff_t *ppos)
-+{
-+	ssize_t	ret = -ENOMEM;
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	/* -2 means don't need set the frame back old number.  */
-+	int	old_num = -2;
-+#endif
-+
-+recheck:
-+	down(&gtp_rw_lock);
-+	if (gtp_start) {
-+		up(&gtp_rw_lock);
-+		if (wait_event_interruptible(gtpframe_wq,
-+					     !gtp_start) == -ERESTARTSYS)
-+			return -EINTR;
-+#ifdef GTP_DEBUG
-+		printk(GTP_DEBUG "gtpframe_read: goto recheck\n");
-+#endif
-+		goto recheck;
-+	}
-+
-+	/* Set gtp_frame_file if need.  */
-+	if (!gtp_frame_file) {
-+		char			*wbuf;
-+#ifdef GTP_FRAME_SIMPLE
-+		char			*frame;
-+#endif
-+		struct gtp_realloc_s	gr;
-+
-+#ifdef GTP_FRAME_SIMPLE
-+		if (gtp_frame_is_circular)
-+			gr.real_size = GTP_FRAME_SIZE;
-+		else
-+			gr.real_size = gtp_frame_w_start - gtp_frame;
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		gr.real_size =
-+			ring_buffer_entries(gtp_frame) * GTP_FRAME_HEAD_SIZE;
-+#endif
-+#ifdef GTP_RB
-+		if (atomic_read(&gtp_frame_create) != 0) {
-+			int	cpu;
-+
-+			for_each_online_cpu(cpu) {
-+
-+				struct gtp_rb_s	*rb
-+				= (struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu);
-+				void		*tmp;
-+				unsigned long	flags;
-+
-+				GTP_RB_LOCK_IRQ(rb, flags);
-+				gr.real_size = GTP_RB_END(rb->r) - rb->r;
-+				for (tmp = GTP_RB_NEXT(rb->r);
-+				     GTP_RB_HEAD(tmp) != GTP_RB_HEAD(rb->w);
-+				     tmp = GTP_RB_NEXT(tmp))
-+					gr.real_size += GTP_RB_DATA_MAX;
-+				gr.real_size += rb->w - GTP_RB_DATA(rb->w);
-+				GTP_RB_UNLOCK_IRQ(rb, flags);
-+			}
-+		}
-+#endif
-+		gr.real_size += 200;
-+		ret = gtp_realloc_alloc(&gr, gr.real_size);
-+		if (ret != 0)
-+			goto out;
-+
-+		if (gtp_frame_file_header(&gr, 0))
-+			goto out;
-+
-+		/* Frame.  */
-+		if (atomic_read(&gtp_frame_create) == 0)
-+			goto end;
-+#ifdef GTP_FRAME_SIMPLE
-+		frame = gtp_frame_r_start;
-+		do {
-+			if (frame == gtp_frame_end)
-+				frame = gtp_frame;
-+
-+			if (FID(frame) == FID_HEAD) {
-+				if (gtp_frame2file(&gr, frame))
-+					goto out;
-+			}
-+
-+			frame = gtp_frame_next(frame);
-+			if (!frame)
-+				break;
-+		} while (frame != gtp_frame_w_start);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		old_num = gtp_frame_current_num;
-+		gtp_frame_iter_reset();
-+		while (1) {
-+			int	cpu;
-+
-+			cpu = gtp_frame_iter_peek_head();
-+			if (cpu < 0)
-+				break;
-+
-+			if (gtp_frame2file(&gr, cpu))
-+				goto out;
-+		}
-+#endif
-+#ifdef GTP_RB
-+		old_num = gtp_frame_current_num;
-+		gtp_rb_read_reset();
-+		while (1) {
-+			if (gtp_rb_read() != 0)
-+				break;
-+			gtp_frame2file(&gr);
-+		}
-+#endif
-+
-+end:
-+		/* End.  */
-+		wbuf = gtp_realloc(&gr, 2, 1);
-+		if (!wbuf)
-+			goto out;
-+		wbuf[0] = '\0';
-+		wbuf[1] = '\0';
-+
-+		gtp_frame_file = gr.buf;
-+		gtp_frame_file_size = gr.size;
-+	}
-+
-+	/* Set buf.  */
-+	ret = size;
-+	if (*ppos + ret > gtp_frame_file_size) {
-+		ret = gtp_frame_file_size - *ppos;
-+		if (ret <= 0) {
-+			ret = 0;
-+			goto out;
-+		}
-+	}
-+	if (copy_to_user(buf, gtp_frame_file + *ppos, ret)) {
-+		size = -EFAULT;
-+		goto out;
-+	}
-+	*ppos += ret;
-+
-+out:
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	if (old_num == -1)
-+		gtp_frame_iter_reset();
-+	else if (old_num >= 0) {
-+		gtp_frame_head_find_num(old_num);
-+		ring_buffer_read(gtp_frame_iter[gtp_frame_current_cpu], NULL);
-+	}
-+#endif
-+#ifdef GTP_RB
-+	if (old_num == -1)
-+		gtp_rb_reset();
-+	else if (old_num >= 0)
-+		gtp_frame_head_find_num(old_num);
-+#endif
-+	up(&gtp_rw_lock);
-+	return ret;
-+}
-+
-+static int
-+gtpframe_open(struct inode *inode, struct file *file)
-+{
-+recheck:
-+	down(&gtp_rw_lock);
-+#ifdef GTP_RB
-+	if (GTP_RB_PAGE_IS_EMPTY) {
-+#elif defined(GTP_FRAME_SIMPLE) || defined(GTP_FTRACE_RING_BUFFER)
-+	if (!gtp_frame) {
-+#endif
-+		up(&gtp_rw_lock);
-+#ifdef GTP_RB
-+		if (wait_event_interruptible(gtpframe_wq,
-+					     !GTP_RB_PAGE_IS_EMPTY)
-+		    == -ERESTARTSYS)
-+#elif defined(GTP_FRAME_SIMPLE) || defined(GTP_FTRACE_RING_BUFFER)
-+		if (wait_event_interruptible(gtpframe_wq,
-+					     gtp_frame) == -ERESTARTSYS)
-+#endif
-+			return -EINTR;
-+#ifdef GTP_DEBUG
-+		printk(GTP_DEBUG "gtpframe_open: goto recheck\n");
-+#endif
-+		goto recheck;
-+	}
-+
-+	if (gtp_gtpframe_pipe_pid >= 0) {
-+		up(&gtp_rw_lock);
-+		return -EBUSY;
-+	}
-+
-+	if (gtp_gtpframe_pid >= 0) {
-+		if (get_current()->pid != gtp_gtpframe_pid) {
-+			up(&gtp_rw_lock);
-+			return -EBUSY;
-+		}
-+	}
-+
-+	gtp_frame_count++;
-+
-+	gtp_gtpframe_pid_count++;
-+	if (gtp_gtpframe_pid < 0)
-+		gtp_gtpframe_pid = get_current()->pid;
-+
-+	up(&gtp_rw_lock);
-+	return 0;
-+}
-+
-+static int
-+gtpframe_release(struct inode *inode, struct file *file)
-+{
-+	down(&gtp_rw_lock);
-+	gtp_frame_count_release();
-+
-+	gtp_gtpframe_pid_count--;
-+	if (gtp_gtpframe_pid_count == 0)
-+		gtp_gtpframe_pid = -1;
-+	up(&gtp_rw_lock);
-+
-+	return 0;
-+}
-+
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+struct gtpframe_pipe_s {
-+	loff_t			begin;
-+	struct gtp_realloc_s	*grs;
-+	int			llseek_move;
-+#ifdef GTP_RB
-+	void			**page;
-+	u64			*page_id;
-+#endif
-+};
-+
-+static int
-+gtpframe_pipe_open(struct inode *inode, struct file *file)
-+{
-+	int			ret = -ENOMEM;
-+	struct gtpframe_pipe_s	*gps = NULL;
-+
-+	down(&gtp_rw_lock);
-+
-+	if (gtp_frame_current_num >= 0 || gtp_gtpframe_pipe_pid >= 0) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
-+	gtp_gtpframe_pipe_pid = get_current()->pid;
-+
-+recheck:
-+#ifdef GTP_RB
-+	if (GTP_RB_PAGE_IS_EMPTY) {
-+#elif defined(GTP_FTRACE_RING_BUFFER)
-+	if (!gtp_frame) {
-+#endif
-+		up(&gtp_rw_lock);
-+		atomic_inc(&gtpframe_pipe_wq_v);
-+#ifdef GTP_RB
-+		if (wait_event_interruptible(gtpframe_pipe_wq,
-+			!GTP_RB_PAGE_IS_EMPTY) == -ERESTARTSYS) {
-+#elif defined(GTP_FTRACE_RING_BUFFER)
-+		if (wait_event_interruptible(gtpframe_pipe_wq,
-+					     gtp_frame) == -ERESTARTSYS) {
-+#endif
-+			ret = -EINTR;
-+			goto out;
-+		}
-+#ifdef GTP_DEBUG
-+		printk(GTP_DEBUG "gtpframe_pipe_open: goto recheck\n");
-+#endif
-+		down(&gtp_rw_lock);
-+		goto recheck;
-+	}
-+
-+	gps = kcalloc(1, sizeof(struct gtpframe_pipe_s), GFP_KERNEL);
-+	if (gps == NULL)
-+		goto out;
-+	gps->grs = kcalloc(1, sizeof(struct gtp_realloc_s), GFP_KERNEL);
-+	if (gps->grs == NULL)
-+		goto out;
-+#ifdef GTP_RB
-+	gps->page = kcalloc(gtp_cpu_number, sizeof(void *), GFP_KERNEL);
-+	if (gps->page == NULL)
-+		goto out;
-+	gps->page_id = kcalloc(gtp_cpu_number, sizeof(u64), GFP_KERNEL);
-+	if (gps->page_id == NULL)
-+		goto out;
-+#endif
-+
-+	file->private_data = gps;
-+
-+	gtp_frame_count++;
-+
-+	ret = 0;
-+out:
-+	if (ret) {
-+		gtp_gtpframe_pipe_pid = -1;
-+		if (gps) {
-+			kfree(gps->grs);
-+#ifdef GTP_RB
-+			kfree(gps->page);
-+			kfree(gps->page_id);
-+#endif
-+			kfree(gps);
-+		}
-+	}
-+	up(&gtp_rw_lock);
-+	return ret;
-+}
-+
-+static int
-+gtpframe_pipe_release(struct inode *inode, struct file *file)
-+{
-+	struct gtpframe_pipe_s	*gps = file->private_data;
-+
-+	down(&gtp_rw_lock);
-+	gtp_frame_count_release();
-+
-+	gtp_gtpframe_pipe_pid = -1;
-+
-+	up(&gtp_rw_lock);
-+
-+	if (gps) {
-+#ifdef GTP_RB
-+		int	cpu;
-+
-+		for_each_online_cpu(cpu) {
-+			struct gtp_rb_s	*rb
-+				= (struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu);
-+			if (gps->page[cpu])
-+				gtp_rb_put_page(rb, gps->page[cpu], 0);
-+		}
-+
-+		kfree(gps->page);
-+		kfree(gps->page_id);
-+#endif
-+		if (gps->grs) {
-+			if (gps->grs->buf)
-+				vfree(gps->grs->buf);
-+			kfree(gps->grs);
-+		}
-+		kfree(gps);
-+	}
-+
-+	return 0;
-+}
-+
-+#ifdef GTP_RB
-+static int
-+gtpframe_pipe_peek(struct gtpframe_pipe_s *gps)
-+{
-+	int			cpu;
-+	u64			min_id = ULLONG_MAX;
-+	int			ret = -1;
-+	struct gtp_rb_walk_s	rbws;
-+
-+	rbws.flags = 0;
-+
-+	for_each_online_cpu(cpu) {
-+		struct gtp_rb_s	*rb
-+			= (struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu);
-+
-+		if (gps->page_id[cpu] == 0) {
-+			/* Get new page.  */
-+			if (gps->page[cpu] == NULL) {
-+get_new_page:
-+				gps->page[cpu] = gtp_rb_get_page(rb);
-+				if (gps->page[cpu] == NULL)
-+					continue;
-+			}
-+			/* Get new entry.  */
-+			gps->page[cpu] = gtp_rb_walk(&rbws, gps->page[cpu]);
-+			if (rbws.reason != gtp_rb_walk_new_entry) {
-+				/* Put the page back and get a new page.  */
-+				gtp_rb_put_page(rb, gps->page[cpu], 1);
-+				goto get_new_page;
-+			}
-+			/* Get id.  */
-+			gps->page_id[cpu] = *(u64 *)(gps->page[cpu] + FID_SIZE);
-+		}
-+
-+		if (gps->page_id[cpu] < min_id) {
-+			min_id = gps->page_id[cpu];
-+			ret = cpu;
-+		}
-+	}
-+
-+	return ret;
-+}
-+#else
-+static int
-+gtpframe_pipe_peek(void)
-+{
-+	u64				min = 0;
-+	u64				ts;
-+	int				cpu;
-+	struct ring_buffer_event	*rbe;
-+	char				*next;
-+	int				ret = -1;
-+
-+	for_each_online_cpu(cpu) {
-+		while (1) {
-+			rbe = ring_buffer_peek(gtp_frame, cpu, &ts, NULL);
-+			if (rbe == NULL)
-+				break;
-+			next = ring_buffer_event_data(rbe);
-+			if (FID(next) == FID_HEAD)
-+				break;
-+			ring_buffer_consume(gtp_frame, cpu, &ts, NULL);
-+		}
-+
-+		if (rbe) {
-+			if ((min && ts < min) || !min) {
-+				min = ts;
-+				ret = cpu;
-+			}
-+		}
-+	}
-+
-+	return ret;
-+}
-+#endif
-+
-+static int
-+#ifdef GTP_RB
-+gtpframe_pipe_get_entry(struct gtpframe_pipe_s *gps)
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+gtpframe_pipe_get_entry(struct gtp_realloc_s *grs)
-+#endif
-+{
-+	int				cpu;
-+	int16_t				*tmp16p;
-+	uint32_t			data_size;
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	char				*next;
-+	struct ring_buffer_event	*rbe;
-+	u64				ts;
-+#endif
-+
-+#ifdef GTP_RB
-+	struct gtp_rb_walk_s		rbws;
-+	struct gtp_realloc_s		*grs = gps->grs;
-+#endif
-+	/* Because this function only be called when gtp_realloc_is_empty,
-+	   so grs don't need reset. */
-+
-+#ifdef GTP_RB
-+#define GTP_PIPE_PEEK	(cpu = gtpframe_pipe_peek(gps))
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+recheck:
-+#define GTP_PIPE_PEEK	(cpu = gtpframe_pipe_peek())
-+#endif
-+	GTP_PIPE_PEEK;
-+	if (cpu < 0) {
-+		/* Didn't get the buffer that have event.
-+		   Wait and recheck.*/
-+		atomic_inc(&gtpframe_pipe_wq_v);
-+		if (wait_event_interruptible(gtpframe_pipe_wq,
-+					     GTP_PIPE_PEEK >= 0)
-+			== -ERESTARTSYS)
-+			return -EINTR;
-+	}
-+#undef GTP_PIPE_PEEK
-+
-+	/* Head.  */
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	rbe = ring_buffer_consume(gtp_frame, cpu, &ts, NULL);
-+	if (rbe == NULL)
-+		goto recheck;
-+	next = ring_buffer_event_data(rbe);
-+	if (FID(next) != FID_HEAD)
-+		goto recheck;
-+#endif
-+	tmp16p = (int16_t *)gtp_realloc(grs, 2, 0);
-+	if (!tmp16p)
-+		return -ENOMEM;
-+#ifdef GTP_RB
-+	*tmp16p = (int16_t)*(ULONGEST *)(gps->page[cpu] + FID_SIZE
-+					 + sizeof(u64));
-+	gps->page[cpu] += FRAME_ALIGN(GTP_FRAME_HEAD_SIZE);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	*tmp16p = (int16_t)*(ULONGEST *)(next + FID_SIZE);
-+#endif
-+	/* This part is for the data_size.  */
-+	if (gtp_realloc(grs, 4, 0) == NULL)
-+		return -ENOMEM;
-+	data_size = 0;
-+
-+#ifdef GTP_RB
-+	{
-+		/* Handle $cpu_id.  */
-+		struct gtp_frame_var	*vr;
-+		char			frame[GTP_FRAME_VAR_SIZE];
-+
-+		vr = (struct gtp_frame_var *) (frame + FID_SIZE);
-+		vr->num = GTP_VAR_CPU_ID;
-+		vr->val = cpu;
-+		if (gtp_frame2file_v(grs, &data_size, frame))
-+			return -ENOMEM;
-+	}
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	{
-+		/* Handle $cpu_id and $clock.  */
-+		struct gtp_frame_var	*vr;
-+		char			frame[GTP_FRAME_VAR_SIZE];
-+
-+
-+		vr = (struct gtp_frame_var *) (frame + FID_SIZE);
-+		vr->num = GTP_VAR_CLOCK_ID;
-+		vr->val = ts;
-+		if (gtp_frame2file_v(grs, &data_size, frame))
-+			return -ENOMEM;
-+		vr->num = GTP_VAR_CPU_ID;
-+		vr->val = cpu;
-+		if (gtp_frame2file_v(grs, &data_size, frame))
-+			return -ENOMEM;
-+	}
-+#endif
-+
-+#ifdef GTP_RB
-+	rbws.flags = GTP_RB_WALK_CHECK_ID | GTP_RB_WALK_STEP;
-+	rbws.id = gps->page_id[cpu];
-+re_walk:
-+	rbws.step = 0;
-+	gps->page[cpu] = gtp_rb_walk(&rbws, gps->page[cpu]);
-+	rbws.step = 1;
-+	while (rbws.reason == gtp_rb_walk_step) {
-+		switch (FID(gps->page[cpu])) {
-+		case FID_REG:
-+			if (gtp_frame2file_r(grs, &data_size, gps->page[cpu]))
-+				return -ENOMEM;
-+			break;
-+
-+		case FID_MEM:
-+			if (gtp_frame2file_m(grs, &data_size, gps->page[cpu]))
-+				return -ENOMEM;
-+			break;
-+
-+		case FID_VAR:
-+			if (gtp_frame2file_v(grs, &data_size, gps->page[cpu]))
-+				return -ENOMEM;
-+			break;
-+		}
-+		gps->page[cpu] = gtp_rb_walk(&rbws, gps->page[cpu]);
-+	}
-+	if (rbws.reason == gtp_rb_walk_end_page
-+	    || rbws.reason == gtp_rb_walk_error) {
-+		/* Put this page back.  */
-+		gtp_rb_put_page((struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu),
-+				gps->page[cpu], 1);
-+		gps->page[cpu] = gtp_rb_get_page((struct gtp_rb_s *)per_cpu_ptr
-+							(gtp_rb, cpu));
-+		if (gps->page[cpu])
-+			goto re_walk;
-+	}
-+	gps->page_id[cpu] = 0;
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	while (1) {
-+#define GTP_PIPE_CONSUME (rbe = ring_buffer_consume(gtp_frame, cpu, NULL, NULL))
-+		GTP_PIPE_CONSUME;
-+		if (rbe == NULL) {
-+			if (!gtp_start)
-+				break;
-+
-+			atomic_inc(&gtpframe_pipe_wq_v);
-+			if (wait_event_interruptible(gtpframe_pipe_wq,
-+							GTP_PIPE_CONSUME
-+							!= NULL)
-+					== -ERESTARTSYS)
-+				return -EINTR;
-+			continue;
-+		}
-+#undef GTP_PIPE_CONSUME
-+		next = ring_buffer_event_data(rbe);
-+		switch (FID(next)) {
-+		case FID_REG:
-+			if (gtp_frame2file_r(grs, &data_size, next))
-+				return -ENOMEM;
-+			break;
-+
-+		case FID_MEM:
-+			if (gtp_frame2file_m(grs, &data_size, next))
-+				return -ENOMEM;
-+			break;
-+
-+		case FID_VAR:
-+			if (gtp_frame2file_v(grs, &data_size, next))
-+				return -ENOMEM;
-+			break;
-+
-+		case FID_HEAD:
-+		case FID_END:
-+			goto while_out;
-+			break;
-+		}
-+	}
-+while_out:
-+#endif
-+	/* Set the data_size.  */
-+	memcpy(grs->buf + grs->size - data_size - 4, &data_size, 4);
-+
-+	return 0;
-+}
-+
-+static ssize_t
-+gtpframe_pipe_read(struct file *file, char __user *buf, size_t size,
-+		   loff_t *ppos)
-+{
-+	ssize_t			ret = -ENOMEM;
-+	struct gtpframe_pipe_s	*gps = file->private_data;
-+	loff_t			entry_offset;
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtpframe_pipe_read: size=%u *ppos=%lld\n",
-+	       size, *ppos);
-+#endif
-+
-+	if (!gtp_realloc_is_alloced(gps->grs)) {
-+		ret = gtp_realloc_alloc(gps->grs, 200);
-+		if (ret != 0)
-+			goto out;
-+	} else if (*ppos < gps->begin
-+		   || *ppos >= (gps->begin + gps->grs->size)) {
-+		gtp_realloc_reset(gps->grs);
-+
-+		if (gps->llseek_move) {
-+			/* clear user will return NULL.
-+			   Then GDB tfind got a fail.  */
-+			if (size > 2)
-+				size = 2;
-+			if (clear_user(buf, size)) {
-+				ret = -EFAULT;
-+				goto out;
-+			}
-+			gps->begin = 0;
-+			gps->llseek_move = 0;
-+			ret = size;
-+			goto out;
-+		}
-+	}
-+
-+	if (gtp_realloc_is_empty(gps->grs)) {
-+		if (*ppos == 0) {
-+
-+			if (gtp_frame_file_header(gps->grs, 1))
-+				goto out;
-+#ifdef GTP_DEBUG
-+			printk(GTP_DEBUG "gtpframe_pipe_read: Get header.\n");
-+#endif
-+		} else {
-+#ifdef GTP_RB
-+			ret = gtpframe_pipe_get_entry(gps);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+			ret = gtpframe_pipe_get_entry(gps->grs);
-+#endif
-+			if (ret < 0)
-+				goto out;
-+#ifdef GTP_DEBUG
-+			printk(GTP_DEBUG "gtpframe_pipe_read: Get entry.\n");
-+#endif
-+		}
-+		gps->begin = *ppos;
-+	}
-+
-+#ifdef GTP_DEBUG
-+	printk(GTP_DEBUG "gtpframe_pipe_read: gps->begin=%lld "
-+			 "gps->grs->size=%u\n",
-+	       gps->begin, gps->grs->size);
-+#endif
-+
-+	entry_offset = *ppos - gps->begin;
-+	ret = size;
-+	if (entry_offset + size > gps->grs->size)
-+		ret = gps->grs->size - entry_offset;
-+	if (copy_to_user(buf, gps->grs->buf + entry_offset, ret)) {
-+		ret = -EFAULT;
-+		goto out;
-+	}
-+	*ppos += ret;
-+
-+out:
-+	return ret;
-+}
-+
-+static loff_t
-+gtpframe_pipe_llseek(struct file *file, loff_t offset, int origin)
-+{
-+	struct gtpframe_pipe_s	*gps = file->private_data;
-+	loff_t			ret = default_llseek(file, offset, origin);
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	/* True means that GDB tfind to next frame entry.  */
-+	if (ret >= gps->begin + gps->grs->size && gps->begin)
-+		gps->llseek_move = 1;
-+
-+	return ret;
-+}
-+#endif
-+
-+static const struct file_operations gtp_operations = {
-+	.owner		= THIS_MODULE,
-+	.open		= gtp_open,
-+	.release	= gtp_release,
-+	.unlocked_ioctl	= gtp_ioctl,
-+	.compat_ioctl	= gtp_ioctl,
-+	.read		= gtp_read,
-+	.write		= gtp_write,
-+	.poll		= gtp_poll,
-+};
-+
-+static const struct file_operations gtpframe_operations = {
-+	.owner		= THIS_MODULE,
-+	.open		= gtpframe_open,
-+	.release	= gtpframe_release,
-+	.read		= gtpframe_read,
-+	.llseek		= default_llseek,
-+};
-+
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+static const struct file_operations gtpframe_pipe_operations = {
-+	.owner		= THIS_MODULE,
-+	.open		= gtpframe_pipe_open,
-+	.release	= gtpframe_pipe_release,
-+	.read		= gtpframe_pipe_read,
-+	.llseek		= gtpframe_pipe_llseek,
-+};
-+#endif
-+
-+struct dentry	*gtp_dir;
-+struct dentry	*gtpframe_dir;
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+struct dentry	*gtpframe_pipe_dir;
-+#endif
-+
-+static int
-+gtp_modules_load_del_notify(struct notifier_block *self, unsigned long val,
-+			    void *data)
-+{
-+	if (val == MODULE_STATE_COMING)
-+		return 0;
-+
-+	down(&gtp_rw_lock);
-+	gtp_modules_traceframe_info_need_get = 1;
-+	up(&gtp_rw_lock);
-+
-+	return 0;
-+}
-+
-+static struct notifier_block	gtp_modules_load_del_nb = {
-+	.notifier_call = gtp_modules_load_del_notify,
-+};
-+
-+static int __init gtp_init(void)
-+{
-+	int		ret = -ENOMEM;
-+
-+	gtp_gtp_pid = -1;
-+	gtp_gtp_pid_count = 0;
-+	gtp_gtpframe_pid = -1;
-+	gtp_gtpframe_pid_count = 0;
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	gtp_gtpframe_pipe_pid = -1;
-+#endif
-+	gtp_list = NULL;
-+	gtp_read_ack = 0;
-+	gtp_rw_bufp = NULL;
-+	gtp_rw_size = 0;
-+	gtp_start = 0;
-+	gtp_disconnected_tracing = 0;
-+	gtp_circular = 0;
-+	gtp_var_list = GTP_VAR_LIST_FIRST;
-+	gtp_var_head = GTP_VAR_SPECIAL_MIN;
-+	gtp_var_tail = GTP_VAR_SPECIAL_MAX;
-+	gtp_var_array = NULL;
-+	current_gtp_var = NULL;
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_FTRACE_RING_BUFFER)
-+	gtp_frame = NULL;
-+#endif
-+	gtp_frame_current_num = -1;
-+	gtp_frame_current_tpe = 0;
-+#ifdef GTP_FRAME_SIMPLE
-+	gtp_frame_r_start = NULL;
-+	gtp_frame_w_start = NULL;
-+	gtp_frame_end = NULL;
-+	gtp_frame_current = NULL;
-+	gtp_frame_is_circular = 0;
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+	{
-+		int	cpu;
-+
-+		for_each_online_cpu(cpu)
-+			gtp_frame_iter[cpu] = NULL;
-+	}
-+	gtp_frame_current_cpu = 0;
-+#endif
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	atomic_set(&gtpframe_pipe_wq_v, 0);
-+#endif
-+	atomic_set(&gtp_frame_create, 0);
-+	gtp_rw_count = 0;
-+	gtp_frame_count = 0;
-+	current_gtp = NULL;
-+	current_gtp_action_cmd = NULL;
-+	current_gtp_src = NULL;
-+	gtpro_list = NULL;
-+	gtp_frame_file = NULL;
-+	gtp_frame_file_size = 0;
-+	gtp_dir = NULL;
-+	gtpframe_dir = NULL;
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	gtpframe_pipe_dir = NULL;
-+#endif
-+	{
-+		int	cpu;
-+
-+		gtp_cpu_number = 0;
-+		for_each_online_cpu(cpu) {
-+			if (cpu > gtp_cpu_number)
-+				gtp_cpu_number = cpu;
-+		}
-+		gtp_cpu_number++;
-+	}
-+	gtp_start_last_errno = 0;
-+	gtp_start_ignore_error = 0;
-+	gtp_pipe_trace = 0;
-+	gtp_bt_size = 512;
-+	gtp_noack_mode = 0;
-+#ifdef GTP_RB
-+	gtp_traceframe_info = NULL;
-+	gtp_traceframe_info_len = 0;
-+#endif
-+
-+#ifdef GTP_RB
-+	ret = gtp_rb_init();
-+	if (ret != 0)
-+		goto out;
-+#endif
-+
-+	gtp_wq = create_singlethread_workqueue("gtpd");
-+	if (gtp_wq == NULL)
-+		goto out;
-+
-+	gtp_dir = debugfs_create_file("gtp", S_IFIFO | S_IRUSR | S_IWUSR, NULL,
-+				      NULL, &gtp_operations);
-+	if (gtp_dir == NULL || gtp_dir == ERR_PTR(-ENODEV)) {
-+		gtp_dir = NULL;
-+		goto out;
-+	}
-+	gtpframe_dir = debugfs_create_file("gtpframe", S_IFIFO | S_IRUSR, NULL,
-+					   NULL, &gtpframe_operations);
-+	if (gtpframe_dir == NULL || gtpframe_dir == ERR_PTR(-ENODEV)) {
-+		gtpframe_dir = NULL;
-+		goto out;
-+	}
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	gtpframe_pipe_dir = debugfs_create_file("gtpframe_pipe",
-+						S_IFIFO | S_IRUSR, NULL, NULL,
-+						&gtpframe_pipe_operations);
-+	if (gtpframe_pipe_dir == NULL
-+	    || gtpframe_pipe_dir == ERR_PTR(-ENODEV)) {
-+		gtpframe_pipe_dir = NULL;
-+		goto out;
-+	}
-+#endif
-+
-+	gtp_modules_traceframe_info_need_get = 1;
-+	gtp_modules_traceframe_info = NULL;
-+	gtp_modules_traceframe_info_len = 0;
-+	if (register_module_notifier(&gtp_modules_load_del_nb))
-+		goto out;
-+
-+	ret = 0;
-+out:
-+	if (ret < 0) {
-+		if (gtp_wq)
-+			destroy_workqueue(gtp_wq);
-+
-+		if (gtp_dir)
-+			debugfs_remove_recursive(gtp_dir);
-+		if (gtpframe_dir)
-+			debugfs_remove_recursive(gtpframe_dir);
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+		if (gtpframe_pipe_dir)
-+			debugfs_remove_recursive(gtpframe_pipe_dir);
-+#endif
-+
-+#ifdef GTP_RB
-+		gtp_rb_release();
-+#endif
-+	}
-+
-+	return ret;
-+}
-+
-+static void __exit gtp_exit(void)
-+{
-+	unregister_module_notifier(&gtp_modules_load_del_nb);
-+
-+	if (gtp_dir)
-+		debugfs_remove_recursive(gtp_dir);
-+	if (gtpframe_dir)
-+		debugfs_remove_recursive(gtpframe_dir);
-+#if defined(GTP_FTRACE_RING_BUFFER) || defined(GTP_RB)
-+	if (gtpframe_pipe_dir)
-+		debugfs_remove_recursive(gtpframe_pipe_dir);
-+#endif
-+
-+	gtp_gdbrsp_qtstop();
-+	gtp_gdbrsp_qtinit();
-+#ifdef GTP_RB
-+	if (!GTP_RB_PAGE_IS_EMPTY)
-+		gtp_rb_page_free();
-+#endif
-+#if defined(GTP_FRAME_SIMPLE) || defined(GTP_FTRACE_RING_BUFFER)
-+	if (gtp_frame) {
-+#ifdef GTP_FRAME_SIMPLE
-+		vfree(gtp_frame);
-+#endif
-+#ifdef GTP_FTRACE_RING_BUFFER
-+		ring_buffer_free(gtp_frame);
-+#endif
-+		gtp_frame = NULL;
-+	}
-+#endif
-+
-+	destroy_workqueue(gtp_wq);
-+
-+#ifdef GTP_RB
-+	gtp_rb_release();
-+#endif
-+}
-+
-+module_init(gtp_init)
-+module_exit(gtp_exit)
-+
-+MODULE_AUTHOR("Hui Zhu <teawater@gmail.com>");
-+MODULE_LICENSE("GPL");
---- /dev/null
-+++ b/lib/gtp_rb.c
-@@ -0,0 +1,498 @@
-+/*
-+ * Ring buffer of kernel GDB tracepoint module.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright(C) KGTP team (https://code.google.com/p/kgtp/), 2011, 2012
-+ *
-+ */
-+
-+#define ADDR_SIZE		sizeof(size_t)
-+#define GTP_RB_HEAD(addr)	((void *)((size_t)(addr) & PAGE_MASK))
-+#define GTP_RB_DATA(addr)	(GTP_RB_HEAD(addr) + ADDR_SIZE)
-+#define GTP_RB_END(addr)	(GTP_RB_HEAD(addr) + PAGE_SIZE - ADDR_SIZE)
-+#define GTP_RB_PREV(addr)	(*(void **)GTP_RB_HEAD(addr))
-+#define GTP_RB_NEXT(addr)	(*(void **)GTP_RB_END(addr))
-+#define GTP_RB_DATA_MAX		(PAGE_SIZE - ADDR_SIZE - ADDR_SIZE - FID_SIZE \
-+				 - sizeof(u64))
-+
-+struct gtp_rb_s {
-+	spinlock_t	lock;
-+	void		*w;
-+	void		*prev_w;
-+	void		*r;
-+	void		*rp;
-+	u64		rp_id;
-+	int		cpu;
-+};
-+
-+static struct gtp_rb_s __percpu	*gtp_rb;
-+static atomic64_t		gtp_rb_count;
-+static unsigned int		gtp_rb_page_count;
-+static atomic_t			gtp_rb_discard_page_number;
-+
-+static int
-+gtp_rb_init(void)
-+{
-+	int	cpu;
-+
-+	gtp_rb = alloc_percpu(struct gtp_rb_s);
-+	if (!gtp_rb)
-+		return -ENOMEM;
-+
-+	for_each_online_cpu(cpu) {
-+		struct gtp_rb_s	*rb
-+			= (struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu);
-+		memset(rb, 0, sizeof(struct gtp_rb_s));
-+		rb->lock = __SPIN_LOCK_UNLOCKED(rb->lock);
-+		rb->cpu = cpu;
-+	}
-+	gtp_rb_page_count = 0;
-+	atomic_set(&gtp_rb_discard_page_number, 0);
-+
-+	return 0;
-+}
-+
-+static void
-+gtp_rb_release(void)
-+{
-+	if (gtp_rb) {
-+		free_percpu(gtp_rb);
-+		gtp_rb = NULL;
-+	}
-+}
-+
-+static void
-+gtp_rb_reset(void)
-+{
-+	int	cpu;
-+
-+	for_each_online_cpu(cpu) {
-+		struct gtp_rb_s	*rb
-+			= (struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu);
-+		rb->w = GTP_RB_DATA(rb->w);
-+		rb->r = rb->w;
-+		rb->rp = NULL;
-+		rb->rp_id = 0;
-+	}
-+
-+	atomic64_set(&gtp_rb_count, 0);
-+	atomic_set(&gtp_rb_discard_page_number, 0);
-+}
-+
-+static inline u64
-+gtp_rb_clock(void)
-+{
-+	return atomic64_inc_return(&gtp_rb_count);
-+}
-+
-+#define GTP_RB_PAGE_IS_EMPTY	(gtp_rb_page_count == 0)
-+
-+static int
-+gtp_rb_page_alloc(int size)
-+{
-+	int	cpu;
-+
-+	for_each_online_cpu(cpu) {
-+		struct gtp_rb_s	*rb
-+			= (struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu);
-+		void		*last = NULL, *next = NULL;
-+		struct page	*page;
-+		int		current_size;
-+
-+		gtp_rb_page_count = 0;
-+		current_size = size;
-+
-+		while (1) {
-+			if (current_size > 0)
-+				current_size -= PAGE_SIZE;
-+			else
-+				break;
-+
-+			page = alloc_pages_node(cpu_to_node(cpu),
-+						GFP_KERNEL, 0);
-+			if (!page)
-+				return -1;
-+			gtp_rb_page_count++;
-+			rb->w = GTP_RB_DATA(page_address(page));
-+			GTP_RB_NEXT(rb->w) = next;
-+			if (next)
-+				GTP_RB_PREV(next) = rb->w;
-+			next = rb->w;
-+			if (!last)
-+				last = rb->w;
-+		}
-+
-+		GTP_RB_NEXT(last) = next;
-+		GTP_RB_PREV(next) = last;
-+		rb->r = rb->w;
-+
-+		if (gtp_rb_page_count < 3)
-+			return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static void
-+gtp_rb_page_free(void)
-+{
-+	int	cpu;
-+
-+	for_each_online_cpu(cpu) {
-+		struct gtp_rb_s	*rb
-+			= (struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu);
-+		void		*need_free = NULL;
-+		int		is_first = 1;
-+
-+		for (rb->r = rb->w = GTP_RB_DATA(rb->w);
-+		     is_first || rb->w != rb->r;
-+		     rb->w = GTP_RB_NEXT(rb->w)) {
-+			if (need_free)
-+				free_page((unsigned long)need_free);
-+			need_free = GTP_RB_HEAD(rb->w);
-+			is_first = 0;
-+		}
-+		if (need_free)
-+			free_page((unsigned long)need_free);
-+	}
-+
-+	gtp_rb_page_count = 0;
-+}
-+
-+#define GTP_RB_LOCK(r)			spin_lock(&r->lock);
-+#define GTP_RB_UNLOCK(r)		spin_unlock(&r->lock);
-+#define GTP_RB_LOCK_IRQ(r, flags)	spin_lock_irqsave(&r->lock, flags);
-+#define GTP_RB_UNLOCK_IRQ(r, flags)	spin_unlock_irqrestore(&r->lock, flags);
-+#define GTP_RB_RELEASE(r)		(r->prev_w = r->w)
-+
-+static void *
-+gtp_rb_alloc(struct gtp_rb_s *rb, size_t size, u64 id)
-+{
-+	void		*ret;
-+
-+	size = FRAME_ALIGN(size);
-+
-+	if (size > GTP_RB_DATA_MAX) {
-+		printk(KERN_WARNING "gtp_rb_alloc: The size %zu is too big"
-+				    "for the KGTP ring buffer.  "
-+				    "The max size that KGTP ring buffer "
-+				    "support is %lu (Need sub some size for "
-+				    "inside structure).\n", size, GTP_RB_DATA_MAX);
-+		return NULL;
-+	}
-+
-+	rb->prev_w = rb->w;
-+
-+	if (rb->w + size > GTP_RB_END(rb->w)) {
-+		/* Don't have enough size in current page, insert a
-+		   FID_PAGE_END and try to get next page.  */
-+		if (GTP_RB_END(rb->w) - rb->w >= FID_SIZE)
-+			FID(rb->w) = FID_PAGE_END;
-+
-+		if (GTP_RB_HEAD(GTP_RB_NEXT(rb->w)) == GTP_RB_HEAD(rb->r)) {
-+			if (gtp_circular) {
-+				rb->r = GTP_RB_NEXT(rb->r);
-+				atomic_inc(&gtp_rb_discard_page_number);
-+			} else
-+				return NULL;
-+		}
-+		rb->w = GTP_RB_NEXT(rb->w);
-+
-+		if (id) {
-+			/* Need insert a FID_PAGE_BEGIN.  */
-+			FID(rb->w) = FID_PAGE_BEGIN;
-+			*((u64 *)(rb->w + FID_SIZE)) = id;
-+			rb->w += FRAME_ALIGN(GTP_FRAME_PAGE_BEGIN_SIZE);
-+		}
-+	}
-+
-+	ret = rb->w;
-+	rb->w += size;
-+
-+	return ret;
-+}
-+
-+enum gtp_rb_walk_reason {
-+	gtp_rb_walk_end = 0,
-+	gtp_rb_walk_end_page,
-+	gtp_rb_walk_end_entry,
-+	gtp_rb_walk_new_entry,
-+	gtp_rb_walk_type,
-+	gtp_rb_walk_step,
-+	gtp_rb_walk_error,
-+};
-+
-+/* Check *end.  */
-+#define GTP_RB_WALK_CHECK_END	0x1
-+/* When to the end of a page, goto next one.  */
-+#define GTP_RB_WALK_PASS_PAGE	0x2
-+/* When to the end of a entry, goto next one.  */
-+#define GTP_RB_WALK_PASS_ENTRY	0x4
-+/* Check with id and FID_PAGE_BEGIN to make sure this is the current frame. */
-+#define GTP_RB_WALK_CHECK_ID	0x8
-+/* Return ff type is same in buffer.  */
-+#define GTP_RB_WALK_CHECK_TYPE	0x10
-+/* Return ff type is same in buffer.  */
-+#define GTP_RB_WALK_STEP	0x20
-+
-+struct gtp_rb_walk_s {
-+	unsigned int		flags;
-+	/* Reason for return.  */
-+	enum gtp_rb_walk_reason	reason;
-+	/* GTP_RB_WALK_CHECK_END */
-+	void			*end;
-+	/* GTP_RB_WALK_CHECK_ID */
-+	u64			id;
-+	/* GTP_RB_WALK_CHECK_TYPE */
-+	FID_TYPE		type;
-+	/* GTP_RB_WALK_STEP */
-+	int			step;
-+};
-+
-+static void *
-+gtp_rb_walk(struct gtp_rb_walk_s *s, void *ret)
-+{
-+	int	step;
-+	void	*page_end = GTP_RB_END(ret);
-+
-+	if (s->flags & GTP_RB_WALK_STEP)
-+		step = 0;
-+
-+	while (1) {
-+		FID_TYPE	fid;
-+
-+		if ((s->flags & GTP_RB_WALK_CHECK_END) && ret == s->end) {
-+			s->reason = gtp_rb_walk_end;
-+			break;
-+		}
-+
-+		if (ret == page_end || page_end - ret < FID_SIZE
-+		    || FID(ret) == FID_PAGE_END) {
-+			if (!(s->flags & GTP_RB_WALK_PASS_PAGE)) {
-+				s->reason = gtp_rb_walk_end_page;
-+				break;
-+			}
-+			ret = GTP_RB_NEXT(ret);
-+			page_end = GTP_RB_END(ret);
-+			continue;
-+		}
-+
-+		fid = FID(ret);
-+
-+		if ((s->flags & GTP_RB_WALK_CHECK_TYPE) && s->type == fid) {
-+			s->reason = gtp_rb_walk_type;
-+			break;
-+		}
-+
-+		if ((s->flags & GTP_RB_WALK_STEP)
-+		    && (fid == FID_REG || fid == FID_MEM || fid == FID_VAR)) {
-+			if (step >= s->step) {
-+				s->reason = gtp_rb_walk_step;
-+				break;
-+			}
-+			step++;
-+		}
-+
-+		switch (fid) {
-+		case FID_HEAD:
-+			if (!(s->flags & GTP_RB_WALK_PASS_ENTRY)) {
-+				s->reason = gtp_rb_walk_new_entry;
-+				goto out;
-+			}
-+			ret += FRAME_ALIGN(GTP_FRAME_HEAD_SIZE);
-+			break;
-+		case FID_REG:
-+			ret += FRAME_ALIGN(GTP_FRAME_REG_SIZE);
-+			break;
-+		case FID_MEM: {
-+				struct gtp_frame_mem	*gfm;
-+
-+				gfm = (struct gtp_frame_mem *) (ret + FID_SIZE);
-+				ret += FRAME_ALIGN(GTP_FRAME_MEM_SIZE
-+						   + gfm->size);
-+			}
-+			break;
-+		case FID_VAR:
-+			ret += FRAME_ALIGN(GTP_FRAME_VAR_SIZE);
-+			break;
-+		case FID_PAGE_BEGIN:
-+			if ((s->flags & GTP_RB_WALK_CHECK_ID)
-+			    && s->id != *(u64 *)(ret + FID_SIZE)) {
-+				s->reason = gtp_rb_walk_end_entry;
-+				goto out;
-+			}
-+			ret += FRAME_ALIGN(GTP_FRAME_PAGE_BEGIN_SIZE);
-+			break;
-+		default:
-+			printk(KERN_WARNING
-+			       "Walk in gtp ring buffer got error id 0x%x "
-+			       "in 0x%p.\n",
-+			       fid, ret);
-+			s->reason = gtp_rb_walk_error;
-+			goto out;
-+			break;
-+		}
-+	}
-+
-+out:
-+	return ret;
-+}
-+
-+static struct gtp_rb_s	*gtp_frame_current_rb;
-+static u64		gtp_frame_current_id;
-+
-+static void
-+gtp_rb_read_reset(void)
-+{
-+	int	cpu;
-+
-+	for_each_online_cpu(cpu) {
-+		struct gtp_rb_s	*rb
-+			= (struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu);
-+
-+		rb->rp = rb->r;
-+		rb->rp_id = 0;
-+	}
-+	gtp_frame_current_num = -1;
-+	gtp_frame_current_rb = NULL;
-+}
-+
-+static int
-+gtp_rb_read(void)
-+{
-+	int			cpu;
-+	u64			min_id = ULLONG_MAX;
-+	struct gtp_rb_walk_s	rbws;
-+
-+	gtp_frame_current_rb = NULL;
-+
-+	rbws.flags = GTP_RB_WALK_PASS_PAGE | GTP_RB_WALK_CHECK_END;
-+
-+	for_each_online_cpu(cpu) {
-+		struct gtp_rb_s	*rb
-+			= (struct gtp_rb_s *)per_cpu_ptr(gtp_rb, cpu);
-+
-+		if (rb->rp == NULL)
-+			rb->rp = rb->r;
-+
-+		if (rb->rp_id == 0) {
-+			rbws.end = rb->w;
-+			rb->rp = gtp_rb_walk(&rbws, rb->rp);
-+			if (rbws.reason != gtp_rb_walk_new_entry)
-+				continue;
-+			rb->rp_id = *(u64 *)(rb->rp + FID_SIZE);
-+		}
-+		if (rb->rp_id < min_id) {
-+			min_id = rb->rp_id;
-+			gtp_frame_current_rb = rb;
-+		}
-+	}
-+
-+	if (gtp_frame_current_rb == NULL) {
-+		gtp_rb_read_reset();
-+		return -1;
-+	}
-+
-+	gtp_frame_current_rb->rp_id = 0;
-+	gtp_frame_current_id = *(u64 *)(gtp_frame_current_rb->rp + FID_SIZE);
-+	gtp_frame_current_tpe = *(ULONGEST *)(gtp_frame_current_rb->rp
-+					      + FID_SIZE + sizeof(u64));
-+	gtp_frame_current_rb->rp += FRAME_ALIGN(GTP_FRAME_HEAD_SIZE);
-+
-+	gtp_frame_current_num += 1;
-+
-+	return 0;
-+}
-+
-+static void *
-+gtp_rb_get_page(struct gtp_rb_s *rb)
-+{
-+	void		*ret = NULL;
-+	unsigned long	flags;
-+
-+	GTP_RB_LOCK_IRQ(rb, flags);
-+
-+	if (GTP_RB_HEAD(rb->r) == GTP_RB_HEAD(rb->w)) {
-+		if (rb->r == rb->w)
-+			goto out;
-+		/* Move rb->w to next page.  */
-+		if (GTP_RB_END(rb->w) - rb->w >= FID_SIZE)
-+			FID(rb->w) = FID_PAGE_END;
-+		rb->w = GTP_RB_NEXT(rb->w);
-+	}
-+
-+	ret = rb->r;
-+	{
-+		/* Move this page out of ring.  */
-+		void	*prev = GTP_RB_PREV(rb->r);
-+		void	*next = GTP_RB_NEXT(rb->r);
-+
-+		GTP_RB_NEXT(prev) = next;
-+		GTP_RB_PREV(next) = prev;
-+		rb->r = next;
-+	}
-+
-+out:
-+	GTP_RB_UNLOCK_IRQ(rb, flags);
-+	return ret;
-+}
-+
-+static void
-+gtp_rb_put_page(struct gtp_rb_s *rb, void *page, int page_is_empty)
-+{
-+	void	*prev, *next;
-+	unsigned long	flags;
-+
-+	GTP_RB_LOCK_IRQ(rb, flags);
-+
-+	if (page_is_empty) {
-+		page = GTP_RB_DATA(page);
-+		if (rb->w == GTP_RB_DATA(rb->w)) {
-+			/* Set page before rb->w and set it as rb->w.
-+			   If need, set it as rb->r.  */
-+			prev = GTP_RB_PREV(rb->w);
-+			next = rb->w;
-+			if (rb->r == rb->w)
-+				rb->r = page;
-+			rb->w = page;
-+		} else {
-+			/* Set page after rb->w.  */
-+			prev = GTP_RB_DATA(rb->w);
-+			next = GTP_RB_NEXT(rb->w);
-+		}
-+	} else {
-+		if (rb->r == GTP_RB_DATA(rb->r)) {
-+			/* Current rb->r page is point to the begin of a page.
-+			   Set page before rb->r and set it as rb->r.  */
-+			prev = GTP_RB_PREV(rb->r);
-+			next = rb->r;
-+		} else {
-+			/* Current rb->r page is not point to the begin of a
-+			   page, give up this data.
-+			   Set page after rb->r and set it as rb->r.  */
-+			prev = GTP_RB_DATA(rb->r);
-+			next = GTP_RB_NEXT(rb->r);
-+		}
-+		rb->r = page;
-+	}
-+
-+	GTP_RB_NEXT(prev) = GTP_RB_DATA(page);
-+	GTP_RB_PREV(next) = GTP_RB_DATA(page);
-+	GTP_RB_PREV(page) = prev;
-+	GTP_RB_NEXT(page) = next;
-+
-+	GTP_RB_UNLOCK_IRQ(rb, flags);
-+}
++Now, you can begin to rock and roll your Linux kernel with KGTP and GDB.
++Please go to HOWTO to get more message about howto use KGTP.
