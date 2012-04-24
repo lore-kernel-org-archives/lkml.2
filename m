@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab2DXWeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:34:12 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758028Ab2DXWeJ (ORCPT
+	id S1758551Ab2DXXCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 19:02:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758052Ab2DXWeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:34:09 -0400
-Message-Id: <20120424223242.339259009@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:34:12 -0400
+Message-Id: <20120424223242.429277603@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:45 -0700
+Date: Tue, 24 Apr 2012 15:32:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [ 04/62] ALSA: hda/conexant - Dont set HP pin-control bit unconditionally
+        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>,
+        Jens Taprogge <jens.taprogge@taprogge.org>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 05/62] ALSA: hda/conexant - Set up the missing docking-station pins
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +28,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit ca3649de026ff95c6f2847e8d096cf2f411c02b3 upstream.
+commit d70f363222ef373c2037412f09a600357cfa1c7a upstream.
 
-Some output pins on Conexant chips have no HP control bit, but the
-auto-parser initializes these pins unconditionally with PIN_HP.
+ThinkPad 410,420,510,520 and X201 with cx50585 & co chips have the
+docking-station ports, but BIOS doesn't initialize for these pins.
+Thus, like the former X200, we need to set up the pins manually in the
+driver.
 
-Check the pin-capability and avoid the HP bit if not supported.
+The odd part is that the same PCI SSID is used for X200 and T400, thus
+we need to prepare individual fixup tables for cx5051 and others.
 
+Bugzilla entries:
+	https://bugzilla.redhat.com/show_bug.cgi?id=808559
+	https://bugzilla.redhat.com/show_bug.cgi?id=806217
+	https://bugzilla.redhat.com/show_bug.cgi?id=810697
+
+Reported-by: Josh Boyer <jwboyer@redhat.com>
+Reported-by: Jens Taprogge <jens.taprogge@taprogge.org>
+Tested-by: Jens Taprogge <jens.taprogge@taprogge.org>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_conexant.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_conexant.c |   28 +++++++++++++++++++++++++---
+ 1 file changed, 25 insertions(+), 3 deletions(-)
 
 --- a/sound/pci/hda/patch_conexant.c
 +++ b/sound/pci/hda/patch_conexant.c
-@@ -3951,9 +3951,14 @@ static void cx_auto_init_output(struct h
- 	int i;
+@@ -4367,8 +4367,10 @@ static void apply_pin_fixup(struct hda_c
  
- 	mute_outputs(codec, spec->multiout.num_dacs, spec->multiout.dac_nids);
--	for (i = 0; i < cfg->hp_outs; i++)
-+	for (i = 0; i < cfg->hp_outs; i++) {
-+		unsigned int val = PIN_OUT;
-+		if (snd_hda_query_pin_caps(codec, cfg->hp_pins[i]) &
-+		    AC_PINCAP_HP_DRV)
-+			val |= AC_PINCTL_HP_EN;
- 		snd_hda_codec_write(codec, cfg->hp_pins[i], 0,
--				    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_HP);
-+				    AC_VERB_SET_PIN_WIDGET_CONTROL, val);
-+	}
- 	mute_outputs(codec, cfg->hp_outs, cfg->hp_pins);
- 	mute_outputs(codec, cfg->line_outs, cfg->line_out_pins);
- 	mute_outputs(codec, cfg->speaker_outs, cfg->speaker_pins);
+ enum {
+ 	CXT_PINCFG_LENOVO_X200,
++	CXT_PINCFG_LENOVO_TP410,
+ };
+ 
++/* ThinkPad X200 & co with cxt5051 */
+ static const struct cxt_pincfg cxt_pincfg_lenovo_x200[] = {
+ 	{ 0x16, 0x042140ff }, /* HP (seq# overridden) */
+ 	{ 0x17, 0x21a11000 }, /* dock-mic */
+@@ -4376,15 +4378,33 @@ static const struct cxt_pincfg cxt_pincf
+ 	{}
+ };
+ 
++/* ThinkPad 410/420/510/520, X201 & co with cxt5066 */
++static const struct cxt_pincfg cxt_pincfg_lenovo_tp410[] = {
++	{ 0x19, 0x042110ff }, /* HP (seq# overridden) */
++	{ 0x1a, 0x21a190f0 }, /* dock-mic */
++	{ 0x1c, 0x212140ff }, /* dock-HP */
++	{}
++};
++
+ static const struct cxt_pincfg *cxt_pincfg_tbl[] = {
+ 	[CXT_PINCFG_LENOVO_X200] = cxt_pincfg_lenovo_x200,
++	[CXT_PINCFG_LENOVO_TP410] = cxt_pincfg_lenovo_tp410,
+ };
+ 
+-static const struct snd_pci_quirk cxt_fixups[] = {
++static const struct snd_pci_quirk cxt5051_fixups[] = {
+ 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo X200", CXT_PINCFG_LENOVO_X200),
+ 	{}
+ };
+ 
++static const struct snd_pci_quirk cxt5066_fixups[] = {
++	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400", CXT_PINCFG_LENOVO_TP410),
++	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo T410", CXT_PINCFG_LENOVO_TP410),
++	SND_PCI_QUIRK(0x17aa, 0x215f, "Lenovo T510", CXT_PINCFG_LENOVO_TP410),
++	SND_PCI_QUIRK(0x17aa, 0x21ce, "Lenovo T420", CXT_PINCFG_LENOVO_TP410),
++	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
++	{}
++};
++
+ /* add "fake" mute amp-caps to DACs on cx5051 so that mixer mute switches
+  * can be created (bko#42825)
+  */
+@@ -4421,11 +4441,13 @@ static int patch_conexant_auto(struct hd
+ 		break;
+ 	case 0x14f15051:
+ 		add_cx5051_fake_mutes(codec);
++		apply_pin_fixup(codec, cxt5051_fixups, cxt_pincfg_tbl);
++		break;
++	default:
++		apply_pin_fixup(codec, cxt5066_fixups, cxt_pincfg_tbl);
+ 		break;
+ 	}
+ 
+-	apply_pin_fixup(codec, cxt_fixups, cxt_pincfg_tbl);
+-
+ 	err = cx_auto_search_adcs(codec);
+ 	if (err < 0)
+ 		return err;
 
 
