@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab2DXJ1U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 05:27:20 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:26204 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755632Ab2DXJ1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 05:27:19 -0400
-Message-ID: <1335259628.11311.0.camel@groo>
-Subject: [GIT PULL] HSI fixes for 3.4
-From: Carlos Chinea <carlos.chinea@nokia.com>
-To: ext Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ext Linus Walleij <linus.walleij@linaro.org>,
-        gregkh@linuxfoundation.org
-Date: Tue, 24 Apr 2012 12:27:08 +0300
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Nokia-AV: Clean
+	id S932193Ab2DXJdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 05:33:13 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:44553 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756600Ab2DXJdM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 05:33:12 -0400
+X-SpamScore: -12
+X-BigFish: VS-12(zcb8kz9371I154dM1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 24 Apr 2012 17:43:20 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Dong Aisheng <b29396@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, <linux-kernel@vger.kernel.org>,
+        <linus.walleij@stericsson.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <rob.herring@calxeda.com>, <linux-arm-kernel@lists.infradead.org>,
+        <kernel@pengutronix.de>, Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH v2 3/3] ARM: imx6q: switch to use pinctrl driver
+Message-ID: <20120424094319.GD32166@shlinux2.ap.freescale.net>
+References: <1334933916-12971-1-git-send-email-b29396@freescale.com>
+ <1334933916-12971-3-git-send-email-b29396@freescale.com>
+ <CACRpkdbbdkhN-hVF6vP4j6bP-Nsdft5UjjpAVhcKn6KSpEbcuQ@mail.gmail.com>
+ <20120424090841.GA6987@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <20120424090841.GA6987@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Apr 24, 2012 at 11:08:41AM +0200, Wolfram Sang wrote:
+> On Tue, Apr 24, 2012 at 10:56:43AM +0200, Linus Walleij wrote:
+> > On Fri, Apr 20, 2012 at 4:58 PM, Dong Aisheng <b29396@freescale.com> wrote:
+> > 
+> > > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > >
+> > > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > >
+> > > ---
+> > > This is not a formal patch and is only used for test
+> > > since before the pinctrl core handle dummy state is in,
+> > > enable pinctrl in driver will break other platforms.
+> > >
+> > > ChangeLog v1->v2:
+> > > * using updated binding
+> > > ---
+> > >  arch/arm/boot/dts/imx6q-arm2.dts   |    2 ++
+> > >  arch/arm/boot/dts/imx6q.dtsi       |   17 +++++++++++++++++
+> > >  arch/arm/mach-imx/Kconfig          |    2 ++
+> > >  drivers/mmc/host/sdhci-esdhc-imx.c |   12 ++++++++++++
+> > >  4 files changed, 33 insertions(+), 0 deletions(-)
+> > 
+> > Since this touches the MMC driver I'd like an ACK from the
+> > maintainer, but no maintainer is set for this subdriver, still
+> > it feels like Sascha and/or Wolfram should be involved.
+> 
+> Can we have a more descriptive name for the pinctrl member?
+> 
+Sure, i will update it.
 
-Please pull the following HSI fixes needed for 3.4
+Thanks
 
-Greg KH found some issues that need to be addressed prior 3.4 release:
-
-https://lkml.org/lkml/2012/4/2/511
-https://lkml.org/lkml/2012/4/2/512
-
-Here you have the link to the discussion of the patches and the Acked-by granted from Greg KH and Linus Walleij:
-
-https://lkml.org/lkml/2012/4/19/144
-
-The signed tag covering those patches: hsi_fixes_for_3.4
-
-Thanks & Br,
-Carlos Chinea
-
-The following changes since commit 66f75a5d028beaf67c931435fdc3e7823125730c:
-
-  Linux 3.4-rc4 (2012-04-21 14:47:52 -0700)
-
-are available in the git repository at:
-  git://gitorious.org/kernel-hsi/kernel-hsi.git for-linus
-
-Carlos Chinea (6):
-      HSI: hsi: Rework hsi_controller release
-      HSI: hsi: Fix error path cleanup on client registration
-      HSI: hsi: Remove controllers and ports from the bus
-      HSI: hsi: Rework hsi_event interface
-      HSI: hsi_char: Remove max_data_size from sysfs
-      HSI: Add HSI ABI documentation
-
- Documentation/ABI/testing/sysfs-bus-hsi |   19 +++
- drivers/hsi/clients/hsi_char.c          |    2 +-
- drivers/hsi/hsi.c                       |  223 ++++++++++++++++---------------
- include/linux/hsi/hsi.h                 |   31 +++--
- 4 files changed, 155 insertions(+), 120 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-hsi
-
-
+Regards
+Dong Aisheng
 
