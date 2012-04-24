@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab2DXKMV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 06:12:21 -0400
-Received: from mga14.intel.com ([143.182.124.37]:53906 "EHLO mga14.intel.com"
+	id S932284Ab2DXKPN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 06:15:13 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43161 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756625Ab2DXKMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 06:12:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="134588548"
-Date: Tue, 24 Apr 2012 13:13:34 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH 2/3] gpio: langwell: allocate IRQ descriptors dynamically
- for SPARSE_IRQ
-Message-ID: <20120424101334.GA16266@intel.com>
-References: <1333617317-28437-1-git-send-email-mika.westerberg@linux.intel.com>
- <1333617317-28437-2-git-send-email-mika.westerberg@linux.intel.com>
- <20120406043414.3B8FF3E0DD7@localhost>
+	id S932207Ab2DXKPM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 06:15:12 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "axel.lin@gmail.com" <axel.lin@gmail.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Girdwood, Liam" <lrg@ti.com>
+Date: Tue, 24 Apr 2012 03:15:09 -0700
+Subject: RE: [PATCH] leds: lm3530: fix handling of already enabled regulators
+Thread-Topic: [PATCH] leds: lm3530: fix handling of already enabled
+ regulators
+Thread-Index: Ac0h9wXiqfShsR+nTziKiCfpk70hWwACX7OQ
+Message-ID: <DD6B9D658496A2488636C8C75B9C0CB601DA3AF6@EXMAIL04.scwf.nsc.com>
+References: <1335107508.6261.3.camel@phoenix>
+ <20120423110912.GC8318@opensource.wolfsonmicro.com>
+ <CAF+7xWkzy5e0rcpwprEE3VWTikOu2+qtsgfdhTN12-yonDxadA@mail.gmail.com>
+ <DD6B9D658496A2488636C8C75B9C0CB601DA3984@EXMAIL04.scwf.nsc.com>
+ <CAF+7xWmB1YWjwmQmf9gk0DX7DH5euBD1QH8d7VW6r_nat8FwYQ@mail.gmail.com>
+In-Reply-To: <CAF+7xWmB1YWjwmQmf9gk0DX7DH5euBD1QH8d7VW6r_nat8FwYQ@mail.gmail.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120406043414.3B8FF3E0DD7@localhost>
-Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 05, 2012 at 09:34:14PM -0700, Grant Likely wrote:
-> On Thu,  5 Apr 2012 12:15:16 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
-> > Since x86 is using SPARSE_IRQ by default nowadays it means that we need to
-> > allocate IRQ descriptors dynamically using irq_alloc_descs() otherwise the
-> > genirq code fails to convert our irq numbers to suitable descriptors.
-> > 
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > 
-> Applied, thakns.
+> Let me put it this way: Assume only this driver is using the regulator.
+> If the regulator is enabled on boot, which means the reference count
+> is init to 1.
 > 
 
-Grant, is there any change getting this particular patch merged for 3.4 as
-well? Without this the driver will fail on 3.4.
+Could you explain what 'enabled on boot' means ?
+1) The regulator_enable() is called in initial time
+or
+2) boot_on = 1 in regulator_init_data ?
+
+If you mean 'boot_on = 1' in regulator_init_data, then no use_count increase.
+
+> Then if we set brt_val to 0 in lm3530_brightness_set, which will then
+> call
+> regulator_disable(). 
+
+It looks buggy code in lm3530_brightness_set().
+Even the regulator_disable() is failed, drvdata->enable is set to false.
+I think drvdata->enable is changed to false only when the regulator is off successfully.
+
+Thanks & BR
+Milo -
