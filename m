@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758530Ab2DXW7a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:59:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932443Ab2DXWfF (ORCPT
+	id S1758546Ab2DXW7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:59:45 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932438Ab2DXWfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:35:05 -0400
-Message-Id: <20120424223243.950806348@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:35:02 -0400
+Message-Id: <20120424223243.870183804@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:04 -0700
+Date: Tue, 24 Apr 2012 15:33:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Francesco Saverio Schiavarelli <fschiava@libero.it>,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
-        Brett Rudley <brudley@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
+        alan@lxorguk.ukuu.org.uk, Bing Zhao <bzhao@marvell.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 23/62] brcm80211: smac: resume transmit fifo upon receiving frames
+Subject: [ 22/62] mwifiex: update pcie8766 scratch register addresses
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,54 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arend van Spriel <arend@broadcom.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit badc4f07622f0f7093a201638f45e85765f1b5e4 upstream.
+commit 428ca8a7065354877db63ceabfc493107686eebe upstream.
 
-There have been reports about not being able to use access-points
-on channel 12 and 13 or having connectivity issues when these channels
-were part of the selected regulatory domain. Upon switching to these
-channels the brcmsmac driver suspends the transmit dma fifos. This
-patch resumes them upon handing over the first received beacon to
-mac80211.
+The scratch register addresses have been changed for newer chips.
+Since the old chip was never shipped and it will not be supported
+any more, just update register addresses to support the new chips.
 
-This patch is to be applied to the stable tree for kernel versions
-3.2 and 3.3.
-
-Tested-by: Francesco Saverio Schiavarelli <fschiava@libero.it>
-Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
-Reviewed-by: Brett Rudley <brudley@broadcom.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/brcm80211/brcmsmac/main.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/net/wireless/mwifiex/pcie.h |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
---- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-@@ -7629,6 +7629,7 @@ brcms_c_recvctl(struct brcms_c_info *wlc
- {
- 	int len_mpdu;
- 	struct ieee80211_rx_status rx_status;
-+	struct ieee80211_hdr *hdr;
+--- a/drivers/net/wireless/mwifiex/pcie.h
++++ b/drivers/net/wireless/mwifiex/pcie.h
+@@ -48,15 +48,15 @@
+ #define PCIE_HOST_INT_STATUS_MASK			0xC3C
+ #define PCIE_SCRATCH_2_REG				0xC40
+ #define PCIE_SCRATCH_3_REG				0xC44
+-#define PCIE_SCRATCH_4_REG				0xCC0
+-#define PCIE_SCRATCH_5_REG				0xCC4
+-#define PCIE_SCRATCH_6_REG				0xCC8
+-#define PCIE_SCRATCH_7_REG				0xCCC
+-#define PCIE_SCRATCH_8_REG				0xCD0
+-#define PCIE_SCRATCH_9_REG				0xCD4
+-#define PCIE_SCRATCH_10_REG				0xCD8
+-#define PCIE_SCRATCH_11_REG				0xCDC
+-#define PCIE_SCRATCH_12_REG				0xCE0
++#define PCIE_SCRATCH_4_REG				0xCD0
++#define PCIE_SCRATCH_5_REG				0xCD4
++#define PCIE_SCRATCH_6_REG				0xCD8
++#define PCIE_SCRATCH_7_REG				0xCDC
++#define PCIE_SCRATCH_8_REG				0xCE0
++#define PCIE_SCRATCH_9_REG				0xCE4
++#define PCIE_SCRATCH_10_REG				0xCE8
++#define PCIE_SCRATCH_11_REG				0xCEC
++#define PCIE_SCRATCH_12_REG				0xCF0
  
- 	memset(&rx_status, 0, sizeof(rx_status));
- 	prep_mac80211_status(wlc, rxh, p, &rx_status);
-@@ -7638,6 +7639,13 @@ brcms_c_recvctl(struct brcms_c_info *wlc
- 	skb_pull(p, D11_PHY_HDR_LEN);
- 	__skb_trim(p, len_mpdu);
- 
-+	/* unmute transmit */
-+	if (wlc->hw->suspended_fifos) {
-+		hdr = (struct ieee80211_hdr *)p->data;
-+		if (ieee80211_is_beacon(hdr->frame_control))
-+			brcms_b_mute(wlc->hw, false);
-+	}
-+
- 	memcpy(IEEE80211_SKB_RXCB(p), &rx_status, sizeof(rx_status));
- 	ieee80211_rx_irqsafe(wlc->pub->ieee_hw, p);
- }
+ #define CPU_INTR_DNLD_RDY				BIT(0)
+ #define CPU_INTR_DOOR_BELL				BIT(1)
 
 
