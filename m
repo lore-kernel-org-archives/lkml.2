@@ -1,52 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab2DXCnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 22:43:13 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48864 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756361Ab2DXCnL (ORCPT
+	id S1756485Ab2DXCqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 22:46:21 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:50412 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756361Ab2DXCqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 22:43:11 -0400
-From: Russ Dill <Russ.Dill@ti.com>
-To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>, Russ Dill <Russ.Dill@ti.com>
-Subject: [PATCH v3] ktest.pl: Fix combined usage of BISECT_REVERSE and BISECT_SKIP
-Date: Mon, 23 Apr 2012 19:43:00 -0700
-Message-Id: <1335235380-8509-1-git-send-email-Russ.Dill@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1335222909-14191-1-git-send-email-Russ.Dill@ti.com>
-References: <1335222909-14191-1-git-send-email-Russ.Dill@ti.com>
+	Mon, 23 Apr 2012 22:46:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120423204735.GA18585@merkur.ravnborg.org>
+References: <20120423184918.GA27862@sepie.suse.cz> <20120423192201.GA18512@merkur.ravnborg.org>
+ <20120423201226.GA22593@kroah.com> <20120423.161353.876914987115892015.davem@davemloft.net>
+ <20120423202248.GA24548@kroah.com> <20120423204735.GA18585@merkur.ravnborg.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 23 Apr 2012 19:45:56 -0700
+X-Google-Sender-Auth: nGGiTn30ohT9zUIgstfAHKoMRxI
+Message-ID: <CA+55aFyxktyAcni484Ti5gRe8ZqtF9LisTn3gRpLdJB4JWU-pg@mail.gmail.com>
+Subject: Re: [GIT] modpost fix for newer toolchain
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, David Miller <davem@davemloft.net>,
+        mmarek@suse.cz, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v3: Ignore all negative values, not just -1.
+On Mon, Apr 23, 2012 at 1:47 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+>
+> I will mail stable when I have a commit-id - if no-one else does.
 
-When BISECT_REVERSE and BISECT_SKIP are used together with boot or test testing,
-build failures are treated as boot or test failures and 'git bisect bad' is executed instead
-of 'git bisect skip'. This is because the $ret value of -1 is treated as a build failure, but
-the $reverse_bisect logic does not properly handle this.
+In my tree now. Commit e88aa7bbbe30.
 
-Simple fix, only invert it if it is positive.
-
-Signed-off-by: Russ Dill <Russ.Dill@ti.com>
----
- tools/testing/ktest/ktest.pl |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 95d6a6f..d2ede59 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -2192,7 +2192,7 @@ sub run_bisect {
-     }
- 
-     # Are we looking for where it worked, not failed?
--    if ($reverse_bisect) {
-+    if ($reverse_bisect && $ret >= 0) {
- 	$ret = !$ret;
-     }
- 
--- 
-1.7.9.5
-
+              Linus
