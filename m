@@ -1,106 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab2DXMgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 08:36:39 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:53552 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577Ab2DXMgi (ORCPT
+	id S1753936Ab2DXMhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 08:37:34 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:39529 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab2DXMhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 08:36:38 -0400
-X-AuditID: cbfee61a-b7b8eae00000534b-9a-4f969e54e970
-Message-id: <4F969E53.9080307@samsung.com>
-Date: Tue, 24 Apr 2012 21:36:35 +0900
-From: Minho Ban <mhban@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
- Thunderbird/11.0.1
-MIME-version: 1.0
-To: Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [RFC/PATCH] Prevent wasting time to find out get_parent_ip
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Tue, 24 Apr 2012 08:37:32 -0400
+X-SENDER-IP: [85.230.169.225]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiKZAKWdlk9V5qnhPGdsb2JhbABEiiqmKgSBEBkBAQEBHhkNJ4IKAQUnExwjEAgDDjgUJQoaiCa7HhOLDYVLYwSVeYYEjSY
+X-IronPort-AV: E=Sophos;i="4.75,473,1330902000"; 
+   d="scan'208";a="24449380"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 24 Apr 2012 14:41:13 +0200
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] hid: Scan the device for group info before adding it
+Message-ID: <20120424124113.GA10055@polaris.bitmath.org>
+References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+ <1335175627-2270-3-git-send-email-rydberg@euromail.se>
+ <alpine.LNX.2.00.1204241430190.1856@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1204241430190.1856@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-trace_preempt_on/off looks empty if PREEMPT_TRACER is off. But actually it is
-spending time to find out get_parent_ip(even CALLER_ADDR for some ARCH) which is
-in argument. This seems not fair for those who expect to do nothing but increase
-or decrease count.
+> > +static int hid_scan_report(struct hid_device *hid)
+> > +{
+> > +	unsigned int page = 0, delim = 0;
+> > +	__u8 *start = hid->dev_rdesc;
+> > +	__u8 *end = start + hid->dev_rsize;
+> 
+> Where do these dev_rdesc and dev_rsize come from? Your patchset doesn't 
+> seem to be changing the corresponding struct device members (which are 
+> rdesc and rsize currently), right?
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Minho Ban <mhban@samsung.com>
----
- include/linux/ftrace.h |    3 ---
- kernel/sched/core.c    |    5 ++++-
- kernel/softirq.c       |    3 ++-
- 3 files changed, 6 insertions(+), 5 deletions(-)
+Those members are added in the enable-report-fixup-on-rebind patchset,
+which this patchset builds on. I only sent that patchset once, to
+avoid confusion. Maybe I created some instead. :-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 72a6cab..7cd11fe 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -484,9 +484,6 @@ static inline void __ftrace_enabled_restore(int enabled)
- #ifdef CONFIG_PREEMPT_TRACER
-   extern void trace_preempt_on(unsigned long a0, unsigned long a1);
-   extern void trace_preempt_off(unsigned long a0, unsigned long a1);
--#else
--  static inline void trace_preempt_on(unsigned long a0, unsigned long a1) { }
--  static inline void trace_preempt_off(unsigned long a0, unsigned long a1) { }
- #endif
- 
- #ifdef CONFIG_FTRACE_MCOUNT_RECORD
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4603b9d..efdd5a0 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3068,8 +3068,10 @@ void __kprobes add_preempt_count(int val)
- 	DEBUG_LOCKS_WARN_ON((preempt_count() & PREEMPT_MASK) >=
- 				PREEMPT_MASK - 10);
- #endif
-+#ifdef CONFIG_PREEMPT_TRACER
- 	if (preempt_count() == val)
- 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
-+#endif
- }
- EXPORT_SYMBOL(add_preempt_count);
- 
-@@ -3088,9 +3090,10 @@ void __kprobes sub_preempt_count(int val)
- 			!(preempt_count() & PREEMPT_MASK)))
- 		return;
- #endif
--
-+#ifdef CONFIG_PREEMPT_TRACER
- 	if (preempt_count() == val)
- 		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
-+#endif
- 	preempt_count() -= val;
- }
- EXPORT_SYMBOL(sub_preempt_count);
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 671f959..e7c8336 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -112,9 +112,10 @@ static void __local_bh_disable(unsigned long ip, unsigned int cnt)
- 	if (softirq_count() == cnt)
- 		trace_softirqs_off(ip);
- 	raw_local_irq_restore(flags);
--
-+#ifdef CONFIG_PREEMPT_TRACER
- 	if (preempt_count() == cnt)
- 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
-+#endif
- }
- #else /* !CONFIG_TRACE_IRQFLAGS */
- static inline void __local_bh_disable(unsigned long ip, unsigned int cnt)
--- 
-1.7.5.4
+And yes, the scanning algorithms do not touch the rdesc/rsize
+variables, nor the collection state. Those are handled upon attachment
+of the driver.
 
+Thanks,
+Henrik
