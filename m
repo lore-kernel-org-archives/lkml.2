@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932511Ab2DXWf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:35:28 -0400
+	id S932529Ab2DXWfg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:35:36 -0400
 Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932495Ab2DXWfX (ORCPT
+	with ESMTP id S932495Ab2DXWfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:35:23 -0400
-Message-Id: <20120424223244.451631409@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:35:30 -0400
+Message-Id: <20120424223244.622090882@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:10 -0700
+Date: Tue, 24 Apr 2012 15:33:12 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Alberto Lago Ballesteros <saniukeokusainaya@gmail.com>,
-        Adrian <agib@gmx.de>, Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [ 29/62] staging: r8712u: Fix regression caused by commit 8c213fa
+        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Ken Chen <kenchen@google.com>
+Subject: [ 31/62] mm: fix s390 BUG by __set_page_dirty_no_writeback on swap
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Hugh Dickins <hughd@google.com>
 
-commit 2080913e017ab9f88379d93fd09546ad95faf87b upstream.
+commit aca50bd3b4c4bb5528a1878158ba7abce41de534 upstream.
 
-In commit 8c213fa "staging: r8712u: Use asynchronous firmware loading",
-the command to release the firmware was placed in the wrong routine.
+Mel reports a BUG_ON(slot == NULL) in radix_tree_tag_set() on s390
+3.0.13: called from __set_page_dirty_nobuffers() when page_remove_rmap()
+tries to transfer dirty flag from s390 storage key to struct page and
+radix_tree.
 
-In combination with the bug introduced in commit a5ee652 "staging: r8712u:
-Interface-state not fully tracked", the driver attempts to upload firmware
-that had already been released. This bug is the source of one of the
-problems in https://bugs.archlinux.org/task/27996#comment89833.
+That would be because of reclaim's shrink_page_list() calling
+add_to_swap() on this page at the same time: first PageSwapCache is set
+(causing page_mapping(page) to appear as &swapper_space), then
+page->private set, then tree_lock taken, then page inserted into
+radix_tree - so there's an interval before taking the lock when the
+radix_tree slot is empty.
 
-Tested-by: Alberto Lago Ballesteros <saniukeokusainaya@gmail.com>
-Tested-by: Adrian <agib@gmx.de>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+We could fix this by moving __add_to_swap_cache()'s spin_lock_irq up
+before the SetPageSwapCache.  But a better fix is simply to do what's
+five years overdue: Ken Chen introduced __set_page_dirty_no_writeback()
+(if !PageDirty TestSetPageDirty) for tmpfs to skip all the radix_tree
+overhead, and swap is just the same - it ignores the radix_tree tag, and
+does not participate in dirty page accounting, so should be using
+__set_page_dirty_no_writeback() too.
+
+s390 testing now confirms that this does indeed fix the problem.
+
+Reported-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Ken Chen <kenchen@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8712/os_intfs.c |    3 ---
- drivers/staging/rtl8712/usb_intf.c |    5 +++++
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ mm/swap_state.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/rtl8712/os_intfs.c
-+++ b/drivers/staging/rtl8712/os_intfs.c
-@@ -476,9 +476,6 @@ static int netdev_close(struct net_devic
- 	r8712_free_assoc_resources(padapter);
- 	/*s2-4.*/
- 	r8712_free_network_queue(padapter);
--	release_firmware(padapter->fw);
--	/* never exit with a firmware callback pending */
--	wait_for_completion(&padapter->rtl8712_fw_ready);
- 	return 0;
- }
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -26,7 +26,7 @@
+  */
+ static const struct address_space_operations swap_aops = {
+ 	.writepage	= swap_writepage,
+-	.set_page_dirty	= __set_page_dirty_nobuffers,
++	.set_page_dirty	= __set_page_dirty_no_writeback,
+ 	.migratepage	= migrate_page,
+ };
  
---- a/drivers/staging/rtl8712/usb_intf.c
-+++ b/drivers/staging/rtl8712/usb_intf.c
-@@ -30,6 +30,7 @@
- 
- #include <linux/usb.h>
- #include <linux/module.h>
-+#include <linux/firmware.h>
- 
- #include "osdep_service.h"
- #include "drv_types.h"
-@@ -621,6 +622,10 @@ static void r871xu_dev_remove(struct usb
- 	struct _adapter *padapter = netdev_priv(pnetdev);
- 	struct usb_device *udev = interface_to_usbdev(pusb_intf);
- 
-+	if (padapter->fw_found)
-+		release_firmware(padapter->fw);
-+	/* never exit with a firmware callback pending */
-+	wait_for_completion(&padapter->rtl8712_fw_ready);
- 	usb_set_intfdata(pusb_intf, NULL);
- 	if (padapter) {
- 		if (drvpriv.drv_registered == true)
 
 
