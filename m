@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab2DXB2S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 21:28:18 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:38815 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754420Ab2DXB2Q (ORCPT
+	id S1756175Ab2DXB3n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 21:29:43 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:37786 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754420Ab2DXB3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 21:28:16 -0400
-Message-ID: <4F9601CD.2070000@xenotime.net>
-Date: Mon, 23 Apr 2012 18:28:45 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 23 Apr 2012 21:29:42 -0400
+From: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Jiri Kosina <trivial@kernel.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] media: Remove unused variable "tmp" from function mxl111sf_ep6_streaming_ctrl.
+Date: Tue, 24 Apr 2012 02:29:37 +0100
+Message-Id: <1335230977-14327-1-git-send-email-krzysztof.wilczynski@linux.com>
+X-Mailer: git-send-email 1.7.7.1
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: David Miller <davem@davemloft.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        linux-hams@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH] net ax25: Fix the build when sysctl support is disabled.
-References: <20120423170701.c96e402234b1387dece11dda@canb.auug.org.au>	<4F95828A.8050403@xenotime.net> <m1obqirn5e.fsf_-_@fess.ebiederm.org>
-In-Reply-To: <m1obqirn5e.fsf_-_@fess.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 05:25 PM, Eric W. Biederman wrote:
+This is to address the following warning during compilation time:
 
-> 
-> Randy Dunlap <rdunlap@xenotime.net> reported:
-> 
->> On 04/23/2012 12:07 AM, Stephen Rothwell wrote:
->>
->>> Hi all,
->>>
->>> Changes since 20120420:
->>
->>
->> include/net/ax25.h:447:75: error: expected ';' before '}' token
->>
->> static inline int ax25_register_dev_sysctl(ax25_dev *ax25_dev) { return 0 };
->> static inline void ax25_unregister_dev_sysctl(ax25_dev *ax25_dev) {};
->>
->> First function:  move ';' inside braces.
->> Second function:  drop the ';'.
-> 
-> Put the semicolons where it makes sense.
-> 
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+  drivers/media/dvb/dvb-usb/mxl111sf.c: In function ‘mxl111sf_ep6_streaming_ctrl’:
+  drivers/media/dvb/dvb-usb/mxl111sf.c:343: warning: unused variable ‘tmp’
 
+This variable is indeed no longer in use (change can be traced back
+to commit: 3be5bb71fbf18f83cb88b54a62a78e03e5a4f30a).
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
+---
+ drivers/media/dvb/dvb-usb/mxl111sf.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Thanks.
-
-> ---
-> 
-> Resent to include David Miller.
-> 
->  include/net/ax25.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/net/ax25.h b/include/net/ax25.h
-> index 8a7a122..5d23521 100644
-> --- a/include/net/ax25.h
-> +++ b/include/net/ax25.h
-> @@ -444,8 +444,8 @@ extern void ax25_uid_free(void);
->  extern int ax25_register_dev_sysctl(ax25_dev *ax25_dev);
->  extern void ax25_unregister_dev_sysctl(ax25_dev *ax25_dev);
->  #else
-> -static inline int ax25_register_dev_sysctl(ax25_dev *ax25_dev) { return 0 };
-> -static inline void ax25_unregister_dev_sysctl(ax25_dev *ax25_dev) {};
-> +static inline int ax25_register_dev_sysctl(ax25_dev *ax25_dev) { return 0; }
-> +static inline void ax25_unregister_dev_sysctl(ax25_dev *ax25_dev) {}
->  #endif /* CONFIG_SYSCTL */
->  
->  #endif
-
-
-
+diff --git a/drivers/media/dvb/dvb-usb/mxl111sf.c b/drivers/media/dvb/dvb-usb/mxl111sf.c
+index 81305de..91834c5 100644
+--- a/drivers/media/dvb/dvb-usb/mxl111sf.c
++++ b/drivers/media/dvb/dvb-usb/mxl111sf.c
+@@ -340,7 +340,6 @@ static int mxl111sf_ep6_streaming_ctrl(struct dvb_usb_adapter *adap, int onoff)
+ 	struct mxl111sf_state *state = d->priv;
+ 	struct mxl111sf_adap_state *adap_state = adap->fe_adap[adap->active_fe].priv;
+ 	int ret = 0;
+-	u8 tmp;
+ 
+ 	deb_info("%s(%d)\n", __func__, onoff);
+ 
 -- 
-~Randy
+1.7.7.1
+
