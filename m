@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab2DXI6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 04:58:33 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:33300 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452Ab2DXI6a (ORCPT
+	id S932128Ab2DXJAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 05:00:06 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16158 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754452Ab2DXJAC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 04:58:30 -0400
-Date: Tue, 24 Apr 2012 10:58:15 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: w.sang@pengutronix.de, ben-linux@fluff.org, swarren@wwwdotorg.org,
-        olof@lixom.net, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V1 1/2] i2c: tegra: fix 10bit address configuration
-Message-ID: <20120424105815.1d9e7d95@endymion.delvare>
-In-Reply-To: <1335251976-31925-2-git-send-email-ldewangan@nvidia.com>
-References: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
-	<1335251976-31925-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
+	Tue, 24 Apr 2012 05:00:02 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 24 Apr 2012 01:59:53 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Apr 2012 10:59:48 +0200
+Subject: Re: [PATCH 2/3] iommu/tegra: smmu: Add device tree support for SMMU
+Thread-Topic: [PATCH 2/3] iommu/tegra: smmu: Add device tree support for SMMU
+Thread-Index: Ac0h+Js4iNi5ITUyTZK/8E66azMgew==
+Message-ID: <20120424.115948.399395507020458456.hdoyu@nvidia.com>
+References: <1335182340-17237-1-git-send-email-hdoyu@nvidia.com><1335182340-17237-2-git-send-email-hdoyu@nvidia.com><4F959F10.9010908@wwwdotorg.org>
+In-Reply-To: <4F959F10.9010908@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Apr 2012 12:49:35 +0530, Laxman Dewangan wrote:
-> The slave address of device to be configured in packet
-> header as follows:
->     7 bit address: PacketHeader3[7:1]
->     10 bit address: PacketHeader3[9:0]
+From: Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 2/3] iommu/tegra: smmu: Add device tree support for SMMU
+Date: Mon, 23 Apr 2012 20:27:28 +0200
+Message-ID: <4F959F10.9010908@wwwdotorg.org>
+
+> On 04/23/2012 05:58 AM, Hiroshi DOYU wrote:
+> > Add device tree support for Tegra30 IOMMU(SMMU).
 > 
-> Fixing the code to make packet header3 properly.
+> > diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
 > 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/i2c/busses/i2c-tegra.c |   11 +++++++----
->  1 files changed, 7 insertions(+), 4 deletions(-)
+> > +	err = of_parse_dma_window(dev->of_node, "dma-window", 0, NULL,
+> > +				  &base, &size);
 > 
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> index 55e5ea6..18067b3 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -476,12 +476,15 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
->  	packet_header = msg->len - 1;
->  	i2c_writel(i2c_dev, packet_header, I2C_TX_FIFO);
->  
-> -	packet_header = msg->addr << I2C_HEADER_SLAVE_ADDR_SHIFT;
-> -	packet_header |= I2C_HEADER_IE_ENABLE;
-> +	packet_header = I2C_HEADER_IE_ENABLE;
->  	if (!stop)
->  		packet_header |= I2C_HEADER_REPEAT_START;
-> -	if (msg->flags & I2C_M_TEN)
-> +	if (msg->flags & I2C_M_TEN) {
-> +		packet_header |= msg->addr;
->  		packet_header |= I2C_HEADER_10BIT_ADDR;
-> +	} else {
-> +		packet_header |= msg->addr << I2C_HEADER_SLAVE_ADDR_SHIFT;
-> +	}
->  	if (msg->flags & I2C_M_IGNORE_NAK)
->  		packet_header |= I2C_HEADER_CONT_ON_NAK;
->  	if (msg->flags & I2C_M_RD)
-> @@ -557,7 +560,7 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
->  
->  static u32 tegra_i2c_func(struct i2c_adapter *adap)
->  {
-> -	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-> +	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | I2C_FUNC_10BIT_ADDR;
->  }
->  
->  static const struct i2c_algorithm tegra_i2c_algo = {
+> This patch also depends on "dt: Add general DMA window parser" that you
+> sent earlier.
+> 
+> > +	asids = be32_to_cpup(of_get_property(dev->of_node, "asids", NULL));
+> > +	if (!asids)
+> > +		return -ENODEV;
+> 
+> What if of_get_property() fails?
 
-Looks good.
+Ok, need to be checked. I'll fix.
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
+> BTW, does the # ASIDs vary? I wonder if it's worth representing it in
+> the device tree or not. If this driver has a chance of working
+> unmodified on some future chip just by updating this DT property without
+> any code changes, then it seems reasonable to have it in DT.
 
-Not that 10-bit address devices are immensely popular though...
-
--- 
-Jean Delvare
+Yes, ASID should be passed from DT.
