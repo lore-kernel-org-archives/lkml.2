@@ -1,211 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab2DXB3w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 21:29:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29815 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755396Ab2DXB3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 21:29:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="134445459"
-Message-ID: <1335231007.14538.71.camel@ymzhang.sh.intel.com>
-Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Cc: "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+	id S1756194Ab2DXBaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 21:30:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64839 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755396Ab2DXBaL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 21:30:11 -0400
+Date: Mon, 23 Apr 2012 18:30:06 -0700
+From: Gerard Snitselaar <dev@snitselaar.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>
-Date: Tue, 24 Apr 2012 09:30:07 +0800
-In-Reply-To: <1334915073.2463.36.camel@laptop>
-References: <EE928378561BF1449699C96571234A740FCE3704@SHSMSX102.ccr.corp.intel.com>
-	 <1334915073.2463.36.camel@laptop>
-Organization: MCG
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>
+Subject: Re: [PATCH v2 resend] staging: comedi: resolve section mismatch in
+ s626
+Message-ID: <20120424013006.GB2321@cantor.Home>
+Reply-To: Gerard Snitselaar <dev@snitselaar.org>
+Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
+	Ian Abbott <abbotti@mev.co.uk>,
+	"devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+	Ian Abbott <ian.abbott@mev.co.uk>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>
+References: <20120319163103.GC3694@kroah.com>
+ <20120319164325.GA31833@perelman.Home>
+ <20120319224649.GA7679@perelman.Home>
+ <20120319232656.GB6386@kroah.com>
+ <4F798416.8040709@mev.co.uk>
+ <20120410182438.GB2052@kroah.com>
+ <4F86D294.3050108@mev.co.uk>
+ <20120418232824.GA9419@kroah.com>
+ <20120420013411.GA3769@cantor.Home>
+ <20120420153331.GA19219@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120420153331.GA19219@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-20 at 11:44 +0200, Peter Zijlstra wrote:
-> On Wed, 2012-04-11 at 08:07 +0000, Tu, Xiaobing wrote:
-> > From: xiaobing tu <xiaobing.tu@intel.com> 
-> > 
-> > Here is the kernel patch for this tool, The idea is to output user
-> > space stack call-chain from /proc/xxx/stack,
-> > currently, /proc/xxx/stack only output kernel stack call chain. We
-> > extend it to output user space call chain in hex format
-> > 
-> > Signed-off-by: yanmin zhang <yanmin_zhang@linux.intel.com>
-> > Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
-> 
-> Ok, so I don't like it.. for one I really don't see the need for this,
-Sorry. We didn't write down enough information about why we implemented
-it. Cong asked the similar question and I explained it in separate emails.
-https://lkml.org/lkml/2012/4/19/11
-https://lkml.org/lkml/2012/4/19/27
+s626_attach is referencing s626_pci_table which is annotated
+__devinitconst. Put pci vendor/device ids in the s626_board struct and
+use s626_boards instead similar to what is done in gsc_hpdi.
 
-> secondly the implementation is crappy,
-I agree it's a little crappy. Other methods like ptrace is slow although
-the codes look like clean. When ptrace is slow and might have other
-bad impact, could we also say it's crappy?
+v2: I had moved the PCI id defines to s626.h earlier, but later
+decided to leave them in s626.c and forgot to move them up above where
+they are being used in s626_boards.
 
+Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
+---
+ drivers/staging/comedi/drivers/s626.c |   27 +++++++++++++++++++--------
+ 1 files changed, 19 insertions(+), 8 deletions(-)
 
->  thirdly the interface is poor.
-> 
-> > ---
-> >  arch/x86/kernel/stacktrace.c |   55 ++++++++++++++++++++++++++++++++++++++++++
-> >  fs/proc/base.c               |   19 +++++++++++++-
-> >  include/linux/stacktrace.h   |    5 +++-
-> >  3 files changed, 77 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c index fdd0c64..d802f05 100644
-> > --- a/arch/x86/kernel/stacktrace.c
-> > +++ b/arch/x86/kernel/stacktrace.c
-> > @@ -7,6 +7,7 @@
-> >  #include <linux/stacktrace.h>
-> >  #include <linux/module.h>
-> >  #include <linux/uaccess.h>
-> > +#include <linux/mm.h>
-> >  #include <asm/stacktrace.h>
-> >  
-> >  static int save_stack_stack(void *data, char *name) @@ -144,3 +145,57 @@ void save_stack_trace_user(struct stack_trace *trace)
-> >  		trace->entries[trace->nr_entries++] = ULONG_MAX;  }
-> >  
-> > +static inline void __save_stack_trace_user_task(struct task_struct *task,
-> > +		struct stack_trace *trace)
-> > +{
-> > +	const struct pt_regs *regs = task_pt_regs(task);
-> > +	const void __user *fp;
-> > +	unsigned long addr;
-> > +
-> > +	if (task != current && task->state == TASK_RUNNING && task->on_cpu) {
-> > +		/* To trap into kernel at least once */
-> > +		smp_send_reschedule(task_cpu(task));
-> > +	}
-> 
-> This doesn't make any sense at all..
-ptrace could put the task to a either STOPPED or TRACED state.
-But it's time-consuming.
-
-> 
-> > +
-> > +	fp = (const void __user *)regs->bp;
-> > +	if (trace->nr_entries < trace->max_entries)
-> > +		trace->entries[trace->nr_entries++] = regs->ip;
-> > +
-> > +	while (trace->nr_entries < trace->max_entries) {
-> > +		struct stack_frame_user frame;
-> > +
-> > +		frame.next_fp = NULL;
-> > +		frame.ret_addr = 0;
-> > +
-> > +		addr = (unsigned long)fp;
-> > +		if (!access_process_vm(task, addr, (void *)&frame,
-> > +				sizeof(frame), 0))
-> > +			break;
-> > +		if ((unsigned long)fp < regs->sp)
-> > +			break;
-> > +		if (frame.ret_addr) {
-> > +			trace->entries[trace->nr_entries++] =
-> > +				frame.ret_addr;
-> > +		}
-> > +		if (fp == frame.next_fp)
-> > +			break;
-> > +		fp = frame.next_fp;
-> > +	}
-> > +}
-> > +
-> > +void save_stack_trace_user_task(struct task_struct *task,
-> > +		struct stack_trace *trace)
-> > +{
-> > +	if (task == current || !task) {
-> > +		save_stack_trace_user(trace);
-> > +		return;
-> > +	}
-> > +
-> > +	if (task->mm)
-> > +		__save_stack_trace_user_task(task, trace);
-> > +
-> > +	if (trace->nr_entries < trace->max_entries)
-> > +		trace->entries[trace->nr_entries++] = ULONG_MAX; } 
-> > +EXPORT_SYMBOL_GPL(save_stack_trace_user_task);
-> 
-> There's already userspace stack walkers, don't reimplement them yet
-> again.
-Would you like to point out the workable userspace stack walker?
-If there is, we would check if we could reuse it.
-
-> 
-> > diff --git a/fs/proc/base.c b/fs/proc/base.c index d4548dd..603e708 100644
-> > --- a/fs/proc/base.c
-> > +++ b/fs/proc/base.c
-> > @@ -327,8 +327,25 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
-> >  			seq_printf(m, "[<%pK>] %pS\n",
-> >  				   (void *)entries[i], (void *)entries[i]);
-> >  		}
-> > -		unlock_trace(task);
-> > +	} else
-> > +		goto out;
-> > +
-> > +	trace.nr_entries	= 0;
-> > +	trace.max_entries	= MAX_STACK_TRACE_DEPTH;
-> > +	trace.entries		= entries;
-> > +	trace.skip		= 0;
-> > +
-> > +	seq_printf(m, "userspace\n");
-> > +
-> > +	save_stack_trace_user_task(task, &trace);
-> > +
-> > +	for (i = 0; i < trace.nr_entries; i++) {
-> > +		if (entries[i] != ULONG_MAX)
-> > +			seq_printf(m, "%p\n", (void *)entries[i]);
-> >  	}
-> > +	unlock_trace(task);
-> > +
-> > +out:
-> 
-> Writing out just the IPs means you have to have a stored snapshot
-> of /proc/$PID/maps around to make any sense of them. This seems a
-> relatively poor interface.
-Good question.
-
-When implementing it, we had similar questions.
-1) Could the parser get the correct data in time, especially when the process
-is running fast and doesn't sleep?
-2) If /proc/XXX/maps is changing, i.e. it mmaps/munmaps frequently, could
-the parser parse data correctly? That's an issue indeed. But Most applications
-don't do so.
-
-Currently, in user space, we collect both the HEX stack data and maps,
-then save them to a trace file. After all collection is done, we do
-the symbol parsing. That mitigates 2) dramatically.
-
-The safest way is to stop the process at a special state, like TASK_STOPPED
-or TASK_TRACED. Then, get data and parse. Then, let the process restore. Such
-way is used to check more detailed data like variables, and change them by gdb.
-But it's too slow and might have bad impact on running system. You might say
-it's debugging stuff and debugger should look for a good approach. I don't
-think such speaking is to resolve the issue. We need provide more tools to
-help developers.
-
-Usage scenario:
-A) Performance debug:
-When debuggers want to do a quick checking, they don't care if the first
-try could get the exact data as system is RUNNING. They would get the data
-for many times. So above question 1) doesn't hurt the utilization.
-B) Android ANR issue debug: We did root cause some ANR issues with our tools.
-
-
-Thanks for the comments and sorry for taking you too much time.
-
-Yanmin
-
+diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
+index 23fc64b..e531f1c 100644
+--- a/drivers/staging/comedi/drivers/s626.c
++++ b/drivers/staging/comedi/drivers/s626.c
+@@ -83,8 +83,17 @@ MODULE_AUTHOR("Gianluca Palli <gpalli@deis.unibo.it>");
+ MODULE_DESCRIPTION("Sensoray 626 Comedi driver module");
+ MODULE_LICENSE("GPL");
+ 
++#define PCI_VENDOR_ID_S626 0x1131
++#define PCI_DEVICE_ID_S626 0x7146
++#define PCI_SUBVENDOR_ID_S626 0x6000
++#define PCI_SUBDEVICE_ID_S626 0x0272
++
+ struct s626_board {
+ 	const char *name;
++	int vendor_id;
++	int device_id;
++	int subvendor_id;
++	int subdevice_id;
+ 	int ai_chans;
+ 	int ai_bits;
+ 	int ao_chans;
+@@ -97,6 +106,10 @@ struct s626_board {
+ static const struct s626_board s626_boards[] = {
+ 	{
+ 	 .name = "s626",
++	 .vendor_id = PCI_VENDOR_ID_S626,
++	 .device_id = PCI_DEVICE_ID_S626,
++	 .subvendor_id = PCI_SUBVENDOR_ID_S626,
++	 .subdevice_id = PCI_SUBDEVICE_ID_S626,
+ 	 .ai_chans = S626_ADC_CHANNELS,
+ 	 .ai_bits = 14,
+ 	 .ao_chans = S626_DAC_CHANNELS,
+@@ -108,8 +121,6 @@ static const struct s626_board s626_boards[] = {
+ };
+ 
+ #define thisboard ((const struct s626_board *)dev->board_ptr)
+-#define PCI_VENDOR_ID_S626 0x1131
+-#define PCI_DEVICE_ID_S626 0x7146
+ 
+ /*
+  * For devices with vendor:device id == 0x1131:0x7146 you must specify
+@@ -117,7 +128,7 @@ static const struct s626_board s626_boards[] = {
+  * Philips SAA7146 media/dvb based cards.
+  */
+ static DEFINE_PCI_DEVICE_TABLE(s626_pci_table) = {
+-	{PCI_VENDOR_ID_S626, PCI_DEVICE_ID_S626, 0x6000, 0x0272, 0, 0, 0},
++	{PCI_VENDOR_ID_S626, PCI_DEVICE_ID_S626, PCI_SUBVENDOR_ID_S626, PCI_SUBDEVICE_ID_S626, 0, 0, 0},
+ 	{0}
+ };
+ 
+@@ -554,17 +565,17 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	resource_size_t resourceStart;
+ 	dma_addr_t appdma;
+ 	struct comedi_subdevice *s;
+-	const struct pci_device_id *ids;
+ 	struct pci_dev *pdev = NULL;
+ 
+ 	if (alloc_private(dev, sizeof(struct s626_private)) < 0)
+ 		return -ENOMEM;
+ 
+-	for (i = 0; i < (ARRAY_SIZE(s626_pci_table) - 1) && !pdev; i++) {
+-		ids = &s626_pci_table[i];
++	for (i = 0; i < ARRAY_SIZE(s626_boards) && !pdev; i++) {
+ 		do {
+-			pdev = pci_get_subsys(ids->vendor, ids->device,
+-					      ids->subvendor, ids->subdevice,
++			pdev = pci_get_subsys(s626_boards[i].vendor_id,
++					      s626_boards[i].device_id,
++					      s626_boards[i].subvendor_id,
++					      s626_boards[i].subdevice_id,
+ 					      pdev);
+ 
+ 			if ((it->options[0] || it->options[1]) && pdev) {
+-- 
+1.7.7.6
 
