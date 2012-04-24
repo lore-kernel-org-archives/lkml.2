@@ -1,80 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab2DXP6l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 11:58:41 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:50486 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755915Ab2DXP6j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 11:58:39 -0400
-Date: Tue, 24 Apr 2012 23:58:43 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Anil Nair <anilcoll90@gmail.com>, Greg KH <greg@kroah.com>,
-        lkml <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: [RFC]Is usb port number fixed?
-Message-ID: <20120424155843.GA3804@udknight>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
-	Alan Stern <stern@rowland.harvard.edu>,
-	Anil Nair <anilcoll90@gmail.com>, Greg KH <greg@kroah.com>,
-	lkml <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-References: <20120424021600.GA5283@udknight>
- <Pine.LNX.4.44L0.1204241010270.1511-100000@iolanthe.rowland.org>
+	id S1755997Ab2DXP7g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 11:59:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42562 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755747Ab2DXP7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 11:59:35 -0400
+Message-ID: <4F96CDE1.5000909@redhat.com>
+Date: Tue, 24 Apr 2012 11:59:29 -0400
+From: Larry Woodman <lwoodman@redhat.com>
+Reply-To: lwoodman@redhat.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1204241010270.1511-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-mm@kvack.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, Motohiro Kosaki <mkosaki@redhat.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -mm V2] do_migrate_pages() calls migrate_to_node() even if
+ task is already on a correct node
+Content-Type: multipart/mixed;
+ boundary="------------030403060505070205030302"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 10:14:05AM -0400, Alan Stern wrote:
-> In drivers/usb/core/hub.c, look through the hub_events() routine.  
-> There are several function calls similar to this one:
-> 
-> 			ret = hub_port_status(hub, i,
-> 					&portstatus, &portchange);
-> 
-> Here i is the port number.  This asks the hub to send back status and 
-> change information for port i.  (See also the code for the 
-> hub_port_status() and get_port_status() routines.)
+This is a multi-part message in MIME format.
+--------------030403060505070205030302
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Thanks, I get it.
+While moving tasks between cpusets we noticed some strange behavior.  
+Specifically if the nodes of the destination
+cpuset are a subset of the nodes of the source cpuset do_migrate_pages() 
+will move pages that are already on a node
+in the destination cpuset.  The reason for this is do_migrate_pages() 
+does not check whether each node in the source
+nodemask is in the destination nodemask before calling 
+migrate_to_node().  If we simply do this check and skip them
+when the source is in the destination moving we wont move nodes that 
+dont need to be moved.
 
-On Tue, Apr 24, 2012 at 07:52:44PM +0530, anil wrote:
-> The USB specification Table 11-13 describes the hub descriptor in
-> detail.
-> The following data structure struct usb_hub_descriptor defined in
-> "drivers/usb/core/hub.h" of Linux  Kernel source contains information
-> about the hub descriptor,
-> 
->                       struct usb_hub_descriptor {
->                             _u8 bDescLength;
->                           _u8 bDescriptorType;
->                              _u8 bNbrPorts;
->                        _le16 wHubCharacteristics;
->                           _u8 bPwrOn2PwrGood;
->                          _u8 bHubContrCurrent;
->                                    }
-> 
-> The bNbrPorts  member contains information on the number of
-> downstream-facing ports the hub supports. The structure which i have
-> provided is in reference to Linux Kernel Version 2.6 series for Linux
-> Kernel Version 3.0+, Please consult an expert.
->   	Is this information you wanted?
-> 
+Adding a little debug printk to migrate_to_node():
 
-Yes, It is want I wanted.But maybe "11.5.3.1 Labeling" show more footprint.
+Without this change migrating tasks from a cpuset containing nodes 0-7 
+to a cpuset containing nodes 3-4, we migrate
+from ALL the nodes even if they are in the both the source and 
+destination nodesets:
 
-Thanks, all guys.
-All you give me a very good explanation about the sentence below:
+   Migrating 7 to 4
+   Migrating 6 to 3
+   Migrating 5 to 4
+   Migrating 4 to 3
+   Migrating 1 to 4
+   Migrating 3 to 4
+   Migrating 0 to 3
+   Migrating 2 to 3
 
-"High quality support from experts available instantly over the Internet at
-no charge has played a major role in stitching together a huge Linux community"
 
-which come from the <<Essential Linux Device Drivers>>.
+With this change we only migrate from nodes that are not in the 
+destination nodesets:
 
-Cheers.
+   Migrating 7 to 4
+   Migrating 6 to 3
+   Migrating 5 to 4
+   Migrating 2 to 3
+   Migrating 1 to 4
+   Migrating 0 to 3
 
-Udknight
+This version of the patch will only skips migrating from nodes that are 
+not in the destination
+nodesets if the number of nodes in the source and destination nodesets 
+are not equal.  This
+preserves the intended behavior that Christoph pointed out yet aviods 
+the costly overhead
+of migrating them when its not necessary.
+
+
+Here is timings of migrating from nodes 0-7 to 1 & 3 with and without 
+the patch:
+
+BEFORE PATCH -- Move times: 59, 140, 651 seconds
+============
+
+Moving 14 tasks from nodes (0-7) to nodes (1,3)
+numad(8780) do_migrate_pages (mm=0xffff88081d414400 
+from_nodes=0xffff880818c81d28 to_nodes=0xffff880818c81ce8 flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x7 dest=0x3 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x6 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x5 dest=0x3 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x4 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x2 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x1 dest=0x3 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x0 dest=0x1 
+flags=0x4)
+(Above moves repeated for each of the 14 tasks...)
+PID 8890 moved to node(s) 1,3 in 59.2 seconds
+
+
+Moving 20 tasks from nodes (0-7) to nodes (1,4-5)
+numad(8780) do_migrate_pages (mm=0xffff88081d88c700 
+from_nodes=0xffff880818c81d28 to_nodes=0xffff880818c81ce8 flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x7 dest=0x4 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x6 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x3 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x2 dest=0x5 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x1 dest=0x4 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x0 dest=0x1 
+flags=0x4)
+(Above moves repeated for each of the 20 tasks...)
+PID 8962 moved to node(s) 1,4-5 in 139.88 seconds
+
+
+Moving 26 tasks from nodes (0-7) to nodes (1-3,5)
+numad(8780) do_migrate_pages (mm=0xffff88081d5bc740 
+from_nodes=0xffff880818c81d28 to_nodes=0xffff880818c81ce8 flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x7 dest=0x5 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x6 dest=0x3 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x5 dest=0x2 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x3 dest=0x5 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x2 dest=0x3 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x1 dest=0x2 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x0 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x4 dest=0x1 
+flags=0x4)
+(Above moves repeated for each of the 26 tasks...)
+PID 9058 moved to node(s) 1-3,5 in 651.45 seconds
+
+
+
+AFTER PATCH -- Move times: 42, 56, 93 seconds
+===========
+
+Moving 14 tasks from nodes (0-7) to nodes (5,7)
+numad(33209) do_migrate_pages (mm=0xffff88101d5ff140 
+from_nodes=0xffff88101e7b5d28 to_nodes=0xffff88101e7b5ce8 flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x6 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x4 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x3 dest=0x7 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x2 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x1 dest=0x7 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x0 dest=0x5 
+flags=0x4)
+(Above moves repeated for each of the 14 tasks...)
+PID 33221 moved to node(s) 5,7 in 41.67 seconds
+
+
+Moving 20 tasks from nodes (0-7) to nodes (1,3,5)
+numad(33209) do_migrate_pages (mm=0xffff88101d6c37c0 
+from_nodes=0xffff88101e7b5d28 to_nodes=0xffff88101e7b5ce8 flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d6c37c0 source=0x7 dest=0x3 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d6c37c0 source=0x6 dest=0x1 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d6c37c0 source=0x4 dest=0x3 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d6c37c0 source=0x2 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d6c37c0 source=0x0 dest=0x1 
+flags=0x4)
+(Above moves repeated for each of the 20 tasks...)
+PID 33289 moved to node(s) 1,3,5 in 56.3 seconds
+
+
+Moving 26 tasks from nodes (0-7) to nodes (1,3,5,7)
+numad(33209) do_migrate_pages (mm=0xffff88101d924400 
+from_nodes=0xffff88101e7b5d28 to_nodes=0xffff88101e7b5ce8 flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d924400 source=0x6 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d924400 source=0x4 dest=0x1 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d924400 source=0x2 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d924400 source=0x0 dest=0x1 
+flags=0x4)
+(Above moves repeated for each of the 26 tasks...)
+PID 33372 moved to node(s) 1,3,5,7 in 92.67 seconds
+
+
+Signed-off-by: Larry Woodman<lwoodman@redhat.com>
+
+
+
+--------------030403060505070205030302
+Content-Type: text/plain;
+ name="upstream-do_migrate_pages.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="upstream-do_migrate_pages.patch"
+
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 47296fe..6c189fa 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1012,6 +1012,16 @@ int do_migrate_pages(struct mm_struct *mm,
+ 		int dest = 0;
+ 
+ 		for_each_node_mask(s, tmp) {
++
++			/* IFF there is an equal number of source and
++			 * destination nodes, maintain relative node distance
++			 * even when source and destination nodes overlap.
++			 * However, when the node weight is unequal, never move
++			 * memory out of any destination nodes */
++			if ((nodes_weight(*from_nodes) != nodes_weight(*to_nodes)) && 
++						(node_isset(s, *to_nodes)))
++				continue;
++
+ 			d = node_remap(s, *from_nodes, *to_nodes);
+ 			if (s == d)
+ 				continue;
+
+--------------030403060505070205030302--
