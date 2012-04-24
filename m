@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab2DXWeD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:34:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757200Ab2DXWeA (ORCPT
+	id S1758042Ab2DXWeH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:34:07 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758028Ab2DXWeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:34:00 -0400
-Message-Id: <20120424223242.171007377@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:34:03 -0400
+Message-Id: <20120424223242.082896738@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:43 -0700
+Date: Tue, 24 Apr 2012 15:32:42 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Kent Yoder <key@linux.vnet.ibm.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 02/62] crypto: sha512 - Fix byte counter overflow in SHA-512
+        alan@lxorguk.ukuu.org.uk, Zeev Tarantov <zeev.tarantov@gmail.com>,
+        "Signed-off-by: David S. Miller" <davem@davemloft.net>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [ 01/62] Perf: fix build breakage
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Yoder <key@linux.vnet.ibm.com>
 
-commit 25c3d30c918207556ae1d6e663150ebdf902186b upstream.
+From: Zeev Tarantov <zeev.tarantov@gmail.com>
 
-The current code only increments the upper 64 bits of the SHA-512 byte
-counter when the number of bytes hashed happens to hit 2^64 exactly.
+[Patch not needed upstream as this is a backport build bugfix - gregkh
 
-This patch increments the upper 64 bits whenever the lower 64 bits
-overflows.
+gcc correctly complains:
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+util/hist.c: In function ‘__hists__add_entry’:
+util/hist.c:240:27: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
+util/hist.c:241:23: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
+
+for this new code:
+
++                       if (he->ms.map != entry->ms.map) {
++                               he->ms.map = entry->ms.map;
++                               if (he->ms.map)
++                                       he->ms.map->referenced = true;
++                       }
+
+because "entry" is a "struct hist_entry", not a pointer to a struct.
+
+In mainline, "entry" is a pointer to struct passed as argument to the function.
+So this is broken during backporting. But obviously not compile tested.
+
+Signed-off-by: Zeev Tarantov <zeev.tarantov@gmail.com>
+Cc: Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/sha512_generic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/hist.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -174,7 +174,7 @@ sha512_update(struct shash_desc *desc, c
- 	index = sctx->count[0] & 0x7f;
- 
- 	/* Update number of bytes */
--	if (!(sctx->count[0] += len))
-+	if ((sctx->count[0] += len) < len)
- 		sctx->count[1]++;
- 
-         part_len = 128 - index;
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -237,8 +237,8 @@ struct hist_entry *__hists__add_entry(st
+ 			 * mis-adjust symbol addresses when computing
+ 			 * the history counter to increment.
+ 			 */
+-			if (he->ms.map != entry->ms.map) {
+-				he->ms.map = entry->ms.map;
++			if (he->ms.map != entry.ms.map) {
++				he->ms.map = entry.ms.map;
+ 				if (he->ms.map)
+ 					he->ms.map->referenced = true;
+ 			}
 
 
