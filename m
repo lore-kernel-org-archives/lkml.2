@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab2DXRo4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 13:44:56 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:26541 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756783Ab2DXRoz (ORCPT
+	id S1757066Ab2DXRpM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 13:45:12 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43347 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757046Ab2DXRpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 13:44:55 -0400
-Message-ID: <1335289485.17274.46.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH net-next 1/3] Add capability to retrieve plug-in module
- EEPROM
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Miller <davem@davemloft.net>
-CC: <smhodgson@solarflare.com>, <netdev@vger.kernel.org>,
-        <bruce.w.allan@intel.com>, <decot@google.com>,
-        <alexander.h.duyck@intel.com>, <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Apr 2012 18:44:45 +0100
-In-Reply-To: <20120423.172848.1733968863825393980.davem@davemloft.net>
-References: <4F9031BF.10106@solarflare.com>
-	 <20120423.172848.1733968863825393980.davem@davemloft.net>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Apr 2012 13:45:11 -0400
+Date: Tue, 24 Apr 2012 18:45:02 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Ted Ts'o" <tytso@mit.edu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Anton Blanchard <anton@au1.ibm.com>
+Subject: Re: [git pull] vfs and fs fixes
+Message-ID: <20120424174502.GC6871@ZenIV.linux.org.uk>
+References: <20120417052511.GU6589@ZenIV.linux.org.uk>
+ <1334805798.3143.25.camel@pasglop>
+ <20120419145007.GD6317@thunk.org>
+ <20120424174006.GA28788@kroah.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18862.005
-X-TM-AS-Result: No--10.861300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120424174006.GA28788@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 17:28 -0400, David Miller wrote:
-> You can't just submit three seperate patches each with the same exact
-> Subject line.
+On Tue, Apr 24, 2012 at 10:40:06AM -0700, Greg KH wrote:
+> On Thu, Apr 19, 2012 at 10:50:07AM -0400, Ted Ts'o wrote:
+> > On Thu, Apr 19, 2012 at 01:23:18PM +1000, Benjamin Herrenschmidt wrote:
+> > > >       ext4: fix endianness breakage in ext4_split_extent_at()
+> > > 
+> > > That smells like something we'd want in -stable no ?
+> > 
+> > Yes, commit af1584f5 is something that should definitely go into
+> > -stable.
 > 
-> Otherwise someone scanning the commit headers can't figure out what
-> is different in each of these changes.
-> 
-> There also is no signoff from Ben for patches #2 or #3, did he review
-> them?  If so, why didn't he ACK or sign off on it?  If not, why not?
+> Now queued up, thanks.
 
-Sorry, I've been busy with another project.  I'll reply to Stuart's
-patches faster next round.
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Actually, the rest of commits from that pull also should go there; forgot
+to add Cc: stable, my apologies...
