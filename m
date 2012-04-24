@@ -1,143 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758649Ab2DXXyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 19:54:22 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:33348 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468Ab2DXXyV (ORCPT
+	id S1758512Ab2DXX4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 19:56:07 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39172 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063Ab2DXX4G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 19:54:21 -0400
-X-AuditID: cbfee61a-b7b8eae00000534b-ae-4f973d2b61c5
-Message-id: <4F973D2B.7000205@samsung.com>
-Date: Wed, 25 Apr 2012 08:54:19 +0900
-From: Minho Ban <mhban@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
- Thunderbird/11.0.1
-MIME-version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [RFC/PATCH] Prevent wasting time to find out get_parent_ip
-References: <4F969E53.9080307@samsung.com>
- <1335291397.28106.142.camel@gandalf.stny.rr.com>
-In-reply-to: <1335291397.28106.142.camel@gandalf.stny.rr.com>
-Content-type: text/plain; charset=ISO-8859-15
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Tue, 24 Apr 2012 19:56:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F973BF2.4080406@jp.fujitsu.com>
+References: <1335171318-4838-1-git-send-email-minchan@kernel.org>
+ <4F963742.2030607@jp.fujitsu.com> <4F963B8E.9030105@kernel.org>
+ <CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com>
+ <4F965413.9010305@kernel.org> <CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com>
+ <20120424143015.99fd8d4a.akpm@linux-foundation.org> <4F973BF2.4080406@jp.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Tue, 24 Apr 2012 19:55:43 -0400
+X-Google-Sender-Auth: Nc2OG67q-eWwAW0xRcVcEOJ_qvc
+Message-ID: <CAHGf_=r09BCxXeuE8dSti4_SrT5yahrQCwJh=NrrA3rsUhhu_w@mail.gmail.com>
+Subject: Re: [RFC] propagate gfp_t to page table alloc functions
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@gmail.com>,
+        Minchan Kim <minchan@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 03:16 AM, Steven Rostedt wrote:
-> On Tue, 2012-04-24 at 21:36 +0900, Minho Ban wrote:
->> trace_preempt_on/off looks empty if PREEMPT_TRACER is off. But actually it is
->> spending time to find out get_parent_ip(even CALLER_ADDR for some ARCH) which is
->> in argument. This seems not fair for those who expect to do nothing but increase
->> or decrease count.
+On Tue, Apr 24, 2012 at 7:49 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> (2012/04/25 6:30), Andrew Morton wrote:
+>
+>> On Tue, 24 Apr 2012 17:48:29 +1000
+>> Nick Piggin <npiggin@gmail.com> wrote:
 >>
-> 
-> Yuck what an ugly patch. Please don't uglify the C code with #ifdefs!
-> 
-
-Yes, I agree.
-
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Signed-off-by: Minho Ban <mhban@samsung.com>
->> ---
->>  include/linux/ftrace.h |    3 ---
->>  kernel/sched/core.c    |    5 ++++-
->>  kernel/softirq.c       |    3 ++-
->>  3 files changed, 6 insertions(+), 5 deletions(-)
+>>>> Hmm, there are several places to use GFP_NOIO and GFP_NOFS even, GFP_ATOMIC.
+>>>> I believe it's not trivial now.
+>>>
+>>> They're all buggy then. Unfortunately not through any real fault of their own.
 >>
->> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
->> index 72a6cab..7cd11fe 100644
->> --- a/include/linux/ftrace.h
->> +++ b/include/linux/ftrace.h
->> @@ -484,9 +484,6 @@ static inline void __ftrace_enabled_restore(int enabled)
->>  #ifdef CONFIG_PREEMPT_TRACER
->>    extern void trace_preempt_on(unsigned long a0, unsigned long a1);
->>    extern void trace_preempt_off(unsigned long a0, unsigned long a1);
->> -#else
->> -  static inline void trace_preempt_on(unsigned long a0, unsigned long a1) { }
->> -  static inline void trace_preempt_off(unsigned long a0, unsigned long a1) { }
-> 
-> If you want to hide the "CALLER_ADDR" for other archs, then simply do:
-> 
-> # define trace_preempt_on(a0, a1) do { } while (0)
-> # define trace_preempt_off(a0, a1) do { } while (0)
-> 
-> and be done with it.
-> 
-> Oh, you should add a comment before these defines to the effect of:
-> 
->  /*
->   * Use defines instead of static inlines because some arches will make 
->   * code out of the CALLER_ADDR, when we really want these to be a real 
->   * nop.
->   */
-> 
-> That way, you will document why we use defines instead of static
-> inlines.
-> 
-> -- Steve
-> 
+>> There are gruesome problems in block/blk-throttle.c (thread "mempool,
+>> percpu, blkcg: fix percpu stat allocation and remove stats_lock").  It
+>> wants to do an alloc_percpu()->vmalloc() from the IO submission path,
+>> under GFP_NOIO.
+>>
+>> Changing vmalloc() to take a gfp_t does make lots of sense, although I
+>> worry a bit about making vmalloc() easier to use!
+>>
+>> I do wonder whether the whole scheme of explicitly passing a gfp_t was
+>> a mistake and that the allocation context should be part of the task
+>> context.  ie: pass the allocation mode via *current.
+>
+> yes...that's very interesting.
 
-Very appreciate your explanation and detailed(even complete) sample code. 
-I'll apply your code.
-
->>  #endif
->>  
->>  #ifdef CONFIG_FTRACE_MCOUNT_RECORD
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index 4603b9d..efdd5a0 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -3068,8 +3068,10 @@ void __kprobes add_preempt_count(int val)
->>  	DEBUG_LOCKS_WARN_ON((preempt_count() & PREEMPT_MASK) >=
->>  				PREEMPT_MASK - 10);
->>  #endif
->> +#ifdef CONFIG_PREEMPT_TRACER
->>  	if (preempt_count() == val)
->>  		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
->> +#endif
->>  }
->>  EXPORT_SYMBOL(add_preempt_count);
->>  
->> @@ -3088,9 +3090,10 @@ void __kprobes sub_preempt_count(int val)
->>  			!(preempt_count() & PREEMPT_MASK)))
->>  		return;
->>  #endif
->> -
->> +#ifdef CONFIG_PREEMPT_TRACER
->>  	if (preempt_count() == val)
->>  		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
->> +#endif
->>  	preempt_count() -= val;
->>  }
->>  EXPORT_SYMBOL(sub_preempt_count);
->> diff --git a/kernel/softirq.c b/kernel/softirq.c
->> index 671f959..e7c8336 100644
->> --- a/kernel/softirq.c
->> +++ b/kernel/softirq.c
->> @@ -112,9 +112,10 @@ static void __local_bh_disable(unsigned long ip, unsigned int cnt)
->>  	if (softirq_count() == cnt)
->>  		trace_softirqs_off(ip);
->>  	raw_local_irq_restore(flags);
->> -
->> +#ifdef CONFIG_PREEMPT_TRACER
->>  	if (preempt_count() == cnt)
->>  		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
->> +#endif
->>  }
->>  #else /* !CONFIG_TRACE_IRQFLAGS */
->>  static inline void __local_bh_disable(unsigned long ip, unsigned int cnt)
-> 
-> 
-> 
-
+I think GFP_ATOMIC is used non task context too. ;-)
