@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab2DXQky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 12:40:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48661 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755428Ab2DXQkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 12:40:53 -0400
-From: Jan Kara <jack@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-mm@kvack.org, Peter Zijlstra <peterz@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: [PATCH RFC v2 0/1] Flexible proportions
-Date: Tue, 24 Apr 2012 18:30:32 +0200
-Message-Id: <1335285033-7347-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
+	id S1756757Ab2DXQnL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 12:43:11 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:48477 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756742Ab2DXQnK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 12:43:10 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18Upxc615AUNx+diDqss4h38vPqax8ISnsU20dcG/
+	t2JgC20bqWV7Ry
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Subject: Re: hibernate a system booted from external USB drive - is it posible?
+Date: Tue, 24 Apr 2012 18:42:52 +0200
+User-Agent: KMail/1.13.7 (Linux/3.3.3; KDE/4.8.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201204221849.31198.toralf.foerster@gmx.de> <4F943AE1.5050207@msgid.tls.msk.ru>
+In-Reply-To: <4F943AE1.5050207@msgid.tls.msk.ru>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201204241842.53014.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-  Hello,
+Michael Tokarev wrote at 19:07:45
+> On 22.04.2012 20:49, Toralf Förster wrote:
+> > I wonder, whether it is expect to work with current stable kernel 3.3.2
+> > or not. Seems not to work here (s2ram works fine).
+> > Hibernate however writes data to the swap partition, but during wakeup I
+> > get :
+> > 
+> > kernel: PM: Hibernation image partition 8:6 present
+> > kernel: PM: Looking for hibernation image.
+> > kernel: PM: Image not found (code -22)
+> > kernel: PM: Hibernation image not present or could not be loaded.
+> 
+> This is entirely an initramfs issue/question.  The device should be
+> present in early userspace when it attempts to resume.  
+> 
+Yes - that its. I do not have an initrd, just buikding linux kernel from git :
 
-  so I got back to my idea of providing code for computing event proportions
-where aging period is not dependent on the number of events happening (so
-that aging works well both with fast storage and slow USB sticks in the same
-system).
+$> make -j 3 && sudo su -c "mount /boot/; make modules_install && cp arch/i386/boot/bzImage /boot/linux-git"
 
-  The basic idea is that we compute proportions as:
-p_j = (\Sum_{i>=0} x_{i,j}/2^{i+1}) / (\Sum_{i>=0} x_i/2^{i+1})
+which works well for a cold start, but during wakeup I get :
 
-  Where x_{i,j} is j's number of events in i-th last time period and x_i is
-total number of events in i-th last time period.
+...
+PM: Checking hibernation image partition /dev/sdb2
+...
+	then the internal sda are recognized
+...
+PM: Hibernation image not present or could not be loaded.
+Waiting 15sec before mounting root device...
+...
+	now the USB devices are recognized>
 
-  Note that when x_i's are all the same (as is the case with current
-proportion code), this expression simplifies to the expression defining
-current proportions which is:
-p_j =  \Sum_{i>=0} x_{i,j}/2^{i+1} / t
 
-  where t is the lenght of the aging period.
+ - too late for me  :-(
 
-  In fact, if we are in the middle of the period, the proportion computed by
-the current code is:
-p_j = (x_0 + \Sum_{i>=1} x_{i,j}/2^{i+1}) / (t' + t)
-
-  where t' is total number of events in the running period and t is the lenght
-of the aging period. So there is event more similarity.
-
-  Similarly as with current proportion code, it is simple to compute update
-proportion after several periods have elapsed. For each proportion we store
-the numerator of our fraction and the number of period when the proportion
-was last updated. In global proportion structure we compute the denominator
-of the fraction which is the same for all event types. So catch up with missed
-periods boils down to shifting the numerator by the number of missed periods
-and that's it. For more details, please see the code.
-
-  I've also run a few tests (I've created a userspace wrapper to allow me to
-run proportion code in userpace and arbitrarily generate events for it) to
-compare the behavior of old and new code. You can see them at
-http://beta.suse.com/private/jack/flex_proportions/ In all the tests new code
-showed faster convergence to current event proportions (I tried to
-realistically set period_shift for fixed proportions).  Also in the last test
-we see that if period_shift is decreased, then current proportions become more
-sensitive to short term fluctuations in event rate so just decreasing
-period_shift isn't a good solution to slower convergence. If anyone has other
-idea what to try, I can do that - it should be simple enough to implement in
-my testing tool.
-
-  So my plan, if people are happy with the new proportion code, would be to
-switch at least bdi writeout proportion to the new code. I can also check
-other users to see whether it would make sense for them to switch. So what
-do people think?
-
-								Honza
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
