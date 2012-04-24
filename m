@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964880Ab2DXWkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:40:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964869Ab2DXWjR (ORCPT
+	id S964899Ab2DXWkl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:40:41 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964853Ab2DXWjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:39:17 -0400
-Message-Id: <20120424223257.121245734@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:39:11 -0400
+Message-Id: <20120424223256.227976314@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:35 -0700
+Date: Tue, 24 Apr 2012 15:33:25 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 42/42] lockd: fix the endianness bug
+        alan@lxorguk.ukuu.org.uk, Eduardo Bacchi Kienetz <eduardo@kienetz.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 32/42] rt2800usb: Add new device ID for Belkin
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Eduardo Bacchi Kienetz <eduardo@kienetz.com>
 
-commit e847469bf77a1d339274074ed068d461f0c872bc upstream.
+commit 43bf8c245237b8309153aa39d4e8f1586cf56af0 upstream.
 
-comparing be32 values for < is not doing the right thing...
+Belkin's Connect N150 Wireless USB Adapter, model F7D1101 version 2, uses ID 0x945b.
+Chipset info: rt: 3390, rf: 000b, rev: 3213.
+I have just bought one, which started to work perfectly after the ID was added through this patch.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Eduardo Bacchi Kienetz <eduardo@kienetz.com>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/clnt4xdr.c |    2 +-
- fs/lockd/clntxdr.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/lockd/clnt4xdr.c
-+++ b/fs/lockd/clnt4xdr.c
-@@ -241,7 +241,7 @@ static int decode_nlm4_stat(struct xdr_s
- 	p = xdr_inline_decode(xdr, 4);
- 	if (unlikely(p == NULL))
- 		goto out_overflow;
--	if (unlikely(*p > nlm4_failed))
-+	if (unlikely(ntohl(*p) > ntohl(nlm4_failed)))
- 		goto out_bad_xdr;
- 	*stat = *p;
- 	return 0;
---- a/fs/lockd/clntxdr.c
-+++ b/fs/lockd/clntxdr.c
-@@ -236,7 +236,7 @@ static int decode_nlm_stat(struct xdr_st
- 	p = xdr_inline_decode(xdr, 4);
- 	if (unlikely(p == NULL))
- 		goto out_overflow;
--	if (unlikely(*p > nlm_lck_denied_grace_period))
-+	if (unlikely(ntohl(*p) > ntohl(nlm_lck_denied_grace_period)))
- 		goto out_enum;
- 	*stat = *p;
- 	return 0;
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -976,6 +976,8 @@ static struct usb_device_id rt2800usb_de
+ 	{ USB_DEVICE(0x0586, 0x341e) },
+ 	{ USB_DEVICE(0x0586, 0x343e) },
+ #ifdef CONFIG_RT2800USB_RT33XX
++	/* Belkin */
++	{ USB_DEVICE(0x050d, 0x945b) },
+ 	/* Ralink */
+ 	{ USB_DEVICE(0x148f, 0x3370) },
+ 	{ USB_DEVICE(0x148f, 0x8070) },
 
 
