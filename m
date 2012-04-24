@@ -1,92 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab2DXFHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 01:07:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:47127 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab2DXFHc convert rfc822-to-8bit (ORCPT
+	id S1752210Ab2DXFIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 01:08:24 -0400
+Received: from portal.weinmann.de ([62.8.140.122]:33273 "EHLO
+	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab2DXFIP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 01:07:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="134496589"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "John W. Linville" <linville@tuxdriver.com>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: linux-next: manual merge of the wireless-next tree with the
- net-next tree
-Thread-Topic: linux-next: manual merge of the wireless-next tree with the
- net-next tree
-Thread-Index: AQHNIcS1sK98DqiK40eU8oBaGR3gdpapbGwg
-Date: Tue, 24 Apr 2012 05:07:25 +0000
-Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB3103432@HASMSX103.ger.corp.intel.com>
-References: <20120424124803.f4dc75ea96a875c3f35db615@canb.auug.org.au>
-In-Reply-To: <20120424124803.f4dc75ea96a875c3f35db615@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
+	Tue, 24 Apr 2012 01:08:15 -0400
+X-Greylist: delayed 995 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Apr 2012 01:08:15 EDT
+From: "Voss, Nikolaus" <N.Voss@weinmann.de>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+CC: "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'rtc-linux@googlegroups.com'" <rtc-linux@googlegroups.com>,
+        "'a.zummo@towertech.it'" <a.zummo@towertech.it>,
+        "'grant.likely@secretlab.ca'" <grant.likely@secretlab.ca>
+Date: Tue, 24 Apr 2012 06:51:03 +0200
+Subject: RE: [PATCH] drivers/rtc/rtc-m41t93.c: don't let get_time() reset
+ error state
+Thread-Topic: [PATCH] drivers/rtc/rtc-m41t93.c: don't let get_time() reset
+ error state
+Thread-Index: Ac0hkyY4NeY7YIfPRkekxVRvNaP6/AAPyylg
+Message-ID: <EF2E73589CA71846A15D0B2CDF79505D0905DB4A4A@wm021.weinmann.com>
+References: <201204231230.q3NCUbbP015327@gatekeeper.vosshq.de>
+ <20120423135322.5b9b1635.akpm@linux-foundation.org>
+In-Reply-To: <20120423135322.5b9b1635.akpm@linux-foundation.org>
+Accept-Language: en-US, de-DE
+Content-Language: de-DE
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.10]
+acceptlanguage: en-US, de-DE
 Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Andrew Morton wrote on 2012-04-23:
+> On Mon, 23 Apr 2012 12:51:23 +0200
+> Nikolaus Voss <n.voss@weinmann.de> wrote:
 > 
-> Hi John,
+>> If the rtc reports the time might be invalid due to oscillator
+>> failure, this flags must not be reset by get_time() as the read
+>> operation doesn't make the time valid.
+>> 
+>> Instead, the flag is reset in set_time() when a valid time is
+>> to be written.
 > 
-> Today's linux-next merge of the wireless-next tree got a conflict in
-> drivers/net/wireless/iwlwifi/iwl-testmode.c between commit d33e152e1edd
-> ("iwlwifi: Stop using NLA_PUT*()") from the net-next tree and commit
-> 2152268ff911 ("iwlwifi: op_mode holds its pointer to the config") from the
-> wireless-next tree.
-> 
-> I was hoping that we were done with these ... :-(
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
+> This is rather vague - what is/are "these flags"?
 
-Thanks Stephen, your fix seems right. In this case, there are only two choices: it is right or it doesn't even compile.
+Sorry, that's true. I speak of the M41T93_FLAG_OF
+(Oscillator Fail) flag.
 
-> 
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc drivers/net/wireless/iwlwifi/iwl-testmode.c
-> index bb27509,a6b16aa..0000000
-> --- a/drivers/net/wireless/iwlwifi/iwl-testmode.c
-> +++ b/drivers/net/wireless/iwlwifi/iwl-testmode.c
-> @@@ -543,12 -539,11 +543,12 @@@ static int iwl_testmode_driver(struct i
->   				IWL_ERR(priv, "Memory allocation fail\n");
->   				return -ENOMEM;
->   			}
->  -			NLA_PUT_U32(skb, IWL_TM_ATTR_COMMAND,
->  -				IWL_TM_CMD_DEV2APP_EEPROM_RSP);
->  -			NLA_PUT(skb, IWL_TM_ATTR_EEPROM,
->  -				priv->cfg->base_params->eeprom_size,
->  -				priv->eeprom);
->  +			if (nla_put_u32(skb, IWL_TM_ATTR_COMMAND,
->  +					IWL_TM_CMD_DEV2APP_EEPROM_RSP) ||
->  +			    nla_put(skb, IWL_TM_ATTR_EEPROM,
-> - 				    cfg(priv)->base_params->eeprom_size,
-> ++				    priv->cfg->base_params->eeprom_size,
->  +				    priv->eeprom))
->  +				goto nla_put_failure;
->   			status = cfg80211_testmode_reply(skb);
->   			if (status < 0)
->   				IWL_ERR(priv, "Error sending msg : %d\n",
----------------------------------------------------------------------
-Intel Israel (74) Limited
+[...]
+> Secondly, you provided no description of the user-visible effects of
+> the bug.  Hence I cannot work out which kernel version(s) this patch
+> should be merged into.
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
+What the user sees is that the first get_time() read reports
+an error (invalid time) and the second reports no error, so the
+first read magically heals the rtc time.
+
+The patch applies to all kernel versions with support for m41t93 rtc.
+
+I'll repost the patch with a proper description.
+
+Niko
+
 
