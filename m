@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469Ab2DXUBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 16:01:04 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:32798 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757293Ab2DXUBC (ORCPT
+	id S1757475Ab2DXUBv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 16:01:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62828 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756852Ab2DXUBt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 16:01:02 -0400
-Date: Tue, 24 Apr 2012 13:00:58 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: =?iso-8859-1?Q?St=E9phane?= Pajot <pajot.stephane@gmail.com>
-Cc: devel@driverdev.osuosl.org, fmhess@users.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: comedi: fix trailing whitespace and quoted
- string split across lines in ni_labpc.c
-Message-ID: <20120424200058.GA14071@kroah.com>
-References: <1335286210-3150-1-git-send-email-pajot.stephane@gmail.com>
- <20120424184642.GA20004@kroah.com>
- <20120424192709.GA4717@stef-pc>
+	Tue, 24 Apr 2012 16:01:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120424192709.GA4717@stef-pc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120424055123.GA7140@burratino>
+References: <1322640100-14534-1-git-send-email-mcree@orcon.net.nz> <20120424055123.GA7140@burratino>
+From: Matt Turner <mattst88@gmail.com>
+Date: Tue, 24 Apr 2012 16:01:28 -0400
+Message-ID: <CAEdQ38HE70B-4w3t71rn_S-eX7BMnc6f=dD49guuBim+dQnPzA@mail.gmail.com>
+Subject: Re: [PATCH] alpha: add io{read,write}{16,32}be functions
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Cree <mcree@orcon.net.nz>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        =?ISO-8859-1?Q?Ra=FAl_Porcel?= <armin76@gentoo.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 09:27:09PM +0200, Stéphane Pajot wrote:
-> On Tue, Apr 24, 2012 at 11:46:42AM -0700, Greg KH wrote:
-> > On Tue, Apr 24, 2012 at 06:50:10PM +0200, Stéphane Pajot wrote:
-> > > @@ -738,7 +738,7 @@ static int labpc_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-> > >  		irq = it->options[1];
-> > >  		dma_chan = it->options[2];
-> > >  #else
-> > > -		printk(KERN_ERR " this driver has not been built with ISA DMA "
-> > > +		printk(KERN_ERR " this driver has not been built with ISA DMA\n"
-> > >  								"support.\n");
-> > 
-> > What?  Why did you do this?  Do you understand what you just did to the
-> > message printed out?
-> 
-> ... It was just to patch this "quoted string split across lines
-> warning", i saw this solution on the web. Now i think i understand that
-> i cannot modify AT ALL a printk(KERN_ERR* even if it's just with a \n ?
+On Tue, Apr 24, 2012 at 1:51 AM, Jonathan Nieder <jrnieder@gmail.com> wrote:
+> Hi Matt et al,
+>
+> Michael Cree wrote:
+>
+>> These functions are used in some PCI drivers with big-endian
+>> MMIO space.
+>>
+>> Admittedly it is almost certain that no one this side of the
+>> Moon would use such a card in an Alpha but it does get us
+>> closer to being able to build allyesconfig or allmodconfig,
+> [...]
+>> --- a/arch/alpha/include/asm/io.h
+>> +++ b/arch/alpha/include/asm/io.h
+>> @@ -490,6 +490,11 @@ extern inline void writeq(u64 b, volatile void __iomem *addr)
+>>  }
+>>  #endif
+>>
+>> +#define ioread16be(p) be16_to_cpu(ioread16(p))
+>> +#define ioread32be(p) be32_to_cpu(ioread32(p))
+>> +#define iowrite16be(v,p) iowrite16(cpu_to_be16(v), (p))
+>> +#define iowrite32be(v,p) iowrite32(cpu_to_be32(v), (p))
+>> +
+>>  #define inb_p                inb
+>
+> This patch has been in use in Debian's development branch since
+> January.  Does it look sensible to you?  (If so, I'd like to see it in
+> mainline eventually so we can more easily share bugfixes depending on
+> it in the future.)
+>
+> Thanks,
+> Jonathan
 
-Think about what is actually happening here.  You do know C, right?
-What is the output of the line before you made the change, and now
-after?
+I recently got my kernel.org tree set up again, so I just applied this.
 
-thanks,
+Thanks, and please point me to any patches I should apply.
 
-greg k-h
+Matt
