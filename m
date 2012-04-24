@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852Ab2DXWiN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:38:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
+	id S932895Ab2DXWiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:38:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932863Ab2DXWiJ (ORCPT
+	with ESMTP id S932868Ab2DXWiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:38:09 -0400
-Message-Id: <20120424223255.189215483@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:38:12 -0400
+Message-Id: <20120424223255.272515087@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:13 -0700
+Date: Tue, 24 Apr 2012 15:33:14 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 20/42] USB: sierra: avoid QMI/wwan interface on MC77xx
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 21/42] EHCI: always clear the STS_FLR status bit
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +24,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 749541d19e70905e3971f2a08335a206a98e4d0c upstream.
+commit 2fbe2bf1fd37f9d99950bd8d8093623cf22cf08b upstream.
 
-These devices have a number of non serial interfaces as well.  Use
-the existing "Direct IP" blacklist to prevent binding to interfaces
-which are handled by other drivers.
+This patch (as1544) fixes a problem affecting some EHCI controllers.
+They can generate interrupts whenever the STS_FLR status bit is turned
+on, even though that bit is masked out in the Interrupt Enable
+register.
 
-We also extend the "Direct IP" blacklist with with interfaces only
-seen in "QMI" mode, assuming that these devices use the same
-interface numbers for serial interfaces both in "Direct IP" and in
-"QMI" mode.
+Since the driver doesn't use STS_FLR anyway, the patch changes the
+interrupt routine to clear that bit whenever it is set, rather than
+leaving it alone.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/host/ehci-hcd.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -221,7 +221,7 @@ static const struct sierra_iface_info ty
- };
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -808,8 +808,13 @@ static irqreturn_t ehci_irq (struct usb_
+ 		goto dead;
+ 	}
  
- /* 'blacklist' of interfaces not served by this driver */
--static const u8 direct_ip_non_serial_ifaces[] = { 7, 8, 9, 10, 11 };
-+static const u8 direct_ip_non_serial_ifaces[] = { 7, 8, 9, 10, 11, 19, 20 };
- static const struct sierra_iface_info direct_ip_interface_blacklist = {
- 	.infolen = ARRAY_SIZE(direct_ip_non_serial_ifaces),
- 	.ifaceinfo = direct_ip_non_serial_ifaces,
-@@ -289,7 +289,6 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1199, 0x6856) },	/* Sierra Wireless AirCard 881 U */
- 	{ USB_DEVICE(0x1199, 0x6859) },	/* Sierra Wireless AirCard 885 E */
- 	{ USB_DEVICE(0x1199, 0x685A) },	/* Sierra Wireless AirCard 885 E */
--	{ USB_DEVICE(0x1199, 0x68A2) }, /* Sierra Wireless MC7710 */
- 	/* Sierra Wireless C885 */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x6880, 0xFF, 0xFF, 0xFF)},
- 	/* Sierra Wireless C888, Air Card 501, USB 303, USB 304 */
-@@ -299,6 +298,9 @@ static const struct usb_device_id id_tab
- 	/* Sierra Wireless HSPA Non-Composite Device */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x6892, 0xFF, 0xFF, 0xFF)},
- 	{ USB_DEVICE(0x1199, 0x6893) },	/* Sierra Wireless Device */
-+	{ USB_DEVICE(0x1199, 0x68A2),   /* Sierra Wireless MC77xx in QMI mode */
-+	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
-+	},
- 	{ USB_DEVICE(0x1199, 0x68A3), 	/* Sierra Wireless Direct IP modems */
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
++	/*
++	 * We don't use STS_FLR, but some controllers don't like it to
++	 * remain on, so mask it out along with the other status bits.
++	 */
++	masked_status = status & (INTR_MASK | STS_FLR);
++
+ 	/* Shared IRQ? */
+-	masked_status = status & INTR_MASK;
+ 	if (!masked_status || unlikely(hcd->state == HC_STATE_HALT)) {
+ 		spin_unlock(&ehci->lock);
+ 		return IRQ_NONE;
 
 
