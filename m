@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab2DXDaR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 23:30:17 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:34920 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756535Ab2DXDaQ (ORCPT
+	id S1756601Ab2DXDdE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 23:33:04 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:52083 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756508Ab2DXDdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 23:30:16 -0400
-Date: Mon, 23 Apr 2012 23:30:09 -0400 (EDT)
-Message-Id: <20120423.233009.1036274421495158511.davem@davemloft.net>
-To: sboyd@codeaurora.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH] Move most arches to asm-generic/current.h
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org>
-References: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 23 Apr 2012 23:33:01 -0400
+Message-ID: <4F961E7F.1020303@st.com>
+Date: Tue, 24 Apr 2012 09:01:11 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: viresh kumar <viresh.linux@gmail.com>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        spear-devel <spear-devel@list.st.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] i2c: designware: Add clk_{un}prepare() support
+References: <caa4a0645f80f199b31ec16de37a5c4c9c67a6fa.1334652570.git.viresh.kumar@st.com> <b562073871c8c3c13a1f59698f69cfdf65db3b5a.1334662366.git.viresh.kumar@st.com> <20120422172611.GA15041@pengutronix.de> <CAOh2x=mHS9h6kHxw2of-XWTtv35-SHRRno9Jdkb_3HuDoAovAg@mail.gmail.com> <20120422183806.GB24810@pengutronix.de>
+In-Reply-To: <20120422183806.GB24810@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 23 Apr 2012 20:30:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Boyd <sboyd@codeaurora.org>
-Date: Mon, 23 Apr 2012 20:18:29 -0700
+On 4/23/2012 12:08 AM, Wolfram Sang wrote:
+> Okay, thanks, both applied to next. If you mention dependencies somewhere
+> when submitting, that might speed things, a tiny bit at least.
 
-> Make get_current() into a static inline function in the
-> generic version of current.h so we match what almost every
-> architecture is doing. This allows us to move most of the arches
-> over to this generic header instead of redefining the same thing
-> over and over in each asm directory.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: linux-arch@vger.kernel.org
+I normally do this. But forgot it this time myself too, that this patch
+had a dependency :(
 
-For sparc bits:
-
-Acked-by: David S. Miller <davem@davemloft.net>
+-- 
+viresh
