@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964866Ab2DXWmQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:42:16 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:11909 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964806Ab2DXWis (ORCPT
+	id S1758228Ab2DXWnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:43:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758210Ab2DXWih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:38:48 -0400
-From: Greg Pearson <greg.pearson@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
-        Greg Pearson <greg.pearson@hp.com>
-Subject: [PATCH 1/1] x86: Use x2apic physical mode based on FADT setting
-Date: Tue, 24 Apr 2012 16:38:35 -0600
-Message-Id: <1335307115-15480-1-git-send-email-greg.pearson@hp.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 24 Apr 2012 18:38:37 -0400
+Message-Id: <20120424223255.969718560@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Tue, 24 Apr 2012 15:33:22 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jason Baron <jbaron@redhat.com>
+Subject: [ 29/42] Dont limit non-nested epoll paths
+In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide systems that do not support x2apic cluster mode
-a mechanism to select x2apic physical mode using the
-FADT FORCE_APIC_PHYSICAL_DESTINATION_MODE bit.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Greg Pearson <greg.pearson@hp.com>
+------------------
+
+From: Jason Baron <jbaron@redhat.com>
+
+commit 93dc6107a76daed81c07f50215fa6ae77691634f upstream.
+
+Commit 28d82dc1c4ed ("epoll: limit paths") that I did to limit the
+number of possible wakeup paths in epoll is causing a few applications
+to longer work (dovecot for one).
+
+The original patch is really about limiting the amount of epoll nesting
+(since epoll fds can be attached to other fds). Thus, we probably can
+allow an unlimited number of paths of depth 1. My current patch limits
+it at 1000. And enforce the limits on paths that have a greater depth.
+
+This is captured in: https://bugzilla.redhat.com/show_bug.cgi?id=681578
+
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/x86/kernel/apic/x2apic_phys.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ fs/eventpoll.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index 8a778db..c372926 100644
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -6,6 +6,10 @@
- #include <linux/init.h>
- #include <linux/dmar.h>
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -988,6 +988,10 @@ static int path_count[PATH_ARR_SIZE];
  
-+#ifdef CONFIG_ACPI
-+#include <linux/acpi.h>
-+#endif
-+
- #include <asm/smp.h>
- #include <asm/x2apic.h>
- 
-@@ -24,6 +28,14 @@ static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+ static int path_count_inc(int nests)
  {
- 	if (x2apic_phys)
- 		return x2apic_enabled();
-+#ifdef CONFIG_ACPI
-+	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
-+		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
-+		x2apic_enabled()) {
-+		printk(KERN_DEBUG "System requires x2apic physical mode\n");
-+		return 1;
-+	}
-+#endif
- 	else
- 		return 0;
- }
--- 
-1.7.5.4
++	/* Allow an arbitrary number of depth 1 paths */
++	if (nests == 0)
++		return 0;
++
+ 	if (++path_count[nests] > path_limits[nests])
+ 		return -1;
+ 	return 0;
+
 
