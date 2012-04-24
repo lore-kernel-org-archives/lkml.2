@@ -1,130 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab2DXQE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 12:04:56 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:24622 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab2DXQEz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 12:04:55 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18tv5g4A/wSlJp/NLLFWJCm
-Date: Tue, 24 Apr 2012 09:04:48 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
-Cc: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>, linux-omap@vger.kernel.org,
-        grant.likely@secretlab.ca, khilman@ti.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Charulatha V <charu@ti.com>
-Subject: Re: [PATCH v9 11/25] gpio/omap: cleanup omap_gpio_mod_init function
-Message-ID: <20120424160447.GI3739@atomide.com>
-References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
- <1328203851-20435-12-git-send-email-tarun.kanti@ti.com>
- <13629551.hP3ZV1ajDo@vclass>
- <CAC83ZvK630=6B-k2TfV3XBg8w7ZosLVDNE4ezjDYnn=hcXA48Q@mail.gmail.com>
- <CAC83ZvJDDvCu8NKTOYh75USA3fvSAKEGaXXi9PtCM955K_keSA@mail.gmail.com>
+	id S1756036Ab2DXQIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 12:08:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30621 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755787Ab2DXQIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 12:08:09 -0400
+Date: Tue, 24 Apr 2012 11:58:43 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
+        andrea@betterlinux.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120424155843.GG26708@redhat.com>
+References: <20120410212041.GP21801@redhat.com>
+ <20120410222425.GF4936@quack.suse.cz>
+ <20120411154005.GD16692@redhat.com>
+ <20120411192231.GF16008@quack.suse.cz>
+ <20120412203719.GL2207@redhat.com>
+ <20120412205148.GA24056@google.com>
+ <20120414143639.GA31241@localhost>
+ <20120416145744.GA15437@redhat.com>
+ <20120424113340.GA12509@localhost>
+ <20120424145655.GA1474@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAC83ZvJDDvCu8NKTOYh75USA3fvSAKEGaXXi9PtCM955K_keSA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120424145655.GA1474@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* DebBarma, Tarun Kanti <tarun.kanti@ti.com> [120424 08:40]:
-> Hi Janusz,
-> 
-> On Tue, Apr 24, 2012 at 12:24 AM, DebBarma, Tarun Kanti
-> <tarun.kanti@ti.com> wrote:
-> > On Sat, Apr 21, 2012 at 7:33 PM, Janusz Krzysztofik
-> > <jkrzyszt@tis.icnet.pl> wrote:
-> >> On Thursday 02 of February 2012 23:00:37 Tarun Kanti DebBarma wrote:
-> >>> With register offsets now defined for respective OMAP versions we can get rid
-> >>> of cpu_class_* checks. This function now has common initialization code for
-> >>> all OMAP versions...
-> >>>
-> >>> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-> >>> Signed-off-by: Charulatha V <charu@ti.com>
-> >>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >>> Acked-by: Tony Lindgren <tony@atomide.com>
-> >>
-> >> Sorry for being so late with my comment for chanes already present in
-> >> mainline, but this patch breaks GPIO on Amstrad Delta at least, and I
-> >> have neither enough spare time nor enough experience with non OMAP1
-> >> machines to provide a solution myself.
-> > Yes, I looked at the omap_gpio_mod_init() and OMAP1 configurations are
-> > overwritten.
-> > Also looks like there is issue in making distinction between omap15xx
-> > and omap16xx.
-> > I will post a patch and you can help me testing it in OMAP1 platform.
-> > Thanks for pointing this out.
-...
- 
-> Here is the patch, with attachment as well. I have just tested on
-> OMAP4 platform.
-> Testing on other OMAP2+ platforms is pending. In the meantime can you please
-> validate on OMAP1 platform and confirm? Thanks.
-> --
-> Tarun
-> 
-> From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-> Date: Tue, 24 Apr 2012 20:34:32 +0530
-> Subject: [PATCH] gpio/omap: fix omap1 register overwrite in omap_gpio_mod_init
-> 
-> Initialization of irqenable, irqstatus registers is the common
-> operation done in this function for all OMAP platforms, viz.
-> OMAP1, OMAP2+. The latter _gpio_rmw()'s to irqenable register
-> was overwriting the correctly programmed OMAP1 value at the
-> beginning. As a result, even though it worked on OMAP2+
-> platforms it was breaking OMAP1 functionality.
+On Tue, Apr 24, 2012 at 04:56:55PM +0200, Jan Kara wrote:
 
-Sounds like the original patch was never tested on omap1?
- 
-> On closer observation it is found that the first _gpio_rmw()
-> which is supposedly done to take care of OMAP1 platform is
-> generic enough and takes care of OMAP2+ platform as well.
-> Therefore remove the latter _gpio_rmw() to irqenable as they
-> are redundant.
+[..]
+> > > I think having separate weigths for sync IO groups and async IO is not
+> > > very appealing. There should be one notion of group weight and bandwidth
+> > > distrubuted among groups according to their weight.
+> > 
+> > There have to be some scheme, either explicitly or implicitly. Maybe
+> > you are baring in mind some "equal split among queues" policy? For
+> > example, if the cgroup has 9 active sync queues and 1 async queue,
+> > split the weight equally to the 10 queues?  So the sync IOs get 90%
+> > share, and the async writes get 10% share.
+>   Maybe I misunderstand but there doesn't have to be (and in fact isn't)
+> any split among sync / async IO in CFQ. At each moment, we choose a queue
+> with the highest score and dispatch a couple of requests from it. Then we
+> go and choose again. The score of the queue depends on several factors
+> (like age of requests, whether the queue is sync or async, IO priority,
+> etc.).
 > 
-> Also, changing the sequence and logic of initializing the
-> irqstatus.
+> Practically, over a longer period system will stabilize on some ratio
+> but that's dependent on the load so your system should not impose some
+> artificial direct/buffered split but rather somehow deal with the reality
+> how IO scheduler decides to dispatch requests...
 
-Please mention also the breaking commit here and get this fix
-merged as a regression as soon as it's tested for the current
--rc series.
+Yes. CFQ does not have the notion of giving a fixed share to async
+requests. In fact right now it is so biased in favor of sync reqeusts,
+that in some cases it can starve async writes or introduce long delays
+resulting in "task hung for 120 second" warnings.
 
-Regards,
+So if there are issues w.r.t how disk is shared between sync/async IO
+with in a cgroup, that should be handled at IO scheduler level. Writeback
+code trying to dictate that ratio, sounds odd.
 
-Tony
-
- 
-> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-> ---
->  drivers/gpio/gpio-omap.c |    5 +----
->  1 files changed, 1 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-> index 1adc2ec..b8f01c1 100644
-> --- a/drivers/gpio/gpio-omap.c
-> +++ b/drivers/gpio/gpio-omap.c
-> @@ -964,11 +964,8 @@ static void omap_gpio_mod_init(struct gpio_bank *bank)
->                 return;
->         }
+> > For dirty throttling w/o cgroup awareness, balance_dirty_pages()
+> > splits the writeout bandwidth equally among all dirtier tasks. Since
+> > cfq works with queues, it seems most natural for it to do equal split
+> > among all queues (inside the cgroup).
+>   Well, but we also have IO priorities which change which queue should get
+> preference.
 > 
-> +       _gpio_rmw(base, bank->regs->irqstatus, l,
-> bank->regs->irqenable_inv == 0 );
->         _gpio_rmw(base, bank->regs->irqenable, l, bank->regs->irqenable_inv);
-> -       _gpio_rmw(base, bank->regs->irqstatus, l,
-> -                                       bank->regs->irqenable_inv == false);
-> -       _gpio_rmw(base, bank->regs->irqenable, l, bank->regs->debounce_en != 0);
-> -       _gpio_rmw(base, bank->regs->irqenable, l, bank->regs->ctrl != 0);
->         if (bank->regs->debounce_en)
->                 _gpio_rmw(base, bank->regs->debounce_en, 0, 1);
-> 
-> --
-> 1.7.0.4
+> > I'm not sure when there are N dd tasks doing direct IO, cfq will
+> > continuously run N sync queues for them (without many dynamic queue
+> > deletion and recreations). If that is the case, it should be trivial
+> > to support the queue based fair split in the global async queue
+> > scheme. Otherwise I'll have some trouble detecting the N value when
+> > trying to do the N:1 sync:async weight split.
+>   And also sync queues for several processes can get merged when CFQ
+> observes these processes cooperate together on one area of disk and get
+> split again when processes stop cooperating. I don't think you really want
+> to second-guess what CFQ does inside...
 
+Agreed. Trying to predict what CFQ will do and then trying to influence
+sync/async ration based on root cgroup weight does not seem to be the
+right way. Especially that will also mean either assuming that everything
+in root group is sync or we shall have to split sync/async weight notion.
 
+sync/async ratio is a IO scheduler thing and is not fixed. So writeback
+layer making assumptions and changing weigths sounds very awkward to me.
+
+Thanks
+Vivek
