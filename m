@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430Ab2DXTpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 15:45:21 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:33506 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757112Ab2DXTpT (ORCPT
+	id S1757391Ab2DXTro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 15:47:44 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51892 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755503Ab2DXTrm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 15:45:19 -0400
-Date: Tue, 24 Apr 2012 21:45:18 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: linux arch <linux-arch@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>
-Cc: Richard Weinberger <richard@nod.at>,
-        "David S. Miller" <davem@davemloft.net>,
-        Arnaud Lacombe <lacombar@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 4/4] kbuild: document KBUILD_LDS, KBUILD_VMLINUX_INIT and
-	KBUILD_VMLINUX_MAIN
-Message-ID: <20120424194518.GD2311@merkur.ravnborg.org>
-References: <20120424194148.GA2216@merkur.ravnborg.org>
+	Tue, 24 Apr 2012 15:47:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120424194148.GA2216@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAAHN_R2vwv6ZzZLOhVb3XHcucUE+bF955FuAuxMJrr+QRasfCQ@mail.gmail.com>
+References: <1335289853-2923-1-git-send-email-siddhesh.poyarekar@gmail.com>
+	<alpine.LSU.2.00.1204241148390.18455@eggly.anvils>
+	<CAAHN_R2vwv6ZzZLOhVb3XHcucUE+bF955FuAuxMJrr+QRasfCQ@mail.gmail.com>
+Date: Wed, 25 Apr 2012 01:17:42 +0530
+Message-ID: <CAAHN_R2-quCSKKR43BBcT2Hz+fXjWySayA72j_bdQGMDApfmpA@mail.gmail.com>
+Subject: Re: [PATCH] Fix overflow in vma length when copying mmap on clone
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 8e5298ec2fd86f90ce55503b02ccb67c30677611 Mon Sep 17 00:00:00 2001
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Mon, 23 Apr 2012 23:06:25 +0200
-Subject: [PATCH 4/4] kbuild: document KBUILD_LDS, KBUILD_VMLINUX_INIT and
- KBUILD_VMLINUX_MAIN
+On 25 April 2012 01:10, Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com> wrote:
+> That was supposed to be errno, not the pointer. I had added my own
+> syscall wrappers to eliminate glibc and then reverted it to the
+> original smaller-to-read reproducer and this got left behind in the
+> process. The demo program is supposed to show "successed" for
+> iterations 16383 to 16390 since the overflow happens at 16TB. All
+> iterations before it (and after) show a fork failure.
+>
+> /proc/sys/vm/overcommit_memory is 0.
+>
+> Perhaps a cleaner demo program would have been:
 
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
----
- Documentation/kbuild/kbuild.txt |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+Ugh, I missed some details once again. The demo below will show
+"Unexpected success" without this patch in place. The system I've
+tested this patch on is an x86_64 F-16 box with 4GB RAM and 6GB swap.
 
-diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
-index 68e32bb..47038a2 100644
---- a/Documentation/kbuild/kbuild.txt
-+++ b/Documentation/kbuild/kbuild.txt
-@@ -214,3 +214,18 @@ KBUILD_BUILD_USER, KBUILD_BUILD_HOST
- These two variables allow to override the user@host string displayed during
- boot and in /proc/version. The default value is the output of the commands
- whoami and host, respectively.
-+
-+KBUILD_LDS
-+--------------------------------------------------
-+The linker script with full path. Assigned by the top-level Makefile.
-+
-+KBUILD_VMLINUX_INIT
-+--------------------------------------------------
-+All objects files for the init (first) part of vmlinux.
-+Files specified with KBUILD_VMLINUX_INIT are linked first.
-+
-+KBUILD_VMLINUX_MAIN
-+--------------------------------------------------
-+All objects files for the main part of vmlinux.
-+KBUILD_VMLINUX_INIT and KBUILD_VMLINUX_MAIN together specify
-+all the object files used to link vmlinux.
+> #include <stdio.h>
+> #include <unistd.h>
+> #include <sys/mman.h>
+> #include <errno.h>
+>
+> #define GIG 1024 * 1024 * 1024L
+> #define EXTENT 16393
+>
+> int main(void)
+> {
+>        int i, r;
+>        void *m;
+>        char buf[1024];
+>        int prev_failed = 0;
+>
+>        for (i = 0; i < EXTENT; i++) {
+>                m = mmap(NULL, (size_t) 1 * 1024 * 1024 * 1024L,
+>                         PROT_READ | PROT_WRITE, MAP_PRIVATE |
+> MAP_ANONYMOUS, 0, 0);
+>
+>                if (m == (void *)-1) {
+>                        printf("MMAP Failed: %d\n", errno);
+>                        return 1;
+>                }
+>
+>                r = fork();
+>
+>                if (r == 0) {
+>                        return 0;
+>                } else if (r < 0) {
+>                        prev_failed = 1;
+>                        /* Fork failed as expected */
+>                }
+>                else if (r > 0 && prev_failed) {
+>                        printf("Unexpected success at %d\n", i);
+>                        wait(NULL);
+>                        return 1;
+>                }
+>        }
+>        return 0;
+> }
+>
+
+
+
 -- 
-1.7.10
-
+Siddhesh Poyarekar
+http://siddhesh.in
