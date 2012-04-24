@@ -1,38 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab2DXGlE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 02:41:04 -0400
-Received: from csmtp1.one.com ([195.47.247.21]:27562 "EHLO csmtp1.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752881Ab2DXGlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 02:41:00 -0400
-Reply-To: <cao23lixin@live.co.uk>
-From: "Cao Lixin" <caolixin@bochk-home.com>
-Subject: Emergency Email, Please get back.
-Date: Tue, 24 Apr 2012 14:40:55 +0800
+	id S1754089Ab2DXGoF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 02:44:05 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:47234 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751539Ab2DXGoD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 02:44:03 -0400
+Message-ID: <4F964B3A.306@st.com>
+Date: Tue, 24 Apr 2012 12:12:02 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        "jgarzik@redhat.com" <jgarzik@redhat.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        spear-devel <spear-devel@list.st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        ML netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH V2 6/9] net/stmmac: Remove conditional compilation of
+ clk code
+References: <cover.1335246730.git.viresh.kumar@st.com> <4336df4e231467d253e25bbd41dbce6d189ed1e8.1335246730.git.viresh.kumar@st.com> <4F964551.4050507@st.com> <4F96493C.7020309@st.com>
+In-Reply-To: <4F96493C.7020309@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20120424064047.D022B2042040C@csmtp1.one.com>
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, 
+On 4/24/2012 12:03 PM, Giuseppe CAVALLARO wrote:
+> Oops, sorry but on a build I got:
+> 
+>  CC      init/version.o
+>   LD      init/built-in.o
+>   LD      .tmp_vmlinux1
+> drivers/built-in.o: In function `stmmac_release':
+> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:1134:
+> undefined reference to `clk_disable'
+> drivers/built-in.o: In function `stmmac_open':
+> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:974:
+> undefined reference to `clk_enable'
+> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:1079:
+> undefined reference to `clk_disable'
+> drivers/built-in.o: In function `stmmac_dvr_probe':
+> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:1931:
+> undefined reference to `clk_get'
+> drivers/built-in.o: In function `stmmac_clk_csr_set':
+> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:174:
+> undefined reference to `clk_get_rate'
+> drivers/built-in.o: In function `stmmac_suspend':
+> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:2030:
+> undefined reference to `clk_disable'
+> drivers/built-in.o: In function `stmmac_resume':
+> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:2054:
+> undefined reference to `clk_enable'
+> make: *** [.tmp_vmlinux1] Error 1
+> 
+> Pls, can you verify?
 
-I have a secured business proposal for you worth USD28,350,000.00. Get back for details. 
+I believe, you haven't applied:
 
-Email: cao23lixin@live.co.uk
+[PATCH V2 1/9] clk: Add non CONFIG_HAVE_CLK routines
 
-I await your response.
+which must be applied before testing this.
 
-Best Regards. 
-  
-Cao Lixin 
-
+-- 
+viresh
