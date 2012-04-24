@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758306Ab2DXWrr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:47:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab2DXWhQ (ORCPT
+	id S1758303Ab2DXWsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:48:09 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932678Ab2DXWhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:37:16 -0400
-Message-Id: <20120424223253.800054268@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:37:10 -0400
+Message-Id: <20120424223253.622038828@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:57 -0700
+Date: Tue, 24 Apr 2012 15:32:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [ 04/42] ALSA: hda/conexant - Dont set HP pin-control bit unconditionally
+        alan@lxorguk.ukuu.org.uk, Kent Yoder <key@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 02/42] crypto: sha512 - Fix byte counter overflow in SHA-512
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,40 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Kent Yoder <key@linux.vnet.ibm.com>
 
-commit ca3649de026ff95c6f2847e8d096cf2f411c02b3 upstream.
+commit 25c3d30c918207556ae1d6e663150ebdf902186b upstream.
 
-Some output pins on Conexant chips have no HP control bit, but the
-auto-parser initializes these pins unconditionally with PIN_HP.
+The current code only increments the upper 64 bits of the SHA-512 byte
+counter when the number of bytes hashed happens to hit 2^64 exactly.
 
-Check the pin-capability and avoid the HP bit if not supported.
+This patch increments the upper 64 bits whenever the lower 64 bits
+overflows.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_conexant.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ crypto/sha512_generic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4003,9 +4003,14 @@ static void cx_auto_init_output(struct h
- 	int i;
+--- a/crypto/sha512_generic.c
++++ b/crypto/sha512_generic.c
+@@ -174,7 +174,7 @@ sha512_update(struct shash_desc *desc, c
+ 	index = sctx->count[0] & 0x7f;
  
- 	mute_outputs(codec, spec->multiout.num_dacs, spec->multiout.dac_nids);
--	for (i = 0; i < cfg->hp_outs; i++)
-+	for (i = 0; i < cfg->hp_outs; i++) {
-+		unsigned int val = PIN_OUT;
-+		if (snd_hda_query_pin_caps(codec, cfg->hp_pins[i]) &
-+		    AC_PINCAP_HP_DRV)
-+			val |= AC_PINCTL_HP_EN;
- 		snd_hda_codec_write(codec, cfg->hp_pins[i], 0,
--				    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_HP);
-+				    AC_VERB_SET_PIN_WIDGET_CONTROL, val);
-+	}
- 	mute_outputs(codec, cfg->hp_outs, cfg->hp_pins);
- 	mute_outputs(codec, cfg->line_outs, cfg->line_out_pins);
- 	mute_outputs(codec, cfg->speaker_outs, cfg->speaker_pins);
+ 	/* Update number of bytes */
+-	if (!(sctx->count[0] += len))
++	if ((sctx->count[0] += len) < len)
+ 		sctx->count[1]++;
+ 
+         part_len = 128 - index;
 
 
