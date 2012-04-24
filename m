@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab2DXRbP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 13:31:15 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56271 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756733Ab2DXRbO convert rfc822-to-8bit (ORCPT
+	id S1756866Ab2DXRby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 13:31:54 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:37084 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755811Ab2DXRbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 13:31:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="92606925"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: RE: [EDAC PATCH v13 6/7] edac.h: Prepare to handle with generic
- layers
-Thread-Topic: [EDAC PATCH v13 6/7] edac.h: Prepare to handle with generic
- layers
-Thread-Index: AQHNHA2e4drkei19OkSnQ3ASg+FwI5apMDmAgAALcwCAAQ8KgIAAEmmAgAATNgCAAASGAIAABdUAgAAOWYCAACKNgP//mZyQ
-Date: Tue, 24 Apr 2012 17:31:12 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F170F319D@ORSMSX104.amr.corp.intel.com>
-References: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
- <1334607133-30039-7-git-send-email-mchehab@redhat.com>
- <20120423174955.GH6147@aftab.osrc.amd.com> <4F959FDE.2070304@redhat.com>
- <20120424104059.GA11559@aftab.osrc.amd.com> <4F9692AD.8090000@redhat.com>
- <20120424125538.GC11559@aftab.osrc.amd.com> <4F96A696.40308@redhat.com>
- <20120424133242.GI11559@aftab.osrc.amd.com> <4F96B783.6060101@redhat.com>
- <20120424162743.GU11559@aftab.osrc.amd.com>
-In-Reply-To: <20120424162743.GU11559@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 24 Apr 2012 13:31:53 -0400
+Message-ID: <1335288711.2347.20.camel@lorien2>
+Subject: Re: [PATCH v2] leds: heartbeat: stop on shutdown
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: shuahkhan@gmail.com, linux-kernel@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 24 Apr 2012 11:31:51 -0600
+In-Reply-To: <4F96E26C.3060302@ahsoftware.de>
+References: <1335275034-22135-1-git-send-email-holler@ahsoftware.de>
+	 <1335280022-16308-1-git-send-email-holler@ahsoftware.de>
+	 <1335281074.2347.4.camel@lorien2> <4F96D58A.3070008@ahsoftware.de>
+	 <1335286810.2347.18.camel@lorien2> <4F96E26C.3060302@ahsoftware.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @Tony: hey Tony, can you point us to an Intel document explaining how
-> Sandy Bridge or NH or one of the new ones does the memory addressing wrt
-> ranks, channels etc? Thanks.
+On Tue, 2012-04-24 at 19:27 +0200, Alexander Holler wrote:
+> Am 24.04.2012 19:00, schrieb Shuah Khan:
+> > On Tue, 2012-04-24 at 18:32 +0200, Alexander Holler wrote:
+> >> Am 24.04.2012 17:24, schrieb Shuah Khan:
+> >>> On Tue, 2012-04-24 at 17:07 +0200, Alexander Holler wrote:
+> >>>> A halted kernel should not show a heartbeat.
+> >>>>
+> >>>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+> >>>> ---
+> >>>>  drivers/leds/ledtrig-heartbeat.c |   18 +++++++++++++++++-
+> >>>>  1 files changed, 17 insertions(+), 1 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
+> >>>> index 759c0bb..1c05bd9 100644
+> >>>> --- a/drivers/leds/ledtrig-heartbeat.c
+> >>>> +++ b/drivers/leds/ledtrig-heartbeat.c
+> >>>> @@ -18,6 +18,7 @@
+> >>>>  #include <linux/timer.h>
+> >>>>  #include <linux/sched.h>
+> >>>>  #include <linux/leds.h>
+> >>>> +#include <linux/reboot.h>
+> >>>>  #include "leds.h"
+> >>>>  
+> >>>>  struct heartbeat_trig_data {
+> >>>> @@ -101,13 +102,28 @@ static struct led_trigger heartbeat_led_trigger = {
+> >>>>  	.deactivate = heartbeat_trig_deactivate,
+> >>>>  };
+> >>>>  
+> >>>> +static int heartbeat_reboot_notifier(struct notifier_block *nb,
+> >>>> +				     unsigned long code, void *unused)
+> >>>> +{
+> >>>> +	led_trigger_unregister(&heartbeat_led_trigger);
+> >>>> +	return NOTIFY_DONE;
+> >>>> +}
+> > I am sorry I didn't catch this the last time. Do you need to call
+> > unregister here? Looks like trigger is going away with a registered
+> > reboot notifier. Might be fine, since reboot is going to happen.
+> 
+> That unregister is the whole reason of the patch because it disables all
+> running heartbeats on reboot/shutdown. ;)
 
-Data sheets for the E5-26xx series (vol 1 & 2) are linked off this page:
+Sorry I should have been clear about which unregister. I meant
+unregister_reboot_notifier()
+> 
+> I still wonder why the timers are running after a kernel halted (so the
+> heardbeat was still alive), but there might be a good reason not just to
+> disable all running timers unconditionally on shutdown.
+> 
+> Regards,
+> 
+> Alexander
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-http://www.intel.com/content/www/us/en/processors/xeon/xeon-processor-5000-sequence/Xeon5000TechnicalResources.html
 
-volume 2, section 4.4 is where this stuff is described ... BUT I'm
-not sure if everything needed made it into them from the internal docs (which
-we let Mauro use to write the sb_edac.c driver and then got a special exemption
-to let him post the driver before the public docs existed ... which means there
-*might* be some things that are only publicly documented in the EDAC driver).
-
--Tony
