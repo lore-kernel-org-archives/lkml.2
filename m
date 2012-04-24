@@ -1,146 +1,429 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab2DXJu4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 05:50:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41055 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932155Ab2DXJuz convert rfc822-to-8bit (ORCPT
+	id S932220Ab2DXJvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 05:51:11 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48473 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932155Ab2DXJvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 05:50:55 -0400
-Message-ID: <1335261027.28150.189.camel@twins>
-Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, cfriesen@nortel.com, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com
-Date: Tue, 24 Apr 2012 11:50:27 +0200
-In-Reply-To: <4F95E3F1.3030407@sssup.it>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	   <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
-	  <1335182113.28150.132.camel@twins> <4F95CFBF.1050000@sssup.it>
-	 <1335218328.28150.181.camel@twins> <4F95E3F1.3030407@sssup.it>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 24 Apr 2012 05:51:08 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] vt: push the tty_lock down into the map handling
+To: linux-kernel@vger.kernel.org, greg@kroah.com
+Date: Tue, 24 Apr 2012 11:06:06 +0100
+Message-ID: <20120424100605.1409.32356.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-24 at 00:21 +0100, Tommaso Cucinotta wrote:
-> > Yes I can do it for x86_64, but people tend to get mighty upset if you
-> > break the compile for all other arches...
-> 
-> rather than breaking compile, I was thinking more of using the 
-> optimization for a more accurate comparison on archs that have 64-bit 
-> mul and 128-bit cmp, and leaving the overflow on other archs. Though, 
-> that would imply a difference in behavior on those borderline cases 
-> (very big periods I guess).
-> 
-> However, I'm also puzzled from what would happen by compiling the 
-> current code on mostly 16-bit micros which have very limited 32-bit 
-> operations... 
+From: Alan Cox <alan@linux.intel.com>
 
-We don't support 16bit archs, 32bit is almost useless as it is :-)
+When we do this it becomes clear the lock we should be holding is the vc
+lock, and in fact many of our other helpers are properly invoked this way.
 
-Anyway, how about something like this, I guess archs can go wild and add
-asm/math128.h if they want etc..
+We don't at this point guarantee not to race the keyboard code but the results
+of that appear harmless and that was true before we started as well.
 
-Completely untested, hasn't even seen a compiler..
+We now have no users of tty_lock in the console driver...
 
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
-Subject: math128: Add {add,mult,cmp}_u128
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Tue Apr 24 11:47:12 CEST 2012
 
+ drivers/tty/vt/consolemap.c |  123 ++++++++++++++++++++++++++++++++-----------
+ drivers/tty/vt/vt_ioctl.c   |   25 ++-------
+ include/linux/vt_kern.h     |    1 
+ 3 files changed, 96 insertions(+), 53 deletions(-)
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- include/linux/math128.h |   75 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 75 insertions(+)
-
---- /dev/null
-+++ b/include/linux/math128.h
-@@ -0,0 +1,75 @@
-+#ifndef _LINUX_MATH128_H
-+#define _LINUX_MATH128_H
+diff --git a/drivers/tty/vt/consolemap.c b/drivers/tty/vt/consolemap.c
+index 8308fc7..2aaa0c2 100644
+--- a/drivers/tty/vt/consolemap.c
++++ b/drivers/tty/vt/consolemap.c
+@@ -19,6 +19,7 @@
+ #include <linux/init.h>
+ #include <linux/tty.h>
+ #include <asm/uaccess.h>
++#include <linux/console.h>
+ #include <linux/consolemap.h>
+ #include <linux/vt_kern.h>
+ 
+@@ -312,6 +313,7 @@ int con_set_trans_old(unsigned char __user * arg)
+ 	if (!access_ok(VERIFY_READ, arg, E_TABSZ))
+ 		return -EFAULT;
+ 
++	console_lock();
+ 	for (i=0; i<E_TABSZ ; i++) {
+ 		unsigned char uc;
+ 		__get_user(uc, arg+i);
+@@ -319,6 +321,7 @@ int con_set_trans_old(unsigned char __user * arg)
+ 	}
+ 
+ 	update_user_maps();
++	console_unlock();
+ 	return 0;
+ }
+ 
+@@ -330,11 +333,13 @@ int con_get_trans_old(unsigned char __user * arg)
+ 	if (!access_ok(VERIFY_WRITE, arg, E_TABSZ))
+ 		return -EFAULT;
+ 
++	console_lock();
+ 	for (i=0; i<E_TABSZ ; i++)
+-	  {
+-	    ch = conv_uni_to_pc(vc_cons[fg_console].d, p[i]);
+-	    __put_user((ch & ~0xff) ? 0 : ch, arg+i);
+-	  }
++	{
++		ch = conv_uni_to_pc(vc_cons[fg_console].d, p[i]);
++		__put_user((ch & ~0xff) ? 0 : ch, arg+i);
++	}
++	console_unlock();
+ 	return 0;
+ }
+ 
+@@ -346,6 +351,7 @@ int con_set_trans_new(ushort __user * arg)
+ 	if (!access_ok(VERIFY_READ, arg, E_TABSZ*sizeof(unsigned short)))
+ 		return -EFAULT;
+ 
++	console_lock();
+ 	for (i=0; i<E_TABSZ ; i++) {
+ 		unsigned short us;
+ 		__get_user(us, arg+i);
+@@ -353,6 +359,7 @@ int con_set_trans_new(ushort __user * arg)
+ 	}
+ 
+ 	update_user_maps();
++	console_unlock();
+ 	return 0;
+ }
+ 
+@@ -364,8 +371,10 @@ int con_get_trans_new(ushort __user * arg)
+ 	if (!access_ok(VERIFY_WRITE, arg, E_TABSZ*sizeof(unsigned short)))
+ 		return -EFAULT;
+ 
++	console_lock();
+ 	for (i=0; i<E_TABSZ ; i++)
+ 	  __put_user(p[i], arg+i);
++	console_unlock();
+ 	
+ 	return 0;
+ }
+@@ -407,6 +416,7 @@ static void con_release_unimap(struct uni_pagedir *p)
+ 	}
+ }
+ 
++/* Caller must hold the console lock */
+ void con_free_unimap(struct vc_data *vc)
+ {
+ 	struct uni_pagedir *p;
+@@ -487,17 +497,21 @@ con_insert_unipair(struct uni_pagedir *p, u_short unicode, u_short fontpos)
+ 	return 0;
+ }
+ 
+-/* ui is a leftover from using a hashtable, but might be used again */
+-int con_clear_unimap(struct vc_data *vc, struct unimapinit *ui)
++/* ui is a leftover from using a hashtable, but might be used again
++   Caller must hold the lock */
++static int con_do_clear_unimap(struct vc_data *vc, struct unimapinit *ui)
+ {
+ 	struct uni_pagedir *p, *q;
+-  
 +
-+#include <linux/types.h>
+ 	p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
+-	if (p && p->readonly) return -EIO;
++	if (p && p->readonly)
++		return -EIO;
 +
-+typedef struct {
-+	u64 hi, lo;
-+} u128;
-+
-+u128 add_u128(u128 a, u128 b)
+ 	if (!p || --p->refcount) {
+ 		q = kzalloc(sizeof(*p), GFP_KERNEL);
+ 		if (!q) {
+-			if (p) p->refcount++;
++			if (p)
++				p->refcount++;
+ 			return -ENOMEM;
+ 		}
+ 		q->refcount=1;
+@@ -511,23 +525,43 @@ int con_clear_unimap(struct vc_data *vc, struct unimapinit *ui)
+ 	return 0;
+ }
+ 
++int con_clear_unimap(struct vc_data *vc, struct unimapinit *ui)
 +{
-+	u128 res;
-+
-+	res.hi = a.hi + b.hi;
-+	res.lo = a.lo + b.lo;
-+
-+	if (res.lo < a.lo || res.lo < b.lo)
-+		res.hi++;
-+
-+	return res;
++	int ret;
++	console_lock();
++	ret = con_do_clear_unimap(vc, ui);
++	console_unlock();
++	return ret;
 +}
++	
+ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
+ {
+ 	int err = 0, err1, i;
+ 	struct uni_pagedir *p, *q;
+ 
++	console_lock();
 +
-+/*
-+ * a * b = (ah * 2^32 + al) * (bh * 2^32 + bl) =
-+ *   ah*bh * 2^64 + (ah*bl + bh*al) * 2^32 + al*bl
+ 	/* Save original vc_unipagdir_loc in case we allocate a new one */
+ 	p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
+-	if (p->readonly) return -EIO;
++	if (p->readonly) {
++		console_unlock();
++		return -EIO;
++	}
+ 	
+-	if (!ct) return 0;
++	if (!ct) {
++		console_unlock();
++		return 0;
++	}
+ 	
+ 	if (p->refcount > 1) {
+ 		int j, k;
+ 		u16 **p1, *p2, l;
+ 		
+-		err1 = con_clear_unimap(vc, NULL);
+-		if (err1) return err1;
++		err1 = con_do_clear_unimap(vc, NULL);
++		if (err1) {
++			console_unlock();
++			return err1;
++		}
+ 		
+ 		/*
+ 		 * Since refcount was > 1, con_clear_unimap() allocated a
+@@ -558,7 +592,8 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
+ 						*vc->vc_uni_pagedir_loc = (unsigned long)p;
+ 						con_release_unimap(q);
+ 						kfree(q);
+-						return err1;
++						console_unlock();
++						return err1; 
+ 					}
+ 				}
+ 			} else {
+@@ -592,21 +627,30 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
+ 	/*
+ 	 * Merge with fontmaps of any other virtual consoles.
+ 	 */
+-	if (con_unify_unimap(vc, p))
++	if (con_unify_unimap(vc, p)) {
++		console_unlock();
+ 		return err;
++	}
+ 
+ 	for (i = 0; i <= 3; i++)
+ 		set_inverse_transl(vc, p, i); /* Update inverse translations */
+ 	set_inverse_trans_unicode(vc, p);
+-  
++
++	console_unlock();
+ 	return err;
+ }
+ 
+-/* Loads the unimap for the hardware font, as defined in uni_hash.tbl.
+-   The representation used was the most compact I could come up
+-   with.  This routine is executed at sys_setup time, and when the
+-   PIO_FONTRESET ioctl is called. */
+-
++/**
++ *	con_set_default_unimap	-	set default unicode map
++ *	@vc: the console we are updating
++ *
++ *	Loads the unimap for the hardware font, as defined in uni_hash.tbl.
++ *	The representation used was the most compact I could come up
++ *	with.  This routine is executed at video setup, and when the
++ *	PIO_FONTRESET ioctl is called. 
++ *
++ *	The caller must hold the console lock
 + */
-+u128 mult_u128(u64 a, u64 b)
-+{
-+	u128 res;
-+	u64 ah, al;
-+	u64 bh, bl;
-+	u128 t1, t2, t3, t4;
+ int con_set_default_unimap(struct vc_data *vc)
+ {
+ 	int i, j, err = 0, err1;
+@@ -617,6 +661,7 @@ int con_set_default_unimap(struct vc_data *vc)
+ 		p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
+ 		if (p == dflt)
+ 			return 0;
 +
-+	ah = a >> 32;
-+	al = a & ((1ULL << 32) - 1);
+ 		dflt->refcount++;
+ 		*vc->vc_uni_pagedir_loc = (unsigned long)dflt;
+ 		if (p && !--p->refcount) {
+@@ -628,8 +673,9 @@ int con_set_default_unimap(struct vc_data *vc)
+ 	
+ 	/* The default font is always 256 characters */
+ 
+-	err = con_clear_unimap(vc, NULL);
+-	if (err) return err;
++	err = con_do_clear_unimap(vc, NULL);
++	if (err)
++		return err;
+     
+ 	p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
+ 	q = dfont_unitable;
+@@ -654,6 +700,13 @@ int con_set_default_unimap(struct vc_data *vc)
+ }
+ EXPORT_SYMBOL(con_set_default_unimap);
+ 
++/**
++ *	con_copy_unimap		-	copy unimap between two vts
++ *	@dst_vc: target
++ *	@src_vt: source
++ *
++ *	The caller must hold the console lock when invoking this method
++ */
+ int con_copy_unimap(struct vc_data *dst_vc, struct vc_data *src_vc)
+ {
+ 	struct uni_pagedir *q;
+@@ -668,13 +721,23 @@ int con_copy_unimap(struct vc_data *dst_vc, struct vc_data *src_vc)
+ 	*dst_vc->vc_uni_pagedir_loc = (long)q;
+ 	return 0;
+ }
++EXPORT_SYMBOL(con_copy_unimap);
+ 
++/**
++ *	con_get_unimap		-	get the unicode map
++ *	@vc: the console to read from
++ *
++ *	Read the console unicode data for this console. Called from the ioctl
++ *	handlers.
++ */
+ int con_get_unimap(struct vc_data *vc, ushort ct, ushort __user *uct, struct unipair __user *list)
+ {
+ 	int i, j, k, ect;
+ 	u16 **p1, *p2;
+ 	struct uni_pagedir *p;
+ 
++	console_lock();
 +
-+	bh = b >> 32;
-+	bl = b & ((1ULL << 32) - 1);
-+
-+	t1.lo = 0;
-+	t1.hi = ah * bh;
-+
-+	t2.lo = ah * bl;
-+	t2.hi = t2.lo >> 32;
-+	t2.lo <<= 32;
-+
-+	t3.lo = al * bh;
-+	t3.hi = t3.lo >> 32;
-+	t3.lo <<= 32;
-+
-+	t4.lo = al * bl;
-+	t4.hi = 0;
-+
-+	res = add_u128(t1, t2);
-+	res = add_u128(res, t3);
-+	res = add_u128(res, t4);
-+
-+	return res;
-+}
-+
-+int cmp_u128(u128 a, u128 b)
-+{
-+	if (a.hi > b.hi)
-+		return 1;
-+	if (a.hi < b.hi)
-+		return -1;
-+	if (a.lo > b.lo)
-+		return 1;
-+	if (a.lo < b.lo)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+#endif /* _LINUX_MATH128_H */
+ 	ect = 0;
+ 	if (*vc->vc_uni_pagedir_loc) {
+ 		p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
+@@ -694,22 +757,19 @@ int con_get_unimap(struct vc_data *vc, ushort ct, ushort __user *uct, struct uni
+ 				}
+ 	}
+ 	__put_user(ect, uct);
++	console_unlock();
+ 	return ((ect <= ct) ? 0 : -ENOMEM);
+ }
+ 
+-void con_protect_unimap(struct vc_data *vc, int rdonly)
+-{
+-	struct uni_pagedir *p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
+-	
+-	if (p)
+-		p->readonly = rdonly;
+-}
+-
+ /*
+  * Always use USER_MAP. These functions are used by the keyboard,
+  * which shouldn't be affected by G0/G1 switching, etc.
+  * If the user map still contains default values, i.e. the
+  * direct-to-font mapping, then assume user is using Latin1.
++ *
++ * FIXME: at some point we need to decide if we want to lock the table
++ * update element itself via the keyboard_event_lock for consistency with the
++ * keyboard driver as well as the consoles
+  */
+ /* may be called during an interrupt */
+ u32 conv_8bit_to_uni(unsigned char c)
+@@ -777,4 +837,3 @@ console_map_init(void)
+ 			con_set_default_unimap(vc_cons[i].d);
+ }
+ 
+-EXPORT_SYMBOL(con_copy_unimap);
+diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
+index ede2ef1..6461854 100644
+--- a/drivers/tty/vt/vt_ioctl.c
++++ b/drivers/tty/vt/vt_ioctl.c
+@@ -910,7 +910,9 @@ int vt_ioctl(struct tty_struct *tty,
+ 		ret = con_font_op(vc_cons[fg_console].d, &op);
+ 		if (ret)
+ 			break;
++		console_lock();
+ 		con_set_default_unimap(vc_cons[fg_console].d);
++		console_unlock();
+ 		break;
+ 		}
+ #endif
+@@ -934,33 +936,23 @@ int vt_ioctl(struct tty_struct *tty,
+ 	case PIO_SCRNMAP:
+ 		if (!perm)
+ 			ret = -EPERM;
+-		else {
+-			tty_lock();
++		else
+ 			ret = con_set_trans_old(up);
+-			tty_unlock();
+-		}
+ 		break;
+ 
+ 	case GIO_SCRNMAP:
+-		tty_lock();
+ 		ret = con_get_trans_old(up);
+-		tty_unlock();
+ 		break;
+ 
+ 	case PIO_UNISCRNMAP:
+ 		if (!perm)
+ 			ret = -EPERM;
+-		else {
+-			tty_lock();
++		else
+ 			ret = con_set_trans_new(up);
+-			tty_unlock();
+-		}
+ 		break;
+ 
+ 	case GIO_UNISCRNMAP:
+-		tty_lock();
+ 		ret = con_get_trans_new(up);
+-		tty_unlock();
+ 		break;
+ 
+ 	case PIO_UNIMAPCLR:
+@@ -970,19 +962,14 @@ int vt_ioctl(struct tty_struct *tty,
+ 		ret = copy_from_user(&ui, up, sizeof(struct unimapinit));
+ 		if (ret)
+ 			ret = -EFAULT;
+-		else {
+-			tty_lock();
++		else
+ 			con_clear_unimap(vc, &ui);
+-			tty_unlock();
+-		}
+ 		break;
+ 	      }
+ 
+ 	case PIO_UNIMAP:
+ 	case GIO_UNIMAP:
+-		tty_lock();
+ 		ret = do_unimap_ioctl(cmd, up, perm, vc);
+-		tty_unlock();
+ 		break;
+ 
+ 	case VT_LOCKSWITCH:
+@@ -1196,9 +1183,7 @@ long vt_compat_ioctl(struct tty_struct *tty,
+ 
+ 	case PIO_UNIMAP:
+ 	case GIO_UNIMAP:
+-		tty_lock();
+ 		ret = compat_unimap_ioctl(cmd, up, perm, vc);
+-		tty_unlock();
+ 		break;
+ 
+ 	/*
+diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
+index e33d77f..50ae7d0 100644
+--- a/include/linux/vt_kern.h
++++ b/include/linux/vt_kern.h
+@@ -70,7 +70,6 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list);
+ int con_get_unimap(struct vc_data *vc, ushort ct, ushort __user *uct, struct unipair __user *list);
+ int con_set_default_unimap(struct vc_data *vc);
+ void con_free_unimap(struct vc_data *vc);
+-void con_protect_unimap(struct vc_data *vc, int rdonly);
+ int con_copy_unimap(struct vc_data *dst_vc, struct vc_data *src_vc);
+ 
+ #define vc_translate(vc, c) ((vc)->vc_translate[(c) |			\
 
