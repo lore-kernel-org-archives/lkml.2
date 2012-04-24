@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758337Ab2DXWtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:49:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758181Ab2DXWgz (ORCPT
+	id S1758298Ab2DXWuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:50:00 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758132Ab2DXWgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:36:55 -0400
-Message-Id: <20120424223247.027703131@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:36:40 -0400
+Message-Id: <20120424223246.518489951@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:40 -0700
+Date: Tue, 24 Apr 2012 15:33:34 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
-Subject: [ 59/62] ocfs: ->rl_used breakage on big-endian
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 53/62] nfsd: fix b0rken error value for setattr on read-only mount
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,56 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit e1bf4cc620fd143766ddfcee3b004a1d1bb34fd0 upstream.
+commit 96f6f98501196d46ce52c2697dd758d9300c63f5 upstream.
 
-it's le16, not le32 or le64...
+..._want_write() returns -EROFS on failure, _not_ an NFS error value.
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/refcounttree.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/nfsd/nfs4proc.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/fs/ocfs2/refcounttree.c
-+++ b/fs/ocfs2/refcounttree.c
-@@ -1468,7 +1468,7 @@ static int ocfs2_divide_leaf_refcount_bl
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -826,6 +826,7 @@ nfsd4_setattr(struct svc_rqst *rqstp, st
+ 	      struct nfsd4_setattr *setattr)
+ {
+ 	__be32 status = nfs_ok;
++	int err;
  
- 	trace_ocfs2_divide_leaf_refcount_block(
- 		(unsigned long long)ref_leaf_bh->b_blocknr,
--		le32_to_cpu(rl->rl_count), le32_to_cpu(rl->rl_used));
-+		le32_to_cpu(rl->rl_count), le16_to_cpu(rl->rl_used));
+ 	if (setattr->sa_iattr.ia_valid & ATTR_SIZE) {
+ 		nfs4_lock_state();
+@@ -837,9 +838,9 @@ nfsd4_setattr(struct svc_rqst *rqstp, st
+ 			return status;
+ 		}
+ 	}
+-	status = fh_want_write(&cstate->current_fh);
+-	if (status)
+-		return status;
++	err = fh_want_write(&cstate->current_fh);
++	if (err)
++		return nfserrno(err);
+ 	status = nfs_ok;
  
- 	/*
- 	 * XXX: Improvement later.
-@@ -2411,7 +2411,7 @@ static int ocfs2_calc_refcount_meta_cred
- 				rb = (struct ocfs2_refcount_block *)
- 							prev_bh->b_data;
- 
--				if (le64_to_cpu(rb->rf_records.rl_used) +
-+				if (le16_to_cpu(rb->rf_records.rl_used) +
- 				    recs_add >
- 				    le16_to_cpu(rb->rf_records.rl_count))
- 					ref_blocks++;
-@@ -2476,7 +2476,7 @@ static int ocfs2_calc_refcount_meta_cred
- 	if (prev_bh) {
- 		rb = (struct ocfs2_refcount_block *)prev_bh->b_data;
- 
--		if (le64_to_cpu(rb->rf_records.rl_used) + recs_add >
-+		if (le16_to_cpu(rb->rf_records.rl_used) + recs_add >
- 		    le16_to_cpu(rb->rf_records.rl_count))
- 			ref_blocks++;
- 
-@@ -3629,7 +3629,7 @@ int ocfs2_refcounted_xattr_delete_need(s
- 			 * one will split a refcount rec, so totally we need
- 			 * clusters * 2 new refcount rec.
- 			 */
--			if (le64_to_cpu(rb->rf_records.rl_used) + clusters * 2 >
-+			if (le16_to_cpu(rb->rf_records.rl_used) + clusters * 2 >
- 			    le16_to_cpu(rb->rf_records.rl_count))
- 				ref_blocks++;
- 
+ 	status = check_attr_support(rqstp, cstate, setattr->sa_bmval,
 
 
