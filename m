@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964925Ab2DXWmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:42:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964795Ab2DXWin (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:38:43 -0400
-Message-Id: <20120424223256.138435895@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:24 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Gertjan van Wingerde <gwingerde@gmail.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 31/42] rt2x00: Properly identify rt2800usb devices.
-In-Reply-To: <20120424223311.GA8456@kroah.com>
+	id S964929Ab2DXWmc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:42:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28125 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964793Ab2DXWm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 18:42:29 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: airlied@redhat.com
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] vgaarb: Fix build failure with modular fbcon
+Date: Tue, 24 Apr 2012 18:41:48 -0400
+Message-Id: <1335307308-22317-1-git-send-email-mjg@redhat.com>
+X-cavan-blacklisted-at: zen.spamhaus.org
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 208.54.36.162
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+We need to export vga_default_device in case fbcon is modular.
 
-------------------
-
-From: Gertjan van Wingerde <gwingerde@gmail.com>
-
-commit acb56120d2c386d6dd104a6515c1a15dabc1ef87 upstream.
-
-Sitecom WLA4000 (USB ID 0x0df6:0x0060) is an RT3072 chipset.
-Sitecom WLA5000 (USB ID 0x0df6:0x0062) is an RT3572 chipset.
-
-Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/vga/vgaarb.c |    2 ++
+ drivers/video/efifb.c    |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -943,6 +943,7 @@ static struct usb_device_id rt2800usb_de
- 	{ USB_DEVICE(0x0df6, 0x0048) },
- 	{ USB_DEVICE(0x0df6, 0x0051) },
- 	{ USB_DEVICE(0x0df6, 0x005f) },
-+	{ USB_DEVICE(0x0df6, 0x0060) },
- 	/* SMC */
- 	{ USB_DEVICE(0x083a, 0x6618) },
- 	{ USB_DEVICE(0x083a, 0x7511) },
-@@ -999,6 +1000,7 @@ static struct usb_device_id rt2800usb_de
- 	{ USB_DEVICE(0x148f, 0x3572) },
- 	/* Sitecom */
- 	{ USB_DEVICE(0x0df6, 0x0041) },
-+	{ USB_DEVICE(0x0df6, 0x0062) },
- 	/* Toshiba */
- 	{ USB_DEVICE(0x0930, 0x0a07) },
- 	/* Zinwell */
-@@ -1096,8 +1098,6 @@ static struct usb_device_id rt2800usb_de
- 	{ USB_DEVICE(0x0df6, 0x004a) },
- 	{ USB_DEVICE(0x0df6, 0x004d) },
- 	{ USB_DEVICE(0x0df6, 0x0053) },
--	{ USB_DEVICE(0x0df6, 0x0060) },
--	{ USB_DEVICE(0x0df6, 0x0062) },
- 	/* SMC */
- 	{ USB_DEVICE(0x083a, 0xa512) },
- 	{ USB_DEVICE(0x083a, 0xc522) },
-
+diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
+index e223b96..3df8fc0 100644
+--- a/drivers/gpu/vga/vgaarb.c
++++ b/drivers/gpu/vga/vgaarb.c
+@@ -137,6 +137,8 @@ struct pci_dev *vga_default_device(void)
+ 	return vga_default;
+ }
+ 
++EXPORT_SYMBOL_GPL(vga_default_device);
++
+ void vga_set_default_device(struct pci_dev *pdev)
+ {
+ 	vga_default = pdev;
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index 66ed991..b4a632a 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -305,6 +305,8 @@ struct pci_dev *vga_default_device(void)
+ 	return default_vga;
+ }
+ 
++EXPORT_SYMBOL_GPL(vga_default_device);
++
+ void vga_set_default_device(struct pci_dev *pdev)
+ {
+ 	default_vga = pdev;
+-- 
+1.7.10
 
