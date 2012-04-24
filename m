@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964893Ab2DXWjW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:39:22 -0400
+	id S964860Ab2DXWjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:39:12 -0400
 Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964863Ab2DXWjO (ORCPT
+	with ESMTP id S964816Ab2DXWjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:39:14 -0400
-Message-Id: <20120424223257.030953611@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:39:08 -0400
+Message-Id: <20120424223256.845934311@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:34 -0700
+Date: Tue, 24 Apr 2012 15:33:32 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
         Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
-Subject: [ 41/42] ocfs2: ->e_leaf_clusters endianness breakage
+Subject: [ 39/42] ocfs: ->rl_used breakage on big-endian
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,9 +27,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 72094e43e3af5020510f920321d71f1798fa896d upstream.
+commit e1bf4cc620fd143766ddfcee3b004a1d1bb34fd0 upstream.
 
-le16, not le32...
+it's le16, not le32 or le64...
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Mark Fasheh <mfasheh@suse.com>
@@ -37,28 +37,46 @@ Cc: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/suballoc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ocfs2/refcounttree.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/ocfs2/suballoc.c
-+++ b/fs/ocfs2/suballoc.c
-@@ -600,7 +600,7 @@ static void ocfs2_bg_alloc_cleanup(handl
- 		ret = ocfs2_free_clusters(handle, cluster_ac->ac_inode,
- 					  cluster_ac->ac_bh,
- 					  le64_to_cpu(rec->e_blkno),
--					  le32_to_cpu(rec->e_leaf_clusters));
-+					  le16_to_cpu(rec->e_leaf_clusters));
- 		if (ret)
- 			mlog_errno(ret);
- 		/* Try all the clusters to free */
-@@ -1628,7 +1628,7 @@ static int ocfs2_bg_discontig_fix_by_rec
- {
- 	unsigned int bpc = le16_to_cpu(cl->cl_bpc);
- 	unsigned int bitoff = le32_to_cpu(rec->e_cpos) * bpc;
--	unsigned int bitcount = le32_to_cpu(rec->e_leaf_clusters) * bpc;
-+	unsigned int bitcount = le16_to_cpu(rec->e_leaf_clusters) * bpc;
+--- a/fs/ocfs2/refcounttree.c
++++ b/fs/ocfs2/refcounttree.c
+@@ -1468,7 +1468,7 @@ static int ocfs2_divide_leaf_refcount_bl
  
- 	if (res->sr_bit_offset < bitoff)
- 		return 0;
+ 	trace_ocfs2_divide_leaf_refcount_block(
+ 		(unsigned long long)ref_leaf_bh->b_blocknr,
+-		le32_to_cpu(rl->rl_count), le32_to_cpu(rl->rl_used));
++		le32_to_cpu(rl->rl_count), le16_to_cpu(rl->rl_used));
+ 
+ 	/*
+ 	 * XXX: Improvement later.
+@@ -2411,7 +2411,7 @@ static int ocfs2_calc_refcount_meta_cred
+ 				rb = (struct ocfs2_refcount_block *)
+ 							prev_bh->b_data;
+ 
+-				if (le64_to_cpu(rb->rf_records.rl_used) +
++				if (le16_to_cpu(rb->rf_records.rl_used) +
+ 				    recs_add >
+ 				    le16_to_cpu(rb->rf_records.rl_count))
+ 					ref_blocks++;
+@@ -2476,7 +2476,7 @@ static int ocfs2_calc_refcount_meta_cred
+ 	if (prev_bh) {
+ 		rb = (struct ocfs2_refcount_block *)prev_bh->b_data;
+ 
+-		if (le64_to_cpu(rb->rf_records.rl_used) + recs_add >
++		if (le16_to_cpu(rb->rf_records.rl_used) + recs_add >
+ 		    le16_to_cpu(rb->rf_records.rl_count))
+ 			ref_blocks++;
+ 
+@@ -3629,7 +3629,7 @@ int ocfs2_refcounted_xattr_delete_need(s
+ 			 * one will split a refcount rec, so totally we need
+ 			 * clusters * 2 new refcount rec.
+ 			 */
+-			if (le64_to_cpu(rb->rf_records.rl_used) + clusters * 2 >
++			if (le16_to_cpu(rb->rf_records.rl_used) + clusters * 2 >
+ 			    le16_to_cpu(rb->rf_records.rl_count))
+ 				ref_blocks++;
+ 
 
 
