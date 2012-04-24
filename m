@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128Ab2DXJAG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 05:00:06 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16158 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452Ab2DXJAC convert rfc822-to-8bit (ORCPT
+	id S932143Ab2DXJAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 05:00:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33532 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756129Ab2DXJAe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 05:00:02 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 24 Apr 2012 01:59:53 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Apr 2012 10:59:48 +0200
-Subject: Re: [PATCH 2/3] iommu/tegra: smmu: Add device tree support for SMMU
-Thread-Topic: [PATCH 2/3] iommu/tegra: smmu: Add device tree support for SMMU
-Thread-Index: Ac0h+Js4iNi5ITUyTZK/8E66azMgew==
-Message-ID: <20120424.115948.399395507020458456.hdoyu@nvidia.com>
-References: <1335182340-17237-1-git-send-email-hdoyu@nvidia.com><1335182340-17237-2-git-send-email-hdoyu@nvidia.com><4F959F10.9010908@wwwdotorg.org>
-In-Reply-To: <4F959F10.9010908@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
+	Tue, 24 Apr 2012 05:00:34 -0400
+Message-ID: <1335258004.28150.183.camel@twins>
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>, tglx@linutronix.de,
+        mingo@redhat.com, rostedt@goodmis.org, cfriesen@nortel.com,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com
+Date: Tue, 24 Apr 2012 11:00:04 +0200
+In-Reply-To: <4F965471.2030905@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	   <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
+	  <1335191701.28150.155.camel@twins> <4F9577CF.2020400@gmail.com>
+	 <1335195826.28150.177.camel@twins> <4F958627.8070109@gmail.com>
+	 <4F95D41F.5060700@sssup.it> <4F965471.2030905@gmail.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 2/3] iommu/tegra: smmu: Add device tree support for SMMU
-Date: Mon, 23 Apr 2012 20:27:28 +0200
-Message-ID: <4F959F10.9010908@wwwdotorg.org>
+On Tue, 2012-04-24 at 09:21 +0200, Juri Lelli wrote:
+> Well, depends on how much effort will this turn to require. I personally
+> would prefer to be able to come out with a new release ASAP. Just to
+> continue the discussion with the most of the comments addressed and a
+> more updated code (I also have a mainline version of the patchset
+> quite ready). 
 
-> On 04/23/2012 05:58 AM, Hiroshi DOYU wrote:
-> > Add device tree support for Tegra30 IOMMU(SMMU).
-> 
-> > diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
-> 
-> > +	err = of_parse_dma_window(dev->of_node, "dma-window", 0, NULL,
-> > +				  &base, &size);
-> 
-> This patch also depends on "dt: Add general DMA window parser" that you
-> sent earlier.
-> 
-> > +	asids = be32_to_cpup(of_get_property(dev->of_node, "asids", NULL));
-> > +	if (!asids)
-> > +		return -ENODEV;
-> 
-> What if of_get_property() fails?
+Right, one thing we can initially do is require root for using
+SCHED_DEADLINE and then when later work closes all the holes and we've
+added user bandwidth controls we can allow everybody in.
 
-Ok, need to be checked. I'll fix.
 
-> BTW, does the # ASIDs vary? I wonder if it's worth representing it in
-> the device tree or not. If this driver has a chance of working
-> unmodified on some future chip just by updating this DT property without
-> any code changes, then it seems reasonable to have it in DT.
-
-Yes, ASID should be passed from DT.
