@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab2DXCsR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 22:48:17 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50170 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756264Ab2DXCsP (ORCPT
+	id S1756461Ab2DXCuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 22:50:16 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:42582 "HELO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756267Ab2DXCuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 22:48:15 -0400
-Date: Tue, 24 Apr 2012 12:48:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the wireless-next tree with the
- net-next tree
-Message-Id: <20120424124803.f4dc75ea96a875c3f35db615@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__24_Apr_2012_12_48_03_+1000_RYx7J0P8wXf47REW"
+	Mon, 23 Apr 2012 22:50:14 -0400
+From: Yilu Mao <ylmao@marvell.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux@arm.linux.org.uk, Baohua.Song@csr.com, santosh.shilimkar@ti.com,
+        robherring2@gmail.com, catalin.marinas@arm.com,
+        linux-arm-kernel@lists.infradead.org, Yilu Mao <ylmao@marvell.com>
+Subject: [PATCH] ARM: cache-l2x0.c: save aux ctrl for resume in case that l2x0 is enabled before init
+Date: Tue, 24 Apr 2012 10:41:20 +0800
+Message-Id: <1335235280-25148-1-git-send-email-ylmao@marvell.com>
+X-Mailer: git-send-email 1.7.5.4
+X-OriginalArrivalTime: 24 Apr 2012 02:41:39.0448 (UTC) FILETIME=[C6654F80:01CD21C3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__24_Apr_2012_12_48_03_+1000_RYx7J0P8wXf47REW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If l2x0 controller has been enabled when calling l2x0_init, the aux ctrl
+register will not be saved in l2x0_saved_regs. Therefore we can not use
+l2x0_saved_regs.aux_ctrl for resume later. This patch fixed the problem
+by saving aux ctrl in l2x0_saved_regs just after it's being read from
+the register.
 
-Hi John,
+Signed-off-by: Yilu Mao <ylmao@marvell.com>
+---
+ arch/arm/mm/cache-l2x0.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-Today's linux-next merge of the wireless-next tree got a conflict in
-drivers/net/wireless/iwlwifi/iwl-testmode.c between commit d33e152e1edd
-("iwlwifi: Stop using NLA_PUT*()") from the net-next tree and commit
-2152268ff911 ("iwlwifi: op_mode holds its pointer to the config") from
-the wireless-next tree.
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index a53fd2a..3034b06 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -320,6 +320,12 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
+ 	cache_id = readl_relaxed(l2x0_base + L2X0_CACHE_ID);
+ 	aux = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
+ 
++	/* In case l2x controller is enabled, the aux ctrl register
++	 * can't be set. So the original value should be stored in
++	 * the l2x0_saved_regs for restoring when resume.
++	 */
++	l2x0_saved_regs.aux_ctrl = aux;
++
+ 	aux &= aux_mask;
+ 	aux |= aux_val;
+ 
+-- 
+1.7.5.4
 
-I was hoping that we were done with these ... :-(
-
-I fixed it up (see below) and can carry the fix as necessary.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/wireless/iwlwifi/iwl-testmode.c
-index bb27509,a6b16aa..0000000
---- a/drivers/net/wireless/iwlwifi/iwl-testmode.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-testmode.c
-@@@ -543,12 -539,11 +543,12 @@@ static int iwl_testmode_driver(struct i
-  				IWL_ERR(priv, "Memory allocation fail\n");
-  				return -ENOMEM;
-  			}
- -			NLA_PUT_U32(skb, IWL_TM_ATTR_COMMAND,
- -				IWL_TM_CMD_DEV2APP_EEPROM_RSP);
- -			NLA_PUT(skb, IWL_TM_ATTR_EEPROM,
- -				priv->cfg->base_params->eeprom_size,
- -				priv->eeprom);
- +			if (nla_put_u32(skb, IWL_TM_ATTR_COMMAND,
- +					IWL_TM_CMD_DEV2APP_EEPROM_RSP) ||
- +			    nla_put(skb, IWL_TM_ATTR_EEPROM,
-- 				    cfg(priv)->base_params->eeprom_size,
-++				    priv->cfg->base_params->eeprom_size,
- +				    priv->eeprom))
- +				goto nla_put_failure;
-  			status =3D cfg80211_testmode_reply(skb);
-  			if (status < 0)
-  				IWL_ERR(priv, "Error sending msg : %d\n",
-
---Signature=_Tue__24_Apr_2012_12_48_03_+1000_RYx7J0P8wXf47REW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPlhRjAAoJEECxmPOUX5FEI5MP/0+2Wqq8cAzuPhh882ISOHkG
-Vv8nSfAKY7giDI5RAG7TwvzdqGybV6RGgbr/ljeSrfFJBgYynmAitw+iYOUU6nb/
-GjjDol0J3u3xNLpCeEfLEB/lwEkmlcPme6klAAg4E+Ni5gfKBeejYBdidgWNfKRX
-9ZgfBMZboYKbM6sclQxNkP6MA1behIDC1XoeTPrzOuwv1Fs/DT2n78NKcbzREUPw
-tmUJIBHx2NW/ihuX0SldZdFFRSSidSkMWPaO3Ovh4c61tmcpHTacGlzClN81qqJD
-C6r10myMGLKfK8Rg4YstlGYkLjM+zZ6Pwns66v09nNndCsn0b+ZnK2QZYGQ+UamO
-aa5t5zVWaInWFB2c2WEqoIXvmEms+F0d1/AGypROFsH7kXZk9Vy30QvI/SuGJ46y
-GxTSCUmPkNPvj+7VtiOo6fI1YtCjxJeeAvMV/ifOAoNLs0dHc4EkfuoxC9FeOKSK
-Y0dycOQYzhMtlpXrk9wmOdZ5ZOe3bMnXHNthcIh5YLtslBP7QchbvrqvmDhsIGiQ
-xMrqzmnPBTscyFSAB8W0zt09KUAZSClKyIlbWkDoAn1cmPoL/RywMRZyodDkAuWE
-lGrUzTx9cO7jNvhQ1B7EEhDx63mfkcXWVhMyGwW+UprxuiZ8+IRWUDe/EQK0a7eO
-ZojfOxeoovg2gmzoc8I/
-=5L06
------END PGP SIGNATURE-----
-
---Signature=_Tue__24_Apr_2012_12_48_03_+1000_RYx7J0P8wXf47REW--
