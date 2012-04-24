@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab2DXWgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:36:46 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758122Ab2DXWgn (ORCPT
+	id S1758191Ab2DXWg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:36:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758179Ab2DXWgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:36:43 -0400
-Message-Id: <20120424223246.607005556@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:36:52 -0400
+Message-Id: <20120424223246.858425751@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:35 -0700
+Date: Tue, 24 Apr 2012 15:33:38 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 54/62] nfsd: fix error values returned by nfsd4_lockt() when nfsd_open() fails
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: [ 57/62] btrfs: btrfs_root_readonly() broken on big-endian
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 04da6e9d63427b2d0fd04766712200c250b3278f upstream.
+commit 6ed3cf2cdfce4c9f1d73171bd3f27d9cb77b734e upstream.
 
-nfsd_open() already returns an NFS error value; only vfs_test_lock()
-result needs to be fed through nfserrno().  Broken by commit 55ef12
-(nfsd: Ensure nfsv4 calls the underlying filesystem on LOCKT)
-three years ago...
+->root_flags is __le64 and all accesses to it go through the helpers
+that do proper conversions.  Except for btrfs_root_readonly(), which
+checks bit 0 as in host-endian...
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Chris Mason <chris.mason@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ fs/btrfs/ctree.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -4109,16 +4109,14 @@ out:
-  * vfs_test_lock.  (Arguably perhaps test_lock should be done with an
-  * inode operation.)
-  */
--static int nfsd_test_lock(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file_lock *lock)
-+static __be32 nfsd_test_lock(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file_lock *lock)
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -2115,7 +2115,7 @@ BTRFS_SETGET_STACK_FUNCS(root_last_snaps
+ 
+ static inline bool btrfs_root_readonly(struct btrfs_root *root)
  {
- 	struct file *file;
--	int err;
--
--	err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_READ, &file);
--	if (err)
--		return err;
--	err = vfs_test_lock(file, lock);
--	nfsd_close(file);
-+	__be32 err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_READ, &file);
-+	if (!err) {
-+		err = nfserrno(vfs_test_lock(file, lock));
-+		nfsd_close(file);
-+	}
- 	return err;
+-	return root->root_item.flags & BTRFS_ROOT_SUBVOL_RDONLY;
++	return (root->root_item.flags & cpu_to_le64(BTRFS_ROOT_SUBVOL_RDONLY)) != 0;
  }
  
-@@ -4132,7 +4130,6 @@ nfsd4_lockt(struct svc_rqst *rqstp, stru
- 	struct inode *inode;
- 	struct file_lock file_lock;
- 	struct nfs4_lockowner *lo;
--	int error;
- 	__be32 status;
- 
- 	if (locks_in_grace())
-@@ -4178,12 +4175,10 @@ nfsd4_lockt(struct svc_rqst *rqstp, stru
- 
- 	nfs4_transform_lock_offset(&file_lock);
- 
--	status = nfs_ok;
--	error = nfsd_test_lock(rqstp, &cstate->current_fh, &file_lock);
--	if (error) {
--		status = nfserrno(error);
-+	status = nfsd_test_lock(rqstp, &cstate->current_fh, &file_lock);
-+	if (status)
- 		goto out;
--	}
-+
- 	if (file_lock.fl_type != F_UNLCK) {
- 		status = nfserr_denied;
- 		nfs4_set_lock_denied(&file_lock, &lockt->lt_denied);
+ /* struct btrfs_root_backup */
 
 
