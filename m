@@ -1,45 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab2DXBkB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 21:40:01 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:40966 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756150Ab2DXBj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 21:39:59 -0400
-Date: Mon, 23 Apr 2012 21:39:56 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Eldad Zack <eldad@fogrefinery.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [EXT4] super.c: unused variable warning without
- CONFIG_QUOTA
-Message-ID: <20120424013956.GB18865@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Eldad Zack <eldad@fogrefinery.com>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1335109852-17829-1-git-send-email-eldad@fogrefinery.com>
+	id S1756189Ab2DXBob (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 21:44:31 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58683 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755994Ab2DXBo3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 21:44:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1335109852-17829-1-git-send-email-eldad@fogrefinery.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1335192983.4191.25.camel@dabdike.lan>
+References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
+ <20120420150732.10596.9085.stgit@beardog.cce.hp.com> <CAP=VYLpOyBuvZ3+Nfw1u0dojOX8kt-1TDJA+v-EWQuKPdh0A1w@mail.gmail.com>
+ <CADzpL0S04XTYoe4u7_WNgA6cw11uNw9uxiyyYCQ=cY-p-Z+sww@mail.gmail.com>
+ <4F955F78.8070604@windriver.com> <1335192983.4191.25.camel@dabdike.lan>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Mon, 23 Apr 2012 21:43:54 -0400
+X-Google-Sender-Auth: 3GK8PsQL8y-TM6uVr3-FhGmXMVI
+Message-ID: <CAP=VYLqwYKMM89reQ7gZfXojRh6dTxdHLyODNY-9xQH5_T3yWg@mail.gmail.com>
+Subject: Re: [PATCH 14/17] hpsa: use new IS_ENABLED macro
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Stephen Cameron <stephenmcameron@gmail.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matthew.gates@hp.com, thenzl@redhat.com, akpm@linux-foundation.org,
+        mikem@beardog.cce.hp.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 22, 2012 at 05:50:52PM +0200, Eldad Zack wrote:
-> sb info is only checked with quota support.
-> 
-> fs/ext4/super.c: In function â€˜parse_optionsâ€™:
-> fs/ext4/super.c:1600:23: warning: unused variable â€˜sbiâ€™ [-Wunused-variable]
-> 
-> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+On Mon, Apr 23, 2012 at 10:56 AM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Mon, 2012-04-23 at 09:56 -0400, Paul Gortmaker wrote:
+>> On 12-04-22 10:20 PM, Stephen Cameron wrote:
+>> > On Sun, Apr 22, 2012 at 1:12 PM, Paul Gortmaker
+>> > <paul.gortmaker@windriver.com> wrote:
+>> >> On Fri, Apr 20, 2012 at 11:07 AM, Stephen M. Cameron
+>> >> <scameron@beardog.cce.hp.com> wrote:
+>> >>> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>> >>>
+>> >>> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>> >>
+>> >> You've not written a commit log, so I'm left guessing what the
+>> >> intended rationale is here.  COMPAT, X86 and PCI_MSI are
+>> >> I believe all bool, so why make this change?  To me it gives
+>> >> a misleading message that some level of modular awareness
+>> >> is needed here, when there really isn't any such need.
+>> >
+>> > Well, I saw this commit go by: 69349c2dc01c489eccaa4c472542c08e370c6d7e
+>> >
+>> >    Using IS_ENABLED() within C (vs.  within CPP #if statements) in its
+>> >    current form requires us to actually define every possible bool/tristate
+>> >    Kconfig option twice (__enabled_* and __enabled_*_MODULE variants).
+>> >    [...]
+>> >
+>> > and so I kind of thought IS_ENABLED is the new way to do that sort of thing.
+>
+> I don't think you need to change the driver unless there's a good
+> reason.  In kernel terms, it's usually better to wait a bit to see if
+> the wheels fall off any particular bandwagon before leaping on it ...
+>
+>> In my opinion, IS_ENABLED can/should be used when you have:
+>>
+>> #if defined(CONFIG_FOO) || defined(CONFIG_FOO_MODULE)
+>>
+>> i.e. "is this driver built in, or can it be loaded as a module?"
+>> The CONFIG_FOO_MODULE doesn't appear in your .config -- it is auto
+>> generated by Kbuild infrastructure.
+>>
+>> It will do the Right Thing even for cases where CONFIG_FOO_MODULE
+>> is impossible, but it does as I've said, give the wrong impression
+>> that there is some possibility of modular presence.  At least to
+>> those who are familiar with the implementation and why it exists.
+>> [I'll grant you that the name doesn't convey the use case too well.]
+>>
+>> >
+>> > Perhaps I'm wrong about that.  Obviously the patch is not _needed_ for
+>> > things to work.
+>>
+>> I don't think we want to go and mass replace all existing cases of
+>>
+>>    #ifdef CONFIG_SOME_BOOL
+>>
+>> with:
+>>
+>>    #if IS_ENABLED(CONFIG_SOME_BOOL)
+>>
+>> There is no value add.  However, replacing instances of:
+>>
+>>    #if defined(CONFIG_FOO) || defined(CONFIG_FOO_MODULE)
+>>
+>> with:
+>>
+>>    #if IS_ENABLED(CONFIG_FOO)
+>>
+>> is in my opinion, a reasonable thing to do.  It is shorter, and
+>> it does hide the internally generated _MODULE suffixed "shadow"
+>> variables from appearing directly in the main source files.  And
+>> it tells you that the author was thinking about both the built
+>> in and the modular cases when they wrote it.
+>
+> To be honest, I think we want to use #if IS_ENABLED() for all cases
+> going forwards, including the boolean case.
 
-Thanks, applied.
+I guess we will have to agree to disagree then.
 
-					- Ted
+>
+> The reason is that it's an easier design pattern.  If we have the #ifdef
+> CONFIG_X vs #if IS_ENABLED(CONFIG_X) depending on whether CONFIG_X can
+> be modular or not it's just creating pointless rules that someone will
+> annoy us all by enforcing in a checkpatch or some other script.  Whereas
+> #if IS_ENABLED(CONFIG_X) is obvious and simple.
+
+What exactly is an "easier design pattern", and what are the gains?
+
+To me, it has nothing to do with rules, and what the checkpatch folks do
+or do not do.  The line "#ifdef CONFIG_FOO" conveys one specific piece
+of information.  The line "#if IS_ENABLED(CONFIG_FOO) conveys
+a different piece of information, which is a superset of the former.
+
+If you blindly convert all of them, you throw away information that would
+otherwise be available to the code reader.  I would not support that.
+
+Thanks,
+Paul.
+--
+
+>
+> James
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
