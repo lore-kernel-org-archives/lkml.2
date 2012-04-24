@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab2DXWe0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:34:26 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932288Ab2DXWeV (ORCPT
+	id S932374Ab2DXWem (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:34:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932337Ab2DXWed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:34:21 -0400
-Message-Id: <20120424223242.772599478@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:34:33 -0400
+Message-Id: <20120424223243.120183666@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:50 -0700
+Date: Tue, 24 Apr 2012 15:32:54 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paul Walmsley <paul@pwsan.com>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [ 09/62] ARM: OMAP1: DMTIMER: fix broken timer clock source selection
+        alan@lxorguk.ukuu.org.uk, Daniel Drake <dsd@laptop.org>,
+        Chuanxiao Dong <chuanxiao.dong@intel.com>, Chris Ball <cjb@laptop.org>
+Subject: [ 13/62] mmc: sdhci: refine non-removable card checking for card detection
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,55 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Walmsley <paul@pwsan.com>
+From: Daniel Drake <dsd@laptop.org>
 
-commit 6aaec67da1e41a0752a2b903b989e73b9f02e182 upstream.
+commit 87b87a3fc0eec58d95e4216392f889a26439ad22 upstream.
 
-DMTIMER source selection on OMAP1 is broken.  omap1_dm_timer_set_src()
-tries to use __raw_{read,write}l() to read from and write to physical
-addresses, but those functions take virtual addresses.
+Commit c79396c191bc19 ("mmc: sdhci: prevent card detection activity
+for non-removable cards") disables card detection where the cards
+are marked as non-removable.
 
-sparse caught this:
+This makes sense, but the implementation detail of calling
+mmc_card_is_removable() causes some problems, because
+mmc_card_is_removable() is overloaded with CONFIG_MMC_UNSAFE_RESUME
+semantics.
 
-arch/arm/mach-omap1/timer.c:50:13: warning: incorrect type in argument 1 (different base types)
-arch/arm/mach-omap1/timer.c:50:13:    expected void const volatile [noderef] <asn:2>*<noident>
-arch/arm/mach-omap1/timer.c:50:13:    got unsigned int
-arch/arm/mach-omap1/timer.c:52:9: warning: incorrect type in argument 1 (different base types)
-arch/arm/mach-omap1/timer.c:52:9:    expected void const volatile [noderef] <asn:2>*<noident>
-arch/arm/mach-omap1/timer.c:52:9:    got unsigned int
+In the OLPC XO case, we need CONFIG_MMC_UNSAFE_RESUME because our root
+filesystem is stored on SD, but we also have external SD card slots
+where we want automatic card detection.
 
-Fix by using omap_{read,writel}(), just like the other users of the
-MOD_CONF_CTRL_1 register in the OMAP1 codebase.  Of course, in the long term,
-removing omap_{read,write}l() is the appropriate thing to do; but
-this will take some work to do this cleanly.
+Refine the check to only apply to hosts marked as MMC_CAP_NONREMOVABLE,
+which is defined to mean that the card is *really* nonremovable. This
+could be revisited in future if we find a way to improve
+CONFIG_MMC_UNSAFE_RESUME semantics.
 
-Looks like this was caused by 97933d6 (ARM: OMAP1: dmtimer: conversion
-to platform devices) that dangerously moved code and changed it in
-the same patch.
-
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Cc: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-[tony@atomide.com: updated comments to include the breaking commit]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Acked-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap1/timer.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/host/sdhci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-omap1/timer.c
-+++ b/arch/arm/mach-omap1/timer.c
-@@ -47,9 +47,9 @@ static int omap1_dm_timer_set_src(struct
- 	int n = (pdev->id - 1) << 1;
- 	u32 l;
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -147,7 +147,7 @@ static void sdhci_set_card_detection(str
+ 	u32 present, irqs;
  
--	l = __raw_readl(MOD_CONF_CTRL_1) & ~(0x03 << n);
-+	l = omap_readl(MOD_CONF_CTRL_1) & ~(0x03 << n);
- 	l |= source << n;
--	__raw_writel(l, MOD_CONF_CTRL_1);
-+	omap_writel(l, MOD_CONF_CTRL_1);
+ 	if ((host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION) ||
+-	    !mmc_card_is_removable(host->mmc))
++	    (host->mmc->caps & MMC_CAP_NONREMOVABLE))
+ 		return;
  
- 	return 0;
- }
+ 	present = sdhci_readl(host, SDHCI_PRESENT_STATE) &
 
 
