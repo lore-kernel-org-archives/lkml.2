@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758042Ab2DXWeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:34:07 -0400
+	id S932201Ab2DXWeO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:34:14 -0400
 Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758028Ab2DXWeD (ORCPT
+	with ESMTP id S1758031Ab2DXWeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:34:03 -0400
-Message-Id: <20120424223242.082896738@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:34:07 -0400
+Message-Id: <20120424223242.251771207@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:42 -0700
+Date: Tue, 24 Apr 2012 15:32:44 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Zeev Tarantov <zeev.tarantov@gmail.com>,
-        "Signed-off-by: David S. Miller" <davem@davemloft.net>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [ 01/62] Perf: fix build breakage
+        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [ 03/62] hwmon: fam15h_power: fix bogus values with current BIOSes
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +26,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Andre Przywara <andre.przywara@amd.com>
 
-From: Zeev Tarantov <zeev.tarantov@gmail.com>
+commit 00250ec90963b7ef6678438888f3244985ecde14 upstream.
 
-[Patch not needed upstream as this is a backport build bugfix - gregkh
+Newer BKDG[1] versions recommend a different initialization value for
+the running average range register in the northbridge. This improves
+the power reading by avoiding counter saturations resulting in bogus
+values for anything below about 80% of TDP power consumption.
+Updated BIOSes will have this new value set up from the beginning,
+but meanwhile we correct this value ourselves.
+This needs to be done on all northbridges, even on those where the
+driver itself does not register at.
 
-gcc correctly complains:
+This fixes the driver on all current machines to provide proper
+values for idle load.
 
-util/hist.c: In function ‘__hists__add_entry’:
-util/hist.c:240:27: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
-util/hist.c:241:23: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
+[1]
+http://support.amd.com/us/Processor_TechDocs/42301_15h_Mod_00h-0Fh_BKDG.pdf
+Chapter 3.8: D18F5xE0 Processor TDP Running Average (p. 452)
 
-for this new code:
-
-+                       if (he->ms.map != entry->ms.map) {
-+                               he->ms.map = entry->ms.map;
-+                               if (he->ms.map)
-+                                       he->ms.map->referenced = true;
-+                       }
-
-because "entry" is a "struct hist_entry", not a pointer to a struct.
-
-In mainline, "entry" is a pointer to struct passed as argument to the function.
-So this is broken during backporting. But obviously not compile tested.
-
-Signed-off-by: Zeev Tarantov <zeev.tarantov@gmail.com>
-Cc: Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+[guenter.roeck@ericsson.com: Removed unnecessary return statement]
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/util/hist.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/hwmon/fam15h_power.c |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -237,8 +237,8 @@ struct hist_entry *__hists__add_entry(st
- 			 * mis-adjust symbol addresses when computing
- 			 * the history counter to increment.
- 			 */
--			if (he->ms.map != entry->ms.map) {
--				he->ms.map = entry->ms.map;
-+			if (he->ms.map != entry.ms.map) {
-+				he->ms.map = entry.ms.map;
- 				if (he->ms.map)
- 					he->ms.map->referenced = true;
- 			}
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -122,6 +122,38 @@ static bool __devinit fam15h_power_is_in
+ 	return true;
+ }
+ 
++/*
++ * Newer BKDG versions have an updated recommendation on how to properly
++ * initialize the running average range (was: 0xE, now: 0x9). This avoids
++ * counter saturations resulting in bogus power readings.
++ * We correct this value ourselves to cope with older BIOSes.
++ */
++static void __devinit tweak_runavg_range(struct pci_dev *pdev)
++{
++	u32 val;
++	const struct pci_device_id affected_device = {
++		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
++
++	/*
++	 * let this quirk apply only to the current version of the
++	 * northbridge, since future versions may change the behavior
++	 */
++	if (!pci_match_id(&affected_device, pdev))
++		return;
++
++	pci_bus_read_config_dword(pdev->bus,
++		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
++		REG_TDP_RUNNING_AVERAGE, &val);
++	if ((val & 0xf) != 0xe)
++		return;
++
++	val &= ~0xf;
++	val |=  0x9;
++	pci_bus_write_config_dword(pdev->bus,
++		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
++		REG_TDP_RUNNING_AVERAGE, val);
++}
++
+ static void __devinit fam15h_power_init_data(struct pci_dev *f4,
+ 					     struct fam15h_power_data *data)
+ {
+@@ -155,6 +187,13 @@ static int __devinit fam15h_power_probe(
+ 	struct device *dev;
+ 	int err;
+ 
++	/*
++	 * though we ignore every other northbridge, we still have to
++	 * do the tweaking on _each_ node in MCM processors as the counters
++	 * are working hand-in-hand
++	 */
++	tweak_runavg_range(pdev);
++
+ 	if (!fam15h_power_is_internal_node0(pdev)) {
+ 		err = -ENODEV;
+ 		goto exit;
 
 
