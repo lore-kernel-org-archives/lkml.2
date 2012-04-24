@@ -1,42 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab2DXHlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 03:41:55 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:44533 "EHLO gw1.transmode.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754399Ab2DXHly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 03:41:54 -0400
-In-Reply-To: <1335237195.24897.0.camel@pasglop>
-References: <1335220202-32533-1-git-send-email-grant.likely@secretlab.ca>	 <1335220202-32533-2-git-send-email-grant.likely@secretlab.ca> <1335237195.24897.0.camel@pasglop>
-Subject: Re: [PATCH v2 1/2] powerpc/8xx: Fix NR_IRQ bugs and refactor 8xx interrupt
- controller
-X-KeepSent: 4123672B:F86C969F-C12579EA:002A2C1F;
- type=4; name=$KeepSent
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-Message-ID: <OF4123672B.F86C969F-ONC12579EA.002A2C1F-C12579EA.002A48C2@transmode.se>
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Tue, 24 Apr 2012 09:41:51 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP1|March 07, 2012) at
- 24/04/2012 09:41:51
+	id S1755366Ab2DXHm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 03:42:28 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34672 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754861Ab2DXHm1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 03:42:27 -0400
+Date: Tue, 24 Apr 2012 08:42:03 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Viresh Kumar <viresh.kumar@st.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        spear-devel <spear-devel@list.st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "jgarzik@redhat.com" <jgarzik@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2 4/9] ata/sata_mv: Remove conditional compilation of
+	clk code
+Message-ID: <20120424074202.GO24211@n2100.arm.linux.org.uk>
+References: <20120424070426.GA24089@lunn.ch> <4F9650B3.9030406@st.com> <20120424072653.GB24089@lunn.ch>
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120424072653.GB24089@lunn.ch>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote on 2012/04/24 05:13:15:
->
-> On Mon, 2012-04-23 at 16:30 -0600, Grant Likely wrote:
-> > The mpc8xx driver uses a reference to NR_IRQS that is buggy.  It uses
-> > NR_IRQs for the array size of the ppc_cached_irq_mask bitmap, but
-> > NR_IRQs could be smaller than the number of hardware irqs that
-> > ppc_cached_irq_mask tracks.
->
-> Joakim, any chance you can test this ASAP ? :-)
+On Tue, Apr 24, 2012 at 09:26:53AM +0200, Andrew Lunn wrote:
+> On Tue, Apr 24, 2012 at 12:35:23PM +0530, Viresh Kumar wrote:
+> > On 4/24/2012 12:34 PM, Andrew Lunn wrote:
+> > > I don't think this change is correct. With the old semantics, it was:
+> > 
+> > Sorry. :(
+> > 
+> > > If we have CLK support, we expect there to be a clock for sata_mv, and
+> > > if there is no such clock, output a notice message, something is
+> > > probably wrong, i expected there to be a clock.
+> > > 
+> > > The new semantics are:
+> > > 
+> > > We expect there to be a clock for sata_mv, and if there is no such
+> > > clock, output a notice message, something is probably wrong, i
+> > > expected there to be a clock.
+> > > 
+> > > We are going to see this notice message much more, when it is not
+> > > expected.
+> > 
+> > So, the only problem is this message?
+> > How do you suggest to tackle this now. Have #ifdef,#endif around this print?
+> 
+> Well, adding #ifdef defeats the point of adding dummy implementations.
+> 
+> Maybe, rather than return -ENODEV, return -ENOTSUP.
+> 
+> IS_ERR() still returns true, so in most cases, no code needs
+> changing. However, when you need to differentiate between, "clock does
+> not exists" and "Dummy clock functions being used", you can tell the
+> difference. mv_sata could look like:
+> 
+>         hpriv->clk = clk_get(&pdev->dev, NULL);
+>         if (IS_ERR(hpriv->clk))
+> 	        if (PTR_ERR(hpriv->clk) == -ENODEV)
+> 		        dev_notice(&pdev->dev, "cannot get clkdev\n");
+>         else
+>                 clk_prepare_enable(hpriv->clk);
+> 
+> 
+> You would however, need to look at all uses of clk_get and see if any
+> are looked for ENODEV, and not just IS_ERR(), and fix those....
 
-Sorry, but no.  We have not moved our 8xx boards to 3.x as it in maintenance
-and takes too much space.
+Why bother?
 
+If you don't have the clk API configured, you have no clocks to control.
+So, why not make clk_get() return NULL, and make the rest of the API
+calls do nothing?  That's what you'll end up codifying in the drivers
+anyway.
