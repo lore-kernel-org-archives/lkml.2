@@ -1,92 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab2DXLeQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 07:34:16 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:40064 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753519Ab2DXLeO (ORCPT
+	id S1753698Ab2DXLik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 07:38:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46895 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752948Ab2DXLii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 07:34:14 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <akpm@linux-foundation.org>
-Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <mturquette@linaro.org>, <sshtylyov@mvista.com>, <jgarzik@redhat.com>,
-        <linux@arm.linux.org.uk>, Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V3 00/12] clk: Add non CONFIG_HAVE_CLK routines
-Date: Tue, 24 Apr 2012 16:51:22 +0530
-Message-ID: <cover.1335266056.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.9
+	Tue, 24 Apr 2012 07:38:38 -0400
+Date: Tue, 24 Apr 2012 12:38:35 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V1 2/2] i2c: tegra: support for I2C_M_NOSTART protocol
+ mangling
+Message-ID: <20120424113834.GE12063@opensource.wolfsonmicro.com>
+References: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
+ <1335251976-31925-3-git-send-email-ldewangan@nvidia.com>
+ <20120424105557.7ac07232@endymion.delvare>
+ <4F967089.3050004@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4Epv4kl9IRBfg3rk"
+Content-Disposition: inline
+In-Reply-To: <4F967089.3050004@nvidia.com>
+X-Cookie: Be careful!  Is it classified?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many drivers are shared between architectures that may or may not have HAVE_CLK
-selected for them. To remove compilation errors for them we enclose clk_*()
-calls in these drivers within #ifdef CONFIG_HAVE_CLK, #endif.
 
-This patchset removes the need of these CONFIG_HAVE_CLK statements, by
-introducing dummy routines when HAVE_CLK is not selected by platforms. So,
-definition of these routines will always be available. These calls will return
-error for platforms that don't select HAVE_CLK.
+--4Epv4kl9IRBfg3rk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I hope i don't break anything now. ;)
+On Tue, Apr 24, 2012 at 02:51:13PM +0530, Laxman Dewangan wrote:
+> On Tuesday 24 April 2012 02:25 PM, Jean Delvare wrote:
 
-V2->V3:
-- Dummy routines now return NULL or 0.
-- All user drivers must fail if clk_get returned error other than NULL.
-- All user drivers don't need to validate their clk pointer before every call to
-  clk_*() routines.
-- Patches dropped earlier are again taken back, as they were following similar
-  approach to what is implemented now.
+> >>Adding support for protocol mangling I2C_M_NOSTART.
+> >>When multiple message transfer request made through i2c
+> >>and if any message is flagged with I2C_M_NOSTART then
+> >>it will not send the start/repeat start/address of that
+> >>message i.e. send the data directly.
 
-V1->V2:
-- Removed few patches as they might break working drivers
-- Updated 1st patch, as it doesn't apply cleanly on latest linux-next after this
-  got applied.
+> >What do you need this for?
 
-	commit a8a97db984bdc5e89d42e41891543d2daaf314cb
-	Author: Mark Brown <broonie@sirena.org.uk>
-	Date:   Thu Apr 5 11:42:09 2012 +0100
-	
-	ARM: 7376/1: clkdev: Implement managed clk_get()
+> The primary use-case here is scatter-gather of multiple I2C
+> messages; the first message will contain the START and perhaps some
+> transfers, then subsequent messages will continue with more data
+> transfers. This removes the need to put all the data transfers into
+> a single message, and hence avoids some copying of commands/data.
 
-- Similarly, updated stmmac patch as there were updates for it too.
+> Mark Brown says this is important for regmap. This feature is
+> implement gather support for I2C transfers - the resulting I2C
+> transfer is entirely normal but this ends up being implemented by
+> the controller doing two transfers back to back with no start on the
+> second transfer. To the outside world it looks like a perfectly
+> normal transfer. This behaviour can be emulated by allocating a
+> buffer and coalescing the data into that buffer before sending it to
+> the hardware but this introduces an avoidable and sometimes
+> noticeable overhead.
 
-Viresh Kumar (12):
-  clk: Add non CONFIG_HAVE_CLK routines
-  clk: Remove redundant depends on from drivers/Kconfig
-  i2c/i2c-pxa: Remove conditional compilation of clk code
-  usb/marvell: Remove conditional compilation of clk code
-  usb/musb: Remove conditional compilation of clk code
-  ata/pata_arasan: Remove conditional compilation of clk code
-  ata/sata_mv: Remove conditional compilation of clk code
-  net/c_can: Remove conditional compilation of clk code
-  net/stmmac: Remove conditional compilation of clk code
-  gadget/m66592: Remove conditional compilation of clk code
-  gadget/r8a66597: Remove conditional compilation of clk code
-  usb/host/r8a66597: Remove conditional compilation of clk code
+I'm sure I've seen that block of text somewhere before :)
 
- drivers/ata/pata_arasan_cf.c                      |   14 +--
- drivers/ata/sata_mv.c                             |   32 ++---
- drivers/clk/Kconfig                               |    2 -
- drivers/i2c/busses/i2c-pxa.c                      |    7 -
- drivers/net/can/c_can/c_can_platform.c            |    8 -
- drivers/net/ethernet/stmicro/stmmac/stmmac.h      |   41 -----
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   33 ++--
- drivers/usb/gadget/m66592-udc.c                   |    9 +-
- drivers/usb/gadget/m66592-udc.h                   |    5 -
- drivers/usb/gadget/r8a66597-udc.c                 |   11 +-
- drivers/usb/gadget/r8a66597-udc.h                 |    5 -
- drivers/usb/host/r8a66597-hcd.c                   |   12 --
- drivers/usb/host/r8a66597.h                       |    5 -
- drivers/usb/musb/musb_core.h                      |    8 -
- include/linux/clk.h                               |  168 +++++++++++++-------
- include/linux/platform_data/mv_usb.h              |    9 -
- 16 files changed, 141 insertions(+), 228 deletions(-)
+This is it, you've got some big blob like a firmware image somewhere=20
+or perhaps even just a small block of data to write in one and you want
+to put a register address on the front and send it.  It's much easier
+and slightly faster if you can avoid having to allocate a temporary
+buffer - not so much for I2C per se (it's generally very slow after all)
+as for the overall system, often when you're doing this stuff when the
+system is generally very busy so it's helpful to avoid introducing
+needless extra work.
 
--- 
-1.7.9
+In the grand scheme it's not the end of the world if it's missing but
+if the hardware supports it we may as well use it, it's usually just
+setting a single register bit.
 
+--4Epv4kl9IRBfg3rk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPlpCOAAoJEBus8iNuMP3d1TQQAIZp0Z0T74cWQ+75VBj7FKKZ
+ie39Zbam6fRlZYxfERAmUTi38uL5gDNRuEWDYIAB+WkpxxRMmxUwmPt7wCNLRf5D
+gVI/WyNERwla6fiqIA2G4gB8UqQPOmTKujaX8XyB0/RBqdxcbjp6Au+GmbLnqyd6
+ZnW8vOkCvTShiGXawkiFnHVk/tpIcmoaahHjXfxikgyNlFRKxb9LLy4UjbSp3rMX
+xyCthylB3bwDtMGKzjxQ+MXpdblvF5EKjopPr8+nSbwDmrABSZvmd9dkOE2gZhQl
+gJsl7KqOPIM4UytF67OlZdzux58BoygT9QhZWilNXJ2BxTIaAWf2+eWj6zBQw8Ct
+suyawO2G37p0GJeQAtIahFh3ZLXnesx0hoxMN9N0qHAQBzSDC43H2jJ1yGDuUjSf
+/RbR9lpp4BcMcusndyqnYjUU5wAwzzq4JAu92PvM7h5SUgg2gBlc69znmSrpxt3E
+rk8Vn9gdZQ4EAVZqQMacVze6qMrwUhxh/vZkJyTAczPInvre4Ob8MgyXZ2eo9Oor
+vrHMeHeg9IE4IqQo/C+87erNQoifiNg/uKdkzNf9n3neRRgen+L9l0kwyb0d1i9W
+dHJheNrMk5l8wGWRX5f3MFI6NFSOE0sb4BVTiVn2nPsZkICZF52XH30RwspKNq+O
+4DN39W1CXyMC/Bwg57Q6
+=/foX
+-----END PGP SIGNATURE-----
+
+--4Epv4kl9IRBfg3rk--
