@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab2DXUSr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 16:18:47 -0400
-Received: from unicorn.mansr.com ([78.86.181.103]:55388 "EHLO
-	unicorn.mansr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757296Ab2DXUSp convert rfc822-to-8bit (ORCPT
+	id S1757563Ab2DXUVu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 16:21:50 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65440 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757489Ab2DXUVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 16:18:45 -0400
-X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Apr 2012 16:18:45 EDT
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 2/3] math128: Introduce {mult,add,cmp}_u128
-References: <20120424161039.293018424@chello.nl>
-	<20120424162224.526249106@chello.nl>
-	<CA+55aFyvBTDh_DkXs6Z6zFmjyYxvWaAEm9-rJDXhvPx8CpDiKA@mail.gmail.com>
-Date: Tue, 24 Apr 2012 21:12:20 +0100
-In-Reply-To: <CA+55aFyvBTDh_DkXs6Z6zFmjyYxvWaAEm9-rJDXhvPx8CpDiKA@mail.gmail.com>
-	(Linus Torvalds's message of "Tue, 24 Apr 2012 12:37:53 -0700")
-Message-ID: <yw1xy5pkj3dn.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Tue, 24 Apr 2012 16:21:47 -0400
+Date: Tue, 24 Apr 2012 13:21:43 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, devel@openvz.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 17/23] kmem controller charge/uncharge infrastructure
+In-Reply-To: <20120424142232.GC8626@somewhere>
+Message-ID: <alpine.DEB.2.00.1204241319360.753@chino.kir.corp.google.com>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1335138820-26590-6-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1204231522320.13535@chino.kir.corp.google.com> <20120424142232.GC8626@somewhere>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On Tue, 24 Apr 2012, Frederic Weisbecker wrote:
 
-> On Tue, Apr 24, 2012 at 9:10 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> Grow rudimentary u128 support without relying on gcc/libgcc.
->>
->> +#ifndef add_u128
->> +static inline u128 add_u128(u128 a, u128 b)
->> +{
->> +       u128 res;
->> +
->> +       res.hi = a.hi + b.hi;
->> +       res.lo = a.lo + b.lo;
->> +
->> +       if (res.lo < a.lo || res.lo < b.lo)
->> +               res.hi++;
->
-> This is wrong. Or at least stupid.
->
-> Just do one of the comparisons, not both. If overflow occurs, the
-> result will be smaller than *either* of the added numbers, so
-> comparing both is just silly and confused.
->
-> So just pick one.
->
-> Also, it might be worth looking at code generation, to see if it's
-> better to just do
->
->    a.hi += b.hi;
->    a.low += b.low;
->    if (a.low < b.low)
->       a.hi++;
->    return a;
+> > This seems horribly inconsistent with memcg charging of user memory since 
+> > it charges to p->mm->owner and you're charging to p.  So a thread attached 
+> > to a memcg can charge user memory to one memcg while charging slab to 
+> > another memcg?
+> 
+> Charging to the thread rather than the process seem to me the right behaviour:
+> you can have two threads of a same process attached to different cgroups.
+> 
+> Perhaps it is the user memory memcg that needs to be fixed?
+> 
 
-I have no idea if it makes a difference, but that if statement can be
-written as a.hi += a.low < b.low.  Just an observation.
+No, because memory is represented by mm_struct, not task_struct, so you 
+must charge to p->mm->owner to allow for moving threads amongst memcgs 
+later for memory.move_charge_at_immigrate.  You shouldn't be able to 
+charge two different memcgs for memory represented by a single mm.
 
-> because that might make it clear that there are fewer actual values
-> live at any particular time. But gcc may not care. Try it.
->
-> Also, for the multiply, please make sure gcc knows to do a "32x32->64"
-> multiplication, rather than thinking it needs to do full 64x64
-> multiplies..
-
-On ARM it does the right thing at least since 4.3, which is the oldest
-ARM compiler I have at hand.
-
--- 
-Måns Rullgård
-mans@mansr.com
+> > > +
+> > > +	if (!mem_cgroup_kmem_enabled(memcg))
+> > > +		goto out;
+> > > +
+> > > +	mem_cgroup_get(memcg);
+> > > +	ret = memcg_charge_kmem(memcg, gfp, size) == 0;
+> > > +	if (ret)
+> > > +		mem_cgroup_put(memcg);
+> > > +out:
+> > > +	rcu_read_unlock();
+> > > +	return ret;
+> > > +}
+> > > +EXPORT_SYMBOL(__mem_cgroup_charge_kmem);
+> > > +
+> > > +void __mem_cgroup_uncharge_kmem(size_t size)
+> > > +{
+> > > +	struct mem_cgroup *memcg;
+> > > +
+> > > +	rcu_read_lock();
+> > > +	memcg = mem_cgroup_from_task(current);
+> > > +
+> > > +	if (!mem_cgroup_kmem_enabled(memcg))
+> > > +		goto out;
+> > > +
+> > > +	mem_cgroup_put(memcg);
+> > > +	memcg_uncharge_kmem(memcg, size);
+> > > +out:
+> > > +	rcu_read_unlock();
+> > > +}
+> > > +EXPORT_SYMBOL(__mem_cgroup_uncharge_kmem);
