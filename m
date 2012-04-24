@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab2DXI0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 04:26:41 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:55994 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754838Ab2DXI0j (ORCPT
+	id S1756001Ab2DXI1N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 04:27:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44812 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab2DXI1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 04:26:39 -0400
-Message-ID: <4F966345.5080303@st.com>
-Date: Tue, 24 Apr 2012 10:24:37 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
+	Tue, 24 Apr 2012 04:27:08 -0400
+Date: Tue, 24 Apr 2012 09:26:52 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Viresh Kumar <viresh.kumar@st.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "jgarzik@redhat.com" <jgarzik@redhat.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
         spear-devel <spear-devel@list.st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
         "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        ML netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH V2 6/9] net/stmmac: Remove conditional compilation of
- clk code
-References: <cover.1335246730.git.viresh.kumar@st.com> <4336df4e231467d253e25bbd41dbce6d189ed1e8.1335246730.git.viresh.kumar@st.com> <4F964551.4050507@st.com> <4F96493C.7020309@st.com> <4F964B3A.306@st.com>
-In-Reply-To: <4F964B3A.306@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "jgarzik@redhat.com" <jgarzik@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2 4/9] ata/sata_mv: Remove conditional compilation of
+	clk code
+Message-ID: <20120424082652.GQ24211@n2100.arm.linux.org.uk>
+References: <20120424070426.GA24089@lunn.ch> <4F9650B3.9030406@st.com> <20120424072653.GB24089@lunn.ch> <20120424074202.GO24211@n2100.arm.linux.org.uk> <4F965D1C.2010203@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F965D1C.2010203@st.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/24/2012 8:42 AM, Viresh Kumar wrote:
-> On 4/24/2012 12:03 PM, Giuseppe CAVALLARO wrote:
->> Oops, sorry but on a build I got:
->>
->>  CC      init/version.o
->>   LD      init/built-in.o
->>   LD      .tmp_vmlinux1
->> drivers/built-in.o: In function `stmmac_release':
->> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:1134:
->> undefined reference to `clk_disable'
->> drivers/built-in.o: In function `stmmac_open':
->> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:974:
->> undefined reference to `clk_enable'
->> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:1079:
->> undefined reference to `clk_disable'
->> drivers/built-in.o: In function `stmmac_dvr_probe':
->> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:1931:
->> undefined reference to `clk_get'
->> drivers/built-in.o: In function `stmmac_clk_csr_set':
->> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:174:
->> undefined reference to `clk_get_rate'
->> drivers/built-in.o: In function `stmmac_suspend':
->> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:2030:
->> undefined reference to `clk_disable'
->> drivers/built-in.o: In function `stmmac_resume':
->> /stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:2054:
->> undefined reference to `clk_enable'
->> make: *** [.tmp_vmlinux1] Error 1
->>
->> Pls, can you verify?
+On Tue, Apr 24, 2012 at 01:28:20PM +0530, Viresh Kumar wrote:
+> On 4/24/2012 1:12 PM, Russell King - ARM Linux wrote:
+> > If you don't have the clk API configured, you have no clocks to control.
+> > So, why not make clk_get() return NULL, and make the rest of the API
+> > calls do nothing?  That's what you'll end up codifying in the drivers
+> > anyway.
 > 
-> I believe, you haven't applied:
+> Ok. We can return NULL from calls that return clk *. What about other
+> routines that return integers. Like, clk_enable().
 > 
-> [PATCH V2 1/9] clk: Add non CONFIG_HAVE_CLK routines
-> 
-> which must be applied before testing this.
+> Is returning 0 correct? Which would mean we were able to enable clk, but
+> actually we haven't.
 
-Yes with it applied the build is ok.
+Think about this case: if you don't have the means to control the clock
+inputs to a device (for example, you don't support the clk API on your
+CPU arch) then for the device to be functional, it must be supplied with
+all its necessary clocks.  Therefore, the clock is already enabled.  It
+makes sense for the clk API to stub-out to be completely transparent and
+non-error inducing to the driver.
 
-Peppe
-
-> 
-
+The problem comes with clk_get_rate().  I'd suggest merely returning zero
+for that in this case.  If the clock rate is really required by a driver,
+then the clk API would need to be enabled.
