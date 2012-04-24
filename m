@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964825Ab2DXWoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:44:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932874Ab2DXWiT (ORCPT
+	id S932846Ab2DXWiE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:38:04 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932818Ab2DXWhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:38:19 -0400
-Message-Id: <20120424223255.456705238@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:37:55 -0400
+Message-Id: <20120424223254.862179878@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:16 -0700
+Date: Tue, 24 Apr 2012 15:33:09 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 23/42] usb: gadget: eliminate NULL pointer dereference (bugfix)
+        alan@lxorguk.ukuu.org.uk, Shaohua Li <shli@fusionio.com>,
+        Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
+Subject: [ 16/42] jbd2: use GFP_NOFS for blkdev_issue_flush
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+From: Shaohua Li <shli@kernel.org>
 
-commit 92b0abf80c5c5f0e0d71d1309688a330fd74731b upstream.
+commit 99aa78466777083255b876293e9e83dec7cd809a upstream.
 
-usb: gadget: eliminate NULL pointer dereference (bugfix)
+flush request is issued in transaction commit code path, so looks using
+GFP_KERNEL to allocate memory for flush request bio falls into the classic
+deadlock issue.  I saw btrfs and dm get it right, but ext4, xfs and md are
+using GFP.
 
-This patch fixes a bug which causes NULL pointer dereference in
-ffs_ep0_ioctl. The bug happens when the FunctionFS is not bound (either
-has not been bound yet or has been bound and then unbound) and can be
-reproduced with running the following commands:
-
-$ insmod g_ffs.ko
-$ mount -t functionfs func /dev/usbgadget
-$ ./null
-
-where null.c is:
-
-#include <fcntl.h>
-#include <linux/usb/functionfs.h>
-
-int main(void)
-{
-	int fd = open("/dev/usbgadget/ep0", O_RDWR);
-	ioctl(fd, FUNCTIONFS_CLEAR_HALT);
-
-	return 0;
-}
-
-Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_fs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/jbd2/commit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -720,7 +720,7 @@ static long ffs_ep0_ioctl(struct file *f
- 	if (code == FUNCTIONFS_INTERFACE_REVMAP) {
- 		struct ffs_function *func = ffs->func;
- 		ret = func ? ffs_func_revmap_intf(func, value) : -ENODEV;
--	} else if (gadget->ops->ioctl) {
-+	} else if (gadget && gadget->ops->ioctl) {
- 		ret = gadget->ops->ioctl(gadget, code, value);
- 	} else {
- 		ret = -ENOTTY;
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -683,7 +683,7 @@ start_journal_io:
+ 	if (commit_transaction->t_need_data_flush &&
+ 	    (journal->j_fs_dev != journal->j_dev) &&
+ 	    (journal->j_flags & JBD2_BARRIER))
+-		blkdev_issue_flush(journal->j_fs_dev, GFP_KERNEL, NULL);
++		blkdev_issue_flush(journal->j_fs_dev, GFP_NOFS, NULL);
+ 
+ 	/* Done it all: now write the commit record asynchronously. */
+ 	if (JBD2_HAS_INCOMPAT_FEATURE(journal,
+@@ -819,7 +819,7 @@ wait_for_iobuf:
+ 	if (JBD2_HAS_INCOMPAT_FEATURE(journal,
+ 				      JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT) &&
+ 	    journal->j_flags & JBD2_BARRIER) {
+-		blkdev_issue_flush(journal->j_dev, GFP_KERNEL, NULL);
++		blkdev_issue_flush(journal->j_dev, GFP_NOFS, NULL);
+ 	}
+ 
+ 	if (err)
 
 
