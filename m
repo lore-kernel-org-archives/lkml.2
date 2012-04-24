@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab2DXGNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 02:13:08 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:44847 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab2DXGNF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 02:13:05 -0400
+	id S1753461Ab2DXGOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 02:14:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21628 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751674Ab2DXGOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 02:14:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="135966394"
+From: Andi Kleen <andi@firstfloor.org>
+To: Toby Goodwin <toby@mythic-beasts.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Fixing NFS over OpenVPN
+References: <1335200249.5607.41.camel@rocinante.mythic-beasts.com>
+Date: Mon, 23 Apr 2012 23:14:39 -0700
+In-Reply-To: <1335200249.5607.41.camel@rocinante.mythic-beasts.com> (Toby
+	Goodwin's message of "Mon, 23 Apr 2012 17:57:28 +0100")
+Message-ID: <m2ehrdodv4.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <4F963B8E.9030105@kernel.org>
-References: <1335171318-4838-1-git-send-email-minchan@kernel.org>
-	<4F963742.2030607@jp.fujitsu.com>
-	<4F963B8E.9030105@kernel.org>
-Date: Tue, 24 Apr 2012 16:13:05 +1000
-Message-ID: <CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com>
-Subject: Re: [RFC] propagate gfp_t to page table alloc functions
-From: Nick Piggin <npiggin@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/4/24 Minchan Kim <minchan@kernel.org>:
-> On 04/24/2012 02:16 PM, KAMEZAWA Hiroyuki wrote:
+Toby Goodwin <toby@mythic-beasts.com> writes:
 >
->> (2012/04/23 17:55), Minchan Kim wrote:
->>
->>> As I test some code, I found a problem about deadlock by lockdep.
->>> The reason I saw the message is __vmalloc calls map_vm_area which calls
->>> pud/pmd_alloc without gfp_t. so although we call __vmalloc with
->>> GFP_ATOMIC or GFP_NOIO, it ends up allocating pages with GFP_KERNEL.
->>> The should be a BUG. This patch fixes it by passing gfp_to to low page
->>> table allocate functions.
->>>
->>> Signed-off-by: Minchan Kim <minchan@kernel.org>
->>
->>
->> Hmm ? vmalloc should support GFP_ATOMIC ?
+> I believe I know how to fix this, but would appreciate some guidance.
+> Part of the solution is to specify the "--mlock" flag to openvpn -- this
+> exists so that secrets are never written to swap, but as a side effect
+> it prevents openvpn from ever page faulting.
+
+mlock does not prevent page faulting. It merely prevents existing pages
+getting swapped out, but new pages can be definitely be faulted in.
+Your explanation would only make sense if all swappable memory 
+in the system is tied up in the openvpn process, which is unlikely.
+
+That said there may be still deadlocks if openvpn needs any new
+memory for writing data, but that has nothing to do with mlock.
+
+In fact the mlock should make it more stable under swapping, but you
+still have the problem you describe next.
+
+> userland AF_INET socket. (This is the socket through which OpenVPN sends
+> its encrypted packets to the remote end of the tunnel.) I haven't
+> discovered any way for userland to request a particular allocation
+> policy for a socket, please let me know if I've missed something.
+
+Just changing to GFP_NOIO will not fully solve the problem. 
+
+You really would need a preallocated mempool of pages for the socket
+(similar to Mel Gorman/ Peter Ziljstra's swap-over-NFS
+patchkit). Essentially the whole IO path needs to be able to work
+without allocating new memory.
 >
->
-> I'm not sure but alloc_large_system_hash already has used.
-> And it's not specific on GFP_ATOMIC.
-> We have to care of GFP_NOFS and GFP_NOIO to prevent deadlock on reclaim
-> context.
-> There are some places to use GFP_NOFS and we don't emit any warning
-> message in case of that.
+> Is there a better way to solve this?
 
-What's the lockdep warning?
+Probably parts of openvpn would need to move into the kernel.
 
-vmalloc was never supposed to use gfp flags for allocation "context"
-restriction. I.e., it
-was always supposed to have blocking, fs, and io capable allocation
-context. The flags
-were supposed to be a memory type modifier.
+-Andi
 
-These different classes of flags is a bit of a problem and source of
-confusion we have.
-We should be doing more checks for them, of course.
-
-I suspect you need to fix the caller?
-
-Thanks,
-Nick
+-- 
+ak@linux.intel.com -- Speaking for myself only
