@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab2DXJKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 05:10:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60666 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756479Ab2DXJKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 05:10:20 -0400
-Date: Tue, 24 Apr 2012 11:10:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: Our failure on tracing tools unification (Was: Re: [RFC][PATCH
- 00/15] tools: Unify perf and trace-cmd trace event format parsing v2)
-In-Reply-To: <1335193719.28150.171.camel@twins>
-Message-ID: <alpine.LFD.2.02.1204241014471.2542@ionos>
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>  <20120423144743.GB29985@somewhere> <1335193719.28150.171.camel@twins>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S932160Ab2DXJR4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 05:17:56 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:44603 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932096Ab2DXJRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 05:17:53 -0400
+Message-ID: <4F966FAA.1030901@openvz.org>
+Date: Tue, 24 Apr 2012 13:17:30 +0400
+From: Kinsbursky Stanislav <skinsbursky@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "criu@openvz.org" <criu@openvz.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "eparis@parisplace.org" <eparis@parisplace.org>,
+        "sds@tycho.nsa.gov" <sds@tycho.nsa.gov>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelianov <xemul@parallels.com>
+Subject: Re: [CRIU] [PATCH 0/5] IPC: checkpoint/restore in userspace enhancements
+References: <20120209175043.24392.62810.stgit@localhost6.localdomain6> <4F54B9DE.60604@openvz.org> <20120306151954.bc50817c.akpm@linux-foundation.org>
+In-Reply-To: <20120306151954.bc50817c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Apr 2012, Peter Zijlstra wrote:
+On 07.03.2012 03:19, Andrew Morton wrote:
+> On Mon, 05 Mar 2012 17:04:30 +0400
+> Kinsbursky Stanislav<skinsbursky@openvz.org>  wrote:
+>
+>> 09.02.2012 22:01, Stanislav Kinsbursky __________:
+>>> This patch set aimed to provide additional functionality for all IPC objects,
+>>> which is required for migration these objects by user-space checkpoint/restore
+>>> utils.
+>>> The main problem here was impossibility to set up object id. This patch set
+>>> solves the problem in two steps:
+>>> 1) Makes it possible to create new object (shared memory, semaphores set or
+>>> messages queue) with ID, equal to passed key.
+>>> 2) Makes it possible to change existent object key.
+>> Hello, Andrew.
+>> Are you going to take this patch set?
+>>
+> (top-posting repaired - please don't do that)
+>
+> I haven't forgotten about it :(.  There has been little review feedback
+> on this patchset and I still have overall concerns about the approach
+> we've been taking to c/r development.  I have a lengthy Feb 15 email
+> from Pavel which I also haven't forgotten about, but I haven't got back
+> to thinking about the whole topic yet, sorry.  Soon...
 
-> On Mon, 2012-04-23 at 16:47 +0200, Frederic Weisbecker wrote:
-> > Ingo doesn't seem to want this library outside perf in order to avoid
-> > the fragmentation of the efforts on tracing tools.
-> 
-> I really don't see the point.. parsing /debug/tracing/events/*/format
-> gunk really is separate, furthermore things like powertop et al already
-> are separate projects and really need this lib.
-> 
-> I mean, who gives a bother where all that crap lives, if its in the
-> kernel tree its all close enough to keep an eye on.. its not like
-> kernel/events/ and kernel/trace/ are the same directory.
-> 
-> Ingo, please could you lighten up and let people get stuff done? Merging
-> the two implementations, wherever the result lives, is a better
-> situation that two dis-joint implementations. So either let Frederic
-> work or do it yourself but don't hand-wave and road-block stuff.
+Hi, Andrew.
+Just wondering about this patch set - have you commited it yet?
+Or you need something from me to do this?
 
-So you are saying that we have patches for a fully unified library and
-block it just because we have religious debates about the directory in
-which the library code should be?
+-- 
+Best regards,
+Stanislav Kinsbursky
 
-Some folks should really visit their shrinks!
-
-Thanks,
-
-	tglx
