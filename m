@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab2DXLel (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 07:34:41 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:58256 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753503Ab2DXLej (ORCPT
+	id S1754849Ab2DXLgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 07:36:05 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:57024 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752554Ab2DXLeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 07:34:39 -0400
+	Tue, 24 Apr 2012 07:34:36 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <akpm@linux-foundation.org>
 Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
@@ -15,9 +15,9 @@ Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
         <linux@arm.linux.org.uk>, Viresh Kumar <viresh.kumar@st.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         <linux-usb@vger.kernel.org>
-Subject: [PATCH V3 12/12] usb/host/r8a66597: Remove conditional compilation of clk code
-Date: Tue, 24 Apr 2012 16:51:34 +0530
-Message-ID: <289b3d064b7c6170d7720c79478b11a88ee69917.1335266056.git.viresh.kumar@st.com>
+Subject: [PATCH V3 11/12] gadget/r8a66597: Remove conditional compilation of clk code
+Date: Tue, 24 Apr 2012 16:51:33 +0530
+Message-ID: <65bf26c65f3e79540735134b151fe7ff497fd3ef.1335266056.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <cover.1335266056.git.viresh.kumar@st.com>
 References: <cover.1335266056.git.viresh.kumar@st.com>
@@ -35,87 +35,75 @@ Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-usb@vger.kernel.org
 ---
- drivers/usb/host/r8a66597-hcd.c |   12 ------------
- drivers/usb/host/r8a66597.h     |    5 -----
- 2 files changed, 0 insertions(+), 17 deletions(-)
+ drivers/usb/gadget/r8a66597-udc.c |   11 +++--------
+ drivers/usb/gadget/r8a66597-udc.h |    5 -----
+ 2 files changed, 3 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/usb/host/r8a66597-hcd.c b/drivers/usb/host/r8a66597-hcd.c
-index 2bf1320..60b8278 100644
---- a/drivers/usb/host/r8a66597-hcd.c
-+++ b/drivers/usb/host/r8a66597-hcd.c
-@@ -95,9 +95,7 @@ static int r8a66597_clock_enable(struct r8a66597 *r8a66597)
- 	int i = 0;
- 
- 	if (r8a66597->pdata->on_chip) {
+diff --git a/drivers/usb/gadget/r8a66597-udc.c b/drivers/usb/gadget/r8a66597-udc.c
+index c4401e7..f873023 100644
+--- a/drivers/usb/gadget/r8a66597-udc.c
++++ b/drivers/usb/gadget/r8a66597-udc.c
+@@ -1818,12 +1818,12 @@ static int __exit r8a66597_remove(struct platform_device *pdev)
+ 		iounmap(r8a66597->sudmac_reg);
+ 	free_irq(platform_get_irq(pdev, 0), r8a66597);
+ 	r8a66597_free_request(&r8a66597->ep[0].ep, r8a66597->ep0_req);
 -#ifdef CONFIG_HAVE_CLK
- 		clk_enable(r8a66597->clk);
--#endif
- 		do {
- 			r8a66597_write(r8a66597, SCKE, SYSCFG0);
- 			tmp = r8a66597_read(r8a66597, SYSCFG0);
-@@ -141,9 +139,7 @@ static void r8a66597_clock_disable(struct r8a66597 *r8a66597)
- 	udelay(1);
- 
++
  	if (r8a66597->pdata->on_chip) {
--#ifdef CONFIG_HAVE_CLK
  		clk_disable(r8a66597->clk);
--#endif
- 	} else {
- 		r8a66597_bclr(r8a66597, PLLC, SYSCFG0);
- 		r8a66597_bclr(r8a66597, XCKE, SYSCFG0);
-@@ -2406,19 +2402,15 @@ static int __devexit r8a66597_remove(struct platform_device *pdev)
- 	del_timer_sync(&r8a66597->rh_timer);
- 	usb_remove_hcd(hcd);
- 	iounmap(r8a66597->reg);
--#ifdef CONFIG_HAVE_CLK
- 	if (r8a66597->pdata->on_chip)
  		clk_put(r8a66597->clk);
+ 	}
 -#endif
- 	usb_put_hcd(hcd);
++
+ 	device_unregister(&r8a66597->gadget.dev);
+ 	kfree(r8a66597);
  	return 0;
- }
+@@ -1855,9 +1855,7 @@ static int __init r8a66597_sudmac_ioremap(struct r8a66597 *r8a66597,
  
- static int __devinit r8a66597_probe(struct platform_device *pdev)
+ static int __init r8a66597_probe(struct platform_device *pdev)
  {
 -#ifdef CONFIG_HAVE_CLK
  	char clk_name[8];
 -#endif
- 	struct resource *res = NULL, *ires;
- 	int irq = -1;
+ 	struct resource *res, *ires;
+ 	int irq;
  	void __iomem *reg = NULL;
-@@ -2482,7 +2474,6 @@ static int __devinit r8a66597_probe(struct platform_device *pdev)
- 	r8a66597->irq_sense_low = irq_trigger == IRQF_TRIGGER_LOW;
+@@ -1921,7 +1919,6 @@ static int __init r8a66597_probe(struct platform_device *pdev)
+ 	r8a66597->timer.data = (unsigned long)r8a66597;
+ 	r8a66597->reg = reg;
  
- 	if (r8a66597->pdata->on_chip) {
 -#ifdef CONFIG_HAVE_CLK
+ 	if (r8a66597->pdata->on_chip) {
  		snprintf(clk_name, sizeof(clk_name), "usb%d", pdev->id);
  		r8a66597->clk = clk_get(&pdev->dev, clk_name);
- 		if (IS_ERR(r8a66597->clk)) {
-@@ -2491,7 +2482,6 @@ static int __devinit r8a66597_probe(struct platform_device *pdev)
- 			ret = PTR_ERR(r8a66597->clk);
- 			goto clean_up2;
+@@ -1933,7 +1930,7 @@ static int __init r8a66597_probe(struct platform_device *pdev)
  		}
+ 		clk_enable(r8a66597->clk);
+ 	}
 -#endif
- 		r8a66597->max_root_hub = 1;
- 	} else
- 		r8a66597->max_root_hub = 2;
-@@ -2531,11 +2521,9 @@ static int __devinit r8a66597_probe(struct platform_device *pdev)
- 	return 0;
- 
++
+ 	if (r8a66597->pdata->sudmac) {
+ 		ret = r8a66597_sudmac_ioremap(r8a66597, pdev);
+ 		if (ret < 0)
+@@ -1993,13 +1990,11 @@ err_add_udc:
  clean_up3:
--#ifdef CONFIG_HAVE_CLK
- 	if (r8a66597->pdata->on_chip)
- 		clk_put(r8a66597->clk);
+ 	free_irq(irq, r8a66597);
  clean_up2:
+-#ifdef CONFIG_HAVE_CLK
+ 	if (r8a66597->pdata->on_chip) {
+ 		clk_disable(r8a66597->clk);
+ 		clk_put(r8a66597->clk);
+ 	}
+ clean_up_dev:
 -#endif
- 	usb_put_hcd(hcd);
- 
+ 	device_unregister(&r8a66597->gadget.dev);
  clean_up:
-diff --git a/drivers/usb/host/r8a66597.h b/drivers/usb/host/r8a66597.h
-index f28782d..672cea3 100644
---- a/drivers/usb/host/r8a66597.h
-+++ b/drivers/usb/host/r8a66597.h
-@@ -26,10 +26,7 @@
+ 	if (r8a66597) {
+diff --git a/drivers/usb/gadget/r8a66597-udc.h b/drivers/usb/gadget/r8a66597-udc.h
+index 8e3de61..d2a5ad2 100644
+--- a/drivers/usb/gadget/r8a66597-udc.h
++++ b/drivers/usb/gadget/r8a66597-udc.h
+@@ -13,10 +13,7 @@
  #ifndef __R8A66597_H__
  #define __R8A66597_H__
  
@@ -125,17 +113,17 @@ index f28782d..672cea3 100644
 -
  #include <linux/usb/r8a66597.h>
  
- #define R8A66597_MAX_NUM_PIPE		10
-@@ -113,9 +110,7 @@ struct r8a66597_root_hub {
- struct r8a66597 {
- 	spinlock_t lock;
- 	void __iomem *reg;
+ #define R8A66597_MAX_SAMPLING	10
+@@ -92,9 +89,7 @@ struct r8a66597 {
+ 	void __iomem		*reg;
+ 	void __iomem		*sudmac_reg;
+ 
 -#ifdef CONFIG_HAVE_CLK
  	struct clk *clk;
 -#endif
  	struct r8a66597_platdata	*pdata;
- 	struct r8a66597_device		device0;
- 	struct r8a66597_root_hub	root_hub[R8A66597_MAX_ROOT_HUB];
+ 
+ 	struct usb_gadget		gadget;
 -- 
 1.7.9
 
