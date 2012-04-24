@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758387Ab2DXWyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:54:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932436Ab2DXWfk (ORCPT
+	id S1758382Ab2DXWzE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:55:04 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932515Ab2DXWfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:35:40 -0400
-Message-Id: <20120424223244.206782703@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:35:33 -0400
+Message-Id: <20120424223244.701664774@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:07 -0700
+Date: Tue, 24 Apr 2012 15:33:13 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 26/62] media: drxk: Does not unlock mutex if sanity check failed in scu_command()
+        alan@lxorguk.ukuu.org.uk, Jan Ceuleers <jan.ceuleers@computer.org>,
+        NeilBrown <neilb@suse.de>
+Subject: [ 32/62] md: dont call ->add_disk unless there is good reason.
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: NeilBrown <neilb@suse.de>
 
-commit e4459e1682c107d7ee1bf102c1ba534230e9b50b upstream.
+commit ed209584c38fb74b7eecc03e5b1bfe674e591bd8 upstream.
 
-If sanity check fails in scu_command(), goto error leads to unlock of
-an unheld mutex. The check should not fail in reality, but it nevertheless
-worth fixing.
+Commit 7bfec5f35c68121e7b18
 
-Found by Linux Driver Verification project (linuxtesting.org).
+   md/raid5: If there is a spare and a want_replacement device, start replacement.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+cause md_check_recovery to call ->add_disk much more often.
+Instead of only when the array is degraded, it is now called whenever
+md_check_recovery finds anything useful to do, which includes
+updating the metadata for clean<->dirty transition.
+This causes unnecessary work, and causes info messages from ->add_disk
+to be reported much too often.
+
+So refine md_check_recovery to only do any actual recovery checking
+(including ->add_disk) if MD_RECOVERY_NEEDED is set.
+
+This fix is suitable for 3.3.y:
+
+Reported-by: Jan Ceuleers <jan.ceuleers@computer.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb/frontends/drxk_hard.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/md/md.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/media/dvb/frontends/drxk_hard.c
-+++ b/drivers/media/dvb/frontends/drxk_hard.c
-@@ -1525,8 +1525,10 @@ static int scu_command(struct drxk_state
- 	dprintk(1, "\n");
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7580,14 +7580,14 @@ void md_check_recovery(struct mddev *mdd
+ 		 * any transients in the value of "sync_action".
+ 		 */
+ 		set_bit(MD_RECOVERY_RUNNING, &mddev->recovery);
+-		clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 		/* Clear some bits that don't mean anything, but
+ 		 * might be left set
+ 		 */
+ 		clear_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 		clear_bit(MD_RECOVERY_DONE, &mddev->recovery);
  
- 	if ((cmd == 0) || ((parameterLen > 0) && (parameter == NULL)) ||
--	    ((resultLen > 0) && (result == NULL)))
--		goto error;
-+	    ((resultLen > 0) && (result == NULL))) {
-+		printk(KERN_ERR "drxk: Error %d on %s\n", status, __func__);
-+		return status;
-+	}
- 
- 	mutex_lock(&state->mutex);
- 
+-		if (test_bit(MD_RECOVERY_FROZEN, &mddev->recovery))
++		if (!test_and_clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery) ||
++		    test_bit(MD_RECOVERY_FROZEN, &mddev->recovery))
+ 			goto unlock;
+ 		/* no recovery is running.
+ 		 * remove any failed drives, then
 
 
