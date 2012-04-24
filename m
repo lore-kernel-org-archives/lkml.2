@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab2DXCJW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 22:09:22 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39884 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756185Ab2DXCJV convert rfc822-to-8bit (ORCPT
+	id S1756307Ab2DXCNu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 22:13:50 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:53815 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756266Ab2DXCNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 22:09:21 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20120423110912.GC8318@opensource.wolfsonmicro.com>
-References: <1335107508.6261.3.camel@phoenix> <20120423110912.GC8318@opensource.wolfsonmicro.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 24 Apr 2012 10:09:00 +0800
-Message-ID: <CAF+7xWkzy5e0rcpwprEE3VWTikOu2+qtsgfdhTN12-yonDxadA@mail.gmail.com>
-Subject: Re: [PATCH] leds: lm3530: fix handling of already enabled regulators
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        "Milo(Woogyom) Kim" <milo.kim@ti.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>, Liam Girdwood <lrg@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 23 Apr 2012 22:13:49 -0400
+Date: Tue, 24 Apr 2012 11:43:40 +0930
+From: Christopher Yeoh <cyeoh@au1.ibm.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Adds Kconfig option for Cross Memory Attach
+Message-ID: <20120424114340.79825228@Gantu>
+In-Reply-To: <4F9579E4.2000701@xenotime.net>
+References: <20120423134243.5ac73596@Gantu>
+	<4F9579E4.2000701@xenotime.net>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12042316-1618-0000-0000-00000161EA84
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/4/23 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Sun, Apr 22, 2012 at 11:11:48PM +0800, Axel Lin wrote:
->
->>               drvdata->regulator = NULL;
->>               goto err_regulator_get;
->>       }
->> +     drvdata->enable = regulator_is_enabled(drvdata->regulator);
->>
->
-> This isn't sufficient for what the driver is doing - it also needs to
-> enable the regulator.  Regulator enables are reference counted (since
-> the regulator can be shared by many device supplies) so if this driver
-> doesn't reference the regulator when it's needed then it could get
-> powered off.
+On Mon, 23 Apr 2012 08:48:52 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 04/22/2012 09:12 PM, Christopher Yeoh wrote:
+> 
+> > Hi Andrew,
+> > 
+> > Attached is a patch which you asked for a while back which adds a
+> > Kconfig option to allow people who don't want cross memory attach
+> > to not have it included in their build.
+> 
+> 
+> and it shouldn't be default y.
+> 
+> Linus has written a diatribe on [not] making new options
+> default to y.
 
-The regulator_enable() is called in lm3530_init_registers().
-
->
-> If this regulator is the actual LED then the current default of assuming
-> the regulator is off on boot isn't ideal either as it means that if the
-> regulator is enabled on boot then the LED may be left on even though the
-> driver thinks it's off.
-
-Hi Shreshtha,
-I think without this patch you can see the symptom Mark mentioned if the
-regulator is enabled on boot.
-Any chance to test if this patch works or not?
+I'm not that fussed, but currently CMA is enabled whether you like it
+or not. This just allows you to disable it. IIRC there was an exception
+where a new config option allows you to disable an old feature
+(although CMA has not been out that long).
 
 Regards,
-Axel
+
+Chris
+-- 
+cyeoh@au.ibm.com
+
