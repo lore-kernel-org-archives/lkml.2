@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab2DXWnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:43:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
+	id S1758246Ab2DXWnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:43:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758210Ab2DXWih (ORCPT
+	with ESMTP id S932901Ab2DXWi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:38:37 -0400
-Message-Id: <20120424223255.969718560@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:38:29 -0400
+Message-Id: <20120424223255.711401244@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:22 -0700
+Date: Tue, 24 Apr 2012 15:33:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Baron <jbaron@redhat.com>
-Subject: [ 29/42] Dont limit non-nested epoll paths
+        alan@lxorguk.ukuu.org.uk,
+        Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Charlie Suffin <charlie.suffin@stratus.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [ 26/42] PCI: Add quirk for still enabled interrupts on Intel Sandy Bridge GPUs
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Baron <jbaron@redhat.com>
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
 
-commit 93dc6107a76daed81c07f50215fa6ae77691634f upstream.
+commit f67fd55fa96f7d7295b43ffbc4a97d8f55e473aa upstream.
 
-Commit 28d82dc1c4ed ("epoll: limit paths") that I did to limit the
-number of possible wakeup paths in epoll is causing a few applications
-to longer work (dovecot for one).
+Some BIOS implementations leave the Intel GPU interrupts enabled,
+even though no one is handling them (f.e. i915 driver is never loaded).
+Additionally the interrupt destination is not set up properly
+and the interrupt ends up -somewhere-.
 
-The original patch is really about limiting the amount of epoll nesting
-(since epoll fds can be attached to other fds). Thus, we probably can
-allow an unlimited number of paths of depth 1. My current patch limits
-it at 1000. And enforce the limits on paths that have a greater depth.
+These spurious interrupts are "sticky" and the kernel disables
+the (shared) interrupt line after 100.000+ generated interrupts.
 
-This is captured in: https://bugzilla.redhat.com/show_bug.cgi?id=681578
+Fix it by disabling the still enabled interrupts.
+This resolves crashes often seen on monitor unplug.
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Tested on the following boards:
+- Intel DH61CR: Affected
+- Intel DH67BL: Affected
+- Intel S1200KP server board: Affected
+- Asus P8H61-M LE: Affected, but system does not crash.
+  Probably the IRQ ends up somewhere unnoticed.
+
+According to reports on the net, the Intel DH61WW board is also affected.
+
+Many thanks to Jesse Barnes from Intel for helping
+with the register configuration and to Intel in general
+for providing public hardware documentation.
+
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Tested-by: Charlie Suffin <charlie.suffin@stratus.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/eventpoll.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/pci/quirks.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -988,6 +988,10 @@ static int path_count[PATH_ARR_SIZE];
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2822,6 +2822,40 @@ static void __devinit fixup_ti816x_class
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_TI, 0xb800, fixup_ti816x_class);
  
- static int path_count_inc(int nests)
- {
-+	/* Allow an arbitrary number of depth 1 paths */
-+	if (nests == 0)
-+		return 0;
++/*
++ * Some BIOS implementations leave the Intel GPU interrupts enabled,
++ * even though no one is handling them (f.e. i915 driver is never loaded).
++ * Additionally the interrupt destination is not set up properly
++ * and the interrupt ends up -somewhere-.
++ *
++ * These spurious interrupts are "sticky" and the kernel disables
++ * the (shared) interrupt line after 100.000+ generated interrupts.
++ *
++ * Fix it by disabling the still enabled interrupts.
++ * This resolves crashes often seen on monitor unplug.
++ */
++#define I915_DEIER_REG 0x4400c
++static void __devinit disable_igfx_irq(struct pci_dev *dev)
++{
++	void __iomem *regs = pci_iomap(dev, 0, 0);
++	if (regs == NULL) {
++		dev_warn(&dev->dev, "igfx quirk: Can't iomap PCI device\n");
++		return;
++	}
 +
- 	if (++path_count[nests] > path_limits[nests])
- 		return -1;
- 	return 0;
++	/* Check if any interrupt line is still enabled */
++	if (readl(regs + I915_DEIER_REG) != 0) {
++		dev_warn(&dev->dev, "BIOS left Intel GPU interrupts enabled; "
++			"disabling\n");
++
++		writel(0, regs + I915_DEIER_REG);
++	}
++
++	pci_iounmap(dev, regs);
++}
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
++
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
+ {
 
 
