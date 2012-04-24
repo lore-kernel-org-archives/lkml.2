@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab2DXQoC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 12:44:02 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34166 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755962Ab2DXQoA (ORCPT
+	id S1756770Ab2DXQsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 12:48:05 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:11678 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756746Ab2DXQsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 12:44:00 -0400
-Message-ID: <4F96D84E.7080204@wwwdotorg.org>
-Date: Tue, 24 Apr 2012 10:43:58 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Tue, 24 Apr 2012 12:48:02 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6691"; a="182231362"
+Date: Tue, 24 Apr 2012 11:47:59 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-hexagon@vger.kernel.org
+Subject: Re: [patch 11/18] hexagon: Use generic idle thread allocation
+Message-ID: <20120424164759.GD3221@codeaurora.org>
+References: <20120420122120.097464672@linutronix.de>
+ <20120420124557.581762105@linutronix.de>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Dong Aisheng <B29396@freescale.com>, viresh kumar <viresh.kumar@st.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: Tag on pinctrl
-References: <CACRpkdYqZrNFxj4kyMqYZk5PAcjF6-TroJ+Xq+3EVBLvo5Zg-Q@mail.gmail.com>
-In-Reply-To: <CACRpkdYqZrNFxj4kyMqYZk5PAcjF6-TroJ+Xq+3EVBLvo5Zg-Q@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120420124557.581762105@linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2012 07:15 AM, Linus Walleij wrote:
-> A while back I created a tag:
-> 
-> pinctrl-mergebase-20120418
-> 
-> On the pinctrl tree. It contains stuff up until that date that
-> has since been sitting in linux-next for a while.
-> 
-> I do not expect to rebase these patches further. They
-> are based on v3.4-rc3. So I will base any further pinctrl
-> work on this.
-> 
-> I think Stephen needed to pull this into the ARM SoC tree?
+On Fri, Apr 20, 2012 at 01:05:51PM -0000, Thomas Gleixner wrote:
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Richard Kuo <rkuo@codeaurora.org>
+> ---
+>  arch/hexagon/Kconfig      |    1 +
+>  arch/hexagon/kernel/smp.c |   11 ++---------
+>  2 files changed, 3 insertions(+), 9 deletions(-)
 
-Yes, I have pulled that tag into the Tegra tree as
-for-3.5/gpio-pinmux-dependency, and have a Tegra-specific
-for-3.5/gpio-pinmux branch that depends on it. Two other Tegra branches
-in turn (for-3.5/tegra30-audio, for-3.5/usb-ulpi) depend on
-for-3.5/gpio-pinmux.
+Tested; works for me.
 
-Linus, I think this will get into the ARM SoC tree simply by my saying
-in my for-3.5/gpio-pinmux pull request that the branch depends on your
-tag; I don't /think/ you need to explicitly send a pull request there,
-right?
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
+
+
+-- 
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
