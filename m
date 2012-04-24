@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab2DXReb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 13:34:31 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:57193 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756863Ab2DXRea (ORCPT
+	id S1756903Ab2DXRek (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 13:34:40 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:36941 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756863Ab2DXRei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 13:34:30 -0400
-Message-ID: <4F96E41C.6030309@ahsoftware.de>
-Date: Tue, 24 Apr 2012 19:34:20 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120303 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: shuahkhan@gmail.com
-CC: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] leds: heartbeat: stop on shutdown
-References: <1335275034-22135-1-git-send-email-holler@ahsoftware.de>  <1335280022-16308-1-git-send-email-holler@ahsoftware.de>  <1335281074.2347.4.camel@lorien2> <4F96D58A.3070008@ahsoftware.de>  <1335286810.2347.18.camel@lorien2> <4F96E26C.3060302@ahsoftware.de> <1335288711.2347.20.camel@lorien2>
-In-Reply-To: <1335288711.2347.20.camel@lorien2>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 24 Apr 2012 13:34:38 -0400
+X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Apr 2012 13:34:38 EDT
+Message-ID: <1335288545.17274.35.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH net-next 2/3] Add capability to retrieve plug-in module
+ EEPROM
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Stuart Hodgson <smhodgson@solarflare.com>
+CC: <netdev@vger.kernel.org>, <bruce.w.allan@intel.com>, <decot@google.com>,
+        <alexander.h.duyck@intel.com>, <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Apr 2012 18:29:05 +0100
+In-Reply-To: <4F9031CE.1060702@solarflare.com>
+References: <4F9031CE.1060702@solarflare.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18862.005
+X-TM-AS-Result: No--17.541500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.04.2012 19:31, schrieb Shuah Khan:
-> On Tue, 2012-04-24 at 19:27 +0200, Alexander Holler wrote:
->> Am 24.04.2012 19:00, schrieb Shuah Khan:
->>> On Tue, 2012-04-24 at 18:32 +0200, Alexander Holler wrote:
->>>> Am 24.04.2012 17:24, schrieb Shuah Khan:
->>>>> On Tue, 2012-04-24 at 17:07 +0200, Alexander Holler wrote:
->>>>>> A halted kernel should not show a heartbeat.
->>>>>>
->>>>>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
->>>>>> ---
->>>>>>  drivers/leds/ledtrig-heartbeat.c |   18 +++++++++++++++++-
->>>>>>  1 files changed, 17 insertions(+), 1 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
->>>>>> index 759c0bb..1c05bd9 100644
->>>>>> --- a/drivers/leds/ledtrig-heartbeat.c
->>>>>> +++ b/drivers/leds/ledtrig-heartbeat.c
->>>>>> @@ -18,6 +18,7 @@
->>>>>>  #include <linux/timer.h>
->>>>>>  #include <linux/sched.h>
->>>>>>  #include <linux/leds.h>
->>>>>> +#include <linux/reboot.h>
->>>>>>  #include "leds.h"
->>>>>>  
->>>>>>  struct heartbeat_trig_data {
->>>>>> @@ -101,13 +102,28 @@ static struct led_trigger heartbeat_led_trigger = {
->>>>>>  	.deactivate = heartbeat_trig_deactivate,
->>>>>>  };
->>>>>>  
->>>>>> +static int heartbeat_reboot_notifier(struct notifier_block *nb,
->>>>>> +				     unsigned long code, void *unused)
->>>>>> +{
->>>>>> +	led_trigger_unregister(&heartbeat_led_trigger);
->>>>>> +	return NOTIFY_DONE;
->>>>>> +}
->>> I am sorry I didn't catch this the last time. Do you need to call
->>> unregister here? Looks like trigger is going away with a registered
->>> reboot notifier. Might be fine, since reboot is going to happen.
->>
->> That unregister is the whole reason of the patch because it disables all
->> running heartbeats on reboot/shutdown. ;)
+On Thu, 2012-04-19 at 16:39 +0100, Stuart Hodgson wrote:
+> Provides a new struct ethtool_modinfo that will return the
+> type and size of plug-in module eeprom (such as SFP+) for parsing
+> by userland program.
 > 
-> Sorry I should have been clear about which unregister. I meant
-> unregister_reboot_notifier()
+> The second provides the API to get the raw eeprom information
+> using the existing ethtool_eeprom structture to return the data
+> 
+> Signed-off-by: Stuart Hodgson <smhodgson@solarflare.com>
+> ---
+>  include/linux/ethtool.h |   33 +++++++++++++++++++++++++++++++++
+>  net/core/ethtool.c      |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 80 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/ethtool.h b/include/linux/ethtool.h
+> index 89d68d8..f6500f3 100644
+> --- a/include/linux/ethtool.h
+> +++ b/include/linux/ethtool.h
+> @@ -137,6 +137,23 @@ struct ethtool_eeprom {
+>  };
+> 
+>  /**
+> + * struct ethtool_modinfo - plugin module eeprom information
+> + * @cmd: ETHTOOL_GMODULEINFO
+> + * @type: Standard the module information conforms to SFF_xxxx
 
-That is needed in case the module will be unloaded.
+You renamed the type codes to begin with 'ETH_MODULE_SFF_', so this line
+needs to be updated too.
 
-Regards,
+> + * @eeprom_len: Length of the eeprom
+> + *
+> + * This structure is used to return the information to
+> + * properly size memory for a subsequent call to ETHTOOL_GMODULEEEPROM
+[...]
 
-Alexander
+The type code is also essential in order to parse the information.
+
+Also, a minor nitpick: you should put a '%' in front of the names of
+constants so they can be pretty-printed properly.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
