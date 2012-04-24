@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab2DXQTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 12:19:03 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:37470 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755773Ab2DXQTB (ORCPT
+	id S1756639Ab2DXQZD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 12:25:03 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:58995 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755785Ab2DXQZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 12:19:01 -0400
-Message-ID: <4F96D27A.2050005@gmail.com>
-Date: Tue, 24 Apr 2012 12:19:06 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 24 Apr 2012 12:25:01 -0400
+Message-ID: <4F96D3FA.1010909@xenotime.net>
+Date: Tue, 24 Apr 2012 09:25:30 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: lwoodman@redhat.com
-CC: linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Motohiro Kosaki <mkosaki@redhat.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kosaki.motohiro@gmail.com
-Subject: Re: [PATCH -mm V2] do_migrate_pages() calls migrate_to_node() even
- if task is already on a correct node
-References: <4F96CDE1.5000909@redhat.com>
-In-Reply-To: <4F96CDE1.5000909@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org
+Subject: Re: linux-next: Tree for Apr 24 (kvm)
+References: <20120424154354.7feba600beac616833d034de@canb.auug.org.au>
+In-Reply-To: <20120424154354.7feba600beac616833d034de@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index 47296fe..6c189fa 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -1012,6 +1012,16 @@ int do_migrate_pages(struct mm_struct *mm,
->  		int dest = 0;
->
->  		for_each_node_mask(s, tmp) {
-> +
-> +			/* IFF there is an equal number of source and
-> +			 * destination nodes, maintain relative node distance
-> +			 * even when source and destination nodes overlap.
-> +			 * However, when the node weight is unequal, never move
-> +			 * memory out of any destination nodes */
+On 04/23/2012 10:43 PM, Stephen Rothwell wrote:
 
-Please use
-
-/*
-  * foo bar
-  */
-
-style comment. and this comment only explain how code work but don't explain why.
-I hope the comment describe HPC usecase require to migrate if src and dest have the
-same weight.
-
-Otherwise looks ok. please feel free to use my ack to your next spin.
-  Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Hi all,
+> 
+> There will probably be no linux-next release until April 30 as I am
+> taking a break.
+> 
+> Changes since 20120423:
 
 
+on i386:
 
-> +			if ((nodes_weight(*from_nodes) != nodes_weight(*to_nodes)) &&
-> +						(node_isset(s, *to_nodes)))
-> +				continue;
-> +
+  CC [M]  arch/x86/kvm/emulate.o
+arch/x86/kvm/emulate.c: Assembler messages:
+arch/x86/kvm/emulate.c:4122: Error: bad register name `%bpl'
 
 
+-- 
+~Randy
