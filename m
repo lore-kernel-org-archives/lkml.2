@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964919Ab2DXWjq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:39:46 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964885Ab2DXWjV (ORCPT
+	id S964877Ab2DXWjS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:39:18 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:56299 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964864Ab2DXWjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:39:21 -0400
-Message-Id: <20120424223256.930908381@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:33 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
-Subject: [ 40/42] ocfs2: ->rl_count endianness breakage
-In-Reply-To: <20120424223311.GA8456@kroah.com>
+	Tue, 24 Apr 2012 18:39:15 -0400
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Holler <holler@ahsoftware.de>
+Subject: [PATCH v4] leds: heartbeat: stop on shutdown, reboot or panic
+Date: Wed, 25 Apr 2012 00:38:57 +0200
+Message-Id: <1335307137-5732-1-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1335306610-5549-1-git-send-email-holler@ahsoftware.de>
+References: <1335306610-5549-1-git-send-email-holler@ahsoftware.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+A halted kernel should not show a heartbeat.
 
-------------------
-
-From: Al Viro <viro@zeniv.linux.org.uk>
-
-commit 28748b325dc2d730ccc312830a91c4ae0c0d9379 upstream.
-
-le16, not le32...
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 ---
- fs/ocfs2/refcounttree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/leds/ledtrig-heartbeat.c |   27 ++++++++++++++++++++++++++-
+ 1 files changed, 26 insertions(+), 1 deletions(-)
 
---- a/fs/ocfs2/refcounttree.c
-+++ b/fs/ocfs2/refcounttree.c
-@@ -1468,7 +1468,7 @@ static int ocfs2_divide_leaf_refcount_bl
+diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
+index 759c0bb..31c234c 100644
+--- a/drivers/leds/ledtrig-heartbeat.c
++++ b/drivers/leds/ledtrig-heartbeat.c
+@@ -18,6 +18,7 @@
+ #include <linux/timer.h>
+ #include <linux/sched.h>
+ #include <linux/leds.h>
++#include <linux/reboot.h>
+ #include "leds.h"
  
- 	trace_ocfs2_divide_leaf_refcount_block(
- 		(unsigned long long)ref_leaf_bh->b_blocknr,
--		le32_to_cpu(rl->rl_count), le16_to_cpu(rl->rl_used));
-+		le16_to_cpu(rl->rl_count), le16_to_cpu(rl->rl_used));
+ struct heartbeat_trig_data {
+@@ -101,13 +102,37 @@ static struct led_trigger heartbeat_led_trigger = {
+ 	.deactivate = heartbeat_trig_deactivate,
+ };
  
- 	/*
- 	 * XXX: Improvement later.
-
++static int heartbeat_reboot_notifier(struct notifier_block *nb,
++				     unsigned long code, void *unused)
++{
++	led_trigger_unregister(&heartbeat_led_trigger);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block heartbeat_reboot_nb = {
++	.notifier_call = heartbeat_reboot_notifier,
++};
++
++static struct notifier_block heartbeat_panic_nb = {
++	.notifier_call = heartbeat_reboot_notifier,
++};
++
+ static int __init heartbeat_trig_init(void)
+ {
+-	return led_trigger_register(&heartbeat_led_trigger);
++	int rc = led_trigger_register(&heartbeat_led_trigger);
++	if (!rc) {
++		atomic_notifier_chain_register(&panic_notifier_list,
++					       &heartbeat_panic_nb);
++		register_reboot_notifier(&heartbeat_reboot_nb);
++	}
++	return rc;
+ }
+ 
+ static void __exit heartbeat_trig_exit(void)
+ {
++	unregister_reboot_notifier(&heartbeat_reboot_nb);
++	atomic_notifier_chain_unregister(&panic_notifier_list,
++					 &heartbeat_panic_nb);
+ 	led_trigger_unregister(&heartbeat_led_trigger);
+ }
+ 
+-- 
+1.7.6.5
 
