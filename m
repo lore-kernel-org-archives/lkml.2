@@ -1,259 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab2DXGfl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 02:35:41 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:45594 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751562Ab2DXGfj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 02:35:39 -0400
-Message-ID: <4F96493C.7020309@st.com>
-Date: Tue, 24 Apr 2012 08:33:32 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1753418Ab2DXGhS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 02:37:18 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:36678 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751876Ab2DXGhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 02:37:16 -0400
+Message-ID: <4F9649FE.6060104@linux.vnet.ibm.com>
+Date: Tue, 24 Apr 2012 12:06:46 +0530
+From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Cc: Viresh KUMAR <viresh.kumar@st.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        mturquette@linaro.org, sshtylyov@mvista.com, jgarzik@redhat.com,
-        linux@arm.linux.org.uk, spear-devel@list.st.com,
-        viresh.linux@gmail.com, "David S. Miller" <davem@davemloft.net>,
-        ML netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH V2 6/9] net/stmmac: Remove conditional compilation of
- clk code
-References: <cover.1335246730.git.viresh.kumar@st.com> <4336df4e231467d253e25bbd41dbce6d189ed1e8.1335246730.git.viresh.kumar@st.com> <4F964551.4050507@st.com>
-In-Reply-To: <4F964551.4050507@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: peterz@infradead.org, mingo@elte.hu
+CC: Andrew Morton <akpm@linux-foundation.org>, torvalds@linux-foundation.org,
+        ananth@in.ibm.com, jkenisto@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, oleg@redhat.com,
+        andi@firstfloor.org, hch@infradead.org, rostedt@goodmis.org,
+        acme@infradead.org, masami.hiramatsu.pt@hitachi.com,
+        tglx@linutronix.de, anton@redhat.com, srikar@linux.vnet.ibm.com
+Subject: [PATCH-V2] perf/probe: verify instruction/offset in perf before adding
+ a uprobe
+References: <20120424061439.14593.97404.stgit@nprashan.in.ibm.com>
+In-Reply-To: <20120424061439.14593.97404.stgit@nprashan.in.ibm.com>
+X-Forwarded-Message-Id: <20120424061439.14593.97404.stgit@nprashan.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042406-3534-0000-0000-000007BDAB09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/24/2012 8:16 AM, Giuseppe CAVALLARO wrote:
-> On 4/24/2012 7:56 AM, Viresh KUMAR wrote:
->> With addition of dummy clk_*() calls for non CONFIG_HAVE_CLK cases in clk.h,
->> there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #endif
->> macros.
-> 
-> Hello Viresh
-> 
-> patch only applies fine against the net-next repository so on top of the
-> diver version: March_2012 and it builds fine on arch w/ w/o HAVE_CLK
-> (just tested).
+This patch is to augment Srikar's perf support for uprobes patch
+(https://lkml.org/lkml/2012/4/11/191) with the following features:
 
+a. Instruction verification for user space tracing
+b. Function boundary validation support to uprobes as its kernel
+counterpart (Commit-ID: 1c1bc922).
 
-Oops, sorry but on a build I got:
+This will help in ensuring uprobe is placed at right location inside
+the intended function.
 
- CC      init/version.o
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-drivers/built-in.o: In function `stmmac_release':
-/stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:1134:
-undefined reference to `clk_disable'
-drivers/built-in.o: In function `stmmac_open':
-/stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:974:
-undefined reference to `clk_enable'
-/stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:1079:
-undefined reference to `clk_disable'
-drivers/built-in.o: In function `stmmac_dvr_probe':
-/stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:1931:
-undefined reference to `clk_get'
-drivers/built-in.o: In function `stmmac_clk_csr_set':
-/stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:174:
-undefined reference to `clk_get_rate'
-drivers/built-in.o: In function `stmmac_suspend':
-/stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:2030:
-undefined reference to `clk_disable'
-drivers/built-in.o: In function `stmmac_resume':
-/stlinux/cavagiu/git/mirror/net-next.git/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:2054:
-undefined reference to `clk_enable'
-make: *** [.tmp_vmlinux1] Error 1
+To verify instructions in perf before adding a uprobe, we need to use
+arch/x86/lib/insn.c. Since perf Makefile enables -Wswitch-default flag
+it causes build warnings/failures. Masami's patch
+https://lkml.org/lkml/2012/4/12/598 addresses those warnings and it is
+a pre-req for this patch.
 
-Pls, can you verify?
+v2 addresses Masami's review comments: Rebuild insn.c and inat.c while
+building perf and a few other minor ones.
 
-Peppe
+Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+---
 
-> 
-> Thanks a lot.
-> 
-> Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> 
->> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
->> Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
->> Cc: David S. Miller <davem@davemloft.net>
->> ---
->>  drivers/net/ethernet/stmicro/stmmac/stmmac.h      |   41 ---------------------
->>  drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   31 ++++++++++------
->>  2 files changed, 19 insertions(+), 53 deletions(-)
->>
->> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
->> index db2de9a..7f85895 100644
->> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
->> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
->> @@ -81,9 +81,7 @@ struct stmmac_priv {
->>  	struct stmmac_counters mmc;
->>  	struct dma_features dma_cap;
->>  	int hw_cap_support;
->> -#ifdef CONFIG_HAVE_CLK
->>  	struct clk *stmmac_clk;
->> -#endif
->>  	int clk_csr;
->>  };
->>  
->> @@ -103,42 +101,3 @@ int stmmac_dvr_remove(struct net_device *ndev);
->>  struct stmmac_priv *stmmac_dvr_probe(struct device *device,
->>  				     struct plat_stmmacenet_data *plat_dat,
->>  				     void __iomem *addr);
->> -
->> -#ifdef CONFIG_HAVE_CLK
->> -static inline int stmmac_clk_enable(struct stmmac_priv *priv)
->> -{
->> -	if (!IS_ERR(priv->stmmac_clk))
->> -		return clk_enable(priv->stmmac_clk);
->> -
->> -	return 0;
->> -}
->> -
->> -static inline void stmmac_clk_disable(struct stmmac_priv *priv)
->> -{
->> -	if (IS_ERR(priv->stmmac_clk))
->> -		return;
->> -
->> -	clk_disable(priv->stmmac_clk);
->> -}
->> -static inline int stmmac_clk_get(struct stmmac_priv *priv)
->> -{
->> -	priv->stmmac_clk = clk_get(priv->device, NULL);
->> -
->> -	if (IS_ERR(priv->stmmac_clk))
->> -		return PTR_ERR(priv->stmmac_clk);
->> -
->> -	return 0;
->> -}
->> -#else
->> -static inline int stmmac_clk_enable(struct stmmac_priv *priv)
->> -{
->> -	return 0;
->> -}
->> -static inline void stmmac_clk_disable(struct stmmac_priv *priv)
->> -{
->> -}
->> -static inline int stmmac_clk_get(struct stmmac_priv *priv)
->> -{
->> -	return 0;
->> -}
->> -#endif /* CONFIG_HAVE_CLK */
->> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
->> index 1a4cf81..18ce287 100644
->> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
->> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
->> @@ -28,6 +28,7 @@
->>  	https://bugzilla.stlinux.com/
->>  *******************************************************************************/
->>  
->> +#include <linux/clk.h>
->>  #include <linux/kernel.h>
->>  #include <linux/interrupt.h>
->>  #include <linux/ip.h>
->> @@ -165,7 +166,6 @@ static void stmmac_verify_args(void)
->>  
->>  static void stmmac_clk_csr_set(struct stmmac_priv *priv)
->>  {
->> -#ifdef CONFIG_HAVE_CLK
->>  	u32 clk_rate;
->>  
->>  	if (IS_ERR(priv->stmmac_clk))
->> @@ -192,7 +192,6 @@ static void stmmac_clk_csr_set(struct stmmac_priv *priv)
->>  	   * we can not estimate the proper divider as it is not known
->>  	   * the frequency of clk_csr_i. So we do not change the default
->>  	   * divider. */
->> -#endif
->>  }
->>  
->>  #if defined(STMMAC_XMIT_DEBUG) || defined(STMMAC_RX_DEBUG)
->> @@ -971,7 +970,8 @@ static int stmmac_open(struct net_device *dev)
->>  	} else
->>  		priv->tm->enable = 1;
->>  #endif
->> -	stmmac_clk_enable(priv);
->> +	if (!IS_ERR(priv->stmmac_clk))
->> +		clk_enable(priv->stmmac_clk);
->>  
->>  	stmmac_check_ether_addr(priv);
->>  
->> @@ -1075,7 +1075,8 @@ open_error:
->>  	if (priv->phydev)
->>  		phy_disconnect(priv->phydev);
->>  
->> -	stmmac_clk_disable(priv);
->> +	if (!IS_ERR(priv->stmmac_clk))
->> +		clk_disable(priv->stmmac_clk);
->>  
->>  	return ret;
->>  }
->> @@ -1128,7 +1129,9 @@ static int stmmac_release(struct net_device *dev)
->>  #ifdef CONFIG_STMMAC_DEBUG_FS
->>  	stmmac_exit_fs();
->>  #endif
->> -	stmmac_clk_disable(priv);
->> +
->> +	if (!IS_ERR(priv->stmmac_clk))
->> +		clk_disable(priv->stmmac_clk);
->>  
->>  	return 0;
->>  }
->> @@ -1925,7 +1928,8 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
->>  		goto error;
->>  	}
->>  
->> -	if (stmmac_clk_get(priv))
->> +	priv->stmmac_clk = clk_get(priv->device, NULL);
->> +	if (IS_ERR(priv->stmmac_clk))
->>  		pr_warning("%s: warning: cannot get CSR clock\n", __func__);
->>  
->>  	/* If a specific clk_csr value is passed from the platform
->> @@ -1934,10 +1938,12 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
->>  	 * set the MDC clock dynamically according to the csr actual
->>  	 * clock input.
->>  	 */
->> -	if (!priv->plat->clk_csr)
->> -		stmmac_clk_csr_set(priv);
->> -	else
->> +	if (!priv->plat->clk_csr) {
->> +		if (!IS_ERR(priv->stmmac_clk))
->> +			stmmac_clk_csr_set(priv);
->> +	} else {
->>  		priv->clk_csr = priv->plat->clk_csr;
->> +	}
->>  
->>  	/* MDIO bus Registration */
->>  	ret = stmmac_mdio_register(ndev);
->> @@ -2020,7 +2026,8 @@ int stmmac_suspend(struct net_device *ndev)
->>  	else {
->>  		stmmac_set_mac(priv->ioaddr, false);
->>  		/* Disable clock in case of PWM is off */
->> -		stmmac_clk_disable(priv);
->> +		if (!IS_ERR(priv->stmmac_clk))
->> +			clk_disable(priv->stmmac_clk);
->>  	}
->>  	spin_unlock(&priv->lock);
->>  	return 0;
->> @@ -2042,9 +2049,9 @@ int stmmac_resume(struct net_device *ndev)
->>  	 * from another devices (e.g. serial console). */
->>  	if (device_may_wakeup(priv->device))
->>  		priv->hw->mac->pmt(priv->ioaddr, 0);
->> -	else
->> +	else if (!IS_ERR(priv->stmmac_clk))
->>  		/* enable the clk prevously disabled */
->> -		stmmac_clk_enable(priv);
->> +			clk_enable(priv->stmmac_clk);
->>  
->>  	netif_device_attach(ndev);
->>  
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+ tools/perf/Makefile                    |    1 
+ tools/perf/arch/x86/Makefile           |   20 ++++++++
+ tools/perf/arch/x86/util/probe-event.c |   84 ++++++++++++++++++++++++++++++++
+ tools/perf/util/include/linux/string.h |    1 
+ tools/perf/util/probe-event.c          |   22 ++++++++
+ tools/perf/util/probe-event.h          |    2 +
+ tools/perf/util/symbol.c               |    2 +
+ tools/perf/util/symbol.h               |    1 
+ 8 files changed, 132 insertions(+), 1 deletions(-)
+ create mode 100644 tools/perf/arch/x86/util/probe-event.c
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 820371f..94879b9 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -61,6 +61,7 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+
+ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
++AWK = awk
+
+ # Additional ARCH settings for x86
+ ifeq ($(ARCH),i386)
+diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+index 744e629..1a7215b 100644
+--- a/tools/perf/arch/x86/Makefile
++++ b/tools/perf/arch/x86/Makefile
+@@ -1,5 +1,25 @@
++inat_tables_script = ../../arch/$(ARCH)/tools/gen-insn-attr-x86.awk
++inat_tables_maps = ../../arch/$(ARCH)/lib/x86-opcode-map.txt
++cmd_inat_tables = $(AWK) -f $(inat_tables_script) $(inat_tables_maps) > $@ || rm -f $@
++
++BASIC_CFLAGS += -I. -I../../arch/$(ARCH)/include
++
+ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/probe-event.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/inat.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/insn.o
++
++$(OUTPUT)arch/$(ARCH)/inat.o:../../arch/$(ARCH)/lib/inat-tables.c
++
++../../arch/$(ARCH)/lib/inat-tables.c: $(inat_tables_script) $(inat_tables_maps)
++	$(cmd_inat_tables)
++
++$(OUTPUT)arch/$(ARCH)/inat.o:../../arch/$(ARCH)/lib/inat.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
++
++$(OUTPUT)arch/$(ARCH)/insn.o:../../arch/$(ARCH)/lib/insn.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
+diff --git a/tools/perf/arch/x86/util/probe-event.c b/tools/perf/arch/x86/util/probe-event.c
+new file mode 100644
+index 0000000..7df9031
+--- /dev/null
++++ b/tools/perf/arch/x86/util/probe-event.c
+@@ -0,0 +1,84 @@
++/*
++ * probe-event.c : x86 specific perf-probe definition
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2011-2012
++ * Authors:
++ *	Prashanth Nageshappa
++ */
++
++#include <util/types.h>
++#include <util/probe-event.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <string.h>
++#include <errno.h>
++#include <asm/insn.h>
++#include <elf.h>
++
++/*
++ * Check if a given offset from start of a function is valid or not
++ */
++bool can_probe(char *name, unsigned long long vaddr, unsigned long offset,
++		u8 class)
++{
++	unsigned long long eaddr, saddr;
++	unsigned long fileoffset, readbytes;
++	int fd = 0;
++	bool ret = false;
++	char *buf = NULL;
++	struct insn insn;
++
++	fd = open(name, O_RDONLY);
++	if (fd == -1) {
++		pr_warning("Failed to open %s: %s\n", name, strerror(errno));
++		return ret;
++	}
++	buf = (char *)malloc(offset + MAX_INSN_SIZE);
++	if (buf == NULL) {
++		pr_warning("Failed to allocate memory");
++		goto out;
++	}
++	fileoffset = lseek(fd, vaddr, SEEK_SET);
++	if (fileoffset != vaddr) {
++		pr_warning("Failed to lseek %s: %s\n", name, strerror(errno));
++		goto out;
++	}
++	saddr = (unsigned long long)buf;
++	eaddr = (unsigned long long)buf + offset;
++	readbytes = read(fd, buf, offset + MAX_INSN_SIZE);
++	if (readbytes != offset + MAX_INSN_SIZE) {
++		pr_warning("Failed to read %s: %s\n", name, strerror(errno));
++		goto out;
++	}
++	while (saddr < eaddr) {
++		insn_init(&insn, (void *)saddr, class == ELFCLASS64);
++		insn_get_length(&insn);
++		saddr += insn.length;
++	}
++	ret = (saddr == eaddr);
++
++out:
++	if (buf)
++		free(buf);
++
++	if (fd)
++		close(fd);
++
++	return ret;
++}
+diff --git a/tools/perf/util/include/linux/string.h b/tools/perf/util/include/linux/string.h
+index 3b2f590..9d5eb21 100644
+--- a/tools/perf/util/include/linux/string.h
++++ b/tools/perf/util/include/linux/string.h
+@@ -1 +1,2 @@
+ #include <string.h>
++#include <perf.h>
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index b7dec82..8f3de61 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -2254,6 +2254,17 @@ int show_available_funcs(const char *target, struct strfilter *_filter,
+ }
+
+ /*
++ * Check if a given offset from start of a function is valid or not
++ */
++bool __attribute__((weak)) can_probe(char *name __used,
++					unsigned long long vaddr __used,
++					unsigned long offset __used,
++					u8 class __used)
++{
++	return true;
++}
++
++/*
+  * uprobe_events only accepts address:
+  * Convert function and any offset to address
+  */
+@@ -2307,7 +2318,16 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
+
+ 	if (map->start > sym->start)
+ 		vaddr = map->start;
+-	vaddr += sym->start + pp->offset + map->pgoff;
++
++	vaddr += sym->start + map->pgoff;
++	if (pp->offset)
++		if ((vaddr + pp->offset > sym->end) ||
++			!can_probe(name, vaddr, pp->offset,
++					map->dso->class)) {
++			pr_err("Failed to insert probe, ensure offset is within function and on insn boundary.\n");
++			return -EINVAL;
++		}
++	vaddr += pp->offset;
+ 	pp->offset = 0;
+
+ 	if (!pev->event) {
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index f9f3de8..af96594 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -137,4 +137,6 @@ extern int show_available_funcs(const char *module, struct strfilter *filter,
+ /* Maximum index number of event-name postfix */
+ #define MAX_EVENT_INDEX	1024
+
++extern bool can_probe(char *name, unsigned long long vaddr,
++			unsigned long offset, u8 class);
+ #endif /*_PROBE_EVENT_H */
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index caaf75a..be58b06 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1184,6 +1184,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 		goto out_close;
+ 	}
+
++	dso->class = gelf_getclass(elf);
+ 	if (gelf_getehdr(elf, &ehdr) == NULL) {
+ 		pr_debug("%s: cannot get elf header.\n", __func__);
+ 		goto out_elf_end;
+@@ -1326,6 +1327,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 				curr_dso->kernel = dso->kernel;
+ 				curr_dso->long_name = dso->long_name;
+ 				curr_dso->long_name_len = dso->long_name_len;
++				curr_dso->class = dso->class;
+ 				curr_map = map__new2(start, curr_dso,
+ 						     map->type);
+ 				if (curr_map == NULL) {
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 9e7742c..1d0cc28 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -174,6 +174,7 @@ struct dso {
+ 	char	 	 *long_name;
+ 	u16		 long_name_len;
+ 	u16		 short_name_len;
++	u8		 class;
+ 	char		 name[0];
+ };
+
 
