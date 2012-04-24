@@ -1,71 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab2DXIfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 04:35:13 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:52580 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755270Ab2DXIfK (ORCPT
+	id S932120Ab2DXIgM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 04:36:12 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.182]:57915 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065Ab2DXIgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 04:35:10 -0400
-Date: Tue, 24 Apr 2012 16:36:06 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Rob Lee <rob.lee@linaro.org>, Sascha Hauer <s.hauer@pengutronix.de>,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
-Message-ID: <20120424083603.GE26306@S2101-09.ap.freescale.net>
-References: <CAMXH7KE2RtdNy3G61guZb2uWy3rn267Z3eEVEgN5e==tHHsiuA@mail.gmail.com>
- <20120423051813.GM26306@S2101-09.ap.freescale.net>
- <20120423062739.GX3852@pengutronix.de>
- <20120423065259.GR26306@S2101-09.ap.freescale.net>
- <20120423065623.GA3852@pengutronix.de>
- <20120423071013.GS26306@S2101-09.ap.freescale.net>
- <20120423074856.GU20478@pengutronix.de>
- <CAMXH7KH1pwh7hJ=T30zxcWcx19wjXvr6Ff4OLy7fzqY5p79Fwg@mail.gmail.com>
- <20120424013841.GB26306@S2101-09.ap.freescale.net>
- <20120424075426.GP24211@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120424075426.GP24211@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 24 Apr 2012 04:36:08 -0400
+X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
+X-RZG-CLASS-ID: mo05
+Message-Id: <201204240835.q3O8ZO5h009576@gatekeeper.vosshq.de>
+From: Nikolaus Voss <n.voss@weinmann.de>
+Date: Tue, 24 Apr 2012 10:29:56 +0200
+Subject: [PATCH v3] drivers/rtc/rtc-m41t93.c: don't let get_time() reset
+ M41T93_FLAG_OF
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Cc: akpm@linux-foundation.org, a.zummo@towertech.it, grant.likely@secretlab.ca
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 08:54:26AM +0100, Russell King - ARM Linux wrote:
-> On Tue, Apr 24, 2012 at 09:38:43AM +0800, Shawn Guo wrote:
-> > On Mon, Apr 23, 2012 at 10:45:02AM -0500, Rob Lee wrote:
-> > > >> Let me try last time.  What about having a late_initcall hook in
-> > > >> machine_desc?
-> > > >
-> > > > Also fine with me.
-> > > >
-> > > 
-> > > Shall I add Shawn's patch to my imx cpuidle patchset or should the
-> > > arch/arm/kernel/setup.c and arch.h changes be submitted separately?
-> > > If separately, Shawn, did you want to submit this patch or should I?
-> > > 
-> > Strange.  Russell is not in the Cc list.  I remember I added Russell
-> > into Cc when I propose the idea.  Added him again.
-> 
-> I didn't see any message in this thread cc'd to me, but that's not to
-> say I hadn't already read this patch.  I don't have any comment against
-> it, but I do wonder how often this hook would be used.
-> 
-I guess mach-* that use common cpuidle will likely need this hook.
+If the rtc reports the time might be invalid due to oscillator
+failure, M41T93_FLAG_OF flag must not be reset by get_time() as
+the read operation doesn't make the time valid.
 
-> We do seem to have quite a number of late_initcall()s in arch/arm/mach-*,
-> so it seems to be a good idea - provided someone's willing to convert all
-> those users of late_initcall()s.
+Without this patch, only the first get_time() reported an invalid
+time, the second get_time() reported a valid time althought the
+reported time is probably wrong due to oscillator failure.
 
-Agreed.  The late_initcall()s in arch/arm/mach-* will not scale for
-long time, since we are moving toward single build.
+Instead of resetting in get_time(), with this patch M41T93_FLAG_OF
+is reset in set_time() when a valid time is to be written.
 
+Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+---
+v3: removed accidentally included i2c patch
+v2: better commit description
+
+ drivers/rtc/rtc-m41t93.c |   46 +++++++++++++++++++++++++++-------------------
+ 1 files changed, 27 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/rtc/rtc-m41t93.c b/drivers/rtc/rtc-m41t93.c
+index ef71132..f19f45c 100644
+--- a/drivers/rtc/rtc-m41t93.c
++++ b/drivers/rtc/rtc-m41t93.c
+@@ -48,6 +48,7 @@ static inline int m41t93_set_reg(struct spi_device *spi, u8 addr, u8 data)
+ static int m41t93_set_time(struct device *dev, struct rtc_time *tm)
+ {
+ 	struct spi_device *spi = to_spi_device(dev);
++	int tmp;
+ 	u8 buf[9] = {0x80};        /* write cmd + 8 data bytes */
+ 	u8 * const data = &buf[1]; /* ptr to first data byte */
+ 
+@@ -62,6 +63,30 @@ static int m41t93_set_time(struct device *dev, struct rtc_time *tm)
+ 		return -EINVAL;
+ 	}
+ 
++	tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
++	if (tmp < 0)
++		return tmp;
++
++	if (tmp & M41T93_FLAG_OF) {
++		dev_warn(&spi->dev, "OF bit is set, resetting.\n");
++		m41t93_set_reg(spi, M41T93_REG_FLAGS, tmp & ~M41T93_FLAG_OF);
++
++		tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
++		if (tmp < 0) {
++			return tmp;
++		} else if (tmp & M41T93_FLAG_OF) {
++			/* OF cannot be immediately reset: oscillator has to be
++			 * restarted. */
++			u8 reset_osc = buf[M41T93_REG_ST_SEC] | M41T93_FLAG_ST;
++
++			dev_warn(&spi->dev,
++				 "OF bit is still set, kickstarting clock.\n");
++			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
++			reset_osc &= ~M41T93_FLAG_ST;
++			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
++		}
++	}
++
+ 	data[M41T93_REG_SSEC]		= 0;
+ 	data[M41T93_REG_ST_SEC]		= bin2bcd(tm->tm_sec);
+ 	data[M41T93_REG_MIN]		= bin2bcd(tm->tm_min);
+@@ -89,10 +114,7 @@ static int m41t93_get_time(struct device *dev, struct rtc_time *tm)
+ 	   1. halt bit (HT) is set: the clock is running but update of readout
+ 	      registers has been disabled due to power failure. This is normal
+ 	      case after poweron. Time is valid after resetting HT bit.
+-	   2. oscillator fail bit (OF) is set. Oscillator has be stopped and
+-	      time is invalid:
+-	      a) OF can be immeditely reset.
+-	      b) OF cannot be immediately reset: oscillator has to be restarted.
++	   2. oscillator fail bit (OF) is set: time is invalid.
+ 	*/
+ 	tmp = spi_w8r8(spi, M41T93_REG_ALM_HOUR_HT);
+ 	if (tmp < 0)
+@@ -110,21 +132,7 @@ static int m41t93_get_time(struct device *dev, struct rtc_time *tm)
+ 
+ 	if (tmp & M41T93_FLAG_OF) {
+ 		ret = -EINVAL;
+-		dev_warn(&spi->dev, "OF bit is set, resetting.\n");
+-		m41t93_set_reg(spi, M41T93_REG_FLAGS, tmp & ~M41T93_FLAG_OF);
+-
+-		tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
+-		if (tmp < 0)
+-			return tmp;
+-		else if (tmp & M41T93_FLAG_OF) {
+-			u8 reset_osc = buf[M41T93_REG_ST_SEC] | M41T93_FLAG_ST;
+-
+-			dev_warn(&spi->dev,
+-				 "OF bit is still set, kickstarting clock.\n");
+-			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
+-			reset_osc &= ~M41T93_FLAG_ST;
+-			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
+-		}
++		dev_warn(&spi->dev, "OF bit is set, write time to restart.\n");
+ 	}
+ 
+ 	if (tmp & M41T93_FLAG_BL)
 -- 
-Regards,
-Shawn
+1.7.5.4
+
