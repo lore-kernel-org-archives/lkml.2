@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab2DXWe6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:34:58 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
+	id S932511Ab2DXWf2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:35:28 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932406Ab2DXWew (ORCPT
+	with ESMTP id S932495Ab2DXWfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:34:52 -0400
-Message-Id: <20120424223243.633089162@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:35:23 -0400
+Message-Id: <20120424223244.451631409@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:00 -0700
+Date: Tue, 24 Apr 2012 15:33:10 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
-Subject: [ 19/62] uwb: fix use of del_timer_sync() in interrupt
+        alan@lxorguk.ukuu.org.uk,
+        Alberto Lago Ballesteros <saniukeokusainaya@gmail.com>,
+        Adrian <agib@gmx.de>, Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [ 29/62] staging: r8712u: Fix regression caused by commit 8c213fa
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,61 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 9426cd05682745d1024dbabdec5631309bd2f480 upstream.
+commit 2080913e017ab9f88379d93fd09546ad95faf87b upstream.
 
-del_timer_sync() cannot be used in interrupt.
-Replace it with del_timer() and a flag
+In commit 8c213fa "staging: r8712u: Use asynchronous firmware loading",
+the command to release the firmware was placed in the wrong routine.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+In combination with the bug introduced in commit a5ee652 "staging: r8712u:
+Interface-state not fully tracked", the driver attempts to upload firmware
+that had already been released. This bug is the source of one of the
+problems in https://bugs.archlinux.org/task/27996#comment89833.
+
+Tested-by: Alberto Lago Ballesteros <saniukeokusainaya@gmail.com>
+Tested-by: Adrian <agib@gmx.de>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/uwb/neh.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/staging/rtl8712/os_intfs.c |    3 ---
+ drivers/staging/rtl8712/usb_intf.c |    5 +++++
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/uwb/neh.c
-+++ b/drivers/uwb/neh.c
-@@ -107,6 +107,7 @@ struct uwb_rc_neh {
- 	u8 evt_type;
- 	__le16 evt;
- 	u8 context;
-+	u8 completed;
- 	uwb_rc_cmd_cb_f cb;
- 	void *arg;
+--- a/drivers/staging/rtl8712/os_intfs.c
++++ b/drivers/staging/rtl8712/os_intfs.c
+@@ -476,9 +476,6 @@ static int netdev_close(struct net_devic
+ 	r8712_free_assoc_resources(padapter);
+ 	/*s2-4.*/
+ 	r8712_free_network_queue(padapter);
+-	release_firmware(padapter->fw);
+-	/* never exit with a firmware callback pending */
+-	wait_for_completion(&padapter->rtl8712_fw_ready);
+ 	return 0;
+ }
  
-@@ -409,6 +410,7 @@ static void uwb_rc_neh_grok_event(struct
- 	struct device *dev = &rc->uwb_dev.dev;
- 	struct uwb_rc_neh *neh;
- 	struct uwb_rceb *notif;
-+	unsigned long flags;
+--- a/drivers/staging/rtl8712/usb_intf.c
++++ b/drivers/staging/rtl8712/usb_intf.c
+@@ -30,6 +30,7 @@
  
- 	if (rceb->bEventContext == 0) {
- 		notif = kmalloc(size, GFP_ATOMIC);
-@@ -422,7 +424,11 @@ static void uwb_rc_neh_grok_event(struct
- 	} else {
- 		neh = uwb_rc_neh_lookup(rc, rceb);
- 		if (neh) {
--			del_timer_sync(&neh->timer);
-+			spin_lock_irqsave(&rc->neh_lock, flags);
-+			/* to guard against a timeout */
-+			neh->completed = 1;
-+			del_timer(&neh->timer);
-+			spin_unlock_irqrestore(&rc->neh_lock, flags);
- 			uwb_rc_neh_cb(neh, rceb, size);
- 		} else
- 			dev_warn(dev, "event 0x%02x/%04x/%02x (%zu bytes): nobody cared\n",
-@@ -568,6 +574,10 @@ static void uwb_rc_neh_timer(unsigned lo
- 	unsigned long flags;
+ #include <linux/usb.h>
+ #include <linux/module.h>
++#include <linux/firmware.h>
  
- 	spin_lock_irqsave(&rc->neh_lock, flags);
-+	if (neh->completed) {
-+		spin_unlock_irqrestore(&rc->neh_lock, flags);
-+		return;
-+	}
- 	if (neh->context)
- 		__uwb_rc_neh_rm(rc, neh);
- 	else
+ #include "osdep_service.h"
+ #include "drv_types.h"
+@@ -621,6 +622,10 @@ static void r871xu_dev_remove(struct usb
+ 	struct _adapter *padapter = netdev_priv(pnetdev);
+ 	struct usb_device *udev = interface_to_usbdev(pusb_intf);
+ 
++	if (padapter->fw_found)
++		release_firmware(padapter->fw);
++	/* never exit with a firmware callback pending */
++	wait_for_completion(&padapter->rtl8712_fw_ready);
+ 	usb_set_intfdata(pusb_intf, NULL);
+ 	if (padapter) {
+ 		if (drvpriv.drv_registered == true)
 
 
