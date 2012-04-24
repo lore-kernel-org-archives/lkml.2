@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab2DXQQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 12:16:56 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:46933 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756064Ab2DXQQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 12:16:55 -0400
-Message-ID: <4F96D1F6.80701@msgid.tls.msk.ru>
-Date: Tue, 24 Apr 2012 20:16:54 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+	id S1756669Ab2DXQRy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 12:17:54 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:57702 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755538Ab2DXQRx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 12:17:53 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ian Kent <raven@themaw.net>, "stable@kernel.org" <stable@kernel.org>,
-        autofs@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Breaking userspace? Re: 3.0.24 broke aufofs on mixed 32/64bit
- environment
-References: <4F94222C.6080608@msgid.tls.msk.ru> <1335172741.2226.10.camel@perseus.themaw.net> <4F958352.7050106@msgid.tls.msk.ru> <4F95897B.2040103@msgid.tls.msk.ru> <4F959A5A.8070907@msgid.tls.msk.ru> <CA+55aFyQ4y9jyRXyejKwtf3yXJX52hQkLuwJ5=jfQM+yLkBNMw@mail.gmail.com> <4F96D0E7.9060000@msgid.tls.msk.ru>
-In-Reply-To: <4F96D0E7.9060000@msgid.tls.msk.ru>
-X-Enigmail-Version: 1.4
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [14.97.114.93]
+In-Reply-To: <393682CA-A7A8-4962-B156-3EBDF5B41E36@gmail.com>
+References: <CAAhSdy12KufzNtrf6wYY7rK0LZMPC-_-4N+p4JwJsV5MB6HTDg@mail.gmail.com>
+	<393682CA-A7A8-4962-B156-3EBDF5B41E36@gmail.com>
+Date: Tue, 24 Apr 2012 21:47:52 +0530
+Message-ID: <CAAhSdy3m1eWiWMNA0UQLJHVkwqd3W4hwEAH2jdiLNur2b8QiuQ@mail.gmail.com>
+Subject: Re: [Android-virt] [ANNOUNCE] [OFFTOPIC] Xvisor ARM with and/or
+ without virtualization extensions
+From: Anup Patel <anup@brainfault.org>
+To: Alexander Golec <thejfasi@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        android-virt@lists.cs.columbia.edu, beagleboard@googlegroups.com,
+        xen-arm@lists.xensource.com
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.04.2012 20:12, Michael Tokarev wrote:
-> On 24.04.2012 19:08, Linus Torvalds wrote:
+Hi Alex,
 
->>> Kernel has been shipping with this brokeness for quite
->>> some time, namely, since introduction of autofs4, dated
->>> Mon Mar 27 01:14:55 2006 -0800 (commit 5c0a32fc2cd0).
->>
+Network Virtualization and Block Device Virtualization are at top most
+priority for Xvisor right now. Couple of folks have already started
+working on Network virtualization but Block Device Virtualization
+still unexplored.
 
->> Actually, that's just not true. The *main* users of the interface seem
->> to have never fixed anything. As far as I know, neither the upstream
->> autofs tools nor several of the big distributions ever had patches to
->> make 32-bit autofs work with the old broken 64-bit compat layer.
-[]
-> I don't know how old this code is, but it definitely is in the
-> 5.0.1 upstream tarball, and the file there is dated
-> Feb-20, 2007 - at least 3 years after the initial bug in kernel.
+We would be glad to have your contributions. Do join our xvisor-devel
+googlegroup.
 
-I meant to say "about a year after the initial bug in kernel".
+Thanks & Regards,
+Anup Patel
 
-And I think it was me who found the original issue, -- i mean,
-discovered that it does not work, not found the real bug - but
-I don't remember anymore.  This stuff looks very familiar for
-some reason however... ;)
-
-Thanks,
-
-/mjt
+On Tue, Apr 24, 2012 at 7:24 PM, Alexander Golec <thejfasi@gmail.com> wrote:
+> Hi,
+>
+> I'm a graduating senior at Columbia University, and I have spent the past semester working on the KVM on ARM project, specifically on block IO virtualization support. I was wondering if you have any need for an implementation of IO virtualization for block and network operations. If so, then I would be glad to submit a pull request further down the line.
+>
+> Alex
+>
