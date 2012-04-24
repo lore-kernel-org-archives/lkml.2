@@ -1,114 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab2DXQ1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 12:27:51 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:44924 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756072Ab2DXQ1t (ORCPT
+	id S1756693Ab2DXQ2m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 12:28:42 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35175 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755791Ab2DXQ2l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 12:27:49 -0400
-Date: Tue, 24 Apr 2012 18:27:43 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: [EDAC PATCH v13 6/7] edac.h: Prepare to handle with generic
- layers
-Message-ID: <20120424162743.GU11559@aftab.osrc.amd.com>
-References: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
- <1334607133-30039-7-git-send-email-mchehab@redhat.com>
- <20120423174955.GH6147@aftab.osrc.amd.com>
- <4F959FDE.2070304@redhat.com>
- <20120424104059.GA11559@aftab.osrc.amd.com>
- <4F9692AD.8090000@redhat.com>
- <20120424125538.GC11559@aftab.osrc.amd.com>
- <4F96A696.40308@redhat.com>
- <20120424133242.GI11559@aftab.osrc.amd.com>
- <4F96B783.6060101@redhat.com>
+	Tue, 24 Apr 2012 12:28:41 -0400
+Date: Tue, 24 Apr 2012 12:23:22 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Lin Ming <mlin@ss.pku.edu.cn>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        Andrew Cooper <Andrew.Cooper3@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/apic: implement io apic read with
+ hypercall
+Message-ID: <20120424162321.GH3213@phenom.dumpdata.com>
+References: <1334913957.2863.1.camel@hp6530s>
+ <4F913340.4000202@citrix.com>
+ <1334920396.2863.16.camel@hp6530s>
+ <1334925508.28331.63.camel@zakaz.uk.xensource.com>
+ <20120420164150.GC31062@phenom.dumpdata.com>
+ <CAF1ivSamaYzQDwjFqRGrnQ+fCr0D4vLGuG4JRBZ3_GD_y8yY=A@mail.gmail.com>
+ <20120423151123.GC24481@phenom.dumpdata.com>
+ <CAF1ivSY1GAkqU2gN0P22Tb0pmwagam5UUVMABSgnoH3+C+TY+A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4F96B783.6060101@redhat.com>
+In-Reply-To: <CAF1ivSY1GAkqU2gN0P22Tb0pmwagam5UUVMABSgnoH3+C+TY+A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 11:24:03AM -0300, Mauro Carvalho Chehab wrote:
-> Yes (well, except that Nehalem has also a concept of "virtual channel", so
-> calling it "virtual" can mislead into a different view).
-
-No, it cannot. It is a very simple question: Am I looking at virtual
-slots/channels or not, when I'm looking at edac-ctl output?
-
-[..]
-
-> > I hope you can understand my confusion now:
-> > 
-> > On the one hand, there are the physical slots where the DIMMs are
-> > sticked into.
-> > 
-> > OTOH, there are the slots==ranks which the memory controllers use to
-> > talk to the DIMMs.
+On Tue, Apr 24, 2012 at 10:43:53PM +0800, Lin Ming wrote:
+> On Mon, Apr 23, 2012 at 11:11 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> >> >> > How about return -1 on error?
+> >> >> > The calling function can check -1 for error.
+> >> >>
+> >> >> Isn't -1 potentially (at least theoretically) a valid value to read from
+> >> >> one of these registers?
+> >> >
+> >> > Yeah, but then we are back to crashing at bootup (with dom0) :-)
+> >> >
+> >> > Perhaps the fallback is to emulate (so retain some of the original code)
+> >> > as we have been since .. uh 3.0?
+> >>
+> >> Do you mean the return value of io_apic_read in 3.0?
+> >
+> > No. I meant that we would continue to emulate. The improvement
+> > is that now we do:
+> >
+> >       if (reg == 0x1)
+> >               return 0x00170020;
+> >       else if (reg == 0x0)
+> >               return apic << 24;
+> >
+> > instead of 0xfdfdfdfd.
+> >
+> >> It's 0xffffffff.
+> >
+> > Now it is 0xfdfdfdfd.
+> >
+> > I am suggesting that instead of BUG_ON(), we fallback to do returning
+> > an emulatated IO_APIC values - like the ones that this original patch
+> > cooked up..
 > 
-> This only applies to amd64 and other csrows-based memory controllers.
+> But we still need to return some value if the register is not emulated.
+
+Right. 0xfd;
 > 
-> A memory controller like the one at Nehalem abstracts csrows (I suspect
-> that they have internally something functionally similar to a FB-DIMM
-> AMB internally). They do memory interleaving between the memory channels
-> in order to produce a cachesize bigger than 64 bits, but they don't
+> How about below?
 
-You mean cacheline here.
 
-> actually care about how many ranks are there on each DIMM.
-
-This cannot be right - you need the chip select to talk to a rank.
-This is basic DDR functionality.
-
-I can imagine that they're doing some tricks like channel/chip
-select/memory controller interleaving.
-
-In the end of the day, it is smallest row that gives you 64 bits of
-data.
-
-@Tony: hey Tony, can you point us to an Intel document explaining how
-Sandy Bridge or NH or one of the new ones does the memory addressing wrt
-ranks, channels etc? Thanks.
-
-[..]
-
-> No. As far as I can tell, they can have 9 quad-ranked DIMMs (the machines
-> I've looked so far are all equipped with single rank memories, so I don't 
-> have a real scenario with 2R or 4R for Nehalem yet).
+Almost perfect.
 > 
-> At Sandy Bridge-EP (E. g. Intel E5 CPUs), we have one machine fully equipped
-> with dual rank memories. The number of ranks there is just a DIMM property.
+> unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
+> {
+>         struct physdev_apic apic_op;
+>         int ret;
 > 
-> # ./edac-ctl --layout
->        +-----------------------------------------------------------------------------------------------+
->        |                      mc0                      |                      mc1                      |
->        | channel0  | channel1  | channel2  | channel3  | channel0  | channel1  | channel2  | channel3  |
-> -------+-----------------------------------------------------------------------------------------------+
-> slot2: |     0 MB  |     0 MB  |     0 MB  |     0 MB  |     0 MB  |     0 MB  |     0 MB  |     0 MB  |
-> slot1: |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |
-> slot0: |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |
-> -------+-----------------------------------------------------------------------------------------------+
+>         apic_op.apic_physbase = mpc_ioapic_addr(apic);
+>         apic_op.reg = reg;
+>         ret = HYPERVISOR_physdev_op(PHYSDEVOP_apic_read, &apic_op);
+>         if (!ret)
+>                 return apic_op.value;
 > 
-> (this machine doesn't have physical DIMM sockets for slot#2)
+>         /* emulate register */
+>         if (reg == 0x1)
+>                 return 0x00170020;
+>         else if (reg == 0x0)
+>                 return apic << 24;
+>         else
+>                 return -1;
 
-Ok, I can count 8 2R DIMMs here and each rank or slot in your
-nomenclature is 4G. slot#2 has to be something virtual since each rank
-occupies one slot, i.e. slot0 and slot1 on a channel.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+	return 0xfd;
+> }
