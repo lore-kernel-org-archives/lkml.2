@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758153Ab2DXWul (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:50:41 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23243 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757457Ab2DXWuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:50:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="136324504"
-Subject: Re: [PATCH 1/1] x86: Use x2apic physical mode based on FADT setting
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Greg Pearson <greg.pearson@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 24 Apr 2012 15:53:26 -0700
-In-Reply-To: <1335307115-15480-1-git-send-email-greg.pearson@hp.com>
-References: <1335307115-15480-1-git-send-email-greg.pearson@hp.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1335308006.28674.266.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1758195Ab2DXWu5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:50:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758097Ab2DXWgb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 18:36:31 -0400
+Message-Id: <20120424223246.332226404@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Tue, 24 Apr 2012 15:33:32 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, AceLan Kao <acelan.kao@canonical.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [ 51/62] dell-laptop: touchpad LED should persist its status after S3
+In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-24 at 16:38 -0600, Greg Pearson wrote:
-> Provide systems that do not support x2apic cluster mode
-> a mechanism to select x2apic physical mode using the
-> FADT FORCE_APIC_PHYSICAL_DESTINATION_MODE bit.
-> 
-> Signed-off-by: Greg Pearson <greg.pearson@hp.com>
-> ---
->  arch/x86/kernel/apic/x2apic_phys.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-> index 8a778db..c372926 100644
-> --- a/arch/x86/kernel/apic/x2apic_phys.c
-> +++ b/arch/x86/kernel/apic/x2apic_phys.c
-> @@ -6,6 +6,10 @@
->  #include <linux/init.h>
->  #include <linux/dmar.h>
->  
-> +#ifdef CONFIG_ACPI
-> +#include <linux/acpi.h>
-> +#endif
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-dmar.h already includes acpi.h
+------------------
 
-> +
->  #include <asm/smp.h>
->  #include <asm/x2apic.h>
->  
-> @@ -24,6 +28,14 @@ static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
->  {
->  	if (x2apic_phys)
->  		return x2apic_enabled();
-> +#ifdef CONFIG_ACPI
-> +	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
-> +		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
-> +		x2apic_enabled()) {
-> +		printk(KERN_DEBUG "System requires x2apic physical mode\n");
-> +		return 1;
-> +	}
-> +#endif
+From: AceLan Kao <acelan.kao@canonical.com>
 
-x2apic is already dependent on irq-remapping which depends on ACPI. So I
-think you can do away with those ifdef CONFIG_ACPI.
+commit 2d5de9e84928e35b4d9b46b4d8d5dcaac1cff1fa upstream.
 
-Also, which system requires this? If you can include the information in
-the changelog that will be great.
+Touchpad LED will not turn on after S3, it will make the touchpad status
+doesn't consist with the LED.
+By adding one flag to let the LED device restore it's status.
 
-thanks,
-suresh
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/platform/x86/dell-laptop.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -642,6 +642,7 @@ static void touchpad_led_set(struct led_
+ static struct led_classdev touchpad_led = {
+ 	.name = "dell-laptop::touchpad",
+ 	.brightness_set = touchpad_led_set,
++	.flags = LED_CORE_SUSPENDRESUME,
+ };
+ 
+ static int __devinit touchpad_led_init(struct device *dev)
+
 
