@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964873Ab2DXWlc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:41:32 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
+	id S964851Ab2DXWly (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:41:54 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964804Ab2DXWi7 (ORCPT
+	with ESMTP id S964813Ab2DXWiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:38:59 -0400
-Message-Id: <20120424223256.581081032@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:38:50 -0400
+Message-Id: <20120424223256.311669106@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:29 -0700
+Date: Tue, 24 Apr 2012 15:33:26 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: [ 36/42] nfsd: fix compose_entry_fh() failure exits
+        alan@lxorguk.ukuu.org.uk, Teika Kazura <teika@lavabit.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 33/42] rt2x00: Add USB device ID of Buffalo WLI-UC-GNHP.
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,91 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Gertjan van Wingerde <gwingerde@gmail.com>
 
-commit efe39651f08813180f37dc508d950fc7d92b29a8 upstream.
+commit c18b7806e4f3373b2f296a65fb19251a3b49a532 upstream.
 
-Restore the original logics ("fail on mountpoints, negatives and in
-case of fh_compose() failures").  Since commit 8177e (nfsd: clean up
-readdirplus encoding) that got broken -
-	rv = fh_compose(fhp, exp, dchild, &cd->fh);
-	if (rv)
-	       goto out;
-	if (!dchild->d_inode)
-		goto out;
-	rv = 0;
-out:
-is equivalent to
-	rv = fh_compose(fhp, exp, dchild, &cd->fh);
-out:
-and the second check has no effect whatsoever...
+This is reported to be an RT3070 based device.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Reported-by: Teika Kazura <teika@lavabit.com>
+Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs3xdr.c |   22 ++++++++--------------
- 1 file changed, 8 insertions(+), 14 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nfsd/nfs3xdr.c
-+++ b/fs/nfsd/nfs3xdr.c
-@@ -803,13 +803,13 @@ encode_entry_baggage(struct nfsd3_readdi
- 	return p;
- }
- 
--static int
-+static __be32
- compose_entry_fh(struct nfsd3_readdirres *cd, struct svc_fh *fhp,
- 		const char *name, int namlen)
- {
- 	struct svc_export	*exp;
- 	struct dentry		*dparent, *dchild;
--	int rv = 0;
-+	__be32 rv = nfserr_noent;
- 
- 	dparent = cd->fh.fh_dentry;
- 	exp  = cd->fh.fh_export;
-@@ -817,26 +817,20 @@ compose_entry_fh(struct nfsd3_readdirres
- 	if (isdotent(name, namlen)) {
- 		if (namlen == 2) {
- 			dchild = dget_parent(dparent);
--			if (dchild == dparent) {
--				/* filesystem root - cannot return filehandle for ".." */
--				dput(dchild);
--				return -ENOENT;
--			}
-+			/* filesystem root - cannot return filehandle for ".." */
-+			if (dchild == dparent)
-+				goto out;
- 		} else
- 			dchild = dget(dparent);
- 	} else
- 		dchild = lookup_one_len(name, dparent, namlen);
- 	if (IS_ERR(dchild))
--		return -ENOENT;
--	rv = -ENOENT;
-+		return rv;
- 	if (d_mountpoint(dchild))
- 		goto out;
--	rv = fh_compose(fhp, exp, dchild, &cd->fh);
--	if (rv)
--		goto out;
- 	if (!dchild->d_inode)
- 		goto out;
--	rv = 0;
-+	rv = fh_compose(fhp, exp, dchild, &cd->fh);
- out:
- 	dput(dchild);
- 	return rv;
-@@ -845,7 +839,7 @@ out:
- static __be32 *encode_entryplus_baggage(struct nfsd3_readdirres *cd, __be32 *p, const char *name, int namlen)
- {
- 	struct svc_fh	fh;
--	int err;
-+	__be32 err;
- 
- 	fh_init(&fh, NFS3_FHSIZE);
- 	err = compose_entry_fh(cd, &fh, name, namlen);
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -824,6 +824,7 @@ static struct usb_device_id rt2800usb_de
+ 	{ USB_DEVICE(0x050d, 0x935b) },
+ 	/* Buffalo */
+ 	{ USB_DEVICE(0x0411, 0x00e8) },
++	{ USB_DEVICE(0x0411, 0x0158) },
+ 	{ USB_DEVICE(0x0411, 0x016f) },
+ 	{ USB_DEVICE(0x0411, 0x01a2) },
+ 	/* Corega */
 
 
