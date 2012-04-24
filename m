@@ -1,108 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab2DXTCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 15:02:12 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39575 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755888Ab2DXTCL (ORCPT
+	id S1757241Ab2DXTEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 15:04:31 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33342 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757036Ab2DXTEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 15:02:11 -0400
-Date: Tue, 24 Apr 2012 12:01:52 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] Fix overflow in vma length when copying mmap on clone
-In-Reply-To: <1335289853-2923-1-git-send-email-siddhesh.poyarekar@gmail.com>
-Message-ID: <alpine.LSU.2.00.1204241148390.18455@eggly.anvils>
-References: <1335289853-2923-1-git-send-email-siddhesh.poyarekar@gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 24 Apr 2012 15:04:30 -0400
+Message-ID: <4F96F93B.2020603@wwwdotorg.org>
+Date: Tue, 24 Apr 2012 13:04:27 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Dong Aisheng <b29396@freescale.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, s.hauer@pengutronix.de
+Subject: Re: [PATCH v2 2/2] pinctrl: remove the old pinctrl dt dummy state
+ interfaces
+References: <1335260023-15859-1-git-send-email-b29396@freescale.com> <1335260023-15859-2-git-send-email-b29396@freescale.com>
+In-Reply-To: <1335260023-15859-2-git-send-email-b29396@freescale.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Apr 2012, Siddhesh Poyarekar wrote:
-> The vma length in dup_mmap is calculated and stored in a unsigned int,
-> which is insufficient and hence overflows for very large maps (beyond
-> 16TB). The following program demonstrates this:
+On 04/24/2012 03:33 AM, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
 > 
-> \#include <stdio.h>
-> \#include <unistd.h>
-> \#include <sys/mman.h>
-> 
-> \#define GIG 1024 * 1024 * 1024L
-> \#define EXTENT 16393
-> 
-> int main(void)
-> {
->         int i, r;
->         void *m;
->         char buf[1024];
-> 
->         for (i = 0; i < EXTENT; i++) {
->                 m = mmap(NULL, (size_t) 1 * 1024 * 1024 * 1024L,
->                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-> 
->                 if (m == (void *)-1)
->                         printf("MMAP Failed: %d\n", m);
->                 else
->                         printf("%d : MMAP returned %p\n", i, m);
-> 
->                 r = fork();
-> 
->                 if (r == 0) {
->                         printf("%d: successed\n", i);
->                         return 0;
->                 } else if (r < 0)
->                         printf("FORK Failed: %d\n", r);
->                 else if (r > 0)
->                         wait(NULL);
->         }
->         return 0;
-> }
-> 
-> This trivial patch increases the storage size of the result to
-> unsigned long, which should be sufficient for storing the difference
-> between addresses.
-> 
-> Signed-off-by: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+> We already have pinctrl_provide_dummies, so remove the old
+> one to avoid diversity.
 
-Good catch, thank you, remarkable that's survived for so long.
-For the patch,
+Nak, if I may be so bold.
 
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: stable@vger.kernel.org
+> Hi Stephen,
+> I removed the old dt pinctrl dummy sate interface.
+> The purpose is to get a unified way to handle pinctrl dummy state.
 
-But I didn't (try very hard to) work out what your demo program shows
-- though I am amused by your sense of humour in using %d for a pointer
-there!  I wonder what setting of /proc/sys/vm/overcommit_memory is
-needed for it to behave as you intend?
+Well, there are two completely different scenarios being covered here,
+and I don't think it makes sense to unify them:
 
-Personally, I wouldn't bother with the demo and describing it more fully,
-I'd just be glad to get that fix in at last.
+1) Platform under development without complete pinctrl support yet
+(covered by patch 1 in this series).
 
-> ---
->  kernel/fork.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index b9372a0..7acaee1 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -355,7 +355,8 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
->  		}
->  		charge = 0;
->  		if (mpnt->vm_flags & VM_ACCOUNT) {
-> -			unsigned int len = (mpnt->vm_end - mpnt->vm_start) >> PAGE_SHIFT;
-> +			unsigned long len;
-> +			len = (mpnt->vm_end - mpnt->vm_start) >> PAGE_SHIFT;
->  			if (security_vm_enough_memory_mm(oldmm, len)) /* sic */
->  				goto fail_nomem;
->  			charge = len;
-> -- 
-> 1.7.7.6
+2) Platform with complete pinctrl support, but using some common HW
+modules whose drivers need to use pinctrl on some platforms, but not on
+all, so that dummy states are required. This patch removes the ability
+to correctly represent this situation.
+
+> One disadvantage is that we may not meet the requirement
+> that for platform which only want to use dummy state for some specific
+> devices while not affect others. For this case, it may reply on users
+> to refer to the pinctrl debug message to see which devices are using
+> dummy state while which are not.
+> However, if keep it we may have two type of user interface to handle
+> dummy state which i'm not sure is a good thing. And as regulator also
+> does not provide per device dummies, so i removed it first.
+
+Well, first I'd say that if regulator didn't have this feature, it'd
+probably just be a missing feature in regulator, and not a good
+justification for removing the feature from pinctrl.
+
+But that said, regulator does in fact have this feature - it's called
+the fixed regulator.
+
+> What's your suggestion on it?
+> I reform this clean up into a separate patch, if you do not like it,
+> we can drop it later.
+
+I'd love to drop it, please.
