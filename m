@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab2DXWhl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:37:41 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932760Ab2DXWhi (ORCPT
+	id S932823Ab2DXWh4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:37:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932768Ab2DXWhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:37:38 -0400
-Message-Id: <20120424223254.419272643@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:37:52 -0400
+Message-Id: <20120424223253.987401789@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:04 -0700
+Date: Tue, 24 Apr 2012 15:32:59 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
-Subject: [ 11/42] uwb: fix error handling
+        alan@lxorguk.ukuu.org.uk,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 06/42] xen/gntdev: do not set VM_PFNMAP
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,31 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 5bd7b419ef2eb4989b207753e088c3437159618a upstream.
+commit e8e937be971d706061dc56220ff3605ab77622a7 upstream.
 
-Fatal errors such as a device disconnect must not trigger
-error handling. The error returns must be checked.
+Since we are using the m2p_override we do have struct pages
+corresponding to the user vma mmap'ed by gntdev.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Removing the VM_PFNMAP flag makes get_user_pages work on that vma.
+An example test case would be using a Xen userspace block backend
+(QDISK) on a file on NFS using O_DIRECT.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/uwb/hwa-rc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/xen/gntdev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/uwb/hwa-rc.c
-+++ b/drivers/uwb/hwa-rc.c
-@@ -645,7 +645,8 @@ void hwarc_neep_cb(struct urb *urb)
- 		dev_err(dev, "NEEP: URB error %d\n", urb->status);
- 	}
- 	result = usb_submit_urb(urb, GFP_ATOMIC);
--	if (result < 0) {
-+	if (result < 0 && result != -ENODEV && result != -EPERM) {
-+		/* ignoring unrecoverable errors */
- 		dev_err(dev, "NEEP: Can't resubmit URB (%d) resetting device\n",
- 			result);
- 		goto error;
+--- a/drivers/xen/gntdev.c
++++ b/drivers/xen/gntdev.c
+@@ -664,7 +664,7 @@ static int gntdev_mmap(struct file *flip
+ 	vma->vm_flags |= VM_RESERVED|VM_DONTEXPAND;
+ 
+ 	if (use_ptemod)
+-		vma->vm_flags |= VM_DONTCOPY|VM_PFNMAP;
++		vma->vm_flags |= VM_DONTCOPY;
+ 
+ 	vma->vm_private_data = map;
+ 
 
 
