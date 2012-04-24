@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab2DXRPH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 13:15:07 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59346 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755828Ab2DXRPF (ORCPT
+	id S1756760Ab2DXRPZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 13:15:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44345 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828Ab2DXRPW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 13:15:05 -0400
-Message-ID: <4F96DF93.4050000@gmail.com>
-Date: Tue, 24 Apr 2012 19:14:59 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
-        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Subject: Re: [PATCH 10/16] sched: add resource limits for -deadline tasks.
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>   <1333696481-3433-11-git-send-email-juri.lelli@gmail.com>  <1335280075.28150.202.camel@twins> <4F96C52C.7030606@gmail.com> <1335284820.28150.203.camel@twins>
-In-Reply-To: <1335284820.28150.203.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Apr 2012 13:15:22 -0400
+Message-ID: <1335287700.28150.211.camel@twins>
+Subject: Re: [PATCH bisected regression] sched: rebuild sched domains at
+ suspend/resume
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+Date: Tue, 24 Apr 2012 19:15:00 +0200
+In-Reply-To: <4F9555C5.6040601@linux.vnet.ibm.com>
+References: <20120306204357.13169.90791.stgit@zurg>
+	 <1331067743.11248.333.camel@twins>
+	 <CA+55aFxPiW=T8iNy=Fb_fuO2DYV9+sQL-mr8=Uc7cWymTyVt6A@mail.gmail.com>
+	 <1331084302.11248.338.camel@twins>
+	 <CA+55aFx6NXjLpAz_Bu1wvaxFB-2zrYGkfBeN_8rM5q7MkYuNEQ@mail.gmail.com>
+	 <4F5D00AE.8000602@openvz.org> <4F9555C5.6040601@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2012 06:27 PM, Peter Zijlstra wrote:
-> On Tue, 2012-04-24 at 17:22 +0200, Juri Lelli wrote:
->
->> Ok, but considering what you said regarding setscheduler security problems:
->
->> Are you suggesting to drop/postpone this to some later time?
->
-> Yeah, I think we can put this on the end of the queue and try and get
-> some of the basic infrastructure merged first.
+On Mon, 2012-04-23 at 18:44 +0530, Srivatsa S. Bhat wrote:
+> 
+> Basically, our assumption that we are good to go (even with stale sched
+> domains) as long as the dying cpu was not in the cpu_active_mask, was wrong. 
 
-Perfect, no rants on my side ;-).
+Argh, that means cpu_active_mask is pointless.. so we should either fix
+that or remove that thing entirely.
 
-Thanks,
-
-- Juri
+Anyway, tglx is reworking all that hotplug stuff as we speak, I think
+its best to wait for that dust to settle before we go make the mess even
+bigger.
