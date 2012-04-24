@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374Ab2DXWem (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:34:42 -0400
+	id S932340Ab2DXWed (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:34:33 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932337Ab2DXWed (ORCPT
+	with ESMTP id S932318Ab2DXWe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:34:33 -0400
-Message-Id: <20120424223243.120183666@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:34:29 -0400
+Message-Id: <20120424223242.942571171@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:54 -0700
+Date: Tue, 24 Apr 2012 15:32:52 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Drake <dsd@laptop.org>,
-        Chuanxiao Dong <chuanxiao.dong@intel.com>, Chris Ball <cjb@laptop.org>
-Subject: [ 13/62] mmc: sdhci: refine non-removable card checking for card detection
+        alan@lxorguk.ukuu.org.uk, Adrian Hunter <adrian.hunter@intel.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [ 11/62] mmc: fixes for eMMC v4.5 discard operation
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Drake <dsd@laptop.org>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-commit 87b87a3fc0eec58d95e4216392f889a26439ad22 upstream.
+commit 7194efb8f063ee3aa0cb50d9002348887e68ec10 upstream.
 
-Commit c79396c191bc19 ("mmc: sdhci: prevent card detection activity
-for non-removable cards") disables card detection where the cards
-are marked as non-removable.
+eMMC v4.5 discard operation is significantly different from the
+existing trim operation because it is not guaranteed to work with
+the new sanitize operation.  Consequently mmc_can_trim() is
+separated from mmc_can_discard().
 
-This makes sense, but the implementation detail of calling
-mmc_card_is_removable() causes some problems, because
-mmc_card_is_removable() is overloaded with CONFIG_MMC_UNSAFE_RESUME
-semantics.
+Also the new discard operation does not result in the sectors being
+set to all-zeros, so discard_zeroes_data must not be set.
 
-In the OLPC XO case, we need CONFIG_MMC_UNSAFE_RESUME because our root
-filesystem is stored on SD, but we also have external SD card slots
-where we want automatic card detection.
+In addition, the new discard has the same timeout as trim, but from
+v4.5 trim is defined to use the hc timeout.  The timeout calculation
+is adjusted accordingly.
 
-Refine the check to only apply to hosts marked as MMC_CAP_NONREMOVABLE,
-which is defined to mean that the card is *really* nonremovable. This
-could be revisited in future if we find a way to improve
-CONFIG_MMC_UNSAFE_RESUME semantics.
+Fixes apply to linux 3.2 on.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Acked-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/card/queue.c |    2 +-
+ drivers/mmc/core/core.c  |    7 ++++---
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -147,7 +147,7 @@ static void sdhci_set_card_detection(str
- 	u32 present, irqs;
+--- a/drivers/mmc/card/queue.c
++++ b/drivers/mmc/card/queue.c
+@@ -139,7 +139,7 @@ static void mmc_queue_setup_discard(stru
  
- 	if ((host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION) ||
--	    !mmc_card_is_removable(host->mmc))
-+	    (host->mmc->caps & MMC_CAP_NONREMOVABLE))
- 		return;
+ 	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
+ 	q->limits.max_discard_sectors = max_discard;
+-	if (card->erased_byte == 0)
++	if (card->erased_byte == 0 && !mmc_can_discard(card))
+ 		q->limits.discard_zeroes_data = 1;
+ 	q->limits.discard_granularity = card->pref_erase << 9;
+ 	/* granularity must not be greater than max. discard */
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1557,7 +1557,10 @@ static unsigned int mmc_mmc_erase_timeou
+ {
+ 	unsigned int erase_timeout;
  
- 	present = sdhci_readl(host, SDHCI_PRESENT_STATE) &
+-	if (card->ext_csd.erase_group_def & 1) {
++	if (arg == MMC_DISCARD_ARG ||
++	    (arg == MMC_TRIM_ARG && card->ext_csd.rev >= 6)) {
++		erase_timeout = card->ext_csd.trim_timeout;
++	} else if (card->ext_csd.erase_group_def & 1) {
+ 		/* High Capacity Erase Group Size uses HC timeouts */
+ 		if (arg == MMC_TRIM_ARG)
+ 			erase_timeout = card->ext_csd.trim_timeout;
+@@ -1829,8 +1832,6 @@ int mmc_can_trim(struct mmc_card *card)
+ {
+ 	if (card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN)
+ 		return 1;
+-	if (mmc_can_discard(card))
+-		return 1;
+ 	return 0;
+ }
+ EXPORT_SYMBOL(mmc_can_trim);
 
 
