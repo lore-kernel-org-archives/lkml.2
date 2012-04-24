@@ -1,35 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab2DXQ6f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 12:58:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48308 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755240Ab2DXQ6e convert rfc822-to-8bit (ORCPT
+	id S1756034Ab2DXRAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 13:00:13 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:2645 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755721Ab2DXRAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 12:58:34 -0400
-Message-ID: <1335286696.28150.206.camel@twins>
-Subject: Re: [PATCH v1] sched: steer waking task to empty cfs_rq for better
- latencies
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org
-Date: Tue, 24 Apr 2012 18:58:16 +0200
-In-Reply-To: <20120424165619.GA28701@linux.vnet.ibm.com>
-References: <20120424165619.GA28701@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 24 Apr 2012 13:00:12 -0400
+Message-ID: <1335286810.2347.18.camel@lorien2>
+Subject: Re: [PATCH v2] leds: heartbeat: stop on shutdown
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: shuahkhan@gmail.com, linux-kernel@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 24 Apr 2012 11:00:10 -0600
+In-Reply-To: <4F96D58A.3070008@ahsoftware.de>
+References: <1335275034-22135-1-git-send-email-holler@ahsoftware.de>
+	 <1335280022-16308-1-git-send-email-holler@ahsoftware.de>
+	 <1335281074.2347.4.camel@lorien2> <4F96D58A.3070008@ahsoftware.de>
+Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-24 at 22:26 +0530, Srivatsa Vaddagiri wrote:
-> Steer a waking task towards a cpu where its cgroup has zero tasks (in
-> order to provide it better sleeper credits and hence reduce its wakeup
-> latency). 
+On Tue, 2012-04-24 at 18:32 +0200, Alexander Holler wrote:
+> Am 24.04.2012 17:24, schrieb Shuah Khan:
+> > On Tue, 2012-04-24 at 17:07 +0200, Alexander Holler wrote:
+> >> A halted kernel should not show a heartbeat.
+> >>
+> >> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+> >> ---
+> >>  drivers/leds/ledtrig-heartbeat.c |   18 +++++++++++++++++-
+> >>  1 files changed, 17 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
+> >> index 759c0bb..1c05bd9 100644
+> >> --- a/drivers/leds/ledtrig-heartbeat.c
+> >> +++ b/drivers/leds/ledtrig-heartbeat.c
+> >> @@ -18,6 +18,7 @@
+> >>  #include <linux/timer.h>
+> >>  #include <linux/sched.h>
+> >>  #include <linux/leds.h>
+> >> +#include <linux/reboot.h>
+> >>  #include "leds.h"
+> >>  
+> >>  struct heartbeat_trig_data {
+> >> @@ -101,13 +102,28 @@ static struct led_trigger heartbeat_led_trigger = {
+> >>  	.deactivate = heartbeat_trig_deactivate,
+> >>  };
+> >>  
+> >> +static int heartbeat_reboot_notifier(struct notifier_block *nb,
+> >> +				     unsigned long code, void *unused)
+> >> +{
+> >> +	led_trigger_unregister(&heartbeat_led_trigger);
+> >> +	return NOTIFY_DONE;
+> >> +}
+I am sorry I didn't catch this the last time. Do you need to call
+unregister here? Looks like trigger is going away with a registered
+reboot notifier. Might be fine, since reboot is going to happen.
 
-That's just vile.. pjt could you post your global vruntime stuff so
-vatsa can have a go at that?
+> >> +
+> >> +static struct notifier_block heartbeat_reboot_nb = {
+> >> +	.notifier_call = heartbeat_reboot_notifier,
+> >> +};
+> >> +
+> >>  static int __init heartbeat_trig_init(void)
+> >>  {
+> >> -	return led_trigger_register(&heartbeat_led_trigger);
+> >> +	int rc = led_trigger_register(&heartbeat_led_trigger);
+> >> +	if( ! rc )
+> >> +		register_reboot_notifier(&heartbeat_reboot_nb);
+> > 
+> > Do you need to check return value here? I see return value being checked
+> > in some places in the kernel and not in others. Not checking is fine for
+> > now since register_reboot_notifier() always returns 0.
+> > 
+> > Maybe adding return handling might not be a bad idea to be consistent
+> > with other places that do check.
+> 
+> What to do if it fails? As long as unregister_reboot_notifier() doesn't
+> do something bad with non-registered notifiers (which it doesn't), I
+> would let the init still succeed. 
+
+Yes I agree that init should still succeed. It might be helpful to throw
+out a kernel message when this occurs though since register shouldn't
+fail unless there is an error.
+
+> And to not unregister a
+> non-registered-reboot_notifier, a long-living bool would be needed.
+
+Yes keeping state is probably required to unregister conditionally.
+Since unregistering is safe (simply returns -ENOENT) when called after
+register fails. So I would think you can call unregister even when
+register fails. 
+
+-- Shuah
+
+
+
