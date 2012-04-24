@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab2DXRMk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 13:12:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48541 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755725Ab2DXRMj convert rfc822-to-8bit (ORCPT
+	id S1756683Ab2DXRPH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 13:15:07 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:59346 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828Ab2DXRPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 13:12:39 -0400
-Message-ID: <1335287547.28150.210.camel@twins>
-Subject: Re: [PATCH v1] sched: steer waking task to empty cfs_rq for better
- latencies
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org
-Date: Tue, 24 Apr 2012 19:12:27 +0200
-In-Reply-To: <20120424170743.GA18799@linux.vnet.ibm.com>
-References: <20120424165619.GA28701@linux.vnet.ibm.com>
-	 <1335286696.28150.206.camel@twins>
-	 <20120424170743.GA18799@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 24 Apr 2012 13:15:05 -0400
+Message-ID: <4F96DF93.4050000@gmail.com>
+Date: Tue, 24 Apr 2012 19:14:59 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Subject: Re: [PATCH 10/16] sched: add resource limits for -deadline tasks.
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>   <1333696481-3433-11-git-send-email-juri.lelli@gmail.com>  <1335280075.28150.202.camel@twins> <4F96C52C.7030606@gmail.com> <1335284820.28150.203.camel@twins>
+In-Reply-To: <1335284820.28150.203.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-24 at 22:37 +0530, Srivatsa Vaddagiri wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2012-04-24 18:58:16]:
-> 
-> > On Tue, 2012-04-24 at 22:26 +0530, Srivatsa Vaddagiri wrote:
-> > > Steer a waking task towards a cpu where its cgroup has zero tasks (in
-> > > order to provide it better sleeper credits and hence reduce its wakeup
-> > > latency). 
-> > 
-> > That's just vile.. pjt could you post your global vruntime stuff so
-> > vatsa can have a go at that?
-> 
-> The workload I am up against does experience tons of wakeup (after very short 
-> (microsecond range) bursts of sleeps) and so am skeptical how the global 
-> vruntime would keep up with this kind of workload. I'd be happy to test patches 
-> and give feedback!
+On 04/24/2012 06:27 PM, Peter Zijlstra wrote:
+> On Tue, 2012-04-24 at 17:22 +0200, Juri Lelli wrote:
+>
+>> Ok, but considering what you said regarding setscheduler security problems:
+>
+>> Are you suggesting to drop/postpone this to some later time?
+>
+> Yeah, I think we can put this on the end of the queue and try and get
+> some of the basic infrastructure merged first.
 
-Thing is, global vruntime might fix that flaw/property you're exploiting
-to get that preemption.
+Perfect, no rants on my side ;-).
 
+Thanks,
 
+- Juri
