@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab2DXKqN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 06:46:13 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:43034 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab2DXKqL (ORCPT
+	id S1752466Ab2DXKrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 06:47:42 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:25941 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab2DXKrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 06:46:11 -0400
-Date: Tue, 24 Apr 2012 12:46:06 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: [PATCH] edac.h: Add generic layers for describing a memory
- location
-Message-ID: <20120424104606.GB11559@aftab.osrc.amd.com>
-References: <4F95A5CE.7010804@redhat.com>
- <1335208746-15223-1-git-send-email-mchehab@redhat.com>
- <4F95B671.2070003@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F95B671.2070003@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 24 Apr 2012 06:47:40 -0400
+X-AuditID: cbfee61a-b7b8eae00000534b-1e-4f9684c1a200
+Message-id: <4F9684BC.2000004@samsung.com>
+Date: Tue, 24 Apr 2012 19:47:24 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [RESEND PATCH v2 0/2] power_supply: update Charger-Manager
+References: <4F7E3945.6000800@samsung.com>
+In-reply-to: <4F7E3945.6000800@samsung.com>
+X-Forwarded-Message-Id: <4F7E3945.6000800@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 08:07:13PM +0000, Mauro Carvalho Chehab wrote:
-> There are 55 patches affected by this change. Applying them locally
-> was as simple as running this small script to the submitted patches:
-> 
-> $ for i in `quilt series`; do sed s,is_csrow,is_virt_csrow,g $i|sed s,GET_POS,EDAC_DIMM_PTR,g| >a && mv a $i; done
-> 
-> However, mailbombing 55 patches just because of the above rename
-> is probably not very welcome by the people at the ML. Also, at least
-> for me, it seems more logical to add a patch like that at the end of
-> the patch series, than to force people to re-analyze the entire patchset.
-> 
-> Due to that, I won't resend the entire patchbomb to the ML.
+Initially, the main role of Charger-Manager is to monitor battery health
+while the system is in suspend-to-RAM.
 
-This is exactly one of the reasons why one shouldn't send mailbombs like
-that in the first place.
+This patchset updates the initial Charger-Manager to poll the battery state
+in normal state and provide function for in-kernel use.
 
-Documentation/SubmittingPatches does not state this for no reason:
+As Mr. Kim Donggeun leaved the company as personal reason, I follow up of
+this patchset. So I replied about your comment based on following link
+last week.
+- https://lkml.org/lkml/2012/2/29/506
+- https://lkml.org/lkml/2012/2/29/524
+- https://lkml.org/lkml/2012/3/4/137
 
-"If you cannot condense your patch set into a smaller set of patches,
-then only post say 15 or so at a time and wait for review and
-integration."
+The following patch url are replies which was posted on last week.
+Re: power_supply: Charger-Manager: poll battery health in normal state
+- https://lkml.org/lkml/2012/3/19/733
+Re: power_supply: Charger-Manager: provide function for in-kernel use
+- http://comments.gmane.org/gmane.linux.kernel/1270020
 
-And having patches which change earlier patches in your patchset is
-absolutely a no-no.
+v2
+- Code clean according to comment of Rafael J. Wysocki
+- Use Power management wakeup interface for waking up the system
+  from sleep when event is happended
+- Cancle work/delayed_work in remove function
 
-This means at least that your previous patches haven't been reviewed
-properly and still suffer some churn, causing the later ones to need
-readjustment.
+Donggeun Kim (2):
+  power_supply: Charger-Manager: poll battery health in normal state
+  power_supply: Charger-Manager: provide function for in-kernel use
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+ Documentation/power/charger-manager.txt |   41 +++-
+ drivers/power/charger-manager.c         |  391
++++++++++++++++++++++++++++++++
+ include/linux/power/charger-manager.h   |   49 ++++-
+ 3 files changed, 471 insertions(+), 10 deletions(-)
