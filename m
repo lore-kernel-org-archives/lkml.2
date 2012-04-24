@@ -1,121 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758551Ab2DXXCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 19:02:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758052Ab2DXWeM (ORCPT
+	id S1758046Ab2DXXIZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 19:08:25 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:9635 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757484Ab2DXXIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:34:12 -0400
-Message-Id: <20120424223242.429277603@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:46 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 05/62] ALSA: hda/conexant - Set up the missing docking-station pins
-In-Reply-To: <20120424223305.GA7748@kroah.com>
+	Tue, 24 Apr 2012 19:08:24 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-12.tower-209.messagelabs.com!1335308900!4006749!3
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] media: videobuf2-dma-contig: include header for exported symbols
+Date: Tue, 24 Apr 2012 16:08:12 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-media@vger.kernel.org>, <pawel@osciak.com>,
+        <m.szyprowski@samsung.com>, <kyungmin.park@samsung.com>,
+        <mchehab@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204241608.13305.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+Include the header to pickup the definitions of the exported symbols.
 
-------------------
+Quiets the following sparse warnings:
 
-From: Takashi Iwai <tiwai@suse.de>
+warning: symbol 'vb2_dma_contig_memops' was not declared. Should it be static?
+warning: symbol 'vb2_dma_contig_init_ctx' was not declared. Should it be static?
+warning: symbol 'vb2_dma_contig_cleanup_ctx' was not declared. Should it be static?
 
-commit d70f363222ef373c2037412f09a600357cfa1c7a upstream.
-
-ThinkPad 410,420,510,520 and X201 with cx50585 & co chips have the
-docking-station ports, but BIOS doesn't initialize for these pins.
-Thus, like the former X200, we need to set up the pins manually in the
-driver.
-
-The odd part is that the same PCI SSID is used for X200 and T400, thus
-we need to prepare individual fixup tables for cx5051 and others.
-
-Bugzilla entries:
-	https://bugzilla.redhat.com/show_bug.cgi?id=808559
-	https://bugzilla.redhat.com/show_bug.cgi?id=806217
-	https://bugzilla.redhat.com/show_bug.cgi?id=810697
-
-Reported-by: Josh Boyer <jwboyer@redhat.com>
-Reported-by: Jens Taprogge <jens.taprogge@taprogge.org>
-Tested-by: Jens Taprogge <jens.taprogge@taprogge.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Pawel Osciak <pawel@osciak.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
 
 ---
- sound/pci/hda/patch_conexant.c |   28 +++++++++++++++++++++++++---
- 1 file changed, 25 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4367,8 +4367,10 @@ static void apply_pin_fixup(struct hda_c
+diff --git a/drivers/media/video/videobuf2-dma-contig.c b/drivers/media/video/videobuf2-dma-contig.c
+index f17ad98..a1bee6c 100644
+--- a/drivers/media/video/videobuf2-dma-contig.c
++++ b/drivers/media/video/videobuf2-dma-contig.c
+@@ -15,6 +15,7 @@
+ #include <linux/dma-mapping.h>
  
- enum {
- 	CXT_PINCFG_LENOVO_X200,
-+	CXT_PINCFG_LENOVO_TP410,
- };
+ #include <media/videobuf2-core.h>
++#include <media/videobuf2-dma-contig.h>
+ #include <media/videobuf2-memops.h>
  
-+/* ThinkPad X200 & co with cxt5051 */
- static const struct cxt_pincfg cxt_pincfg_lenovo_x200[] = {
- 	{ 0x16, 0x042140ff }, /* HP (seq# overridden) */
- 	{ 0x17, 0x21a11000 }, /* dock-mic */
-@@ -4376,15 +4378,33 @@ static const struct cxt_pincfg cxt_pincf
- 	{}
- };
- 
-+/* ThinkPad 410/420/510/520, X201 & co with cxt5066 */
-+static const struct cxt_pincfg cxt_pincfg_lenovo_tp410[] = {
-+	{ 0x19, 0x042110ff }, /* HP (seq# overridden) */
-+	{ 0x1a, 0x21a190f0 }, /* dock-mic */
-+	{ 0x1c, 0x212140ff }, /* dock-HP */
-+	{}
-+};
-+
- static const struct cxt_pincfg *cxt_pincfg_tbl[] = {
- 	[CXT_PINCFG_LENOVO_X200] = cxt_pincfg_lenovo_x200,
-+	[CXT_PINCFG_LENOVO_TP410] = cxt_pincfg_lenovo_tp410,
- };
- 
--static const struct snd_pci_quirk cxt_fixups[] = {
-+static const struct snd_pci_quirk cxt5051_fixups[] = {
- 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo X200", CXT_PINCFG_LENOVO_X200),
- 	{}
- };
- 
-+static const struct snd_pci_quirk cxt5066_fixups[] = {
-+	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400", CXT_PINCFG_LENOVO_TP410),
-+	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo T410", CXT_PINCFG_LENOVO_TP410),
-+	SND_PCI_QUIRK(0x17aa, 0x215f, "Lenovo T510", CXT_PINCFG_LENOVO_TP410),
-+	SND_PCI_QUIRK(0x17aa, 0x21ce, "Lenovo T420", CXT_PINCFG_LENOVO_TP410),
-+	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
-+	{}
-+};
-+
- /* add "fake" mute amp-caps to DACs on cx5051 so that mixer mute switches
-  * can be created (bko#42825)
-  */
-@@ -4421,11 +4441,13 @@ static int patch_conexant_auto(struct hd
- 		break;
- 	case 0x14f15051:
- 		add_cx5051_fake_mutes(codec);
-+		apply_pin_fixup(codec, cxt5051_fixups, cxt_pincfg_tbl);
-+		break;
-+	default:
-+		apply_pin_fixup(codec, cxt5066_fixups, cxt_pincfg_tbl);
- 		break;
- 	}
- 
--	apply_pin_fixup(codec, cxt_fixups, cxt_pincfg_tbl);
--
- 	err = cx_auto_search_adcs(codec);
- 	if (err < 0)
- 		return err;
-
-
+ struct vb2_dc_conf {
