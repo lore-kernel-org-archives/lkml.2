@@ -1,76 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab2DXTiR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 15:38:17 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43613 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757164Ab2DXTiO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 15:38:14 -0400
+	id S1757340Ab2DXTi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 15:38:58 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:35243 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756878Ab2DXTi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 15:38:57 -0400
+Date: Tue, 24 Apr 2012 21:38:46 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: move pc lookup point to commit_charge()
+Message-ID: <20120424193846.GA28862@cmpxchg.org>
+References: <1335295860-28919-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <20120424162224.526249106@chello.nl>
-References: <20120424161039.293018424@chello.nl> <20120424162224.526249106@chello.nl>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 Apr 2012 12:37:53 -0700
-X-Google-Sender-Auth: rp_qFneZVih0vBackfdm35Dk_Qw
-Message-ID: <CA+55aFyvBTDh_DkXs6Z6zFmjyYxvWaAEm9-rJDXhvPx8CpDiKA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 2/3] math128: Introduce {mult,add,cmp}_u128
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335295860-28919-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 9:10 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> Grow rudimentary u128 support without relying on gcc/libgcc.
->
-> +#ifndef add_u128
-> +static inline u128 add_u128(u128 a, u128 b)
-> +{
-> +       u128 res;
-> +
-> +       res.hi = a.hi + b.hi;
-> +       res.lo = a.lo + b.lo;
-> +
-> +       if (res.lo < a.lo || res.lo < b.lo)
-> +               res.hi++;
+Sorry, git-send-email didn't pick up the CCs, full quote here:
 
-This is wrong. Or at least stupid.
-
-Just do one of the comparisons, not both. If overflow occurs, the
-result will be smaller than *either* of the added numbers, so
-comparing both is just silly and confused.
-
-So just pick one.
-
-Also, it might be worth looking at code generation, to see if it's
-better to just do
-
-   a.hi += b.hi;
-   a.low += b.low;
-   if (a.low < b.low)
-      a.hi++;
-   return a;
-
-because that might make it clear that there are fewer actual values
-live at any particular time. But gcc may not care. Try it.
-
-Also, for the multiply, please make sure gcc knows to do a "32x32->64"
-multiplication, rather than thinking it needs to do full 64x64
-multiplies..
-
-I'm not sure gcc understands that as you wrote it. You are probably
-better off actually using 32-bit values, and then an explicit cast, ie
-
-  u32 a32_0 = .. low 32 bits of a ..
-  u32 b32_0 = .. low 32 bits of b ..
-  u64 res64_0 = (u64) a32_0 * (u64) b32_0;
-
-but if gcc understands it from the shifts and masks, I guess it doesn't matter.
-
-        Linus
+On Tue, Apr 24, 2012 at 09:31:00PM +0200, Johannes Weiner wrote:
+> None of the callsites actually need the page_cgroup descriptor
+> themselves, so just pass the page and do the look up in there.
+> 
+> We already had two bugs (6568d4a 'mm: memcg: update the correct soft
+> limit tree during migration' and 'memcg: fix Bad page state after
+> replace_page_cache') where the passed page and pc were not referring
+> to the same page frame.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Acked-by: Hugh Dickins <hughd@google.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/memcontrol.c |   17 +++++------------
+>  1 files changed, 5 insertions(+), 12 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 884e936..1a28dd8 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2461,10 +2461,10 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+>  static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+>  				       struct page *page,
+>  				       unsigned int nr_pages,
+> -				       struct page_cgroup *pc,
+>  				       enum charge_type ctype,
+>  				       bool lrucare)
+>  {
+> +	struct page_cgroup *pc = lookup_page_cgroup(page);
+>  	struct zone *uninitialized_var(zone);
+>  	bool was_on_lru = false;
+>  	bool anon;
+> @@ -2701,7 +2701,6 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+>  {
+>  	struct mem_cgroup *memcg = NULL;
+>  	unsigned int nr_pages = 1;
+> -	struct page_cgroup *pc;
+>  	bool oom = true;
+>  	int ret;
+>  
+> @@ -2715,11 +2714,10 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+>  		oom = false;
+>  	}
+>  
+> -	pc = lookup_page_cgroup(page);
+>  	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
+>  	if (ret == -ENOMEM)
+>  		return ret;
+> -	__mem_cgroup_commit_charge(memcg, page, nr_pages, pc, ctype, false);
+> +	__mem_cgroup_commit_charge(memcg, page, nr_pages, ctype, false);
+>  	return 0;
+>  }
+>  
+> @@ -2816,16 +2814,13 @@ static void
+>  __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *memcg,
+>  					enum charge_type ctype)
+>  {
+> -	struct page_cgroup *pc;
+> -
+>  	if (mem_cgroup_disabled())
+>  		return;
+>  	if (!memcg)
+>  		return;
+>  	cgroup_exclude_rmdir(&memcg->css);
+>  
+> -	pc = lookup_page_cgroup(page);
+> -	__mem_cgroup_commit_charge(memcg, page, 1, pc, ctype, true);
+> +	__mem_cgroup_commit_charge(memcg, page, 1, ctype, true);
+>  	/*
+>  	 * Now swap is on-memory. This means this page may be
+>  	 * counted both as mem and swap....double count.
+> @@ -3254,14 +3249,13 @@ int mem_cgroup_prepare_migration(struct page *page,
+>  	 * page. In the case new page is migrated but not remapped, new page's
+>  	 * mapcount will be finally 0 and we call uncharge in end_migration().
+>  	 */
+> -	pc = lookup_page_cgroup(newpage);
+>  	if (PageAnon(page))
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
+>  	else if (page_is_file_cache(page))
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
+>  	else
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+> -	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, ctype, false);
+> +	__mem_cgroup_commit_charge(memcg, newpage, 1, ctype, false);
+>  	return ret;
+>  }
+>  
+> @@ -3348,8 +3342,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
+>  	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
+>  	 * LRU while we overwrite pc->mem_cgroup.
+>  	 */
+> -	pc = lookup_page_cgroup(newpage);
+> -	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type, true);
+> +	__mem_cgroup_commit_charge(memcg, newpage, 1, type, true);
+>  }
+>  
+>  #ifdef CONFIG_DEBUG_VM
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
