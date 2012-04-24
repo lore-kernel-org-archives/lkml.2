@@ -1,113 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab2DXHVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 03:21:34 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3158 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754915Ab2DXHVb (ORCPT
+	id S1755010Ab2DXHVa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 03:21:30 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57622 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754915Ab2DXHV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 03:21:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 24 Apr 2012 00:21:01 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: w.sang@pengutronix.de, ben-linux@fluff.org, swarren@wwwdotorg.org,
-        olof@lixom.net
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V1 2/2] i2c: tegra: support for I2C_M_NOSTART protocol mangling
-Date: Tue, 24 Apr 2012 12:49:36 +0530
-Message-Id: <1335251976-31925-3-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
-References: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
+	Tue, 24 Apr 2012 03:21:27 -0400
+Message-ID: <4F965471.2030905@gmail.com>
+Date: Tue, 24 Apr 2012 09:21:21 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
+CC: Peter Zijlstra <peterz@infradead.org>, tglx@linutronix.de,
+        mingo@redhat.com, rostedt@goodmis.org, cfriesen@nortel.com,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>   <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>  <1335191701.28150.155.camel@twins> <4F9577CF.2020400@gmail.com> <1335195826.28150.177.camel@twins> <4F958627.8070109@gmail.com> <4F95D41F.5060700@sssup.it>
+In-Reply-To: <4F95D41F.5060700@sssup.it>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support for protocol mangling I2C_M_NOSTART.
-When multiple message transfer request made through i2c
-and if any message is flagged with I2C_M_NOSTART then
-it will not send the start/repeat start/address of that
-message i.e. send the data directly.
+On 04/24/2012 12:13 AM, Tommaso Cucinotta wrote:
+> Il 23/04/2012 17:41, Juri Lelli ha scritto:
+>> The user could call __setparam_dl on a throttled task through
+>> __sched_setscheduler.
+>
+> in case it can be related: a scenario that used to break isolation
+> (in the old aquosa crap): 1) create a deadline task 2) (actively)
+> wait till it's just about to be throttled 3) remove reservation
+> (i.e., return the task to the normal system policy and destroy
+> reservation info in the kernel) 4) reserve it again
+>
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/i2c/busses/i2c-tegra.c |   32 +++++++++++++++++++++++++++-----
- 1 files changed, 27 insertions(+), 5 deletions(-)
+Yes, this is very similar to what I thought just after I've sent the
+email (ouch! :-)).
+  
+> Assuming the borderline condition of a nearly fully saturated system,
+> if 3)-4) manage to happen sufficiently close to each other and right
+> after 2), now the task budget is refilled with a deadline which is
+> where it should not be, according to the admission control rules. In
+> other words, we may break guarantees of other tasks by a properly
+> misbehaving task. Something relevant when considering misbehaviour
+> and admission control from a security perspective [1].
+>
 
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 18067b3..a50e4c4 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -97,8 +97,21 @@
- #define I2C_HEADER_10BIT_ADDR			(1<<18)
- #define I2C_HEADER_IE_ENABLE			(1<<17)
- #define I2C_HEADER_REPEAT_START			(1<<16)
-+#define I2C_HEADER_CONTINUE_XFER		(1<<15)
- #define I2C_HEADER_MASTER_ADDR_SHIFT		12
- #define I2C_HEADER_SLAVE_ADDR_SHIFT		1
-+/*
-+ * msg_end_type: The bus control which need to be send at end of transfer.
-+ * @MSG_END_STOP: Send stop pulse at end of transfer.
-+ * @MSG_END_REPEAT_START: Send repeat start at end of transfer.
-+ * @MSG_END_CONTINUE: The following on message is coming and so do not send
-+ *		stop or repeat start.
-+ */
-+enum msg_end_type {
-+	MSG_END_STOP,
-+	MSG_END_REPEAT_START,
-+	MSG_END_CONTINUE,
-+};
- 
- /**
-  * struct tegra_i2c_dev	- per device i2c context
-@@ -450,7 +463,7 @@ err:
- }
- 
- static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
--	struct i2c_msg *msg, int stop)
-+	struct i2c_msg *msg, enum msg_end_type end_state)
- {
- 	u32 packet_header;
- 	u32 int_mask;
-@@ -477,7 +490,9 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
- 	i2c_writel(i2c_dev, packet_header, I2C_TX_FIFO);
- 
- 	packet_header = I2C_HEADER_IE_ENABLE;
--	if (!stop)
-+	if (end_state == MSG_END_CONTINUE)
-+		packet_header |= I2C_HEADER_CONTINUE_XFER;
-+	else if (end_state == MSG_END_REPEAT_START)
- 		packet_header |= I2C_HEADER_REPEAT_START;
- 	if (msg->flags & I2C_M_TEN) {
- 		packet_header |= msg->addr;
-@@ -549,8 +564,14 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
- 
- 	clk_enable(i2c_dev->clk);
- 	for (i = 0; i < num; i++) {
--		int stop = (i == (num - 1)) ? 1  : 0;
--		ret = tegra_i2c_xfer_msg(i2c_dev, &msgs[i], stop);
-+		enum msg_end_type end_type = MSG_END_STOP;
-+		if (i < (num - 1)) {
-+			if (msgs[i + 1].flags & I2C_M_NOSTART)
-+				end_type = MSG_END_CONTINUE;
-+			else
-+				end_type = MSG_END_REPEAT_START;
-+		}
-+		ret = tegra_i2c_xfer_msg(i2c_dev, &msgs[i], end_type);
- 		if (ret)
- 			break;
- 	}
-@@ -560,7 +581,8 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
- 
- static u32 tegra_i2c_func(struct i2c_adapter *adap)
- {
--	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | I2C_FUNC_10BIT_ADDR;
-+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | I2C_FUNC_10BIT_ADDR |
-+			I2C_FUNC_PROTOCOL_MANGLING;
- }
- 
- static const struct i2c_algorithm tegra_i2c_algo = {
--- 
-1.7.1.1
+Thanks for the ref., I'll read it!
+
+> At that time, I was persuaded that the right way to avoid this would
+> be to avoid to free system cpu bw immediately when a reservation is
+> destroyed, but rather wait till its current abs deadline, then "free"
+> the bandwidth. A new task trying to re-create the reservation too
+> early, i.e., at step 4) above, would be rejected by the system as it
+> would still see a fully occupied cpu bw. Never implemented of course
+> :-)...
+>
+
+A kind of "two steps" approach. It would work, I just have to think how
+to implement it (and let the system survive ;-)). Then create some
+bench to test it.
+
+> And also, from a security perspective, a misbehaving (sched_other)
+> task might thrash the system with useless nansosleeps forcing the OS
+> to continuously schedule/deschedule it. Equivalently, with a deadline
+> scheduler, you could try to set a very small period/deadline. That's
+> why in [1], among the configurable variables, there was a minimum
+> allowed reservation period.
+>
+
+Yes, this should be easily controlled at admission time.
+
+> Nothing really urgent, just something you might want to keep in mind
+> for the future, I thought.
+>
+
+Well, depends on how much effort will this turn to require. I personally
+would prefer to be able to come out with a new release ASAP. Just to
+continue the discussion with the most of the comments addressed and a
+more updated code (I also have a mainline version of the patchset
+quite ready).
+
+Thanks a lot,
+
+- Juri
 
