@@ -1,55 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab2DXTBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 15:01:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29196 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755884Ab2DXTBl (ORCPT
+	id S1757265Ab2DXTCM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 15:02:12 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39575 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755888Ab2DXTCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 15:01:41 -0400
-X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=TWBfIqSxIMQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ich_fey3V0Z6hoRVRgYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1335294097.28106.146.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 06/16] sched: SCHED_DEADLINE push and pull logic
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Date: Tue, 24 Apr 2012 15:01:37 -0400
-In-Reply-To: <1335293623.28150.216.camel@twins>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	 <1333696481-3433-7-git-send-email-juri.lelli@gmail.com>
-	 <1334162018.23924.268.camel@gandalf.stny.rr.com>
-	 <1335273316.28150.194.camel@twins>
-	 <1335293456.28106.145.camel@gandalf.stny.rr.com>
-	 <1335293623.28150.216.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 24 Apr 2012 15:02:11 -0400
+Date: Tue, 24 Apr 2012 12:01:52 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] Fix overflow in vma length when copying mmap on clone
+In-Reply-To: <1335289853-2923-1-git-send-email-siddhesh.poyarekar@gmail.com>
+Message-ID: <alpine.LSU.2.00.1204241148390.18455@eggly.anvils>
+References: <1335289853-2923-1-git-send-email-siddhesh.poyarekar@gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-24 at 20:53 +0200, Peter Zijlstra wrote:
-
-> Well that's up to the implementation of pick_next_task_rt() that
-> conversion is just a minimal make it work thing.
+On Tue, 24 Apr 2012, Siddhesh Poyarekar wrote:
+> The vma length in dup_mmap is calculated and stored in a unsigned int,
+> which is insufficient and hence overflows for very large maps (beyond
+> 16TB). The following program demonstrates this:
 > 
-> But the generic changes that patch carries should allow you to do what
-> you want, right?
+> \#include <stdio.h>
+> \#include <unistd.h>
+> \#include <sys/mman.h>
+> 
+> \#define GIG 1024 * 1024 * 1024L
+> \#define EXTENT 16393
+> 
+> int main(void)
+> {
+>         int i, r;
+>         void *m;
+>         char buf[1024];
+> 
+>         for (i = 0; i < EXTENT; i++) {
+>                 m = mmap(NULL, (size_t) 1 * 1024 * 1024 * 1024L,
+>                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+> 
+>                 if (m == (void *)-1)
+>                         printf("MMAP Failed: %d\n", m);
+>                 else
+>                         printf("%d : MMAP returned %p\n", i, m);
+> 
+>                 r = fork();
+> 
+>                 if (r == 0) {
+>                         printf("%d: successed\n", i);
+>                         return 0;
+>                 } else if (r < 0)
+>                         printf("FORK Failed: %d\n", r);
+>                 else if (r > 0)
+>                         wait(NULL);
+>         }
+>         return 0;
+> }
+> 
+> This trivial patch increases the storage size of the result to
+> unsigned long, which should be sufficient for storing the difference
+> between addresses.
+> 
+> Signed-off-by: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
 
-Yep. It should.
+Good catch, thank you, remarkable that's survived for so long.
+For the patch,
 
--- Steve
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org
 
+But I didn't (try very hard to) work out what your demo program shows
+- though I am amused by your sense of humour in using %d for a pointer
+there!  I wonder what setting of /proc/sys/vm/overcommit_memory is
+needed for it to behave as you intend?
 
+Personally, I wouldn't bother with the demo and describing it more fully,
+I'd just be glad to get that fix in at last.
 
+> ---
+>  kernel/fork.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index b9372a0..7acaee1 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -355,7 +355,8 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+>  		}
+>  		charge = 0;
+>  		if (mpnt->vm_flags & VM_ACCOUNT) {
+> -			unsigned int len = (mpnt->vm_end - mpnt->vm_start) >> PAGE_SHIFT;
+> +			unsigned long len;
+> +			len = (mpnt->vm_end - mpnt->vm_start) >> PAGE_SHIFT;
+>  			if (security_vm_enough_memory_mm(oldmm, len)) /* sic */
+>  				goto fail_nomem;
+>  			charge = len;
+> -- 
+> 1.7.7.6
