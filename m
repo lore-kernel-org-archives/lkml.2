@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab2DXQZD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 12:25:03 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:58995 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755785Ab2DXQZB (ORCPT
+	id S1756676Ab2DXQZh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 12:25:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57101 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755785Ab2DXQZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 12:25:01 -0400
-Message-ID: <4F96D3FA.1010909@xenotime.net>
-Date: Tue, 24 Apr 2012 09:25:30 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org
-Subject: Re: linux-next: Tree for Apr 24 (kvm)
-References: <20120424154354.7feba600beac616833d034de@canb.auug.org.au>
-In-Reply-To: <20120424154354.7feba600beac616833d034de@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Tue, 24 Apr 2012 12:25:35 -0400
+Message-Id: <20120424161039.293018424@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Tue, 24 Apr 2012 18:10:39 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>
+Subject: [RFC][PATCH 0/3] gcc work-around and math128
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 10:43 PM, Stephen Rothwell wrote:
+Hi all,
 
-> Hi all,
-> 
-> There will probably be no linux-next release until April 30 as I am
-> taking a break.
-> 
-> Changes since 20120423:
+The SCHED_DEADLINE review resulted in the following three patches;
 
+The first is a cleanup of various copies of the same GCC loop optimization
+work-around. I don't think this patch is too controversial, at worst I've
+picked a wrong name, but I wanted to get it out there in case people
+know more sites.
 
-on i386:
+The second two implement a few u128 operations so we can do 128bit math.. I
+know a few people will die a little inside, but having nanosecond granularity
+time accounting leads to very big numbers very quickly and when you need to
+multiply them 64bit really isn't that much.
 
-  CC [M]  arch/x86/kvm/emulate.o
-arch/x86/kvm/emulate.c: Assembler messages:
-arch/x86/kvm/emulate.c:4122: Error: bad register name `%bpl'
+So far its just mult, add and cmp for u128, no divisions quite yet. I realize
+that on 32bit archs mult_u128 will result in like 8 multiplication
+instructions that's still nowhere near the most expensive thing ever.
 
+Also, I suck at gcc inline asm, so patch 3/3 is very likely completely wrong,
+in any case none of the patches has even been near a compiler and this really
+is just an RFC to probe if we want to go here at all.
 
--- 
-~Randy
