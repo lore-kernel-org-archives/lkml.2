@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757437Ab2DXT7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 15:59:33 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54667 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757170Ab2DXT7c (ORCPT
+	id S1757445Ab2DXUAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 16:00:36 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:33964 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757170Ab2DXUAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 15:59:32 -0400
-Date: Tue, 24 Apr 2012 20:59:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Hiroshi DOYU <hdoyu@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tony Lindgren <tony@atomide.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] ARM: tegra: Add SMMU enabler in AHB
-Message-ID: <20120424195901.GC3628@n2100.arm.linux.org.uk>
-References: <1335269116-9578-1-git-send-email-hdoyu@nvidia.com> <1335269116-9578-2-git-send-email-hdoyu@nvidia.com>
+	Tue, 24 Apr 2012 16:00:34 -0400
+Date: Tue, 24 Apr 2012 23:03:07 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: =?iso-8859-1?Q?St=E9phane?= Pajot <pajot.stephane@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        fmhess@users.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: comedi: fix trailing whitespace and quoted
+ string split across lines in ni_labpc.c
+Message-ID: <20120424200307.GA6447@mwanda>
+References: <1335286210-3150-1-git-send-email-pajot.stephane@gmail.com>
+ <20120424184642.GA20004@kroah.com>
+ <20120424192709.GA4717@stef-pc>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1335269116-9578-2-git-send-email-hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120424192709.GA4717@stef-pc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 03:05:15PM +0300, Hiroshi DOYU wrote:
-> +#define AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_DONE	1
-> +#define AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_SHIFT	17
-> +
->  struct __tegra_ahb {
->  	void __iomem	*regs;
->  	struct device	*dev;
-> @@ -95,6 +98,21 @@ static inline void gizmo_writel(unsigned long value, unsigned long offset)
->  	writel(value, tegra_ahb->regs + offset);
->  }
->  
-> +#ifdef CONFIG_ARCH_TEGRA_3x_SOC
-> +
-> +void tegra_ahb_enable_smmu(void)
-> +{
-> +	unsigned long val;
-> +
-> +	val = gizmo_readl(AHB_ARBITRATION_XBAR_CTRL);
-> +	val |= AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_DONE <<
-> +		AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE_SHIFT;
+Hehe. :P
 
-In addition to what Felipe said...
+Stéphane you seem like a nice person but you're a bit of a beginner
+to be working on the kernel...  Come back in couple years after you
+have done a little bit more C programming and you know the answer to
+that question.  We'll still be around waiting for you.  :)  There is
+no rush.
 
-Why do you need two constants where you have only one use point?
-What's wrong with having just a single definition which gives you
-the right bitmask?
+regards,
+dan carpenter
