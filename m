@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab2DXWfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:35:13 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:33944 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932406Ab2DXWfI (ORCPT
+	id S932539Ab2DXW6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:58:07 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:56284 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932501Ab2DXW57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:35:08 -0400
-Message-Id: <20120424223244.035314155@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 24/62] mac80211: fix logic error in ibss channel type check
-In-Reply-To: <20120424223305.GA7748@kroah.com>
+	Tue, 24 Apr 2012 18:57:59 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <20120424225614.GA14008@quad.lixom.net>
+References: <1334256332-29867-1-git-send-email-k.lewandowsk@samsung.com>
+	<1334256332-29867-2-git-send-email-k.lewandowsk@samsung.com>
+	<20120424225614.GA14008@quad.lixom.net>
+Date: Tue, 24 Apr 2012 15:57:58 -0700
+Message-ID: <CAOesGMj9AT9MUdC+Dg_qFSgztZpqrxnM3TJb=8wby2PFa6+jzw@mail.gmail.com>
+Subject: Re: [PATCH 01/13] regulator: Fix DT node name checking in max8997-pmic
+From: Olof Johansson <olof@lixom.net>
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        thomas.abraham@linaro.org, m.szyprowski@samsung.com,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Apr 24, 2012 at 3:56 PM, Olof Johansson <olof@lixom.net> wrote:
+> Hi,
+>
+>
+> On Thu, Apr 12, 2012 at 08:45:20PM +0200, Karol Lewandowski wrote:
+>> Avoid hard lockup when someone provides non-supported regulator
+>> name.
+>>
+>> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> Cc: Thomas Abraham <thomas.abraham@linaro.org>
+>
+> What is this supposed to apply against?
 
-------------------
-
-From: Felix Fietkau <nbd@openwrt.org>
-
-commit 6741e7f048dacc92e37c5d724ff5c64e45f6c2c9 upstream.
-
-The broken check leads to rate control attempting to use HT40 while
-the driver is configured for HT20. This leads to interesting hardware
-issues.
-
-HT40 can only be used if the channel type is either HT40- or HT40+
-and if the channel type of the cell matches the local type.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/mac80211/ibss.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/net/mac80211/ibss.c
-+++ b/net/mac80211/ibss.c
-@@ -435,8 +435,8 @@ static void ieee80211_rx_bss_info(struct
- 			 * fall back to HT20 if we don't use or use
- 			 * the other extension channel
- 			 */
--			if ((channel_type == NL80211_CHAN_HT40MINUS ||
--			     channel_type == NL80211_CHAN_HT40PLUS) &&
-+			if (!(channel_type == NL80211_CHAN_HT40MINUS ||
-+			      channel_type == NL80211_CHAN_HT40PLUS) ||
- 			    channel_type != sdata->u.ibss.channel_type)
- 				sta_ht_cap_new.cap &=
- 					~IEEE80211_HT_CAP_SUP_WIDTH_20_40;
+D'oh, I didn't see the dependency in 0/13, nevermind.
 
 
+-Olof
