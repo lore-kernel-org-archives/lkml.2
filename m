@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab2DXDEL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 23:04:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28536 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756376Ab2DXDEJ convert rfc822-to-8bit (ORCPT
+	id S1756527Ab2DXDJp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 23:09:45 -0400
+Received: from mga10.intel.com ([192.55.52.92]:12746 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756454Ab2DXDJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 23:04:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="135921026"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>
-Subject: RE: [PATCH 2/2] Enter 2nd kernel with BSP
-Thread-Topic: [PATCH 2/2] Enter 2nd kernel with BSP
-Thread-Index: AQHNIT65ITP0DIVx9kuGF0QFOk7QwZapsD8A//+azcA=
-Date: Tue, 24 Apr 2012 03:04:08 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C71220076F2AE3@ORSMSX105.amr.corp.intel.com>
-References: <20120416021951.9303.58568.stgit@localhost6.localdomain6>
-	<20120416022139.9303.56284.stgit@localhost6.localdomain6>
-	<m2ipgqoh90.fsf@firstfloor.org>
- <20120424.110518.434300178.d.hatayama@jp.fujitsu.com>
-In-Reply-To: <20120424.110518.434300178.d.hatayama@jp.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 23 Apr 2012 23:09:43 -0400
 MIME-Version: 1.0
+In-Reply-To: <4F961041.7010106@huawei.com>
+References: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com>
+	<1335189109-4871-7-git-send-email-jiang.liu@huawei.com>
+	<CABE8wwvi_Yz8AyALr1-uDW9xSgrSqfrYWhB_22NQ2ydTa81+mg@mail.gmail.com>
+	<4F961041.7010106@huawei.com>
+Date: Mon, 23 Apr 2012 20:09:40 -0700
+Message-ID: <CABE8wwvW9MUWaqSUCPMr7_yj7XGtSj+X9VE1-xWrEusZ3TMaqQ@mail.gmail.com>
+Subject: Re: [PATCH v1 6/8] dmaengine: enhance network subsystem to support
+ DMA device hotplug
+From: Dan Williams <dan.j.williams@intel.com>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        Keping Chen <chenkeping@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Split logic into BSP's and AP's: BSP waits for AP halting.
-> >>
-> >> Don't remove variable crashing_cpu for debugging use; useful for
-> >> determining one what CPU crash happens.
-> >
-> > Fenghua has this patchkit to allow offlining the BSP. What happens
-> then?
+On Mon, Apr 23, 2012 at 7:30 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
+>> If you are going to hotplug the entire IOH, then you are probably ok
+>> with network links going down, so could you just down the links and
+>> remove the driver with the existing code?
+>
+> I feel it's a little risky to shut down/restart all network interfaces
+> for hot-removal of IOH, that may disturb the applications.
 
-I'm fixing one issue when doing stress BSP online/offline test. I'll send out a newer patch set pretty soon.
+I guess I'm confused... wouldn't the removal of an entire domain of
+pci devices disturb userspace applications?
 
-Thanks.
+> And there
+> are also other kinds of clients, such as ASYNC_TX, seems we can't
+> adopt this method to reclaim DMA channels from ASYNC_TX subsystem.
 
--Fenghua
+I say handle this like block device hotplug.  I.e. the driver stays
+loaded but the channel is put into an 'offline' state.  So the driver
+hides the fact that the hardware went away.  Similar to how you can
+remove a disk but /dev/sda sticks around until the last reference is
+gone (and the driver 'sd' sticks around until all block devices are
+gone).
+
+I expect the work will be in making sure existing clients are prepared
+to handle NULL returns from ->device_prep_dma_*.  In some cases the
+channel is treated more like a cpu, so a NULL return from
+->device_prep_dma_memcpy() has been interpreted as "device is
+temporarily busy, it is safe to try again".  We would need to change
+that to a permanent indication that the device is gone and not attempt
+retry.
+
+--
+Dan
