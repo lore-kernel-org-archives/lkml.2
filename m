@@ -1,161 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab2DXDNa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 23:13:30 -0400
-Received: from gate.crashing.org ([63.228.1.57]:49326 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756503Ab2DXDN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 23:13:29 -0400
-Message-ID: <1335237195.24897.0.camel@pasglop>
-Subject: Re: [PATCH v2 1/2] powerpc/8xx: Fix NR_IRQ bugs and refactor 8xx
- interrupt controller
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Tue, 24 Apr 2012 13:13:15 +1000
-In-Reply-To: <1335220202-32533-2-git-send-email-grant.likely@secretlab.ca>
-References: <1335220202-32533-1-git-send-email-grant.likely@secretlab.ca>
-	 <1335220202-32533-2-git-send-email-grant.likely@secretlab.ca>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1756556Ab2DXDRG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 23:17:06 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:30256 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756450Ab2DXDRF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Apr 2012 23:17:05 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6690"; a="184317711"
+Message-ID: <4F961B2F.4060203@codeaurora.org>
+Date: Mon, 23 Apr 2012 20:17:03 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] spinlock_debug: Print kallsyms name for lock
+References: <1335217525-30709-1-git-send-email-sboyd@codeaurora.org> <1335217525-30709-2-git-send-email-sboyd@codeaurora.org> <20120423145431.617c2b01.akpm@linux-foundation.org>
+In-Reply-To: <20120423145431.617c2b01.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 16:30 -0600, Grant Likely wrote:
-> The mpc8xx driver uses a reference to NR_IRQS that is buggy.  It uses
-> NR_IRQs for the array size of the ppc_cached_irq_mask bitmap, but
-> NR_IRQs could be smaller than the number of hardware irqs that
-> ppc_cached_irq_mask tracks.
+On 04/23/12 14:54, Andrew Morton wrote:
+>
+>> --- a/lib/spinlock_debug.c
+>> +++ b/lib/spinlock_debug.c
+>> @@ -58,7 +58,7 @@ static void spin_dump(raw_spinlock_t *lock, const char *msg)
+>>  	printk(KERN_EMERG "BUG: spinlock %s on CPU#%d, %s/%d\n",
+>>  		msg, raw_smp_processor_id(),
+>>  		current->comm, task_pid_nr(current));
+>> -	printk(KERN_EMERG " lock: %p, .magic: %08x, .owner: %s/%d, "
+>> +	printk(KERN_EMERG " lock: %ps, .magic: %08x, .owner: %s/%d, "
+>>  			".owner_cpu: %d\n",
+>>  		lock, lock->magic,
+>>  		owner ? owner->comm : "<none>",
+> Maybe.  It will only do useful things for statically-allocated locks
+> which are rare and which we are unlikely to screw up as easily as locks
+> which lie in dynamically allocated memory.
 
-Joakim, any chance you can test this ASAP ? :-)
+Agreed. It catches the really stupid stuff and that's about it. I was
+thinking we could get more information about dynamic allocated locks by
+adding some code to slab to find the slab that a pointer is allocated
+in. Does that sound possible?
 
-Thanks !
+With stacktrace support in slub we could even find the caller who
+allocated the storage for the spinlock. It might be useful but one could
+argue the stacktrace from this function is already pretty useful for
+tracking down which spinlock it is.
 
-Cheers,
-Ben.
-
-> Also, while fixing that problem, it became apparent that the interrupt
-> controller only supports 32 interrupt numbers, but it is written as if
-> it supports multiple register banks which is more complicated.
-> 
-> This patch pulls out the buggy reference to NR_IRQs and fixes the size
-> of the ppc_cached_irq_mask to match the number of HW irqs.  It also
-> drops the now-unnecessary code since ppc_cached_irq_mask is no longer
-> an array.
-> 
-> v2: - Rename ppc_cached_irq_mask to mpc8xx_cached_irq_mask
->     - Drop duplicate forward declaration
-> 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> ---
->  arch/powerpc/sysdev/mpc8xx_pic.c |   61 +++++++++++++-------------------------
->  1 file changed, 20 insertions(+), 41 deletions(-)
-> 
-> diff --git a/arch/powerpc/sysdev/mpc8xx_pic.c b/arch/powerpc/sysdev/mpc8xx_pic.c
-> index d5f5416..b724622 100644
-> --- a/arch/powerpc/sysdev/mpc8xx_pic.c
-> +++ b/arch/powerpc/sysdev/mpc8xx_pic.c
-> @@ -18,69 +18,45 @@
->  extern int cpm_get_irq(struct pt_regs *regs);
->  
->  static struct irq_domain *mpc8xx_pic_host;
-> -#define NR_MASK_WORDS   ((NR_IRQS + 31) / 32)
-> -static unsigned long ppc_cached_irq_mask[NR_MASK_WORDS];
-> +static unsigned long mpc8xx_cached_irq_mask;
->  static sysconf8xx_t __iomem *siu_reg;
->  
-> -int cpm_get_irq(struct pt_regs *regs);
-> +static inline unsigned long mpc8xx_irqd_to_bit(struct irq_data *d)
-> +{
-> +	return 0x80000000 >> irqd_to_hwirq(d);
-> +}
->  
->  static void mpc8xx_unmask_irq(struct irq_data *d)
->  {
-> -	int	bit, word;
-> -	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
-> -
-> -	bit = irq_nr & 0x1f;
-> -	word = irq_nr >> 5;
-> -
-> -	ppc_cached_irq_mask[word] |= (1 << (31-bit));
-> -	out_be32(&siu_reg->sc_simask, ppc_cached_irq_mask[word]);
-> +	mpc8xx_cached_irq_mask |= mpc8xx_irqd_to_bit(d);
-> +	out_be32(&siu_reg->sc_simask, mpc8xx_cached_irq_mask);
->  }
->  
->  static void mpc8xx_mask_irq(struct irq_data *d)
->  {
-> -	int	bit, word;
-> -	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
-> -
-> -	bit = irq_nr & 0x1f;
-> -	word = irq_nr >> 5;
-> -
-> -	ppc_cached_irq_mask[word] &= ~(1 << (31-bit));
-> -	out_be32(&siu_reg->sc_simask, ppc_cached_irq_mask[word]);
-> +	mpc8xx_cached_irq_mask &= ~mpc8xx_irqd_to_bit(d);
-> +	out_be32(&siu_reg->sc_simask, mpc8xx_cached_irq_mask);
->  }
->  
->  static void mpc8xx_ack(struct irq_data *d)
->  {
-> -	int	bit;
-> -	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
-> -
-> -	bit = irq_nr & 0x1f;
-> -	out_be32(&siu_reg->sc_sipend, 1 << (31-bit));
-> +	out_be32(&siu_reg->sc_sipend, mpc8xx_irqd_to_bit(d));
->  }
->  
->  static void mpc8xx_end_irq(struct irq_data *d)
->  {
-> -	int bit, word;
-> -	unsigned int irq_nr = (unsigned int)irqd_to_hwirq(d);
-> -
-> -	bit = irq_nr & 0x1f;
-> -	word = irq_nr >> 5;
-> -
-> -	ppc_cached_irq_mask[word] |= (1 << (31-bit));
-> -	out_be32(&siu_reg->sc_simask, ppc_cached_irq_mask[word]);
-> +	mpc8xx_cached_irq_mask |= mpc8xx_irqd_to_bit(d);
-> +	out_be32(&siu_reg->sc_simask, mpc8xx_cached_irq_mask);
->  }
->  
->  static int mpc8xx_set_irq_type(struct irq_data *d, unsigned int flow_type)
->  {
-> -	if (flow_type & IRQ_TYPE_EDGE_FALLING) {
-> -		irq_hw_number_t hw = (unsigned int)irqd_to_hwirq(d);
-> +	/* only external IRQ senses are programmable */
-> +	if ((flow_type & IRQ_TYPE_EDGE_FALLING) && !(irqd_to_hwirq(d) & 1)) {
->  		unsigned int siel = in_be32(&siu_reg->sc_siel);
-> -
-> -		/* only external IRQ senses are programmable */
-> -		if ((hw & 1) == 0) {
-> -			siel |= (0x80000000 >> hw);
-> -			out_be32(&siu_reg->sc_siel, siel);
-> -			__irq_set_handler_locked(d->irq, handle_edge_irq);
-> -		}
-> +		siel |= mpc8xx_irqd_to_bit(d);
-> +		out_be32(&siu_reg->sc_siel, siel);
-> +		__irq_set_handler_locked(d->irq, handle_edge_irq);
->  	}
->  	return 0;
->  }
-> @@ -132,6 +108,9 @@ static int mpc8xx_pic_host_xlate(struct irq_domain *h, struct device_node *ct,
->  		IRQ_TYPE_EDGE_FALLING,
->  	};
->  
-> +	if (intspec[0] > 0x1f)
-> +		return 0;
-> +
->  	*out_hwirq = intspec[0];
->  	if (intsize > 1 && intspec[1] < 4)
->  		*out_flags = map_pic_senses[intspec[1]];
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
