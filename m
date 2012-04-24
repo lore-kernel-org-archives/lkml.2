@@ -1,35 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab2DXRRs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 13:17:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43001 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756753Ab2DXRRq (ORCPT
+	id S1756792Ab2DXRTp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 13:19:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45603 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755771Ab2DXRTo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 13:17:46 -0400
-Message-ID: <4F96E03F.3080200@gmail.com>
-Date: Tue, 24 Apr 2012 13:17:51 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: lwoodman@redhat.com
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Motohiro Kosaki <mkosaki@redhat.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kosaki.motohiro@gmail.com
-Subject: Re: [PATCH -mm V2] do_migrate_pages() calls migrate_to_node() even
- if task is already on a correct node
-References: <4F96CDE1.5000909@redhat.com> <4F96D27A.2050005@gmail.com> <4F96DFE0.6040306@redhat.com>
-In-Reply-To: <4F96DFE0.6040306@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Apr 2012 13:19:44 -0400
+Message-ID: <1335287973.28150.213.camel@twins>
+Subject: Re: [RFC][PATCH 3/3] math128, x86_64: Implement {mult,add}_u128 in
+ 64bit asm
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 24 Apr 2012 19:19:33 +0200
+In-Reply-To: <4F96E01E.6040109@zytor.com>
+References: <20120424161039.293018424@chello.nl>
+	  <20120424162224.588822231@chello.nl> <4F96D604.5050709@zytor.com>
+	 <1335285395.28150.204.camel@twins> <4F96E01E.6040109@zytor.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How does this look:
+On Tue, 2012-04-24 at 10:17 -0700, H. Peter Anvin wrote:
+> On 04/24/2012 09:36 AM, Peter Zijlstra wrote:
+> > On Tue, 2012-04-24 at 09:34 -0700, H. Peter Anvin wrote:
+> >> On 04/24/2012 09:10 AM, Peter Zijlstra wrote:
+> >>
+> >> Are you sure that gcc won't simply generate this code already if given
+> >> "unsigned __int128"?
+> > 
+> > It might, but I've been told some GCC versions had issues, also lots of
+> > archs fall back to libgcc functions.
+> > 
+> 
+> Yes, but this is specific to x86-64.  If gcc can generate the code it
+> can also schedule the code, which it can't for assembly...
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-
+Ok, but are you sure unsigned __int128 works for all gcc versions we
+support?
