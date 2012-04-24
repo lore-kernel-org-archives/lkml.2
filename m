@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab2DXXCD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 19:02:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49279 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297Ab2DXWeY (ORCPT
+	id S932247Ab2DXWeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:34:18 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:49931 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932211Ab2DXWeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:34:24 -0400
-Message-Id: <20120424223242.855843657@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:34:15 -0400
+Message-Id: <20120424223242.513711422@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:32:51 -0700
+Date: Tue, 24 Apr 2012 15:32:47 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@ti.com>, "Govindraj.R" <govindraj.raja@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
-Subject: [ 10/62] ARM: OMAP: serial: Fix the ocp smart idlemode handling bug
+        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
+        Valere Monseur <valere.monseur@ymail.com>,
+        Joseph Freeman <jfree143dev@gmail.com>
+Subject: [ 06/62] memblock: memblock should be able to handle zero length operations
 In-Reply-To: <20120424223305.GA7748@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 5ae256dcd91bf308826a4ac19598b27ebb86a536 upstream.
+commit b3dc627cabb33fc95f93da78457770c1b2a364d2 upstream.
 
-The current serial UART code, while fidling with ocp idlemode bits,
-forget about the smart idle wakeup bit even if it is supported by
-UART IP block. This will lead to missing the module wakeup on OMAP's
-where the smart idle wakeup is supported.
+Commit 24aa07882b ("memblock, x86: Replace memblock_x86_reserve/
+free_range() with generic ones") replaced x86 specific memblock
+operations with the generic ones; unfortunately, it lost zero length
+operation handling in the process making the kernel panic if somebody
+tries to reserve zero length area.
 
-This was the root cause of the console sluggishness issue, I have been
-observing on OMAP4 devices and also can be potential reason for some
-other UART wakeup issues.
+There isn't much to be gained by being cranky to zero length operations
+and panicking is almost the worst response.  Drop the BUG_ON() in
+memblock_reserve() and update memblock_add_region/isolate_range() so
+that all zero length operations are handled as noops.
 
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Kevin Hilman <khilman@ti.com>
-Acked-by: Govindraj.R <govindraj.raja@ti.com>
-Reviewed-by: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Valere Monseur <valere.monseur@ymail.com>
+Bisected-by: Joseph Freeman <jfree143dev@gmail.com>
+Tested-by: Joseph Freeman <jfree143dev@gmail.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43098
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/serial.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ mm/memblock.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-omap2/serial.c
-+++ b/arch/arm/mach-omap2/serial.c
-@@ -110,8 +110,14 @@ static void omap_uart_set_noidle(struct
- static void omap_uart_set_smartidle(struct platform_device *pdev)
- {
- 	struct omap_device *od = to_omap_device(pdev);
-+	u8 idlemode;
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -330,6 +330,9 @@ static int __init_memblock memblock_add_
+ 	phys_addr_t end = base + memblock_cap_size(base, &size);
+ 	int i, nr_new;
  
--	omap_hwmod_set_slave_idlemode(od->hwmods[0], HWMOD_IDLEMODE_SMART);
-+	if (od->hwmods[0]->class->sysc->idlemodes & SIDLE_SMART_WKUP)
-+		idlemode = HWMOD_IDLEMODE_SMART_WKUP;
-+	else
-+		idlemode = HWMOD_IDLEMODE_SMART;
++	if (!size)
++		return 0;
 +
-+	omap_hwmod_set_slave_idlemode(od->hwmods[0], idlemode);
- }
+ 	/* special case for empty array */
+ 	if (type->regions[0].size == 0) {
+ 		WARN_ON(type->cnt != 1 || type->total_size);
+@@ -430,6 +433,9 @@ static int __init_memblock memblock_isol
  
- #else
+ 	*start_rgn = *end_rgn = 0;
+ 
++	if (!size)
++		return 0;
++
+ 	/* we'll create at most two more regions */
+ 	while (type->cnt + 2 > type->max)
+ 		if (memblock_double_array(type) < 0)
+@@ -514,7 +520,6 @@ int __init_memblock memblock_reserve(phy
+ 		     (unsigned long long)base,
+ 		     (unsigned long long)base + size,
+ 		     (void *)_RET_IP_);
+-	BUG_ON(0 == size);
+ 
+ 	return memblock_add_region(_rgn, base, size, MAX_NUMNODES);
+ }
 
 
