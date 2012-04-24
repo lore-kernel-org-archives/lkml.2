@@ -1,104 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab2DXOZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 10:25:25 -0400
-Received: from 16.mo4.mail-out.ovh.net ([188.165.55.104]:41519 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754923Ab2DXOZW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 10:25:22 -0400
-X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Apr 2012 10:25:21 EDT
-Date: Tue, 24 Apr 2012 14:46:34 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
-        s.hauer@pengutronix.de
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [PATCH v2 3/3] ARM: imx6q: switch to use pinctrl driver
-Message-ID: <20120424124634.GH9142@game.jcrosoft.org>
-References: <1334933916-12971-1-git-send-email-b29396@freescale.com>
- <1334933916-12971-3-git-send-email-b29396@freescale.com>
+	id S1754997Ab2DXO1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 10:27:39 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:50258 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753627Ab2DXO1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 10:27:37 -0400
+Date: Tue, 24 Apr 2012 16:29:39 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: viresh kumar <viresh.linux@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Viresh Kumar <viresh.kumar@st.com>,
+        akpm@linux-foundation.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        mturquette@linaro.org, sshtylyov@mvista.com, jgarzik@redhat.com,
+        linux@arm.linux.org.uk, linux-ide@vger.kernel.org
+Subject: Re: [PATCH V3 07/12] ata/sata_mv: Remove conditional compilation of
+ clk code
+Message-ID: <20120424142939.GG24089@lunn.ch>
+Mail-Followup-To: viresh kumar <viresh.linux@gmail.com>,
+	Andrew Lunn <andrew@lunn.ch>, Viresh Kumar <viresh.kumar@st.com>,
+	akpm@linux-foundation.org, spear-devel@list.st.com,
+	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	mturquette@linaro.org, sshtylyov@mvista.com, jgarzik@redhat.com,
+	linux@arm.linux.org.uk, linux-ide@vger.kernel.org
+References: <cover.1335266056.git.viresh.kumar@st.com>
+ <abbcf661dc58948794839eb0fba1d5a0950ec848.1335266056.git.viresh.kumar@st.com>
+ <20120424120019.GE24089@lunn.ch>
+ <CAOh2x==YaPxYxigyE=n2weoKHhu4ktGRHHGdzgs2+d1_Lo-D4Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334933916-12971-3-git-send-email-b29396@freescale.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 11910613640334584679
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeggedrtddvucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: 0
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeggedrtddvucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+In-Reply-To: <CAOh2x==YaPxYxigyE=n2weoKHhu4ktGRHHGdzgs2+d1_Lo-D4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22:58 Fri 20 Apr     , Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+On Tue, Apr 24, 2012 at 07:12:10PM +0530, viresh kumar wrote:
+> On 4/24/12, Andrew Lunn <andrew@lunn.ch> wrote:
+> > Sorry, but still wrong.
+> >
+> > The clock is optional. If we can find a clock, turn it on. If not,
+> > keep going....
+> >
+> > You patch causes the missing clock to become a fatal error.
+> >
+> > This sata_mv exists in multiple forms. It can be part of a SoC. It can
+> > also be on a PCI bus. In the PCI form, it is unlikely to have a clk
+> > which can be controlled. When built into a SoC, namely one of the
+> > Orion family, dove, orion5x, mv78xx0 do not have a clock which can be
+> > controlled. However kirkwood does have a clock.
+> >
+> > So, kirkwood will provide a clock and expects that sata_mv will turn
+> > it on. All the other ways of using sata_mv will not provide a clock,
+> > but still expect the driver to be happy.
 > 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> Hmm. What this code does now is:
+> If HAVE_CLK is selected, then there must be a clock for the device. Otherwise
+> it will always pass.
 > 
-> ---
-> This is not a formal patch and is only used for test
-> since before the pinctrl core handle dummy state is in,
-> enable pinctrl in driver will break other platforms.
-> 
-> ChangeLog v1->v2:
-> * using updated binding
-> ---
->  arch/arm/boot/dts/imx6q-arm2.dts   |    2 ++
->  arch/arm/boot/dts/imx6q.dtsi       |   17 +++++++++++++++++
->  arch/arm/mach-imx/Kconfig          |    2 ++
->  drivers/mmc/host/sdhci-esdhc-imx.c |   12 ++++++++++++
->  4 files changed, 33 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/imx6q-arm2.dts b/arch/arm/boot/dts/imx6q-arm2.dts
-> index ce1c823..68b1d8d 100644
-> --- a/arch/arm/boot/dts/imx6q-arm2.dts
-> +++ b/arch/arm/boot/dts/imx6q-arm2.dts
-> @@ -44,6 +44,8 @@
->  				fsl,card-wired;
->  				vmmc-supply = <&reg_3p3v>;
->  				status = "okay";
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_usdhc4_1>;
->  			};
->  
->  			uart4: uart@021f0000 {
-> diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
-> index 4905f51..8cbd88b 100644
-> --- a/arch/arm/boot/dts/imx6q.dtsi
-> +++ b/arch/arm/boot/dts/imx6q.dtsi
-> @@ -386,7 +386,24 @@
->  			};
->  
->  			iomuxc@020e0000 {
-> +				compatible = "fsl,imx6q-iomuxc";
->  				reg = <0x020e0000 0x4000>;
-> +
-> +				/* shared pinctrl settings */
-> +				usdhc4 {
-> +					pinctrl_usdhc4_1: usdhc4grp-1 {
-> +						fsl,pins = <1386 0x17059	/* MX6Q_PAD_SD4_CMD__USDHC4_CMD */
-> +							    1392 0x17059	/* MX6Q_PAD_SD4_CLK__USDHC4_CLK	*/
-> +							    1462 0x17059	/* MX6Q_PAD_SD4_DAT0__USDHC4_DAT0 */
-> +							    1470 0x17059	/* MX6Q_PAD_SD4_DAT1__USDHC4_DAT1 */
-> +							    1478 0x17059	/* MX6Q_PAD_SD4_DAT2__USDHC4_DAT2 */
-> +							    1486 0x17059	/* MX6Q_PAD_SD4_DAT3__USDHC4_DAT3 */
-> +							    1493 0x17059	/* MX6Q_PAD_SD4_DAT4__USDHC4_DAT4 */
-> +							    1501 0x17059	/* MX6Q_PAD_SD4_DAT5__USDHC4_DAT5 */
-> +							    1509 0x17059	/* MX6Q_PAD_SD4_DAT6__USDHC4_DAT6 */
-> +							    1517 0x17059>;	/* MX6Q_PAD_SD4_DAT7__USDHC4_DAT7 */
-Can you on IMX have alternative onfiguration where you use as example just one
-pin on a different pad?
 
-Best Regards,
-J.
+-#if defined(CONFIG_HAVE_CLK)
+    hpriv->clk = clk_get(&pdev->dev, NULL);
+-   if (IS_ERR(hpriv->clk))
+-           dev_notice(&pdev->dev, "cannot get clkdev\n");
+-   else
+-           clk_enable(hpriv->clk);
+-#endif
++   if (IS_ERR(hpriv->clk)) {
++           dev_err(&pdev->dev, "cannot get clkdev\n");
++           return PTR_ERR(hpriv->clk);
++   }
++
++   clk_enable(hpriv->clk);
+
+There are three use cases....
+
+1) The platform does not implement HAVE_CLK. So we are using your NOP
+   operations.
+
+   clk_get() returns NULL.
+
+   IS_ERR(NULL) is false. So it keeps going, calls clk_enable() which is
+   also NOP and the driver is happy.
+
+2) The platform does have HAVE_CLK. So we are using driver/clk/
+   code. There is no clk defined for the device, since there is no
+   controllable clk. Its using the PCI clock, or some hard wired
+   internal SoC clock.
+
+   clk_get() returns ERR_PTR(-ENOENT)
+
+   IS_ERR(hpriv->clk) is true, you output a dev_err() and the device
+   probe fails.
+
+   This is wrong. Not having the clk is not fatal. The old code would
+   carefully not call clk_enable(), since it has an error pointer, not
+   have a valid clk, and would also not call clk_disable during
+   removal.
+
+3) The platform does have HAVE_CLK. So we are using driver/clk/ code.
+   There is however a gateable clock driving this lump of silicon.
+
+   clk_get() returns a valid pointer to a clk.
+   IS_ERR(hpriv->clk) is false, so it keeps going.
+   clk_enable() is called and the driver is happy.
+
+   Well, actually, his brings up a new issues 
+
+static int __clk_enable(struct clk *clk)
+{
+        int ret = 0;
+
+        if (!clk)
+                return 0;
+
+        if (WARN_ON(clk->prepare_count == 0))
+                return -ESHUTDOWN;
+
+   this should actually be clk_prepare_enable(). Did you see my
+   patches adding generic clk framework support for Orion. I fixed
+   this as part of that patch set.
+
+Anyway.... You asked:
+
+> You want not to return error if a platform does have HAVE_CLK, but
+> doesn't have a clock for sata? That would be simple to fix, but want
+> to confirm if this is actually required.
+
+Correct.
+
+	Andrew
+   
+   
