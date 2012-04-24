@@ -1,63 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab2DXCFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 22:05:40 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36593 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab2DXCFj (ORCPT
+	id S1756276Ab2DXCGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 22:06:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47889 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756259Ab2DXCGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 22:05:39 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 24 Apr 2012 11:05:18 +0900 (JST)
-Message-Id: <20120424.110518.434300178.d.hatayama@jp.fujitsu.com>
-To: andi@firstfloor.org
-Cc: linux-kernel@vger.kernel.org, fenghua.yu@intel.com, ebiederm@xmission.com
-Subject: Re: [PATCH 2/2] Enter 2nd kernel with BSP
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <m2ipgqoh90.fsf@firstfloor.org>
-References: <20120416021951.9303.58568.stgit@localhost6.localdomain6>
-	<20120416022139.9303.56284.stgit@localhost6.localdomain6>
-	<m2ipgqoh90.fsf@firstfloor.org>
-X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 23 Apr 2012 22:06:20 -0400
+Date: Tue, 24 Apr 2012 12:06:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org,
+        Parav Pandit <parav.pandit@emulex.com>,
+        Ajit Khaparde <ajitkhaparde@gmail.com>
+Subject: linux-next: manual merge of the net-next tree with the infiniband
+ tree
+Message-Id: <20120424120611.cce0e2cdee61b60c700725a8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__24_Apr_2012_12_06_11_+1000_QBc0z=7ZcH=PXpsO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 2/2] Enter 2nd kernel with BSP
-Date: Mon, 23 Apr 2012 03:49:15 -0700
+--Signature=_Tue__24_Apr_2012_12_06_11_+1000_QBc0z=7ZcH=PXpsO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> Split logic into BSP's and AP's: BSP waits for AP halting.
->>
->> Don't remove variable crashing_cpu for debugging use; useful for
->> determining one what CPU crash happens.
-> 
-> Fenghua has this patchkit to allow offlining the BSP. What happens then?
-> 
-> It would be good to understand why initializing APs from other APs
-> should not work.  Not aware of such a limitation in x86.
-> 
-> AFAIK when we online a random cpu after boot there is no effort to do it
-> from BSP. Why does that work and not from the kexec boot?
-> 
+Hi all,
 
-Hello Andi,
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/ethernet/emulex/benet/be.h between commit c72adfd767af
+("be2net: Add functionality to support RoCE driver") from the infiniband
+tree and commit 42f11cf20cc5 ("be2net: fix ethtool get settings") from
+the net-next tree.
 
-I have yet to test what I explain here, so I'm sorry I say these with
-``would''.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-APs to APs case would be entirely my misunderstanding. The problematic
-case would be APs to BSP case only.
+diff --cc drivers/net/ethernet/emulex/benet/be.h
+index 7bb2e97,ad69cf8..0000000
+--- a/drivers/net/ethernet/emulex/benet/be.h
++++ b/drivers/net/ethernet/emulex/benet/be.h
+@@@ -379,22 -394,7 +396,18 @@@ struct be_adapter=20
+  	u32 rx_fc;		/* Rx flow control */
+  	u32 tx_fc;		/* Tx flow control */
+  	bool stats_cmd_sent;
+- 	int link_speed;
+- 	u8 port_type;
+- 	u8 transceiver;
+- 	u8 autoneg;
+  	u8 generation;		/* BladeEngine ASIC generation */
+ +	u32 if_type;
+ +	struct {
+ +		u8 __iomem *base;	/* Door Bell */
+ +		u32 size;
+ +		u32 total_size;
+ +		u64 io_addr;
+ +	} roce_db;
+ +	u32 num_msix_roce_vec;
+ +	struct ocrdma_dev *ocrdma_dev;
+ +	struct list_head entry;
+ +
+  	u32 flash_status;
+  	struct completion flash_compl;
+ =20
+@@@ -606,17 -597,5 +620,18 @@@ extern void be_link_status_update(struc
+  extern void be_parse_stats(struct be_adapter *adapter);
+  extern int be_load_fw(struct be_adapter *adapter, u8 *func);
+  extern bool be_is_wol_supported(struct be_adapter *adapter);
++ extern bool be_pause_supported(struct be_adapter *adapter);
+ +
+ +/*
+ + * internal function to initialize-cleanup roce device.
+ + */
+ +extern void be_roce_dev_add(struct be_adapter *);
+ +extern void be_roce_dev_remove(struct be_adapter *);
+ +
+ +/*
+ + * internal function to open-close roce device during ifup-ifdown.
+ + */
+ +extern void be_roce_dev_open(struct be_adapter *);
+ +extern void be_roce_dev_close(struct be_adapter *);
+ +
+  #endif				/* BE_H */
 
-native_cpu_up avoids to wake up cpu with boot_cpu_physical_apicid, but
-the boot_cpu_physical_apicid would be just a boot cpu now, which could
-be non-BSP on the 2nd kernel; equal to crashing cpu on the 1st
-kernel. It would need to check explicitly whether a given cpu is BSP
-or not and this would be better fix here. This is suggested by Eric.
+--Signature=_Tue__24_Apr_2012_12_06_11_+1000_QBc0z=7ZcH=PXpsO
+Content-Type: application/pgp-signature
 
-Thanks.
-HATAYAMA, Daisuke
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPlgqTAAoJEECxmPOUX5FEbUAP/jIf5CKRfbZXwM2tRgh1wg+Z
+kipdXKoFPouQoHLtyyOx3Vcs39j0wL12qQqa2O2bhHO+vQzmTyEtOMczGPytbEd5
+XPmv2w8Qoi4ZexbCi6eVPhJYlwRP3cluQZhH7pAIvEaJt9VWg2q0In4VSXUhKggY
+iydQAYBhyFx55wQ5ZqahGdx4UKFeP/wyjDYImXXGvJ9gn86PRW8qXw1QsrVPSoPR
+uNp2EOKZBW0Q9NMUkuqzHtgpz3TSiO30A/2IxmN6GB6HSJcyIylyMVGQWzMyv5df
+8v9SjAS0k8BITNJOsoFcJytkzCv/5Tv2Hme4uVaBGQLkdPyYjvqnJ+A/jOoyKGXI
+TEwhr4/HSRwbQOJZwIfswLTZIgFMkiCHzn5icxpbK/bLTS3K7BYno+awGxzcv9YF
+C/sh8738jthBUzvimDGqUKakc2bVvs9owHowAvcokKcgzAZDdTGOae/Dnz7hC6o3
+r5jEvpnD0SthlOQjilO09D1ke4vCbk35K9G5jON6+PQ1YZd5F1ft+a2HIIcaYmqq
+gVMX+td4sCj4RFzaqoG0mxS5GsNgQs3haYvF3lv+qGOIx4AMDzP0yfDn3M5b58Vc
+aQ6gVU/uPEyJV/SSxRUMtvX6cCXI8KfXk1LKImSVq3DMP29f5fhvvcPWhupK18Yu
+UkPngkPoiG9LnCXrrrqe
+=H1b7
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__24_Apr_2012_12_06_11_+1000_QBc0z=7ZcH=PXpsO--
