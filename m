@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab2DXFS6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 01:18:58 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60771 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604Ab2DXFS5 (ORCPT
+	id S1752169Ab2DXF27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 01:28:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64906 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab2DXF2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 01:18:57 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F963742.2030607@jp.fujitsu.com>
-Date: Tue, 24 Apr 2012 14:16:50 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 24 Apr 2012 01:28:43 -0400
+Date: Mon, 23 Apr 2012 22:28:32 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/input/tablet/aiptek.c: adjust error-handling
+ code label
+Message-ID: <20120424052832.GA28787@core.coreip.homeip.net>
+References: <1334609092-15338-1-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] propagate gfp_t to page table alloc functions
-References: <1335171318-4838-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1335171318-4838-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334609092-15338-1-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/23 17:55), Minchan Kim wrote:
-
-> As I test some code, I found a problem about deadlock by lockdep.
-> The reason I saw the message is __vmalloc calls map_vm_area which calls
-> pud/pmd_alloc without gfp_t. so although we call __vmalloc with
-> GFP_ATOMIC or GFP_NOIO, it ends up allocating pages with GFP_KERNEL.
-> The should be a BUG. This patch fixes it by passing gfp_to to low page
-> table allocate functions.
+On Mon, Apr 16, 2012 at 10:44:52PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> At the point of this error-handling code, aiptek->urb has been allocated,
+> and it does not appear to be less necessary to free it here than in the
+> error-handling code just below.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
+Applied, thank you Julia.
 
-Hmm ? vmalloc should support GFP_ATOMIC ?
+> 
+> ---
+>  drivers/input/tablet/aiptek.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/input/tablet/aiptek.c b/drivers/input/tablet/aiptek.c
+> index 205d16a..a33d347 100644
+> --- a/drivers/input/tablet/aiptek.c
+> +++ b/drivers/input/tablet/aiptek.c
+> @@ -1856,7 +1856,7 @@ aiptek_probe(struct usb_interface *intf, const struct usb_device_id *id)
+>  	if (i == ARRAY_SIZE(speeds)) {
+>  		dev_info(&intf->dev,
+>  			 "Aiptek tried all speeds, no sane response\n");
+> -		goto fail2;
+> +		goto fail3;
+>  	}
+>  
+>  	/* Associate this driver's struct with the usb interface.
+> 
 
-And, do we need to change all pud_,pgd_,pmd_,pte_alloc() for users pgtables ?
-
-Thanks,
--Kame
-
+-- 
+Dmitry
