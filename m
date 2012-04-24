@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab2DXN20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 09:28:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43073 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab2DXN2Z (ORCPT
+	id S1754820Ab2DXNay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 09:30:54 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:48938 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754281Ab2DXNax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 09:28:25 -0400
-Date: Tue, 24 Apr 2012 15:28:10 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, ben-linux@fluff.org,
-        swarren@wwwdotorg.org, olof@lixom.net, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V1 2/2] i2c: tegra: support for I2C_M_NOSTART protocol
- mangling
-Message-ID: <20120424132810.GE4030@pengutronix.de>
-References: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
- <1335251976-31925-3-git-send-email-ldewangan@nvidia.com>
- <20120424105557.7ac07232@endymion.delvare>
- <4F967089.3050004@nvidia.com>
- <20120424143241.0d66fd2e@endymion.delvare>
- <20120424124030.GD13747@opensource.wolfsonmicro.com>
- <20120424130118.GD4030@pengutronix.de>
- <20120424150750.36f8c2fc@endymion.delvare>
+	Tue, 24 Apr 2012 09:30:53 -0400
+Message-ID: <4F96AAF4.2000402@linux.vnet.ibm.com>
+Date: Tue, 24 Apr 2012 08:30:28 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2qXFWqzzG3v1+95a"
-Content-Disposition: inline
-In-Reply-To: <20120424150750.36f8c2fc@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Autif Khan <autif.mlist@gmail.com>
+Subject: Re: [PATCH] drivers: staging: zcache: fix Kconfig crypto dependency
+References: <1335231230-29344-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120424022702.GA6573@kroah.com>
+In-Reply-To: <20120424022702.GA6573@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042413-3352-0000-0000-0000043C779C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/23/2012 09:27 PM, Greg Kroah-Hartman wrote:
+> Ok, this fixes one of the build problems reported, what about the other
+> one?
 
---2qXFWqzzG3v1+95a
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Both problems that I heard about were caused by same issue;
+the issue fixed in this patch.
 
+ZSMALLOC=m was only allowed because CRYPTO=m was allowed.
+This patch requires CRYPTO=y, which also requires ZSMALLOC=y
+when ZCACHE=y.
 
-> I think the assumption was that mangling requires full control of the
-> bus lines, so a driver would either support all quirks (i2c-algo-bit)
-> or none (everybody else), thus having a single functionality flag. As
-> it seems I2C_M_NOSTART no longer fits the "quirky" category, having a
-> separate flag for it would make sense. But I would leave the rest alone
-> for the time being.
+https://lkml.org/lkml/2012/4/19/588
 
-OK. We can still do what I proposed just in case the other mangling
-features should ever become equally important ;)
+https://lkml.org/lkml/2012/4/23/481
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Thanks,
+Seth
 
---2qXFWqzzG3v1+95a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+WqmoACgkQD27XaX1/VRuLpQCfZ/O8piFutX04a4tw0wpzXaYA
-Es4AoKiZiBoWXCd6+EWv7Aj2MpiknRRp
-=TvEQ
------END PGP SIGNATURE-----
-
---2qXFWqzzG3v1+95a--
