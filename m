@@ -1,100 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab2DXBgK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Apr 2012 21:36:10 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:35169 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716Ab2DXBgI (ORCPT
+	id S1756215Ab2DXBhv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Apr 2012 21:37:51 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:55568 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754716Ab2DXBht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Apr 2012 21:36:08 -0400
-Message-ID: <4F960376.6040906@us.ibm.com>
-Date: Mon, 23 Apr 2012 18:35:50 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Mon, 23 Apr 2012 21:37:49 -0400
+Date: Tue, 24 Apr 2012 09:38:43 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Rob Lee <rob.lee@linaro.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, linaro-dev@lists.linaro.org,
+        patches@linaro.org, daniel.lezcano@linaro.org,
+        linux-kernel@vger.kernel.org, Amit Kucheria <amit.kucheria@linaro.org>,
+        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
+Message-ID: <20120424013841.GB26306@S2101-09.ap.freescale.net>
+References: <20120419064308.GH3852@pengutronix.de>
+ <20120420020816.GH22219@S2101-09.ap.freescale.net>
+ <CAMXH7KE2RtdNy3G61guZb2uWy3rn267Z3eEVEgN5e==tHHsiuA@mail.gmail.com>
+ <20120423051813.GM26306@S2101-09.ap.freescale.net>
+ <20120423062739.GX3852@pengutronix.de>
+ <20120423065259.GR26306@S2101-09.ap.freescale.net>
+ <20120423065623.GA3852@pengutronix.de>
+ <20120423071013.GS26306@S2101-09.ap.freescale.net>
+ <20120423074856.GU20478@pengutronix.de>
+ <CAMXH7KH1pwh7hJ=T30zxcWcx19wjXvr6Ff4OLy7fzqY5p79Fwg@mail.gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 8/8] PM / Sleep: Add user space interface for manipulating
- wakeup sources
-References: <201202070200.55505.rjw@sisk.pl> <201202220031.46219.rjw@sisk.pl> <201204222319.02228.rjw@sisk.pl> <201204222324.45586.rjw@sisk.pl>
-In-Reply-To: <201204222324.45586.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042401-7282-0000-0000-0000086D62FC
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMXH7KH1pwh7hJ=T30zxcWcx19wjXvr6Ff4OLy7fzqY5p79Fwg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2012 02:24 PM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki<rjw@sisk.pl>
->
-> Android allows user space to manipulate wakelocks using two
-> sysfs file located in /sys/power/, wake_lock and wake_unlock.
-> Writing a wakelock name and optionally a timeout to the wake_lock
-> file causes the wakelock whose name was written to be acquired (it
-> is created before is necessary), optionally with the given timeout.
-> Writing the name of a wakelock to wake_unlock causes that wakelock
-> to be released.
->
-> Implement an analogous interface for user space using wakeup sources.
-> Add the /sys/power/wake_lock and /sys/power/wake_unlock files
-> allowing user space to create, activate and deactivate wakeup
-> sources, such that writing a name and optionally a timeout to
-> wake_lock causes the wakeup source of that name to be activated,
-> optionally with the given timeout.  If that wakeup source doesn't
-> exist, it will be created and then activated.  Writing a name to
-> wake_unlock causes the wakeup source of that name, if there is one,
-> to be deactivated.  Wakeup sources created with the help of
-> wake_lock that haven't been used for more than 5 minutes are garbage
-> collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
-> wakeup sources created with the help of wake_lock present at a time.
->
-> The data type used to track wakeup sources created by user space is
-> called "struct wakelock" to indicate the origins of this feature.
->
-> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
-> ---
-One small bug.  In wakelock_lookup_add, you're assigning parent after 
-you assign node, so at loop exit the parent might be null.
-This resulted in some strange cases where I'd add two wakelocks and 
-everything would be fine, but then adding the third would cause the 
-first two to get lost.
+On Mon, Apr 23, 2012 at 10:45:02AM -0500, Rob Lee wrote:
+> >> Let me try last time.  What about having a late_initcall hook in
+> >> machine_desc?
+> >
+> > Also fine with me.
+> >
+> 
+> Shall I add Shawn's patch to my imx cpuidle patchset or should the
+> arch/arm/kernel/setup.c and arch.h changes be submitted separately?
+> If separately, Shawn, did you want to submit this patch or should I?
+> 
+Strange.  Russell is not in the Cc list.  I remember I added Russell
+into Cc when I propose the idea.  Added him again.
 
-The following patch seems to fix it.
+Rob,
 
-thanks
--john
+I suggest you have changes on arch/arm/kernel/setup.c and arch.h be
+a separate patch, but you can still have it in the series to show why
+we need the changes.  Cc Russell when posting the series, and see if
+Russell is fine with the patch.  If he is, we can ask his preference
+how the patch should go in, submitting it to his patch tracker or we
+can have it go though arm-soc along with the series to save the
+dependency.
 
-diff --git a/kernel/power/wakelock.c b/kernel/power/wakelock.c
-index 2f99f02..f950cc2 100644
---- a/kernel/power/wakelock.c
-+++ b/kernel/power/wakelock.c
-@@ -70,6 +70,7 @@ static struct wakelock *wakelock_lookup_add(const char *name, size_t len,
-  	while (*node) {
-  		int diff;
+Regards,
+Shawn
 
-+		parent = *node;
-  		wl = rb_entry(*node, struct wakelock, node);
-  		diff = strncmp(name, wl->name, len);
-  		if (diff == 0) {
-@@ -82,8 +83,6 @@ static struct wakelock *wakelock_lookup_add(const char *name, size_t len,
-  			node =&(*node)->rb_left;
-  		else
-  			node =&(*node)->rb_right;
--
--		parent = *node;
-  	}
-  	if (!add_if_not_found)
-  		return ERR_PTR(-EINVAL);
-
-
+> >> 8<---
+> >>
+> >> diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+> >> index d7692ca..0b1c94b 100644
+> >> --- a/arch/arm/include/asm/mach/arch.h
+> >> +++ b/arch/arm/include/asm/mach/arch.h
+> >> @@ -43,6 +43,7 @@ struct machine_desc {
+> >>         void                    (*init_irq)(void);
+> >>         struct sys_timer        *timer;         /* system tick timer    */
+> >>         void                    (*init_machine)(void);
+> >> +       void                    (*init_late)(void);
+> >>  #ifdef CONFIG_MULTI_IRQ_HANDLER
+> >>         void                    (*handle_irq)(struct pt_regs *);
+> >>  #endif
+> >> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> >> index ebfac78..549f036 100644
+> >> --- a/arch/arm/kernel/setup.c
+> >> +++ b/arch/arm/kernel/setup.c
+> >> @@ -800,6 +800,14 @@ static int __init customize_machine(void)
+> >>  }
+> >>  arch_initcall(customize_machine);
+> >>
+> >> +static int __init init_machine_late(void)
+> >> +{
+> >> +       if (machine_desc->init_late)
+> >> +               machine_desc->init_late();
+> >> +       return 0;
+> >> +}
+> >> +late_initcall(init_machine_late);
+> >> +
+> >>  #ifdef CONFIG_KEXEC
+> >>  static inline unsigned long long get_total_mem(void)
+> >>  {
+> >> diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+> >> index da6c1d9..0e3640f 100644
+> >> --- a/arch/arm/mach-imx/mach-imx6q.c
+> >> +++ b/arch/arm/mach-imx/mach-imx6q.c
+> >> @@ -142,6 +142,7 @@ DT_MACHINE_START(IMX6Q, "Freescale i.MX6 Quad (Device Tree)")
+> >>         .handle_irq     = imx6q_handle_irq,
+> >>         .timer          = &imx6q_timer,
+> >>         .init_machine   = imx6q_init_machine,
+> >> +       .init_late      = imx6q_init_late,
+> >>         .dt_compat      = imx6q_dt_compat,
+> >>         .restart        = imx6q_restart,
+> >>  MACHINE_END
