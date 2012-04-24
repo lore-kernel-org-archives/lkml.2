@@ -1,117 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab2DXH33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 03:29:29 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:51128 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab2DXH32 (ORCPT
+	id S1755245Ab2DXHcv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 03:32:51 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56595 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754861Ab2DXHcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 03:29:28 -0400
-Date: Tue, 24 Apr 2012 15:29:18 +0800
-From: Richard Yang <weiyang@linux.vnet.ibm.com>
-To: Don Dutile <ddutile@redhat.com>
-Cc: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: One problem in reassign pci bus number?
-Message-ID: <20120424072918.GA9138@richard>
-Reply-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-References: <20120410090306.GA7056@richard>
- <20120422155202.GA13540@richard>
- <4F95B17B.3030401@redhat.com>
+	Tue, 24 Apr 2012 03:32:50 -0400
+Date: Tue, 24 Apr 2012 09:32:47 +0200
+From: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F95B17B.3030401@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12042407-4790-0000-0000-000002529400
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] GPIO: Add support for TI TCA6424
+Content-Type: multipart/mixed;
+	boundary="------------070106090909080508090806"
+X-KSE-AntiSpam-Interceptor-Info: protection disabled
+X-KSE-Antivirus-Interceptor-Info: scan successful
+X-KSE-Antivirus-Info: Clean
+Message-Id: <0LgtFa-1RqHgs3C6g-00neuS@mrelayeu.kundenserver.de>
+X-Provags-ID: V02:K0:qBDITRsNRVisXT0N2ou5ScO/1EqPwciohUSa6x50Lt8
+ 6/It57ywJAkCxoHHlTnPBdGFrhNM3FNxStG714j792vjMlV4E1
+ gAHCU4R2jJht/Ip/OkmX/KgmpI646f/3vV+CDmW8uCTV4tMfzL
+ abHgSz4tZ3n3/AuaPMndUqncWcapobnekPQnl9HLZntSXBUBzV
+ Lo8GBTIZOXTdPTKAASZ3HTOwI+pCnhK3x7I9tcgKMnKFWWdocC
+ eM9UJyiejlDhfAKrtD8XfUYX/hOc9FKXHPb1dmn4rM4SMdtLmf
+ wB3fUkB9k3yPqAP6pmbSLQm9Q920cIdFGgLUe/r9fXjEFJKO7V
+ ESRZj2SXokMXhv447YUehhT48k9AvSUnGm08y0XjAMtJZFngyB
+ GNjcdfOmErxjg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 03:46:03PM -0400, Don Dutile wrote:
->On 04/22/2012 11:52 AM, Richard Yang wrote:
->>All,
->>
->>I am reading the pci_scan_bridge() and not sure what will happen in
->>following situation.
->>
->>Suppose the kernel is not passed the pci=assign-busses.
->>
->>Below is a picture about the pci system.
->>
->>                    +-------+
->>                    |       | root bridge(0,255)
->>                    +---+---+
->>                        |          Bus 0
->>       -----+-----------+------------------------------+--
->>            |                                          |
->>            |                                          |
->>            |                                          |
->>       +----+----+                               +-----+-----+
->>       |         |  B1(1,15)                     |           |B2(16,28)
->>       +----+----+                               +-----+-----+
->>            |  Bus 1                                   |    Bus 16
->>       -----+-----------------------         ----------+----------------
->>                             |
->>                        +----+----+
->>                        |         | B3
->>                        +---------+
->>
->>Suppose B1 and B2 works fine with the BIOS, which get the right bus
->>number and range.
->>
->>B3 does not works fine with the BIOS, which doesn't get the bus number.
->>
->>So in pci_scan_bridge(), B3 will be met in the second pass and get bus
->>number 16?
->
->unfortunately, today, the answer is yes.
->I have run into a similar problem recently when trying to use pci=assign-busses
->with an SRIOV device behind a non-ARI-capable PCIe switch.
->In this scenario, the assign-busses code assigned the next bus number,
->which conflicted with an existing one on the system, and hangs the
->system -- two bridges responding to the same PCI bus num evidently
->confuses the hw! ;-)
-Hmm... seems we are not talking about the same case.
-My case is the kernel not passed with pci=assign-busses.
+--------------070106090909080508090806
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
-I think, if pci=assign-busses is used, kernel will just ignore the bus
-number assigned by BIOS, and do the assignment itself.
->
->The PCI code is suppose to do two bus scans -- pass=0: to see what the BIOS
->has setup, and then pass=1 to assign non-BIOS setup devices.
->But, what I'm finding is that when pci=assign-busses is set, the
->pass=0 scan is not doing a full PCI tree scan and registering all
->the BIOS-setup busses first, and it tries to do extended bus assignment in pass=0,
->not pass=1; in the above configuration, it expands B1's bus num range from (1,15)
->to (1,16), then tries to scan behind it.  that creates an overlap btwn
->B1 & B2's sec/sub bus-num ranges, and they both respond to a Type1 config cycle
->with a bus-number of 16 (typically when trying to read the VID register of 16:0.0
->in this case).... boom! ... or more like silence due to system hang...
->
->*If* the system spaces bus ranges apart, e.g., in your config above,
->if the BIOS setup B1(1,15) and B2(24,32), then pci=assign-busses will
->work because bus num 16 is free, and two bridges won't think they both
->respond to type1 pci config cycle (with bus-number=16 lying in their sec/sub-bus num range),
->and all will (luckily) work.
->
->Unfortunately, I'm in & out of work due to at-home time requirements,
->so I haven't had a chance to work out a proper patch.
->What should happen in the above case, is the kernel prints a warning saying
->it couldn't do needed assign-busses operations due to configuration constraints...
->and continue to do pci (pass=1) bridge scanning.... and not wedge the system
->as it does now.
->The base problem is that
->(a)pass=0 is doing bus-assigning, and it shouldn't be done
->    until pass=1, after all known BIOS-setup busses are known
->(b) the code doesn't have a nice warning and continuation when this
->    conflict occurs.
->
->>Would this be a conflict?
->>
->summary: yes.
+This patch extends the PCA953x driver to support TI's TCA6424.
+It is based on code by Michele Bevilacqua. Please review.
 
+Signed-off-by: Andreas Schallenberg<Andreas.Schallenberg@3alitytechnica.com>
+
+
+--------------070106090909080508090806
+Content-Type: text/plain; charset="UTF-8";
+	name="0001-Add-support-for-TCA6424.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="0001-Add-support-for-TCA6424.patch"
+
+>From 25f4cbad51cec9107a9bdc90bb8182a98304a1c2 Mon Sep 17 00:00:00 2001
+From: Andreas Schallenberg <aschallenberg@GWS026Linux.(none)>
+Date: Thu, 19 Apr 2012 10:48:45 +0200
+Subject: [PATCH] Add support for TCA6424
+
+---
+ drivers/gpio/gpio-pca953x.c |   43 ++++++++++++++++++++++++++++++-------------
+ 1 files changed, 30 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+index 0550dcb..58f9428 100644
+--- a/drivers/gpio/gpio-pca953x.c
++++ b/drivers/gpio/gpio-pca953x.c
+@@ -28,6 +28,8 @@
+ #define PCA953X_INVERT		2
+ #define PCA953X_DIRECTION	3
+ 
++#define REG_ADDR_AI		0x80
++
+ #define PCA957X_IN		0
+ #define PCA957X_INVRT		1
+ #define PCA957X_BKEN		2
+@@ -63,15 +65,15 @@ static const struct i2c_device_id pca953x_id[] = {
+ 	{ "pca6107", 8  | PCA953X_TYPE | PCA_INT, },
+ 	{ "tca6408", 8  | PCA953X_TYPE | PCA_INT, },
+ 	{ "tca6416", 16 | PCA953X_TYPE | PCA_INT, },
+-	/* NYET:  { "tca6424", 24, }, */
++	{ "tca6424", 24 | PCA953X_TYPE | PCA_INT, },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, pca953x_id);
+ 
+ struct pca953x_chip {
+ 	unsigned gpio_start;
+-	uint16_t reg_output;
+-	uint16_t reg_direction;
++	uint reg_output;
++	uint reg_direction;
+ 	struct mutex i2c_lock;
+ 
+ #ifdef CONFIG_GPIO_PCA953X_IRQ
+@@ -89,12 +91,20 @@ struct pca953x_chip {
+ 	int	chip_type;
+ };
+ 
+-static int pca953x_write_reg(struct pca953x_chip *chip, int reg, uint16_t val)
++static int pca953x_write_reg(struct pca953x_chip *chip, int reg, uint val)
+ {
+ 	int ret = 0;
+ 
+ 	if (chip->gpio_chip.ngpio <= 8)
+ 		ret = i2c_smbus_write_byte_data(chip->client, reg, val);
++	else if (chip->gpio_chip.ngpio > 16) {
++		ret = i2c_smbus_write_word_data(chip->client,
++						(reg << 2) | REG_ADDR_AI,
++						val & 0xffff);
++		ret = i2c_smbus_write_byte_data(chip->client,
++						(reg << 2) + 2,
++						(val & 0xff0000) >> 16);
++	}
+ 	else {
+ 		switch (chip->chip_type) {
+ 		case PCA953X_TYPE:
+@@ -121,12 +131,17 @@ static int pca953x_write_reg(struct pca953x_chip *chip, int reg, uint16_t val)
+ 	return 0;
+ }
+ 
+-static int pca953x_read_reg(struct pca953x_chip *chip, int reg, uint16_t *val)
++static int pca953x_read_reg(struct pca953x_chip *chip, int reg, uint *val)
+ {
+ 	int ret;
+ 
+ 	if (chip->gpio_chip.ngpio <= 8)
+ 		ret = i2c_smbus_read_byte_data(chip->client, reg);
++	else if (chip->gpio_chip.ngpio == 24) {
++		ret =  i2c_smbus_read_word_data(chip->client, reg << 2);
++		ret |= (i2c_smbus_read_byte_data(chip->client,
++						 (reg << 2) + 2)<<16);
++	}
+ 	else
+ 		ret = i2c_smbus_read_word_data(chip->client, reg << 1);
+ 
+@@ -135,14 +150,14 @@ static int pca953x_read_reg(struct pca953x_chip *chip, int reg, uint16_t *val)
+ 		return ret;
+ 	}
+ 
+-	*val = (uint16_t)ret;
++	*val = (uint)ret;
+ 	return 0;
+ }
+ 
+ static int pca953x_gpio_direction_input(struct gpio_chip *gc, unsigned off)
+ {
+ 	struct pca953x_chip *chip;
+-	uint16_t reg_val;
++	uint reg_val;
+ 	int ret, offset = 0;
+ 
+ 	chip = container_of(gc, struct pca953x_chip, gpio_chip);
+@@ -173,7 +188,7 @@ static int pca953x_gpio_direction_output(struct gpio_chip *gc,
+ 		unsigned off, int val)
+ {
+ 	struct pca953x_chip *chip;
+-	uint16_t reg_val;
++	uint reg_val;
+ 	int ret, offset = 0;
+ 
+ 	chip = container_of(gc, struct pca953x_chip, gpio_chip);
+@@ -223,7 +238,7 @@ exit:
+ static int pca953x_gpio_get_value(struct gpio_chip *gc, unsigned off)
+ {
+ 	struct pca953x_chip *chip;
+-	uint16_t reg_val;
++	uint reg_val;
+ 	int ret, offset = 0;
+ 
+ 	chip = container_of(gc, struct pca953x_chip, gpio_chip);
+@@ -253,7 +268,7 @@ static int pca953x_gpio_get_value(struct gpio_chip *gc, unsigned off)
+ static void pca953x_gpio_set_value(struct gpio_chip *gc, unsigned off, int val)
+ {
+ 	struct pca953x_chip *chip;
+-	uint16_t reg_val;
++	uint reg_val;
+ 	int ret, offset = 0;
+ 
+ 	chip = container_of(gc, struct pca953x_chip, gpio_chip);
+@@ -386,7 +401,7 @@ static struct irq_chip pca953x_irq_chip = {
+ 
+ static uint16_t pca953x_irq_pending(struct pca953x_chip *chip)
+ {
+-	uint16_t cur_stat;
++	uint     cur_stat;
+ 	uint16_t old_stat;
+ 	uint16_t pending;
+ 	uint16_t trigger;
+@@ -449,6 +464,7 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
+ {
+ 	struct i2c_client *client = chip->client;
+ 	int ret, offset = 0;
++	uint temporary;
+ 
+ 	if (irq_base != -1
+ 			&& (id->driver_data & PCA_INT)) {
+@@ -462,7 +478,8 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
+ 			offset = PCA957X_IN;
+ 			break;
+ 		}
+-		ret = pca953x_read_reg(chip, offset, &chip->irq_stat);
++		ret = pca953x_read_reg(chip, offset, &temporary);
++		chip->irq_stat = temporary;
+ 		if (ret)
+ 			goto out_failed;
+ 
+@@ -606,7 +623,7 @@ out:
+ static int __devinit device_pca957x_init(struct pca953x_chip *chip, int invert)
+ {
+ 	int ret;
+-	uint16_t val = 0;
++	uint val = 0;
+ 
+ 	/* Let every port in proper state, that could save power */
+ 	pca953x_write_reg(chip, PCA957X_PUPD, 0x0);
 -- 
-Richard Yang
-Help you, Help me
+1.7.3.4
 
+
+--------------070106090909080508090806--
