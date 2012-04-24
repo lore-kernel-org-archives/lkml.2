@@ -1,41 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311Ab2DXTe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 15:34:56 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49544 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757146Ab2DXTey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 15:34:54 -0400
-Message-ID: <4F97005A.2010305@wwwdotorg.org>
-Date: Tue, 24 Apr 2012 13:34:50 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Hiroshi DOYU <hdoyu@nvidia.com>
-CC: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org,
+	id S1757320Ab2DXTgA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 15:36:00 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:35235 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757164Ab2DXTf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 15:35:58 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] arm/dts: Tegra30: Add device tree support for SMMU
-References: <1335182340-17237-1-git-send-email-hdoyu@nvidia.com> <1335182340-17237-3-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1335182340-17237-3-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: [patch 1/2] kernel: cgroup: push rcu read locking from css_is_ancestor() to callsite
+Date: Tue, 24 Apr 2012 21:35:43 +0200
+Message-Id: <1335296144-29381-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 05:58 AM, Hiroshi DOYU wrote:
-> Add device tree support for Tegra30 IOMMU(SMMU).
+Library functions should not grab locks when the callsites can do it,
+even if the lock nests like the rcu read-side lock does.
 
-> diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+Push the rcu_read_lock() from css_is_ancestor() to its single user,
+mem_cgroup_same_or_subtree(), in preparation for another user that
+already holds the rcu read-side lock.
 
-> +	smmu: smmu@7000f000 {
-...
-> +		interrupts = <0 13 0x40>;
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+---
+ kernel/cgroup.c |   20 ++++++++++----------
+ mm/memcontrol.c |   14 +++++++++-----
+ 2 files changed, 19 insertions(+), 15 deletions(-)
 
-This interrupt is on the 3rd IRQ controller (or GIC bank) so should be
-(2*32)+13, i.e. 75 not 13.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index ad8eae5..240b02f 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -5132,7 +5132,7 @@ EXPORT_SYMBOL_GPL(css_depth);
+  * @root: the css supporsed to be an ancestor of the child.
+  *
+  * Returns true if "root" is an ancestor of "child" in its hierarchy. Because
+- * this function reads css->id, this use rcu_dereference() and rcu_read_lock().
++ * this function reads css->id, the caller must hold rcu_read_lock().
+  * But, considering usual usage, the csses should be valid objects after test.
+  * Assuming that the caller will do some action to the child if this returns
+  * returns true, the caller must take "child";s reference count.
+@@ -5144,18 +5144,18 @@ bool css_is_ancestor(struct cgroup_subsys_state *child,
+ {
+ 	struct css_id *child_id;
+ 	struct css_id *root_id;
+-	bool ret = true;
+ 
+-	rcu_read_lock();
+ 	child_id  = rcu_dereference(child->id);
++	if (!child_id)
++		return false;
+ 	root_id = rcu_dereference(root->id);
+-	if (!child_id
+-	    || !root_id
+-	    || (child_id->depth < root_id->depth)
+-	    || (child_id->stack[root_id->depth] != root_id->id))
+-		ret = false;
+-	rcu_read_unlock();
+-	return ret;
++	if (!root_id)
++		return false;
++	if (child_id->depth < root_id->depth)
++		return false;
++	if (child_id->stack[root_id->depth] != root_id->id)
++		return false;
++	return true;
+ }
+ 
+ void free_css_id(struct cgroup_subsys *ss, struct cgroup_subsys_state *css)
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 1a28dd8..a1fea51 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1146,12 +1146,16 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
+ static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+ 		struct mem_cgroup *memcg)
+ {
+-	if (root_memcg != memcg) {
+-		return (root_memcg->use_hierarchy &&
+-			css_is_ancestor(&memcg->css, &root_memcg->css));
+-	}
++	bool ret;
+ 
+-	return true;
++	if (root_memcg == memcg)
++		return true;
++	if (!root_memcg->use_hierarchy)
++		return false;
++	rcu_read_lock();
++	ret = css_is_ancestor(&memcg->css, &root_memcg->css);
++	rcu_read_unlock();
++	return ret;
+ }
+ 
+ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg)
+-- 
+1.7.7.6
+
