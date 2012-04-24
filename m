@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757704Ab2DXVK0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 17:10:26 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:34906 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757708Ab2DXVKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 17:10:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Aaron Lu <aaron.lu@amd.com>
-Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
-Date: Tue, 24 Apr 2012 23:15:00 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Lin Ming <ming.m.lin@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
-References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com> <CAF1ivSbOhUbE6wreRQ5E3jV5N_haHn1y9q48CU_OZFeCRTed+A@mail.gmail.com> <20120424142457.GA5292@fedora>
-In-Reply-To: <20120424142457.GA5292@fedora>
+	id S1757739Ab2DXVLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 17:11:06 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:6576 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757697Ab2DXVLF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 17:11:05 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-15.tower-160.messagelabs.com!1335301849!4683276!30
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: linux-next: allyesconfig build failure in drivers/usb/gadget
+Date: Tue, 24 Apr 2012 14:10:36 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204242315.00419.rjw@sisk.pl>
+Content-Disposition: inline
+Message-ID: <201204241410.37561.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 24, 2012, Aaron Lu wrote:
-> On Tue, Apr 24, 2012 at 09:15:37PM +0800, Lin Ming wrote:
-> > >> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > >> > index 7417267..734d946 100644
-> > >> > --- a/drivers/acpi/scan.c
-> > >> > +++ b/drivers/acpi/scan.c
-> > >> > @@ -908,6 +908,10 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
-> > >> >     device->power.states[ACPI_STATE_D3].flags.valid = 1;
-> > >> >     device->power.states[ACPI_STATE_D3].power = 0;
-> > >> >
-> > >> > +   /* Also set D3cold's explicit flag when _PS3 exists */
-> > >> > +   if (device->power.states[ACPI_STATE_D3_HOT].flags.explicit_set)
-> > >> > +           device->power.states[ACPI_STATE_D3].flags.explicit_set = 1;
-> > >>
-> > >> We should use ACPI_STATE_D3_COLD instead of ACPI_STATE_D3 to make thing
-> > >> clear.
-> > >>
-> > > Thanks for your suggestion.
-> > >
-> > > Well, considering all those ACPI_STATE_D3 used in tree, I don't think I
-> > > should use ACPI_STATE_D3_COLD here, especially the two lines above are
-> > > still using ACPI_STATE_D3.
-> > >
-> > > But if that is desired, we should probably change all the existing
-> > > ACPI_STATE_D3 macros to ACPI_STATE_D3_COLD to make things clear.
-> > >
-> > > Or we all use ACPI_STATE_D3, since it is defined as 4 and means D3 cold,
-> > > and people will learn this, won't they?
-> > >
-> > > What do you think?
-> > 
-> > OK.
-> > 
-> > But we may do more cleanup later.
-> > 
-> 
-> Sure :-)
-> I think the first thing to do is to agree on which macro should be used,
-> ACPI_STATE_D3 or ACPI_STATE_D3_COLD. And then replace the other one
-> altogether.
+Hello all,
 
-I'd prefer to use ACPI_STATE_D3 wherever it makes sense, because that's
-also well defined in older versions of ACPI (think pre-ACPI-4.0 BIOSes).
+I'm not sure if this is a known issue or not...
 
-Thanks,
-Rafael
+I was trying an allyesconfig build of linux-next (next-20120224) and got this:
+
+drivers/usb/built-in.o: In function `usb_descriptor_fillbuf':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:38: multiple definition of `usb_descriptor_fillbuf'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:38: first defined here
+drivers/usb/built-in.o: In function `usb_string_ids_n':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:994: multiple definition of `usb_string_ids_n'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:994: first defined here
+drivers/usb/built-in.o: In function `usb_interface_id':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:341: multiple definition of `usb_interface_id'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:341: first defined here
+drivers/usb/built-in.o: In function `usb_string_id':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:932: multiple definition of `usb_string_id'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:932: first defined here
+drivers/usb/built-in.o: In function `usb_string_ids_tab':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:960: multiple definition of `usb_string_ids_tab'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:960: first defined here
+drivers/usb/built-in.o: In function `usb_copy_descriptors':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:124: multiple definition of `usb_copy_descriptors'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:124: first defined here
+drivers/usb/built-in.o: In function `usb_composite_unregister':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1602: multiple definition of `usb_composite_unregister'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1602: first defined here
+drivers/usb/built-in.o: In function `config_ep_by_speed':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:119: multiple definition of `config_ep_by_speed'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:119: first defined here
+drivers/usb/built-in.o: In function `usb_gadget_get_string':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/usbstring.c:41: multiple definition of `usb_gadget_get_string'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/usbstring.c:41: first defined here
+drivers/usb/built-in.o: In function `usb_add_function':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:209: multiple definition of `usb_add_function'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:209: first defined here
+drivers/usb/built-in.o: In function `usb_composite_probe':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1576: multiple definition of `usb_composite_probe'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1576: first defined here
+drivers/usb/built-in.o: In function `usb_composite_setup_continue':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1619: multiple definition of `usb_composite_setup_continue'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:1619: first defined here
+drivers/usb/built-in.o: In function `usb_gadget_config_buf':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:84: multiple definition of `usb_gadget_config_buf'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/config.c:84: first defined here
+drivers/usb/built-in.o: In function `usb_ep_autoconfig':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:367: multiple definition of `usb_ep_autoconfig'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:367: first defined here
+drivers/usb/built-in.o: In function `usb_function_activate':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:298: multiple definition of `usb_function_activate'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:298: first defined here
+drivers/usb/built-in.o: In function `usb_ep_autoconfig_reset':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:382: multiple definition of `usb_ep_autoconfig_reset'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:382: first defined here
+drivers/usb/built-in.o: In function `usb_add_config':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:713: multiple definition of `usb_add_config'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:713: first defined here
+drivers/usb/built-in.o: In function `usb_ep_autoconfig_ss':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:265: multiple definition of `usb_ep_autoconfig_ss'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/epautoconf.c:265: first defined here
+drivers/usb/built-in.o: In function `usb_function_deactivate':
+/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:271: multiple definition of `usb_function_deactivate'
+drivers/target/built-in.o:/home/bigguiness/src/git/linux-next/drivers/usb/gadget/composite.c:271: first defined here
+make[1]: *** [drivers/built-in.o] Error 1
+make: *** [drivers] Error 2
+
+It appears config.c, composite.c, usbstring.c, and epautoconf.c are not
+actually built separately during the make but are #include'd by various
+other sources. All of these files have functions that are not marked static
+so we end up with the 'multiple definition' errors.
+
+Should these files be compiled separately and treated as a gadget library?
+
+Regards,
+Hartley
