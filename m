@@ -1,138 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab2DXIAz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 04:00:55 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48860 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754589Ab2DXIAv (ORCPT
+	id S1755606Ab2DXIBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 04:01:09 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:41280 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755477Ab2DXIAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 04:00:51 -0400
-X-AuditID: 9c93016f-b7cfcae00000449e-75-4f965db125b6
-Message-ID: <4F965DCC.2000501@kernel.org>
-Date: Tue, 24 Apr 2012 17:01:16 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Tue, 24 Apr 2012 04:00:54 -0400
+Message-ID: <4F965D1C.2010203@st.com>
+Date: Tue, 24 Apr 2012 13:28:20 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Nick Piggin <npiggin@gmail.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC] propagate gfp_t to page table alloc functions
-References: <1335171318-4838-1-git-send-email-minchan@kernel.org> <4F963742.2030607@jp.fujitsu.com> <4F963B8E.9030105@kernel.org> <CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com> <4F965413.9010305@kernel.org> <CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com>
-In-Reply-To: <CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        spear-devel <spear-devel@list.st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "jgarzik@redhat.com" <jgarzik@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2 4/9] ata/sata_mv: Remove conditional compilation of
+ clk code
+References: <20120424070426.GA24089@lunn.ch> <4F9650B3.9030406@st.com> <20120424072653.GB24089@lunn.ch> <20120424074202.GO24211@n2100.arm.linux.org.uk>
+In-Reply-To: <20120424074202.GO24211@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2012 04:48 PM, Nick Piggin wrote:
+On 4/24/2012 1:12 PM, Russell King - ARM Linux wrote:
+> If you don't have the clk API configured, you have no clocks to control.
+> So, why not make clk_get() return NULL, and make the rest of the API
+> calls do nothing?  That's what you'll end up codifying in the drivers
+> anyway.
 
-> On 24 April 2012 17:19, Minchan Kim <minchan@kernel.org> wrote:
->> On 04/24/2012 03:13 PM, Nick Piggin wrote:
->>
->>> 2012/4/24 Minchan Kim <minchan@kernel.org>:
->>>> On 04/24/2012 02:16 PM, KAMEZAWA Hiroyuki wrote:
->>>>
->>>>> (2012/04/23 17:55), Minchan Kim wrote:
->>>>>
->>>>>> As I test some code, I found a problem about deadlock by lockdep.
->>>>>> The reason I saw the message is __vmalloc calls map_vm_area which calls
->>>>>> pud/pmd_alloc without gfp_t. so although we call __vmalloc with
->>>>>> GFP_ATOMIC or GFP_NOIO, it ends up allocating pages with GFP_KERNEL.
->>>>>> The should be a BUG. This patch fixes it by passing gfp_to to low page
->>>>>> table allocate functions.
->>>>>>
->>>>>> Signed-off-by: Minchan Kim <minchan@kernel.org>
->>>>>
->>>>>
->>>>> Hmm ? vmalloc should support GFP_ATOMIC ?
->>>>
->>>>
->>>> I'm not sure but alloc_large_system_hash already has used.
->>>> And it's not specific on GFP_ATOMIC.
->>>> We have to care of GFP_NOFS and GFP_NOIO to prevent deadlock on reclaim
->>>> context.
->>>> There are some places to use GFP_NOFS and we don't emit any warning
->>>> message in case of that.
->>>
->>> What's the lockdep warning?
->>
->>
->> It's just some private-test code, not-mainlined and lockdep warning is like this.
->>
->> [ INFO: inconsistent lock state ]
->> 3.4.0-rc3-next-20120417+ #80 Not tainted
->> ---------------------------------
->> inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
->>
->> It seems test code calls vmalloc inside reclaim context so that it enters
->> reclaim context, again by map_vm_area which allocates pages with GFP_KERNEL.
->>
->> Of course, I can avoid this problem by fixing the caller but during I look into
->> this problem, found other places to use gfp_t with "context restriction".
->>
->>
->>>
->>
->>> vmalloc was never supposed to use gfp flags for allocation "context"
->>> restriction. I.e., it
->>> was always supposed to have blocking, fs, and io capable allocation
->>> context. The flags
->>> were supposed to be a memory type modifier.
->>
->>
->> You mean "zone modifiers"?
-> 
-> Yeah, things like that.
-> 
->>> These different classes of flags is a bit of a problem and source of
->>> confusion we have.
->>> We should be doing more checks for them, of course.
->>
->>
->> It might need some warning in __vmalloc and family which use gfp_t
->> if the caller use context flags.
-> 
-> I think that would be a good idea.
-> 
-> 
->>> I suspect you need to fix the caller?
->>
->>
->> Hmm, there are several places to use GFP_NOIO and GFP_NOFS even, GFP_ATOMIC.
->> I believe it's not trivial now.
-> 
-> They're all buggy then. Unfortunately not through any real fault of their own.
+Ok. We can return NULL from calls that return clk *. What about other
+routines that return integers. Like, clk_enable().
 
-
-That's why I send it with RFC before I have to make all architecture change.
-Nick, Thanks!
-
-> 
-> I would say add a bit of warnings and documentation, and see what can be done
-> about callers.
-
-> 
-
-> We should not take lightly the decision to make the API more permissive, because
-> as you can see it's more work for implementation. Making it ATOMIC safe is even
-
-
-Agree. Will add waring and Cced all maintainers.
-
-> harder, requiring irqsafe locks and such, and it might be tricky for some
-
-
-irqsafe? Why should we consider it? 
-Just out of curiosity.
+Is returning 0 correct? Which would mean we were able to enable clk, but
+actually we haven't.
 
 -- 
-Kind regards,
-Minchan Kim
+viresh
