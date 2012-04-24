@@ -1,34 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab2DXHU6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 03:20:58 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3076 "EHLO
+	id S1755142Ab2DXHVe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 03:21:34 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3158 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531Ab2DXHU5 (ORCPT
+	with ESMTP id S1754915Ab2DXHVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 03:20:57 -0400
+	Tue, 24 Apr 2012 03:21:31 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 24 Apr 2012 00:20:56 -0700
+	by hqnvupgp08.nvidia.com on Tue, 24 Apr 2012 00:21:01 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: w.sang@pengutronix.de, ben-linux@fluff.org, swarren@wwwdotorg.org,
         olof@lixom.net
 Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V1 0/2] i2c: tegra: 10 bit and M_NOSTART support
-Date: Tue, 24 Apr 2012 12:49:34 +0530
-Message-Id: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V1 2/2] i2c: tegra: support for I2C_M_NOSTART protocol mangling
+Date: Tue, 24 Apr 2012 12:49:36 +0530
+Message-Id: <1335251976-31925-3-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
+References: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support for i2c protocoal mangling M_NOSTART and
-fixes bug for 10 bit address configuration.
+Adding support for protocol mangling I2C_M_NOSTART.
+When multiple message transfer request made through i2c
+and if any message is flagged with I2C_M_NOSTART then
+it will not send the start/repeat start/address of that
+message i.e. send the data directly.
 
-Laxman Dewangan (2):
-  i2c: tegra: fix 10bit address configuration
-  i2c: tegra: support for I2C_M_NOSTART protocol mangling
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/i2c/busses/i2c-tegra.c |   32 +++++++++++++++++++++++++++-----
+ 1 files changed, 27 insertions(+), 5 deletions(-)
 
- drivers/i2c/busses/i2c-tegra.c |   41 ++++++++++++++++++++++++++++++++-------
- 1 files changed, 33 insertions(+), 8 deletions(-)
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index 18067b3..a50e4c4 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -97,8 +97,21 @@
+ #define I2C_HEADER_10BIT_ADDR			(1<<18)
+ #define I2C_HEADER_IE_ENABLE			(1<<17)
+ #define I2C_HEADER_REPEAT_START			(1<<16)
++#define I2C_HEADER_CONTINUE_XFER		(1<<15)
+ #define I2C_HEADER_MASTER_ADDR_SHIFT		12
+ #define I2C_HEADER_SLAVE_ADDR_SHIFT		1
++/*
++ * msg_end_type: The bus control which need to be send at end of transfer.
++ * @MSG_END_STOP: Send stop pulse at end of transfer.
++ * @MSG_END_REPEAT_START: Send repeat start at end of transfer.
++ * @MSG_END_CONTINUE: The following on message is coming and so do not send
++ *		stop or repeat start.
++ */
++enum msg_end_type {
++	MSG_END_STOP,
++	MSG_END_REPEAT_START,
++	MSG_END_CONTINUE,
++};
+ 
+ /**
+  * struct tegra_i2c_dev	- per device i2c context
+@@ -450,7 +463,7 @@ err:
+ }
+ 
+ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
+-	struct i2c_msg *msg, int stop)
++	struct i2c_msg *msg, enum msg_end_type end_state)
+ {
+ 	u32 packet_header;
+ 	u32 int_mask;
+@@ -477,7 +490,9 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
+ 	i2c_writel(i2c_dev, packet_header, I2C_TX_FIFO);
+ 
+ 	packet_header = I2C_HEADER_IE_ENABLE;
+-	if (!stop)
++	if (end_state == MSG_END_CONTINUE)
++		packet_header |= I2C_HEADER_CONTINUE_XFER;
++	else if (end_state == MSG_END_REPEAT_START)
+ 		packet_header |= I2C_HEADER_REPEAT_START;
+ 	if (msg->flags & I2C_M_TEN) {
+ 		packet_header |= msg->addr;
+@@ -549,8 +564,14 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
+ 
+ 	clk_enable(i2c_dev->clk);
+ 	for (i = 0; i < num; i++) {
+-		int stop = (i == (num - 1)) ? 1  : 0;
+-		ret = tegra_i2c_xfer_msg(i2c_dev, &msgs[i], stop);
++		enum msg_end_type end_type = MSG_END_STOP;
++		if (i < (num - 1)) {
++			if (msgs[i + 1].flags & I2C_M_NOSTART)
++				end_type = MSG_END_CONTINUE;
++			else
++				end_type = MSG_END_REPEAT_START;
++		}
++		ret = tegra_i2c_xfer_msg(i2c_dev, &msgs[i], end_type);
+ 		if (ret)
+ 			break;
+ 	}
+@@ -560,7 +581,8 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
+ 
+ static u32 tegra_i2c_func(struct i2c_adapter *adap)
+ {
+-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | I2C_FUNC_10BIT_ADDR;
++	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | I2C_FUNC_10BIT_ADDR |
++			I2C_FUNC_PROTOCOL_MANGLING;
+ }
+ 
+ static const struct i2c_algorithm tegra_i2c_algo = {
+-- 
+1.7.1.1
 
