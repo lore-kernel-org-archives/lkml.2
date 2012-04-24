@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246Ab2DXWnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 18:43:40 -0400
+	id S964795Ab2DXWn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 18:43:58 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38637 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932901Ab2DXWi3 (ORCPT
+	with ESMTP id S932887Ab2DXWiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 18:38:29 -0400
-Message-Id: <20120424223255.711401244@linuxfoundation.org>
+	Tue, 24 Apr 2012 18:38:22 -0400
+Message-Id: <20120424223254.775060804@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Tue, 24 Apr 2012 15:33:19 -0700
+Date: Tue, 24 Apr 2012 15:33:08 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Thomas Jarosch <thomas.jarosch@intra2net.com>,
-        Charlie Suffin <charlie.suffin@stratus.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 26/42] PCI: Add quirk for still enabled interrupts on Intel Sandy Bridge GPUs
+        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Ken Chen <kenchen@google.com>
+Subject: [ 15/42] mm: fix s390 BUG by __set_page_dirty_no_writeback on swap
 In-Reply-To: <20120424223311.GA8456@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,85 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit f67fd55fa96f7d7295b43ffbc4a97d8f55e473aa upstream.
+commit aca50bd3b4c4bb5528a1878158ba7abce41de534 upstream.
 
-Some BIOS implementations leave the Intel GPU interrupts enabled,
-even though no one is handling them (f.e. i915 driver is never loaded).
-Additionally the interrupt destination is not set up properly
-and the interrupt ends up -somewhere-.
+Mel reports a BUG_ON(slot == NULL) in radix_tree_tag_set() on s390
+3.0.13: called from __set_page_dirty_nobuffers() when page_remove_rmap()
+tries to transfer dirty flag from s390 storage key to struct page and
+radix_tree.
 
-These spurious interrupts are "sticky" and the kernel disables
-the (shared) interrupt line after 100.000+ generated interrupts.
+That would be because of reclaim's shrink_page_list() calling
+add_to_swap() on this page at the same time: first PageSwapCache is set
+(causing page_mapping(page) to appear as &swapper_space), then
+page->private set, then tree_lock taken, then page inserted into
+radix_tree - so there's an interval before taking the lock when the
+radix_tree slot is empty.
 
-Fix it by disabling the still enabled interrupts.
-This resolves crashes often seen on monitor unplug.
+We could fix this by moving __add_to_swap_cache()'s spin_lock_irq up
+before the SetPageSwapCache.  But a better fix is simply to do what's
+five years overdue: Ken Chen introduced __set_page_dirty_no_writeback()
+(if !PageDirty TestSetPageDirty) for tmpfs to skip all the radix_tree
+overhead, and swap is just the same - it ignores the radix_tree tag, and
+does not participate in dirty page accounting, so should be using
+__set_page_dirty_no_writeback() too.
 
-Tested on the following boards:
-- Intel DH61CR: Affected
-- Intel DH67BL: Affected
-- Intel S1200KP server board: Affected
-- Asus P8H61-M LE: Affected, but system does not crash.
-  Probably the IRQ ends up somewhere unnoticed.
+s390 testing now confirms that this does indeed fix the problem.
 
-According to reports on the net, the Intel DH61WW board is also affected.
-
-Many thanks to Jesse Barnes from Intel for helping
-with the register configuration and to Intel in general
-for providing public hardware documentation.
-
-Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Tested-by: Charlie Suffin <charlie.suffin@stratus.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reported-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Ken Chen <kenchen@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/quirks.c |   34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ mm/swap_state.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2822,6 +2822,40 @@ static void __devinit fixup_ti816x_class
- }
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_TI, 0xb800, fixup_ti816x_class);
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -28,7 +28,7 @@
+  */
+ static const struct address_space_operations swap_aops = {
+ 	.writepage	= swap_writepage,
+-	.set_page_dirty	= __set_page_dirty_nobuffers,
++	.set_page_dirty	= __set_page_dirty_no_writeback,
+ 	.migratepage	= migrate_page,
+ };
  
-+/*
-+ * Some BIOS implementations leave the Intel GPU interrupts enabled,
-+ * even though no one is handling them (f.e. i915 driver is never loaded).
-+ * Additionally the interrupt destination is not set up properly
-+ * and the interrupt ends up -somewhere-.
-+ *
-+ * These spurious interrupts are "sticky" and the kernel disables
-+ * the (shared) interrupt line after 100.000+ generated interrupts.
-+ *
-+ * Fix it by disabling the still enabled interrupts.
-+ * This resolves crashes often seen on monitor unplug.
-+ */
-+#define I915_DEIER_REG 0x4400c
-+static void __devinit disable_igfx_irq(struct pci_dev *dev)
-+{
-+	void __iomem *regs = pci_iomap(dev, 0, 0);
-+	if (regs == NULL) {
-+		dev_warn(&dev->dev, "igfx quirk: Can't iomap PCI device\n");
-+		return;
-+	}
-+
-+	/* Check if any interrupt line is still enabled */
-+	if (readl(regs + I915_DEIER_REG) != 0) {
-+		dev_warn(&dev->dev, "BIOS left Intel GPU interrupts enabled; "
-+			"disabling\n");
-+
-+		writel(0, regs + I915_DEIER_REG);
-+	}
-+
-+	pci_iounmap(dev, regs);
-+}
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
-+
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
- {
 
 
