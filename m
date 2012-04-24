@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab2DXUBv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 16:01:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62828 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756852Ab2DXUBt convert rfc822-to-8bit (ORCPT
+	id S1757485Ab2DXUHk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 16:07:40 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:54016 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757461Ab2DXUHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 16:01:49 -0400
+	Tue, 24 Apr 2012 16:07:37 -0400
+Message-ID: <4F970826.8030702@xenotime.net>
+Date: Tue, 24 Apr 2012 13:08:06 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20120424055123.GA7140@burratino>
-References: <1322640100-14534-1-git-send-email-mcree@orcon.net.nz> <20120424055123.GA7140@burratino>
-From: Matt Turner <mattst88@gmail.com>
-Date: Tue, 24 Apr 2012 16:01:28 -0400
-Message-ID: <CAEdQ38HE70B-4w3t71rn_S-eX7BMnc6f=dD49guuBim+dQnPzA@mail.gmail.com>
-Subject: Re: [PATCH] alpha: add io{read,write}{16,32}be functions
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Cree <mcree@orcon.net.nz>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        =?ISO-8859-1?Q?Ra=FAl_Porcel?= <armin76@gentoo.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] Documentation: memcg: future proof hierarchical statistics
+ documentation
+References: <1335296038-29297-1-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1335296038-29297-1-git-send-email-hannes@cmpxchg.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 1:51 AM, Jonathan Nieder <jrnieder@gmail.com> wrote:
-> Hi Matt et al,
->
-> Michael Cree wrote:
->
->> These functions are used in some PCI drivers with big-endian
->> MMIO space.
->>
->> Admittedly it is almost certain that no one this side of the
->> Moon would use such a card in an Alpha but it does get us
->> closer to being able to build allyesconfig or allmodconfig,
-> [...]
->> --- a/arch/alpha/include/asm/io.h
->> +++ b/arch/alpha/include/asm/io.h
->> @@ -490,6 +490,11 @@ extern inline void writeq(u64 b, volatile void __iomem *addr)
->>  }
->>  #endif
->>
->> +#define ioread16be(p) be16_to_cpu(ioread16(p))
->> +#define ioread32be(p) be32_to_cpu(ioread32(p))
->> +#define iowrite16be(v,p) iowrite16(cpu_to_be16(v), (p))
->> +#define iowrite32be(v,p) iowrite32(cpu_to_be32(v), (p))
->> +
->>  #define inb_p                inb
->
-> This patch has been in use in Debian's development branch since
-> January.  Does it look sensible to you?  (If so, I'd like to see it in
-> mainline eventually so we can more easily share bugfixes depending on
-> it in the future.)
->
-> Thanks,
-> Jonathan
+On 04/24/2012 12:33 PM, Johannes Weiner wrote:
 
-I recently got my kernel.org tree set up again, so I just applied this.
+> The hierarchical versions of per-memcg counters in memory.stat are all
+> calculated the same way and are all named total_<counter>.
+> 
+> Documenting the pattern is easier for maintenance than listing each
+> counter twice.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Acked-by: Ying Han <yinghan@google.com>
+> ---
+>  Documentation/cgroups/memory.txt |   15 ++++-----------
+>  1 files changed, 4 insertions(+), 11 deletions(-)
+> 
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index ab34ae5..6a066a2 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -432,17 +432,10 @@ hierarchical_memory_limit - # of bytes of memory limit with regard to hierarchy
+>  hierarchical_memsw_limit - # of bytes of memory+swap limit with regard to
+>  			hierarchy under which memory cgroup is.
+>  
+> -total_cache		- sum of all children's "cache"
+> -total_rss		- sum of all children's "rss"
+> -total_mapped_file	- sum of all children's "cache"
+> -total_pgpgin		- sum of all children's "pgpgin"
+> -total_pgpgout		- sum of all children's "pgpgout"
+> -total_swap		- sum of all children's "swap"
+> -total_inactive_anon	- sum of all children's "inactive_anon"
+> -total_active_anon	- sum of all children's "active_anon"
+> -total_inactive_file	- sum of all children's "inactive_file"
+> -total_active_file	- sum of all children's "active_file"
+> -total_unevictable	- sum of all children's "unevictable"
+> +total_<counter>		- # hierarchical version of <counter>, which in
+> +			addition to the cgroup's own value includes the
+> +			sum of all hierarchical children's values of
+> +			<counter>, i.e. total_cache
 
-Thanks, and please point me to any patches I should apply.
+			           e.g., total_cache
 
-Matt
+But how is a user or an admin supposed to know what all of the valid
+total_<counter> names are?  Is the entire list documented anywhere
+else other than here (which is being deleted)?
+
+
+>  # The following additional stats are dependent on CONFIG_DEBUG_VM.
+>  
+
+
+
+-- 
+~Randy
