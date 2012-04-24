@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab2DXTxu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 15:53:50 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48660 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757174Ab2DXTxt convert rfc822-to-8bit (ORCPT
+	id S1757350Ab2DXT5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 15:57:20 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54652 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755503Ab2DXT5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 15:53:49 -0400
+	Tue, 24 Apr 2012 15:57:19 -0400
+Date: Tue, 24 Apr 2012 20:56:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Hiroshi DOYU <hdoyu@nvidia.com>
+Cc: linux-tegra@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v2 1/3] ARM: tegra: Add AHB driver
+Message-ID: <20120424195645.GB3628@n2100.arm.linux.org.uk>
+References: <1335269116-9578-1-git-send-email-hdoyu@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <4F96D0E7.9060000@msgid.tls.msk.ru>
-References: <4F94222C.6080608@msgid.tls.msk.ru> <1335172741.2226.10.camel@perseus.themaw.net>
- <4F958352.7050106@msgid.tls.msk.ru> <4F95897B.2040103@msgid.tls.msk.ru>
- <4F959A5A.8070907@msgid.tls.msk.ru> <CA+55aFyQ4y9jyRXyejKwtf3yXJX52hQkLuwJ5=jfQM+yLkBNMw@mail.gmail.com>
- <4F96D0E7.9060000@msgid.tls.msk.ru>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 Apr 2012 12:53:27 -0700
-X-Google-Sender-Auth: Vkp3J65KAoGV9DEd2J6YjaOHRTc
-Message-ID: <CA+55aFw=cfYZO7PWDRRuZw1nYxvUk-63qfVVwfdJWevtmZoOig@mail.gmail.com>
-Subject: Re: Breaking userspace? Re: 3.0.24 broke aufofs on mixed 32/64bit environment
-To: Michael Tokarev <mjt@tls.msk.ru>, Thomas Meyer <thomas@m3y3r.de>
-Cc: Ian Kent <raven@themaw.net>, "stable@kernel.org" <stable@kernel.org>,
-        autofs@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335269116-9578-1-git-send-email-hdoyu@nvidia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 9:12 AM, Michael Tokarev <mjt@tls.msk.ru> wrote:
->
-> The userspace is running debian stable (squeeze).  Debian has autofs
-> package based on upstream 5.0.4 version.  That (upstream) version has
-> the "bug-compat" code in it, in daemon/automount.c:
->
-> static size_t get_kpkt_len(void)
-> {
->        size_t pkt_len = sizeof(struct autofs_v5_packet);
->        struct utsname un;
->
->        uname(&un);
->
->        if (pkt_len % 8) {
->                if (strcmp(un.machine, "alpha") == 0 ||
->                    strcmp(un.machine, "ia64") == 0 ||
->                    strcmp(un.machine, "x86_64") == 0 ||
->                    strcmp(un.machine, "ppc64") == 0)
->                        pkt_len += 4;
+On Tue, Apr 24, 2012 at 03:05:14PM +0300, Hiroshi DOYU wrote:
+> The AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
+> High-performance Bus (AHB) architecture.
+> 
+> The AHB Arbiter controls AHB bus master arbitration. This effectively
+> forms a second level of arbitration for access to the memory
+> controller through the AHB Slave Memory device. The AHB pre-fetch
+> logic can be configured to enhance performance for devices doing
+> sequential access. Each AHB master is assigned to either the high or
+> low priority bin. Both Tegra20/30 have this AHB bus.
+> 
+> Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> ---
+> Update:
+> - Use platform_device to get info from dt dynamically.(Felipe/Arnd)
+> ---
+>  arch/arm/mach-tegra/Makefile    |    1 +
+>  arch/arm/mach-tegra/tegra-ahb.c |  285 +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 286 insertions(+), 0 deletions(-)
 
-Ugh.
-
-So how did this break for Thomas Mayer (there was another person
-involved too, I forget the details)? Is this code somehow
-config-dependent so that it doesn't even get compiled for some cases?
-
-                    Linus
+1. I thought we weren't going to have any more drivers under arch/arm
+2. From the way you describe it above, this sounds like it should be some
+   kind of generic driver, which obtains the necessary settings to be
+   programmed into registers from (eg) DT.
