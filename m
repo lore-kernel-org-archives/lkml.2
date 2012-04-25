@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758927Ab2DYGWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 02:22:44 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48168 "EHLO
+	id S1758981Ab2DYGXt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 02:23:49 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50065 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758057Ab2DYGWn (ORCPT
+	with ESMTP id S1758250Ab2DYGWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 02:22:43 -0400
-X-AuditID: 9c93016f-b7cfcae00000449e-03-4f979831d258
+	Wed, 25 Apr 2012 02:22:44 -0400
+X-AuditID: 9c93016f-b7cfcae00000449e-06-4f979831443e
 From: Minchan Kim <minchan@kernel.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Seth Jennings <sjenning@linux.vnet.ibm.com>,
@@ -16,9 +16,9 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 1/6] zsmalloc: use PageFlag macro instead of [set|test]_bit
-Date: Wed, 25 Apr 2012 15:23:09 +0900
-Message-Id: <1335334994-22138-2-git-send-email-minchan@kernel.org>
+Subject: [PATCH 3/6] zsmalloc: rename zspage_order with zspage_pages
+Date: Wed, 25 Apr 2012 15:23:11 +0900
+Message-Id: <1335334994-22138-4-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1335334994-22138-1-git-send-email-minchan@kernel.org>
 References: <1335334994-22138-1-git-send-email-minchan@kernel.org>
@@ -27,51 +27,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MM code always uses PageXXX to handle page flags.
-Let's keep the consistency.
+zspage_order defines how many pages are needed to make a zspage.
+So _order_ is rather awkward naming. It already deceive Jonathan
+- http://lwn.net/Articles/477067/
+" For each size, the code calculates an optimum number of pages (up to 16)"
+
+Let's change from _order_ to _pages_.
 
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- drivers/staging/zsmalloc/zsmalloc-main.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/staging/zsmalloc/zsmalloc-main.c |   14 +++++++-------
+ drivers/staging/zsmalloc/zsmalloc_int.h  |    2 +-
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 917461c..504b6c2 100644
+index b99ad9e..0fe4cbb 100644
 --- a/drivers/staging/zsmalloc/zsmalloc-main.c
 +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -45,12 +45,12 @@ static DEFINE_PER_CPU(struct mapping_area, zs_map_area);
- 
- static int is_first_page(struct page *page)
+@@ -180,7 +180,7 @@ out:
+  * link together 3 PAGE_SIZE sized pages to form a zspage
+  * since then we can perfectly fit in 8 such objects.
+  */
+-static int get_zspage_order(int class_size)
++static int get_zspage_pages(int class_size)
  {
--	return test_bit(PG_private, &page->flags);
-+	return PagePrivate(page);
- }
+ 	int i, max_usedpc = 0;
+ 	/* zspage order which gives maximum used size per KB */
+@@ -368,7 +368,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+ 	 * identify the last page.
+ 	 */
+ 	error = -ENOMEM;
+-	for (i = 0; i < class->zspage_order; i++) {
++	for (i = 0; i < class->zspage_pages; i++) {
+ 		struct page *page, *prev_page;
  
- static int is_last_page(struct page *page)
- {
--	return test_bit(PG_private_2, &page->flags);
-+	return PagePrivate2(page);
- }
- 
- static void get_zspage_mapping(struct page *page, unsigned int *class_idx,
-@@ -377,7 +377,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
- 
- 		INIT_LIST_HEAD(&page->lru);
- 		if (i == 0) {	/* first page */
--			set_bit(PG_private, &page->flags);
-+			SetPagePrivate(page);
- 			set_page_private(page, 0);
- 			first_page = page;
- 			first_page->inuse = 0;
-@@ -389,8 +389,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+ 		page = alloc_page(flags);
+@@ -388,7 +388,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+ 			page->first_page = first_page;
  		if (i >= 2)
  			list_add(&page->lru, &prev_page->lru);
- 		if (i == class->zspage_order - 1)	/* last page */
--			set_bit(PG_private_2, &page->flags);
--
-+			SetPagePrivate2(page);
+-		if (i == class->zspage_order - 1)	/* last page */
++		if (i == class->zspage_pages - 1)	/* last page */
+ 			SetPagePrivate2(page);
  		prev_page = page;
  	}
+@@ -397,7 +397,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+ 
+ 	first_page->freelist = obj_location_to_handle(first_page, 0);
+ 	/* Maximum number of objects we can store in this zspage */
+-	first_page->objects = class->zspage_order * PAGE_SIZE / class->size;
++	first_page->objects = class->zspage_pages * PAGE_SIZE / class->size;
+ 
+ 	error = 0; /* Success */
+ 
+@@ -511,7 +511,7 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
+ 		class->size = size;
+ 		class->index = i;
+ 		spin_lock_init(&class->lock);
+-		class->zspage_order = get_zspage_order(size);
++		class->zspage_pages = get_zspage_pages(size);
+ 
+ 	}
+ 
+@@ -602,7 +602,7 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
+ 
+ 		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
+ 		spin_lock(&class->lock);
+-		class->pages_allocated += class->zspage_order;
++		class->pages_allocated += class->zspage_pages;
+ 	}
+ 
+ 	obj = first_page->freelist;
+@@ -657,7 +657,7 @@ void zs_free(struct zs_pool *pool, void *obj)
+ 	fullness = fix_fullness_group(pool, first_page);
+ 
+ 	if (fullness == ZS_EMPTY)
+-		class->pages_allocated -= class->zspage_order;
++		class->pages_allocated -= class->zspage_pages;
+ 
+ 	spin_unlock(&class->lock);
+ 
+diff --git a/drivers/staging/zsmalloc/zsmalloc_int.h b/drivers/staging/zsmalloc/zsmalloc_int.h
+index 92eefc6..8f9ce0c 100644
+--- a/drivers/staging/zsmalloc/zsmalloc_int.h
++++ b/drivers/staging/zsmalloc/zsmalloc_int.h
+@@ -124,7 +124,7 @@ struct size_class {
+ 	unsigned int index;
+ 
+ 	/* Number of PAGE_SIZE sized pages to combine to form a 'zspage' */
+-	int zspage_order;
++	int zspage_pages;
+ 
+ 	spinlock_t lock;
  
 -- 
 1.7.9.5
