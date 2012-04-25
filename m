@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759166Ab2DYNvM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 09:51:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44495 "EHLO
+	id S1759181Ab2DYNxI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 09:53:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44520 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757396Ab2DYNvK (ORCPT
+	with ESMTP id S1750766Ab2DYNxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 09:51:10 -0400
-Date: Wed, 25 Apr 2012 06:50:50 -0700
-From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Message-ID: <tip-a720b2dd2470a52345df11dca8d6c1466599f812@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, tglx@linutronix.de,
-        borislav.petkov@amd.com, dan.carpenter@oracle.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, srivatsa.bhat@linux.vnet.ibm.com,
-        dan.carpenter@oracle.com, borislav.petkov@amd.com
-In-Reply-To: <20120419070053.GB16645@elgon.mountain>
-References: <20120419070053.GB16645@elgon.mountain>
+	Wed, 25 Apr 2012 09:53:05 -0400
+Date: Wed, 25 Apr 2012 06:52:29 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-33ff581eddf744ea91a50d46c2f0961b375a9595@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1334756818-6631-1-git-send-email-jolsa@redhat.com>
+References: <1334756818-6631-1-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, intel_cacheinfo:
-  Fix error return code in amd_set_l3_disable_slot()
-Git-Commit-ID: a720b2dd2470a52345df11dca8d6c1466599f812
+Subject: [tip:perf/urgent] perf symbols:
+  Read plt symbols from proper symtab_type binary
+Git-Commit-ID: 33ff581eddf744ea91a50d46c2f0961b375a9595
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,80 +32,80 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Apr 2012 06:50:56 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Apr 2012 06:52:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a720b2dd2470a52345df11dca8d6c1466599f812
-Gitweb:     http://git.kernel.org/tip/a720b2dd2470a52345df11dca8d6c1466599f812
-Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-AuthorDate: Thu, 19 Apr 2012 12:35:08 +0200
-Committer:  Borislav Petkov <borislav.petkov@amd.com>
-CommitDate: Thu, 19 Apr 2012 18:30:28 +0200
+Commit-ID:  33ff581eddf744ea91a50d46c2f0961b375a9595
+Gitweb:     http://git.kernel.org/tip/33ff581eddf744ea91a50d46c2f0961b375a9595
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Wed, 18 Apr 2012 15:46:58 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 20 Apr 2012 13:34:49 -0300
 
-x86, intel_cacheinfo: Fix error return code in amd_set_l3_disable_slot()
+perf symbols: Read plt symbols from proper symtab_type binary
 
-If the L3 disable slot is already in use, return -EEXIST instead of
--EINVAL. The caller, store_cache_disable(), checks this return value to
-print an appropriate warning.
+When loading symbols from DSO we check multiple paths of DSO binary
+until we succeed to load symbols ('.symtab' section). Once symbols are
+read we try to load also plt symbols.
 
-Also, we want to signal with -EEXIST that the current index we're
-disabling has actually been already disabled on the node:
+During the reading of plt symbols, the dso file is reopened from
+location given by dso->long_name. This could be wrong in case we want
+process buildid binaries.
 
-$ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_0
-$ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_0
--bash: echo: write error: File exists
-$ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_1
--bash: echo: write error: File exists
-$ echo 12 > /sys/devices/system/cpu/cpu5/cache/index3/cache_disable_1
--bash: echo: write error: File exists
+The change is to make the plt symbols being read from the DSO path, that
+normal symbols were read from.
 
-The old code would say
-
--bash: echo: write error: Invalid argument
-
-for disable slot 1 when playing the example above with no output in
-dmesg, which is clearly misleading.
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20120419070053.GB16645@elgon.mountain
-[Boris: add testing for the other index too]
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1334756818-6631-1-git-send-email-jolsa@redhat.com
+[ committer note: moved dso to be the first parameter of that function ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/kernel/cpu/intel_cacheinfo.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ tools/perf/util/symbol.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 73d08ed..b8f3653 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -433,14 +433,14 @@ int amd_set_l3_disable_slot(struct amd_northbridge *nb, int cpu, unsigned slot,
- 	/*  check if @slot is already used or the index is already disabled */
- 	ret = amd_get_l3_disable_slot(nb, slot);
- 	if (ret >= 0)
--		return -EINVAL;
-+		return -EEXIST;
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index c0a028c..ab9867b 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -977,8 +977,9 @@ static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
+  * And always look at the original dso, not at debuginfo packages, that
+  * have the PLT data stripped out (shdr_rel_plt.sh_type == SHT_NOBITS).
+  */
+-static int dso__synthesize_plt_symbols(struct  dso *dso, struct map *map,
+-				       symbol_filter_t filter)
++static int
++dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
++			    symbol_filter_t filter)
+ {
+ 	uint32_t nr_rel_entries, idx;
+ 	GElf_Sym sym;
+@@ -993,10 +994,7 @@ static int dso__synthesize_plt_symbols(struct  dso *dso, struct map *map,
+ 	char sympltname[1024];
+ 	Elf *elf;
+ 	int nr = 0, symidx, fd, err = 0;
+-	char name[PATH_MAX];
  
- 	if (index > nb->l3_cache.indices)
- 		return -EINVAL;
+-	snprintf(name, sizeof(name), "%s%s",
+-		 symbol_conf.symfs, dso->long_name);
+ 	fd = open(name, O_RDONLY);
+ 	if (fd < 0)
+ 		goto out;
+@@ -1703,8 +1701,9 @@ restart:
+ 			continue;
  
- 	/* check whether the other slot has disabled the same index already */
- 	if (index == amd_get_l3_disable_slot(nb, !slot))
--		return -EINVAL;
-+		return -EEXIST;
- 
- 	amd_l3_disable_index(nb, cpu, slot, index);
- 
-@@ -468,8 +468,8 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
- 	err = amd_set_l3_disable_slot(this_leaf->base.nb, cpu, slot, val);
- 	if (err) {
- 		if (err == -EEXIST)
--			printk(KERN_WARNING "L3 disable slot %d in use!\n",
--					    slot);
-+			pr_warning("L3 slot %d in use/index already disabled!\n",
-+				   slot);
- 		return err;
- 	}
- 	return count;
+ 		if (ret > 0) {
+-			int nr_plt = dso__synthesize_plt_symbols(dso, map,
+-								 filter);
++			int nr_plt;
++
++			nr_plt = dso__synthesize_plt_symbols(dso, name, map, filter);
+ 			if (nr_plt > 0)
+ 				ret += nr_plt;
+ 			break;
