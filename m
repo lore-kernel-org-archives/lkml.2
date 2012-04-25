@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759015Ab2DYGYN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 02:24:13 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48168 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758166Ab2DYGWo (ORCPT
+	id S1751359Ab2DYG1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 02:27:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52721 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab2DYG1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 02:22:44 -0400
-X-AuditID: 9c93016f-b7cfcae00000449e-05-4f97983126f2
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 2/6] zsmalloc: remove unnecessary alignment
-Date: Wed, 25 Apr 2012 15:23:10 +0900
-Message-Id: <1335334994-22138-3-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1335334994-22138-1-git-send-email-minchan@kernel.org>
-References: <1335334994-22138-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 25 Apr 2012 02:27:12 -0400
+MIME-Version: 1.0
+Date: Wed, 25 Apr 2012 14:27:11 +0800
+Message-ID: <CAHnt0GWDqsGsj_i1u3aRSMa1ie4EAhS9GN_D=m1jx5gk6nYgwg@mail.gmail.com>
+Subject: A potential bug in mm/memblock.c?
+From: Peter Teoh <htmldeveloper@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It isn't necessary to align pool size with PAGE_SIZE.
-If I missed something, please let me know it.
+Comments please.   Thanks.
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/zsmalloc/zsmalloc-main.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Signed-off-by: Peter Teoh <htmldeveloper@gmail.com>
 
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 504b6c2..b99ad9e 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -489,14 +489,13 @@ fail:
- 
- struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
+diff --git a/mm/memblock.c b/mm/memblock.c
+index a44eab3..2c621c5 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -553,8 +553,8 @@ void __init_memblock __next_free_mem_range(u64
+*idx, int nid,
  {
--	int i, error, ovhd_size;
-+	int i, error;
- 	struct zs_pool *pool;
- 
- 	if (!name)
- 		return NULL;
- 
--	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
--	pool = kzalloc(ovhd_size, GFP_KERNEL);
-+	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
- 	if (!pool)
- 		return NULL;
- 
--- 
-1.7.9.5
+       struct memblock_type *mem = &memblock.memory;
+       struct memblock_type *rsv = &memblock.reserved;
+-       int mi = *idx & 0xffffffff;
+-       int ri = *idx >> 32;
++       unsigned int mi = *idx & 0xffffffff;
++       unsigned int ri = *idx >> 32;
 
+       for ( ; mi < mem->cnt; mi++) {
+               struct memblock_region *m = &mem->regions[mi];
+
+
+
+-- 
+Regards,
+Peter Teoh
