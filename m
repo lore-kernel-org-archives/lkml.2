@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab2DYPv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:51:56 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38360 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755090Ab2DYPvy (ORCPT
+	id S1756193Ab2DYPwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:52:20 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:50993 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755823Ab2DYPwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:51:54 -0400
-Message-ID: <4F981D96.3000401@wwwdotorg.org>
-Date: Wed, 25 Apr 2012 09:51:50 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: Hiroshi DOYU <hdoyu@nvidia.com>, swarren@nvidia.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/4] ARM: tegra: Add SMMU enabler in AHB
-References: <1335352072-4001-1-git-send-email-hdoyu@nvidia.com> <1335352072-4001-2-git-send-email-hdoyu@nvidia.com> <20120425112950.GC3564@arwen.pp.htv.fi>
-In-Reply-To: <20120425112950.GC3564@arwen.pp.htv.fi>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Apr 2012 11:52:16 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 2/3] x86, MCE, AMD: Hide interrupt_enable sysfs node
+Date: Wed, 25 Apr 2012 17:52:02 +0200
+Message-Id: <1335369123-23196-3-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.9.3.362.g71319
+In-Reply-To: <1335369123-23196-1-git-send-email-bp@amd64.org>
+References: <1335369123-23196-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 05:29 AM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Wed, Apr 25, 2012 at 02:07:37PM +0300, Hiroshi DOYU wrote:
->> Add extern func, "tegra_ahb_enable_smmu()" to inform AHB that SMMU is
->> ready.
+From: Borislav Petkov <borislav.petkov@amd.com>
 
->> +#ifdef CONFIG_ARCH_TEGRA_3x_SOC
->> +static int __tegra_ahb_enable_smmu(struct device *dev, void *data)
->> +{
->> +	u32 val;
->> +	struct tegra_ahb *ahb = dev_get_drvdata(dev);
->> +
->> +	val = gizmo_readl(ahb, AHB_ARBITRATION_XBAR_CTRL);
->> +	val |= AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE;
->> +	gizmo_writel(ahb, val, AHB_ARBITRATION_XBAR_CTRL);
->> +	return 0;
->> +}
->> +
->> +int tegra_ahb_enable_smmu(void)
->> +{
->> +	return driver_for_each_device(&tegra_ahb_driver.driver, NULL, NULL,
->> +				      __tegra_ahb_enable_smmu);
->> +}
->> +EXPORT_SYMBOL(tegra_ahb_enable_smmu);
->> +#endif
-> 
-> this is still not correct. If you will always call this whenever you run
-> on tegra 3, why do you even expose this function ?
+Depending on whether the box supports the APIC LVT interrupt for
+thresholding, we want to show the 'interrupt_enable' sysfs node or not.
+Make that the case by adding it to the default sysfs attributes only if
+it is supported.
 
-I think the issue is that this function should only be called after the
-SMMU driver has initialized the SMMU, and it's ready to be activated.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index 2c1d178be46e..f4873a64f46d 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -421,10 +421,10 @@ RW_ATTR(threshold_limit);
+ RW_ATTR(error_count);
+ 
+ static struct attribute *default_attrs[] = {
+-	&interrupt_enable.attr,
+ 	&threshold_limit.attr,
+ 	&error_count.attr,
+-	NULL
++	NULL,	/* possibly interrupt_enable if supported, see below */
++	NULL,
+ };
+ 
+ #define to_block(k)	container_of(k, struct threshold_block, kobj)
+@@ -501,6 +501,11 @@ static __cpuinit int allocate_threshold_blocks(unsigned int cpu,
+ 	b->interrupt_capable	= lvt_interrupt_supported(bank, high);
+ 	b->threshold_limit	= THRESHOLD_MAX;
+ 
++	if (b->interrupt_capable)
++		threshold_ktype.default_attrs[2] = &interrupt_enable.attr;
++	else
++		threshold_ktype.default_attrs[2] = NULL;
++
+ 	INIT_LIST_HEAD(&b->miscj);
+ 
+ 	if (per_cpu(threshold_banks, cpu)[bank]->blocks) {
+-- 
+1.7.9.3.362.g71319
+
