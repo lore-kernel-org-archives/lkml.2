@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758661Ab2DYUKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 16:10:49 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64707 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758548Ab2DYUKq (ORCPT
+	id S1758718Ab2DYUK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 16:10:57 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:53546 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758671Ab2DYUKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 16:10:46 -0400
-Message-ID: <4F985A39.4060804@landley.net>
-Date: Wed, 25 Apr 2012 15:10:33 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Ludwig Nussel <ludwig.nussel@suse.de>
-CC: linux-kernel@vger.kernel.org,
-        "Jan Kara (maintainer:EXT2 FILE SYSTEM)" <jack@suse.cz>,
-        "Andrew Morton (maintainer:EXT3 FILE SYSTEM)" 
-	<akpm@linux-foundation.org>,
-        "Andreas Dilger (maintainer:EXT3 FILE SYSTEM)" 
-	<adilger.kernel@dilger.ca>,
-        "\"Theodore Ts'o\" (maintainer:EXT4 FILE SYSTEM)" <tytso@mit.edu>,
-        linux-ext4@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] implement uid and gid mount options for ext2, ext3 and
- ext4
-References: <1335281356-2943-1-git-send-email-ludwig.nussel@suse.de> <4F971936.6070809@landley.net> <4F97E5F2.50501@suse.de>
-In-Reply-To: <4F97E5F2.50501@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 Apr 2012 16:10:55 -0400
+Date: Wed, 25 Apr 2012 16:10:50 -0400 (EDT)
+Message-Id: <20120425.161050.1011838269798884593.davem@davemloft.net>
+To: linux-kernel@vger.kernel.org
+CC: yinghai@kernel.org, tj@kernel.org, torvalds@linux-foundation.org
+Subject: [PATCH] mm: nobootmem: Correct alloc_bootmem semantics.
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 25 Apr 2012 13:10:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 06:54 AM, Ludwig Nussel wrote:
-> Rob Landley wrote:
->> On 04/24/2012 10:29 AM, Ludwig Nussel wrote:
->>> Further development of a patch I sent years ago. I didn't find the
->>> time to address the concerns raised back then and forgot about the
->>> patch. Now here it is again.
->>
->> The doc bits look fine:
->>
->> Acked-by: Rob Landley <rob@landley.net>
->>
->> As for the design: why isn't this in the VFS instead of in ext234? It
->> seems like VFAT is more likely to need this, and I vaguely recall virtfs
->> (I.E. 9pfs) doing something similar...?
-> 
-> Yes, file systems like FAT that do not store ownership information
-> themselves have a uid option. I agree that handling that in vfs itself
-> would be the more generic solution. It would require more work though.
 
-The right thing to do is often more work.  If it allows us to remove
-existing duplicate code, even better...
+The comments above __alloc_bootmem_node() claim that the code will
+first try the allocation using 'goal' and if that fails it will
+try again but with the 'goal' requirement dropped.
 
-Rob
--- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+Unfortunately, this is not what the code does, so fix it to do so.
+
+This is important for nobootmem conversions to architectures such
+as sparc where MAX_DMA_ADDRESS is infinity.
+
+On such architectures all of the allocations done by generic spots,
+such as the sparse-vmemmap implementation, will pass in:
+
+	__pa(MAX_DMA_ADDRESS)
+
+as the goal, and with the limit given as "-1" this will always fail
+unless we add the appropriate fallback logic here.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index 24f0fc1..e53bb8a 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -298,13 +298,19 @@ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+ 	if (WARN_ON_ONCE(slab_is_available()))
+ 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+ 
++again:
+ 	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
+ 					 goal, -1ULL);
+ 	if (ptr)
+ 		return ptr;
+ 
+-	return __alloc_memory_core_early(MAX_NUMNODES, size, align,
+-					 goal, -1ULL);
++	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
++					goal, -1ULL);
++	if (!ptr && goal) {
++		goal = 0;
++		goto again;
++	}
++	return ptr;
+ }
+ 
+ void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
