@@ -1,112 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab2DYMiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:38:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26203 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750972Ab2DYMit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:38:49 -0400
-Date: Wed, 25 Apr 2012 14:37:46 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Roland McGrath <roland@hack.frob.com>
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120425123746.GA15560@redhat.com>
-References: <CA+55aFzinX_6DVvDTyxrsP6VEHVY2Q+Y=e+qksnAjR+oT3GZew@mail.gmail.com> <20120420080914.GF6871@ZenIV.linux.org.uk> <CA+55aFxia+u3VAf0qN-2wv7DyAQZK-Z8=n=cqUvo--+C905aFg@mail.gmail.com> <20120420160848.GG6871@ZenIV.linux.org.uk> <20120420164239.GH6871@ZenIV.linux.org.uk> <CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com> <20120420180748.GI6871@ZenIV.linux.org.uk> <20120423180150.GA6871@ZenIV.linux.org.uk> <20120424072617.GB6871@ZenIV.linux.org.uk> <20120425030659.GE6871@ZenIV.linux.org.uk>
+	id S1754619Ab2DYMjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:39:09 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46036 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416Ab2DYMjH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 08:39:07 -0400
+Date: Wed, 25 Apr 2012 14:39:01 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: Our failure on tracing tools unification (Was: Re: [RFC][PATCH
+ 00/15] tools: Unify perf and trace-cmd trace event format parsing v2)
+Message-ID: <20120425123858.GF8626@somewhere>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+ <20120423144743.GB29985@somewhere>
+ <1335193719.28150.171.camel@twins>
+ <20120425080525.GA32613@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120425030659.GE6871@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120425080525.GA32613@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25, Al Viro wrote:
->
-> FWIW, there's an interesting question rmk has brought up.  Consider the
-> following scenario (on any architecture):
-> 	sigsuspend(2) sees a signal and returns ERESTARTNOHAND.
-> 	do_signal() is called and calls get_signal_to_deliver() and gets 0,
-> for whatever reason.
-> 	We decide to restart, return address adjusted, syscall number
-> returned to the right register in pt_regs.  In the meanwhile, no matter what
-> state interrupts used to have before, get_signal_to_deliver() has enabled
-> them when returning
+On Wed, Apr 25, 2012 at 10:05:25AM +0200, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Mon, 2012-04-23 at 16:47 +0200, Frederic Weisbecker wrote:
+> > > Ingo doesn't seem to want this library outside perf in order to avoid
+> > > the fragmentation of the efforts on tracing tools.
+> > 
+> > I really don't see the point.. parsing 
+> > /debug/tracing/events/*/format gunk really is separate, 
+> > furthermore things like powertop et al already are separate 
+> > projects and really need this lib.
+> > 
+> > I mean, who gives a bother where all that crap lives, if its 
+> > in the kernel tree its all close enough to keep an eye on.. 
+> > its not like kernel/events/ and kernel/trace/ are the same 
+> > directory.
+> > 
+> > Ingo, please could you lighten up and let people get stuff 
+> > done? Merging the two implementations, wherever the result 
+> > lives, is a better situation that two dis-joint 
+> > implementations. So either let Frederic work or do it yourself 
+> > but don't hand-wave and road-block stuff.
+> 
+> As long as perf builds it not as a DSO - or has it in 
+> tools/perf/libparseevent/ and co-installs the .so together with 
+> perf (and it's packaged together) I'm fine with it.
 
-Afaics this doesn't really matter, TIF_SIGPENDING can be set by another CPU
-once get_signal_to_deliver() drops ->siglock.
+It's a static library (.a) in tools/lib
+This way we ensure perf is not going to dynamically link to some
+random version. Besides it stays on the kernel tree so the sources
+can evolve on the same branch.
 
-> , so we'll need to reload thread flags.  And we find that
-> another signal has arrived in the meanwhile.
-> 	OK, do_signal() is called again, and this time we have a handler for
-> the arrived signal.  We form a stack frame and return to userland, into the
-> beginning of the handler.  We don't even look at the restart-related logics
-> this time around, due to the usual logics protecting us from double restarts.
-> 	Handler is executed, up to rt_sigreturn(2).
-> 	We decode the sigcontext, restore pt_regs and return to userland.
-> 	Right into the beginning of interrupted sigsuspend()
->
-> So we have sigsuspend() hit by a signal we have a handler for.  Handler is
-> executed and we are stuck is sigsuspend() again, all because a signal without
-> a handler has arrived just before that one - close enough for our signal to
-> come right after get_signal_to_deliver() has returned zero to do_signal().
+The reason why it's on tools/lib is that people don't want to force
+tools to depend on perf.
 
-Yes, this (and the similar races) were already discussed a couple of times.
-In short, regs->ax = -ERESTART* and ->ip doesn't survive after do_signal().
-In this case the syscall was already restarted after the first do_signal()
-even if we do not return to user-mode yet.
+> One thing that would suck is perf being bound by various 
+> versions of this library floating out there.
 
-> AFAICS, that's a clear bug.
+Sure, the fact it's static and is on the kernel tree prevents
+from that.
 
-I do not know. So far it was decided that we do not really care, but
-I won't argue if we decide to change the current behaviour.
+> One reason why perf has become so popular is that it's 
+> self-sufficient to a large degree and is very easy to 
+> build/install. Lets not kill that aspect by the death of a 
+> thousand cuts.
 
-As for sys_sigsuspend() and this race in particular:
+Agreed. The perf makefile just relays on tools/lib so the dependency
+stays on the same tree and stays static so this is transparent to the
+user that doesn't need to juggle with dependencies.
 
-> Arrival of a signal that has userland handler
-> and that isn't blocked by the mask given to sigsuspend() should terminate
-> sigsuspend().
+> 
+> We had nothing but pain from external libraries so far, and 
+> there's a reason why the Git project (3+ times larger than perf) 
+> avoids library dependencies like the plague...
+> 
+> Anyway, Frederic, mind posting a version that does the above, so 
+> I can have a look at how it all works in practice?
 
-Yes. But note that do_signal() restores the old sigmask. This means that
-the signal we get after the first do_signal() was not blocked before
-sigsuspend() was called. So, to some extent, we can pretend that the
-handler was executed before sigsuspend() and it was never restarted.
+Ok I just rebased against latest perf/core updates and posted to
+you. I also pushed it to some branch in my tree (see cover letter)
 
-IOW, I tend to agree with the comments from Roland, see for example
+Thanks!
 
-	HR timers prevent an itimer from generating EINTR?
-	http://marc.info/?t=125210012600005
-
-	[RESEND] [RFC][PATCH X86_32 1/2]: Call do_notify_resume() with interrupts enabled
-	http://marc.info/?t=131955450100004
-
-But let me repeat that I never really understood if this is "by design"
-or not.
-
-> Solution proposed last summer when that had been noticed by arm folks was
-> more or less along the lines of
-> 	* new thread flag, checked after we'd seen that no SIGPENDING et.al.
-> is there.  If it's set, we clear it, do syscall restart work as we would for
-> handlerless signal and recheck the flags if we had to do something like
-> __put_user() in process (arm might have to do that for ERESTART_RESTARTBLOCK)[1]
-> 	* do_signal() would set that flag if
-> 		+ anti double-restart logics would not have prevented
-> 		  restarts
-> 		+ error value was ERESTART_...
-> 	* no restart work on "no signal" path in do_signal()
-> 	* if we have a handler and the flag is set, clear it and do what
-> we normally do for restarts (including the "has ptrace mangled registers
-> in a way that would prevent restarts in the current code" logics for
-> architectures that have such logics - arm and sparc, at least).
-
-Hmm. Not sure I understand this in details. But at first glance,
-"do_signal() would set that flag" is not enough. We have the similar problem
-if we dequeue a SA_RESTART signal first, then another signal without SA_RESTART.
-Or I simply misunderstood.
-
-Oleg.
-
+> 
+> Thanks,
+> 
+> 	Ingo
