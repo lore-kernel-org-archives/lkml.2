@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759039Ab2DYNt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 09:49:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44452 "EHLO
+	id S1759166Ab2DYNvM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 09:51:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44495 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439Ab2DYNt1 (ORCPT
+	with ESMTP id S1757396Ab2DYNvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 09:49:27 -0400
-Date: Wed, 25 Apr 2012 06:49:10 -0700
-From: tip-bot for Gleb Natapov <gleb@redhat.com>
-Message-ID: <tip-e7c72d888dac2c81003401d663bd8abd68e7c5cd@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, gleb@redhat.com, tglx@linutronix.de, avi@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, gleb@redhat.com, tglx@linutronix.de, avi@redhat.com
-In-Reply-To: <20120417111345.GK11918@redhat.com>
-References: <20120417111345.GK11918@redhat.com>
+	Wed, 25 Apr 2012 09:51:10 -0400
+Date: Wed, 25 Apr 2012 06:50:50 -0700
+From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Message-ID: <tip-a720b2dd2470a52345df11dca8d6c1466599f812@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, tglx@linutronix.de,
+        borislav.petkov@amd.com, dan.carpenter@oracle.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, srivatsa.bhat@linux.vnet.ibm.com,
+        dan.carpenter@oracle.com, borislav.petkov@amd.com
+In-Reply-To: <20120419070053.GB16645@elgon.mountain>
+References: <20120419070053.GB16645@elgon.mountain>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Add 'G' and 'H'
-  modifiers to event parsing
-Git-Commit-ID: e7c72d888dac2c81003401d663bd8abd68e7c5cd
+Subject: [tip:x86/urgent] x86, intel_cacheinfo:
+  Fix error return code in amd_set_l3_disable_slot()
+Git-Commit-ID: a720b2dd2470a52345df11dca8d6c1466599f812
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,94 +30,80 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Apr 2012 06:49:17 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Apr 2012 06:50:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e7c72d888dac2c81003401d663bd8abd68e7c5cd
-Gitweb:     http://git.kernel.org/tip/e7c72d888dac2c81003401d663bd8abd68e7c5cd
-Author:     Gleb Natapov <gleb@redhat.com>
-AuthorDate: Tue, 17 Apr 2012 14:13:45 +0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 17 Apr 2012 11:20:23 -0300
+Commit-ID:  a720b2dd2470a52345df11dca8d6c1466599f812
+Gitweb:     http://git.kernel.org/tip/a720b2dd2470a52345df11dca8d6c1466599f812
+Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+AuthorDate: Thu, 19 Apr 2012 12:35:08 +0200
+Committer:  Borislav Petkov <borislav.petkov@amd.com>
+CommitDate: Thu, 19 Apr 2012 18:30:28 +0200
 
-perf tools: Add 'G' and 'H' modifiers to event parsing
+x86, intel_cacheinfo: Fix error return code in amd_set_l3_disable_slot()
 
-They were dropped during conversion of event parser. Add test case to
-make sure this will not happen again.
+If the L3 disable slot is already in use, return -EEXIST instead of
+-EINVAL. The caller, store_cache_disable(), checks this return value to
+print an appropriate warning.
 
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/20120417111345.GK11918@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Also, we want to signal with -EEXIST that the current index we're
+disabling has actually been already disabled on the node:
+
+$ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_0
+$ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_0
+-bash: echo: write error: File exists
+$ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_1
+-bash: echo: write error: File exists
+$ echo 12 > /sys/devices/system/cpu/cpu5/cache/index3/cache_disable_1
+-bash: echo: write error: File exists
+
+The old code would say
+
+-bash: echo: write error: Invalid argument
+
+for disable slot 1 when playing the example above with no output in
+dmesg, which is clearly misleading.
+
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20120419070053.GB16645@elgon.mountain
+[Boris: add testing for the other index too]
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- tools/perf/builtin-test.c      |   30 ++++++++++++++++++++++++++++++
- tools/perf/util/parse-events.l |    2 +-
- 2 files changed, 31 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/intel_cacheinfo.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 1c5b980..223ffdc 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -851,6 +851,28 @@ static int test__checkevent_symbolic_name_modifier(struct perf_evlist *evlist)
- 	return test__checkevent_symbolic_name(evlist);
- }
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index 73d08ed..b8f3653 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -433,14 +433,14 @@ int amd_set_l3_disable_slot(struct amd_northbridge *nb, int cpu, unsigned slot,
+ 	/*  check if @slot is already used or the index is already disabled */
+ 	ret = amd_get_l3_disable_slot(nb, slot);
+ 	if (ret >= 0)
+-		return -EINVAL;
++		return -EEXIST;
  
-+static int test__checkevent_exclude_host_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+
-+	return test__checkevent_symbolic_name(evlist);
-+}
-+
-+static int test__checkevent_exclude_guest_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+
-+	return test__checkevent_symbolic_name(evlist);
-+}
-+
- static int test__checkevent_symbolic_alias_modifier(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-@@ -1091,6 +1113,14 @@ static struct test__event_st {
- 		.name  = "r1,syscalls:sys_enter_open:k,1:1:hp",
- 		.check = test__checkevent_list,
- 	},
-+	{
-+		.name  = "instructions:G",
-+		.check = test__checkevent_exclude_host_modifier,
-+	},
-+	{
-+		.name  = "instructions:H",
-+		.check = test__checkevent_exclude_guest_modifier,
-+	},
- };
+ 	if (index > nb->l3_cache.indices)
+ 		return -EINVAL;
  
- #define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 05d766e..1fcf1bb 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -54,7 +54,7 @@ num_dec		[0-9]+
- num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
- name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
--modifier_event	[ukhp]{1,5}
-+modifier_event	[ukhpGH]{1,8}
- modifier_bp	[rwx]
+ 	/* check whether the other slot has disabled the same index already */
+ 	if (index == amd_get_l3_disable_slot(nb, !slot))
+-		return -EINVAL;
++		return -EEXIST;
  
- %%
+ 	amd_l3_disable_index(nb, cpu, slot, index);
+ 
+@@ -468,8 +468,8 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
+ 	err = amd_set_l3_disable_slot(this_leaf->base.nb, cpu, slot, val);
+ 	if (err) {
+ 		if (err == -EEXIST)
+-			printk(KERN_WARNING "L3 disable slot %d in use!\n",
+-					    slot);
++			pr_warning("L3 slot %d in use/index already disabled!\n",
++				   slot);
+ 		return err;
+ 	}
+ 	return count;
