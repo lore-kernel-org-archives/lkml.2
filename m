@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab2DYMo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:44:27 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54819 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757349Ab2DYMoY (ORCPT
+	id S1757881Ab2DYMoc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:44:32 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33102 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757654Ab2DYMo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:44:24 -0400
+	Wed, 25 Apr 2012 08:44:28 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, torvalds@linux-foundation.org, mszeredi@suse.cz
-Subject: [PATCH 13/16] vfs: nameidata_to_filp(): inline __dentry_open()
-Date: Wed, 25 Apr 2012 14:44:14 +0200
-Message-Id: <1335357857-16416-14-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 15/16] vfs: retry last component if opening stale dentry
+Date: Wed, 25 Apr 2012 14:44:16 +0200
+Message-Id: <1335357857-16416-16-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
 References: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
@@ -23,45 +23,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Copy __dentry_open() into nameidata_to_filp().
+NFS optimizes away d_revalidates for last component of open.  This means that
+open itself can find the dentry stale.
+
+This patch allows the filesystem to return EOPENSTALE and the VFS will retry the
+lookup on just the last component if possible.
+
+If the lookup was done using RCU mode, including the last component, then this
+is not possible since the parent dentry is lost.  In this case fall back to
+non-RCU lookup.  Currently this is not used since NFS will always leave RCU
+mode.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/open.c |   20 ++++++++++++++++++--
- 1 files changed, 18 insertions(+), 2 deletions(-)
+ fs/namei.c            |   37 +++++++++++++++++++++++++++++++++++--
+ include/linux/errno.h |    1 +
+ 2 files changed, 36 insertions(+), 2 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index e1448cd..161c15f 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -818,9 +818,25 @@ struct file *nameidata_to_filp(struct nameidata *nd)
+diff --git a/fs/namei.c b/fs/namei.c
+index f7e7d76..e34df8d 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2204,6 +2204,8 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	struct file *filp;
+ 	struct inode *inode;
+ 	int symlink_ok = 0;
++	struct path save_parent = { .dentry = NULL, .mnt = NULL };
++	bool retried = false;
+ 	int error;
  
- 	/* Has the filesystem initialised the file for us? */
- 	if (filp->f_path.dentry == NULL) {
-+		struct file *res;
-+
- 		path_get(&nd->path);
--		filp = __dentry_open(nd->path.dentry, nd->path.mnt, filp,
--				     NULL, cred);
-+		res = do_dentry_open(nd->path.dentry, nd->path.mnt,
-+				     filp, NULL, cred);
-+		if (!IS_ERR(res)) {
-+			int error;
-+
-+			BUG_ON(res != filp);
-+
-+			error = open_check_o_direct(filp);
-+			if (error) {
-+				fput(filp);
-+				filp = ERR_PTR(error);
-+			}
-+		} else {
-+			put_filp(filp);
-+			filp = res;
-+		}
+ 	nd->flags &= ~LOOKUP_PARENT;
+@@ -2269,6 +2271,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	if (nd->last.name[nd->last.len])
+ 		goto exit;
+ 
++retry_lookup:
+ 	mutex_lock(&dir->d_inode->i_mutex);
+ 
+ 	dentry = lookup_hash(nd);
+@@ -2349,12 +2352,21 @@ finish_lookup:
+ 		return NULL;
  	}
+ 
+-	path_to_nameidata(path, nd);
++	if ((nd->flags & LOOKUP_RCU) || nd->path.mnt != path->mnt) {
++		path_to_nameidata(path, nd);
++	} else {
++		save_parent.dentry = nd->path.dentry;
++		save_parent.mnt = mntget(path->mnt);
++		nd->path.dentry = path->dentry;
++
++	}
+ 	nd->inode = inode;
+ 	/* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
+ 	error = complete_walk(nd);
+-	if (error)
++	if (error) {
++		path_put(&save_parent);
+ 		return ERR_PTR(error);
++	}
+ 	error = -EISDIR;
+ 	if ((open_flag & O_CREAT) && S_ISDIR(nd->inode->i_mode))
+ 		goto exit;
+@@ -2377,6 +2389,20 @@ common:
+ 	if (error)
+ 		goto exit;
+ 	filp = nameidata_to_filp(nd);
++	if (filp == ERR_PTR(-EOPENSTALE) && save_parent.dentry && !retried) {
++		BUG_ON(save_parent.dentry != dir);
++		path_put(&nd->path);
++		nd->path = save_parent;
++		nd->inode = dir->d_inode;
++		save_parent.mnt = NULL;
++		save_parent.dentry = NULL;
++		if (want_write) {
++			mnt_drop_write(nd->path.mnt);
++			want_write = 0;
++		}
++		retried = true;
++		goto retry_lookup;
++	}
+ 	if (!IS_ERR(filp)) {
+ 		error = ima_file_check(filp, op->acc_mode);
+ 		if (error) {
+@@ -2396,6 +2422,7 @@ common:
+ out:
+ 	if (want_write)
+ 		mnt_drop_write(nd->path.mnt);
++	path_put(&save_parent);
+ 	terminate_walk(nd);
  	return filp;
- }
+ 
+@@ -2459,6 +2486,12 @@ out:
+ 	if (base)
+ 		fput(base);
+ 	release_open_intent(nd);
++	if (filp == ERR_PTR(-EOPENSTALE)) {
++		if (flags & LOOKUP_RCU)
++			filp = ERR_PTR(-ECHILD);
++		else
++			filp = ERR_PTR(-ESTALE);
++	}
+ 	return filp;
+ 
+ out_filp:
+diff --git a/include/linux/errno.h b/include/linux/errno.h
+index 2d09bfa..e0de516 100644
+--- a/include/linux/errno.h
++++ b/include/linux/errno.h
+@@ -17,6 +17,7 @@
+ #define ENOIOCTLCMD	515	/* No ioctl command */
+ #define ERESTART_RESTARTBLOCK 516 /* restart by calling sys_restart_syscall */
+ #define EPROBE_DEFER	517	/* Driver requests probe retry */
++#define EOPENSTALE	518	/* open found a stale dentry */
+ 
+ /* Defined for the NFSv3 protocol */
+ #define EBADHANDLE	521	/* Illegal NFS file handle */
 -- 
 1.7.7
 
