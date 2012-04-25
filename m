@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab2DYF0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 01:26:35 -0400
-Received: from plane.gmane.org ([80.91.229.3]:60685 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932199Ab2DYF0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 01:26:33 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Adrian Yanes <devel@ayanes.com>
-Subject: Re: [PATCH] i2c-at91: fix data-loss issue
-Date: Wed, 25 Apr 2012 08:26:18 +0300
-Message-ID: <jn81tq$b3s$1@dough.gmane.org>
-References: <20120413103937.GH7154@arwen.pp.htv.fi> <1334317476-10044-1-git-send-email-h.feurstein@gmail.com> <EF2E73589CA71846A15D0B2CDF79505D0905D5A1AA@wm021.weinmann.com> <20120418143920.GA19802@pengutronix.de> <4F930B77.8070909@ayanes.com> <EF2E73589CA71846A15D0B2CDF79505D0905DB4657@wm021.weinmann.com> <4F94F598.1040008@ayanes.com>
-Reply-To: devel@ayanes.com
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: duw0.kyla.fi
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.5; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-In-Reply-To: <4F94F598.1040008@ayanes.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
+	id S1758210Ab2DYF2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 01:28:46 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15126 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755182Ab2DYF2p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 01:28:45 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 24 Apr 2012 22:28:44 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>
+Date: Wed, 25 Apr 2012 10:58:38 +0530
+Subject: RE: [PATCH] mfd: tps65090: Return proper error if regmap_init_i2c
+ fails
+Thread-Topic: [PATCH] mfd: tps65090: Return proper error if regmap_init_i2c
+ fails
+Thread-Index: Ac0igws+cZXxKYnJSRezm+AzWCpDsQAIMHBQ
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DD76B0EFB@BGMAIL02.nvidia.com>
+References: <1335317436.24039.2.camel@phoenix>
+In-Reply-To: <1335317436.24039.2.camel@phoenix>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3P5Sprn004104
 
-Apparently the issue with the AT91RM9200 is the chipset itself due to a
-factory design defect. Some people claim that the root cause of it is:
+Thanks for the patch.
+Acked by: Venu Byravarasu<vbyravarasu@nvidia.com>
 
-"Since the TWI doesn't have a DMA channel there is no way to deliver
-timely data to the Tx buffer under heavy CPU load."[1]
+> -----Original Message-----
+> From: Axel Lin [mailto:axel.lin@gmail.com]
+> Sent: Wednesday, April 25, 2012 7:01 AM
+> To: linux-kernel@vger.kernel.org
+> Cc: Samuel Ortiz; Venu Byravarasu
+> Subject: [PATCH] mfd: tps65090: Return proper error if regmap_init_i2c fails
+> 
+> Return proper error instead of 0 if regmap_init_i2c fails.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/mfd/tps65090.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+> index 47f802b..da821d9 100644
+> --- a/drivers/mfd/tps65090.c
+> +++ b/drivers/mfd/tps65090.c
+> @@ -286,10 +286,10 @@ static int __devinit tps65090_i2c_probe(struct
+> i2c_client *client,
+>  	tps65090->rmap = regmap_init_i2c(tps65090->client,
+>  		&tps65090_regmap_config);
+>  	if (IS_ERR(tps65090->rmap)) {
+> -		dev_err(&client->dev, "regmap_init failed with err: %ld\n",
+> -			PTR_ERR(tps65090->rmap));
+> +		ret = PTR_ERR(tps65090->rmap);
+> +		dev_err(&client->dev, "regmap_init failed with err: %d\n", ret);
+>  		goto err_irq_exit;
+> -	};
+> +	}
+> 
+>  	ret = mfd_add_devices(tps65090->dev, -1, tps65090s,
+>  		ARRAY_SIZE(tps65090s), NULL, 0);
+> --
+> 1.7.5.4
+> 
+> 
 
-Other threads[2] highlights same issues with the AT91RM9200 and the data
-loss. Even in 2007, Ronny Nilsson tried to do some patch[3] blocking the
-interrupts in order to win more feasibility, some testing was
-performed[4], and up to 100kHz (exactly the same value as we started
-getting errors), the driver just failed. At the end of the discussion
-the conclusion was that the TWI controller of the AT91RM9200 is just
-broken and the GPIO driver is the only alternative.
-
-Therefore, your driver will work for all of those chipsets using PDC
-with the TWI. However, it won't work with the AT91RM9200 (and probably
-old hardware variants that keep same hardware design).
-
-So I recommend to add a note/comment indicating such incompatibility for
-the AT91RM9200, either in the source code or in the kernel config.
-
-Thanks.
-
-Adrian
-
-
-1 - http://lists.atrpms.net/pipermail/i2c/2007-October/002026.html
-2 - http://lists.lm-sensors.org/pipermail/i2c/2007-February/000773.html
-3 - http://lists.lm-sensors.org/pipermail/i2c/2007-February/000833.html
-4 - http://lists.atrpms.net/pipermail/i2c/2007-October/002034.html
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
