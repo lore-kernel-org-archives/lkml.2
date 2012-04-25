@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758261Ab2DYT2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 15:28:06 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:37455 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757623Ab2DYT1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 15:27:15 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 0/3] PM / Domains: Fix device stop and domain power off governor functions, take 2
-Date: Wed, 25 Apr 2012 21:28:32 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        markgross@thegnar.org, Jean Pihet <j-pihet@ti.com>,
-        Simon Horman <horms@verge.net.au>
-References: <201204242349.26288.rjw@sisk.pl>
-In-Reply-To: <201204242349.26288.rjw@sisk.pl>
+	id S1758185Ab2DYTpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 15:45:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52762 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757829Ab2DYTpM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 15:45:12 -0400
+Date: Wed, 25 Apr 2012 20:45:06 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Message-ID: <20120425194506.GG3932@decadent.org.uk>
+References: <20120424223305.GA7748@kroah.com>
+ <20120424223242.251771207@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204252128.33016.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120424223242.251771207@linuxfoundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [ 03/62] hwmon: fam15h_power: fix bogus values with current
+ BIOSes
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Apr 24, 2012 at 03:32:44PM -0700, Greg KH wrote:
+> 3.3-stable review patch.  If anyone has any objections, please let me know.
+[...]
+> +static void __devinit tweak_runavg_range(struct pci_dev *pdev)
+> +{
+> +	u32 val;
+> +	const struct pci_device_id affected_device = {
+> +		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
+> +
+> +	/*
+> +	 * let this quirk apply only to the current version of the
+> +	 * northbridge, since future versions may change the behavior
+> +	 */
+> +	if (!pci_match_id(&affected_device, pdev))
+> +		return;
+[...]
 
-On Tuesday, April 24, 2012, Rafael J. Wysocki wrote:
-> Hi all,
-> 
-> It turns out that the PM domains device stop and domain power off governor
-> functions I invented some time ago don't really make sense, because they
-> should only decide whether or not the resulting low-power state will be
-> too deep and that only depends on latencies.  In particular, the time
-> when devices have been suspended doesn't really matter here, so the
-> results returned by those functions shouldn't depend on it either (as it
-> shouldn't depend on any "break even" values that only make sense when we
-> know how much time in advance the device is going to be used, but this
-> information is not related to the PM QoS latency constraint).
-> 
-> If this functions are fixed (patches [1/3] and [2/3]), then some ugly
-> computations can be removed from rpm_suspend() and other places and the
-> whole framework can be simplified quite a bit (patch [3/3]).
+pci_match_id() takes an *array* of IDs which must be properly zero-
+terminated.  This change is bogus and should be fixed up before it
+goes into a stable update.
 
-I noticed a few problems with the patches sent yesterday.  Most importantly:
+Ben.
 
-* dev_pm_qos_read_value() should be used rather than its unlocked counterpart.
-* All children of the device have to be taken into account, not only those
-  belonging to generic PM domains.
-* default_power_down_ok() should take restore_state_latency_ns into account.
-* default_power_down_ok() should not assume that default_stop_ok() will always
-  be called before it (the domain may choose to use a different device stop
-  governor function in principle).
-* rpm_resume() still should check the devices PM QoS constraint and return
-  error code if the value is negative (which means never suspend).
-
-Updated patches follow.
-
-Thanks,
-Rafael
-
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
