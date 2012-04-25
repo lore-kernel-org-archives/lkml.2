@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab2DYEGg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 00:06:36 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:35980 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab2DYEGe (ORCPT
+	id S1752749Ab2DYEJS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 00:09:18 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:49399 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015Ab2DYEJQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 00:06:34 -0400
-Message-ID: <4F977739.5050808@linux.vnet.ibm.com>
-Date: Wed, 25 Apr 2012 12:02:01 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Wed, 25 Apr 2012 00:09:16 -0400
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v4 03/10] KVM: VMX: export PFEC.P bit on ept
-References: <4F9776D2.7020506@linux.vnet.ibm.com>
-In-Reply-To: <4F9776D2.7020506@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12042417-9264-0000-0000-000001545C71
+In-Reply-To: <4F9777FB.8050109@msgid.tls.msk.ru>
+References: <4F94222C.6080608@msgid.tls.msk.ru> <1335172741.2226.10.camel@perseus.themaw.net>
+ <4F958352.7050106@msgid.tls.msk.ru> <4F95897B.2040103@msgid.tls.msk.ru>
+ <4F959A5A.8070907@msgid.tls.msk.ru> <CA+55aFyQ4y9jyRXyejKwtf3yXJX52hQkLuwJ5=jfQM+yLkBNMw@mail.gmail.com>
+ <4F96D0E7.9060000@msgid.tls.msk.ru> <CA+55aFw=cfYZO7PWDRRuZw1nYxvUk-63qfVVwfdJWevtmZoOig@mail.gmail.com>
+ <1335300159.1393.13.camel@localhost.localdomain> <CA+55aFx9hATsnANWYSoagycc2HnXO=5Oa3gtqBjMr9eoe1obpA@mail.gmail.com>
+ <4F9777FB.8050109@msgid.tls.msk.ru>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 24 Apr 2012 21:08:54 -0700
+X-Google-Sender-Auth: G_uEAtjSrFaAnZG1BdvRZSx0jA4
+Message-ID: <CA+55aFyhTj2TjQ46ewruKXGF=x0ng2HAOfMDSC96WH3UTt=B5Q@mail.gmail.com>
+Subject: Re: Breaking userspace? Re: 3.0.24 broke aufofs on mixed 32/64bit environment
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Thomas Meyer <thomas@m3y3r.de>, Ian Kent <raven@themaw.net>,
+        "stable@kernel.org" <stable@kernel.org>, autofs@vger.kernel.org,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export the present bit of page fault error code, the later patch
-will use it
+On Tue, Apr 24, 2012 at 9:05 PM, Michael Tokarev <mjt@tls.msk.ru> wrote:
+>
+> How about something like
+>
+>     sbi->compat_daemon = is_compat_task() && strcmp(task->comm, "automount") != 0
+>
+> instead?  (This task->comm is a pseudocode, just to show the idea, I don't
+> know where this info can be found in kernel)
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/vmx.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+Thomas, does that work for you?
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 52f6856..2c98057 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -4735,6 +4735,7 @@ static int handle_ept_violation(struct kvm_vcpu *vcpu)
- {
- 	unsigned long exit_qualification;
- 	gpa_t gpa;
-+	u32 error_code;
- 	int gla_validity;
-
- 	exit_qualification = vmcs_readl(EXIT_QUALIFICATION);
-@@ -4759,7 +4760,13 @@ static int handle_ept_violation(struct kvm_vcpu *vcpu)
-
- 	gpa = vmcs_read64(GUEST_PHYSICAL_ADDRESS);
- 	trace_kvm_page_fault(gpa, exit_qualification);
--	return kvm_mmu_page_fault(vcpu, gpa, exit_qualification & 0x3, NULL, 0);
-+
-+	/* It is a write fault? */
-+	error_code = exit_qualification & (1U << 1);
-+	/* ept page table is present? */
-+	error_code |= (exit_qualification >> 3) & 0x1;
-+
-+	return kvm_mmu_page_fault(vcpu, gpa, error_code, NULL, 0);
- }
-
- static u64 ept_rsvd_mask(u64 spte, int level)
--- 
-1.7.7.6
-
+                Linus
