@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759342Ab2DYO0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 10:26:09 -0400
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:56983 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757973Ab2DYO0H (ORCPT
+	id S1755892Ab2DYO3i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 10:29:38 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50178 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab2DYO3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 10:26:07 -0400
-X-Greylist: delayed 1979 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Apr 2012 10:26:07 EDT
-Message-ID: <1335361985.1885.16.camel@castor.rsk>
-Subject: [PATCH] fs: remove 8 bytes of padding from struct writeback_control
- on 64 bit builds
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>
-Date: Wed, 25 Apr 2012 14:53:05 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 25 Apr 2012 10:29:37 -0400
+MIME-Version: 1.0
+Date: Wed, 25 Apr 2012 15:29:36 +0100
+Message-ID: <CANd1uZ=btyt8q5vbhFjh06bij2xaqGxMLjHf10ORk-XQq-gSxQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] math128: Introduce {mult,add,cmp}_u128
+From: Jay Foad <jay.foad@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorder structure writeback_control to remove 8 bytes of padding on 64
-bit builds, this shrinks its size from 48 to 40 bytes.
+> +#ifndef shl_u128
+> +static inline u128 shl_u128(u128 x, unsigned int n)
+> +{
+> +	u128 res;
+> +
+> +	if (n < 64) {
+> +		res.hi = x.hi << n;
+> +		res.hi |= x.lo >> (64 - n);
 
-This structure is always on the stack and uses C99 named initialisation,
-so should be safe and have a small impact on stack usage.
-    
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+This is undefined when n == 0.
 
---
+> +		res.lo = x.lo << n;
+> +	} else {
+> +		res.lo = 0;
+> +		res.hi = x.lo << (n - 64);
+> +	}
+> +
+> +	return res;
+> +}
+> +#endif /* shl_u128 */
+> +
+> +#ifndef shr_u128
+> +static inline u128 shr_u128(u128 x, unsigned int n)
+> +{
+> +	u128 res;
+> +
+> +	if (n < 64) {
+> +		res.lo = x.lo >> n;
+> +		res.lo |= x.hi << (64 - n);
 
-patch against v3.4-rc4
-compiled and tested on x86_64
+Likewise.
 
-I've been running my desktop with this patch applied for several days
-and have not seen any problems.
-regards
-Richard
+> +		res.hi = x.hi >> n;
+> +	} else {
+> +		res.hi = 0;
+> +		res.lo = x.hi >> (n - 64);
+> +	}
+> +
+> +	return res;
+> +}
+> +#endif /* shr_u128 */
 
-
-
-
-
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index a2b84f5..3309736 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -58,7 +58,6 @@ extern const char *wb_reason_name[];
-  * in a manner such that unspecified fields are set to zero.
-  */
- struct writeback_control {
--	enum writeback_sync_modes sync_mode;
- 	long nr_to_write;		/* Write this many pages, and decrement
- 					   this for each page written */
- 	long pages_skipped;		/* Pages which were not written */
-@@ -71,6 +70,8 @@ struct writeback_control {
- 	loff_t range_start;
- 	loff_t range_end;
- 
-+	enum writeback_sync_modes sync_mode;
-+
- 	unsigned for_kupdate:1;		/* A kupdate writeback */
- 	unsigned for_background:1;	/* A background writeback */
- 	unsigned tagged_writepages:1;	/* tag-and-write to avoid livelock */
-
-
+Jay.
