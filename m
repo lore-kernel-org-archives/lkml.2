@@ -1,78 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757915Ab2DYSzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 14:55:00 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:18024 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757516Ab2DYSy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 14:54:58 -0400
-X-IronPort-AV: E=Sophos;i="4.75,481,1330934400"; 
-   d="scan'208";a="643431590"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v2] SUNRPC: skip dead but not buried clients on PipeFS
- events
-Thread-Topic: [PATCH v2] SUNRPC: skip dead but not buried clients on PipeFS
- events
-Thread-Index: AQHNIxTn/SFFkm36aUWQVPW+0yWgXw==
-Date: Wed, 25 Apr 2012 18:54:55 +0000
-Message-ID: <1335380095.15862.26.camel@lade.trondhjem.org>
-References: <20120420141042.7205.62608.stgit@localhost6.localdomain6>
-	 <20120425173005.GD751@fieldses.org>
-In-Reply-To: <20120425173005.GD751@fieldses.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <D9BF71DEE9A73C4CA2D4C46692124478@tahoe.netapp.com>
+	id S1757924Ab2DYS6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 14:58:30 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50780 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757446Ab2DYS63 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 14:58:29 -0400
+Date: Wed, 25 Apr 2012 14:58:28 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>
+cc: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Lockdep false positive in sysfs
+Message-ID: <Pine.LNX.4.44L0.1204251436140.1206-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3PItClI008939
 
-On Wed, 2012-04-25 at 13:30 -0400, J. Bruce Fields wrote:
-> On Fri, Apr 20, 2012 at 06:11:02PM +0400, Stanislav Kinsbursky wrote:
-> > v2: atomic_inc_return() was replaced by atomic_inc_not_zero().
-> > 
-> > These clients can't be safely dereferenced if their counter in 0.
-> 
-> I'm pretty confused by how these notifiers work....
-> 
-> rpc_release_client decrements cl_count to zero temporarily, to have it
-> immediately re-incremented by rpc_free_auth.
-> 
-> So if we're called concurrently with rpc_release_client then it's sort
-> of random whether someone gets this callback.
-> 
-> Is that a problem?
+Peter and Tejun:
 
-Not really. If we re-increment the client->cl_count in rpc_free_auth()
-then it would be so that we can send off a bunch of NULL rpc calls to
-destroy existing RPCSEC_GSS contexts. We shouldn't need to do any more
-upcalls in pipefs.
+Here's my problem, which affects several sysfs attribute methods in the 
+USB subsystem:
 
-If we care, we could simply move the call to rpc_unregister_client()
-into rpc_free_auth() so that the pipefs notifier doesn't see us, or we
-could set a flag to have it ignore us.
+Sysfs attribute A is attached to a USB device D.  When the user writes
+to A, the corresponding store method unregisters D's children (it does
+not unregister D, though).
 
-> Also, is this an existing bug?  (In which case Trond should take it
-> now.)
+Now, some of these children may also be USB devices (i.e., if D is a
+hub), and therefore may have the same set of sysfs attributes.  As a
+result, A's store method for D will end up removing the A attribute for
+device E, where E is a child of D.
 
+This causes lockdep to complain.  When A's method is called, sysfs
+tells lockdep that it holds a readlock for the s_active "rwsem"
+associated with the A attribute for D.  However the sysfs routine that
+removes attributes tells lockdep that it is going to get a writelock
+for the s_active associated with the A attribute for E, which is in the
+same lockdep class since it belongs to the same attribute.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+The resulting splat looks like this:
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+[ 1004.679564] =============================================
+[ 1004.680053] [ INFO: possible recursive locking detected ]
+[ 1004.680053] 3.4.0-rc4+ #17 Tainted: G           O
+[ 1004.680053] ---------------------------------------------
+[ 1004.680053] bash/1256 is trying to acquire lock:
+[ 1004.680053]  (s_active#73){++++.+}, at: [<c10c9c2b>] sysfs_hash_and_remove+0x60/0x71
+[ 1004.680053] 
+[ 1004.680053] but task is already holding lock:
+[ 1004.680053]  (s_active#73){++++.+}, at: [<c10c9fce>] sysfs_write_file+0xa7/0xea
+[ 1004.680053] 
+[ 1004.680053] other info that might help us debug this:
+[ 1004.680053]  Possible unsafe locking scenario:
+[ 1004.680053] 
+[ 1004.680053]        CPU0
+[ 1004.680053]        ----
+[ 1004.680053]   lock(s_active#73);
+[ 1004.680053]   lock(s_active#73);
+[ 1004.680053] 
+[ 1004.680053]  *** DEADLOCK ***
+[ 1004.680053] 
+[ 1004.680053]  May be due to missing lock nesting notation
+[ 1004.680053] 
+[ 1004.680053] 4 locks held by bash/1256:
+[ 1004.680053]  #0:  (&buffer->mutex){+.+.+.}, at: [<c10c9f4c>] sysfs_write_file+0x25/0xea
+[ 1004.680053]  #1:  (s_active#73){++++.+}, at: [<c10c9fce>] sysfs_write_file+0xa7/0xea
+[ 1004.680053]  #2:  (&__lockdep_no_validate__){......}, at: [<f002c376>] usb_deauthorize_device+0x16/0xb2 [usbcore]
+[ 1004.680053]  #3:  (&__lockdep_no_validate__){......}, at: [<c1185767>] device_release_driver+0x13/0x25
+[ 1004.680053] 
+[ 1004.680053] stack backtrace:
+[ 1004.680053] Pid: 1256, comm: bash Tainted: G           O 3.4.0-rc4+ #17
+[ 1004.680053] Call Trace:
+[ 1004.680053]  [<c101ea89>] ? console_unlock+0x1ad/0x1d3
+[ 1004.680053]  [<c104f712>] __lock_acquire+0x82f/0xb8a
+[ 1004.680053]  [<c104df6d>] ? mark_lock+0x26/0x21f
+[ 1004.680053]  [<c104e47a>] ? debug_check_no_locks_freed+0x112/0x11c
+[ 1004.680053]  [<c104e31c>] ? trace_hardirqs_on_caller+0x13f/0x17e
+[ 1004.680053]  [<c104e366>] ? trace_hardirqs_on+0xb/0xd
+[ 1004.680053]  [<c104fde5>] lock_acquire+0x5e/0x75
+[ 1004.680053]  [<c10c9c2b>] ? sysfs_hash_and_remove+0x60/0x71
+[ 1004.680053]  [<c10caf8c>] sysfs_addrm_finish+0x86/0xd2
+[ 1004.680053]  [<c10c9c2b>] ? sysfs_hash_and_remove+0x60/0x71
+[ 1004.680053]  [<c10c0000>] ? m_next+0x4c/0x56
+[ 1004.680053]  [<c10c0000>] ? m_next+0x4c/0x56
+[ 1004.680053]  [<c10c9c2b>] sysfs_hash_and_remove+0x60/0x71
+[ 1004.680053]  [<c10cc329>] sysfs_remove_group+0x56/0x77
+[ 1004.680053]  [<c118331e>] device_remove_groups+0x17/0x25
+[ 1004.680053]  [<c11834b5>] device_remove_attrs+0x1c/0x47
+[ 1004.680053]  [<c11835c6>] device_del+0xe6/0x135
+[ 1004.680053]  [<f002b658>] usb_disconnect+0x9a/0xd4 [usbcore]
+[ 1004.680053]  [<f002b6d6>] hub_quiesce+0x44/0x83 [usbcore]
+[ 1004.680053]  [<f002b86c>] hub_disconnect+0x6b/0xdb [usbcore]
+[ 1004.680053]  [<f0032f1d>] usb_unbind_interface+0x42/0xf9 [usbcore]
+[ 1004.680053]  [<c1185719>] __device_release_driver+0x66/0xa1
+[ 1004.680053]  [<c118576e>] device_release_driver+0x1a/0x25
+[ 1004.680053]  [<c1185398>] bus_remove_device+0xa3/0xb0
+[ 1004.680053]  [<c11835cd>] device_del+0xed/0x135
+[ 1004.680053]  [<f00316fb>] usb_disable_device+0x79/0x19b [usbcore]
+[ 1004.680053]  [<f0031e1d>] usb_set_configuration+0x18e/0x513 [usbcore]
+[ 1004.680053]  [<f002c397>] usb_deauthorize_device+0x37/0xb2 [usbcore]
+[ 1004.680053]  [<f0035204>] usb_dev_authorized_store+0x31/0x43 [usbcore]
+[ 1004.680053]  [<f00351d3>] ? set_persist+0x67/0x67 [usbcore]
+[ 1004.680053]  [<c1182f83>] dev_attr_store+0x1b/0x23
+[ 1004.680053]  [<c10c9fe5>] sysfs_write_file+0xbe/0xea
+[ 1004.680053]  [<c10c9f27>] ? sysfs_open_file+0x1c6/0x1c6
+[ 1004.680053]  [<c108ebc0>] vfs_write+0x74/0xa0
+[ 1004.680053]  [<c108ed21>] sys_write+0x3b/0x5d
+[ 1004.680053]  [<c1221210>] sysenter_do_call+0x12/0x36
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Normally one solves this sort of problem by annotating one of the locks
+as a nested call.  But there doesn't appear to be any reasonable way of
+doing this for sysfs attributes.
+
+I could work around the problem by having the method do everything in a 
+workqueue, but I would prefer not to -- the actions taken by these 
+attributes really ought to be synchronous.
+
+Do you guys have any suggestions for better solutions?
+
+Alan Stern
+
