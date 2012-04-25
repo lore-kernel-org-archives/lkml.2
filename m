@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab2DYQ51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 12:57:27 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45511 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756161Ab2DYQ5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 12:57:25 -0400
-Date: Wed, 25 Apr 2012 18:57:31 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Borislav Petkov <bp@amd64.org>, EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] AMD thresholding fixes
-Message-ID: <20120425165730.GB18314@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Luck, Tony" <tony.luck@intel.com>, Ingo Molnar <mingo@kernel.org>,
-	Borislav Petkov <bp@amd64.org>,
-	EDAC devel <linux-edac@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <1335369123-23196-1-git-send-email-bp@amd64.org>
- <3908561D78D1C84285E8C5FCA982C28F170F3C53@ORSMSX104.amr.corp.intel.com>
+	id S1756807Ab2DYRBd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 13:01:33 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63112 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754374Ab2DYRBb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 13:01:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F170F3C53@ORSMSX104.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F80548C.3060202@gmail.com>
+References: <1333726296-3817-1-git-send-email-jiang.liu@huawei.com>
+ <CAErSpo7KdaYt0tVpBW5vXmc7RXRgnbaOe7JTNmb5xp4vZMsK3w@mail.gmail.com> <4F80548C.3060202@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 25 Apr 2012 11:01:07 -0600
+Message-ID: <CAErSpo7kZAeAzr4UxDGvviQtwou5t8RduWe-SmzOPvO2UJpgeg@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Fix a device reference count leakage issue in pci_dev_present()
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 04:49:52PM +0000, Luck, Tony wrote:
-> > If there are no issues, I'll add the queue to linux-next (I don't see a
-> > branch from ras.git in linux-next, btw, which is strange).
-> 
-> Patches so far have been flowing from "ras" to "tip" to "linus". It
-> hasn't quite been clear how linux-next fits into this. If we export
-> to -next, then are we planning on sending those directly to linus,
-> bypassing tip?
+On Sat, Apr 7, 2012 at 8:51 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> On 04/07/2012 07:23 AM, Bjorn Helgaas wrote:
+>> On Fri, Apr 6, 2012 at 9:31 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>>> Function pci_get_dev_by_id() will hold a reference count on the pci device
+>>> returned, so pci_dev_present() should release the corresponding reference
+>>> count to avoid memory leakage.
+>>>
+>>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>>> ---
+>>>  drivers/pci/search.c |   10 +++++-----
+>>>  1 files changed, 5 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+>>> index 9d75dc8..b572730 100644
+>>> --- a/drivers/pci/search.c
+>>> +++ b/drivers/pci/search.c
+>>> @@ -338,13 +338,13 @@ int pci_dev_present(const struct pci_device_id *ids)
+>>>        WARN_ON(in_interrupt());
+>>>        while (ids->vendor || ids->subvendor || ids->class_mask) {
+>>>                found = pci_get_dev_by_id(ids, NULL);
+>>> -               if (found)
+>>> -                       goto exit;
+>>> +               if (found) {
+>>> +                       pci_dev_put(found);
+>>> +                       return 1;
+>>> +               }
+>>>                ids++;
+>>>        }
+>>> -exit:
+>>> -       if (found)
+>>> -               return 1;
+>>> +
+>>>        return 0;
+>>>  }
+>>>  EXPORT_SYMBOL(pci_dev_present);
+>>
+>> This might be the right thing to do, but I'd like to understand what's
+>> going on, so let's talk about it a bit first.
+>>
+>> I agree, there appears to be a leak here.  Or at least, the fact that
+>> we keep a reference when a device is found doesn't match the comment.
+>> What problem are you seeing from this leak?
+>>
+>> There are not many callers, and most appear to be one-time things done
+>> at boot, looking for built-in devices known to be defective.  These
+>> devices won't be removable, so the leak shouldn't be causing
+>> hot-remove issues.
+> I noticed this issue when reading code, no real issue disclosed yet.
+> As you have pointed out, this interface is used for built-in devices only,
+> there should be no real issue currently and the patch is just for purity.
+>
+>>
+>> IMO, this is a bogus interface that leads to poor code, and I don't
+>> want to encourage its use.  For device defect workarounds, I think
+>> it'd be better to use PCI quirks to catch the defective device.  Some
+>> chipset defects affect all downstream devices, and a quirk could make
+>> the defect visible to all the drivers, not just the ones that use
+>> pci_dev_present().  For example, look at tg3_write_reorder_chipsets
+>> and tg3_dma_wait_state_chipsets.  Those aren't for tg3 bugs, they're
+>> for chipset bugs that might affect other devices, too.  But right now,
+>> that knowledge is buried in the tg3 driver.
+> Thanks for pointing out the real issue behind this bogus interface.
+> It would be better to solve this type of chip bugs in PCI core instead
+> of in individual drivers.
 
-That's actually a good point. Once in -tip, they're seeing linux-next
-anyway.
+I applied this to the -next branch, thanks.
 
-Ok, Ingo, what would you guys rather have:
-
-* ras tree -> linux-next -> we send pull request to Linus
-
-or
-
-* ras tree -> -tip -> linux-next (automatically due to tip daily merges)
--> you send pull request to Linus
-
-I guess I'm fine with both, second one makes us even lazier :)
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
+Bjorn
