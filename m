@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759209Ab2DYNzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 09:55:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44560 "EHLO
+	id S1759279Ab2DYN4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 09:56:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44581 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab2DYNz3 (ORCPT
+	with ESMTP id S1758174Ab2DYN4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 09:55:29 -0400
-Date: Wed, 25 Apr 2012 06:55:01 -0700
+	Wed, 25 Apr 2012 09:56:19 -0400
+Date: Wed, 25 Apr 2012 06:54:10 -0700
 From: tip-bot for Don Zickus <dzickus@redhat.com>
-Message-ID: <tip-553222f3e81f18da31b2552e18dc519715198590@git.kernel.org>
+Message-ID: <tip-09ee10143658cd021d879ead61ead72a196302b6@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, wim@iguana.be,
         thomas.mingarelli@hp.com, akpm@linux-foundation.org,
         tglx@linutronix.de, dzickus@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, thomas.mingarelli@hp.com, tglx@linutronix.de,
-        dzickus@redhat.com
-In-Reply-To: <1333051877-15755-3-git-send-email-dzickus@redhat.com>
-References: <1333051877-15755-3-git-send-email-dzickus@redhat.com>
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        thomas.mingarelli@hp.com, wim@iguana.be, akpm@linux-foundation.org,
+        tglx@linutronix.de, dzickus@redhat.com
+In-Reply-To: <1333051877-15755-2-git-send-email-dzickus@redhat.com>
+References: <1333051877-15755-2-git-send-email-dzickus@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] x86/nmi:
-  Add new NMI queues to deal with IO_CHK and SERR
-Git-Commit-ID: 553222f3e81f18da31b2552e18dc519715198590
+Subject: [tip:core/locking] watchdog, hpwdt:
+  Remove priority option for NMI callback
+Git-Commit-ID: 09ee10143658cd021d879ead61ead72a196302b6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,154 +32,99 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Apr 2012 06:55:06 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Apr 2012 06:54:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  553222f3e81f18da31b2552e18dc519715198590
-Gitweb:     http://git.kernel.org/tip/553222f3e81f18da31b2552e18dc519715198590
+Commit-ID:  09ee10143658cd021d879ead61ead72a196302b6
+Gitweb:     http://git.kernel.org/tip/09ee10143658cd021d879ead61ead72a196302b6
 Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Thu, 29 Mar 2012 16:11:16 -0400
+AuthorDate: Thu, 29 Mar 2012 16:11:15 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 25 Apr 2012 12:43:34 +0200
+CommitDate: Wed, 25 Apr 2012 12:43:33 +0200
 
-x86/nmi: Add new NMI queues to deal with IO_CHK and SERR
+watchdog, hpwdt: Remove priority option for NMI callback
 
-In discussions with Thomas Mingarelli about hpwdt, he explained
-to me some issues they were some when using their virtual NMI
-button to test the hpwdt driver.
+The NMI_UNKNOWN bucket only allows for one function to register
+to it. The reason for that is because only functions which can
+not determine if the NMI belongs to them or not should register
+and would like to assume/swallow any NMI they see.
 
-It turns out the virtual NMI button used on HP's machines do no
-send unknown NMIs but instead send IO_CHK NMIs.  The way the
-kernel code is written, the hpwdt driver can not register itself
-against that type of NMI and therefore can not successfully
-capture system information before panic'ing.
+As a result it doesn't make sense to let more than one function
+like this register.  In fact, letting a second function fail
+allows us to know that more than one function is going to
+swallow NMIs on the current system. This is better than silently
+being ignored.
 
-To solve this I created two new NMI queues to allow driver to
-register against the IO_CHK and SERR NMIs.  Or in the hpwdt all
-three (if you include unknown NMIs too).
+Therefore hpwdt's priority mechanism doesn't make sense any
+more.  They will be always first on the NMI_UNKNOWN queue, if
+they register.
 
-The change is straightforward and just mimics what the unknown
-NMI does.
+Removing this parameter cleans up the code and simplifies things
+for the next patch which changes how nmis are registered.
 
-Reported-and-tested-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
+Cc: Thomas Mingarelli <thomas.mingarelli@hp.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1333051877-15755-3-git-send-email-dzickus@redhat.com
+Link: http://lkml.kernel.org/r/1333051877-15755-2-git-send-email-dzickus@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/nmi.h |    2 ++
- arch/x86/kernel/nmi.c      |   18 ++++++++++++++++++
- drivers/watchdog/hpwdt.c   |   27 ++++++++++++++++++++-------
- 3 files changed, 40 insertions(+), 7 deletions(-)
+ drivers/watchdog/hpwdt.c |   19 ++++---------------
+ 1 files changed, 4 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-index fd3f9f1..07162df 100644
---- a/arch/x86/include/asm/nmi.h
-+++ b/arch/x86/include/asm/nmi.h
-@@ -27,6 +27,8 @@ void arch_trigger_all_cpu_backtrace(void);
- enum {
- 	NMI_LOCAL=0,
- 	NMI_UNKNOWN,
-+	NMI_SERR,
-+	NMI_IO_CHECK,
- 	NMI_MAX
- };
- 
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index 47acaf3..ac9c1b7 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -54,6 +54,14 @@ static struct nmi_desc nmi_desc[NMI_MAX] =
- 		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[1].lock),
- 		.head = LIST_HEAD_INIT(nmi_desc[1].head),
- 	},
-+	{
-+		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[2].lock),
-+		.head = LIST_HEAD_INIT(nmi_desc[2].head),
-+	},
-+	{
-+		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[3].lock),
-+		.head = LIST_HEAD_INIT(nmi_desc[3].head),
-+	},
- 
- };
- 
-@@ -120,6 +128,8 @@ static int __setup_nmi(unsigned int type, struct nmiaction *action)
- 	 * to manage expectations
- 	 */
- 	WARN_ON_ONCE(type == NMI_UNKNOWN && !list_empty(&desc->head));
-+	WARN_ON_ONCE(type == NMI_SERR && !list_empty(&desc->head));
-+	WARN_ON_ONCE(type == NMI_IO_CHECK && !list_empty(&desc->head));
- 
- 	/*
- 	 * some handlers need to be executed first otherwise a fake
-@@ -212,6 +222,10 @@ EXPORT_SYMBOL_GPL(unregister_nmi_handler);
- static notrace __kprobes void
- pci_serr_error(unsigned char reason, struct pt_regs *regs)
- {
-+	/* check to see if anyone registered against these types of errors */
-+	if (nmi_handle(NMI_SERR, regs, false))
-+		return;
-+
- 	pr_emerg("NMI: PCI system error (SERR) for reason %02x on CPU %d.\n",
- 		 reason, smp_processor_id());
- 
-@@ -241,6 +255,10 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
- {
- 	unsigned long i;
- 
-+	/* check to see if anyone registered against these types of errors */
-+	if (nmi_handle(NMI_IO_CHECK, regs, false))
-+		return;
-+
- 	pr_emerg(
- 	"NMI: IOCK error (debug interrupt?) for reason %02x on CPU %d.\n",
- 		 reason, smp_processor_id());
 diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index 4000b80..6e414b5 100644
+index cbc7cee..4000b80 100644
 --- a/drivers/watchdog/hpwdt.c
 +++ b/drivers/watchdog/hpwdt.c
-@@ -725,19 +725,32 @@ static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
- 	 * Only one function can register for NMI_UNKNOWN
+@@ -147,7 +147,6 @@ struct cmn_registers {
+ 
+ static unsigned int hpwdt_nmi_decoding;
+ static unsigned int allow_kdump;
+-static unsigned int priority;		/* hpwdt at end of die_notify list */
+ static unsigned int is_icru;
+ static DEFINE_SPINLOCK(rom_lock);
+ static void *cru_rom_addr;
+@@ -723,13 +722,9 @@ static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
+ 	}
+ 
+ 	/*
+-	 * If the priority is set to 1, then we will be put first on the
+-	 * die notify list to handle a critical NMI. The default is to
+-	 * be last so other users of the NMI signal can function.
++	 * Only one function can register for NMI_UNKNOWN
  	 */
- 	retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout, 0, "hpwdt");
--	if (retval != 0) {
--		dev_warn(&dev->dev,
--			"Unable to register a die notifier (err=%d).\n",
--			retval);
--		if (cru_rom_addr)
--			iounmap(cru_rom_addr);
--	}
-+	if (retval)
-+		goto error;
-+	retval = register_nmi_handler(NMI_SERR, hpwdt_pretimeout, 0, "hpwdt");
-+	if (retval)
-+		goto error1;
-+	retval = register_nmi_handler(NMI_IO_CHECK, hpwdt_pretimeout, 0, "hpwdt");
-+	if (retval)
-+		goto error2;
+-	retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout,
+-					(priority) ? NMI_FLAG_FIRST : 0,
+-					"hpwdt");
++	retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout, 0, "hpwdt");
+ 	if (retval != 0) {
+ 		dev_warn(&dev->dev,
+ 			"Unable to register a die notifier (err=%d).\n",
+@@ -740,10 +735,8 @@ static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
  
  	dev_info(&dev->dev,
  			"HP Watchdog Timer Driver: NMI decoding initialized"
- 			", allow kernel dump: %s (default = 0/OFF)\n",
- 			(allow_kdump == 0) ? "OFF" : "ON");
+-			", allow kernel dump: %s (default = 0/OFF)"
+-			", priority: %s (default = 0/LAST).\n",
+-			(allow_kdump == 0) ? "OFF" : "ON",
+-			(priority == 0) ? "LAST" : "FIRST");
++			", allow kernel dump: %s (default = 0/OFF)\n",
++			(allow_kdump == 0) ? "OFF" : "ON");
  	return 0;
-+
-+error2:
-+	unregister_nmi_handler(NMI_SERR, "hpwdt");
-+error1:
-+	unregister_nmi_handler(NMI_UNKNOWN, "hpwdt");
-+error:
-+	dev_warn(&dev->dev,
-+		"Unable to register a die notifier (err=%d).\n",
-+		retval);
-+	if (cru_rom_addr)
-+		iounmap(cru_rom_addr);
-+	return retval;
  }
  
- static void hpwdt_exit_nmi_decoding(void)
+@@ -881,10 +874,6 @@ MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
+ #ifdef CONFIG_HPWDT_NMI_DECODING
+ module_param(allow_kdump, int, 0);
+ MODULE_PARM_DESC(allow_kdump, "Start a kernel dump after NMI occurs");
+-
+-module_param(priority, int, 0);
+-MODULE_PARM_DESC(priority, "The hpwdt driver handles NMIs first or last"
+-		" (default = 0/Last)\n");
+ #endif /* !CONFIG_HPWDT_NMI_DECODING */
+ 
+ module_init(hpwdt_init);
