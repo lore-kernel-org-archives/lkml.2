@@ -1,75 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab2DYITk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 04:19:40 -0400
-Received: from antcom.de ([188.40.178.216]:42533 "EHLO chuck.antcom.de"
+	id S1754909Ab2DYIVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 04:21:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33096 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754208Ab2DYITg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 04:19:36 -0400
-Message-ID: <4F97B395.9020501@antcom.de>
-Date: Wed, 25 Apr 2012 10:19:33 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
+	id S1754320Ab2DYIV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 04:21:27 -0400
+Date: Wed, 25 Apr 2012 10:21:26 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: move pc lookup point to commit_charge()
+Message-ID: <20120425082125.GA11364@tiehlicka.suse.cz>
+References: <1335295860-28919-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com, stern@rowland.harvard.edu,
-        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
-Subject: Re: [PATCH v5 1/3] USB: Add driver for NXP ISP1301 USB transceiver
-References: <1335002264-22225-1-git-send-email-stigge@antcom.de> <20120424232044.GA2657@kroah.com>
-In-Reply-To: <20120424232044.GA2657@kroah.com>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335295860-28919-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-thanks for reviewing! I integrated all of your suggestions into the
-patch update, except ...
-
-On 04/25/2012 01:20 AM, Greg KH wrote:
-> On Sat, Apr 21, 2012 at 11:57:42AM +0200, Roland Stigge wrote:
->> This very-lowlevel driver registers the NXP ISP1301 chip via the I2C subsystem.
->> The chip is the USB transceiver shared by ohci-nxp, lpc32xx_udc (gadget) and
->> isp1301_omap.
->>
->> Following patches let the respective USB host and gadget drivers use this
->> driver, instead of duplicating ISP1301 handling.
->>
->> Signed-off-by: Roland Stigge <stigge@antcom.de>
->> Acked-by: Arnd Bergmann <arnd@arndb.de>
->>
->>  include/linux/usb/isp1301.h                       |   84 ++++++++++++++++++++++
+On Tue 24-04-12 21:31:00, Johannes Weiner wrote:
+> None of the callsites actually need the page_cgroup descriptor
+> themselves, so just pass the page and do the look up in there.
 > 
-> Why this file?  You have a lot of register stuff in here that should be
-> in the .c file, right?  Only put what other files need in this .h file,
-> which shouldn't be much at all from what I can tell.
+> We already had two bugs (6568d4a 'mm: memcg: update the correct soft
+> limit tree during migration' and 'memcg: fix Bad page state after
+> replace_page_cache') where the passed page and pc were not referring
+> to the same page frame.
 
-Right. At first sight, it doesn't look very elegant that the driver
-exposes the ISP1301 register set to the drivers using it. I discussed
-this design previously with Arnd on the mailing list and we agreed on
-the following: ISP1301 is a very low level driver that primarily
-separates out the I2C client registration of the ISP1301 chip (including
-instantiation via DT), used by other drivers, but it's still just a kind
-of helper driver for some OHCI and USB device drivers. Consider the
-ISP1301 driver as a register set extension of ohci-nxp, lpc32xx-udc and
-isp1301_omap, which in turn know best what to do with the low level
-functionality (individual ISP1301 registers and timing, see the
-different initialization strategies in those drivers). Those drivers
-previously internally duplicated ISP1301 register definitions which is
-solved by the new isp1301 driver.
+Yes let's get rid of these relics once and for all.
 
-Initially, I actually had register get/set functions defined in
-isp1301.h but it turned out that those trivial wrappers around standard
-i2c_smbus_*() better had been removed.
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Acked-by: Hugh Dickins <hughd@google.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
 
-So what do you think?
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Thanks in advance,
+Thanks!
 
-Roland
+> ---
+>  mm/memcontrol.c |   17 +++++------------
+>  1 files changed, 5 insertions(+), 12 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 884e936..1a28dd8 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2461,10 +2461,10 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+>  static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+>  				       struct page *page,
+>  				       unsigned int nr_pages,
+> -				       struct page_cgroup *pc,
+>  				       enum charge_type ctype,
+>  				       bool lrucare)
+>  {
+> +	struct page_cgroup *pc = lookup_page_cgroup(page);
+>  	struct zone *uninitialized_var(zone);
+>  	bool was_on_lru = false;
+>  	bool anon;
+> @@ -2701,7 +2701,6 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+>  {
+>  	struct mem_cgroup *memcg = NULL;
+>  	unsigned int nr_pages = 1;
+> -	struct page_cgroup *pc;
+>  	bool oom = true;
+>  	int ret;
+>  
+> @@ -2715,11 +2714,10 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+>  		oom = false;
+>  	}
+>  
+> -	pc = lookup_page_cgroup(page);
+>  	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
+>  	if (ret == -ENOMEM)
+>  		return ret;
+> -	__mem_cgroup_commit_charge(memcg, page, nr_pages, pc, ctype, false);
+> +	__mem_cgroup_commit_charge(memcg, page, nr_pages, ctype, false);
+>  	return 0;
+>  }
+>  
+> @@ -2816,16 +2814,13 @@ static void
+>  __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *memcg,
+>  					enum charge_type ctype)
+>  {
+> -	struct page_cgroup *pc;
+> -
+>  	if (mem_cgroup_disabled())
+>  		return;
+>  	if (!memcg)
+>  		return;
+>  	cgroup_exclude_rmdir(&memcg->css);
+>  
+> -	pc = lookup_page_cgroup(page);
+> -	__mem_cgroup_commit_charge(memcg, page, 1, pc, ctype, true);
+> +	__mem_cgroup_commit_charge(memcg, page, 1, ctype, true);
+>  	/*
+>  	 * Now swap is on-memory. This means this page may be
+>  	 * counted both as mem and swap....double count.
+> @@ -3254,14 +3249,13 @@ int mem_cgroup_prepare_migration(struct page *page,
+>  	 * page. In the case new page is migrated but not remapped, new page's
+>  	 * mapcount will be finally 0 and we call uncharge in end_migration().
+>  	 */
+> -	pc = lookup_page_cgroup(newpage);
+>  	if (PageAnon(page))
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
+>  	else if (page_is_file_cache(page))
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
+>  	else
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+> -	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, ctype, false);
+> +	__mem_cgroup_commit_charge(memcg, newpage, 1, ctype, false);
+>  	return ret;
+>  }
+>  
+> @@ -3348,8 +3342,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
+>  	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
+>  	 * LRU while we overwrite pc->mem_cgroup.
+>  	 */
+> -	pc = lookup_page_cgroup(newpage);
+> -	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type, true);
+> +	__mem_cgroup_commit_charge(memcg, newpage, 1, type, true);
+>  }
+>  
+>  #ifdef CONFIG_DEBUG_VM
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
