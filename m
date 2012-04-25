@@ -1,53 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705Ab2DYUMw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 16:12:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48054 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758558Ab2DYUMv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 16:12:51 -0400
-Date: Wed, 25 Apr 2012 13:12:46 -0700
-From: Tejun Heo <tj@kernel.org>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, yinghai@kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH] mm: nobootmem: Correct alloc_bootmem semantics.
-Message-ID: <20120425201246.GB8989@google.com>
-References: <20120425.161050.1011838269798884593.davem@davemloft.net>
+	id S1758781Ab2DYUPv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 16:15:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61115 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758558Ab2DYUPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 16:15:49 -0400
+Date: Wed, 25 Apr 2012 16:15:40 -0400
+From: Dave Jones <davej@redhat.com>
+To: Robert =?utf-8?B?xZp3acSZY2tp?= <robert@swiecki.net>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        linux-mm@kvack.org
+Subject: Re: NULL-ptr deref in mmput via sys_migrate_pages in 3.4-rc4 (proly
+ missing mm==NULL check)
+Message-ID: <20120425201540.GA1560@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Robert =?utf-8?B?xZp3acSZY2tp?= <robert@swiecki.net>,
+	linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+	linux-mm@kvack.org
+References: <CAP145pgsaAN7uvj29Di6Qwtgrr54WvGL6X4rqU-fre8z_zJh4Q@mail.gmail.com>
+ <CAP145pjuQ=Ja6bQLBFdOptzRG29qL2BRvMw=Qz7ub1TOjOn2XQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120425.161050.1011838269798884593.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAP145pjuQ=Ja6bQLBFdOptzRG29qL2BRvMw=Qz7ub1TOjOn2XQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 04:10:50PM -0400, David Miller wrote:
-> 
-> The comments above __alloc_bootmem_node() claim that the code will
-> first try the allocation using 'goal' and if that fails it will
-> try again but with the 'goal' requirement dropped.
-> 
-> Unfortunately, this is not what the code does, so fix it to do so.
-> 
-> This is important for nobootmem conversions to architectures such
-> as sparc where MAX_DMA_ADDRESS is infinity.
-> 
-> On such architectures all of the allocations done by generic spots,
-> such as the sparse-vmemmap implementation, will pass in:
-> 
-> 	__pa(MAX_DMA_ADDRESS)
-> 
-> as the goal, and with the limit given as "-1" this will always fail
-> unless we add the appropriate fallback logic here.
-> 
-> Signed-off-by: David S. Miller <davem@davemloft.net>
+Commit 3268c63eded4612a3d07b56d1e02ce7731e6608e introduced two potential NULL dereferences.
+Move the mmput calls into the if arms that have already tested for a valid mm.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Reported-by: Robert Święcki <robert@swiecki.net>
+Cc: Christoph Lameter <cl@linux.com>
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-Thanks.
-
--- 
-tejun
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index cfb6c86..6de4850 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1361,13 +1361,12 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
+ 
+ 	mm = get_task_mm(task);
+ 	put_task_struct(task);
+-	if (mm)
++	if (mm) {
+ 		err = do_migrate_pages(mm, old, new,
+ 			capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
+-	else
++		mmput(mm);
++	} else
+ 		err = -EINVAL;
+-
+-	mmput(mm);
+ out:
+ 	NODEMASK_SCRATCH_FREE(scratch);
+ 
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 51c08a0..d73d860 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1389,15 +1389,15 @@ SYSCALL_DEFINE6(move_pages, pid_t, pid, unsigned long, nr_pages,
+ 	put_task_struct(task);
+ 
+ 	if (mm) {
+-		if (nodes)
++		if (nodes) {
+ 			err = do_pages_move(mm, task_nodes, nr_pages, pages,
+ 					    nodes, status, flags);
+-		else
++			mmput(mm);
++		} else
+ 			err = do_pages_stat(mm, nr_pages, pages, status);
+ 	} else
+ 		err = -EINVAL;
+ 
+-	mmput(mm);
+ 	return err;
+ 
+ out:
