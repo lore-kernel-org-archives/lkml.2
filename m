@@ -1,126 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758555Ab2DYMqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:46:14 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:55976 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757113Ab2DYMoW (ORCPT
+	id S1758466Ab2DYMqZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:46:25 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36822 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757239Ab2DYMqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:44:22 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org, mszeredi@suse.cz
-Subject: [PATCH 11/16] vfs: split __dentry_open()
-Date: Wed, 25 Apr 2012 14:44:12 +0200
-Message-Id: <1335357857-16416-12-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
-References: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
+	Wed, 25 Apr 2012 08:46:22 -0400
+Subject: Re: many rx packets dropped since 2.6.37
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Chris <xchris89x@googlemail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <CAOFJUkj27aF6diDjcZFTyBaTdDdU8URkj+1vr3ECoozbzqDVBg@mail.gmail.com>
+References: <CAOFJUkhi6NoECFGcz=rq8-uVXFc90V4SuH=A1+sWdvYDDhO8Ow@mail.gmail.com>
+	 <1335353427.3274.103.camel@edumazet-glaptop>
+	 <CAOFJUkj27aF6diDjcZFTyBaTdDdU8URkj+1vr3ECoozbzqDVBg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Apr 2012 14:46:15 +0200
+Message-ID: <1335357975.3274.187.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Wed, 2012-04-25 at 14:34 +0200, Chris wrote:
 
-Split __dentry_open() into two functions:
+> Are you sure that these packets are really dropped? I see a lot of
+> more packets dropped with virtio_net instead of e1000. (KVM
+> environments)
+> 
 
-  do_dentry_open() - does most of the actual work, doesn't put file on failure
-  open_check_o_direct() - after a successful open, checks direct_IO method
+Yep, we are sure packets are dropped, just read the patch and you'll can
+see this.
 
-This will allow i_op->atomic_open to do just the file initialization and leave
-the direct_IO checking to the VFS.
+> Why do we see dropped packets only in virtual environments and bonded
+> network interfaces and not on real network interfaces?
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/internal.h |    1 +
- fs/open.c     |   47 +++++++++++++++++++++++++++++++++--------------
- 2 files changed, 34 insertions(+), 14 deletions(-)
+This has to be investigated, eventually.
 
-diff --git a/fs/internal.h b/fs/internal.h
-index 9962c59..4d69fdd 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -100,6 +100,7 @@ extern struct file *do_file_open_root(struct dentry *, struct vfsmount *,
- 
- extern long do_handle_open(int mountdirfd,
- 			   struct file_handle __user *ufh, int open_flag);
-+extern int open_check_o_direct(struct file *f);
- 
- /*
-  * inode.c
-diff --git a/fs/open.c b/fs/open.c
-index 5720854..971b474 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -644,10 +644,23 @@ static inline int __get_file_write_access(struct inode *inode,
- 	return error;
- }
- 
--static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
--					struct file *f,
--					int (*open)(struct inode *, struct file *),
--					const struct cred *cred)
-+int open_check_o_direct(struct file *f)
-+{
-+	/* NB: we're sure to have correct a_ops only after f_op->open */
-+	if (f->f_flags & O_DIRECT) {
-+		if (!f->f_mapping->a_ops ||
-+		    ((!f->f_mapping->a_ops->direct_IO) &&
-+		    (!f->f_mapping->a_ops->get_xip_mem))) {
-+			return -EINVAL;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static struct file *do_dentry_open(struct dentry *dentry, struct vfsmount *mnt,
-+				   struct file *f,
-+				   int (*open)(struct inode *, struct file *),
-+				   const struct cred *cred)
- {
- 	static const struct file_operations empty_fops = {};
- 	struct inode *inode;
-@@ -703,16 +716,6 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
- 
- 	file_ra_state_init(&f->f_ra, f->f_mapping->host->i_mapping);
- 
--	/* NB: we're sure to have correct a_ops only after f_op->open */
--	if (f->f_flags & O_DIRECT) {
--		if (!f->f_mapping->a_ops ||
--		    ((!f->f_mapping->a_ops->direct_IO) &&
--		    (!f->f_mapping->a_ops->get_xip_mem))) {
--			fput(f);
--			f = ERR_PTR(-EINVAL);
--		}
--	}
--
- 	return f;
- 
- cleanup_all:
-@@ -740,6 +743,22 @@ cleanup_file:
- 	return ERR_PTR(error);
- }
- 
-+static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
-+				struct file *f,
-+				int (*open)(struct inode *, struct file *),
-+				const struct cred *cred)
-+{
-+	struct file *res = do_dentry_open(dentry, mnt, f, open, cred);
-+	if (!IS_ERR(res)) {
-+		int error = open_check_o_direct(f);
-+		if (error) {
-+			fput(res);
-+			res = ERR_PTR(error);
-+		}
-+	}
-+	return res;
-+}
-+
- /**
-  * lookup_instantiate_filp - instantiates the open intent filp
-  * @nd: pointer to nameidata
--- 
-1.7.7
+About the bond, if you are in active-backup mode, a frame coming to
+inactive device is going to be dropped, or you could have duplication of
+logical frames.
+
+You can use tcpdump to get a copy of these frames.
+
+
 
