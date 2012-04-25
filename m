@@ -1,147 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab2DYIvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 04:51:41 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11868 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753409Ab2DYIvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 04:51:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="158076641"
-Message-ID: <4F97BA98.6010001@intel.com>
-Date: Wed, 25 Apr 2012 16:49:28 +0800
-From: ShuoX Liu <shuox.liu@intel.com>
-Reply-To: shuox.liu@intel.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120420 Thunderbird/12.0
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: tj@kernel.org, Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Subject: [PATCH] mm: percpu: Add PCPU_FC_FIXED to pcpu_fc for setting fixed
- pcpu_atom_size.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755977Ab2DYIxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 04:53:09 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:19854 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab2DYIxH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 04:53:07 -0400
+X-AuditID: cbfee60e-b7b3bae000007458-f6-4f97bb723631
+Date: Wed, 25 Apr 2012 08:53:06 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [patch] Extcon: check for allocation failure
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120425085144848@myungjoo.ham
+Msgkey: 20120425085144848@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120425085144848@myungjoo.ham
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <29718349.140341335343984348.JavaMail.weblogic@epml25>
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3P8rLKb005080
 
-From: ShuoX Liu <shuox.liu@intel.com>
+> Return -ENOMEM if the kmalloc() fails.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-We are enabling Android on Medfield. On i386, if the board has more
-physical memory, it means the vmalloc space is small. If the vmalloc
-space is big, it means physical memory is small. Dynamic percpu
-allocation is based on VM space. On i386, by default, the chunk size
-is 4MB. As vmalloc space is <= 128M, percpu allocation often fails.
-If using PERCPU_FC_PAGE, system can't go to deep sleep states.
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-The patch add one more chosen to percpu_alloc kernel parameter.
-Besides page,embed,auto are available for percpu_alloc, memory size
-suffixed with %K,%M are supported. It set pcpu_atom_size to fixed
-wanted size.
 
-Signed-off-by: Yanmin Zhang <yanmin.zhang@intel.com>
-Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
----
- Documentation/kernel-parameters.txt |    4 +++-
- arch/x86/kernel/setup_percpu.c      |    6 +++++-
- include/linux/percpu.h              |    2 ++
- mm/percpu.c                         |   11 +++++++++--
- 4 files changed, 19 insertions(+), 4 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index c1601e5..befeb5f 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2196,7 +2196,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			See arch/parisc/kernel/pdc_chassis.c
- 
- 	percpu_alloc=	Select which percpu first chunk allocator to use.
--			Currently supported values are "embed" and "page".
-+			Currently supported values are "embed", "page" and size
-+			suffixed with %K,%M. Fixed size will overwrite
-+			pcpu_atom_size of chunk allocation parameter.
- 			Archs may support subset or none of the	selections.
- 			See comments in mm/percpu.c for details on each
- 			allocator.  This parameter is primarily	for debugging
-diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
-index 71f4727..824bc41 100644
---- a/arch/x86/kernel/setup_percpu.c
-+++ b/arch/x86/kernel/setup_percpu.c
-@@ -185,9 +185,13 @@ void __init setup_per_cpu_areas(void)
- #endif
- 	rc = -EINVAL;
- 	if (pcpu_chosen_fc != PCPU_FC_PAGE) {
--		const size_t atom_size = cpu_has_pse ? PMD_SIZE : PAGE_SIZE;
-+		size_t atom_size;
- 		const size_t dyn_size = PERCPU_MODULE_RESERVE +
- 			PERCPU_DYNAMIC_RESERVE - PERCPU_FIRST_CHUNK_RESERVE;
-+		if (pcpu_chosen_fc == PCPU_FC_FIXED && pcpu_atom_size)
-+			atom_size = pcpu_atom_size;
-+		else
-+			atom_size = cpu_has_pse ? PMD_SIZE : PAGE_SIZE;
- 
- 		rc = pcpu_embed_first_chunk(PERCPU_FIRST_CHUNK_RESERVE,
- 					    dyn_size, atom_size,
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index 21638ae..3943088 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -104,12 +104,14 @@ enum pcpu_fc {
- 	PCPU_FC_AUTO,
- 	PCPU_FC_EMBED,
- 	PCPU_FC_PAGE,
-+	PCPU_FC_FIXED,
- 
- 	PCPU_FC_NR,
- };
- extern const char *pcpu_fc_names[PCPU_FC_NR];
- 
- extern enum pcpu_fc pcpu_chosen_fc;
-+extern size_t pcpu_atom_size;
- 
- typedef void * (*pcpu_fc_alloc_fn_t)(unsigned int cpu, size_t size,
- 				     size_t align);
-diff --git a/mm/percpu.c b/mm/percpu.c
-index f47af91..7770ad0 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -113,9 +113,9 @@ struct pcpu_chunk {
- static int pcpu_unit_pages __read_mostly;
- static int pcpu_unit_size __read_mostly;
- static int pcpu_nr_units __read_mostly;
--static int pcpu_atom_size __read_mostly;
- static int pcpu_nr_slots __read_mostly;
- static size_t pcpu_chunk_struct_size __read_mostly;
-+size_t pcpu_atom_size __read_mostly;
- 
- /* cpus with the lowest and highest unit addresses */
- static unsigned int pcpu_low_unit_cpu __read_mostly;
-@@ -1374,12 +1374,14 @@ const char *pcpu_fc_names[PCPU_FC_NR] __initdata = {
- 	[PCPU_FC_AUTO]	= "auto",
- 	[PCPU_FC_EMBED]	= "embed",
- 	[PCPU_FC_PAGE]	= "page",
-+	[PCPU_FC_FIXED]	= "fixed",
- };
- 
- enum pcpu_fc pcpu_chosen_fc __initdata = PCPU_FC_AUTO;
- 
- static int __init percpu_alloc_setup(char *str)
- {
-+	size_t size = memparse(str, NULL);
- 	if (0)
- 		/* nada */;
- #ifdef CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK
-@@ -1390,7 +1392,12 @@ static int __init percpu_alloc_setup(char *str)
- 	else if (!strcmp(str, "page"))
- 		pcpu_chosen_fc = PCPU_FC_PAGE;
- #endif
--	else
-+	else if (!strcmp(str, "auto"))
-+		pcpu_chosen_fc = PCPU_FC_AUTO;
-+	else if (size > 0) {
-+		pcpu_atom_size = size;
-+		pcpu_chosen_fc = PCPU_FC_FIXED;
-+	} else
- 		pr_warning("PERCPU: unknown allocator %s specified\n", str);
- 
- 	return 0;
+> 
+> diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
+> index 3bc4b8a..fe5a038 100644
+> --- a/drivers/extcon/extcon_class.c
+> +++ b/drivers/extcon/extcon_class.c
+> @@ -621,6 +621,8 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
+>  	}
+>  
+>  	edev->dev = kzalloc(sizeof(struct device), GFP_KERNEL);
+> +	if (!edev->dev)
+> +		return -ENOMEM;
+>  	edev->dev->parent = dev;
+>  	edev->dev->class = extcon_class;
+>  	edev->dev->release = extcon_dev_release;
+> 
+> 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
