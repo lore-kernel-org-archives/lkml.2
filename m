@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab2DYOql (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 10:46:41 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:47057 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751413Ab2DYOqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 10:46:39 -0400
-Message-ID: <4F980DC6.9020000@parallels.com>
-Date: Wed, 25 Apr 2012 11:44:22 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <devel@openvz.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        "Christoph Lameter" <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 17/23] kmem controller charge/uncharge infrastructure
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1335138820-26590-6-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1204231522320.13535@chino.kir.corp.google.com> <20120424142232.GC8626@somewhere> <4F9759C0.1070805@jp.fujitsu.com>
-In-Reply-To: <4F9759C0.1070805@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.19.44]
+	id S1753556Ab2DYOuT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 10:50:19 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43733 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab2DYOuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 10:50:17 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Samuel Chessman <chessman@tux.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] tlan: add cast needed for proper 64 bit operation
+Date: Wed, 25 Apr 2012 10:49:20 -0400
+Message-Id: <1335365360-4891-1-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes this beauty into a statement that actually has an effect on amd64.
 
->
-> About kmem, if we count task_struct, page tables, etc...which can be freed by
-> OOM-Killer i.e. it's allocated for 'process', should be aware of OOM problem.
-> Using mm->owner makes sense to me until someone finds a great idea to handle
-> OOM situation rather than task killing.
->
+Tested-by: Per Jessen <per@opensuse.org>
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+---
+ drivers/net/ethernet/ti/tlan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-noted, will update.
+diff --git a/drivers/net/ethernet/ti/tlan.c b/drivers/net/ethernet/ti/tlan.c
+index 817ad3b..efd3669 100644
+--- a/drivers/net/ethernet/ti/tlan.c
++++ b/drivers/net/ethernet/ti/tlan.c
+@@ -228,7 +228,7 @@ tlan_get_skb(const struct tlan_list *tag)
+ 	unsigned long addr;
+ 
+ 	addr = tag->buffer[9].address;
+-	addr |= (tag->buffer[8].address << 16) << 16;
++	addr |= ((unsigned long) tag->buffer[8].address << 16) << 16;
+ 	return (struct sk_buff *) addr;
+ }
+ 
+-- 
+1.7.7
 
