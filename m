@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758956Ab2DYM2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:28:17 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44117 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758101Ab2DYM2P (ORCPT
+	id S1759238Ab2DYM2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:28:33 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41891 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab2DYM23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:28:15 -0400
+	Wed, 25 Apr 2012 08:28:29 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tom Zanussi <tzanussi@gmail.com>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
@@ -18,9 +18,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Tom Zanussi <tzanussi@gmail.com>,
         Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 07/15] perf/events: Add flag/symbol format_flags
-Date: Wed, 25 Apr 2012 14:26:51 +0200
-Message-Id: <1335356819-16710-8-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 11/15] parse-events: Let pevent_free() take a NULL pointer
+Date: Wed, 25 Apr 2012 14:26:55 +0200
+Message-Id: <1335356819-16710-12-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
 References: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
@@ -28,14 +28,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Zanussi <tzanussi@gmail.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-This is a port of commit eb9a42caa7a92
- perf trace: Add flag/symbolic format_flags
-of the old trace-event-parse.c to the new event-parse.c that
-was written by Tom Zanussi and forward ported by Steven Rostedt.
+The pevent_free() should ack like other free()s and allow a
+NULL pointer to be passed to it which makes error handling a bit
+easier for the users of pevent_free().
 
-Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -49,53 +47,37 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: David Ahern <dsahern@gmail.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/lib/traceevent/event-parse.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ tools/lib/traceevent/event-parse.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index c799c19..f012395 100644
+index cdb32c7..4d5092f 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -39,6 +39,9 @@ static const char *input_buf;
- static unsigned long long input_buf_ptr;
- static unsigned long long input_buf_siz;
+@@ -4960,13 +4960,20 @@ static void free_event(struct event_format *event)
+  */
+ void pevent_free(struct pevent *pevent)
+ {
+-	struct cmdline_list *cmdlist = pevent->cmdlist, *cmdnext;
+-	struct func_list *funclist = pevent->funclist, *funcnext;
+-	struct printk_list *printklist = pevent->printklist, *printknext;
++	struct cmdline_list *cmdlist, *cmdnext;
++	struct func_list *funclist, *funcnext;
++	struct printk_list *printklist, *printknext;
+ 	struct pevent_function_handler *func_handler;
+ 	struct event_handler *handle;
+ 	int i;
  
-+static int is_flag_field;
-+static int is_symbolic_field;
++	if (!pevent)
++		return;
 +
- static int show_warning = 1;
- 
- #define do_warning(fmt, ...)				\
-@@ -1789,6 +1792,16 @@ process_entry(struct event_format *event __unused, struct print_arg *arg,
- 	arg->type = PRINT_FIELD;
- 	arg->field.name = field;
- 
-+	if (is_flag_field) {
-+		arg->field.field = pevent_find_any_field(event, arg->field.name);
-+		arg->field.field->flags |= FIELD_IS_FLAG;
-+		is_flag_field = 0;
-+	} else if (is_symbolic_field) {
-+		arg->field.field = pevent_find_any_field(event, arg->field.name);
-+		arg->field.field->flags |= FIELD_IS_SYMBOLIC;
-+		is_symbolic_field = 0;
-+	}
++	cmdlist = pevent->cmdlist;
++	funclist = pevent->funclist;
++	printklist = pevent->printklist;
 +
- 	type = read_token(&token);
- 	*tok = token;
- 
-@@ -2398,10 +2411,12 @@ process_function(struct event_format *event, struct print_arg *arg,
- 
- 	if (strcmp(token, "__print_flags") == 0) {
- 		free_token(token);
-+		is_flag_field = 1;
- 		return process_flags(event, arg, tok);
- 	}
- 	if (strcmp(token, "__print_symbolic") == 0) {
- 		free_token(token);
-+		is_symbolic_field = 1;
- 		return process_symbols(event, arg, tok);
- 	}
- 	if (strcmp(token, "__get_str") == 0) {
+ 	pevent->ref_count--;
+ 	if (pevent->ref_count)
+ 		return;
 -- 
 1.7.5.4
 
