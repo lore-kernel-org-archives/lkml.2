@@ -1,173 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab2DYJaU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 05:30:20 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:34371
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756970Ab2DYJaR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 05:30:17 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzz8275bh8275dhz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M313Q8-01-BLS-02
-X-M-MSG: 
-Date: Wed, 25 Apr 2012 11:30:01 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-CC: <x86@kernel.org>, <kernel-janitors@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Frank Arnold <frank.arnold@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [GIT PULL] L3 CID fix for 3.5
-Message-ID: <20120425093001.GA18882@aftab.osrc.amd.com>
-References: <20120419070053.GB16645@elgon.mountain>
- <4F8FCA3A.5060504@linux.vnet.ibm.com>
- <20120419110229.GB30447@aftab>
- <20120419114453.GO6498@mwanda>
- <20120419165353.GF3221@aftab.osrc.amd.com>
+	id S1757114Ab2DYJfL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 05:35:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47174 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751563Ab2DYJfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 05:35:09 -0400
+Message-ID: <4F97C545.4030304@redhat.com>
+Date: Wed, 25 Apr 2012 12:35:01 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120419165353.GF3221@aftab.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+Subject: Re: linux-next: Tree for Apr 24 (kvm)
+References: <20120424154354.7feba600beac616833d034de@canb.auug.org.au> <4F96D3FA.1010909@xenotime.net>
+In-Reply-To: <4F96D3FA.1010909@xenotime.net>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
+On 04/24/2012 07:25 PM, Randy Dunlap wrote:
+> On 04/23/2012 10:43 PM, Stephen Rothwell wrote:
+>
+> > Hi all,
+> > 
+> > There will probably be no linux-next release until April 30 as I am
+> > taking a break.
+> > 
+> > Changes since 20120423:
+>
+>
+> on i386:
+>
+>   CC [M]  arch/x86/kvm/emulate.o
+> arch/x86/kvm/emulate.c: Assembler messages:
+> arch/x86/kvm/emulate.c:4122: Error: bad register name `%bpl'
+>
+>
 
-Guys, any issues with this that I should know of?
-
-Thanks.
-
-On Thu, Apr 19, 2012 at 06:53:53PM +0200, Borislav Petkov wrote:
-> Hi guys,
-> 
-> please pull the following fix for L3 cache index disable into tip. Since
-> there's no real breakage but simply a correctness issue, it can wait for
-> 3.5. I've also removed the stable tag I had in the previous version.
-> 
-> Thanks.
-> 
-> --
-> The following changes since commit e816b57a337ea3b755de72bec38c10c864f23015:
-> 
->   Linux 3.4-rc3 (2012-04-15 18:28:29 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/l3-fix-for-3.5
-> 
-> for you to fetch changes up to a720b2dd2470a52345df11dca8d6c1466599f812:
-> 
->   x86, intel_cacheinfo: Fix error return code in amd_set_l3_disable_slot() (2012-04-19 18:30:28 +0200)
-> 
-> ----------------------------------------------------------------
-> A small L3 cache index disable fix from Srivatsa Bhat which unifies the
-> way the code checks for already disabled indices.
-> 
-> ----------------------------------------------------------------
-> Srivatsa S. Bhat (1):
->       x86, intel_cacheinfo: Fix error return code in amd_set_l3_disable_slot()
-> 
->  arch/x86/kernel/cpu/intel_cacheinfo.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> Appending patch here too:
-> 
-> --
-> commit a720b2dd2470a52345df11dca8d6c1466599f812
-> Author: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Date:   Thu Apr 19 12:35:08 2012 +0200
-> 
->     x86, intel_cacheinfo: Fix error return code in amd_set_l3_disable_slot()
->     
->     If the L3 disable slot is already in use, return -EEXIST instead of
->     -EINVAL. The caller, store_cache_disable(), checks this return value to
->     print an appropriate warning.
->     
->     Also, we want to signal with -EEXIST that the current index we're
->     disabling has actually been already disabled on the node:
->     
->     $ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_0
->     $ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_0
->     -bash: echo: write error: File exists
->     $ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_1
->     -bash: echo: write error: File exists
->     $ echo 12 > /sys/devices/system/cpu/cpu5/cache/index3/cache_disable_1
->     -bash: echo: write error: File exists
->     
->     The old code would say
->     
->     -bash: echo: write error: Invalid argument
->     
->     for disable slot 1 when playing the example above with no output in
->     dmesg, which is clearly misleading.
->     
->     Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
->     Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->     Link: http://lkml.kernel.org/r/20120419070053.GB16645@elgon.mountain
->     [Boris: add testing for the other index too]
->     Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-> index 73d08ed98a64..b8f3653dddbc 100644
-> --- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-> +++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-> @@ -433,14 +433,14 @@ int amd_set_l3_disable_slot(struct amd_northbridge *nb, int cpu, unsigned slot,
->  	/*  check if @slot is already used or the index is already disabled */
->  	ret = amd_get_l3_disable_slot(nb, slot);
->  	if (ret >= 0)
-> -		return -EINVAL;
-> +		return -EEXIST;
->  
->  	if (index > nb->l3_cache.indices)
->  		return -EINVAL;
->  
->  	/* check whether the other slot has disabled the same index already */
->  	if (index == amd_get_l3_disable_slot(nb, !slot))
-> -		return -EINVAL;
-> +		return -EEXIST;
->  
->  	amd_l3_disable_index(nb, cpu, slot, index);
->  
-> @@ -468,8 +468,8 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
->  	err = amd_set_l3_disable_slot(this_leaf->base.nb, cpu, slot, val);
->  	if (err) {
->  		if (err == -EEXIST)
-> -			printk(KERN_WARNING "L3 disable slot %d in use!\n",
-> -					    slot);
-> +			pr_warning("L3 slot %d in use/index already disabled!\n",
-> +				   slot);
->  		return err;
->  	}
->  	return count;
-> 
-> -- 
-> Regards/Gruss,
-> Boris.
-> 
-> Advanced Micro Devices GmbH
-> Einsteinring 24, 85609 Dornach
-> GM: Alberto Bozzo
-> Reg: Dornach, Landkreis Muenchen
-> HRB Nr. 43632 WEEE Registernr: 129 19551
-> _______________________________________________
-> osrc-patches mailing list
-> osrc-patches@elbe.amd.com
-> https://elbe.amd.com/mailman/listinfo/osrc-patches
+Fix already committed, will be pushed later today.
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
