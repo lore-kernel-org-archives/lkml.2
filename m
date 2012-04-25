@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757694Ab2DYSsg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 14:48:36 -0400
-Received: from smtp-out-106.synserver.de ([212.40.185.106]:1094 "EHLO
+	id S1757641Ab2DYSsf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 14:48:35 -0400
+Received: from smtp-out-106.synserver.de ([212.40.185.106]:1135 "EHLO
 	smtp-out-098.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757300Ab2DYSse (ORCPT
+	by vger.kernel.org with ESMTP id S1757446Ab2DYSse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Apr 2012 14:48:34 -0400
 X-SynServer-TrustedSrc: 1
@@ -21,132 +21,62 @@ Cc: Viresh Kumar <viresh.kumar@st.com>,
         Yong Wang <yong.y.wang@intel.com>,
         Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
         linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 1/3] dmaengine: Use sg_dma_address instead of sg_phys
-Date: Wed, 25 Apr 2012 20:50:51 +0200
-Message-Id: <1335379853-10122-1-git-send-email-lars@metafoo.de>
+Subject: [PATCH 3/3] dmaengine: Fixup dmaengine_prep_slave_single() to be actually useful
+Date: Wed, 25 Apr 2012 20:50:53 +0200
+Message-Id: <1335379853-10122-3-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1335379853-10122-1-git-send-email-lars@metafoo.de>
+References: <1335379853-10122-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dmaengine drivers should always use sg_dma_address instead of sg_phys to get the
-addresses for the transfer from a sg element.
+From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
-To quote Russel King:
-	sg_phys(sg) of course has nothing to do with DMA addresses. It's the
-	physical address _to the CPU_ of the memory associated with the scatterlist
-	entry. That may, or may not have the same value for the DMA engine,
-	particularly if IOMMUs are involved.
+dmaengine_prep_slave_single() is a helper function which is supposed to be used
+to prepare a transfer of a single contingous buffer. Currently the function
+takes a pointer to such a buffer from which it builds a scatterlist and passes
+it on to device_prep_slave_sg. The dmaengine framework requires that any
+scatterlist that is passed to device_prep_slave_sg is mapped and it may not be
+unmapped until the DMA operation has completed. This is not the here and any use
+of dmaengine_prep_slave_single() will lead to undefined behaviour (Most likely a
+system crash).
 
-	And if these drivers are used on ARM, they must be fixed, sooner rather
-	than later.  There's patches in the works which will mean we will end up
-	with IOMMU support in the DMA mapping later, which means everything I've
-	said above will become reality.
+This patch changes dmaengine_prep_slave_single() to take a dma_addr_t instead of
+a pointer to a buffer and moves the responsibility of mapping and unmapping the
+buffer up to the caller.
 
-The patch has been generated using the following coccinelle patch:
-<smpl>
-@@
-struct scatterlist *sg;
-@@
--sg_phys(sg)
-+sg_dma_address(sg)
-</smpl>
-
+Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
 ---
-Compile tested only
+Changes since v1:
+	* Drop call to sg_set_page
+	* Slightly reword commit message
 ---
- drivers/dma/amba-pl08x.c    |    4 ++--
- drivers/dma/coh901318_lli.c |    4 ++--
- drivers/dma/dw_dmac.c       |    4 ++--
- drivers/dma/intel_mid_dma.c |    2 +-
- drivers/dma/pch_dma.c       |    2 +-
- 5 files changed, 8 insertions(+), 8 deletions(-)
+ include/linux/dmaengine.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index e7d5550..003220a 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -1382,11 +1382,11 @@ static struct dma_async_tx_descriptor *pl08x_prep_slave_sg(
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 676f967..0e6b595 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -615,11 +615,13 @@ static inline int dmaengine_slave_config(struct dma_chan *chan,
+ }
  
- 		dsg->len = sg_dma_len(sg);
- 		if (direction == DMA_MEM_TO_DEV) {
--			dsg->src_addr = sg_phys(sg);
-+			dsg->src_addr = sg_dma_address(sg);
- 			dsg->dst_addr = slave_addr;
- 		} else {
- 			dsg->src_addr = slave_addr;
--			dsg->dst_addr = sg_phys(sg);
-+			dsg->dst_addr = sg_dma_address(sg);
- 		}
- 	}
+ static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_single(
+-	struct dma_chan *chan, void *buf, size_t len,
++	struct dma_chan *chan, dma_addr_t buf, size_t len,
+ 	enum dma_transfer_direction dir, unsigned long flags)
+ {
+ 	struct scatterlist sg;
+-	sg_init_one(&sg, buf, len);
++	sg_init_table(&sg, 1);
++	sg_dma_address(&sg) = buf;
++	sg_dma_len(&sg) = len;
  
-diff --git a/drivers/dma/coh901318_lli.c b/drivers/dma/coh901318_lli.c
-index 6c0e2d4..780e042 100644
---- a/drivers/dma/coh901318_lli.c
-+++ b/drivers/dma/coh901318_lli.c
-@@ -270,10 +270,10 @@ coh901318_lli_fill_sg(struct coh901318_pool *pool,
- 
- 		if (dir == DMA_MEM_TO_DEV)
- 			/* increment source address */
--			src = sg_phys(sg);
-+			src = sg_dma_address(sg);
- 		else
- 			/* increment destination address */
--			dst =  sg_phys(sg);
-+			dst = sg_dma_address(sg);
- 
- 		bytes_to_transfer = sg_dma_len(sg);
- 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 7439079..930076b 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -742,7 +742,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 			struct dw_desc	*desc;
- 			u32		len, dlen, mem;
- 
--			mem = sg_phys(sg);
-+			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
- 
- 			if (!((mem | len) & 7))
-@@ -809,7 +809,7 @@ slave_sg_todev_fill_desc:
- 			struct dw_desc	*desc;
- 			u32		len, dlen, mem;
- 
--			mem = sg_phys(sg);
-+			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
- 
- 			if (!((mem | len) & 7))
-diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
-index c900ca7..d0ef593 100644
---- a/drivers/dma/intel_mid_dma.c
-+++ b/drivers/dma/intel_mid_dma.c
-@@ -398,7 +398,7 @@ static int midc_lli_fill_sg(struct intel_mid_dma_chan *midc,
- 							desc->width,
- 							midc->dma->block_size);
- 		/*Populate SAR and DAR values*/
--		sg_phy_addr = sg_phys(sg);
-+		sg_phy_addr = sg_dma_address(sg);
- 		if (desc->dirn ==  DMA_MEM_TO_DEV) {
- 			lli_bloc_desc->sar  = sg_phy_addr;
- 			lli_bloc_desc->dar  = mids->dma_slave.dst_addr;
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index 65c0495..987ab5c 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -621,7 +621,7 @@ static struct dma_async_tx_descriptor *pd_prep_slave_sg(struct dma_chan *chan,
- 			goto err_desc_get;
- 
- 		desc->regs.dev_addr = reg;
--		desc->regs.mem_addr = sg_phys(sg);
-+		desc->regs.mem_addr = sg_dma_address(sg);
- 		desc->regs.size = sg_dma_len(sg);
- 		desc->regs.next = DMA_DESC_FOLLOW_WITHOUT_IRQ;
- 
+ 	return chan->device->device_prep_slave_sg(chan, &sg, 1,
+ 						  dir, flags, NULL);
 -- 
 1.7.9.5
 
