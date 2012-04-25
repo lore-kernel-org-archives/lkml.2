@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab2DYRzV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 13:55:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:28575 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753530Ab2DYRzT convert rfc822-to-8bit (ORCPT
+	id S1756410Ab2DYR4q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 13:56:46 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:37089 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753789Ab2DYR4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 13:55:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="158285105"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: RE: [EDAC PATCH v13 6/7] edac.h: Prepare to handle with generic
- layers
-Thread-Topic: [EDAC PATCH v13 6/7] edac.h: Prepare to handle with generic
- layers
-Thread-Index: AQHNHA2e4drkei19OkSnQ3ASg+FwI5apMDmAgAALcwCAAQ8KgIAAEmmAgAATNgCAAASGAIAABdUAgAAOWYCAACKNgIAAEACAgAGQrgD//5KrQA==
-Date: Wed, 25 Apr 2012 17:55:16 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F170F3D5B@ORSMSX104.amr.corp.intel.com>
-References: <20120423174955.GH6147@aftab.osrc.amd.com>
- <4F959FDE.2070304@redhat.com> <20120424104059.GA11559@aftab.osrc.amd.com>
- <4F9692AD.8090000@redhat.com> <20120424125538.GC11559@aftab.osrc.amd.com>
- <4F96A696.40308@redhat.com> <20120424133242.GI11559@aftab.osrc.amd.com>
- <4F96B783.6060101@redhat.com> <20120424162743.GU11559@aftab.osrc.amd.com>
- <4F96E1EB.1030407@redhat.com> <20120425171904.GM18882@aftab.osrc.amd.com>
-In-Reply-To: <20120425171904.GM18882@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Apr 2012 13:56:45 -0400
+Date: Wed, 25 Apr 2012 10:56:39 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 5/6] zsmalloc: remove unnecessary type casting
+Message-ID: <20120425175639.GA14974@kroah.com>
+References: <1335334994-22138-1-git-send-email-minchan@kernel.org>
+ <1335334994-22138-6-git-send-email-minchan@kernel.org>
+ <4F97FD9D.9090105@vflare.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F97FD9D.9090105@vflare.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And now the question is, when you get a DRAM ECC, how does the hardware
-> point to the DIMM in error, does it give you a (channel, slot) tuple
-> or a virtual address which you have to un-interleave? From MCA, you're
-> getting a virtual address in MC4_ADDR so how do you compute this one
-> back to a DIMM?
+On Wed, Apr 25, 2012 at 09:35:25AM -0400, Nitin Gupta wrote:
+> On 04/25/2012 02:23 AM, Minchan Kim wrote:
+> 
+> > Let's remove unnecessary type casting of (void *).
+> > 
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  drivers/staging/zsmalloc/zsmalloc-main.c |    3 +--
+> >  1 file changed, 1 insertion(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> > index b7d31cc..ff089f8 100644
+> > --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> > +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> > @@ -644,8 +644,7 @@ void zs_free(struct zs_pool *pool, void *obj)
+> >  	spin_lock(&class->lock);
+> >  
+> >  	/* Insert this object in containing zspage's freelist */
+> > -	link = (struct link_free *)((unsigned char *)kmap_atomic(f_page)
+> > -							+ f_offset);
+> > +	link = (struct link_free *)(kmap_atomic(f_page)	+ f_offset);
+> >  	link->next = first_page->freelist;
+> >  	kunmap_atomic(link);
+> >  	first_page->freelist = obj;
+> 
+> 
+> 
+> Incrementing a void pointer looks weired and should not be allowed by C
+> compilers though gcc and clang seem to allow this without any warnings.
+> (fortunately C++ forbids incrementing void pointers)
 
-Right now we have the EDAC driver doing a reverse translation from the
-physical address it finds in MC5_ADDR using the SAD/TAD/... register
-information to get to a DIMM address.
+Huh?  A void pointer can safely be incremented by C I thought, do you
+have a pointer to where in the reference it says it is "unspecified"?
 
-Some of the same information does get reported by BIOS via HEST to
-the ghes driver ... but Linux currently isn't looking at it (this
-was the code path to get physical address on Nehalem/Westmere
-generations where the h/w didn't always provide a valid address)
-See apei_mce_report_mem_error() in mce-apei.c ... the error record
-passed in may have a bunch more fields valid which would help in
-identifying the DIMM.
+> So, we should keep this cast to unsigned char pointer to avoid relying
+> on a non-standard, compiler specific behavior.
 
--Tony
+I do agree about this, more people are starting to build the kernel with
+other compilers than gcc, so it would be nice to ensure that we get
+stuff like this right.
+
+thanks,
+
+greg k-h
