@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab2DYMxt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:53:49 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:57828 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab2DYMxr (ORCPT
+	id S1755389Ab2DYMyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:54:18 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:60821 "EHLO
+	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752882Ab2DYMyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:53:47 -0400
-Message-ID: <4F97F3D6.8000404@vflare.org>
-Date: Wed, 25 Apr 2012 08:53:42 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Wed, 25 Apr 2012 08:54:16 -0400
+X-Greylist: delayed 151186 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Apr 2012 08:54:16 EDT
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/6] zsmalloc: remove unnecessary alignment
-References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-3-git-send-email-minchan@kernel.org>
-In-Reply-To: <1335334994-22138-3-git-send-email-minchan@kernel.org>
+In-Reply-To: <CAMQu2gzwijaSzXprEwTNTie3zCgFcNPonAexzrO_AWc2a8jOkw@mail.gmail.com>
+References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
+	<1328203851-20435-12-git-send-email-tarun.kanti@ti.com>
+	<13629551.hP3ZV1ajDo@vclass>
+	<CAC83ZvK630=6B-k2TfV3XBg8w7ZosLVDNE4ezjDYnn=hcXA48Q@mail.gmail.com>
+	<CAC83ZvJDDvCu8NKTOYh75USA3fvSAKEGaXXi9PtCM955K_keSA@mail.gmail.com>
+	<20120424160447.GI3739@atomide.com>
+	<CAC83Zv+CCLQfZHfqMcbof6JtA-hOK1PfX5Gs0BBVQhBAiWzX_g@mail.gmail.com>
+	<CAMQu2gzwijaSzXprEwTNTie3zCgFcNPonAexzrO_AWc2a8jOkw@mail.gmail.com>
+Date: Wed, 25 Apr 2012 18:24:14 +0530
+Message-ID: <CAC83ZvKN_Qxw-9RPfpJaL5434j0HgysZ364F+b29rdSCQWhm7A@mail.gmail.com>
+Subject: Re: [PATCH v9 11/25] gpio/omap: cleanup omap_gpio_mod_init function
+From: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>, linux-omap@vger.kernel.org,
+        grant.likely@secretlab.ca, khilman@ti.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Charulatha V <charu@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 02:23 AM, Minchan Kim wrote:
-
-> It isn't necessary to align pool size with PAGE_SIZE.
-> If I missed something, please let me know it.
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zsmalloc/zsmalloc-main.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index 504b6c2..b99ad9e 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -489,14 +489,13 @@ fail:
->  
->  struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
->  {
-> -	int i, error, ovhd_size;
-> +	int i, error;
->  	struct zs_pool *pool;
->  
->  	if (!name)
->  		return NULL;
->  
-> -	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
-> -	pool = kzalloc(ovhd_size, GFP_KERNEL);
-> +	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
->  	if (!pool)
->  		return NULL;
->  
-
-
-pool metadata is rounded-up to avoid potential false-sharing problem
-(though we could just roundup to cache_line_size()).
-
-Thanks,
-Nitin
+On Wed, Apr 25, 2012 at 12:09 PM, Shilimkar, Santosh
+<santosh.shilimkar@ti.com> wrote:
+> On Wed, Apr 25, 2012 at 10:04 AM, DebBarma, Tarun Kanti
+> <tarun.kanti@ti.com> wrote:
+>> On Tue, Apr 24, 2012 at 9:34 PM, Tony Lindgren <tony@atomide.com> wrote:
+>>> * DebBarma, Tarun Kanti <tarun.kanti@ti.com> [120424 08:40]:
+>>>> Hi Janusz,
+>>>>
+>>>> On Tue, Apr 24, 2012 at 12:24 AM, DebBarma, Tarun Kanti
+>>>> <tarun.kanti@ti.com> wrote:
+>>>> > On Sat, Apr 21, 2012 at 7:33 PM, Janusz Krzysztofik
+>>>> > <jkrzyszt@tis.icnet.pl> wrote:
+>>>> >> On Thursday 02 of February 2012 23:00:37 Tarun Kanti DebBarma wrote:
+>>>> >>> With register offsets now defined for respective OMAP versions we can get rid
+>>>> >>> of cpu_class_* checks. This function now has common initialization code for
+>>>> >>> all OMAP versions...
+>>>> >>>
+>>>> >>> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+>>>> >>> Signed-off-by: Charulatha V <charu@ti.com>
+>>>> >>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>> >>> Acked-by: Tony Lindgren <tony@atomide.com>
+>>>> >>
+>>>> >> Sorry for being so late with my comment for chanes already present in
+>>>> >> mainline, but this patch breaks GPIO on Amstrad Delta at least, and I
+>>>> >> have neither enough spare time nor enough experience with non OMAP1
+>>>> >> machines to provide a solution myself.
+>>>> > Yes, I looked at the omap_gpio_mod_init() and OMAP1 configurations are
+>>>> > overwritten.
+>>>> > Also looks like there is issue in making distinction between omap15xx
+>>>> > and omap16xx.
+>>>> > I will post a patch and you can help me testing it in OMAP1 platform.
+>>>> > Thanks for pointing this out.
+>>> ...
+>>>
+>>>> Here is the patch, with attachment as well. I have just tested on
+>>>> OMAP4 platform.
+>>>> Testing on other OMAP2+ platforms is pending. In the meantime can you please
+>>>> validate on OMAP1 platform and confirm? Thanks.
+>>>> --
+>>>> Tarun
+>>>>
+>>>> From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+>>>> Date: Tue, 24 Apr 2012 20:34:32 +0530
+>>>> Subject: [PATCH] gpio/omap: fix omap1 register overwrite in omap_gpio_mod_init
+>>>>
+>>>> Initialization of irqenable, irqstatus registers is the common
+>>>> operation done in this function for all OMAP platforms, viz.
+>>>> OMAP1, OMAP2+. The latter _gpio_rmw()'s to irqenable register
+>>>> was overwriting the correctly programmed OMAP1 value at the
+>>>> beginning. As a result, even though it worked on OMAP2+
+>>>> platforms it was breaking OMAP1 functionality.
+>>>
+>>> Sounds like the original patch was never tested on omap1?
+>> That's right, only bootup test was done on OMAP1710-SDP.
+>>
+>>>
+>>>> On closer observation it is found that the first _gpio_rmw()
+>>>> which is supposedly done to take care of OMAP1 platform is
+>>>> generic enough and takes care of OMAP2+ platform as well.
+>>>> Therefore remove the latter _gpio_rmw() to irqenable as they
+>>>> are redundant.
+>>>>
+>>>> Also, changing the sequence and logic of initializing the
+>>>> irqstatus.
+>>>
+>>> Please mention also the breaking commit here and get this fix
+>>> merged as a regression as soon as it's tested for the current
+>>> -rc series.
+>> Sure, I will do that!
+>
+> Looks like it is regression on 3.4 as well so CC stable when you
+> post the patch.
+Ok, I will do that.
+--
+Tarun
+>
+> Regards
+> Santosh
