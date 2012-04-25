@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab2DYAbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 20:31:19 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60757 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744Ab2DYAbS (ORCPT
+	id S1757666Ab2DYAiy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 20:38:54 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:28895 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab2DYAiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 20:31:18 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F97456B.5090201@jp.fujitsu.com>
-Date: Wed, 25 Apr 2012 09:29:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 24 Apr 2012 20:38:52 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-209.messagelabs.com!1335314326!3555994!5
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] crush: include header for global symbols
+Date: Tue, 24 Apr 2012 17:38:37 -0700
+User-Agent: KMail/1.9.9
+CC: <netdev@vger.kernel.org>, <ceph-devel@vger.kernel.org>,
+        <sage@newdream.net>, <davem@davemloft.net>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH 2/2] res_counter: Account max_usage when calling res_counter_charge_nofail()
-References: <1335309096-12886-1-git-send-email-fweisbec@gmail.com> <1335309096-12886-3-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1335309096-12886-3-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204241738.38280.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/25 8:11), Frederic Weisbecker wrote:
+Include the header to pickup the definitions of the global symbols.
 
-> Updating max_usage is something one would expect when we reach
-> a new maximum usage value even when we do this by forcing through
-> the limit with res_counter_charge_nofail().
-> 
-> (Whether we want to account failcnt when we force through the limit
-> is another debate).
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Glauber Costa <glommer@parallels.com>
-> Cc: Kirill A. Shutemov <kirill@shutemov.name>
+Quiets the following sparse warnings:
 
+warning: symbol 'crush_find_rule' was not declared. Should it be static?
+warning: symbol 'crush_do_rule' was not declared. Should it be static?
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Sage Weil <sage@newdream.net>
+Cc: "David S. Miller" <davem@davemloft.net>
 
+---
+
+diff --git a/net/ceph/crush/mapper.c b/net/ceph/crush/mapper.c
+index 854ac53..363f8f7 100644
+--- a/net/ceph/crush/mapper.c
++++ b/net/ceph/crush/mapper.c
+@@ -20,6 +20,7 @@
+ 
+ #include <linux/crush/crush.h>
+ #include <linux/crush/hash.h>
++#include <linux/crush/mapper.h>
+ 
+ /*
+  * Implement the core CRUSH mapping algorithm.
