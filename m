@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab2DYO3t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 10:29:49 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34055 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab2DYO3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 10:29:38 -0400
-Date: Wed, 25 Apr 2012 15:29:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] dmaengine: care sd_dma_address/len in
-	dmaengine_prep_slave_single()
-Message-ID: <20120425142901.GA24211@n2100.arm.linux.org.uk>
-References: <8739axwnh9.wl%kuninori.morimoto.gx@renesas.com> <1327917366.1527.42.camel@vkoul-udesk3> <87pqe04qtk.wl%kuninori.morimoto.gx@renesas.com> <20120201182201.GE889@n2100.arm.linux.org.uk> <4F9807AF.3000804@metafoo.de>
+	id S1752282Ab2DYObR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 10:31:17 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:58867 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751700Ab2DYObQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 10:31:16 -0400
+Message-ID: <4F980A42.6040308@parallels.com>
+Date: Wed, 25 Apr 2012 11:29:22 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9807AF.3000804@metafoo.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        <fweisbec@gmail.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 16/23] slab: provide kmalloc_no_account
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1335138820-26590-5-git-send-email-glommer@parallels.com> <4F975703.3080005@jp.fujitsu.com>
+In-Reply-To: <4F975703.3080005@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.19.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 04:18:23PM +0200, Lars-Peter Clausen wrote:
-> On 02/01/2012 07:22 PM, Russell King - ARM Linux wrote:
-> > On Mon, Jan 30, 2012 at 05:13:30PM -0800, Kuninori Morimoto wrote:
-> >> +	sg_init_table(&sg, 1);
-> >> +	sg_set_page(&sg, pfn_to_page(PFN_DOWN(buf)),
-> >> +		    len, offset_in_page(buf));
-> > 
-> > There's not much point setting this - the page/virtual address should
-> > not be used by DMA engines as that may not reflect what's being requested
-> > (especially if there's an IOMMU in the way.)
+On 04/24/2012 10:44 PM, KAMEZAWA Hiroyuki wrote:
+> (2012/04/23 8:53), Glauber Costa wrote:
 > 
-> I was just looking at this again and there are actually quite a few dma
-> engine drivers which use sg->length and sg_phys(sg). I guess these would
-> break if the sg_set_page was to be removed. Should these drivers be changed
-> to use sg_dma_len and sg_dma_address?
+>> Some allocations need to be accounted to the root memcg regardless
+>> of their context. One trivial example, is the allocations we do
+>> during the memcg slab cache creation themselves. Strictly speaking,
+>> they could go to the parent, but it is way easier to bill them to
+>> the root cgroup.
+>>
+>> Only generic kmalloc allocations are allowed to be bypassed.
+>>
+>> The function is not exported, because drivers code should always
+>> be accounted.
+>>
+>> This code is mosly written by Suleiman Souhlal.
+>>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> CC: Christoph Lameter<cl@linux.com>
+>> CC: Pekka Enberg<penberg@cs.helsinki.fi>
+>> CC: Michal Hocko<mhocko@suse.cz>
+>> CC: Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Johannes Weiner<hannes@cmpxchg.org>
+>> CC: Suleiman Souhlal<suleiman@google.com>
+> 
+> 
+> Seems reasonable.
+> Reviewed-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Hmm...but can't we find the 'context' in automatic way ?
+> 
 
-sg->length is meaningless to something performing DMA - and that's probably
-a bug you've found.
+Not that I can think of. Well, actually, not without adding some tests
+to the allocation path I'd rather not (like testing for the return
+address and then doing a table lookup, etc)
 
-In cases where sg_dma_len(sg) and sg->length are the same storage, then
-there's no problem.  But scatterlists _can_ (and one some architectures)
-do split them - especially when you have an IOMMU which can allow you to
-combine a scatterlist into fewer entries.
+An option would be to store it in the task_struct. So we would allocate
+as following:
 
-So, anything using sg->length for the size of a scatterlist's DMA transfer
-_after_ a call to dma_map_sg() is almost certainly buggy.
+memcg_skip_account_start(p);
+do_a_bunch_of_allocations();
+memcg_skip_account_stop(p);
 
-sg_phys(sg) of course has nothing to do with DMA addresses.  It's the
-physical address _to the CPU_ of the memory associated with the scatterlist
-entry.  That may, or may not have the same value for the DMA engine,
-particularly if IOMMUs are involved.  So again, that's a bug.
+The problem with that, is that it is quite easy to abuse.
+but if we don't export that to modules, it would be acceptable.
 
-And if these drivers are used on ARM, they must be fixed, sooner rather
-than later.  There's patches in the works which will mean we will end up
-with IOMMU support in the DMA mapping later, which means everything I've
-said above will become reality.
+Question is, given the fact that the number of kmalloc_no_account() is
+expected to be really small, is it worth it?
+
+
+
