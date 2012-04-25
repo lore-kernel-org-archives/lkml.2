@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab2DYMoL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:44:11 -0400
+	id S1758772Ab2DYMr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:47:58 -0400
 Received: from mail-wi0-f172.google.com ([209.85.212.172]:60469 "EHLO
 	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088Ab2DYMoG (ORCPT
+	with ESMTP id S1755389Ab2DYMoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:44:06 -0400
+	Wed, 25 Apr 2012 08:44:11 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, torvalds@linux-foundation.org, mszeredi@suse.cz
-Subject: [PATCH 03/16] vfs: do_last(): inline walk_component()
-Date: Wed, 25 Apr 2012 14:44:04 +0200
-Message-Id: <1335357857-16416-4-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 05/16] vfs: make follow_link check RCU safe
+Date: Wed, 25 Apr 2012 14:44:06 +0200
+Message-Id: <1335357857-16416-6-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
 References: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
@@ -23,67 +23,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Copy walk_component() into do_lookup().
+This will allow this code to be used in RCU mode.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namei.c |   35 ++++++++++++++++++++++++++++++-----
- 1 files changed, 30 insertions(+), 5 deletions(-)
+ fs/namei.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 020a62f..46d4bf6 100644
+index f21ddb3..a3a0fa1 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -2202,6 +2202,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	int want_write = 0;
+@@ -2203,6 +2203,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
  	int acc_mode = op->acc_mode;
  	struct file *filp;
-+	struct inode *inode;
+ 	struct inode *inode;
++	int symlink_ok = 0;
  	int error;
  
  	nd->flags &= ~LOOKUP_PARENT;
-@@ -2239,12 +2240,36 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+@@ -2234,7 +2235,6 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	}
+ 
+ 	if (!(open_flag & O_CREAT)) {
+-		int symlink_ok = 0;
+ 		if (nd->last.name[nd->last.len])
+ 			nd->flags |= LOOKUP_FOLLOW | LOOKUP_DIRECTORY;
  		if (open_flag & O_PATH && !(nd->flags & LOOKUP_FOLLOW))
- 			symlink_ok = 1;
- 		/* we _can_ be in RCU mode here */
--		error = walk_component(nd, path, &nd->last, LAST_NORM,
--					!symlink_ok);
--		if (error < 0)
--			return ERR_PTR(error);
--		if (error) /* symlink */
-+		error = lookup_fast(nd, &nd->last, path, &inode);
-+		if (unlikely(error)) {
-+			if (error < 0)
+@@ -2365,8 +2365,16 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	if (!inode)
+ 		goto exit_dput;
+ 
+-	if (inode->i_op->follow_link)
++	if (should_follow_link(inode, !symlink_ok)) {
++		if (nd->flags & LOOKUP_RCU) {
++			if (unlikely(unlazy_walk(nd, path->dentry))) {
++				error = -ECHILD;
 +				goto exit;
-+
-+			error = lookup_slow(nd, &nd->last, path);
-+			if (error < 0)
-+				goto exit;
-+
-+			inode = path->dentry->d_inode;
-+		}
-+		error = -ENOENT;
-+		if (!inode) {
-+			path_to_nameidata(path, nd);
-+			goto exit;
-+		}
-+
-+		if (should_follow_link(inode, !symlink_ok)) {
-+			if (nd->flags & LOOKUP_RCU) {
-+				if (unlikely(unlazy_walk(nd, path->dentry))) {
-+					error = -ECHILD;
-+					goto exit;
-+				}
 +			}
-+			BUG_ON(inode != path->dentry->d_inode);
- 			return NULL;
 +		}
-+		path_to_nameidata(path, nd);
-+		nd->inode = inode;
-+
- 		/* sayonara */
- 		error = complete_walk(nd);
- 		if (error)
++		BUG_ON(inode != path->dentry->d_inode);
+ 		return NULL;
++	}
+ 
+ 	path_to_nameidata(path, nd);
+ 	nd->inode = inode;
 -- 
 1.7.7
 
