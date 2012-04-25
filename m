@@ -1,152 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758918Ab2DYMtY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:49:24 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54819 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786Ab2DYMoD (ORCPT
+	id S1758057Ab2DYMuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:50:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37608 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754659Ab2DYMuV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:44:03 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org, mszeredi@suse.cz
-Subject: [PATCH 01/16] vfs: split do_lookup()
-Date: Wed, 25 Apr 2012 14:44:02 +0200
-Message-Id: <1335357857-16416-2-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
-References: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
+	Wed, 25 Apr 2012 08:50:21 -0400
+Message-ID: <1335358206.28150.265.camel@twins>
+Subject: Re: [PATCH 1/2] math128: Introduce {mult,add,cmp}_u128
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 25 Apr 2012 14:50:06 +0200
+In-Reply-To: <20120425112244.894997253@chello.nl>
+References: <20120425111552.665217867@chello.nl>
+	 <20120425112244.894997253@chello.nl>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Wed, 2012-04-25 at 13:15 +0200, Peter Zijlstra wrote:
+> +static inline u128 add_u128(u128 a, u128 b)
+> +{
+> +       a.lo += b.lo;
+> +       if (a.lo < b.lo)
+> +               a.hi++;
+> +
+> +       return a;
+> +} 
 
-Split do_lookup() into two functions:
-
-  lookup_fast() - does cached lookup without i_mutex
-  lookup_slow() - does lookup with i_mutex
-
-Both follow managed dentries.
-
-The new functions are needed by atomic_open.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/namei.c |   59 +++++++++++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 45 insertions(+), 14 deletions(-)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index 0062dd1..fcd807a 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1138,8 +1138,8 @@ static struct dentry *__lookup_hash(struct qstr *name,
-  *  small and for now I'd prefer to have fast path as straight as possible.
-  *  It _is_ time-critical.
-  */
--static int do_lookup(struct nameidata *nd, struct qstr *name,
--			struct path *path, struct inode **inode)
-+static int lookup_fast(struct nameidata *nd, struct qstr *name,
-+		       struct path *path, struct inode **inode)
- {
- 	struct vfsmount *mnt = nd->path.mnt;
- 	struct dentry *dentry, *parent = nd->path.dentry;
-@@ -1208,7 +1208,7 @@ unlazy:
- 			goto need_lookup;
- 		}
- 	}
--done:
-+
- 	path->mnt = mnt;
- 	path->dentry = dentry;
- 	err = follow_managed(path, nd->flags);
-@@ -1222,6 +1222,17 @@ done:
- 	return 0;
- 
- need_lookup:
-+	return 1;
-+}
-+
-+/* Fast lookup failed, do it the slow way */
-+static int lookup_slow(struct nameidata *nd, struct qstr *name,
-+		       struct path *path)
-+{
-+	struct dentry *dentry, *parent;
-+	int err;
-+
-+	parent = nd->path.dentry;
- 	BUG_ON(nd->inode != parent->d_inode);
- 
- 	mutex_lock(&parent->d_inode->i_mutex);
-@@ -1229,7 +1240,16 @@ need_lookup:
- 	mutex_unlock(&parent->d_inode->i_mutex);
- 	if (IS_ERR(dentry))
- 		return PTR_ERR(dentry);
--	goto done;
-+	path->mnt = nd->path.mnt;
-+	path->dentry = dentry;
-+	err = follow_managed(path, nd->flags);
-+	if (unlikely(err < 0)) {
-+		path_put_conditional(path, nd);
-+		return err;
-+	}
-+	if (err)
-+		nd->flags |= LOOKUP_JUMPED;
-+	return 0;
- }
- 
- static inline int may_lookup(struct nameidata *nd)
-@@ -1301,21 +1321,26 @@ static inline int walk_component(struct nameidata *nd, struct path *path,
- 	 */
- 	if (unlikely(type != LAST_NORM))
- 		return handle_dots(nd, type);
--	err = do_lookup(nd, name, path, &inode);
-+	err = lookup_fast(nd, name, path, &inode);
- 	if (unlikely(err)) {
--		terminate_walk(nd);
--		return err;
--	}
--	if (!inode) {
--		path_to_nameidata(path, nd);
--		terminate_walk(nd);
--		return -ENOENT;
-+		if (err < 0)
-+			goto out_err;
-+
-+		err = lookup_slow(nd, name, path);
-+		if (err < 0)
-+			goto out_err;
-+
-+		inode = path->dentry->d_inode;
- 	}
-+	err = -ENOENT;
-+	if (!inode)
-+		goto out_path_put;
-+
- 	if (should_follow_link(inode, follow)) {
- 		if (nd->flags & LOOKUP_RCU) {
- 			if (unlikely(unlazy_walk(nd, path->dentry))) {
--				terminate_walk(nd);
--				return -ECHILD;
-+				err = -ECHILD;
-+				goto out_err;
- 			}
- 		}
- 		BUG_ON(inode != path->dentry->d_inode);
-@@ -1324,6 +1349,12 @@ static inline int walk_component(struct nameidata *nd, struct path *path,
- 	path_to_nameidata(path, nd);
- 	nd->inode = inode;
- 	return 0;
-+
-+out_path_put:
-+	path_to_nameidata(path, nd);
-+out_err:
-+	terminate_walk(nd);
-+	return err;
- }
- 
- /*
--- 
-1.7.7
-
+D'0h I lost a .hi add there..
