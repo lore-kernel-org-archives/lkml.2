@@ -1,79 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab2DYPWh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:22:37 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58168 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754165Ab2DYPWO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754983Ab2DYPXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:23:12 -0400
+Received: from fieldses.org ([174.143.236.118]:51423 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753938Ab2DYPWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Apr 2012 11:22:14 -0400
-Message-ID: <4F9816A3.5090907@wwwdotorg.org>
-Date: Wed, 25 Apr 2012 09:22:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Dong Aisheng <aisheng.dong@freescale.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
-Subject: Re: [PATCH v2 1/2] pinctrl: add pinctrl_provide_dummies interface
- for platforms to use
-References: <1335260023-15859-1-git-send-email-b29396@freescale.com> <4F96F847.508@wwwdotorg.org> <20120425094934.GA17631@shlinux2.ap.freescale.net> <CACRpkdYjVYsM-Qo7NWKx5Mr3rAmp12G_wAtkmNkkqNyX=ZeKUw@mail.gmail.com> <20120425114955.GB17631@shlinux2.ap.freescale.net>
-In-Reply-To: <20120425114955.GB17631@shlinux2.ap.freescale.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: bfields@fieldses.org
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 4/5] vfs: take i_mutex on renamed file
+Date: Wed, 25 Apr 2012 11:22:08 -0400
+Message-Id: <1335367329-929-4-git-send-email-bfields@fieldses.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20120418215238.GA11959@fieldses.org>
+References: <20120418215238.GA11959@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 05:49 AM, Dong Aisheng wrote:
-> On Wed, Apr 25, 2012 at 07:19:43PM +0800, Linus Walleij wrote:
->> On Wed, Apr 25, 2012 at 11:49 AM, Dong Aisheng
->> <aisheng.dong@freescale.com> wrote:
->>> On Wed, Apr 25, 2012 at 03:00:23AM +0800, Stephen Warren wrote:
->>
->>>> The only thing that should be calling pinctrl_request_gpio() is a GPIO
->>>> driver. It should only be calling it for the GPIOs it manages. I'd
->>>> expect that if a platform's pinctrl driver was not yet written to
->>>> support the GPIO functionality, then the GPIO driver would not be
->>>> calling this function.
->>>>
->>> Hmm, pinctrl gpio is in the same situation as pinctrl state that gpio
->>> driver may be shared between several platforms, with pinctrl support
->>> or not.
->>
->> I think it's mostly safe to assume that either:
->>
-> I just saw your reply after i sent out the revised patch...
-> 
->> - pinctrl calls from GPIO drivers gets stubbed out totally due to
->>   CONFIG_PINCTRL not being selected
->>
-> Yes, we already have that in include/linux/pinctrl/consumer.h
-> 
->> or:
->>
->> - You need to pass a token through platform data to the
->>   GPIO driver telling it whether it needs to request pins for
->>   it's GPIOs or not. Just a bool should work fine?
->>
-> Yes, this is an alternative way.
-> I'm using a similar way, but pass the data to pinctrl core
-> rather than gpio driver. Then it is be handled together with
-> dummy state in platform code.
-> 
-> Do you think if the current way i used is ok?
-> Or i need to change to your proposed way?
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-I think Linus was suggesting a flag in platform data for each GPIO
-driver rather than a global flag for the entire pinctrl subsystem.
+A read delegation is used by NFSv4 as a guarantee that a client can
+perform local read opens without informing the server.
 
-That way, if one of the pinctrl drivers did fully support all the GPIO
-functionality and the other didn't, you'd be able to have just one of
-the GPIO drivers not call into pinctrl (or ignore certain errors) yet
-the other GPIO driver could still fully interact with pinctrl as desired.
+The open operation takes the last component of the pathname as an
+argument, thus is also a lookup operation, and giving the client the
+above guarantee means informing the client before we allow anything that
+would change the set of names pointing to the inode.
+
+Therefore, we need to break delegations on rename, link, and unlink.
+
+We also need to prevent new delegations from being acquired while one of
+these operations is in progress.
+
+We could add some completely new locking for that purpose, but it's
+simpler to use the i_mutex, since that's already taken by all the
+operations we care about.
+
+The single exception is rename.  So, modify rename to take the i_mutex
+on the file that is being renamed.
+
+Also fix up lockdep and Documentation/filesystems/directory-locking to
+reflect the change.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+---
+ Documentation/filesystems/directory-locking |   30 ++++++++++++++++++--------
+ fs/namei.c                                  |    7 ++---
+ 2 files changed, 24 insertions(+), 13 deletions(-)
+
+diff --git a/Documentation/filesystems/directory-locking b/Documentation/filesystems/directory-locking
+index ff7b611..9e8a629 100644
+--- a/Documentation/filesystems/directory-locking
++++ b/Documentation/filesystems/directory-locking
+@@ -2,6 +2,10 @@
+ kinds of locks - per-inode (->i_mutex) and per-filesystem
+ (->s_vfs_rename_mutex).
+ 
++	When taking the i_mutex on multiple non-directory objects, we
++always acquire the locks in order by increasing address.  We'll call
++that "inode pointer" order in the following.
++
+ 	For our purposes all operations fall in 5 classes:
+ 
+ 1) read access.  Locking rules: caller locks directory we are accessing.
+@@ -12,8 +16,9 @@ kinds of locks - per-inode (->i_mutex) and per-filesystem
+ locks victim and calls the method.
+ 
+ 4) rename() that is _not_ cross-directory.  Locking rules: caller locks
+-the parent, finds source and target, if target already exists - locks it
+-and then calls the method.
++the parent and finds source and target.  If source and target both
++exist, they are locked in inode pointer order.  Otherwise lock just
++source.  Then call method.
+ 
+ 5) link creation.  Locking rules:
+ 	* lock parent
+@@ -30,7 +35,8 @@ rules:
+ 		fail with -ENOTEMPTY
+ 	* if new parent is equal to or is a descendent of source
+ 		fail with -ELOOP
+-	* if target exists - lock it.
++	* If target exists, lock both source and target, in inode
++	  pointer order.  Otherwise lock just source.
+ 	* call the method.
+ 
+ 
+@@ -56,9 +62,11 @@ objects - A < B iff A is an ancestor of B.
+     renames will be blocked on filesystem lock and we don't start changing
+     the order until we had acquired all locks).
+ 
+-(3) any operation holds at most one lock on non-directory object and
+-    that lock is acquired after all other locks.  (Proof: see descriptions
+-    of operations).
++(3) locks on non-directory objects are acquired only after locks on
++    directory objects, and are acquired in inode pointer order.
++    (Proof: all operations but renames take lock on at most one
++    non-directory object, except renames, which take locks on source and
++    target in inode pointer order.)
+ 
+ 	Now consider the minimal deadlock.  Each process is blocked on
+ attempt to acquire some lock and already holds at least one lock.  Let's
+@@ -66,9 +74,13 @@ consider the set of contended locks.  First of all, filesystem lock is
+ not contended, since any process blocked on it is not holding any locks.
+ Thus all processes are blocked on ->i_mutex.
+ 
+-	Non-directory objects are not contended due to (3).  Thus link
+-creation can't be a part of deadlock - it can't be blocked on source
+-and it means that it doesn't hold any locks.
++	By (3), any process holding a non-directory lock can only be
++waiting on another non-directory lock with a larger address.  Therefore
++the process holding the "largest" such lock can always make progress, and
++non-directory objects are not included in the set of contended locks.
++
++	Thus link creation can't be a part of deadlock - it can't be
++blocked on source and it means that it doesn't hold any locks.
+ 
+ 	Any contended object is either held by cross-directory rename or
+ has a child that is also contended.  Indeed, suppose that it is held by
+diff --git a/fs/namei.c b/fs/namei.c
+index 0062dd1..ee5fdd3 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3165,6 +3165,7 @@ static int vfs_rename_other(struct inode *old_dir, struct dentry *old_dentry,
+ 			    struct inode *new_dir, struct dentry *new_dentry)
+ {
+ 	struct inode *target = new_dentry->d_inode;
++	struct inode *source = old_dentry->d_inode;
+ 	int error;
+ 
+ 	error = security_inode_rename(old_dir, old_dentry, new_dir, new_dentry);
+@@ -3172,8 +3173,7 @@ static int vfs_rename_other(struct inode *old_dir, struct dentry *old_dentry,
+ 		return error;
+ 
+ 	dget(new_dentry);
+-	if (target)
+-		mutex_lock(&target->i_mutex);
++	lock_two_nondirectories(source, target);
+ 
+ 	error = -EBUSY;
+ 	if (d_mountpoint(old_dentry)||d_mountpoint(new_dentry))
+@@ -3188,8 +3188,7 @@ static int vfs_rename_other(struct inode *old_dir, struct dentry *old_dentry,
+ 	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE))
+ 		d_move(old_dentry, new_dentry);
+ out:
+-	if (target)
+-		mutex_unlock(&target->i_mutex);
++	unlock_two_nondirectories(source, target);
+ 	dput(new_dentry);
+ 	return error;
+ }
+-- 
+1.7.5.4
+
