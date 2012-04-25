@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758702Ab2DYBeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 21:34:25 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50825 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757063Ab2DYBeY (ORCPT
+	id S1758689Ab2DYBfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 21:35:43 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:17641 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757026Ab2DYBfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 21:34:24 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F975430.4090107@jp.fujitsu.com>
-Date: Wed, 25 Apr 2012 10:32:32 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 24 Apr 2012 21:35:41 -0400
+Date: Tue, 24 Apr 2012 21:35:37 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Martin Peres <martin.peres@labri.fr>, Ben Skeggs <bskeggs@redhat.com>,
+        dri-devel@lists.freedesktop.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.4-rc4
+Message-ID: <20120425013537.GA11959@elliptictech.com>
+References: <CA+55aFzQD4UyPVDQesrWq7JkM=BoQevdJpQt1YyaG10MtfM-Pw@mail.gmail.com>
+ <20120422040715.GA30689@elliptictech.com>
+ <CA+55aFwGrb_sOjHFWe6tYwf8mmNsFbqKAhz=bq2ofiU+F+wVvA@mail.gmail.com>
+ <20120422164023.GA32342@elliptictech.com>
+ <20120423000554.GA893@elliptictech.com>
+ <20120423024558.GD13840@phenom.dumpdata.com>
+ <20120424010345.GA30674@elliptictech.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@openvz.org, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 09/23] kmem slab accounting basic infrastructure
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1334959051-18203-10-git-send-email-glommer@parallels.com>
-In-Reply-To: <1334959051-18203-10-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120424010345.GA30674@elliptictech.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/21 6:57), Glauber Costa wrote:
-
-> This patch adds the basic infrastructure for the accounting of the slab
-> caches. To control that, the following files are created:
+On 2012-04-23 21:03 -0400, Nick Bowler wrote:
+> On 2012-04-22 22:45 -0400, Konrad Rzeszutek Wilk wrote:
+> > On Sun, Apr 22, 2012 at 08:05:54PM -0400, Nick Bowler wrote:
+> > > Following up on the above, the commit which introduces the panics during
+> > > boot is this one:
+> > >
+> > > commit 8e7e70522d760c4ccd4cd370ebfa0ba69e006c6e
+> > > Author: Jerome Glisse <jglisse@redhat.com>
+> > > Date:   Wed Nov 9 17:15:26 2011 -0500
+> > > 
+> > >     drm/ttm: isolate dma data from ttm_tt V4
+[...]
+> > dea7e0a ttm: fix agp since ttm tt rework
+> > 
+> > fixed that.
 > 
->  * memory.kmem.usage_in_bytes
->  * memory.kmem.limit_in_bytes
->  * memory.kmem.failcnt
->  * memory.kmem.max_usage_in_bytes
-> 
-> They have the same meaning of their user memory counterparts. They reflect
-> the state of the "kmem" res_counter.
-> 
-> The code is not enabled until a limit is set. This can be tested by the flag
-> "kmem_accounted". This means that after the patch is applied, no behavioral
-> changes exists for whoever is still using memcg to control their memory usage.
-> 
+> Yes, I just tested this commit and the one immediately before it.  The
+> one before crashes in the usual way, and dea7e0a boots (with the VGA
+> output black as in the original report).  So this fixed the crash.
 
-Hmm, res_counter never goes naeative ?
+OK, here's what I did:
 
-> We always account to both user and kernel resource_counters. This effectively
-> means that an independent kernel limit is in place when the limit is set
-> to a lower value than the user memory. A equal or higher value means that the
-> user limit will always hit first, meaning that kmem is effectively unlimited.
-> 
-> People who want to track kernel memory but not limit it, can set this limit
-> to a very high number (like RESOURCE_MAX - 1page - that no one will ever hit,
-> or equal to the user memory)
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
+ - Since dea7e0a is the first commit that both (a) boots and (b) has
+   broken VGA, I checked it out on a new branch:
 
+     git checkout -b crazy dea7e0a
 
-The code itself seems fine.
+ - Next, I reverted *all* (well, I missed one by accident) the remaining
+   nouveau-specific commits between 3230cfc34 ("drm/nouveau: enable the
+   ttm dma pool when swiotlb is active V3") (i.e., the last commit that
+   (a) boots and (b) has non-broken VGA) and dea7e0a:
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+     git revert --no-edit 0c101461e267..f7b24c42da1a
+
+ - Amazingly, the resulting kernel booted and had working VGA, so I did
+   a "backwards" bisect on this branch of reverts.  In a strange twist
+   of fate, this actually managed to produce bootable kernels the entire
+   time.  The bisection pinpointed the following commit as the culprit:
+
+commit a0b25635515ef5049f93b032a1e37f18b16e0f6f
+Author: Ben Skeggs <bskeggs@redhat.com>
+Date:   Mon Nov 21 16:41:48 2011 +1000
+
+    drm/nouveau/gpio: reimplement as nouveau_gpio.c, fixing a number of issues
+    
+    - moves out of nouveau_bios.c and demagics the logical state definitions
+    - simplifies chipset-specific driver interface
+    - makes most of gpio irq handling common, will use for nv4x hpd later
+    - api extended to allow both direct gpio access, and access using the
+      logical function states
+    - api extended to allow for future use of gpio extender chips
+    - pre-nv50 was handled very badly, the main issue being that all GPIOs
+      were being treated as output-only.
+    - fixes nvd0 so gpio changes actually stick, magic reg needs bashing
+    
+    Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+
+Unfortunately, there are a number of seemingly non-trivial conflicts
+trying to revert just this one gigantic commit.  So to avoid any
+conflicts, I reverted all of the following (in this order) on top of
+3.3.3 (there are even more conflicts trying to revert on top of Linus'
+master):
+
+  7df898b1a70b ("drm/nouveau/disp: check that panel power gpio is enabled at init time")
+  52c4d767437b ("drm/nouveau: move hpd enable/disable to common code")
+  47e5d5cb83d4 ("drm/nv40/disp: implement support for hotplug irq")
+  a0b25635515e ("drm/nouveau/gpio: reimplement as nouveau_gpio.c, fixing a number of issues")
+
+and my VGA is working again!
+
+Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
