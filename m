@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759237Ab2DYN55 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 09:57:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44606 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab2DYN5z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 09:57:55 -0400
-Date: Wed, 25 Apr 2012 06:57:30 -0700
-From: tip-bot for Greg Pearson <greg.pearson@hp.com>
-Message-ID: <tip-ea0dcf903e7d76aa5d483d876215fedcfdfe140f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        greg.pearson@hp.com, suresh.b.siddha@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        greg.pearson@hp.com, suresh.b.siddha@intel.com, tglx@linutronix.de
-In-Reply-To: <1335313436-32020-1-git-send-email-greg.pearson@hp.com>
-References: <1335313436-32020-1-git-send-email-greg.pearson@hp.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/apic:
-  Use x2apic physical mode based on FADT setting
-Git-Commit-ID: ea0dcf903e7d76aa5d483d876215fedcfdfe140f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1759295Ab2DYN6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 09:58:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23190 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753088Ab2DYN6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 09:58:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="158189829"
+Date: Wed, 25 Apr 2012 21:57:34 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH] fs: remove 8 bytes of padding from struct
+ writeback_control on 64 bit builds
+Message-ID: <20120425135734.GA4995@localhost>
+References: <1335361985.1885.16.camel@castor.rsk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Apr 2012 06:57:36 -0700 (PDT)
+In-Reply-To: <1335361985.1885.16.camel@castor.rsk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ea0dcf903e7d76aa5d483d876215fedcfdfe140f
-Gitweb:     http://git.kernel.org/tip/ea0dcf903e7d76aa5d483d876215fedcfdfe140f
-Author:     Greg Pearson <greg.pearson@hp.com>
-AuthorDate: Tue, 24 Apr 2012 18:23:56 -0600
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 25 Apr 2012 12:47:08 +0200
+On Wed, Apr 25, 2012 at 02:53:05PM +0100, Richard Kennedy wrote:
+> Reorder structure writeback_control to remove 8 bytes of padding on 64
+> bit builds, this shrinks its size from 48 to 40 bytes.
+> 
+> This structure is always on the stack and uses C99 named initialisation,
+> so should be safe and have a small impact on stack usage.
+>     
+> Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+> 
+> --
+> 
+> patch against v3.4-rc4
+> compiled and tested on x86_64
+> 
+> I've been running my desktop with this patch applied for several days
+> and have not seen any problems.
+> regards
+> Richard
 
-x86/apic: Use x2apic physical mode based on FADT setting
+Applied, thanks!
 
-Provide systems that do not support x2apic cluster mode
-a mechanism to select x2apic physical mode using the
-FADT FORCE_APIC_PHYSICAL_DESTINATION_MODE bit.
-
-Changes from v1: (based on Suresh's comments)
- - removed #ifdef CONFIG_ACPI
- - removed #include <linux/acpi.h>
-
-Signed-off-by: Greg Pearson <greg.pearson@hp.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Link: http://lkml.kernel.org/r/1335313436-32020-1-git-send-email-greg.pearson@hp.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/apic/x2apic_phys.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index 8a778db..991e315 100644
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -24,6 +24,12 @@ static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
- {
- 	if (x2apic_phys)
- 		return x2apic_enabled();
-+	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
-+		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
-+		x2apic_enabled()) {
-+		printk(KERN_DEBUG "System requires x2apic physical mode\n");
-+		return 1;
-+	}
- 	else
- 		return 0;
- }
+Fengguang
