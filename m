@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab2DYMaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:30:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53544 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752434Ab2DYMaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:30:06 -0400
-Message-ID: <4F97EE46.4070305@redhat.com>
-Date: Wed, 25 Apr 2012 08:29:58 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Salman Qazi <sqazi@google.com>, stable@kernel.org
-Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
-References: <1333552260-1170-1-git-send-email-prarit@redhat.com> <4F7C8C3E.1020203@us.ibm.com> <4F7C9402.3090602@redhat.com> <4F7CF094.5020201@us.ibm.com> <4F7D8FA1.1010107@redhat.com> <4F8F4C31.7010209@linaro.org> <4F8F555F.7040404@redhat.com> <4F8F59E2.4080301@linaro.org> <alpine.LFD.2.02.1204191437560.2542@ionos> <alpine.LFD.2.02.1204191451350.2542@ionos> <4F905576.6040406@linaro.org>
-In-Reply-To: <4F905576.6040406@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1759193Ab2DYM2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:28:23 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44117 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758916Ab2DYM2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 08:28:17 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Julia Lawall <julia@diku.dk>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 08/15] perf/events: Correct size given to memset
+Date: Wed, 25 Apr 2012 14:26:52 +0200
+Message-Id: <1335356819-16710-9-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
+References: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Julia Lawall <julia@diku.dk>
 
+This is a forward port of commit 5660ce34241ab
+perf tools: Correct size given to memset
+written by Julia Lawall and forward ported by Steven Rostedt.
 
-On 04/19/2012 02:12 PM, John Stultz wrote:
-> On 04/19/2012 05:52 AM, Thomas Gleixner wrote:
->> On Thu, 19 Apr 2012, Thomas Gleixner wrote:
->>
->>> We should think about the reasons why we have interrupts disabled for
->>> so much time. Is that really, really necessary ?
->> I'm not against making the clocksource code more robust, but I don't
->> want to add crap there just to cope with complete madness elsewhere.
->>
-> 
-> Very much agreed.
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ tools/lib/traceevent/event-parse.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Hi John and Thomas,
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index f012395..16da20c 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -2076,7 +2076,7 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 			goto out_free;
+ 
+ 		field = malloc_or_die(sizeof(*field));
+-		memset(field, 0, sizeof(field));
++		memset(field, 0, sizeof(*field));
+ 
+ 		value = arg_eval(arg);
+ 		field->value = strdup(value);
+-- 
+1.7.5.4
 
-After much analysis I have good news to report.  The good news is that the
-problem with the random tsc failures was chased down to a script left running in
-which sysrq-t's were executed over ping packets.  This, as I've previously
-pointed out, can cause the tsc to be erroneously marked unstable.
-
-[Aside: I hit myself with a big cluebat when I realized that all the failures
-were occurring at the same wall-clock time, 3:00AM.  That couldn't be a
-coincidence.]
-
-I'm working with lwoodman to figure out a way to get rid of the locking (as
-suggested by you Thomas) around the sysrq code.
-
-P.
-
-> -john
-> 
