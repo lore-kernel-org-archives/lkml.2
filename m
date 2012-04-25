@@ -1,25 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758860Ab2DYDun (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 23:50:43 -0400
-Received: from static.vdc.vn ([123.30.186.158]:37415 "EHLO GEDmail"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757307Ab2DYDum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 23:50:42 -0400
-X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Apr 2012 23:50:41 EDT
-To: <alt.travel.marketplace@googlegroups.com>
-Subject: =?UTF-8?Q?C=E1=BA=A3=20nh=C3=A0=20nhanh=20tay=20nh=C3=A9!=20KH=20?=  =?UTF-8?Q?Gi=C3=A1m=20=C4=90=E1=BB=91c=20=C4=90i=E1=BB=81u=20H=C3=A0nh=20?=  =?UTF-8?Q?=7C=20Hotdeal=2Evn=20H=C3=A0=20N=E1=BB=99i=2E=20Gi=C3=A1=20ch?=  =?UTF-8?Q?=E1=BB=89=20c=C3=B2n=20=32=2E=39=35=30=2E=30=30=30=C4=91=2E?=
+	id S1758877Ab2DYDwa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 23:52:30 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37971 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758763Ab2DYDw3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 23:52:29 -0400
+Message-ID: <4F9774F7.3050702@openvz.org>
+Date: Wed, 25 Apr 2012 07:52:23 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 2/2] mm: memcg: count pte references from every member
+ of the reclaimed hierarchy
+References: <1335296144-29381-1-git-send-email-hannes@cmpxchg.org> <1335296144-29381-2-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1335296144-29381-2-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Wed, 25 Apr 2012 10:00:07 +0700
-From: =?UTF-8?Q?H=E1=BB=8Dc_vi=E1=BB=87n_doanh_nh=C3=A2n_GED?= 
-	<info@doanhnhan.edu.vn>
-Message-ID: <dd27a36c50103066004fd542710b039a@doanhnhan.edu.vn>
-User-Agent: RoundCube Webmail/0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://www.hotdeal.vn/ha-noi/kh-giam-doc-dieu-hanh-4002.html
+Johannes Weiner wrote:
+> The rmap walker checking page table references has historically
+> ignored references from VMAs that were not part of the memcg that was
+> being reclaimed during memcg hard limit reclaim.
+>
+> When transitioning global reclaim to memcg hierarchy reclaim, I missed
+> that bit and now references from outside a memcg are ignored even
+> during global reclaim.
+>
+> Reverting back to traditional behaviour - count all references during
+> global reclaim and only mind references of the memcg being reclaimed
+> during limit reclaim would be one option.
+>
+> However, the more generic idea is to ignore references exactly then
+> when they are outside the hierarchy that is currently under reclaim;
+> because only then will their reclamation be of any use to help the
+> pressure situation.  It makes no sense to ignore references from a
+> sibling memcg and then evict a page that will be immediately refaulted
+> by that sibling which contributes to the same usage of the common
+> ancestor under reclaim.
+>
+> The solution: make the rmap walker ignore references from VMAs that
+> are not part of the hierarchy that is being reclaimed.
+>
+> Flat limit reclaim will stay the same, hierarchical limit reclaim will
+> mind the references only to pages that the hierarchy owns.  Global
+> reclaim, since it reclaims from all memcgs, will be fixed to regard
+> all references.
+>
+> Reported-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> Signed-off-by: Johannes Weiner<hannes@cmpxchg.org>
+> Acked-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> Acked-by: Michal Hocko<mhocko@suse.cz>
+
+Hooray, I already had planned to resend this together with my patchset =)
+
+Acked-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+
+> ---
+>   include/linux/memcontrol.h |    6 +++++-
+>   mm/memcontrol.c            |   16 +++++++++++-----
+>   mm/vmscan.c                |    6 ++++--
+>   3 files changed, 20 insertions(+), 8 deletions(-)
+>
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 58d820c..76f9d9b 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -78,6 +78,7 @@ extern void mem_cgroup_uncharge_cache_page(struct page *page);
+>
+>   extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>   				     int order);
+> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *, struct mem_cgroup *);
+>   int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
+>
+>   extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+> @@ -91,10 +92,13 @@ static inline
+>   int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
+>   {
+>   	struct mem_cgroup *memcg;
+> +	int match;
+> +
+>   	rcu_read_lock();
+>   	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
+> +	match = memcg&&  __mem_cgroup_same_or_subtree(cgroup, memcg);
+>   	rcu_read_unlock();
+> -	return cgroup == memcg;
+> +	return match;
+>   }
+>
+>   extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg);
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index a1fea51..b365ae3 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1143,17 +1143,23 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
+>    * Checks whether given mem is same or in the root_mem_cgroup's
+>    * hierarchy subtree
+>    */
+> -static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> -		struct mem_cgroup *memcg)
+> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> +				  struct mem_cgroup *memcg)
+>   {
+> -	bool ret;
+> -
+>   	if (root_memcg == memcg)
+>   		return true;
+>   	if (!root_memcg->use_hierarchy)
+>   		return false;
+> +	return css_is_ancestor(&memcg->css,&root_memcg->css);
+> +}
+> +
+> +static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> +				       struct mem_cgroup *memcg)
+> +{
+> +	bool ret;
+> +
+>   	rcu_read_lock();
+> -	ret = css_is_ancestor(&memcg->css,&root_memcg->css);
+> +	ret = __mem_cgroup_same_or_subtree(root_memcg, memcg);
+>   	rcu_read_unlock();
+>   	return ret;
+>   }
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index d6122e7..7bc7b8b 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -632,7 +632,8 @@ static enum page_references page_check_references(struct page *page,
+>   	int referenced_ptes, referenced_page;
+>   	unsigned long vm_flags;
+>
+> -	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup,&vm_flags);
+> +	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
+> +					&vm_flags);
+
+Argument "mz" in page_check_references() now unused.
+Ok, I'll remove it in my patchset together with "struct mem_cgroup_zone"
+
+>   	referenced_page = TestClearPageReferenced(page);
+>
+>   	/*
+> @@ -1474,7 +1475,8 @@ static void shrink_active_list(unsigned long nr_to_scan,
+>   			}
+>   		}
+>
+> -		if (page_referenced(page, 0, mz->mem_cgroup,&vm_flags)) {
+> +		if (page_referenced(page, 0, sc->target_mem_cgroup,
+> +				&vm_flags)) {
+>   			nr_rotated += hpage_nr_pages(page);
+>   			/*
+>   			 * Identify referenced, file-backed active pages and
+
