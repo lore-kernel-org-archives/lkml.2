@@ -1,96 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab2DYRBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 13:01:33 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63112 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754374Ab2DYRBb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 13:01:31 -0400
+	id S1756927Ab2DYRFK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 13:05:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752736Ab2DYRFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 13:05:08 -0400
+Date: Wed, 25 Apr 2012 19:02:30 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Roland McGrath <roland@hack.frob.com>
+Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
+Message-ID: <20120425170230.GA24977@redhat.com>
+References: <20120423180150.GA6871@ZenIV.linux.org.uk> <20120424072617.GB6871@ZenIV.linux.org.uk> <20120425030659.GE6871@ZenIV.linux.org.uk> <20120425123746.GA15560@redhat.com> <20120425125042.GF6871@ZenIV.linux.org.uk> <20120425130329.GA16413@redhat.com> <20120425133238.GG6871@ZenIV.linux.org.uk> <20120425145239.GA21386@redhat.com> <20120425154611.GA23672@redhat.com> <20120425161002.GH6871@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <4F80548C.3060202@gmail.com>
-References: <1333726296-3817-1-git-send-email-jiang.liu@huawei.com>
- <CAErSpo7KdaYt0tVpBW5vXmc7RXRgnbaOe7JTNmb5xp4vZMsK3w@mail.gmail.com> <4F80548C.3060202@gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 25 Apr 2012 11:01:07 -0600
-Message-ID: <CAErSpo7kZAeAzr4UxDGvviQtwou5t8RduWe-SmzOPvO2UJpgeg@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Fix a device reference count leakage issue in pci_dev_present()
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120425161002.GH6871@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 7, 2012 at 8:51 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> On 04/07/2012 07:23 AM, Bjorn Helgaas wrote:
->> On Fri, Apr 6, 2012 at 9:31 AM, Jiang Liu <liuj97@gmail.com> wrote:
->>> Function pci_get_dev_by_id() will hold a reference count on the pci device
->>> returned, so pci_dev_present() should release the corresponding reference
->>> count to avoid memory leakage.
->>>
->>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->>> ---
->>>  drivers/pci/search.c |   10 +++++-----
->>>  1 files changed, 5 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
->>> index 9d75dc8..b572730 100644
->>> --- a/drivers/pci/search.c
->>> +++ b/drivers/pci/search.c
->>> @@ -338,13 +338,13 @@ int pci_dev_present(const struct pci_device_id *ids)
->>>        WARN_ON(in_interrupt());
->>>        while (ids->vendor || ids->subvendor || ids->class_mask) {
->>>                found = pci_get_dev_by_id(ids, NULL);
->>> -               if (found)
->>> -                       goto exit;
->>> +               if (found) {
->>> +                       pci_dev_put(found);
->>> +                       return 1;
->>> +               }
->>>                ids++;
->>>        }
->>> -exit:
->>> -       if (found)
->>> -               return 1;
->>> +
->>>        return 0;
->>>  }
->>>  EXPORT_SYMBOL(pci_dev_present);
->>
->> This might be the right thing to do, but I'd like to understand what's
->> going on, so let's talk about it a bit first.
->>
->> I agree, there appears to be a leak here.  Or at least, the fact that
->> we keep a reference when a device is found doesn't match the comment.
->> What problem are you seeing from this leak?
->>
->> There are not many callers, and most appear to be one-time things done
->> at boot, looking for built-in devices known to be defective.  These
->> devices won't be removable, so the leak shouldn't be causing
->> hot-remove issues.
-> I noticed this issue when reading code, no real issue disclosed yet.
-> As you have pointed out, this interface is used for built-in devices only,
-> there should be no real issue currently and the patch is just for purity.
+On 04/25, Al Viro wrote:
 >
->>
->> IMO, this is a bogus interface that leads to poor code, and I don't
->> want to encourage its use.  For device defect workarounds, I think
->> it'd be better to use PCI quirks to catch the defective device.  Some
->> chipset defects affect all downstream devices, and a quirk could make
->> the defect visible to all the drivers, not just the ones that use
->> pci_dev_present().  For example, look at tg3_write_reorder_chipsets
->> and tg3_dma_wait_state_chipsets.  Those aren't for tg3 bugs, they're
->> for chipset bugs that might affect other devices, too.  But right now,
->> that knowledge is buried in the tg3 driver.
-> Thanks for pointing out the real issue behind this bogus interface.
-> It would be better to solve this type of chip bugs in PCI core instead
-> of in individual drivers.
+> On Wed, Apr 25, 2012 at 05:46:11PM +0200, Oleg Nesterov wrote:
+> >
+> > 	--- x/arch/x86/kernel/signal.c
+> > 	+++ x/arch/x86/kernel/signal.c
+> > 	@@ -711,6 +711,13 @@ handle_signal(unsigned long sig, siginfo
+> > 				regs->ax = regs->orig_ax;
+> > 				regs->ip -= 2;
+> > 				break;
+> > 	+
+> > 	+		case -EINTR:
+> > 	+			break;
+> > 	+
+> > 	+		default:
+> > 	+			if (regs->orig_ax == NR_eintr)
+> > 	+				regs->ax = NR_eintr;
+> > 			}
+> > 		}
+> > 	
+> > 	@@ -791,6 +798,7 @@ static void do_signal(struct pt_regs *re
+> > 			case -ERESTARTSYS:
+> > 			case -ERESTARTNOINTR:
+> > 				regs->ax = regs->orig_ax;
+> > 	+			regs->orig_ax = NR_eintr;
+> > 				regs->ip -= 2;
+> > 				break;
+> > 	
+> >
+> > this ignores ERESTART_RESTARTBLOCK for simplicity.
+>
+> Ehh...  You do realize that it's that simple only on architectures that
+> have syscall number in a register?
 
-I applied this to the -next branch, thanks.
+No, I do not ;) I simply know nothing about other architectures.
 
-Bjorn
+> Take a look at e.g. insert_restart_trampoline()
+> in arch/parisc/kernel/signal.c
+
+Will do. Not sure I will be able to undestand it though. And btw I still
+didn't look at the signal patches in your tree, I've just returned from
+vacation today.
+
+> I'm not sure that SA_RESTART case is actually worth bothering with -
+
+Neither me. But,
+
+> AFAICS, your mechanism won't cover SA_RESTART/SA_RESTART/!SA_RESTART
+> combinations anyway,
+
+Confused. The hack above doesn't even try to cover this case (and it is
+obviously wrong in ERESTARTSYS/NOINTR case), I only tried to illustrate
+the idea.
+
+> 	syscall interrupted
+> 		SA_RESTART signal arrives, handler1 entered
+> 			!SA_RESTART signal arrives, handler2 entered
+> 			handler2 returns
+> 		hander1 returns
+> 	syscall restarts
+
+And there is another case:
+
+	syscall interrupted, it returns ERESTARTSYS.
+
+	do_signal() sees no signal, restarts the syscall
+
+	!SA_RESTART comes before we return to user-mode
+
+This doesn't really differ from sigsuspend/ERESTARTNOHAND we discussed
+before.
+
+Oleg.
+
