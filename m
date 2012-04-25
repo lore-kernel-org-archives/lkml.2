@@ -1,24 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab2DYEGE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 00:06:04 -0400
-Received: from static.vdc.vn ([123.30.186.158]:38900 "EHLO GEDmail"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752433Ab2DYEGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 00:06:00 -0400
-To: <alt.society.zeitgeist@googlegroups.com>
-Subject: =?UTF-8?Q?C=E1=BA=A3=20nh=C3=A0=20nhanh=20tay=20nh=C3=A9!=20KH=20?=  =?UTF-8?Q?Gi=C3=A1m=20=C4=90=E1=BB=91c=20=C4=90i=E1=BB=81u=20H=C3=A0nh=20?=  =?UTF-8?Q?=7C=20Hotdeal=2Evn=20H=C3=A0=20N=E1=BB=99i=2E=20Gi=C3=A1=20ch?=  =?UTF-8?Q?=E1=BB=89=20c=C3=B2n=20=32=2E=39=35=30=2E=30=30=30=C4=91=2E?=
+	id S1753241Ab2DYEGh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 00:06:37 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:53863 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab2DYEGf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 00:06:35 -0400
+Message-ID: <4F977837.8070305@linux.vnet.ibm.com>
+Date: Wed, 25 Apr 2012 12:06:15 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v4 10/10] KVM: MMU: document mmu-lock and fast page fault
+References: <4F9776D2.7020506@linux.vnet.ibm.com>
+In-Reply-To: <4F9776D2.7020506@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Date: Wed, 25 Apr 2012 10:21:33 +0700
-From: =?UTF-8?Q?H=E1=BB=8Dc_vi=E1=BB=87n_doanh_nh=C3=A2n_GED?= 
-	<info@doanhnhan.edu.vn>
-Message-ID: <1e5d090e7038d69fa0e13197b7e56d71@doanhnhan.edu.vn>
-User-Agent: RoundCube Webmail/0.1
+x-cbid: 12042418-3568-0000-0000-00000199B64F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://www.hotdeal.vn/ha-noi/kh-giam-doc-dieu-hanh-4002.html
+Document fast page fault and mmu-lock in locking.txt
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ Documentation/virtual/kvm/locking.txt |  152 ++++++++++++++++++++++++++++++++-
+ 1 files changed, 151 insertions(+), 1 deletions(-)
+
+diff --git a/Documentation/virtual/kvm/locking.txt b/Documentation/virtual/kvm/locking.txt
+index 3b4cd3b..f2dbefb 100644
+--- a/Documentation/virtual/kvm/locking.txt
++++ b/Documentation/virtual/kvm/locking.txt
+@@ -6,7 +6,151 @@ KVM Lock Overview
+
+ (to be written)
+
+-2. Reference
++3: Exception
++------------
++
++Fast page fault:
++
++Fast page fault is the fast path which fixes the guest page fault out of
++the mmu-lock on x86. Currently, the page fault can be fast only if the
++shadow page table is present and it is caused by write-protect, that means
++we just need change the W bit of the spte.
++
++What we use to avoid all the race is the SPTE_HOST_WRITEABLE bit,
++SPTE_MMU_WRITEABLE bit and SPTE_WRITE_PROTECT bit on the spte:
++- SPTE_HOST_WRITEABLE means the gfn is writable on host.
++- SPTE_MMU_WRITEABLE means the gfn is writable on guest mmu.
++- SPTE_WRITE_PROTECT means the gfn is write-protected for shadow page
++  write protection.
++
++On fast page fault path, we will use cmpxchg to atomically set the spte W
++bit if spte.SPTE_HOST_WRITEABLE = 1, spte.SPTE_WRITE_PROTECT = 1 and
++spte.SPTE_WRITE_PROTECT = 0, this is safe because whenever changing these
++bits can be detected by cmpxchg.
++
++But we need carefully check these cases:
++1): The mapping from gfn to pfn
++
++The mapping from gfn to pfn may be changed since we can only ensure the pfn
++is not changed during cmpxchg. This is a ABA problem, for example, below case
++will happen:
++
++At the beginning:
++gpte = gfn1
++gfn1 is mapped to pfn1 on host
++spte is the shadow page table entry corresponding with gpte and
++spte = pfn1
++
++   VCPU 0                           VCPU0
++on fast page fault path:
++
++   old_spte = *spte;
++                                 pfn1 is swapped out:
++                                    spte = 0;
++
++                                 pfn1 is re-alloced for gfn2.
++
++                                 gpte is changed to point to
++                                 gfn2 by the guest:
++                                    spte = pfn1;
++
++   if (cmpxchg(spte, old_spte, old_spte+W)
++	mark_page_dirty(vcpu->kvm, gfn1)
++             OOPS!!!
++
++We dirty-log for gfn1, that means gfn2 is lost in dirty-bitmap.
++
++For direct sp, we can easily avoid it since the spte of direct sp is fixed
++to gfn. For indirect sp, before we do cmpxchg, we call gfn_to_pfn_atomic()
++to pin gfn to pfn, because after gfn_to_pfn_atomic():
++- We have held the refcount of pfn that means the pfn can not be freed and
++  be reused for another gfn.
++- The pfn is writable that means it can not be shared between different gfns
++  by KSM.
++
++Then, we can ensure the dirty bitmaps is correctly set for a gfn.
++
++2): flush tlbs due to shadow page table write-protected
++
++In rmap_write_protect(), we always need flush tlbs if
++spte.SPTE_HOST_WRITEABLE = 1 and spte.SPTE_MMU_WRITEABLE = 1
++even if the current spte is read-only. The reason is fast page fault path
++will mark the spte to writable and the writable spte will be cached into tlb.
++Like below case:
++
++At the beginning:
++spte.W = 0
++spte.SPTE_WRITE_PROTECT = 0
++spte.SPTE_HOST_WRITEABLE = 1
++spte.SPTE_MMU_WRITEABLE = 1
++
++   VCPU 0                          VCPU0
++In rmap_write_protect():
++
++   flush = false;
++
++   if (spte.W == 1)
++      flush = true;
++
++                               On fast page fault path:
++                                  old_spte = *spte
++                                  cmpxchg(spte, old_spte, old_spte + W)
++
++                               the spte is fetched/prefetched into
++                               tlb by CPU
++
++   spte = (spte | SPTE_WRITE_PROTECT) &
++                      ~PT_WRITABLE_MASK;
++
++   if (flush)
++         kvm_flush_remote_tlbs(vcpu->kvm)
++               OOPS!!!
++
++The tlbs are not flushed since the spte is read-only, but invalid writable
++spte has been cached in the tlbs caused by fast page fault.
++
++3): Dirty bit tracking
++In the origin code, the spte can be fast updated (non-atomically) if the
++spte is read-only and the Accessed bit has already been set since the
++Accessed bit and Dirty bit can not be lost.
++
++But it is not true after fast page fault since the spte can be marked
++writable between reading spte and updating spte. Like below case:
++
++At the beginning:
++spte.W = 0
++spte.Accessed = 1
++
++   VCPU 0                                       VCPU0
++In mmu_spte_clear_track_bits():
++
++   old_spte = *spte;
++
++   /* 'if' condition is satisfied. */
++   if (old_spte.Accssed == 1 &&
++        old_spte.W == 0)
++      spte = 0ull;
++                                         on fast page fault path:
++                                             spte.W = 1
++                                         memory write on the spte:
++                                             spte.Dirty = 1
++
++
++   else
++      old_spte = xchg(spte, 0ull)
++
++
++   if (old_spte.Accssed == 1)
++      kvm_set_pfn_accessed(spte.pfn);
++   if (old_spte.Dirty == 1)
++      kvm_set_pfn_dirty(spte.pfn);
++      OOPS!!!
++
++The Dirty bit is lost in this case. We can call the slow path
++(__update_clear_spte_slow()) to update the spte if the spte can be changed
++by fast page fault.
++
++3. Reference
+ ------------
+
+ Name:		kvm_lock
+@@ -23,3 +167,9 @@ Arch:		x86
+ Protects:	- kvm_arch::{last_tsc_write,last_tsc_nsec,last_tsc_offset}
+ 		- tsc offset in vmcb
+ Comment:	'raw' because updating the tsc offsets must not be preempted.
++
++Name:		kvm->mmu_lock
++Type:		spinlock_t
++Arch:		any
++Protects:	-shadow page/shadow tlb entry
++Comment:	it is a spinlock since it will be used in mmu notifier.
+-- 
+1.7.7.6
+
