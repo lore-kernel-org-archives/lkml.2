@@ -1,166 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab2DYPFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:05:37 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58689 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751087Ab2DYPFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:05:35 -0400
-Message-ID: <1335366330.3081.6.camel@dabdike.lan>
-Subject: Re: [Bug 42969] New: Softlockup during boot during init_sd
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: bugzilla-daemon@bugzilla.kernel.org
-Cc: linux-scsi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 25 Apr 2012 16:05:30 +0100
-In-Reply-To: <bug-42969-11613@https.bugzilla.kernel.org/>
-References: <bug-42969-11613@https.bugzilla.kernel.org/>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753628Ab2DYPGE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:06:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34301 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752736Ab2DYPGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 11:06:03 -0400
+Date: Wed, 25 Apr 2012 16:05:56 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 02/16] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+Message-ID: <20120425150556.GC15299@suse.de>
+References: <1334578624-23257-1-git-send-email-mgorman@suse.de>
+ <1334578624-23257-3-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1204231637390.17030@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1204231637390.17030@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-21 at 06:46 +0000, bugzilla-daemon@bugzilla.kernel.org
-wrote:
-> https://bugzilla.kernel.org/show_bug.cgi?id=42969
+On Mon, Apr 23, 2012 at 04:51:02PM -0700, David Rientjes wrote:
+> On Mon, 16 Apr 2012, Mel Gorman wrote:
 > 
->            Summary: Softlockup during boot during init_sd
->            Product: IO/Storage
->            Version: 2.5
->     Kernel Version: 3.3-rc5
->           Platform: All
->         OS/Version: Linux
->               Tree: Mainline
->             Status: NEW
->           Severity: normal
->           Priority: P1
->          Component: SCSI
->         AssignedTo: linux-scsi@vger.kernel.org
->         ReportedBy: eric.sesterhenn@lsexperts.de
->         Regression: Yes
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 280eabe..0fa2c72 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -1463,6 +1463,7 @@ failed:
+> >  #define ALLOC_HARDER		0x10 /* try to alloc harder */
+> >  #define ALLOC_HIGH		0x20 /* __GFP_HIGH set */
+> >  #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
+> > +#define ALLOC_PFMEMALLOC	0x80 /* Caller has PF_MEMALLOC set */
+> >  
+> >  #ifdef CONFIG_FAIL_PAGE_ALLOC
+> >  
+> > @@ -2208,16 +2209,22 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+> >  	} else if (unlikely(rt_task(current)) && !in_interrupt())
+> >  		alloc_flags |= ALLOC_HARDER;
+> >  
+> > -	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
+> > -		if (!in_interrupt() &&
+> > -		    ((current->flags & PF_MEMALLOC) ||
+> > -		     unlikely(test_thread_flag(TIF_MEMDIE))))
+> > +	if ((current->flags & PF_MEMALLOC) ||
+> > +			unlikely(test_thread_flag(TIF_MEMDIE))) {
+> > +		alloc_flags |= ALLOC_PFMEMALLOC;
+> > +
+> > +		if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
+> >  			alloc_flags |= ALLOC_NO_WATERMARKS;
+> >  	}
+> >  
+> >  	return alloc_flags;
+> >  }
+> >  
+> > +bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
+> > +{
+> > +	return !!(gfp_to_alloc_flags(gfp_mask) & ALLOC_PFMEMALLOC);
+> > +}
+> > +
+> >  static inline struct page *
+> >  __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+> >  	struct zonelist *zonelist, enum zone_type high_zoneidx,
+> > @@ -2407,8 +2414,16 @@ nopage:
+> >  got_pg:
+> >  	if (kmemcheck_enabled)
+> >  		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
+> > -	return page;
+> >  
+> > +	/*
+> > +	 * page->pfmemalloc is set when the caller had PFMEMALLOC set or is
+> > +	 * been OOM killed. The expectation is that the caller is taking
+> > +	 * steps that will free more memory. The caller should avoid the
+> > +	 * page being used for !PFMEMALLOC purposes.
+> > +	 */
+> > +	page->pfmemalloc = !!(alloc_flags & ALLOC_PFMEMALLOC);
+> > +
+> > +	return page;
+> >  }
+> >  
+> >  /*
 > 
+> I think this is slightly inconsistent if the page allocation succeeded 
+> without needing ALLOC_NO_WATERMARKS, meaning that page was allocated above 
+> the min watermark.  That's possible if the slowpath's first call to 
+> get_page_from_freelist() succeeds without needing  __alloc_pages_high_priority(). 
+> So perhaps we need to do something like
 > 
-> Created an attachment (id=72662)
->  --> (https://bugzilla.kernel.org/attachment.cgi?id=72662)
-> Bisect Log
+> 	got_pg_memalloc:
+> 		...
+> 		page->pfmemalloc = !!(alloc_flags & ALLOC_PFMEMALLOC);
+> 	got_pg:
+> 		if (kmemcheck_enabled)
+> 			kmemcheck_pagealloc_alloc(page, order, gfp_mask);
+> 		return page;
 > 
-> Hi,
+> and use got_pg_memalloc everywhere we currently use got_pg other than the 
+> when it succeeds with ALLOC_NO_WATERMARKS.
 > 
-> when switching from kernels 2.6 to 3 we run into a softlockup during sd_init.
-> 
-> The last working kernel we used was Debian Backports 2.6.39-
-> bpo.2-amd64. The newest kernel we tested which failed is vanilla 3.3-rc5.
-> 
-> The problem roughly happens in three out of four boots.
-> 
-> 
-> [   60.219724] BUG: soft lockup - CPU#0 stuck for 23s! [modprobe:257]          
->                                                        [   60.219726] Modules
-> linked in: sd_mod(+) crc_t10dif uhci_hcd(+) lpfc 
-> scsi_transport_fc scsi_tgt ehci_hcd usbcore igb scsi_mod usb_common dca        
->                                                                     [  
-> 60.219736] CPU 0                                                               
->                [   60.219737] Modules linked in: sd_mod(+) crc_t10dif
-> uhci_hcd(+) lpfc 
-> scsi_transport_fc scsi_tgt ehci_hcd usbcore igb scsi_mod usb_common dca        
->                                                                     [  
-> 60.219743]                                                                     
-> [   60.219746] Pid: 257, comm: modprobe Not tainted 3.2.0-1-amd64 #1 HITACHI    
-> BladeSymphony F51   /7TPBVa                             
-> [   60.219750] RIP: 0010:[<ffffffff810703c0>]  [<ffffffff810703c0>] 
-> smp_call_function_many+0x1c7/0x1de                                   
-> [   60.219759] RSP: 0018:ffff880630939d48  EFLAGS: 00000202                     
-> [   60.219761] RAX: 0000000000000200 RBX: 0000000000000010 RCX: 
-> 0000000000000000                                                         
-> [   60.219763] RDX: 0000000000000010 RSI: 0000000000000200 RDI: 
-> 0000000000000286                                                         
-> [   60.219766] RBP: 000000000000000f R08: 0000000000000200 R09: 
-> ffffffff8168cac0                                                         
-> [   60.219768] R10: 00000000000163a8 R11: 00000000000163a8 R12: 
-> ffffffffffffff95                                                         
-> [   60.219770] R13: 0000000000000286 R14: 0000000000000200 R15: 
-> 0000000000000010                                                         
-> [   60.219773] FS:  00007f29dea69700(0000) GS:ffff88033fc00000(0000) 
-> knlGS:0000000000000000                                              
-> [   60.219776] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033               
->                                                 [   60.219778] CR2:
-> ffffe8fcffc00000 CR3: 00000006308cb000 CR4: 
-> 00000000000006f0                                                         
-> [   60.219780] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
-> 0000000000000000                                                         
-> [   60.219782] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 
-> 0000000000000400                                                         
-> [   60.219785] Process modprobe (pid: 257, threadinfo ffff880630938000, task 
-> ffff88063170caa0)                                           
-> [   60.219787] Stack:                                                          
->                [   60.219788]  0000000000000246 01ffffff810eaa96
-> 0000000000000088 
-> ffffffff810e9109                                                      
-> [   60.219794]  ffff88032cdc8f00 000000000000fef0 00000000ffffffff 
-> 000000000000000f                                                      
-> [   60.219798]  000000000000003c ffffffff810703f2 00000000000163a8 
-> ffffffff81070409                                                      
-> [   60.219802] Call Trace:                                                     
->                     [   60.219809]  [<ffffffff810e9109>] ?
-> kmem_cache_size+0x4/0x4                                                        
-> [   60.219813]  [<ffffffff810703f2>] ? smp_call_function+0x1b/0x20             
->                                        [   60.219816]  [<ffffffff81070409>] ?
-> on_each_cpu+0x12/0x35                                                          
-> [   60.219820]  [<ffffffff810eb078>] ? do_tune_cpucache+0xef/0x3d6             
->                                        [   60.219823]  [<ffffffff810eb530>] ?
-> enable_cpucache+0x78/0x9d                                                      
-> [   60.219827]  [<ffffffff810eba3a>] ? kmem_cache_create+0x3fb/0x476           
->                                        [   60.219834]  [<ffffffffa018609c>] ?
-> init_sd+0x9c/0x1000 [sd_mod]                                                    
-> [   60.219837]  [<ffffffffa0186000>] ? 0xffffffffa0185fff                      
->                                        [   60.219840]  [<ffffffffa0186000>] ?
-> 0xffffffffa0185fff                                                             
-> [   60.219844]  [<ffffffff81002085>] ? do_one_initcall+0x75/0x12c              
->                                        [   60.219847]  [<ffffffffa0186000>] ?
-> 0xffffffffa0185fff                                                             
-> [   60.219851]  [<ffffffff81074efd>] ? sys_init_module+0x10c/0x25b             
->                                        [   60.219856]  [<ffffffff813457d2>] ?
-> system_call_fastpath+0x16/0x1b                                                 
-> [   60.219858] Code: 48 89 5a 08 48 89 c6 89 6b 28 48 89 1d 1a 3e 59 00 e8 a9 
-> 04 2d 00 0f ae f0 4c 89 ef ff 15 11 3e 5a 00 80 7c 24 0f 00 75 04 eb 08 <f3> 
-> 90 f6 43 20 01 75 f8 48 83 c4 18 5b 5d 41 5c 41 5d 41 5e 41                     
-> [   60.219880] Call Trace:                                                     
->                     [   60.219884]  [<ffffffff810e9109>] ?
-> kmem_cache_size+0x4/0x4                                                        
-> [   60.219887]  [<ffffffff810703f2>] ? smp_call_function+0x1b/0x20             
->                                        [   60.219890]  [<ffffffff81070409>] ?
-> on_each_cpu+0x12/0x35                                                          
-> [   60.219894]  [<ffffffff810eb078>] ? do_tune_cpucache+0xef/0x3d6             
->                                        [   60.219897]  [<ffffffff810eb530>] ?
-> enable_cpucache+0x78/0x9d                                                      
-> [   60.219901]  [<ffffffff810eba3a>] ? kmem_cache_create+0x3fb/0x476           
->                                        [   60.219906]  [<ffffffffa018609c>] ?
-> init_sd+0x9c/0x1000 [sd_mod]                                                    
-> [   60.219909]  [<ffffffffa0186000>] ? 0xffffffffa0185fff                      
->                                        [   60.219911]  [<ffffffffa0186000>] ?
-> 0xffffffffa0185fff                                                             
-> [   60.219914]  [<ffffffff81002085>] ? do_one_initcall+0x75/0x12c              
->                                        [   60.219917]  [<ffffffffa0186000>] ?
-> 0xffffffffa0185fff                                                             
-> [   60.219920]  [<ffffffff81074efd>] ? sys_init_module+0x10c/0x25b             
->                                        [   60.219924]  [<ffffffff813457d2>] ?
-> system_call_fastpath+0x16/0x1b           
-> 
-> 
-> A collegue tried a bisect, but the offending commit seemed USB related and
-> reverting did not fix the problem for us.
 
-This doesn't look sd related to me.  The failure seems to be because
-smp_call_function got stuck.  That implies either one of the IPIs got
-lost or one of the CPUs is spinning with interrupts off.
+In this path, we are under memory pressure and at least below the low
+watermark. kswapd is woken up and should start reclaiming pages. The
+calling process may enter direct reclaim. As we are paging out and some
+of that could be over the network, the pages are preserved until the
+paging is complete. The problem is that in the context of this patch,
+ALLOC_NO_WATERMARK is not being set for the cases we need so what it
+does at this point makes sense.
 
-I've cc'd linux-kernel in case anyone there knows what might be causing
-this.
+That said, I see your point. The changelog is inconsistent with what
+the code is doing. I updated the desription to read "When this patch is
+applied, pages allocated from below the low watermark are returned with
+page->pfmemalloc set and it is up to the caller to determine how the page
+should be protected."
 
-James
+You are also right in that the series as a whole is actually protecting pages
+below the low watermark and not below the min watermark as stated. I'll add a
+new patch that will be patch 6 in the series that only sets page->pfmemalloc
+when ALLOC_NO_WATERMARKS is used and test that.
 
+One could argue that the patch "mm: Introduce __GFP_MEMALLOC to allow access
+to emergency reserves" should be updated but I think a separate patch will
+be easier to review and also easier to revert if regressions are reported.
 
+Well spotted and thanks for reviewing.
 
+This is not tested but is this what you had in mind? It only sets
+page->pfmemalloc if ALLOC_NO_WATERMARKS was necessary to satisfy the
+allocation. To do that, ALLOC_NO_WATERMARKS has to be stripped from
+__alloc_pages_direct_reclaim and friends but it should goto rebalanace later.
+
+---8<---
+mm: Only set page->pfmemalloc when ALLOC_NO_WATERMARKS was used
+
+__alloc_pages_slowpath() is called when the number of free pages is below
+the low watermark. If the caller is entitled to use ALLOC_NO_WATERMARKS
+then the page will be marked page->pfmemalloc.  This protects more pages
+than are strictly necessary as we only need to protect pages allocated
+below the min watermark (the pfmemalloc reserves).
+
+This patch only sets page->pfmemalloc when ALLOC_NO_WATERMARKS was
+required to allocate the page.
+
+[rientjes@google.com: David noticed the problem during review]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/page_alloc.c |   27 ++++++++++++++-------------
+ 1 file changed, 14 insertions(+), 13 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 3738596..363ca90 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2043,8 +2043,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 
+ 		page = get_page_from_freelist(gfp_mask, nodemask,
+ 				order, zonelist, high_zoneidx,
+-				alloc_flags, preferred_zone,
+-				migratetype);
++				alloc_flags & ~ALLOC_NO_WATERMARKS,
++				preferred_zone, migratetype);
+ 		if (page) {
+ 			preferred_zone->compact_considered = 0;
+ 			preferred_zone->compact_defer_shift = 0;
+@@ -2124,8 +2124,8 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ retry:
+ 	page = get_page_from_freelist(gfp_mask, nodemask, order,
+ 					zonelist, high_zoneidx,
+-					alloc_flags, preferred_zone,
+-					migratetype);
++					alloc_flags & ~ALLOC_NO_WATERMARKS,
++					preferred_zone, migratetype);
+ 
+ 	/*
+ 	 * If an allocation failed after direct reclaim, it could be because
+@@ -2296,8 +2296,17 @@ rebalance:
+ 		page = __alloc_pages_high_priority(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+ 				preferred_zone, migratetype);
+-		if (page)
++		if (page) {
++			/*
++			 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
++			 * necessary to allocate the page. The expectation is
++			 * that the caller is taking steps that will free more
++			 * memory. The caller should avoid the page being used
++			 * for !PFMEMALLOC purposes.
++			 */
++			page->pfmemalloc = true;
+ 			goto got_pg;
++		}
+ 	}
+ 
+ 	/* Atomic allocations - we can't balance anything */
+@@ -2414,14 +2423,6 @@ nopage:
+ 	warn_alloc_failed(gfp_mask, order, NULL);
+ 	return page;
+ got_pg:
+-	/*
+-	 * page->pfmemalloc is set when the caller had PFMEMALLOC set, is
+-	 * been OOM killed or specified __GFP_MEMALLOC. The expectation is
+-	 * that the caller is taking steps that will free more memory. The
+-	 * caller should avoid the page being used for !PFMEMALLOC purposes.
+-	 */
+-	page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
+-
+ 	if (kmemcheck_enabled)
+ 		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
+ 
