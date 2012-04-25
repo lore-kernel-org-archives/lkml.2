@@ -1,69 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab2DYIYW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 04:24:22 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60561 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755425Ab2DYIYU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 04:24:20 -0400
-Date: Wed, 25 Apr 2012 09:24:18 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] twl-regulator: Allow CONFIG_TWL4030_ALLOW_UNSUPPORTED to
- be requested.
-Message-ID: <20120425082417.GE3195@opensource.wolfsonmicro.com>
-References: <20120425122924.0f08f5dc@notabene.brown>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="19uQFt6ulqmgNgg1"
-Content-Disposition: inline
-In-Reply-To: <20120425122924.0f08f5dc@notabene.brown>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755581Ab2DYIZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 04:25:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14975 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754840Ab2DYIXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 04:23:46 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 1/4] ftrace: Remove unused code ftrace related code
+Date: Wed, 25 Apr 2012 10:23:36 +0200
+Message-Id: <1335342219-2782-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1335342219-2782-1-git-send-email-jolsa@redhat.com>
+References: <1335342219-2782-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Removing unused functions:
+  ftrace_rec_iter_record
+  ftrace_rec_iter_next
+  ftrace_rec_iter_start
+  ftrace_location
 
---19uQFt6ulqmgNgg1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ include/linux/ftrace.h |    7 ---
+ kernel/trace/ftrace.c  |  100 ------------------------------------------------
+ 2 files changed, 0 insertions(+), 107 deletions(-)
 
-On Wed, Apr 25, 2012 at 12:29:24PM +1000, NeilBrown wrote:
->=20
-> twl-regulator.c changes behaviour slightly depending on
->   CONFIG_TWL4030_ALLOW_UNSUPPORTED
-> However that config option is not currently listed in any Kconfig
-> file.
-> So add the option to allow it to be chosen.
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 72a6cab..49596e3 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -280,16 +280,9 @@ enum {
+ 
+ void arch_ftrace_update_code(int command);
+ 
+-struct ftrace_rec_iter;
+-
+-struct ftrace_rec_iter *ftrace_rec_iter_start(void);
+-struct ftrace_rec_iter *ftrace_rec_iter_next(struct ftrace_rec_iter *iter);
+-struct dyn_ftrace *ftrace_rec_iter_record(struct ftrace_rec_iter *iter);
+-
+ int ftrace_update_record(struct dyn_ftrace *rec, int enable);
+ int ftrace_test_record(struct dyn_ftrace *rec, int enable);
+ void ftrace_run_stop_machine(int command);
+-int ftrace_location(unsigned long ip);
+ 
+ extern ftrace_func_t ftrace_trace_function;
+ 
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 0fa92f6..6e6c51a 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1393,34 +1393,6 @@ static int ftrace_cmp_recs(const void *a, const void *b)
+ 	return 0;
+ }
+ 
+-/**
+- * ftrace_location - return true if the ip giving is a traced location
+- * @ip: the instruction pointer to check
+- *
+- * Returns 1 if @ip given is a pointer to a ftrace location.
+- * That is, the instruction that is either a NOP or call to
+- * the function tracer. It checks the ftrace internal tables to
+- * determine if the address belongs or not.
+- */
+-int ftrace_location(unsigned long ip)
+-{
+-	struct ftrace_page *pg;
+-	struct dyn_ftrace *rec;
+-	struct dyn_ftrace key;
+-
+-	key.ip = ip;
+-
+-	for (pg = ftrace_pages_start; pg; pg = pg->next) {
+-		rec = bsearch(&key, pg->records, pg->index,
+-			      sizeof(struct dyn_ftrace),
+-			      ftrace_cmp_recs);
+-		if (rec)
+-			return 1;
+-	}
+-
+-	return 0;
+-}
+-
+ static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
+ 				     int filter_hash,
+ 				     bool inc)
+@@ -1717,78 +1689,6 @@ static void ftrace_replace_code(int update)
+ 	} while_for_each_ftrace_rec();
+ }
+ 
+-struct ftrace_rec_iter {
+-	struct ftrace_page	*pg;
+-	int			index;
+-};
+-
+-/**
+- * ftrace_rec_iter_start, start up iterating over traced functions
+- *
+- * Returns an iterator handle that is used to iterate over all
+- * the records that represent address locations where functions
+- * are traced.
+- *
+- * May return NULL if no records are available.
+- */
+-struct ftrace_rec_iter *ftrace_rec_iter_start(void)
+-{
+-	/*
+-	 * We only use a single iterator.
+-	 * Protected by the ftrace_lock mutex.
+-	 */
+-	static struct ftrace_rec_iter ftrace_rec_iter;
+-	struct ftrace_rec_iter *iter = &ftrace_rec_iter;
+-
+-	iter->pg = ftrace_pages_start;
+-	iter->index = 0;
+-
+-	/* Could have empty pages */
+-	while (iter->pg && !iter->pg->index)
+-		iter->pg = iter->pg->next;
+-
+-	if (!iter->pg)
+-		return NULL;
+-
+-	return iter;
+-}
+-
+-/**
+- * ftrace_rec_iter_next, get the next record to process.
+- * @iter: The handle to the iterator.
+- *
+- * Returns the next iterator after the given iterator @iter.
+- */
+-struct ftrace_rec_iter *ftrace_rec_iter_next(struct ftrace_rec_iter *iter)
+-{
+-	iter->index++;
+-
+-	if (iter->index >= iter->pg->index) {
+-		iter->pg = iter->pg->next;
+-		iter->index = 0;
+-
+-		/* Could have empty pages */
+-		while (iter->pg && !iter->pg->index)
+-			iter->pg = iter->pg->next;
+-	}
+-
+-	if (!iter->pg)
+-		return NULL;
+-
+-	return iter;
+-}
+-
+-/**
+- * ftrace_rec_iter_record, get the record at the iterator location
+- * @iter: The current iterator location
+- *
+- * Returns the record that the current @iter is at.
+- */
+-struct dyn_ftrace *ftrace_rec_iter_record(struct ftrace_rec_iter *iter)
+-{
+-	return &iter->pg->records[iter->index];
+-}
+-
+ static int
+ ftrace_code_disable(struct module *mod, struct dyn_ftrace *rec)
+ {
+-- 
+1.7.1
 
-Shouldn't this be hidden behind _EXPERIMENTAL and/or enabled by the
-board in platform data/device tree?  Kconfig feels like the wrong place
-to do this sort of configuration.
-
---19uQFt6ulqmgNgg1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPl7RvAAoJEBus8iNuMP3dyTUP/iZXjsEorYalpERjNH0au3uO
-OnEpEi0Ufv86EdecYYS8Vv09OUe36V9HPPQiiuLPa4rEsb0YzGEQ3xupxPrzksPR
-my9mwllqvna7VFvM7CrWZjZt94wl6y2fci64pKk77VYP95U9Vq49kizhbR7UoSvk
-GYUVvNKhU+cTLAa0sHQsHJwv2/OJtL7zAjuuIs3WL4ekPSGfHCGvmHhTpx3FwcLx
-Iw/zMP4C5y7RzV7XbDlSA7L3VU/ovCtMSC0beC3jyDnl6e5blXhrUjLs4q7G82wp
-Wees3uaMvkYOozNXdxVp6yywXXtedC2DZilrjVjGiBE6He91qNJ8s6UtERsJaX7T
-TTIK1SO+dKknEaYo9w1L4aZoDppe+5KwSCBDnR1k79uMMzIQpA7FG9k7eIujUYQY
-zC2JRkhR/h3qhhQxZ3i6Bvpr82Q72cpsJBkYbhSWNhbleJo98cTuVfsNriwFzLf3
-RhhKwVfxcHWaRB+Pk8bUY/MJUqIg2CX1hyUuX6Qbjdw9NaOG7TGvpih42FTfL7hF
-KfjyUlr9BA0gXqXdBEzCDZWFvCFvgV+SgBAxTqJGEXO0Q7FVIv4XDm6e3W4ONOxw
-XEJj5oPQgV6xcd+5zebEz650PJ8ssRBjUgGlYy+v1T1Yvoi1/gf8fWZJjF7mqoqv
-Ki1ew8CK4svr+LHlrSCI
-=uaPy
------END PGP SIGNATURE-----
-
---19uQFt6ulqmgNgg1--
