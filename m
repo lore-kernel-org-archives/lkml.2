@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758563Ab2DYLKb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 07:10:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19958 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758550Ab2DYLKa (ORCPT
+	id S1758484Ab2DYLTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 07:19:45 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34265 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596Ab2DYLTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 07:10:30 -0400
-X-Authority-Analysis: v=2.0 cv=XbcLPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=9oLMtTzusXUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=hD80L64hAAAA:8 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=UnoOuXimfdPuiC4A0coA:9 a=PUjeQqilurYA:10 a=v3rLFGiuRE8A:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1335352227.28106.152.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] tracing: Prevent wasting time evaluating parameters in
- trace_preempt_on/off
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Minho Ban <mhban@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Date: Wed, 25 Apr 2012 07:10:27 -0400
-In-Reply-To: <4F978CAC.6060408@samsung.com>
-References: <4F978CAC.6060408@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 25 Apr 2012 07:19:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120425094934.GA17631@shlinux2.ap.freescale.net>
+References: <1335260023-15859-1-git-send-email-b29396@freescale.com>
+	<4F96F847.508@wwwdotorg.org>
+	<20120425094934.GA17631@shlinux2.ap.freescale.net>
+Date: Wed, 25 Apr 2012 13:19:43 +0200
+Message-ID: <CACRpkdYjVYsM-Qo7NWKx5Mr3rAmp12G_wAtkmNkkqNyX=ZeKUw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] pinctrl: add pinctrl_provide_dummies interface for
+ platforms to use
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dong Aisheng <aisheng.dong@freescale.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-25 at 14:33 +0900, Minho Ban wrote:
-> This fixes spending time for evaluating parameters in trace_preempt_on/off when
-> the tracer config is off.
-> 
-> The patch mainly inspired by Steven Rostedt, thanks Steven.
-> 
-> Signed-off-by: Minho Ban <mhban@samsung.com>
+On Wed, Apr 25, 2012 at 11:49 AM, Dong Aisheng
+<aisheng.dong@freescale.com> wrote:
+> On Wed, Apr 25, 2012 at 03:00:23AM +0800, Stephen Warren wrote:
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+>> The only thing that should be calling pinctrl_request_gpio() is a GPIO
+>> driver. It should only be calling it for the GPIOs it manages. I'd
+>> expect that if a platform's pinctrl driver was not yet written to
+>> support the GPIO functionality, then the GPIO driver would not be
+>> calling this function.
+>>
+> Hmm, pinctrl gpio is in the same situation as pinctrl state that gpio
+> driver may be shared between several platforms, with pinctrl support
+> or not.
 
--- Steve
+I think it's mostly safe to assume that either:
 
+- pinctrl calls from GPIO drivers gets stubbed out totally due to
+  CONFIG_PINCTRL not being selected
 
+or:
+
+- You need to pass a token through platform data to the
+  GPIO driver telling it whether it needs to request pins for
+  it's GPIOs or not. Just a bool should work fine?
+
+Linus Walleij
