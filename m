@@ -1,45 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699Ab2DYIrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 04:47:19 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:44599 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab2DYIrS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 04:47:18 -0400
-Date: Wed, 25 Apr 2012 11:47:02 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] Extcon: check for allocation failure
-Message-ID: <20120425084702.GB12799@elgon.mountain>
+	id S1756129Ab2DYIrm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 04:47:42 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:49975 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755903Ab2DYIri (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Wed, 25 Apr 2012 04:47:38 -0400
+Message-ID: <4F97BA13.8060705@suse.com>
+Date: Wed, 25 Apr 2012 14:17:15 +0530
+From: Suresh Jayaraman <sjayaraman@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, Steve French <smfrench@gmail.com>,
+        ctalbott@google.com, rni@google.com, andrea@betterlinux.com,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        lsf@lists.linux-foundation.org, linux-mm@kvack.org, jmoyer@redhat.com,
+        lizefan@huawei.com, linux-fsdevel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [Lsf] [RFC] writeback and cgroup
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com> <20120404145134.GC12676@redhat.com> <CAH2r5mtwQa0Uu=_Yd2JywVJXA=OMGV43X_OUfziC-yeVy9BGtQ@mail.gmail.com> <20120404185605.GC29686@dhcp-172-17-108-109.mtv.corp.google.com> <20120404191918.GK12676@redhat.com>
+In-Reply-To: <20120404191918.GK12676@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return -ENOMEM if the kmalloc() fails.
+On 04/05/2012 12:49 AM, Vivek Goyal wrote:
+> On Wed, Apr 04, 2012 at 11:56:05AM -0700, Tejun Heo wrote:
+>> On Wed, Apr 04, 2012 at 10:36:04AM -0500, Steve French wrote:
+>>>> How do you take care of thorottling IO to NFS case in this model? Current
+>>>> throttling logic is tied to block device and in case of NFS, there is no
+>>>> block device.
+>>>
+>>> Similarly smb2 gets congestion info (number of "credits") returned from
+>>> the server on every response - but not sure why congestion
+>>> control is tied to the block device when this would create
+>>> problems for network file systems
+>>
+>> I hope the previous replies answered this.  It's about writeback
+>> getting pressure from bdi and isn't restricted to block devices.
+> 
+> So the controlling knobs for network filesystems will be very different
+> as current throttling knobs are per device (and not per bdi). So
+> presumably there will be some throttling logic in network layer (network
+> tc), and that should communicate the back pressure.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Tried to figure out potential use-case scenarios for controlling Network
+I/O resource from netfs POV (which ideally should guide the interfaces).
 
-diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
-index 3bc4b8a..fe5a038 100644
---- a/drivers/extcon/extcon_class.c
-+++ b/drivers/extcon/extcon_class.c
-@@ -621,6 +621,8 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
- 	}
- 
- 	edev->dev = kzalloc(sizeof(struct device), GFP_KERNEL);
-+	if (!edev->dev)
-+		return -ENOMEM;
- 	edev->dev->parent = dev;
- 	edev->dev->class = extcon_class;
- 	edev->dev->release = extcon_dev_release;
+- Is finer grained control of network I/O is desirable/useful or being
+  able to control bandwidth at per server level is sufficient? Consider
+  the case where there are different NFS volumes mounted from the same
+  NFS/CIFS server,
+
+    /backup
+    /missioncritical_data
+    /apps
+    /documents
+
+  admin being able to set bandwidth limits to the each of these
+  mounts based on how important would be a useful feature. If we try to
+  build the logic in the network layer using tc then this still
+  wouldn't be possible to limit the tasks that are writing to more than
+  one volumes? (need some logic in netfs as well?). Network filesystem
+  clients typically are not bothered much about the actual device but
+  about the exported share. So it appears that the controlling knobs
+  could be different for netfs.
+
+- Provide minimimum guarantees for the Network I/O to keep going
+  irrespective of the overloaded workload situations. i.e. operations
+  that are local to the machine should not hamper Network I/O or
+  operations that are happening on one mount should not impact
+  operations that are happening on another mount.
+
+  IIRC, while we currently would be able to limit maximum usage, we
+  don't guarantee the minimum quantity of the resource that would be
+  available in general for all controllers. This might be important from
+  QoS guarantee POV.
+
+- What are the other use-cases where limiting Network I/O would be
+  useful?
+
+> I have tried limiting network traffic on NFS using network controller
+> and tc but that did not help for variety of reasons.
+> 
+
+A quick look at the current net_tls implementation shows that it allows
+setting priorities but doesn't seem to provide ways to limit the
+throughput? Or is it still possible?
+If not did you use a out-of-tree implementation to test this?
+
+> - We again have the problem of losing submitter's context down the layer.
+
+If the network layer is cgroup aware why this would be a problem?
+
+> - We have interesting TCP/IP sequencing issues. I don't have the details
+>   but if you throttle traffic from one group, it kind of led to some 
+>   kind of multiple re-transmissions from server for ack due to some
+>   sequence number issues. Sorry, I am short on details as it was long back
+>   and nfs guys told me that pNFS might help here.
+> 
+>   The basic problem seemed to that that if you multiplex traffic from
+>   all cgroups on single tcp/ip session and then choke IO suddenly from
+>   one of them, that was leading to some sequence number issues and led
+>   to really sucky performance.
+> 
+> So something to keep in mind while coming up ways for how to implement
+> throttling for network file systems.
+> 
+
+
+Thanks
+Suresh
