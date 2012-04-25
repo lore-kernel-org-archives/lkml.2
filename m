@@ -1,117 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab2DYIrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 04:47:42 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:49975 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903Ab2DYIri (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Wed, 25 Apr 2012 04:47:38 -0400
-Message-ID: <4F97BA13.8060705@suse.com>
-Date: Wed, 25 Apr 2012 14:17:15 +0530
-From: Suresh Jayaraman <sjayaraman@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, Steve French <smfrench@gmail.com>,
-        ctalbott@google.com, rni@google.com, andrea@betterlinux.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        lsf@lists.linux-foundation.org, linux-mm@kvack.org, jmoyer@redhat.com,
-        lizefan@huawei.com, linux-fsdevel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [Lsf] [RFC] writeback and cgroup
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com> <20120404145134.GC12676@redhat.com> <CAH2r5mtwQa0Uu=_Yd2JywVJXA=OMGV43X_OUfziC-yeVy9BGtQ@mail.gmail.com> <20120404185605.GC29686@dhcp-172-17-108-109.mtv.corp.google.com> <20120404191918.GK12676@redhat.com>
-In-Reply-To: <20120404191918.GK12676@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756062Ab2DYIs0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 04:48:26 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:38078 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754844Ab2DYIsY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 04:48:24 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, stern@rowland.harvard.edu,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v6 1/3] USB: Add driver for NXP ISP1301 USB transceiver
+Date: Wed, 25 Apr 2012 10:47:51 +0200
+Message-Id: <1335343673-7504-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2012 12:49 AM, Vivek Goyal wrote:
-> On Wed, Apr 04, 2012 at 11:56:05AM -0700, Tejun Heo wrote:
->> On Wed, Apr 04, 2012 at 10:36:04AM -0500, Steve French wrote:
->>>> How do you take care of thorottling IO to NFS case in this model? Current
->>>> throttling logic is tied to block device and in case of NFS, there is no
->>>> block device.
->>>
->>> Similarly smb2 gets congestion info (number of "credits") returned from
->>> the server on every response - but not sure why congestion
->>> control is tied to the block device when this would create
->>> problems for network file systems
->>
->> I hope the previous replies answered this.  It's about writeback
->> getting pressure from bdi and isn't restricted to block devices.
-> 
-> So the controlling knobs for network filesystems will be very different
-> as current throttling knobs are per device (and not per bdi). So
-> presumably there will be some throttling logic in network layer (network
-> tc), and that should communicate the back pressure.
+This very-lowlevel driver registers the NXP ISP1301 chip via the I2C subsystem.
+The chip is the USB transceiver shared by ohci-nxp, lpc32xx_udc (gadget) and
+isp1301_omap.
 
-Tried to figure out potential use-case scenarios for controlling Network
-I/O resource from netfs POV (which ideally should guide the interfaces).
+Following patches let the respective USB host and gadget drivers use this
+driver, instead of duplicating ISP1301 handling.
 
-- Is finer grained control of network I/O is desirable/useful or being
-  able to control bandwidth at per server level is sufficient? Consider
-  the case where there are different NFS volumes mounted from the same
-  NFS/CIFS server,
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-    /backup
-    /missioncritical_data
-    /apps
-    /documents
+---
 
-  admin being able to set bandwidth limits to the each of these
-  mounts based on how important would be a useful feature. If we try to
-  build the logic in the network layer using tc then this still
-  wouldn't be possible to limit the tasks that are writing to more than
-  one volumes? (need some logic in netfs as well?). Network filesystem
-  clients typically are not bothered much about the actual device but
-  about the exported share. So it appears that the controlling knobs
-  could be different for netfs.
+Applies to v3.4-rc3
 
-- Provide minimimum guarantees for the Network I/O to keep going
-  irrespective of the overloaded workload situations. i.e. operations
-  that are local to the machine should not hamper Network I/O or
-  operations that are happening on one mount should not impact
-  operations that are happening on another mount.
+Changes since v5:
+* Removed DRV_VERSION
+* Use EXPORT_SYMBOL_GPL()
+* Removed FSF address
 
-  IIRC, while we currently would be able to limit maximum usage, we
-  don't guarantee the minimum quantity of the resource that would be
-  available in general for all controllers. This might be important from
-  QoS guarantee POV.
+Thanks to GregKH for reviewing v5!
 
-- What are the other use-cases where limiting Network I/O would be
-  useful?
+ Documentation/devicetree/bindings/usb/isp1301.txt |   25 ++++++
+ drivers/usb/Kconfig                               |    2 
+ drivers/usb/Makefile                              |    1 
+ drivers/usb/phy/Kconfig                           |   17 ++++
+ drivers/usb/phy/Makefile                          |    7 +
+ drivers/usb/phy/isp1301.c                         |   77 +++++++++++++++++++++
+ include/linux/usb/isp1301.h                       |   80 ++++++++++++++++++++++
+ 7 files changed, 209 insertions(+)
 
-> I have tried limiting network traffic on NFS using network controller
-> and tc but that did not help for variety of reasons.
-> 
-
-A quick look at the current net_tls implementation shows that it allows
-setting priorities but doesn't seem to provide ways to limit the
-throughput? Or is it still possible?
-If not did you use a out-of-tree implementation to test this?
-
-> - We again have the problem of losing submitter's context down the layer.
-
-If the network layer is cgroup aware why this would be a problem?
-
-> - We have interesting TCP/IP sequencing issues. I don't have the details
->   but if you throttle traffic from one group, it kind of led to some 
->   kind of multiple re-transmissions from server for ack due to some
->   sequence number issues. Sorry, I am short on details as it was long back
->   and nfs guys told me that pNFS might help here.
-> 
->   The basic problem seemed to that that if you multiplex traffic from
->   all cgroups on single tcp/ip session and then choke IO suddenly from
->   one of them, that was leading to some sequence number issues and led
->   to really sucky performance.
-> 
-> So something to keep in mind while coming up ways for how to implement
-> throttling for network file systems.
-> 
-
-
-Thanks
-Suresh
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/usb/isp1301.txt
+@@ -0,0 +1,25 @@
++* NXP ISP1301 USB transceiver
++
++Required properties:
++- compatible: must be "nxp,isp1301"
++- reg: I2C address of the ISP1301 device
++
++Optional properties of devices using ISP1301:
++- transceiver: phandle of isp1301 - this helps the ISP1301 driver to find the
++               ISP1301 instance associated with the respective USB driver
++
++Example:
++
++	isp1301: usb-transceiver@2c {
++		compatible = "nxp,isp1301";
++		reg = <0x2c>;
++	};
++
++	usbd@31020000 {
++		compatible = "nxp,lpc3220-udc";
++		reg = <0x31020000 0x300>;
++		interrupt-parent = <&mic>;
++		interrupts = <0x3d 0>, <0x3e 0>, <0x3c 0>, <0x3a 0>;
++		transceiver = <&isp1301>;
++		status = "okay";
++	};
+--- linux-2.6.orig/drivers/usb/Kconfig
++++ linux-2.6/drivers/usb/Kconfig
+@@ -177,6 +177,8 @@ source "drivers/usb/serial/Kconfig"
+ 
+ source "drivers/usb/misc/Kconfig"
+ 
++source "drivers/usb/phy/Kconfig"
++
+ source "drivers/usb/atm/Kconfig"
+ 
+ source "drivers/usb/gadget/Kconfig"
+--- linux-2.6.orig/drivers/usb/Makefile
++++ linux-2.6/drivers/usb/Makefile
+@@ -46,6 +46,7 @@ obj-$(CONFIG_USB_MICROTEK)	+= image/
+ obj-$(CONFIG_USB_SERIAL)	+= serial/
+ 
+ obj-$(CONFIG_USB)		+= misc/
++obj-$(CONFIG_USB)		+= phy/
+ obj-$(CONFIG_EARLY_PRINTK_DBGP)	+= early/
+ 
+ obj-$(CONFIG_USB_ATM)		+= atm/
+--- /dev/null
++++ linux-2.6/drivers/usb/phy/Kconfig
+@@ -0,0 +1,17 @@
++#
++# Physical Layer USB driver configuration
++#
++comment "USB Physical Layer drivers"
++	depends on USB
++
++config USB_ISP1301
++	tristate "NXP ISP1301 USB transceiver support"
++	depends on USB
++	depends on I2C
++	help
++	  Say Y here to add support for the NXP ISP1301 USB transceiver driver.
++	  This chip is typically used as USB transceiver for USB host, gadget
++	  and OTG drivers (to be selected separately).
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called isp1301.
+--- /dev/null
++++ linux-2.6/drivers/usb/phy/Makefile
+@@ -0,0 +1,7 @@
++#
++# Makefile for physical layer USB drivers
++#
++
++ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
++
++obj-$(CONFIG_USB_ISP1301)		+= isp1301.o
+--- /dev/null
++++ linux-2.6/drivers/usb/phy/isp1301.c
+@@ -0,0 +1,77 @@
++/*
++ * NXP ISP1301 USB transceiver driver
++ *
++ * Copyright (C) 2012 Roland Stigge
++ *
++ * Author: Roland Stigge <stigge@antcom.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/i2c.h>
++
++#define DRV_NAME		"isp1301"
++
++#define ISP1301_I2C_ADDR	0x2C
++
++static const unsigned short normal_i2c[] = {
++	ISP1301_I2C_ADDR, ISP1301_I2C_ADDR + 1, I2C_CLIENT_END
++};
++
++static const struct i2c_device_id isp1301_id[] = {
++	{ "isp1301", 0 },
++	{ }
++};
++
++static struct i2c_client *isp1301_i2c_client;
++
++static int isp1301_probe(struct i2c_client *client,
++			 const struct i2c_device_id *i2c_id)
++{
++	isp1301_i2c_client = client;
++	return 0;
++}
++
++static int isp1301_remove(struct i2c_client *client)
++{
++	return 0;
++}
++
++static struct i2c_driver isp1301_driver = {
++	.driver = {
++		.name = DRV_NAME,
++	},
++	.probe = isp1301_probe,
++	.remove = isp1301_remove,
++	.id_table = isp1301_id,
++};
++
++module_i2c_driver(isp1301_driver);
++
++static int match(struct device *dev, void *data)
++{
++	struct device_node *node = (struct device_node *)data;
++	return (dev->of_node == node) &&
++		(dev->driver == &isp1301_driver.driver);
++}
++
++struct i2c_client *isp1301_get_client(struct device_node *node)
++{
++	if (node) { /* reference of ISP1301 I2C node via DT */
++		struct device *dev = bus_find_device(&i2c_bus_type, NULL,
++						     node, match);
++		if (!dev)
++			return NULL;
++		return to_i2c_client(dev);
++	} else { /* non-DT: only one ISP1301 chip supported */
++		return isp1301_i2c_client;
++	}
++}
++EXPORT_SYMBOL_GPL(isp1301_get_client);
++
++MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
++MODULE_DESCRIPTION("NXP ISP1301 USB transceiver driver");
++MODULE_LICENSE("GPL");
+--- /dev/null
++++ linux-2.6/include/linux/usb/isp1301.h
+@@ -0,0 +1,80 @@
++/*
++ * NXP ISP1301 USB transceiver driver
++ *
++ * Copyright (C) 2012 Roland Stigge <stigge@antcom.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __LINUX_USB_ISP1301_H
++#define __LINUX_USB_ISP1301_H
++
++#include <linux/of.h>
++
++/* I2C Register definitions: */
++
++#define ISP1301_I2C_MODE_CONTROL_1	0x04	/* u8 read, set, +1 clear */
++
++#define MC1_SPEED_REG			(1 << 0)
++#define MC1_SUSPEND_REG			(1 << 1)
++#define MC1_DAT_SE0			(1 << 2)
++#define MC1_TRANSPARENT			(1 << 3)
++#define MC1_BDIS_ACON_EN		(1 << 4)
++#define MC1_OE_INT_EN			(1 << 5)
++#define MC1_UART_EN			(1 << 6)
++#define MC1_MASK			0x7f
++
++#define ISP1301_I2C_MODE_CONTROL_2	0x12	/* u8 read, set, +1 clear */
++
++#define MC2_GLOBAL_PWR_DN		(1 << 0)
++#define MC2_SPD_SUSP_CTRL		(1 << 1)
++#define MC2_BI_DI			(1 << 2)
++#define MC2_TRANSP_BDIR0		(1 << 3)
++#define MC2_TRANSP_BDIR1		(1 << 4)
++#define MC2_AUDIO_EN			(1 << 5)
++#define MC2_PSW_EN			(1 << 6)
++#define MC2_EN2V7			(1 << 7)
++
++#define ISP1301_I2C_OTG_CONTROL_1	0x06	/* u8 read, set, +1 clear */
++
++#define OTG1_DP_PULLUP			(1 << 0)
++#define OTG1_DM_PULLUP			(1 << 1)
++#define OTG1_DP_PULLDOWN		(1 << 2)
++#define OTG1_DM_PULLDOWN		(1 << 3)
++#define OTG1_ID_PULLDOWN		(1 << 4)
++#define OTG1_VBUS_DRV			(1 << 5)
++#define OTG1_VBUS_DISCHRG		(1 << 6)
++#define OTG1_VBUS_CHRG			(1 << 7)
++
++#define ISP1301_I2C_OTG_CONTROL_2	0x10	/* u8 readonly */
++
++#define OTG_B_SESS_END			(1 << 6)
++#define OTG_B_SESS_VLD			(1 << 7)
++
++#define ISP1301_I2C_INTERRUPT_SOURCE	0x8
++#define ISP1301_I2C_INTERRUPT_LATCH	0xA
++#define ISP1301_I2C_INTERRUPT_FALLING	0xC
++#define ISP1301_I2C_INTERRUPT_RISING	0xE
++
++#define INT_VBUS_VLD			(1 << 0)
++#define INT_SESS_VLD			(1 << 1)
++#define INT_DP_HI			(1 << 2)
++#define INT_ID_GND			(1 << 3)
++#define INT_DM_HI			(1 << 4)
++#define INT_ID_FLOAT			(1 << 5)
++#define INT_BDIS_ACON			(1 << 6)
++#define INT_CR_INT			(1 << 7)
++
++#define ISP1301_I2C_REG_CLEAR_ADDR	1	/* Register Address Modifier */
++
++struct i2c_client *isp1301_get_client(struct device_node *node);
++
++#endif /* __LINUX_USB_ISP1301_H */
