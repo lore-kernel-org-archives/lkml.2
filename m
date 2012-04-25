@@ -1,90 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab2DYWts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 18:49:48 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54858 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932379Ab2DYWtq convert rfc822-to-8bit (ORCPT
+	id S932437Ab2DYW4V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 18:56:21 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:43190
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932352Ab2DYW4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 18:49:46 -0400
+	Wed, 25 Apr 2012 18:56:20 -0400
+X-SpamScore: 0
+X-BigFish: PS0(zzzz1202hzz8275bhz2fh2a8h668h839hd24he5bh)
+X-Forefront-Antispam-Report: CIP:157.55.49.13;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0802HT003.namprd08.prod.outlook.com;RD:none;EFVD:NLI
+From: Rupesh Gujare <rgujare@ozmodevices.com>
+To: <gregkh@linuxfoundation.org>, <devel@driverdev.osuosl.org>
+CC: <linux-kernel@vger.kernel.org>, Rupesh Gujare <rgujare@ozmodevices.com>,
+        Chris Kelly <ckelly@ozmodevices.com>
+Subject: [PATCH] Fix bug where kfree is called twice.
+Date: Wed, 25 Apr 2012 23:54:58 +0100
+Message-ID: <1335394498-5046-1-git-send-email-rgujare@ozmodevices.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUVHO-7SXq3+qz1Gh3yrWtT+R15iiRG0DCLbcKn2PchVHA@mail.gmail.com>
-References: <CA+icZUWVwUr19xL0Dn5mHnZjQaVjj6VYD3BMMktEWO0vgoZEXw@mail.gmail.com>
- <CA+icZUUGFaz0c-tHa9EGUxZaxPj_M=zrE+kE0dv5UMoA6GyN3w@mail.gmail.com>
- <CAErSpo5vZSf_EZr6-XnAA8N2Luv6rA92YtZsidWZCZ8rarkPUQ@mail.gmail.com>
- <CA+icZUU+asnLWAevwqKBgnvrmKNitL8-0+8ijDii4pt9VsjspA@mail.gmail.com>
- <94F2FBAB4432B54E8AACC7DFDE6C92E346A77806@ORSMSX101.amr.corp.intel.com>
- <CAErSpo5E3E=A+EEAZjmkYc8x3B==9ZtYufNaG4t8xQegtOfxfA@mail.gmail.com>
- <94F2FBAB4432B54E8AACC7DFDE6C92E346A77908@ORSMSX101.amr.corp.intel.com>
- <CAErSpo7Yj6_QZCSeNKXksiYayV53gkUubVBTnRRu8z1pyWeMQQ@mail.gmail.com> <CA+icZUVHO-7SXq3+qz1Gh3yrWtT+R15iiRG0DCLbcKn2PchVHA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 25 Apr 2012 16:49:24 -0600
-Message-ID: <CAErSpo4Jsx5C2JG6qtU=qnA6RFNH+H4mDajEuKgAFkAodakF3Q@mail.gmail.com>
-Subject: Re: Warning: pnp 00:0b: can't evaluate _CRS: 12311
-To: sedat.dilek@gmail.com
-Cc: "Moore, Robert" <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Lin, Ming M" <ming.m.lin@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain
+X-Originating-IP: [2.126.200.180]
+X-OriginatorOrg: ozmodevices.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 4:06 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> On Wed, Apr 25, 2012 at 11:57 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Wed, Apr 25, 2012 at 3:39 PM, Moore, Robert <robert.moore@intel.com> wrote:
->>> This disassembly might make more sense. From the looks of the ASL, several of the address base and length fields are being updated dynamically.  I don't see anything that would corrupt a resource descriptor, however.
->>>
->>>
->>> Are we certain that the ACPI Error and pnp messages are directly related to the PNP0C02 device ID?
->>>
->>> [    0.293699] system 00:0a: Plug and Play ACPI device, IDs PNP0c02 (active)
->>> [    0.294032] ACPI Error: Invalid/unsupported resource descriptor: Type 0x00 (20120320/utresrc-650)
->>> [    0.294037] pnp 00:0b: can't evaluate _CRS: 12311
->>
->> Oh, I'm sorry, I just wasted your time.  I didn't notice the 0a/0b
->> mismatch.  You're right, the _CRS error is on 00:0b, and we don't know
->> what the path is or the PNP ID for 00:0b.
->>
->> Sedat, can you run "grep . /sys/bus/pnp/devices/*/id" please?  That
->> will at least show us the PNP ID of device 00:0b.
->>
->> Bjorn
->
-> Here we go:
-> ...
-> /sys/bus/pnp/devices/00:0b/id:PNP0c01
+Signed-off-by: Rupesh Gujare <rgujare@ozmodevices.com>
+Signed-off-by: Chris Kelly <ckelly@ozmodevices.com>
+---
+ drivers/staging/ozwpan/ozpd.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-There's only one PNP0C01 device:
+diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
+index 2b45d3d..04cd57f 100644
+--- a/drivers/staging/ozwpan/ozpd.c
++++ b/drivers/staging/ozwpan/ozpd.c
+@@ -383,8 +383,6 @@ static void oz_tx_frame_free(struct oz_pd *pd, struct oz_tx_frame *f)
+ 		pd->tx_pool = &f->link;
+ 		pd->tx_pool_count++;
+ 		f = 0;
+-	} else {
+-		kfree(f);
+ 	}
+ 	spin_unlock_bh(&pd->tx_frame_lock);
+ 	if (f)
+-- 
+1.7.5.4
 
-            Device (^^MEM2)
-            {
-                Name (_HID, EisaId ("PNP0C01"))
-                Name (_UID, 0x02)
-                Name (CRS, ResourceTemplate ()
-                {
-                    Memory32Fixed (ReadWrite,
-                        0x20000000,         // Address Base
-                        0x00200000,         // Address Length
-                        )
-                    Memory32Fixed (ReadWrite,
-                        0x40000000,         // Address Base
-                        0x00200000,         // Address Length
-                        )
-                })
-                Method (_CRS, 0, NotSerialized)
-                {
-                    If (IGDS)
-                    {
-                        Return (CRS)
-                    }
-                }
-            }
 
-I don't know whether this is legal or not.  If "(!IGDS)", _CRS
-apparently don't return anything at all, and I don't know what happens
-then.
