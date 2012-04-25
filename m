@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758755Ab2DYCFF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 22:05:05 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59667 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757318Ab2DYCFE (ORCPT
+	id S1758760Ab2DYCGN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 22:06:13 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52247 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757318Ab2DYCGM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 22:05:04 -0400
-Message-ID: <1335319498.30909.6.camel@phoenix>
-Subject: [PATCH 3/5] mfd: tps65090: Convert to devm_regmap_init_i2c()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Date: Wed, 25 Apr 2012 10:04:58 +0800
-In-Reply-To: <1335319315.30909.2.camel@phoenix>
-References: <1335319315.30909.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 24 Apr 2012 22:06:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120424195127.GA3628@n2100.arm.linux.org.uk>
+References: <20120423062739.GX3852@pengutronix.de>
+	<20120423065259.GR26306@S2101-09.ap.freescale.net>
+	<20120423065623.GA3852@pengutronix.de>
+	<20120423071013.GS26306@S2101-09.ap.freescale.net>
+	<20120423074856.GU20478@pengutronix.de>
+	<CAMXH7KH1pwh7hJ=T30zxcWcx19wjXvr6Ff4OLy7fzqY5p79Fwg@mail.gmail.com>
+	<20120424013841.GB26306@S2101-09.ap.freescale.net>
+	<20120424075426.GP24211@n2100.arm.linux.org.uk>
+	<20120424083603.GE26306@S2101-09.ap.freescale.net>
+	<CAMXH7KFMcHoGeTRcPWR_ENK2R=nU134HgjnXpFUsYJTL9pbgrQ@mail.gmail.com>
+	<20120424195127.GA3628@n2100.arm.linux.org.uk>
+Date: Wed, 25 Apr 2012 10:06:10 +0800
+Message-ID: <CAAQ0ZWTR7PAFX6z6PpkBhGoy5qh6u-xjK16mVCHnSoi-0GrD3g@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rob Lee <rob.lee@linaro.org>, Sascha Hauer <s.hauer@pengutronix.de>,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/tps65090.c |   10 +++-------
- 1 files changed, 3 insertions(+), 7 deletions(-)
+On 25 April 2012 03:51, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> On Tue, Apr 24, 2012 at 10:40:35AM -0500, Rob Lee wrote:
+>> Thanks for the attention on this.  From what I've understood, I will
+>> send another submission that includes the imx cpuidle patchset and
+>> Shawn's device tree late initcall patchset and I'll provide
+>> explanation of the two separate patchsets in the cover sheet.
+>
+> What I also want to see _along with_ the addition of the init_late
+> callback is a patch set from the _same_ people fixing up the rest
+> of arch/arm/mach-* to use it - you know, like what I do when I
+> introduce these kinds of things.
+>
+> Otherwise I'm going to NAK the change.  We can't have new stuff
+> introduced in this way and the older platforms ignored.  Forward
+> progress across the board please.
 
-diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-index da821d9..3e12bba 100644
---- a/drivers/mfd/tps65090.c
-+++ b/drivers/mfd/tps65090.c
-@@ -283,8 +283,8 @@ static int __devinit tps65090_i2c_probe(struct i2c_client *client,
- 		}
- 	}
- 
--	tps65090->rmap = regmap_init_i2c(tps65090->client,
--		&tps65090_regmap_config);
-+	tps65090->rmap = devm_regmap_init_i2c(tps65090->client,
-+					      &tps65090_regmap_config);
- 	if (IS_ERR(tps65090->rmap)) {
- 		ret = PTR_ERR(tps65090->rmap);
- 		dev_err(&client->dev, "regmap_init failed with err: %d\n", ret);
-@@ -296,14 +296,11 @@ static int __devinit tps65090_i2c_probe(struct i2c_client *client,
- 	if (ret) {
- 		dev_err(&client->dev, "add mfd devices failed with err: %d\n",
- 			ret);
--		goto err_regmap_exit;
-+		goto err_irq_exit;
- 	}
- 
- 	return 0;
- 
--err_regmap_exit:
--	regmap_exit(tps65090->rmap);
--
- err_irq_exit:
- 	if (client->irq)
- 		free_irq(client->irq, tps65090);
-@@ -316,7 +313,6 @@ static int __devexit tps65090_i2c_remove(struct i2c_client *client)
- 	struct tps65090 *tps65090 = i2c_get_clientdata(client);
- 
- 	mfd_remove_devices(tps65090->dev);
--	regmap_exit(tps65090->rmap);
- 	if (client->irq)
- 		free_irq(client->irq, tps65090);
- 
--- 
-1.7.5.4
+I'm working on a series to clean them up.
 
-
-
+Regards,
+Shawn
