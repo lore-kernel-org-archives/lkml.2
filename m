@@ -1,140 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab2DYRnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 13:43:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39105 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757203Ab2DYRna convert rfc822-to-8bit (ORCPT
+	id S1754975Ab2DYRvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 13:51:24 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37336 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363Ab2DYRvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 13:43:30 -0400
-Message-ID: <1335375798.28150.271.camel@twins>
-Subject: Re: load balancing regression since commit 367456c7
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Alex Shi <alex.shi@intel.com>,
-        Ying <ying.huang@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 25 Apr 2012 19:43:18 +0200
-In-Reply-To: <1335375537.3796.55.camel@schen9-DESK>
-References: <1334106376.19157.89.camel@schen9-DESK>
-	 <1334664553.28150.87.camel@twins>  <1334681054.3796.28.camel@schen9-DESK>
-	 <1334930421.2463.60.camel@laptop>  <1334940042.3796.48.camel@schen9-DESK>
-	 <1334940837.2463.70.camel@laptop>  <1334942012.3796.50.camel@schen9-DESK>
-	 <1334943202.2463.71.camel@laptop>  <1335365763.28150.267.camel@twins>
-	 <1335375537.3796.55.camel@schen9-DESK>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 25 Apr 2012 13:51:22 -0400
+Date: Wed, 25 Apr 2012 18:51:13 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Roland McGrath <roland@hack.frob.com>
+Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
+Message-ID: <20120425175113.GI6871@ZenIV.linux.org.uk>
+References: <20120424072617.GB6871@ZenIV.linux.org.uk>
+ <20120425030659.GE6871@ZenIV.linux.org.uk>
+ <20120425123746.GA15560@redhat.com>
+ <20120425125042.GF6871@ZenIV.linux.org.uk>
+ <20120425130329.GA16413@redhat.com>
+ <20120425133238.GG6871@ZenIV.linux.org.uk>
+ <20120425145239.GA21386@redhat.com>
+ <20120425154611.GA23672@redhat.com>
+ <20120425161002.GH6871@ZenIV.linux.org.uk>
+ <20120425170230.GA24977@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120425170230.GA24977@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 25, 2012 at 07:02:30PM +0200, Oleg Nesterov wrote:
 
-Gargh.. lost the change to kernel/sched/features.h, now included.
+> And there is another case:
+> 
+> 	syscall interrupted, it returns ERESTARTSYS.
+> 
+> 	do_signal() sees no signal, restarts the syscall
+> 
+> 	!SA_RESTART comes before we return to user-mode
+> 
+> This doesn't really differ from sigsuspend/ERESTARTNOHAND we discussed
+> before.
 
-Sorry for that.
+... and dealt with the same way:
+	NEED_RESTART flag is set the first time around
+	no handler for the first signal, so we do nothing else
+	handler is found for the second signal
+	NEED_RESTART flag is present, so
+		we clear NEED_RESTART
+		we look at errno and see ERESTARTSYS
+		we check sa_flags and see !SA_RESTART
+		we set return value to -EINTR and proceed to set sigframe up
+	on the exit to userland we see NEED_RESTART not set, so off we go
+I think I hadn't been clear enough; here's pseudocode for what I meant
 
----
-Subject: sched: Fix more load-balance fallout
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Tue Apr 17 13:38:40 CEST 2012
+do_signal()
+{
+	if (we have any business doing restarts)
+		// note: we won't get here on subsequent calls of do_signal()
+		// due to the checks above; same logics that currently prevents
+		// double restarts
+		set NEED_RESTART flag
+	sig = get_signal_to_deliver(...)
+	if (sig) {
+		if (NEED_RESTART set) {
+			clear NEED_RESTART
+			same thing we do at that spot now - restart or EINTR
+			handle_signal(...)
+			...
+			return;
+		}
+	}
+	/* no handler */
+	if (test_and_clear_...(RESTORE_SIGMASK))
+		set_current_blocked(&current->saved_sigmask);
+}
+and in asm glue, *after* checking for SIGPENDING/NOTIFY_RESUME, check
+NEED_RESTART and if it's set do what we currently do for restarts on
+handlerless signal.
 
-Commits 367456c756a6 ("sched: Ditch per cgroup task lists for
-load-balancing") and 5d6523ebd ("sched: Fix load-balance wreckage")
-left some more wreckage.
-
-By setting loop_max unconditionally to ->nr_running load-balancing
-could take a lot of time on very long runqueues (hackbench!). So keep
-the sysctl as max limit of the amount of tasks we'll iterate.
-
-Furthermore, the min load filter for migration completely fails with
-cgroups since inequality in per-cpu state can easily lead to such
-small loads :/
-
-Furthermore the change to add new tasks to the tail of the queue
-instead of the head seems to have some effect.. not quite sure I
-understand why.
-
-Combined these fixes solve the huge hackbench regression reported by
-Tim when hackbench is ran in a cgroup.
-
-Reported-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1335365763.28150.267.camel@twins
----
- kernel/sched/fair.c     |   19 ++++++++++++++-----
- kernel/sched/features.h |    1 +
- 2 files changed, 15 insertions(+), 5 deletions(-)
-
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -784,7 +784,7 @@ account_entity_enqueue(struct cfs_rq *cf
- 		update_load_add(&rq_of(cfs_rq)->load, se->load.weight);
- #ifdef CONFIG_SMP
- 	if (entity_is_task(se))
--		list_add_tail(&se->group_node, &rq_of(cfs_rq)->cfs_tasks);
-+		list_add(&se->group_node, &rq_of(cfs_rq)->cfs_tasks);
- #endif
- 	cfs_rq->nr_running++;
- }
-@@ -3215,6 +3215,14 @@ static int move_one_task(struct lb_env *
- 
- static unsigned long task_h_load(struct task_struct *p);
- 
-+static const unsigned int sched_nr_migrate_break =
-+#ifdef CONFIG_PREEMPT
-+	8
-+#else
-+	32
-+#endif
-+	;
-+
- /*
-  * move_tasks tries to move up to load_move weighted load from busiest to
-  * this_rq, as part of a balancing operation within domain "sd".
-@@ -3242,7 +3250,7 @@ static int move_tasks(struct lb_env *env
- 
- 		/* take a breather every nr_migrate tasks */
- 		if (env->loop > env->loop_break) {
--			env->loop_break += sysctl_sched_nr_migrate;
-+			env->loop_break += sched_nr_migrate_break;
- 			env->flags |= LBF_NEED_BREAK;
- 			break;
- 		}
-@@ -3252,7 +3260,7 @@ static int move_tasks(struct lb_env *env
- 
- 		load = task_h_load(p);
- 
--		if (load < 16 && !env->sd->nr_balance_failed)
-+		if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
- 			goto next;
- 
- 		if ((load / 2) > env->load_move)
-@@ -4407,7 +4415,7 @@ static int load_balance(int this_cpu, st
- 		.dst_cpu	= this_cpu,
- 		.dst_rq		= this_rq,
- 		.idle		= idle,
--		.loop_break	= sysctl_sched_nr_migrate,
-+		.loop_break	= sched_nr_migrate_break,
- 	};
- 
- 	cpumask_copy(cpus, cpu_active_mask);
-@@ -4448,7 +4456,8 @@ static int load_balance(int this_cpu, st
- 		env.load_move = imbalance;
- 		env.src_cpu = busiest->cpu;
- 		env.src_rq = busiest;
--		env.loop_max = busiest->nr_running;
-+		env.loop_max = min_t(unsigned long,
-+				sysctl_sched_nr_migrate, busiest->nr_running);
- 
- more_balance:
- 		local_irq_save(flags);
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -68,3 +68,4 @@ SCHED_FEAT(TTWU_QUEUE, true)
- 
- SCHED_FEAT(FORCE_SD_OVERLAP, false)
- SCHED_FEAT(RT_RUNTIME_SHARE, true)
-+SCHED_FEAT(LB_MIN, false)
-
+BTW, if we combine that with ERESTART_RESTARTBLOCK trick on arm/parisc/unicore,
+there won't be much work to do for restarts in that case; in x86ese it
+would be simply
+	if (regs->ax == -ERESTART_RESTARTBLOCK)
+		set_thread_flag(TIF_EMULATE_RESTART_SYSCALL)
+	regs->ax = regs->orig_ax;
+	regs->ip -= 2;
+all of that conditional on TS_NEED_RESTART...
