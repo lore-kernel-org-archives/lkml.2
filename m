@@ -1,61 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab2DYSYN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 14:24:13 -0400
-Received: from fieldses.org ([174.143.236.118]:56333 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755525Ab2DYSYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 14:24:12 -0400
-Date: Wed, 25 Apr 2012 14:24:09 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH 0/3] SUNRPC: three bugfixes for PipeFS event handling
-Message-ID: <20120425182409.GE751@fieldses.org>
-References: <20120420141419.10848.84280.stgit@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420141419.10848.84280.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757528Ab2DYSYx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 14:24:53 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:52780 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756161Ab2DYSYw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 14:24:52 -0400
+Date: Wed, 25 Apr 2012 14:24:43 -0400 (EDT)
+Message-Id: <20120425.142443.127806422826680167.davem@davemloft.net>
+To: bpoirier@suse.de
+Cc: chessman@tux.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tlan: add cast needed for proper 64 bit operation
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1335365360-4891-1-git-send-email-bpoirier@suse.de>
+References: <1335365360-4891-1-git-send-email-bpoirier@suse.de>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 25 Apr 2012 11:24:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 06:18:59PM +0400, Stanislav Kinsbursky wrote:
-> These bugfixes were caught (or noticed) due to the following simple script:
+From: Benjamin Poirier <bpoirier@suse.de>
+Date: Wed, 25 Apr 2012 10:49:20 -0400
 
-I'm assuming Trond should take these (possibly for 3.4?).
+> Changes this beauty into a statement that actually has an effect on amd64.
+> 
+> Tested-by: Per Jessen <per@opensuse.org>
+> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 
---b.
-
-> 
-> ======================================================================
-> 
-> #!/bin/bash
-> service rpcbind stop
-> service rpcidmapd stop
-> killall -TERM rpc.statd
-> umount /var/lib/nfs/rpc_pipefs
-> rmmod nfs
-> service rpcbind start
-> service nfs start
-> mount -t rpc_pipefs sunrpc /var/lib/nfs/rpc_pipefs
-> 
-> =======================================================================
-> 
-> The following series consists of:
-> 
-> ---
-> 
-> Stanislav Kinsbursky (3):
->       SUNRPC: skip clients with program without PipeFS entries
->       SUNRPC: traverse clients tree on PipeFS event
->       SUNRPC: set per-net PipeFS superblock before notification
-> 
-> 
->  net/sunrpc/clnt.c     |   34 ++++++++++++++++++++++++++++------
->  net/sunrpc/rpc_pipe.c |    3 ++-
->  2 files changed, 30 insertions(+), 7 deletions(-)
-> 
+Applied, thanks.
