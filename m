@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758908Ab2DYLiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 07:38:50 -0400
-Received: from antcom.de ([188.40.178.216]:35783 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752271Ab2DYLit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 07:38:49 -0400
-Message-ID: <4F97E243.1040707@antcom.de>
-Date: Wed, 25 Apr 2012 13:38:43 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Sourav Poddar <sourav.poddar@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        Benoit Cousson <b-cousson@ti.com>,
+	id S1758733Ab2DYLj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 07:39:58 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:57594 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752930Ab2DYLj5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 07:39:57 -0400
+X-SpamScore: -16
+X-BigFish: VS-16(zz9371I179dN1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 25 Apr 2012 19:49:56 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Randy Dunlap <rdunlap@xenotime.net>, Felipe Balbi <balbi@ti.com>,
-        linux-input@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv4 1/2] drivers: input: keypad: Add device tree support
-References: <1335346004-18108-1-git-send-email-sourav.poddar@ti.com> <20120425105235.GV24211@n2100.arm.linux.org.uk>
-In-Reply-To: <20120425105235.GV24211@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
+Subject: Re: [PATCH v2 1/2] pinctrl: add pinctrl_provide_dummies interface
+ for platforms to use
+Message-ID: <20120425114955.GB17631@shlinux2.ap.freescale.net>
+References: <1335260023-15859-1-git-send-email-b29396@freescale.com>
+ <4F96F847.508@wwwdotorg.org>
+ <20120425094934.GA17631@shlinux2.ap.freescale.net>
+ <CACRpkdYjVYsM-Qo7NWKx5Mr3rAmp12G_wAtkmNkkqNyX=ZeKUw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYjVYsM-Qo7NWKx5Mr3rAmp12G_wAtkmNkkqNyX=ZeKUw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell and Sourav,
-
-On 04/25/2012 12:52 PM, Russell King - ARM Linux wrote:
-> I think you and Roland Stigge need to put your heads together and come
-> up with a common DT binding for matrix keypad devices, rather than
-> inventing N different platform specific bindings.
+On Wed, Apr 25, 2012 at 07:19:43PM +0800, Linus Walleij wrote:
+> On Wed, Apr 25, 2012 at 11:49 AM, Dong Aisheng
+> <aisheng.dong@freescale.com> wrote:
+> > On Wed, Apr 25, 2012 at 03:00:23AM +0800, Stephen Warren wrote:
 > 
->> +Required Board Specific Properties, in addition to those specified by
->> +the shared matrix-keyboard bindings:
->> +- keypad,num-rows: Number of row lines connected to the keypad
->> +  controller.
->> +
->> +- keypad,num-columns: Number of column lines connected to the
->> +  keypad controller.
+> >> The only thing that should be calling pinctrl_request_gpio() is a GPIO
+> >> driver. It should only be calling it for the GPIOs it manages. I'd
+> >> expect that if a platform's pinctrl driver was not yet written to
+> >> support the GPIO functionality, then the GPIO driver would not be
+> >> calling this function.
+> >>
+> > Hmm, pinctrl gpio is in the same situation as pinctrl state that gpio
+> > driver may be shared between several platforms, with pinctrl support
+> > or not.
+> 
+> I think it's mostly safe to assume that either:
+> 
+I just saw your reply after i sent out the revised patch...
 
-Right - the LPC32xx key scanner always has a square matrix design (#rows
-== #cols), but I'm fine with re-using properties "keypad,num-rows" and
-"keypad,num-columns" instead of "nxp,matrix-size".
+> - pinctrl calls from GPIO drivers gets stubbed out totally due to
+>   CONFIG_PINCTRL not being selected
+> 
+Yes, we already have that in include/linux/pinctrl/consumer.h
 
-Besides, I still have "nxp,debounce-delay-ms" and "nxp,scan-delay-ms" -
-do I need to change this to some default properties I don't know of (yet)?
+> or:
+> 
+> - You need to pass a token through platform data to the
+>   GPIO driver telling it whether it needs to request pins for
+>   it's GPIOs or not. Just a bool should work fine?
+> 
+Yes, this is an alternative way.
+I'm using a similar way, but pass the data to pinctrl core
+rather than gpio driver. Then it is be handled together with
+dummy state in platform code.
 
-And: I re-used the DT subnodes strategy for the keycodes ("linux,code")
-of the samsung-keypad driver, see
-Documentation/devicetree/bindings/input/samsung-keypad.txt - can I
-continue using it?
+Do you think if the current way i used is ok?
+Or i need to change to your proposed way?
 
-Thanks in advance,
+Regards
+Dong Aisheng
 
-Roland
