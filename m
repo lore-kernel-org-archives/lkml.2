@@ -1,164 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758877Ab2DYDwa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 23:52:30 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37971 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758763Ab2DYDw3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 23:52:29 -0400
-Message-ID: <4F9774F7.3050702@openvz.org>
-Date: Wed, 25 Apr 2012 07:52:23 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	id S1758888Ab2DYD7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 23:59:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48320 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758871Ab2DYD7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 23:59:51 -0400
+Message-ID: <4F9776B4.60001@ti.com>
+Date: Tue, 24 Apr 2012 20:59:48 -0700
+From: Russ Dill <Russ.Dill@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 2/2] mm: memcg: count pte references from every member
- of the reclaimed hierarchy
-References: <1335296144-29381-1-git-send-email-hannes@cmpxchg.org> <1335296144-29381-2-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1335296144-29381-2-git-send-email-hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ktest.pl: Fix combined usage of BISECT_REVERSE and
+ BISECT_SKIP
+References: <1335222539-31546-1-git-send-email-Russ.Dill@ti.com>  <1335222909-14191-1-git-send-email-Russ.Dill@ti.com> <1335228915.28106.129.camel@gandalf.stny.rr.com>
+In-Reply-To: <1335228915.28106.129.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner wrote:
-> The rmap walker checking page table references has historically
-> ignored references from VMAs that were not part of the memcg that was
-> being reclaimed during memcg hard limit reclaim.
+On 04/23/2012 05:55 PM, Steven Rostedt wrote:
+> On Mon, 2012-04-23 at 16:15 -0700, Russ Dill wrote:
+>> When BISECT_REVERSE and BISECT_SKIP are used together with boot or test testing,
+>> build failures are treated as boot or test failures and 'git bisect bad' is executed instead
+>> of 'git bisect skip'. This is because the $ret value of -1 is treated as a build failure, but
+>> the $reverse_bisect logic does not properly handle this.
+>>
+>> Simple fix, don't invert $ret if it is -1.
+>>
+>> Signed-off-by: Russ Dill <Russ.Dill@ti.com>
+>> ---
+>>  tools/testing/ktest/ktest.pl |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+>> index 95d6a6f..5221b00 100755
+>> --- a/tools/testing/ktest/ktest.pl
+>> +++ b/tools/testing/ktest/ktest.pl
+>> @@ -2192,7 +2192,7 @@ sub run_bisect {
+>>      }
+>>  
+>>      # Are we looking for where it worked, not failed?
+>> -    if ($reverse_bisect) {
+>> +    if ($reverse_bisect && $ret != -1) {
+> Thanks! But can you resend with the following change:
 >
-> When transitioning global reclaim to memcg hierarchy reclaim, I missed
-> that bit and now references from outside a memcg are ignored even
-> during global reclaim.
+> 	... && $ret >= 0) {
 >
-> Reverting back to traditional behaviour - count all references during
-> global reclaim and only mind references of the memcg being reclaimed
-> during limit reclaim would be one option.
->
-> However, the more generic idea is to ignore references exactly then
-> when they are outside the hierarchy that is currently under reclaim;
-> because only then will their reclamation be of any use to help the
-> pressure situation.  It makes no sense to ignore references from a
-> sibling memcg and then evict a page that will be immediately refaulted
-> by that sibling which contributes to the same usage of the common
-> ancestor under reclaim.
->
-> The solution: make the rmap walker ignore references from VMAs that
-> are not part of the hierarchy that is being reclaimed.
->
-> Flat limit reclaim will stay the same, hierarchical limit reclaim will
-> mind the references only to pages that the hierarchy owns.  Global
-> reclaim, since it reclaims from all memcgs, will be fixed to regard
-> all references.
->
-> Reported-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> Signed-off-by: Johannes Weiner<hannes@cmpxchg.org>
-> Acked-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Michal Hocko<mhocko@suse.cz>
+> Just incase we have $ret be another negative number for something else.
 
-Hooray, I already had planned to resend this together with my patchset =)
-
-Acked-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-
-> ---
->   include/linux/memcontrol.h |    6 +++++-
->   mm/memcontrol.c            |   16 +++++++++++-----
->   mm/vmscan.c                |    6 ++++--
->   3 files changed, 20 insertions(+), 8 deletions(-)
->
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 58d820c..76f9d9b 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -78,6 +78,7 @@ extern void mem_cgroup_uncharge_cache_page(struct page *page);
->
->   extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->   				     int order);
-> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *, struct mem_cgroup *);
->   int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
->
->   extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
-> @@ -91,10 +92,13 @@ static inline
->   int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
->   {
->   	struct mem_cgroup *memcg;
-> +	int match;
-> +
->   	rcu_read_lock();
->   	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-> +	match = memcg&&  __mem_cgroup_same_or_subtree(cgroup, memcg);
->   	rcu_read_unlock();
-> -	return cgroup == memcg;
-> +	return match;
->   }
->
->   extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg);
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index a1fea51..b365ae3 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1143,17 +1143,23 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
->    * Checks whether given mem is same or in the root_mem_cgroup's
->    * hierarchy subtree
->    */
-> -static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> -		struct mem_cgroup *memcg)
-> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> +				  struct mem_cgroup *memcg)
->   {
-> -	bool ret;
-> -
->   	if (root_memcg == memcg)
->   		return true;
->   	if (!root_memcg->use_hierarchy)
->   		return false;
-> +	return css_is_ancestor(&memcg->css,&root_memcg->css);
-> +}
-> +
-> +static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> +				       struct mem_cgroup *memcg)
-> +{
-> +	bool ret;
-> +
->   	rcu_read_lock();
-> -	ret = css_is_ancestor(&memcg->css,&root_memcg->css);
-> +	ret = __mem_cgroup_same_or_subtree(root_memcg, memcg);
->   	rcu_read_unlock();
->   	return ret;
->   }
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index d6122e7..7bc7b8b 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -632,7 +632,8 @@ static enum page_references page_check_references(struct page *page,
->   	int referenced_ptes, referenced_page;
->   	unsigned long vm_flags;
->
-> -	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup,&vm_flags);
-> +	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
-> +					&vm_flags);
-
-Argument "mz" in page_check_references() now unused.
-Ok, I'll remove it in my patchset together with "struct mem_cgroup_zone"
-
->   	referenced_page = TestClearPageReferenced(page);
->
->   	/*
-> @@ -1474,7 +1475,8 @@ static void shrink_active_list(unsigned long nr_to_scan,
->   			}
->   		}
->
-> -		if (page_referenced(page, 0, mz->mem_cgroup,&vm_flags)) {
-> +		if (page_referenced(page, 0, sc->target_mem_cgroup,
-> +				&vm_flags)) {
->   			nr_rotated += hpage_nr_pages(page);
->   			/*
->   			 * Identify referenced, file-backed active pages and
+BTW, I can across an additional problem that I'm not sure how to solve.
+I'm using PRE_BUILD and POST_BUILD to apply a patch during a bisect. As
+soon as the bisect hits a tree where the patch applies, the module
+tar-up fails. The kernel version (and module path) has a '-dirty' but
+ktest.pl is calling its get_version after POST_BUILD when the tree is clean.
 
