@@ -1,53 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab2DYPKB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:10:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37726 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab2DYPJ7 convert rfc822-to-8bit (ORCPT
+	id S1753429Ab2DYPLe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:11:34 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:21562 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab2DYPLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:09:59 -0400
-Message-ID: <1335366582.28150.270.camel@twins>
-Subject: Re: [RFC][PATCH 2/3] math128: Introduce {mult,add,cmp}_u128
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 25 Apr 2012 17:09:42 +0200
-In-Reply-To: <CAMuHMdVSjX1ZRc_Q0cuL+U_f+zzuD+1cjW-OBdn1c3mC8Ya_Rg@mail.gmail.com>
-References: <20120424161039.293018424@chello.nl>
-	 <20120424162224.526249106@chello.nl>
-	 <20120425102342.45cf5c5e81e8aeb3bec67d0b@canb.auug.org.au>
-	 <1335341466.28150.248.camel@twins>
-	 <CAMuHMdUqgR8Z8wtBjm=-g9ff6CVmEd=FpbC2tk-CMU7B3XVVDg@mail.gmail.com>
-	 <1335355106.28150.254.camel@twins>
-	 <CAMuHMdVSjX1ZRc_Q0cuL+U_f+zzuD+1cjW-OBdn1c3mC8Ya_Rg@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Wed, 25 Apr 2012 11:11:32 -0400
+Date: Wed, 25 Apr 2012 10:11:30 -0500
+From: scameron@beardog.cce.hp.com
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Stephen Cameron <stephenmcameron@gmail.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matthew.gates@hp.com, thenzl@redhat.com, akpm@linux-foundation.org,
+        mikem@beardog.cce.hp.com, scameron@beardog.cce.hp.com
+Subject: Re: [PATCH 14/17] hpsa: use new IS_ENABLED macro
+Message-ID: <20120425151130.GI11802@beardog.cce.hp.com>
+References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com> <20120420150732.10596.9085.stgit@beardog.cce.hp.com> <CAP=VYLpOyBuvZ3+Nfw1u0dojOX8kt-1TDJA+v-EWQuKPdh0A1w@mail.gmail.com> <CADzpL0S04XTYoe4u7_WNgA6cw11uNw9uxiyyYCQ=cY-p-Z+sww@mail.gmail.com> <4F955F78.8070604@windriver.com> <1335192983.4191.25.camel@dabdike.lan> <CAP=VYLqwYKMM89reQ7gZfXojRh6dTxdHLyODNY-9xQH5_T3yWg@mail.gmail.com> <1335255910.2809.8.camel@dabdike.lan> <4F96C38E.9000102@windriver.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F96C38E.9000102@windriver.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-25 at 16:35 +0200, Geert Uytterhoeven wrote:
-> On Wed, Apr 25, 2012 at 13:58, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >> Still using quilt? I didn't regret ditching it in favor of git (yummy,
-> >> git rebase ;-).
-> >
-> > Yeah, I can't seem to deal with git, I edit my patches by hand way too
-> > often, also quilt is a _LOT_ faster pushing/popping patches than git is
-> > (and yes I use an SSD).
-> >
-> > Not using git also means I don't have to deal with the trainwreck that
-> > is git-merge,.. /me runs like hell.
+On Tue, Apr 24, 2012 at 11:15:26AM -0400, Paul Gortmaker wrote:
+> On 12-04-24 04:25 AM, James Bottomley wrote:
+> > On Mon, 2012-04-23 at 21:43 -0400, Paul Gortmaker wrote:
+> >> On Mon, Apr 23, 2012 at 10:56 AM, James Bottomley
+> >> <James.Bottomley@hansenpartnership.com> wrote:
+> >>> On Mon, 2012-04-23 at 09:56 -0400, Paul Gortmaker wrote:
+> >>>> On 12-04-22 10:20 PM, Stephen Cameron wrote:
+> >>>>> On Sun, Apr 22, 2012 at 1:12 PM, Paul Gortmaker
+> >>>>> <paul.gortmaker@windriver.com> wrote:
+> >>>>>> On Fri, Apr 20, 2012 at 11:07 AM, Stephen M. Cameron
+> >>>>>> <scameron@beardog.cce.hp.com> wrote:
+> >>>>>>> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> >>>>>>>
+> >>>>>>> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> >>>>>>
+> >>>>>> You've not written a commit log, so I'm left guessing what the
+> >>>>>> intended rationale is here.  COMPAT, X86 and PCI_MSI are
+> >>>>>> I believe all bool, so why make this change?  To me it gives
+> >>>>>> a misleading message that some level of modular awareness
+> >>>>>> is needed here, when there really isn't any such need.
+> >>>>>
+> >>>>> Well, I saw this commit go by: 69349c2dc01c489eccaa4c472542c08e370c6d7e
+> >>>>>
+> >>>>>    Using IS_ENABLED() within C (vs.  within CPP #if statements) in its
+> >>>>>    current form requires us to actually define every possible bool/tristate
+> >>>>>    Kconfig option twice (__enabled_* and __enabled_*_MODULE variants).
+> >>>>>    [...]
+> >>>>>
+> >>>>> and so I kind of thought IS_ENABLED is the new way to do that sort of thing.
+> >>>
+> >>> I don't think you need to change the driver unless there's a good
+> >>> reason.  In kernel terms, it's usually better to wait a bit to see if
+> >>> the wheels fall off any particular bandwagon before leaping on it ...
+> >>>
+> >>>> In my opinion, IS_ENABLED can/should be used when you have:
+> >>>>
+> >>>> #if defined(CONFIG_FOO) || defined(CONFIG_FOO_MODULE)
+> >>>>
+> >>>> i.e. "is this driver built in, or can it be loaded as a module?"
+> >>>> The CONFIG_FOO_MODULE doesn't appear in your .config -- it is auto
+> >>>> generated by Kbuild infrastructure.
+> >>>>
+> >>>> It will do the Right Thing even for cases where CONFIG_FOO_MODULE
+> >>>> is impossible, but it does as I've said, give the wrong impression
+> >>>> that there is some possibility of modular presence.  At least to
+> >>>> those who are familiar with the implementation and why it exists.
+> >>>> [I'll grant you that the name doesn't convey the use case too well.]
+> >>>>
+> >>>>>
+> >>>>> Perhaps I'm wrong about that.  Obviously the patch is not _needed_ for
+> >>>>> things to work.
+> >>>>
+> >>>> I don't think we want to go and mass replace all existing cases of
+> >>>>
+> >>>>    #ifdef CONFIG_SOME_BOOL
+> >>>>
+> >>>> with:
+> >>>>
+> >>>>    #if IS_ENABLED(CONFIG_SOME_BOOL)
+> >>>>
+> >>>> There is no value add.  However, replacing instances of:
+> >>>>
+> >>>>    #if defined(CONFIG_FOO) || defined(CONFIG_FOO_MODULE)
+> >>>>
+> >>>> with:
+> >>>>
+> >>>>    #if IS_ENABLED(CONFIG_FOO)
+> >>>>
+> >>>> is in my opinion, a reasonable thing to do.  It is shorter, and
+> >>>> it does hide the internally generated _MODULE suffixed "shadow"
+> >>>> variables from appearing directly in the main source files.  And
+> >>>> it tells you that the author was thinking about both the built
+> >>>> in and the modular cases when they wrote it.
+> >>>
+> >>> To be honest, I think we want to use #if IS_ENABLED() for all cases
+> >>> going forwards, including the boolean case.
+> >>
+> >> I guess we will have to agree to disagree then.
+> >>
+> >>>
+> >>> The reason is that it's an easier design pattern.  If we have the #ifdef
+> >>> CONFIG_X vs #if IS_ENABLED(CONFIG_X) depending on whether CONFIG_X can
+> >>> be modular or not it's just creating pointless rules that someone will
+> >>> annoy us all by enforcing in a checkpatch or some other script.  Whereas
+> >>> #if IS_ENABLED(CONFIG_X) is obvious and simple.
+> >>
+> >> What exactly is an "easier design pattern", and what are the gains?
+> > 
+> > It means you only have one rule:
+> > 
+> > everything is #if IS_ENABLED
+> > 
+> > vs two arbitrary ones
 > 
-> But you have to deal with the quilt-oh-no-the-patch-no-longer-applies
-> trainwreck...
+> Again I'll have to disagree with you categorizing them as "arbitrary".
+> 
+> > 
+> > If it's a boolean symbol, you use #ifdef else if it's tristate, use #if
+> > IS_ENABLED
+> > 
+> > It's obvious to me the former is simpler.
+> 
+> So, something in you doesn't go "eeech" when you see:
+> 
+> #if IS_ENABLED(CONFIG_ARM)
+> 
+> ...that treats ARM as if it is some kind of driver, or feature
+> that can simply be enabled at will, alongside of any other
+> features?  Or worse, when people take it to the next level
+> and do:
+> 
+> -#ifdef CONFIG_SPARC
+> -	boo();
+> -	bar();
+> -	baz();
+> -#endif
+> +	if (IS_ENABLED(CONFIG_SPARC)) {
+> +		boo();
+> +		bar();
+> +		baz();
+> +	}
+> 
+> These are kinds of instances that I hope we don't entertain
+> as being improvements, or use cases we'd adopt as defaults.
+> 
+> > 
+> >> To me, it has nothing to do with rules, and what the checkpatch folks do
+> >> or do not do.  The line "#ifdef CONFIG_FOO" conveys one specific piece
+> >> of information.  The line "#if IS_ENABLED(CONFIG_FOO) conveys
+> >> a different piece of information, which is a superset of the former.
+> > 
+> > That's the point ... why bother with the former?  If the latter is a
+> > superset and you always do the latter, the rule is simpler.
+> > 
+> >> If you blindly convert all of them, you throw away information that would
+> >> otherwise be available to the code reader.  I would not support that.
+> > 
+> > Well, a) I'm not advocating converting everything.  I'm advocating using
+> > the superset for everything going forwards.
+> > 
+> > I don't understand what information would be lost:  All use if #ifdef vs
+> > #if IS_ENABLED tells you is whether the author thought the symbol was
+> > boolean or tristate.  I don't see how that's useful at all and it will
+> > cause problems if a symbol changes (some non-modular code may become
+> > modular for instance) ... then we have to go and chase it through the
+> > code base.
+> 
+> Hopefully the above makes my concerns more clear -- IS_ENABLED should
+> not be used blindly without thought.  Some things like core arch configs
+> will never _ever_ be modular.  Seeing IS_ENABLED used on those kinds of
+> options just seems ugly to me.  That is what was in this original patch.
+> 
+> But using it on some driver that isn't currently modular, but might be
+> made so eventually is reasonable.  Maybe you will still call that
+> distinction arbitrary, and the arch use case not ugly enough to matter.
+> 
+> Nor IMHO should IS_ENABLED be used as a tool to engage a holy war on
+> eradicating all #ifdef/#endif block.  Just like "goto", sensible uses
+> of such blocks can make things more readable, not less.
+> 
+> Your point earlier about recommending people show restraint before
+> rushing out to use the shiny new tool just because they can, was
+> a good one -- I agree wholeheartedly with that.
+> 
+> Thanks,
+> Paul.
+> 
+> > 
+> > James
+> > 
+> > 
 
-Yeah, but I find it much easier to deal with .rej files than with the
-stuff left behind by git.
+
+Also, in "[PATCH 13/17] hpsa: factor out hpsa_free_irqs_and_disable_msix", I did this:
+
+[...]
+-#ifdef CONFIG_PCI_MSI
+-	if (h->msix_vector)
+-		pci_disable_msix(h->pdev);
+-	else if (h->msi_vector)
+-		pci_disable_msi(h->pdev);
+-#endif /* CONFIG_PCI_MSI */
++	if (!IS_ENABLED(PCI_MSI))
++		return;
++	if (h->msix_vector) {
++		if (h->pdev->msix_enabled)
++			pci_disable_msix(h->pdev);
++	} else if (h->msi_vector) {
++		if (h->pdev->msi_enabled)
++			pci_disable_msi(h->pdev);
++	}
++}
+[...]
+
+Presumably I should not use IS_ENABLED in this instance either.
+
+-- steve
+
