@@ -1,148 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab2DYXDi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 19:03:38 -0400
-Received: from gimli.pxnet.com ([89.1.7.7]:35428 "EHLO mail.pxnet.com"
+	id S932538Ab2DYXDf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 19:03:35 -0400
+Received: from gimli.pxnet.com ([89.1.7.7]:38400 "EHLO mail.pxnet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932516Ab2DYXDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932514Ab2DYXDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Apr 2012 19:03:32 -0400
 From: Tilman Schmidt <tilman@imap.cc>
 To: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>
 CC: Hansjoerg Lipp <hjlipp@web.de>, Karsten Keil <keil@b1-systems.de>,
         i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Message-ID: <20120425-patch-gigaset-07.tilman@imap.cc>
+Message-ID: <20120425-patch-gigaset-05.tilman@imap.cc>
 In-Reply-To: <20120425-patch-gigaset-00.tilman@imap.cc>
 References: <20120425-patch-gigaset-00.tilman@imap.cc>
-Subject: [PATCH 7/8] isdn/capi: fix readability damage
+Subject: [PATCH 5/8] isdn/gigaset: internal function name cleanup
 Date: Thu, 26 Apr 2012 01:02:20 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix up some of the readibility deterioration caused by the recent
-whitespace coding style cleanup.
+Functions clear_at_state and free_strings did the same thing;
+drop one of them, keeping the more descriptive name.
+Drop a redundant call.
+Rename function dealloc_at_states to dealloc_temp_at_states
+to clarify its purpose.
 
 Signed-off-by: Tilman Schmidt <tilman@imap.cc>
 ---
- drivers/isdn/capi/capi.c    |   23 +++++++----------------
- drivers/isdn/capi/capidrv.c |    8 +++++---
- 2 files changed, 12 insertions(+), 19 deletions(-)
+ drivers/isdn/gigaset/common.c |   16 +++++-----------
+ 1 files changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/isdn/capi/capi.c b/drivers/isdn/capi/capi.c
-index b902794..9ee3991 100644
---- a/drivers/isdn/capi/capi.c
-+++ b/drivers/isdn/capi/capi.c
-@@ -786,7 +786,6 @@ register_out:
- 		return retval;
+diff --git a/drivers/isdn/gigaset/common.c b/drivers/isdn/gigaset/common.c
+index 7679270..6c306d4 100644
+--- a/drivers/isdn/gigaset/common.c
++++ b/drivers/isdn/gigaset/common.c
+@@ -362,7 +362,7 @@ struct event_t *gigaset_add_event(struct cardstate *cs,
+ }
+ EXPORT_SYMBOL_GPL(gigaset_add_event);
  
- 	case CAPI_GET_VERSION:
--	{
- 		if (copy_from_user(&data.contr, argp,
- 				   sizeof(data.contr)))
- 			return -EFAULT;
-@@ -796,11 +795,9 @@ register_out:
- 		if (copy_to_user(argp, &data.version,
- 				 sizeof(data.version)))
- 			return -EFAULT;
--	}
--	return 0;
-+		return 0;
+-static void free_strings(struct at_state_t *at_state)
++static void clear_at_state(struct at_state_t *at_state)
+ {
+ 	int i;
  
- 	case CAPI_GET_SERIAL:
--	{
- 		if (copy_from_user(&data.contr, argp,
- 				   sizeof(data.contr)))
- 			return -EFAULT;
-@@ -810,10 +807,9 @@ register_out:
- 		if (copy_to_user(argp, data.serial,
- 				 sizeof(data.serial)))
- 			return -EFAULT;
--	}
--	return 0;
-+		return 0;
-+
- 	case CAPI_GET_PROFILE:
--	{
- 		if (copy_from_user(&data.contr, argp,
- 				   sizeof(data.contr)))
- 			return -EFAULT;
-@@ -837,11 +833,9 @@ register_out:
- 		}
- 		if (retval)
- 			return -EFAULT;
--	}
--	return 0;
-+		return 0;
- 
- 	case CAPI_GET_MANUFACTURER:
--	{
- 		if (copy_from_user(&data.contr, argp,
- 				   sizeof(data.contr)))
- 			return -EFAULT;
-@@ -853,8 +847,8 @@ register_out:
- 				 sizeof(data.manufacturer)))
- 			return -EFAULT;
- 
--	}
--	return 0;
-+		return 0;
-+
- 	case CAPI_GET_ERRCODE:
- 		data.errcode = cdev->errcode;
- 		cdev->errcode = CAPI_NOERROR;
-@@ -870,8 +864,7 @@ register_out:
- 			return 0;
- 		return -ENXIO;
- 
--	case CAPI_MANUFACTURER_CMD:
--	{
-+	case CAPI_MANUFACTURER_CMD: {
- 		struct capi_manufacturer_cmd mcmd;
- 		if (!capable(CAP_SYS_ADMIN))
- 			return -EPERM;
-@@ -879,8 +872,6 @@ register_out:
- 			return -EFAULT;
- 		return capi20_manufacturer(mcmd.cmd, mcmd.data);
+@@ -372,18 +372,13 @@ static void free_strings(struct at_state_t *at_state)
  	}
--	return 0;
+ }
+ 
+-static void clear_at_state(struct at_state_t *at_state)
+-{
+-	free_strings(at_state);
+-}
 -
- 	case CAPI_SET_FLAGS:
- 	case CAPI_CLR_FLAGS: {
- 		unsigned userflags;
-diff --git a/drivers/isdn/capi/capidrv.c b/drivers/isdn/capi/capidrv.c
-index 6f5016b..832bc80 100644
---- a/drivers/isdn/capi/capidrv.c
-+++ b/drivers/isdn/capi/capidrv.c
-@@ -1593,7 +1593,7 @@ static int capidrv_command(isdn_ctrl *c, capidrv_contr *card)
- 		return capidrv_ioctl(c, card);
+-static void dealloc_at_states(struct cardstate *cs)
++static void dealloc_temp_at_states(struct cardstate *cs)
+ {
+ 	struct at_state_t *cur, *next;
  
- 	switch (c->command) {
--	case ISDN_CMD_DIAL:{
-+	case ISDN_CMD_DIAL: {
- 		u8 calling[ISDN_MSNLEN + 3];
- 		u8 called[ISDN_MSNLEN + 2];
+ 	list_for_each_entry_safe(cur, next, &cs->temp_at_states, list) {
+ 		list_del(&cur->list);
+-		free_strings(cur);
++		clear_at_state(cur);
+ 		kfree(cur);
+ 	}
+ }
+@@ -512,7 +507,7 @@ void gigaset_freecs(struct cardstate *cs)
+ 	case 1: /* error when registering to LL */
+ 		gig_dbg(DEBUG_INIT, "clearing at_state");
+ 		clear_at_state(&cs->at_state);
+-		dealloc_at_states(cs);
++		dealloc_temp_at_states(cs);
  
-@@ -2072,7 +2072,8 @@ static int capidrv_addcontr(u16 contr, struct capi_profile *profp)
- 	card->interface.writebuf_skb = if_sendbuf;
- 	card->interface.writecmd = NULL;
- 	card->interface.readstat = if_readstat;
--	card->interface.features = ISDN_FEATURE_L2_HDLC |
-+	card->interface.features =
-+		ISDN_FEATURE_L2_HDLC |
- 		ISDN_FEATURE_L2_TRANS |
- 		ISDN_FEATURE_L3_TRANS |
- 		ISDN_FEATURE_P_UNKNOWN |
-@@ -2080,7 +2081,8 @@ static int capidrv_addcontr(u16 contr, struct capi_profile *profp)
- 		ISDN_FEATURE_L2_X75UI |
- 		ISDN_FEATURE_L2_X75BUI;
- 	if (profp->support1 & (1 << 2))
--		card->interface.features |= ISDN_FEATURE_L2_V11096 |
-+		card->interface.features |=
-+			ISDN_FEATURE_L2_V11096 |
- 			ISDN_FEATURE_L2_V11019 |
- 			ISDN_FEATURE_L2_V11038;
- 	if (profp->support1 & (1 << 8))
+ 		/* fall through */
+ 	case 0:	/* error in basic setup */
+@@ -848,8 +843,7 @@ static void cleanup_cs(struct cardstate *cs)
+ 	cs->mstate = MS_UNINITIALIZED;
+ 
+ 	clear_at_state(&cs->at_state);
+-	dealloc_at_states(cs);
+-	free_strings(&cs->at_state);
++	dealloc_temp_at_states(cs);
+ 	gigaset_at_init(&cs->at_state, NULL, cs, 0);
+ 
+ 	cs->inbuf->inputstate = INS_command;
 -- 
 1.7.3.4
 
