@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab2DYP3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:29:03 -0400
-Received: from fieldses.org ([174.143.236.118]:50733 "EHLO fieldses.org"
+	id S1755234Ab2DYPdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:33:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50745 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757Ab2DYP27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:28:59 -0400
-Date: Wed, 25 Apr 2012 11:28:58 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: Re: [PATCH 5/5] vfs: change nondirectory i_mutex ordering to fix
- quota deadlock
-Message-ID: <20120425152858.GB751@fieldses.org>
-References: <20120418215238.GA11959@fieldses.org>
- <1335367329-929-5-git-send-email-bfields@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335367329-929-5-git-send-email-bfields@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750757Ab2DYPc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 11:32:58 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] i5000: Fix the fatal error handling
+Date: Wed, 25 Apr 2012 12:32:51 -0300
+Message-Id: <1335367971-29584-1-git-send-email-mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 11:22:09AM -0400, bfields@fieldses.org wrote:
-> diff --git a/fs/inode.c b/fs/inode.c
-> index 487c924..13d23b6 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -961,6 +961,17 @@ void unlock_new_inode(struct inode *inode)
->  }
->  EXPORT_SYMBOL(unlock_new_inode);
->  
-> +/*
-> + * We order !IS_NOQUOTA files before ISNOQUOTA files, and by pointer
-> + * within each category.
-> + */
-> +static bool nondir_mutex_ordered(struct inode *inode1, struct inode *inode2)
-> +{
-> +	if (IS_NOQUOTA(inode1) == IS_NOQUOTA(inode2))
-> +		return inode1 < inode2;
-> +	return IS_NOQUOTA(inode2);
-> +}
+The fatal error channel bits point to a single channel, and not
+to a range of channels. Fix the code to properly report it,
+instead of printing messages like:
+	kernel: EDAC MC0: INTERNAL ERROR: channel-b out of range (4 >= 4)
 
-This seems kind of awful.  Is it what you were thinking of originally,
-Al, and could we live with it?
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
 
-> +
->  /**
->   * lock_two_nondirectories - take two i_mutexes on non-directory objects
->   * @inode1: first inode to lock; must be non-NULL
-> @@ -970,7 +981,7 @@ void lock_two_nondirectories(struct inode *inode1, struct inode *inode2)
->  {
->  	if (inode1 == inode2 || inode2 == NULL)
->  		mutex_lock(&inode1->i_mutex);
-> -	else if (inode1 < inode2) {
-> +	else if (nondir_mutex_ordered(inode1, inode2)) {
->  		mutex_lock(&inode1->i_mutex);
->  		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_QUOTA);
+This patch should be applied after the edac API fixes, e. g.
+after this patch: https://lkml.org/lkml/2012/4/16/515
 
-But I still don't see how to stop this code racing with S_NOQUOTA being
-toggled.
+ drivers/edac/i5000_edac.c |   12 +++++-------
+ 1 files changed, 5 insertions(+), 7 deletions(-)
 
---b.
+diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
+index fda19b4..2a9f1dc 100644
+--- a/drivers/edac/i5000_edac.c
++++ b/drivers/edac/i5000_edac.c
+@@ -474,7 +474,6 @@ static void i5000_process_fatal_error_info(struct mem_ctl_info *mci,
+ 	char msg[EDAC_MC_LABEL_LEN + 1 + 160];
+ 	char *specific = NULL;
+ 	u32 allErrors;
+-	int branch;
+ 	int channel;
+ 	int bank;
+ 	int rank;
+@@ -486,8 +485,7 @@ static void i5000_process_fatal_error_info(struct mem_ctl_info *mci,
+ 	if (!allErrors)
+ 		return;		/* if no error, return now */
+ 
+-	branch = EXTRACT_FBDCHAN_INDX(info->ferr_fat_fbd);
+-	channel = branch;
++	channel = EXTRACT_FBDCHAN_INDX(info->ferr_fat_fbd);
+ 
+ 	/* Use the NON-Recoverable macros to extract data */
+ 	bank = NREC_BANK(info->nrecmema);
+@@ -496,9 +494,9 @@ static void i5000_process_fatal_error_info(struct mem_ctl_info *mci,
+ 	ras = NREC_RAS(info->nrecmemb);
+ 	cas = NREC_CAS(info->nrecmemb);
+ 
+-	debugf0("\t\tCSROW= %d  Channels= %d,%d  (Branch= %d "
+-		"DRAM Bank= %d rdwr= %s ras= %d cas= %d)\n",
+-		rank, channel, channel + 1, branch >> 1, bank,
++	debugf0("\t\tCSROW= %d  Channel= %d "
++		"(DRAM Bank= %d rdwr= %s ras= %d cas= %d)\n",
++		rank, channel, bank,
+ 		rdwr ? "Write" : "Read", ras, cas);
+ 
+ 	/* Only 1 bit will be on */
+@@ -539,7 +537,7 @@ static void i5000_process_fatal_error_info(struct mem_ctl_info *mci,
+ 
+ 	/* Call the helper to output message */
+ 	edac_mc_handle_error(HW_EVENT_ERR_FATAL, mci, 0, 0, 0,
+-			     branch >> 1, -1, rank,
++			     channel >> 1, channel & 1, rank,
+ 			     rdwr ? "Write error" : "Read error",
+ 			     msg, NULL);
+ }
+-- 
+1.7.8
 
->  
-> -- 
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
