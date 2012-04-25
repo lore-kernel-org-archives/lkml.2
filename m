@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759305Ab2DYU7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 16:59:14 -0400
-Received: from relay.parallels.com ([195.214.232.42]:57611 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759273Ab2DYU7K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 16:59:10 -0400
-Message-ID: <4F98659B.6060409@parallels.com>
-Date: Thu, 26 Apr 2012 00:59:07 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 0/3] SUNRPC: three bugfixes for PipeFS event handling
-References: <20120420141419.10848.84280.stgit@localhost6.localdomain6> <20120425182409.GE751@fieldses.org>
-In-Reply-To: <20120425182409.GE751@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+	id S1758949Ab2DYU56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 16:57:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51103 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757275Ab2DYU54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 16:57:56 -0400
+From: Jan Kara <jack@suse.cz>
+To: linux-fsdevel@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, bfields@fieldses.org,
+        Al Viro <viro@ZenIV.linux.org.uk>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 1/6] ext3: Remove i_mutex use from ext3_quota_write()
+Date: Wed, 25 Apr 2012 22:57:42 +0200
+Message-Id: <1335387467-4928-2-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1335387467-4928-1-git-send-email-jack@suse.cz>
+References: <1335387467-4928-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-25.04.2012 22:24, J. Bruce Fields написал:
-> On Fri, Apr 20, 2012 at 06:18:59PM +0400, Stanislav Kinsbursky wrote:
->> These bugfixes were caught (or noticed) due to the following simple script:
-> I'm assuming Trond should take these (possibly for 3.4?).
+We don't need i_mutex in ext3_quota_write() because writes to quota file
+are serialized by dqio_mutex anyway. Changes to quota files outside of quota
+code are forbidded and enforced by NOATIME and IMMUTABLE bits.
 
-I think so.
-But would be great if you'll take them as well (since I'm mostly working 
-with your tree).
-Of course, only if its not a big deal for you.
-But if there will be any conflicts - then don't worry. I can just keep 
-these patches in my repo.
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/ext3/super.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-> --b.
->
->> ======================================================================
->>
->> #!/bin/bash
->> service rpcbind stop
->> service rpcidmapd stop
->> killall -TERM rpc.statd
->> umount /var/lib/nfs/rpc_pipefs
->> rmmod nfs
->> service rpcbind start
->> service nfs start
->> mount -t rpc_pipefs sunrpc /var/lib/nfs/rpc_pipefs
->>
->> =======================================================================
->>
->> The following series consists of:
->>
->> ---
->>
->> Stanislav Kinsbursky (3):
->>        SUNRPC: skip clients with program without PipeFS entries
->>        SUNRPC: traverse clients tree on PipeFS event
->>        SUNRPC: set per-net PipeFS superblock before notification
->>
->>
->>   net/sunrpc/clnt.c     |   34 ++++++++++++++++++++++++++++------
->>   net/sunrpc/rpc_pipe.c |    3 ++-
->>   2 files changed, 30 insertions(+), 7 deletions(-)
->>
+diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+index cf0b592..7c08c93 100644
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -3000,7 +3000,6 @@ static ssize_t ext3_quota_write(struct super_block *sb, int type,
+ 			(unsigned long long)off, (unsigned long long)len);
+ 		return -EIO;
+ 	}
+-	mutex_lock_nested(&inode->i_mutex, I_MUTEX_QUOTA);
+ 	bh = ext3_bread(handle, inode, blk, 1, &err);
+ 	if (!bh)
+ 		goto out;
+@@ -3024,10 +3023,8 @@ static ssize_t ext3_quota_write(struct super_block *sb, int type,
+ 	}
+ 	brelse(bh);
+ out:
+-	if (err) {
+-		mutex_unlock(&inode->i_mutex);
++	if (err)
+ 		return err;
+-	}
+ 	if (inode->i_size < off + len) {
+ 		i_size_write(inode, off + len);
+ 		EXT3_I(inode)->i_disksize = inode->i_size;
+@@ -3035,7 +3032,6 @@ out:
+ 	inode->i_version++;
+ 	inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+ 	ext3_mark_inode_dirty(handle, inode);
+-	mutex_unlock(&inode->i_mutex);
+ 	return len;
+ }
+ 
+-- 
+1.7.1
 
