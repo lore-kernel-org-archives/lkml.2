@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757629Ab2DYJrt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 05:47:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29024 "EHLO mga09.intel.com"
+	id S1757612Ab2DYJtW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 05:49:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11364 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757162Ab2DYJrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 05:47:48 -0400
+	id S1755406Ab2DYJtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 05:49:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="133580737"
-Subject: Re: [PATCH V1] dmaengine: tegra: add dma driver
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-In-Reply-To: <4F97C709.2060807@nvidia.com>
-References: <1334912896-4614-1-git-send-email-ldewangan@nvidia.com>
-	 <1334920487.31825.98.camel@vkoul-udesk3> <4F9153AF.7020901@nvidia.com>
-	 <1335170491.31825.104.camel@vkoul-udesk3> <4F95483F.5020005@nvidia.com>
-	 <20120423130659.GA22186@n2100.arm.linux.org.uk>
-	 <4F95567E.3090605@nvidia.com>  <4F97BD67.1050300@nvidia.com>
-	 <1335346425.31825.118.camel@vkoul-udesk3>  <4F97C709.2060807@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Apr 2012 15:13:48 +0530
-Message-ID: <1335347028.31825.122.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="133581085"
+From: Andi Kleen <andi@firstfloor.org>
+To: Hui Zhu <teawater@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: KGTP (Linux Kernel debugger and tracer) 20120424 release(doc update)[1/3]code
+References: <4F96A881.7050507@gmail.com>
+Date: Wed, 25 Apr 2012 02:49:19 -0700
+In-Reply-To: <4F96A881.7050507@gmail.com> (Hui Zhu's message of "Tue, 24 Apr
+	2012 21:20:01 +0800")
+Message-ID: <m2mx60m99c.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-25 at 15:12 +0530, Laxman Dewangan wrote:
-> On Wednesday 25 April 2012 03:03 PM, Vinod Koul wrote:
-> > On Wed, 2012-04-25 at 14:31 +0530, Laxman Dewangan wrote:
-> >> I had a  communication with Russell on another change thread and
-> >> understand that some more work need to be done in virt_chan to support
-> >> cyclic one.
-> >>
-> >> I want to have the cyclic dma support in my driver so I want to go on
-> >> following steps:
-> >> 1. I will post the patch for tegra dma which will not use the virt_dma
-> >> so that my driver will be independent of Russel's change.
-> > which driver? A new driver for cyclic support only or on top of
-> > Russell's changes?
-> 
-> I am referring the Nvidia Tegra's APB dma driver. This will be 
-> completely new driver based on dmaengine. We have old dma driver under 
-> mach-tegra/dma.c which has tegra specific apis. Want to move this driver 
-> to generic dmaengine based api.
-Okay, lets review the new patchset then :-)
+Hui Zhu <teawater@gmail.com> writes:
 
+Could you please split it down further. a 9kLOC patch is pretty daunting.
+
+>From a quick glance over some focus on simplication would be good: no
+own allocators (kernel has enough), no own types (that would remove
+asm), remove optional facilities like the private ring buffer. Some
+obsolete code like using semaphores vs mutexes. The variable list looks
+overcomplicated, just use an array? Generally too many macros I would
+say, try using inlines or removing them.  
+
+Do you have any rarely used optional features that could be left out a
+version 1? If yes do that.  I'm sure with some effort the 9kLOC could be
+much less. A patch half the size would be much easier to merge.
+
+There are some things that checkpatch will likely warn about.
+
+It would be good if you could describe the use case a bit better:
+this is for the kernel only or also user applications?
+
+-Andi
 
 -- 
-~Vinod
-
+ak@linux.intel.com -- Speaking for myself only
