@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758272Ab2DYFde (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 01:33:34 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:63891 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab2DYFdd (ORCPT
+	id S1758301Ab2DYFiT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 01:38:19 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9550 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893Ab2DYFiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 01:33:33 -0400
-X-AuditID: cbfee61a-b7b8eae00000534b-93-4f978caccf6a
-Message-id: <4F978CAC.6060408@samsung.com>
-Date: Wed, 25 Apr 2012 14:33:32 +0900
-From: Minho Ban <mhban@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
- Thunderbird/11.0.1
-MIME-version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH] tracing: Prevent wasting time evaluating parameters in
- trace_preempt_on/off
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Wed, 25 Apr 2012 01:38:18 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 24 Apr 2012 22:37:51 -0700
+Date: Wed, 25 Apr 2012 08:37:47 +0300
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Felipe Balbi" <balbi@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v2 1/3] ARM: tegra: Add AHB driver
+Message-ID: <20120425083747.466f5c98330af8964d980b8c@nvidia.com>
+In-Reply-To: <20120424195645.GB3628@n2100.arm.linux.org.uk>
+References: <1335269116-9578-1-git-send-email-hdoyu@nvidia.com>
+	<20120424195645.GB3628@n2100.arm.linux.org.uk>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes spending time for evaluating parameters in trace_preempt_on/off when
-the tracer config is off.
+On Tue, 24 Apr 2012 21:56:45 +0200
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-The patch mainly inspired by Steven Rostedt, thanks Steven.
+> On Tue, Apr 24, 2012 at 03:05:14PM +0300, Hiroshi DOYU wrote:
+> > The AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
+> > High-performance Bus (AHB) architecture.
+> > 
+> > The AHB Arbiter controls AHB bus master arbitration. This effectively
+> > forms a second level of arbitration for access to the memory
+> > controller through the AHB Slave Memory device. The AHB pre-fetch
+> > logic can be configured to enhance performance for devices doing
+> > sequential access. Each AHB master is assigned to either the high or
+> > low priority bin. Both Tegra20/30 have this AHB bus.
+> > 
+> > Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+> > Cc: Felipe Balbi <balbi@ti.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > ---
+> > Update:
+> > - Use platform_device to get info from dt dynamically.(Felipe/Arnd)
+> > ---
+> >  arch/arm/mach-tegra/Makefile    |    1 +
+> >  arch/arm/mach-tegra/tegra-ahb.c |  285 +++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 286 insertions(+), 0 deletions(-)
+> 
+> 1. I thought we weren't going to have any more drivers under
+>    arch/arm
 
-Signed-off-by: Minho Ban <mhban@samsung.com>
----
- include/linux/ftrace.h |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+Can this driver be located under "drivers/misc"? Or is there any better place?
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 72a6cab..bc7af66 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -485,8 +485,12 @@ static inline void __ftrace_enabled_restore(int enabled)
-   extern void trace_preempt_on(unsigned long a0, unsigned long a1);
-   extern void trace_preempt_off(unsigned long a0, unsigned long a1);
- #else
--  static inline void trace_preempt_on(unsigned long a0, unsigned long a1) { }
--  static inline void trace_preempt_off(unsigned long a0, unsigned long a1) { }
-+/*
-+ * Use defines instead of static inlines because some arches will make code out
-+ * of the CALLER_ADDR, when we really want these to be a real nop.
-+ */
-+# define trace_preempt_on(a0, a1) do { } while (0)
-+# define trace_preempt_off(a0, a1) do { } while (0)
- #endif
- 
- #ifdef CONFIG_FTRACE_MCOUNT_RECORD
--- 
-1.7.5.4
+> 2. From the way you describe it above, this sounds like it should be some
+>    kind of generic driver, which obtains the necessary settings to be
+>    programmed into registers from (eg) DT.
 
+Agree.
