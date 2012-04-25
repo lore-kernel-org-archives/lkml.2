@@ -1,194 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab2DYJCD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 05:02:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36393 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755661Ab2DYJCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 05:02:00 -0400
-Date: Wed, 25 Apr 2012 11:01:56 +0200
-From: Jan Kara <jack@suse.cz>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Vivek Goyal <vgoyal@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
-        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120425090156.GB12568@quack.suse.cz>
-References: <20120410222425.GF4936@quack.suse.cz>
- <20120411154005.GD16692@redhat.com>
- <20120411192231.GF16008@quack.suse.cz>
- <20120412203719.GL2207@redhat.com>
- <20120412205148.GA24056@google.com>
- <20120414143639.GA31241@localhost>
- <20120416145744.GA15437@redhat.com>
- <20120424113340.GA12509@localhost>
- <20120424145655.GA1474@quack.suse.cz>
- <20120425031635.GA6895@localhost>
+	id S1756963Ab2DYJCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 05:02:54 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:16256 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755661Ab2DYJCw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 05:02:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 25 Apr 2012 02:02:51 -0700
+Message-ID: <4F97BD67.1050300@nvidia.com>
+Date: Wed, 25 Apr 2012 14:31:27 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120425031635.GA6895@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Vinod Koul <vinod.koul@linux.intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V1] dmaengine: tegra: add dma driver
+References: <1334912896-4614-1-git-send-email-ldewangan@nvidia.com> <1334920487.31825.98.camel@vkoul-udesk3> <4F9153AF.7020901@nvidia.com> <1335170491.31825.104.camel@vkoul-udesk3> <4F95483F.5020005@nvidia.com> <20120423130659.GA22186@n2100.arm.linux.org.uk> <4F95567E.3090605@nvidia.com>
+In-Reply-To: <4F95567E.3090605@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 25-04-12 11:16:35, Wu Fengguang wrote:
-> On Tue, Apr 24, 2012 at 04:56:55PM +0200, Jan Kara wrote:
-> > On Tue 24-04-12 19:33:40, Wu Fengguang wrote:
-> > > On Mon, Apr 16, 2012 at 10:57:45AM -0400, Vivek Goyal wrote:
-> > > > On Sat, Apr 14, 2012 at 10:36:39PM +0800, Fengguang Wu wrote:
-> > > > 
-> > > > [..]
-> > > > > Yeah the backpressure idea would work nicely with all possible
-> > > > > intermediate stacking between the bdi and leaf devices. In my attempt
-> > > > > to do combined IO bandwidth control for
-> > > > > 
-> > > > > - buffered writes, in balance_dirty_pages()
-> > > > > - direct IO, in the cfq IO scheduler
-> > > > > 
-> > > > > I have to look into the cfq code in the past days to get an idea how
-> > > > > the two throttling layers can cooperate (and suffer from the pains
-> > > > > arise from the violations of layers). It's also rather tricky to get
-> > > > > two previously independent throttling mechanisms to work seamlessly
-> > > > > with each other for providing the desired _unified_ user interface. It
-> > > > > took a lot of reasoning and experiments to work the basic scheme out...
-> > > > > 
-> > > > > But here is the first result. The attached graph shows progress of 4
-> > > > > tasks:
-> > > > > - cgroup A: 1 direct dd + 1 buffered dd
-> > > > > - cgroup B: 1 direct dd + 1 buffered dd
-> > > > > 
-> > > > > The 4 tasks are mostly progressing at the same pace. The top 2
-> > > > > smoother lines are for the buffered dirtiers. The bottom 2 lines are
-> > > > > for the direct writers. As you may notice, the two direct writers are
-> > > > > somehow stalled for 1-2 times, which increases the gaps between the
-> > > > > lines. Otherwise, the algorithm is working as expected to distribute
-> > > > > the bandwidth to each task.
-> > > > > 
-> > > > > The current code's target is to satisfy the more realistic user demand
-> > > > > of distributing bandwidth equally to each cgroup, and inside each
-> > > > > cgroup, distribute bandwidth equally to buffered/direct writes. On top
-> > > > > of which, weights can be specified to change the default distribution.
-> > > > > 
-> > > > > The implementation involves adding "weight for direct IO" to the cfq
-> > > > > groups and "weight for buffered writes" to the root cgroup. Note that
-> > > > > current cfq proportional IO conroller does not offer explicit control
-> > > > > over the direct:buffered ratio.
-> > > > > 
-> > > > > When there are both direct/buffered writers in the cgroup,
-> > > > > balance_dirty_pages() will kick in and adjust the weights for cfq to
-> > > > > execute. Note that cfq will continue to send all flusher IOs to the
-> > > > > root cgroup.  balance_dirty_pages() will compute the overall async
-> > > > > weight for it so that in the above test case, the computed weights
-> > > > > will be
-> > > > 
-> > > > I think having separate weigths for sync IO groups and async IO is not
-> > > > very appealing. There should be one notion of group weight and bandwidth
-> > > > distrubuted among groups according to their weight.
-> > > 
-> > > There have to be some scheme, either explicitly or implicitly. Maybe
-> > > you are baring in mind some "equal split among queues" policy? For
-> > > example, if the cgroup has 9 active sync queues and 1 async queue,
-> > > split the weight equally to the 10 queues?  So the sync IOs get 90%
-> > > share, and the async writes get 10% share.
-> >   Maybe I misunderstand but there doesn't have to be (and in fact isn't)
-> > any split among sync / async IO in CFQ. At each moment, we choose a queue
-> > with the highest score and dispatch a couple of requests from it. Then we
-> > go and choose again. The score of the queue depends on several factors
-> > (like age of requests, whether the queue is sync or async, IO priority,
-> > etc.).
-> > 
-> > Practically, over a longer period system will stabilize on some ratio
-> > but that's dependent on the load so your system should not impose some
-> > artificial direct/buffered split but rather somehow deal with the reality
-> > how IO scheduler decides to dispatch requests...
-> 
-> >   Well, but we also have IO priorities which change which queue should get
-> > preference.
-> 
-> >   And also sync queues for several processes can get merged when CFQ
-> > observes these processes cooperate together on one area of disk and get
-> > split again when processes stop cooperating. I don't think you really want
-> > to second-guess what CFQ does inside...
->  
-> Good points, thank you!
-> 
-> So the cfq behavior is pretty undetermined. I more or less realize
-> this from the experiments. For example, when starting 2+ "dd oflag=direct"
-> tasks in one single cgroup, they _sometimes_ progress at different rates.
-> See the attached graphs for two such examples on XFS. ext4 is fine.
-> 
-> The 2-dd test case is:
-> 
-> mkdir /cgroup/dd
-> echo $$ > /cgroup/dd/tasks
-> 
-> dd if=/dev/zero of=/fs/zero1 bs=1M oflag=direct &
-> dd if=/dev/zero of=/fs/zero2 bs=1M oflag=direct &
-> 
-> The 6-dd test case is similar.
-  Hum, interesting. I would not expect that. Maybe it's because files are
-allocated at the different area of the disk. But even then the difference
-should not be *that* big.
- 
-> > > Look at this graph, the 4 dd tasks are granted the same weight (2 of
-> > > them are buffered writes). I guess the 2 buffered dd tasks managed to
-> > > progress much faster than the 2 direct dd tasks just because the async
-> > > IOs are much more efficient than the bs=64k direct IOs.
-> >   Likely because 64k is too low to get good bandwidth with direct IO. If
-> > it was 4M, I believe you would get similar throughput for buffered and
-> > direct IO. So essentially you are right, small IO benefits from caching
-> > effects since they allow you to submit larger requests to the device which
-> > is more efficient.
-> 
-> I didn't direct compare the effects, however here is an example of
-> doing 1M, 64k, 4k direct writes in parallel. It _seems_ bs=1M only has
-> marginal benefits of 64k, assuming cfq is behaving well.
-> 
-> https://github.com/fengguang/io-controller-tests/raw/master/log/snb/ext4/direct-write-1M-64k-4k.2012-04-19-10-50/balance_dirty_pages-task-bw.png
-> 
-> The test case is:
-> 
-> # cgroup 1
-> echo 500 > /cgroup/cp/blkio.weight
-> 
-> dd if=/dev/zero of=/fs/zero-1M bs=1M oflag=direct &
-> 
-> # cgroup 2
-> echo 1000 > /cgroup/dd/blkio.weight
-> 
-> dd if=/dev/zero of=/fs/zero-64k bs=64k oflag=direct &
-> dd if=/dev/zero of=/fs/zero-4k  bs=4k  oflag=direct &
-  Um, I'm not completely sure what you tried to test in the above test.
-What I wanted to point out is that direct IO is not necessarily less
-efficient than buffered IO. Look:
-xen-node0:~ # uname -a
-Linux xen-node0 3.3.0-rc4-xen+ #6 SMP PREEMPT Tue Apr 17 06:48:08 UTC 2012
-x86_64 x86_64 x86_64 GNU/Linux
-xen-node0:~ # dd if=/dev/zero of=/mnt/file bs=1M count=1024 conv=fsync
-1024+0 records in
-1024+0 records out
-1073741824 bytes (1.1 GB) copied, 10.5304 s, 102 MB/s
-xen-node0:~ # dd if=/dev/zero of=/mnt/file bs=1M count=1024 oflag=direct conv=fsync
-1024+0 records in
-1024+0 records out
-1073741824 bytes (1.1 GB) copied, 10.3678 s, 104 MB/s
+Hi Vinod,
 
-So both direct and buffered IO are about the same. Note that I used
-conv=fsync flag to erase the effect that part of buffered write still
-remains in the cache when dd is done writing which is unfair to direct
-writer...
+On Monday 23 April 2012 06:47 PM, Laxman Dewangan wrote:
+> On Monday 23 April 2012 06:36 PM, Russell King - ARM Linux wrote:
+>> On Mon, Apr 23, 2012 at 05:47:03PM +0530, Laxman Dewangan wrote:
+>>> Hi Russell,
+>>> On Monday 23 April 2012 02:11 PM, Vinod Koul wrote:
+>>>> On Fri, 2012-04-20 at 17:46 +0530, Laxman Dewangan wrote:
+>>>>> Thanks Vinod for quick review.
+>>>> Since I was on vacation, I hadn't noticed Russell has already sent the
+>>>> patches for omap dma support.
+>>>> http://permalink.gmane.org/gmane.linux.ports.arm.omap/75034
+>>>>
+>>>> It would be nice if both the efforts are coordinated.
+>>>>
+>>>> Btw I like the virtual channel support introduced by Russell
+>>>>
+>>> Can you please point me the virtual channel related change? I am not
+>>> able to locate this like search for function vchan_* ().
+>>> My driver is also on same line but not used vchan_* and also having
+>>> support for cyclic transfer.
+>> It's only been posted in RFC form on linux-arm-kernel and linux-omap
+>> lists.  The specific patch is:
+>>
+>> http://lists.arm.linux.org.uk/lurker/message/20120418.101116.082b350f.en.html
+>>
+>> I wouldn't call it perfected yet, but usable.  It doesn't have any
+>> knowledge about cyclic transfers either.
+> For simple dma, it is straight to use the virt_chan and it reduce lots
+> of code from tegra_dma as most of it moved to the virt_dma.
+>
+> Some points which I am looking are:
+> 1. Extending this for cyclic support:
+> In cyclic mode, we need to call callback after period_len but do not
+> want to free descriptors. So either I need to add flag on the desctiptor
+> to no delet and so when vc->desc_free(vd); is called from callback, it
+> will not delete the descriptor.
+>
+> 2. With very prep call, we are allocating descriptor. Is it is possible
+> to allocate some desc in advance and then keep using them. The
+> complexity is that if we allocate the desc in advance, we need to
+> allocate the desc and sq_req list and maintain the two different lists
+> as we dont know the sg_len in advance.
+>
+> 3. vchan_cookie_complete()  is not possible in the cyclic mode as we
+> dont want to call dma_cookie_complete() but just want to do following
+> two thing:
+>
+> list_add_tail(&vd->node,&vc->desc_completed);
+> tasklet_schedule(&vc->task);
+>
+> if we extend this function to bypass dma_cookie_complete(&vd->tx); or
+> rather than calling this api, directly call the above apis.
+>
 
-And actually 64k vs 1M makes a big difference on my machine:
-xen-node0:~ # dd if=/dev/zero of=/mnt/file bs=64k count=16384 oflag=direct conv=fsync
-16384+0 records in
-16384+0 records out
-1073741824 bytes (1.1 GB) copied, 19.3176 s, 55.6 MB/s
 
-								Honza
+I had a  communication with Russell on another change thread and 
+understand that some more work need to be done in virt_chan to support 
+cyclic one.
+
+I want to have the cyclic dma support in my driver so I want to go on 
+following steps:
+1. I will post the patch for tegra dma which will not use the virt_dma 
+so that my driver will be independent of Russel's change.
+2. Once the tegra dma is part of tree, I can move all my dma client to 
+use the dmaengine based driver and remove old style dma.
+3. Till that time Russell's will have already virt_dma support for 
+cyclic one and so I will change tegra_dma.c to use virt_dma.
+
+
+Let me know your opinion so that I can plan my patch/change accordingly.
+
+Thanks,
+Laxman
+
