@@ -1,117 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065Ab2DYK3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 06:29:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43553 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757111Ab2DYK3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 06:29:10 -0400
-Date: Wed, 25 Apr 2012 20:29:02 +1000
-From: NeilBrown <neilb@suse.de>
-To: balbi@ti.com
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 6/6] twl4030-usb: Don't report EVENT_ID when there is
- VBUS.
-Message-ID: <20120425202902.05890cca@notabene.brown>
-In-Reply-To: <20120425080526.GA3777@arwen.pp.htv.fi>
-References: <20120425072931.20124.56635.stgit@notabene.brown>
-	<20120425073311.20124.58619.stgit@notabene.brown>
-	<20120425080526.GA3777@arwen.pp.htv.fi>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/OpguYR6x=Dedfco+oUfOsjx"; protocol="application/pgp-signature"
+	id S1758076Ab2DYKbe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 06:31:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57765 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756970Ab2DYKbd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 06:31:33 -0400
+Date: Wed, 25 Apr 2012 07:31:32 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>
+Subject: Re: [GIT PULL 00/13] Annotation improvements (G+ edition)
+Message-ID: <20120425103132.GB17992@infradead.org>
+References: <1334867644-2722-1-git-send-email-acme@infradead.org>
+ <20120425070537.GA29496@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120425070537.GA29496@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/OpguYR6x=Dedfco+oUfOsjx
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+CCing Hagen, who also reported this crash on G+.
 
-On Wed, 25 Apr 2012 11:05:27 +0300 Felipe Balbi <balbi@ti.com> wrote:
+Em Wed, Apr 25, 2012 at 09:05:38AM +0200, Ingo Molnar escreveu:
+> The new output looks very (very!) nice - but it is still a bit 
+> fragile:
 
-> Hi,
->=20
-> On Wed, Apr 25, 2012 at 05:33:11PM +1000, NeilBrown wrote:
-> > Some USB chargers tie the ID pin low via various resistors.
-> > So they can cause VBUS to be high and ID to be low.
-> >=20
-> > The 'A' end of an OTG cable never receives VBUS, it only ever generates=
- it.
->=20
-> this isn't entirely true. Have you considered Accessory Charger
-> Adapters ?
+Glad you liked it :-)
+ 
+> earth5:~/tip/tools/perf> ./perf record -a sleep 1
+> [ perf record: Woken up 1 times to write data ]
+> [ perf record: Captured and wrote 0.092 MB perf.data (~4008 samples) ]
+> 
+> earth5:~/tip/tools/perf> ./perf annotate _int_free
+> perf: Segmentation fault
+> 
+> The crash happens here:
+> 
+> Program received signal SIGSEGV, Segmentation fault.
+> 0x0000000000486cda in annotate_browser__mark_jump_targets (size=<optimized out>, 
+>     browser=<optimized out>) at ui/browsers/annotate.c:704
+> 704			bdlt->jump_target = true;
+> 
+> But other than that the new assembly output is awesome :-)
 
-I confess that I probably did get lost amid the maze of twisty standards -
-all different.
+Humm...
 
-Looking at http://en.wikipedia.org/wiki/USB_On-The-Go
+683 static void annotate_browser__mark_jump_targets(struct annotate_browser *browser,
+684							size_t size)
+685	{
+686		u64 offset;
+687	
+688		for (offset = 0; offset < size; ++offset) {
+689			struct disasm_line *dl = browser->offsets[offset], *dlt;
+690			struct browser_disasm_line *bdlt;
+691	
+692			if (!dl || !dl->ins || !ins__is_jump(dl->ins))
+693				continue;
+694	
+695			if (dl->ops.target >= size) {
+696				ui__error("jump to after symbol!\n"
+697					  "size: %zx, jump target: %" PRIx64,
+698					  size, dl->ops.target);
+699				continue;
+700			}
+701	
+702			dlt = browser->offsets[dl->ops.target];
+703			bdlt = disasm_line__browser(dlt);
+704			bdlt->jump_target = true;
+705		}
+706			
+707	}
 
-it seems that a USB Accessory Charger Adapter can present 3 states includin=
-g:
+(gdb) p size
+$5 = 2415
+(gdb) p offset
+$6 = 140
+(gdb) p dl->ops.target
+$7 = 143
+(gdb) p browser->offsets[143]
+$8 = (struct disasm_line *) 0x0
+(gdb) p dl->name
+$9 = 0x2363bd0 "je"
+(gdb)
 
-   A charger and a B-device are attached. The OTG device is allowed to char=
-ge
-   and enter host mode.
+Really strange, the code assumed that at the jump target we would have an
+assembly line, but only in the previous instruction offset we have a 'lock':
 
-which would mean that the TWL4030 would see that A end of an OTG cable, and
-VBUS asserted.
+(gdb) p browser->offsets[144]
+$10 = (struct disasm_line *) 0x0
+(gdb) p browser->offsets[142]
+$11 = (struct disasm_line *) 0x27bd620
+(gdb) p browser->offsets[142]->name
+$12 = 0x237a8a0 "lock"
+(gdb)
 
-However that appears to be selected if the ID resistance is 36.5Kohms, while
-others are selected for 68Kohm and 124Kohm.
-But the twl4030 cannot detect that distinction.  The cut-offs are
-  Ground,  102K,  200K,  440K,  Floating
+I'll study this more, but for now I'll just check if there is a disasm_line
+at dl->ops.target, i.e. a valid jump target.
 
-so it seems this is a standard that post-dates TWL4030.  It also seems to be
-specific to OTG Micro plugs, and I have an OTG Mini plug (does TWL4030
-support Micro plugs? Does it care?)
-
->=20
-> > So if we see VBUS and are not generating it, this must be a charger,
-> > not the A end of an OTG cable, so in that case, ignore the fact that
-> > ID is low.
->=20
-> wrong.
->=20
-
-That may well be.  However we need some way to tell twl4030_charger.c
-either USB_EVENT_VBUS or USB_EVENT_CHARGER when a charger is plugged in.
-I guess we could just punt to user-space: provide all the measurements
-through sysfs and allow user-space to enable the charger and select the
-desired current?
-
-Or should this just go in the too-hard basket for now?
-
-
-Thanks,
-NeilBrown
-
-
---Sig_/OpguYR6x=Dedfco+oUfOsjx
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT5fR7jnsnt1WYoG5AQJqGhAAsrtkkJyfHpybbxenpUpN/81xbKn4sSh6
-HBVj7u5j0OVKaEoMUwKPFkur7cBBphISQf/XcX9j8UrU6C0hc6YZcC2Vz3sRpU34
-QeUA2PSdzixCtbArilb7S7SdSO+HObxLe2sz3N3JCZGz3DfhDdFGlMhnqWzGzyrm
-rO7rdMGvs+3UTkZPdIF7C+ZHNEsMj9iZxvFfCyvtNBmhtvrxrXf5Vo2jcIoxnjYG
-4AYjAgy+h/OXMuGEs1ZF1RSkS8DKYldKaHvHRX2TuEfkz/kF80jBDJ9NWDkKr+ef
-35GYiuxfTwS1XIEW0oyQm8W8dTTrOX2NCf7+fPcPTWJ9/mLewdVXU7YSwwcuIKUR
-BarerCJNQXh8pupGzd+7Abmm1to1vjJ6PrKEIVtcwSnoG/rbPDUNdMTyGPuO6SUg
-M2xlpK1IOBXRIUK+L0X76m1hnNYRDyZBovgMm23GqC+6FpgWQ6tuGB+1FcPvnNKw
-z1uEilrmJ6VPQw+wmGItjmEKhWfBYpf7rHm5QfvfyOLi+C9FQQwXm4L8g2ZssWjv
-DFywfP3KVCtu48tuSmmS5lT9IMt0Rqmc84+xsT5D4d3H6eiQWwgfH6zPy4jfN2wo
-C9CjwJpu4j4ZgM3kt82LEc5/CDsWr3wwZycPH+b5qOBLT951lSo89NUhkdgy1J/q
-mOqIwvefQCA=
-=z91q
------END PGP SIGNATURE-----
-
---Sig_/OpguYR6x=Dedfco+oUfOsjx--
+- Arnaldo
