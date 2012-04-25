@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758568Ab2DYC71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 22:59:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63966 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753792Ab2DYC7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 22:59:25 -0400
-Message-ID: <4F976889.3010809@redhat.com>
-Date: Tue, 24 Apr 2012 22:59:21 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111104 Red Hat/3.1.16-2.el6_1 Thunderbird/3.1.16
+	id S1757771Ab2DYDCR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 23:02:17 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56373 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037Ab2DYDCP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 23:02:15 -0400
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: One problem in reassign pci bus number?
-References: <20120410090306.GA7056@richard>	<20120422155202.GA13540@richard>	<4F95B17B.3030401@redhat.com>	<CAE9FiQX52eL6ZFQ_X3uL5DukK03sPhByZpPh0++o6L=WF8BGXg@mail.gmail.com>	<4F95C50C.4060203@redhat.com> <CAE9FiQVAWqCYjy3tpvtnq6y4WMWRHoQFug-WsgUAtvjVpvkMqw@mail.gmail.com>
-In-Reply-To: <CAE9FiQVAWqCYjy3tpvtnq6y4WMWRHoQFug-WsgUAtvjVpvkMqw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120424201802.GE3628@n2100.arm.linux.org.uk>
+References: <cover.1335266056.git.viresh.kumar@st.com>
+	<abbcf661dc58948794839eb0fba1d5a0950ec848.1335266056.git.viresh.kumar@st.com>
+	<20120424120019.GE24089@lunn.ch>
+	<CAOh2x==YaPxYxigyE=n2weoKHhu4ktGRHHGdzgs2+d1_Lo-D4Q@mail.gmail.com>
+	<20120424201802.GE3628@n2100.arm.linux.org.uk>
+Date: Wed, 25 Apr 2012 08:32:14 +0530
+Message-ID: <CAOh2x==Se4ipK_jexOE_=82=S4p41W9Ek0Om6DrUwctSz-Wcyw@mail.gmail.com>
+Subject: Re: [PATCH V3 07/12] ata/sata_mv: Remove conditional compilation of
+ clk code
+From: viresh kumar <viresh.linux@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Andrew Lunn <andrew@lunn.ch>, Viresh Kumar <viresh.kumar@st.com>,
+        akpm@linux-foundation.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        mturquette@linaro.org, sshtylyov@mvista.com, jgarzik@redhat.com,
+        linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 06:22 PM, Yinghai Lu wrote:
-> On Mon, Apr 23, 2012 at 2:09 PM, Don Dutile<ddutile@redhat.com>  wrote:
->> even though I've tried every magic trick known with grub&  kernel boot
->> params.
->> ... the PCI log btwn early boot and until the console is reconfigured is
->> 'lost'
->
-> please change
->
-> earlycon=uart82550,io,0x1030,115200 earlyprintk=serial,ttyS0,115200
-> console=tty0 console=ttyS0,115200n8
->
-> ===>
->
-> earlycon=uart82550,io,0x1030,115200
->
->
-> Yinghai
-I'm pretty sure I tried that, and only added the earlyprintk
-and console args when the earlycon didn't work, but I'll give it another try...
+On Wed, Apr 25, 2012 at 1:48 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> Look, it's very very simple.
 
+Thanks for explaining.
 
+> Finally, if a platform has clk API support enabled, and a driver requests
+> a clock, and clk_get() returns an error, it means the clock was not found.
+> That's a fatal error for the driver, because it means that something is
+> wrong in the lookup tables - moreover, it means that _potentially_ someone
+> screwed up the clk matching and this device has a clock which needs some
+> control, but wasn't found.  I don't think ignoring that kind of error,
+> even by printing a warning, is a particularly good approach - it seems
+> to me it makes things fragile.  What if this missing clock causes the
+> bus to your device to ultimately hang?
 
+This is what i was thinking too and thats why floated this version of patch.
+But as Andrew said, clk API support is enabled for them, but still they
+don't have a clk for sata. To get this working, there are two solutions:
+- Create dummy clk for sata for that platform, so clk_get doesn't fail.
+- Check for error before every call to clk APIs after clk_get().
+
+Andrew favored the second one. Which means, even on platforms
+with clk API defined and clk enable required, if there are some issues
+with lookup table, and clk_get() fails, system may hang when registers
+are accessed. For this i favored first one.
+
+--
+viresh
