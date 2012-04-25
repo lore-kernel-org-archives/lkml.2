@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057Ab2DYMuX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:50:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37608 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754659Ab2DYMuV convert rfc822-to-8bit (ORCPT
+	id S1759060Ab2DYMut (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:50:49 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39082 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754580Ab2DYMur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:50:21 -0400
-Message-ID: <1335358206.28150.265.camel@twins>
-Subject: Re: [PATCH 1/2] math128: Introduce {mult,add,cmp}_u128
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 25 Apr 2012 14:50:06 +0200
-In-Reply-To: <20120425112244.894997253@chello.nl>
-References: <20120425111552.665217867@chello.nl>
-	 <20120425112244.894997253@chello.nl>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 25 Apr 2012 08:50:47 -0400
+Date: Wed, 25 Apr 2012 13:50:42 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Roland McGrath <roland@hack.frob.com>
+Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
+Message-ID: <20120425125042.GF6871@ZenIV.linux.org.uk>
+References: <20120420080914.GF6871@ZenIV.linux.org.uk>
+ <CA+55aFxia+u3VAf0qN-2wv7DyAQZK-Z8=n=cqUvo--+C905aFg@mail.gmail.com>
+ <20120420160848.GG6871@ZenIV.linux.org.uk>
+ <20120420164239.GH6871@ZenIV.linux.org.uk>
+ <CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com>
+ <20120420180748.GI6871@ZenIV.linux.org.uk>
+ <20120423180150.GA6871@ZenIV.linux.org.uk>
+ <20120424072617.GB6871@ZenIV.linux.org.uk>
+ <20120425030659.GE6871@ZenIV.linux.org.uk>
+ <20120425123746.GA15560@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120425123746.GA15560@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-25 at 13:15 +0200, Peter Zijlstra wrote:
-> +static inline u128 add_u128(u128 a, u128 b)
-> +{
-> +       a.lo += b.lo;
-> +       if (a.lo < b.lo)
-> +               a.hi++;
-> +
-> +       return a;
-> +} 
+On Wed, Apr 25, 2012 at 02:37:46PM +0200, Oleg Nesterov wrote:
+> As for sys_sigsuspend() and this race in particular:
+> 
+> > Arrival of a signal that has userland handler
+> > and that isn't blocked by the mask given to sigsuspend() should terminate
+> > sigsuspend().
+> 
+> Yes. But note that do_signal() restores the old sigmask. This means that
+> the signal we get after the first do_signal() was not blocked before
+> sigsuspend() was called. So, to some extent, we can pretend that the
+> handler was executed before sigsuspend() and it was never restarted.
 
-D'0h I lost a .hi add there..
+Signal might have already arrived by the time we restore sigmask.  So no,
+it might have been blocked prior to sigsuspend().
+
+I agree that relying on disabled interrupts doesn't work - objection would
+have worked if it was just "what if we get NEED_RESCHED and while we are
+scheduled away a signal arrives", but this scenario doesn't depend on
+that.  We definitely want interrupts enabled before we start playing with
+do_notify_resume(), especially if things like deferred fput, etc. end up
+there as well.
