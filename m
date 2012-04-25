@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab2DYP2z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:28:55 -0400
-Received: from exchange.thenap.com ([209.190.0.21]:4961 "EHLO
-	EXCHANGE.thenap.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab2DYP2x convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:28:53 -0400
-X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Apr 2012 11:28:53 EDT
-From: Drew Weaver <drew.weaver@thenap.com>
-To: "'Thomas Jarosch'" <thomas.jarosch@intra2net.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Charlie Suffin <charlie.suffin@stratus.com>
-Date: Wed, 25 Apr 2012 11:23:27 -0400
-Subject: RE: [PATCH] pci: Add quirk for still enabled interrupts on Intel
- Sandy Bridge GPUs
-Thread-Topic: [PATCH] pci: Add quirk for still enabled interrupts on Intel
- Sandy Bridge GPUs
-Thread-Index: Ac0i9zRMpky74yPqSEiNSKWofqhBKwAABc6Q
-Message-ID: <F3318834F1F89D46857972DD4B411D7005324C00C5@exchange>
-References: <4EDFD5BB.1050906@intra2net.com>
- <201204251722.14877.thomas.jarosch@intra2net.com>
-In-Reply-To: <201204251722.14877.thomas.jarosch@intra2net.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754923Ab2DYP3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:29:03 -0400
+Received: from fieldses.org ([174.143.236.118]:50733 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757Ab2DYP27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 11:28:59 -0400
+Date: Wed, 25 Apr 2012 11:28:58 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: Re: [PATCH 5/5] vfs: change nondirectory i_mutex ordering to fix
+ quota deadlock
+Message-ID: <20120425152858.GB751@fieldses.org>
+References: <20120418215238.GA11959@fieldses.org>
+ <1335367329-929-5-git-send-email-bfields@fieldses.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335367329-929-5-git-send-email-bfields@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yeah it is very unfortunate that this hasn't been fixed in the BIOS.
+On Wed, Apr 25, 2012 at 11:22:09AM -0400, bfields@fieldses.org wrote:
+> diff --git a/fs/inode.c b/fs/inode.c
+> index 487c924..13d23b6 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -961,6 +961,17 @@ void unlock_new_inode(struct inode *inode)
+>  }
+>  EXPORT_SYMBOL(unlock_new_inode);
+>  
+> +/*
+> + * We order !IS_NOQUOTA files before ISNOQUOTA files, and by pointer
+> + * within each category.
+> + */
+> +static bool nondir_mutex_ordered(struct inode *inode1, struct inode *inode2)
+> +{
+> +	if (IS_NOQUOTA(inode1) == IS_NOQUOTA(inode2))
+> +		return inode1 < inode2;
+> +	return IS_NOQUOTA(inode2);
+> +}
 
------Original Message-----
-From: Thomas Jarosch [mailto:thomas.jarosch@intra2net.com] 
-Sent: Wednesday, April 25, 2012 11:22 AM
-To: linux-pci@vger.kernel.org
-Cc: Jesse Barnes; linux-kernel@vger.kernel.org; Drew Weaver; Charlie Suffin
-Subject: Re: [PATCH] pci: Add quirk for still enabled interrupts on Intel Sandy Bridge GPUs
+This seems kind of awful.  Is it what you were thinking of originally,
+Al, and could we live with it?
 
-On Wednesday, 7. December 2011 22:08:11 Thomas Jarosch wrote:
-> Some BIOS implementations leave the Intel GPU interrupts enabled, even 
-> though no one is handling them (f.e. i915 driver is never loaded).
-> Additionally the interrupt destination is not set up properly and the 
-> interrupt ends up -somewhere-.
->
-> These spurious interrupts are "sticky" and the kernel disables the 
-> (shared) interrupt line after 100.000+ generated interrupts.
+> +
+>  /**
+>   * lock_two_nondirectories - take two i_mutexes on non-directory objects
+>   * @inode1: first inode to lock; must be non-NULL
+> @@ -970,7 +981,7 @@ void lock_two_nondirectories(struct inode *inode1, struct inode *inode2)
+>  {
+>  	if (inode1 == inode2 || inode2 == NULL)
+>  		mutex_lock(&inode1->i_mutex);
+> -	else if (inode1 < inode2) {
+> +	else if (nondir_mutex_ordered(inode1, inode2)) {
+>  		mutex_lock(&inode1->i_mutex);
+>  		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_QUOTA);
 
-Just a small heads up: Boards with the new Intel Ivy bridge chipset are affected, too. Currently known to be affected is
+But I still don't see how to stop this code racing with S_NOQUOTA being
+toggled.
 
-    Intel Desktop Board DH77EB
+--b.
 
-
-Would be nice if Intel fixes the shared BIOS code...
-
-Thanks to Drew Weaver for reporting the issue. I currently don't have time to prepare another quirk.
-
-Best regards
-Thomas Jarosch
+>  
+> -- 
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
