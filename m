@@ -1,124 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab2DYAZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 20:25:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47797 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757234Ab2DYAZ4 (ORCPT
+	id S1758549Ab2DYAak (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 20:30:40 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60957 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757610Ab2DYAaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 20:25:56 -0400
-Date: Tue, 24 Apr 2012 17:25:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@gmail.com>, Minchan Kim <minchan@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] propagate gfp_t to page table alloc functions
-Message-Id: <20120424172554.c9c330dd.akpm@linux-foundation.org>
-In-Reply-To: <4F973FB8.6050103@jp.fujitsu.com>
-References: <1335171318-4838-1-git-send-email-minchan@kernel.org>
-	<4F963742.2030607@jp.fujitsu.com>
-	<4F963B8E.9030105@kernel.org>
-	<CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com>
-	<4F965413.9010305@kernel.org>
-	<CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com>
-	<20120424143015.99fd8d4a.akpm@linux-foundation.org>
-	<4F973BF2.4080406@jp.fujitsu.com>
-	<CAHGf_=r09BCxXeuE8dSti4_SrT5yahrQCwJh=NrrA3rsUhhu_w@mail.gmail.com>
-	<4F973FB8.6050103@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 24 Apr 2012 20:30:39 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F974545.1060107@jp.fujitsu.com>
+Date: Wed, 25 Apr 2012 09:28:53 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH 1/2] res_counter: Merge res_counter_charge and res_counter_charge_nofail
+References: <1335309096-12886-1-git-send-email-fweisbec@gmail.com> <1335309096-12886-2-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1335309096-12886-2-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Apr 2012 09:05:12 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+(2012/04/25 8:11), Frederic Weisbecker wrote:
 
-> (2012/04/25 8:55), KOSAKI Motohiro wrote:
+> These two functions do almost the same thing and duplicate some code.
+> Merge their implementation into a single common function.
+> res_counter_charge_locked() takes one more parameter but it doesn't seem
+> to be used outside res_counter.c yet anyway.
 > 
-> > On Tue, Apr 24, 2012 at 7:49 PM, KAMEZAWA Hiroyuki
-> > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> >> (2012/04/25 6:30), Andrew Morton wrote:
-> >>
-> >>> On Tue, 24 Apr 2012 17:48:29 +1000
-> >>> Nick Piggin <npiggin@gmail.com> wrote:
-> >>>
-> >>>>> Hmm, there are several places to use GFP_NOIO and GFP_NOFS even, GFP_ATOMIC.
-> >>>>> I believe it's not trivial now.
-> >>>>
-> >>>> They're all buggy then. Unfortunately not through any real fault of their own.
-> >>>
-> >>> There are gruesome problems in block/blk-throttle.c (thread "mempool,
-> >>> percpu, blkcg: fix percpu stat allocation and remove stats_lock").  It
-> >>> wants to do an alloc_percpu()->vmalloc() from the IO submission path,
-> >>> under GFP_NOIO.
-> >>>
-> >>> Changing vmalloc() to take a gfp_t does make lots of sense, although I
-> >>> worry a bit about making vmalloc() easier to use!
-> >>>
-> >>> I do wonder whether the whole scheme of explicitly passing a gfp_t was
-> >>> a mistake and that the allocation context should be part of the task
-> >>> context.  ie: pass the allocation mode via *current.
-> >>
-> >> yes...that's very interesting.
-> > 
-> > I think GFP_ATOMIC is used non task context too. ;-)
+> There is no (intended) change in the behaviour.
 > 
-> Hmm, in interrupt context or some ? Can't we detect it ?
-
-There are lots of practical details and I haven't begun to think it
-through, mainly because it Isn't Going To Happen!
-
-For example how do we handle spin_lock()?  Does spin_lock() now do
-
-gfp_t spin_lock_2(spinlock_t *lock)
-{
-	gfp_t old_gfp = set_current_gfp(GFP_ATOMIC);
-	spin_lock(lock);
-	return old_gfp;
-}
-
-void spin_unlock_2(spinlock_t *lock, gfp_t old_gfp)
-{
-	spin_unlock(lock);
-	set_current_gfp(old_gfp);
-}
-
-Well that's bad.  Currently we require programmers to keep track of
-what context they're running in.  So they think about what they're
-doing.  If we made it this easy, we'd see a big proliferation of
-GFP_ATOMIC allocations, which is bad.
-
-Requiring the spin_lock() caller to run set_current_gfp() would have
-the same effect.
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Glauber Costa <glommer@parallels.com>
+> Cc: Kirill A. Shutemov <kirill@shutemov.name>
 
 
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Or do we instead do this:
-
--	some_function(foo, bar, GFP_NOIO);
-+	old_gfp = set_current_gfp(GFP_NOIO);
-+	some_function(foo, bar);
-+	set_current_gfp(old_gfp);
-
-So the rule is "if the code was using an explicit GFP_foo then convert
-it to use set_current_gfp().  If the code was receiving a gfp_t
-variable from the caller then delete that arg".
-
-Or something like that.  It's all too hopelessly impractical to bother
-discussing - 20 years too late!
-
-
-otoh, maybe a constrained version of this could be used to address the
-vmalloc() problem alone.
-
-
-otoh2, I didn't *want* blk-throttle.c to use GFP_NOIO for vmalloc(). 
-GFP_NOIO is weak, unreliable and lame.  blk-throttle should find a way
-of using GFP_KERNEL!
