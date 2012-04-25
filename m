@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab2DYJli (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 05:41:38 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47253 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756636Ab2DYJle (ORCPT
+	id S1757575Ab2DYJl5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 05:41:57 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:4699 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756881Ab2DYJl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 05:41:34 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Peter Staubach <pstaubach@exagrid.com>, Steve Dickson <SteveD@redhat.com>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "viro\@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch\@infradead.org" <hch@infradead.org>,
-        "michael.brantley\@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner\@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>,
-        "chuck.lever\@oracle.com" <chuck.lever@oracle.com>,
-        "malahal\@us.ibm.com" <malahal@us.ibm.com>,
-        "bfields\@fieldses.org" <bfields@fieldses.org>,
-        "trond.myklebust\@fys.uio.no" <trond.myklebust@fys.uio.no>,
-        "rees\@umich.edu" <rees@umich.edu>
-Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
-In-Reply-To: <20120424123413.17625d5d@tlielax.poochiereds.net> (Jeff Layton's
-	message of "Tue, 24 Apr 2012 12:34:13 -0400")
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<1334749927-26138-1-git-send-email-jlayton@redhat.com>
-	<20120420104055.511e15bc@tlielax.poochiereds.net>
-	<4F91C49D.8070908@RedHat.com>
-	<20120420171300.326d6e36@corrin.poochiereds.net>
-	<4F956D5C.5050801@RedHat.com>
-	<20120423113216.01992555@tlielax.poochiereds.net>
-	<4F959A36.2080402@RedHat.com>
-	<FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E64B@IT-1874.Isys.com>
-	<20120424105049.5ed96b40@tlielax.poochiereds.net>
-	<87lillktv3.fsf@tucsk.pomaz.szeredi.hu>
-	<20120424123413.17625d5d@tlielax.poochiereds.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Wed, 25 Apr 2012 11:41:52 +0200
-Message-ID: <87bomgkv1b.fsf@tucsk.pomaz.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 25 Apr 2012 05:41:56 -0400
+Message-ID: <1335346910.1611.9.camel@t41.thuisdomein>
+Subject: Re: [PATCH] TPM: chip disabled state erronously being reported as
+ error
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
+Date: Wed, 25 Apr 2012 11:41:50 +0200
+In-Reply-To: <20120424205717.GA3755@localhost>
+References: <20120424205717.GA3755@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.0.1 (3.4.0.1-1.fc18) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 25 Apr 2012 09:41:50.0424 (UTC) FILETIME=[A3B8B580:01CD22C7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Layton <jlayton@redhat.com> writes:
+Rajiv,
 
->> And an audit would still not ensure safety against future additions of
->> ESTALE.
->> 
->
-> Well, nothing is safe from the future. It's incumbent upon us to review
-> patches and such before such breakage goes in.
+On Tue, 2012-04-24 at 17:57 -0300, Rajiv Andrade wrote:
+> Can you test it?
 
-Good interfaces are safe against stupidity, and that very much applies
-to the kernel too.  Review is not an excuse for bad interfaces.
+Sure. Your patch applied cleanly to the current Fedora 16 kernel's
+sources (ie, kernel-3.3.2-6.fc16). One boot and one suspend-and-resume
+cycle both were without the error message that bothered me so much.
 
-> But, let's say for the purposes of argument that we do have a fs (FUSE
-> or otherwise) that is persistently returning ESTALE on a lookup. Why
-> was Peter's check that we were making forward progress not enough to
-> guard against this problem?
->
-> In particular, I'm talking about the code he added to link_path_walk in
-> this patch to check that the value of nd->path.dentry was changing:
->
->     https://lkml.org/lkml/2008/3/10/266
->
-> It seems like that ought to be enough to alleviate your fears on this.
-> We could also check for fatal signals on each pass and that would allow
-> users to break out of the loop even when the underlying fs doesn't
-> handle signals properly.
+That should be all testing that this patch needs, shouldn't it?
 
-AFAICS that doesn't ensure progress, only change.  It helps those cases
-which persistently return ESTALE, but not cases where there is change
-but no progress.  E.g. it doesn't prevent DoS by a client doing renames
-over a directory in a tight loop.
+> tpm_do_selftest() attempts to read a PCR in order to
+> decide if one can rely on the TPM being used or not.
+> The function that's used by __tpm_pcr_read() does not
+> expect the TPM to be disabled or deactivated, and if so,
+> reports an error.
+> 
+> It's fine if the TPM returns this error when trying to
+> use it for the first time after a power cycle, but it's
+> definitely not if it already returned success for a
+> previous attempt to read one of its PCRs.
+> 
+> The tpm_do_selftest() was modified so that the driver only
+> reports this return code as an error when it really is.
+> 
+> Reported-by: Paul Bolle <pebolle@tiscali.nl>
 
-Thanks,
-Miklos
+I guess that is now "Reported-and-tested-by", even though the test was
+run against a v3.3.2 based kernel.
+
+> Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+
+Should this be CC-ed to stable for v3.3?
+
+
+Paul Bolle
+
