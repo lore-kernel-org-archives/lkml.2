@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab2DYKkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 06:40:46 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35932 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756970Ab2DYKkp (ORCPT
+	id S1758213Ab2DYKqI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 06:46:08 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53069 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756970Ab2DYKqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 06:40:45 -0400
-Date: Wed, 25 Apr 2012 14:40:40 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH -mm] c/r: fs, proc: Move children entry back to tid_base_stuff
-Message-ID: <20120425104040.GB21469@moon>
+	Wed, 25 Apr 2012 06:46:06 -0400
+Date: Wed, 25 Apr 2012 11:46:00 +0100
+From: Mark Brown <broonie@sirena.org.uk>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Dong Aisheng <B29396@freescale.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Tag on pinctrl
+Message-ID: <20120425104559.GA16752@sirena.org.uk>
+References: <CACRpkdYqZrNFxj4kyMqYZk5PAcjF6-TroJ+Xq+3EVBLvo5Zg-Q@mail.gmail.com>
+ <4F96D84E.7080204@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F96D84E.7080204@wwwdotorg.org>
+X-Cookie: No running on pool deck.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While merging to linux-next the "children" entry jumped from
-tid_base_stuff to tgid_base_stuff by mistake.
-Fix it, by moving it back.
+On Tue, Apr 24, 2012 at 10:43:58AM -0600, Stephen Warren wrote:
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
+> Yes, I have pulled that tag into the Tegra tree as
+> for-3.5/gpio-pinmux-dependency, and have a Tegra-specific
+> for-3.5/gpio-pinmux branch that depends on it. Two other Tegra branches
+> in turn (for-3.5/tegra30-audio, for-3.5/usb-ulpi) depend on
+> for-3.5/gpio-pinmux.
 
-Andrew, I suspect this nit happened when the patch was merged
-to linux-next.
+> Linus, I think this will get into the ARM SoC tree simply by my saying
+> in my for-3.5/gpio-pinmux pull request that the branch depends on your
+> tag; I don't /think/ you need to explicitly send a pull request there,
+> right?
 
- fs/proc/base.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-Index: linux-2.6.git/fs/proc/base.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -2990,9 +2990,6 @@ static const struct pid_entry tgid_base_
- 	ONE("stat",       S_IRUGO, proc_tgid_stat),
- 	ONE("statm",      S_IRUGO, proc_pid_statm),
- 	REG("maps",       S_IRUGO, proc_pid_maps_operations),
--#ifdef CONFIG_CHECKPOINT_RESTORE
--	REG("children",  S_IRUGO, proc_tid_children_operations),
--#endif
- #ifdef CONFIG_NUMA
- 	REG("numa_maps",  S_IRUGO, proc_pid_numa_maps_operations),
- #endif
-@@ -3352,6 +3349,9 @@ static const struct pid_entry tid_base_s
- 	ONE("stat",      S_IRUGO, proc_tid_stat),
- 	ONE("statm",     S_IRUGO, proc_pid_statm),
- 	REG("maps",      S_IRUGO, proc_tid_maps_operations),
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+	REG("children",  S_IRUGO, proc_tid_children_operations),
-+#endif
- #ifdef CONFIG_NUMA
- 	REG("numa_maps", S_IRUGO, proc_tid_numa_maps_operations),
- #endif
+If the gpio-pinmux branch is based on Linus' branch (which it really
+should be if it's a dependency...) then git will do the right thing
+here.  If it's not then you need to explicitly get things pulled in but
+there will also be bisection issues.
