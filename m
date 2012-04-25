@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758587Ab2DYLX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 07:23:27 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57784 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754759Ab2DYLXZ convert rfc822-to-8bit (ORCPT
+	id S1758655Ab2DYL0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 07:26:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27257 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758585Ab2DYL0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 07:23:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <1335341466.28150.248.camel@twins>
-References: <20120424161039.293018424@chello.nl>
-	<20120424162224.526249106@chello.nl>
-	<20120425102342.45cf5c5e81e8aeb3bec67d0b@canb.auug.org.au>
-	<1335341466.28150.248.camel@twins>
-Date: Wed, 25 Apr 2012 13:23:25 +0200
-X-Google-Sender-Auth: sAcZq0BAClR-PtOWEtM5RGXZso4
-Message-ID: <CAMuHMdUqgR8Z8wtBjm=-g9ff6CVmEd=FpbC2tk-CMU7B3XVVDg@mail.gmail.com>
-Subject: Re: [RFC][PATCH 2/3] math128: Introduce {mult,add,cmp}_u128
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Apr 2012 07:26:18 -0400
+X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=EC6Uyf8RYSQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=FDAbc1_C4EvKoK8eQwUA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1335353176.28106.161.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 2/4] ftrace: Remove unused ftrace_update_time
+ variable/code
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+Date: Wed, 25 Apr 2012 07:26:16 -0400
+In-Reply-To: <1335342219-2782-3-git-send-email-jolsa@redhat.com>
+References: <1335342219-2782-1-git-send-email-jolsa@redhat.com>
+	 <1335342219-2782-3-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 10:11, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->  ls arch/*/include/asm/Kbuild | while read file; do quilt add $file;
-> echo "generic-y += math128.h" >> $file; done
+On Wed, 2012-04-25 at 10:23 +0200, Jiri Olsa wrote:
+> The update time of the records update is meassured but never
+> used. It was probably dropped along the way, removing it.
 
-That may fail if your "ls" is an alias.
-Better: "for file in arch/*/include/asm/Kbuild;do ..; done".
+No it's not dropped. I have patches that read it. But you are correct,
+that I should either add those patches, or moved this code out into
+those patches, and keep the kernel clean.
 
-Still using quilt? I didn't regret ditching it in favor of git (yummy,
-git rebase ;-).
+Actually, as there's a debug file in the debugfs code now
+(dyn_ftrace_total_info). That would be a good place to put this info.
 
-Gr{oetje,eeting}s,
+-- Steve
 
-                        Geert
+> 
+> Also changing ftrace_update_cnt static variable into automatic,
+> since it's used only in ftrace_update_code function.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+
