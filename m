@@ -1,121 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab2DYJlE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 05:41:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25630 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755406Ab2DYJlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 05:41:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="145693804"
-Subject: Re: [PATCH v2] dma: pl330: fix a couple of compilation warnings
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boojin Kim <boojin.kim@samsung.com>
-In-Reply-To: <1333927579-16999-1-git-send-email-olof@lixom.net>
-References: <1333919920-25481-1-git-send-email-olof@lixom.net>
-	 <1333927579-16999-1-git-send-email-olof@lixom.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Apr 2012 15:07:03 +0530
-Message-ID: <1335346623.31825.120.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757525Ab2DYJli (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 05:41:38 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47253 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756636Ab2DYJle (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 05:41:34 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Peter Staubach <pstaubach@exagrid.com>, Steve Dickson <SteveD@redhat.com>,
+        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viro\@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "hch\@infradead.org" <hch@infradead.org>,
+        "michael.brantley\@deshaw.com" <michael.brantley@deshaw.com>,
+        "sven.breuner\@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>,
+        "chuck.lever\@oracle.com" <chuck.lever@oracle.com>,
+        "malahal\@us.ibm.com" <malahal@us.ibm.com>,
+        "bfields\@fieldses.org" <bfields@fieldses.org>,
+        "trond.myklebust\@fys.uio.no" <trond.myklebust@fys.uio.no>,
+        "rees\@umich.edu" <rees@umich.edu>
+Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
+In-Reply-To: <20120424123413.17625d5d@tlielax.poochiereds.net> (Jeff Layton's
+	message of "Tue, 24 Apr 2012 12:34:13 -0400")
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+	<1334749927-26138-1-git-send-email-jlayton@redhat.com>
+	<20120420104055.511e15bc@tlielax.poochiereds.net>
+	<4F91C49D.8070908@RedHat.com>
+	<20120420171300.326d6e36@corrin.poochiereds.net>
+	<4F956D5C.5050801@RedHat.com>
+	<20120423113216.01992555@tlielax.poochiereds.net>
+	<4F959A36.2080402@RedHat.com>
+	<FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E64B@IT-1874.Isys.com>
+	<20120424105049.5ed96b40@tlielax.poochiereds.net>
+	<87lillktv3.fsf@tucsk.pomaz.szeredi.hu>
+	<20120424123413.17625d5d@tlielax.poochiereds.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Date: Wed, 25 Apr 2012 11:41:52 +0200
+Message-ID: <87bomgkv1b.fsf@tucsk.pomaz.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-08 at 16:26 -0700, Olof Johansson wrote:
-> Move a couple of tests and do a minor refactor to avoid:
-> 
-> drivers/dma/pl330.c: In function 'pl330_probe':
-> drivers/dma/pl330.c:2929:215: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-> drivers/dma/pl330.c: In function 'pl330_tasklet':
-> drivers/dma/pl330.c:2250:8: warning: 'pch' may be used uninitialized in this function [-Wuninitialized]
-> drivers/dma/pl330.c:2228:25: note: 'pch' was declared here
-> drivers/dma/pl330.c:2277:130: warning: 'pch' may be used uninitialized in this function [-Wuninitialized]
-> drivers/dma/pl330.c:2260:25: note: 'pch' was declared here
-> 
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-Applied thanks
+Jeff Layton <jlayton@redhat.com> writes:
 
-> ---
->  drivers/dma/pl330.c |   25 +++++++++++++++----------
->  1 file changed, 15 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index 282caf11..2ee6e23 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -2225,12 +2225,9 @@ static inline void free_desc_list(struct list_head *list)
->  {
->  	struct dma_pl330_dmac *pdmac;
->  	struct dma_pl330_desc *desc;
-> -	struct dma_pl330_chan *pch;
-> +	struct dma_pl330_chan *pch = NULL;
->  	unsigned long flags;
->  
-> -	if (list_empty(list))
-> -		return;
-> -
->  	/* Finish off the work list */
->  	list_for_each_entry(desc, list, node) {
->  		dma_async_tx_callback callback;
-> @@ -2247,6 +2244,10 @@ static inline void free_desc_list(struct list_head *list)
->  		desc->pchan = NULL;
->  	}
->  
-> +	/* pch will be unset if list was empty */
-> +	if (!pch)
-> +		return;
-> +
->  	pdmac = pch->dmac;
->  
->  	spin_lock_irqsave(&pdmac->pool_lock, flags);
-> @@ -2257,12 +2258,9 @@ static inline void free_desc_list(struct list_head *list)
->  static inline void handle_cyclic_desc_list(struct list_head *list)
->  {
->  	struct dma_pl330_desc *desc;
-> -	struct dma_pl330_chan *pch;
-> +	struct dma_pl330_chan *pch = NULL;
->  	unsigned long flags;
->  
-> -	if (list_empty(list))
-> -		return;
-> -
->  	list_for_each_entry(desc, list, node) {
->  		dma_async_tx_callback callback;
->  
-> @@ -2274,6 +2272,10 @@ static inline void handle_cyclic_desc_list(struct list_head *list)
->  			callback(desc->txd.callback_param);
->  	}
->  
-> +	/* pch will be unset if list was empty */
-> +	if (!pch)
-> +		return;
-> +
->  	spin_lock_irqsave(&pch->lock, flags);
->  	list_splice_tail_init(list, &pch->work_list);
->  	spin_unlock_irqrestore(&pch->lock, flags);
-> @@ -2926,8 +2928,11 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
->  	INIT_LIST_HEAD(&pd->channels);
->  
->  	/* Initialize channel parameters */
-> -	num_chan = max(pdat ? pdat->nr_valid_peri : (u8)pi->pcfg.num_peri,
-> -			(u8)pi->pcfg.num_chan);
-> +	if (pdat)
-> +		num_chan = max_t(int, pdat->nr_valid_peri, pi->pcfg.num_chan);
-> +	else
-> +		num_chan = max_t(int, pi->pcfg.num_peri, pi->pcfg.num_chan);
-> +
->  	pdmac->peripherals = kzalloc(num_chan * sizeof(*pch), GFP_KERNEL);
->  
->  	for (i = 0; i < num_chan; i++) {
+>> And an audit would still not ensure safety against future additions of
+>> ESTALE.
+>> 
+>
+> Well, nothing is safe from the future. It's incumbent upon us to review
+> patches and such before such breakage goes in.
 
+Good interfaces are safe against stupidity, and that very much applies
+to the kernel too.  Review is not an excuse for bad interfaces.
 
--- 
-~Vinod
+> But, let's say for the purposes of argument that we do have a fs (FUSE
+> or otherwise) that is persistently returning ESTALE on a lookup. Why
+> was Peter's check that we were making forward progress not enough to
+> guard against this problem?
+>
+> In particular, I'm talking about the code he added to link_path_walk in
+> this patch to check that the value of nd->path.dentry was changing:
+>
+>     https://lkml.org/lkml/2008/3/10/266
+>
+> It seems like that ought to be enough to alleviate your fears on this.
+> We could also check for fatal signals on each pass and that would allow
+> users to break out of the loop even when the underlying fs doesn't
+> handle signals properly.
 
+AFAICS that doesn't ensure progress, only change.  It helps those cases
+which persistently return ESTALE, but not cases where there is change
+but no progress.  E.g. it doesn't prevent DoS by a client doing renames
+over a directory in a tight loop.
+
+Thanks,
+Miklos
