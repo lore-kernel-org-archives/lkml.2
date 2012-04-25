@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759238Ab2DYM2d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:28:33 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41891 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab2DYM23 (ORCPT
+	id S1759264Ab2DYM2k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:28:40 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44117 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759244Ab2DYM2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:28:29 -0400
+	Wed, 25 Apr 2012 08:28:37 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
@@ -18,9 +18,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
         Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 11/15] parse-events: Let pevent_free() take a NULL pointer
-Date: Wed, 25 Apr 2012 14:26:55 +0200
-Message-Id: <1335356819-16710-12-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 14/15] parse-event: Fix memset pointer size bug in handle
+Date: Wed, 25 Apr 2012 14:26:58 +0200
+Message-Id: <1335356819-16710-15-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
 References: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
@@ -30,9 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The pevent_free() should ack like other free()s and allow a
-NULL pointer to be passed to it which makes error handling a bit
-easier for the users of pevent_free().
+Fix memset(ptr, 0, sizeof(ptr)) to memset(ptr, 0, sizeof(*ptr))
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -47,37 +45,22 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: David Ahern <dsahern@gmail.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/lib/traceevent/event-parse.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+ tools/lib/traceevent/event-parse.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index cdb32c7..4d5092f 100644
+index 876b2720..ec13174 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -4960,13 +4960,20 @@ static void free_event(struct event_format *event)
-  */
- void pevent_free(struct pevent *pevent)
- {
--	struct cmdline_list *cmdlist = pevent->cmdlist, *cmdnext;
--	struct func_list *funclist = pevent->funclist, *funcnext;
--	struct printk_list *printklist = pevent->printklist, *printknext;
-+	struct cmdline_list *cmdlist, *cmdnext;
-+	struct func_list *funclist, *funcnext;
-+	struct printk_list *printklist, *printknext;
- 	struct pevent_function_handler *func_handler;
- 	struct event_handler *handle;
- 	int i;
- 
-+	if (!pevent)
-+		return;
-+
-+	cmdlist = pevent->cmdlist;
-+	funclist = pevent->funclist;
-+	printklist = pevent->printklist;
-+
- 	pevent->ref_count--;
- 	if (pevent->ref_count)
- 		return;
+@@ -4904,7 +4904,7 @@ int pevent_register_event_handler(struct pevent *pevent,
+  not_found:
+ 	/* Save for later use. */
+ 	handle = malloc_or_die(sizeof(*handle));
+-	memset(handle, 0, sizeof(handle));
++	memset(handle, 0, sizeof(*handle));
+ 	handle->id = id;
+ 	if (event_name)
+ 		handle->event_name = strdup(event_name);
 -- 
 1.7.5.4
 
