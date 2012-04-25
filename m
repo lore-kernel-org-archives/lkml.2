@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559Ab2DYScZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 14:32:25 -0400
-Received: from mga03.intel.com ([143.182.124.21]:52531 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757300Ab2DYScX convert rfc822-to-8bit (ORCPT
+	id S1757586Ab2DYSfs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 14:35:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56297 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756340Ab2DYSfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 14:32:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="135301476"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>, Borislav Petkov <bp@amd64.org>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: RE: [EDAC PATCH v13 6/7] edac.h: Prepare to handle with generic
- layers
-Thread-Topic: [EDAC PATCH v13 6/7] edac.h: Prepare to handle with generic
- layers
-Thread-Index: AQHNHA2e4drkei19OkSnQ3ASg+FwI5apMDmAgAALcwCAAQ8KgIAAEmmAgAATNgCAAASGAIAABdUAgAAOWYCAACKNgIAAEACAgAGQrgCAAAf8gP//k8Wg
-Date: Wed, 25 Apr 2012 18:32:21 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F170F3DA7@ORSMSX104.amr.corp.intel.com>
-References: <20120423174955.GH6147@aftab.osrc.amd.com>
- <4F959FDE.2070304@redhat.com> <20120424104059.GA11559@aftab.osrc.amd.com>
- <4F9692AD.8090000@redhat.com> <20120424125538.GC11559@aftab.osrc.amd.com>
- <4F96A696.40308@redhat.com> <20120424133242.GI11559@aftab.osrc.amd.com>
- <4F96B783.6060101@redhat.com> <20120424162743.GU11559@aftab.osrc.amd.com>
- <4F96E1EB.1030407@redhat.com> <20120425171904.GM18882@aftab.osrc.amd.com>
- <4F9838BB.5010209@redhat.com>
-In-Reply-To: <4F9838BB.5010209@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Apr 2012 14:35:47 -0400
+Date: Wed, 25 Apr 2012 11:35:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com, stern@rowland.harvard.edu,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
+Subject: Re: [PATCH v5 1/3] USB: Add driver for NXP ISP1301 USB transceiver
+Message-ID: <20120425183542.GA27617@kroah.com>
+References: <1335002264-22225-1-git-send-email-stigge@antcom.de>
+ <20120424232044.GA2657@kroah.com>
+ <4F97B395.9020501@antcom.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F97B395.9020501@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> See the driver: the only useful information provided by the MCA log is
-> that an error happened, their physical address, and the type of the 
-> error. Unlikely the Nehalem MCA, the MCE_MISC registers won't point to the
-> DIMM in the error.
+On Wed, Apr 25, 2012 at 10:19:33AM +0200, Roland Stigge wrote:
+> Hi Greg,
+> 
+> thanks for reviewing! I integrated all of your suggestions into the
+> patch update, except ...
+> 
+> On 04/25/2012 01:20 AM, Greg KH wrote:
+> > On Sat, Apr 21, 2012 at 11:57:42AM +0200, Roland Stigge wrote:
+> >> This very-lowlevel driver registers the NXP ISP1301 chip via the I2C subsystem.
+> >> The chip is the USB transceiver shared by ohci-nxp, lpc32xx_udc (gadget) and
+> >> isp1301_omap.
+> >>
+> >> Following patches let the respective USB host and gadget drivers use this
+> >> driver, instead of duplicating ISP1301 handling.
+> >>
+> >> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> >> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> >>
+> >>  include/linux/usb/isp1301.h                       |   84 ++++++++++++++++++++++
+> > 
+> > Why this file?  You have a lot of register stuff in here that should be
+> > in the .c file, right?  Only put what other files need in this .h file,
+> > which shouldn't be much at all from what I can tell.
+> 
+> Right. At first sight, it doesn't look very elegant that the driver
+> exposes the ISP1301 register set to the drivers using it. I discussed
+> this design previously with Arnd on the mailing list and we agreed on
+> the following: ISP1301 is a very low level driver that primarily
+> separates out the I2C client registration of the ISP1301 chip (including
+> instantiation via DT), used by other drivers, but it's still just a kind
+> of helper driver for some OHCI and USB device drivers. Consider the
+> ISP1301 driver as a register set extension of ohci-nxp, lpc32xx-udc and
+> isp1301_omap, which in turn know best what to do with the low level
+> functionality (individual ISP1301 registers and timing, see the
+> different initialization strategies in those drivers). Those drivers
+> previously internally duplicated ISP1301 register definitions which is
+> solved by the new isp1301 driver.
+> 
+> Initially, I actually had register get/set functions defined in
+> isp1301.h but it turned out that those trivial wrappers around standard
+> i2c_smbus_*() better had been removed.
+> 
+> So what do you think?
 
-There's a bit more information in the MCA log than just the physical address:
+Ok, that makes more sense, thanks for explaining it.  Perhaps you should
+put that in the patch changelog entry itself, so others don't also have
+that same question?
 
-The cpu number that finds the data in its bank will provide socket information.
-[/proc/cpuinfo maps logical cpu numbers to "physical id"]
+thanks,
 
-Low order bits of the MCi_STATUS register will give the channel. See the SDM.
-
-So the only missing information from the MCA log is which DIMM within
-the channel.  I.e. we can pin the fault to a group of either two or
-three DIMMs depending on how many DIMMS/channel the motherboard supports.
-
-If you only have one DIMM per channel populated than socket/channel is
-sufficient to identify the DIMM.
-
-[We also don't have any intra-DIMM information for those customers who
-would like to diagnose the device on the DIMM, or which bits within
-the cache line had the error]
-
--Tony
+greg k-h
