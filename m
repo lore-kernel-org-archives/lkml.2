@@ -1,17 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759228Ab2DYM20 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:28:26 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44117 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab2DYM2V (ORCPT
+	id S1759251Ab2DYM2h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:28:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33746 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab2DYM2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:28:21 -0400
+	Wed, 25 Apr 2012 08:28:34 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
@@ -20,9 +18,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 09/15] parse-events: Handle invalid opcode parsing gracefully
-Date: Wed, 25 Apr 2012 14:26:53 +0200
-Message-Id: <1335356819-16710-10-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 13/15] parse-events: Allow '*' and '/' operations in TP_printk
+Date: Wed, 25 Apr 2012 14:26:57 +0200
+Message-Id: <1335356819-16710-14-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
 References: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
@@ -30,20 +28,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-If an invalid opcode is encountered, trace-cmd exits with an error.
-Instead it can be treated as a soft error where the event's print format
-is not parsed and its binary data is dumped out.
+Add multiply and divide operations in the printk format.
 
-This patch adds a return value to arg_num_eval() function to indicate if
-the parsing was successful. If not, then the error is considered soft
-and the parsing of the offending event fails.
-
-Cc: Michael Rubin <mrubin@google.com>
-Cc: David Sharp <dhsharp@google.com>
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Link: http://lkml.kernel.org/r/1310785241-3799-2-git-send-email-vnagarnaik@google.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -57,233 +45,26 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: David Ahern <dsahern@gmail.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/lib/traceevent/event-parse.c |  125 ++++++++++++++++++++++++------------
- 1 files changed, 83 insertions(+), 42 deletions(-)
+ tools/lib/traceevent/event-parse.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 16da20c..ef2c65f 100644
+index 476626a..876b2720 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -1915,90 +1915,120 @@ eval_type(unsigned long long val, struct print_arg *arg, int pointer)
- 	return eval_type_str(val, arg->typecast.type, pointer);
- }
- 
--static long long arg_num_eval(struct print_arg *arg)
-+static int arg_num_eval(struct print_arg *arg, long long *val)
- {
- 	long long left, right;
--	long long val = 0;
-+	int ret = 1;
- 
- 	switch (arg->type) {
- 	case PRINT_ATOM:
--		val = strtoll(arg->atom.atom, NULL, 0);
-+		*val = strtoll(arg->atom.atom, NULL, 0);
- 		break;
- 	case PRINT_TYPE:
--		val = arg_num_eval(arg->typecast.item);
--		val = eval_type(val, arg, 0);
-+		ret = arg_num_eval(arg->typecast.item, val);
-+		if (!ret)
+@@ -3130,6 +3130,12 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
+ 		case '+':
+ 			val = left + right;
+ 			break;
++		case '/':
++			val = left / right;
 +			break;
-+		*val = eval_type(*val, arg, 0);
- 		break;
- 	case PRINT_OP:
- 		switch (arg->op.op[0]) {
- 		case '|':
--			left = arg_num_eval(arg->op.left);
--			right = arg_num_eval(arg->op.right);
-+			ret = arg_num_eval(arg->op.left, &left);
-+			if (!ret)
-+				break;
-+			ret = arg_num_eval(arg->op.right, &right);
-+			if (!ret)
-+				break;
- 			if (arg->op.op[1])
--				val = left || right;
-+				*val = left || right;
- 			else
--				val = left | right;
-+				*val = left | right;
- 			break;
- 		case '&':
--			left = arg_num_eval(arg->op.left);
--			right = arg_num_eval(arg->op.right);
-+			ret = arg_num_eval(arg->op.left, &left);
-+			if (!ret)
-+				break;
-+			ret = arg_num_eval(arg->op.right, &right);
-+			if (!ret)
-+				break;
- 			if (arg->op.op[1])
--				val = left && right;
-+				*val = left && right;
- 			else
--				val = left & right;
-+				*val = left & right;
- 			break;
- 		case '<':
--			left = arg_num_eval(arg->op.left);
--			right = arg_num_eval(arg->op.right);
-+			ret = arg_num_eval(arg->op.left, &left);
-+			if (!ret)
-+				break;
-+			ret = arg_num_eval(arg->op.right, &right);
-+			if (!ret)
-+				break;
- 			switch (arg->op.op[1]) {
- 			case 0:
--				val = left < right;
-+				*val = left < right;
- 				break;
- 			case '<':
--				val = left << right;
-+				*val = left << right;
- 				break;
- 			case '=':
--				val = left <= right;
-+				*val = left <= right;
- 				break;
- 			default:
--				die("unknown op '%s'", arg->op.op);
-+				do_warning("unknown op '%s'", arg->op.op);
-+				ret = 0;
- 			}
- 			break;
- 		case '>':
--			left = arg_num_eval(arg->op.left);
--			right = arg_num_eval(arg->op.right);
-+			ret = arg_num_eval(arg->op.left, &left);
-+			if (!ret)
-+				break;
-+			ret = arg_num_eval(arg->op.right, &right);
-+			if (!ret)
-+				break;
- 			switch (arg->op.op[1]) {
- 			case 0:
--				val = left > right;
-+				*val = left > right;
- 				break;
- 			case '>':
--				val = left >> right;
-+				*val = left >> right;
- 				break;
- 			case '=':
--				val = left >= right;
-+				*val = left >= right;
- 				break;
- 			default:
--				die("unknown op '%s'", arg->op.op);
-+				do_warning("unknown op '%s'", arg->op.op);
-+				ret = 0;
- 			}
- 			break;
- 		case '=':
--			left = arg_num_eval(arg->op.left);
--			right = arg_num_eval(arg->op.right);
--
--			if (arg->op.op[1] != '=')
--				die("unknown op '%s'", arg->op.op);
-+			ret = arg_num_eval(arg->op.left, &left);
-+			if (!ret)
-+				break;
-+			ret = arg_num_eval(arg->op.right, &right);
-+			if (!ret)
-+				break;
- 
--			val = left == right;
-+			if (arg->op.op[1] != '=') {
-+				do_warning("unknown op '%s'", arg->op.op);
-+				ret = 0;
-+			} else
-+				*val = left == right;
- 			break;
- 		case '!':
--			left = arg_num_eval(arg->op.left);
--			right = arg_num_eval(arg->op.right);
-+			ret = arg_num_eval(arg->op.left, &left);
-+			if (!ret)
-+				break;
-+			ret = arg_num_eval(arg->op.right, &right);
-+			if (!ret)
-+				break;
- 
- 			switch (arg->op.op[1]) {
- 			case '=':
--				val = left != right;
-+				*val = left != right;
- 				break;
- 			default:
--				die("unknown op '%s'", arg->op.op);
-+				do_warning("unknown op '%s'", arg->op.op);
-+				ret = 0;
- 			}
- 			break;
- 		case '-':
-@@ -2006,12 +2036,17 @@ static long long arg_num_eval(struct print_arg *arg)
- 			if (arg->op.left->type == PRINT_NULL)
- 				left = 0;
- 			else
--				left = arg_num_eval(arg->op.left);
--			right = arg_num_eval(arg->op.right);
--			val = left - right;
-+				ret = arg_num_eval(arg->op.left, &left);
-+			if (!ret)
-+				break;
-+			ret = arg_num_eval(arg->op.right, &right);
-+			if (!ret)
-+				break;
-+			*val = left - right;
- 			break;
++		case '*':
++			val = left * right;
++			break;
  		default:
--			die("unknown op '%s'", arg->op.op);
-+			do_warning("unknown op '%s'", arg->op.op);
-+			ret = 0;
+ 			die("unknown op '%s'", arg->op.op);
  		}
- 		break;
- 
-@@ -2020,10 +2055,11 @@ static long long arg_num_eval(struct print_arg *arg)
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
- 	default:
--		die("invalid eval type %d", arg->type);
-+		do_warning("invalid eval type %d", arg->type);
-+		ret = 0;
- 
- 	}
--	return val;
-+	return ret;
- }
- 
- static char *arg_eval (struct print_arg *arg)
-@@ -2037,7 +2073,8 @@ static char *arg_eval (struct print_arg *arg)
- 	case PRINT_TYPE:
- 		return arg_eval(arg->typecast.item);
- 	case PRINT_OP:
--		val = arg_num_eval(arg);
-+		if (!arg_num_eval(arg, &val))
-+			break;
- 		sprintf(buf, "%lld", val);
- 		return buf;
- 
-@@ -2079,6 +2116,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
- 		memset(field, 0, sizeof(*field));
- 
- 		value = arg_eval(arg);
-+		if (value == NULL)
-+			goto out_free;
- 		field->value = strdup(value);
- 
- 		free_arg(arg);
-@@ -2090,6 +2129,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
- 			goto out_free;
- 
- 		value = arg_eval(arg);
-+		if (value == NULL)
-+			goto out_free;
- 		field->str = strdup(value);
- 		free_arg(arg);
- 		arg = NULL;
 -- 
 1.7.5.4
 
