@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab2DYP6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:58:32 -0400
-Received: from correo.siroco.com.pe ([190.187.139.71]:36962 "EHLO
-	correo.siroco.com.pe" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755588Ab2DYP6a convert rfc822-to-8bit (ORCPT
+	id S1756165Ab2DYP7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:59:46 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33379 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755890Ab2DYP7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:58:30 -0400
-X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Apr 2012 11:58:30 EDT
-Date: Wed, 25 Apr 2012 10:31:28 -0500 (PET)
-From: Mr David Hisco <cass@siroco.com.pe>
-Reply-To: Mr David Hisco <davidhisco@gmail.com>
-Message-ID: <32895865.16.1335367888423.JavaMail.root@correo.siroco.com.pe>
-Subject: Mr David Hisco
+	Wed, 25 Apr 2012 11:59:45 -0400
+Message-ID: <4F981F6C.2050807@wwwdotorg.org>
+Date: Wed, 25 Apr 2012 09:59:40 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [82.128.20.165]
-X-Mailer: Zimbra 6.0.14_GA_2928 (zclient/6.0.14_GA_2928)
-To: undisclosed-recipients:;
+To: Arnd Bergmann <arnd@arndb.de>
+CC: balbi@ti.com, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v2 1/3] ARM: tegra: Add AHB driver
+References: <1335269116-9578-1-git-send-email-hdoyu@nvidia.com> <20120425083747.466f5c98330af8964d980b8c@nvidia.com> <20120425074639.GB3423@arwen.pp.htv.fi> <201204251215.22889.arnd@arndb.de>
+In-Reply-To: <201204251215.22889.arnd@arndb.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mr David Hisco.
-Tel: +44 704 574 7992.
+On 04/25/2012 06:15 AM, Arnd Bergmann wrote:
+> On Wednesday 25 April 2012, Felipe Balbi wrote:
+...
+>>> Can this driver be located under "drivers/misc"? Or is there any better place?
+>>
+>> maybe drivers/platform/arm/ ??
+> 
+> I really wouldn't want to add that directory: It has the risk of letting
+> people add random crap there that may or may not be related to ARM (the
+> company) and/or ARM (the architecture).
+> 
+> I think it could go into drivers/amba/ along with the primecell bus driver.
+> The two drivers are for two different aspects of the AMBA spec and don't
+> actually depend on one another as far as I can tell, but it's at least
+> a fitting name, and it doesn't depend on the ARM architecture, which is
+> important because the driver could be used on other architectures that
+> are connected to an AHB bus.
 
-Accept my sincere apologies if my mail does not meet your personal ethics.
+Hiroshi, is this driver for something (registers/features) that AMBA
+actually specifies? AHB might be part of AMBA (I'm not familiar enough
+to know), but I don't think this aspect of Tegra's AHB bus is part of
+any core AHB/AMBA specification, rather than being some Tegra-specific
+control over the bus (given that the registers and bits correspond to
+Tegra-specific devices on the bus).
 
-I will introduce myself as Mr David Hisco; I am a citizen Virgin Islands 
-British residing in London. A director in the accounts management Section, monitoring financial network here in the United Kingdom.
-
-This is the detail of what i want you to assist me in doing. One of our accounts with holding balance of £20,500,000.00(Twenty Million Five Hundred Thousand pounds) 
-Has been dormant and has not been operated for the past twelve (12) years.
-
->From my investigations and confirmations, the owner of this account, a foreigner by name (Ost Bob) died On January 31 2000.
-
-See this: http://www.lifewhile.com/sh/news/stories/nat-news-20000201-133854.html
-
-And since then nobody has done anything as regards the claiming of this Money because he has no family members who are aware of the existence of Neither the account nor the funds.
-
-I seek your consent to present you as the next of kin/Will Beneficiary to the deceased so that the proceeds of this account valued at £20.5 Million Pounds can be paid (transfer) to your Account in your country.
-
-
-This will be disbursed or shared in these percentages, 60% to me and 40% to you.  All necessary legal documents that can be used to back up this claim will be secured
-us.
-
-Please, provide me the following, as we have 7 days to run it through.
-This is very very URGENT PLEASE.
- 
-1. Full Name.
-2. Your Direct Mobile Number.
-3. Your Contact Address.
-4. Your Age.
-5. Your Occupation.
- 
-Regards,
-Mr David Hisco.
-Tel: +44 704 574 7992.
-
-
-...........................................................................................................................................................................
-Od: Mr David HISCO. 
-Tel: +44 704 574 7992. 
-
-Sprejmi moje iskreno opravičilo, če moj mail, ne izpolnjuje svoje osebne etike. 
-
-Bom se predstavim kot gospod David HISCO, sem državljan Deviški otoki 
-Britanski stanujoč v Londonu. Direktor v oddelku za upravljanje računov, spremljanje finančno mrežo tukaj v Združenem kraljestvu. 
-
-To je podrobnost o tem, kaj hočem, da mi pomagajo pri tem. Eden od naših računov, ki ima z bilanco funtov 20,500,000.00 (dvajset milijonov petsto tisoč funtov) 
-Je v mirujočem stanju in ni deloval v zadnjih dvanajstih (12) let. 
-
-Iz mojih raziskav in potrditev, lastnik tega računa, tujec po imenu Bob (OST) je umrl 31. januarja 2000. 
-
-Glej tole: http://www.lifewhile.com/sh/news/stories/nat-news-20000201-133854.html 
-
-In od takrat se nihče ni storil ničesar, kar zadeva uveljavljanje tega denarja, ker je nima družinskih članov, ki se zavedajo obstoja nobene račun niti sredstev. 
-
-Sem iskati vaše privoljenje, da vam predstavi kot ožjih sorodnikov / bo upravičenec do pokojnika, tako da se izkupiček od tega računa vrednotijo ​​na 20,5 milijonov funtov funtov plača (prenos) na vaš račun v vaši državi. 
-
-
-To bo izplačana ali delijo v ti odstotki 60% za mene in 40% za vas. Vse potrebne pravne dokumente, ki se lahko uporabljajo za nazaj do tega zahtevka bo zagotovljeno 
-nas. 
-
-Prosim, da mi naslednje, kot smo 7 dni, da ga vodijo skozi. 
-To je zelo zelo nujno prosim. 
-  
-1. Ime in priimek. 
-2. Vaš Direct Mobile številka. 
-3. Vaš kontaktni naslov. 
-4. Vaš Age. 
-5. Vaš poklic. 
-  
-S spoštovanjem, 
-Mr David HISCO. 
-Tel: +44 704 574 7992. 
+I'm not really convinced that low-level platform-specific drivers like
+this shouldn't be in the arch/arm/mach-* directories.
