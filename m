@@ -1,35 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693Ab2DYAzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 20:55:06 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:44538 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757147Ab2DYAzF (ORCPT
+	id S1757741Ab2DYBBq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 21:01:46 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33689 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757051Ab2DYBBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 20:55:05 -0400
-References: <1334267969.2573.14.camel@shrek.rexursive.com> <201204232359.14109.rjw@sisk.pl> <1335220840.2187.30.camel@shrek.rexursive.com> <201204250012.00544.rjw@sisk.pl>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <201204250012.00544.rjw@sisk.pl>
+	Tue, 24 Apr 2012 21:01:44 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F974C84.6010407@jp.fujitsu.com>
+Date: Wed, 25 Apr 2012 09:59:48 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for hibernate/thaw buffering
-From: Bojan Smojver <bojan@rexursive.com>
-Date: Wed, 25 Apr 2012 10:55:00 +1000
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Per Olofsson <pelle@debian.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Message-ID: <d584bc22-db6e-477f-abe6-5540f9358565@email.android.com>
+To: Glauber Costa <glommer@parallels.com>
+CC: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Suleiman Souhlal <ssouhlal@FreeBSD.org>
+Subject: Re: [PATCH 04/23] memcg: Make it possible to use the stock for more
+ than one page.
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1334959051-18203-5-git-send-email-glommer@parallels.com>
+In-Reply-To: <1334959051-18203-5-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+(2012/04/21 6:57), Glauber Costa wrote:
 
->Applied to linux-pm/linux-next.  Will push to Linus later this week.
+> From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
+> 
+> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 
-Thank you.
 
--- 
-Bojan
+ok, should work enough.
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
