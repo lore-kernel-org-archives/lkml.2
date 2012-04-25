@@ -1,160 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab2DYIXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 04:23:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10235 "EHLO mx1.redhat.com"
+	id S1755395Ab2DYIYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 04:24:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23532 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755066Ab2DYIXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 04:23:50 -0400
+	id S1755046Ab2DYIXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 04:23:52 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/4] ftrace: No return value for ftrace_process_locs
-Date: Wed, 25 Apr 2012 10:23:38 +0200
-Message-Id: <1335342219-2782-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 4/4] tracing: Use seq_*_private interface for some seq files
+Date: Wed, 25 Apr 2012 10:23:39 +0200
+Message-Id: <1335342219-2782-5-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1335342219-2782-1-git-send-email-jolsa@redhat.com>
 References: <1335342219-2782-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The return value of ftrace_process_locs is never checked. The function
-tries to update as many calls as possible and in case of error there's
-either warning output or ftrace_bug call.
+It's appropriate to use __seq_open_private interface to open
+some of trace seq files, because it covers all steps we are
+duplicating in tracing code - zallocating the iterator and
+setting it as seq_file's private.
+
+Using this for following files:
+  trace
+  available_filter_functions
+  enabled_functions
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- kernel/trace/ftrace.c |   37 ++++++++++++++++---------------------
- 1 files changed, 16 insertions(+), 21 deletions(-)
+ kernel/trace/ftrace.c |   44 +++++++++++---------------------------------
+ kernel/trace/trace.c  |   27 ++++-----------------------
+ 2 files changed, 15 insertions(+), 56 deletions(-)
 
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index b3ceecd..e67f5b3 100644
+index e67f5b3..14989a7 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -1930,7 +1930,7 @@ static int ops_traces_mod(struct ftrace_ops *ops)
- 	return ftrace_hash_empty(hash);
- }
- 
--static int ftrace_update_code(struct module *mod)
-+static void ftrace_update_code(struct module *mod)
+@@ -2359,57 +2359,35 @@ static int
+ ftrace_avail_open(struct inode *inode, struct file *file)
  {
- 	struct ftrace_page *pg;
- 	struct dyn_ftrace *p;
-@@ -1959,7 +1959,7 @@ static int ftrace_update_code(struct module *mod)
- 		for (i = 0; i < pg->index; i++) {
- 			/* If something went wrong, bail without enabling anything */
- 			if (unlikely(ftrace_disabled))
--				return -1;
-+				return;
+ 	struct ftrace_iterator *iter;
+-	int ret;
  
- 			p = &pg->records[i];
- 			p->flags = ref;
-@@ -1968,8 +1968,8 @@ static int ftrace_update_code(struct module *mod)
- 			 * Do the initial record conversion from mcount jump
- 			 * to the NOP instructions.
- 			 */
--			if (!ftrace_code_disable(mod, p))
--				break;
-+			if (WARN_ON_ONCE(!ftrace_code_disable(mod, p)))
-+				return;
+ 	if (unlikely(ftrace_disabled))
+ 		return -ENODEV;
  
- 			cnt++;
- 
-@@ -1992,7 +1992,6 @@ static int ftrace_update_code(struct module *mod)
- 
- 	ftrace_new_pgs = NULL;
- 	ftrace_update_tot_cnt += cnt;
--	return 0;
- }
- 
- static int ftrace_allocate_records(struct ftrace_page *pg, int count)
-@@ -2041,11 +2040,11 @@ ftrace_allocate_pages(unsigned long num_to_init)
- 	int cnt;
- 
- 	if (!num_to_init)
--		return 0;
-+		return NULL;
- 
- 	start_pg = pg = kzalloc(sizeof(*pg), GFP_KERNEL);
- 	if (!pg)
--		return NULL;
-+		goto out;
- 
- 	/*
- 	 * Try to allocate as much as possible in one continues
-@@ -2078,6 +2077,7 @@ ftrace_allocate_pages(unsigned long num_to_init)
- 		kfree(pg);
- 		pg = start_pg;
- 	}
-+ out:
- 	pr_info("ftrace: FAILED to allocate memory for functions\n");
- 	return NULL;
- }
-@@ -3589,25 +3589,23 @@ static void ftrace_swap_recs(void *a, void *b, int size)
- 	*recb = t;
- }
- 
--static int ftrace_process_locs(struct module *mod,
--			       unsigned long *start,
--			       unsigned long *end)
-+static void ftrace_process_locs(struct module *mod,
-+				unsigned long *start,
-+				unsigned long *end)
- {
- 	struct ftrace_page *pg;
- 	unsigned long count;
- 	unsigned long *p;
- 	unsigned long addr;
- 	unsigned long flags = 0; /* Shut up gcc */
--	int ret = -ENOMEM;
- 
- 	count = end - start;
--
- 	if (!count)
--		return 0;
-+		return;
- 
- 	pg = ftrace_allocate_pages(count);
- 	if (!pg)
+-	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+-	if (!iter)
 -		return -ENOMEM;
-+		return;
- 
- 	mutex_lock(&ftrace_lock);
- 
-@@ -3621,7 +3619,7 @@ static int ftrace_process_locs(struct module *mod,
- 		/* First initialization */
- 		ftrace_pages = ftrace_pages_start = pg;
- 	} else {
--		if (!ftrace_pages)
-+		if (!WARN_ON_ONCE(ftrace_pages))
- 			goto out;
- 
- 		if (WARN_ON(ftrace_pages->next)) {
-@@ -3670,11 +3668,8 @@ static int ftrace_process_locs(struct module *mod,
- 	ftrace_update_code(mod);
- 	if (!mod)
- 		local_irq_restore(flags);
--	ret = 0;
-  out:
- 	mutex_unlock(&ftrace_lock);
 -
+-	iter->pg = ftrace_pages_start;
+-	iter->ops = &global_ops;
+-
+-	ret = seq_open(file, &show_ftrace_seq_ops);
+-	if (!ret) {
+-		struct seq_file *m = file->private_data;
+-
+-		m->private = iter;
+-	} else {
+-		kfree(iter);
++	iter = __seq_open_private(file, &show_ftrace_seq_ops, sizeof(*iter));
++	if (iter) {
++		iter->pg = ftrace_pages_start;
++		iter->ops = &global_ops;
+ 	}
+ 
 -	return ret;
++	return iter ? 0 : -ENOMEM;
  }
  
- #ifdef CONFIG_MODULES
-@@ -3789,9 +3784,9 @@ void __init ftrace_init(void)
+ static int
+ ftrace_enabled_open(struct inode *inode, struct file *file)
+ {
+ 	struct ftrace_iterator *iter;
+-	int ret;
  
- 	last_ftrace_enabled = ftrace_enabled = 1;
+ 	if (unlikely(ftrace_disabled))
+ 		return -ENODEV;
  
--	ret = ftrace_process_locs(NULL,
--				  __start_mcount_loc,
--				  __stop_mcount_loc);
-+	ftrace_process_locs(NULL,
-+			    __start_mcount_loc,
-+			    __stop_mcount_loc);
+-	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+-	if (!iter)
+-		return -ENOMEM;
+-
+-	iter->pg = ftrace_pages_start;
+-	iter->flags = FTRACE_ITER_ENABLED;
+-	iter->ops = &global_ops;
+-
+-	ret = seq_open(file, &show_ftrace_seq_ops);
+-	if (!ret) {
+-		struct seq_file *m = file->private_data;
+-
+-		m->private = iter;
+-	} else {
+-		kfree(iter);
++	iter = __seq_open_private(file, &show_ftrace_seq_ops, sizeof(*iter));
++	if (iter) {
++		iter->pg = ftrace_pages_start;
++		iter->flags = FTRACE_ITER_ENABLED;
++		iter->ops = &global_ops;
+ 	}
  
- 	ret = register_module_notifier(&ftrace_module_nb);
- 	if (ret)
+-	return ret;
++	return iter ? 0 : -ENOMEM;
+ }
+ 
+ static void ftrace_filter_reset(struct ftrace_hash *hash)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index ed7b5d1..cf382a4 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2332,7 +2332,6 @@ static struct trace_iterator *
+ __tracing_open(struct inode *inode, struct file *file)
+ {
+ 	long cpu_file = (long) inode->i_private;
+-	void *fail_ret = ERR_PTR(-ENOMEM);
+ 	struct trace_iterator *iter;
+ 	struct seq_file *m;
+ 	int cpu, ret;
+@@ -2340,7 +2339,7 @@ __tracing_open(struct inode *inode, struct file *file)
+ 	if (tracing_disabled)
+ 		return ERR_PTR(-ENODEV);
+ 
+-	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
++	iter = __seq_open_private(file, &tracer_seq_ops, sizeof(*iter));
+ 	if (!iter)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -2397,32 +2396,15 @@ __tracing_open(struct inode *inode, struct file *file)
+ 		tracing_iter_reset(iter, cpu);
+ 	}
+ 
+-	ret = seq_open(file, &tracer_seq_ops);
+-	if (ret < 0) {
+-		fail_ret = ERR_PTR(ret);
+-		goto fail_buffer;
+-	}
+-
+-	m = file->private_data;
+-	m->private = iter;
+-
+ 	mutex_unlock(&trace_types_lock);
+ 
+ 	return iter;
+ 
+- fail_buffer:
+-	for_each_tracing_cpu(cpu) {
+-		if (iter->buffer_iter[cpu])
+-			ring_buffer_read_finish(iter->buffer_iter[cpu]);
+-	}
+-	free_cpumask_var(iter->started);
+-	tracing_start();
+  fail:
+ 	mutex_unlock(&trace_types_lock);
+ 	kfree(iter->trace);
+-	kfree(iter);
+-
+-	return fail_ret;
++	seq_release_private(inode, file);
++	return ERR_PTR(-ENOMEM);
+ }
+ 
+ int tracing_open_generic(struct inode *inode, struct file *filp)
+@@ -2458,11 +2440,10 @@ static int tracing_release(struct inode *inode, struct file *file)
+ 	tracing_start();
+ 	mutex_unlock(&trace_types_lock);
+ 
+-	seq_release(inode, file);
+ 	mutex_destroy(&iter->mutex);
+ 	free_cpumask_var(iter->started);
+ 	kfree(iter->trace);
+-	kfree(iter);
++	seq_release_private(inode, file);
+ 	return 0;
+ }
+ 
 -- 
 1.7.1
 
