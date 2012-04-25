@@ -1,125 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab2DYNCL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 09:02:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10494 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752754Ab2DYNCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 09:02:08 -0400
-Date: Wed, 25 Apr 2012 15:01:42 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, ming.m.lin@intel.com
-Subject: Re: [PATCH 4/6] perf tool: Parse general events from sysfs
-Message-ID: <20120425130142.GB3378@m.brq.redhat.com>
-References: <1333244495-1020-1-git-send-email-zheng.z.yan@intel.com>
- <1333244495-1020-5-git-send-email-zheng.z.yan@intel.com>
- <20120424090427.GA2125@m.brq.redhat.com>
- <4F979002.9090906@intel.com>
+	id S1753237Ab2DYNDz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 09:03:55 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60146 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab2DYNDy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 09:03:54 -0400
+Message-ID: <4F97F634.1010400@vflare.org>
+Date: Wed, 25 Apr 2012 09:03:48 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F979002.9090906@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/6] zsmalloc: rename zspage_order with zspage_pages
+References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-4-git-send-email-minchan@kernel.org>
+In-Reply-To: <1335334994-22138-4-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 01:47:46PM +0800, Yan, Zheng wrote:
-> On 04/24/2012 05:04 PM, Jiri Olsa wrote:
-> > hi,
-> > so the point is to have an alias support for pmu event definition.
-> > Seems like good idea to improve usability/readability, I have some
-> > general comments though..
-> > 
-> Thank you very much for reviewing this.
-> > - you suggest to have sysfs files having contents like:
-> >     event=0x2c,umask=0xf
-> >   when we were adding the formats stuff into sysfs, we had to cut off
-> >   the sysfs file contents to bare minimum to obey the sysfs rule:
-> >     single file = single value
-> >   so you might have some troubles pushing that through.. not sure ;)
-> > 
-> > - I haven't read the whole patchset, but seems like the "events"
-> >   directory is now specific to a 'Intel uncore pmu'. If thats the
-> >   case I think there should be generic way for each pmu to define
-> >   this stuff.
-> > 
-> > - as for the tools/pmu.c change I'd like to see more consistent
-> >   way of parsing this, than via 'newcfg' variable.. but none
-> >   is comming to me so far ;) I'll think about that..
-> > 
-> For this point, how about making the parser re-entrantable like the patch
-> attached below does.
+On 04/25/2012 02:23 AM, Minchan Kim wrote:
 
-yep, looks cleaner ;) some comments below
-
+> zspage_order defines how many pages are needed to make a zspage.
+> So _order_ is rather awkward naming. It already deceive Jonathan
+> - http://lwn.net/Articles/477067/
+> " For each size, the code calculates an optimum number of pages (up to 16)"
 > 
-> Regards
-> Yan, Zheng
+> Let's change from _order_ to _pages_.
 > 
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 > ---
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index e98e14c..a8b47d2 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -728,11 +728,13 @@ $(OUTPUT)perf.o perf.spec \
->  # These two need to be here so that when O= is not used they take precedence
+>  drivers/staging/zsmalloc/zsmalloc-main.c |   14 +++++++-------
+>  drivers/staging/zsmalloc/zsmalloc_int.h  |    2 +-
+>  2 files changed, 8 insertions(+), 8 deletions(-)
+>
 
-SNIP
 
-> +static int __parse_events(const char *str, int *idx, struct list_head *list);
->  
->  #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
->  #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-> @@ -651,8 +653,11 @@ int parse_events_add_numeric(struct list_head *list, int *idx,
->  int parse_events_add_pmu(struct list_head *list, int *idx,
->  			 char *name, struct list_head *head_config)
+Recently, Seth changed max_zspage_order to ZS_MAX_PAGES_PER_ZSPAGE for
+the same reason. I think it would be better to rename the function in a
+similary way to have some consistency. So, we could use:
+
+1) get_pages_per_zspage() instead of get_zspage_pages()
+2) class->pages_per_zspage instead of class->zspage_pages
+
+ 
+> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> index b99ad9e..0fe4cbb 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> @@ -180,7 +180,7 @@ out:
+>   * link together 3 PAGE_SIZE sized pages to form a zspage
+>   * since then we can perfectly fit in 8 such objects.
+>   */
+> -static int get_zspage_order(int class_size)
+> +static int get_zspage_pages(int class_size)
 >  {
-> +	LIST_HEAD(event);
-
-Are there all available events under ...event_source/devices/%s/events or
-just some of them ?
-
-In case of the latter, maybe the 'aliases/alias' would be better name for
-that.. ending up with rename in this source ;)
-
-
->  	struct perf_event_attr attr;
->  	struct perf_pmu *pmu;
-> +	char *config;
-> +	int ret;
->  
->  	pmu = perf_pmu__find(name);
->  	if (!pmu)
-> @@ -666,10 +671,21 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+>  	int i, max_usedpc = 0;
+>  	/* zspage order which gives maximum used size per KB */
+> @@ -368,7 +368,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+>  	 * identify the last page.
 >  	 */
->  	config_attr(&attr, head_config, 0);
+>  	error = -ENOMEM;
+> -	for (i = 0; i < class->zspage_order; i++) {
+> +	for (i = 0; i < class->zspage_pages; i++) {
+>  		struct page *page, *prev_page;
 >  
-> -	if (perf_pmu__config(pmu, &attr, head_config))
-> -		return -EINVAL;
-> +	ret = perf_pmu__config(pmu, &attr, head_config);
-> +	if (!ret)
-> +		return add_event(list, idx, &attr, (char *) "pmu");
-> +
-> +	ret = perf_pmu__alias(pmu, &config, head_config);
-> +	if (ret)
-> +		return ret;
+>  		page = alloc_page(flags);
+> @@ -388,7 +388,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+>  			page->first_page = first_page;
+>  		if (i >= 2)
+>  			list_add(&page->lru, &prev_page->lru);
+> -		if (i == class->zspage_order - 1)	/* last page */
+> +		if (i == class->zspage_pages - 1)	/* last page */
+>  			SetPagePrivate2(page);
+>  		prev_page = page;
+>  	}
+> @@ -397,7 +397,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+>  
+>  	first_page->freelist = obj_location_to_handle(first_page, 0);
+>  	/* Maximum number of objects we can store in this zspage */
+> -	first_page->objects = class->zspage_order * PAGE_SIZE / class->size;
+> +	first_page->objects = class->zspage_pages * PAGE_SIZE / class->size;
+>  
+>  	error = 0; /* Success */
+>  
+> @@ -511,7 +511,7 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
+>  		class->size = size;
+>  		class->index = i;
+>  		spin_lock_init(&class->lock);
+> -		class->zspage_order = get_zspage_order(size);
+> +		class->zspage_pages = get_zspage_pages(size);
+>  
+>  	}
+>  
+> @@ -602,7 +602,7 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
+>  
+>  		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
+>  		spin_lock(&class->lock);
+> -		class->pages_allocated += class->zspage_order;
+> +		class->pages_allocated += class->zspage_pages;
+>  	}
+>  
+>  	obj = first_page->freelist;
+> @@ -657,7 +657,7 @@ void zs_free(struct zs_pool *pool, void *obj)
+>  	fullness = fix_fullness_group(pool, first_page);
+>  
+>  	if (fullness == ZS_EMPTY)
+> -		class->pages_allocated -= class->zspage_order;
+> +		class->pages_allocated -= class->zspage_pages;
+>  
+>  	spin_unlock(&class->lock);
+>  
+> diff --git a/drivers/staging/zsmalloc/zsmalloc_int.h b/drivers/staging/zsmalloc/zsmalloc_int.h
+> index 92eefc6..8f9ce0c 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc_int.h
+> +++ b/drivers/staging/zsmalloc/zsmalloc_int.h
+> @@ -124,7 +124,7 @@ struct size_class {
+>  	unsigned int index;
+>  
+>  	/* Number of PAGE_SIZE sized pages to combine to form a 'zspage' */
+> -	int zspage_order;
+> +	int zspage_pages;
+>  
+>  	spinlock_t lock;
+>  
 
 
-I think it's ok for pmu object to contain list of aliases loaded
-from sysfs (if that change will go throught ;) ), but I'd rather
-see the pmu alias interface to be more generic like:
-
-        config = perf_pmu__alias(pmu, alias);
-
-The function would just return the event config string if the record
-is found for the alias.
-
-...and the parse_events_add_pmu function would then take care of
-the rest.. the final 'pmu/config' string and have it parsed...
-
-
-thanks,
-jirka
+Thanks,
+Nitin
