@@ -1,147 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab2DYIVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 04:21:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33096 "EHLO mx2.suse.de"
+	id S1755005Ab2DYIXr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 04:23:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37605 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754320Ab2DYIV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 04:21:27 -0400
-Date: Wed, 25 Apr 2012 10:21:26 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: move pc lookup point to commit_charge()
-Message-ID: <20120425082125.GA11364@tiehlicka.suse.cz>
-References: <1335295860-28919-1-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335295860-28919-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754781Ab2DYIXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 04:23:45 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] tracing: Various cleanups
+Date: Wed, 25 Apr 2012 10:23:35 +0200
+Message-Id: <1335342219-2782-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 24-04-12 21:31:00, Johannes Weiner wrote:
-> None of the callsites actually need the page_cgroup descriptor
-> themselves, so just pass the page and do the look up in there.
-> 
-> We already had two bugs (6568d4a 'mm: memcg: update the correct soft
-> limit tree during migration' and 'memcg: fix Bad page state after
-> replace_page_cache') where the passed page and pc were not referring
-> to the same page frame.
+hi,
+sending some small cleanups I gathered along the way ;)
 
-Yes let's get rid of these relics once and for all.
+attached patches:
+  1/4 ftrace: Remove unused code ftrace related code
+  2/4 ftrace: Remove unused ftrace_update_time variable/code
+  3/4 ftrace: No return value for ftrace_process_locs
+  4/4 tracing: Use seq_*_private interface for some seq files
 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Hugh Dickins <hughd@google.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-Thanks!
-
-> ---
->  mm/memcontrol.c |   17 +++++------------
->  1 files changed, 5 insertions(+), 12 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 884e936..1a28dd8 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2461,10 +2461,10 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
->  static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
->  				       struct page *page,
->  				       unsigned int nr_pages,
-> -				       struct page_cgroup *pc,
->  				       enum charge_type ctype,
->  				       bool lrucare)
->  {
-> +	struct page_cgroup *pc = lookup_page_cgroup(page);
->  	struct zone *uninitialized_var(zone);
->  	bool was_on_lru = false;
->  	bool anon;
-> @@ -2701,7 +2701,6 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
->  {
->  	struct mem_cgroup *memcg = NULL;
->  	unsigned int nr_pages = 1;
-> -	struct page_cgroup *pc;
->  	bool oom = true;
->  	int ret;
->  
-> @@ -2715,11 +2714,10 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
->  		oom = false;
->  	}
->  
-> -	pc = lookup_page_cgroup(page);
->  	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
->  	if (ret == -ENOMEM)
->  		return ret;
-> -	__mem_cgroup_commit_charge(memcg, page, nr_pages, pc, ctype, false);
-> +	__mem_cgroup_commit_charge(memcg, page, nr_pages, ctype, false);
->  	return 0;
->  }
->  
-> @@ -2816,16 +2814,13 @@ static void
->  __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *memcg,
->  					enum charge_type ctype)
->  {
-> -	struct page_cgroup *pc;
-> -
->  	if (mem_cgroup_disabled())
->  		return;
->  	if (!memcg)
->  		return;
->  	cgroup_exclude_rmdir(&memcg->css);
->  
-> -	pc = lookup_page_cgroup(page);
-> -	__mem_cgroup_commit_charge(memcg, page, 1, pc, ctype, true);
-> +	__mem_cgroup_commit_charge(memcg, page, 1, ctype, true);
->  	/*
->  	 * Now swap is on-memory. This means this page may be
->  	 * counted both as mem and swap....double count.
-> @@ -3254,14 +3249,13 @@ int mem_cgroup_prepare_migration(struct page *page,
->  	 * page. In the case new page is migrated but not remapped, new page's
->  	 * mapcount will be finally 0 and we call uncharge in end_migration().
->  	 */
-> -	pc = lookup_page_cgroup(newpage);
->  	if (PageAnon(page))
->  		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
->  	else if (page_is_file_cache(page))
->  		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
->  	else
->  		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> -	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, ctype, false);
-> +	__mem_cgroup_commit_charge(memcg, newpage, 1, ctype, false);
->  	return ret;
->  }
->  
-> @@ -3348,8 +3342,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
->  	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
->  	 * LRU while we overwrite pc->mem_cgroup.
->  	 */
-> -	pc = lookup_page_cgroup(newpage);
-> -	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type, true);
-> +	__mem_cgroup_commit_charge(memcg, newpage, 1, type, true);
->  }
->  
->  #ifdef CONFIG_DEBUG_VM
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+wbr,
+jirka
+---
+ include/linux/ftrace.h |    7 --
+ kernel/trace/ftrace.c  |  199 ++++++++----------------------------------------
+ kernel/trace/trace.c   |   27 +------
+ 3 files changed, 35 insertions(+), 198 deletions(-)
