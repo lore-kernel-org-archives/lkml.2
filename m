@@ -1,104 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab2DYQr4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 12:47:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756715Ab2DYQry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 12:47:54 -0400
-Subject: Re: [git pull] vfs and fs fixes
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <20120425162640.GA27193@quack.suse.cz>
-References: <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
-	 <20120417180129.GW6589@ZenIV.linux.org.uk>
-	 <20120417182825.GX6589@ZenIV.linux.org.uk>
-	 <20120417211419.GC27426@fieldses.org>
-	 <CA+55aFwdh_QWG-R2FQ71kDXiNYZ04qPANBsY_PssVUwEBH4uSw@mail.gmail.com>
-	 <20120417234423.GY6589@ZenIV.linux.org.uk>
-	 <20120420111517.GB8985@quack.suse.cz> <20120424195236.GA19095@fieldses.org>
-	 <20120424222312.GA10665@quack.suse.cz>
-	 <20120425112930.GA30477@fieldses.org>
-	 <20120425162640.GA27193@quack.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Wed, 25 Apr 2012 17:47:03 +0100
-Message-ID: <1335372423.2730.2.camel@menhir>
-Mime-Version: 1.0
+	id S1756643Ab2DYQtW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 12:49:22 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39507 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754681Ab2DYQtV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 12:49:21 -0400
+Message-ID: <4F982B0C.7050103@acm.org>
+Date: Wed, 25 Apr 2012 11:49:16 -0500
+From: Corey Minyard <tcminyard@gmail.com>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+CC: Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        tcminyard@gmail.com
+Subject: Re: [BISECTED] ipmi_si not loading since 2.6.39
+References: <20120420223833.GA7855@nik-comp.lan> <20120421072056.GA2033@nik-comp.lan> <4F95B6F3.3010303@calxeda.com> <4F96AD8C.9010105@acm.org> <20120424203745.GB2152@nik-comp.lan> <4F97135A.2060801@calxeda.com> <20120424213056.GC2152@nik-comp.lan> <4F9721C3.7000009@acm.org> <20120425042123.GA2067@nik-comp.lan>
+In-Reply-To: <20120425042123.GA2067@nik-comp.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/24/2012 11:21 PM, Nikola Ciprich wrote:
+>> In the previous kernel it was coming up at address 0xca2, not 0xca8.
+>> Can you try that?
+> hmm, haven't noticed that!
+>
+> here's the try:
+> [root@vbox4 ~]# modprobe ipmi_si type=kcs addrs=0xca2 regspacings=1 regsizes=1 regshifts=0 irqs=0 slave_addrs=0x0
+>
+> dmesg:
+> [33743.684605] IPMI System Interface driver.
+> [33743.684607] ipmi_si: probing via hardcoded address
+> [33743.684608] ipmi_si: Adding hardcoded-specified kcs state machine
+> [33743.684610] ipmi_si: Trying hardcoded-specified kcs state machine at mem address 0xca2, slave address 0x0, irq 0
+> [33743.684612] ipmi_si: Could not set up I/O space
 
-On Wed, 2012-04-25 at 18:26 +0200, Jan Kara wrote:
-> On Wed 25-04-12 07:29:30, J. Bruce Fields wrote:
-> > On Wed, Apr 25, 2012 at 12:23:12AM +0200, Jan Kara wrote:
-> > > On Tue 24-04-12 15:52:36, J. Bruce Fields wrote:
-> > > > On Fri, Apr 20, 2012 at 01:15:17PM +0200, Jan Kara wrote:
-> > > > > On Wed 18-04-12 00:44:24, Al Viro wrote:
-> > > > > > On Tue, Apr 17, 2012 at 03:08:26PM -0700, Linus Torvalds wrote:
-> > > > > > > > Or I could increment that counter for all the conflicting operations and
-> > > > > > > > rely on it instead of the i_mutex. ?I was trying to avoid adding
-> > > > > > > > something like that (an inc, a dec, another error path) to every
-> > > > > > > > operation. ?And hoping to avoid adding another field to struct inode.
-> > > > > > > > Oh well.
-> > > > > > > 
-> > > > > > > We could just say that we can do a double inode lock, but then
-> > > > > > > standardize on the order. And the only sane order is comparing inode
-> > > > > > > pointers, not inode numbers like ext4 apparently does.
-> > > > > > > 
-> > > > > > > With a standard order, I don't think it would be at all wrong to just
-> > > > > > > take the inode lock on rename.
-> > > > > > 
-> > > > > > In principle, yes, but have you tried to grep for i_mutex?  Note that
-> > > > > > we have *another* place where multiple ->i_mutex might be held on
-> > > > > > non-directories (and unless I'm missing something, ext4 move_extent.c
-> > > > > > stuff doesn't play well with it): quota writes.  Which can, AFAICS,
-> > > > > > happen while write(2) is holding ->i_mutex on a regular file.  So
-> > > > > > it's not _that_ easy - we want something like "and quota file is goes
-> > > > > > last", since there we don't get to change the locking order - the first
-> > > > > > ->i_mutex is taken too far outside.
-> > > > >   Hum, I think I could just do away with quota file i_mutex being special.
-> > > > > It's used for two purposes:
-> > > > >   1) When quota is being turned on/off, we want to set/clear inode immutable
-> > > > > flag, truncate page cache, etc. But we should be able push this locking
-> > > > > outside of quota locks.
-> > > > >   2) Inside filesystems when quota file is written to. Quota writes are
-> > > > > serialized by quota code anyway and noone else has any bussiness with quota
-> > > > > files (they are marked as immutable to avoid mistakes) so there i_mutex is
-> > > > > not really needed.
-> > > > 
-> > > > Grepping for I_MUTEX_QUOTA shows hits in ext4, reiserfs, and gfs2.  The
-> > > > former two are in code called from the quota code (through the
-> > > > ->quota_write method).  But the gfs2 code appears to be called directly
-> > > > from gfs2's write code.
-> > >   Ah, gfs2 doesn't use generic quota code so whatever it does is it's own
-> > > invention. For ext4 and reiserfs I could get rid of I_MUTEX_QUOTA as I
-> > > wrote.
-> > 
-> > So, just the appended?
->   Yup, that's the easier part. We also use the mutex in quota code itself
-> (fs/quota/dquot.c). That's somewhat harder to solve but still relatively
-> simple.
-> 
-> > But unfortunately as long as that's left in gfs2 we're still stuck
-> > trying to order quota files after other files when we take two
-> > non-directory i_mutexes elsewhere.
->   As far as GFS2 is concerned, I'm not sure what it uses i_mutex in quota
-> code for.  In any case it should be possible to replace that usage by some
-> GFS2 internal lock to get rid of the last usage of I_MUTEX_QUOTA... Stephen?
-> 
-> 								Honza
-> 
-I'll have a look and see what we can do. I'm not sure off the top of my
-head how easy it will be to eliminate this lock,
+That means that something else is using that I/O space.  You can look in 
+/proc/ioports to find what.
 
-Steve.
+-corey
 
+> cheers!
+> n.
+>
+>
+>> -corey
+>>
+>>
+>>> n.
+>>>
+>>>
+>>> On Tue, Apr 24, 2012 at 03:55:54PM -0500, Rob Herring wrote:
+>>>> On 04/24/2012 03:37 PM, Nikola Ciprich wrote:
+>>>>> Hi Corey,
+>>>>>
+>>>>> I have this problem with 3.4-rc4 as well and it already contains
+>>>>> b1608d69cb804e414d0887140ba08a9398e4e638, so this doesn't fix this problem..
+>>>>>
+>>>> Can you send the kernel log for the failing case.
+>>>>
+>>>> Rob
+>>>>
+>>>>> BR
+>>>>>
+>>>>> nik
+>>>>>
+>>>>>
+>>>>> On Tue, Apr 24, 2012 at 08:41:32AM -0500, Corey Minyard wrote:
+>>>>>> Looks like you might need change b1608d69cb804e414d0887140ba08a9398e4e638
+>>>>>>
+>>>>>> -corey
+>>>>>>
+>>>>>> On 04/23/2012 03:09 PM, Rob Herring wrote:
+>>>>>>> On 04/21/2012 02:20 AM, Nikola Ciprich wrote:
+>>>>>>>> Hi,
+>>>>>>>>
+>>>>>>>> here's further information Rob and Corey requested:
+>>>>>>>>
+>>>>>>>> on working system:
+>>>>>>>>
+>>>>>>>> [root@vbox4 ~]# cat /proc/ipmi/0/params
+>>>>>>>> kcs,i/o,0xca2,rsp=1,rsi=1,rsh=0,irq=0,ipmb=0
+>>>>>>>>
+>>>>>>>> dmesg snippet:
+>>>>>>>>
+>>>>>>>> [   41.759319] ipmi message handler version 39.2
+>>>>>>>> [   41.760690] ipmi device interface
+>>>>>>>> [   42.765334] IPMI System Interface driver.
+>>>>>>>> [   42.765336] ipmi_si: probing via hardcoded address
+>>>>>>>> [   42.765337] ipmi_si: Adding hardcoded-specified kcs state machine
+>>>>>>>> [   42.765340] ipmi_si: Trying hardcoded-specified kcs state machine at i/o address 0xca8, slave address 0x0, irq 0
+>>>>>>>> [   42.765344] ipmi_si: Interface detection failed
+>>>>>>>> [   42.770823] ipmi_si: probing via SMBIOS
+>>>>>>>> [   42.770834] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 irq 0
+>>>>>>>> [   42.770836] ipmi_si: Adding SMBIOS-specified kcs state machine
+>>>>>>>> [   42.770838] ipmi_si: probing via SPMI
+>>>>>>>> [   42.770840] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
+>>>>>>>> [   42.770841] ipmi_si: Adding SPMI-specified kcs state machine
+>>>>>>>> [   42.770843] ipmi_si: Trying SMBIOS-specified kcs state machine at i/o address 0xca2, slave address 0x0, irq 0
+>>>>>>>> [   42.798137] ipmi_si ipmi_si.0: Error clearing flags: cc
+>>>>>>>> [   42.801011] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x002a7c, prod_id: 0x0624, dev_id: 0x20)
+>>>>>>>> [   42.801068] ipmi_si ipmi_si.0: IPMI kcs interface initialized
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> dmidecode:
+>>>>>>>>
+>>>>>>>> IPMI Device Information
+>>>>>>>>            Interface Type: KCS (Keyboard Control Style)
+>>>>>>>>            Specification Version: 2.0
+>>>>>>>>            I2C Slave Address: 0x00
+>>>>>>>>            NV Storage Device: Not Present
+>>>>>>>>            Base Address: 0x0000000000000CA2 (I/O)
+>>>>>>>>            Register Spacing: Successive Byte Boundaries
+>>>>>>>>
+>>>>>>>> Base Board Information
+>>>>>>>>            Manufacturer: Supermicro
+>>>>>>>>            Product Name: X9SCL/X9SCM
+>>>>>>>>
+>>>>>>>> (but we're experiencing this on various supermicro bords, ie X8DTL)
+>>>>>>>>
+>>>>>>>> Tried setting parameters by hand didn't help:
+>>>>>>>>
+>>>>>>>> modprobe ipmi_si type=kcs addrs=0xca8 regspacings=1 regsizes=1 regshifts=0 irqs=0 slave_addrs=0x0
+>>>>>>>>
+>>>>>>>> (not sure whether I got them correct though, and values mostly seem to me to be defaults anyways..)
+>>>>>>>>
+>>>>>>> It is working for me on a SuperMicro system with ubuntu oneiric (3.0
+>>>>>>> based).
+>>>>>>>
+>>>>>>> [597160.259728] ipmi_si: probing via SMBIOS
+>>>>>>> [597160.259730] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 irq 0
+>>>>>>> [597160.259731] ipmi_si: Adding SMBIOS-specified kcs state machine
+>>>>>>> [597160.259734] ipmi_si: probing via SPMI
+>>>>>>> [597160.259735] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
+>>>>>>> [597160.259737] ipmi_si: Adding SPMI-specified kcs state machine
+>>>>>>> [597160.259739] ipmi_si: Trying SMBIOS-specified kcs state machine at
+>>>>>>> i/o address 0xca2, slave address 0x0, irq 0
+>>>>>>> [597160.378757] ipmi_si: Invalid return from get global enables command,
+>>>>>>> cannot enable the event buffer.
+>>>>>>> [597160.382032] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x00b980,
+>>>>>>> prod_id: 0x0624, dev_id: 0x20)
+>>>>>>> [597160.382040] ipmi_si ipmi_si.0: IPMI kcs interface initialized
+>>>>>>> [597179.973960] ipmi device interface
+>>>>>>> localadm@sandy1:~$ ipmitool bmc info
+>>>>>>> Could not open device at /dev/ipmi0 or /dev/ipmi/0 or /dev/ipmidev/0: No
+>>>>>>> such file or directory
+>>>>>>> Get Device ID command failed
+>>>>>>> localadm@sandy1:~$ sudo ipmitool bmc info
+>>>>>>> Device ID                 : 32
+>>>>>>> Device Revision           : 1
+>>>>>>> Firmware Revision         : 1.1
+>>>>>>> IPMI Version              : 2.0
+>>>>>>> Manufacturer ID           : 47488
+>>>>>>> Manufacturer Name         : Unknown (0xB980)
+>>>>>>> Product ID                : 1572 (0x0624)
+>>>>>>> Product Name              : Unknown (0x624)
+>>>>>>> Device Available          : yes
+>>>>>>> Provides Device SDRs      : no
+>>>>>>> Additional Device Support :
+>>>>>>>        Sensor Device
+>>>>>>>        SDR Repository Device
+>>>>>>>        SEL Device
+>>>>>>>        FRU Inventory Device
+>>>>>>>        IPMB Event Receiver
+>>>>>>>        IPMB Event Generator
+>>>>>>>        Chassis Device
+>>>>>>> Aux Firmware Rev Info     :
+>>>>>>>        0x06
+>>>>>>>        0x00
+>>>>>>>        0x00
+>>>>>>>        0x00
+>>>>>>> localadm@sandy1:~$ uname -a
+>>>>>>> Linux sandy1 3.0.0-16-generic #28-Ubuntu SMP Fri Jan 27 17:44:39 UTC
+>>>>>>> 2012 x86_64 x86_64 x86_64 GNU/Linux
+>>>>>>>
+>>>>>>> Rob
+>>>>>>>
+>>>>>>>> nik
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> On Sat, Apr 21, 2012 at 12:38:33AM +0200, Nikola Ciprich wrote:
+>>>>>>>>> Hello,
+>>>>>>>>>
+>>>>>>>>> I was trying to find out why IPMI stopped working on new kernels. Since 2.6.39
+>>>>>>>>> module loading ends with following message:
+>>>>>>>>>
+>>>>>>>>>     ipmi_si: Interface detection failed
+>>>>>>>>>
+>>>>>>>>> Then ipmitool is unable to control IPMI device.
+>>>>>>>>>
+>>>>>>>>> Works for 2.6.38, doesn't work for 2.6.39, 3.0.28, 3.4-rc1.
+>>>>>>>>>
+>>>>>>>>> I got this bisected to following commit:
+>>>>>>>>>
+>>>>>>>>> commit a1e9c9dd3383e6a1a762464ad604b1081774dbda
+>>>>>>>>> Author: Rob Herring<rob.herring@calxeda.com>
+>>>>>>>>> Date:   Wed Feb 23 15:37:59 2011 -0600
+>>>>>>>>>
+>>>>>>>>>        ipmi: convert OF driver to platform driver
+>>>>>>>>>
+>>>>>>>>>        of_bus is deprecated in favor of the plain platform bus. This patch
+>>>>>>>>>        merges the ipmi OF driver with the existing platform driver.
+>>>>>>>>>
+>>>>>>>>>        CONFIG_PPC_OF occurrances are removed or replaced with CONFIG_OF.
+>>>>>>>>>
+>>>>>>>>>        Compile tested with and without CONFIG_OF. Tested OF probe and
+>>>>>>>>>        default probe cases.
+>>>>>>>>>
+>>>>>>>>>        Signed-off-by: Rob Herring<rob.herring@calxeda.com>
+>>>>>>>>>        Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
+>>>>>>>>>
+>>>>>>>>> I wonder whether this is a bug, or I'm doing something wrong?
+>>>>>>>>>
+>>>>>>>>> Thanks in advance!
+>>>>>>>>>
+>>>>>>>>> with best regards
+>>>>>>>>>
+>>>>>>>>> nik
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> -- 
+>>>>>>>>> -------------------------------------
+>>>>>>>>> Ing. Nikola CIPRICH
+>>>>>>>>> LinuxBox.cz, s.r.o.
+>>>>>>>>> 28. rijna 168, 709 01 Ostrava
+>>>>>>>>>
+>>>>>>>>> tel.:   +420 596 603 142
+>>>>>>>>> fax:    +420 596 621 273
+>>>>>>>>> mobil:  +420 777 093 799
+>>>>>>>>>
+>>>>>>>>> www.linuxbox.cz
+>>>>>>>>>
+>>>>>>>>> mobil servis: +420 737 238 656
+>>>>>>>>> email servis: servis@linuxbox.cz
+>>>>>>>>> -------------------------------------
+>>>>>>> --
+>>>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>>>> Please read the FAQ at  http://www.tux.org/lkml/
 
