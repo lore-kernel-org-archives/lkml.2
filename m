@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab2DYPYw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:24:52 -0400
-Received: from longford.logfs.org ([213.229.74.203]:45068 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab2DYPYv (ORCPT
+	id S1754522Ab2DYP2I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:28:08 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34871 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab2DYP2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:24:51 -0400
-Date: Wed, 25 Apr 2012 09:25:14 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] add blockconsole
-Message-ID: <20120425132513.GA23492@logfs.org>
-References: <20120424205946.GH20610@logfs.org>
- <x49zka0j5bk.fsf@segfault.boston.devel.redhat.com>
+	Wed, 25 Apr 2012 11:28:07 -0400
+Message-ID: <4F9817E8.7030700@windriver.com>
+Date: Wed, 25 Apr 2012 10:27:36 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <x49zka0j5bk.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH v2] kgdb: Do not allow function tracing of kgdb code
+References: <1335367432.28106.167.camel@gandalf.stny.rr.com>
+In-Reply-To: <1335367432.28106.167.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 April 2012 09:42:39 -0400, Jeff Moyer wrote:
-> 
-> Neat idea, but I'm curious to know how it works when the system panics
-> and you no longer can schedule the writeback thread.  What are the
-> limitations you've seen in practice?
+On 04/25/2012 10:23 AM, Steven Rostedt wrote:
+> As function tracing the kgdb code can cause issues, as kgdb is a
+> debugger itself, do not trace the kgdb functions.
+>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-If the writeback thread doesn't get scheduled, you lose that
-information.  Formerly I did the submit_bio directly, but lockdep
-reminded me that I shouldn't do so from interrupt context.  Bummer.
+You beat me to creating the patch, because I was in the process of
+testing the same modification before posting. :-)
 
-Also, this is pretty young code so far.  We are starting to deploy it
-in numbers just about now.  The obvious hope is that it will record a
-non-zero class of problems that doesn't make it to syslog.  And the
-obvious fear is that it will fail to record another non-zero class of
-problems.  As to the extend of those two classes, we just don't have
-good data yet.
+Acked-by: Jason Wessel <jason.wessel@windriver.com>
 
-But as they say, release early, release often, and hope some reviewer
-finds a bug you can fix before having to debug it the hard way. ;)
+Thanks,
+Jason.
 
-Jörn
