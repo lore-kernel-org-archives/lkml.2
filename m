@@ -1,104 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400Ab2DYF0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 01:26:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52699 "EHLO mx2.suse.de"
+	id S932422Ab2DYF0f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 01:26:35 -0400
+Received: from plane.gmane.org ([80.91.229.3]:60685 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932373Ab2DYF0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 01:26:10 -0400
-Date: Wed, 25 Apr 2012 15:26:03 +1000
-From: NeilBrown <neilb@suse.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: twl4030 power button: don't lose presses on
- resume
-Message-ID: <20120425152603.3d24547f@notabene.brown>
-In-Reply-To: <20120425050919.GB27843@core.coreip.homeip.net>
-References: <20120425122139.512c6890@notabene.brown>
-	<20120425050919.GB27843@core.coreip.homeip.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S932199Ab2DYF0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 01:26:33 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Adrian Yanes <devel@ayanes.com>
+Subject: Re: [PATCH] i2c-at91: fix data-loss issue
+Date: Wed, 25 Apr 2012 08:26:18 +0300
+Message-ID: <jn81tq$b3s$1@dough.gmane.org>
+References: <20120413103937.GH7154@arwen.pp.htv.fi> <1334317476-10044-1-git-send-email-h.feurstein@gmail.com> <EF2E73589CA71846A15D0B2CDF79505D0905D5A1AA@wm021.weinmann.com> <20120418143920.GA19802@pengutronix.de> <4F930B77.8070909@ayanes.com> <EF2E73589CA71846A15D0B2CDF79505D0905DB4657@wm021.weinmann.com> <4F94F598.1040008@ayanes.com>
+Reply-To: devel@ayanes.com
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/klFw2H1hDUnKfS+VV9SEI+9"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: duw0.kyla.fi
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.5; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+In-Reply-To: <4F94F598.1040008@ayanes.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/klFw2H1hDUnKfS+VV9SEI+9
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Apparently the issue with the AT91RM9200 is the chipset itself due to a
+factory design defect. Some people claim that the root cause of it is:
 
-On Tue, 24 Apr 2012 22:09:19 -0700 Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
+"Since the TWI doesn't have a DMA channel there is no way to deliver
+timely data to the Tx buffer under heavy CPU load."[1]
 
-> Hi Neil,
->=20
-> On Wed, Apr 25, 2012 at 12:21:39PM +1000, NeilBrown wrote:
-> >=20
-> > If we press and release the power button before the press interrupt is
-> > handled - as can happen on resume - we lose the press event so the
-> > release event is ignored and we don't know what happened to cause the
-> > wakeup.
->=20
-> What kind of latency do you observe?
+Other threads[2] highlights same issues with the AT91RM9200 and the data
+loss. Even in 2007, Ronny Nilsson tried to do some patch[3] blocking the
+interrupts in order to win more feasibility, some testing was
+performed[4], and up to 100kHz (exactly the same value as we started
+getting errors), the driver just failed. At the end of the discussion
+the conclusion was that the TWI controller of the AT91RM9200 is just
+broken and the GPIO driver is the only alternative.
 
-When I have debugging enabled, hundreds of milliseconds.
+Therefore, your driver will work for all of those chipsets using PDC
+with the TWI. However, it won't work with the AT91RM9200 (and probably
+old hardware variants that keep same hardware design).
 
-When I don't have debugging enabled ... it doesn't tell me, but I'm fairly
-sure it is several tens of milliseconds and the button press can be quicker
-than that.
+So I recommend to add a note/comment indicating such incompatibility for
+the AT91RM9200, either in the source code or in the kernel config.
 
-If it will help I can try to instrument the driver and get some timings.
+Thanks.
 
->=20
-> >=20
-> > So make sure that each interrupt handled does generate an event.
-> > Because twl4030 queues interrupt events we will see two interrupts
-> > for a press-release even if we handle the first one later.  This means
-> > that such a sequence will be reported as two button presses.  This
-> > is unfortunate but is better than no button presses.
-> > Possibly we could set the PENDDIS_MASK to disable queuing of
-> > interrupts, but that might adversely affect other interrupt sources.
-> >
->=20
-> It looks like we'd have to modify every driver to ensure consistent
-> behavior as we do not have any guarantees on how long resume takes.
-> Maybe this is something that input core needs to implement?
+Adrian
 
-Well if every driver is buggy....
 
-I don't see how this could be implemented in the input core.  And even if it
-was, you'd probably need to change each driver to interact with this new
-functionality which would be much the same work as changing them to work wi=
-th
-the current functionality....
-But maybe I have no imagination - if you can suggest a way that the input c=
-ore
-could support this without changing the drivers, I'm happy to try it out.
+1 - http://lists.atrpms.net/pipermail/i2c/2007-October/002026.html
+2 - http://lists.lm-sensors.org/pipermail/i2c/2007-February/000773.html
+3 - http://lists.lm-sensors.org/pipermail/i2c/2007-February/000833.html
+4 - http://lists.atrpms.net/pipermail/i2c/2007-October/002034.html
 
-Thanks,
-NeilBrown
-
---Sig_/klFw2H1hDUnKfS+VV9SEI+9
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT5eK6znsnt1WYoG5AQLyWw//Uajlw6vtJCkOI22ElIrr9Rzpl+O9wVMf
-dqTc0VCiRxEyBFUXudziN4GtNs9XdLfBRvWr8NhrSqVJHX+8nsWmzrIUD/wXc8kM
-UmL0EhcRa3hw2J3lU4bOxhgsYh+6iR83OdCc9Jn5jHyGOXULnjc75MmVzXYVNIUd
-b2b3k/CQ4IkqoXvLHG58h7/vwIdRe/qaAKF7hlGBAVmYXk0+x/po+ep9i2UdnC/G
-YtUPVSO4Cvl/8l8XEYksrBTneW8CUNEb58e7ff49R5/Eleiv480WDKi8mhUBxu6A
-5WvdtDcDNrtW6RTXmwZUzmFfkOfbh4I9gkDG2zO7R2LKFxzIcLhw0hF35eiuqyKP
-crqrq1DUnlLPpd3b/sJShDuQQs6FnBB5pJYznj/d51Qft/iijq8idO6mOmyRBp9p
-U83kS8DI5kou9+zXTbs1YrsQDEb3GqVCmt9NUxKtl93GEGgIiTv5TITieo0xc2rs
-KSoqSE0zN738OWcFwhodd6KOIXqI/0lqBuqkYs41ggecYFSwB+obC5s95dbp5j0v
-AovuZmWZsPQt/NWaBWgskMNdzAyoSvkLGAox+K34vrb70hZPTzcMLFMYa7yyUA05
-tnLHsG7LZIuLU6kG6b20CTmhpe3rueOKxjeScVulWJeS0BEMzxrxc5BVJuNZzZZ8
-0hGdr+Jysw0=
-=dE7s
------END PGP SIGNATURE-----
-
---Sig_/klFw2H1hDUnKfS+VV9SEI+9--
