@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab2DYPP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:15:29 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:29090 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab2DYPP2 (ORCPT
+	id S1753659Ab2DYPSR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:18:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6359 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab2DYPSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:15:28 -0400
-X-IronPort-AV: E=Sophos;i="4.75,481,1330923600"; 
-   d="scan'208";a="192014963"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: xen-devel@lists.xen.org
-CC: konrad.wilk@oracle.com, Stefano.Stabellini@eu.citrix.com,
-        tobias.geiger@vido.info, linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH] xen: use the pirq number to check the pirq_eoi_map
-Date: Wed, 25 Apr 2012 16:11:38 +0100
-Message-ID: <1335366698-19875-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 25 Apr 2012 11:18:15 -0400
+X-Authority-Analysis: v=2.0 cv=IaEFqBWa c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=6_Z-mwH_ePMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=6ASPn2vhAAAA:8 a=hzjqOLpxxnnnCK4k38cA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=xWsXUZN4lXYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1335367093.28106.165.camel@gandalf.stny.rr.com>
+Subject: [PATCH] kgdb: Do not allow function tracing of kgdb code
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Wed, 25 Apr 2012 11:18:13 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In pirq_check_eoi_map use the pirq number rather than the Linux irq
-number to check whether an eoi is needed in the pirq_eoi_map.
+As function tracing the kgdb code can cause issues, as kgdb is a
+debugger itself, do not trace the kgdb functions.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Tested-by: Tobias Geiger <tobias.geiger@vido.info>
----
- drivers/xen/events.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 4b33acd..0a8a17c 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -274,7 +274,7 @@ static unsigned int cpu_from_evtchn(unsigned int evtchn)
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 532d2e0..b7828ce 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -15,6 +15,7 @@ CFLAGS_REMOVE_pvclock.o = -pg
+ CFLAGS_REMOVE_kvmclock.o = -pg
+ CFLAGS_REMOVE_ftrace.o = -pg
+ CFLAGS_REMOVE_early_printk.o = -pg
++CFLAGS_REMOVE_kgdb.o = -pg
+ endif
  
- static bool pirq_check_eoi_map(unsigned irq)
- {
--	return test_bit(irq, pirq_eoi_map);
-+	return test_bit(pirq_from_irq(irq), pirq_eoi_map);
- }
- 
- static bool pirq_needs_eoi_flag(unsigned irq)
--- 
-1.7.2.5
+ obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
+
 
