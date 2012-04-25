@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab2DYQht (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 12:37:49 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39752 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab2DYQhs (ORCPT
+	id S1756459Ab2DYQim (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 12:38:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46451 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab2DYQil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 12:37:48 -0400
+	Wed, 25 Apr 2012 12:38:41 -0400
+Date: Wed, 25 Apr 2012 13:37:38 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: Our failure on tracing tools unification
+Message-ID: <20120425163738.GE17992@infradead.org>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+ <20120423144743.GB29985@somewhere>
+ <1335193719.28150.171.camel@twins>
+ <20120425080525.GA32613@gmail.com>
+ <y0m8vhjopvs.fsf@fche.csb>
 MIME-Version: 1.0
-In-Reply-To: <4F8DB90A.8050504@xenotime.net>
-References: <20120417144241.0d7dc5fde56b2a37ff0dcaba@canb.auug.org.au> <4F8DB90A.8050504@xenotime.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 25 Apr 2012 10:37:26 -0600
-Message-ID: <CAErSpo56ddRZCG=5yqcEUBPZ1_x76=33xkv5x-46gcNgQCA0Qg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 17 (pci-sysfs.c and vga_switcheroo.c)
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <y0m8vhjopvs.fsf@fche.csb>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 12:40 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On 04/16/2012 09:42 PM, Stephen Rothwell wrote:
->
->> Hi all,
->>
->> Changes since 20120416:
->
->
-> When CONFIG_VGA_ARB is not enabled:
->
-> drivers/built-in.o: In function `boot_vga_show':
-> pci-sysfs.c:(.text+0x1060f): undefined reference to `vga_default_device'
->
->
-> and
->
-> drivers/built-in.o: In function `boot_vga_show':
-> pci-sysfs.c:(.text+0x8cc2): undefined reference to `vga_default_device'
-> drivers/built-in.o: In function `vga_switcheroo_register_client':
-> (.text+0x76671): undefined reference to `vga_default_device'
-> drivers/built-in.o: In function `vga_switchto_stage1':
-> vga_switcheroo.c:(.text+0x767f4): undefined reference to `vga_set_default_device'
+Em Wed, Apr 25, 2012 at 10:19:35AM -0400, Frank Ch. Eigler escreveu:
+> 
+> mingo wrote:
+> 
+> > [...]  One thing that would suck is perf being bound by various
+> > versions of this library floating out there.
+> 
+> Could the event parser shared library be ABI-preserving?  If so, what
+> would perf have to fear?
 
-I assume this is related to 77b267c7549e3629ea55cf780aa3d474da7bc2d5
-("vgaarb: Add support for setting the default video device") and that
-Matthew will take care of whatever needs to be done (if it's not fixed
-already).
+Perhaps its because people working on perf grew in the kernel, where we
+can change things as we see fit, i.e. change the networking API? Sure,
+we can go over the drivers and change them, its all in the same source
+tree, etc.
 
-Bjorn
+> > [...] We had nothing but pain from external libraries so far [...]
+> 
+> If the elfutils, newt, gtk, bfd, iberty, zlib, python libraries didn't
+> contribute useful and un-rewriteable functionality, perf would not be
+> using them.
+
+newt was a pain and will go away, 99% of things rely just on libslang,
+but even that one could go, bfd we use just for C++ demangling, so
+probably could go too.
+
+- Arnaldo
