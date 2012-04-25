@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab2DYQZX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 12:25:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40956 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752953Ab2DYQZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 12:25:22 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, robert.richter@amd.com
-Subject: [PATCHv2 0/6] perf, tool: event parsing enhancements/fixes
-Date: Wed, 25 Apr 2012 18:24:56 +0200
-Message-Id: <1335371102-11358-1-git-send-email-jolsa@redhat.com>
+	id S1755316Ab2DYQ2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 12:28:22 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:61037 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab2DYQ2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 12:28:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <CADLM8XPryGVVWVruB=sZ9zxPp-nEhz8xKeMhY3u8KBShk2suBQ@mail.gmail.com>
+References: <20120410090306.GA7056@richard>
+	<20120422155202.GA13540@richard>
+	<CAE9FiQXoUcUw5kOcBmsbBu_hJ+GbKk--qFt+WyUHbjJPwY+8Pw@mail.gmail.com>
+	<CADLM8XPryGVVWVruB=sZ9zxPp-nEhz8xKeMhY3u8KBShk2suBQ@mail.gmail.com>
+Date: Wed, 25 Apr 2012 09:28:19 -0700
+X-Google-Sender-Auth: U_KylyBIAqUEU3Q11riCAeORNWc
+Message-ID: <CAE9FiQXLxEEu68tJvph3LB53nqycK+YctwDKMEF824koXVM5AA@mail.gmail.com>
+Subject: Re: One problem in reassign pci bus number?
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wei Yang <weiyang.kernel@gmail.com>
+Cc: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-adding some enhancements/fixies for perf event parsing.
+On Wed, Apr 25, 2012 at 2:47 AM, Wei Yang <weiyang.kernel@gmail.com> wrote:
+>> busn_alloc patchset should address your concern.
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>> for-pci-busn-alloc
+>>
+> Yinghai
+>
+> You mean this patch 44b2347b fix the problem?
+>
+> In the comment, "do pass0 for all good bridge".
+> Then there are totally two pass for a whole pci domain?
 
-v2 changes:
-   - rebased to current tip tree
-   - 2/6 - ommitting pmu tests in case there's no pmu sysfs record
-   - 6/6 - default the pmu event name to raw 0x<perf_event_attr::config>
+also other commits about strict checking to see if it is good.
 
-Attached patches:
-  1/6 perf, tool: Split term type into value type and term type
-  2/6 perf, tool: Move parse event automated tests to separated object
-  3/6 perf, tool: Add support for displaying event parser debug info
-  4/6 perf, tool: Use allocated list for each parsed event
-  5/6 perf, tool: Separate 'mem:' event scanner bits
-  6/6 perf, tool: Add hardcoded name term for pmu events
+>
+> I tried "git grep busn_alloc", but not find anything.
 
-thanks,
-jirka
----
- tools/perf/Makefile                 |   13 +-
- tools/perf/builtin-test.c           |  552 +------------------------------
- tools/perf/util/parse-events-test.c |  625 +++++++++++++++++++++++++++++++++++
- tools/perf/util/parse-events.c      |  114 +++++--
- tools/perf/util/parse-events.h      |   42 ++-
- tools/perf/util/parse-events.l      |   26 ++-
- tools/perf/util/parse-events.y      |   93 ++++--
- tools/perf/util/pmu.c               |   74 +++--
- 8 files changed, 883 insertions(+), 656 deletions(-)
+the commit in the patchset.
+
+  PCI: Add busn_res into struct pci_bus.
+  PCI: Add busn_res operation functions
+  PCI: Release busn_res when removing bus
+  PCI: Insert busn_res in pci_create_root_bus()
+  PCI: Checking busn_res in pci_scan_root_bus()
+  PCI: Add default busn_resource
+  PCI: Add default busn_res for pci_scan_bus()
+  x86, PCI: Add busn_res into resources list for acpi path
+  x86, PCI: Put busn resource in pci_root_info for not using _CRS path
+  PCI, ia64: Register busn_res for root buses
+  PCI, sparc: Register busn_res for root buses
+  PCI, powerpc: Register busn_res for root buses
+  PCI, parisc: Register busn_res for root buses
+  resources: Add probe_resource()
+  resources: Replace registered resource in tree.
+  PCI: Add pci_bus_extend/shrink_top()
+  PCI: Probe safe range that we can use for unassigned bridge.
+  PCI: Add pci_bus_replace_busn_res()
+  PCI: Allocate bus range instead of use max blindly
+  PCI: Strict checking of valid range for bridge
+  PCI: Kill pci_fixup_parent_subordinate_busnr()
+  PCI: Seperate child bus scanning to two passes overall
+  pcmcia: Remove workaround for fixing pci parent bus subordinate
+  PCI: Double checking setting for bus register and bus struct.
+  PCI, pciehp: Remove not needed bus number range checking
+  PCI: More strict checking of valid range for bridge
+  PCI: Don't shrink too much for hotplug bridge
