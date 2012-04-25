@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab2DYBnA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 21:43:00 -0400
-Received: from mga14.intel.com ([143.182.124.37]:4549 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932176Ab2DYBm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 21:42:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="92766390"
-Subject: Re: [PATCH v2 1/1] x86: Use x2apic physical mode based on FADT
- setting
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Greg Pearson <greg.pearson@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 24 Apr 2012 18:45:45 -0700
-In-Reply-To: <1335313436-32020-1-git-send-email-greg.pearson@hp.com>
-References: <1335313436-32020-1-git-send-email-greg.pearson@hp.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	id S1758719Ab2DYBqb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 21:46:31 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34467 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757303Ab2DYBq3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 21:46:29 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F975703.3080005@jp.fujitsu.com>
+Date: Wed, 25 Apr 2012 10:44:35 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Glauber Costa <glommer@parallels.com>
+CC: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, fweisbec@gmail.com,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 16/23] slab: provide kmalloc_no_account
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1335138820-26590-5-git-send-email-glommer@parallels.com>
+In-Reply-To: <1335138820-26590-5-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Message-ID: <1335318345.28674.268.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-24 at 18:23 -0600, Greg Pearson wrote:
-> Provide systems that do not support x2apic cluster mode
-> a mechanism to select x2apic physical mode using the
-> FADT FORCE_APIC_PHYSICAL_DESTINATION_MODE bit.
-> 
-> Changes from v1: (based on Suresh's comments)
-> - removed #ifdef CONFIG_ACPI
-> - removed #include <linux/acpi.h>
-> 
-> Signed-off-by: Greg Pearson <greg.pearson@hp.com>
-> ---
->  arch/x86/kernel/apic/x2apic_phys.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-> index 8a778db..991e315 100644
-> --- a/arch/x86/kernel/apic/x2apic_phys.c
-> +++ b/arch/x86/kernel/apic/x2apic_phys.c
-> @@ -24,6 +24,12 @@ static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
->  {
->  	if (x2apic_phys)
->  		return x2apic_enabled();
-> +	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
-> +		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
-> +		x2apic_enabled()) {
-> +		printk(KERN_DEBUG "System requires x2apic physical mode\n");
-> +		return 1;
-> +	}
->  	else
->  		return 0;
->  }
+(2012/04/23 8:53), Glauber Costa wrote:
 
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Some allocations need to be accounted to the root memcg regardless
+> of their context. One trivial example, is the allocations we do
+> during the memcg slab cache creation themselves. Strictly speaking,
+> they could go to the parent, but it is way easier to bill them to
+> the root cgroup.
+> 
+> Only generic kmalloc allocations are allowed to be bypassed.
+> 
+> The function is not exported, because drivers code should always
+> be accounted.
+> 
+> This code is mosly written by Suleiman Souhlal.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
+
+
+Seems reasonable.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+Hmm...but can't we find the 'context' in automatic way ?
+
+-Kame
+
+> ---
+>  include/linux/slab_def.h |    1 +
+>  mm/slab.c                |   23 +++++++++++++++++++++++
+>  2 files changed, 24 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+> index 06e4a3e..54d25d7 100644
+> --- a/include/linux/slab_def.h
+> +++ b/include/linux/slab_def.h
+> @@ -114,6 +114,7 @@ extern struct cache_sizes malloc_sizes[];
+>  
+>  void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
+>  void *__kmalloc(size_t size, gfp_t flags);
+> +void *kmalloc_no_account(size_t size, gfp_t flags);
+>  
+>  #ifdef CONFIG_TRACING
+>  extern void *kmem_cache_alloc_trace(size_t size,
+> diff --git a/mm/slab.c b/mm/slab.c
+> index c4ef684..13948c3 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -3960,6 +3960,29 @@ void *__kmalloc(size_t size, gfp_t flags)
+>  }
+>  EXPORT_SYMBOL(__kmalloc);
+>  
+> +static __always_inline void *__do_kmalloc_no_account(size_t size, gfp_t flags,
+> +						     void *caller)
+> +{
+> +	struct kmem_cache *cachep;
+> +	void *ret;
+> +
+> +	cachep = __find_general_cachep(size, flags);
+> +	if (unlikely(ZERO_OR_NULL_PTR(cachep)))
+> +		return cachep;
+> +
+> +	ret = __cache_alloc(cachep, flags, caller);
+> +	trace_kmalloc((unsigned long)caller, ret, size,
+> +		      cachep->buffer_size, flags);
+> +
+> +	return ret;
+> +}
+> +
+> +void *kmalloc_no_account(size_t size, gfp_t flags)
+> +{
+> +	return __do_kmalloc_no_account(size, flags,
+> +				       __builtin_return_address(0));
+> +}
+> +
+>  void *__kmalloc_track_caller(size_t size, gfp_t flags, unsigned long caller)
+>  {
+>  	return __do_kmalloc(size, flags, (void *)caller);
+
+
 
