@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447Ab2DYGjz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 02:39:55 -0400
-Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:56566 "EHLO
-	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750908Ab2DYGjx (ORCPT
+	id S1751763Ab2DYGoa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 02:44:30 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:62210 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab2DYGo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 02:39:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAC83Zv+CCLQfZHfqMcbof6JtA-hOK1PfX5Gs0BBVQhBAiWzX_g@mail.gmail.com>
-References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
- <1328203851-20435-12-git-send-email-tarun.kanti@ti.com> <13629551.hP3ZV1ajDo@vclass>
- <CAC83ZvK630=6B-k2TfV3XBg8w7ZosLVDNE4ezjDYnn=hcXA48Q@mail.gmail.com>
- <CAC83ZvJDDvCu8NKTOYh75USA3fvSAKEGaXXi9PtCM955K_keSA@mail.gmail.com>
- <20120424160447.GI3739@atomide.com> <CAC83Zv+CCLQfZHfqMcbof6JtA-hOK1PfX5Gs0BBVQhBAiWzX_g@mail.gmail.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Wed, 25 Apr 2012 12:09:32 +0530
-Message-ID: <CAMQu2gzwijaSzXprEwTNTie3zCgFcNPonAexzrO_AWc2a8jOkw@mail.gmail.com>
-Subject: Re: [PATCH v9 11/25] gpio/omap: cleanup omap_gpio_mod_init function
-To: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>, linux-omap@vger.kernel.org,
-        grant.likely@secretlab.ca, khilman@ti.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Charulatha V <charu@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 Apr 2012 02:44:28 -0400
+Message-ID: <20375.40225.227084.644318@ipc1.ka-ro>
+Date: Wed, 25 Apr 2012 08:43:45 +0200
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: viresh kumar <viresh.linux@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        sshtylyov@mvista.com, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        mturquette@linaro.org, akpm@linux-foundation.org, jgarzik@redhat.com,
+        linux-arm-kernel@lists.infradead.org
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH V3 07/12] ata/sata_mv: Remove conditional compilation of
+ clk code
+In-Reply-To: <20120425052802.GF13489@lunn.ch>
+References: <cover.1335266056.git.viresh.kumar@st.com>
+	<abbcf661dc58948794839eb0fba1d5a0950ec848.1335266056.git.viresh.kumar@st.com>
+	<20120424120019.GE24089@lunn.ch>
+	<CAOh2x==YaPxYxigyE=n2weoKHhu4ktGRHHGdzgs2+d1_Lo-D4Q@mail.gmail.com>
+	<20120424201802.GE3628@n2100.arm.linux.org.uk>
+	<CAOh2x==Se4ipK_jexOE_=82=S4p41W9Ek0Om6DrUwctSz-Wcyw@mail.gmail.com>
+	<20120425052802.GF13489@lunn.ch>
+X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 10:04 AM, DebBarma, Tarun Kanti
-<tarun.kanti@ti.com> wrote:
-> On Tue, Apr 24, 2012 at 9:34 PM, Tony Lindgren <tony@atomide.com> wrote:
->> * DebBarma, Tarun Kanti <tarun.kanti@ti.com> [120424 08:40]:
->>> Hi Janusz,
->>>
->>> On Tue, Apr 24, 2012 at 12:24 AM, DebBarma, Tarun Kanti
->>> <tarun.kanti@ti.com> wrote:
->>> > On Sat, Apr 21, 2012 at 7:33 PM, Janusz Krzysztofik
->>> > <jkrzyszt@tis.icnet.pl> wrote:
->>> >> On Thursday 02 of February 2012 23:00:37 Tarun Kanti DebBarma wrote:
->>> >>> With register offsets now defined for respective OMAP versions we can get rid
->>> >>> of cpu_class_* checks. This function now has common initialization code for
->>> >>> all OMAP versions...
->>> >>>
->>> >>> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
->>> >>> Signed-off-by: Charulatha V <charu@ti.com>
->>> >>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>> >>> Acked-by: Tony Lindgren <tony@atomide.com>
->>> >>
->>> >> Sorry for being so late with my comment for chanes already present in
->>> >> mainline, but this patch breaks GPIO on Amstrad Delta at least, and I
->>> >> have neither enough spare time nor enough experience with non OMAP1
->>> >> machines to provide a solution myself.
->>> > Yes, I looked at the omap_gpio_mod_init() and OMAP1 configurations are
->>> > overwritten.
->>> > Also looks like there is issue in making distinction between omap15xx
->>> > and omap16xx.
->>> > I will post a patch and you can help me testing it in OMAP1 platform.
->>> > Thanks for pointing this out.
->> ...
->>
->>> Here is the patch, with attachment as well. I have just tested on
->>> OMAP4 platform.
->>> Testing on other OMAP2+ platforms is pending. In the meantime can you please
->>> validate on OMAP1 platform and confirm? Thanks.
->>> --
->>> Tarun
->>>
->>> From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
->>> Date: Tue, 24 Apr 2012 20:34:32 +0530
->>> Subject: [PATCH] gpio/omap: fix omap1 register overwrite in omap_gpio_mod_init
->>>
->>> Initialization of irqenable, irqstatus registers is the common
->>> operation done in this function for all OMAP platforms, viz.
->>> OMAP1, OMAP2+. The latter _gpio_rmw()'s to irqenable register
->>> was overwriting the correctly programmed OMAP1 value at the
->>> beginning. As a result, even though it worked on OMAP2+
->>> platforms it was breaking OMAP1 functionality.
->>
->> Sounds like the original patch was never tested on omap1?
-> That's right, only bootup test was done on OMAP1710-SDP.
->
->>
->>> On closer observation it is found that the first _gpio_rmw()
->>> which is supposedly done to take care of OMAP1 platform is
->>> generic enough and takes care of OMAP2+ platform as well.
->>> Therefore remove the latter _gpio_rmw() to irqenable as they
->>> are redundant.
->>>
->>> Also, changing the sequence and logic of initializing the
->>> irqstatus.
->>
->> Please mention also the breaking commit here and get this fix
->> merged as a regression as soon as it's tested for the current
->> -rc series.
-> Sure, I will do that!
+Hi,
 
-Looks like it is regression on 3.4 as well so CC stable when you
-post the patch.
+Andrew Lunn writes:
+> > This is what i was thinking too and thats why floated this version of patch.
+> > But as Andrew said, clk API support is enabled for them, but still they
+> > don't have a clk for sata. To get this working, there are two solutions:
+> > - Create dummy clk for sata for that platform, so clk_get doesn't fail.
+> > - Check for error before every call to clk APIs after clk_get().
+> > 
+> > Andrew favored the second one. Which means, even on platforms
+> > with clk API defined and clk enable required, if there are some issues
+> > with lookup table, and clk_get() fails, system may hang when registers
+> > are accessed. For this i favored first one.
+> 
+> I'm not too sure how you are going to achieve 1)
+> 
+> config SATA_MV
+>         tristate "Marvell SATA support"
+>         help
+>           This option enables support for the Marvell Serial ATA family.
+>           Currently supports 88SX[56]0[48][01] PCI(-X) chips,
+>           as well as the newer [67]042 PCI-X/PCIe and SOC devices.
+> 
+> So this driver can be used with anything which has a PCI(-X) or PCIe
+> bus, or Orion SoC and a few PowerPC SoCs.
+> 
+> The SoCs are not too bad, we know which ones they are and we can add
+> dummy entries to their device tree. However, how do you want to handle
+> the PCI devices? Create the dummy entry somewhere in the middle of the
+> PCI core?
+> 
+> Thought not.
+> 
+AFAICT the PCI archs do not have HAVE_CLK enabled. Thus they will have
+a dummy clk API in place that provides the driver with a non-error
+clk_get() return value.
 
-Regards
-Santosh
+
+Lothar Waßmann
+-- 
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
