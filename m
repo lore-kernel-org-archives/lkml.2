@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759367Ab2DYOYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 10:24:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48048 "EHLO mx1.redhat.com"
+	id S1759310Ab2DYOW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 10:22:58 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:33787 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759355Ab2DYOYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 10:24:04 -0400
-Date: Wed, 25 Apr 2012 16:22:41 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
-Message-ID: <20120425142241.GA18319@redhat.com>
-References: <20120405222024.GA19154@redhat.com> <20120414111637.GB24688@gmail.com> <20120416113124.GA25464@linux.vnet.ibm.com> <20120416144116.GA6745@redhat.com> <20120425125239.GA2889@linux.vnet.ibm.com>
+	id S1759222Ab2DYOW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 10:22:56 -0400
+Subject: [PATCH 1/6] LockD: pass service to per-net up and down functions
+To: bfields@fieldses.org, Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Wed, 25 Apr 2012 18:22:40 +0400
+Message-ID: <20120425142240.22909.50321.stgit@localhost6.localdomain6>
+In-Reply-To: <20120425141934.22909.53047.stgit@localhost6.localdomain6>
+References: <20120425141934.22909.53047.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120425125239.GA2889@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25, Srikar Dronamraju wrote:
->
-> I applied the patches and ran all my tests.
-> Everything works as expected.
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-Thanks a lot Srikar.
+---
+ fs/lockd/svc.c |   12 +++++-------
+ 1 files changed, 5 insertions(+), 7 deletions(-)
 
-I'll resend this series with some cleanups. Probably we do not need
-is_swbp_at_addr_fast, we can check mm == current->mm in read_opcode()
-as Peter suggests. Plus I'll try to make the MMF_UPROBE changes we
-discussed. And a couple of really minor and off-topic cleanups.
-
-But I'll wait until we have all pending patches in -tip to avoid
-the unnecessary noise at this stage.
-
-Oleg.
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index 3250f28..58ddc38 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -251,10 +251,9 @@ out_err:
+ 	return err;
+ }
+ 
+-static int lockd_up_net(struct net *net)
++static int lockd_up_net(struct svc_serv *serv, struct net *net)
+ {
+ 	struct lockd_net *ln = net_generic(net, lockd_net_id);
+-	struct svc_serv *serv = nlmsvc_rqst->rq_server;
+ 	int error;
+ 
+ 	if (ln->nlmsvc_users++)
+@@ -276,10 +275,9 @@ err_rpcb:
+ 	return error;
+ }
+ 
+-static void lockd_down_net(struct net *net)
++static void lockd_down_net(struct svc_serv *serv, struct net *net)
+ {
+ 	struct lockd_net *ln = net_generic(net, lockd_net_id);
+-	struct svc_serv *serv = nlmsvc_rqst->rq_server;
+ 
+ 	if (ln->nlmsvc_users) {
+ 		if (--ln->nlmsvc_users == 0) {
+@@ -307,7 +305,7 @@ int lockd_up(struct net *net)
+ 	 * Check whether we're already up and running.
+ 	 */
+ 	if (nlmsvc_rqst) {
+-		error = lockd_up_net(net);
++		error = lockd_up_net(nlmsvc_rqst->rq_server, net);
+ 		goto out;
+ 	}
+ 
+@@ -378,7 +376,7 @@ out:
+ 	return error;
+ 
+ err_start:
+-	lockd_down_net(net);
++	lockd_down_net(serv, net);
+ 	goto destroy_and_out;
+ }
+ EXPORT_SYMBOL_GPL(lockd_up);
+@@ -390,7 +388,7 @@ void
+ lockd_down(struct net *net)
+ {
+ 	mutex_lock(&nlmsvc_mutex);
+-	lockd_down_net(net);
++	lockd_down_net(nlmsvc_rqst->rq_server, net);
+ 	if (nlmsvc_users) {
+ 		if (--nlmsvc_users)
+ 			goto out;
 
