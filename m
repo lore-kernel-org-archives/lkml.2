@@ -1,62 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab2DYQUD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 12:20:03 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:35461 "EHLO e7.ny.us.ibm.com"
+	id S1755072Ab2DYQZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 12:25:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49757 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752905Ab2DYQUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 12:20:00 -0400
-Message-ID: <4F982424.9000603@linaro.org>
-Date: Wed, 25 Apr 2012 09:19:48 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/3] Range tree implementation
-References: <1335289787-11089-1-git-send-email-john.stultz@linaro.org> <1335289787-11089-2-git-send-email-john.stultz@linaro.org> <CAO6Zf6Bn7dHoXj=MN2dG8JynvxoAYjNZq3NqC3tWzO115T6uhA@mail.gmail.com>
-In-Reply-To: <CAO6Zf6Bn7dHoXj=MN2dG8JynvxoAYjNZq3NqC3tWzO115T6uhA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042516-5806-0000-0000-00001499DC17
+	id S1752953Ab2DYQZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 12:25:24 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, robert.richter@amd.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 1/6] perf, tool: Split term type into value type and term type
+Date: Wed, 25 Apr 2012 18:24:57 +0200
+Message-Id: <1335371102-11358-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1335371102-11358-1-git-send-email-jolsa@redhat.com>
+References: <1335371102-11358-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 05:16 AM, Dmitry Adamushko wrote:
-> Hi John,
->
-> range_tree_in_range_adjacent() is not used in your code, and it
-> doesn't seem to be very useful in general case. range_tree_in_range()
-> can do the same thing (and you use it that way in the 2nd patch) and
-> is more flexible (can be paired with range_tree_next_in_range()). So I
-> think it can be dropped altogether.
+Introducing type_val and type_term for term instead of a single
+type value. Currently the term type marked out the value type as
+well.
 
-Agreed. I actually at one point meant to do this and forgot. Thanks for 
-pointing it out!
+With this change we can have future string term values being
+specified by user and translated into proper number along the
+processing.
 
-> Now, I'm wondering whether it actually makes sense to make a dedicated
-> interface out of the remaining bits.
->
-> Almost everything is common rb_tree-handling code that can be found in
-> any place where rb-trees are used (hard-coded for flexibility,
-> performance or whatever other reasons). So my feeling is that it
-> should not be different here.
->
-Sorry, not sure I quite understand what you're suggesting. Are you 
-saying it doesn't make sense to have a generic range tree 
-implementation, since really its just a small shim over the rbtree 
-code?  So instead range-tree users should just implment them 
-themselves?  Or something else?
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/parse-events.c |   45 +++++++++++++++++++------
+ tools/perf/util/parse-events.h |   21 +++++++-----
+ tools/perf/util/parse-events.y |   16 ++++----
+ tools/perf/util/pmu.c          |   70 ++++++++++++++++++++++++----------------
+ 4 files changed, 96 insertions(+), 56 deletions(-)
 
-thanks
--john
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 5b3a0ef..c7fc18a 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -593,17 +593,27 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
+ static int config_term(struct perf_event_attr *attr,
+ 		       struct parse_events__term *term)
+ {
+-	switch (term->type) {
++#define CHECK_TYPE_VAL(type)					\
++do {								\
++	if (PARSE_EVENTS__TERM_TYPE_ ## type != term->type_val)	\
++		return -EINVAL;					\
++} while (0)
++
++	switch (term->type_term) {
+ 	case PARSE_EVENTS__TERM_TYPE_CONFIG:
++		CHECK_TYPE_VAL(NUM);
+ 		attr->config = term->val.num;
+ 		break;
+ 	case PARSE_EVENTS__TERM_TYPE_CONFIG1:
++		CHECK_TYPE_VAL(NUM);
+ 		attr->config1 = term->val.num;
+ 		break;
+ 	case PARSE_EVENTS__TERM_TYPE_CONFIG2:
++		CHECK_TYPE_VAL(NUM);
+ 		attr->config2 = term->val.num;
+ 		break;
+ 	case PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD:
++		CHECK_TYPE_VAL(NUM);
+ 		attr->sample_period = term->val.num;
+ 		break;
+ 	case PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE:
+@@ -615,7 +625,9 @@ static int config_term(struct perf_event_attr *attr,
+ 	default:
+ 		return -EINVAL;
+ 	}
++
+ 	return 0;
++#undef CHECK_TYPE_VAL
+ }
+ 
+ static int config_attr(struct perf_event_attr *attr,
+@@ -1015,11 +1027,12 @@ void print_events(const char *event_glob)
+ 
+ int parse_events__is_hardcoded_term(struct parse_events__term *term)
+ {
+-	return term->type <= PARSE_EVENTS__TERM_TYPE_HARDCODED_MAX;
++	return term->type_term != PARSE_EVENTS__TERM_TYPE_USER;
+ }
+ 
+-int parse_events__new_term(struct parse_events__term **_term, int type,
+-			   char *config, char *str, long num)
++static int new_term(struct parse_events__term **_term, int type_val,
++		    int type_term, char *config,
++		    char *str, long num)
+ {
+ 	struct parse_events__term *term;
+ 
+@@ -1028,15 +1041,11 @@ int parse_events__new_term(struct parse_events__term **_term, int type,
+ 		return -ENOMEM;
+ 
+ 	INIT_LIST_HEAD(&term->list);
+-	term->type = type;
++	term->type_val  = type_val;
++	term->type_term = type_term;
+ 	term->config = config;
+ 
+-	switch (type) {
+-	case PARSE_EVENTS__TERM_TYPE_CONFIG:
+-	case PARSE_EVENTS__TERM_TYPE_CONFIG1:
+-	case PARSE_EVENTS__TERM_TYPE_CONFIG2:
+-	case PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD:
+-	case PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE:
++	switch (type_val) {
+ 	case PARSE_EVENTS__TERM_TYPE_NUM:
+ 		term->val.num = num;
+ 		break;
+@@ -1051,6 +1060,20 @@ int parse_events__new_term(struct parse_events__term **_term, int type,
+ 	return 0;
+ }
+ 
++int parse_events__term_num(struct parse_events__term **term,
++			   int type_term, char *config, long num)
++{
++	return new_term(term, PARSE_EVENTS__TERM_TYPE_NUM, type_term,
++			config, NULL, num);
++}
++
++int parse_events__term_str(struct parse_events__term **term,
++			   int type_term, char *config, char *str)
++{
++	return new_term(term, PARSE_EVENTS__TERM_TYPE_STR, type_term,
++			config, str, 0);
++}
++
+ void parse_events__free_terms(struct list_head *terms)
+ {
+ 	struct parse_events__term *term, *h;
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index ca069f8..a39e15d 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -34,16 +34,17 @@ extern int parse_filter(const struct option *opt, const char *str, int unset);
+ #define EVENTS_HELP_MAX (128*1024)
+ 
+ enum {
++	PARSE_EVENTS__TERM_TYPE_NUM,
++	PARSE_EVENTS__TERM_TYPE_STR,
++};
++
++enum {
++	PARSE_EVENTS__TERM_TYPE_USER,
+ 	PARSE_EVENTS__TERM_TYPE_CONFIG,
+ 	PARSE_EVENTS__TERM_TYPE_CONFIG1,
+ 	PARSE_EVENTS__TERM_TYPE_CONFIG2,
+ 	PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD,
+ 	PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
+-	PARSE_EVENTS__TERM_TYPE_NUM,
+-	PARSE_EVENTS__TERM_TYPE_STR,
+-
+-	PARSE_EVENTS__TERM_TYPE_HARDCODED_MAX =
+-		PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
+ };
+ 
+ struct parse_events__term {
+@@ -52,14 +53,16 @@ struct parse_events__term {
+ 		char *str;
+ 		long  num;
+ 	} val;
+-	int type;
+-
++	int type_val;
++	int type_term;
+ 	struct list_head list;
+ };
+ 
+ int parse_events__is_hardcoded_term(struct parse_events__term *term);
+-int parse_events__new_term(struct parse_events__term **term, int type,
+-			   char *config, char *str, long num);
++int parse_events__term_num(struct parse_events__term **_term,
++			   int type_term, char *config, long num);
++int parse_events__term_str(struct parse_events__term **_term,
++			   int type_term, char *config, char *str);
+ void parse_events__free_terms(struct list_head *terms);
+ int parse_events_modifier(struct list_head *list __used, char *str __used);
+ int parse_events_add_tracepoint(struct list_head *list, int *idx,
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index d9637da..936913e 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -176,8 +176,8 @@ PE_NAME '=' PE_NAME
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_STR,
+-		 $1, $3, 0));
++	ABORT_ON(parse_events__term_str(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1, $3));
+ 	$$ = term;
+ }
+ |
+@@ -185,8 +185,8 @@ PE_NAME '=' PE_VALUE
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_NUM,
+-		 $1, NULL, $3));
++	ABORT_ON(parse_events__term_num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1, $3));
+ 	$$ = term;
+ }
+ |
+@@ -194,8 +194,8 @@ PE_NAME
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_NUM,
+-		 $1, NULL, 1));
++	ABORT_ON(parse_events__term_num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1, 1));
+ 	$$ = term;
+ }
+ |
+@@ -203,7 +203,7 @@ PE_TERM '=' PE_VALUE
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__new_term(&term, $1, NULL, NULL, $3));
++	ABORT_ON(parse_events__term_num(&term, $1, NULL, $3));
+ 	$$ = term;
+ }
+ |
+@@ -211,7 +211,7 @@ PE_TERM
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__new_term(&term, $1, NULL, NULL, 1));
++	ABORT_ON(parse_events__term_num(&term, $1, NULL, 1));
+ 	$$ = term;
+ }
+ 
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index cb08a11..8ee219b 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -225,7 +225,7 @@ static int pmu_config_term(struct list_head *formats,
+ 	if (parse_events__is_hardcoded_term(term))
+ 		return 0;
+ 
+-	if (term->type != PARSE_EVENTS__TERM_TYPE_NUM)
++	if (term->type_val != PARSE_EVENTS__TERM_TYPE_NUM)
+ 		return -EINVAL;
+ 
+ 	format = pmu_find_format(formats, term->config);
+@@ -246,6 +246,11 @@ static int pmu_config_term(struct list_head *formats,
+ 		return -EINVAL;
+ 	}
+ 
++	/*
++	 * XXX If we ever decide to go with string values for
++	 * non-hardcoded terms, here's the place to translate
++	 * them into value.
++	 */
+ 	*vp |= pmu_format_value(format->bits, term->val.num);
+ 	return 0;
+ }
+@@ -324,49 +329,58 @@ static struct test_format {
+ /* Simulated users input. */
+ static struct parse_events__term test_terms[] = {
+ 	{
+-		.config  = (char *) "krava01",
+-		.val.num = 15,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava01",
++		.val.num   = 15,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava02",
+-		.val.num = 170,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava02",
++		.val.num   = 170,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava03",
+-		.val.num = 1,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava03",
++		.val.num   = 1,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava11",
+-		.val.num = 27,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava11",
++		.val.num   = 27,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava12",
+-		.val.num = 1,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava12",
++		.val.num   = 1,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava13",
+-		.val.num = 2,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava13",
++		.val.num   = 2,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava21",
+-		.val.num = 119,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava21",
++		.val.num   = 119,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava22",
+-		.val.num = 11,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava22",
++		.val.num   = 11,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava23",
+-		.val.num = 2,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava23",
++		.val.num   = 2,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ };
+ #define TERMS_CNT (sizeof(test_terms) / sizeof(struct parse_events__term))
+-- 
+1.7.7.6
 
