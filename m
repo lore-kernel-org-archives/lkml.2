@@ -1,162 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758299Ab2DYTwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 15:52:05 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:55284 "EHLO smtp5-g21.free.fr"
+	id S1758293Ab2DYTyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 15:54:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48144 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758229Ab2DYTwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 15:52:04 -0400
-From: Jim Meyering <jim@meyering.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Josef Bacik <josef@redhat.com>
-Subject: [PATCH] Btrfs: avoid buffer overrun in mount option handling
-Date: Wed, 25 Apr 2012 21:51:53 +0200
-Message-ID: <87mx5z1teu.fsf@rho.meyering.net>
+	id S1758093Ab2DYTyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 15:54:54 -0400
+Date: Wed, 25 Apr 2012 21:53:43 +0200
+From: Jan Kara <jack@suse.cz>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: Re: [PATCH 5/5] vfs: change nondirectory i_mutex ordering to fix
+ quota deadlock
+Message-ID: <20120425195343.GC27193@quack.suse.cz>
+References: <20120418215238.GA11959@fieldses.org>
+ <1335367329-929-5-git-send-email-bfields@fieldses.org>
+ <20120425152858.GB751@fieldses.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120425152858.GB751@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 25-04-12 11:28:58, J. Bruce Fields wrote:
+> On Wed, Apr 25, 2012 at 11:22:09AM -0400, bfields@fieldses.org wrote:
+> > diff --git a/fs/inode.c b/fs/inode.c
+> > index 487c924..13d23b6 100644
+> > --- a/fs/inode.c
+> > +++ b/fs/inode.c
+> > @@ -961,6 +961,17 @@ void unlock_new_inode(struct inode *inode)
+> >  }
+> >  EXPORT_SYMBOL(unlock_new_inode);
+> >  
+> > +/*
+> > + * We order !IS_NOQUOTA files before ISNOQUOTA files, and by pointer
+> > + * within each category.
+> > + */
+> > +static bool nondir_mutex_ordered(struct inode *inode1, struct inode *inode2)
+> > +{
+> > +	if (IS_NOQUOTA(inode1) == IS_NOQUOTA(inode2))
+> > +		return inode1 < inode2;
+> > +	return IS_NOQUOTA(inode2);
+> > +}
+> 
+> This seems kind of awful.  Is it what you were thinking of originally,
+> Al, and could we live with it?
+  Yeah, it's pretty ugly and also racy. I'm just now testing patches that
+would get rid of I_MUTEX_QUOTA usage for filesystems (except GFS2) and
+quota code. GFS2 could be certainly dealt with as well (at least by
+introducing a new GFS2 internal lock) so this ugly code can go away.
 
-There is an off-by-one error: allocating room for a maximal result
-string but without room for a trailing NUL.  That, can lead to
-returning a transformed string that is not NUL-terminated, and then
-to a caller reading beyond end of the malloc'd buffer.
+								Honza
 
-Worse still, we could write one non-NUL byte beyond the end of that
-malloc'd result buffer when given a mount option of "subvol=," (i.e.,
-no arg after the "=") because here the replacement "subvolid=0" is 3
-bytes longer, not just 2.
-
-Also changed: s/kzalloc/kmalloc/, remove unwarranted use of strncpy
-(the result is guaranteed to fit), remove dead strlen at end, and
-change a few variable names and comments.
-
-Signed-off-by: Jim Meyering <meyering@redhat.com>
----
-Hi Josef,
-
-I took the liberty of rewriting this function.
-If you would prefer a smaller patch, let me know.
-
-Also, while this removes more lines than it adds, it could easily remove
-two more if only we could rely on the stpcpy function, but alas, I think
-that's not an option, since these would be the first two uses:
-
-@@ -952,12 +952,10 @@ static char *setup_root_args(char *args)
- 	 */
- 	if (src != args) {
- 		*src++ = '\0';
--		strcpy(buf, args);
--		dst += strlen(args);
-+		dst = stpcpy(buf, args);
- 	}
-
--	strcpy(dst, "subvolid=0");
--	dst += strlen("subvolid=0");
-+	dst = stpcpy(dst, "subvolid=0");
-
- 	/*
- 	 * If there is a "," after the original subvol=... string,
-
-
- fs/btrfs/super.c |   67 +++++++++++++++++++++---------------------------------
- 1 file changed, 26 insertions(+), 41 deletions(-)
-
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index 8d5d380..eca8dea 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -926,63 +926,48 @@ static inline int is_subvolume_inode(struct inode *inode)
-  */
- static char *setup_root_args(char *args)
- {
--	unsigned copied = 0;
--	unsigned len = strlen(args) + 2;
--	char *pos;
--	char *ret;
-+	unsigned len = strlen(args) + 3 + 1;
-+	char *src, *dst, *buf;
-
- 	/*
--	 * We need the same args as before, but minus
-+	 * We need the same args as before, but with this substitution:
-+	 * s!subvol=[^,]*!subvolid=0!
- 	 *
--	 * subvol=a
--	 *
--	 * and add
--	 *
--	 * subvolid=0
--	 *
--	 * which is a difference of 2 characters, so we allocate strlen(args) +
--	 * 2 characters.
-+	 * Since the replacement string is up to 3 bytes longer than the
-+	 * original, allocate strlen(args) + 3 + 1 bytes.
- 	 */
--	ret = kzalloc(len * sizeof(char), GFP_NOFS);
--	if (!ret)
--		return NULL;
--	pos = strstr(args, "subvol=");
-
-+	src = strstr(args, "subvol=");
- 	/* This shouldn't happen, but just in case.. */
--	if (!pos) {
--		kfree(ret);
-+	if (!src)
-+		return NULL;
-+
-+	buf = dst = kmalloc(len, GFP_NOFS);
-+	if (!buf)
- 		return NULL;
--	}
-
- 	/*
--	 * The subvol=<> arg is not at the front of the string, copy everybody
--	 * up to that into ret.
-+	 * If the subvol= arg is not at the start of the string,
-+	 * copy whatever precedes it into buf.
- 	 */
--	if (pos != args) {
--		*pos = '\0';
--		strcpy(ret, args);
--		copied += strlen(args);
--		pos++;
-+	if (src != args) {
-+		*src++ = '\0';
-+		strcpy(buf, args);
-+		dst += strlen(args);
- 	}
-
--	strncpy(ret + copied, "subvolid=0", len - copied);
--
--	/* Length of subvolid=0 */
--	copied += 10;
-+	strcpy(dst, "subvolid=0");
-+	dst += strlen("subvolid=0");
-
- 	/*
--	 * If there is no , after the subvol= option then we know there's no
--	 * other options and we can just return.
-+	 * If there is a "," after the original subvol=... string,
-+	 * copy that suffix into our buffer.  Otherwise, we're done.
- 	 */
--	pos = strchr(pos, ',');
--	if (!pos)
--		return ret;
-+	src = strchr(src, ',');
-+	if (src)
-+		strcpy(dst, src);
-
--	/* Copy the rest of the arguments into our buffer */
--	strncpy(ret + copied, pos, len - copied);
--	copied += strlen(pos);
--
--	return ret;
-+	return buf;
- }
-
- static struct dentry *mount_subvol(const char *subvol_name, int flags,
---
-1.7.10.335.g879d8
