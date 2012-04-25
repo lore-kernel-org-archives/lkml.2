@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757111Ab2DYL6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 07:58:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33525 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759118Ab2DYL6p convert rfc822-to-8bit (ORCPT
+	id S1759167Ab2DYMBH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:01:07 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:24526
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757157Ab2DYMBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 07:58:45 -0400
-Message-ID: <1335355106.28150.254.camel@twins>
-Subject: Re: [RFC][PATCH 2/3] math128: Introduce {mult,add,cmp}_u128
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 25 Apr 2012 13:58:26 +0200
-In-Reply-To: <CAMuHMdUqgR8Z8wtBjm=-g9ff6CVmEd=FpbC2tk-CMU7B3XVVDg@mail.gmail.com>
-References: <20120424161039.293018424@chello.nl>
-	 <20120424162224.526249106@chello.nl>
-	 <20120425102342.45cf5c5e81e8aeb3bec67d0b@canb.auug.org.au>
-	 <1335341466.28150.248.camel@twins>
-	 <CAMuHMdUqgR8Z8wtBjm=-g9ff6CVmEd=FpbC2tk-CMU7B3XVVDg@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 25 Apr 2012 08:01:05 -0400
+X-SpamScore: -10
+X-BigFish: VS-10(zz1102I1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 25 Apr 2012 20:10:53 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Dong Aisheng <b29396@freescale.com>
+CC: <linux-kernel@vger.kernel.org>, <linus.walleij@stericsson.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <rob.herring@calxeda.com>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@pengutronix.de>,
+        <s.hauer@pengutronix.de>
+Subject: Re: [PATCH v2 1/3] pinctrl: pinctrl-imx: add imx pinctrl core
+ driver
+Message-ID: <20120425121052.GD17631@shlinux2.ap.freescale.net>
+References: <1334933916-12971-1-git-send-email-b29396@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1334933916-12971-1-git-send-email-b29396@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-25 at 13:23 +0200, Geert Uytterhoeven wrote:
-> On Wed, Apr 25, 2012 at 10:11, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >  ls arch/*/include/asm/Kbuild | while read file; do quilt add $file;
-> > echo "generic-y += math128.h" >> $file; done
+On Fri, Apr 20, 2012 at 10:58:34PM +0800, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
 > 
-> That may fail if your "ls" is an alias.
-> Better: "for file in arch/*/include/asm/Kbuild;do ..; done".
+> The driver has mux and config support while the gpio is still
+> not supported.
+> For select input setting, the driver will handle it internally
+> and do not need user to take care of it.
+> 
+> The pinctrl-imx core driver will parse the dts file and dynamically
+> create the pinmux functions and groups.
+> 
+> Each IMX SoC pinctrl driver should register pins with a pin register map
+> including mux register and config register and select input map to core
+> for proper operations.
+> 
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+I will send out an updated version with minor dt fix
+(SION bit in mux missed from v2, thanks for Richard's report).
 
-Agreed, still ls worked and the patch is send..
+Regards
+Dong Aisheng
 
-> Still using quilt? I didn't regret ditching it in favor of git (yummy,
-> git rebase ;-).
-
-Yeah, I can't seem to deal with git, I edit my patches by hand way too
-often, also quilt is a _LOT_ faster pushing/popping patches than git is
-(and yes I use an SSD).
-
-Not using git also means I don't have to deal with the trainwreck that
-is git-merge,.. /me runs like hell.
