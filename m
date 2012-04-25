@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759320Ab2DYVAH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 17:00:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51108 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757767Ab2DYU54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 16:57:56 -0400
-From: Jan Kara <jack@suse.cz>
-To: linux-fsdevel@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, bfields@fieldses.org,
-        Al Viro <viro@ZenIV.linux.org.uk>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 5/6] quota: Use precomputed value of sb_dqopt in dquot_quota_sync
-Date: Wed, 25 Apr 2012 22:57:46 +0200
-Message-Id: <1335387467-4928-6-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1335387467-4928-1-git-send-email-jack@suse.cz>
-References: <1335387467-4928-1-git-send-email-jack@suse.cz>
+	id S1759282Ab2DYVAF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 17:00:05 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49780 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758835Ab2DYVAA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 17:00:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <1335365016.6263.28.camel@ierdnac-hp>
+References: <1335365016.6263.28.camel@ierdnac-hp>
+Date: Wed, 25 Apr 2012 23:59:58 +0300
+Message-ID: <CAMXE1-rhPegy+97JwKQKBqrza-PZZX4H0RAYp35oDePmgEWHJw@mail.gmail.com>
+Subject: Re: bluetooth oops
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: andrei.popa@i-neo.ro
+Cc: linux-kernel@vger.kernel.org,
+        Bluetooth Linux <linux-bluetooth@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/quota/dquot.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Hi Andrei
 
-diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-index d69a1d1..1b7e0fc 100644
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -638,7 +638,7 @@ int dquot_quota_sync(struct super_block *sb, int type, int wait)
- 	dqstats_inc(DQST_SYNCS);
- 	mutex_unlock(&dqopt->dqonoff_mutex);
- 
--	if (!wait || (sb_dqopt(sb)->flags & DQUOT_QUOTA_SYS_FILE))
-+	if (!wait || (dqopt->flags & DQUOT_QUOTA_SYS_FILE))
- 		return 0;
- 
- 	/* This is not very clever (and fast) but currently I don't know about
-@@ -652,18 +652,18 @@ int dquot_quota_sync(struct super_block *sb, int type, int wait)
- 	 * Now when everything is written we can discard the pagecache so
- 	 * that userspace sees the changes.
- 	 */
--	mutex_lock(&sb_dqopt(sb)->dqonoff_mutex);
-+	mutex_lock(&dqopt->dqonoff_mutex);
- 	for (cnt = 0; cnt < MAXQUOTAS; cnt++) {
- 		if (type != -1 && cnt != type)
- 			continue;
- 		if (!sb_has_quota_active(sb, cnt))
- 			continue;
--		mutex_lock_nested(&sb_dqopt(sb)->files[cnt]->i_mutex,
-+		mutex_lock_nested(&dqopt->files[cnt]->i_mutex,
- 				  I_MUTEX_QUOTA);
--		truncate_inode_pages(&sb_dqopt(sb)->files[cnt]->i_data, 0);
--		mutex_unlock(&sb_dqopt(sb)->files[cnt]->i_mutex);
-+		truncate_inode_pages(&dqopt->files[cnt]->i_data, 0);
-+		mutex_unlock(&dqopt->files[cnt]->i_mutex);
- 	}
--	mutex_unlock(&sb_dqopt(sb)->dqonoff_mutex);
-+	mutex_unlock(&dqopt->dqonoff_mutex);
- 
- 	return 0;
- }
--- 
-1.7.1
+On Wed, Apr 25, 2012 at 5:43 PM, Andrei Popa <andrei.popa@i-neo.ro> wrote:
+>
+> I was using kernel (Linux hp 3.3.3-pf-c236 #1 SMP PREEMPT Mon Apr 23
+> 21:09:50 EEST 2012 x86_64 Intel(R) Core(TM) i3 CPU M 380 @ 2.53GHz
+> GenuineIntel GNU/Linux) with pf patchset and when I was pairing a
+> bluettoth phone with the computer it oopses:
+>
+>
+> BUG: unable to handle kernel paging request at 0000000100000000
+> IP: [<ffffffff817a42f5>] _raw_spin_lock_irqsave+0x25/0x50
+> PGD 0
+> Oops: 0002 [#1] PREEMPT SMP
+> CPU 2
+> Modules linked in: r8169 rt2800pci eeprom_93cx6 rt2x00pci rt2800lib
+> rt2x00lib mac80211 psmouse cfg80211 [last unloaded: r8169]
+>
+> Pid: 15651, comm: bluetoothd Not tainted 3.3.3-pf-c236 #1
+> Hewlett-Packard HP ProBook 4320s/1423
+> RIP: 0010:[<ffffffff817a42f5>]  [<ffffffff817a42f5>]
+> _raw_spin_lock_irqsave+0x25/0x50
+> RSP: 0000:ffff8801f1143d10  EFLAGS: 00010002
+> RAX: 0000000000000100 RBX: 0000000100000000 RCX: 000000000000006d
+> RDX: 0000000000000206 RSI: ffff8801f1143d50 RDI: 0000000100000000
+> RBP: ffff8801f2ba08f0 R08: 0000000000000000 R09: 0000000000000000
+> R10: 000000000000000a R11: 0000000000000000 R12: ffff8801f1143d50
+> R13: 0000000100000000 R14: 00007fff2cfa5880 R15: 00007fa7c6e08760
+> FS:  00007fa7c6db5700(0000) GS:ffff88023bc80000(0000)
+> knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000100000000 CR3: 000000010868a000 CR4: 00000000000006e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process bluetoothd (pid: 15651, threadinfo ffff8801f1142000, task
+> ffff88022a8eed70)
+> Stack:
+> ffffffff8107e3b3 0000000000000000 ffff8801f2ba08d8 0000000000000000
+> ffff8801f1143db0 ffff8801ef429570 ffffffff8107e82f ffff8801f1143d68
+> ffffffff8174abe0 ffffffff819b715b ffff8801f2ba0800 0000000000000000
+> atkbd serio0: Unknown key released (translated set 2, code 0xf8 on
+> isa0060/serio0).
+> atkbd serio0: Use 'setkeycodes e078 <keycode>' to make it known.
+> Call Trace:
+> [<ffffffff8107e3b3>] ? lock_timer_base.clone.28+0x33/0x70
+> [<ffffffff8107e82f>] ? del_timer+0x1f/0x80
+> [<ffffffff8174abe0>] ? hci_conn_del_sysfs+0x60/0xa0
+> [<ffffffff8173ebd0>] ? hci_conn_del+0x20/0x220
+> [<ffffffff8173ee40>] ? hci_conn_hash_flush+0x70/0xd0
 
+Probably related to:
+
+https://lkml.org/lkml/2012/3/7/68
+
+Could you try those patches below:
+
+http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=patch;h=2a5a5ec620a29d4ba07743c3151cdf0a417c8f8c
+http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=patch;h=3c4e0df028935618d052235ba85bc7079be13394
+
+
+Regards,
+Andrei
