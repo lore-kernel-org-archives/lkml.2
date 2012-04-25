@@ -1,63 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab2DYP7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:59:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33379 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890Ab2DYP7p (ORCPT
+	id S1756281Ab2DYQAD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 12:00:03 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37330 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab2DYQAB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:59:45 -0400
-Message-ID: <4F981F6C.2050807@wwwdotorg.org>
-Date: Wed, 25 Apr 2012 09:59:40 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Wed, 25 Apr 2012 12:00:01 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: balbi@ti.com, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v2 1/3] ARM: tegra: Add AHB driver
-References: <1335269116-9578-1-git-send-email-hdoyu@nvidia.com> <20120425083747.466f5c98330af8964d980b8c@nvidia.com> <20120425074639.GB3423@arwen.pp.htv.fi> <201204251215.22889.arnd@arndb.de>
-In-Reply-To: <201204251215.22889.arnd@arndb.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [72.73.18.11]
+Date: Wed, 25 Apr 2012 12:00:00 -0400
+Message-ID: <CAO9zADwJnKfwh7axHoML5HU49Tfj0yH_O0OfV4u2UhsQAgF=3Q@mail.gmail.com>
+Subject: INFO: rcu_bh detected stall on CPU 2 (t=0 jiffies) (w/CONFIG_FRAME_POINTER=y)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 06:15 AM, Arnd Bergmann wrote:
-> On Wednesday 25 April 2012, Felipe Balbi wrote:
-...
->>> Can this driver be located under "drivers/misc"? Or is there any better place?
->>
->> maybe drivers/platform/arm/ ??
-> 
-> I really wouldn't want to add that directory: It has the risk of letting
-> people add random crap there that may or may not be related to ARM (the
-> company) and/or ARM (the architecture).
-> 
-> I think it could go into drivers/amba/ along with the primecell bus driver.
-> The two drivers are for two different aspects of the AMBA spec and don't
-> actually depend on one another as far as I can tell, but it's at least
-> a fitting name, and it doesn't depend on the ARM architecture, which is
-> important because the driver could be used on other architectures that
-> are connected to an AHB bus.
+Hello,
 
-Hiroshi, is this driver for something (registers/features) that AMBA
-actually specifies? AHB might be part of AMBA (I'm not familiar enough
-to know), but I don't think this aspect of Tegra's AHB bus is part of
-any core AHB/AMBA specification, rather than being some Tegra-specific
-control over the bus (given that the registers and bits correspond to
-Tegra-specific devices on the bus).
+Kernel: 3.3.0+x86_64
+Motherboard listed below in the trace.
+Is this fixed in 3.3.(x>0)?
 
-I'm not really convinced that low-level platform-specific drivers like
-this shouldn't be in the arch/arm/mach-* directories.
+[466782.433024] INFO: rcu_bh detected stall on CPU 2 (t=0 jiffies)
+[466782.433034] sending NMI to all CPUs:
+[466782.433049] NMI backtrace for cpu 2
+[466782.433054] CPU 2
+[466782.433063] Pid: 3352, comm: xchat Not tainted 3.3.0 #10
+Supermicro X7SPA-HF/X7SPA-HF
+[466782.433075] RIP: 0010:[<ffffffff812d99c0>]  [<ffffffff812d99c0>]
+__delay+0x10/0x10
+[466782.433092] RSP: 0000:ffff88013fd03e00  EFLAGS: 00000006
+[466782.433099] RAX: 0000000000000c00 RBX: 0000000000002710 RCX:
+0000000000000080
+[466782.433106] RDX: 0000000000000014 RSI: 0000000000000002 RDI:
+0000000000418958
+[466782.433112] RBP: ffff88013fd03e18 R08: 0000000000000000 R09:
+0000000000000000
+[466782.433119] R10: 0000000000000000 R11: 0000000000000001 R12:
+ffffffff818172c0
+[466782.433126] R13: ffffffff818172c0 R14: 7fffffffffffffff R15:
+0001a889411b5eae
+[466782.433134] FS:  00007f70dd20c920(0000) GS:ffff88013fd00000(0000)
+knlGS:0000000000000000
+[466782.433142] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[466782.433148] CR2: ffffffffff600400 CR3: 00000001297cc000 CR4:
+00000000000006e0
+[466782.433155] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[466782.433162] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[466782.433169] Process xchat (pid: 3352, threadinfo ffff880126f50000,
+task ffff880129700110)
+[466782.433175] Stack:
+[466782.433179]  ffffffff8101b77a 0000000000000000 ffff88013fd0d540
+ffff88013fd03e68
+[466782.433193]  ffffffff8106fd89 0000000000000002 ffff88013fd03e30
+ffff88013fd03e30
+[466782.433205]  0000000000000002 0000000000000001 0000000000000002
+7fffffffffffffff
+[466782.433217] Call Trace:
+[466782.433222]  <IRQ>
+[466782.433235]  [<ffffffff8101b77a>] ? arch_trigger_all_cpu_backtrace+0x6a/0x90
+[466782.433246]  [<ffffffff8106fd89>] __rcu_pending+0x159/0x3c0
+[466782.433256]  [<ffffffff81070deb>] rcu_check_callbacks+0xcb/0xe0
+[466782.433266]  [<ffffffff81038234>] update_process_times+0x44/0x90
+[466782.433276]  [<ffffffff81060020>] tick_sched_timer+0x60/0xb0
+[466782.433287]  [<ffffffff81049a1f>] __run_hrtimer.isra.34+0x4f/0x110
+[466782.433296]  [<ffffffff8104a49f>] hrtimer_interrupt+0xdf/0x200
+[466782.433306]  [<ffffffff8101ab74>] smp_apic_timer_interrupt+0x64/0xa0
+[466782.433316]  [<ffffffff815e850b>] apic_timer_interrupt+0x6b/0x70
+[466782.433322]  <EOI>
+[466782.433330]  [<ffffffff815e7b22>] ? system_call_fastpath+0x16/0x1b
+[466782.433336] Code: c9 54 00 30 99 2d 81 48 89 e5 5d c3 66 66 66 66
+66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 ff 15 3e c9 54 00 5d c3
+0f 1f 40 00 <55> 48 8d 04 bd 00 00 00 00 48 89 e5 65 48 8b 14 25 d8 0c
+01 00
+[466782.433380] Call Trace:
+[466782.433380]  <IRQ>  [<ffffffff8101b77a>] ?
+arch_trigger_all_cpu_backtrace+0x6a/0x90
+[466782.433380]  [<ffffffff8106fd89>] __rcu_pending+0x159/0x3c0
+[466782.433380]  [<ffffffff81070deb>] rcu_check_callbacks+0xcb/0xe0
+[466782.433380]  [<ffffffff81038234>] update_process_times+0x44/0x90
+[466782.433380]  [<ffffffff81060020>] tick_sched_timer+0x60/0xb0
+[466782.433380]  [<ffffffff81049a1f>] __run_hrtimer.isra.34+0x4f/0x110
+[466782.433380]  [<ffffffff8104a49f>] hrtimer_interrupt+0xdf/0x200
+[466782.433380]  [<ffffffff8101ab74>] smp_apic_timer_interrupt+0x64/0xa0
+[466782.433380]  [<ffffffff815e850b>] apic_timer_interrupt+0x6b/0x70
+[466782.433380]  <EOI>  [<ffffffff815e7b22>] ? system_call_fastpath+0x16/0x1b
+[466782.433149] NMI backtrace for cpu 0
+[466782.433149] CPU 0
+[466782.433149] Pid: 0, comm: swapper/0 Not tainted 3.3.0 #10
+Supermicro X7SPA-HF/X7SPA-HF
+[466782.433149] RIP: 0010:[<ffffffff812fac94>]  [<ffffffff812fac94>]
+intel_idle+0xb4/0x140
+[466782.433149] RSP: 0018:ffffffff81801e98  EFLAGS: 00000046
+[466782.433149] RAX: 0000000000000000 RBX: 0000000000000002 RCX:
+0000000000000001
+[466782.433149] RDX: 0000000000000000 RSI: ffffffff81801fd8 RDI:
+ffffffff81812400
+[466782.433149] RBP: ffffffff81801ef8 R08: 000000000000043e R09:
+00000000fffffffe
+[466782.433149] R10: 000000011bcdf4ff R11: ffff88013f001c00 R12:
+0000000000000001
+[466782.433149] R13: ffff88013fc13270 R14: 0000000000000000 R15:
+1287b7a032d1901d
+[466782.433149] FS:  0000000000000000(0000) GS:ffff88013fc00000(0000)
+knlGS:0000000000000000
+[466782.433149] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[466782.433149] CR2: ffffffffff600400 CR3: 00000001312c7000 CR4:
+00000000000006f0
+[466782.433149] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[466782.433149] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[466782.433149] Process swapper/0 (pid: 0, threadinfo
+ffffffff81800000, task ffffffff8180d020)
+[466782.433149] Stack:
+[466782.433149]  0000000000000000 00000000011ca4a3 ffffffff81801ef8
+ffffffff81475924
+[466782.433149]  0000000000000000 00000000011ca4a3 0000000000000000
+ffff88013fc13270
+[466782.433149]  ffffffff81827cc0 00000000fffffff0 ffffffffffffffff
+0000000000000000
+[466782.433149] Call Trace:
+[466782.433149]  [<ffffffff81475924>] ? menu_select+0xd4/0x340
+[466782.433149]  [<ffffffff81474702>] cpuidle_idle_call+0x92/0xf0
+[466782.433149]  [<ffffffff8100078a>] cpu_idle+0x7a/0xd0
+[466782.433149]  [<ffffffff815cc714>] rest_init+0x68/0x74
+[466782.433149]  [<ffffffff81882a6b>] start_kernel+0x2a0/0x2ab
+[466782.433149]  [<ffffffff818822f1>] x86_64_start_reservations+0x101/0x105
+[466782.433149]  [<ffffffff818823e6>] x86_64_start_kernel+0xf1/0xf9
+[466782.433149] Code: 48 8d 86 28 e0 ff ff 75 22 31 d2 48 83 c0 10 48
+89 d1 0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 4c 89
+f0 0f 01 c9 <e8> c7 e2 d5 ff 4c 29 f8 48 89 c7 e8 2c 65 d3 ff 4c 69 f0
+40 42
+[466782.433149] Call Trace:
+[466782.433149]  [<ffffffff81475924>] ? menu_select+0xd4/0x340
+[466782.433149]  [<ffffffff81474702>] cpuidle_idle_call+0x92/0xf0
+[466782.433149]  [<ffffffff8100078a>] cpu_idle+0x7a/0xd0
+[466782.433149]  [<ffffffff815cc714>] rest_init+0x68/0x74
+[466782.433149]  [<ffffffff81882a6b>] start_kernel+0x2a0/0x2ab
+[466782.433149]  [<ffffffff818822f1>] x86_64_start_reservations+0x101/0x105
+[466782.433149]  [<ffffffff818823e6>] x86_64_start_kernel+0xf1/0xf9
+[466782.433955] NMI backtrace for cpu 1
+[466782.433965] CPU 1
+[466782.433975] Pid: 0, comm: swapper/1 Not tainted 3.3.0 #10
+Supermicro X7SPA-HF/X7SPA-HF
+[466782.433986] RIP: 0010:[<ffffffff812fac94>]  [<ffffffff812fac94>]
+intel_idle+0xb4/0x140
+[466782.434003] RSP: 0018:ffff88013f105e78  EFLAGS: 00000046
+[466782.434009] RAX: 0000000000000000 RBX: 0000000000000002 RCX:
+0000000000000001
+[466782.434010] RDX: 0000000000000000 RSI: ffff88013f105fd8 RDI:
+ffffffff81812400
+[466782.434010] RBP: ffff88013f105ed8 R08: 00000000000003bf R09:
+00000000fffffffe
+[466782.434010] R10: 0000000000000000 R11: 0000000000000400 R12:
+0000000000000001
+[466782.434010] R13: ffff88013fc93270 R14: 0000000000000000 R15:
+1287b7a032da73b8
+[466782.434010] FS:  0000000000000000(0000) GS:ffff88013fc80000(0000)
+knlGS:0000000000000000
+[466782.434010] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[466782.434010] CR2: ffffffffff600400 CR3: 000000012c1e8000 CR4:
+00000000000006e0
+[466782.434010] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[466782.434010] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[466782.434010] Process swapper/1 (pid: 0, threadinfo
+ffff88013f104000, task ffff88013f0ff1b0)
+[466782.434010] Stack:
+[466782.434010]  0000000000000000 00000000000efcd0 ffff88013f105ed8
+ffffffff81475924
+[466782.434010]  0000000000000000 00000001000efcd0 0000000000000000
+ffff88013fc93270
+[466782.434010]  ffffffff81827cc0 00000000fffffff0 0000000000000000
+0000000000000000
+[466782.434010] Call Trace:
+[466782.434010]  [<ffffffff81475924>] ? menu_select+0xd4/0x340
+[466782.434010]  [<ffffffff81474702>] cpuidle_idle_call+0x92/0xf0
+[466782.434010]  [<ffffffff8100078a>] cpu_idle+0x7a/0xd0
+[466782.434010]  [<ffffffff818b2c25>] start_secondary+0x1bb/0x1bf
+[466782.434010] Code: 48 8d 86 28 e0 ff ff 75 22 31 d2 48 83 c0 10 48
+89 d1 0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 4c 89
+f0 0f 01 c9 <e8> c7 e2 d5 ff 4c 29 f8 48 89 c7 e8 2c 65 d3 ff 4c 69 f0
+40 42
+[466782.434010] Call Trace:
+[466782.434010]  [<ffffffff81475924>] ? menu_select+0xd4/0x340
+[466782.434010]  [<ffffffff81474702>] cpuidle_idle_call+0x92/0xf0
+[466782.434010]  [<ffffffff8100078a>] cpu_idle+0x7a/0xd0
+[466782.434010]  [<ffffffff818b2c25>] start_secondary+0x1bb/0x1bf
+[466782.420012] NMI backtrace for cpu 3
+[466782.420012] CPU 3
+[466782.420012] Pid: 0, comm: swapper/3 Not tainted 3.3.0 #10
+Supermicro X7SPA-HF/X7SPA-HF
+[466782.420012] RIP: 0010:[<ffffffff812fac94>]  [<ffffffff812fac94>]
+intel_idle+0xb4/0x140
+[466782.420012] RSP: 0018:ffff88013f149e78  EFLAGS: 00000046
+[466782.420012] RAX: 0000000000000000 RBX: 0000000000000002 RCX:
+0000000000000001
+[466782.420012] RDX: 0000000000000000 RSI: ffff88013f149fd8 RDI:
+ffffffff81812400
+[466782.434371] RBP: ffff88013f149ed8 R08: 00000000000040ba R09:
+00000000fffffffe
+[466782.434371] R10: 00000000011bcdf5 R11: 0000000000000040 R12:
+0000000000000001
+[466782.434371] R13: ffff88013fd93270 R14: 0000000000000000 R15:
+1287b7a0320528f6
+[466782.434371] FS:  0000000000000000(0000) GS:ffff88013fd80000(0000)
+knlGS:0000000000000000
+[466782.434371] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[466782.434371] CR2: ffffffffff600400 CR3: 000000013a25d000 CR4:
+00000000000006e0
+[466782.434371] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[466782.434371] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[466782.434371] Process swapper/3 (pid: 0, threadinfo
+ffff88013f148000, task ffff88013f145230)
+[466782.434371] Stack:
+[466782.434371]  0000000000000000 00000000018349ff ffff88013f149ed8
+ffffffff81475924
+[466782.434371]  0000000000000000 00000003018349ff 0000000000000000
+ffff88013fd93270
+[466782.434371]  ffffffff81827cc0 00000000fffffff0 0000000000000000
+0000000000000000
+[466782.434371] Call Trace:
+[466782.434371]  [<ffffffff81475924>] ? menu_select+0xd4/0x340
+[466782.434371]  [<ffffffff81474702>] cpuidle_idle_call+0x92/0xf0
+[466782.434371]  [<ffffffff8100078a>] cpu_idle+0x7a/0xd0
+[466782.434371]  [<ffffffff818b2c25>] start_secondary+0x1bb/0x1bf
+[466782.434371] Code: 48 8d 86 28 e0 ff ff 75 22 31 d2 48 83 c0 10 48
+89 d1 0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 4c 89
+f0 0f 01 c9 <e8> c7 e2 d5 ff 4c 29 f8 48 89 c7 e8 2c 65 d3 ff 4c 69 f0
+40 42
+[466782.434371] Call Trace:
+[466782.434371]  [<ffffffff81475924>] ? menu_select+0xd4/0x340
+[466782.434371]  [<ffffffff81474702>] cpuidle_idle_call+0x92/0xf0
+[466782.434371]  [<ffffffff8100078a>] cpu_idle+0x7a/0xd0
+[466782.434371]  [<ffffffff818b2c25>] start_secondary+0x1bb/0x1bf
+
+Justin.
