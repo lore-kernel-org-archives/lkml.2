@@ -1,69 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608Ab2DYSop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 14:44:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41633 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756176Ab2DYSon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 14:44:43 -0400
-Message-ID: <4F984611.8040802@redhat.com>
-Date: Wed, 25 Apr 2012 15:44:33 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Borislav Petkov <bp@amd64.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: [EDAC PATCH v13 6/7] edac.h: Prepare to handle with generic layers
-References: <20120423174955.GH6147@aftab.osrc.amd.com> <4F959FDE.2070304@redhat.com> <20120424104059.GA11559@aftab.osrc.amd.com> <4F9692AD.8090000@redhat.com> <20120424125538.GC11559@aftab.osrc.amd.com> <4F96A696.40308@redhat.com> <20120424133242.GI11559@aftab.osrc.amd.com> <4F96B783.6060101@redhat.com> <20120424162743.GU11559@aftab.osrc.amd.com> <4F96E1EB.1030407@redhat.com> <20120425171904.GM18882@aftab.osrc.amd.com> <4F9838BB.5010209@redhat.com> <3908561D78D1C84285E8C5FCA982C28F170F3DA7@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F170F3DA7@ORSMSX104.amr.corp.intel.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757694Ab2DYSsg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 14:48:36 -0400
+Received: from smtp-out-106.synserver.de ([212.40.185.106]:1094 "EHLO
+	smtp-out-098.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757300Ab2DYSse (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 14:48:34 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 1421
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Vinod Koul <vinod.koul@intel.com>, Russell King <linux@arm.linux.org.uk>
+Cc: Viresh Kumar <viresh.kumar@st.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Yong Wang <yong.y.wang@intel.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 1/3] dmaengine: Use sg_dma_address instead of sg_phys
+Date: Wed, 25 Apr 2012 20:50:51 +0200
+Message-Id: <1335379853-10122-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 25-04-2012 15:32, Luck, Tony escreveu:
->> See the driver: the only useful information provided by the MCA log is
->> that an error happened, their physical address, and the type of the 
->> error. Unlikely the Nehalem MCA, the MCE_MISC registers won't point to the
->> DIMM in the error.
-> 
-> There's a bit more information in the MCA log than just the physical address:
-> 
-> The cpu number that finds the data in its bank will provide socket information.
-> [/proc/cpuinfo maps logical cpu numbers to "physical id"]
+dmaengine drivers should always use sg_dma_address instead of sg_phys to get the
+addresses for the transfer from a sg element.
 
-Yes, but this seems to be different than the CPU that actually has the memory
-controller. The MCA registers have a bit to mark if the the error is at the
-same CPU or on another one. So, when there's just 2 CPU (sockets), this could
-be used, but, for more than 2 CPUs, this field is useless.
+To quote Russel King:
+	sg_phys(sg) of course has nothing to do with DMA addresses. It's the
+	physical address _to the CPU_ of the memory associated with the scatterlist
+	entry. That may, or may not have the same value for the DMA engine,
+	particularly if IOMMUs are involved.
 
-So, I opted to not trust on it.
+	And if these drivers are used on ARM, they must be fixed, sooner rather
+	than later.  There's patches in the works which will mean we will end up
+	with IOMMU support in the DMA mapping later, which means everything I've
+	said above will become reality.
 
-> Low order bits of the MCi_STATUS register will give the channel. See the SDM.
+The patch has been generated using the following coccinelle patch:
+<smpl>
+@@
+struct scatterlist *sg;
+@@
+-sg_phys(sg)
++sg_dma_address(sg)
+</smpl>
 
-On all tests I did, the channel information reported via MCi_status didn't
-match the channel reported via the decoding logic. Maybe this might be due
-to some bug on the pre-release CPUs I used so far.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-> So the only missing information from the MCA log is which DIMM within
-> the channel.  I.e. we can pin the fault to a group of either two or
-> three DIMMs depending on how many DIMMS/channel the motherboard supports.
-> 
-> If you only have one DIMM per channel populated than socket/channel is
-> sufficient to identify the DIMM.
-> 
-> [We also don't have any intra-DIMM information for those customers who
-> would like to diagnose the device on the DIMM, or which bits within
-> the cache line had the error]
-> 
-> -Tony
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+---
+Compile tested only
+---
+ drivers/dma/amba-pl08x.c    |    4 ++--
+ drivers/dma/coh901318_lli.c |    4 ++--
+ drivers/dma/dw_dmac.c       |    4 ++--
+ drivers/dma/intel_mid_dma.c |    2 +-
+ drivers/dma/pch_dma.c       |    2 +-
+ 5 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index e7d5550..003220a 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -1382,11 +1382,11 @@ static struct dma_async_tx_descriptor *pl08x_prep_slave_sg(
+ 
+ 		dsg->len = sg_dma_len(sg);
+ 		if (direction == DMA_MEM_TO_DEV) {
+-			dsg->src_addr = sg_phys(sg);
++			dsg->src_addr = sg_dma_address(sg);
+ 			dsg->dst_addr = slave_addr;
+ 		} else {
+ 			dsg->src_addr = slave_addr;
+-			dsg->dst_addr = sg_phys(sg);
++			dsg->dst_addr = sg_dma_address(sg);
+ 		}
+ 	}
+ 
+diff --git a/drivers/dma/coh901318_lli.c b/drivers/dma/coh901318_lli.c
+index 6c0e2d4..780e042 100644
+--- a/drivers/dma/coh901318_lli.c
++++ b/drivers/dma/coh901318_lli.c
+@@ -270,10 +270,10 @@ coh901318_lli_fill_sg(struct coh901318_pool *pool,
+ 
+ 		if (dir == DMA_MEM_TO_DEV)
+ 			/* increment source address */
+-			src = sg_phys(sg);
++			src = sg_dma_address(sg);
+ 		else
+ 			/* increment destination address */
+-			dst =  sg_phys(sg);
++			dst = sg_dma_address(sg);
+ 
+ 		bytes_to_transfer = sg_dma_len(sg);
+ 
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 7439079..930076b 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -742,7 +742,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 			struct dw_desc	*desc;
+ 			u32		len, dlen, mem;
+ 
+-			mem = sg_phys(sg);
++			mem = sg_dma_address(sg);
+ 			len = sg_dma_len(sg);
+ 
+ 			if (!((mem | len) & 7))
+@@ -809,7 +809,7 @@ slave_sg_todev_fill_desc:
+ 			struct dw_desc	*desc;
+ 			u32		len, dlen, mem;
+ 
+-			mem = sg_phys(sg);
++			mem = sg_dma_address(sg);
+ 			len = sg_dma_len(sg);
+ 
+ 			if (!((mem | len) & 7))
+diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+index c900ca7..d0ef593 100644
+--- a/drivers/dma/intel_mid_dma.c
++++ b/drivers/dma/intel_mid_dma.c
+@@ -398,7 +398,7 @@ static int midc_lli_fill_sg(struct intel_mid_dma_chan *midc,
+ 							desc->width,
+ 							midc->dma->block_size);
+ 		/*Populate SAR and DAR values*/
+-		sg_phy_addr = sg_phys(sg);
++		sg_phy_addr = sg_dma_address(sg);
+ 		if (desc->dirn ==  DMA_MEM_TO_DEV) {
+ 			lli_bloc_desc->sar  = sg_phy_addr;
+ 			lli_bloc_desc->dar  = mids->dma_slave.dst_addr;
+diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+index 65c0495..987ab5c 100644
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -621,7 +621,7 @@ static struct dma_async_tx_descriptor *pd_prep_slave_sg(struct dma_chan *chan,
+ 			goto err_desc_get;
+ 
+ 		desc->regs.dev_addr = reg;
+-		desc->regs.mem_addr = sg_phys(sg);
++		desc->regs.mem_addr = sg_dma_address(sg);
+ 		desc->regs.size = sg_dma_len(sg);
+ 		desc->regs.next = DMA_DESC_FOLLOW_WITHOUT_IRQ;
+ 
+-- 
+1.7.9.5
 
