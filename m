@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab2DYDV3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 23:21:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49253 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754243Ab2DYDV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 23:21:28 -0400
-Date: Wed, 25 Apr 2012 13:21:22 +1000
-From: NeilBrown <neilb@suse.de>
-To: Chris Jones <chrisjones@spin.net.au>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 3.1+ kernels unbootable
-Message-ID: <20120425132122.11280b66@notabene.brown>
-In-Reply-To: <20120425124925.267056b5@ubuntu>
-References: <20120425124925.267056b5@ubuntu>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/F1eM8Rjuk3sbMQY/fr4a2I3"; protocol="application/pgp-signature"
+	id S1758843Ab2DYDVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 23:21:45 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:22865 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756821Ab2DYDVi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 23:21:38 -0400
+X-AuditID: cbfee61b-b7c1cae000004793-02-4f976dc071cd
+Message-id: <4F976DC0.6060004@samsung.com>
+Date: Wed, 25 Apr 2012 12:21:36 +0900
+From: Minho Ban <mhban@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
+ Thunderbird/11.0.1
+MIME-version: 1.0
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Paul Turner <pjt@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC/PATCH] Prevent wasting time to find out get_parent_ip
+References: <4F969E53.9080307@samsung.com> <1335272025.28150.193.camel@twins>
+ <4F9737CC.6010703@samsung.com> <20120424234513.GA11841@leaf>
+In-reply-to: <20120424234513.GA11841@leaf>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/F1eM8Rjuk3sbMQY/fr4a2I3
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 04/25/2012 08:45 AM, Josh Triplett wrote:
+> On Wed, Apr 25, 2012 at 08:31:24AM +0900, Minho Ban wrote:
+>> On 04/24/2012 09:53 PM, Peter Zijlstra wrote:
+>>> On Tue, 2012-04-24 at 21:36 +0900, Minho Ban wrote:
+>>>> trace_preempt_on/off looks empty if PREEMPT_TRACER is off. But actually it is
+>>>> spending time to find out get_parent_ip(even CALLER_ADDR for some ARCH) which is
+>>>> in argument. This seems not fair for those who expect to do nothing but increase
+>>>> or decrease count.
+>>>
+>>> You can do the same by making them CPP macros and adding a comment as to
+>>> why they're macros instead of inlines..
+>>>
+>>
+>> Thank you for pointing this out, certainly macros look better. I'll amend this.
+> 
+> As an alternative, how about making get_parent_ip and its called
+> functions static inlines?  Then the compiler can eliminate them via dead
+> code elimination.
+> 
+> Or, how about declaring get_parent_ip with the GCC "pure" attribute?
+> That would tell GCC that it can safely eliminate calls to the function.
+> 
+> - Josh Triplett
+> 
 
-On Wed, 25 Apr 2012 12:49:25 +1000 Chris Jones <chrisjones@spin.net.au> wro=
-te:
+Thank you for alternative method, but I'm afraid this could not cover the CALLER_ADDR.
 
-> I understand this mailing list is not a support list. But I am curious
-> as to what could make the Linux kernel non-bootable from 3.1+ kernels?
-
-A bug probably.
-
->=20
-> My 3.0 kernel boots just fine with my current system.
-
-You might like to try=20
- a/ describing your current system in more detail.
- b/ describe what actually happens when you try to boot a 3.1+ kernel.
-    It is rare that absolutely nothing happens.
-    Also describe the provenance of these 3.1+ kernels (do you compile
-    yourself, or get them from a distro or....)
-
-NeilBrown
-
---Sig_/F1eM8Rjuk3sbMQY/fr4a2I3
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT5dtsjnsnt1WYoG5AQJe+Q/9HQfmFSjLa+EE1ajHAmKOap2j0xmTa0fl
-ttOja+isa+Ve7XSocMB302LiG0U34h8On6E31KMWbvaj2FmhZPJWPwSz8qo/bQzH
-2Gij3WMuunJ2JRBrwPJ+Zem32noIP7EL7MdqwbvG8HyOuRYRy7cLqWK9+Spa96qm
-Dyw41iEJ7Q9kZW6JzozrO7EzlHtwOqxSodvqWfOHz0WcY58gQwtIgRSQEU94TNN+
-Hg4IX0u0Wib4v+wZnvXosr787Lz7xVmTA5TTfM1CJiwfD8Q056La8kvlb7PCWfle
-se/PXHaId91guzVwbK23ab40TCcWXl5FY0wbpASJ8z7qKj0fuzW625WVbsVF4AE1
-dxslB6k1Pk7NhArwFKjK2coDk6jPD7Xrff7BzCa4UnPf+njisq/ThpkZ7LlAzRba
-MvXA8AUSeQJTDucq6lypelGHJrTg8vW/6QCfc9+g/vS8PTkwf4vDmjZ0QsgJFO8/
-AyLJZRzNByoIke4iYWFq+yd2yNtxnikxULA/wYMS/GYvEwWGuue9UahqcK6d+FBu
-66uEZASkH/hJRLhPDh4YwgpFiNC+vnrB7g3WIY3u+pJ2rtqK/nH3EI71deNgWR1P
-0vaVoSyrWQrOj/xObBB5dtBXrgHRoMexFan2CPGudq1NAQYBt52nUkTNazvw6og6
-WgPldByI1lQ=
-=ba0X
------END PGP SIGNATURE-----
-
---Sig_/F1eM8Rjuk3sbMQY/fr4a2I3--
