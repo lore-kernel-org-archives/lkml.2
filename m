@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab2DYKVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 06:21:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50176 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757695Ab2DYKVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 06:21:30 -0400
-Date: Wed, 25 Apr 2012 07:21:24 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] perf tools: Fix include header files in
- util/parse-events.h
-Message-ID: <20120425102124.GE28056@infradead.org>
-References: <1333643188-26895-1-git-send-email-robert.richter@amd.com>
- <1333643188-26895-2-git-send-email-robert.richter@amd.com>
- <20120424165344.GH9747@erda.amd.com>
- <20120424173555.GD28056@infradead.org>
- <20120424175804.GJ9747@erda.amd.com>
+	id S1758021Ab2DYKYG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 06:24:06 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:39251 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756861Ab2DYKYE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 06:24:04 -0400
+Date: Wed, 25 Apr 2012 12:23:58 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Frank Arnold <frank.arnold@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [GIT PULL] L3 CID fix for 3.5
+Message-ID: <20120425102357.GC20853@gmail.com>
+References: <20120419070053.GB16645@elgon.mountain>
+ <4F8FCA3A.5060504@linux.vnet.ibm.com>
+ <20120419110229.GB30447@aftab>
+ <20120419114453.GO6498@mwanda>
+ <20120419165353.GF3221@aftab.osrc.amd.com>
+ <20120425093001.GA18882@aftab.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120424175804.GJ9747@erda.amd.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20120425093001.GA18882@aftab.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Apr 24, 2012 at 07:58:04PM +0200, Robert Richter escreveu:
-> On 24.04.12 14:35:55, Arnaldo Carvalho de Melo wrote:
-> > Em Tue, Apr 24, 2012 at 06:53:44PM +0200, Robert Richter escreveu:
-> > > On 05.04.12 18:26:25, Robert Richter wrote:
-> > > > Include header fixes for
-> > > > 
-> > > > ... bool:
-> > > > 
-> > > >  util/parse-events.h:31: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘have_tracepoints’
-> > > > 
-> > > > ... and types.h:
-> > > > 
-> > > >  util/parse-events.h:28: error: expected ‘)’ before ‘config’
-> > > >  util/parse-events.h:34: error: expected declaration specifiers or ‘...’ before ‘u64’
-> > > >  util/parse-events.h:45: error: expected ‘)’ before ‘type’
-> > > > 
-> > > > This happens if now other include files are included before
-> > > > util/parse-events.h.
-> > > > 
-> > > > Signed-off-by: Robert Richter <robert.richter@amd.com>
-> > > 
-> > > Arnaldo,
-> > > 
-> > > is it your intention that you didn't apply this patch?
-> > 
-> > Is this on perf/urgent or perf/core? In what system does this happen?
+
+* Borislav Petkov <borislav.petkov@amd.com> wrote:
+
+> Ping?
 > 
-> Neither, I stumbled over this while working on a modified version of
-> perf tools. The interface definition of util/parse-events.h contains
-> type bool and u64, but both are not defined. Thus, including
-> parse-events.h independently of other header files will raise this
-> compile errors. It took me some time to figure out what happened so I
-> think it is worth fixing it.
+> Guys, any issues with this that I should know of?
 
-Cool, that explains why I have not stumbled on it, thanks for
-explaining, will apply.
+Looks good to me. You marked it v3.5, should I pull it into 
+v3.4? Looks small enough to me and we better keep such user 
+facing interfaces correct, even if there's no direct regression.
 
-- Arnaldo
+Thanks,
+
+	Ingo
