@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab2DYPdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:33:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50745 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757Ab2DYPc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:32:58 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] i5000: Fix the fatal error handling
-Date: Wed, 25 Apr 2012 12:32:51 -0300
-Message-Id: <1335367971-29584-1-git-send-email-mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1755373Ab2DYPdN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:33:13 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65129 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755258Ab2DYPdJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 11:33:09 -0400
+Subject: Re: [PATCH -next] mtd: fix sbc2_flash build when PCI is not enabled
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Tim Hockin <thockin@sun.com>
+Date: Wed, 25 Apr 2012 18:33:02 +0300
+In-Reply-To: <4F8C780D.9010702@xenotime.net>
+References: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>
+	 <4F8C780D.9010702@xenotime.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-JuECyCsuI5LDt9lG4JKJ"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1335367986.6356.12.camel@koala>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fatal error channel bits point to a single channel, and not
-to a range of channels. Fix the code to properly report it,
-instead of printing messages like:
-	kernel: EDAC MC0: INTERNAL ERROR: channel-b out of range (4 >= 4)
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
+--=-JuECyCsuI5LDt9lG4JKJ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This patch should be applied after the edac API fixes, e. g.
-after this patch: https://lkml.org/lkml/2012/4/16/515
+On Mon, 2012-04-16 at 12:50 -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+>=20
+> sbc2_flash.c is a PCI driver, but its build fails when CONFIG_PCI
+> is not enabled, so make it depend on PCI.
+>=20
+> drivers/mtd/maps/scb2_flash.c:237:1: warning: data definition has no type=
+ or storage class
+> drivers/mtd/maps/scb2_flash.c:237:1: warning: type defaults to 'int' in d=
+eclaration of 'module_pci_driver'
+> drivers/mtd/maps/scb2_flash.c:237:1: warning: parameter names (without ty=
+pes) in function declaration
+>=20
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 
- drivers/edac/i5000_edac.c |   12 +++++-------
- 1 files changed, 5 insertions(+), 7 deletions(-)
+Pushed to l2-mtd.git, thanks!
 
-diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
-index fda19b4..2a9f1dc 100644
---- a/drivers/edac/i5000_edac.c
-+++ b/drivers/edac/i5000_edac.c
-@@ -474,7 +474,6 @@ static void i5000_process_fatal_error_info(struct mem_ctl_info *mci,
- 	char msg[EDAC_MC_LABEL_LEN + 1 + 160];
- 	char *specific = NULL;
- 	u32 allErrors;
--	int branch;
- 	int channel;
- 	int bank;
- 	int rank;
-@@ -486,8 +485,7 @@ static void i5000_process_fatal_error_info(struct mem_ctl_info *mci,
- 	if (!allErrors)
- 		return;		/* if no error, return now */
- 
--	branch = EXTRACT_FBDCHAN_INDX(info->ferr_fat_fbd);
--	channel = branch;
-+	channel = EXTRACT_FBDCHAN_INDX(info->ferr_fat_fbd);
- 
- 	/* Use the NON-Recoverable macros to extract data */
- 	bank = NREC_BANK(info->nrecmema);
-@@ -496,9 +494,9 @@ static void i5000_process_fatal_error_info(struct mem_ctl_info *mci,
- 	ras = NREC_RAS(info->nrecmemb);
- 	cas = NREC_CAS(info->nrecmemb);
- 
--	debugf0("\t\tCSROW= %d  Channels= %d,%d  (Branch= %d "
--		"DRAM Bank= %d rdwr= %s ras= %d cas= %d)\n",
--		rank, channel, channel + 1, branch >> 1, bank,
-+	debugf0("\t\tCSROW= %d  Channel= %d "
-+		"(DRAM Bank= %d rdwr= %s ras= %d cas= %d)\n",
-+		rank, channel, bank,
- 		rdwr ? "Write" : "Read", ras, cas);
- 
- 	/* Only 1 bit will be on */
-@@ -539,7 +537,7 @@ static void i5000_process_fatal_error_info(struct mem_ctl_info *mci,
- 
- 	/* Call the helper to output message */
- 	edac_mc_handle_error(HW_EVENT_ERR_FATAL, mci, 0, 0, 0,
--			     branch >> 1, -1, rank,
-+			     channel >> 1, channel & 1, rank,
- 			     rdwr ? "Write error" : "Read error",
- 			     msg, NULL);
- }
--- 
-1.7.8
+--=20
+Best Regards,
+Artem Bityutskiy
+
+
+--=-JuECyCsuI5LDt9lG4JKJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAABAgAGBQJPmBkuAAoJEJtuLFy+q7feiIgIALof73CXbgSHfMUNoGAFrBRJ
+ngSktsu+8fR32v5EUadpPYYtgHL1wEg+BuRDWsPaEH1mLsSVEHp8VKRDiKRMrbjP
+gqk5o8sxtv0WSdhL6gJJyKv0Sk4ac0RRGLZU/ql1ehO90K+kmy8Euzq8t0PJ1D+o
+gtCSft8lG+GzhSTi2s5xeZIQzEhJF8strXtYqjmKSlaLS8JAPmKT99kJUVmA7p0W
+7SKmpJEyduPEWo6droAJmI3klQN9gP6w6PaOGrhgmdJLmBY+7IYcMgU4WjCHpOWi
+OZgwotr+bKL21DCOCa+8wuWtzUD0iAiIf6B3kyNzmp5SAYqwSL65RBAprI0TDyc=
+=apWk
+-----END PGP SIGNATURE-----
+
+--=-JuECyCsuI5LDt9lG4JKJ--
 
