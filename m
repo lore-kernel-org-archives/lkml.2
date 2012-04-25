@@ -1,138 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab2DYNDz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 09:03:55 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:60146 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab2DYNDy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 09:03:54 -0400
-Message-ID: <4F97F634.1010400@vflare.org>
-Date: Wed, 25 Apr 2012 09:03:48 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1755903Ab2DYNE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 09:04:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21308 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750766Ab2DYNEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 09:04:25 -0400
+Date: Wed, 25 Apr 2012 15:03:29 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Roland McGrath <roland@hack.frob.com>
+Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
+Message-ID: <20120425130329.GA16413@redhat.com>
+References: <CA+55aFxia+u3VAf0qN-2wv7DyAQZK-Z8=n=cqUvo--+C905aFg@mail.gmail.com> <20120420160848.GG6871@ZenIV.linux.org.uk> <20120420164239.GH6871@ZenIV.linux.org.uk> <CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com> <20120420180748.GI6871@ZenIV.linux.org.uk> <20120423180150.GA6871@ZenIV.linux.org.uk> <20120424072617.GB6871@ZenIV.linux.org.uk> <20120425030659.GE6871@ZenIV.linux.org.uk> <20120425123746.GA15560@redhat.com> <20120425125042.GF6871@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 3/6] zsmalloc: rename zspage_order with zspage_pages
-References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-4-git-send-email-minchan@kernel.org>
-In-Reply-To: <1335334994-22138-4-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120425125042.GF6871@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 02:23 AM, Minchan Kim wrote:
-
-> zspage_order defines how many pages are needed to make a zspage.
-> So _order_ is rather awkward naming. It already deceive Jonathan
-> - http://lwn.net/Articles/477067/
-> " For each size, the code calculates an optimum number of pages (up to 16)"
-> 
-> Let's change from _order_ to _pages_.
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zsmalloc/zsmalloc-main.c |   14 +++++++-------
->  drivers/staging/zsmalloc/zsmalloc_int.h  |    2 +-
->  2 files changed, 8 insertions(+), 8 deletions(-)
+On 04/25, Al Viro wrote:
 >
+> On Wed, Apr 25, 2012 at 02:37:46PM +0200, Oleg Nesterov wrote:
+> > As for sys_sigsuspend() and this race in particular:
+> >
+> > > Arrival of a signal that has userland handler
+> > > and that isn't blocked by the mask given to sigsuspend() should terminate
+> > > sigsuspend().
+> >
+> > Yes. But note that do_signal() restores the old sigmask. This means that
+> > the signal we get after the first do_signal() was not blocked before
+> > sigsuspend() was called. So, to some extent, we can pretend that the
+> > handler was executed before sigsuspend() and it was never restarted.
+>
+> Signal might have already arrived by the time we restore sigmask.
 
+Yes, and it sets TIF_SIGPENDING, but unless I missed something this doesn't
+matter.
 
-Recently, Seth changed max_zspage_order to ZS_MAX_PAGES_PER_ZSPAGE for
-the same reason. I think it would be better to rename the function in a
-similary way to have some consistency. So, we could use:
+> So no,
+> it might have been blocked prior to sigsuspend().
 
-1) get_pages_per_zspage() instead of get_zspage_pages()
-2) class->pages_per_zspage instead of class->zspage_pages
+If it was not blocked, then the next do_signal()->get_signal_to_deliver()
+returns 0 and clears TIF_SIGPENDING. After that we finally re-enter
+sys_sigsuspend() and (assuming it unblocks this sig) notice this pending
+signal again and return -EINTR eventually.
 
- 
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index b99ad9e..0fe4cbb 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -180,7 +180,7 @@ out:
->   * link together 3 PAGE_SIZE sized pages to form a zspage
->   * since then we can perfectly fit in 8 such objects.
->   */
-> -static int get_zspage_order(int class_size)
-> +static int get_zspage_pages(int class_size)
->  {
->  	int i, max_usedpc = 0;
->  	/* zspage order which gives maximum used size per KB */
-> @@ -368,7 +368,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
->  	 * identify the last page.
->  	 */
->  	error = -ENOMEM;
-> -	for (i = 0; i < class->zspage_order; i++) {
-> +	for (i = 0; i < class->zspage_pages; i++) {
->  		struct page *page, *prev_page;
->  
->  		page = alloc_page(flags);
-> @@ -388,7 +388,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
->  			page->first_page = first_page;
->  		if (i >= 2)
->  			list_add(&page->lru, &prev_page->lru);
-> -		if (i == class->zspage_order - 1)	/* last page */
-> +		if (i == class->zspage_pages - 1)	/* last page */
->  			SetPagePrivate2(page);
->  		prev_page = page;
->  	}
-> @@ -397,7 +397,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
->  
->  	first_page->freelist = obj_location_to_handle(first_page, 0);
->  	/* Maximum number of objects we can store in this zspage */
-> -	first_page->objects = class->zspage_order * PAGE_SIZE / class->size;
-> +	first_page->objects = class->zspage_pages * PAGE_SIZE / class->size;
->  
->  	error = 0; /* Success */
->  
-> @@ -511,7 +511,7 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
->  		class->size = size;
->  		class->index = i;
->  		spin_lock_init(&class->lock);
-> -		class->zspage_order = get_zspage_order(size);
-> +		class->zspage_pages = get_zspage_pages(size);
->  
->  	}
->  
-> @@ -602,7 +602,7 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
->  
->  		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
->  		spin_lock(&class->lock);
-> -		class->pages_allocated += class->zspage_order;
-> +		class->pages_allocated += class->zspage_pages;
->  	}
->  
->  	obj = first_page->freelist;
-> @@ -657,7 +657,7 @@ void zs_free(struct zs_pool *pool, void *obj)
->  	fullness = fix_fullness_group(pool, first_page);
->  
->  	if (fullness == ZS_EMPTY)
-> -		class->pages_allocated -= class->zspage_order;
-> +		class->pages_allocated -= class->zspage_pages;
->  
->  	spin_unlock(&class->lock);
->  
-> diff --git a/drivers/staging/zsmalloc/zsmalloc_int.h b/drivers/staging/zsmalloc/zsmalloc_int.h
-> index 92eefc6..8f9ce0c 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc_int.h
-> +++ b/drivers/staging/zsmalloc/zsmalloc_int.h
-> @@ -124,7 +124,7 @@ struct size_class {
->  	unsigned int index;
->  
->  	/* Number of PAGE_SIZE sized pages to combine to form a 'zspage' */
-> -	int zspage_order;
-> +	int zspage_pages;
->  
->  	spinlock_t lock;
->  
+Oleg.
 
-
-Thanks,
-Nitin
