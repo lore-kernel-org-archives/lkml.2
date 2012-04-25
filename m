@@ -1,41 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab2DYJK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 05:10:59 -0400
-Received: from mail-qa0-f56.google.com ([209.85.216.56]:44832 "EHLO
-	mail-qa0-f56.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab2DYJK6 convert rfc822-to-8bit (ORCPT
+	id S1757002Ab2DYJ3I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 05:29:08 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48841 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756113Ab2DYJ3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 05:10:58 -0400
-X-Greylist: delayed 2154 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Apr 2012 05:10:58 EDT
-Path: glegroupsg2000goo.googlegroups.com!not-for-mail
-Newsgroups: fa.linux.kernel
-Date: Wed, 25 Apr 2012 01:35:03 -0700 (PDT)
-In-Reply-To: <fa.Vmg5vDod2/oKvwyy9BcalhoT+Lo@ifi.uio.no>
-Complaints-To: groups-abuse@google.com
-Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=80.79.80.249; posting-account=QHeL1goAAACOxKFIX_qcWBFQ-yrvkYkM
-NNTP-Posting-Host: 80.79.80.249
-References: <fa.CZQqvHf3CBfYWzhSDPNOWxTTD9w@ifi.uio.no> <fa.Vmg5vDod2/oKvwyy9BcalhoT+Lo@ifi.uio.no>
-User-Agent: G2/1.0
-X-Google-Web-Client: true
-X-Google-IP: 80.79.80.249
+	Wed, 25 Apr 2012 05:29:04 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-input@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCHv4 2/2] arm/dts: omap4-sdp: Add keypad data
+Date: Wed, 25 Apr 2012 14:56:44 +0530
+Message-ID: <1335346004-18108-2-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1335346004-18108-1-git-send-email-sourav.poddar@ti.com>
+References: <1335346004-18108-1-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-Message-ID: <14969994.2790.1335342903511.JavaMail.geo-discussion-forums@vbbfr18>
-Subject: Re: Unhandled IRQs on AMD E-450
-From: andymatei@gmail.com
-To: fa.linux.kernel@googlegroups.com
-Cc: Clemens Ladisch <clemens@ladisch.de>, "Huang, Shane" <Shane.Huang@amd.com>,
-        Borislav Petkov <bp@amd64.org>, "Nguyen, Dong" <Dong.Nguyen@amd.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+Add keypad data node in omap4 device tree file.
+Also fill the device tree binding parameters
+with the required value in "omap4-sdp" dts file.
 
-I am not that good in Linux as you guys are but here it goes. I have bought the Asus E45M1-M PRO to use in my home storage. I had 2 PCI Intel NICs that i wanted to use for iSCSI traffic that goes to 2 ESXi servers. 4 Seagate@2TB and one WD for  OS. I use Openfiler as a storage appliance. Problem appears after 20-30 minutes after starting the PC. I get "Disabling IRQ 16" and "Disabling IRQ 19". SATA disks drop from 130MB/s to 2MB/s speed, web interface does not work anymore. After reboot everything works but goes down again after 30 minutes. Is there a patch or something that resolves this issue yet?
+Tested on omap44330 sdp with 3.4-rc3 kernel.
 
-Thanks,
-Andrei
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Benoit Cousson <b-cousson@ti.com>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+---
+v3->v4:
+Express keymap binding as (linux,keymap) in the format described in 
+Documentation/devicetree/bindings/input/matrix-keymap.txt
+ arch/arm/boot/dts/omap4-sdp.dts |   63 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/omap4.dtsi    |    5 +++
+ 2 files changed, 68 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+index 63c6b2b..0c9b3bf 100644
+--- a/arch/arm/boot/dts/omap4-sdp.dts
++++ b/arch/arm/boot/dts/omap4-sdp.dts
+@@ -17,4 +17,67 @@
+ 		device_type = "memory";
+ 		reg = <0x80000000 0x40000000>; /* 1 GB */
+ 	};
++
++	keypad@4ae1c000 {
++		keypad,num-rows = <8>;
++		keypad,num-columns = <8>;
++		linux,keymap = < 0x00000012
++			0x00010013
++			0x00020014
++			0x00030066
++			0x0004003f
++			0x00060017
++			0x0007002a
++			0x01000020
++			0x01010021
++			0x01020022
++			0x01030054
++			0x01040040
++			0x01060025
++			0x0107001c
++			0x0200002d
++			0x0201002e
++			0x0202002f
++			0x0203006b
++			0x02040041
++			0x02060034
++			0x0207003a
++			0x0300002c
++			0x0301004e
++			0x03020030
++			0x0303003b
++			0x03040042
++			0x03060018
++			0x03070039
++			0x04000011
++			0x04010015
++			0x04020016
++			0x0403003c
++			0x04040073
++			0x04060026
++			0x04070069
++			0x0500001f
++			0x05010023
++			0x05020024
++			0x0503003d
++			0x05040043
++			0x05050072
++			0x05060032
++			0x0507006a
++			0x06000010
++			0x0601001e
++			0x06020031
++			0x0603005c
++			0x0604000e
++			0x06060019
++			0x06070067
++			0x07000094
++			0x07010095
++			0x070200ca
++			0x070300cb
++			0x0704003e
++			0x07060160
++			0x0707006c >;
++		linux,input-no-autorepeat;
++	};
+ };
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 3d35559..e0f678a 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -156,4 +156,9 @@
+ 			ti,hwmods = "i2c4";
+ 		};
+ 	};
++
++	keypad@4ae1c000 {
++		compatible = "ti,omap4-keypad";
++		ti,hwmods = "kbd";
++	};
+ };
+-- 
+1.7.1
+
