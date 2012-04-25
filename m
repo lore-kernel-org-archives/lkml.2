@@ -1,109 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758689Ab2DYBfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 21:35:43 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:17641 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757026Ab2DYBfl (ORCPT
+	id S1758686Ab2DYBky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 21:40:54 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54265 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757303Ab2DYBkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 21:35:41 -0400
-Date: Tue, 24 Apr 2012 21:35:37 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Martin Peres <martin.peres@labri.fr>, Ben Skeggs <bskeggs@redhat.com>,
-        dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.4-rc4
-Message-ID: <20120425013537.GA11959@elliptictech.com>
-References: <CA+55aFzQD4UyPVDQesrWq7JkM=BoQevdJpQt1YyaG10MtfM-Pw@mail.gmail.com>
- <20120422040715.GA30689@elliptictech.com>
- <CA+55aFwGrb_sOjHFWe6tYwf8mmNsFbqKAhz=bq2ofiU+F+wVvA@mail.gmail.com>
- <20120422164023.GA32342@elliptictech.com>
- <20120423000554.GA893@elliptictech.com>
- <20120423024558.GD13840@phenom.dumpdata.com>
- <20120424010345.GA30674@elliptictech.com>
+	Tue, 24 Apr 2012 21:40:53 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F9755B3.7010606@jp.fujitsu.com>
+Date: Wed, 25 Apr 2012 10:38:59 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120424010345.GA30674@elliptictech.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Glauber Costa <glommer@parallels.com>
+CC: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 11/23] slub: consider a memcg parameter in kmem_create_cache
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1334959051-18203-12-git-send-email-glommer@parallels.com>
+In-Reply-To: <1334959051-18203-12-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-23 21:03 -0400, Nick Bowler wrote:
-> On 2012-04-22 22:45 -0400, Konrad Rzeszutek Wilk wrote:
-> > On Sun, Apr 22, 2012 at 08:05:54PM -0400, Nick Bowler wrote:
-> > > Following up on the above, the commit which introduces the panics during
-> > > boot is this one:
-> > >
-> > > commit 8e7e70522d760c4ccd4cd370ebfa0ba69e006c6e
-> > > Author: Jerome Glisse <jglisse@redhat.com>
-> > > Date:   Wed Nov 9 17:15:26 2011 -0500
-> > > 
-> > >     drm/ttm: isolate dma data from ttm_tt V4
-[...]
-> > dea7e0a ttm: fix agp since ttm tt rework
-> > 
-> > fixed that.
+(2012/04/21 6:57), Glauber Costa wrote:
+
+> Allow a memcg parameter to be passed during cache creation.
+> The slub allocator will only merge caches that belong to
+> the same memcg.
 > 
-> Yes, I just tested this commit and the one immediately before it.  The
-> one before crashes in the usual way, and dea7e0a boots (with the VGA
-> output black as in the original report).  So this fixed the crash.
+> Default function is created as a wrapper, passing NULL
+> to the memcg version. We only merge caches that belong
+> to the same memcg.
+> 
+>>From the memcontrol.c side, 3 helper functions are created:
+> 
+>  1) memcg_css_id: because slub needs a unique cache name
+>     for sysfs. Since this is visible, but not the canonical
+>     location for slab data, the cache name is not used, the
+>     css_id should suffice.
+> 
+>  2) mem_cgroup_register_cache: is responsible for assigning
+>     a unique index to each cache, and other general purpose
+>     setup. The index is only assigned for the root caches. All
+>     others are assigned index == -1.
+> 
+>  3) mem_cgroup_release_cache: can be called from the root cache
+>     destruction, and will release the index for other caches.
+> 
+> This index mechanism was developed by Suleiman Souhlal.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
+> ---
+>  include/linux/memcontrol.h |   14 ++++++++++++++
+>  include/linux/slab.h       |    6 ++++++
+>  mm/memcontrol.c            |   29 +++++++++++++++++++++++++++++
+>  mm/slub.c                  |   31 +++++++++++++++++++++++++++----
+>  4 files changed, 76 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index f94efd2..99e14b9 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -26,6 +26,7 @@ struct mem_cgroup;
+>  struct page_cgroup;
+>  struct page;
+>  struct mm_struct;
+> +struct kmem_cache;
+>  
+>  /* Stats that can be updated by kernel. */
+>  enum mem_cgroup_page_stat_item {
+> @@ -440,7 +441,20 @@ struct sock;
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>  void sock_update_memcg(struct sock *sk);
+>  void sock_release_memcg(struct sock *sk);
+> +int memcg_css_id(struct mem_cgroup *memcg);
+> +void mem_cgroup_register_cache(struct mem_cgroup *memcg,
+> +				      struct kmem_cache *s);
+> +void mem_cgroup_release_cache(struct kmem_cache *cachep);
+>  #else
+> +static inline void mem_cgroup_register_cache(struct mem_cgroup *memcg,
+> +					     struct kmem_cache *s)
+> +{
+> +}
+> +
+> +static inline void mem_cgroup_release_cache(struct kmem_cache *cachep)
+> +{
+> +}
+> +
+>  static inline void sock_update_memcg(struct sock *sk)
+>  {
+>  }
+> diff --git a/include/linux/slab.h b/include/linux/slab.h
+> index a5127e1..c7a7e05 100644
+> --- a/include/linux/slab.h
+> +++ b/include/linux/slab.h
+> @@ -321,6 +321,12 @@ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
+>  	__kmalloc(size, flags)
+>  #endif /* DEBUG_SLAB */
+>  
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +#define MAX_KMEM_CACHE_TYPES 400
+> +#else
+> +#define MAX_KMEM_CACHE_TYPES 0
+> +#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+> +
 
-OK, here's what I did:
 
- - Since dea7e0a is the first commit that both (a) boots and (b) has
-   broken VGA, I checked it out on a new branch:
+why 400 ?
 
-     git checkout -b crazy dea7e0a
 
- - Next, I reverted *all* (well, I missed one by accident) the remaining
-   nouveau-specific commits between 3230cfc34 ("drm/nouveau: enable the
-   ttm dma pool when swiotlb is active V3") (i.e., the last commit that
-   (a) boots and (b) has non-broken VGA) and dea7e0a:
+>  #ifdef CONFIG_NUMA
+>  /*
+>   * kmalloc_node_track_caller is a special version of kmalloc_node that
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 36f1e6b..0015ed0 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -323,6 +323,11 @@ struct mem_cgroup {
+>  #endif
+>  };
+>  
+> +int memcg_css_id(struct mem_cgroup *memcg)
+> +{
+> +	return css_id(&memcg->css);
+> +}
+> +
+>  /* Stuffs for move charges at task migration. */
+>  /*
+>   * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
+> @@ -461,6 +466,30 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
+>  }
+>  EXPORT_SYMBOL(tcp_proto_cgroup);
+>  #endif /* CONFIG_INET */
+> +
+> +/* Bitmap used for allocating the cache id numbers. */
+> +static DECLARE_BITMAP(cache_types, MAX_KMEM_CACHE_TYPES);
+> +
+> +void mem_cgroup_register_cache(struct mem_cgroup *memcg,
+> +			       struct kmem_cache *cachep)
+> +{
+> +	int id = -1;
+> +
+> +	cachep->memcg_params.memcg = memcg;
+> +
+> +	if (!memcg) {
+> +		id = find_first_zero_bit(cache_types, MAX_KMEM_CACHE_TYPES);
+> +		BUG_ON(id < 0 || id >= MAX_KMEM_CACHE_TYPES);
+> +		__set_bit(id, cache_types);
 
-     git revert --no-edit 0c101461e267..f7b24c42da1a
 
- - Amazingly, the resulting kernel booted and had working VGA, so I did
-   a "backwards" bisect on this branch of reverts.  In a strange twist
-   of fate, this actually managed to produce bootable kernels the entire
-   time.  The bisection pinpointed the following commit as the culprit:
+No lock here ? you need find_first_zero_bit_and_set_atomic() or some.
+Rather than that, I think you can use lib/idr.c::ida_simple_get().
 
-commit a0b25635515ef5049f93b032a1e37f18b16e0f6f
-Author: Ben Skeggs <bskeggs@redhat.com>
-Date:   Mon Nov 21 16:41:48 2011 +1000
+> +	} else
+> +		INIT_LIST_HEAD(&cachep->memcg_params.destroyed_list);
+> +	cachep->memcg_params.id = id;
+> +}
+> +
+> +void mem_cgroup_release_cache(struct kmem_cache *cachep)
+> +{
+> +	__clear_bit(cachep->memcg_params.id, cache_types);
+> +}
+>  #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+>  
+>  static void drain_all_stock_async(struct mem_cgroup *memcg);
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 2652e7c..86e40cc 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/prefetch.h>
+>  
+>  #include <trace/events/kmem.h>
+> +#include <linux/memcontrol.h>
+>  
+>  /*
+>   * Lock order:
+> @@ -3880,7 +3881,7 @@ static int slab_unmergeable(struct kmem_cache *s)
+>  	return 0;
+>  }
+>  
+> -static struct kmem_cache *find_mergeable(size_t size,
+> +static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+>  		size_t align, unsigned long flags, const char *name,
+>  		void (*ctor)(void *))
+>  {
+> @@ -3916,21 +3917,29 @@ static struct kmem_cache *find_mergeable(size_t size,
+>  		if (s->size - size >= sizeof(void *))
+>  			continue;
+>  
+> +		if (memcg && s->memcg_params.memcg != memcg)
+> +			continue;
+> +
+>  		return s;
+>  	}
+>  	return NULL;
+>  }
+>  
+> -struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+> -		size_t align, unsigned long flags, void (*ctor)(void *))
+> +struct kmem_cache *
+> +kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+> +			size_t align, unsigned long flags, void (*ctor)(void *))
+>  {
+>  	struct kmem_cache *s;
+>  
+>  	if (WARN_ON(!name))
+>  		return NULL;
+>  
+> +#ifndef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +	WARN_ON(memcg != NULL);
+> +#endif
 
-    drm/nouveau/gpio: reimplement as nouveau_gpio.c, fixing a number of issues
-    
-    - moves out of nouveau_bios.c and demagics the logical state definitions
-    - simplifies chipset-specific driver interface
-    - makes most of gpio irq handling common, will use for nv4x hpd later
-    - api extended to allow both direct gpio access, and access using the
-      logical function states
-    - api extended to allow for future use of gpio extender chips
-    - pre-nv50 was handled very badly, the main issue being that all GPIOs
-      were being treated as output-only.
-    - fixes nvd0 so gpio changes actually stick, magic reg needs bashing
-    
-    Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 
-Unfortunately, there are a number of seemingly non-trivial conflicts
-trying to revert just this one gigantic commit.  So to avoid any
-conflicts, I reverted all of the following (in this order) on top of
-3.3.3 (there are even more conflicts trying to revert on top of Linus'
-master):
+I'm sorry what's is this warning for ?
 
-  7df898b1a70b ("drm/nouveau/disp: check that panel power gpio is enabled at init time")
-  52c4d767437b ("drm/nouveau: move hpd enable/disable to common code")
-  47e5d5cb83d4 ("drm/nv40/disp: implement support for hotplug irq")
-  a0b25635515e ("drm/nouveau/gpio: reimplement as nouveau_gpio.c, fixing a number of issues")
 
-and my VGA is working again!
+> @@ -5265,6 +5283,11 @@ static char *create_unique_id(struct kmem_cache *s)
+>  	if (p != name + 1)
+>  		*p++ = '-';
+>  	p += sprintf(p, "%07d", s->size);
+> +
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +	if (s->memcg_params.memcg)
+> +		p += sprintf(p, "-%08d", memcg_css_id(s->memcg_params.memcg));
+> +#endif
+>  	BUG_ON(p > name + ID_STR_LENGTH - 1);
+>  	return name;
+>  }
 
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+
+So, you use 'id' in user interface. Should we provide 'id' as memory.id file ?
+
+Thanks,
+-Kame
 
