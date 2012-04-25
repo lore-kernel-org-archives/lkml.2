@@ -1,93 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759034Ab2DYLo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 07:44:56 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43063 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758589Ab2DYLoz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 07:44:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120425073311.20124.58619.stgit@notabene.brown>
-References: <20120425072931.20124.56635.stgit@notabene.brown>
-	<20120425073311.20124.58619.stgit@notabene.brown>
-Date: Wed, 25 Apr 2012 14:44:54 +0300
-Message-ID: <CANOLnOMYqnjopeyEcP3MfuGLinTzmdz9Shoc+cwYGQaDiAiZ-g@mail.gmail.com>
-Subject: Re: [PATCH 6/6] twl4030-usb: Don't report EVENT_ID when there is VBUS.
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759106Ab2DYLp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 07:45:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759068Ab2DYLpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 07:45:24 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 1/2] perf, tool: Handle different endians properly during symbol load
+Date: Wed, 25 Apr 2012 13:45:00 +0200
+Message-Id: <1335354301-5908-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1335354301-5908-1-git-send-email-jolsa@redhat.com>
+References: <1335354301-5908-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 10:33 AM, NeilBrown <neilb@suse.de> wrote:
-> Some USB chargers tie the ID pin low via various resistors.
-> So they can cause VBUS to be high and ID to be low.
->
-> The 'A' end of an OTG cable never receives VBUS, it only ever generates it.
->
-> So if we see VBUS and are not generating it, this must be a charger,
-> not the A end of an OTG cable, so in that case, ignore the fact that
-> ID is low.
->
-> This assumes that VBUS_PRES isn't asserted when the charge pump is
-> providing VBUS.  The document isn't clear on this and some experiments
-> suggest that it isn't.
+Currently we dont care about the file object's endianness. It's possible
+we read buildid file object from different architecture than we are
+currentlly running on. So we need to care about properly reading such
+object's data - handle different endianness properly.
 
-Like already mentioned, this is not what I see on pandora. I don't
-know, maybe it's due to some errata or different versions of TWL chip
-act different, or perhaps even board design issue, but that's how it
-is here.
+Adding:
+	needs_swap DSO field
+	dso__swap_init function to initialize DSO's needs_swap
+	DSO__READ to read the data with proper swaps
 
-If you look at git history, this has been changed back and forth
-several times, like in commit def6f8b9. Perhaps some platform_data
-could be added to handle this, I don't know..
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/symbol.c |   33 ++++++++++++++++++++++++++++++++-
+ tools/perf/util/symbol.h |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 62 insertions(+), 1 deletions(-)
 
->
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> ---
->
->  drivers/usb/otg/twl4030-usb.c |   19 ++++++++++---------
->  1 file changed, 10 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
-> index bd8fe9b..990400f 100644
-> --- a/drivers/usb/otg/twl4030-usb.c
-> +++ b/drivers/usb/otg/twl4030-usb.c
-> @@ -268,15 +268,16 @@ static enum usb_phy_events twl4030_usb_linkstat(struct twl4030_usb *twl)
->                        STS_HW_CONDITIONS);
->        if (status < 0)
->                dev_err(twl->dev, "USB link status err %d\n", status);
-> -       else if (status & (BIT(7) | BIT(2))) {
-> -               if (status & (BIT(7)))
-> -                        twl->vbus_supplied = true;
-> -
-> -               if (status & BIT(2))
-> -                       linkstat = USB_EVENT_ID;
-> -               else
-> -                       linkstat = USB_EVENT_VBUS;
-> -       } else
-> +       else if (status & (BIT(7))) {
-> +               /* We have VBUS so ignore ID_PRES - it is only meaningful
-> +                * as an indicator of an A plug when there is no
-> +                * VBUS.
-> +                */
-> +               twl->vbus_supplied = true;
-> +               linkstat = USB_EVENT_VBUS;
-> +       } else if (status & BIT(2))
-> +               linkstat = USB_EVENT_ID;
-> +       else
->                linkstat = USB_EVENT_NONE;
->
->        dev_dbg(twl->dev, "HW_CONDITIONS 0x%02x/%d; link %d\n",
->
->
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 5988861..bc1d6ac 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -323,6 +323,7 @@ struct dso *dso__new(const char *name)
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+ 		dso->kernel = DSO_TYPE_USER;
++		dso->needs_swap = DSO_SWAP__UNSET;
+ 		INIT_LIST_HEAD(&dso->node);
+ 	}
+ 
+@@ -1156,6 +1157,33 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+ 	return -1;
+ }
+ 
++static int dso__swap_init(struct dso *dso, unsigned char eidata)
++{
++	static unsigned int const endian = 1;
++
++	dso->needs_swap = DSO_SWAP__NO;
++
++	switch (eidata) {
++	case ELFDATA2LSB:
++		/* We are big endian, DSO is little endian. */
++		if (*(unsigned char const *)&endian != 1)
++			dso->needs_swap = DSO_SWAP__YES;
++		break;
++
++	case ELFDATA2MSB:
++		/* We are little endian, DSO is big endian. */
++		if (*(unsigned char const *)&endian != 0)
++			dso->needs_swap = DSO_SWAP__YES;
++		break;
++
++	default:
++		pr_err("unrecognized DSO data encoding %d\n", eidata);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			 int fd, symbol_filter_t filter, int kmodule,
+ 			 int want_symtab)
+@@ -1187,6 +1215,9 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 		goto out_elf_end;
+ 	}
+ 
++	if (dso__swap_init(dso, ehdr.e_ident[EI_DATA]))
++		goto out_elf_end;
++
+ 	/* Always reject images with a mismatched build-id: */
+ 	if (dso->has_build_id) {
+ 		u8 build_id[BUILD_ID_SIZE];
+@@ -1272,7 +1303,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 		if (opdsec && sym.st_shndx == opdidx) {
+ 			u32 offset = sym.st_value - opdshdr.sh_addr;
+ 			u64 *opd = opddata->d_buf + offset;
+-			sym.st_value = *opd;
++			sym.st_value = DSO__READ(dso, u64, *opd);
+ 			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
+ 		}
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index ac49ef2..f693cb3 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -9,6 +9,7 @@
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+ #include <stdio.h>
++#include <byteswap.h>
+ 
+ #ifdef HAVE_CPLUS_DEMANGLE
+ extern char *cplus_demangle(const char *, int);
+@@ -155,11 +156,18 @@ enum dso_kernel_type {
+ 	DSO_TYPE_GUEST_KERNEL
+ };
+ 
++enum dso_swap_type {
++	DSO_SWAP__UNSET,
++	DSO_SWAP__NO,
++	DSO_SWAP__YES,
++};
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
+ 	enum dso_kernel_type	kernel;
++	enum dso_swap_type	needs_swap;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 hit:1;
+@@ -177,6 +185,28 @@ struct dso {
+ 	char		 name[0];
+ };
+ 
++#define DSO__READ(dso, type, val)			\
++({							\
++	type ____r = val;				\
++	BUG_ON(dso->needs_swap == DSO_SWAP__UNSET);	\
++	if (dso->needs_swap == DSO_SWAP__YES) {		\
++		switch (sizeof(____r)) {		\
++		case 2:					\
++			____r = bswap_16(val);		\
++			break;				\
++		case 4:					\
++			____r = bswap_32(val);		\
++			break;				\
++		case 8:					\
++			____r = bswap_64(val);		\
++			break;				\
++		default:				\
++			BUG_ON(1);			\
++		}					\
++	}						\
++	____r;						\
++})
++
+ struct dso *dso__new(const char *name);
+ void dso__delete(struct dso *dso);
+ 
 -- 
-Gražvydas
+1.7.7.6
+
