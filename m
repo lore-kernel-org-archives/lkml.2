@@ -1,81 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932369Ab2DYF0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 01:26:00 -0400
-Received: from londo.lunn.ch ([80.238.139.98]:51185 "EHLO londo.lunn.ch"
+	id S932400Ab2DYF0O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 01:26:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52699 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754065Ab2DYFZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 01:25:58 -0400
-Date: Wed, 25 Apr 2012 07:28:02 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: viresh kumar <viresh.linux@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Lunn <andrew@lunn.ch>, Viresh Kumar <viresh.kumar@st.com>,
-        akpm@linux-foundation.org, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        mturquette@linaro.org, sshtylyov@mvista.com, jgarzik@redhat.com,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH V3 07/12] ata/sata_mv: Remove conditional compilation of
- clk code
-Message-ID: <20120425052802.GF13489@lunn.ch>
-Mail-Followup-To: viresh kumar <viresh.linux@gmail.com>,
-	Russell King - ARM Linux <linux@arm.linux.org.uk>,
-	Andrew Lunn <andrew@lunn.ch>, Viresh Kumar <viresh.kumar@st.com>,
-	akpm@linux-foundation.org, spear-devel@list.st.com,
-	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	mturquette@linaro.org, sshtylyov@mvista.com, jgarzik@redhat.com,
-	linux-ide@vger.kernel.org
-References: <cover.1335266056.git.viresh.kumar@st.com>
- <abbcf661dc58948794839eb0fba1d5a0950ec848.1335266056.git.viresh.kumar@st.com>
- <20120424120019.GE24089@lunn.ch>
- <CAOh2x==YaPxYxigyE=n2weoKHhu4ktGRHHGdzgs2+d1_Lo-D4Q@mail.gmail.com>
- <20120424201802.GE3628@n2100.arm.linux.org.uk>
- <CAOh2x==Se4ipK_jexOE_=82=S4p41W9Ek0Om6DrUwctSz-Wcyw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOh2x==Se4ipK_jexOE_=82=S4p41W9Ek0Om6DrUwctSz-Wcyw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932373Ab2DYF0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 01:26:10 -0400
+Date: Wed, 25 Apr 2012 15:26:03 +1000
+From: NeilBrown <neilb@suse.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: twl4030 power button: don't lose presses on
+ resume
+Message-ID: <20120425152603.3d24547f@notabene.brown>
+In-Reply-To: <20120425050919.GB27843@core.coreip.homeip.net>
+References: <20120425122139.512c6890@notabene.brown>
+	<20120425050919.GB27843@core.coreip.homeip.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/klFw2H1hDUnKfS+VV9SEI+9"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This is what i was thinking too and thats why floated this version of patch.
-> But as Andrew said, clk API support is enabled for them, but still they
-> don't have a clk for sata. To get this working, there are two solutions:
-> - Create dummy clk for sata for that platform, so clk_get doesn't fail.
-> - Check for error before every call to clk APIs after clk_get().
-> 
-> Andrew favored the second one. Which means, even on platforms
-> with clk API defined and clk enable required, if there are some issues
-> with lookup table, and clk_get() fails, system may hang when registers
-> are accessed. For this i favored first one.
+--Sig_/klFw2H1hDUnKfS+VV9SEI+9
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I'm not too sure how you are going to achieve 1)
+On Tue, 24 Apr 2012 22:09:19 -0700 Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
 
-config SATA_MV
-        tristate "Marvell SATA support"
-        help
-          This option enables support for the Marvell Serial ATA family.
-          Currently supports 88SX[56]0[48][01] PCI(-X) chips,
-          as well as the newer [67]042 PCI-X/PCIe and SOC devices.
+> Hi Neil,
+>=20
+> On Wed, Apr 25, 2012 at 12:21:39PM +1000, NeilBrown wrote:
+> >=20
+> > If we press and release the power button before the press interrupt is
+> > handled - as can happen on resume - we lose the press event so the
+> > release event is ignored and we don't know what happened to cause the
+> > wakeup.
+>=20
+> What kind of latency do you observe?
 
-So this driver can be used with anything which has a PCI(-X) or PCIe
-bus, or Orion SoC and a few PowerPC SoCs.
+When I have debugging enabled, hundreds of milliseconds.
 
-The SoCs are not too bad, we know which ones they are and we can add
-dummy entries to their device tree. However, how do you want to handle
-the PCI devices? Create the dummy entry somewhere in the middle of the
-PCI core?
+When I don't have debugging enabled ... it doesn't tell me, but I'm fairly
+sure it is several tens of milliseconds and the button press can be quicker
+than that.
 
-Thought not.
+If it will help I can try to instrument the driver and get some timings.
 
-A comment to:
-> - Check for error before every call to clk APIs after clk_get().
+>=20
+> >=20
+> > So make sure that each interrupt handled does generate an event.
+> > Because twl4030 queues interrupt events we will see two interrupts
+> > for a press-release even if we handle the first one later.  This means
+> > that such a sequence will be reported as two button presses.  This
+> > is unfortunate but is better than no button presses.
+> > Possibly we could set the PENDDIS_MASK to disable queuing of
+> > interrupts, but that might adversely affect other interrupt sources.
+> >
+>=20
+> It looks like we'd have to modify every driver to ensure consistent
+> behavior as we do not have any guarantees on how long resume takes.
+> Maybe this is something that input core needs to implement?
 
-There are only two calls. clk_prepare_enable() in the probe and
-clk_disable_unprepare() in the remove function.
+Well if every driver is buggy....
 
-	Andrew
+I don't see how this could be implemented in the input core.  And even if it
+was, you'd probably need to change each driver to interact with this new
+functionality which would be much the same work as changing them to work wi=
+th
+the current functionality....
+But maybe I have no imagination - if you can suggest a way that the input c=
+ore
+could support this without changing the drivers, I'm happy to try it out.
 
+Thanks,
+NeilBrown
 
+--Sig_/klFw2H1hDUnKfS+VV9SEI+9
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBT5eK6znsnt1WYoG5AQLyWw//Uajlw6vtJCkOI22ElIrr9Rzpl+O9wVMf
+dqTc0VCiRxEyBFUXudziN4GtNs9XdLfBRvWr8NhrSqVJHX+8nsWmzrIUD/wXc8kM
+UmL0EhcRa3hw2J3lU4bOxhgsYh+6iR83OdCc9Jn5jHyGOXULnjc75MmVzXYVNIUd
+b2b3k/CQ4IkqoXvLHG58h7/vwIdRe/qaAKF7hlGBAVmYXk0+x/po+ep9i2UdnC/G
+YtUPVSO4Cvl/8l8XEYksrBTneW8CUNEb58e7ff49R5/Eleiv480WDKi8mhUBxu6A
+5WvdtDcDNrtW6RTXmwZUzmFfkOfbh4I9gkDG2zO7R2LKFxzIcLhw0hF35eiuqyKP
+crqrq1DUnlLPpd3b/sJShDuQQs6FnBB5pJYznj/d51Qft/iijq8idO6mOmyRBp9p
+U83kS8DI5kou9+zXTbs1YrsQDEb3GqVCmt9NUxKtl93GEGgIiTv5TITieo0xc2rs
+KSoqSE0zN738OWcFwhodd6KOIXqI/0lqBuqkYs41ggecYFSwB+obC5s95dbp5j0v
+AovuZmWZsPQt/NWaBWgskMNdzAyoSvkLGAox+K34vrb70hZPTzcMLFMYa7yyUA05
+tnLHsG7LZIuLU6kG6b20CTmhpe3rueOKxjeScVulWJeS0BEMzxrxc5BVJuNZzZZ8
+0hGdr+Jysw0=
+=dE7s
+-----END PGP SIGNATURE-----
+
+--Sig_/klFw2H1hDUnKfS+VV9SEI+9--
