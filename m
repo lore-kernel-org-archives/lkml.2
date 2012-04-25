@@ -1,86 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab2DYNBn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 09:01:43 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13365 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab2DYNBm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 09:01:42 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 25 Apr 2012 06:01:34 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "balbi@ti.com" <balbi@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Date: Wed, 25 Apr 2012 15:01:28 +0200
-Subject: Re: [PATCHv3 1/4] ARM: tegra: Add AHB driver
-Thread-Topic: [PATCHv3 1/4] ARM: tegra: Add AHB driver
-Thread-Index: Ac0i44elZw5fdqENQzCoNlKj29XYIQ==
-Message-ID: <20120425.160128.1314575000242024123.hdoyu@nvidia.com>
-References: <1335352072-4001-1-git-send-email-hdoyu@nvidia.com><20120425112519.GB3564@arwen.pp.htv.fi>
-In-Reply-To: <20120425112519.GB3564@arwen.pp.htv.fi>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1757479Ab2DYNCL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 09:02:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10494 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752754Ab2DYNCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 09:02:08 -0400
+Date: Wed, 25 Apr 2012 15:01:42 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, ming.m.lin@intel.com
+Subject: Re: [PATCH 4/6] perf tool: Parse general events from sysfs
+Message-ID: <20120425130142.GB3378@m.brq.redhat.com>
+References: <1333244495-1020-1-git-send-email-zheng.z.yan@intel.com>
+ <1333244495-1020-5-git-send-email-zheng.z.yan@intel.com>
+ <20120424090427.GA2125@m.brq.redhat.com>
+ <4F979002.9090906@intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F979002.9090906@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCHv3 1/4] ARM: tegra: Add AHB driver
-Date: Wed, 25 Apr 2012 13:25:20 +0200
-Message-ID: <20120425112519.GB3564@arwen.pp.htv.fi>
+On Wed, Apr 25, 2012 at 01:47:46PM +0800, Yan, Zheng wrote:
+> On 04/24/2012 05:04 PM, Jiri Olsa wrote:
+> > hi,
+> > so the point is to have an alias support for pmu event definition.
+> > Seems like good idea to improve usability/readability, I have some
+> > general comments though..
+> > 
+> Thank you very much for reviewing this.
+> > - you suggest to have sysfs files having contents like:
+> >     event=0x2c,umask=0xf
+> >   when we were adding the formats stuff into sysfs, we had to cut off
+> >   the sysfs file contents to bare minimum to obey the sysfs rule:
+> >     single file = single value
+> >   so you might have some troubles pushing that through.. not sure ;)
+> > 
+> > - I haven't read the whole patchset, but seems like the "events"
+> >   directory is now specific to a 'Intel uncore pmu'. If thats the
+> >   case I think there should be generic way for each pmu to define
+> >   this stuff.
+> > 
+> > - as for the tools/pmu.c change I'd like to see more consistent
+> >   way of parsing this, than via 'newcfg' variable.. but none
+> >   is comming to me so far ;) I'll think about that..
+> > 
+> For this point, how about making the parser re-entrantable like the patch
+> attached below does.
 
-> * PGP Signed by an unknown key
+yep, looks cleaner ;) some comments below
+
 > 
-> On Wed, Apr 25, 2012 at 02:07:36PM +0300, Hiroshi DOYU wrote:
-> > The AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
-> > High-performance Bus (AHB) architecture.
-> >
-> > The AHB Arbiter controls AHB bus master arbitration. This effectively
-> > forms a second level of arbitration for access to the memory
-> > controller through the AHB Slave Memory device. The AHB pre-fetch
-> > logic can be configured to enhance performance for devices doing
-> > sequential access. Each AHB master is assigned to either the high or
-> > low priority bin. Both Tegra20/30 have this AHB bus.
-> >
-> > Some of configuration param could be passed from DT too.
-> >
-> > Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
-> > Cc: Felipe Balbi <balbi@ti.com>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > ---
-> > v4:
-> > Fixed the comments from Felipe/Russell.
-> > This is now located under drivers/platform/arm.
-> > v3:
-> > Use platform_device to get info from dt dynamically.(Felipe/Arnd)
-> >
-> > Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+> Regards
+> Yan, Zheng
 > 
-> Just one thing, you seem to have missed Russell's comment about this
-> driver being generic. You still add a TEGRA_AHB driver,
+> ---
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index e98e14c..a8b47d2 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -728,11 +728,13 @@ $(OUTPUT)perf.o perf.spec \
+>  # These two need to be here so that when O= is not used they take precedence
 
-For generalization, there seems to be many parts in this driver
-depending on SoC implementation, and I'm not so sure how much S/W
-compatibility can be kept from H/W spec. Is there any other similar
-SoC AHB driver in kernel?
+SNIP
 
-> also, you don't need <mach/iomap.h>. Apart from those, you can add:
+> +static int __parse_events(const char *str, int *idx, struct list_head *list);
+>  
+>  #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
+>  #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
+> @@ -651,8 +653,11 @@ int parse_events_add_numeric(struct list_head *list, int *idx,
+>  int parse_events_add_pmu(struct list_head *list, int *idx,
+>  			 char *name, struct list_head *head_config)
+>  {
+> +	LIST_HEAD(event);
 
-Ok, I'll fix and add your Reviewed-by:. Thank you for your review.
+Are there all available events under ...event_source/devices/%s/events or
+just some of them ?
+
+In case of the latter, maybe the 'aliases/alias' would be better name for
+that.. ending up with rename in this source ;)
+
+
+>  	struct perf_event_attr attr;
+>  	struct perf_pmu *pmu;
+> +	char *config;
+> +	int ret;
+>  
+>  	pmu = perf_pmu__find(name);
+>  	if (!pmu)
+> @@ -666,10 +671,21 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+>  	 */
+>  	config_attr(&attr, head_config, 0);
+>  
+> -	if (perf_pmu__config(pmu, &attr, head_config))
+> -		return -EINVAL;
+> +	ret = perf_pmu__config(pmu, &attr, head_config);
+> +	if (!ret)
+> +		return add_event(list, idx, &attr, (char *) "pmu");
+> +
+> +	ret = perf_pmu__alias(pmu, &config, head_config);
+> +	if (ret)
+> +		return ret;
+
+
+I think it's ok for pmu object to contain list of aliases loaded
+from sysfs (if that change will go throught ;) ), but I'd rather
+see the pmu alias interface to be more generic like:
+
+        config = perf_pmu__alias(pmu, alias);
+
+The function would just return the event config string if the record
+is found for the alias.
+
+...and the parse_events_add_pmu function would then take care of
+the rest.. the final 'pmu/config' string and have it parsed...
+
+
+thanks,
+jirka
