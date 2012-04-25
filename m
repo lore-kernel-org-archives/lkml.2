@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373Ab2DYOXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 10:23:09 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:4376 "EHLO relay.sw.ru"
+	id S932426Ab2DYOXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 10:23:24 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:25646 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932325Ab2DYOXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 10:23:06 -0400
-Subject: [PATCH 3/6] LockD: service creation function introduced
+	id S932386Ab2DYOXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 10:23:21 -0400
+Subject: [PATCH 5/6] LockD: service start function introduced
 To: bfields@fieldses.org, Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 25 Apr 2012 18:22:54 +0400
-Message-ID: <20120425142254.22909.92489.stgit@localhost6.localdomain6>
+Date: Wed, 25 Apr 2012 18:23:09 +0400
+Message-ID: <20120425142309.22909.39767.stgit@localhost6.localdomain6>
 In-Reply-To: <20120425141934.22909.53047.stgit@localhost6.localdomain6>
 References: <20120425141934.22909.53047.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -22,89 +22,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function creates service if it's not exist, or increase usage counter of
-the existent, and returns pointer to it.
-Usage counter will be droppepd by svc_destroy() later in lockd_up().
+This is just a code move, which from my POW makes code looks better.
+I.e. now on start we have 3 different stages:
+1) Service creation.
+2) Service per-net data allocation.
+3) Service start.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/lockd/svc.c |   38 +++++++++++++++++++++++++++-----------
- 1 files changed, 27 insertions(+), 11 deletions(-)
+ fs/lockd/svc.c |   67 +++++++++++++++++++++++++++++++++++---------------------
+ 1 files changed, 42 insertions(+), 25 deletions(-)
 
 diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index 71c6c31..ad11ea7 100644
+index 53cd69e..b47bf77 100644
 --- a/fs/lockd/svc.c
 +++ b/fs/lockd/svc.c
-@@ -291,21 +291,20 @@ static void lockd_down_net(struct svc_serv *serv, struct net *net)
+@@ -291,6 +291,46 @@ static void lockd_down_net(struct svc_serv *serv, struct net *net)
  	}
  }
  
--/*
-- * Bring up the lockd process if it's not already up.
-- */
--int lockd_up(struct net *net)
-+static struct svc_serv *lockd_create_svc(void)
- {
- 	struct svc_serv *serv;
--	int		error = 0;
- 
--	mutex_lock(&nlmsvc_mutex);
- 	/*
- 	 * Check whether we're already up and running.
- 	 */
- 	if (nlmsvc_rqst) {
--		error = lockd_up_net(nlmsvc_rqst->rq_server, net);
--		goto out;
-+		/*
-+		 * Note: increase service usage, because later in case of error
-+		 * svc_destroy() will be called.
-+		 */
-+		svc_get(nlmsvc_rqst->rq_server);
-+		return nlmsvc_rqst->rq_server;
- 	}
- 
- 	/*
-@@ -316,11 +315,28 @@ int lockd_up(struct net *net)
- 		printk(KERN_WARNING
- 			"lockd_up: no pid, %d users??\n", nlmsvc_users);
- 
--	error = -ENOMEM;
- 	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, NULL);
- 	if (!serv) {
- 		printk(KERN_WARNING "lockd_up: create service failed\n");
--		goto out;
-+		return ERR_PTR(-ENOMEM);
++static int lockd_start_svc(struct svc_serv *serv)
++{
++	int error;
++
++	if (nlmsvc_rqst)
++		return 0;
++
++	/*
++	 * Create the kernel thread and wait for it to start.
++	 */
++	nlmsvc_rqst = svc_prepare_thread(serv, &serv->sv_pools[0], NUMA_NO_NODE);
++	if (IS_ERR(nlmsvc_rqst)) {
++		error = PTR_ERR(nlmsvc_rqst);
++		printk(KERN_WARNING
++			"lockd_up: svc_rqst allocation failed, error=%d\n",
++			error);
++		goto out_rqst;
 +	}
-+	return serv;
++
++	svc_sock_update_bufs(serv);
++	serv->sv_maxconn = nlm_max_connections;
++
++	nlmsvc_task = kthread_run(lockd, nlmsvc_rqst, serv->sv_name);
++	if (IS_ERR(nlmsvc_task)) {
++		error = PTR_ERR(nlmsvc_task);
++		printk(KERN_WARNING
++			"lockd_up: kthread_run failed, error=%d\n", error);
++		goto out_task;
++	}
++	dprintk("lockd_up: service started\n");
++	return 0;
++
++out_task:
++	svc_exit_thread(nlmsvc_rqst);
++	nlmsvc_task = NULL;
++out_rqst:
++	nlmsvc_rqst = NULL;
++	return error;
 +}
 +
-+/*
-+ * Bring up the lockd process if it's not already up.
-+ */
-+int lockd_up(struct net *net)
-+{
-+	struct svc_serv *serv;
-+	int		error = 0;
-+
-+	mutex_lock(&nlmsvc_mutex);
-+
-+	serv = lockd_create_svc();
-+	if (IS_ERR(serv)) {
-+		error = PTR_ERR(serv);
-+		goto err_create;
- 	}
+ static struct svc_serv *lockd_create_svc(void)
+ {
+ 	struct svc_serv *serv;
+@@ -343,32 +383,9 @@ int lockd_up(struct net *net)
+ 	if (error < 0)
+ 		goto err_net;
  
- 	error = lockd_up_net(serv, net);
-@@ -360,9 +376,9 @@ int lockd_up(struct net *net)
- 	 */
- err_net:
- 	svc_destroy(serv);
--out:
- 	if (!error)
- 		nlmsvc_users++;
-+err_create:
- 	mutex_unlock(&nlmsvc_mutex);
- 	return error;
+-	/*
+-	 * Create the kernel thread and wait for it to start.
+-	 */
+-	nlmsvc_rqst = svc_prepare_thread(serv, &serv->sv_pools[0], NUMA_NO_NODE);
+-	if (IS_ERR(nlmsvc_rqst)) {
+-		error = PTR_ERR(nlmsvc_rqst);
+-		nlmsvc_rqst = NULL;
+-		printk(KERN_WARNING
+-			"lockd_up: svc_rqst allocation failed, error=%d\n",
+-			error);
+-		goto err_start;
+-	}
+-
+-	svc_sock_update_bufs(serv);
+-	serv->sv_maxconn = nlm_max_connections;
+-
+-	nlmsvc_task = kthread_run(lockd, nlmsvc_rqst, serv->sv_name);
+-	if (IS_ERR(nlmsvc_task)) {
+-		error = PTR_ERR(nlmsvc_task);
+-		svc_exit_thread(nlmsvc_rqst);
+-		nlmsvc_task = NULL;
+-		nlmsvc_rqst = NULL;
+-		printk(KERN_WARNING
+-			"lockd_up: kthread_run failed, error=%d\n", error);
++	error = lockd_start_svc(serv);
++	if (error < 0)
+ 		goto err_start;
+-	}
  
+ 	nlmsvc_users++;
+ 	/*
 
