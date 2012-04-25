@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758210Ab2DYF2q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 01:28:46 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15126 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755182Ab2DYF2p (ORCPT
+	id S1758272Ab2DYFde (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 01:33:34 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:63891 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab2DYFdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 01:28:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 24 Apr 2012 22:28:44 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>
-Date: Wed, 25 Apr 2012 10:58:38 +0530
-Subject: RE: [PATCH] mfd: tps65090: Return proper error if regmap_init_i2c
- fails
-Thread-Topic: [PATCH] mfd: tps65090: Return proper error if regmap_init_i2c
- fails
-Thread-Index: Ac0igws+cZXxKYnJSRezm+AzWCpDsQAIMHBQ
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DD76B0EFB@BGMAIL02.nvidia.com>
-References: <1335317436.24039.2.camel@phoenix>
-In-Reply-To: <1335317436.24039.2.camel@phoenix>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="utf-8"
+	Wed, 25 Apr 2012 01:33:33 -0400
+X-AuditID: cbfee61a-b7b8eae00000534b-93-4f978caccf6a
+Message-id: <4F978CAC.6060408@samsung.com>
+Date: Wed, 25 Apr 2012 14:33:32 +0900
+From: Minho Ban <mhban@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
+ Thunderbird/11.0.1
+MIME-version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH] tracing: Prevent wasting time evaluating parameters in
+ trace_preempt_on/off
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3P5Sprn004104
 
-Thanks for the patch.
-Acked by: Venu Byravarasu<vbyravarasu@nvidia.com>
+This fixes spending time for evaluating parameters in trace_preempt_on/off when
+the tracer config is off.
 
-> -----Original Message-----
-> From: Axel Lin [mailto:axel.lin@gmail.com]
-> Sent: Wednesday, April 25, 2012 7:01 AM
-> To: linux-kernel@vger.kernel.org
-> Cc: Samuel Ortiz; Venu Byravarasu
-> Subject: [PATCH] mfd: tps65090: Return proper error if regmap_init_i2c fails
-> 
-> Return proper error instead of 0 if regmap_init_i2c fails.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/tps65090.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-> index 47f802b..da821d9 100644
-> --- a/drivers/mfd/tps65090.c
-> +++ b/drivers/mfd/tps65090.c
-> @@ -286,10 +286,10 @@ static int __devinit tps65090_i2c_probe(struct
-> i2c_client *client,
->  	tps65090->rmap = regmap_init_i2c(tps65090->client,
->  		&tps65090_regmap_config);
->  	if (IS_ERR(tps65090->rmap)) {
-> -		dev_err(&client->dev, "regmap_init failed with err: %ld\n",
-> -			PTR_ERR(tps65090->rmap));
-> +		ret = PTR_ERR(tps65090->rmap);
-> +		dev_err(&client->dev, "regmap_init failed with err: %d\n", ret);
->  		goto err_irq_exit;
-> -	};
-> +	}
-> 
->  	ret = mfd_add_devices(tps65090->dev, -1, tps65090s,
->  		ARRAY_SIZE(tps65090s), NULL, 0);
-> --
-> 1.7.5.4
-> 
-> 
+The patch mainly inspired by Steven Rostedt, thanks Steven.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Minho Ban <mhban@samsung.com>
+---
+ include/linux/ftrace.h |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 72a6cab..bc7af66 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -485,8 +485,12 @@ static inline void __ftrace_enabled_restore(int enabled)
+   extern void trace_preempt_on(unsigned long a0, unsigned long a1);
+   extern void trace_preempt_off(unsigned long a0, unsigned long a1);
+ #else
+-  static inline void trace_preempt_on(unsigned long a0, unsigned long a1) { }
+-  static inline void trace_preempt_off(unsigned long a0, unsigned long a1) { }
++/*
++ * Use defines instead of static inlines because some arches will make code out
++ * of the CALLER_ADDR, when we really want these to be a real nop.
++ */
++# define trace_preempt_on(a0, a1) do { } while (0)
++# define trace_preempt_off(a0, a1) do { } while (0)
+ #endif
+ 
+ #ifdef CONFIG_FTRACE_MCOUNT_RECORD
+-- 
+1.7.5.4
+
