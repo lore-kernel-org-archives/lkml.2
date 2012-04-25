@@ -1,143 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab2DYKuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 06:50:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45998 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757654Ab2DYKuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 06:50:08 -0400
-Date: Wed, 25 Apr 2012 20:50:02 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] twl-regulator: Allow CONFIG_TWL4030_ALLOW_UNSUPPORTED
- to be requested.
-Message-ID: <20120425205002.104ff358@notabene.brown>
-In-Reply-To: <20120425101258.GI3195@opensource.wolfsonmicro.com>
-References: <20120425122924.0f08f5dc@notabene.brown>
-	<20120425082417.GE3195@opensource.wolfsonmicro.com>
-	<20120425195956.5b3d9c2a@notabene.brown>
-	<20120425101258.GI3195@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/GKDRxYWIVDp8lJe0Qb6qCN."; protocol="application/pgp-signature"
+	id S1758237Ab2DYKu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 06:50:58 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49019 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757654Ab2DYKu4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 06:50:56 -0400
+Date: Wed, 25 Apr 2012 11:50:24 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Roland Stigge <stigge@antcom.de>
+Cc: dmitry.torokhov@gmail.com, axel.lin@gmail.com, riyer@nvidia.com,
+        michael.hennerich@analog.com, grant.likely@secretlab.ca,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Subject: Re: [PATCH v2 1/2] input: keyboard: Add keys driver for the
+	LPC32xx SoC
+Message-ID: <20120425105024.GU24211@n2100.arm.linux.org.uk>
+References: <1335344386-7809-1-git-send-email-stigge@antcom.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335344386-7809-1-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/GKDRxYWIVDp8lJe0Qb6qCN.
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 25, 2012 at 10:59:45AM +0200, Roland Stigge wrote:
+> +/*
+> + * Key scanner platform configuration structure
+> + */
+> +struct lpc32XX_kscan_cfg {
 
-On Wed, 25 Apr 2012 11:12:59 +0100 Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+Why the upper case names?
 
-> On Wed, Apr 25, 2012 at 07:59:56PM +1000, NeilBrown wrote:
->=20
-> > That make sense - but I cannot find a good place to put the flag.
-> > TWL doesn't have any twl-specific platform data, it just uses
-> > struct regulator_init_data.  I don't suppose it would be acceptable
-> > to tuck an 'allow_unsupported' flag inside 'struct regulation_constrain=
-ts'?
->=20
-> > I'm not sure how else to do it without fairly major surgery.
->=20
-> This is what the driver_data in regulator_init_data is there for - to
-> allow device specific extensions to be added if needed.  I guess it
-> should be possible to use that?
+> +	u32	matrix_sz;	/* Size of matrix in XxY, ie. 3 = 3x3 */
+> +	int	*keymap;	/* Pointer to key map for the scan matrix */
+> +	u32	deb_clks;	/* Debounce clocks (based on 32KHz clock) */
+> +	u32	scan_delay;	/* Scan delay (based on 32KHz clock) */
+> +};
+> +
+> +struct lpc32xx_kscan_drv {
+> +	struct input_dev *input;
+> +	struct lpc32XX_kscan_cfg *kscancfg;
+> +	struct clk *clk;
+> +	void __iomem *kscan_base;
+> +	int irq;
+> +	u8 lastkeystates[8];
+> +};
+> +
+> +static void lpc32xx_mod_states(struct lpc32xx_kscan_drv *kscandat, int off)
+> +{
+> +	u8 st, key;
+> +	int j, scancode, keycode;
+> +
+> +	key = (u8)readl(LPC32XX_KS_DATA(kscandat->kscan_base, off));
 
-Ahh... (digs around) and twl treats that as a 'long' and copies it into
-  info->features
-(which is otherwize set from static data).
+You don't need a narrowing cast for assignment - it happens automatically.
 
-So maybe something like that (completely untested as yet) ??
-(and this seems to have changed between 3.3 and 3.4 which confused me
-a bit.  But if you think this approach is OK I'll come up with something
-that is right for 3.4).
+> +	if (key != kscandat->lastkeystates[off]) {
+> +		for (j = 0; j < kscandat->kscancfg->matrix_sz; j++) {
+> +			st = key & (1 << j);
+> +			if (st != (kscandat->lastkeystates[off] & (1 << j))) {
+> +				/* Key state changed, signal an event */
+> +				scancode = (int)
+> +				    (j * kscandat->kscancfg->matrix_sz) + off;
 
-Thanks,
-NeilBrown
+Why this cast?  j is an int, matrix_sz is a u32 (so unsigned int), and off
+is an int too.
 
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regu=
-lator.c
-index 181a2cf..00fd3d2 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -375,14 +375,12 @@ static int twl6030reg_set_mode(struct regulator_dev *=
-rdev, unsigned mode)
-  * VAUX3 at 3V is incorrectly listed in some TI manuals as unsupported.
-  * TI are revising the twl5030/tps659x0 specs to support that 3.0V setting.
-  */
--#ifdef CONFIG_TWL4030_ALLOW_UNSUPPORTED
--#define UNSUP_MASK	0x0000
--#else
- #define UNSUP_MASK	0x8000
--#endif
-=20
- #define UNSUP(x)	(UNSUP_MASK | (x))
--#define IS_UNSUP(x)	(UNSUP_MASK & (x))
-+#define IS_UNSUP(info, x)			\
-+	((UNSUP_MASK & (x)) &&			\
-+	 !((info)->features & TWL4030_ALLOW_UNSUPPORTED))
- #define LDO_MV(x)	(~UNSUP_MASK & (x))
-=20
-=20
-@@ -456,7 +454,7 @@ static int twl4030ldo_list_voltage(struct regulator_dev=
- *rdev, unsigned index)
- 	struct twlreg_info	*info =3D rdev_get_drvdata(rdev);
- 	int			mV =3D info->table[index];
-=20
--	return IS_UNSUP(mV) ? 0 : (LDO_MV(mV) * 1000);
-+	return IS_UNSUP(info, mV) ? 0 : (LDO_MV(mV) * 1000);
- }
-=20
- static int
-@@ -470,7 +468,7 @@ twl4030ldo_set_voltage(struct regulator_dev *rdev, int =
-min_uV, int max_uV,
- 		int mV =3D info->table[vsel];
- 		int uV;
-=20
--		if (IS_UNSUP(mV))
-+		if (IS_UNSUP(info, mV))
- 			continue;
- 		uV =3D LDO_MV(mV) * 1000;
-=20
-diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index 5b87dc9..5f56743 100644
---- a/include/linux/i2c/twl.h
-+++ b/include/linux/i2c/twl.h
-@@ -172,6 +172,9 @@ TWL_CLASS_IS(4030, TWL4030_CLASS_ID)
- TWL_CLASS_IS(6030, TWL6030_CLASS_ID)
-=20
- #define TWL6025_SUBCLASS	BIT(4)  /* TWL6025 has changed registers */
-+#define TWL4030_ALLOW_UNSUPPORTED BIT(0) /* Some voltages are possible
-+					  * but not officially supported
-+					  */
-=20
- /*
-  * Read and write single 8-bit registers
+What about:
+	changed = key ^ kscandat->lastkeystates[off];
+	if (changed) {
+		for (j = 0; j < kscandat->kscancfg->matrix_sz; j++) {
+			if (changed & (1 << j)) {
+				scancode = j * kscandat->kscancfg->matrix_sz + off;
 
---Sig_/GKDRxYWIVDp8lJe0Qb6qCN.
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+I'd also suggest that you treat collections of bits as unsigned integers
+rather than signed.  You can use a plain 'unsigned' to declare them
+rather than 'unsigned int' if you're worred about too much typing ;)
+It makes sense for key, changed, lastkeystates, and scancode to all
+be unsigned.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+> +				keycode = kscandat->kscancfg->keymap[scancode];
+> +				input_report_key(kscandat->input, keycode,
+> +						 (st != 0));
+> +			}
+> +		}
+> +
+> +		kscandat->lastkeystates[off] = key;
+> +	}
+> +}
+> +
+> +static irqreturn_t lpc32xx_kscan_irq(int irq, void *dev_id)
+> +{
+> +	int i;
+> +	struct lpc32xx_kscan_drv *kscandat = (struct lpc32xx_kscan_drv *)dev_id;
 
-iQIVAwUBT5fW2jnsnt1WYoG5AQLDPBAApPlhnJZ1PcBzhR/wHfBjKMm0euQ6gVbD
-KqYGFEjEW96stQlV5LgCCk1cakeNq2AdNDbHgtzPwqBVVu9YPY2apWUqw7K4xjWO
-U/T4sm7cV9VJPI8qAGENU0lphKRNtox69QD34BszMwbcA6nkz13/vcZnGjV1rPAD
-RpbJZm1iIRSe5HshEjfib4ZaddUw+ELasIsFSNiANM4+TY9ue2WHo4tUcyYkGidx
-XuMfpBCQ95+s2pwKp43SQfpeig8C/QZ9xxqS5G6J72UQm3sD3fCxAg/5D3ku7AX/
-pYLJ6nsu9wXn7DP9m7yPjhClEarYZfBRdOnSwPKD2yDINYiZGOjZA0DU2MvRs/sg
-pWsq8rBgGT1qdeRkL7d2L928GEtOfJ+HY3bw+CJmL0ar2dFRmi3H7Zc6/UI/bBgq
-REcXKtuz7fjQ+o115yE0CcVysRb7WHNcy1UaJyCPeeD89dn7Xi/gAm+DXcPDJEA9
-kAvjSwfDt4BdMwkbFZQ6SVmt6i1ws5Ru7jPKy5GBtjwx+RazdoXdJhBOaKqQFku6
-taW3qQ3FUFSzs+JBZYYnkJrO18TkXCdAh6gvVzq48bWl4TjaP6n4q3NLGolPXfQW
-e0eYGqTGEny5tQxCdTRKqO8P5CgligTaXQIGjvevtk0RUrSr4RWPeYRG+5ghzafB
-2K8ogbIJ8Ck=
-=7BiC
------END PGP SIGNATURE-----
+No need to cast from void *.  The compiler won't complain.
 
---Sig_/GKDRxYWIVDp8lJe0Qb6qCN.--
+> +
+> +	for (i = 0; i < kscandat->kscancfg->matrix_sz; i++)
+> +		lpc32xx_mod_states(kscandat, i);
+> +
+> +	writel(1, LPC32XX_KS_IRQ(kscandat->kscan_base));
+> +
+> +	input_sync(kscandat->input);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +#ifdef CONFIG_OF
+> +static struct lpc32XX_kscan_cfg *lpc32XX_parse_dt(struct device *dev)
+> +{
+> +	struct lpc32XX_kscan_cfg *pdata;
+> +	struct device_node *np = dev->of_node;
+> +	struct device_node *key_np;
+> +	int key_count;
+> +	int i;
+> +
+> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata) {
+> +		dev_err(dev, "could not allocate memory for platform data\n");
+> +		return NULL;
+> +	}
+> +
+> +	of_property_read_u32(np, "nxp,matrix-size", &pdata->matrix_sz);
+> +	of_property_read_u32(np, "nxp,debounce-delay-ms", &pdata->deb_clks);
+> +	of_property_read_u32(np, "nxp,scan-delay-ms", &pdata->scan_delay);
+> +
+> +	if (!pdata->matrix_sz || !pdata->deb_clks || !pdata->scan_delay) {
+> +		dev_err(dev,
+> +			"matrix size, debounce or scan delay not specified\n");
+> +		return NULL;
+> +	}
+> +
+> +	key_count = pdata->matrix_sz * pdata->matrix_sz;
+> +	pdata->keymap = devm_kzalloc(dev, sizeof(int) * key_count, GFP_KERNEL);
+> +	if (!pdata->keymap) {
+> +		dev_err(dev, "could not allocate memory for keymap\n");
+> +		return NULL;
+> +	}
+> +
+> +	i = 0;
+> +	for_each_child_of_node(np, key_np) {
+> +		u32 key_code;
+> +		of_property_read_u32(key_np, "linux,code", &key_code);
+> +		pdata->keymap[i++] = key_code;
+> +	}
+> +
+> +	return pdata;
+> +}
+> +#else
+> +static struct lpc32XX_kscan_cfg *lpc32XX_parse_dt(struct device *dev)
+> +{
+> +	return NULL;
+> +}
+> +#endif
+> +
+> +static int __devinit lpc32xx_kscan_probe(struct platform_device *pdev)
+> +{
+> +	struct lpc32xx_kscan_drv *kscandat;
+> +	struct resource *res;
+> +	int retval, i, keynum;
+> +
+> +	kscandat = kzalloc(sizeof(struct lpc32xx_kscan_drv), GFP_KERNEL);
+> +	if (unlikely(!kscandat)) {
+
+No need to use unlikely() here, this isn't a fast path, so it's better
+to let the compiler make the decisions.
+
+> +		dev_err(&pdev->dev, "failed to allocate memory\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (res == NULL) {
+
+	if (!res) { will do here.
+
+> +		dev_err(&pdev->dev, "failed to get platform I/O memory\n");
+> +		retval = -EBUSY;
+> +		goto out1;
+> +	}
+> +
+> +	kscandat->kscan_base = devm_request_and_ioremap(&pdev->dev, res);
+> +	if (kscandat->kscan_base == NULL) {
+> +		dev_err(&pdev->dev, "failed to request and remap I/O memory\n");
+> +		retval = -EBUSY;
+> +		goto out1;
+> +	}
+> +
+> +	/* Get the key scanner clock */
+> +	kscandat->clk = clk_get(&pdev->dev, NULL);
+> +	if (IS_ERR(kscandat->clk)) {
+> +		dev_err(&pdev->dev, "failed to get clock\n");
+> +		retval = -ENODEV;
+> +		goto out1;
+> +	}
+> +	clk_enable(kscandat->clk);
+
+clk_prepare_enable() ?  What about doing this in the open/release
+callbacks from the input device, so when this input device isn't
+actually being used, it's not consuming power?
+
+Don't forget that these functions can also fail.
+
+> +
+> +	kscandat->irq = platform_get_irq(pdev, 0);
+> +	if ((kscandat->irq < 0) || (kscandat->irq >= NR_IRQS)) {
+> +		dev_err(&pdev->dev, "failed to get platform irq\n");
+> +		retval = -EINVAL;
+> +		goto out2;
+> +	}
+> +	retval = request_irq(kscandat->irq, lpc32xx_kscan_irq,
+> +			     0, pdev->name, kscandat);
+> +	if (retval) {
+> +		dev_err(&pdev->dev, "failed to request irq\n");
+> +		goto out2;
+> +	}
+> +
+> +	kscandat->input = input_allocate_device();
+> +	if (kscandat->input == NULL) {
+> +		dev_err(&pdev->dev, "failed to allocate device\n");
+> +		retval = -ENOMEM;
+> +		goto out3;
+> +	}
+> +
+> +	if (pdev->dev.of_node)
+> +		kscandat->kscancfg = lpc32XX_parse_dt(&pdev->dev);
+> +	else
+> +		kscandat->kscancfg =
+> +			(struct lpc32XX_kscan_cfg *)pdev->dev.platform_data;
+
+Cast not required.
+
+> +	if (!kscandat->kscancfg) {
+> +		dev_err(&pdev->dev, "failed to get platform data\n");
+> +		retval = -EINVAL;
+> +		goto out4;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, kscandat);
+> +
+> +	/* Setup key input */
+> +	kscandat->input->evbit[0]	= BIT_MASK(EV_KEY);
+> +	kscandat->input->name		= pdev->name;
+> +	kscandat->input->phys		= "matrix-keys/input0";
+> +	kscandat->input->dev.parent	=  &pdev->dev;
+> +	kscandat->input->id.vendor	= 0x0001;
+> +	kscandat->input->id.product	= 0x0001;
+> +	kscandat->input->id.version	= 0x0100;
+> +	keynum = kscandat->kscancfg->matrix_sz * kscandat->kscancfg->matrix_sz;
+> +	for (i = 0; i < keynum; i++)
+> +		__set_bit(kscandat->kscancfg->keymap[i],
+> +			kscandat->input->keybit);
+> +
+> +	input_set_capability(kscandat->input, EV_MSC, MSC_SCAN);
+> +
+> +	retval = input_register_device(kscandat->input);
+> +	if (retval) {
+> +		dev_err(&pdev->dev, "failed to register input device\n");
+> +		goto out4;
+> +	}
+> +
+> +	/* Configure the key scanner */
+> +	writel(kscandat->kscancfg->deb_clks,
+> +		LPC32XX_KS_DEB(kscandat->kscan_base));
+> +	writel(kscandat->kscancfg->scan_delay,
+> +		LPC32XX_KS_SCAN_CTL(kscandat->kscan_base));
+> +	writel(LPC32XX_KSCAN_FTST_USE32K_CLK,
+> +		LPC32XX_KS_FAST_TST(kscandat->kscan_base));
+> +	writel(kscandat->kscancfg->matrix_sz,
+> +		LPC32XX_KS_MATRIX_DIM(kscandat->kscan_base));
+> +	writel(1, LPC32XX_KS_IRQ(kscandat->kscan_base));
+> +
+> +	return 0;
+> +
+> +out4:
+> +	input_free_device(kscandat->input);
+> +out3:
+> +	free_irq(kscandat->irq, pdev);
+> +out2:
+
+No balancing of the clock enable.
+
+> +	clk_put(kscandat->clk);
+> +out1:
+> +	kfree(kscandat);
+> +
+> +	return retval;
+> +}
+> +
+> +static int __devexit lpc32xx_kscan_remove(struct platform_device *pdev)
+> +{
+> +	struct lpc32xx_kscan_drv *kscandat = platform_get_drvdata(pdev);
+> +
+> +	free_irq(kscandat->irq, pdev);
+> +	input_unregister_device(kscandat->input);
+
+No balancing of clk_enable() ?
+
+> +	clk_put(kscandat->clk);
+> +	kfree(kscandat);
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +static int lpc32xx_kscan_suspend(struct platform_device *pdev,
+> +	pm_message_t state)
+> +{
+> +	struct lpc32xx_kscan_drv *kscandat = platform_get_drvdata(pdev);
+> +
+> +	/* Clear IRQ and disable clock */
+> +	writel(1, LPC32XX_KS_IRQ(kscandat->kscan_base));
+> +	clk_disable(kscandat->clk);
+> +
+> +	return 0;
+> +}
+> +
+> +static int lpc32xx_kscan_resume(struct platform_device *pdev)
+> +{
+> +	struct lpc32xx_kscan_drv *kscandat = platform_get_drvdata(pdev);
+> +
+> +	/* Enable clock and clear IRQ */
+> +	clk_enable(kscandat->clk);
+> +	writel(1, LPC32XX_KS_IRQ(kscandat->kscan_base));
+> +
+> +	return 0;
+> +}
+> +#else
+> +#define lpc32xx_kscan_suspend	NULL
+> +#define lpc32xx_kscan_resume	NULL
+> +#endif
+> +
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id lpc32xx_kscan_match[] = {
+> +	{ .compatible = "nxp,lpc3220-key" },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, lpc32xx_kscan_match);
+> +#endif
+> +
+> +static struct platform_driver lpc32xx_kscan_driver = {
+> +	.probe		= lpc32xx_kscan_probe,
+> +	.remove		= __devexit_p(lpc32xx_kscan_remove),
+> +	.suspend	= lpc32xx_kscan_suspend,
+> +	.resume		= lpc32xx_kscan_resume,
+> +	.driver		= {
+> +		.name	= "lpc32xx_keys",
+> +		.of_match_table = of_match_ptr(lpc32xx_kscan_match),
+> +	}
+> +};
+> +
+> +module_platform_driver(lpc32xx_kscan_driver);
+> +
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Kevin Wells <kevin.wells@nxp.com>");
+> +MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
+> +MODULE_DESCRIPTION("Key scanner driver for LPC32XX devices");
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
