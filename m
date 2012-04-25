@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758667Ab2DYBGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 21:06:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6075 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757654Ab2DYBGU convert rfc822-to-8bit (ORCPT
+	id S1758653Ab2DYBL5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 21:11:57 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:34969 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757638Ab2DYBL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 21:06:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="145539058"
-From: "Venkataraman, Meenakshi" <meenakshi.venkataraman@intel.com>
-To: Norbert Preining <preining@logic.at>
-CC: Emmanuel Grumbach <egrumbach@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>
-Subject: RE: 3.4-rc2, ilwagn still most of the time completely unusable
-Thread-Topic: 3.4-rc2, ilwagn still most of the time completely unusable
-Thread-Index: AQHNF4xSbRLp8UBTpUGj9Ei8Jnp2cJaWQsUQgACCdACAASt1EIAAxQMAgBIX3IA=
-Date: Wed, 25 Apr 2012 01:06:17 +0000
-Message-ID: <4595B4D22AB93C4FABBA84AAD5AA37FD136757@ORSMSX103.amr.corp.intel.com>
-References: <20120330011734.GH6277@gamma.logic.tuwien.ac.at>
- <20120411023747.GA10126@gamma.logic.tuwien.ac.at>
- <4595B4D22AB93C4FABBA84AAD5AA37FD11DE3C@ORSMSX103.amr.corp.intel.com>
- <20120412000202.GA15286@gamma.logic.tuwien.ac.at>
- <4595B4D22AB93C4FABBA84AAD5AA37FD120BF8@ORSMSX103.amr.corp.intel.com>
- <20120413053858.GA4057@gamma.logic.tuwien.ac.at>
-In-Reply-To: <20120413053858.GA4057@gamma.logic.tuwien.ac.at>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 24 Apr 2012 21:11:56 -0400
+Message-ID: <1335316301.9726.3.camel@ayu>
+Subject: Re: [PATCH 2/2] staging:android:fix line over 80 characters issue
+ in binders.c this patch fixes line over 80 characters warning that was
+ found using checkpatch.pl tool Signed-off-by:Anirudh Bhat
+ <abhat38@gmail.com>
+From: Calvin Walton <calvin.walton@kepstin.ca>
+To: David Howells <dhowells@redhat.com>
+Cc: anirudh bhat <abhat38@gmail.com>, arve@android.com,
+        chris+android@zenthought.org, hpa@zytor.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        anirudh bhat <anirudhbhat@ubuntu.ubuntu-domain>
+Date: Tue, 24 Apr 2012 21:11:41 -0400
+In-Reply-To: <14565.1334823778@redhat.com>
+References: <1334767915-4870-1-git-send-email-abhat38@gmail.com> <1>
+	 <14565.1334823778@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Norbert,
+On Thu, 2012-04-19 at 09:22 +0100, David Howells wrote:
+> anirudh bhat <abhat38@gmail.com> wrote:
+> 
+> > -		printk(KERN_ERR "binder: %d: binder_alloc_buf failed to "
+> > -		       "map pages in userspace, no vma\n", proc->pid);
+> > +		printk(KERN_ERR "binder: %d: binder_alloc_buf failed to map pages in userspace, no vma\n",
+> > +			proc->pid);
+> 
+> Are these the wrong way round?  Surely these are introducing checkpatch
+> warnings rather than curing them?
+> 
+> If checkpatch is complaining about:
+> 
+> 	printk(KERN_ERR "binder: %d: binder_alloc_buf failed to "
+> 	       "map pages in userspace, no vma\n", proc->pid);
+> 
+> being a string split over multiple lines, then *checkpatch* needs to be fixed.
 
->WIth that turned off I *believe* I have better results, but I will tet
->it a bi tmore.
+This check was added to checkpatch on purpose, with the intention of
+allowing you to use e.g.
+$ git grep 'failed to match pages'
+to find out where in the kernel source the message came from. If the
+string is split and wrapped, that doesn't work.
 
-[MV] How is this looking now?
+This is mentioned as a recommendation in Documentation/CodingStyle as
+well:
+> Statements longer than 80 columns will be broken into sensible chunks, unless
+> exceeding 80 columns significantly increases readability and does not hide
+> information. Descendants are always substantially shorter than the parent and
+> are placed substantially to the right. The same applies to function headers
+> with a long argument list. However, never break user-visible strings such as
+> printk messages, because that breaks the ability to grep for them.
 
->> I don't see the invalid station activation error in the log you sent me, so I'm
->guessing it appears only on the other network. Do send us logs for that.
->
->Now I got one ....
->	http://www.logic.at/people/preining/syslog-debug.bz2
->take care, unpacked it is big!
+-- 
+Calvin Walton <calvin.walton@kepstin.ca>
 
-[MV]  I'm going through this log -- don't have a root cause for this yet, but getting closer to it. I see in this log that authentication is timing out. It appears that the driver sent out the authentication frame, and received some frame OTA, but I can't tell what it received from just the dmesg log. I'd like some trace-cmd logs from you. Is it possible for you to collect a trace-cmd log and send over the binary to me?
-
->One more thing, I believe that this happens most of the times
->(but not necessarily exclusively, but I don't have statistics)
->after resume (from suspend to ram).
-
-[MV]  This is good to know. I wonder if this is related to the PCIe l used on your platform. Can you try to use PCIe link state management to L0s in your BIOS and see if the stability of your system improves?
-
->>So saying, it seems that with power_save=0 even if I get several of
->these:
->[ 1601.552069] tx session timer expired on tid 0
->[ 1601.552116] Tx BA session stop requested for 00:24:c4:ab:bd:e0 tid 0
->[ 1601.576292] Stopping Tx BA session for 00:24:c4:ab:bd:e0 tid 0
->[ 1603.470312] Open BA session requested for 00:24:c4:ab:bd:e0 tid 0
->[ 1603.480274] activated addBA response timer on tid 0
->[ 1603.483479] switched off addBA timer for tid 0
->[ 1603.483485] Aggregation is on for tid 0
->the connection does not break down, as before. Well, I am not sure whether
->it is a consequence or coincidence.
-
-[MV] the tx session timer expiry ... hmm... I haven't looked at it. Otherwise, it seems to be Tx Aggregation sessions being turned on and turned off, so perhaps we will reduce the debug level at which it is printed. One of us is looking at the frequency with which these messages are being reported.
-
-Thanks,
-Meenakshi
