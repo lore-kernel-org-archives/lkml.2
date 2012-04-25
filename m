@@ -1,209 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab2DYQ0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 12:26:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11984 "EHLO mx1.redhat.com"
+	id S1756570Ab2DYQ02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 12:26:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64373 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756431Ab2DYQ0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 12:26:10 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, robert.richter@amd.com,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 6/6] perf, tool: Add hardcoded name term for pmu events
-Date: Wed, 25 Apr 2012 18:25:02 +0200
-Message-Id: <1335371102-11358-7-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1335371102-11358-1-git-send-email-jolsa@redhat.com>
-References: <1335371102-11358-1-git-send-email-jolsa@redhat.com>
+	id S1756153Ab2DYQ0Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 12:26:24 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: =?utf-8?Q?J=C3=B6rn?= Engel <joern@logfs.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] add blockconsole
+References: <20120424205946.GH20610@logfs.org>
+	<x49zka0j5bk.fsf@segfault.boston.devel.redhat.com>
+	<20120425132513.GA23492@logfs.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 25 Apr 2012 11:52:28 -0400
+In-Reply-To: <20120425132513.GA23492@logfs.org> (=?utf-8?Q?=22J=C3=B6rn?=
+ Engel"'s message of
+	"Wed, 25 Apr 2012 09:25:14 -0400")
+Message-ID: <x49vcknkdvn.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding a new hardcoded term 'name' allowing to specify a name
-for the pmu event. The term is defined along with standard
-pmu terms. If no 'name' term is given, the event name follows
-following template:
-    "raw 0x<perf_event_attr::config>"
+Jörn Engel <joern@logfs.org> writes:
 
-running:
-    perf stat -e cpu/config=1,name=krava1/u ls
+> On Wed, 25 April 2012 09:42:39 -0400, Jeff Moyer wrote:
+>> 
+>> Neat idea, but I'm curious to know how it works when the system panics
+>> and you no longer can schedule the writeback thread.  What are the
+>> limitations you've seen in practice?
+>
+> If the writeback thread doesn't get scheduled, you lose that
+> information.  Formerly I did the submit_bio directly, but lockdep
+> reminded me that I shouldn't do so from interrupt context.  Bummer.
 
-will produce following output:
-    ...
-    Performance counter stats for 'ls':
-                 0 krava1
-    ...
+Well, submit_bio can sleep, obviously.  Perhaps you could explore
+registering a panic notifier, and then flush the logs from there?
+Unfortunately, there is always the possibility that some required locks
+will be taken, but it might get you a little bit further.  Or, you could
+explore the route that the diskdump or lkcd folks took, implementing
+their own polling mode drivers.
 
-running:
-    perf stat -e cpu/config=1/u ls
-
-will produce following output:
-    ...
-    Performance counter stats for 'ls':
-                 0 raw 0x1
-    ...
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/parse-events-test.c |   25 +++++++++++++++++++++++++
- tools/perf/util/parse-events.c      |   23 ++++++++++++++++++++++-
- tools/perf/util/parse-events.h      |    1 +
- tools/perf/util/parse-events.l      |    1 +
- tools/perf/util/parse-events.y      |    8 ++++++++
- tools/perf/util/pmu.c               |    4 ++--
- 6 files changed, 59 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index 2e8f435..76b98e2 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -409,6 +409,27 @@ static int test__checkevent_list(struct perf_evlist *evlist)
- 	return 0;
- }
- 
-+static int test__checkevent_pmu_name(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel;
-+
-+	/* cpu/config=1,name=krava1/u */
-+	evsel = list_entry(evlist->entries.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",  1 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong name", !strcmp(evsel->name, "krava"));
-+
-+	/* cpu/config=2/" */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",  2 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong name", !strcmp(evsel->name, "raw 0x2"));
-+
-+	return 0;
-+}
-+
- struct test__event_st {
- 	const char *name;
- 	__u32 type;
-@@ -529,6 +550,10 @@ static struct test__event_st test__events_pmu[] = {
- 		.name  = "cpu/config=10,config1,config2=3,period=1000/u",
- 		.check = test__checkevent_pmu,
- 	},
-+	[1] = {
-+		.name  = "cpu/config=1,name=krava/u,cpu/config=2/u",
-+		.check = test__checkevent_pmu_name,
-+	},
- };
- 
- #define TEST__EVENTS_PMU_CNT (sizeof(test__events_pmu) / \
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 59324e7..fac7d59 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -634,6 +634,9 @@ do {								\
- 		 * attr->branch_sample_type = term->val.num;
- 		 */
- 		break;
-+	case PARSE_EVENTS__TERM_TYPE_NAME:
-+		CHECK_TYPE_VAL(STR);
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
-@@ -672,6 +675,23 @@ int parse_events_add_numeric(struct list_head **list, int *idx,
- 			 (char *) __event_name(type, config));
- }
- 
-+static int parse_events__is_name_term(struct parse_events__term *term)
-+{
-+	return term->type_term == PARSE_EVENTS__TERM_TYPE_NAME;
-+}
-+
-+static char *pmu_event_name(struct perf_event_attr *attr,
-+			    struct list_head *head_terms)
-+{
-+	struct parse_events__term *term;
-+
-+	list_for_each_entry(term, head_terms, list)
-+		if (parse_events__is_name_term(term))
-+			return term->val.str;
-+
-+	return (char *) __event_name(PERF_TYPE_RAW, attr->config);
-+}
-+
- int parse_events_add_pmu(struct list_head **list, int *idx,
- 			 char *name, struct list_head *head_config)
- {
-@@ -693,7 +713,8 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
- 	if (perf_pmu__config(pmu, &attr, head_config))
- 		return -EINVAL;
- 
--	return add_event(list, idx, &attr, (char *) "pmu");
-+	return add_event(list, idx, &attr,
-+			 pmu_event_name(&attr, head_config));
- }
- 
- void parse_events_update_lists(struct list_head *list_event,
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 5633b32..20d623d 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -46,6 +46,7 @@ enum {
- 	PARSE_EVENTS__TERM_TYPE_CONFIG,
- 	PARSE_EVENTS__TERM_TYPE_CONFIG1,
- 	PARSE_EVENTS__TERM_TYPE_CONFIG2,
-+	PARSE_EVENTS__TERM_TYPE_NAME,
- 	PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD,
- 	PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
- };
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 331d28a..618a8e7 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -105,6 +105,7 @@ misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
- config			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG); }
- config1			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG1); }
- config2			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG2); }
-+name			{ return term(PARSE_EVENTS__TERM_TYPE_NAME); }
- period			{ return term(PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
- branch_type		{ return term(PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
- 
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 126fad0..362cc59 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -237,6 +237,14 @@ PE_NAME
- 	$$ = term;
- }
- |
-+PE_TERM '=' PE_NAME
-+{
-+	struct parse_events__term *term;
-+
-+	ABORT_ON(parse_events__term_str(&term, $1, NULL, $3));
-+	$$ = term;
-+}
-+|
- PE_TERM '=' PE_VALUE
- {
- 	struct parse_events__term *term;
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 8ee219b..a119a53 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -258,9 +258,9 @@ static int pmu_config_term(struct list_head *formats,
- static int pmu_config(struct list_head *formats, struct perf_event_attr *attr,
- 		      struct list_head *head_terms)
- {
--	struct parse_events__term *term, *h;
-+	struct parse_events__term *term;
- 
--	list_for_each_entry_safe(term, h, head_terms, list)
-+	list_for_each_entry(term, head_terms, list)
- 		if (pmu_config_term(formats, attr, term))
- 			return -EINVAL;
- 
--- 
-1.7.7.6
-
+Cheers,
+Jeff
