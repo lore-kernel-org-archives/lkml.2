@@ -1,125 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793Ab2DYCm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 22:42:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47937 "EHLO mga09.intel.com"
+	id S1758813Ab2DYCol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 22:44:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22660 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757878Ab2DYCmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 22:42:55 -0400
+	id S1758014Ab2DYCok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 22:44:40 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="136394693"
-Date: Wed, 25 Apr 2012 10:42:43 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120425024243.GA6572@localhost>
-References: <20120410222425.GF4936@quack.suse.cz>
- <20120411154005.GD16692@redhat.com>
- <20120411192231.GF16008@quack.suse.cz>
- <20120412203719.GL2207@redhat.com>
- <20120412205148.GA24056@google.com>
- <20120414143639.GA31241@localhost>
- <20120416145744.GA15437@redhat.com>
- <20120424113340.GA12509@localhost>
- <20120424145655.GA1474@quack.suse.cz>
- <20120424155843.GG26708@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120424155843.GG26708@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="133484314"
+Message-ID: <1335321899.14538.105.camel@ymzhang.sh.intel.com>
+Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>
+Date: Wed, 25 Apr 2012 10:44:59 +0800
+In-Reply-To: <1335262311.28150.192.camel@twins>
+References: <EE928378561BF1449699C96571234A740FCE3704@SHSMSX102.ccr.corp.intel.com>
+	 <1334915073.2463.36.camel@laptop>
+	 <1335231007.14538.71.camel@ymzhang.sh.intel.com>
+	 <1335262311.28150.192.camel@twins>
+Organization: MCG
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 11:58:43AM -0400, Vivek Goyal wrote:
-> On Tue, Apr 24, 2012 at 04:56:55PM +0200, Jan Kara wrote:
-> 
-> [..]
-> > > > I think having separate weigths for sync IO groups and async IO is not
-> > > > very appealing. There should be one notion of group weight and bandwidth
-> > > > distrubuted among groups according to their weight.
-> > > 
-> > > There have to be some scheme, either explicitly or implicitly. Maybe
-> > > you are baring in mind some "equal split among queues" policy? For
-> > > example, if the cgroup has 9 active sync queues and 1 async queue,
-> > > split the weight equally to the 10 queues?  So the sync IOs get 90%
-> > > share, and the async writes get 10% share.
-> >   Maybe I misunderstand but there doesn't have to be (and in fact isn't)
-> > any split among sync / async IO in CFQ. At each moment, we choose a queue
-> > with the highest score and dispatch a couple of requests from it. Then we
-> > go and choose again. The score of the queue depends on several factors
-> > (like age of requests, whether the queue is sync or async, IO priority,
-> > etc.).
+On Tue, 2012-04-24 at 12:11 +0200, Peter Zijlstra wrote:
+> On Tue, 2012-04-24 at 09:30 +0800, Yanmin Zhang wrote:
+> > Would you like to point out the workable userspace stack walker?
+> > If there is, we would check if we could reuse it.
 > > 
-> > Practically, over a longer period system will stabilize on some ratio
-> > but that's dependent on the load so your system should not impose some
-> > artificial direct/buffered split but rather somehow deal with the reality
-> > how IO scheduler decides to dispatch requests...
-> 
-> Yes. CFQ does not have the notion of giving a fixed share to async
-> requests. In fact right now it is so biased in favor of sync reqeusts,
-> that in some cases it can starve async writes or introduce long delays
-> resulting in "task hung for 120 second" warnings.
-> 
-> So if there are issues w.r.t how disk is shared between sync/async IO
-> with in a cgroup, that should be handled at IO scheduler level. Writeback
-> code trying to dictate that ratio, sounds odd.
-
-Indeed it sounds odd.. However it does look that there need some
-sync/async ratio to avoid livelock issues, say 80:20 or whatever.
-What's you original plan to deal with this in the IO scheduler?
-
-> > > For dirty throttling w/o cgroup awareness, balance_dirty_pages()
-> > > splits the writeout bandwidth equally among all dirtier tasks. Since
-> > > cfq works with queues, it seems most natural for it to do equal split
-> > > among all queues (inside the cgroup).
-> >   Well, but we also have IO priorities which change which queue should get
-> > preference.
 > > 
-> > > I'm not sure when there are N dd tasks doing direct IO, cfq will
-> > > continuously run N sync queues for them (without many dynamic queue
-> > > deletion and recreations). If that is the case, it should be trivial
-> > > to support the queue based fair split in the global async queue
-> > > scheme. Otherwise I'll have some trouble detecting the N value when
-> > > trying to do the N:1 sync:async weight split.
-> >   And also sync queues for several processes can get merged when CFQ
-> > observes these processes cooperate together on one area of disk and get
-> > split again when processes stop cooperating. I don't think you really want
-> > to second-guess what CFQ does inside...
-> 
-> Agreed. Trying to predict what CFQ will do and then trying to influence
-> sync/async ration based on root cgroup weight does not seem to be the
-> right way. Especially that will also mean either assuming that everything
-> in root group is sync or we shall have to split sync/async weight notion.
+> arch/x86/kernel/cpu/perf_event.c:perf_callchain_user(), it also deals
+> with compat stuffs.
+Yes, it does. But it just collects the user stack call chain of
+_current_ task.
 
-It seems there is some misunderstanding to the sync/async split.
-No, root cgroup tasks won't be any special wrt the weight split.
-Although in the current patch I does make assumption that no IO
-is happening in the root cgroup.
+When Xiaobing worked out the patch, we did think over if we could implement
+it based on perf. We also checked ftrace. Both ftrace and perf collect
+user stack of _current_ task.
 
-To make it look easier, we may as well move the flusher thread to a
-standalone cgroup. Then if the root cgroup has both aggressive
-sync/async IOs, the split will be carried out the same way as other
-cgroups:
+Xiaobing wrote a similar tool based on ptrace one year ago and gave it up
+as it was slow.
 
-        rootcg->dio_weight = rootcg->weight / 2
-        flushercg->async_weight += rootcg->weight / 2
+I was thinking if we could use the powerful symbol parsing capability of
+perf to do the user space parse. I was busy and Xiaobing just changed
+his old codes to work out a prototype quickly as other developers pushed hard
+for the tool.
 
-> sync/async ratio is a IO scheduler thing and is not fixed. So writeback
-> layer making assumptions and changing weigths sounds very awkward to me.
+Yanmin
 
-OK the ratio is not fixed, so I'm not going to do the guess work.
-However there is still the question: how are we going to fix the
-sync-starve-async IO problem without some guaranteed ratio?
 
-Thanks,
-Fengguang
