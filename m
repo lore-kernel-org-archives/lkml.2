@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab2DYOuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 10:50:19 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43733 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab2DYOuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 10:50:17 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: Samuel Chessman <chessman@tux.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] tlan: add cast needed for proper 64 bit operation
-Date: Wed, 25 Apr 2012 10:49:20 -0400
-Message-Id: <1335365360-4891-1-git-send-email-bpoirier@suse.de>
-X-Mailer: git-send-email 1.7.7
+	id S1754119Ab2DYOxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 10:53:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8057 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753755Ab2DYOxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 10:53:34 -0400
+Date: Wed, 25 Apr 2012 16:52:39 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Roland McGrath <roland@hack.frob.com>
+Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
+Message-ID: <20120425145239.GA21386@redhat.com>
+References: <20120420164239.GH6871@ZenIV.linux.org.uk> <CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com> <20120420180748.GI6871@ZenIV.linux.org.uk> <20120423180150.GA6871@ZenIV.linux.org.uk> <20120424072617.GB6871@ZenIV.linux.org.uk> <20120425030659.GE6871@ZenIV.linux.org.uk> <20120425123746.GA15560@redhat.com> <20120425125042.GF6871@ZenIV.linux.org.uk> <20120425130329.GA16413@redhat.com> <20120425133238.GG6871@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120425133238.GG6871@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes this beauty into a statement that actually has an effect on amd64.
+On 04/25, Al Viro wrote:
+>
+> Point...  Still, since we are talking about an arbitrary wide window (the
+> damn thing is waiting for signals to arrive, after all) this doesn't
+> sound good;
+> ...
+> IMO it's
+> a QoI problem at the very least.
 
-Tested-by: Per Jessen <per@opensuse.org>
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
----
- drivers/net/ethernet/ti/tlan.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+and looks confusing, agreed.
 
-diff --git a/drivers/net/ethernet/ti/tlan.c b/drivers/net/ethernet/ti/tlan.c
-index 817ad3b..efd3669 100644
---- a/drivers/net/ethernet/ti/tlan.c
-+++ b/drivers/net/ethernet/ti/tlan.c
-@@ -228,7 +228,7 @@ tlan_get_skb(const struct tlan_list *tag)
- 	unsigned long addr;
- 
- 	addr = tag->buffer[9].address;
--	addr |= (tag->buffer[8].address << 16) << 16;
-+	addr |= ((unsigned long) tag->buffer[8].address << 16) << 16;
- 	return (struct sk_buff *) addr;
- }
- 
--- 
-1.7.7
+> As for SA_RESTART/!SA_RESTART mixes, if SA_RESTART comes first we should
+> just take that restart and pretend that the second signal has arrived at
+> the very beginning of handler, I think.
+
+Yes. My point was, this confuses the user-space developers too. And this
+case is equally unclear to me wrt should we (at least try to) change this
+or not.
+
+Oleg.
 
