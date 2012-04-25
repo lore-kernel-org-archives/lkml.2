@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459Ab2DYQim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 12:38:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46451 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab2DYQil (ORCPT
+	id S1756614Ab2DYQjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 12:39:16 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:54607 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753380Ab2DYQjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 12:38:41 -0400
-Date: Wed, 25 Apr 2012 13:37:38 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: Our failure on tracing tools unification
-Message-ID: <20120425163738.GE17992@infradead.org>
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
- <20120423144743.GB29985@somewhere>
- <1335193719.28150.171.camel@twins>
- <20120425080525.GA32613@gmail.com>
- <y0m8vhjopvs.fsf@fche.csb>
+	Wed, 25 Apr 2012 12:39:15 -0400
+Message-ID: <4F982862.4050302@linux.vnet.ibm.com>
+Date: Wed, 25 Apr 2012 11:37:54 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <y0m8vhjopvs.fsf@fche.csb>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Minchan Kim <minchan@kernel.org>
+CC: Nitin Gupta <ngupta@vflare.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 6/6] zsmalloc: make zsmalloc portable
+References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-7-git-send-email-minchan@kernel.org> <4F980AFE.60901@vflare.org>
+In-Reply-To: <4F980AFE.60901@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042516-6148-0000-0000-000005503097
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Apr 25, 2012 at 10:19:35AM -0400, Frank Ch. Eigler escreveu:
-> 
-> mingo wrote:
-> 
-> > [...]  One thing that would suck is perf being bound by various
-> > versions of this library floating out there.
-> 
-> Could the event parser shared library be ABI-preserving?  If so, what
-> would perf have to fear?
+Hey Minchan,
 
-Perhaps its because people working on perf grew in the kernel, where we
-can change things as we see fit, i.e. change the networking API? Sure,
-we can go over the drivers and change them, its all in the same source
-tree, etc.
+Thanks for the patches!
 
-> > [...] We had nothing but pain from external libraries so far [...]
-> 
-> If the elfutils, newt, gtk, bfd, iberty, zlib, python libraries didn't
-> contribute useful and un-rewriteable functionality, perf would not be
-> using them.
+On 04/25/2012 09:32 AM, Nitin Gupta wrote:
+> I think Seth was working on this improvement but not sure about the
+> current status. Seth?
 
-newt was a pain and will go away, 99% of things rely just on libslang,
-but even that one could go, bfd we use just for C++ demangling, so
-probably could go too.
+Yes, I looked at this option, and it is very clean and portable.
 
-- Arnaldo
+Unfortunately, IIRC, with our rate of mapping/unmapping,
+flush_tlb_kernel_range() causes an IPI storm that effective
+stalls the machine.
+
+I'll apply your patch and try it out.
+
+Thanks,
+Seth
+
