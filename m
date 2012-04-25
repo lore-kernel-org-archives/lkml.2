@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759181Ab2DYNxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 09:53:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44520 "EHLO
+	id S1759246Ab2DYNxe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 09:53:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44529 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab2DYNxF (ORCPT
+	with ESMTP id S1759209Ab2DYNxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 09:53:05 -0400
-Date: Wed, 25 Apr 2012 06:52:29 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-33ff581eddf744ea91a50d46c2f0961b375a9595@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1334756818-6631-1-git-send-email-jolsa@redhat.com>
-References: <1334756818-6631-1-git-send-email-jolsa@redhat.com>
+	Wed, 25 Apr 2012 09:53:32 -0400
+Date: Wed, 25 Apr 2012 06:53:19 -0700
+From: tip-bot for Sasha Levin <levinsasha928@gmail.com>
+Message-ID: <tip-625056b65ee9a8b4caf42136e0c844c15e6ec54f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, levinsasha928@gmail.com, hpa@zytor.com,
+        mingo@kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, levinsasha928@gmail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, tglx@linutronix.de
+In-Reply-To: <1331848040-1676-1-git-send-email-levinsasha928@gmail.com>
+References: <1331848040-1676-1-git-send-email-levinsasha928@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf symbols:
-  Read plt symbols from proper symtab_type binary
-Git-Commit-ID: 33ff581eddf744ea91a50d46c2f0961b375a9595
+Subject: [tip:core/locking] hung task debugging:
+  Inject NMI when hung and going to panic
+Git-Commit-ID: 625056b65ee9a8b4caf42136e0c844c15e6ec54f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,80 +30,51 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Apr 2012 06:52:35 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Apr 2012 06:53:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  33ff581eddf744ea91a50d46c2f0961b375a9595
-Gitweb:     http://git.kernel.org/tip/33ff581eddf744ea91a50d46c2f0961b375a9595
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 18 Apr 2012 15:46:58 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 20 Apr 2012 13:34:49 -0300
+Commit-ID:  625056b65ee9a8b4caf42136e0c844c15e6ec54f
+Gitweb:     http://git.kernel.org/tip/625056b65ee9a8b4caf42136e0c844c15e6ec54f
+Author:     Sasha Levin <levinsasha928@gmail.com>
+AuthorDate: Thu, 15 Mar 2012 17:47:20 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 25 Apr 2012 12:39:25 +0200
 
-perf symbols: Read plt symbols from proper symtab_type binary
+hung task debugging: Inject NMI when hung and going to panic
 
-When loading symbols from DSO we check multiple paths of DSO binary
-until we succeed to load symbols ('.symtab' section). Once symbols are
-read we try to load also plt symbols.
+Send an NMI to all CPUs when a hung task is detected and the hung
+task code is configured to panic. This gives us a fairly uptodate
+snapshot of all CPUs in the system.
 
-During the reading of plt symbols, the dso file is reopened from
-location given by dso->long_name. This could be wrong in case we want
-process buildid binaries.
+This lets us get stack trace of all CPUs which makes life easier
+trying to debug a deadlock, and the NMI doesn't change anything
+since the next step is a kernel panic.
 
-The change is to make the plt symbols being read from the DSO path, that
-normal symbols were read from.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1334756818-6631-1-git-send-email-jolsa@redhat.com
-[ committer note: moved dso to be the first parameter of that function ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1331848040-1676-1-git-send-email-levinsasha928@gmail.com
+[ extended the changelog a bit ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/util/symbol.c |   13 ++++++-------
- 1 files changed, 6 insertions(+), 7 deletions(-)
+ kernel/hung_task.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index c0a028c..ab9867b 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -977,8 +977,9 @@ static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
-  * And always look at the original dso, not at debuginfo packages, that
-  * have the PLT data stripped out (shdr_rel_plt.sh_type == SHT_NOBITS).
-  */
--static int dso__synthesize_plt_symbols(struct  dso *dso, struct map *map,
--				       symbol_filter_t filter)
-+static int
-+dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
-+			    symbol_filter_t filter)
- {
- 	uint32_t nr_rel_entries, idx;
- 	GElf_Sym sym;
-@@ -993,10 +994,7 @@ static int dso__synthesize_plt_symbols(struct  dso *dso, struct map *map,
- 	char sympltname[1024];
- 	Elf *elf;
- 	int nr = 0, symidx, fd, err = 0;
--	char name[PATH_MAX];
+diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+index c21449f..6df6149 100644
+--- a/kernel/hung_task.c
++++ b/kernel/hung_task.c
+@@ -108,8 +108,10 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
  
--	snprintf(name, sizeof(name), "%s%s",
--		 symbol_conf.symfs, dso->long_name);
- 	fd = open(name, O_RDONLY);
- 	if (fd < 0)
- 		goto out;
-@@ -1703,8 +1701,9 @@ restart:
- 			continue;
+ 	touch_nmi_watchdog();
  
- 		if (ret > 0) {
--			int nr_plt = dso__synthesize_plt_symbols(dso, map,
--								 filter);
-+			int nr_plt;
-+
-+			nr_plt = dso__synthesize_plt_symbols(dso, name, map, filter);
- 			if (nr_plt > 0)
- 				ret += nr_plt;
- 			break;
+-	if (sysctl_hung_task_panic)
++	if (sysctl_hung_task_panic) {
++		trigger_all_cpu_backtrace();
+ 		panic("hung_task: blocked tasks");
++	}
+ }
+ 
+ /*
