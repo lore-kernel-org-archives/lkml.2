@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759026Ab2DYL3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 07:29:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14566 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758638Ab2DYL3o (ORCPT
+	id S1758951Ab2DYLao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 07:30:44 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54970 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758485Ab2DYLam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 07:29:44 -0400
-X-Authority-Analysis: v=2.0 cv=IaEFqBWa c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=DP5z0Fm-GvoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=pdiIOGQpc7p32w3lwnwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1335353383.28106.162.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 3/4] ftrace: No return value for ftrace_process_locs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Date: Wed, 25 Apr 2012 07:29:43 -0400
-In-Reply-To: <1335342219-2782-4-git-send-email-jolsa@redhat.com>
-References: <1335342219-2782-1-git-send-email-jolsa@redhat.com>
-	 <1335342219-2782-4-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Apr 2012 07:30:42 -0400
+Subject: Re: many rx packets dropped since 2.6.37
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Chris <xchris89x@googlemail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <CAOFJUkhi6NoECFGcz=rq8-uVXFc90V4SuH=A1+sWdvYDDhO8Ow@mail.gmail.com>
+References: <CAOFJUkhi6NoECFGcz=rq8-uVXFc90V4SuH=A1+sWdvYDDhO8Ow@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Apr 2012 13:30:27 +0200
+Message-ID: <1335353427.3274.103.camel@edumazet-glaptop>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-25 at 10:23 +0200, Jiri Olsa wrote:
-> The return value of ftrace_process_locs is never checked. The function
-> tries to update as many calls as possible and in case of error there's
-> either warning output or ftrace_bug call.
+On Wed, 2012-04-25 at 13:03 +0200, Chris wrote:
+> Hello,
+> 
+> There is a bug since 2.6.37 with dropped rx packets in virtual
+> environments (like kvm) and bonded network interfaces.
+> 
+> References:
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/890475
+> https://bugzilla.redhat.com/show_bug.cgi?id=709551
+> 
+> This change has led to:
+> commit caf586e5f23cebb2a68cbaf288d59dbbf2d74052
+> Author: Eric Dumazet <eric.dumazet@gmail.com>
+> Date:   Thu Sep 30 21:06:55 2010 +0000
+> 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=caf586e5f23cebb2a68cbaf288d59dbbf2d74052
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=8990f468a
+> 
+> Would it be possible to remove this patch?
+> 
+> --
+> Chris
 
-No, the real bug is...
+Its no possible to remove this patch.
 
->  #ifdef CONFIG_MODULES
-> @@ -3789,9 +3784,9 @@ void __init ftrace_init(void)
->  
->  	last_ftrace_enabled = ftrace_enabled = 1;
->  
-> -	ret = ftrace_process_locs(NULL,
-> -				  __start_mcount_loc,
-> -				  __stop_mcount_loc);
-> +	ftrace_process_locs(NULL,
-> +			    __start_mcount_loc,
-> +			    __stop_mcount_loc);
+If you want to ignore fact that packets _are_ dropped, just ignore the
+counter.
 
-We should check the return code of ftrace_process_locs().
+We want to track dropped packets, not hide them.
 
--- Steve
-
->  
->  	ret = register_module_notifier(&ftrace_module_nb);
->  	if (ret)
 
 
