@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab2DYQqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 12:46:01 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:36566 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756282Ab2DYQp5 (ORCPT
+	id S1755741Ab2DYQri (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 12:47:38 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54951 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab2DYQrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 12:45:57 -0400
-Date: Wed, 25 Apr 2012 17:45:48 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: linux-next: Tree for Apr 17 (pci-sysfs.c and vga_switcheroo.c)
-Message-ID: <20120425164548.GB17905@srcf.ucam.org>
-References: <20120417144241.0d7dc5fde56b2a37ff0dcaba@canb.auug.org.au>
- <4F8DB90A.8050504@xenotime.net>
- <CAErSpo56ddRZCG=5yqcEUBPZ1_x76=33xkv5x-46gcNgQCA0Qg@mail.gmail.com>
+	Wed, 25 Apr 2012 12:47:37 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/mCfoFi/NOzaM9IsiwuZx/
+Date: Wed, 25 Apr 2012 09:47:26 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Afzal Mohammed <afzal@ti.com>
+Cc: khilman@ti.com, linux@arm.linux.org.uk, dwmw2@infradead.org,
+        sameo@linux.intel.com, grinberg@compulab.co.il, mike@compulab.co.il,
+        nm@ti.com, artem.bityutskiy@linux.intel.com, vimal.newwork@gmail.com,
+        dbaryshkov@gmail.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [TMP] OMAP3EVM: Test gpmc nand & smsc911x
+Message-ID: <20120425164726.GU3739@atomide.com>
+References: <cover.1333640054.git.afzal@ti.com>
+ <bb95fec60401f7cf6ac77200a12baf3fc83852f5.1333640054.git.afzal@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo56ddRZCG=5yqcEUBPZ1_x76=33xkv5x-46gcNgQCA0Qg@mail.gmail.com>
+In-Reply-To: <bb95fec60401f7cf6ac77200a12baf3fc83852f5.1333640054.git.afzal@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 10:37:26AM -0600, Bjorn Helgaas wrote:
-> I assume this is related to 77b267c7549e3629ea55cf780aa3d474da7bc2d5
-> ("vgaarb: Add support for setting the default video device") and that
-> Matthew will take care of whatever needs to be done (if it's not fixed
-> already).
+* Afzal Mohammed <afzal@ti.com> [120405 09:08]:
+> @@ -114,6 +147,8 @@ static struct omap_smsc911x_platform_data smsc911x_cfg = {
+>  
+>  static inline void __init omap3evm_init_smsc911x(void)
+>  {
+> +	struct gpmc_device_pdata *gpmc_smsc911x_info;
+> +
+>  	/* Configure ethernet controller reset gpio */
+>  	if (cpu_is_omap3430()) {
+>  		if (get_omap3_evm_rev() == OMAP3EVM_BOARD_GEN_1)
+> @@ -122,7 +157,11 @@ static inline void __init omap3evm_init_smsc911x(void)
+>  			smsc911x_cfg.gpio_reset = OMAP3EVM_GEN2_ETHR_GPIO_RST;
+>  	}
+>  
+> -	gpmc_smsc911x_init(&smsc911x_cfg);
+> +	gpmc_smsc911x_info = gpmc_smsc911x_init(&smsc911x_cfg);
+> +	if (gpmc_smsc911x_info)
+> +		*gpmc_data_cur++ = gpmc_smsc911x_info;
+> +	else
+> +		pr_err("error: unable to initilaize gpmc smsc911x\n");
+>  }
+>  
+>  #else
 
-Dave has patches.
+Obviously we can't merge any of this if until all the board-*.c files
+are changed and tested.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Can you maybe still keep the old interfaces in addition to the new ones
+so we can do the conversion one board-*.c file at a time while keeping
+things working?
+
+Regards,
+
+Tony
