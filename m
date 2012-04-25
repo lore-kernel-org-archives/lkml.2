@@ -1,149 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab2DYOci (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 10:32:38 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:58954 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab2DYOcg (ORCPT
+	id S1752643Ab2DYOfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 10:35:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62186 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab2DYOft convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 10:32:36 -0400
-Message-ID: <4F980AFE.60901@vflare.org>
-Date: Wed, 25 Apr 2012 10:32:30 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Wed, 25 Apr 2012 10:35:49 -0400
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
+In-Reply-To: <1335355106.28150.254.camel@twins>
+References: <20120424161039.293018424@chello.nl>
+	<20120424162224.526249106@chello.nl>
+	<20120425102342.45cf5c5e81e8aeb3bec67d0b@canb.auug.org.au>
+	<1335341466.28150.248.camel@twins>
+	<CAMuHMdUqgR8Z8wtBjm=-g9ff6CVmEd=FpbC2tk-CMU7B3XVVDg@mail.gmail.com>
+	<1335355106.28150.254.camel@twins>
+Date: Wed, 25 Apr 2012 16:35:47 +0200
+X-Google-Sender-Auth: lXpdLW3YBqZBpFJUmlaem91mO_Q
+Message-ID: <CAMuHMdVSjX1ZRc_Q0cuL+U_f+zzuD+1cjW-OBdn1c3mC8Ya_Rg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 2/3] math128: Introduce {mult,add,cmp}_u128
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 6/6] zsmalloc: make zsmalloc portable
-References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-7-git-send-email-minchan@kernel.org>
-In-Reply-To: <1335334994-22138-7-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Juri Lelli <juri.lelli@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 02:23 AM, Minchan Kim wrote:
+On Wed, Apr 25, 2012 at 13:58, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>> Still using quilt? I didn't regret ditching it in favor of git (yummy,
+>> git rebase ;-).
+>
+> Yeah, I can't seem to deal with git, I edit my patches by hand way too
+> often, also quilt is a _LOT_ faster pushing/popping patches than git is
+> (and yes I use an SSD).
+>
+> Not using git also means I don't have to deal with the trainwreck that
+> is git-merge,.. /me runs like hell.
 
-> The zsmalloc uses __flush_tlb_one and set_pte.
-> It's very lower functions so that it makes arhcitecture dependency
-> so currently zsmalloc is used by only x86.
-> This patch changes them with map_vm_area and unmap_kernel_range so
-> it should work all architecture.
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zsmalloc/Kconfig         |    4 ----
->  drivers/staging/zsmalloc/zsmalloc-main.c |   27 +++++++++++++++++----------
->  drivers/staging/zsmalloc/zsmalloc_int.h  |    1 -
->  3 files changed, 17 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-> index a5ab720..9084565 100644
-> --- a/drivers/staging/zsmalloc/Kconfig
-> +++ b/drivers/staging/zsmalloc/Kconfig
-> @@ -1,9 +1,5 @@
->  config ZSMALLOC
->  	tristate "Memory allocator for compressed pages"
-> -	# X86 dependency is because of the use of __flush_tlb_one and set_pte
-> -	# in zsmalloc-main.c.
-> -	# TODO: convert these to portable functions
-> -	depends on X86
->  	default n
->  	help
->  	  zsmalloc is a slab-based memory allocator designed to store
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index ff089f8..cc017b1 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -442,7 +442,7 @@ static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
->  		area = &per_cpu(zs_map_area, cpu);
->  		if (area->vm)
->  			break;
-> -		area->vm = alloc_vm_area(2 * PAGE_SIZE, area->vm_ptes);
-> +		area->vm = alloc_vm_area(2 * PAGE_SIZE, NULL);
->  		if (!area->vm)
->  			return notifier_from_errno(-ENOMEM);
->  		break;
-> @@ -696,13 +696,22 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
->  	} else {
->  		/* this object spans two pages */
->  		struct page *nextp;
-> +		struct page *pages[2];
-> +		struct page **page_array = &pages[0];
-> +		int err;
->  
->  		nextp = get_next_page(page);
->  		BUG_ON(!nextp);
->  
-> +		page_array[0] = page;
-> +		page_array[1] = nextp;
->  
-> -		set_pte(area->vm_ptes[0], mk_pte(page, PAGE_KERNEL));
-> -		set_pte(area->vm_ptes[1], mk_pte(nextp, PAGE_KERNEL));
-> +		/*
-> +		 * map_vm_area never fail because we already allocated
-> +		 * pages for page table in alloc_vm_area.
-> +		 */
-> +		err = map_vm_area(area->vm, PAGE_KERNEL, &page_array);
-> +		BUG_ON(err);
->  
->  		/* We pre-allocated VM area so mapping can never fail */
->  		area->vm_addr = area->vm->addr;
-> @@ -730,14 +739,12 @@ void zs_unmap_object(struct zs_pool *pool, void *handle)
->  	off = obj_idx_to_offset(page, obj_idx, class->size);
->  
->  	area = &__get_cpu_var(zs_map_area);
-> -	if (off + class->size <= PAGE_SIZE) {
-> +	if (off + class->size <= PAGE_SIZE)
->  		kunmap_atomic(area->vm_addr);
-> -	} else {
-> -		set_pte(area->vm_ptes[0], __pte(0));
-> -		set_pte(area->vm_ptes[1], __pte(0));
-> -		__flush_tlb_one((unsigned long)area->vm_addr);
-> -		__flush_tlb_one((unsigned long)area->vm_addr + PAGE_SIZE);
-> -	}
-> +	else
-> +		unmap_kernel_range((unsigned long)area->vm->addr,
-> +					PAGE_SIZE * 2);
-> +
+But you have to deal with the quilt-oh-no-the-patch-no-longer-applies
+trainwreck...
 
+Gr{oetje,eeting}s,
 
+                        Geert
 
-This would certainly work but would incur unncessary cost. All we need
-to do is to flush the local TLB entry correpsonding to these two pages.
-However, unmap_kernel_range --> flush_tlb_kernel_range woule cause TLB
-flush on all CPUs. Additionally, implementation of this function
-(flush_tlb_kernel_range) on architecutures like x86 seems naive since it
-flushes the entire TLB on all the CPUs.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Even with all this penalty, I'm inclined on keeping this change to
-remove x86 only dependency, keeping improvements as future work.
-
-I think Seth was working on this improvement but not sure about the
-current status. Seth?
-
-
->  	put_cpu_var(zs_map_area);
->  }
->  EXPORT_SYMBOL_GPL(zs_unmap_object);
-> diff --git a/drivers/staging/zsmalloc/zsmalloc_int.h b/drivers/staging/zsmalloc/zsmalloc_int.h
-> index 8f9ce0c..4c11c89 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc_int.h
-> +++ b/drivers/staging/zsmalloc/zsmalloc_int.h
-> @@ -111,7 +111,6 @@ static const int fullness_threshold_frac = 4;
->  
->  struct mapping_area {
->  	struct vm_struct *vm;
-> -	pte_t *vm_ptes[2];
->  	char *vm_addr;
->  };
->  
-
-
-Thanks,
-Nitin
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
