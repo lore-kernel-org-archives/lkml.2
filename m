@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759105Ab2DYNia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 09:38:30 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:48089 "EHLO relay.sw.ru"
+	id S1758898Ab2DYNmt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 09:42:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42022 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759035Ab2DYNi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 09:38:28 -0400
-Subject: [PATCH 0/3] SUNRPC: separate per-net data creation from service
- creation
-To: bfields@fieldses.org, Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 25 Apr 2012 17:37:33 +0400
-Message-ID: <20120425132314.13800.6813.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1751376Ab2DYNms convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 09:42:48 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: =?utf-8?Q?J=C3=B6rn?= Engel <joern@logfs.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] add blockconsole
+References: <20120424205946.GH20610@logfs.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 25 Apr 2012 09:42:39 -0400
+In-Reply-To: <20120424205946.GH20610@logfs.org> (=?utf-8?Q?=22J=C3=B6rn?=
+ Engel"'s message of
+	"Tue, 24 Apr 2012 16:59:48 -0400")
+Message-ID: <x49zka0j5bk.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cleanup patch set.
-It will be followed my LockD start/stop cleanup patch set and NFS callback
-service containerization patch set (yes, I forgot to implement it).
+Jörn Engel <joern@logfs.org> writes:
 
-Today per-net data is created with service, and then is service is starting in
-other network namespace. And thus it's destroyed with service too. Moreover,
-network context for destroying of per-net data is taken from current process.
-This is correct, but code looks ugly.
-This patch set separates per-net data allocation from service allocation and
-destruction.
-IOW, per-net data have to be destroyed by service users - not service itself.
+> Console driver similar to netconsole, except it writes to a block
+> device.  Can be useful in a setup where netconsole, for whatever
+> reasons, is impractical.
 
-BTW, NFSd code become uglier with this patch set. Sorry.
-But I assume, that these new ugly parts will be replaced later by NFSd service
-containerization code.
+Hi, Joern,
 
-The following series consists of:
+Neat idea, but I'm curious to know how it works when the system panics
+and you no longer can schedule the writeback thread.  What are the
+limitations you've seen in practice?
 
----
-
-Stanislav Kinsbursky (3):
-      SUNRPC: new svc_bind() routine introduced
-      SUNRPC: check rpcbind clients usage counter before decrement
-      SUNRPC: move per-net operations from svc_destroy()
-
-
- fs/lockd/svc.c             |   30 +++++++++++++++++++-----------
- fs/nfs/callback.c          |   11 +++++++++++
- fs/nfsd/nfsctl.c           |    4 ++++
- fs/nfsd/nfssvc.c           |   16 ++++++++++++++++
- include/linux/sunrpc/svc.h |    1 +
- net/sunrpc/rpcb_clnt.c     |   12 +++++++-----
- net/sunrpc/svc.c           |   23 ++++++++++-------------
- 7 files changed, 68 insertions(+), 29 deletions(-)
-
+Cheers,
+Jeff
