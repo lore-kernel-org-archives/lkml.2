@@ -1,368 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366Ab2DYQZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 12:25:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34980 "EHLO mx1.redhat.com"
+	id S1756507Ab2DYQ0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 12:26:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11984 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755720Ab2DYQZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 12:25:34 -0400
+	id S1756431Ab2DYQ0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 12:26:10 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, robert.richter@amd.com,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 4/6] perf, tool: Use allocated list for each parsed event
-Date: Wed, 25 Apr 2012 18:25:00 +0200
-Message-Id: <1335371102-11358-5-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 6/6] perf, tool: Add hardcoded name term for pmu events
+Date: Wed, 25 Apr 2012 18:25:02 +0200
+Message-Id: <1335371102-11358-7-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1335371102-11358-1-git-send-email-jolsa@redhat.com>
 References: <1335371102-11358-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch from using static temporary event list into dynamically
-allocated one. This way we dont need to pass temp list to the
-parse_events_parse which makes the interface more clear.
+Adding a new hardcoded term 'name' allowing to specify a name
+for the pmu event. The term is defined along with standard
+pmu terms. If no 'name' term is given, the event name follows
+following template:
+    "raw 0x<perf_event_attr::config>"
+
+running:
+    perf stat -e cpu/config=1,name=krava1/u ls
+
+will produce following output:
+    ...
+    Performance counter stats for 'ls':
+                 0 krava1
+    ...
+
+running:
+    perf stat -e cpu/config=1/u ls
+
+will produce following output:
+    ...
+    Performance counter stats for 'ls':
+                 0 raw 0x1
+    ...
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/parse-events.c |   39 ++++++++++++++---------
- tools/perf/util/parse-events.h |   16 +++------
- tools/perf/util/parse-events.y |   69 ++++++++++++++++++++++++++++++---------
- 3 files changed, 83 insertions(+), 41 deletions(-)
+ tools/perf/util/parse-events-test.c |   25 +++++++++++++++++++++++++
+ tools/perf/util/parse-events.c      |   23 ++++++++++++++++++++++-
+ tools/perf/util/parse-events.h      |    1 +
+ tools/perf/util/parse-events.l      |    1 +
+ tools/perf/util/parse-events.y      |    8 ++++++++
+ tools/perf/util/pmu.c               |    4 ++--
+ 6 files changed, 59 insertions(+), 3 deletions(-)
 
+diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
+index 2e8f435..76b98e2 100644
+--- a/tools/perf/util/parse-events-test.c
++++ b/tools/perf/util/parse-events-test.c
+@@ -409,6 +409,27 @@ static int test__checkevent_list(struct perf_evlist *evlist)
+ 	return 0;
+ }
+ 
++static int test__checkevent_pmu_name(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel;
++
++	/* cpu/config=1,name=krava1/u */
++	evsel = list_entry(evlist->entries.next, struct perf_evsel, node);
++	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",  1 == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong name", !strcmp(evsel->name, "krava"));
++
++	/* cpu/config=2/" */
++	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
++	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",  2 == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong name", !strcmp(evsel->name, "raw 0x2"));
++
++	return 0;
++}
++
+ struct test__event_st {
+ 	const char *name;
+ 	__u32 type;
+@@ -529,6 +550,10 @@ static struct test__event_st test__events_pmu[] = {
+ 		.name  = "cpu/config=10,config1,config2=3,period=1000/u",
+ 		.check = test__checkevent_pmu,
+ 	},
++	[1] = {
++		.name  = "cpu/config=1,name=krava/u,cpu/config=2/u",
++		.check = test__checkevent_pmu_name,
++	},
+ };
+ 
+ #define TEST__EVENTS_PMU_CNT (sizeof(test__events_pmu) / \
 diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 6704978..4025e18 100644
+index 59324e7..fac7d59 100644
 --- a/tools/perf/util/parse-events.c
 +++ b/tools/perf/util/parse-events.c
-@@ -26,8 +26,7 @@ struct event_symbol {
- #ifdef PARSER_DEBUG
- extern int parse_events_debug;
- #endif
--int parse_events_parse(struct list_head *list, struct list_head *list_tmp,
--		       int *idx);
-+int parse_events_parse(struct list_head *list, int *idx);
- 
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-@@ -358,20 +357,30 @@ const char *__event_name(int type, u64 config)
- 	return "unknown";
- }
- 
--static int add_event(struct list_head *list, int *idx,
-+static int add_event(struct list_head **_list, int *idx,
- 		     struct perf_event_attr *attr, char *name)
- {
- 	struct perf_evsel *evsel;
-+	struct list_head *list = *_list;
-+
-+	if (!list) {
-+		list = malloc(sizeof(*list));
-+		if (!list)
-+			return -ENOMEM;
-+		INIT_LIST_HEAD(list);
-+	}
- 
- 	event_attr_init(attr);
- 
- 	evsel = perf_evsel__new(attr, (*idx)++);
--	if (!evsel)
-+	if (!evsel) {
-+		free(list);
- 		return -ENOMEM;
--
--	list_add_tail(&evsel->node, list);
-+	}
- 
- 	evsel->name = strdup(name);
-+	list_add_tail(&evsel->node, list);
-+	*_list = list;
- 	return 0;
- }
- 
-@@ -393,7 +402,7 @@ static int parse_aliases(char *str, const char *names[][MAX_ALIASES], int size)
- 	return -1;
- }
- 
--int parse_events_add_cache(struct list_head *list, int *idx,
-+int parse_events_add_cache(struct list_head **list, int *idx,
- 			   char *type, char *op_result1, char *op_result2)
- {
- 	struct perf_event_attr attr;
-@@ -454,7 +463,7 @@ int parse_events_add_cache(struct list_head *list, int *idx,
- 	return add_event(list, idx, &attr, name);
- }
- 
--static int add_tracepoint(struct list_head *list, int *idx,
-+static int add_tracepoint(struct list_head **list, int *idx,
- 			  char *sys_name, char *evt_name)
- {
- 	struct perf_event_attr attr;
-@@ -491,7 +500,7 @@ static int add_tracepoint(struct list_head *list, int *idx,
- 	return add_event(list, idx, &attr, name);
- }
- 
--static int add_tracepoint_multi(struct list_head *list, int *idx,
-+static int add_tracepoint_multi(struct list_head **list, int *idx,
- 				char *sys_name, char *evt_name)
- {
- 	char evt_path[MAXPATHLEN];
-@@ -522,7 +531,7 @@ static int add_tracepoint_multi(struct list_head *list, int *idx,
- 	return ret;
- }
- 
--int parse_events_add_tracepoint(struct list_head *list, int *idx,
-+int parse_events_add_tracepoint(struct list_head **list, int *idx,
- 				char *sys, char *event)
- {
- 	int ret;
-@@ -566,7 +575,7 @@ parse_breakpoint_type(const char *type, struct perf_event_attr *attr)
- 	return 0;
- }
- 
--int parse_events_add_breakpoint(struct list_head *list, int *idx,
-+int parse_events_add_breakpoint(struct list_head **list, int *idx,
- 				void *ptr, char *type)
- {
- 	struct perf_event_attr attr;
-@@ -645,7 +654,7 @@ static int config_attr(struct perf_event_attr *attr,
- 	return 0;
- }
- 
--int parse_events_add_numeric(struct list_head *list, int *idx,
-+int parse_events_add_numeric(struct list_head **list, int *idx,
- 			     unsigned long type, unsigned long config,
- 			     struct list_head *head_config)
- {
-@@ -663,7 +672,7 @@ int parse_events_add_numeric(struct list_head *list, int *idx,
+@@ -634,6 +634,9 @@ do {								\
+ 		 * attr->branch_sample_type = term->val.num;
+ 		 */
+ 		break;
++	case PARSE_EVENTS__TERM_TYPE_NAME:
++		CHECK_TYPE_VAL(STR);
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -672,6 +675,23 @@ int parse_events_add_numeric(struct list_head **list, int *idx,
  			 (char *) __event_name(type, config));
  }
  
--int parse_events_add_pmu(struct list_head *list, int *idx,
-+int parse_events_add_pmu(struct list_head **list, int *idx,
++static int parse_events__is_name_term(struct parse_events__term *term)
++{
++	return term->type_term == PARSE_EVENTS__TERM_TYPE_NAME;
++}
++
++static char *pmu_event_name(struct perf_event_attr *attr,
++			    struct list_head *head_terms)
++{
++	struct parse_events__term *term;
++
++	list_for_each_entry(term, head_terms, list)
++		if (parse_events__is_name_term(term))
++			return term->val.str;
++
++	return (char *) __event_name(PERF_TYPE_RAW, attr->config);
++}
++
+ int parse_events_add_pmu(struct list_head **list, int *idx,
  			 char *name, struct list_head *head_config)
  {
- 	struct perf_event_attr attr;
-@@ -696,7 +705,7 @@ void parse_events_update_lists(struct list_head *list_event,
- 	 * list, for next event definition.
- 	 */
- 	list_splice_tail(list_event, list_all);
--	INIT_LIST_HEAD(list_event);
-+	free(list_event);
+@@ -693,7 +713,8 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
+ 	if (perf_pmu__config(pmu, &attr, head_config))
+ 		return -EINVAL;
+ 
+-	return add_event(list, idx, &attr, (char *) "pmu");
++	return add_event(list, idx, &attr,
++			 pmu_event_name(&attr, head_config));
  }
  
- int parse_events_modifier(struct list_head *list, char *str)
-@@ -774,7 +783,7 @@ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
- #ifdef PARSER_DEBUG
- 	parse_events_debug = 1;
- #endif
--	ret = parse_events_parse(&list, &list_tmp, &idx);
-+	ret = parse_events_parse(&list, &idx);
- 
- 	parse_events__flush_buffer(buffer);
- 	parse_events__delete_buffer(buffer);
+ void parse_events_update_lists(struct list_head *list_event,
 diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 6f1f86c..5633b32 100644
+index 5633b32..20d623d 100644
 --- a/tools/perf/util/parse-events.h
 +++ b/tools/perf/util/parse-events.h
-@@ -67,25 +67,21 @@ int parse_events__term_num(struct parse_events__term **_term,
- int parse_events__term_str(struct parse_events__term **_term,
- 			   int type_term, char *config, char *str);
- void parse_events__free_terms(struct list_head *terms);
--int parse_events_modifier(struct list_head *list __used, char *str __used);
--int parse_events_add_tracepoint(struct list_head *list, int *idx,
-+int parse_events_modifier(struct list_head *list, char *str);
-+int parse_events_add_tracepoint(struct list_head **list, int *idx,
- 				char *sys, char *event);
--int parse_events_add_raw(struct perf_evlist *evlist, unsigned long config,
--			 unsigned long config1, unsigned long config2,
--			 char *mod);
--int parse_events_add_numeric(struct list_head *list, int *idx,
-+int parse_events_add_numeric(struct list_head **list, int *idx,
- 			     unsigned long type, unsigned long config,
- 			     struct list_head *head_config);
--int parse_events_add_cache(struct list_head *list, int *idx,
-+int parse_events_add_cache(struct list_head **list, int *idx,
- 			   char *type, char *op_result1, char *op_result2);
--int parse_events_add_breakpoint(struct list_head *list, int *idx,
-+int parse_events_add_breakpoint(struct list_head **list, int *idx,
- 				void *ptr, char *type);
--int parse_events_add_pmu(struct list_head *list, int *idx,
-+int parse_events_add_pmu(struct list_head **list, int *idx,
- 			 char *pmu , struct list_head *head_config);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
- void parse_events_error(struct list_head *list_all,
--			struct list_head *list_event,
- 			int *idx, char const *msg);
- int parse_events__test(void);
+@@ -46,6 +46,7 @@ enum {
+ 	PARSE_EVENTS__TERM_TYPE_CONFIG,
+ 	PARSE_EVENTS__TERM_TYPE_CONFIG1,
+ 	PARSE_EVENTS__TERM_TYPE_CONFIG2,
++	PARSE_EVENTS__TERM_TYPE_NAME,
+ 	PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD,
+ 	PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
+ };
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 331d28a..618a8e7 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -105,6 +105,7 @@ misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
+ config			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG); }
+ config1			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG1); }
+ config2			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG2); }
++name			{ return term(PARSE_EVENTS__TERM_TYPE_NAME); }
+ period			{ return term(PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
+ branch_type		{ return term(PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
  
 diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 936913e..126fad0 100644
+index 126fad0..362cc59 100644
 --- a/tools/perf/util/parse-events.y
 +++ b/tools/perf/util/parse-events.y
-@@ -1,7 +1,6 @@
- 
- %name-prefix "parse_events_"
- %parse-param {struct list_head *list_all}
--%parse-param {struct list_head *list_event}
- %parse-param {int *idx}
- 
- %{
-@@ -41,6 +40,14 @@ do { \
- %type <str> PE_MODIFIER_BP
- %type <head> event_config
- %type <term> event_term
-+%type <head> event_pmu
-+%type <head> event_legacy_symbol
-+%type <head> event_legacy_cache
-+%type <head> event_legacy_mem
-+%type <head> event_legacy_tracepoint
-+%type <head> event_legacy_numeric
-+%type <head> event_legacy_raw
-+%type <head> event_def
- 
- %union
- {
-@@ -62,13 +69,13 @@ event_def PE_MODIFIER_EVENT
- 	 * (there could be more events added for multiple tracepoint
- 	 * definitions via '*?'.
- 	 */
--	ABORT_ON(parse_events_modifier(list_event, $2));
--	parse_events_update_lists(list_event, list_all);
-+	ABORT_ON(parse_events_modifier($1, $2));
-+	parse_events_update_lists($1, list_all);
+@@ -237,6 +237,14 @@ PE_NAME
+ 	$$ = term;
  }
  |
- event_def
- {
--	parse_events_update_lists(list_event, list_all);
-+	parse_events_update_lists($1, list_all);
- }
- 
- event_def: event_pmu |
-@@ -82,71 +89,102 @@ event_def: event_pmu |
- event_pmu:
- PE_NAME '/' event_config '/'
- {
--	ABORT_ON(parse_events_add_pmu(list_event, idx, $1, $3));
-+	struct list_head *list = NULL;
++PE_TERM '=' PE_NAME
++{
++	struct parse_events__term *term;
 +
-+	ABORT_ON(parse_events_add_pmu(&list, idx, $1, $3));
- 	parse_events__free_terms($3);
-+	$$ = list;
- }
++	ABORT_ON(parse_events__term_str(&term, $1, NULL, $3));
++	$$ = term;
++}
++|
+ PE_TERM '=' PE_VALUE
+ {
+ 	struct parse_events__term *term;
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 8ee219b..a119a53 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -258,9 +258,9 @@ static int pmu_config_term(struct list_head *formats,
+ static int pmu_config(struct list_head *formats, struct perf_event_attr *attr,
+ 		      struct list_head *head_terms)
+ {
+-	struct parse_events__term *term, *h;
++	struct parse_events__term *term;
  
- event_legacy_symbol:
- PE_VALUE_SYM '/' event_config '/'
- {
-+	struct list_head *list = NULL;
- 	int type = $1 >> 16;
- 	int config = $1 & 255;
+-	list_for_each_entry_safe(term, h, head_terms, list)
++	list_for_each_entry(term, head_terms, list)
+ 		if (pmu_config_term(formats, attr, term))
+ 			return -EINVAL;
  
--	ABORT_ON(parse_events_add_numeric(list_event, idx, type, config, $3));
-+	ABORT_ON(parse_events_add_numeric(&list, idx, type, config, $3));
- 	parse_events__free_terms($3);
-+	$$ = list;
- }
- |
- PE_VALUE_SYM sep_slash_dc
- {
-+	struct list_head *list = NULL;
- 	int type = $1 >> 16;
- 	int config = $1 & 255;
- 
--	ABORT_ON(parse_events_add_numeric(list_event, idx, type, config, NULL));
-+	ABORT_ON(parse_events_add_numeric(&list, idx, type, config, NULL));
-+	$$ = list;
- }
- 
- event_legacy_cache:
- PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT '-' PE_NAME_CACHE_OP_RESULT
- {
--	ABORT_ON(parse_events_add_cache(list_event, idx, $1, $3, $5));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_cache(&list, idx, $1, $3, $5));
-+	$$ = list;
- }
- |
- PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT
- {
--	ABORT_ON(parse_events_add_cache(list_event, idx, $1, $3, NULL));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_cache(&list, idx, $1, $3, NULL));
-+	$$ = list;
- }
- |
- PE_NAME_CACHE_TYPE
- {
--	ABORT_ON(parse_events_add_cache(list_event, idx, $1, NULL, NULL));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_cache(&list, idx, $1, NULL, NULL));
-+	$$ = list;
- }
- 
- event_legacy_mem:
- PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
- {
--	ABORT_ON(parse_events_add_breakpoint(list_event, idx, (void *) $2, $4));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_breakpoint(&list, idx, (void *) $2, $4));
-+	$$ = list;
- }
- |
- PE_PREFIX_MEM PE_VALUE sep_dc
- {
--	ABORT_ON(parse_events_add_breakpoint(list_event, idx, (void *) $2, NULL));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_breakpoint(&list, idx, (void *) $2, NULL));
-+	$$ = list;
- }
- 
- event_legacy_tracepoint:
- PE_NAME ':' PE_NAME
- {
--	ABORT_ON(parse_events_add_tracepoint(list_event, idx, $1, $3));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_tracepoint(&list, idx, $1, $3));
-+	$$ = list;
- }
- 
- event_legacy_numeric:
- PE_VALUE ':' PE_VALUE
- {
--	ABORT_ON(parse_events_add_numeric(list_event, idx, $1, $3, NULL));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_numeric(&list, idx, $1, $3, NULL));
-+	$$ = list;
- }
- 
- event_legacy_raw:
- PE_RAW
- {
--	ABORT_ON(parse_events_add_numeric(list_event, idx, PERF_TYPE_RAW, $1, NULL));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_numeric(&list, idx, PERF_TYPE_RAW, $1, NULL));
-+	$$ = list;
- }
- 
- event_config:
-@@ -222,7 +260,6 @@ sep_slash_dc: '/' | ':' |
- %%
- 
- void parse_events_error(struct list_head *list_all __used,
--			struct list_head *list_event __used,
- 			int *idx __used,
- 			char const *msg __used)
- {
 -- 
 1.7.7.6
 
