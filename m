@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758709Ab2DYBaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 21:30:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44662 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757063Ab2DYBao (ORCPT
+	id S1758702Ab2DYBeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 21:34:25 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50825 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757063Ab2DYBeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 21:30:44 -0400
-Message-ID: <1335317436.24039.2.camel@phoenix>
-Subject: [PATCH] mfd: tps65090: Return proper error if regmap_init_i2c fails
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Date: Wed, 25 Apr 2012 09:30:36 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Tue, 24 Apr 2012 21:34:24 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F975430.4090107@jp.fujitsu.com>
+Date: Wed, 25 Apr 2012 10:32:32 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Glauber Costa <glommer@parallels.com>
+CC: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 09/23] kmem slab accounting basic infrastructure
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1334959051-18203-10-git-send-email-glommer@parallels.com>
+In-Reply-To: <1334959051-18203-10-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return proper error instead of 0 if regmap_init_i2c fails.
+(2012/04/21 6:57), Glauber Costa wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/tps65090.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> This patch adds the basic infrastructure for the accounting of the slab
+> caches. To control that, the following files are created:
+> 
+>  * memory.kmem.usage_in_bytes
+>  * memory.kmem.limit_in_bytes
+>  * memory.kmem.failcnt
+>  * memory.kmem.max_usage_in_bytes
+> 
+> They have the same meaning of their user memory counterparts. They reflect
+> the state of the "kmem" res_counter.
+> 
+> The code is not enabled until a limit is set. This can be tested by the flag
+> "kmem_accounted". This means that after the patch is applied, no behavioral
+> changes exists for whoever is still using memcg to control their memory usage.
+> 
 
-diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-index 47f802b..da821d9 100644
---- a/drivers/mfd/tps65090.c
-+++ b/drivers/mfd/tps65090.c
-@@ -286,10 +286,10 @@ static int __devinit tps65090_i2c_probe(struct i2c_client *client,
- 	tps65090->rmap = regmap_init_i2c(tps65090->client,
- 		&tps65090_regmap_config);
- 	if (IS_ERR(tps65090->rmap)) {
--		dev_err(&client->dev, "regmap_init failed with err: %ld\n",
--			PTR_ERR(tps65090->rmap));
-+		ret = PTR_ERR(tps65090->rmap);
-+		dev_err(&client->dev, "regmap_init failed with err: %d\n", ret);
- 		goto err_irq_exit;
--	};
-+	}
- 
- 	ret = mfd_add_devices(tps65090->dev, -1, tps65090s,
- 		ARRAY_SIZE(tps65090s), NULL, 0);
--- 
-1.7.5.4
+Hmm, res_counter never goes naeative ?
+
+> We always account to both user and kernel resource_counters. This effectively
+> means that an independent kernel limit is in place when the limit is set
+> to a lower value than the user memory. A equal or higher value means that the
+> user limit will always hit first, meaning that kmem is effectively unlimited.
+> 
+> People who want to track kernel memory but not limit it, can set this limit
+> to a very high number (like RESOURCE_MAX - 1page - that no one will ever hit,
+> or equal to the user memory)
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
 
 
+The code itself seems fine.
+
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
