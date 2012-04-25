@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab2DYPAV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:00:21 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37228 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab2DYPAU (ORCPT
+	id S1752188Ab2DYPCB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:02:01 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56034 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab2DYPCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:00:20 -0400
-Message-ID: <4F98117C.7080309@lwfinger.net>
-Date: Wed, 25 Apr 2012 10:00:12 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
+	Wed, 25 Apr 2012 11:02:00 -0400
+Message-ID: <4F9811E5.4040105@wwwdotorg.org>
+Date: Wed, 25 Apr 2012 09:01:57 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Regression in 32-bit ppc kernel
-References: <4F973026.3020103@lwfinger.net>  <1335311621.15830.42.camel@pasglop> <4F976352.4060001@lwfinger.net> <1335327081.21961.28.camel@pasglop>
-In-Reply-To: <1335327081.21961.28.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Mark Brown <broonie@sirena.org.uk>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Dong Aisheng <B29396@freescale.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Tag on pinctrl
+References: <CACRpkdYqZrNFxj4kyMqYZk5PAcjF6-TroJ+Xq+3EVBLvo5Zg-Q@mail.gmail.com> <4F96D84E.7080204@wwwdotorg.org> <20120425104559.GA16752@sirena.org.uk>
+In-Reply-To: <20120425104559.GA16752@sirena.org.uk>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2012 11:11 PM, Benjamin Herrenschmidt wrote:
-> On Tue, 2012-04-24 at 21:37 -0500, Larry Finger wrote:
->>>> Somewhere between v3.2 and v3.3, the kernel in my Powerbook G4
->> started issuing
->>>> the following traceback on bootup:
->>>
->>> Does it continue working afterward or not at all ?
->>>
->>> Are you using the old IDE driver or the newer libata based
->> pata_macio ?
->>
->> Yes, it finishes the boot, and appears to work correctly. If a device
->> is
->> missing, I do not know what it is.
->>
->> I think I am using the old IDE driver.
->>
-> Interesting. Does it make a difference if you switch to pata_macio ?
+On 04/25/2012 04:46 AM, Mark Brown wrote:
+> On Tue, Apr 24, 2012 at 10:43:58AM -0600, Stephen Warren wrote:
+> 
+>> Yes, I have pulled that tag into the Tegra tree as
+>> for-3.5/gpio-pinmux-dependency, and have a Tegra-specific
+>> for-3.5/gpio-pinmux branch that depends on it. Two other Tegra branches
+>> in turn (for-3.5/tegra30-audio, for-3.5/usb-ulpi) depend on
+>> for-3.5/gpio-pinmux.
+> 
+>> Linus, I think this will get into the ARM SoC tree simply by my saying
+>> in my for-3.5/gpio-pinmux pull request that the branch depends on your
+>> tag; I don't /think/ you need to explicitly send a pull request there,
+>> right?
+> 
+> If the gpio-pinmux branch is based on Linus' branch (which it really
+> should be if it's a dependency...) then git will do the right thing
+> here.  If it's not then you need to explicitly get things pulled in but
+> there will also be bisection issues.
 
-After a few tries, I managed to change over to pata_macio. Fortunately, most of 
-the system used dev-by-id or UUID, thus most of the process was getting all the 
-kernel pieces built in.
+The Tegra branch is indeed based directly on the pinctrl branch.
 
-Unfortunately, the original problem remains. I have resumed the bisecting - only 
-11 steps to go. I should have it by Friday! :)
-
-Larry
+However, I was talking more about how Arnd/Olof are managing arm-soc
+than raw git operation; I believe they like to keep an explicit separate
+branch for each dependency in order to track which commits to wait for
+before sending pull requests for the branches they have that are based
+on them, so the dependent commits come in from their original subsystem
+first.
