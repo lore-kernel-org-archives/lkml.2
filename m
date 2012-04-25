@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab2DYPSR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:18:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6359 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab2DYPSP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:18:15 -0400
-X-Authority-Analysis: v=2.0 cv=IaEFqBWa c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=6_Z-mwH_ePMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=6ASPn2vhAAAA:8 a=hzjqOLpxxnnnCK4k38cA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=xWsXUZN4lXYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1335367093.28106.165.camel@gandalf.stny.rr.com>
-Subject: [PATCH] kgdb: Do not allow function tracing of kgdb code
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Wed, 25 Apr 2012 11:18:13 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753998Ab2DYPUq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:20:46 -0400
+Received: from fieldses.org ([174.143.236.118]:51410 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752620Ab2DYPUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 11:20:45 -0400
+Date: Wed, 25 Apr 2012 11:20:41 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs and fs fixes
+Message-ID: <20120425152041.GA751@fieldses.org>
+References: <20120417052511.GU6589@ZenIV.linux.org.uk>
+ <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
+ <20120417180129.GW6589@ZenIV.linux.org.uk>
+ <20120417182825.GX6589@ZenIV.linux.org.uk>
+ <20120417211419.GC27426@fieldses.org>
+ <CA+55aFwdh_QWG-R2FQ71kDXiNYZ04qPANBsY_PssVUwEBH4uSw@mail.gmail.com>
+ <20120417234423.GY6589@ZenIV.linux.org.uk>
+ <20120418215238.GA11959@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120418215238.GA11959@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As function tracing the kgdb code can cause issues, as kgdb is a
-debugger itself, do not trace the kgdb functions.
+On Wed, Apr 18, 2012 at 05:52:38PM -0400, J. Bruce Fields wrote:
+> On Wed, Apr 18, 2012 at 12:44:24AM +0100, Al Viro wrote:
+> > On Tue, Apr 17, 2012 at 03:08:26PM -0700, Linus Torvalds wrote:
+> > > > Or I could increment that counter for all the conflicting operations and
+> > > > rely on it instead of the i_mutex. ?I was trying to avoid adding
+> > > > something like that (an inc, a dec, another error path) to every
+> > > > operation. ?And hoping to avoid adding another field to struct inode.
+> > > > Oh well.
+> > > 
+> > > We could just say that we can do a double inode lock, but then
+> > > standardize on the order. And the only sane order is comparing inode
+> > > pointers, not inode numbers like ext4 apparently does.
+> > > 
+> > > With a standard order, I don't think it would be at all wrong to just
+> > > take the inode lock on rename.
+> > 
+> > In principle, yes, but have you tried to grep for i_mutex?  Note that
+> > we have *another* place where multiple ->i_mutex might be held on
+> > non-directories (and unless I'm missing something, ext4 move_extent.c
+> > stuff doesn't play well with it): quota writes.  Which can, AFAICS,
+> > happen while write(2) is holding ->i_mutex on a regular file.  So
+> > it's not _that_ easy - we want something like "and quota file is goes
+> > last"
+> 
+> So the idea would be to always take the i_mutex on non-quota files
+> before taking it on quota files?
+> 
+> I tried pulling the ext4 thing into fs/inode.c, modifying the order to
+> do that, and then doing the rename change on top of that.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Patches follow, with the ordering change at the end.
 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 532d2e0..b7828ce 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -15,6 +15,7 @@ CFLAGS_REMOVE_pvclock.o = -pg
- CFLAGS_REMOVE_kvmclock.o = -pg
- CFLAGS_REMOVE_ftrace.o = -pg
- CFLAGS_REMOVE_early_printk.o = -pg
-+CFLAGS_REMOVE_kgdb.o = -pg
- endif
- 
- obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
+And a documentation fix that I suppose could go in whenever.
 
-
+--b.
