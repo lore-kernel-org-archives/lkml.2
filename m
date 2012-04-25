@@ -1,128 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab2DYPrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 11:47:36 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:35831 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755747Ab2DYPrc (ORCPT
+	id S1755670Ab2DYPsj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 11:48:39 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55710 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416Ab2DYPsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 11:47:32 -0400
-Message-ID: <4F981C87.60403@gmail.com>
-Date: Wed, 25 Apr 2012 23:47:19 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Wed, 25 Apr 2012 11:48:37 -0400
+Message-ID: <4F981CD1.2050007@wwwdotorg.org>
+Date: Wed, 25 Apr 2012 09:48:33 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: Dan Williams <dan.j.williams@intel.com>
-CC: Jiang Liu <jiang.liu@huawei.com>, Vinod Koul <vinod.koul@intel.com>,
-        Keping Chen <chenkeping@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 6/8] dmaengine: enhance network subsystem to support
- DMA device hotplug
-References: <1335189109-4871-1-git-send-email-jiang.liu@huawei.com> <1335189109-4871-7-git-send-email-jiang.liu@huawei.com> <CABE8wwvi_Yz8AyALr1-uDW9xSgrSqfrYWhB_22NQ2ydTa81+mg@mail.gmail.com> <4F961041.7010106@huawei.com> <CABE8wwvW9MUWaqSUCPMr7_yj7XGtSj+X9VE1-xWrEusZ3TMaqQ@mail.gmail.com>
-In-Reply-To: <CABE8wwvW9MUWaqSUCPMr7_yj7XGtSj+X9VE1-xWrEusZ3TMaqQ@mail.gmail.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Benoit Cousson <b-cousson@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCHv4 1/2] drivers: input: keypad: Add device tree support
+References: <1335346004-18108-1-git-send-email-sourav.poddar@ti.com>
+In-Reply-To: <1335346004-18108-1-git-send-email-sourav.poddar@ti.com>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
-	Thanks for your great comments about the performance penalty issue. And I'm trying
-to refine the implementation to reduce penalty caused by hotplug logic. If the algorithm works
-correctly, the optimized hot path code will be:
+On 04/25/2012 03:26 AM, Sourav Poddar wrote:
+> Update the Documentation with omap4 keypad device tree
+> binding information.
+> Add device tree support for omap4 keypad driver.
 
-------------------------------------------------------------------------------
-struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type)
-{
-        struct dma_chan *chan = this_cpu_read(channel_table[tx_type]->chan);
+> diff --git a/Documentation/devicetree/bindings/input/omap-keypad.txt b/Documentation/devicetree/bindings/input/omap-keypad.txt
 
-        this_cpu_inc(dmaengine_chan_ref_count);
-        if (static_key_false(&dmaengine_quiesce)) {
-                chan = NULL;
-        }
+> +Required Board Specific Properties, in addition to those specified by
+> +the shared matrix-keyboard bindings:
+> +- keypad,num-rows: Number of row lines connected to the keypad
+> +  controller.
+> +
+> +- keypad,num-columns: Number of column lines connected to the
+> +  keypad controller.
 
-        return chan;
-}
-EXPORT_SYMBOL(dma_find_channel);
+I'm not sure if "keypad," is the appropriate prefix here. If the
+properties are specific to this one TI/OMAP binding, "ti," might be a
+better prefix. However, if they're more generally applicable, maybe
+"linux," to match "linux,keymap"?
 
-struct dma_chan *dma_get_channel(struct dma_chan *chan)
-{
-        if (static_key_false(&dmaengine_quiesce))
-                atomic_inc(&dmaengine_dirty);
-        this_cpu_inc(dmaengine_chan_ref_count);
+> +Optional Properties specific to linux:
+> +- linux,keypad-no-autorepeat: do no enable autorepeat feature.
 
-        return chan;
-}
-EXPORT_SYMBOL(dma_get_channel);
+It's probably worth considering whether num-rows/columns should be part
+of matrix-keyboard.txt, and whether linux,keypad-no-autorepeat should be
+part of some core keyboard binding. Some of the properties in
+tegra-kbc.txt might be worth generalizing too (debounce/repeat delay,
+ghost filter)?
 
-void dma_put_channel(struct dma_chan *chan)
-{
-        this_cpu_dec(dmaengine_chan_ref_count);
-}
-EXPORT_SYMBOL(dma_put_channel);
------------------------------------------------------------------------------
-
-The disassembled code is:
-(gdb) disassemble dma_find_channel 
-Dump of assembler code for function dma_find_channel:
-   0x0000000000000000 <+0>:	push   %rbp
-   0x0000000000000001 <+1>:	mov    %rsp,%rbp
-   0x0000000000000004 <+4>:	callq  0x9 <dma_find_channel+9>
-   0x0000000000000009 <+9>:	mov    %edi,%edi
-   0x000000000000000b <+11>:	mov    0x0(,%rdi,8),%rax
-   0x0000000000000013 <+19>:	mov    %gs:(%rax),%rax
-   0x0000000000000017 <+23>:	incq   %gs:0x0				//overhead: this_cpu_inc(dmaengine_chan_ref_count)
-   0x0000000000000020 <+32>:	jmpq   0x25 <dma_find_channel+37>	//overhead: if (static_key_false(&dmaengine_quiesce)), will be replaced as NOP by jump label
-   0x0000000000000025 <+37>:	pop    %rbp
-   0x0000000000000026 <+38>:	retq   
-   0x0000000000000027 <+39>:	nopw   0x0(%rax,%rax,1)
-   0x0000000000000030 <+48>:	xor    %eax,%eax
-   0x0000000000000032 <+50>:	pop    %rbp
-   0x0000000000000033 <+51>:	retq   
-End of assembler dump.
-(gdb) disassemble dma_put_channel 	// overhead: to decrease channel reference count, 6 instructions
-Dump of assembler code for function dma_put_channel:
-   0x0000000000000070 <+0>:	push   %rbp
-   0x0000000000000071 <+1>:	mov    %rsp,%rbp
-   0x0000000000000074 <+4>:	callq  0x79 <dma_put_channel+9>
-   0x0000000000000079 <+9>:	decq   %gs:0x0
-   0x0000000000000082 <+18>:	pop    %rbp
-   0x0000000000000083 <+19>:	retq   
-End of assembler dump.
-(gdb) disassemble dma_get_channel 
-Dump of assembler code for function dma_get_channel:
-   0x0000000000000040 <+0>:	push   %rbp
-   0x0000000000000041 <+1>:	mov    %rsp,%rbp
-   0x0000000000000044 <+4>:	callq  0x49 <dma_get_channel+9>
-   0x0000000000000049 <+9>:	mov    %rdi,%rax
-   0x000000000000004c <+12>:	jmpq   0x51 <dma_get_channel+17>
-   0x0000000000000051 <+17>:	incq   %gs:0x0
-   0x000000000000005a <+26>:	pop    %rbp
-   0x000000000000005b <+27>:	retq   
-   0x000000000000005c <+28>:	nopl   0x0(%rax)
-   0x0000000000000060 <+32>:	lock incl 0x0(%rip)        # 0x67 <dma_get_channel+39>
-   0x0000000000000067 <+39>:	jmp    0x51 <dma_get_channel+17>
-End of assembler dump.
-
-So for a typical dma_find_channel()/dma_put_channel(), the total overhead
-is about 10 instructions and two percpu(local) memory updates. And there's
-no shared cache pollution any more. Is this acceptable ff the algorithm 
-works as expected? I will test the code tomorrow.
-
-For typical systems which don't support DMA device hotplug, the overhead
-could be completely removed by condition compilation.
-
-Any comments are welcomed!
-
-Thanks!
---gerry
-
-
-On 04/24/2012 11:09 AM, Dan Williams wrote:
->>> If you are going to hotplug the entire IOH, then you are probably ok
-
+> +Example:
+> +        keypad@4ae1c000{
+> +                compatible = "ti,omap4-keypad";
+> +                keypad,num-rows = <2>;
+> +                keypad,num-columns = <8>;
+> +		linux,keypad-no-autorepeat;
+> +	};
