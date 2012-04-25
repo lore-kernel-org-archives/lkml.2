@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab2DYStk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 14:49:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2795 "EHLO
+	id S1757976Ab2DYStj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 14:49:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23437 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757834Ab2DYStd (ORCPT
+	with ESMTP id S1757872Ab2DYSte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 14:49:33 -0400
-X-Authority-Analysis: v=2.0 cv=IaEFqBWa c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=18I3TvJX4GEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=oGMlB6cnAAAA:8 a=meVymXHHAAAA:8 a=pBgNJTDty4BEqmi_3asA:9 a=XYnpgcLDUZJWObOWT1IA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=CY6gl2JlH4YA:10 a=jeBq3FmKZ4MA:10 a=7v2E64V5x3mQTYVR:21 a=B6U_evCqh1edfrBO:21 a=eM1y4gnh5IgjXmNsuTsA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Wed, 25 Apr 2012 14:49:34 -0400
+X-Authority-Analysis: v=2.0 cv=MNHiabll c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=wWoeE9cL47oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=1cMp6Op0AAAA:8 a=oGMlB6cnAAAA:8 a=meVymXHHAAAA:8 a=9VY1LBHLNaFFkPAqgBUA:9 a=fIo9X-f-_k0BDLh8c1QA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=PBs7KpRtM0kA:10 a=CY6gl2JlH4YA:10 a=jeBq3FmKZ4MA:10 a=GTUw4PQbpYoNWLa9XyIA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120425184930.873468066@goodmis.org>
+Message-Id: <20120425184931.259121910@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 25 Apr 2012 14:48:34 -0400
+Date: Wed, 25 Apr 2012 14:48:35 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 4/5] ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine
+        Paul Mundt <lethal@linux-sh.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 5/5] ftrace/x86: Remove the complex ftrace NMI handling code
 References: <20120425184830.325105778@goodmis.org>
-Content-Disposition: inline; filename=0004-ftrace-x86-Have-arch-x86_64-use-breakpoints-instead-.patch
+Content-Disposition: inline; filename=0005-ftrace-x86-Remove-the-complex-ftrace-NMI-handling-co.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,472 +33,312 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-This method changes x86 to add a breakpoint to the mcount locations
-instead of calling stop machine.
+As ftrace function tracing would require modifying code that could
+be executed in NMI context, which is not stopped with stop_machine(),
+ftrace had to do a complex algorithm with various stages of setup
+and memory barriers to make it work.
 
-Now that iret can be handled by NMIs, we perform the following to
-update code:
+With the new breakpoint method, this is no longer required. The changes
+to the code can be done without any problem in NMI context, as well as
+without stop machine altogether. Remove the complex code as it is
+no longer needed.
 
-1) Add a breakpoint to all locations that will be modified
+Also, a lot of the notrace annotations could be removed from the
+NMI code as it is now safe to trace them. With the exception of
+do_nmi itself, which does some special work to handle running in
+the debug stack. The breakpoint method can cause NMIs to double
+nest the debug stack if it's not setup properly, and that is done
+in do_nmi(), thus that function must not be traced.
 
-2) Sync all cores
+(Note the arch sh may want to do the same)
 
-3) Update all locations to be either a nop or call (except breakpoint
-   op)
-
-4) Sync all cores
-
-5) Remove the breakpoint with the new code.
-
-6) Sync all cores
-
-[
-  Added updates that Masami suggested:
-   Use unlikely(modifying_ftrace_code) in int3 trap to keep kprobes efficie=
-nt.
-   Don't use NOTIFY_* in ftrace handler in int3 as it is not a notifier.
-]
-
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
 Cc: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/ftrace.h |    4 +
- arch/x86/kernel/ftrace.c      |  343 +++++++++++++++++++++++++++++++++++++=
-++++
- arch/x86/kernel/traps.c       |    9 +-
- include/linux/ftrace.h        |    6 +
- 4 files changed, 361 insertions(+), 1 deletion(-)
+ arch/x86/Kconfig         |    1 -
+ arch/x86/kernel/ftrace.c |  169 +-----------------------------------------=
+----
+ arch/x86/kernel/nmi.c    |   10 +--
+ 3 files changed, 6 insertions(+), 174 deletions(-)
 
-diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-index 268c783..f866c10 100644
---- a/arch/x86/include/asm/ftrace.h
-+++ b/arch/x86/include/asm/ftrace.h
-@@ -34,6 +34,7 @@
-=20
- #ifndef __ASSEMBLY__
- extern void mcount(void);
-+extern int modifying_ftrace_code;
-=20
- static inline unsigned long ftrace_call_adjust(unsigned long addr)
- {
-@@ -50,6 +51,9 @@ struct dyn_arch_ftrace {
- 	/* No extra data needed for x86 */
- };
-=20
-+int ftrace_int3_handler(int cmd, const char *str,
-+		struct pt_regs *regs, long err, int trap, int sig);
-+
- #endif /*  CONFIG_DYNAMIC_FTRACE */
- #endif /* __ASSEMBLY__ */
- #endif /* CONFIG_FUNCTION_TRACER */
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 1d14cc6..1324139 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -40,7 +40,6 @@ config X86
+ 	select HAVE_FUNCTION_GRAPH_TRACER
+ 	select HAVE_FUNCTION_GRAPH_FP_TEST
+ 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
+-	select HAVE_FTRACE_NMI_ENTER if DYNAMIC_FTRACE
+ 	select HAVE_SYSCALL_TRACEPOINTS
+ 	select HAVE_KVM
+ 	select HAVE_ARCH_KGDB
 diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index c9a281f..24108af 100644
+index 24108af..db97bd1 100644
 --- a/arch/x86/kernel/ftrace.c
 +++ b/arch/x86/kernel/ftrace.c
-@@ -20,6 +20,7 @@
- #include <linux/init.h>
- #include <linux/list.h>
- #include <linux/module.h>
-+#include <linux/kprobes.h>
+@@ -27,38 +27,18 @@
+ #include <asm/cacheflush.h>
+ #include <asm/ftrace.h>
+ #include <asm/nops.h>
+-#include <asm/nmi.h>
+-
 =20
- #include <trace/syscall.h>
+ #ifdef CONFIG_DYNAMIC_FTRACE
 =20
-@@ -334,6 +335,348 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
- 	return ret;
+-/*
+- * modifying_code is set to notify NMIs that they need to use
+- * memory barriers when entering or exiting. But we don't want
+- * to burden NMIs with unnecessary memory barriers when code
+- * modification is not being done (which is most of the time).
+- *
+- * A mutex is already held when ftrace_arch_code_modify_prepare
+- * and post_process are called. No locks need to be taken here.
+- *
+- * Stop machine will make sure currently running NMIs are done
+- * and new NMIs will see the updated variable before we need
+- * to worry about NMIs doing memory barriers.
+- */
+-static int modifying_code __read_mostly;
+-static DEFINE_PER_CPU(int, save_modifying_code);
+-
+ int ftrace_arch_code_modify_prepare(void)
+ {
+ 	set_kernel_text_rw();
+ 	set_all_modules_text_rw();
+-	modifying_code =3D 1;
+ 	return 0;
  }
 =20
-+int modifying_ftrace_code __read_mostly;
-+
-+/*
-+ * A breakpoint was added to the code address we are about to
-+ * modify, and this is the handle that will just skip over it.
-+ * We are either changing a nop into a trace call, or a trace
-+ * call to a nop. While the change is taking place, we treat
-+ * it just like it was a nop.
-+ */
-+int ftrace_int3_handler(int cmd, const char *str,
-+		 struct pt_regs *regs, long err, int trap, int sig)
-+{
-+	if (!modifying_ftrace_code || cmd !=3D DIE_INT3 || !regs)
-+		return 0;
-+
-+	if (!ftrace_location(regs->ip - 1))
-+		return 0;
-+
-+	regs->ip +=3D MCOUNT_INSN_SIZE - 1;
-+
-+	return 1;
-+}
-+
-+static int ftrace_write(unsigned long ip, const char *val, int size)
-+{
-+	/*
-+	 * On x86_64, kernel text mappings are mapped read-only with
-+	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
-+	 * of the kernel text mapping to modify the kernel text.
-+	 *
-+	 * For 32bit kernels, these mappings are same and we can use
-+	 * kernel identity mapping to modify code.
-+	 */
-+	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
-+		ip =3D (unsigned long)__va(__pa(ip));
-+
-+	return probe_kernel_write((void *)ip, val, size);
-+}
-+
-+static int add_break(unsigned long ip, const char *old)
-+{
-+	unsigned char replaced[MCOUNT_INSN_SIZE];
-+	unsigned char brk =3D BREAKPOINT_INSTRUCTION;
-+
-+	if (probe_kernel_read(replaced, (void *)ip, MCOUNT_INSN_SIZE))
-+		return -EFAULT;
-+
-+	/* Make sure it is what we expect it to be */
-+	if (memcmp(replaced, old, MCOUNT_INSN_SIZE) !=3D 0)
-+		return -EINVAL;
-+
-+	if (ftrace_write(ip, &brk, 1))
-+		return -EPERM;
-+
-+	return 0;
-+}
-+
-+static int add_brk_on_call(struct dyn_ftrace *rec, unsigned long addr)
-+{
-+	unsigned const char *old;
-+	unsigned long ip =3D rec->ip;
-+
-+	old =3D ftrace_call_replace(ip, addr);
-+
-+	return add_break(rec->ip, old);
-+}
-+
-+
-+static int add_brk_on_nop(struct dyn_ftrace *rec)
-+{
-+	unsigned const char *old;
-+
-+	old =3D ftrace_nop_replace();
-+
-+	return add_break(rec->ip, old);
-+}
-+
-+static int add_breakpoints(struct dyn_ftrace *rec, int enable)
-+{
-+	unsigned long ftrace_addr;
-+	int ret;
-+
-+	ret =3D ftrace_test_record(rec, enable);
-+
-+	ftrace_addr =3D (unsigned long)FTRACE_ADDR;
-+
-+	switch (ret) {
-+	case FTRACE_UPDATE_IGNORE:
-+		return 0;
-+
-+	case FTRACE_UPDATE_MAKE_CALL:
-+		/* converting nop to call */
-+		return add_brk_on_nop(rec);
-+
-+	case FTRACE_UPDATE_MAKE_NOP:
-+		/* converting a call to a nop */
-+		return add_brk_on_call(rec, ftrace_addr);
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * On error, we need to remove breakpoints. This needs to
-+ * be done caefully. If the address does not currently have a
-+ * breakpoint, we know we are done. Otherwise, we look at the
-+ * remaining 4 bytes of the instruction. If it matches a nop
-+ * we replace the breakpoint with the nop. Otherwise we replace
-+ * it with the call instruction.
-+ */
-+static int remove_breakpoint(struct dyn_ftrace *rec)
-+{
-+	unsigned char ins[MCOUNT_INSN_SIZE];
-+	unsigned char brk =3D BREAKPOINT_INSTRUCTION;
-+	const unsigned char *nop;
-+	unsigned long ftrace_addr;
-+	unsigned long ip =3D rec->ip;
-+
-+	/* If we fail the read, just give up */
-+	if (probe_kernel_read(ins, (void *)ip, MCOUNT_INSN_SIZE))
-+		return -EFAULT;
-+
-+	/* If this does not have a breakpoint, we are done */
-+	if (ins[0] !=3D brk)
-+		return -1;
-+
-+	nop =3D ftrace_nop_replace();
-+
-+	/*
-+	 * If the last 4 bytes of the instruction do not match
-+	 * a nop, then we assume that this is a call to ftrace_addr.
-+	 */
-+	if (memcmp(&ins[1], &nop[1], MCOUNT_INSN_SIZE - 1) !=3D 0) {
-+		/*
-+		 * For extra paranoidism, we check if the breakpoint is on
-+		 * a call that would actually jump to the ftrace_addr.
-+		 * If not, don't touch the breakpoint, we make just create
-+		 * a disaster.
-+		 */
-+		ftrace_addr =3D (unsigned long)FTRACE_ADDR;
-+		nop =3D ftrace_call_replace(ip, ftrace_addr);
-+
-+		if (memcmp(&ins[1], &nop[1], MCOUNT_INSN_SIZE - 1) !=3D 0)
-+			return -EINVAL;
-+	}
-+
-+	return probe_kernel_write((void *)ip, &nop[0], 1);
-+}
-+
-+static int add_update_code(unsigned long ip, unsigned const char *new)
-+{
-+	/* skip breakpoint */
-+	ip++;
-+	new++;
-+	if (ftrace_write(ip, new, MCOUNT_INSN_SIZE - 1))
-+		return -EPERM;
-+	return 0;
-+}
-+
-+static int add_update_call(struct dyn_ftrace *rec, unsigned long addr)
-+{
-+	unsigned long ip =3D rec->ip;
-+	unsigned const char *new;
-+
-+	new =3D ftrace_call_replace(ip, addr);
-+	return add_update_code(ip, new);
-+}
-+
-+static int add_update_nop(struct dyn_ftrace *rec)
-+{
-+	unsigned long ip =3D rec->ip;
-+	unsigned const char *new;
-+
-+	new =3D ftrace_nop_replace();
-+	return add_update_code(ip, new);
-+}
-+
-+static int add_update(struct dyn_ftrace *rec, int enable)
-+{
-+	unsigned long ftrace_addr;
-+	int ret;
-+
-+	ret =3D ftrace_test_record(rec, enable);
-+
-+	ftrace_addr =3D (unsigned long)FTRACE_ADDR;
-+
-+	switch (ret) {
-+	case FTRACE_UPDATE_IGNORE:
-+		return 0;
-+
-+	case FTRACE_UPDATE_MAKE_CALL:
-+		/* converting nop to call */
-+		return add_update_call(rec, ftrace_addr);
-+
-+	case FTRACE_UPDATE_MAKE_NOP:
-+		/* converting a call to a nop */
-+		return add_update_nop(rec);
-+	}
-+
-+	return 0;
-+}
-+
-+static int finish_update_call(struct dyn_ftrace *rec, unsigned long addr)
-+{
-+	unsigned long ip =3D rec->ip;
-+	unsigned const char *new;
-+
-+	new =3D ftrace_call_replace(ip, addr);
-+
-+	if (ftrace_write(ip, new, 1))
-+		return -EPERM;
-+
-+	return 0;
-+}
-+
-+static int finish_update_nop(struct dyn_ftrace *rec)
-+{
-+	unsigned long ip =3D rec->ip;
-+	unsigned const char *new;
-+
-+	new =3D ftrace_nop_replace();
-+
-+	if (ftrace_write(ip, new, 1))
-+		return -EPERM;
-+	return 0;
-+}
-+
-+static int finish_update(struct dyn_ftrace *rec, int enable)
-+{
-+	unsigned long ftrace_addr;
-+	int ret;
-+
-+	ret =3D ftrace_update_record(rec, enable);
-+
-+	ftrace_addr =3D (unsigned long)FTRACE_ADDR;
-+
-+	switch (ret) {
-+	case FTRACE_UPDATE_IGNORE:
-+		return 0;
-+
-+	case FTRACE_UPDATE_MAKE_CALL:
-+		/* converting nop to call */
-+		return finish_update_call(rec, ftrace_addr);
-+
-+	case FTRACE_UPDATE_MAKE_NOP:
-+		/* converting a call to a nop */
-+		return finish_update_nop(rec);
-+	}
-+
-+	return 0;
-+}
-+
-+static void do_sync_core(void *data)
-+{
-+	sync_core();
-+}
-+
-+static void run_sync(void)
-+{
-+	int enable_irqs =3D irqs_disabled();
-+
-+	/* We may be called with interrupts disbled (on bootup). */
-+	if (enable_irqs)
-+		local_irq_enable();
-+	on_each_cpu(do_sync_core, NULL, 1);
-+	if (enable_irqs)
-+		local_irq_disable();
-+}
-+
-+static void ftrace_replace_code(int enable)
-+{
-+	struct ftrace_rec_iter *iter;
-+	struct dyn_ftrace *rec;
-+	const char *report =3D "adding breakpoints";
-+	int count =3D 0;
-+	int ret;
-+
-+	for_ftrace_rec_iter(iter) {
-+		rec =3D ftrace_rec_iter_record(iter);
-+
-+		ret =3D add_breakpoints(rec, enable);
-+		if (ret)
-+			goto remove_breakpoints;
-+		count++;
-+	}
-+
-+	run_sync();
-+
-+	report =3D "updating code";
-+
-+	for_ftrace_rec_iter(iter) {
-+		rec =3D ftrace_rec_iter_record(iter);
-+
-+		ret =3D add_update(rec, enable);
-+		if (ret)
-+			goto remove_breakpoints;
-+	}
-+
-+	run_sync();
-+
-+	report =3D "removing breakpoints";
-+
-+	for_ftrace_rec_iter(iter) {
-+		rec =3D ftrace_rec_iter_record(iter);
-+
-+		ret =3D finish_update(rec, enable);
-+		if (ret)
-+			goto remove_breakpoints;
-+	}
-+
-+	run_sync();
-+
-+	return;
-+
-+ remove_breakpoints:
-+	ftrace_bug(ret, rec ? rec->ip : 0);
-+	printk(KERN_WARNING "Failed on %s (%d):\n", report, count);
-+	for_ftrace_rec_iter(iter) {
-+		rec =3D ftrace_rec_iter_record(iter);
-+		remove_breakpoint(rec);
-+	}
-+}
-+
-+void arch_ftrace_update_code(int command)
-+{
-+	modifying_ftrace_code++;
-+
-+	if (command & FTRACE_UPDATE_CALLS)
-+		ftrace_replace_code(1);
-+	else if (command & FTRACE_DISABLE_CALLS)
-+		ftrace_replace_code(0);
-+
-+	if (command & FTRACE_UPDATE_TRACE_FUNC)
-+		ftrace_update_ftrace_func(ftrace_trace_function);
-+
-+	if (command & FTRACE_START_FUNC_RET)
-+		ftrace_enable_ftrace_graph_caller();
-+	else if (command & FTRACE_STOP_FUNC_RET)
-+		ftrace_disable_ftrace_graph_caller();
-+
-+	modifying_ftrace_code--;
-+}
-+
- int __init ftrace_dyn_arch_init(void *data)
+ int ftrace_arch_code_modify_post_process(void)
  {
- 	/* The return code is retured via data */
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index ff9281f1..1712485 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -50,6 +50,7 @@
- #include <asm/processor.h>
- #include <asm/debugreg.h>
- #include <linux/atomic.h>
-+#include <asm/ftrace.h>
- #include <asm/traps.h>
- #include <asm/desc.h>
- #include <asm/i387.h>
-@@ -303,8 +304,14 @@ gp_in_kernel:
+-	modifying_code =3D 0;
+ 	set_all_modules_text_ro();
+ 	set_kernel_text_ro();
+ 	return 0;
+@@ -91,134 +71,6 @@ static unsigned char *ftrace_call_replace(unsigned long=
+ ip, unsigned long addr)
+ 	return calc.code;
  }
 =20
- /* May run on IST stack. */
--dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
-+dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long er=
-ror_code)
+-/*
+- * Modifying code must take extra care. On an SMP machine, if
+- * the code being modified is also being executed on another CPU
+- * that CPU will have undefined results and possibly take a GPF.
+- * We use kstop_machine to stop other CPUS from exectuing code.
+- * But this does not stop NMIs from happening. We still need
+- * to protect against that. We separate out the modification of
+- * the code to take care of this.
+- *
+- * Two buffers are added: An IP buffer and a "code" buffer.
+- *
+- * 1) Put the instruction pointer into the IP buffer
+- *    and the new code into the "code" buffer.
+- * 2) Wait for any running NMIs to finish and set a flag that says
+- *    we are modifying code, it is done in an atomic operation.
+- * 3) Write the code
+- * 4) clear the flag.
+- * 5) Wait for any running NMIs to finish.
+- *
+- * If an NMI is executed, the first thing it does is to call
+- * "ftrace_nmi_enter". This will check if the flag is set to write
+- * and if it is, it will write what is in the IP and "code" buffers.
+- *
+- * The trick is, it does not matter if everyone is writing the same
+- * content to the code location. Also, if a CPU is executing code
+- * it is OK to write to that code location if the contents being written
+- * are the same as what exists.
+- */
+-
+-#define MOD_CODE_WRITE_FLAG (1 << 31)	/* set when NMI should do the write =
+*/
+-static atomic_t nmi_running =3D ATOMIC_INIT(0);
+-static int mod_code_status;		/* holds return value of text write */
+-static void *mod_code_ip;		/* holds the IP to write to */
+-static const void *mod_code_newcode;	/* holds the text to write to the IP =
+*/
+-
+-static unsigned nmi_wait_count;
+-static atomic_t nmi_update_count =3D ATOMIC_INIT(0);
+-
+-int ftrace_arch_read_dyn_info(char *buf, int size)
+-{
+-	int r;
+-
+-	r =3D snprintf(buf, size, "%u %u",
+-		     nmi_wait_count,
+-		     atomic_read(&nmi_update_count));
+-	return r;
+-}
+-
+-static void clear_mod_flag(void)
+-{
+-	int old =3D atomic_read(&nmi_running);
+-
+-	for (;;) {
+-		int new =3D old & ~MOD_CODE_WRITE_FLAG;
+-
+-		if (old =3D=3D new)
+-			break;
+-
+-		old =3D atomic_cmpxchg(&nmi_running, old, new);
+-	}
+-}
+-
+-static void ftrace_mod_code(void)
+-{
+-	/*
+-	 * Yes, more than one CPU process can be writing to mod_code_status.
+-	 *    (and the code itself)
+-	 * But if one were to fail, then they all should, and if one were
+-	 * to succeed, then they all should.
+-	 */
+-	mod_code_status =3D probe_kernel_write(mod_code_ip, mod_code_newcode,
+-					     MCOUNT_INSN_SIZE);
+-
+-	/* if we fail, then kill any new writers */
+-	if (mod_code_status)
+-		clear_mod_flag();
+-}
+-
+-void ftrace_nmi_enter(void)
+-{
+-	__this_cpu_write(save_modifying_code, modifying_code);
+-
+-	if (!__this_cpu_read(save_modifying_code))
+-		return;
+-
+-	if (atomic_inc_return(&nmi_running) & MOD_CODE_WRITE_FLAG) {
+-		smp_rmb();
+-		ftrace_mod_code();
+-		atomic_inc(&nmi_update_count);
+-	}
+-	/* Must have previous changes seen before executions */
+-	smp_mb();
+-}
+-
+-void ftrace_nmi_exit(void)
+-{
+-	if (!__this_cpu_read(save_modifying_code))
+-		return;
+-
+-	/* Finish all executions before clearing nmi_running */
+-	smp_mb();
+-	atomic_dec(&nmi_running);
+-}
+-
+-static void wait_for_nmi_and_set_mod_flag(void)
+-{
+-	if (!atomic_cmpxchg(&nmi_running, 0, MOD_CODE_WRITE_FLAG))
+-		return;
+-
+-	do {
+-		cpu_relax();
+-	} while (atomic_cmpxchg(&nmi_running, 0, MOD_CODE_WRITE_FLAG));
+-
+-	nmi_wait_count++;
+-}
+-
+-static void wait_for_nmi(void)
+-{
+-	if (!atomic_read(&nmi_running))
+-		return;
+-
+-	do {
+-		cpu_relax();
+-	} while (atomic_read(&nmi_running));
+-
+-	nmi_wait_count++;
+-}
+-
+ static inline int
+ within(unsigned long addr, unsigned long start, unsigned long end)
  {
-+#ifdef CONFIG_FUNCTION_TRACER
-+	/* ftrace must be first, everything else may cause a recursive crash */
-+	if (unlikely(modifying_ftrace_code) &&
-+	    ftrace_int3_handler(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP))
-+		return;
-+#endif
- #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
- 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 				SIGTRAP) =3D=3D NOTIFY_STOP)
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 72a6cab..0b55903 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -286,6 +286,12 @@ struct ftrace_rec_iter *ftrace_rec_iter_start(void);
- struct ftrace_rec_iter *ftrace_rec_iter_next(struct ftrace_rec_iter *iter);
- struct dyn_ftrace *ftrace_rec_iter_record(struct ftrace_rec_iter *iter);
+@@ -239,26 +91,7 @@ do_ftrace_mod_code(unsigned long ip, const void *new_co=
+de)
+ 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
+ 		ip =3D (unsigned long)__va(__pa(ip));
 =20
-+#define for_ftrace_rec_iter(iter)		\
-+	for (iter =3D ftrace_rec_iter_start();	\
-+	     iter;				\
-+	     iter =3D ftrace_rec_iter_next(iter))
-+
-+
- int ftrace_update_record(struct dyn_ftrace *rec, int enable);
- int ftrace_test_record(struct dyn_ftrace *rec, int enable);
- void ftrace_run_stop_machine(int command);
+-	mod_code_ip =3D (void *)ip;
+-	mod_code_newcode =3D new_code;
+-
+-	/* The buffers need to be visible before we let NMIs write them */
+-	smp_mb();
+-
+-	wait_for_nmi_and_set_mod_flag();
+-
+-	/* Make sure all running NMIs have finished before we write the code */
+-	smp_mb();
+-
+-	ftrace_mod_code();
+-
+-	/* Make sure the write happens before clearing the bit */
+-	smp_mb();
+-
+-	clear_mod_flag();
+-	wait_for_nmi();
+-
+-	return mod_code_status;
++	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
+ }
+=20
+ static const unsigned char *ftrace_nop_replace(void)
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index 47acaf3..eb1539e 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -84,7 +84,7 @@ __setup("unknown_nmi_panic", setup_unknown_nmi_panic);
+=20
+ #define nmi_to_desc(type) (&nmi_desc[type])
+=20
+-static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs =
+*regs, bool b2b)
++static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, b=
+ool b2b)
+ {
+ 	struct nmi_desc *desc =3D nmi_to_desc(type);
+ 	struct nmiaction *a;
+@@ -209,7 +209,7 @@ void unregister_nmi_handler(unsigned int type, const ch=
+ar *name)
+=20
+ EXPORT_SYMBOL_GPL(unregister_nmi_handler);
+=20
+-static notrace __kprobes void
++static __kprobes void
+ pci_serr_error(unsigned char reason, struct pt_regs *regs)
+ {
+ 	pr_emerg("NMI: PCI system error (SERR) for reason %02x on CPU %d.\n",
+@@ -236,7 +236,7 @@ pci_serr_error(unsigned char reason, struct pt_regs *re=
+gs)
+ 	outb(reason, NMI_REASON_PORT);
+ }
+=20
+-static notrace __kprobes void
++static __kprobes void
+ io_check_error(unsigned char reason, struct pt_regs *regs)
+ {
+ 	unsigned long i;
+@@ -263,7 +263,7 @@ io_check_error(unsigned char reason, struct pt_regs *re=
+gs)
+ 	outb(reason, NMI_REASON_PORT);
+ }
+=20
+-static notrace __kprobes void
++static __kprobes void
+ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+ {
+ 	int handled;
+@@ -305,7 +305,7 @@ unknown_nmi_error(unsigned char reason, struct pt_regs =
+*regs)
+ static DEFINE_PER_CPU(bool, swallow_nmi);
+ static DEFINE_PER_CPU(unsigned long, last_nmi_rip);
+=20
+-static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
++static __kprobes void default_do_nmi(struct pt_regs *regs)
+ {
+ 	unsigned char reason =3D 0;
+ 	int handled;
 --=20
 1.7.9.5
 
@@ -512,19 +351,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPmEc6AAoJEIy3vGnGbaoA+fgQAJeaEej1SqHb21LB7JYkr+Kn
-wphw7IuhA24TkdcrrQn1KB1RXgsK4XuDHodLfs+1CFsidr4D37pds6Tiy0oP3PTr
-bYyV3N8HLYELWr9QHsYcUMxO4cCx/owMwZ14/I4ozKnh1vJM1RD9CcFX8wGOseoj
-GKTXWiTRRKKHYyYfoznNKAqYu+s6n8khCFagzQQ7CDMhuAYoHoJuhi85/eChHOuv
-A+nZKgZjZq+mRzD4vkACMOhnlr4DTAS+fqEQ6JHR0AHhn41eOlIwibgTOAtFPpNw
-Z1U9opzjDiuITzocJA9Hw2fKGXea/Xs8kO1U93vshVR4tVDIq5ofmFlPTncAEYhe
-9Jifz/cL57NPyP3Z7UeXoRIyp2a6huD0Uiex+8NW+kEWg+dlxsV5IbM4kvAIBaO6
-Jv8THT9YUDTS4FGtN3RSmK5MBbXjx+uVfkA40OgZnsPWBfEWMWgXJIT8BNLpjgp5
-Wy5Cz0ZAvPvAOQFeEIrFpG9W8Pq0xrDfn9SHJzgL59zoFvyB5Ut0r6F5cwB7wqZB
-vKwGAzrQIEEcSSKHN1A2uDCLal3WCwY5V2xMVsx1rHIx2Xmh8Lt8xkb2csWH5y1k
-EdvrvxPI73tPBNHaGNsvpB3TohRz0y7RMcinXSU1v0Kp49PP1EWmUeaTLP9UblbV
-LMhniS9vOhnVbP2gzKC/
-=Hjk1
+iQIcBAABAgAGBQJPmEc7AAoJEIy3vGnGbaoAS0YP/2EisoEXy+cOBK4B+Xh+N830
+JV1NBTeLYeaHfpiiupyOEHJ69srrGxA7Kg9zl7oh9irZF8NZyeHqNU3sIeuDHJrC
+igapfidK3aq5q1AhbHbnIcGWEWDycoES5LlEk5LcfULYgli+53E+aM6ZyVX+q2b2
+XAGoBwxNNI+cLIquOq+iPrTdl4izkY8NkxwPqckxXvxvMMCeJQeWOsKE1eKBiOwH
+eSfh9+sZweLCFho7gcIgWdHhLTXc6qWTdCvZHAgCI9pTPU3aB4h4VSjxlJ4DZQex
+pad2W/z2LBebbDTuVLagEY+UuU++++PIWECTVKrXWx/PXqKMbn2k4csZQYtcp6QD
+Z32wFNpIutmlBtcp4zIxmmyLVPcXWQZbcQUzUFxd8GCpSavBTgGzxvxVzAb3ZeKo
+W5LSmM0IopPcjG1F7KdxEdWY2q4YMBGGDn3VkJDjDNosDi8IosqHgTmGMKH4c+bq
+18h3/yXLYiuBPUZ6br2LTSA3L4XYlo2ixDqq4vo6p3bzcdgn5Oz+L1se9pLYFwWb
+wfERetQwnu5xWB7fNuAZuXA9PhoVbjKbE0V3dXdbsT5pvysf2+eRFudUsQ6JzjlA
+epXWYrdCGoOEsjXIZ5MfB2FpREwEq7RLF+ucAUK8PNOHYVS5eoA9uCkn8VkBsRoL
+OYjP5BlAhdedpo+TolJ7
+=vCE5
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
