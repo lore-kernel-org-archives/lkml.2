@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759164Ab2DYVo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 17:44:28 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38191 "EHLO gate.crashing.org"
+	id S1759314Ab2DYV50 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 17:57:26 -0400
+Received: from mail.grid-net.com ([97.65.115.2]:29704 "EHLO mail.grid-net.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757827Ab2DYVo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 17:44:27 -0400
-Message-ID: <1335390257.21961.53.camel@pasglop>
-Subject: Re: Regression in 32-bit ppc kernel
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 26 Apr 2012 07:44:17 +1000
-In-Reply-To: <4F98117C.7080309@lwfinger.net>
-References: <4F973026.3020103@lwfinger.net>
-	 <1335311621.15830.42.camel@pasglop> <4F976352.4060001@lwfinger.net>
-	 <1335327081.21961.28.camel@pasglop> <4F98117C.7080309@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756879Ab2DYV5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 17:57:24 -0400
+X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Apr 2012 17:57:24 EDT
+From: Subodh Nijsure <snijsure@grid-net.com>
+To: <rdunlap@xenotime.net>, <linux-doc@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        <snijsure@grid-net.com>
+Subject: [PATCH] Recommend correct way to submit new version of the patches.
+Date: Wed, 25 Apr 2012 14:51:57 -0700
+Message-ID: <1335390717-32165-1-git-send-email-snijsure@grid-net.com>
+X-Mailer: git-send-email 1.7.5.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.12.0.120]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-25 at 10:00 -0500, Larry Finger wrote:
-> 
-> After a few tries, I managed to change over to pata_macio.
-> Fortunately, most of 
-> the system used dev-by-id or UUID, thus most of the process was
-> getting all the 
-> kernel pieces built in.
-> 
-> Unfortunately, the original problem remains. I have resumed the
-> bisecting - only 
-> 11 steps to go. I should have it by Friday! :)
-> 
-Thanks !
+Russell King suggested proper way to submit new versions of the patches.
+See http://lists.infradead.org/pipermail/linux-arm-kernel/2012-April/096236.html
+Modify SubmittingPatches to summerize that recommendation.
 
-Do we know what the bad interrupt maps to ? Also what is the value of
-NR_IRQ and do you have SPARSE_IRQ enabled ? Can you try with the latter
-disabled and NR_IRQ set to something large, such as 128 ?
+Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
+---
+ Documentation/SubmittingPatches |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-(You may be able to check the interrupt mapping in debugfs)
-
-Cheers,
-Ben.
-
+diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+index 4468ce2..4b166a4 100644
+--- a/Documentation/SubmittingPatches
++++ b/Documentation/SubmittingPatches
+@@ -579,6 +579,18 @@ use diffstat options "-p 1 -w 70" so that filenames are listed from
+ the top of the kernel source tree and don't use too much horizontal
+ space (easily fit in 80 columns, maybe with some indentation).
+ 
++Please don't thread the posting of a new version of the patches to
++the previous posting of the older version.  In other words, the
++initial summary mail for Vn should not be threaded to the Vn-1
++series, and the individual patches for Vn should only be threaded
++to the initial summary mail for Vn. This is to avoid one massive
++thread for a proposed patch.
++
++If you wish to provide a direct reference back to a previous thread,
++please do so via URLs into archives, or providing the message id or
++exact subject of the previous series in the new summary message body.
++But please don't thread each version to the previous version!
++
+ See more details on the proper patch format in the following
+ references.
+ 
+-- 
+1.7.5.4
 
