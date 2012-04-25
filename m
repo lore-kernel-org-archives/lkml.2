@@ -1,129 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758662Ab2DYBSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 21:18:37 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40012 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757109Ab2DYBSg (ORCPT
+	id S1758683Ab2DYBTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 21:19:19 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:13703 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757109Ab2DYBTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 21:18:36 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F97507A.60204@jp.fujitsu.com>
-Date: Wed, 25 Apr 2012 10:16:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@openvz.org, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Suleiman Souhlal <ssouhlal@FreeBSD.org>
-Subject: Re: [PATCH 05/23] memcg: Reclaim when more than one page needed.
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1334959051-18203-6-git-send-email-glommer@parallels.com>
-In-Reply-To: <1334959051-18203-6-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Apr 2012 21:19:17 -0400
+X-AuditID: cbfee61b-b7c1cae000004793-a8-4f9751131bbb
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Joe Perches'" <joe@perches.com>
+Cc: "'Ryan Mallon'" <rmallon@gmail.com>,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "'Julia Lawall'" <julia.lawall@lip6.fr>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1334777828-3557-1-git-send-email-Julia.Lawall@lip6.fr>
+ <4F8F5938.2000207@gmail.com> <000401cd1dd2$5f8ee3b0$1eacab10$%han@samsung.com>
+ <alpine.DEB.2.02.1204190713200.1954@localhost6.localdomain6>
+ <1335271586.25429.19.camel@joe2Laptop>
+In-reply-to: <1335271586.25429.19.camel@joe2Laptop>
+Subject: RE: [PATCH] drivers/video/ep93xx-fb.c: clean up error-handling code
+Date: Wed, 25 Apr 2012 10:19:15 +0900
+Message-id: <000e01cd2281$6ddd2ef0$49978cd0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac0iRY5a0dUgh3PUT9uFqUm7uymZfgAO0udw
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/21 6:57), Glauber Costa wrote:
 
-> From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
+On Tue, 24 Apr 2012, Joe Perches wrote:
+> -----Original Message-----
+> On Thu, 2012-04-19 at 07:14 +0200, Julia Lawall wrote:
+> > I don't know thw impact of the ./.  I use the options
+> >
+> > --nokeywords --nogit-fallback --subsystem --norolestats -f
+> >
+> > julia
+> >
+> > On Thu, 19 Apr 2012, Jingoo Han wrote:
+> >
+> > >> -----Original Message-----
+> > >> From: Ryan Mallon
+> []
+> > >> Oddly, scripts/get_maintainer.pl on this file doesn't return me, even
+> > >> though, according to git blame, I am the author of 90% of the commits.
+> > >> Should I have an entry in the MAINTAINERS file, or is
+> > >> scripts/get_maintainer.pl not working properly?
+> > >
+> > > There are optional differences in using scripts/get_maintainer.pl.
+> > > If you use './' ahead of file path, you will see your name.
+> > >
+> > > Without './' ahead of 'drivers/video/ep93xx-fb.c':
+> > > ./scripts/get_maintainer.pl --file drivers/video/ep93xx-fb.c
+> > > Florian Tobias Schandinat <FlorianSchandinat@gmx.de> (maintainer:FRAMEBUFFER LAYER)
+> > > linux-fbdev@vger.kernel.org (open list:FRAMEBUFFER LAYER)
+> > > linux-kernel@vger.kernel.org (open list)
+> > >
+> > > With './' ahead of 'drivers/video/ep93xx-fb.c':
+> > > ./scripts/get_maintainer.pl --file ./drivers/video/ep93xx-fb.c
+> > > Ryan Mallon <rmallon@gmail.com> (commit_signer:2/3=67%)
+> > > Paul Gortmaker <paul.gortmaker@windriver.com> (commit_signer:1/3=33%)
+> > > H Hartley Sweeten <hsweeten@visionengravers.com> (commit_signer:1/3=33%)
+> > > Jesper Juhl <jj@chaosbits.net> (commit_signer:1/3=33%)
+> > > Jiri Kosina <jkosina@suse.cz> (commit_signer:1/3=33%)
+> > > linux-kernel@vger.kernel.org (open list)
 > 
-> mem_cgroup_do_charge() was written before slab accounting, and expects
-> three cases: being called for 1 page, being called for a stock of 32 pages,
-> or being called for a hugepage.  If we call for 2 pages (and several slabs
-> used in process creation are such, at least with the debug options I had),
-> it assumed it's being called for stock and just retried without reclaiming.
+> Prefixing "./" to the file path bypasses the normal
+> get_maintainers pattern check for file maintainership.
 > 
-> Fix that by passing down a minsize argument in addition to the csize.
+> Florian Schandinat and linux-fbdev are not returned
+> in the second lookup above.
 > 
-> And what to do about that (csize == PAGE_SIZE && ret) retry?  If it's
-> needed at all (and presumably is since it's there, perhaps to handle
-> races), then it should be extended to more than PAGE_SIZE, yet how far?
-
-
-IIRC, it was for preventing rapid OOM kill and reducing latency.
-
-> And should there be a retry count limit, of what?  For now retry up to
-> COSTLY_ORDER (as page_alloc.c does), stay safe with a cond_resched(),
-> and make sure not to do it if __GFP_NORETRY.
+> One of the patterns for FRAMEBUFFER is
+> F:	drivers/video/
+> which is a direct match for is ep93xx-fb.c file,
+> so --git is not used by default.
 > 
-> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
-
-
-Hmm, maybe ok.
-
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-
-> ---
->  mm/memcontrol.c |   18 +++++++++++-------
->  1 files changed, 11 insertions(+), 7 deletions(-)
+> Adding --git may be appropriate and it also returns
+> Ryan's name in this case.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 4b94b2d..cbffc4c 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2187,7 +2187,8 @@ enum {
->  };
->  
->  static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
-> -				unsigned int nr_pages, bool oom_check)
-> +				unsigned int nr_pages, unsigned int min_pages,
-> +				bool oom_check)
->  {
->  	unsigned long csize = nr_pages * PAGE_SIZE;
->  	struct mem_cgroup *mem_over_limit;
-> @@ -2210,18 +2211,18 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  	} else
->  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
->  	/*
-> -	 * nr_pages can be either a huge page (HPAGE_PMD_NR), a batch
-> -	 * of regular pages (CHARGE_BATCH), or a single regular page (1).
-> -	 *
->  	 * Never reclaim on behalf of optional batching, retry with a
->  	 * single page instead.
->  	 */
-> -	if (nr_pages == CHARGE_BATCH)
-> +	if (nr_pages > min_pages)
->  		return CHARGE_RETRY;
->  
->  	if (!(gfp_mask & __GFP_WAIT))
->  		return CHARGE_WOULDBLOCK;
->  
-> +	if (gfp_mask & __GFP_NORETRY)
-> +		return CHARGE_NOMEM;
-> +
->  	ret = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
->  	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
->  		return CHARGE_RETRY;
-> @@ -2234,8 +2235,10 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  	 * unlikely to succeed so close to the limit, and we fall back
->  	 * to regular pages anyway in case of failure.
->  	 */
-> -	if (nr_pages == 1 && ret)
-> +	if (nr_pages <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER) && ret) {
-> +		cond_resched();
->  		return CHARGE_RETRY;
-> +	}
->  
->  	/*
->  	 * At task move, charge accounts can be doubly counted. So, it's
-> @@ -2369,7 +2372,8 @@ again:
->  			nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
->  		}
->  
-> -		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, oom_check);
-> +		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, nr_pages,
-> +		    oom_check);
->  		switch (ret) {
->  		case CHARGE_OK:
->  			break;
+> $ ./scripts/get_maintainer.pl -f drivers/video/ep93xx-fb.c
+> Florian Tobias Schandinat <FlorianSchandinat@gmx.de> (maintainer:FRAMEBUFFER LAYER)
+> linux-fbdev@vger.kernel.org (open list:FRAMEBUFFER LAYER)
+> linux-kernel@vger.kernel.org (open list)
+> 
+> $ ./scripts/get_maintainer.pl --git -f drivers/video/ep93xx-fb.c
+> Florian Tobias Schandinat <FlorianSchandinat@gmx.de> (maintainer:FRAMEBUFFER LAYER)
+> Ryan Mallon <rmallon@gmail.com> (commit_signer:2/3=67%)
+> Paul Gortmaker <paul.gortmaker@windriver.com> (commit_signer:1/3=33%)
+> H Hartley Sweeten <hsweeten@visionengravers.com> (commit_signer:1/3=33%)
+> Jesper Juhl <jj@chaosbits.net> (commit_signer:1/3=33%)
+> Jiri Kosina <jkosina@suse.cz> (commit_signer:1/3=33%)
+> linux-fbdev@vger.kernel.org (open list:FRAMEBUFFER LAYER)
+> linux-kernel@vger.kernel.org (open list)
+> 
+> Nominally, as framebuffer maintainer, Florian
+> should also have "signed-off" on these commits,
+> but many subsystems don't actually have a
+> single path or person for patches and commits.
+> 
+> This file came into the tree via Andrew Morton.
+> 
+> Another way to investigate who actually does
+> work on an individual file is to use the
+> get_maintainer.pl option "--interactive".
 
+Thank you for your reply.
+It is very helpful.
 
+Best regards,
+Jingoo Han
+
+> 
+> That can give you an output like:
+> 
+> *  # email/list and role:stats                                        auth sign
+> *  1 Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+>      maintainer:FRAMEBUFFER LAYER
+> *  2 Ryan Mallon <rmallon@gmail.com>                                     4    4
+>      commit_signer:2/3=67%,authored lines:645/650=99%,commits:4/8=50%
+> *  3 Paul Gortmaker <paul.gortmaker@windriver.com>                       1    1
+>      commit_signer:1/3=33%,commits:1/8=12%
+> *  4 H Hartley Sweeten <hsweeten@visionengravers.com>                    0    2
+>      commit_signer:1/3=33%,commits:2/8=25%
+> *  5 Jesper Juhl <jj@chaosbits.net>                                      0    1
+>      commit_signer:1/3=33%
+> *  6 Jiri Kosina <jkosina@suse.cz>                                       0    1
+>      commit_signer:1/3=33%
+> *  7 Andrew Morton <akpm@linux-foundation.org>                           0    2
+>      commits:2/8=25%
+> *  8 Russell King <rmk+kernel@arm.linux.org.uk>                          0    1
+>      commits:1/8=12%
+> *  9 linux-fbdev@vger.kernel.org
+>      open list:FRAMEBUFFER LAYER
+> * 10 linux-kernel@vger.kernel.org
+>      open list
+> 
+> About maintainership for individual files:
+> 
+> If anyone thinks they are the maintainer for
+> a particular file, generally they should submit
+> a patch to MAINTAINERS adding a section with
+> their name, maintainership level and an
+> appropriate file pattern.
 
