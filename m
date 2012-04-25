@@ -1,104 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758863Ab2DYC57 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 22:57:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59016 "EHLO mga09.intel.com"
+	id S1758568Ab2DYC71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 22:59:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63966 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758829Ab2DYC56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 22:57:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="133486798"
-Message-ID: <1335322697.14538.116.camel@ymzhang.sh.intel.com>
-Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>
-Date: Wed, 25 Apr 2012 10:58:17 +0800
-In-Reply-To: <1335262248.28150.191.camel@twins>
-References: <EE928378561BF1449699C96571234A740FCE3704@SHSMSX102.ccr.corp.intel.com>
-	 <1334915073.2463.36.camel@laptop>
-	 <1335231007.14538.71.camel@ymzhang.sh.intel.com>
-	 <1335262248.28150.191.camel@twins>
-Organization: MCG
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1753792Ab2DYC7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 22:59:25 -0400
+Message-ID: <4F976889.3010809@redhat.com>
+Date: Tue, 24 Apr 2012 22:59:21 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111104 Red Hat/3.1.16-2.el6_1 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: One problem in reassign pci bus number?
+References: <20120410090306.GA7056@richard>	<20120422155202.GA13540@richard>	<4F95B17B.3030401@redhat.com>	<CAE9FiQX52eL6ZFQ_X3uL5DukK03sPhByZpPh0++o6L=WF8BGXg@mail.gmail.com>	<4F95C50C.4060203@redhat.com> <CAE9FiQVAWqCYjy3tpvtnq6y4WMWRHoQFug-WsgUAtvjVpvkMqw@mail.gmail.com>
+In-Reply-To: <CAE9FiQVAWqCYjy3tpvtnq6y4WMWRHoQFug-WsgUAtvjVpvkMqw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-24 at 12:10 +0200, Peter Zijlstra wrote:
-> On Tue, 2012-04-24 at 09:30 +0800, Yanmin Zhang wrote:
-> > > > +static inline void __save_stack_trace_user_task(struct task_struct *task,
-> > > > +           struct stack_trace *trace)
-> > > > +{
-> > > > +   const struct pt_regs *regs = task_pt_regs(task);
-> > > > +   const void __user *fp;
-> > > > +   unsigned long addr;
-> > > > +
-> > > > +   if (task != current && task->state == TASK_RUNNING && task->on_cpu) {
-> > > > +           /* To trap into kernel at least once */
-> > > > +           smp_send_reschedule(task_cpu(task));
-> > > > +   }
-> > > 
-> > > This doesn't make any sense at all..
-> > ptrace could put the task to a either STOPPED or TRACED state.
-> > But it's time-consuming. 
-> 
-> Yeah, but what is the above meant to achieve? it doesn't actually stop
-> the task or anything, it will just trap the remote cpu, by the time you
-> do your stack walk below the cpu might be running another task entirely
-> or you're walking a life stack with all the 'fun' issues that'll bring.
-When we access the user space stack, it's based on _task_, not cpu.
+On 04/23/2012 06:22 PM, Yinghai Lu wrote:
+> On Mon, Apr 23, 2012 at 2:09 PM, Don Dutile<ddutile@redhat.com>  wrote:
+>> even though I've tried every magic trick known with grub&  kernel boot
+>> params.
+>> ... the PCI log btwn early boot and until the console is reconfigured is
+>> 'lost'
+>
+> please change
+>
+> earlycon=uart82550,io,0x1030,115200 earlyprintk=serial,ttyS0,115200
+> console=tty0 console=ttyS0,115200n8
+>
+> ===>
+>
+> earlycon=uart82550,io,0x1030,115200
+>
+>
+> Yinghai
+I'm pretty sure I tried that, and only added the earlyprintk
+and console args when the earlycon didn't work, but I'll give it another try...
 
-The IPI is to make sure the task could trap into kernel at least once,
-so we could get its regs->bp. If the task is running on another cpu
-for a long time, the regs->bp might be too old. I am also a little worried
-about that if the task restores to user space to run quickly after the IPI,
-regs->bp might be ruined. If it's true, we might get bad data, or couldn't
-get useful data.
-
-See below codes.
-+       const struct pt_regs *regs = task_pt_regs(task);
-Above pt_regs is task's, not current's.
-
-+       const void __user *fp;
-+       unsigned long addr;
-+
-+       if (task != current && task->state == TASK_RUNNING && task->on_cpu) {
-+               /* To trap into kernel at least once */
-+               smp_send_reschedule(task_cpu(task));
-+       }
-+
-+       fp = (const void __user *)regs->bp;
-+       if (trace->nr_entries < trace->max_entries)
-+               trace->entries[trace->nr_entries++] = regs->ip;
-+
-+       while (trace->nr_entries < trace->max_entries) {
-+               struct stack_frame_user frame;
-+
-+               frame.next_fp = NULL;
-+               frame.ret_addr = 0;
-+
-+               addr = (unsigned long)fp;
-+               if (!access_process_vm(task, addr, (void *)&frame,
-+                               sizeof(frame), 0))
-Above line would access the task's user space stack.
-
-We implemented the tool based on real requirement and it's not perfect. So
-we need your expertise help.
-
-Thanks for the comments.
-
-Yanmin
 
 
