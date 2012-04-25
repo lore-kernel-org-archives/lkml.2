@@ -1,123 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758727Ab2DYBv0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 21:51:26 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:42657 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757864Ab2DYBvZ (ORCPT
+	id S932320Ab2DYB6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 21:58:15 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36128 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757928Ab2DYB6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 21:51:25 -0400
-Date: Wed, 25 Apr 2012 09:50:44 +0800
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
-To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Ryan Wang <openspace.wang@gmail.com>
-Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.4-rc3 compile failed on IBM Power6
-Message-ID: <20120425015044.GA4637@shangw>
-Reply-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-References: <CAPxxNQmfkJLPHq0BvzxOnLFO-e0FRmaF1VqLhP-jMqF-ziM2tA@mail.gmail.com>
- <20120425005432.GA14663@linux.vnet.ibm.com>
+	Tue, 24 Apr 2012 21:58:12 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F9759C0.1070805@jp.fujitsu.com>
+Date: Wed, 25 Apr 2012 10:56:16 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120425005432.GA14663@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12042415-0260-0000-0000-000000EF97AD
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, devel@openvz.org,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 17/23] kmem controller charge/uncharge infrastructure
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1335138820-26590-6-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1204231522320.13535@chino.kir.corp.google.com> <20120424142232.GC8626@somewhere>
+In-Reply-To: <20120424142232.GC8626@somewhere>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nish,
+(2012/04/24 23:22), Frederic Weisbecker wrote:
 
->> # gcc --version
->> gcc (GCC) 4.4.6 20110731 (Red Hat 4.4.6-3)
->> Copyright (C) 2010 Free Software Foundation, Inc.
->> This is free software; see the source for copying conditions.  There is NO
->> warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
->> 
->> platform    : pSeries
->> model        : IBM,9117-MMA
->> machine        : CHRP IBM,9117-MMA
->
-><snip>
->
->>   CC      arch/powerpc/platforms/pseries/iommu.o
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c: In function
->> ?query_ddw?:
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c:823: error:
->> implicit declaration of function ?pci_dev_to_eeh_dev?
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c:823: warning:
->> assignment makes pointer from integer without a cast
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c:824: error:
->> dereferencing pointer to incomplete type
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c:825: error:
->> dereferencing pointer to incomplete type
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c:826: error:
->> dereferencing pointer to incomplete type
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c:827: error:
->> dereferencing pointer to incomplete type
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c: In function
->> ?create_ddw?:
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c:852: warning:
->> assignment makes pointer from integer without a cast
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c:853: error:
->> dereferencing pointer to incomplete type
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c:854: error:
->> dereferencing pointer to incomplete type
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c:855: error:
->> dereferencing pointer to incomplete type
->> /usr/src/kernels/linux/arch/powerpc/platforms/pseries/iommu.c:856: error:
->> dereferencing pointer to incomplete type
->> make[3]: *** [arch/powerpc/platforms/pseries/iommu.o] Error 1
->> make[2]: *** [arch/powerpc/platforms/pseries] Error 2
->> make[1]: *** [arch/powerpc/platforms] Error 2
->> make: *** [sub-make] Error 2
->
->Do you have CONFIG_EEH set in your .config? I'm guessing not, and that
->causes pci.h to not define pci_dev_to_eeh_dev().
->
->Gavin, I think this is broken by your
->39baadbf36cee3ede5fdb8a34006d9109e5e2570. Probably need a wrapper for
->pci_dev_to_eeh_dev() when !CONFIG_EEH?
->
->Actually, looking at it more, eeh_dev, which is protected by CONFIG_EEH
->in arch/powerpc/include/asm/eeh.h won't be defined in such situations
->and is the type of the return from pci_dev_to_eeh_dev(). So that's going
->to be broken completely if !CONFIG_EEH as above.
->
+> On Mon, Apr 23, 2012 at 03:25:59PM -0700, David Rientjes wrote:
+>> On Sun, 22 Apr 2012, Glauber Costa wrote:
+>>
+>>> +/*
+>>> + * Return the kmem_cache we're supposed to use for a slab allocation.
+>>> + * If we are in interrupt context or otherwise have an allocation that
+>>> + * can't fail, we return the original cache.
+>>> + * Otherwise, we will try to use the current memcg's version of the cache.
+>>> + *
+>>> + * If the cache does not exist yet, if we are the first user of it,
+>>> + * we either create it immediately, if possible, or create it asynchronously
+>>> + * in a workqueue.
+>>> + * In the latter case, we will let the current allocation go through with
+>>> + * the original cache.
+>>> + *
+>>> + * This function returns with rcu_read_lock() held.
+>>> + */
+>>> +struct kmem_cache *__mem_cgroup_get_kmem_cache(struct kmem_cache *cachep,
+>>> +					     gfp_t gfp)
+>>> +{
+>>> +	struct mem_cgroup *memcg;
+>>> +	int idx;
+>>> +
+>>> +	gfp |=  cachep->allocflags;
+>>> +
+>>> +	if ((current->mm == NULL))
+>>> +		return cachep;
+>>> +
+>>> +	if (cachep->memcg_params.memcg)
+>>> +		return cachep;
+>>> +
+>>> +	idx = cachep->memcg_params.id;
+>>> +	VM_BUG_ON(idx == -1);
+>>> +
+>>> +	memcg = mem_cgroup_from_task(current);
+>>> +	if (!mem_cgroup_kmem_enabled(memcg))
+>>> +		return cachep;
+>>> +
+>>> +	if (rcu_access_pointer(memcg->slabs[idx]) == NULL) {
+>>> +		memcg_create_cache_enqueue(memcg, cachep);
+>>> +		return cachep;
+>>> +	}
+>>> +
+>>> +	return rcu_dereference(memcg->slabs[idx]);
+>>> +}
+>>> +EXPORT_SYMBOL(__mem_cgroup_get_kmem_cache);
+>>> +
+>>> +void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id)
+>>> +{
+>>> +	rcu_assign_pointer(cachep->memcg_params.memcg->slabs[id], NULL);
+>>> +}
+>>> +
+>>> +bool __mem_cgroup_charge_kmem(gfp_t gfp, size_t size)
+>>> +{
+>>> +	struct mem_cgroup *memcg;
+>>> +	bool ret = true;
+>>> +
+>>> +	rcu_read_lock();
+>>> +	memcg = mem_cgroup_from_task(current);
+>>
+>> This seems horribly inconsistent with memcg charging of user memory since 
+>> it charges to p->mm->owner and you're charging to p.  So a thread attached 
+>> to a memcg can charge user memory to one memcg while charging slab to 
+>> another memcg?
+> 
+> Charging to the thread rather than the process seem to me the right behaviour:
+> you can have two threads of a same process attached to different cgroups.
+> 
+> Perhaps it is the user memory memcg that needs to be fixed?
+> 
 
-I think it's because iommu.c depends on CONFIG_EEH heavily anyway with
-or without the fix 39baadbf36cee3ede5fdb8a34006d9109e5e2570. That means
-without CONFIG_EEH, iommu.c won't work properly even it can be compiled
-successfully :-)
+There is a problem of OOM-Kill.
+To free memory by killing process, 'mm' should be released by kill.
+So, oom-killer just finds a leader of process.
 
-The story behind is that the PCI device is expected to be PE sensitive.
-While setting up its DMA (through IOMMU), the number of the PE to which
-the PCI device belongs to is passed to the related RTAS call. So the
-PE number of the PCI device is expected if possible. As I knew, the PE
-number of the PCI device is -ONLY- figured out by EEH.
+Assume A process X consists of thread A, B and A is thread-group-leader.
+
+Put thread A into cgroup/Gold
+    thread B into cgroup/Silver.
+
+If we do accounting based on threads, we can't do anything at OOM in cgroup/Silver.
+An idea 'Killing thread-A to kill thread-B'..... breaks isolation.
  
->So maybe the callers should be EEH-unaware (as they were before) and the
->callee becomes of the EEH variety (at compile-time) if CONFIG_EEH is
->set?
->
+As far as resources used by process, I think accounting should be done per process.
+It's not tied to thread.
 
-In order to make iommu.c irrelative to CONFIG_EEH, we might figure out
-the PE number of the PCI device during PCI probe time. Here're some
-rough thoughts about the rework.
-
-	- Introduce additional field "int pe_num" to "struct dev_archdata".
-	  That would be traced like: (struct pci_dev)->(struct device dev)
-	  ->(struct dev_archdata archdata).
-	- During the PCI probe time (maybe pci_fixup_early), we can figure
-	  out the PE number.
-
-Then we can retrieve the PE number of PCI device from "int pe_num" and needn't
-care CONFIG_EEH has been turned on or off. I'm not sure Ben has any comments
-on the idea? 
+About kmem, if we count task_struct, page tables, etc...which can be freed by
+OOM-Killer i.e. it's allocated for 'process', should be aware of OOM problem.
+Using mm->owner makes sense to me until someone finds a great idea to handle
+OOM situation rather than task killing.
 
 Thanks,
-Gavin
- 
+-Kame
 
