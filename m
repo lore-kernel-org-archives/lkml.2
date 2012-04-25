@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117Ab2DYKiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 06:38:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40493 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755412Ab2DYKiM (ORCPT
+	id S1758166Ab2DYKkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 06:40:46 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35932 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756970Ab2DYKkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 06:38:12 -0400
-Date: Wed, 25 Apr 2012 11:37:44 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Lothar Wa??mann <LW@KARO-electronics.de>,
-        viresh kumar <viresh.linux@gmail.com>, sshtylyov@mvista.com,
-        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, mturquette@linaro.org,
-        akpm@linux-foundation.org, jgarzik@redhat.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V3 07/12] ata/sata_mv: Remove conditional compilation
-	of clk code
-Message-ID: <20120425103744.GT24211@n2100.arm.linux.org.uk>
-References: <abbcf661dc58948794839eb0fba1d5a0950ec848.1335266056.git.viresh.kumar@st.com> <20120424120019.GE24089@lunn.ch> <CAOh2x==YaPxYxigyE=n2weoKHhu4ktGRHHGdzgs2+d1_Lo-D4Q@mail.gmail.com> <20120424201802.GE3628@n2100.arm.linux.org.uk> <CAOh2x==Se4ipK_jexOE_=82=S4p41W9Ek0Om6DrUwctSz-Wcyw@mail.gmail.com> <20120425052802.GF13489@lunn.ch> <20375.40225.227084.644318@ipc1.ka-ro> <20120425071418.GA2116@lunn.ch> <20375.46953.269684.680915@ipc1.ka-ro> <20120425093109.GC2116@lunn.ch>
+	Wed, 25 Apr 2012 06:40:45 -0400
+Date: Wed, 25 Apr 2012 14:40:40 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH -mm] c/r: fs, proc: Move children entry back to tid_base_stuff
+Message-ID: <20120425104040.GB21469@moon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120425093109.GC2116@lunn.ch>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 11:31:09AM +0200, Andrew Lunn wrote:
-> > If an arch has HAVE_CLK enabled it must provide valid clocks (be it
-> > dummy clocks) for all devices it supports.
-> 
-> So, lets take the theoretical exaple of a unicore32 PUV3
-> 
-> config ARCH_PUV3
->         def_bool y
->         select CPU_UCV2
->         select GENERIC_CLOCKEVENTS
->         select HAVE_CLK
->         select ARCH_REQUIRE_GPIOLIB
->         select ARCH_HAS_CPUFREQ
-> 
-> Seems like this somewhat unknown, to me at least, architecture, also
-> supports PCI. So i plug in an HP Adaptec AIC8120 SATA host bus adapter
-> into a spare PCI slot. This uses the Marvell 88SX6041, which the
-> SATA_MV driver supports.
-> 
-> Should i expect that the unicore32 PUV3 has created a dummy clk for
-> this case?
+While merging to linux-next the "children" entry jumped from
+tid_base_stuff to tgid_base_stuff by mistake.
+Fix it, by moving it back.
 
-Are you going to bother answering the detailed email I sent describing
-my POV on this case?
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+
+Andrew, I suspect this nit happened when the patch was merged
+to linux-next.
+
+ fs/proc/base.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: linux-2.6.git/fs/proc/base.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/base.c
++++ linux-2.6.git/fs/proc/base.c
+@@ -2990,9 +2990,6 @@ static const struct pid_entry tgid_base_
+ 	ONE("stat",       S_IRUGO, proc_tgid_stat),
+ 	ONE("statm",      S_IRUGO, proc_pid_statm),
+ 	REG("maps",       S_IRUGO, proc_pid_maps_operations),
+-#ifdef CONFIG_CHECKPOINT_RESTORE
+-	REG("children",  S_IRUGO, proc_tid_children_operations),
+-#endif
+ #ifdef CONFIG_NUMA
+ 	REG("numa_maps",  S_IRUGO, proc_pid_numa_maps_operations),
+ #endif
+@@ -3352,6 +3349,9 @@ static const struct pid_entry tid_base_s
+ 	ONE("stat",      S_IRUGO, proc_tid_stat),
+ 	ONE("statm",     S_IRUGO, proc_pid_statm),
+ 	REG("maps",      S_IRUGO, proc_tid_maps_operations),
++#ifdef CONFIG_CHECKPOINT_RESTORE
++	REG("children",  S_IRUGO, proc_tid_children_operations),
++#endif
+ #ifdef CONFIG_NUMA
+ 	REG("numa_maps", S_IRUGO, proc_tid_numa_maps_operations),
+ #endif
