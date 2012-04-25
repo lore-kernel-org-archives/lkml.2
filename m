@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121Ab2DYDGS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 23:06:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48991 "EHLO mx2.suse.de"
+	id S1758605Ab2DYDGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 23:06:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48995 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757157Ab2DYDGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 23:06:17 -0400
+	id S1758156Ab2DYDGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Apr 2012 23:06:32 -0400
 From: NeilBrown <neilb@suse.de>
 To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
         Samuel Ortiz <sameo@linux.intel.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         "Rafael J. Wysocki" <rjw@sisk.pl>
-Date: Wed, 25 Apr 2012 13:05:23 +1000
-Subject: [PATCH 0/3] Ensure twl4030 interrupts are lost during suspend.
+Date: Wed, 25 Apr 2012 13:05:24 +1000
+Subject: [PATCH 1/3] ARM: omap2+: set IRQCHIP_SKIP_SET_WAKE for INTC
+ interrupts.
 Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Message-ID: <20120425025637.7832.14013.stgit@notabene.brown>
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        NeilBrown <neilb@suse.de>
+Message-ID: <20120425030524.7832.52047.stgit@notabene.brown>
+In-Reply-To: <20120425025637.7832.14013.stgit@notabene.brown>
+References: <20120425025637.7832.14013.stgit@notabene.brown>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,46 +28,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the scatter-gun list of email address, but while each of
-these patches only touches one subsystem, they really needed each
-other to provide proper context.
+All interrupts can wake-from-sleep (I think) so it should be
+permissible to call enable_irq_wake().  Setting this flag allows that.
 
-The goal is to ensure that an interrupt that arrives on a TWL4030
-connected to an OMAP3, during the 'late-suspend' stage will
-cause the suspend to abort (if the interrupt is properly configured).
-(e.g. power button, RTC alarm, USB plug/unplug)
+It is needed because without this, an interrupt which is delivered
+during late suspend will get ignored but will not cause suspend to
+abort.
+If enable_irq_wake() is called and succeeds, check_wakuep_irqs()
+will abort the suspend if the interrupt has fired.
 
-The interrupt as seen by the OMAP3 is a level-triggered interrupt so
-if it arrives at this time, it is masked.  With the current code it
-remains masked and so cannot wake the device from suspend.
-
-To fix this:
-  The twl4030 drivers must mark the interrupt for wakeup
-  The OMAP interrupt handler must allow the interrupt to be
-     marked for wakeup
-  The core interrupt/PM code must allow masked level-triggered
-     interrupts to abort a suspend.
-
-I'm least sure about that last one.  My patch unmasks any masked
-interrupt that is suppose to support wakeup.  I suspect that is
-correct but I don't know enough about general IRQ handling to be sure.
-Maybe there could be cases where a driver has explicitly masked the
-interrupt without cleaning the 'wakeup' setting.  Is that allowed?
-
-
+Signed-off-by: NeilBrown <neilb@suse.de>
 ---
 
-NeilBrown (3):
-      twl4030: enable wakeup on twl4030 IRQ.
-      IRQ: allow check_wakeup_irqs to notice level-triggered interrupts.
-      ARM: omap2+: set IRQCHIP_SKIP_SET_WAKE for INTC interrupts.
-
-
  arch/arm/mach-omap2/irq.c |    1 +
- drivers/mfd/twl4030-irq.c |    1 +
- kernel/irq/pm.c           |    6 ++++++
- 3 files changed, 8 insertions(+)
+ 1 file changed, 1 insertion(+)
 
--- 
-Signature
+diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
+index 65f0d257..b0790a9 100644
+--- a/arch/arm/mach-omap2/irq.c
++++ b/arch/arm/mach-omap2/irq.c
+@@ -148,6 +148,7 @@ omap_alloc_gc(void __iomem *base, unsigned int irq_start, unsigned int num)
+ 	ct->chip.irq_ack = omap_mask_ack_irq;
+ 	ct->chip.irq_mask = irq_gc_mask_disable_reg;
+ 	ct->chip.irq_unmask = irq_gc_unmask_enable_reg;
++	ct->chip.flags |= IRQCHIP_SKIP_SET_WAKE;
+ 
+ 	ct->regs.ack = INTC_CONTROL;
+ 	ct->regs.enable = INTC_MIR_CLEAR0;
+
 
