@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758222Ab2DYAAT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Apr 2012 20:00:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55086 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755956Ab2DYAAR (ORCPT
+	id S1758656Ab2DYAFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Apr 2012 20:05:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51530 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757017Ab2DYAFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Apr 2012 20:00:17 -0400
-Date: Wed, 25 Apr 2012 10:00:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>, Rob Lee <rob.lee@linaro.org>
-Subject: Re: linux-next: clean up time
-Message-Id: <20120425100002.a288b8b25dee6cecf813a69c@canb.auug.org.au>
-In-Reply-To: <4F9722CA.80403@goop.org>
-References: <20120402112009.3477dad7deff0f4d87f49b29@canb.auug.org.au>
-	<20120423164859.082b5c53b5d9bd9a524ec864@canb.auug.org.au>
-	<4F9722CA.80403@goop.org>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__25_Apr_2012_10_00_02_+1000_r6sxjq7e5PnFLL1."
+	Tue, 24 Apr 2012 20:05:09 -0400
+Message-ID: <4F973FB2.1050004@samsung.com>
+Date: Tue, 24 Apr 2012 17:05:06 -0700
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Ben Dooks <ben-linux@fluff.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: arch/arm/mach-s3c2410/Kconfig is unsourced
+References: <1335090082.1814.27.camel@x61.thuisdomein>
+In-Reply-To: <1335090082.1814.27.camel@x61.thuisdomein>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__25_Apr_2012_10_00_02_+1000_r6sxjq7e5PnFLL1.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Jeremy,
-
-On Tue, 24 Apr 2012 15:01:46 -0700 Jeremy Fitzhardinge <jeremy@goop.org> wr=
-ote:
+Paul Bolle wrote:
+> 0) commit 85fd6d63bf2927b9da7ab1b0d46723bfdb13808c ("ARM: S3C2410: move
+> mach-s3c2410/* into mach-s3c24xx/") orphaned
+> arch/arm/mach-s3c2410/Kconfig: currently nothing sources that file in
+> Linus' tree.
 >
-> Are you pulling from xen.git upstream/xen?  I just updated it to be
-> current Linus master, so it shouldn't conflict any more.
+Oops, you're right.
 
-Yes, I fetch branch upstream/xen from
-git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git and, yes, it
-is empty now, thanks.
+> 1) I haven't looked in depth at this, but this made S3C2410_PLLTABLE
+> disappear from the build system (ie, arch/arm/mach-s3c2410/pll.c is dead
+> code now). Moreover, this basically turned both "select S3C2410_CPUFREQ
+> if CPU_FREQ_S3C24XX", under "config CPU_S3C2410", and "select
+> S3C2410_IOTIMING if S3C2410_CPUFREQ", under "config ARCH_BAST", into
+> nops (both in arch/arm/mach-s3c24xx/Kconfig).
+>
+> 2) So to me it seems the move has only been done half: either more
+> things needs to be moved or those things can be removed entirely. But
+> perhaps arch/arm/mach-s3c2410/Kconfig should just be sourced again.
+>
+Yes, I think, would be better right now, if we could add just sourcing 
+mach-s3c2410/Kconfig but as you said, I need to remove entire mach-s3c24 
+stuff.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks for your pointing out and let me fix it.
 
---Signature=_Wed__25_Apr_2012_10_00_02_+1000_r6sxjq7e5PnFLL1.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPlz6CAAoJEECxmPOUX5FEDCMP/2MEVG7K8zd0nCqsDaH/fD/f
-RBjLDe5JwSPEDkY9mFJAiS4qhIVNItefqaZO9RzcODT+4nfJAVyp48TXgTB+WS98
-AFUYKHM6cFanPlLbUMIzxV5ZVZgDGiN2apbg4fcn9vfkCYBJNzm0ozaABm3xQpDQ
-J0LyLiRHmzxDHamgqV5rvKTTJakghV7g37B7X6uq5LawYaF6CRk0jH8/JI0nwO9D
-Wb4p22DqkxihG11JrCmpFH0SAozMO+x8h3QaUJ0H7XJyjt9tP6IO9xaNYpapEd65
-gqIrSE4OoxmBPsoLZcx1q14IJVb81ccY8WWkKjlxckxUTziETU7itX6cFCF5ehZ/
-W8Yr4OeePr61FoEC+Q7EXyYjXjDiScCqXphCbdGDjX/yPRxB4D8ERabFUBMxL21j
-+ZCEHQYBZ8rhX5/mbN4m6KEK3a/akT1ZTOHzlqn0oSac4Vpic0KFwEAL7xzmwD7C
-XVQilu4PGwJJFvpPA/s5nPaIM1D5j+SS2iWt4/EKTNFsU54RJHGTn05Le+R+sIdB
-x5KeGhkGjKNLm3IsZmt6ZE5D6kEVD3814K4/KzMiHeMjNfvqm/DX9UDBkiWub8uo
-7T8cT+NbdDAS41IBIjYIC9rEzj8M4NXJ7tpldjaXJn4QKle9Xxd7rePl9ABJz66n
-88Ky7oUiCaDbUvirvBh0
-=aDPw
------END PGP SIGNATURE-----
-
---Signature=_Wed__25_Apr_2012_10_00_02_+1000_r6sxjq7e5PnFLL1.--
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
