@@ -1,106 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab2DYQKK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 12:10:10 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57469 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316Ab2DYQKI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 12:10:08 -0400
-Date: Wed, 25 Apr 2012 17:10:02 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Roland McGrath <roland@hack.frob.com>
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120425161002.GH6871@ZenIV.linux.org.uk>
-References: <20120420180748.GI6871@ZenIV.linux.org.uk>
- <20120423180150.GA6871@ZenIV.linux.org.uk>
- <20120424072617.GB6871@ZenIV.linux.org.uk>
- <20120425030659.GE6871@ZenIV.linux.org.uk>
- <20120425123746.GA15560@redhat.com>
- <20120425125042.GF6871@ZenIV.linux.org.uk>
- <20120425130329.GA16413@redhat.com>
- <20120425133238.GG6871@ZenIV.linux.org.uk>
- <20120425145239.GA21386@redhat.com>
- <20120425154611.GA23672@redhat.com>
+	id S1753150Ab2DYQNW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 12:13:22 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48227 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751363Ab2DYQNU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 12:13:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120425154611.GA23672@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F95CB3E.6070504@windriver.com>
+References: <1334784254-17603-1-git-send-email-paul.gortmaker@windriver.com>
+ <CAErSpo4t2USorOiSMs99UQ_JPyhnz=FKfF=R5twhepDMPVH5oQ@mail.gmail.com> <4F95CB3E.6070504@windriver.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 25 Apr 2012 10:12:58 -0600
+Message-ID: <CAErSpo7rsqtPEBsS4VzFYX+AGYXDYv2+MzR023=VqEqrzTtanA@mail.gmail.com>
+Subject: Re: [PATCH] pci: frv architecture needs generic setup-bus infrastructure
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 05:46:11PM +0200, Oleg Nesterov wrote:
-> OK, I didn't really try to think, and somehow I simply can't wake up today.
-> But perhaps we can do something the following? We add the new syscall
-> 
-> 	sys_eintr(void)
-> 	{
-> 		return -EINTR;
-> 	}
-> 
-> (perhaps not strictly needed, perhaps we can reuse sys_restart_syscal)
-> 
-> Now,
-> 
-> 	--- x/arch/x86/kernel/signal.c
-> 	+++ x/arch/x86/kernel/signal.c
-> 	@@ -711,6 +711,13 @@ handle_signal(unsigned long sig, siginfo
-> 				regs->ax = regs->orig_ax;
-> 				regs->ip -= 2;
-> 				break;
-> 	+
-> 	+		case -EINTR:
-> 	+			break;
-> 	+
-> 	+		default:
-> 	+			if (regs->orig_ax == NR_eintr)
-> 	+				regs->ax = NR_eintr;
-> 			}
-> 		}
-> 	 
-> 	@@ -791,6 +798,7 @@ static void do_signal(struct pt_regs *re
-> 			case -ERESTARTSYS:
-> 			case -ERESTARTNOINTR:
-> 				regs->ax = regs->orig_ax;
-> 	+			regs->orig_ax = NR_eintr;
-> 				regs->ip -= 2;
-> 				break;
-> 	 
-> 
-> this ignores ERESTART_RESTARTBLOCK for simplicity.
+On Mon, Apr 23, 2012 at 3:35 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> On 12-04-23 04:38 PM, Bjorn Helgaas wrote:
+>> On Wed, Apr 18, 2012 at 3:24 PM, Paul Gortmaker
+>> <paul.gortmaker@windriver.com> wrote:
+>>> Otherwise we get this link failure for frv's defconfig:
+>>>
+>>>   LD      .tmp_vmlinux1
+>>>  drivers/built-in.o: In function `pci_assign_resource':
+>>>  (.text+0xbf0c): undefined reference to `pci_cardbus_resource_alignment'
+>>>  drivers/built-in.o: In function `pci_setup':
+>>>  pci.c:(.init.text+0x174): undefined reference to `pci_realloc_get_opt'
+>>>  pci.c:(.init.text+0x1a0): undefined reference to `pci_realloc_get_opt'
+>>>  make[1]: *** [.tmp_vmlinux1] Error 1
+>>>
+>>> Cc: Bjorn Helgaas <bhelgaas@google.com>
 
-Ehh...  You do realize that it's that simple only on architectures that
-have syscall number in a register?  arm/parisc/unicore32 have really
-painful code dealing with restart_syscall(2); building trampoline on
-stack and all such...  Take a look at e.g. insert_restart_trampoline()
-in arch/parisc/kernel/signal.c (BTW, it doesn't check for put_user()
-failures while building that thing).
+This looks good to me, and if you'd put it in your queue, that'd be
+great.  It won't break any other arches, so I'm fine with it going in
+either for 3.4 or in the 3.5 merge window.
 
-FWIW, I wonder if e.g. arm would be better off with the following
-trick: new flag added to _TIF_SYSCALL_WORK, with __sys_trace checking
-it and if it's set, clearing it and simulating sys_restart_syscall().
-ERESTART_RESTARTBLOCK would become practically identical to ERESTARTNOHAND,
-except that if we decide to restart it we would set the flag.  All the
-trampoline crap goes away that way and restart logics gets simpler on
-any platform doing that kind of thing.
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-I'm not sure that SA_RESTART case is actually worth bothering with -
-AFAICS, your mechanism won't cover SA_RESTART/SA_RESTART/!SA_RESTART
-combinations anyway, and I'm not at all sure that we _want_ to change
-user-visible behaviour.  Basically, you have
-	syscall interrupted
-		SA_RESTART signal arrives, handler1 entered
-			!SA_RESTART signal arrives, handler2 entered
-			handler2 returns
-		hander1 returns
-	syscall restarts
-and to get behaviour independent of relative timing of those two signals
-you'd have to replace the last one with "syscall fails with EINTR".
-It's a user-visible change and I'm not at all sure that we won't break
-userland code with it.
+>>> Cc: David Howells <dhowells@redhat.com>
+>>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>>>
+>>> diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
+>>> index 083a49f..165274c 100644
+>>> --- a/drivers/pci/Makefile
+>>> +++ b/drivers/pci/Makefile
+>>> @@ -42,6 +42,7 @@ obj-$(CONFIG_UNICORE32) += setup-bus.o setup-irq.o
+>>>  obj-$(CONFIG_PARISC) += setup-bus.o
+>>>  obj-$(CONFIG_SUPERH) += setup-bus.o setup-irq.o
+>>>  obj-$(CONFIG_PPC) += setup-bus.o
+>>> +obj-$(CONFIG_FRV) += setup-bus.o
+>>>  obj-$(CONFIG_MIPS) += setup-bus.o setup-irq.o
+>>>  obj-$(CONFIG_X86_VISWS) += setup-irq.o
+>>>  obj-$(CONFIG_MN10300) += setup-bus.o
+>>
+>> Wow, I didn't even realize that we had this sort of arch-specific
+>> selection of generic PCI parts.  drivers/pci/setup-irq.c is on my list
+>> for reworking because it looks like it doesn't work correctly for
+>> hotplug.  setup-bus.c is much more complicated, but (a) it looks like
+>> most architectures include it anyway, and (b) it seems like it'd be
+>> cleaner to have a CONFIG_PCI_REALLOC or something to avoid having
+>> arch-specific stuff in the Makefile.
+>>
+>> Anyway, that's all for the future.  Does this fix need to go in 3.4,
+>> or should it go in -next?  What commit introduced the problem?
+>
+> It does address a compile fail seen in 3.4 (sorry for not calling
+> that out explicitly).  I've not dug back in time to see when it
+> 1st appeared.  With a lot of these less common arch, it seems they
+> can get broken and remain broken for quite some time, so the original
+> breakage may predate the 3.4 merge window.
+>
+> I've already got a queue with fixes for 3.4 in various other
+> less common arch; it is no trouble for me to carry this there,
+> if you are OK with it as a 3.4 fix.
+>
+> Thanks,
+> Paul.
+> --
+>
+>>
+>> Bjorn
