@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab2DYOXB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 10:23:01 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:30268 "EHLO relay.sw.ru"
+	id S932373Ab2DYOXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 10:23:09 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:4376 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759290Ab2DYOW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 10:22:58 -0400
-Subject: [PATCH 2/6] LockD: use existent per-net data function on service
- creation
+	id S932325Ab2DYOXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 10:23:06 -0400
+Subject: [PATCH 3/6] LockD: service creation function introduced
 To: bfields@fieldses.org, Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 25 Apr 2012 18:22:47 +0400
-Message-ID: <20120425142247.22909.7047.stgit@localhost6.localdomain6>
+Date: Wed, 25 Apr 2012 18:22:54 +0400
+Message-ID: <20120425142254.22909.92489.stgit@localhost6.localdomain6>
 In-Reply-To: <20120425141934.22909.53047.stgit@localhost6.localdomain6>
 References: <20120425141934.22909.53047.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -23,83 +22,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch also replaces svc_rpcb_setup() with svc_bind().
+This function creates service if it's not exist, or increase usage counter of
+the existent, and returns pointer to it.
+Usage counter will be droppepd by svc_destroy() later in lockd_up().
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/lockd/svc.c |   23 +++++++----------------
- 1 files changed, 7 insertions(+), 16 deletions(-)
+ fs/lockd/svc.c |   38 +++++++++++++++++++++++++++-----------
+ 1 files changed, 27 insertions(+), 11 deletions(-)
 
 diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index 58ddc38..71c6c31 100644
+index 71c6c31..ad11ea7 100644
 --- a/fs/lockd/svc.c
 +++ b/fs/lockd/svc.c
-@@ -259,9 +259,9 @@ static int lockd_up_net(struct svc_serv *serv, struct net *net)
- 	if (ln->nlmsvc_users++)
- 		return 0;
- 
--	error = svc_rpcb_setup(serv, net);
-+	error = svc_bind(serv, net);
- 	if (error)
--		goto err_rpcb;
-+		goto err_bind;
- 
- 	error = make_socks(serv, net);
- 	if (error < 0)
-@@ -270,7 +270,7 @@ static int lockd_up_net(struct svc_serv *serv, struct net *net)
- 
- err_socks:
- 	svc_rpcb_cleanup(serv, net);
--err_rpcb:
-+err_bind:
- 	ln->nlmsvc_users--;
- 	return error;
+@@ -291,21 +291,20 @@ static void lockd_down_net(struct svc_serv *serv, struct net *net)
+ 	}
  }
-@@ -298,7 +298,6 @@ int lockd_up(struct net *net)
+ 
+-/*
+- * Bring up the lockd process if it's not already up.
+- */
+-int lockd_up(struct net *net)
++static struct svc_serv *lockd_create_svc(void)
  {
  	struct svc_serv *serv;
- 	int		error = 0;
--	struct lockd_net *ln = net_generic(net, lockd_net_id);
+-	int		error = 0;
  
- 	mutex_lock(&nlmsvc_mutex);
+-	mutex_lock(&nlmsvc_mutex);
  	/*
-@@ -324,17 +323,9 @@ int lockd_up(struct net *net)
- 		goto out;
+ 	 * Check whether we're already up and running.
+ 	 */
+ 	if (nlmsvc_rqst) {
+-		error = lockd_up_net(nlmsvc_rqst->rq_server, net);
+-		goto out;
++		/*
++		 * Note: increase service usage, because later in case of error
++		 * svc_destroy() will be called.
++		 */
++		svc_get(nlmsvc_rqst->rq_server);
++		return nlmsvc_rqst->rq_server;
  	}
  
--	error = svc_bind(serv, net);
--	if (error < 0) {
--		printk(KERN_WARNING "lockd_up: bind service failed\n");
--		goto destroy_and_out;
--	}
--
--	ln->nlmsvc_users++;
--
--	error = make_socks(serv, net);
-+	error = lockd_up_net(serv, net);
- 	if (error < 0)
--		goto err_start;
-+		goto err_net;
- 
  	/*
- 	 * Create the kernel thread and wait for it to start.
-@@ -367,7 +358,7 @@ int lockd_up(struct net *net)
- 	 * Note: svc_serv structures have an initial use count of 1,
- 	 * so we exit through here on both success and failure.
- 	 */
--destroy_and_out:
-+err_net:
- 	svc_destroy(serv);
- out:
- 	if (!error)
-@@ -377,7 +368,7 @@ out:
+@@ -316,11 +315,28 @@ int lockd_up(struct net *net)
+ 		printk(KERN_WARNING
+ 			"lockd_up: no pid, %d users??\n", nlmsvc_users);
  
- err_start:
- 	lockd_down_net(serv, net);
--	goto destroy_and_out;
-+	goto err_net;
- }
- EXPORT_SYMBOL_GPL(lockd_up);
+-	error = -ENOMEM;
+ 	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, NULL);
+ 	if (!serv) {
+ 		printk(KERN_WARNING "lockd_up: create service failed\n");
+-		goto out;
++		return ERR_PTR(-ENOMEM);
++	}
++	return serv;
++}
++
++/*
++ * Bring up the lockd process if it's not already up.
++ */
++int lockd_up(struct net *net)
++{
++	struct svc_serv *serv;
++	int		error = 0;
++
++	mutex_lock(&nlmsvc_mutex);
++
++	serv = lockd_create_svc();
++	if (IS_ERR(serv)) {
++		error = PTR_ERR(serv);
++		goto err_create;
+ 	}
+ 
+ 	error = lockd_up_net(serv, net);
+@@ -360,9 +376,9 @@ int lockd_up(struct net *net)
+ 	 */
+ err_net:
+ 	svc_destroy(serv);
+-out:
+ 	if (!error)
+ 		nlmsvc_users++;
++err_create:
+ 	mutex_unlock(&nlmsvc_mutex);
+ 	return error;
  
 
