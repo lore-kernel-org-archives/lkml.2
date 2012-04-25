@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab2DYGoa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 02:44:30 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:62210 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab2DYGo2 (ORCPT
+	id S1751883Ab2DYGrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 02:47:06 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:40878 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab2DYGrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 02:44:28 -0400
-Message-ID: <20375.40225.227084.644318@ipc1.ka-ro>
-Date: Wed, 25 Apr 2012 08:43:45 +0200
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: viresh kumar <viresh.linux@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        sshtylyov@mvista.com, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        mturquette@linaro.org, akpm@linux-foundation.org, jgarzik@redhat.com,
-        linux-arm-kernel@lists.infradead.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH V3 07/12] ata/sata_mv: Remove conditional compilation of
- clk code
-In-Reply-To: <20120425052802.GF13489@lunn.ch>
-References: <cover.1335266056.git.viresh.kumar@st.com>
-	<abbcf661dc58948794839eb0fba1d5a0950ec848.1335266056.git.viresh.kumar@st.com>
-	<20120424120019.GE24089@lunn.ch>
-	<CAOh2x==YaPxYxigyE=n2weoKHhu4ktGRHHGdzgs2+d1_Lo-D4Q@mail.gmail.com>
-	<20120424201802.GE3628@n2100.arm.linux.org.uk>
-	<CAOh2x==Se4ipK_jexOE_=82=S4p41W9Ek0Om6DrUwctSz-Wcyw@mail.gmail.com>
-	<20120425052802.GF13489@lunn.ch>
-X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
+	Wed, 25 Apr 2012 02:47:05 -0400
+X-Originating-IP: 217.70.178.130
+X-Originating-IP: 50.43.46.74
+Date: Tue, 24 Apr 2012 23:46:41 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Minho Ban <mhban@samsung.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Paul Turner <pjt@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC/PATCH] Prevent wasting time to find out get_parent_ip
+Message-ID: <20120425064641.GA14635@leaf>
+References: <4F969E53.9080307@samsung.com>
+ <1335272025.28150.193.camel@twins>
+ <4F9737CC.6010703@samsung.com>
+ <20120424234513.GA11841@leaf>
+ <4F976DC0.6060004@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F976DC0.6060004@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Andrew Lunn writes:
-> > This is what i was thinking too and thats why floated this version of patch.
-> > But as Andrew said, clk API support is enabled for them, but still they
-> > don't have a clk for sata. To get this working, there are two solutions:
-> > - Create dummy clk for sata for that platform, so clk_get doesn't fail.
-> > - Check for error before every call to clk APIs after clk_get().
+On Wed, Apr 25, 2012 at 12:21:36PM +0900, Minho Ban wrote:
+> On 04/25/2012 08:45 AM, Josh Triplett wrote:
+> > On Wed, Apr 25, 2012 at 08:31:24AM +0900, Minho Ban wrote:
+> >> On 04/24/2012 09:53 PM, Peter Zijlstra wrote:
+> >>> On Tue, 2012-04-24 at 21:36 +0900, Minho Ban wrote:
+> >>>> trace_preempt_on/off looks empty if PREEMPT_TRACER is off. But actually it is
+> >>>> spending time to find out get_parent_ip(even CALLER_ADDR for some ARCH) which is
+> >>>> in argument. This seems not fair for those who expect to do nothing but increase
+> >>>> or decrease count.
+> >>>
+> >>> You can do the same by making them CPP macros and adding a comment as to
+> >>> why they're macros instead of inlines..
+> >>>
+> >>
+> >> Thank you for pointing this out, certainly macros look better. I'll amend this.
 > > 
-> > Andrew favored the second one. Which means, even on platforms
-> > with clk API defined and clk enable required, if there are some issues
-> > with lookup table, and clk_get() fails, system may hang when registers
-> > are accessed. For this i favored first one.
+> > As an alternative, how about making get_parent_ip and its called
+> > functions static inlines?  Then the compiler can eliminate them via dead
+> > code elimination.
+> > 
+> > Or, how about declaring get_parent_ip with the GCC "pure" attribute?
+> > That would tell GCC that it can safely eliminate calls to the function.
+> > 
+> > - Josh Triplett
+> > 
 > 
-> I'm not too sure how you are going to achieve 1)
-> 
-> config SATA_MV
->         tristate "Marvell SATA support"
->         help
->           This option enables support for the Marvell Serial ATA family.
->           Currently supports 88SX[56]0[48][01] PCI(-X) chips,
->           as well as the newer [67]042 PCI-X/PCIe and SOC devices.
-> 
-> So this driver can be used with anything which has a PCI(-X) or PCIe
-> bus, or Orion SoC and a few PowerPC SoCs.
-> 
-> The SoCs are not too bad, we know which ones they are and we can add
-> dummy entries to their device tree. However, how do you want to handle
-> the PCI devices? Create the dummy entry somewhere in the middle of the
-> PCI core?
-> 
-> Thought not.
-> 
-AFAICT the PCI archs do not have HAVE_CLK enabled. Thus they will have
-a dummy clk API in place that provides the driver with a non-error
-clk_get() return value.
+> Thank you for alternative method, but I'm afraid this could not cover the CALLER_ADDR.
 
+As far as I can tell, CALLER_ADDR() always means ftrace_caller(), and
+CALLER_ADDR[0-6] always reference __builtin_return_address() or
+return_address().  In the former case, you could mark ftrace_caller
+pure, and in the latter cases, if GCC for some reason generates code for
+those without eliminating it as dead code, you could add trivial
+wrappers around those functions that have the pure attribute set on
+them.  That should allow GCC to completely eliminate all of those.
 
-Lothar Waßmann
--- 
-___________________________________________________________
+Would that work?
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+- Josh Triplett
