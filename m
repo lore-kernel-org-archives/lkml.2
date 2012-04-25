@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab2DYMoE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 08:44:04 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43809 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534Ab2DYMoB (ORCPT
+	id S1758471Ab2DYMsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 08:48:25 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45860 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab2DYMoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 08:44:01 -0400
+	Wed, 25 Apr 2012 08:44:09 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, torvalds@linux-foundation.org, mszeredi@suse.cz
-Subject: [PATCH 00/16] vfs: atomic open v4 (part 1)
-Date: Wed, 25 Apr 2012 14:44:01 +0200
-Message-Id: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 04/16] vfs: do_last(): use inode variable
+Date: Wed, 25 Apr 2012 14:44:05 +0200
+Message-Id: <1335357857-16416-5-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
+References: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Part 1 of the atomic open series (split the patch bomb into 2 parts).  This goes
-as far as moving NFS open code out from ->revalidate and into ->open.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Al, can you please review and apply?
+Use helper variable instead of path->dentry->d_inode before complete_walk().
+This will allow this code to be used in RCU mode.
 
-git tree is here:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git atomic-open.v4
-
-Thanks,
-Miklos
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
+ fs/namei.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-
-Miklos Szeredi (16):
-      vfs: split do_lookup()
-      vfs: do_last(): make exit RCU safe
-      vfs: do_last(): inline walk_component()
-      vfs: do_last(): use inode variable
-      vfs: make follow_link check RCU safe
-      vfs: do_last(): make ENOENT exit RCU safe
-      vfs: do_last(): check LOOKUP_DIRECTORY
-      vfs: do_last(): only return EISDIR for O_CREAT
-      vfs: do_last(): add audit_inode before open
-      vfs: do_last() common post lookup
-      vfs: split __dentry_open()
-      vfs: do_dentry_open(): don't put filp
-      vfs: nameidata_to_filp(): inline __dentry_open()
-      vfs: nameidata_to_filp(): don't throw away file on error
-      vfs: retry last component if opening stale dentry
-      nfs: don't open in ->d_revalidate
-
----
- fs/internal.h         |    1 +
- fs/namei.c            |  151 ++++++++++++++++++++++++++++++++++++------------
- fs/nfs/dir.c          |   56 ++-----------------
- fs/nfs/file.c         |   77 ++++++++++++++++++++++++-
- fs/open.c             |   76 ++++++++++++++++++------
- include/linux/errno.h |    1 +
- 6 files changed, 250 insertions(+), 112 deletions(-)
+diff --git a/fs/namei.c b/fs/namei.c
+index 46d4bf6..f21ddb3 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2360,15 +2360,16 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	if (error)
+ 		nd->flags |= LOOKUP_JUMPED;
+ 
++	inode = path->dentry->d_inode;
+ 	error = -ENOENT;
+-	if (!path->dentry->d_inode)
++	if (!inode)
+ 		goto exit_dput;
+ 
+-	if (path->dentry->d_inode->i_op->follow_link)
++	if (inode->i_op->follow_link)
+ 		return NULL;
+ 
+ 	path_to_nameidata(path, nd);
+-	nd->inode = path->dentry->d_inode;
++	nd->inode = inode;
+ 	/* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
+ 	error = complete_walk(nd);
+ 	if (error)
+-- 
+1.7.7
 
