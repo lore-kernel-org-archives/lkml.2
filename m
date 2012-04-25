@@ -1,65 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab2DYNfc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 09:35:32 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:51290 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab2DYNfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 09:35:30 -0400
-Message-ID: <4F97FD9D.9090105@vflare.org>
-Date: Wed, 25 Apr 2012 09:35:25 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1758541Ab2DYNiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 09:38:01 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:29727 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757139Ab2DYNiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Apr 2012 09:38:00 -0400
+Subject: [PATCH 1/3] SUNRPC: new svc_bind() routine introduced
+To: bfields@fieldses.org, Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Wed, 25 Apr 2012 17:37:42 +0400
+Message-ID: <20120425133742.13800.49114.stgit@localhost6.localdomain6>
+In-Reply-To: <20120425132314.13800.6813.stgit@localhost6.localdomain6>
+References: <20120425132314.13800.6813.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 5/6] zsmalloc: remove unnecessary type casting
-References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-6-git-send-email-minchan@kernel.org>
-In-Reply-To: <1335334994-22138-6-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 02:23 AM, Minchan Kim wrote:
+New routine is responsible for service registration in specified network
+context.
+The idea is to separate service creation from per-net operations.
 
-> Let's remove unnecessary type casting of (void *).
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zsmalloc/zsmalloc-main.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index b7d31cc..ff089f8 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -644,8 +644,7 @@ void zs_free(struct zs_pool *pool, void *obj)
->  	spin_lock(&class->lock);
->  
->  	/* Insert this object in containing zspage's freelist */
-> -	link = (struct link_free *)((unsigned char *)kmap_atomic(f_page)
-> -							+ f_offset);
-> +	link = (struct link_free *)(kmap_atomic(f_page)	+ f_offset);
->  	link->next = first_page->freelist;
->  	kunmap_atomic(link);
->  	first_page->freelist = obj;
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
+---
+ fs/lockd/svc.c             |    6 ++++++
+ fs/nfs/callback.c          |    8 ++++++++
+ fs/nfsd/nfssvc.c           |    9 +++++++++
+ include/linux/sunrpc/svc.h |    1 +
+ net/sunrpc/svc.c           |   19 ++++++++++---------
+ 5 files changed, 34 insertions(+), 9 deletions(-)
 
-
-Incrementing a void pointer looks weired and should not be allowed by C
-compilers though gcc and clang seem to allow this without any warnings.
-(fortunately C++ forbids incrementing void pointers)
-
-So, we should keep this cast to unsigned char pointer to avoid relying
-on a non-standard, compiler specific behavior.
-
-Thanks,
-Nitin
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index 1ead075..b7e92ed 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -324,6 +324,12 @@ int lockd_up(struct net *net)
+ 		goto out;
+ 	}
+ 
++	error = svc_bind(serv, net);
++	if (error < 0) {
++		printk(KERN_WARNING "lockd_up: bind service failed\n");
++		goto destroy_and_out;
++	}
++
+ 	error = make_socks(serv, net);
+ 	if (error < 0)
+ 		goto destroy_and_out;
+diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+index eb95f50..26b38fb 100644
+--- a/fs/nfs/callback.c
++++ b/fs/nfs/callback.c
+@@ -17,6 +17,7 @@
+ #include <linux/kthread.h>
+ #include <linux/sunrpc/svcauth_gss.h>
+ #include <linux/sunrpc/bc_xprt.h>
++#include <linux/nsproxy.h>
+ 
+ #include <net/inet_sock.h>
+ 
+@@ -253,6 +254,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+ 	char svc_name[12];
+ 	int ret = 0;
+ 	int minorversion_setup;
++	struct net *net = current->nsproxy->net_ns;
+ 
+ 	mutex_lock(&nfs_callback_mutex);
+ 	if (cb_info->users++ || cb_info->task != NULL) {
+@@ -265,6 +267,12 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+ 		goto out_err;
+ 	}
+ 
++	ret = svc_bind(serv, net);
++	if (ret < 0) {
++		printk(KERN_WARNING "NFS: bind callback service failed\n");
++		goto out_err;
++	}
++
+ 	minorversion_setup =  nfs_minorversion_callback_svc_setup(minorversion,
+ 					serv, xprt, &rqstp, &callback_svc);
+ 	if (!minorversion_setup) {
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index cb4d51d..0762f3c 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -11,6 +11,7 @@
+ #include <linux/module.h>
+ #include <linux/fs_struct.h>
+ #include <linux/swap.h>
++#include <linux/nsproxy.h>
+ 
+ #include <linux/sunrpc/stats.h>
+ #include <linux/sunrpc/svcsock.h>
+@@ -330,6 +331,8 @@ static int nfsd_get_default_max_blksize(void)
+ 
+ int nfsd_create_serv(void)
+ {
++	int error;
++
+ 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
+ 	if (nfsd_serv) {
+ 		svc_get(nfsd_serv);
+@@ -343,6 +346,12 @@ int nfsd_create_serv(void)
+ 	if (nfsd_serv == NULL)
+ 		return -ENOMEM;
+ 
++	error = svc_bind(nfsd_serv, current->nsproxy->net_ns);
++	if (error < 0) {
++		svc_destroy(nfsd_serv);
++		return error;
++	}
++
+ 	set_max_drc();
+ 	do_gettimeofday(&nfssvc_boot);		/* record boot time */
+ 	return 0;
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index 51b29ac..2b43e02 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -416,6 +416,7 @@ struct svc_procedure {
+  */
+ int svc_rpcb_setup(struct svc_serv *serv, struct net *net);
+ void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net);
++int svc_bind(struct svc_serv *serv, struct net *net);
+ struct svc_serv *svc_create(struct svc_program *, unsigned int,
+ 			    void (*shutdown)(struct svc_serv *, struct net *net));
+ struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 4153846..e6d542c 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -407,6 +407,14 @@ static int svc_uses_rpcbind(struct svc_serv *serv)
+ 	return 0;
+ }
+ 
++int svc_bind(struct svc_serv *serv, struct net *net)
++{
++	if (!svc_uses_rpcbind(serv))
++		return 0;
++	return svc_rpcb_setup(serv, net);
++}
++EXPORT_SYMBOL_GPL(svc_bind);
++
+ /*
+  * Create an RPC service
+  */
+@@ -471,15 +479,8 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+ 		spin_lock_init(&pool->sp_lock);
+ 	}
+ 
+-	if (svc_uses_rpcbind(serv)) {
+-		if (svc_rpcb_setup(serv, current->nsproxy->net_ns) < 0) {
+-			kfree(serv->sv_pools);
+-			kfree(serv);
+-			return NULL;
+-		}
+-		if (!serv->sv_shutdown)
+-			serv->sv_shutdown = svc_rpcb_cleanup;
+-	}
++	if (svc_uses_rpcbind(serv) && (!serv->sv_shutdown))
++		serv->sv_shutdown = svc_rpcb_cleanup;
+ 
+ 	return serv;
+ }
 
