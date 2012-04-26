@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932728Ab2DZAlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 20:41:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54749 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932688Ab2DZAlK (ORCPT
+	id S932738Ab2DZAls (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 20:41:48 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51563 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932697Ab2DZAlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 20:41:10 -0400
-Date: Thu, 26 Apr 2012 01:41:07 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felipe Balbi <balbi@ti.com>
-Message-ID: <20120426004107.GJ3932@decadent.org.uk>
+	Wed, 25 Apr 2012 20:41:46 -0400
+Date: Wed, 25 Apr 2012 19:41:32 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>,
+        Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>
+Subject: Re: [ 30/62] Fix modpost failures in fedora 17
+Message-ID: <20120426004131.GA8556@burratino>
 References: <20120424223305.GA7748@kroah.com>
- <20120424223245.832510907@linuxfoundation.org>
+ <20120424223244.539071890@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120424223245.832510907@linuxfoundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [ 45/62] usb: musb: omap: fix crash when musb glue (omap) gets
- initialized
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+In-Reply-To: <20120424223244.539071890@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 03:33:26PM -0700, Greg KH wrote:
-> 3.3-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Kishon Vijay Abraham I <kishon@ti.com>
-> 
-> commit 3006dc8c627d738693e910c159630e4368c9e86c upstream.
-> 
-> pm_runtime_enable is being called after omap2430_musb_init. Hence
-> pm_runtime_get_sync in omap2430_musb_init does not have any effect (does
-> not enable clocks) resulting in a crash during register access. It is
-> fixed here.
-> 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  drivers/usb/musb/omap2430.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- a/drivers/usb/musb/omap2430.c
-> +++ b/drivers/usb/musb/omap2430.c
-> @@ -451,14 +451,14 @@ static int __init omap2430_probe(struct
->  		goto err2;
->  	}
->  
-> +	pm_runtime_enable(&pdev->dev);
-> +
->  	ret = platform_device_add(musb);
->  	if (ret) {
->  		dev_err(&pdev->dev, "failed to register musb device\n");
+Greg KH wrote:
 
-This failure path now needs a call to pm_runtime_disable().
+> 3.3-stable review patch.
+[...]
+> commit e88aa7bbbe3046a125ea1936b16bb921cc9c6349 upstream.
+>
+> The symbol table on x86-64 starts to have entries that have names
+> like:
+>
+> _GLOBAL__sub_I_65535_0___mod_x86cpu_device_table
+[...]
+> FATAL: arch/x86/crypto/aesni-intel: sizeof(struct x86cpu_device_id)=16 is not a modulo of the size of section __mod_x86cpu_device_table=18.
 
-Ben.
+I haven't tested this, but I suspect 3.0.y has the same problem ---
+v3.3-rc1~66^2~12 ("modpost: use a table rather than a giant if/else
+statement") just clarified the code a little and does not seem to have
+gone wrong.
 
->  		goto err2;
->  	}
->  
-> -	pm_runtime_enable(&pdev->dev);
-> -
->  	return 0;
->  
->  err2:
+In other words, the conflict encountered when applying this to 3.0.y
+looks like a textual and not a meaningful one.  Backport follows.
 
+-- >8 --
+From: David Miller <davem@davemloft.net>
+Date: Thu, 12 Apr 2012 14:37:30 -0400
+
+commit e88aa7bbbe3046a125ea1936b16bb921cc9c6349 upstream.
+
+The symbol table on x86-64 starts to have entries that have names
+like:
+
+_GLOBAL__sub_I_65535_0___mod_x86cpu_device_table
+
+They are of type STT_FUNCTION and this one had a length of 18.  This
+matched the device ID validation logic and it barfed because the
+length did not meet the device type's criteria.
+
+--------------------
+FATAL: arch/x86/crypto/aesni-intel: sizeof(struct x86cpu_device_id)=16 is not a modulo of the size of section __mod_x86cpu_device_table=18.
+Fix definition of struct x86cpu_device_id in mod_devicetable.h
+--------------------
+
+These are some kind of compiler tool internal stuff being emitted and
+not something we want to inspect in modpost's device ID table
+validation code.
+
+So skip the symbol if it is not of type STT_OBJECT.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+---
+Thanks,
+Jonathan
+
+ scripts/mod/file2alias.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index e26e2fb462d4..f210eae9bd7e 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -905,6 +905,10 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
+ 	if (!sym->st_shndx || get_secindex(info, sym) >= info->num_sections)
+ 		return;
+ 
++	/* We're looking for an object */
++	if (ELF_ST_TYPE(sym->st_info) != STT_OBJECT)
++		return;
++
+ 	/* Handle all-NULL symbols allocated into .bss */
+ 	if (info->sechdrs[get_secindex(info, sym)].sh_type & SHT_NOBITS) {
+ 		zeros = calloc(1, sym->st_size);
 -- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+1.7.10
+
