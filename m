@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab2DZOjm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 10:39:42 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45576 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757110Ab2DZOjl (ORCPT
+	id S1757331Ab2DZOlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 10:41:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52105 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756609Ab2DZOlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 10:39:41 -0400
-Message-ID: <4F995E28.1050203@wwwdotorg.org>
-Date: Thu, 26 Apr 2012 08:39:36 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 26 Apr 2012 10:41:20 -0400
+Date: Thu, 26 Apr 2012 15:41:16 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: Default Kconfig state for hw_random drivers
+Message-ID: <20120426144115.GK3207@opensource.wolfsonmicro.com>
+References: <20120426114229.GG3207@opensource.wolfsonmicro.com>
+ <CAOesGMj2eZvWek86D2MKQMPY9qAsC0D2MsYyN-+RPUr5gDFn4A@mail.gmail.com>
 MIME-Version: 1.0
-To: "Poddar, Sourav" <sourav.poddar@ti.com>
-CC: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Benoit Cousson <b-cousson@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCHv4 1/2] drivers: input: keypad: Add device tree support
-References: <1335346004-18108-1-git-send-email-sourav.poddar@ti.com>	<4F981CD1.2050007@wwwdotorg.org> <CAKdam56ONhS_drgfHCeY6aKWp3nT0PtDEO5SMCKxG+dGVPS66A@mail.gmail.com>
-In-Reply-To: <CAKdam56ONhS_drgfHCeY6aKWp3nT0PtDEO5SMCKxG+dGVPS66A@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2WS97oupGEGbYNpW"
+Content-Disposition: inline
+In-Reply-To: <CAOesGMj2eZvWek86D2MKQMPY9qAsC0D2MsYyN-+RPUr5gDFn4A@mail.gmail.com>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 12:33 AM, Poddar, Sourav wrote:
-> On Wed, Apr 25, 2012 at 9:18 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-...
->> It's probably worth considering whether num-rows/columns should be part
->> of matrix-keyboard.txt, and whether linux,keypad-no-autorepeat should be
->> part of some core keyboard binding. Some of the properties in
->> tegra-kbc.txt might be worth generalizing too (debounce/repeat delay,
->> ghost filter)?
->
-> Yes, I also think that its a good idea to make some of the above
-> binding more generic. Though, I think "linux,keypad-no-autorepeat"
-> will still be a custom binding, since its totally on the platform
-> whether to use
-> autorepeat feature or not?
 
-I think the concept of whether autorepeat should be enabled is pretty
-generic. The actual value of the property might well be
-board/platform-specific, so may differ in individual board .dts files.
+--2WS97oupGEGbYNpW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, Apr 26, 2012 at 07:17:25AM -0700, Olof Johansson wrote:
+
+> Looking at other options in the same Kconfig, it would be appropriate
+> to make it depend on ARCH_AT91 instead.
+
+Possibly wants an || AVR32 dependency of some kind too?
+
+--2WS97oupGEGbYNpW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPmV59AAoJEBus8iNuMP3dwYQQAI8Q9ImjUJNN2Zq0GKyP84Fr
+sj//XVTzPjnFDU/jXn4j0hm0rPeDUW9COk8/jLtmbi4o4is1Tc5Faw8/iUygLUPF
+cbeeaOzoNJl6jx7dR91cTM+ts+GLdG6ouxR5ywJkphYyz2oyDfETZoPGSl3q06ab
+BiNZ83t2OFnTpyT1rStXSqKiJdazU3Advu0MnQc8LjNAXOFnxWvRcwl8AjYcQv81
+5AUWNysXTP0jLL5RmFGTf9I6JECbUF0O+LLd/oM5Q8LyQH6l7NflfZaWbmTHAcjn
+BV8c+CmN5IAk0asuxVdXkY3TdAw0sL13TT60N01bbfGUQnod2SYsS16sehAMf+vP
+4/I9SJgjoeQrwWKo+URB8qWmE57ctY8OGdYIZbzJAqLBBTQU586MvoyCTj8YX+zO
+IpUF6YI7Pedyots/2UXcJoI2sxeTS486aV7JoGYeq98vVerPT2ybJfd8SuLwkPXf
+/P0+6HxsPulI5Nptgj5iucygxGUmegjBFdwXInSqqLJd2/Ny+UOmQkZ/MsIpi7i3
+otcSk/ckf73B5kHb/bu/ps5cmshkKFSViFdpOwXGWLKs7OkLopWfNIYAZPBJ/oxi
+BoRJx7UMRKdOM4vPlpgBsSpFCdt9aH9LCkJHHWOnvaf0cX4l1bSagxU+0TkCS/oS
+pHpXrJeLIZFilaUpE/6f
+=DLm0
+-----END PGP SIGNATURE-----
+
+--2WS97oupGEGbYNpW--
