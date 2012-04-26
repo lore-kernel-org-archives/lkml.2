@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab2DZP3Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 11:29:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54176 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047Ab2DZP3W convert rfc822-to-8bit (ORCPT
+	id S1757422Ab2DZPeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 11:34:05 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:47223 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757000Ab2DZPeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 11:29:22 -0400
-Message-ID: <1335454137.13683.95.camel@twins>
-Subject: Re: [PATCH RFC tip/core/rcu 6/6] rcu: Reduce cache-miss
- initialization latencies for large systems
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Date: Thu, 26 Apr 2012 17:28:57 +0200
-In-Reply-To: <20120426141213.GB2407@linux.vnet.ibm.com>
-References: <20120423164159.GA13819@linux.vnet.ibm.com>
-	 <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335199347-13926-6-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335444707.13683.14.camel@twins>
-	 <20120426141213.GB2407@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 26 Apr 2012 11:34:03 -0400
+Date: Thu, 26 Apr 2012 17:35:01 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Subject: [pull] drm-intel-fixes for 3.4
+Message-ID: <20120426153501.GC5156@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux phenom 3.2.0-2-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-26 at 07:12 -0700, Paul E. McKenney wrote:
-> On Thu, Apr 26, 2012 at 02:51:47PM +0200, Peter Zijlstra wrote:
+Hi Dave,
 
-> > Wouldn't it be much better to match the rcu fanout tree to the physical
-> > topology of the machine?
-> 
-> From what I am hearing, doing so requires me to morph the rcu_node tree
-> at run time.  I might eventually become courageous/inspired/senile
-> enough to try this, but not yet.  ;-)
+Nothing major here and imo can wait a bit if you don't have anything
+important in drm-fixes yet:
+- VGA load-detect fix. This bug seems to be as old as the load-detect code
+  (2.6.30), but needs stupid userspace (upowerd trying to detect
+  connectors on dpms-off outputs) to actually kill the machine. And
+  obviously a machine without VGA-hotplug, otherwise we don't do load
+  detect.
+- 2 interger overflow fixes for unpriviledged ioctls from Xi Wang.
 
-Yes, boot time with possibly some hotplug hooks.
+Yours, Daniel
 
-> Actually, some of this topology shifting seems to me like a firmware
-> bug.  Why not arrange the Linux-visible numbering in a way to promote
-> locality for code sequencing through the CPUs?
+The following changes since commit 66f75a5d028beaf67c931435fdc3e7823125730c:
 
-I'm not sure.. but it seems well established on x86 to first enumerate
-the cores (thread 0) and then the sibling threads (thread 1) -- one
-'advantage' is that if you boot with max_cpus=$half you get all cores
-instead of half the cores.
+  Linux 3.4-rc4 (2012-04-21 14:47:52 -0700)
 
-OTOH it does make linear iteration of the cpus 'funny' :-)
+are available in the git repository at:
 
-Also, a fanout of 16 is nice when your machine doesn't have HT and has a
-2^n core count, but some popular machines these days have 6/10 cores per
-socket, resulting in your fanout splitting caches.
+  git://people.freedesktop.org/~danvet/drm-intel drm-intel-fixes
 
+for you to fetch changes up to 44afb3a04391a74309d16180d1e4f8386fdfa745:
 
+  drm/i915: fix integer overflow in i915_gem_do_execbuffer() (2012-04-23 22:32:15 +0200)
+
+----------------------------------------------------------------
+Daniel Vetter (1):
+      drm/i915: fixup load-detect on enabled, but not active pipe
+
+Xi Wang (2):
+      drm/i915: fix integer overflow in i915_gem_execbuffer2()
+      drm/i915: fix integer overflow in i915_gem_do_execbuffer()
+
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    8 +++++++-
+ drivers/gpu/drm/i915/intel_crt.c           |   29 +++++++++++-----------------
+ 2 files changed, 18 insertions(+), 19 deletions(-)
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
