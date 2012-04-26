@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab2DZHjT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 03:39:19 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:3079
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751671Ab2DZHjS (ORCPT
+	id S1753977Ab2DZHxx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 03:53:53 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58284 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab2DZHxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 03:39:18 -0400
-X-SpamScore: -17
-X-BigFish: VS-17(zzbb2dI9371I179dN1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 26 Apr 2012 15:48:54 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
-Subject: Re: [PATCH v2 1/2] pinctrl: add pinctrl_provide_dummies interface
- for platforms to use
-Message-ID: <20120426074853.GA26070@shlinux2.ap.freescale.net>
-References: <1335260023-15859-1-git-send-email-b29396@freescale.com>
- <4F96F847.508@wwwdotorg.org>
- <20120425094934.GA17631@shlinux2.ap.freescale.net>
- <CACRpkdYjVYsM-Qo7NWKx5Mr3rAmp12G_wAtkmNkkqNyX=ZeKUw@mail.gmail.com>
- <20120425114955.GB17631@shlinux2.ap.freescale.net>
- <4F9816A3.5090907@wwwdotorg.org>
+	Thu, 26 Apr 2012 03:53:51 -0400
+Subject: [PATCH next 00/12] mm: replace struct mem_cgroup_zone with struct
+ lruvec
+To: Andrew Morton <akpm@linux-foundation.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Thu, 26 Apr 2012 11:53:44 +0400
+Message-ID: <20120426074632.18961.17803.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4F9816A3.5090907@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 11:22:11PM +0800, Stephen Warren wrote:
-> On 04/25/2012 05:49 AM, Dong Aisheng wrote:
-> > On Wed, Apr 25, 2012 at 07:19:43PM +0800, Linus Walleij wrote:
-> >> On Wed, Apr 25, 2012 at 11:49 AM, Dong Aisheng
-> >> <aisheng.dong@freescale.com> wrote:
-> >>> On Wed, Apr 25, 2012 at 03:00:23AM +0800, Stephen Warren wrote:
-> >>
-> >>>> The only thing that should be calling pinctrl_request_gpio() is a GPIO
-> >>>> driver. It should only be calling it for the GPIOs it manages. I'd
-> >>>> expect that if a platform's pinctrl driver was not yet written to
-> >>>> support the GPIO functionality, then the GPIO driver would not be
-> >>>> calling this function.
-> >>>>
-> >>> Hmm, pinctrl gpio is in the same situation as pinctrl state that gpio
-> >>> driver may be shared between several platforms, with pinctrl support
-> >>> or not.
-> >>
-> >> I think it's mostly safe to assume that either:
-> >>
-> > I just saw your reply after i sent out the revised patch...
-> > 
-> >> - pinctrl calls from GPIO drivers gets stubbed out totally due to
-> >>   CONFIG_PINCTRL not being selected
-> >>
-> > Yes, we already have that in include/linux/pinctrl/consumer.h
-> > 
-> >> or:
-> >>
-> >> - You need to pass a token through platform data to the
-> >>   GPIO driver telling it whether it needs to request pins for
-> >>   it's GPIOs or not. Just a bool should work fine?
-> >>
-> > Yes, this is an alternative way.
-> > I'm using a similar way, but pass the data to pinctrl core
-> > rather than gpio driver. Then it is be handled together with
-> > dummy state in platform code.
-> > 
-> > Do you think if the current way i used is ok?
-> > Or i need to change to your proposed way?
-> 
-> I think Linus was suggesting a flag in platform data for each GPIO
-> driver rather than a global flag for the entire pinctrl subsystem.
-> 
-> That way, if one of the pinctrl drivers did fully support all the GPIO
-> functionality and the other didn't, you'd be able to have just one of
-> the GPIO drivers not call into pinctrl (or ignore certain errors) yet
-> the other GPIO driver could still fully interact with pinctrl as desired.
-> 
-Yes, it's true.
-I will drop the dummy gpio support in pinctrl subsystem and let gpio
-driver to decide whether it wants to use pinctrl gpio mux function.
+This patchset depends on Johannes Weiner's patch
+"mm: memcg: count pte references from every member of the reclaimed hierarchy".
 
-Regards
-Dong Aisheng
+bloat-o-meter delta for patches 2..12
 
+add/remove: 6/6 grow/shrink: 6/14 up/down: 4414/-4625 (-211)
+function                                     old     new   delta
+shrink_page_list                               -    2270   +2270
+shrink_lruvec                                  -    1386   +1386
+update_isolated_counts                         -     376    +376
+lruvec_init                                    -     195    +195
+get_lruvec_size                                -      61     +61
+balance_pgdat                               1856    1904     +48
+mem_cgroup_shrink_node_zone                  283     302     +19
+shrink_inactive_list                         985    1003     +18
+mem_cgroup_get_lruvec_size                     -      18     +18
+mem_cgroup_create                           1453    1468     +15
+shrink_active_list                           824     830      +6
+shrink_zone                                  147     149      +2
+mem_control_stat_show                        750     745      -5
+mem_cgroup_zone_lruvec                        72      67      -5
+mem_cgroup_get_reclaim_stat_from_page        108     103      -5
+mem_cgroup_nr_lru_pages                      185     179      -6
+inactive_anon_is_low                         110     103      -7
+test_mem_cgroup_node_reclaimable             200     192      -8
+__mem_cgroup_free                            389     381      -8
+putback_inactive_pages                       634     620     -14
+mem_control_numa_stat_show                  1015    1001     -14
+static.isolate_lru_pages                     419     403     -16
+mem_cgroup_force_empty                      1694    1678     -16
+get_reclaim_stat                              30       -     -30
+mem_cgroup_zone_nr_lru_pages                  64       -     -64
+free_area_init_node                          849     784     -65
+mem_cgroup_inactive_anon_is_low              177      84     -93
+mem_cgroup_inactive_file_is_low              140      31    -109
+zone_nr_lru_pages                            110       -    -110
+static.update_isolated_counts                376       -    -376
+shrink_mem_cgroup_zone                      1381       -   -1381
+static.shrink_page_list                     2293       -   -2293
+
+---
+
+Konstantin Khlebnikov (12):
+      mm/vmscan: store "priority" in struct scan_control
+      mm: add link from struct lruvec to struct zone
+      mm/vmscan: push lruvec pointer into isolate_lru_pages()
+      mm/vmscan: push zone pointer into shrink_page_list()
+      mm/vmscan: push zone pointer into update_isolated_counts()
+      mm/vmscan: push lruvec pointer into putback_inactive_pages()
+      mm/vmscan: replace zone_nr_lru_pages() with get_lruvec_size()
+      mm/vmscan: push lruvec pointer into inactive_list_is_low()
+      mm/vmscan: push lruvec pointer into shrink_list()
+      mm/vmscan: push lruvec pointer into get_scan_count()
+      mm/vmscan: push lruvec pointer into should_continue_reclaim()
+      mm/vmscan: kill struct mem_cgroup_zone
+
+
+ include/linux/memcontrol.h |   16 +--
+ include/linux/mmzone.h     |   14 ++
+ mm/memcontrol.c            |   33 +++--
+ mm/mmzone.c                |   14 ++
+ mm/page_alloc.c            |    8 -
+ mm/vmscan.c                |  277 ++++++++++++++++++++------------------------
+ 6 files changed, 177 insertions(+), 185 deletions(-)
+
+-- 
+Signature
