@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab2DZJNS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 05:13:18 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:53363 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab2DZJNQ convert rfc822-to-8bit (ORCPT
+	id S1755041Ab2DZJPG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 05:15:06 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:19619 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab2DZJPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 05:13:16 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6692"; a="185081049"
-X-IronPort-AV: E=Sophos;i="4.75,484,1330934400"; 
-   d="scan'208";a="304826313"
-From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-To: David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>
-Subject: RE: [PATCH 00/10] atl1c: update hardware settings - v3
-Thread-Topic: [PATCH 00/10] atl1c: update hardware settings - v3
-Thread-Index: AQHNI3Wo421SUud/iEyOaFswT6jiFpatRfAA//+MhAA=
-Date: Thu, 26 Apr 2012 09:13:14 +0000
-Message-ID: <157393863283F442885425D2C454285623D5E63C@nasanexd02a.na.qualcomm.com>
-References: <1335421638-16304-1-git-send-email-xiong@qca.qualcomm.com>
- <20120426.050542.243663587525305831.davem@davemloft.net>
-In-Reply-To: <20120426.050542.243663587525305831.davem@davemloft.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.45.230.6]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 Apr 2012 05:15:04 -0400
+Message-ID: <4F991210.8060409@atmel.com>
+Date: Thu, 26 Apr 2012 11:14:56 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Andrew Victor <avictor.za@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: [GIT PULL] net/at91: at91_ether fixes for 3.4-rc
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, I will update quirks.c for the next patch set. Thanks !
+Hi David,
 
--Xiong
+Can you please pull those fixes for 3.4-rc? The ARM/AT91 part
+of modifications is pretty small and bounded to a single SoC so
+it will not mess with arm-soc git tree.
 
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Thursday, April 26, 2012 17:06
-> To: Huang, Xiong
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; qca-linux-team; nic-
-> devel
-> Subject: Re: [PATCH 00/10] atl1c: update hardware settings - v3
-> 
-> From: xiong <xiong@qca.qualcomm.com>
-> Date: Thu, 26 Apr 2012 14:27:08 +0800
-> 
-> > This update contains a serial of patches, most of them are hardware
-> > settings related. register definitions are refined (or removed if
-> > meaningless) for each patch.
-> >
-> > This is the third serial patches, after reviewed/applied the fourth
-> > serial will be out.
-> >
-> > The patches have addressed all sparse and checkpatch warnings.
-> >
-> > Following NICs are tested:
-> > AR8131/AR8132/AR8151A/AR8152A/AR8152B
-> > Test item includes:
-> > build/install/uninstall/dhcp/ping/iperf/wol/reboot/etc.
-> 
-> I've applied patches #1 until #9, patch #10 needs to be done differently.
-> 
-> The PCI_DEV_FLAGS_MSI_INTX_DISABLE_BUG bit should be set via a PCI quirk
-> entry in drivers/pci/quirks.c just as it is done for other devices which have this
-> problem.
-> 
-> Thank you.
+Tell me if you need other information on this signed tag...
+
+The following changes since commit 66f75a5d028beaf67c931435fdc3e7823125730c:
+
+  Linux 3.4-rc4 (2012-04-21 14:47:52 -0700)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-3.4-net-fixes
+
+for you to fetch changes up to cfc991548b5b73c8038f41877da1cd0104945cf5:
+
+  net/at91_ether: use gpio_to_irq for phy IRQ line (2012-04-26 10:22:40 +0200)
+
+----------------------------------------------------------------
+Both fixes are about at91_ether.c driver: It is only used in a single
+Atmel AT91 SoC: AT91RM9200.
+The removal of fixed mapping is a long standing refinement which will
+convert this driver to a more typical resources management.
+The gpio fix is needed now that we have moved AT91 to irqdomains.
+
+----------------------------------------------------------------
+Andrew Victor (1):
+      AT91: Remove fixed mapping for AT91RM9200 ethernet
+
+Nicolas Ferre (1):
+      net/at91_ether: use gpio_to_irq for phy IRQ line
+
+ arch/arm/mach-at91/at91rm9200.c            |   10 --
+ arch/arm/mach-at91/at91rm9200_devices.c    |    4 +-
+ arch/arm/mach-at91/include/mach/hardware.h |    1 -
+ drivers/net/ethernet/cadence/at91_ether.c  |  535 ++++++++++++++++++++++++++++++++++++++++++++-------------------------------------
+ drivers/net/ethernet/cadence/at91_ether.h  |    1 +
+ 5 files changed, 291 insertions(+), 260 deletions(-)
+
+Best regards,
+-- 
+Nicolas Ferre
