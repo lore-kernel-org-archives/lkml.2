@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597Ab2DYXhV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 19:37:21 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:45958 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932454Ab2DYXhU convert rfc822-to-8bit (ORCPT
+	id S1759396Ab2DZAGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 20:06:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42119 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757501Ab2DZAG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 19:37:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120422025532.GA19064@khazad-dum.debian.net>
-References: <20120411163849.GE4794@alberich.amd.com> <4F8D7A0A.4080404@linux.vnet.ibm.com>
- <20120417145002.GA11221@aftab> <201204171153.04489.gene.heskett@gmail.com>
- <CAPXgP12_k4D-r=HQy3zidHhMP8ygMsT4J5Q+-h0CE3k_vpsazA@mail.gmail.com> <20120422025532.GA19064@khazad-dum.debian.net>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 26 Apr 2012 01:36:59 +0200
-Message-ID: <CAPXgP12EVPwCDB0F8bHiApgb926AVhfZf0LiW-WzXVfb6ocN8w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86, microcode: Ensure that module is only loaded for
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Gene Heskett <gene.heskett@gmail.com>, Borislav Petkov <bp@amd64.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	Wed, 25 Apr 2012 20:06:29 -0400
+Date: Thu, 26 Apr 2012 02:06:21 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
+cc: Samuel Ortiz <sameo@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        tigran@aivazian.fsnet.co.uk, hpa@zytor.com, x86@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH][TRIVIAL] mfd: twl6030: Add intermediate cast to uintptr_t
+ before casting to pointer.
+In-Reply-To: <1335396750-18950-1-git-send-email-krzysztof.wilczynski@linux.com>
+Message-ID: <alpine.LFD.2.02.1204260203160.2542@ionos>
+References: <1335396750-18950-1-git-send-email-krzysztof.wilczynski@linux.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1926140714-1335398782=:2542"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 22, 2012 at 04:55, Henrique de Moraes Holschuh
-<hmh@hmh.eng.br> wrote:
-> On Tue, 17 Apr 2012, Kay Sievers wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
->> Just a note: the intel microcode is loaded by a kernel-initiated
->> firmware request these days. There is no (broken) init script on
->
-> Is it?  Which distros have deployed the required userspace and switched to
-> Intel binary microcode already?
+--8323328-1926140714-1335398782=:2542
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-The tool is here:
-  http://pkgs.fedoraproject.org/repo/pkgs/microcode_ctl/intel-microcode2ucode.c/0efc5f6c74a4d7e61ca22683c93c98cf/intel-microcode2ucode.c
+On Thu, 26 Apr 2012, Krzysztof Wilczynski wrote:
 
-It's at least used here:
-  http://pkgs.fedoraproject.org/gitweb/?p=microcode_ctl.git;a=tree
-  https://build.opensuse.org/package/files?package=microcode_ctl&project=Base%3ASystem
-  http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/sys-apps/microcode-data/files/
+> This is to address the following warning during compilation time:
+> 
+>   drivers/mfd/twl6030-irq.c: In function ‘twl6030_init_irq’:
+>   drivers/mfd/twl6030-irq.c:398: warning: cast to pointer from integer of different size
+>   drivers/mfd/twl6030-irq.c:415: warning: cast to pointer from integer of different size
 
-Kay
+Sigh. Instaed of blindy fixing some random warning, that driver should
+be converted to use proper threaded interrupt handlers which already
+do the Right Thing.
+ 
+Thanks,
+
+	tglx
+--8323328-1926140714-1335398782=:2542--
