@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab2DZBTl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 21:19:41 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49934 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab2DZBTk (ORCPT
+	id S1752210Ab2DZBmQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 21:42:16 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62708 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab2DZBmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 21:19:40 -0400
-X-AuditID: 9c93016f-b7cfcae00000449e-c4-4f98a2a7771e
-Message-ID: <4F98A2CC.4080104@kernel.org>
-Date: Thu, 26 Apr 2012 10:20:12 +0900
+	Wed, 25 Apr 2012 21:42:15 -0400
+X-AuditID: 9c930179-b7bfaae000006f69-f4-4f98a7f407e4
+Message-ID: <4F98A818.1080106@kernel.org>
+Date: Thu, 26 Apr 2012 10:42:48 +0900
 From: Minchan Kim <minchan@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
@@ -20,9 +20,9 @@ CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dan Magenheimer <dan.magenheimer@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 0/6] zsmalloc: clean up and fix arch dependency
-References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <4F97F0F1.2000506@vflare.org>
-In-Reply-To: <4F97F0F1.2000506@vflare.org>
+Subject: Re: [PATCH 2/6] zsmalloc: remove unnecessary alignment
+References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-3-git-send-email-minchan@kernel.org> <4F97F3D6.8000404@vflare.org>
+In-Reply-To: <4F97F3D6.8000404@vflare.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
@@ -30,44 +30,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nitin,
+On 04/25/2012 09:53 PM, Nitin Gupta wrote:
 
-On 04/25/2012 09:41 PM, Nitin Gupta wrote:
-
-> Hi Minchan,
-> 
 > On 04/25/2012 02:23 AM, Minchan Kim wrote:
 > 
->> This patchset has some clean up patches(1-5) and remove 
->> set_bit, flush_tlb for portability in [6/6].
+>> It isn't necessary to align pool size with PAGE_SIZE.
+>> If I missed something, please let me know it.
 >>
->> Minchan Kim (6):
->>   zsmalloc: use PageFlag macro instead of [set|test]_bit
->>   zsmalloc: remove unnecessary alignment
->>   zsmalloc: rename zspage_order with zspage_pages
->>   zsmalloc: add/fix function comment
->>   zsmalloc: remove unnecessary type casting
->>   zsmalloc: make zsmalloc portable
+>> Signed-off-by: Minchan Kim <minchan@kernel.org>
+>> ---
+>>  drivers/staging/zsmalloc/zsmalloc-main.c |    5 ++---
+>>  1 file changed, 2 insertions(+), 3 deletions(-)
 >>
->>  drivers/staging/zsmalloc/Kconfig         |    4 --
->>  drivers/staging/zsmalloc/zsmalloc-main.c |   73 +++++++++++++++++-------------
->>  drivers/staging/zsmalloc/zsmalloc_int.h  |    3 +-
->>  3 files changed, 43 insertions(+), 37 deletions(-)
->>
+>> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+>> index 504b6c2..b99ad9e 100644
+>> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+>> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+>> @@ -489,14 +489,13 @@ fail:
+>>  
+>>  struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
+>>  {
+>> -	int i, error, ovhd_size;
+>> +	int i, error;
+>>  	struct zs_pool *pool;
+>>  
+>>  	if (!name)
+>>  		return NULL;
+>>  
+>> -	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
+>> -	pool = kzalloc(ovhd_size, GFP_KERNEL);
+>> +	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
+>>  	if (!pool)
+>>  		return NULL;
+>>  
 > 
 > 
-> Thanks for the fixes.
-> 
-> 
-> Your description is missing testing notes (especially since patch [6/6]
-> is not a cosmetic change). So, can you please add these either here in
-> patch 0 or as part of patch 6/6 description?
+> pool metadata is rounded-up to avoid potential false-sharing problem
+> (though we could just roundup to cache_line_size()).
 
 
-Will do in later version.
-Test is simply done in x86 and ARM qemu environment with zram so test coverage isn't good
-but [1-6] is just trivial while [7] is severe. As I see Seth's reply, he could test it enough
-and other architecture should work if it works in x86 because we used generic functions.
+Do you really have any hurt by false-sharing problem?
+If so, we can change it with
+
+kzalloc(ALIGN(sizeof(*pool), cache_line_size()), GFP_KERNEL);
+
+But I am not sure we need this.
+
+> 
+> Thanks,
+> Nitin
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
+
 
 -- 
 Kind regards,
