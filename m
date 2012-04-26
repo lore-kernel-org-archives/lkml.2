@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759241Ab2DZUIP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 16:08:15 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:39298 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759219Ab2DZUIL (ORCPT
+	id S1759235Ab2DZUJf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 16:09:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53336 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751522Ab2DZUJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 16:08:11 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 1/3] ARM: omap2+: set IRQCHIP_SKIP_SET_WAKE for INTC interrupts.
-Organization: Texas Instruments, Inc.
-References: <20120425025637.7832.14013.stgit@notabene.brown>
-	<20120425030524.7832.52047.stgit@notabene.brown>
-Date: Thu, 26 Apr 2012 13:08:08 -0700
-In-Reply-To: <20120425030524.7832.52047.stgit@notabene.brown> (NeilBrown's
-	message of "Wed, 25 Apr 2012 13:05:24 +1000")
-Message-ID: <87sjfq9ryv.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 26 Apr 2012 16:09:34 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] extcon: Pacify the section mismatch checker
+Date: Thu, 26 Apr 2012 21:09:28 +0100
+Message-Id: <1335470968-10920-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NeilBrown <neilb@suse.de> writes:
+The section mismatch checker can't figure out that it's safe for
+extcon_gpio to reference gpio_extcon_remove() without a _driver on
+the end of the name of the struct so add one to avoid warnings.
 
-> All interrupts can wake-from-sleep (I think) so it should be
-> permissible to call enable_irq_wake().  Setting this flag allows that.
->
-> It is needed because without this, an interrupt which is delivered
-> during late suspend will get ignored but will not cause suspend to
-> abort.
-> If enable_irq_wake() is called and succeeds, check_wakuep_irqs()
-> will abort the suspend if the interrupt has fired.
->
-> Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/extcon/extcon_gpio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Acked-by: Kevin Hilman <khilman@ti.com>
+diff --git a/drivers/extcon/extcon_gpio.c b/drivers/extcon/extcon_gpio.c
+index 5c0f085..fe7a07b 100644
+--- a/drivers/extcon/extcon_gpio.c
++++ b/drivers/extcon/extcon_gpio.c
+@@ -153,7 +153,7 @@ static int __devexit gpio_extcon_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static struct platform_driver gpio_extcon = {
++static struct platform_driver gpio_extcon_driver = {
+ 	.probe		= gpio_extcon_probe,
+ 	.remove		= __devexit_p(gpio_extcon_remove),
+ 	.driver		= {
+@@ -162,7 +162,7 @@ static struct platform_driver gpio_extcon = {
+ 	},
+ };
+ 
+-module_platform_driver(gpio_extcon);
++module_platform_driver(gpio_extcon_driver);
+ 
+ MODULE_AUTHOR("Mike Lockwood <lockwood@android.com>");
+ MODULE_DESCRIPTION("GPIO extcon driver");
+-- 
+1.7.10
 
-Tony, should I queue this one in my OMAP PM features for v3.5 branch?
-or do you want to take it?
-
-Kevin
