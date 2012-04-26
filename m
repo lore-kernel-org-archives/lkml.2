@@ -1,40 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759021Ab2DZVgy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 17:36:54 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:50954 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753141Ab2DZVgx (ORCPT
+	id S1759273Ab2DZVhe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 17:37:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43933 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab2DZVhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 17:36:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <1335353894-22096-1-git-send-email-b29396@freescale.com>
-References: <1335353894-22096-1-git-send-email-b29396@freescale.com>
-Date: Thu, 26 Apr 2012 23:36:52 +0200
-Message-ID: <CACRpkdadLsqpb=X+BmomyRywf=SrgGpbW2B=Myo3zTn_xMHJ2g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: support gpio request deferred probing
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linus.walleij@stericsson.com, swarren@wwwdotorg.org,
-        s.hauer@pengutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Apr 2012 17:37:33 -0400
+Date: Thu, 26 Apr 2012 14:37:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcg: count pte references from every member
+ of the reclaimed hierarchy
+Message-Id: <20120426143729.10f672ae.akpm@linux-foundation.org>
+In-Reply-To: <1335296144-29381-2-git-send-email-hannes@cmpxchg.org>
+References: <1335296144-29381-1-git-send-email-hannes@cmpxchg.org>
+	<1335296144-29381-2-git-send-email-hannes@cmpxchg.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 1:38 PM, Dong Aisheng <b29396@freescale.com> wrote:
+On Tue, 24 Apr 2012 21:35:44 +0200
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+> The rmap walker checking page table references has historically
+> ignored references from VMAs that were not part of the memcg that was
+> being reclaimed during memcg hard limit reclaim.
+> 
+> When transitioning global reclaim to memcg hierarchy reclaim, I missed
+> that bit and now references from outside a memcg are ignored even
+> during global reclaim.
+> 
+> Reverting back to traditional behaviour - count all references during
+> global reclaim and only mind references of the memcg being reclaimed
+> during limit reclaim would be one option.
+> 
+> However, the more generic idea is to ignore references exactly then
+> when they are outside the hierarchy that is currently under reclaim;
+> because only then will their reclamation be of any use to help the
+> pressure situation.  It makes no sense to ignore references from a
+> sibling memcg and then evict a page that will be immediately refaulted
+> by that sibling which contributes to the same usage of the common
+> ancestor under reclaim.
+> 
+> The solution: make the rmap walker ignore references from VMAs that
+> are not part of the hierarchy that is being reclaimed.
+> 
+> Flat limit reclaim will stay the same, hierarchical limit reclaim will
+> mind the references only to pages that the hierarchy owns.  Global
+> reclaim, since it reclaims from all memcgs, will be fixed to regard
+> all references.
+> 
+> ...
 >
-> As pinctrl handles, it may be possible the pinctrl gpio ranges
-> are still not got registered when user call pinctrl_gpio_request.
-> Thus, add defer support for it too.
->
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -78,6 +78,7 @@ extern void mem_cgroup_uncharge_cache_page(struct page *page);
+>  
+>  extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  				     int order);
+> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *, struct mem_cgroup *);
 
-Since nobody is saying anything and it looks reasonable,
-I just applied this.
+I dunno about you guys, but this practice of omitting the names of the
+arguments in the declaration drives me bats.  It really does throw away
+a *lot* of information.  It looks OK when one is initially reading the
+code, but when I actually go in there and do some work on the code, it
+makes things significantly harder.
 
-Thanks!
-Linus Walleij
+>  int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
+>  
+>  extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+> @@ -91,10 +92,13 @@ static inline
+>  int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
+>  {
+>  	struct mem_cgroup *memcg;
+> +	int match;
+> +
+>  	rcu_read_lock();
+>  	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
+> +	match = memcg && __mem_cgroup_same_or_subtree(cgroup, memcg);
+>  	rcu_read_unlock();
+> -	return cgroup == memcg;
+> +	return match;
+>  }
+
+mm_match_cgroup() really wants to return a bool type, no?
+
+> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> +				  struct mem_cgroup *memcg)
+
+Like him.
+
+> +static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> +				       struct mem_cgroup *memcg)
+
+And him.
+
+
