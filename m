@@ -1,120 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757002Ab2DZOZb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 10:25:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38943 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756801Ab2DZOZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 10:25:30 -0400
-Message-ID: <4F995ACA.2010701@redhat.com>
-Date: Thu, 26 Apr 2012 11:25:14 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1756961Ab2DZO3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 10:29:37 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42240 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700Ab2DZO3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 10:29:35 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Tony Luck <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: [EDAC PATCH v13 6/7] edac.h: Prepare to handle with generic layers
-References: <20120424104059.GA11559@aftab.osrc.amd.com> <4F9692AD.8090000@redhat.com> <20120424125538.GC11559@aftab.osrc.amd.com> <4F96A696.40308@redhat.com> <20120424133242.GI11559@aftab.osrc.amd.com> <4F96B783.6060101@redhat.com> <20120424162743.GU11559@aftab.osrc.amd.com> <4F96E1EB.1030407@redhat.com> <20120425171904.GM18882@aftab.osrc.amd.com> <4F9838BB.5010209@redhat.com> <20120426141149.GC28653@aftab.osrc.amd.com>
-In-Reply-To: <20120426141149.GC28653@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4
+In-Reply-To: <1335449254.2775.45.camel@edumazet-glaptop>
+References: <CAOFJUkhi6NoECFGcz=rq8-uVXFc90V4SuH=A1+sWdvYDDhO8Ow@mail.gmail.com>
+	<1335353427.3274.103.camel@edumazet-glaptop>
+	<CAOFJUkj27aF6diDjcZFTyBaTdDdU8URkj+1vr3ECoozbzqDVBg@mail.gmail.com>
+	<1335357975.3274.187.camel@edumazet-glaptop>
+	<CAOFJUki3Jg+fAWWY70nDUCdxVs5A5VGfwkwUn01a4BX+N5nm-A@mail.gmail.com>
+	<1335375781.5951.2.camel@edumazet-glaptop>
+	<CAOFJUkhF1205=2sO_a4gT+it42h_1rZU365N-Rb5LVJZa8zvhw@mail.gmail.com>
+	<1335449254.2775.45.camel@edumazet-glaptop>
+Date: Thu, 26 Apr 2012 16:29:34 +0200
+Message-ID: <CAOFJUkhNnD2VVKAuNjU7yW8jh+XZMuzt5N_Qk6oiV21CNK6auQ@mail.gmail.com>
+Subject: Re: many rx packets dropped since 2.6.37
+From: Chris <xchris89x@googlemail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 26-04-2012 11:11, Borislav Petkov escreveu:
-> On Wed, Apr 25, 2012 at 02:47:39PM -0300, Mauro Carvalho Chehab wrote:
->>> Now let's look at your output from earlier:
->>>
->>>> $ ./edac-ctl --layout
->>>>        +-----------------------------------+
->>>>        |                mc0                |
->>>>        | channel0  | channel1  | channel2  |
->>>> -------+-----------------------------------+
->>>> slot2: |     0 MB  |     0 MB  |     0 MB  |
->>>> slot1: |  1024 MB  |     0 MB  |     0 MB  |
->>>> slot0: |  1024 MB  |  1024 MB  |  1024 MB  |
->>>> -------+-----------------------------------+
->>>>
->>>> Those are the logs that dump the Memory Controller registers:
->>>>
->>>> [  115.818947] EDAC DEBUG: get_dimm_config: Ch0 phy rd0, wr0 (0x063f4031): 2 ranks, UDIMMs
->>>
->>> it says here 2 ranks
+2012/4/26 Eric Dumazet <eric.dumazet@gmail.com>:
+>> Okay this is a Fedora-16 VM under KVM with 4 minutes uptime only and dropwatch!
 >>
->> The above output is for the Nehalem machine, with 4 dimms, all single ranked.
+>> 349 dropped packets in 4 minutes uptime??
 >>
->>>> [  115.818950] EDAC DEBUG: get_dimm_config:   dimm 0 1024 Mb offset: 0, bank: 8, rank: 1, row: 0x4000, col: 0x400
->>>> [  115.818955] EDAC DEBUG: get_dimm_config:   dimm 1 1024 Mb offset: 4, bank: 8, rank: 1, row: 0x4000, col: 0x400
->>>> [  115.818982] EDAC DEBUG: get_dimm_config: Ch1 phy rd1, wr1 (0x063f4031): 2 ranks, UDIMMs
->>>
->>> and here 2 too although there's only one single-ranked DIMM here. So
->>> which is it?
->>
->> The # of ranks there is the total amount of ranks at the channel.
-> 
-> The total amount of ranks what? The channel supports, are present on the
-> channel, the number of physical slots?
-> 
-> I'm just saying it is puzzling because your output says "2 ranks" whent
-> there are 2 single-ranked DIMMs connected to ch0 and also "2 ranks" when
-> there's only one DIMM connected to ch1.
+>
+> yes, apparently.
+>
+> Mostely because of :
+>
+> 610 with invalid addresses
+> 71 dropped because of missing route
+> and IPReversePathFilter: 82
+>
+> It seems you have some work to do on your network config
 
-Ah, ok, now I understood what you meant: yeah, channel 1 and 2 also says
-that there are two ranks.
+What do you mean exactly?
 
-I'll double check what's happening there.
+This is netstat -s on the hostsystem with 24 days uptime. KVM guests
+are connected via bridged networking.
 
-> 
-> [..]
-> 
->> In the case of the EDAC driver, we're relying at the per-DIMM
->> information, that is reported via the MCE misc register. Also, there
->> are per-DIMM error counters out there. So, while it could, in thesis,
->> be possible to use the per-RANK registers and do the error decoding
->> without MCA, this can have troubles, in practice, as some BIOSes
->> can also be accessing the same registers, which would cause race
->> conditions between BIOS and Linux.
-> 
-> BIOS accessing those registers while OS is running, what is that SMM?
-> APEI?
+# netstat -s
+Ip:
+    14750606 total packets received
+    4394457 with invalid addresses
+    0 forwarded
+    0 incoming packets discarded
+    5461822 incoming packets delivered
+    5149263 requests sent out
+Icmp:
+    136871 ICMP messages received
+    22 input ICMP message failed.
+    ICMP input histogram:
+        destination unreachable: 30
+        timeout in transit: 5
+        echo requests: 136809
+        echo replies: 27
+    149082 ICMP messages sent
+    0 ICMP messages failed
+    ICMP output histogram:
+        destination unreachable: 12269
+        echo request: 4
+        echo replies: 136809
+IcmpMsg:
+        InType0: 27
+        InType3: 30
+        InType8: 136809
+        InType11: 5
+        OutType0: 136809
+        OutType3: 12269
+        OutType8: 4
+Tcp:
+    430 active connections openings
+    32123 passive connection openings
+    117 failed connection attempts
+    39 connection resets received
+    2 connections established
+    5250012 segments received
+    4916354 segments send out
+    8781 segments retransmited
+    0 bad segments received.
+    70 resets sent
+Udp:
+    74938 packets received
+    0 packets to unknown port received.
+    0 packet receive errors
+    75044 packets sent
+UdpLite:
+TcpExt:
+    2 invalid SYN cookies received
+    117 resets received for embryonic SYN_RECV sockets
+    809 TCP sockets finished time wait in fast timer
+    1 time wait sockets recycled by time stamp
+    2400 packets rejects in established connections because of timestamp
+    101608 delayed acks sent
+    978 delayed acks further delayed because of locked socket
+    Quick ack mode was activated 2993 times
+    36910 packets directly queued to recvmsg prequeue.
+    13392680 packets directly received from backlog
+    169 packets directly received from prequeue
+    4493014 packets header predicted
+    2027 packets header predicted and directly queued to user
+    109135 acknowledgments not containing data received
+    2686390 predicted acknowledgments
+    46 times recovered from packet loss due to SACK data
+    TCPDSACKUndo: 16
+    613 congestion windows recovered after partial ack
+    5 TCP data loss events
+    696 timeouts after SACK recovery
+    18 timeouts in loss state
+    46 fast retransmits
+    9 forward retransmits
+    193 retransmits in slow start
+    6614 other TCP timeouts
+    1 sack retransmits failed
+    3000 DSACKs sent for old packets
+    2091 DSACKs received
+    11 connections reset due to unexpected data
+    24 connections reset due to early user close
+    26 connections aborted due to timeout
+    TCPDSACKIgnoredOld: 1333
+    TCPDSACKIgnoredNoUndo: 407
+    TCPSackShifted: 28
+    TCPSackMerged: 93
+    TCPSackShiftFallback: 443
+IpExt:
+    InMcastPkts: 952759
+    OutMcastPkts: 20
+    InBcastPkts: 887543
+    InOctets: 19724020920
+    OutOctets: 918687039
+    InMcastOctets: 73525673
+    OutMcastOctets: 4004
+    InBcastOctets: 139495386
 
-I was thinking in preventing against races with SMM when I was writing 
-the code for using the MCA registers instead of accessing the registers 
-directly.
+>
+>> [root@test ~]# uname -r
+>> 3.3.2-6.fc16.x86_64
+>> [root@test ~]# dropwatch -l kas
+>> Initalizing kallsyms db
+>> dropwatch> start
+>> Enabling monitoring...
+>> Kernel monitoring activated.
+>> Issue Ctrl-C to stop monitoring
+>> 1 drops at netlink_unicast+1bc
+>
+> this is a false positive, bugfix here :
+> http://git.kernel.org/?p=linux/kernel/git/davem/net-next.git;a=commitdiff;h=bfb253c9b277acd9f85b1886ff82b1dd5fbff2ae
 
-> 
-> [..]
-> 
->>>>>> At Sandy Bridge-EP (E. g. Intel E5 CPUs), we have one machine fully equipped
->>>>>> with dual rank memories. The number of ranks there is just a DIMM property.
->>>>>>
->>>>>> # ./edac-ctl --layout
->>>>>>        +-----------------------------------------------------------------------------------------------+
->>>>>>        |                      mc0                      |                      mc1                      |
->>>>>>        | channel0  | channel1  | channel2  | channel3  | channel0  | channel1  | channel2  | channel3  |
->>>>>> -------+-----------------------------------------------------------------------------------------------+
->>>>>> slot2: |     0 MB  |     0 MB  |     0 MB  |     0 MB  |     0 MB  |     0 MB  |     0 MB  |     0 MB  |
->>>>>> slot1: |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |
->>>>>> slot0: |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |  4096 MB  |
->>>>>> -------+-----------------------------------------------------------------------------------------------+
->>>>>>
->>>>>> (this machine doesn't have physical DIMM sockets for slot#2)
->>>
->>> This looks like a 4-channel memory controller with 3 physical slots per
->>> channel.
->>
->> Yes, except that this specific motherboard has only 16 physical slots. In
->> thesis, it is possible to have a motherboard with 24 physical slots.
-> 
-> Ok, this probably means the memory controller supports 3 slots per
-> channel but the mobo designer laid out only 2 per channel.
+Okay :)
 
-Yes.
+>> 3 drops at ip_rcv_finish+f0
+>> 1 drops at __netif_receive_skb+583
+>> 1 drops at ip_rcv+d3
+>> 9 drops at ip_rcv_finish+f0
+>> 9 drops at ip_rcv_finish+f0
+>> 1 drops at __netif_receive_skb+583
+>> 6 drops at ip_rcv_finish+f0
+>> 1 drops at nf_hook_slow+12b
+>
+> do you have drops at iptables level ?
 
-Regards,
-Mauro.
+I do not know. Should i turn off iptables for testing?
+
+--
+Chris
