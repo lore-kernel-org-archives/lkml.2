@@ -1,92 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab2DZFTh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 01:19:37 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:50638 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752215Ab2DZFTe (ORCPT
+	id S1753845Ab2DZFT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 01:19:57 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54562 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab2DZFQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 01:19:34 -0400
-Message-ID: <4F98D889.40207@marvell.com>
-Date: Thu, 26 Apr 2012 13:09:29 +0800
-From: Yilu Mao <ylmao@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: <ylmao@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: cache-l2x0.c: save aux ctrl for resume in case that
- l2x0 is enabled before init
-References: <1335235280-25148-1-git-send-email-ylmao@marvell.com> <20120424082810.GA9367@arm.com>
-In-Reply-To: <20120424082810.GA9367@arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Apr 2012 01:16:21 -0400
+X-AuditID: 9c93016f-b7cfcae00000449e-1a-4f98da226957
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 01/13] perf tools: Introduce struct perf_target
+Date: Thu, 26 Apr 2012 14:15:15 +0900
+Message-Id: <1335417327-11796-2-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
+References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2012 04:28 PM, Catalin Marinas wrote:
-> On Tue, Apr 24, 2012 at 03:41:20AM +0100, Yilu Mao wrote:
->> If l2x0 controller has been enabled when calling l2x0_init, the aux ctrl
->> register will not be saved in l2x0_saved_regs. Therefore we can not use
->> l2x0_saved_regs.aux_ctrl for resume later. This patch fixed the problem
->> by saving aux ctrl in l2x0_saved_regs just after it's being read from
->> the register.
->>
->> Signed-off-by: Yilu Mao<ylmao@marvell.com>
->> ---
->>   arch/arm/mm/cache-l2x0.c |    6 ++++++
->>   1 files changed, 6 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
->> index a53fd2a..3034b06 100644
->> --- a/arch/arm/mm/cache-l2x0.c
->> +++ b/arch/arm/mm/cache-l2x0.c
->> @@ -320,6 +320,12 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
->>   	cache_id = readl_relaxed(l2x0_base + L2X0_CACHE_ID);
->>   	aux = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
->>
->> +	/* In case l2x controller is enabled, the aux ctrl register
->> +	 * can't be set. So the original value should be stored in
->> +	 * the l2x0_saved_regs for restoring when resume.
->> +	 */
->
-> Even better like this ;)
->
-> +	/*
-> +	 * In case l2x controller is enabled, the aux ctrl register
-> +	 * can't be set. So the original value should be stored in
-> +	 * the l2x0_saved_regs for restoring when resume.
-> +	 */
->
->
->> +	l2x0_saved_regs.aux_ctrl = aux;
->> +
->>   	aux&= aux_mask;
->>   	aux |= aux_val;
->
-> I think that's the wrong place to save it, it should be after the
-> masking was done.
->
-> Anyway, if we cannot write this register in l2x0_init() because the L2
-> was enabled, do we expect the L2 to be disabled during resume?
->
-Sorry, I don't think so.
-This is the right place to save it because we must make sure the saved 
-aux_ctrl is the same as what it is set.
-If we save it after masking was done, the saved value will be different 
-because we can't actually change the real setting.
+The perf_target struct will be used for taking care of cpu/thread
+maps based on user's input. Since it is used on various subcommands
+it'd better factoring it out.
 
-What do you think?
+Thanks to Arnaldo for suggesting the better name.
 
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+---
+ tools/perf/builtin-record.c |   41 ++++++++++++++++++++++-------------------
+ tools/perf/builtin-test.c   |    5 +++--
+ tools/perf/perf.h           |   15 ++++++++++-----
+ tools/perf/util/evlist.c    |    2 +-
+ tools/perf/util/evsel.c     |   10 +++++-----
+ 5 files changed, 41 insertions(+), 32 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 10b1f1f25ed7..4dcf27057bd2 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -44,7 +44,6 @@ struct perf_record {
+ 	struct perf_evlist	*evlist;
+ 	struct perf_session	*session;
+ 	const char		*progname;
+-	const char		*uid_str;
+ 	int			output;
+ 	unsigned int		page_size;
+ 	int			realtime_prio;
+@@ -218,7 +217,7 @@ try_again:
+ 			if (err == EPERM || err == EACCES) {
+ 				ui__error_paranoid();
+ 				exit(EXIT_FAILURE);
+-			} else if (err ==  ENODEV && opts->cpu_list) {
++			} else if (err ==  ENODEV && opts->target.cpu_list) {
+ 				die("No such device - did you specify"
+ 					" an out-of-range profile CPU?\n");
+ 			} else if (err == EINVAL) {
+@@ -578,7 +577,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		perf_session__process_machines(session, tool,
+ 					       perf_event__synthesize_guest_os);
+ 
+-	if (!opts->system_wide)
++	if (!opts->target.system_wide)
+ 		perf_event__synthesize_thread_map(tool, evsel_list->threads,
+ 						  process_synthesized_event,
+ 						  machine);
+@@ -765,9 +764,9 @@ const struct option record_options[] = {
+ 		     parse_events_option),
+ 	OPT_CALLBACK(0, "filter", &record.evlist, "filter",
+ 		     "event filter", parse_filter),
+-	OPT_STRING('p', "pid", &record.opts.target_pid, "pid",
++	OPT_STRING('p', "pid", &record.opts.target.pid, "pid",
+ 		    "record events on existing process id"),
+-	OPT_STRING('t', "tid", &record.opts.target_tid, "tid",
++	OPT_STRING('t', "tid", &record.opts.target.tid, "tid",
+ 		    "record events on existing thread id"),
+ 	OPT_INTEGER('r', "realtime", &record.realtime_prio,
+ 		    "collect data with this RT SCHED_FIFO priority"),
+@@ -775,11 +774,11 @@ const struct option record_options[] = {
+ 		    "collect data without buffering"),
+ 	OPT_BOOLEAN('R', "raw-samples", &record.opts.raw_samples,
+ 		    "collect raw sample records from all opened counters"),
+-	OPT_BOOLEAN('a', "all-cpus", &record.opts.system_wide,
++	OPT_BOOLEAN('a', "all-cpus", &record.opts.target.system_wide,
+ 			    "system-wide collection from all CPUs"),
+ 	OPT_BOOLEAN('A', "append", &record.append_file,
+ 			    "append to the output file to do incremental profiling"),
+-	OPT_STRING('C', "cpu", &record.opts.cpu_list, "cpu",
++	OPT_STRING('C', "cpu", &record.opts.target.cpu_list, "cpu",
+ 		    "list of cpus to monitor"),
+ 	OPT_BOOLEAN('f', "force", &record.force,
+ 			"overwrite existing data file (deprecated)"),
+@@ -813,7 +812,8 @@ const struct option record_options[] = {
+ 	OPT_CALLBACK('G', "cgroup", &record.evlist, "name",
+ 		     "monitor event in cgroup name only",
+ 		     parse_cgroups),
+-	OPT_STRING('u', "uid", &record.uid_str, "user", "user to profile"),
++	OPT_STRING('u', "uid", &record.opts.target.uid_str, "user",
++		   "user to profile"),
+ 
+ 	OPT_CALLBACK_NOOPT('b', "branch-any", &record.opts.branch_stack,
+ 		     "branch any", "sample any taken branches",
+@@ -842,8 +842,9 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 
+ 	argc = parse_options(argc, argv, record_options, record_usage,
+ 			    PARSE_OPT_STOP_AT_NON_OPTION);
+-	if (!argc && !rec->opts.target_pid && !rec->opts.target_tid &&
+-		!rec->opts.system_wide && !rec->opts.cpu_list && !rec->uid_str)
++	if (!argc && !rec->opts.target.pid && !rec->opts.target.tid &&
++	    !rec->opts.target.system_wide && !rec->opts.target.cpu_list &&
++	    !rec->opts.target.uid_str)
+ 		usage_with_options(record_usage, record_options);
+ 
+ 	if (rec->force && rec->append_file) {
+@@ -856,7 +857,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		rec->write_mode = WRITE_FORCE;
+ 	}
+ 
+-	if (nr_cgroups && !rec->opts.system_wide) {
++	if (nr_cgroups && !rec->opts.target.system_wide) {
+ 		fprintf(stderr, "cgroup monitoring only available in"
+ 			" system-wide mode\n");
+ 		usage_with_options(record_usage, record_options);
+@@ -883,17 +884,19 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		goto out_symbol_exit;
+ 	}
+ 
+-	rec->opts.uid = parse_target_uid(rec->uid_str, rec->opts.target_tid,
+-					 rec->opts.target_pid);
+-	if (rec->uid_str != NULL && rec->opts.uid == UINT_MAX - 1)
++	rec->opts.target.uid = parse_target_uid(rec->opts.target.uid_str,
++						rec->opts.target.tid,
++						rec->opts.target.pid);
++	if (rec->opts.target.uid_str != NULL &&
++	    rec->opts.target.uid == UINT_MAX - 1)
+ 		goto out_free_fd;
+ 
+-	if (rec->opts.target_pid)
+-		rec->opts.target_tid = rec->opts.target_pid;
++	if (rec->opts.target.pid)
++		rec->opts.target.tid = rec->opts.target.pid;
+ 
+-	if (perf_evlist__create_maps(evsel_list, rec->opts.target_pid,
+-				     rec->opts.target_tid, rec->opts.uid,
+-				     rec->opts.cpu_list) < 0)
++	if (perf_evlist__create_maps(evsel_list, rec->opts.target.pid,
++				     rec->opts.target.tid, rec->opts.target.uid,
++				     rec->opts.target.cpu_list) < 0)
+ 		usage_with_options(record_usage, record_options);
+ 
+ 	list_for_each_entry(pos, &evsel_list->entries, node) {
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 1c5b9801ac61..e9b256920da0 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -1207,8 +1207,9 @@ static int test__PERF_RECORD(void)
+ 	 * perf_evlist__prepare_workload we'll fill in the only thread
+ 	 * we're monitoring, the one forked there.
+ 	 */
+-	err = perf_evlist__create_maps(evlist, opts.target_pid,
+-				       opts.target_tid, UINT_MAX, opts.cpu_list);
++	err = perf_evlist__create_maps(evlist, opts.target.pid,
++				       opts.target.tid, UINT_MAX,
++				       opts.target.cpu_list);
+ 	if (err < 0) {
+ 		pr_debug("Not enough memory to create thread/cpu maps\n");
+ 		goto out_delete_evlist;
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 89e3355ab173..7e226c0e0e31 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -207,10 +207,17 @@ extern const char perf_version_string[];
+ 
+ void pthread__unblock_sigwinch(void);
+ 
+-struct perf_record_opts {
+-	const char   *target_pid;
+-	const char   *target_tid;
++struct perf_target {
++	const char   *pid;
++	const char   *tid;
++	const char   *cpu_list;
++	const char   *uid_str;
+ 	uid_t	     uid;
++	bool	     system_wide;
++};
++
++struct perf_record_opts {
++	struct perf_target target;
+ 	bool	     call_graph;
+ 	bool	     group;
+ 	bool	     inherit_stat;
+@@ -223,7 +230,6 @@ struct perf_record_opts {
+ 	bool	     sample_time;
+ 	bool	     sample_id_all_missing;
+ 	bool	     exclude_guest_missing;
+-	bool	     system_wide;
+ 	bool	     period;
+ 	unsigned int freq;
+ 	unsigned int mmap_pages;
+@@ -231,7 +237,6 @@ struct perf_record_opts {
+ 	int	     branch_stack;
+ 	u64	     default_interval;
+ 	u64	     user_interval;
+-	const char   *cpu_list;
+ };
+ 
+ #endif
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 1986d8051bd1..7080901a2717 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -827,7 +827,7 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+ 		exit(-1);
+ 	}
+ 
+-	if (!opts->system_wide && !opts->target_tid && !opts->target_pid)
++	if (!opts->target.system_wide && !opts->target.tid && !opts->target.pid)
+ 		evlist->threads->map[0] = evlist->workload.pid;
+ 
+ 	close(child_ready_pipe[1]);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 8c13dbcb84b9..d90598edcf1d 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -106,15 +106,15 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 	if (opts->call_graph)
+ 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
+ 
+-	if (opts->system_wide)
++	if (opts->target.system_wide)
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
+ 
+ 	if (opts->period)
+ 		attr->sample_type	|= PERF_SAMPLE_PERIOD;
+ 
+ 	if (!opts->sample_id_all_missing &&
+-	    (opts->sample_time || opts->system_wide ||
+-	     !opts->no_inherit || opts->cpu_list))
++	    (opts->sample_time || opts->target.system_wide ||
++	     !opts->no_inherit || opts->target.cpu_list))
+ 		attr->sample_type	|= PERF_SAMPLE_TIME;
+ 
+ 	if (opts->raw_samples) {
+@@ -135,8 +135,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 	attr->mmap = track;
+ 	attr->comm = track;
+ 
+-	if (!opts->target_pid && !opts->target_tid && !opts->system_wide &&
+-	    (!opts->group || evsel == first)) {
++	if (!opts->target.pid && !opts->target.tid &&
++	    !opts->target.system_wide && (!opts->group || evsel == first)) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
 -- 
-Thanks.
+1.7.10
 
-Best Wishes,
-Yilu Mao
