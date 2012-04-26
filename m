@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757756Ab2DZRne (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 13:43:34 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40721 "EHLO bear.ext.ti.com"
+	id S1758058Ab2DZRn7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 13:43:59 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53791 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756505Ab2DZRld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 13:41:33 -0400
+	id S1754557Ab2DZRla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 13:41:30 -0400
 From: Keerthy <j-keerthy@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <khilman@ti.com>, <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
         <linux-pm@lists.linux-foundation.org>
 CC: <j-pihet@ti.com>, <j-keerthy@ti.com>
-Subject: [PATCH V3 05/10] ARM: OMAP2+: SmartReflex: introduce a busy loop condition test macro
-Date: Thu, 26 Apr 2012 23:10:36 +0530
-Message-ID: <1335462041-4949-6-git-send-email-j-keerthy@ti.com>
+Subject: [PATCH V3 01/10] ARM: OMAP2+: SmartReflex: move the smartreflex header to include/linux/power 
+Date: Thu, 26 Apr 2012 23:10:32 +0530
+Message-ID: <1335462041-4949-2-git-send-email-j-keerthy@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
 References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
@@ -25,8 +25,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jean Pihet <j-pihet@ti.com>
 
-Now that omap_test_timeout is only accessible from mach-omap2/,
-introduce a similar function for SR.
+Move the smartreflex header file
+(arch/arm/mach-omap2/smartreflex.h) in a new header file
+include/linux/power/smartreflex.h.
 
 This change makes the SmartReflex implementation ready for the move
 to drivers/.
@@ -34,81 +35,133 @@ to drivers/.
 Signed-off-by: Jean Pihet <j-pihet@ti.com>
 Signed-off-by: J Keerthy <j-keerthy@ti.com>
 ---
- arch/arm/mach-omap2/smartreflex.c |   12 ++++++------
- include/linux/power/smartreflex.h |   23 ++++++++++++++++++++++-
- 2 files changed, 28 insertions(+), 7 deletions(-)
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |    4 ++--
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |    3 +--
+ arch/arm/mach-omap2/smartreflex-class3.c           |    3 ++-
+ arch/arm/mach-omap2/smartreflex.c                  |    3 +--
+ arch/arm/mach-omap2/sr_device.c                    |    2 +-
+ .../linux/power}/smartreflex.h                     |    7 ++++---
+ 6 files changed, 11 insertions(+), 11 deletions(-)
+ rename {arch/arm/mach-omap2 => include/linux/power}/smartreflex.h (98%)
 
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index 0c65079..144d118 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -14,6 +14,8 @@
+  *
+  * XXX these should be marked initdata for multi-OMAP kernels
+  */
++#include <linux/power/smartreflex.h>
++
+ #include <plat/omap_hwmod.h>
+ #include <mach/irqs.h>
+ #include <plat/cpu.h>
+@@ -29,8 +31,6 @@
+ #include <plat/dmtimer.h>
+ 
+ #include "omap_hwmod_common_data.h"
+-
+-#include "smartreflex.h"
+ #include "prm-regbits-34xx.h"
+ #include "cm-regbits-34xx.h"
+ #include "wd_timer.h"
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index 4906129..1079c79 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -19,6 +19,7 @@
+  */
+ 
+ #include <linux/io.h>
++#include <linux/power/smartreflex.h>
+ 
+ #include <plat/omap_hwmod.h>
+ #include <plat/cpu.h>
+@@ -32,8 +33,6 @@
+ #include <plat/common.h>
+ 
+ #include "omap_hwmod_common_data.h"
+-
+-#include "smartreflex.h"
+ #include "cm1_44xx.h"
+ #include "cm2_44xx.h"
+ #include "prm44xx.h"
+diff --git a/arch/arm/mach-omap2/smartreflex-class3.c b/arch/arm/mach-omap2/smartreflex-class3.c
+index 955566e..ab8cf83 100644
+--- a/arch/arm/mach-omap2/smartreflex-class3.c
++++ b/arch/arm/mach-omap2/smartreflex-class3.c
+@@ -11,7 +11,8 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#include "smartreflex.h"
++#include <linux/power/smartreflex.h>
++#include "voltage.h"
+ 
+ static int sr_class3_enable(struct voltagedomain *voltdm)
+ {
 diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
-index d859277..acef08d 100644
+index 008fbd7..98309d3 100644
 --- a/arch/arm/mach-omap2/smartreflex.c
 +++ b/arch/arm/mach-omap2/smartreflex.c
-@@ -289,9 +289,9 @@ static void sr_v1_disable(struct omap_sr *sr)
- 	 * Wait for SR to be disabled.
- 	 * wait until ERRCONFIG.MCUDISACKINTST = 1. Typical latency is 1us.
- 	 */
--	omap_test_timeout((sr_read_reg(sr, ERRCONFIG_V1) &
--			ERRCONFIG_MCUDISACKINTST), SR_DISABLE_TIMEOUT,
--			timeout);
-+	sr_test_cond_timeout((sr_read_reg(sr, ERRCONFIG_V1) &
-+			     ERRCONFIG_MCUDISACKINTST), SR_DISABLE_TIMEOUT,
-+			     timeout);
+@@ -25,11 +25,10 @@
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+ #include <linux/pm_runtime.h>
++#include <linux/power/smartreflex.h>
  
- 	if (timeout >= SR_DISABLE_TIMEOUT)
- 		dev_warn(&sr->pdev->dev, "%s: Smartreflex disable timedout\n",
-@@ -334,9 +334,9 @@ static void sr_v2_disable(struct omap_sr *sr)
- 	 * Wait for SR to be disabled.
- 	 * wait until IRQSTATUS.MCUDISACKINTST = 1. Typical latency is 1us.
- 	 */
--	omap_test_timeout((sr_read_reg(sr, IRQSTATUS) &
--			IRQSTATUS_MCUDISABLEACKINT), SR_DISABLE_TIMEOUT,
--			timeout);
-+	sr_test_cond_timeout((sr_read_reg(sr, IRQSTATUS) &
-+			     IRQSTATUS_MCUDISABLEACKINT), SR_DISABLE_TIMEOUT,
-+			     timeout);
- 
- 	if (timeout >= SR_DISABLE_TIMEOUT)
- 		dev_warn(&sr->pdev->dev, "%s: Smartreflex disable timedout\n",
-diff --git a/include/linux/power/smartreflex.h b/include/linux/power/smartreflex.h
-index 884eaee..78b795e 100644
---- a/include/linux/power/smartreflex.h
-+++ b/include/linux/power/smartreflex.h
-@@ -22,7 +22,7 @@
- 
- #include <linux/types.h>
- #include <linux/platform_device.h>
+ #include "common.h"
 -
-+#include <linux/delay.h>
- #include <plat/voltage.h>
+ #include "pm.h"
+-#include "smartreflex.h"
+ 
+ #define SMARTREFLEX_NAME_LEN	16
+ #define NVALUE_NAME_LEN		40
+diff --git a/arch/arm/mach-omap2/sr_device.c b/arch/arm/mach-omap2/sr_device.c
+index a503e1e..86e438e 100644
+--- a/arch/arm/mach-omap2/sr_device.c
++++ b/arch/arm/mach-omap2/sr_device.c
+@@ -17,6 +17,7 @@
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+  */
++#include <linux/power/smartreflex.h>
+ 
+ #include <linux/err.h>
+ #include <linux/slab.h>
+@@ -24,7 +25,6 @@
+ 
+ #include <plat/omap_device.h>
+ 
+-#include "smartreflex.h"
+ #include "voltage.h"
+ #include "control.h"
+ #include "pm.h"
+diff --git a/arch/arm/mach-omap2/smartreflex.h b/include/linux/power/smartreflex.h
+similarity index 98%
+rename from arch/arm/mach-omap2/smartreflex.h
+rename to include/linux/power/smartreflex.h
+index 5809141..69eb270 100644
+--- a/arch/arm/mach-omap2/smartreflex.h
++++ b/include/linux/power/smartreflex.h
+@@ -17,12 +17,13 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#ifndef __ASM_ARM_OMAP_SMARTREFLEX_H
+-#define __ASM_ARM_OMAP_SMARTREFLEX_H
++#ifndef __POWER_SMARTREFLEX_H
++#define __POWER_SMARTREFLEX_H
+ 
++#include <linux/types.h>
+ #include <linux/platform_device.h>
+ 
+-#include "voltage.h"
++#include <plat/voltage.h>
  
  /*
-@@ -168,6 +168,27 @@ struct omap_sr {
- };
- 
- /**
-+ * test_cond_timeout - busy-loop, testing a condition
-+ * @cond: condition to test until it evaluates to true
-+ * @timeout: maximum number of microseconds in the timeout
-+ * @index: loop index (integer)
-+ *
-+ * Loop waiting for @cond to become true or until at least @timeout
-+ * microseconds have passed.  To use, define some integer @index in the
-+ * calling code.  After running, if @index == @timeout, then the loop has
-+ * timed out.
-+ *
-+ * Copied from omap_test_timeout */
-+#define sr_test_cond_timeout(cond, timeout, index)		\
-+({								\
-+	for (index = 0; index < timeout; index++) {		\
-+		if (cond)					\
-+			break;					\
-+		udelay(1);					\
-+	}							\
-+})
-+
-+/**
-  * struct omap_sr_pmic_data - Strucutre to be populated by pmic code to pass
-  *				pmic specific info to smartreflex driver
-  *
+  * Different Smartreflex IPs version. The v1 is the 65nm version used in
 -- 
 1.7.5.4
 
