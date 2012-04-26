@@ -1,96 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269Ab2DZPGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 11:06:09 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:49371 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590Ab2DZPGG convert rfc822-to-8bit (ORCPT
+	id S1757434Ab2DZPGb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 11:06:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53715 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab2DZPGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 11:06:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1332765676.16159.108.camel@twins>
-References: <CAEbykaXUy7HEyW7mBaTNmB94NwyjuJBbA1R-H49Jjk5M-iL_fw@mail.gmail.com>
-	<1332409996.18960.511.camel@twins>
-	<CAEbykaUbkgCEcufTx4ZBSdqwrifVbV384Ru4xTyF7BXYtJ85Zg@mail.gmail.com>
-	<1332765676.16159.108.camel@twins>
-Date: Thu, 26 Apr 2012 17:06:04 +0200
-Message-ID: <CABPqkBRcjGuUhaSUnC7GeftV16_+T2L=C56imJyRckLuPJYWuA@mail.gmail.com>
-Subject: Re: [PATCH] perf: Fix RCU dereference check in perf_event_comm
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ari Savolainen <ari.m.savolainen@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 26 Apr 2012 11:06:30 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 1/4] perf annotate browser: Handle NULL jump targets
+Date: Thu, 26 Apr 2012 12:06:14 -0300
+Message-Id: <1335452777-27326-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1335452777-27326-1-git-send-email-acme@infradead.org>
+References: <1335452777-27326-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 2:41 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Thu, 2012-03-22 at 13:36 +0200, Ari Savolainen wrote:
->> 22. maaliskuuta 2012 11.53 Peter Zijlstra <a.p.zijlstra@chello.nl> kirjoitti:
->> > On Thu, 2012-03-22 at 01:43 +0200, Ari Savolainen wrote:
->> >> The warning below is printed when executing a command like
->> >> sudo perf record su - user -c "echo hello"
->> >>
->> >> It's fixed by moving the call of perf_event_comm to be protected
->> >> by the task lock.
->> >
->> > That seems like a rather poor solution since it increases the lock hold
->> > time for no explained reason.
->> >
->> >> include/linux/cgroup.h:567 suspicious rcu_dereference_check() usage!
->> >
->> >>  [<ffffffff8109be55>] lockdep_rcu_suspicious+0xe5/0x100
->> >>  [<ffffffff811131fa>] perf_event_comm+0x37a/0x4d0
->> >
->> > So where exactly is this, perf_event_comm_event() takes rcu_read_lock()
->> > so I presume its before that.
->>
-Sorry for late reply. Forgot about this issue.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Did that warning occur while you were NOT measuring cgroup events?
+In annotate_browser__mark_jump_targets
 
->> I think the warning comes from this source-level call path:
->>
->> perf_event_comm ->
->>   perf_event_enable_on_exec ->
->>     perf_cgroup_sched_out ->
->>       perf_cgroup_from_task ->
->>         task_subsys_state ->
->>           task_subsys_state_check
->>
->> It seems there that path does not take rcu_read_lock(). Where should
->> rcu_read_lock/unlock be added? In perf_group_sched_out around the
->> calls of perf_cgroup_from_task? Like this:
->
-> Ah, ok. So IIRC this too is not needed. As the comment near
-> perf_cgroup_from_task() says, we hold explicit references to the cgroup.
->
-> Ideally we'd come up with a better validation condition but all variants
-> I could come up with make the code ugly and might actually generate
-> worse code, the current true simply shuts it up.
->
-> Stephane any thoughts?
->
-> ---
->  kernel/events/core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index a6a9ec4..e423261 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -240,7 +240,7 @@ static void perf_ctx_unlock(struct perf_cpu_context *cpuctx,
->  static inline struct perf_cgroup *
->  perf_cgroup_from_task(struct task_struct *task)
->  {
-> -       return container_of(task_subsys_state(task, perf_subsys_id),
-> +       return container_of(task_subsys_state_check(task, perf_subsys_id, true),
->                        struct perf_cgroup, css);
->  }
->
->
+702                     dlt = browser->offsets[dl->ops.target];
+703                     bdlt = disasm_line__browser(dlt);
+704                     bdlt->jump_target = true;
+705             }
+706
+707     }
+
+(gdb) p size
+$5 = 2415
+(gdb) p offset
+$6 = 140
+(gdb) p dl->ops.target
+$7 = 143
+(gdb) p browser->offsets[143]
+$8 = (struct disasm_line *) 0x0
+(gdb) p dl->name
+$9 = 0x2363bd0 "je"
+(gdb)
+
+Really strange, the code assumed that at the jump target we would have
+an assembly line, but only in the previous instruction offset we have a
+'lock':
+
+(gdb) p browser->offsets[144]
+$10 = (struct disasm_line *) 0x0
+(gdb) p browser->offsets[142]
+$11 = (struct disasm_line *) 0x27bd620
+(gdb) p browser->offsets[142]->name
+$12 = 0x237a8a0 "lock"
+(gdb)
+
+I'll study this more, but for now I'll just check if there is a
+disasm_line at dl->ops.target, i.e. a valid jump target.
+
+Reported-by: Hagen Paul Pfeifer <hagen@jauu.net>
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-inzjrzyqhkzyv78met2vula6@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/ui/browsers/annotate.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index 9e3310c..4c83fe3 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -700,6 +700,13 @@ static void annotate_browser__mark_jump_targets(struct annotate_browser *browser
+ 		}
+ 
+ 		dlt = browser->offsets[dl->ops.target];
++		/*
++ 		 * FIXME: Oops, no jump target? Buggy disassembler? Or do we
++ 		 * have to adjust to the previous offset?
++ 		 */
++		if (dlt == NULL)
++			continue;
++
+ 		bdlt = disasm_line__browser(dlt);
+ 		bdlt->jump_target = true;
+ 	}
+-- 
+1.7.9.2.358.g22243
+
