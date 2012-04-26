@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab2DZLmf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 07:42:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33942 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755715Ab2DZLme (ORCPT
+	id S1754561Ab2DZLwI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 07:52:08 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:53729 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab2DZLwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 07:42:34 -0400
-Date: Thu, 26 Apr 2012 12:42:29 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>, Matt Mackall <mpm@selenic.com>,
-        Olof Johansson <olof@lixom.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Default Kconfig state for hw_random drivers
-Message-ID: <20120426114229.GG3207@opensource.wolfsonmicro.com>
+	Thu, 26 Apr 2012 07:52:05 -0400
+Date: Thu, 26 Apr 2012 13:52:00 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 2/4] misc: add LM3533 ambient light sensor driver
+Message-ID: <20120426115200.GA22245@localhost>
+References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
+ <1334935826-12527-3-git-send-email-jhovold@gmail.com>
+ <20120420155734.GE8327@kroah.com>
+ <20120420172849.GB12376@localhost>
+ <20120420173754.GA22222@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="APlYHCtpeOhspHkB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Cookie: Your aim is high and to the right.
+In-Reply-To: <20120420173754.GA22222@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 20, 2012 at 10:37:54AM -0700, Greg Kroah-Hartman wrote:
+> On Fri, Apr 20, 2012 at 07:28:49PM +0200, Johan Hovold wrote:
+> > On Fri, Apr 20, 2012 at 08:57:34AM -0700, Greg Kroah-Hartman wrote:
+> > > On Fri, Apr 20, 2012 at 05:30:24PM +0200, Johan Hovold wrote:
+> > > > Add sub-driver for the ambient light sensor in National Semiconductor /
+> > > > TI LM3533 lighting power chips.
+> > > > 
+> > > > Raw ADC values as well as current ALS zone can be retrieved through
+> > > > sysfs. The ALS zone can also be read using a character device
+> > > > (/dev/lm3533-als) which is updated on zone changes (interrupt driven or
+> > > > polled).
+> > > > 
+> > > > The driver provides a configuration interface through sysfs.
+> > > 
+> > > Which seems to not be documented at all :(
+> > 
+> > There are the following sysfs entries for configuring ALS control:
+> 
+> <snip>
+> 
+> That's fine, but you need a Documentation/ABI entry for any new sysfs
+> file you create.
+> > > What about using the iio interface for this instead?  Doesn't that
+> > > already provide this standard interface you are looking for?
+> > 
+> > I had a look at iio last fall and decided not to use it at the time. I
+> > can't remember exactly what the reasons were right now, so I'll have
+> > to get back to you on this.
+> 
+> Please look into this, the iio framework is about to move out of the
+> staging tree for 3.5, so there should not be any reason for you to
+> create yet-another user api for this type of thing.
 
---APlYHCtpeOhspHkB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+We had an initial requirement to support fairly old kernels, but this
+have since been relaxed (and has of course never in itself been a valid
+reason to not use iio for upstream). As iio is moving out of staging, I
+see no problems using it, and the required changes appear quite small.
 
-An Atmel hw_random driver just appeared in -next.  Since it's just a
-regular platform device it has no dependencies on any particular
-platform so following the behaviour of other hw_random drivers it's set
-to default enabled if hw_random is enabled, even on non-Atmel platforms.
+I'll submit a v2 against iio and make sure to document the sysfs-entries.
 
-This doesn't feel like the right thing to do - it'd mean that most of
-the embedded RNGs would end up getting enabled by default which probably
-isn't what we want.
-
---APlYHCtpeOhspHkB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPmTQlAAoJEBus8iNuMP3dnXkQAJ0fiWQ4q5EaIlcErYqIOP1/
-/rzf+XS6zVdRMItdngYtDbZ9vtT1603qgQWaxS17rQzdSfZpME1pp2KTNqvdjL2H
-SVXFsooROI4pniWlbipbZ/fv/EPMUtxcd86NV9E/dwHy30Dzrp4SLeImYhn2vaP8
-yYdXUvRQ8wOsSTJxRd8FrGdI5BNEbLAuL8s4Y2LVF+XqDfIB+5GzNS7xkwxQtWYv
-zTRMeIDVyJ+A7d2rqHvLP85Jv81USoGXxbDY7JkQmcTd8v5t7YLKHuMS7x6rTbRm
-ypINNwZ5X8uRrDPStnBTiwhRXCMLPGHJ9mpt+K97352iDdFt3Ubk6gNDRligMoWG
-lsfsRyo2CmAVzp+1lTob6Q6DnhL7rOIte1S8vpKEmS1rZgnmagQg8Qf29pkdTN/4
-KqShrQzGIjYC5Iw7V9crljcYLp/58N9hiED+3aqg8zS0vWHhND7xsENhxMnX08HD
-4dFcFAdNT8li5pyqOyMik+v7IMBSKXDMCQv7UVVKl/bn2ebCE2pilchkpxlwKFmF
-JDXVmCw5tlLBDD7utJm0SUzQamHl8NoasWTSie5eMQ5mM5nibUwelQm5UrFkArv7
-s0mHWbqENq60q/w3tRgFgAAjCr147VZuNRhvsk/LpE2zuu8F0j23lThPdDniZoW+
-bOrnCj8GM04ADOTbfXXd
-=jnX8
------END PGP SIGNATURE-----
-
---APlYHCtpeOhspHkB--
+Thanks,
+Johan
