@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770Ab2DZJfq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 05:35:46 -0400
-Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:34119 "EHLO
-	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750972Ab2DZJfo (ORCPT
+	id S1755647Ab2DZJgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 05:36:47 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:47102 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab2DZJgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 05:35:44 -0400
-X-Greylist: delayed 15599 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Apr 2012 05:35:38 EDT
-Message-ID: <4F99148B.4020900@marvell.com>
-Date: Thu, 26 Apr 2012 17:25:31 +0800
-From: Yilu Mao <ylmao@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Thu, 26 Apr 2012 05:36:37 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6692"; a="185084335"
+Message-ID: <4d67387a86d99cbb4e2acf68d3588b1c.squirrel@www.codeaurora.org>
+In-Reply-To: <20120426084201.GF17184@pengutronix.de>
+References: <1335419936-10881-1-git-send-email-skannan@codeaurora.org>
+    <4F98EB10.2000505@codeaurora.org>
+    <20120426084201.GF17184@pengutronix.de>
+Date: Thu, 26 Apr 2012 02:36:37 -0700 (PDT)
+Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
+From: "Saravana Kannan" <skannan@codeaurora.org>
+To: "Sascha Hauer" <s.hauer@pengutronix.de>
+Cc: "Saravana Kannan" <skannan@codeaurora.org>,
+        "Mike Turquette" <mturquette@linaro.org>,
+        "Arnd Bergman" <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, "Andrew Lunn" <andrew@lunn.ch>,
+        "Paul Walmsley" <paul@pwsan.com>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Linus Walleij" <linus.walleij@stericsson.com>,
+        "Stephen Boyd" <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
+        "Magnus Damm" <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        "Richard Zhao" <richard.zhao@linaro.org>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        "Deepak Saxena" <dsaxena@linaro.org>,
+        "Amit Kucheria" <amit.kucheria@linaro.org>,
+        "Jamie Iles" <jamie@jamieiles.com>,
+        "Jeremy Kerr" <jeremy.kerr@canonical.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Shawn Guo" <shawn.guo@freescale.com>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Lu Mao <ylmao@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: cache-l2x0.c: save aux ctrl for resume in case that
- l2x0 is enabled before init
-References: <1335235280-25148-1-git-send-email-ylmao@marvell.com> <20120424082810.GA9367@arm.com> <4F98D659.4030709@marvell.com> <20120426083554.GB18136@arm.com>
-In-Reply-To: <20120426083554.GB18136@arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 04:35 PM, Catalin Marinas wrote:
-> On Thu, Apr 26, 2012 at 06:00:09AM +0100, Yilu Mao wrote:
->> On 04/24/2012 04:28 PM, Catalin Marinas wrote:
->>> On Tue, Apr 24, 2012 at 03:41:20AM +0100, Yilu Mao wrote:
->>>> +	l2x0_saved_regs.aux_ctrl = aux;
->>>> +
->>>>    	aux&= aux_mask;
->>>>    	aux |= aux_val;
->>>
->>> I think that's the wrong place to save it, it should be after the
->>> masking was done.
->>>
->>> Anyway, if we cannot write this register in l2x0_init() because the L2
->>> was enabled, do we expect the L2 to be disabled during resume?
->>>
->> Sorry, I don't think so.
->> This is the right place to save it because we must make sure the saved
->> aux_ctrl is the same as what it is set.
->> If we save it after masking was done, the saved value will be different
->> because we can't actually change the real setting.
->
-> And since we can't actually change the real setting on the resume path,
-> why do we need to save it anyway. Is your L2 cache disabled on the
-> resume path but not on the cold boot one?
->
-We can't change L2 aux ctrl setting when do init because it has been 
-enabled. But we have the requirement to handle core idle. For CA9 core 
-idle, L2 controller may be reset. So we need to restore the L2 
-controller registers base on l2x0_saved_regs. This is why we need to 
-keep the value in l2x0_saved_regs to be the same as real setting.
 
+On Thu, April 26, 2012 1:42 am, Sascha Hauer wrote:
+> On Wed, Apr 25, 2012 at 11:28:32PM -0700, Saravana Kannan wrote:
+>>
+>> >diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
+>> >index 6e58f11..8e97491 100644
+>> >--- a/drivers/clk/clk-mux.c
+>> >+++ b/drivers/clk/clk-mux.c
+>> >@@ -95,6 +95,7 @@ struct clk *clk_register_mux(struct device *dev,
+>> const char *name,
+>> >  {
+>>
+>> I would really like to remove these functions. At least until we add
+>> device tree support where each clock is listed in device tree.
+>>
+>> At present, these functions seem to be abused more than actually
+>> being used appropriately.
+>
+> I think this goes in my direction. Still exactly this abuse how you call
+> it makes me relatively independent of for example the changes you
+> introduce with your patch. Had I static initializers I would now have
+> to start a rebase orgy.
+
+In the other email you say you have to change. Here you say, you don't
+have to change. Hopefully, you didn't have to change much -- I was aiming
+for that. If there was agreement about removing these functions, I was
+planning on helping move the current users after this patch merged.
+
+I think in the long run this will result in less changes for you and more
+readable code. If clk_register() adds another optional param, you can't
+get around that without having to write more wrapper functions or changing
+any existing ones you might have. But with this struct, the common clock
+code can be written in a way so that the a value of 0 for the new param
+defaults to the behavior that was there before the param was added.
+
+Something to think about: With these wrapper calls, one would do a lot of
+kalloc and copying of small items when one knows at compile time what the
+clocks are going to be.
+
+Anyway, I understand that some people see value in this. That's why I'm
+bringing it up for discussion instead of just doing it in my patch.
+
+-Saravana
 -- 
-Thanks.
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Best Wishes,
-Yilu Mao
