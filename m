@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586Ab2DZP1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 11:27:48 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:47971 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755871Ab2DZP1q (ORCPT
+	id S1757685Ab2DZP3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 11:29:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54176 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756047Ab2DZP3W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 11:27:46 -0400
-Date: Thu, 26 Apr 2012 08:27:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: George Nychis <gnychis@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: what determines how firmware is loaded? (Q. on request_firmware
- details)
-Message-ID: <20120426152742.GB15674@kroah.com>
-References: <CA+7oygfcQbOFdCFibTW0pqYQpcLwrqCM_jvKpr=GYFBMn9t3GQ@mail.gmail.com>
- <20120423212144.GA3378@kroah.com>
- <CA+7oygc839sn-s3hHo0XBA_BJop86hZB1h987af1caJ6pAOwyw@mail.gmail.com>
- <20120423225603.GA23276@kroah.com>
- <20120426152310.GB26692@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120426152310.GB26692@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 Apr 2012 11:29:22 -0400
+Message-ID: <1335454137.13683.95.camel@twins>
+Subject: Re: [PATCH RFC tip/core/rcu 6/6] rcu: Reduce cache-miss
+ initialization latencies for large systems
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Date: Thu, 26 Apr 2012 17:28:57 +0200
+In-Reply-To: <20120426141213.GB2407@linux.vnet.ibm.com>
+References: <20120423164159.GA13819@linux.vnet.ibm.com>
+	 <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1335199347-13926-6-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1335444707.13683.14.camel@twins>
+	 <20120426141213.GB2407@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 04:23:10PM +0100, Mark Brown wrote:
-> On Mon, Apr 23, 2012 at 03:56:03PM -0700, Greg KH wrote:
+On Thu, 2012-04-26 at 07:12 -0700, Paul E. McKenney wrote:
+> On Thu, Apr 26, 2012 at 02:51:47PM +0200, Peter Zijlstra wrote:
+
+> > Wouldn't it be much better to match the rcu fanout tree to the physical
+> > topology of the machine?
 > 
-> > You do realize just how old and obsolete your 3.0.8 kernel is, right?  I
-> > suggest you update to the latest version, or, if you are stuck with this
-> > kernel, go ask the vendor who provided it to you for support, as they
-> > are the best ones to help you out.
-> 
-> Unfortunately 3.0 is what ICS is based off so the overwhelming majority
-> of vendor code is going to be based on it until the next Android
-> release.  With my vendor hat on I have to say that we find our upstream
-> first policy extremely effective so we shouldn't be part of the issue.
+> From what I am hearing, doing so requires me to morph the rcu_node tree
+> at run time.  I might eventually become courageous/inspired/senile
+> enough to try this, but not yet.  ;-)
 
-That's great, and understandable, but the original poster said they were
-using an old Ubuntu release, and the ability for the community to
-support bugs in older kernel releases like this is very difficult as you
-well know.
+Yes, boot time with possibly some hotplug hooks.
 
-The next Android release should be "any day now" so hopefully we move on
-from 3.0 soon...
+> Actually, some of this topology shifting seems to me like a firmware
+> bug.  Why not arrange the Linux-visible numbering in a way to promote
+> locality for code sequencing through the CPUs?
 
-thanks,
+I'm not sure.. but it seems well established on x86 to first enumerate
+the cores (thread 0) and then the sibling threads (thread 1) -- one
+'advantage' is that if you boot with max_cpus=$half you get all cores
+instead of half the cores.
 
-greg k-h
+OTOH it does make linear iteration of the cpus 'funny' :-)
+
+Also, a fanout of 16 is nice when your machine doesn't have HT and has a
+2^n core count, but some popular machines these days have 6/10 cores per
+socket, resulting in your fanout splitting caches.
+
+
