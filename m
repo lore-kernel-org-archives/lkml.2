@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab2DZMCb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 08:02:31 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:62043 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752111Ab2DZMC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 08:02:29 -0400
-X-IronPort-AV: E=Sophos;i="4.75,486,1330934400"; 
-   d="scan'208";a="643585029"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: kernel BUG at include/net/netns/generic.h:41
-Thread-Topic: kernel BUG at include/net/netns/generic.h:41
-Thread-Index: AQHNEPofLBggl9rQZUWE5n3mvfO03paISysAgASU6YCAAAEqgIAAAGMAgB/fvoCAAHzjAP//6DOg
-Date: Thu, 26 Apr 2012 12:02:17 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91A34FB@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20120328002346.GB3077@redhat.com>
- <20120402172600.GA3728@redhat.com>
- <1333390230.13718.34.camel@lade.trondhjem.org>
- <4F7DC37F.7090404@parallels.com> <20120405161241.GA23658@redhat.com>
- <4F7DC4CC.9080502@parallels.com> <20120425225855.GA5537@redhat.com>
- <4F98EA72.6010300@parallels.com>
-In-Reply-To: <4F98EA72.6010300@parallels.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1756239Ab2DZMDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 08:03:52 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:48043 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752598Ab2DZMDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 08:03:50 -0400
+X-Sasl-enc: ANB/fq9G9ktzS5Y550q9d4rZSRm5cC3kYH/WnjHqJfvzJAwIOPtZqAKFtA 1335441829
+Message-ID: <1335441826.6702.49.camel@perseus.themaw.net>
+Subject: Re: [PATCH] unbreak automount daemon after fixing autofs5 ABI
+From: Ian Kent <raven@themaw.net>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Meyer <thomas@m3y3r.de>, stable@kernel.org,
+        autofs@vger.kernel.org
+Date: Thu, 26 Apr 2012 20:03:46 +0800
+In-Reply-To: <4F99082F.1040902@msgid.tls.msk.ru>
+References: <1335421594-10499-1-git-send-email-mjt@msgid.tls.msk.ru>
+	 <1335428498.6702.33.camel@perseus.themaw.net>
+	 <4F99082F.1040902@msgid.tls.msk.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3QC2evl013589
 
-> -----Original Message-----
-> From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
-> Sent: Thursday, April 26, 2012 2:26 AM
-> To: Dave Jones; Myklebust, Trond; Linux Kernel; netdev@vger.kernel.org
-> Subject: Re: kernel BUG at include/net/netns/generic.h:41
+On Thu, 2012-04-26 at 12:32 +0400, Michael Tokarev wrote:
+> On 26.04.2012 12:21, Ian Kent wrote:
+> > On Thu, 2012-04-26 at 10:26 +0400, Michael Tokarev wrote:
+> []
+> >> Change 499f286dc02cde6b tries to fix the original interface
+> >> bug for 32bit userspace running on 64bit kernel.  But the
+> >> issue is that autofs5 already has a workaround for it, so
+> >> the end result is that the two (kernel & user) disagree
+> >> again.  "Fix" this by applying the in-kernel fix only if
+> >> the process is not named "automount" -- which is how autofs5
+> >> daemon is named.
+> > 
+> > No, you cannot be sure the autofs binary is named automount.
 > 
-> 26.04.2012 02:58, Dave Jones Ğ½Ğ°Ğ¿Ğ¸ÑĞ°Ğ»:
-> > On Thu, Apr 05, 2012 at 08:14:04PM +0400, Stanislav Kinsbursky wrote:
-> >   >  05.04.2012 20:12, Dave Jones Ğ¿Ğ¸ÑˆĞµÑ‚:
-> >   >  >  On Thu, Apr 05, 2012 at 08:08:31PM +0400, Stanislav Kinsbursky
-> wrote:
-> >   >  >
-> >   >  >    >   So, there are few questions to you, Dave:
-> >   >  >    >   1) can this happen (PipeFS mount attempt before SUNPRC
-> module insertion has
-> >   >  >    >   returned any value) in your case?
-> >   >  >
-> >   >  >  I don't know enough of what systemd is doing to answer this.
-> >   >  >
-> >   >  >    >   2) how often do you experience this problem? Not every boot, I
-> suppose?
-> >   >  >    >   3) And is it easy for you to reproduce?
-> >   >  >
-> >   >  >  It happens most the time, but not every time.
-> >   >  >
-> >   >
-> >   >  Ok, I'll send the patch soon.
-> >   >  Hope, it will help.
-> >   >
-> >   >  --
-> >   >  Best regards,
-> >   >  Stanislav Kinsbursky
-> >
-> > I didn't see a follow-up patch on this, and I'm still seeing the BUG in rc4.
-> >
-> > 	Dave
+> Well, I checked several distributions, all have the binary named
+> this way.  Yes a user can rename it and it will break again, but
+> it is at least better than now when it does not work at all.  And
+> yes it is messy, just like current situation already is.
 > 
-> Dave, search for "SUNRPC: register PipeFS file system after pernet
-> sybsystem" in your mail.
-> You are in CC list.
+> > Not only that, this approach makes an unpleasant change even more
+> > unpleasant.
+> > 
+> > I still think that my original proposed patches were the better approach
+> > to handling this problem.
+> > 
+> > My recommendation was that the major autofs kernel protocol version be
+> > bumped and a packed structure used from that version on. That allows
+> > user space to request that protocol version for communication at mount
+> > time. If systemd doesn't want to support earlier protocol versions then
+> > it can complain, instructing the user to update to a later kernel.
+> 
+> This is exactly what I was proposing when I started my thread about
+> 3.0.24 autofs breakage -- to _revert_ the in-kernel fix and introduce
+> a new interface (or variation thereof, in means of a new mount option
+> or something).  This way, breakage and mess are both minimal.
+> 
+> Note that a major protocol changes aren't really needed, just a single
+> mount option, which uses a right size of the structure.  Unless at the
+> same time you want to change something else.
 
-Linus merged it last night together with the other NFS-related bugfixes...
+There's no new interface needed, as such. Basically the structure used
+for communication just needs to be declared packed and used instead of
+the current one. Since it's not a backward compatible change the major
+version needs to be increased to indicate that.
 
-Cheers
-  Trond
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+The autofs kernel protocol version (major version number) is specified
+when mounting autofs mounts. The minor version is meant to be used to
+identify the bug fix level. So increasing the major version number is
+the normal way that change may be introduced without breaking existing
+applications or requiring any changes to them. New applications simply
+set the major version at mount time and can decide if they want to use a
+lower version if the mount fails, assuming the lower version has the
+functionality that's needed. And, yes, it isn't quite that simple at run
+time but that is the way it's meant to work.
+
+So using the word "major" probably gives the wrong impression even
+though the term is correct usage.
+
+Ian
+
+
