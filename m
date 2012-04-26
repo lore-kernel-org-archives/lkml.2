@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758611Ab2DZQ4n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 12:56:43 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:62362 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756540Ab2DZQ4m (ORCPT
+	id S1758606Ab2DZQ7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 12:59:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56391 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756306Ab2DZQ7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 12:56:42 -0400
-Message-ID: <4F997058.6070509@landley.net>
-Date: Thu, 26 Apr 2012 10:57:12 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 26 Apr 2012 12:59:42 -0400
+Date: Thu, 26 Apr 2012 19:00:39 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Subject: Re: [pull] drm-intel-fixes for 3.4
+Message-ID: <20120426170039.GF5156@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+References: <20120426153501.GC5156@phenom.ffwll.local>
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        KVM <kvm@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Xen <xen-devel@lists.xensource.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH RFC V6 5/5] Documentation/kvm : Add documentation on Hypercalls
- and features used for PV spinlock
-References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com> <20120423100034.30893.81866.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20120423100034.30893.81866.sendpatchset@codeblue.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120426153501.GC5156@phenom.ffwll.local>
+X-Operating-System: Linux phenom 3.2.0-2-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2012 05:00 AM, Raghavendra K T wrote:
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> 
-...
-> --- /dev/null
-> +++ b/Documentation/virtual/kvm/hypercalls.txt
-> @@ -0,0 +1,59 @@
-> +KVM Hypercalls Documentation
-> +===========================
-> +Template for documentation is
-> +The documenenation for hypercalls should inlcude
+On Thu, Apr 26, 2012 at 05:35:01PM +0200, Daniel Vetter wrote:
+> Hi Dave,
+> 
+> Nothing major here and imo can wait a bit if you don't have anything
+> important in drm-fixes yet:
+> - VGA load-detect fix. This bug seems to be as old as the load-detect code
+>   (2.6.30), but needs stupid userspace (upowerd trying to detect
+>   connectors on dpms-off outputs) to actually kill the machine. And
+>   obviously a machine without VGA-hotplug, otherwise we don't do load
+>   detect.
+> - 2 interger overflow fixes for unpriviledged ioctls from Xi Wang.
 
-What does the line about templates mean/
+A tested-by for a regression fix just arrived, so I've thrown that in, too:
+- Fix SDVO regression for low-res (pixelclock < 100MHz) digital outputs,
+  introduce in 2.6.36.
 
-documenenation? inlcude?
+Cheers, Daniel
 
-> +1. Hypercall name, value.
-> +2. Architecture(s)
-> +3. status (deprecated, obsolete, active)
-> +4. Purpose
-> +
-> +
-> +1. KVM_HC_VAPIC_POLL_IRQ
-> +------------------------
-> +value: 1
-> +Architecture: x86
-> +Purpose:
+The following changes since commit 66f75a5d028beaf67c931435fdc3e7823125730c:
 
-Purpose: none.
+  Linux 3.4-rc4 (2012-04-21 14:47:52 -0700)
 
-Rob
+are available in the git repository at:
+
+  git://people.freedesktop.org/~danvet/drm-intel drm-intel-fixes
+
+for you to fetch changes up to 6651819b4b4fc3caa6964c5d825eb4bb996f3905:
+
+  drm/i915: handle input/output sdvo timings separately in mode_set (2012-04-26 18:56:26 +0200)
+
+----------------------------------------------------------------
+Daniel Vetter (2):
+      drm/i915: fixup load-detect on enabled, but not active pipe
+      drm/i915: handle input/output sdvo timings separately in mode_set
+
+Xi Wang (2):
+      drm/i915: fix integer overflow in i915_gem_execbuffer2()
+      drm/i915: fix integer overflow in i915_gem_do_execbuffer()
+
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    8 ++++++-
+ drivers/gpu/drm/i915/intel_crt.c           |   29 +++++++++---------------
+ drivers/gpu/drm/i915/intel_sdvo.c          |   34 +++++++++++++++-------------
+ 3 files changed, 36 insertions(+), 35 deletions(-)
 -- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
