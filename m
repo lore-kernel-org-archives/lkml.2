@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab2DZBuz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 21:50:55 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60839 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385Ab2DZBuy (ORCPT
+	id S1752493Ab2DZB6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 21:58:34 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44899 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab2DZB6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 21:50:54 -0400
-X-AuditID: 9c930197-b7ca1ae0000069e6-2b-4f98a9f82925
-Message-ID: <4F98AA1D.1040009@kernel.org>
-Date: Thu, 26 Apr 2012 10:51:25 +0900
+	Wed, 25 Apr 2012 21:58:33 -0400
+X-AuditID: 9c93016f-b7cfcae00000449e-ca-4f98abbe7d88
+Message-ID: <4F98ABDF.1000702@kernel.org>
+Date: Thu, 26 Apr 2012 10:58:55 +0900
 From: Minchan Kim <minchan@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
@@ -20,9 +20,9 @@ CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dan Magenheimer <dan.magenheimer@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/6] zsmalloc: add/fix function comment
-References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-5-git-send-email-minchan@kernel.org> <4F97FBB1.1090001@vflare.org>
-In-Reply-To: <4F97FBB1.1090001@vflare.org>
+Subject: Re: [PATCH 5/6] zsmalloc: remove unnecessary type casting
+References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-6-git-send-email-minchan@kernel.org> <4F97FD9D.9090105@vflare.org>
+In-Reply-To: <4F97FD9D.9090105@vflare.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
@@ -30,90 +30,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 10:27 PM, Nitin Gupta wrote:
+On 04/25/2012 10:35 PM, Nitin Gupta wrote:
 
 > On 04/25/2012 02:23 AM, Minchan Kim wrote:
 > 
->> Add/fix the comment.
+>> Let's remove unnecessary type casting of (void *).
 >>
 >> Signed-off-by: Minchan Kim <minchan@kernel.org>
 >> ---
->>  drivers/staging/zsmalloc/zsmalloc-main.c |   15 +++++++++++----
->>  1 file changed, 11 insertions(+), 4 deletions(-)
+>>  drivers/staging/zsmalloc/zsmalloc-main.c |    3 +--
+>>  1 file changed, 1 insertion(+), 2 deletions(-)
 >>
 >> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
->> index 0fe4cbb..b7d31cc 100644
+>> index b7d31cc..ff089f8 100644
 >> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
 >> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
->> @@ -565,12 +565,9 @@ EXPORT_SYMBOL_GPL(zs_destroy_pool);
->>   * zs_malloc - Allocate block of given size from pool.
->>   * @pool: pool to allocate from
->>   * @size: size of block to allocate
->> - * @page: page no. that holds the object
->> - * @offset: location of object within page
->>   *
->>   * On success, <page, offset> identifies block allocated
->> - * and 0 is returned. On failure, <page, offset> is set to
->> - * 0 and -ENOMEM is returned.
->> + * and <page, offset> is returned. On failure, NULL is returned.
->>   *
-> 
-> 
-> The returned value indeed encodes <page, offset> values as a 'void *'
-> but this should not be part of the function documentation since its an
-> internal detail.  So, its probably better to say:
-> 
-> On success, handle to the allocated object is returned; NULL otherwise.
-
-
-Fair enough.
-
-> 
-> On a side note, we should also 'typedef void * zs_handle' to avoid any
-> confusion. Without this, users may just treat zs_malloc return value as
-> a pointer and try to deference it.
-
-
-Yes. We should do it. I will make it as another patch in next spin.
-
-> 
->>   * Allocation requests with size > ZS_MAX_ALLOC_SIZE will fail.
->>   */
->> @@ -666,6 +663,16 @@ void zs_free(struct zs_pool *pool, void *obj)
->>  }
->>  EXPORT_SYMBOL_GPL(zs_free);
+>> @@ -644,8 +644,7 @@ void zs_free(struct zs_pool *pool, void *obj)
+>>  	spin_lock(&class->lock);
 >>  
->> +/**
->> + * zs_map_object - get address of allocated object from handle.
->> + * @pool: object allocated pool
+>>  	/* Insert this object in containing zspage's freelist */
+>> -	link = (struct link_free *)((unsigned char *)kmap_atomic(f_page)
+>> -							+ f_offset);
+>> +	link = (struct link_free *)(kmap_atomic(f_page)	+ f_offset);
+>>  	link->next = first_page->freelist;
+>>  	kunmap_atomic(link);
+>>  	first_page->freelist = obj;
 > 
 > 
-> should be: @pool: pool from which the object was allocated
 > 
->> + * @handle: handle returned from zs_malloc
->> + *
-> 
->> + * Before using object allocated from zs_malloc, object
->> + * should be mapped to page table by this function.
->> + * After using object,  call zs_unmap_object to unmap page
->> + * table.
->> + */
-> 
-> 
-> We are not really unmapping any page tables, so could be written as:
-> 
-> Before using an object allocated from zs_malloc, it must be mapped using
-> this function. When done with the object, it must be unmapped using
-> zs_unmap_object
-> 
-> 
-> Sorry for nitpicking.
+> Incrementing a void pointer looks weired and should not be allowed by C
+> compilers though gcc and clang seem to allow this without any warnings.
+> (fortunately C++ forbids incrementing void pointers)
 
 
-Never nitpicking.
-Confusing documentation makes people very hang so documentation is very important.
+It's a gcc extension and we have been already used lots of place so I think it's no problem
+although it's non-standard.
+If we compile kernel with -Wpointer-arith, we would find a ton of warning in here and there.
 
-Nitin, Thanks!
+> 
+> So, we should keep this cast to unsigned char pointer to avoid relying
+> on a non-standard, compiler specific behavior.
+
+
+
+Okay. It's a just trivial and I have no justification to do it at the cost of breaking standard.
 
 > 
 > Thanks,
