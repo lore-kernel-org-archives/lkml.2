@@ -1,544 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759452Ab2DZV7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 17:59:52 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:39905 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759435Ab2DZV7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 17:59:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: NeilBrown <neilb@suse.de>
-Subject: Re: [RFC][PATCH 8/8] PM / Sleep: Add user space interface for manipulating wakeup sources
-Date: Fri, 27 Apr 2012 00:04:27 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: John Stultz <johnstul@us.ibm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <201202070200.55505.rjw@sisk.pl> <201204242327.17626.rjw@sisk.pl> <20120426163143.42f707b0@notabene.brown>
-In-Reply-To: <20120426163143.42f707b0@notabene.brown>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204270004.27958.rjw@sisk.pl>
+	id S1759434Ab2DZV7s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 17:59:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53858 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759412Ab2DZV7p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 17:59:45 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, fengguang.wu@intel.com,
+        hughd@google.com, akpm@linux-foundation.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 04/11] mempool: add @gfp_mask to mempool_create_node()
+Date: Thu, 26 Apr 2012 14:59:14 -0700
+Message-Id: <1335477561-11131-5-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1335477561-11131-1-git-send-email-tj@kernel.org>
+References: <1335477561-11131-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 26, 2012, NeilBrown wrote:
-> On Tue, 24 Apr 2012 23:27:17 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > Subject: PM / Sleep: Add user space interface for manipulating wakeup sources, v2
-> > 
-> > Android allows user space to manipulate wakelocks using two
-> > sysfs file located in /sys/power/, wake_lock and wake_unlock.
-> > Writing a wakelock name and optionally a timeout to the wake_lock
-> > file causes the wakelock whose name was written to be acquired (it
-> > is created before is necessary), optionally with the given timeout.
-> > Writing the name of a wakelock to wake_unlock causes that wakelock
-> > to be released.
-> > 
-> > Implement an analogous interface for user space using wakeup sources.
-> > Add the /sys/power/wake_lock and /sys/power/wake_unlock files
-> > allowing user space to create, activate and deactivate wakeup
-> > sources, such that writing a name and optionally a timeout to
-> > wake_lock causes the wakeup source of that name to be activated,
-> > optionally with the given timeout.  If that wakeup source doesn't
-> > exist, it will be created and then activated.  Writing a name to
-> > wake_unlock causes the wakeup source of that name, if there is one,
-> > to be deactivated.  Wakeup sources created with the help of
-> > wake_lock that haven't been used for more than 5 minutes are garbage
-> > collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
-> > wakeup sources created with the help of wake_lock present at a time.
-> > 
-> > The data type used to track wakeup sources created by user space is
-> > called "struct wakelock" to indicate the origins of this feature.
-> > 
-> > This version of the patch includes an rbtree manipulation fix from John Stultz.
-> 
-> Looks good.  Just a couple of minor suggestions.
-> 
-> 
-> > +ssize_t pm_show_wakelocks(char *buf, bool show_active)
-> > +{
-> > +	struct rb_node *node;
-> > +	struct wakelock *wl;
-> > +	char *str = buf;
-> > +	char *end = buf + PAGE_SIZE;
-> > +
-> > +	mutex_lock(&wakelocks_lock);
-> > +
-> > +	for (node = rb_first(&wakelocks_tree); node; node = rb_next(node)) {
-> > +		bool active;
-> > +
-> > +		wl = rb_entry(node, struct wakelock, node);
-> > +		spin_lock_irq(&wl->ws.lock);
-> > +		active = wl->ws.active;
-> > +		spin_unlock_irq(&wl->ws.lock);
-> 
-> I don't think the spin_lock is needed.  We are just reading one value and it
-> is either 0 or not.  So there is no possibility for any inconsistency.
->                 if (wl->ws.active == show_active)
-> ?
+mempool_create_node() currently assumes %GFP_KERNEL.  Its only user,
+blk_init_free_list(), is about to be updated to use other allocation
+flags - add @gfp_mask argument to the function.
 
-Good point.
-
-> > +		if (active == show_active)
-> > +			str += scnprintf(str, end - str, "%s ", wl->name);
-> 
-> Arg.  Extra space on the end of the line!!  :-)
-
-Well, it's not too difficult to get rid of it (as in the patch below).
-
-> I would suggest the entries be terminated by '\n' rather than separate by
-> space.
-> one-item-per-line is much more common in Unix in general.  'grep' allows
-> you to find things more easily etc.
->    while read a
->    do echo $a > wake_unlock
->    done < wake_lock
-
-I know, but this follows the general convention of the files under /sys/power/.
-
-Thanks,
-Rafael
-
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>
 ---
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM / Sleep: Add user space interface for manipulating wakeup sources, v3
+ block/blk-core.c        |    4 ++--
+ include/linux/mempool.h |    3 ++-
+ mm/mempool.c            |   12 +++++++-----
+ 3 files changed, 11 insertions(+), 8 deletions(-)
 
-Android allows user space to manipulate wakelocks using two
-sysfs file located in /sys/power/, wake_lock and wake_unlock.
-Writing a wakelock name and optionally a timeout to the wake_lock
-file causes the wakelock whose name was written to be acquired (it
-is created before is necessary), optionally with the given timeout.
-Writing the name of a wakelock to wake_unlock causes that wakelock
-to be released.
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 6cf13df..6a04dcd 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -518,8 +518,8 @@ static int blk_init_free_list(struct request_queue *q)
+ 	init_waitqueue_head(&rl->wait[BLK_RW_ASYNC]);
+ 
+ 	rl->rq_pool = mempool_create_node(BLKDEV_MIN_RQ, mempool_alloc_slab,
+-				mempool_free_slab, request_cachep, q->node);
+-
++					  mempool_free_slab, request_cachep,
++					  GFP_KERNEL, q->node);
+ 	if (!rl->rq_pool)
+ 		return -ENOMEM;
+ 
+diff --git a/include/linux/mempool.h b/include/linux/mempool.h
+index 7c08052..39ed62a 100644
+--- a/include/linux/mempool.h
++++ b/include/linux/mempool.h
+@@ -26,7 +26,8 @@ typedef struct mempool_s {
+ extern mempool_t *mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
+ 			mempool_free_t *free_fn, void *pool_data);
+ extern mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
+-			mempool_free_t *free_fn, void *pool_data, int nid);
++			mempool_free_t *free_fn, void *pool_data,
++			gfp_t gfp_mask, int nid);
+ 
+ extern int mempool_resize(mempool_t *pool, int new_min_nr, gfp_t gfp_mask);
+ extern void mempool_destroy(mempool_t *pool);
+diff --git a/mm/mempool.c b/mm/mempool.c
+index d904981..5499047 100644
+--- a/mm/mempool.c
++++ b/mm/mempool.c
+@@ -63,19 +63,21 @@ EXPORT_SYMBOL(mempool_destroy);
+ mempool_t *mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
+ 				mempool_free_t *free_fn, void *pool_data)
+ {
+-	return  mempool_create_node(min_nr,alloc_fn,free_fn, pool_data,-1);
++	return mempool_create_node(min_nr,alloc_fn,free_fn, pool_data,
++				   GFP_KERNEL, NUMA_NO_NODE);
+ }
+ EXPORT_SYMBOL(mempool_create);
+ 
+ mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
+-			mempool_free_t *free_fn, void *pool_data, int node_id)
++			       mempool_free_t *free_fn, void *pool_data,
++			       gfp_t gfp_mask, int node_id)
+ {
+ 	mempool_t *pool;
+-	pool = kmalloc_node(sizeof(*pool), GFP_KERNEL | __GFP_ZERO, node_id);
++	pool = kmalloc_node(sizeof(*pool), gfp_mask | __GFP_ZERO, node_id);
+ 	if (!pool)
+ 		return NULL;
+ 	pool->elements = kmalloc_node(min_nr * sizeof(void *),
+-					GFP_KERNEL, node_id);
++				      gfp_mask, node_id);
+ 	if (!pool->elements) {
+ 		kfree(pool);
+ 		return NULL;
+@@ -93,7 +95,7 @@ mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
+ 	while (pool->curr_nr < pool->min_nr) {
+ 		void *element;
+ 
+-		element = pool->alloc(GFP_KERNEL, pool->pool_data);
++		element = pool->alloc(gfp_mask, pool->pool_data);
+ 		if (unlikely(!element)) {
+ 			mempool_destroy(pool);
+ 			return NULL;
+-- 
+1.7.7.3
 
-Implement an analogous interface for user space using wakeup sources.
-Add the /sys/power/wake_lock and /sys/power/wake_unlock files
-allowing user space to create, activate and deactivate wakeup
-sources, such that writing a name and optionally a timeout to
-wake_lock causes the wakeup source of that name to be activated,
-optionally with the given timeout.  If that wakeup source doesn't
-exist, it will be created and then activated.  Writing a name to
-wake_unlock causes the wakeup source of that name, if there is one,
-to be deactivated.  Wakeup sources created with the help of
-wake_lock that haven't been used for more than 5 minutes are garbage
-collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
-wakeup sources created with the help of wake_lock present at a time.
-
-The data type used to track wakeup sources created by user space is
-called "struct wakelock" to indicate the origins of this feature.
-
-This version of the patch includes an rbtree manipulation fix from John Stultz.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- Documentation/ABI/testing/sysfs-power |   42 ++++++
- drivers/base/power/wakeup.c           |    1 
- kernel/power/Kconfig                  |    8 +
- kernel/power/Makefile                 |    1 
- kernel/power/main.c                   |   41 ++++++
- kernel/power/power.h                  |    9 +
- kernel/power/wakelock.c               |  215 ++++++++++++++++++++++++++++++++++
- 7 files changed, 317 insertions(+)
-
-Index: linux/kernel/power/main.c
-===================================================================
---- linux.orig/kernel/power/main.c
-+++ linux/kernel/power/main.c
-@@ -431,6 +431,43 @@ static ssize_t autosleep_store(struct ko
- 
- power_attr(autosleep);
- #endif /* CONFIG_PM_AUTOSLEEP */
-+
-+#ifdef CONFIG_PM_WAKELOCKS
-+static ssize_t wake_lock_show(struct kobject *kobj,
-+			      struct kobj_attribute *attr,
-+			      char *buf)
-+{
-+	return pm_show_wakelocks(buf, true);
-+}
-+
-+static ssize_t wake_lock_store(struct kobject *kobj,
-+			       struct kobj_attribute *attr,
-+			       const char *buf, size_t n)
-+{
-+	int error = pm_wake_lock(buf);
-+	return error ? error : n;
-+}
-+
-+power_attr(wake_lock);
-+
-+static ssize_t wake_unlock_show(struct kobject *kobj,
-+				struct kobj_attribute *attr,
-+				char *buf)
-+{
-+	return pm_show_wakelocks(buf, false);
-+}
-+
-+static ssize_t wake_unlock_store(struct kobject *kobj,
-+				 struct kobj_attribute *attr,
-+				 const char *buf, size_t n)
-+{
-+	int error = pm_wake_unlock(buf);
-+	return error ? error : n;
-+}
-+
-+power_attr(wake_unlock);
-+
-+#endif /* CONFIG_PM_WAKELOCKS */
- #endif /* CONFIG_PM_SLEEP */
- 
- #ifdef CONFIG_PM_TRACE
-@@ -487,6 +524,10 @@ static struct attribute * g[] = {
- #ifdef CONFIG_PM_AUTOSLEEP
- 	&autosleep_attr.attr,
- #endif
-+#ifdef CONFIG_PM_WAKELOCKS
-+	&wake_lock_attr.attr,
-+	&wake_unlock_attr.attr,
-+#endif
- #ifdef CONFIG_PM_DEBUG
- 	&pm_test_attr.attr,
- #endif
-Index: linux/kernel/power/power.h
-===================================================================
---- linux.orig/kernel/power/power.h
-+++ linux/kernel/power/power.h
-@@ -282,3 +282,12 @@ static inline void pm_autosleep_unlock(v
- static inline suspend_state_t pm_autosleep_state(void) { return PM_SUSPEND_ON; }
- 
- #endif /* !CONFIG_PM_AUTOSLEEP */
-+
-+#ifdef CONFIG_PM_WAKELOCKS
-+
-+/* kernel/power/wakelock.c */
-+extern ssize_t pm_show_wakelocks(char *buf, bool show_active);
-+extern int pm_wake_lock(const char *buf);
-+extern int pm_wake_unlock(const char *buf);
-+
-+#endif /* !CONFIG_PM_WAKELOCKS */
-Index: linux/kernel/power/Kconfig
-===================================================================
---- linux.orig/kernel/power/Kconfig
-+++ linux/kernel/power/Kconfig
-@@ -111,6 +111,14 @@ config PM_AUTOSLEEP
- 	Allow the kernel to trigger a system transition into a global sleep
- 	state automatically whenever there are no active wakeup sources.
- 
-+config PM_WAKELOCKS
-+	bool "User space wakeup sources interface"
-+	depends on PM_SLEEP
-+	default n
-+	---help---
-+	Allow user space to create, activate and deactivate wakeup source
-+	objects with the help of a sysfs-based interface.
-+
- config PM_RUNTIME
- 	bool "Run-time PM core functionality"
- 	depends on !IA64_HP_SIM
-Index: linux/kernel/power/wakelock.c
-===================================================================
---- /dev/null
-+++ linux/kernel/power/wakelock.c
-@@ -0,0 +1,215 @@
-+/*
-+ * kernel/power/wakelock.c
-+ *
-+ * User space wakeup sources support.
-+ *
-+ * Copyright (C) 2012 Rafael J. Wysocki <rjw@sisk.pl>
-+ *
-+ * This code is based on the analogous interface allowing user space to
-+ * manipulate wakelocks on Android.
-+ */
-+
-+#include <linux/ctype.h>
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/hrtimer.h>
-+#include <linux/list.h>
-+#include <linux/rbtree.h>
-+#include <linux/slab.h>
-+
-+#define WL_NUMBER_LIMIT	100
-+#define WL_GC_COUNT_MAX	100
-+#define WL_GC_TIME_SEC	300
-+
-+static DEFINE_MUTEX(wakelocks_lock);
-+
-+struct wakelock {
-+	char			*name;
-+	struct rb_node		node;
-+	struct wakeup_source	ws;
-+	struct list_head	lru;
-+};
-+
-+static struct rb_root wakelocks_tree = RB_ROOT;
-+static LIST_HEAD(wakelocks_lru_list);
-+static unsigned int number_of_wakelocks;
-+static unsigned int wakelocks_gc_count;
-+
-+ssize_t pm_show_wakelocks(char *buf, bool show_active)
-+{
-+	struct rb_node *node;
-+	struct wakelock *wl;
-+	char *str = buf;
-+	char *end = buf + PAGE_SIZE;
-+
-+	mutex_lock(&wakelocks_lock);
-+
-+	for (node = rb_first(&wakelocks_tree); node; node = rb_next(node)) {
-+		wl = rb_entry(node, struct wakelock, node);
-+		if (wl->ws.active == show_active)
-+			str += scnprintf(str, end - str, "%s ", wl->name);
-+	}
-+	if (str > buf)
-+		str--;
-+
-+	str += scnprintf(str, end - str, "\n");
-+
-+	mutex_unlock(&wakelocks_lock);
-+	return (str - buf);
-+}
-+
-+static struct wakelock *wakelock_lookup_add(const char *name, size_t len,
-+					    bool add_if_not_found)
-+{
-+	struct rb_node **node = &wakelocks_tree.rb_node;
-+	struct rb_node *parent = *node;
-+	struct wakelock *wl;
-+
-+	while (*node) {
-+		int diff;
-+
-+		parent = *node;
-+		wl = rb_entry(*node, struct wakelock, node);
-+		diff = strncmp(name, wl->name, len);
-+		if (diff == 0) {
-+			if (wl->name[len])
-+				diff = -1;
-+			else
-+				return wl;
-+		}
-+		if (diff < 0)
-+			node = &(*node)->rb_left;
-+		else
-+			node = &(*node)->rb_right;
-+	}
-+	if (!add_if_not_found)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (number_of_wakelocks > WL_NUMBER_LIMIT)
-+		return ERR_PTR(-ENOSPC);
-+
-+	/* Not found, we have to add a new one. */
-+	wl = kzalloc(sizeof(*wl), GFP_KERNEL);
-+	if (!wl)
-+		return ERR_PTR(-ENOMEM);
-+
-+	wl->name = kstrndup(name, len, GFP_KERNEL);
-+	if (!wl->name) {
-+		kfree(wl);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+	wl->ws.name = wl->name;
-+	wakeup_source_add(&wl->ws);
-+	rb_link_node(&wl->node, parent, node);
-+	rb_insert_color(&wl->node, &wakelocks_tree);
-+	list_add(&wl->lru, &wakelocks_lru_list);
-+	number_of_wakelocks++;
-+	return wl;
-+}
-+
-+int pm_wake_lock(const char *buf)
-+{
-+	const char *str = buf;
-+	struct wakelock *wl;
-+	u64 timeout_ns = 0;
-+	size_t len;
-+	int ret = 0;
-+
-+	while (*str && !isspace(*str))
-+		str++;
-+
-+	len = str - buf;
-+	if (!len)
-+		return -EINVAL;
-+
-+	if (*str && *str != '\n') {
-+		/* Find out if there's a valid timeout string appended. */
-+		ret = kstrtou64(skip_spaces(str), 10, &timeout_ns);
-+		if (ret)
-+			return -EINVAL;
-+	}
-+
-+	mutex_lock(&wakelocks_lock);
-+
-+	wl = wakelock_lookup_add(buf, len, true);
-+	if (IS_ERR(wl)) {
-+		ret = PTR_ERR(wl);
-+		goto out;
-+	}
-+	if (timeout_ns) {
-+		u64 timeout_ms = timeout_ns + NSEC_PER_MSEC - 1;
-+
-+		do_div(timeout_ms, NSEC_PER_MSEC);
-+		__pm_wakeup_event(&wl->ws, timeout_ms);
-+	} else {
-+		__pm_stay_awake(&wl->ws);
-+	}
-+
-+	list_move(&wl->lru, &wakelocks_lru_list);
-+
-+ out:
-+	mutex_unlock(&wakelocks_lock);
-+	return ret;
-+}
-+
-+static void wakelocks_gc(void)
-+{
-+	struct wakelock *wl, *aux;
-+	ktime_t now = ktime_get();
-+
-+	list_for_each_entry_safe_reverse(wl, aux, &wakelocks_lru_list, lru) {
-+		u64 idle_time_ns;
-+		bool active;
-+
-+		spin_lock_irq(&wl->ws.lock);
-+		idle_time_ns = ktime_to_ns(ktime_sub(now, wl->ws.last_time));
-+		active = wl->ws.active;
-+		spin_unlock_irq(&wl->ws.lock);
-+
-+		if (idle_time_ns < ((u64)WL_GC_TIME_SEC * NSEC_PER_SEC))
-+			break;
-+
-+		if (!active) {
-+			wakeup_source_remove(&wl->ws);
-+			rb_erase(&wl->node, &wakelocks_tree);
-+			list_del(&wl->lru);
-+			kfree(wl->name);
-+			kfree(wl);
-+			number_of_wakelocks--;
-+		}
-+	}
-+	wakelocks_gc_count = 0;
-+}
-+
-+int pm_wake_unlock(const char *buf)
-+{
-+	struct wakelock *wl;
-+	size_t len;
-+	int ret = 0;
-+
-+	len = strlen(buf);
-+	if (!len)
-+		return -EINVAL;
-+
-+	if (buf[len-1] == '\n')
-+		len--;
-+
-+	if (!len)
-+		return -EINVAL;
-+
-+	mutex_lock(&wakelocks_lock);
-+
-+	wl = wakelock_lookup_add(buf, len, false);
-+	if (IS_ERR(wl)) {
-+		ret = PTR_ERR(wl);
-+		goto out;
-+	}
-+	__pm_relax(&wl->ws);
-+	list_move(&wl->lru, &wakelocks_lru_list);
-+	if (++wakelocks_gc_count > WL_GC_COUNT_MAX)
-+		wakelocks_gc();
-+
-+ out:
-+	mutex_unlock(&wakelocks_lock);
-+	return ret;
-+}
-Index: linux/kernel/power/Makefile
-===================================================================
---- linux.orig/kernel/power/Makefile
-+++ linux/kernel/power/Makefile
-@@ -10,5 +10,6 @@ obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend
- obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
- 				   block_io.o
- obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
-+obj-$(CONFIG_PM_WAKELOCKS)	+= wakelock.o
- 
- obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
-Index: linux/drivers/base/power/wakeup.c
-===================================================================
---- linux.orig/drivers/base/power/wakeup.c
-+++ linux/drivers/base/power/wakeup.c
-@@ -133,6 +133,7 @@ void wakeup_source_add(struct wakeup_sou
- 	spin_lock_init(&ws->lock);
- 	setup_timer(&ws->timer, pm_wakeup_timer_fn, (unsigned long)ws);
- 	ws->active = false;
-+	ws->last_time = ktime_get();
- 
- 	spin_lock_irq(&events_lock);
- 	list_add_rcu(&ws->entry, &wakeup_sources);
-Index: linux/Documentation/ABI/testing/sysfs-power
-===================================================================
---- linux.orig/Documentation/ABI/testing/sysfs-power
-+++ linux/Documentation/ABI/testing/sysfs-power
-@@ -189,3 +189,45 @@ Description:
- 
- 		Reading from this file causes the last string successfully
- 		written to it to be returned.
-+
-+What:		/sys/power/wake_lock
-+Date:		February 2012
-+Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-+Description:
-+		The /sys/power/wake_lock file allows user space to create
-+		wakeup source objects and activate them on demand (if one of
-+		those wakeup sources is active, reads from the
-+		/sys/power/wakeup_count file block or return false).  When a
-+		string without white space is written to /sys/power/wake_lock,
-+		it will be assumed to represent a wakeup source name.  If there
-+		is a wakeup source object with that name, it will be activated
-+		(unless active already).  Otherwise, a new wakeup source object
-+		will be registered, assigned the given name and activated.
-+		If a string written to /sys/power/wake_lock contains white
-+		space, the part of the string preceding the white space will be
-+		regarded as a wakeup source name and handled as descrived above.
-+		The other part of the string will be regarded as a timeout (in
-+		nanoseconds) such that the wakeup source will be automatically
-+		deactivated after it has expired.  The timeout, if present, is
-+		set regardless of the current state of the wakeup source object
-+		in question.
-+
-+		Reads from this file return a string consisting of the names of
-+		wakeup sources created with the help of it that are active at
-+		the moment, separated with spaces.
-+
-+
-+What:		/sys/power/wake_unlock
-+Date:		February 2012
-+Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-+Description:
-+		The /sys/power/wake_unlock file allows user space to deactivate
-+		wakeup sources created with the help of /sys/power/wake_lock.
-+		When a string is written to /sys/power/wake_unlock, it will be
-+		assumed to represent the name of a wakeup source to deactivate.
-+		If a wakeup source object of that name exists and is active at
-+		the moment, it will be deactivated.
-+
-+		Reads from this file return a string consisting of the names of
-+		wakeup sources created with the help of /sys/power/wake_lock
-+		that are inactive at the moment, separated with spaces.
