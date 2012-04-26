@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758586Ab2DZQt7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 12:49:59 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:44817 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757849Ab2DZQt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 12:49:57 -0400
-Message-ID: <1335458867.2351.30.camel@groeck-laptop>
-Subject: Re: [ 03/62] hwmon: fam15h_power: fix bogus values with current
- BIOSes
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Andre Przywara <andre.przywara@amd.com>,
-        Jean Delvare <khali@linux-fr.org>
-Date: Thu, 26 Apr 2012 09:47:47 -0700
-In-Reply-To: <20120426164308.GA18682@kroah.com>
-References: <20120424223305.GA7748@kroah.com>
-	 <20120424223242.251771207@linuxfoundation.org>
-	 <20120425194506.GG3932@decadent.org.uk>
-	 <1335387002.18790.145.camel@groeck-laptop>
-	 <20120426164308.GA18682@kroah.com>
-Organization: Ericsson
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1758611Ab2DZQ4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 12:56:43 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62362 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756540Ab2DZQ4m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 12:56:42 -0400
+Message-ID: <4F997058.6070509@landley.net>
+Date: Thu, 26 Apr 2012 10:57:12 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        KVM <kvm@vger.kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Xen <xen-devel@lists.xensource.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH RFC V6 5/5] Documentation/kvm : Add documentation on Hypercalls
+ and features used for PV spinlock
+References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com> <20120423100034.30893.81866.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20120423100034.30893.81866.sendpatchset@codeblue.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-26 at 12:43 -0400, Greg KH wrote:
-> On Wed, Apr 25, 2012 at 01:50:02PM -0700, Guenter Roeck wrote:
-> > On Wed, 2012-04-25 at 15:45 -0400, Ben Hutchings wrote:
-> > > On Tue, Apr 24, 2012 at 03:32:44PM -0700, Greg KH wrote:
-> > > > 3.3-stable review patch.  If anyone has any objections, please let me know.
-> > > [...]
-> > > > +static void __devinit tweak_runavg_range(struct pci_dev *pdev)
-> > > > +{
-> > > > +	u32 val;
-> > > > +	const struct pci_device_id affected_device = {
-> > > > +		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
-> > > > +
-> > > > +	/*
-> > > > +	 * let this quirk apply only to the current version of the
-> > > > +	 * northbridge, since future versions may change the behavior
-> > > > +	 */
-> > > > +	if (!pci_match_id(&affected_device, pdev))
-> > > > +		return;
-> > > [...]
-> > > 
-> > > pci_match_id() takes an *array* of IDs which must be properly zero-
-> > > terminated.  This change is bogus and should be fixed up before it
-> > > goes into a stable update.
-> > 
-> > Good catch. I sent a patch to fix this in mainline a minute ago.
-> 
-> Is it in Linus's tree yet?  If so, what's the git commit id?  If not,
-> I'll have to drop it from this release.
+On 04/23/2012 05:00 AM, Raghavendra K T wrote:
+> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> 
+...
+> --- /dev/null
+> +++ b/Documentation/virtual/kvm/hypercalls.txt
+> @@ -0,0 +1,59 @@
+> +KVM Hypercalls Documentation
+> +===========================
+> +Template for documentation is
+> +The documenenation for hypercalls should inlcude
 
-It is not in Linus' tree yet. I plan to send the pull request tomorrow,
-after having it rest for another night in my tree (with nightly builds)
-and in linux-next.
+What does the line about templates mean/
 
-Please drop the patch for now. The fix will include a reference to it,
-so you can pull both patches once the fix shows up in Linus' tree.
+documenenation? inlcude?
 
-Sorry for the trouble.
+> +1. Hypercall name, value.
+> +2. Architecture(s)
+> +3. status (deprecated, obsolete, active)
+> +4. Purpose
+> +
+> +
+> +1. KVM_HC_VAPIC_POLL_IRQ
+> +------------------------
+> +value: 1
+> +Architecture: x86
+> +Purpose:
 
-Thanks,
-Guenter
+Purpose: none.
 
-
+Rob
+-- 
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
