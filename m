@@ -1,127 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab2DZGwF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 02:52:05 -0400
-Received: from mx1.b1-systems.de ([217.11.58.35]:46478 "EHLO mx1.b1-systems.de"
+	id S1754041Ab2DZHOY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 03:14:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43442 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752728Ab2DZGwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 02:52:03 -0400
-X-Greylist: delayed 541 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Apr 2012 02:52:03 EDT
-Message-ID: <4F98EDB1.5090702@b1-systems.de>
-Date: Thu, 26 Apr 2012 08:39:45 +0200
-From: Karsten Keil <keil@b1-systems.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
-MIME-Version: 1.0
-To: Tilman Schmidt <tilman@imap.cc>
-CC: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>,
-        Hansjoerg Lipp <hjlipp@web.de>, i4ldeveloper@listserv.isdn4linux.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] isdn/gigaset: ratelimit CAPI message dumps
-References: <20120425-patch-gigaset-00.tilman@imap.cc> <20120425-patch-gigaset-01.tilman@imap.cc>
-In-Reply-To: <20120425-patch-gigaset-01.tilman@imap.cc>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+	id S1753180Ab2DZHOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 03:14:23 -0400
+Date: Thu, 26 Apr 2012 17:14:16 +1000
+From: NeilBrown <neilb@suse.de>
+To: NeilBrown <neilb@suse.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: twl4030 power button: don't lose presses on
+ resume
+Message-ID: <20120426171416.32db6d5b@notabene.brown>
+In-Reply-To: <20120425152603.3d24547f@notabene.brown>
+References: <20120425122139.512c6890@notabene.brown>
+	<20120425050919.GB27843@core.coreip.homeip.net>
+	<20120425152603.3d24547f@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/iKxvBJ=CNT/l.5fL2nznWv="; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.04.2012 01:02, schrieb Tilman Schmidt:
-> Introduce a global ratelimit for CAPI message dumps to protect
-> against possible log flood.
-> Drop the ratelimit for ignored messages which is now covered by the
-> global one.
-> 
+--Sig_/iKxvBJ=CNT/l.5fL2nznWv=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, I think the only CAPI messages which would need a ratelimit are
-related to the DATA_B3 messages. If you need CAPI debug messages in most
-cases you do not need all of the DATA_B3, but you do not want to miss
-any other message related to the call control. With a general rate limit
-you do not have the control, which messages are logged and which are not.
-And here maybe some cases, when even the DATA_B3 are important (e.g.
-searching bugs in flow control), so I would make it still conditional
-to allow to print all messages.
-And I'm not sure, if this is really something for stable.
+On Wed, 25 Apr 2012 15:26:03 +1000 NeilBrown <neilb@suse.de> wrote:
 
-> Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-> CC: stable <stable@kernel.org>
-> ---
->  drivers/isdn/gigaset/capi.c |   22 +++++++++-------------
->  1 files changed, 9 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
-> index 343b5c8..292ca2f 100644
-> --- a/drivers/isdn/gigaset/capi.c
-> +++ b/drivers/isdn/gigaset/capi.c
-> @@ -14,6 +14,7 @@
->  #include "gigaset.h"
->  #include <linux/proc_fs.h>
->  #include <linux/seq_file.h>
-> +#include <linux/ratelimit.h>
->  #include <linux/isdn/capilli.h>
->  #include <linux/isdn/capicmd.h>
->  #include <linux/isdn/capiutil.h>
-> @@ -223,10 +224,14 @@ get_appl(struct gigaset_capi_ctr *iif, u16 appl)
->  static inline void dump_cmsg(enum debuglevel level, const char *tag, _cmsg *p)
->  {
->  #ifdef CONFIG_GIGASET_DEBUG
-> +	/* dump at most 20 messages in 20 secs */
-> +	static DEFINE_RATELIMIT_STATE(msg_dump_ratelimit, 20 * HZ, 20);
->  	_cdebbuf *cdb;
->  
->  	if (!(gigaset_debuglevel & level))
->  		return;
-> +	if (!___ratelimit(&msg_dump_ratelimit, tag))
-> +		return;
->  
->  	cdb = capi_cmsg2str(p);
->  	if (cdb) {
-> @@ -2059,12 +2064,6 @@ static void do_reset_b3_req(struct gigaset_capi_ctr *iif,
->  }
->  
->  /*
-> - * dump unsupported/ignored messages at most twice per minute,
-> - * some apps send those very frequently
-> - */
-> -static unsigned long ignored_msg_dump_time;
-> -
-> -/*
->   * unsupported CAPI message handler
->   */
->  static void do_unsupported(struct gigaset_capi_ctr *iif,
-> @@ -2073,8 +2072,7 @@ static void do_unsupported(struct gigaset_capi_ctr *iif,
->  {
->  	/* decode message */
->  	capi_message2cmsg(&iif->acmsg, skb->data);
-> -	if (printk_timed_ratelimit(&ignored_msg_dump_time, 30 * 1000))
-> -		dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
-> +	dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
->  	send_conf(iif, ap, skb, CapiMessageNotSupportedInCurrentState);
->  }
->  
-> @@ -2085,11 +2083,9 @@ static void do_nothing(struct gigaset_capi_ctr *iif,
->  		       struct gigaset_capi_appl *ap,
->  		       struct sk_buff *skb)
->  {
-> -	if (printk_timed_ratelimit(&ignored_msg_dump_time, 30 * 1000)) {
-> -		/* decode message */
-> -		capi_message2cmsg(&iif->acmsg, skb->data);
-> -		dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
-> -	}
-> +	/* decode message */
-> +	capi_message2cmsg(&iif->acmsg, skb->data);
-> +	dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
->  	dev_kfree_skb_any(skb);
->  }
->  
+> On Tue, 24 Apr 2012 22:09:19 -0700 Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+>=20
+> > Hi Neil,
+> >=20
+> > On Wed, Apr 25, 2012 at 12:21:39PM +1000, NeilBrown wrote:
+> > >=20
+> > > If we press and release the power button before the press interrupt is
+> > > handled - as can happen on resume - we lose the press event so the
+> > > release event is ignored and we don't know what happened to cause the
+> > > wakeup.
+> >=20
+> > What kind of latency do you observe?
+>=20
+> When I have debugging enabled, hundreds of milliseconds.
+>=20
+> When I don't have debugging enabled ... it doesn't tell me, but I'm fairly
+> sure it is several tens of milliseconds and the button press can be quick=
+er
+> than that.
+>=20
+> If it will help I can try to instrument the driver and get some timings.
 
+I added a bit of tracing.
 
--- 
-Karsten Keil
-Linux Kernel Development
-Tel: +49 175 7249132
-Mail: keil@b1-systems.de
+It looks like a fast button press typically shows about 120ms between 'pres=
+s'
+and 'release', though I have seen as low as 70ms.
+When I don't have PM_DEBUG debugging on, the 'press' interrupt gets handled
+in about 14ms.
+So it seems likely that the times that I suffered from the problem and so
+wrote the patch, I had PM_DEBUG enabled which slows resume down quite a lot.
 
-B1 Systems GmbH
-Osterfeldstraﬂe 7 / 85088 Vohburg / http://www.b1-systems.de
-GF: Ralph Dehner / Unternehmenssitz: Vohburg / AG: Ingolstadt,HRB 3537
+So I cannot make a strong case for these patches.  However I think it is
+safer to have them than not :-)
+
+Thanks,
+NeilBrown
+
+--Sig_/iKxvBJ=CNT/l.5fL2nznWv=
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBT5j1yDnsnt1WYoG5AQL15RAAodLmMyHEpRMZfttyjNrAh4KXRHa8/VAk
+2rS9t+DgrOEk0oAeOI1AHw3FE8vo2tqv/hfahXw/UX/Yws86D+tNEhI3y0NHundh
+TR+smI3Daz5Y4z8VcBY1ZGCdHskvUVNtLUMv+INL3/dYiZqdRvkN600PVZrFdEhg
+MtjAG9nYpbHeVNP1LhYbhUT/PJA0MrfN1jyuDPBrJcm4iui8cZHY7Qj2aHYKlePt
+sX7D8PG+2K9RWBlidMV3UXi5mE6d/Im2ER0UIf6AWIwIT7xKP2sEIwFR/MjZ6Hl0
+0OMB7nCyZVUGqYiW5X+2J9cLtZMw0NhGSDVz9tPTg5bowNW8Dr9hzMxaShca/JvZ
+HDssI5ffsyanDMGOf4JFWDATtRfLUELZhIIX8WlSzo1xbN74FXX7D8bD64xJAsYO
+SSnPK3zleP5BqwLs9Vo8JjGeeM6zARiZ5M5W5dhFshWYZNUzg14AtyZCg02NnEc4
+ItU+sqD+Vx0gUmcfEgB6Lc9nFmmYk2oImrCQNJGz0UjqR1WP9e3/Jgf85GcaTMDy
+fJOJM7AReNf5Yw5lxY2EvSfJy+LVYR6GMbYSyEE1huEW8CCtAlAm2Efq8uw/vmHB
+fj+ywPNv9i5FnFTVaByB7a0un1Hq4DLcYQBjuCozyaIERLEGbWbHGWsz6MBbNmWz
+KlFHTyBbni0=
+=ll+V
+-----END PGP SIGNATURE-----
+
+--Sig_/iKxvBJ=CNT/l.5fL2nznWv=--
