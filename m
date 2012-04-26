@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab2DZMDw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 08:03:52 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:48043 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752598Ab2DZMDu (ORCPT
+	id S1755874Ab2DZMLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 08:11:47 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51827 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab2DZMLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 08:03:50 -0400
-X-Sasl-enc: ANB/fq9G9ktzS5Y550q9d4rZSRm5cC3kYH/WnjHqJfvzJAwIOPtZqAKFtA 1335441829
-Message-ID: <1335441826.6702.49.camel@perseus.themaw.net>
-Subject: Re: [PATCH] unbreak automount daemon after fixing autofs5 ABI
-From: Ian Kent <raven@themaw.net>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Meyer <thomas@m3y3r.de>, stable@kernel.org,
-        autofs@vger.kernel.org
-Date: Thu, 26 Apr 2012 20:03:46 +0800
-In-Reply-To: <4F99082F.1040902@msgid.tls.msk.ru>
-References: <1335421594-10499-1-git-send-email-mjt@msgid.tls.msk.ru>
-	 <1335428498.6702.33.camel@perseus.themaw.net>
-	 <4F99082F.1040902@msgid.tls.msk.ru>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 26 Apr 2012 08:11:46 -0400
+From: Richard Cochran <richardcochran@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 0/1] ntp bug fix
+Date: Thu, 26 Apr 2012 14:11:31 +0200
+Message-Id: <cover.1335442155.git.richardcochran@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-26 at 12:32 +0400, Michael Tokarev wrote:
-> On 26.04.2012 12:21, Ian Kent wrote:
-> > On Thu, 2012-04-26 at 10:26 +0400, Michael Tokarev wrote:
-> []
-> >> Change 499f286dc02cde6b tries to fix the original interface
-> >> bug for 32bit userspace running on 64bit kernel.  But the
-> >> issue is that autofs5 already has a workaround for it, so
-> >> the end result is that the two (kernel & user) disagree
-> >> again.  "Fix" this by applying the in-kernel fix only if
-> >> the process is not named "automount" -- which is how autofs5
-> >> daemon is named.
-> > 
-> > No, you cannot be sure the autofs binary is named automount.
-> 
-> Well, I checked several distributions, all have the binary named
-> this way.  Yes a user can rename it and it will break again, but
-> it is at least better than now when it does not work at all.  And
-> yes it is messy, just like current situation already is.
-> 
-> > Not only that, this approach makes an unpleasant change even more
-> > unpleasant.
-> > 
-> > I still think that my original proposed patches were the better approach
-> > to handling this problem.
-> > 
-> > My recommendation was that the major autofs kernel protocol version be
-> > bumped and a packed structure used from that version on. That allows
-> > user space to request that protocol version for communication at mount
-> > time. If systemd doesn't want to support earlier protocol versions then
-> > it can complain, instructing the user to update to a later kernel.
-> 
-> This is exactly what I was proposing when I started my thread about
-> 3.0.24 autofs breakage -- to _revert_ the in-kernel fix and introduce
-> a new interface (or variation thereof, in means of a new mount option
-> or something).  This way, breakage and mess are both minimal.
-> 
-> Note that a major protocol changes aren't really needed, just a single
-> mount option, which uses a right size of the structure.  Unless at the
-> same time you want to change something else.
+I have been cooking up a patch series to keep the core time in TAI
+instead of UTC. In the course of that work I noticed a bug in the
+current NTP code. During a leap second insertion, the kernel will
+advertise the wrong TAI offset.
 
-There's no new interface needed, as such. Basically the structure used
-for communication just needs to be declared packed and used instead of
-the current one. Since it's not a backward compatible change the major
-version needs to be increased to indicate that.
+There is a nice explanation of this issue in the NIST leap second
+list, which I quote below. With reference to that, the Linux kernel
+handles the UTC time value like in the first case, but sets the TAI
+offset as in the second case, resulting in a discontinuity in the
+apparent TAI time.
 
-The autofs kernel protocol version (major version number) is specified
-when mounting autofs mounts. The minor version is meant to be used to
-identify the bug fix level. So increasing the major version number is
-the normal way that change may be introduced without breaking existing
-applications or requiring any changes to them. New applications simply
-set the major version at mount time and can decide if they want to use a
-lower version if the mount fails, assuming the lower version has the
-functionality that's needed. And, yes, it isn't quite that simple at run
-time but that is the way it's meant to work.
+* Excerpt from ftp://time.nist.gov/pub/leap-seconds.list
 
-So using the word "major" probably gives the wrong impression even
-though the term is correct usage.
+   If your system keeps time as the number of seconds since some epoch
+   (e.g., NTP timestamps), then the algorithm for assigning a UTC time
+   stamp to an event that happens during a positive leap second is not
+   well defined. The official name of that leap second is 23:59:60,
+   but there is no way of representing that time in these systems.
 
-Ian
+   Many systems of this type effectively stop the system clock for one
+   second during the leap second and use a time that is equivalent to
+   23:59:59 UTC twice. For these systems, the corresponding TAI
+   timestamp would be obtained by advancing to the next entry in the
+   following table when the time equivalent to 23:59:59 UTC is used
+   for the second time. Thus the leap second which occurred on 30 June
+   1972 at 23:59:59 UTC would have TAI timestamps computed as follows:
 
+   30 June 1972 23:59:59 (2287785599, first time):  TAI= UTC + 10 seconds
+   30 June 1972 23:59:60 (2287785599,second time):  TAI= UTC + 11 seconds
+   1  July 1972 00:00:00 (2287785600)               TAI= UTC + 11 seconds
+
+   If your system realizes the leap second by repeating 00:00:00 UTC
+   twice (this is possible but not usual), then the advance to the
+   next entry in the table must occur the second time that a time
+   equivlent to 00:00:00 UTC is used. Thus, using the same example as
+   above:
+
+   30 June 1972 23:59:59 (2287785599):              TAI= UTC + 10 seconds
+   30 June 1972 23:59:60 (2287785600, first time):  TAI= UTC + 10 seconds
+   1  July 1972 00:00:00 (2287785600,second time):  TAI= UTC + 11 seconds
+
+   in both cases the use of timestamps based on TAI produces a smooth
+   time scale with no discontinuity in the time interval.
+
+
+Richard Cochran (1):
+  ntp: advertise correct TAI offset during leap second
+
+ kernel/time/ntp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+-- 
+1.7.2.5
 
