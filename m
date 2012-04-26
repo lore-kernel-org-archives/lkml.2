@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab2DZHyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 03:54:39 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58284 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754663Ab2DZHya (ORCPT
+	id S1754915Ab2DZHzn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 03:55:43 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42855 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752424Ab2DZHyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 03:54:30 -0400
-Subject: [PATCH 10/12] mm/vmscan: push lruvec pointer into get_scan_count()
+	Thu, 26 Apr 2012 03:54:19 -0400
+Subject: [PATCH 07/12] mm/vmscan: replace zone_nr_lru_pages() with
+ get_lruvec_size()
 To: Andrew Morton <akpm@linux-foundation.org>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Thu, 26 Apr 2012 11:54:26 +0400
-Message-ID: <20120426075426.18961.28425.stgit@zurg>
+Date: Thu, 26 Apr 2012 11:54:15 +0400
+Message-ID: <20120426075415.18961.59046.stgit@zurg>
 In-Reply-To: <20120426074632.18961.17803.stgit@zurg>
 References: <20120426074632.18961.17803.stgit@zurg>
 User-Agent: StGit/0.15
@@ -23,98 +24,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If memory cgroup enabled we always use lruvecs which are embedded into
+struct mem_cgroup_per_zone, so we can reach lru_size counters via container_of().
+
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- mm/vmscan.c |   25 +++++++++----------------
- 1 file changed, 9 insertions(+), 16 deletions(-)
+ include/linux/memcontrol.h |    6 ++----
+ mm/memcontrol.c            |    9 +++++++++
+ mm/vmscan.c                |   31 ++++++++++++++++---------------
+ 3 files changed, 27 insertions(+), 19 deletions(-)
 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 76f9d9b..7980187 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -122,8 +122,7 @@ int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg,
+ int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg,
+ 				    struct zone *zone);
+ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
+-unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
+-					int nid, int zid, unsigned int lrumask);
++unsigned long mem_cgroup_get_lruvec_size(struct lruvec *lruvec, enum lru_list);
+ struct zone_reclaim_stat*
+ mem_cgroup_get_reclaim_stat_from_page(struct page *page);
+ extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
+@@ -342,8 +341,7 @@ mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg, struct zone *zone)
+ }
+ 
+ static inline unsigned long
+-mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, int nid, int zid,
+-				unsigned int lru_mask)
++mem_cgroup_get_lruvec_size(struct lruvec *lruvec, enum lru_list lru)
+ {
+ 	return 0;
+ }
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 66c2f80..2cb6f4d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -723,6 +723,15 @@ static void mem_cgroup_charge_statistics(struct mem_cgroup *memcg,
+ }
+ 
+ unsigned long
++mem_cgroup_get_lruvec_size(struct lruvec *lruvec, enum lru_list lru)
++{
++	struct mem_cgroup_per_zone *mz;
++
++	mz = container_of(lruvec, struct mem_cgroup_per_zone, lruvec);
++	return mz->lru_size[lru];
++}
++
++static unsigned long
+ mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, int nid, int zid,
+ 			unsigned int lru_mask)
+ {
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 258e002..1724ec6 100644
+index 31df071..6d46117 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -150,11 +150,6 @@ static bool global_reclaim(struct scan_control *sc)
+@@ -155,19 +155,14 @@ static struct zone_reclaim_stat *get_reclaim_stat(struct mem_cgroup_zone *mz)
+ 	return &mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup)->reclaim_stat;
  }
- #endif
  
--static struct zone_reclaim_stat *get_reclaim_stat(struct mem_cgroup_zone *mz)
--{
--	return &mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup)->reclaim_stat;
--}
--
- static unsigned long get_lruvec_size(struct lruvec *lruvec, enum lru_list lru)
+-static unsigned long zone_nr_lru_pages(struct mem_cgroup_zone *mz,
+-				       enum lru_list lru)
++static unsigned long get_lruvec_size(struct lruvec *lruvec, enum lru_list lru)
  {
  	if (!mem_cgroup_disabled())
-@@ -1623,20 +1618,18 @@ static int vmscan_swappiness(struct scan_control *sc)
-  *
-  * nr[0] = anon pages to scan; nr[1] = file pages to scan
+-		return mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
+-						    zone_to_nid(mz->zone),
+-						    zone_idx(mz->zone),
+-						    BIT(lru));
++		return mem_cgroup_get_lruvec_size(lruvec, lru);
+ 
+-	return zone_page_state(mz->zone, NR_LRU_BASE + lru);
++	return zone_page_state(lruvec_zone(lruvec), NR_LRU_BASE + lru);
+ }
+ 
+-
+ /*
+  * Add a shrinker callback to be called from the vm
   */
--static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
-+static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
- 			   unsigned long *nr)
- {
- 	unsigned long anon, file, free;
- 	unsigned long anon_prio, file_prio;
- 	unsigned long ap, fp;
--	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
-+	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
- 	u64 fraction[2], denominator;
+@@ -1645,6 +1640,9 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
  	enum lru_list lru;
  	int noswap = 0;
  	bool force_scan = false;
--	struct lruvec *lruvec;
--
--	lruvec = mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup);
-+	struct zone *zone = lruvec_zone(lruvec);
++	struct lruvec *lruvec;
++
++	lruvec = mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup);
  
  	/*
  	 * If the zone or memcg is small, nr[l] can be 0.  This
-@@ -1648,7 +1641,7 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
- 	 * latencies, so it's better to scan a minimum amount there as
- 	 * well.
- 	 */
--	if (current_is_kswapd() && mz->zone->all_unreclaimable)
-+	if (current_is_kswapd() && zone->all_unreclaimable)
- 		force_scan = true;
- 	if (!global_reclaim(sc))
- 		force_scan = true;
-@@ -1668,10 +1661,10 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
- 		get_lruvec_size(lruvec, LRU_INACTIVE_FILE);
+@@ -1670,10 +1668,10 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
+ 		goto out;
+ 	}
+ 
+-	anon  = zone_nr_lru_pages(mz, LRU_ACTIVE_ANON) +
+-		zone_nr_lru_pages(mz, LRU_INACTIVE_ANON);
+-	file  = zone_nr_lru_pages(mz, LRU_ACTIVE_FILE) +
+-		zone_nr_lru_pages(mz, LRU_INACTIVE_FILE);
++	anon  = get_lruvec_size(lruvec, LRU_ACTIVE_ANON) +
++		get_lruvec_size(lruvec, LRU_INACTIVE_ANON);
++	file  = get_lruvec_size(lruvec, LRU_ACTIVE_FILE) +
++		get_lruvec_size(lruvec, LRU_INACTIVE_FILE);
  
  	if (global_reclaim(sc)) {
--		free  = zone_page_state(mz->zone, NR_FREE_PAGES);
-+		free  = zone_page_state(zone, NR_FREE_PAGES);
- 		/* If we have very few page cache pages,
- 		   force-scan anon pages. */
--		if (unlikely(file + free <= high_wmark_pages(mz->zone))) {
-+		if (unlikely(file + free <= high_wmark_pages(zone))) {
- 			fraction[0] = 1;
- 			fraction[1] = 0;
- 			denominator = 1;
-@@ -1697,7 +1690,7 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
- 	 *
- 	 * anon in [0], file in [1]
+ 		free  = zone_page_state(mz->zone, NR_FREE_PAGES);
+@@ -1736,7 +1734,7 @@ out:
+ 		int file = is_file_lru(lru);
+ 		unsigned long scan;
+ 
+-		scan = zone_nr_lru_pages(mz, lru);
++		scan = get_lruvec_size(lruvec, lru);
+ 		if (sc->priority || noswap) {
+ 			scan >>= sc->priority;
+ 			if (!scan && force_scan)
+@@ -1772,6 +1770,7 @@ static inline bool should_continue_reclaim(struct mem_cgroup_zone *mz,
+ {
+ 	unsigned long pages_for_compaction;
+ 	unsigned long inactive_lru_pages;
++	struct lruvec *lruvec;
+ 
+ 	/* If not in reclaim/compaction mode, stop */
+ 	if (!in_reclaim_compaction(sc))
+@@ -1804,10 +1803,12 @@ static inline bool should_continue_reclaim(struct mem_cgroup_zone *mz,
+ 	 * If we have not reclaimed enough pages for compaction and the
+ 	 * inactive lists are large enough, continue reclaiming
  	 */
--	spin_lock_irq(&mz->zone->lru_lock);
-+	spin_lock_irq(&zone->lru_lock);
- 	if (unlikely(reclaim_stat->recent_scanned[0] > anon / 4)) {
- 		reclaim_stat->recent_scanned[0] /= 2;
- 		reclaim_stat->recent_rotated[0] /= 2;
-@@ -1718,7 +1711,7 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
- 
- 	fp = (file_prio + 1) * (reclaim_stat->recent_scanned[1] + 1);
- 	fp /= reclaim_stat->recent_rotated[1] + 1;
--	spin_unlock_irq(&mz->zone->lru_lock);
-+	spin_unlock_irq(&zone->lru_lock);
- 
- 	fraction[0] = ap;
- 	fraction[1] = fp;
-@@ -1836,7 +1829,7 @@ static void shrink_mem_cgroup_zone(struct mem_cgroup_zone *mz,
- restart:
- 	nr_reclaimed = 0;
- 	nr_scanned = sc->nr_scanned;
--	get_scan_count(mz, sc, nr);
-+	get_scan_count(lruvec, sc, nr);
- 
- 	blk_start_plug(&plug);
- 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
++	lruvec = mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup);
+ 	pages_for_compaction = (2UL << sc->order);
+-	inactive_lru_pages = zone_nr_lru_pages(mz, LRU_INACTIVE_FILE);
++	inactive_lru_pages = get_lruvec_size(lruvec, LRU_INACTIVE_FILE);
+ 	if (nr_swap_pages > 0)
+-		inactive_lru_pages += zone_nr_lru_pages(mz, LRU_INACTIVE_ANON);
++		inactive_lru_pages += get_lruvec_size(lruvec,
++						      LRU_INACTIVE_ANON);
+ 	if (sc->nr_reclaimed < pages_for_compaction &&
+ 			inactive_lru_pages > pages_for_compaction)
+ 		return true;
 
