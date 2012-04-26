@@ -1,205 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab2DZOAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 10:00:46 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:41358 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab2DZOAp (ORCPT
+	id S1753556Ab2DZOEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 10:04:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33975 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab2DZOEP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 10:00:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <1335375781.5951.2.camel@edumazet-glaptop>
-References: <CAOFJUkhi6NoECFGcz=rq8-uVXFc90V4SuH=A1+sWdvYDDhO8Ow@mail.gmail.com>
-	<1335353427.3274.103.camel@edumazet-glaptop>
-	<CAOFJUkj27aF6diDjcZFTyBaTdDdU8URkj+1vr3ECoozbzqDVBg@mail.gmail.com>
-	<1335357975.3274.187.camel@edumazet-glaptop>
-	<CAOFJUki3Jg+fAWWY70nDUCdxVs5A5VGfwkwUn01a4BX+N5nm-A@mail.gmail.com>
-	<1335375781.5951.2.camel@edumazet-glaptop>
-Date: Thu, 26 Apr 2012 15:53:43 +0200
-Message-ID: <CAOFJUkhF1205=2sO_a4gT+it42h_1rZU365N-Rb5LVJZa8zvhw@mail.gmail.com>
-Subject: Re: many rx packets dropped since 2.6.37
-From: Chris <xchris89x@googlemail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Apr 2012 10:04:15 -0400
+Message-ID: <1335449039.13683.61.camel@twins>
+Subject: Re: [BUG] perf stat: useless output for raw events with new event
+ parser
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@elte.hu,
+        David Ahern <dsahern@gmail.com>,
+        Robert Richter <robert.richter@amd.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Date: Thu, 26 Apr 2012 16:03:59 +0200
+In-Reply-To: <CABPqkBQdkWWgOoXU+ugJiTC=X=5+7OYZ5_K71KhUJTw7jq6+Rg@mail.gmail.com>
+References: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
+	 <1335178132.28150.117.camel@twins>
+	 <CABPqkBQ2w3RLRwq3fsaJQ_L=_=H+5kounBeuxUv_fk1ksimTOQ@mail.gmail.com>
+	 <1335436031.13683.6.camel@twins>
+	 <CABPqkBQdkWWgOoXU+ugJiTC=X=5+7OYZ5_K71KhUJTw7jq6+Rg@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/4/25 Eric Dumazet <eric.dumazet@gmail.com>:
-> On Wed, 2012-04-25 at 16:38 +0200, Chris wrote:
->> 2012/4/25 Eric Dumazet <eric.dumazet@gmail.com>:
->> >> Why do we see dropped packets only in virtual environments and bonded
->> >> network interfaces and not on real network interfaces?
->> >
->> > This has to be investigated, eventually.
->>
->> Do you have the opportunity to test it? Just install fedora 16 (linux
->> 3.3) or ubuntu 12.04 (linux 3.2) as guest under kvm and use as virtual
->> network card virtio_net or e1000.
->>
->> You will see many lost rx packets and i have no idea why???
->
->
-> You can use drop_monitor / dropwatch to figure out
->
-> https://fedorahosted.org/dropwatch/
->
-> http://prefetch.net/blog/index.php/2011/07/11/using-netstat-and-dropwatch-to-observe-packet-loss-on-linux-servers/
+On Thu, 2012-04-26 at 14:53 +0200, Stephane Eranian wrote:
 
-Hello Eric,
+> > I'd like to use the event names, but really, when you do:
+> >
+> >  cpu/event=instructions_retired,inv,cmask=16/
+> >
+> > is it still instructions_retired?
+> 
+> Yes, to some extent. Remember this is not equivalent to
+> unhalted_core_cycles.
 
-Okay this is a Fedora-16 VM under KVM with 4 minutes uptime only and dropwatch!
+Sure, but I think calling it instructions_retired isn't right either. So
+I think that when you use cpu/event=instructions_retired/ without
+further qualifications its fine to use that as default name, however
+when you muck about with it reverting to either a raw or explicit name
+is useful.
 
-349 dropped packets in 4 minutes uptime??
+> I think this new syntax is too heavy. Again, all you need to know
+> is the event name + umask + modifiers (inv, cmask, edge, u, k).
+> You can structure the event string to make the tool auto detect
+> which string is pmu vs. event name vs. umask vs. modifier.
 
-[root@test ~]# uname -r
-3.3.2-6.fc16.x86_64
-[root@test ~]# dropwatch -l kas
-Initalizing kallsyms db
-dropwatch> start
-Enabling monitoring...
-Kernel monitoring activated.
-Issue Ctrl-C to stop monitoring
-1 drops at netlink_unicast+1bc
-3 drops at ip_rcv_finish+f0
-1 drops at __netif_receive_skb+583
-1 drops at ip_rcv+d3
-9 drops at ip_rcv_finish+f0
-9 drops at ip_rcv_finish+f0
-1 drops at __netif_receive_skb+583
-6 drops at ip_rcv_finish+f0
-1 drops at nf_hook_slow+12b
-4 drops at ip_rcv_finish+f0
-1 drops at __netif_receive_skb+583
-4 drops at ip_rcv_finish+f0
-1 drops at nf_hook_slow+12b
-3 drops at ip_rcv_finish+f0
-3 drops at nf_hook_slow+12b
-2 drops at __netif_receive_skb+583
-1 drops at ip6_mc_input+1f6
-7 drops at ip_rcv_finish+f0
-1 drops at ip_rcv_finish+f0
-1 drops at netlink_unicast+1bc
-1 drops at skb_queue_purge+20
-2 drops at __netif_receive_skb+583
-1 drops at ip_rcv_finish+f0
-1 drops at nf_hook_slow+12b
-1 drops at ip_rcv_finish+f0
-1 drops at __netif_receive_skb+583
-19 drops at ip_rcv+d3
-2 drops at ip_rcv_finish+f0
-37 drops at ip_rcv+d3
-2 drops at __netif_receive_skb+583
-43 drops at ip_rcv+d3
-5 drops at ip_rcv_finish+f0
-1 drops at __netif_receive_skb+583
-1 drops at nf_hook_slow+12b
-1 drops at ip6_mc_input+1f6
-7 drops at ip_rcv_finish+f0
-39 drops at ip_rcv+d3
-2 drops at ip6_mc_input+1f6
-1 drops at netlink_unicast+1bc
-1 drops at skb_queue_purge+20
-29 drops at ip_rcv+d3
-7 drops at ip_rcv_finish+f0
-2 drops at __netif_receive_skb+583
-2 drops at ip6_mc_input+1f6
-54 drops at ip_rcv+d3
-3 drops at __netif_receive_skb+583
-2 drops at nf_hook_slow+12b
-3 drops at ip_rcv_finish+f0
-1 drops at ip6_mc_input+1f6
-36 drops at ip_rcv+d3
-6 drops at ip_rcv_finish+f0
-2 drops at __netif_receive_skb+583
-1 drops at nf_hook_slow+12b
-1 drops at icmpv6_rcv+305
-37 drops at ip_rcv+d3
-1 drops at __netif_receive_skb+583
-2 drops at ip_rcv_finish+f0
-4 drops at ip_rcv_finish+f0
-39 drops at ip_rcv+d3
-2 drops at __netif_receive_skb+583
-1 drops at netlink_unicast+1bc
-1 drops at skb_queue_purge+20
-1 drops at nf_hook_slow+12b
-38 drops at ip_rcv+d3
-3 drops at __netif_receive_skb+583
-2 drops at ip6_mc_input+1f6
-1 drops at ip_rcv_finish+f0
-46 drops at ip_rcv+d3
-1 drops at __netif_receive_skb+583
-1 drops at ip_rcv_finish+f0
-^CGot a stop message
-dropwatch> exit
-Shutting down ...
-[root@test ~]# ifconfig | grep dropped
-          RX packets:161562 errors:0 dropped:349 overruns:0 frame:0
-          TX packets:2140 errors:0 dropped:0 overruns:0 carrier:0
-          RX packets:4 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:4 errors:0 dropped:0 overruns:0 carrier:0
-[root@test ~]# uptime
- 15:47:00 up 4 min,  3 users,  load average: 0.01, 0.04, 0.03
-[root@test ~]# netstat -s
-Ip:
-    1553 total packets received
-    610 with invalid addresses
-    0 forwarded
-    0 incoming packets discarded
-    345 incoming packets delivered
-    478 requests sent out
-    71 dropped because of missing route
-Icmp:
-    4 ICMP messages received
-    0 input ICMP message failed.
-    ICMP input histogram:
-        echo requests: 2
-        echo replies: 2
-    4 ICMP messages sent
-    0 ICMP messages failed
-    ICMP output histogram:
-        echo request: 2
-        echo replies: 2
-IcmpMsg:
-        InType0: 2
-        InType8: 2
-        OutType0: 2
-        OutType8: 2
-Tcp:
-    1 active connections openings
-    2 passive connection openings
-    0 failed connection attempts
-    0 connection resets received
-    2 connections established
-    2353 segments received
-    2096 segments send out
-    0 segments retransmited
-    0 bad segments received.
-    0 resets sent
-Udp:
-    51 packets received
-    0 packets to unknown port received.
-    0 packet receive errors
-    51 packets sent
-    0 receive buffer errors
-    0 send buffer errors
-UdpLite:
-TcpExt:
-    1 TCP sockets finished time wait in fast timer
-    3 delayed acks sent
-    2 packets directly queued to recvmsg prequeue.
-    2 packets directly received from prequeue
-    2009 packets header predicted
-    165 acknowledgments not containing data received
-    IPReversePathFilter: 82
-IpExt:
-    InMcastPkts: 13
-    InBcastPkts: 60
-    InOctets: 146431
-    OutOctets: 63310
-    InMcastOctets: 416
-    InBcastOctets: 12060
+On Intel yes, what about the rest of the world? The current stuff is
+designed so it works with arbitrary bitmasks.
 
---
-Chris
+Ideally the other arch pmu maintainers would provide suitable format
+descriptions as well where appropriate.
+
+> > In SFO we spoke about exporting those event tables you have in libpfm4
+> > in some structured file format so that we both might use them, the
+> > primary difficulty in that (IIRC) was the umask constraints per event.
+
+> Yes, for now the tables are C tables inside the library. This allows some
+> flexibility. Not all tables have the same format. But you can also express
+> more sophisticated umask constraints. For instance, offcore_response
+> where you need a request umask + a response umask on WSM. On
+> SNB is it even more complicated. Of course, the alternative it just
+> to have a flat list enumerating ALL the possible valid combinations.
+> But you have an explosion with WSM/SNB and offcore_response, though
+> maybe only few dozens do really make sense.
+
+Right, for SNB there's an explicit list of offcore events that's
+'supported' which is significantly shorter than what the bit-encoding
+allows for. See 19.3 table 19-4 (Intel SDM March 2012 edition).
+
+> So I suspect for an extern text file, a flat list would make more sense even
+> though is would take up some memory to hold it. But then we'd have only
+> a couple of tables loaded per process (core, uncore, ...).
+
+Right, but I suspect you can express most of it in JSON. You'd be able
+to associate an event with a MESI umask, or some linear enumeration.
+
+
+> > I've already spoken with Jiri about adding this before all this parser
+> > stuff got implemented, so it should all be quite possible to add.
+> >
+> You mean as you suggested above?
+
+Mostly in general trends without too much detail. From what my memory
+still remembers I think we talked about something like:
+
+If the event= thing has a string instead of number, go to some external
+dictionary and get an event description back, this event description
+might include umask,inv,etc.. bits. If the rest of the explicit event
+specification includes bits that are also part of the event, these
+override.
+
+For example:
+
+ cpu/event=BR_MISP_RETIRED.ALL_BRANCHES,umask=1/
+
+would, from the external dictionary, return: event=0xc5,umask=0, the
+final event will look like: event=0xc5,umask=1 (aka.
+BR_MISP_RETIRED.CONDITIONAL).
+
+But suppose you did:
+
+ cpu/event=BR_MISP_RETIRED/
+
+the dictionary might return a umask object (enumeration in this case),
+if it would not include 0, the above might throw a warning to the user
+about incomplete events. But it could also be used resolve:
+
+ cpu/event=BR_MISP_RETIRED,umask=CONDITIONAL/
+
+[ now arguably my example above is somewhat unfortunate because both
+0x00c5 and 0x04c5 are listed as BR_MISP_RETIRED.ALL_BRANCHES ]
+
+> I tried that 3 weeks ago and as I ran into a major issue having to do
+> with loss of semantic of the terms (event, umask) in the parser code.
+> Also I wonder how the syntax would accomodate umask combinations.
+> The problem is that you need to know that the keyword "event" refers
+> to the event code and "umask" to the event umask. Without that, hard
+> to lookup the event string and umask string properly. You need to know
+> you're looking for an event name vs. a umask name. 
+
+I'm not entirely sure I get this, have the tables have the same names as
+the bitfields described in the format.
+
+{
+	"event" : {
+		"BR_MISP_RETIRED" : {
+			"value" : 0xc5,
+			"umask" : {
+				"ALL_BRANCHES" : 0x00
+				"CONDITIONAL" : 0x01
+				...
+				"NOT_TAKEN" : 0x10
+				"TAKEN" : 0x20
+			}
+		},
+		...	
+	}
+}
+
+> That's regardless
+> of the fact that the table is internal to a library or in an external text file.
+> To work around that, you'd have to ass the content of the syfs format/event
+> file to machine specific code which would recognize the attr  + bit field and
+> determine whether or not this corresponds to an event code or umask. That's
+> pretty ugly. Especially given that I have proof that you don't need to
+> go through
+> all of this to get something working.
+
+I'm really not sure what you mean. You need to know how to encode all
+that, you have cpuid->encoding rules, we have sysfs encoding rules, how
+does that matter?
+
+> The advantage of the library is that is can be used for
+> self-monitoring programs.
+
+If we'd stick the perf parser into a library you get the same, that's
+what libraries are for.. so?
+
+> Therefore the event syntax would remain identical. It can work on
+> non-Linux systems
+> as well. The library is layered between HW and OS.
+
+Uhm, no the library is layered on top of the OS since it runs in
+userspace and needs to use OS provided interfaces to work, it simply
+cannot do anything other. If you want to support other OSs thats fine,
+but completely irrelevant.
+
+If we get this event data in a usable format every OS/software on that
+particular hardware can use the same names provided they use the same
+data-set.
+
+> > Furthermore, once we have a common format, we could even ask Intel/AMD
+> > (and other vendors) to provide their data in this format.
+> >
+> I am already doing that.
+> 
+> I think having external event tables would make it easier for people
+> to customize.
+> It would also decrease the memory footprint but it would probably increase the
+> startup time as you'd have to identify the event table and load it (parse it) on
+> demand. It is definitively something I want to pursue. I already
+> started experimenting
+> with it using JSON for the external file syntax.
+
+You can further reduce the load-time by adding an index/cache on top of
+whatever file-format you use. Also, even if you hard-code this in a C
+file the resulting data+code still needs to be loaded, albeit by the OS.
+
+For all I care someone writes a small compiler to compile the JSON into
+a DSO which you can link to.. really I don't care. What I do care about
+is getting that data in a common usable format.
+
