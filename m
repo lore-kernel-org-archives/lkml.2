@@ -1,57 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759314Ab2DZV7e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 17:59:34 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38145 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758735Ab2DZV7d (ORCPT
+	id S1759465Ab2DZV7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 17:59:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53858 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759412Ab2DZV7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 17:59:33 -0400
-Date: Thu, 26 Apr 2012 22:59:03 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Hiroshi DOYU <hdoyu@nvidia.com>, swarren@nvidia.com,
-        Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3 1/4] ARM: tegra: Add AHB driver
-Message-ID: <20120426215903.GH24211@n2100.arm.linux.org.uk>
-References: <1335352072-4001-1-git-send-email-hdoyu@nvidia.com> <4F99A740.3080407@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F99A740.3080407@wwwdotorg.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 26 Apr 2012 17:59:50 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, fengguang.wu@intel.com,
+        hughd@google.com, akpm@linux-foundation.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 06/11] block: refactor get_request[_wait]()
+Date: Thu, 26 Apr 2012 14:59:16 -0700
+Message-Id: <1335477561-11131-7-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1335477561-11131-1-git-send-email-tj@kernel.org>
+References: <1335477561-11131-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 01:51:28PM -0600, Stephen Warren wrote:
-> On 04/25/2012 05:07 AM, Hiroshi DOYU wrote:
-> > The AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
-> > High-performance Bus (AHB) architecture.
-> > 
-> > The AHB Arbiter controls AHB bus master arbitration. This effectively
-> > forms a second level of arbitration for access to the memory
-> > controller through the AHB Slave Memory device. The AHB pre-fetch
-> > logic can be configured to enhance performance for devices doing
-> > sequential access. Each AHB master is assigned to either the high or
-> > low priority bin. Both Tegra20/30 have this AHB bus.
-> > 
-> > Some of configuration param could be passed from DT too.
-> 
-> I think this code looks reasonable. I'd like to see an ack from Russell,
-> Arnd, and Olof on the final location of the files though.
+Currently, there are two request allocation functions - get_request()
+and get_request_wait().  The former tries to allocate a request once
+and the latter keeps retrying until it succeeds.  The latter wraps the
+former and keeps retrying until allocation succeeds.
 
-Well, the big question which needs answering is whether this AHB software
-interface is something specific to Tegra or whether it really is something
-generic.  There's been some hints in the previous thread that it's
-specific to Tegra, so it may not after all make sense for it to be a
-generic driver.
+The combination of two functions deliver fallible non-wait allocation,
+fallible wait allocation and unfailing wait allocation.  However,
+given that forward progress is guaranteed, fallible wait allocation
+isn't all that useful and in fact nobody uses it.
 
-However, we _have_ decided "no more drivers under arch/arm".  So I really
-don't want to see "struct xxx_driver" appearing in any code under that
-subdirectory or one of its decendents.  I don't have much more to say
-about location than that.
+This patch simplifies the interface as follows.
+
+* get_request() is renamed to __get_request() and is only used by the
+  wrapper function.
+
+* get_request_wait() is renamed to get_request().  It now takes
+  @gfp_mask and retries iff it contains %__GFP_WAIT.
+
+This patch doesn't introduce any functional change and is to prepare
+for further updates to request allocation path.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ block/blk-core.c |   74 +++++++++++++++++++++++++----------------------------
+ 1 files changed, 35 insertions(+), 39 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 6a04dcd..02b6cf8 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -824,7 +824,7 @@ static struct io_context *rq_ioc(struct bio *bio)
+ }
+ 
+ /**
+- * get_request - get a free request
++ * __get_request - get a free request
+  * @q: request_queue to allocate request from
+  * @rw_flags: RW and SYNC flags
+  * @bio: bio to allocate request for (can be %NULL)
+@@ -837,8 +837,8 @@ static struct io_context *rq_ioc(struct bio *bio)
+  * Returns %NULL on failure, with @q->queue_lock held.
+  * Returns !%NULL on success, with @q->queue_lock *not held*.
+  */
+-static struct request *get_request(struct request_queue *q, int rw_flags,
+-				   struct bio *bio, gfp_t gfp_mask)
++static struct request *__get_request(struct request_queue *q, int rw_flags,
++				     struct bio *bio, gfp_t gfp_mask)
+ {
+ 	struct request *rq;
+ 	struct request_list *rl = &q->rq;
+@@ -1016,56 +1016,55 @@ rq_starved:
+ }
+ 
+ /**
+- * get_request_wait - get a free request with retry
++ * get_request - get a free request
+  * @q: request_queue to allocate request from
+  * @rw_flags: RW and SYNC flags
+  * @bio: bio to allocate request for (can be %NULL)
++ * @gfp_mask: allocation mask
+  *
+- * Get a free request from @q.  This function keeps retrying under memory
+- * pressure and fails iff @q is dead.
++ * Get a free request from @q.  If %__GFP_WAIT is set in @gfp_mask, this
++ * function keeps retrying under memory pressure and fails iff @q is dead.
+  *
+  * Must be callled with @q->queue_lock held and,
+  * Returns %NULL on failure, with @q->queue_lock held.
+  * Returns !%NULL on success, with @q->queue_lock *not held*.
+  */
+-static struct request *get_request_wait(struct request_queue *q, int rw_flags,
+-					struct bio *bio)
++static struct request *get_request(struct request_queue *q, int rw_flags,
++				   struct bio *bio, gfp_t gfp_mask)
+ {
+ 	const bool is_sync = rw_is_sync(rw_flags) != 0;
++	DEFINE_WAIT(wait);
++	struct request_list *rl = &q->rq;
+ 	struct request *rq;
++retry:
++	rq = __get_request(q, rw_flags, bio, gfp_mask);
++	if (rq)
++		return rq;
+ 
+-	rq = get_request(q, rw_flags, bio, GFP_NOIO);
+-	while (!rq) {
+-		DEFINE_WAIT(wait);
+-		struct request_list *rl = &q->rq;
+-
+-		if (unlikely(blk_queue_dead(q)))
+-			return NULL;
+-
+-		prepare_to_wait_exclusive(&rl->wait[is_sync], &wait,
+-				TASK_UNINTERRUPTIBLE);
++	if (!(gfp_mask & __GFP_WAIT) || unlikely(blk_queue_dead(q)))
++		return NULL;
+ 
+-		trace_block_sleeprq(q, bio, rw_flags & 1);
++	/* wait on @rl and retry */
++	prepare_to_wait_exclusive(&rl->wait[is_sync], &wait,
++				  TASK_UNINTERRUPTIBLE);
+ 
+-		spin_unlock_irq(q->queue_lock);
+-		io_schedule();
++	trace_block_sleeprq(q, bio, rw_flags & 1);
+ 
+-		/*
+-		 * After sleeping, we become a "batching" process and
+-		 * will be able to allocate at least one request, and
+-		 * up to a big batch of them for a small period time.
+-		 * See ioc_batching, ioc_set_batching
+-		 */
+-		create_io_context(GFP_NOIO, q->node);
+-		ioc_set_batching(q, current->io_context);
++	spin_unlock_irq(q->queue_lock);
++	io_schedule();
+ 
+-		spin_lock_irq(q->queue_lock);
+-		finish_wait(&rl->wait[is_sync], &wait);
++	/*
++	 * After sleeping, we become a "batching" process and will be able
++	 * to allocate at least one request, and up to a big batch of them
++	 * for a small period time.  See ioc_batching, ioc_set_batching
++	 */
++	create_io_context(GFP_NOIO, q->node);
++	ioc_set_batching(q, current->io_context);
+ 
+-		rq = get_request(q, rw_flags, bio, GFP_NOIO);
+-	};
++	spin_lock_irq(q->queue_lock);
++	finish_wait(&rl->wait[is_sync], &wait);
+ 
+-	return rq;
++	goto retry;
+ }
+ 
+ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
+@@ -1075,10 +1074,7 @@ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
+ 	BUG_ON(rw != READ && rw != WRITE);
+ 
+ 	spin_lock_irq(q->queue_lock);
+-	if (gfp_mask & __GFP_WAIT)
+-		rq = get_request_wait(q, rw, NULL);
+-	else
+-		rq = get_request(q, rw, NULL, gfp_mask);
++	rq = get_request(q, rw, NULL, gfp_mask);
+ 	if (!rq)
+ 		spin_unlock_irq(q->queue_lock);
+ 	/* q->queue_lock is unlocked at this point */
+@@ -1467,7 +1463,7 @@ get_rq:
+ 	 * Grab a free request. This is might sleep but can not fail.
+ 	 * Returns with the queue unlocked.
+ 	 */
+-	req = get_request_wait(q, rw_flags, bio);
++	req = get_request(q, rw_flags, bio, GFP_NOIO);
+ 	if (unlikely(!req)) {
+ 		bio_endio(bio, -ENODEV);	/* @q is dead */
+ 		goto out_unlock;
+-- 
+1.7.7.3
+
