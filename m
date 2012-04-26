@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758531Ab2DZQfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 12:35:23 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:54316 "EHLO smtp5-g21.free.fr"
+	id S1758466Ab2DZQhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 12:37:05 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:57433 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758302Ab2DZQfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 12:35:21 -0400
+	id S1757812Ab2DZQhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 12:37:04 -0400
 From: Jim Meyering <jim@meyering.net>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: Josef Bacik <josef@redhat.com>
-Subject: [PATCH] Btrfs: avoid buffer overrun in btrfs_printk
-Date: Thu, 26 Apr 2012 18:35:12 +0200
-Message-ID: <87vckmwiwv.fsf@rho.meyering.net>
+Subject: [PATCH] Btrfs: NUL-terminate path buffer in DEV_INFO ioctl result
+Date: Thu, 26 Apr 2012 18:36:56 +0200
+Message-ID: <87pqauwitz.fsf@rho.meyering.net>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -19,46 +19,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The buffer read-overrun would be triggered by a printk format
-starting with <N>, where N is a single digit.  NUL-terminate
-after strncpy.  Use memcpy, not strncpy, since we know the
-string we're copying fits in the destination buffer and
-contains no NUL byte.
+A device with name of length BTRFS_DEVICE_PATH_NAME_MAX or longer
+would not be NUL-terminated in the DEV_INFO ioctl result buffer.
 
 Signed-off-by: Jim Meyering <meyering@redhat.com>
 ---
- fs/btrfs/super.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/btrfs/ioctl.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index 5ddf172..626f574 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -180,23 +180,24 @@ const char *logtypes[] = {
- void btrfs_printk(struct btrfs_fs_info *fs_info, const char *fmt, ...)
- {
- 	struct super_block *sb = fs_info->sb;
- 	char lvl[4];
- 	struct va_format vaf;
- 	va_list args;
- 	const char *type = logtypes[4];
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 18cc23d..1578676 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -2258,16 +2258,17 @@ static long btrfs_ioctl_dev_info(struct btrfs_root *root, void __user *arg)
+ 		goto out;
+ 	}
 
- 	va_start(args, fmt);
+ 	di_args->devid = dev->devid;
+ 	di_args->bytes_used = dev->bytes_used;
+ 	di_args->total_bytes = dev->total_bytes;
+ 	memcpy(di_args->uuid, dev->uuid, sizeof(di_args->uuid));
+ 	strncpy(di_args->path, dev->name, sizeof(di_args->path));
++	di_args->path[sizeof(di_args->path) - 1] = 0;
 
- 	if (fmt[0] == '<' && isdigit(fmt[1]) && fmt[2] == '>') {
--		strncpy(lvl, fmt, 3);
-+		memcpy(lvl, fmt, 3);
-+		lvl[3] = '\0';
- 		fmt += 3;
- 		type = logtypes[fmt[1] - '0'];
- 	} else
- 		*lvl = '\0';
+ out:
+ 	if (ret == 0 && copy_to_user(arg, di_args, sizeof(*di_args)))
+ 		ret = -EFAULT;
 
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
- 	printk("%sBTRFS %s (device %s): %pV", lvl, type, sb->s_id, &vaf);
+ 	kfree(di_args);
+ 	return ret;
  }
-
- /*
 --
 1.7.10.336.gc5e31
