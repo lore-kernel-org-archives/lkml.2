@@ -1,121 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab2DZNfI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 09:35:08 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:49697 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756001Ab2DZNfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 09:35:06 -0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-To: Linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Michael Tokarev <mjt@tls.msk.ru>,
-        Linus Torvalds <torvalds@linux-foundation.org>, autofs@vger.kernel.org,
-        Ian Kent <raven@themaw.net>, Thomas Meyer <thomas@m3y3r.de>,
-        stable@kernel.org
-Subject: [PATCH v2] Introduce a version6 of autofs interface, to fix design error.
-Date: Thu, 26 Apr 2012 17:34:49 +0400
-Message-Id: <1335447289-9909-1-git-send-email-mjt@msgid.tls.msk.ru>
-X-Mailer: git-send-email 1.7.10
+	id S1756768Ab2DZNmP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 09:42:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60896 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab2DZNmO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 09:42:14 -0400
+Date: Thu, 26 Apr 2012 06:42:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: puzzleduck@gmail.com
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>, wgreathouse@smva.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: serial: Changes to conform with coding style
+Message-ID: <20120426134209.GA3121@kroah.com>
+References: <1335432664-4587-1-git-send-email-puzzleduck@gmail.com>
+ <4F994295.8010507@mvista.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F994295.8010507@mvista.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a new autofs interface version, v6, which
-is exactly the same as v5 but uses better defined packet structure
-which does not change between architectures or platform bitness.
-Old interface is supported still.
+On Thu, Apr 26, 2012 at 04:41:57PM +0400, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 26-04-2012 13:31, puzzleduck@gmail.com wrote:
+> 
+> >From: PuZZleDucK<puzzleduck@gmail.com>
+> 
+> >Removed some spaces before tabs and reformatted switch statement.
+> 
+> >Signed-off-by: PuZZleDucK<puzzleduck@gmail.com>
+> 
+>    Real name is needed here, no aliases allowed.
 
-Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Ian Kent <raven@themaw.net>
-Cc: Thomas Meyer <thomas@m3y3r.de>
-Cc: stable@kernel.org
----
- fs/autofs4/waitq.c       |    6 ++++--
- include/linux/auto_fs4.h |   31 +++++++++++++++++++++++++++----
- 2 files changed, 31 insertions(+), 6 deletions(-)
+I agree, please see Documentation/SubmittingPatches for what
+"Signed-off-by:" means, and why we can't accept this as-is.
 
-diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
-index da8876d..97866e8 100644
---- a/fs/autofs4/waitq.c
-+++ b/fs/autofs4/waitq.c
-@@ -145,7 +145,7 @@ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
- 		break;
- 	}
- 	/*
--	 * Kernel protocol v5 packet for handling indirect and direct
-+	 * Kernel protocol v5/v6 packet for handling indirect and direct
- 	 * mount missing and expire requests
- 	 */
- 	case autofs_ptype_missing_indirect:
-@@ -155,7 +155,9 @@ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
- 	{
- 		struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
- 
--		pktsz = sizeof(*packet);
-+		pktsz = (sbi->version == 5) ?
-+			sizeof(struct autofs_v5_bad_packet) :
-+			sizeof(struct autofs_v5_packet);
- 
- 		packet->wait_queue_token = wq->wait_queue_token;
- 		packet->len = wq->name.len;
-diff --git a/include/linux/auto_fs4.h b/include/linux/auto_fs4.h
-index e02982f..fdef141 100644
---- a/include/linux/auto_fs4.h
-+++ b/include/linux/auto_fs4.h
-@@ -20,11 +20,11 @@
- #undef AUTOFS_MIN_PROTO_VERSION
- #undef AUTOFS_MAX_PROTO_VERSION
- 
--#define AUTOFS_PROTO_VERSION		5
-+#define AUTOFS_PROTO_VERSION		6
- #define AUTOFS_MIN_PROTO_VERSION	3
--#define AUTOFS_MAX_PROTO_VERSION	5
-+#define AUTOFS_MAX_PROTO_VERSION	6
- 
--#define AUTOFS_PROTO_SUBVERSION		2
-+#define AUTOFS_PROTO_SUBVERSION		0
- 
- /* Mask for expire behaviour */
- #define AUTOFS_EXP_IMMEDIATE		1
-@@ -126,7 +126,7 @@ union autofs_packet_union {
- 	struct autofs_packet_expire_multi expire_multi;
- };
- 
--/* autofs v5 common packet struct */
-+/* autofs v5/v6 common packet struct */
- struct autofs_v5_packet {
- 	struct autofs_packet_hdr hdr;
- 	autofs_wqt_t wait_queue_token;
-@@ -138,6 +138,29 @@ struct autofs_v5_packet {
- 	__u32 tgid;
- 	__u32 len;
- 	char name[NAME_MAX+1];
-+
-+	/* padding to make
-+	 *   sizeof(autofs_v5_packet) % sizeof(__u64) == 0
-+	 * on all arches */
-+	char _pad[4];
-+};
-+
-+/* earlier kernel interface used this structure for v5 packet,
-+ * which is exactly the same as autofs_v5_packet above
-+ * but does not have padding at the end.  The result was that
-+ * sizeof it was 300 bytes on x86-32 and 304 bytes on x86-64.
-+ * We keep it for compatibility with older userspace. */
-+struct autofs_v5_bad_packet {
-+	struct autofs_packet_hdr hdr;
-+	autofs_wqt_t wait_queue_token;
-+	__u32 dev;
-+	__u64 ino;
-+	__u32 uid;
-+	__u32 gid;
-+	__u32 pid;
-+	__u32 tgid;
-+	__u32 len;
-+	char name[NAME_MAX+1];
- };
- 
- typedef struct autofs_v5_packet autofs_packet_missing_indirect_t;
--- 
-1.7.10
-
+greg k-h
