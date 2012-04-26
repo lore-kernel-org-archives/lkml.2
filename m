@@ -1,151 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759502Ab2DZWBd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 18:01:33 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:42415 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759448Ab2DZV7w (ORCPT
+	id S1759526Ab2DZWBh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 18:01:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60159 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755408Ab2DZWBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 17:59:52 -0400
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk
-Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, fengguang.wu@intel.com,
-        hughd@google.com, akpm@linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/11] block: allocate io_context upfront
-Date: Thu, 26 Apr 2012 14:59:17 -0700
-Message-Id: <1335477561-11131-8-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1335477561-11131-1-git-send-email-tj@kernel.org>
-References: <1335477561-11131-1-git-send-email-tj@kernel.org>
+	Thu, 26 Apr 2012 18:01:33 -0400
+Subject: Re: [PATCH RFC tip/core/rcu 6/6] rcu: Reduce cache-miss
+ initialization latencies for large systems
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+In-Reply-To: <20120426202828.GK2407@linux.vnet.ibm.com>
+References: <20120423164159.GA13819@linux.vnet.ibm.com>
+	 <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1335199347-13926-6-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1335444707.13683.14.camel@twins>
+	 <20120426141213.GB2407@linux.vnet.ibm.com>
+	 <1335454137.13683.95.camel@twins>
+	 <20120426161509.GE2407@linux.vnet.ibm.com>
+	 <1335469319.2463.97.camel@laptop>
+	 <20120426202828.GK2407@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 Apr 2012 00:01:25 +0200
+Message-ID: <1335477685.2463.128.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Block layer very lazy allocation of ioc.  It waits until the moment
-ioc is absolutely necessary; unfortunately, that time could be inside
-queue lock and __get_request() performs unlock - try alloc - retry
-dancing.
+On Thu, 2012-04-26 at 13:28 -0700, Paul E. McKenney wrote:
+> Interesting!  A few probably clueless questions and comments below.
 
-Just allocate it up-front on entry to block layer.  We're not saving
-the rain forest by deferring it to the last possible moment and
-complicating things unnecessarily.
+Thanks, shows me where to put comments in :-)
 
-This patch is to prepare for further updates to request allocation
-path.
+> > +static void sched_init_numa(void)
+> > +{
+> > +     int next_distance, curr_distance = node_distance(0, 0);
+> > +     struct sched_domain_topology_level *tl;
+> > +     int level = 0;
+> > +     int i, j, k;
+> > +
+> > +     sched_domains_numa_scale = curr_distance;
+> > +     sched_domains_numa_distance = kzalloc(sizeof(int) * nr_node_ids, GFP_KERNEL);
+> > +     if (!sched_domains_numa_distance)
+> > +             return;
+> > +
+> > +     next_distance = curr_distance;
+> > +     for (i = 0; i < nr_node_ids; i++) {
+> > +             for (j = 0; j < nr_node_ids; j++) {
+> > +                     int distance = node_distance(0, j);
+> 
+> Shouldn't this be "node_distance(i, j)"?
+> 
+> Actually, I don't see any use of "i" in this loop anywhere, which seems
+> strange.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- block/blk-core.c     |   42 +++++++++++++++---------------------------
- block/blk-throttle.c |    3 ---
- 2 files changed, 15 insertions(+), 30 deletions(-)
+It assumes all distances in node_distance(i,j) occur in
+node_distance(0,j). This to avoid a cubic loop.
+             
+> > +                     if (distance > curr_distance &&
+> > +                                     (distance < next_distance ||
+> > +                                      next_distance == curr_distance))
+> > +                             next_distance = distance;
+> > +             }
+> > +             if (next_distance != curr_distance) {
+> > +                     sched_domains_numa_distance[level++] = next_distance;
+> > +                     sched_domains_numa_levels = level;
+> 
+> I don't understand the intent here.  One approach would be to have
+> one sched_domains_numa_distance[] array per node, with distances
+> in each array sorted by increasing distance from the array's node.
+> 
+> As it is, I believe you get N copies of the sorted distances from
+> node 0 in an array that is only guaranteed to be big enough for 1 copy.
+> Unless you know something about the node_distance() matrix that limits
+> the number of distinct values.
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 02b6cf8..242bf9e 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -842,15 +842,11 @@ static struct request *__get_request(struct request_queue *q, int rw_flags,
- {
- 	struct request *rq;
- 	struct request_list *rl = &q->rq;
--	struct elevator_type *et;
--	struct io_context *ioc;
-+	struct elevator_type *et = q->elevator->type;
-+	struct io_context *ioc = rq_ioc(bio);
- 	struct io_cq *icq = NULL;
- 	const bool is_sync = rw_is_sync(rw_flags) != 0;
--	bool retried = false;
- 	int may_queue;
--retry:
--	et = q->elevator->type;
--	ioc = rq_ioc(bio);
- 
- 	if (unlikely(blk_queue_dead(q)))
- 		return NULL;
-@@ -862,20 +858,6 @@ retry:
- 	if (rl->count[is_sync]+1 >= queue_congestion_on_threshold(q)) {
- 		if (rl->count[is_sync]+1 >= q->nr_requests) {
- 			/*
--			 * We want ioc to record batching state.  If it's
--			 * not already there, creating a new one requires
--			 * dropping queue_lock, which in turn requires
--			 * retesting conditions to avoid queue hang.
--			 */
--			if (!ioc && !retried) {
--				spin_unlock_irq(q->queue_lock);
--				create_io_context(gfp_mask, q->node);
--				spin_lock_irq(q->queue_lock);
--				retried = true;
--				goto retry;
--			}
--
--			/*
- 			 * The queue will fill after this allocation, so set
- 			 * it as full, and mark this process as "batching".
- 			 * This process will be allowed to complete a batch of
-@@ -942,12 +924,8 @@ retry:
- 	/* init elvpriv */
- 	if (rw_flags & REQ_ELVPRIV) {
- 		if (unlikely(et->icq_cache && !icq)) {
--			create_io_context(gfp_mask, q->node);
--			ioc = rq_ioc(bio);
--			if (!ioc)
--				goto fail_elvpriv;
--
--			icq = ioc_create_icq(ioc, q, gfp_mask);
-+			if (ioc)
-+				icq = ioc_create_icq(ioc, q, gfp_mask);
- 			if (!icq)
- 				goto fail_elvpriv;
- 		}
-@@ -1058,7 +1036,6 @@ retry:
- 	 * to allocate at least one request, and up to a big batch of them
- 	 * for a small period time.  See ioc_batching, ioc_set_batching
- 	 */
--	create_io_context(GFP_NOIO, q->node);
- 	ioc_set_batching(q, current->io_context);
- 
- 	spin_lock_irq(q->queue_lock);
-@@ -1073,6 +1050,9 @@ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
- 
- 	BUG_ON(rw != READ && rw != WRITE);
- 
-+	/* create ioc upfront */
-+	create_io_context(gfp_mask, q->node);
-+
- 	spin_lock_irq(q->queue_lock);
- 	rq = get_request(q, rw, NULL, gfp_mask);
- 	if (!rq)
-@@ -1684,6 +1664,14 @@ generic_make_request_checks(struct bio *bio)
- 		goto end_io;
- 	}
- 
-+	/*
-+	 * Various block parts want %current->io_context and lazy ioc
-+	 * allocation ends up trading a lot of pain for a small amount of
-+	 * memory.  Just allocate it upfront.  This may fail and block
-+	 * layer knows how to live with it.
-+	 */
-+	create_io_context(GFP_ATOMIC, q->node);
-+
- 	if (blk_throtl_bio(q, bio))
- 		return false;	/* throttled, will be resubmitted later */
- 
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index e00e9c2..dce5132 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -1123,9 +1123,6 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 		goto out;
- 	}
- 
--	/* bio_associate_current() needs ioc, try creating */
--	create_io_context(GFP_ATOMIC, q->node);
--
- 	/*
- 	 * A throtl_grp pointer retrieved under rcu can be used to access
- 	 * basic fields like stats and io rates. If a group has no rules,
--- 
-1.7.7.3
+Note this is in the 'i' loop, not in the nested i,j loop. The nested
+loop finds the next smallest distance, the outer loop records it.
+
+> > +                     curr_distance = next_distance;
+> > +             } else break;
+> > +     }
+> 
+> The above loop seems to be doing a selection sort eliminating duplicates.
+
+Correct, and leaving out the identity distance, see below.
+
+> Would it make sense to put a real sort implementation into lib/?
+
+There's a heapsort in lib/sort.c. And I guess we could write the whole
+lot in 3 stages, 1) dump node_distance(0,i) in an array, 2) sort array,
+3) remove duplicates from array, but I was lazy and did the O(n^2)
+thing.
+
+So we have 'level' be the number of unique distances larger than the
+identity distance node_distance(i,i) -- in specific (0,0). And
+sched_domains_numa_distance[0..level-1] be the array recording the
+specific distance numbers.
+
+> > +
+> > +     sched_domains_numa_masks = kzalloc(sizeof(void *) * level, GFP_KERNEL);
+> > +     if (!sched_domains_numa_masks)
+> > +             return;
+> > +
+> > +     for (i = 0; i < level; i++) {
+> > +             sched_domains_numa_masks[i] = alloc_percpu(cpumask_t);
+> > +             if (!sched_domains_numa_masks[i])
+> > +                     return;
+> > +
+> > +             for_each_possible_cpu(j) {
+> > +                     struct cpumask *mask =
+> > +                             per_cpu_ptr(sched_domains_numa_masks[i], j);
+> > +
+> > +                     for (k = 0; k < nr_node_ids; k++) {
+> > +                             if (node_distance(cpu_to_node(j), k) >
+> > +                                             sched_domains_numa_distance[i])
+> > +                                     continue;
+> > +
+> > +                             cpumask_or(mask, mask, cpumask_of_node(k));
+> > +                     }
+> > +             }
+> > +     }
+> 
+> OK, if we can assume that the node distances are symmetric, so that
+> node_distance(i, j) == node_distance(j, i), 
+
+Yeah, I do assume that, not quite sure this is true, but we'll see. I'll
+have to ask someone at SGI/HP/etc. for node_distance() tables for
+'interesting' hardware.
+
+> I think I see what you
+> are getting at, though I am having a hard time seeing how to pack
+> it into a linear array.
+
+Yeah, I'm not sure you can either. Hence me building a tree ;-) But you
+too have a tree, its tree-rcu after all.
+
+> The idea seems to be to compute a per-CPU list of CPU masks, with the first
+> entry having bits set for the CPUs closest to the CPU corresponding to
+> the list, and subsequent entries adding more-distant CPUs.  The last
+> CPU mask would presumably have bits set for all CPUs.
+
+Indeed. So the scheduler already knows about nodes (included in the
+default_topology thing), here we're constructing masks spanning nodes
+based on distance.
+
+So the first level is all nodes that are directly connected, the second
+level are all nodes that have one intermediate hop, etc.. with indeed
+the last level being the entire machine.
+
+> I take it that there is no data structure listing per-node CPU masks,
+> indicating which CPUs are members of a given node?  Or is something else
+> going on here?
+
+There is, its cpumask_of_node(), you'll find it used in the above
+code :-) We do the for_each_cpu loop because we need the mask per-node
+and there's no such thing as per-node memory so we fudge it using
+per-cpu memory.
+
+This could be optimized to reduce overhead if this all turns out to work
+well.
+
+So in short: for every 'i < level', for every cpu, we build a mask of
+which cpus are '<= i' hops away from our current node.
+
+> > +
+> > +     tl = kzalloc((ARRAY_SIZE(default_topology) + level) *
+> > +                     sizeof(struct sched_domain_topology_level), GFP_KERNEL);
+> > +     if (!tl)
+> > +             return;
+> > +
+> > +     for (i = 0; default_topology[i].init; i++)
+> > +             tl[i] = default_topology[i];
+> > +
+> > +     for (j = 0; j < level; i++, j++) {
+> > +             tl[i] = (struct sched_domain_topology_level){
+> 
+> tl[j]?
+
+No, [i]. See how we allocate an array of ARRAY_SIZE(default_topology) +
+level, then copy the default topology array then continue i by j
+additional levels.
+
+> > +                     .init = sd_init_NUMA,
+> > +                     .mask = sd_numa_mask,
+> > +                     .flags = SDTL_OVERLAP,
+> > +                     .numa_level = j,
+> > +             };
+> > +     }
+> > +
+> > +     sched_domain_topology = tl;
+> > +} 
 
