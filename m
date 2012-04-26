@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab2DZRaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 13:30:05 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:58820 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753632Ab2DZRaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 13:30:02 -0400
-Date: Thu, 26 Apr 2012 10:28:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 4/6] rcu: Clarify help text for
- RCU_BOOST_PRIO
-Message-ID: <20120426172859.GF2407@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120423164159.GA13819@linux.vnet.ibm.com>
- <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1335199347-13926-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <1335444391.13683.11.camel@twins>
+	id S1754243Ab2DZRbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 13:31:39 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:64986 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752161Ab2DZRbh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 13:31:37 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-132.messagelabs.com!1335461436!9781909!48
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] NFC: nci/data.c: quiet sparse noise about plain integer as NULL pointer
+Date: Thu, 26 Apr 2012 10:31:16 -0700
+User-Agent: KMail/1.9.9
+CC: <netdev@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        <lauro.venancio@openbossa.org>, <aloisio.almeida@openbossa.org>,
+        <sameo@linux.intel.com>, <davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1335444391.13683.11.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042617-5806-0000-0000-000014A4A448
+Message-ID: <201204261031.16737.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 02:46:31PM +0200, Peter Zijlstra wrote:
-> On Mon, 2012-04-23 at 09:42 -0700, Paul E. McKenney wrote:
-> > +         This option specifies the real-time priority to which long-term
-> > +         preempted RCU readers are to be boosted.  If you are working
-> > +         with a real-time application that has one or more CPU-bound
-> > +         threads running at a real-time priority level,
-> 
-> Then your application is broken ;-) the kernel is known to mis-behave
-> under these circumstances since it doesn't get to run house-keeping
-> tasks. RCU is just one of these and elevating it doesn't make it work.
+Pointers should be cleared with NULL, not 0.
 
-As you say, CPU-bound RT tasks have a number of problems, and RCU is but
-one of them.  That said, an RCU-induced memory-exhaustion system hang
-is an extremely unfriendly diagnostic message, and use of RCU priority
-boosting allows them a better debugging environment.
+Quiets a couple sparse warnings of the type:
 
-> >  you should set
-> > +         RCU_BOOST_PRIO to a priority higher then the highest-priority
-> > +         real-time CPU-bound thread.  The default RCU_BOOST_PRIO value
-> > +         of 1 is appropriate in the common case, which is real-time
-> > +         applications that do not have any CPU-bound threads.
-> 
-> Alternatively, 1 is the worst possible choice forcing people to consider
-> the issue.
+warning: Using plain integer as NULL pointer
 
-You say that as if forcing people to consider the issue was a
-bad thing.  ;-)
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
+Cc: Aloisio Almeida Jr <aloisio.almeida@openbossa.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>
 
-> > +         Some real-time applications might not have a single real-time
-> > +         thread that saturates a given CPU, but instead might have
-> > +         multiple real-time threads that, taken together, fully utilize
-> > +         that CPU.  In this case, you should set RCU_BOOST_PRIO to
-> > +         a priority higher than the lowest-priority thread that is
-> > +         conspiring to prevent the CPU from running any non-real-time
-> > +         tasks.  For example, if one thread at priority 10 and another
-> > +         thread at priority 5 are between themselves fully consuming
-> > +         the CPU time on a given CPU, then RCU_BOOST_PRIO should be
-> > +         set to priority 6 or higher. 
-> 
-> I'd call this misleading, who's to say that preempting the 5 would yield
-> enough time to complete the RCU work?
+---
 
-Yep, hence the "or higher".
-
-> This all gets us back to the fun question of RCU delayed bandwidth
-> budgeting.. ideally every 'task' that does call_rcu() should donate some
-> of its budget towards the thread running the callback.
-
-There was an academic interested in that topic a few years ago, but
-I don't believe anything came of it.  An interesting approach would
-be to do EDF scheduling on the callbacks themselves, but having a
-separate thread for each callback sounds like overkill.
-
-> Anyway, I'd argue both the old and new description are bonkers.
-
-Indeed, my goal was "less bonkers" rather than "not bonkers".  A
-"not bonkers" description remains a long-term aspiration rather than
-a short-term goal for the moment.  I can only hope that the timeframe
-is shorter than it was for RCU back in the early 1990s.  ;-)
-
-							Thanx, Paul
-
+diff --git a/net/nfc/nci/data.c b/net/nfc/nci/data.c
+index a0bc326..76c48c5 100644
+--- a/net/nfc/nci/data.c
++++ b/net/nfc/nci/data.c
+@@ -49,7 +49,7 @@ void nci_data_exchange_complete(struct nci_dev *ndev, struct sk_buff *skb,
+ 
+ 	if (cb) {
+ 		ndev->data_exchange_cb = NULL;
+-		ndev->data_exchange_cb_context = 0;
++		ndev->data_exchange_cb_context = NULL;
+ 
+ 		/* forward skb to nfc core */
+ 		cb(cb_context, skb, err);
+@@ -200,10 +200,10 @@ static void nci_add_rx_data_frag(struct nci_dev *ndev,
+ 			pr_err("error adding room for accumulated rx data\n");
+ 
+ 			kfree_skb(skb);
+-			skb = 0;
++			skb = NULL;
+ 
+ 			kfree_skb(ndev->rx_data_reassembly);
+-			ndev->rx_data_reassembly = 0;
++			ndev->rx_data_reassembly = NULL;
+ 
+ 			err = -ENOMEM;
+ 			goto exit;
+@@ -216,7 +216,7 @@ static void nci_add_rx_data_frag(struct nci_dev *ndev,
+ 
+ 		/* third, free old reassembly */
+ 		kfree_skb(ndev->rx_data_reassembly);
+-		ndev->rx_data_reassembly = 0;
++		ndev->rx_data_reassembly = NULL;
+ 	}
+ 
+ 	if (pbf == NCI_PBF_CONT) {
