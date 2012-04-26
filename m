@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab2DZNXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 09:23:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15492 "EHLO mx1.redhat.com"
+	id S1753090Ab2DZN0u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 09:26:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40173 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752418Ab2DZNXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 09:23:05 -0400
-Date: Thu, 26 Apr 2012 15:22:03 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Roland McGrath <roland@hack.frob.com>
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120426132203.GA14401@redhat.com>
-References: <20120425030659.GE6871@ZenIV.linux.org.uk> <20120425123746.GA15560@redhat.com> <20120425125042.GF6871@ZenIV.linux.org.uk> <20120425130329.GA16413@redhat.com> <20120425133238.GG6871@ZenIV.linux.org.uk> <20120425145239.GA21386@redhat.com> <20120425154611.GA23672@redhat.com> <20120425161002.GH6871@ZenIV.linux.org.uk> <20120425170230.GA24977@redhat.com> <20120425175113.GI6871@ZenIV.linux.org.uk>
+	id S1751836Ab2DZN0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 09:26:49 -0400
+Date: Thu, 26 Apr 2012 15:26:08 +0200
+From: Jan Kara <jack@suse.cz>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        swhiteho@redhat.com
+Subject: Re: [PATCH 0/6] Get rid of I_MUTEX_QUOTA use
+Message-ID: <20120426132608.GA10368@quack.suse.cz>
+References: <1335387467-4928-1-git-send-email-jack@suse.cz>
+ <20120425212532.GB3251@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120425175113.GI6871@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120425212532.GB3251@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25, Al Viro wrote:
->
-> do_signal()
-> {
-> 	if (we have any business doing restarts)
-> 		// note: we won't get here on subsequent calls of do_signal()
-> 		// due to the checks above; same logics that currently prevents
-> 		// double restarts
-> 		set NEED_RESTART flag
-> 	sig = get_signal_to_deliver(...)
-> 	if (sig) {
-> 		if (NEED_RESTART set) {
-> 			clear NEED_RESTART
-> 			same thing we do at that spot now - restart or EINTR
-> 			handle_signal(...)
-> 			...
-> 			return;
-> 		}
-> 	}
-> 	/* no handler */
-> 	if (test_and_clear_...(RESTORE_SIGMASK))
-> 		set_current_blocked(&current->saved_sigmask);
-> }
+On Wed 25-04-12 17:25:32, J. Bruce Fields wrote:
+> On Wed, Apr 25, 2012 at 10:57:41PM +0200, Jan Kara wrote:
+> > 
+> >   Hello,
+> > 
+> >   this patch set changes generic quota code (and filesystems relying on it)
+> > so that they don't use special locking class I_MUTEX_QUOTA. The only remaining
+> > user of I_MUTEX_QUOTA is GFS2. If noone has objections, I can merge these
+> > patches through my tree or Bruce, you can take them as your work depends
+> > on these changes.
+> 
+> My changes will likely need to go through Al, and depend on GFS2 being
+> fixed as well.
+> 
+> So it's up to Al.  Best might be to just merge it through your tree and
+> let us sort it out in the next merge window?
+  OK, I've added patches to my tree for now. I also sent a patch for GFS2
+but after some investigation that's mostly a cleanup grade and Steven can
+merge it independently. Quota inode in GFS2 is hidden system file so there
+should be no locking problems with it wrt your patches.
 
-OK,
-
-> and in asm glue,
-
-Ah. So we are going to change the ret_from_sys_call-like code.
-
-> check
-> NEED_RESTART and if it's set do what we currently do for restarts on
-> handlerless signal.
-
-and probably we should clear NEED_RESTART?
-
-OK, thanks, I am starting to understand.
-
-However. Perhaps I missed something, but this doesn't look 100% correct.
-Although even _if_ I am right I guess this is pure theoretical problem.
-
-Suppose that we restart the syscall which returned ERESTARTNOHAND. I mean,
-the task has already returned to the user-mode and CPU is going to execute
-the syscall insn.
-
-What if, say, reschedule interrupt comes before the task enters the kernel
-again? The new signal can come before this task returns to the user-mode,
-ret_from_intr: will notice it and it is still possible to run a signal
-handler before re-entering the syscall.
-
-No?
-
-Oleg.
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
