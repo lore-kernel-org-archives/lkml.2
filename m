@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758920Ab2DZUBm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 16:01:42 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33228 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab2DZUBk (ORCPT
+	id S1759241Ab2DZUIP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 16:08:15 -0400
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:39298 "EHLO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759219Ab2DZUIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 16:01:40 -0400
-Message-ID: <4F99A9A0.1030304@wwwdotorg.org>
-Date: Thu, 26 Apr 2012 14:01:36 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 26 Apr 2012 16:08:11 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 1/3] ARM: omap2+: set IRQCHIP_SKIP_SET_WAKE for INTC interrupts.
+Organization: Texas Instruments, Inc.
+References: <20120425025637.7832.14013.stgit@notabene.brown>
+	<20120425030524.7832.52047.stgit@notabene.brown>
+Date: Thu, 26 Apr 2012 13:08:08 -0700
+In-Reply-To: <20120425030524.7832.52047.stgit@notabene.brown> (NeilBrown's
+	message of "Wed, 25 Apr 2012 13:05:24 +1000")
+Message-ID: <87sjfq9ryv.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Hiroshi DOYU <hdoyu@nvidia.com>
-CC: swarren@nvidia.com, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Simon Glass <sjg@chromium.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 4/4] ARM: dt: tegra: Add device tree support for AHB
-References: <1335352072-4001-1-git-send-email-hdoyu@nvidia.com> <1335352072-4001-4-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1335352072-4001-4-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 05:07 AM, Hiroshi DOYU wrote:
-> Add AHB entry for tegra20/30.
+NeilBrown <neilb@suse.de> writes:
 
-> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+> All interrupts can wake-from-sleep (I think) so it should be
+> permissible to call enable_irq_wake().  Setting this flag allows that.
+>
+> It is needed because without this, an interrupt which is delivered
+> during late suspend will get ignored but will not cause suspend to
+> abort.
+> If enable_irq_wake() is called and succeeds, check_wakuep_irqs()
+> will abort the suspend if the interrupt has fired.
+>
+> Signed-off-by: NeilBrown <neilb@suse.de>
 
-> +	ahb: ahb@6000c004 {
-> +		compatible = "nvidia,tegra30-ahb", "nvidia,tegra20-ahb";
+Acked-by: Kevin Hilman <khilman@ti.com>
 
-This should only be tegra20-ahb in the Tegra20 file.
+Tony, should I queue this one in my OMAP PM features for v3.5 branch?
+or do you want to take it?
+
+Kevin
