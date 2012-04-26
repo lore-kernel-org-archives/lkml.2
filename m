@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab2DZS0y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 14:26:54 -0400
-Received: from relay.parallels.com ([195.214.232.42]:58272 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756893Ab2DZS0x convert rfc822-to-8bit (ORCPT
+	id S1758844Ab2DZSaX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 14:30:23 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:35219 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756893Ab2DZSaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 14:26:53 -0400
-Message-ID: <4F99936B.2050507@parallels.com>
-Date: Thu, 26 Apr 2012 22:26:51 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Thu, 26 Apr 2012 14:30:21 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-131.messagelabs.com!1335465012!2965336!28
+X-Originating-IP: [216.166.12.99]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] IPVS: ip_vs_sync.c: local functions should not be exposed globally
+Date: Thu, 26 Apr 2012 11:29:53 -0700
+User-Agent: KMail/1.9.9
+CC: <netdev@vger.kernel.org>, <davem@davemloft.net>
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 2/3] SUNRPC: traverse clients tree on PipeFS event
-References: <20120420141419.10848.84280.stgit@localhost6.localdomain6>  <20120420141925.10848.90395.stgit@localhost6.localdomain6> <1335463902.9701.35.camel@lade.trondhjem.org>
-In-Reply-To: <1335463902.9701.35.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204261129.53927.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-26.04.2012 22:11, Myklebust, Trond написал:
-> On Fri, 2012-04-20 at 18:19 +0400, Stanislav Kinsbursky wrote:
->
->> +static int __rpc_pipefs_event(struct rpc_clnt *clnt, unsigned long event,
->> +				struct super_block *sb)
->> +{
->> +	int error;
->> +
->> +	if (!rpc_clnt_skip_event(clnt, event)) {
->> +		error = __rpc_clnt_handle_event(clnt, event, sb);
->> +		if (error)
->> +			return error;
->> +	}
->> +	if (clnt != clnt->cl_parent)
->> +		return __rpc_pipefs_event(clnt->cl_parent, event, sb);
->> +	return 0;
->> +}
-> Hi Stanislav,
->
-> Recursion in the kernel is generally frowned upon due to the stack size
-> limits. Could you please rewrite the above into a simple loop. Something
-> along the lines of:
->
-> 	for(;;) {
-> 		...
->
-> 		if (clnt == clnt->cl_parent)
-> 			break;
-> 		clnt = clnt->cl_parent;
-> 	}
->
+Functions not referenced outside of a source file should be marked
+static to prevent it from being exposed globally.
 
-Hi, Trond.
-Yes, sure, I can do this.
+This quiets the sparse warnings:
+
+warning: symbol 'ip_vs_sync_conn_v0' was not declared. Should it be static?
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+
+---
+
+diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
+index bf5e538..49a1fe8 100644
+--- a/net/netfilter/ipvs/ip_vs_sync.c
++++ b/net/netfilter/ipvs/ip_vs_sync.c
+@@ -446,7 +446,7 @@ ip_vs_sync_buff_create_v0(struct netns_ipvs *ipvs)
+  *      Version 0 , could be switched in by sys_ctl.
+  *      Add an ip_vs_conn information into the current sync_buff.
+  */
+-void ip_vs_sync_conn_v0(struct net *net, struct ip_vs_conn *cp)
++static void ip_vs_sync_conn_v0(struct net *net, struct ip_vs_conn *cp)
+ {
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+ 	struct ip_vs_sync_mesg_v0 *m;
