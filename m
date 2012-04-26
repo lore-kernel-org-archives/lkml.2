@@ -1,95 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758680Ab2DZSK1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 14:10:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33616 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758402Ab2DZSKZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 14:10:25 -0400
-X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=MLDgm-O3WeIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=KKAkSRfTAAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=u2j2EDpHsvSPNYeGFAoA:9 a=PUjeQqilurYA:10 a=DHQQ7jDAcw4A:10 a=WwgC8nHKvroA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1335463819.28106.187.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] timer: Fix mod_timer_pinned() header commen (was:
- [PATCH RFC tip/core/rcu 4/4] rcu: Ensure that RCU_FAST_NO_HZ timers expire
- on correct CPU)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Date: Thu, 26 Apr 2012 14:10:19 -0400
-In-Reply-To: <20120426175608.GG2407@linux.vnet.ibm.com>
-References: <20120423161539.GA6467@linux.vnet.ibm.com>
-	 <1335197761-6577-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335197761-6577-4-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335445496.13683.21.camel@twins>
-	 <20120426155450.GD2407@linux.vnet.ibm.com>
-	 <1335456539.28106.185.camel@gandalf.stny.rr.com>
-	 <20120426175608.GG2407@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	id S1758688Ab2DZSLx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 14:11:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37149 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758649Ab2DZSLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 14:11:47 -0400
+Message-ID: <4F998FDE.5020104@redhat.com>
+Date: Thu, 26 Apr 2012 14:11:42 -0400
+From: Larry Woodman <lwoodman@redhat.com>
+Reply-To: lwoodman@redhat.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+CC: Rik van Riel <riel@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Motohiro Kosaki <mkosaki@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -mm V3] do_migrate_pages() calls migrate_to_node() even if
+ task is already on a correct node
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+While running an application that moves tasks from one cpuset to another 
+I noticed
+that it takes much longer and moves many more pages than expected.  The 
+reason
+for this is do_migrate_pages() does its best to preserve the relative 
+node differential
+from the first node of the cpuset because the application may have been 
+written with
+that in mind.  If memory was interleaved on the nodes of the source 
+cpuset by an
+application do_migrate_pages() will try its best to maintain that 
+interleaving on the
+nodes of the destination cpuset.  This means copying the memory from all 
+source nodes
+to the destination nodes even if the source and destination nodes overlap.
 
-> ------------------------------------------------------------------------
-> 
-> timer: Fix mod_timer_pinned() header comment
-> 
-> The mod_timer_pinned() header comment states that it prevents timers
-> from being migrated to a different CPU.  This is not the case, instead,
-> it ensures that the timer is posted to the current CPU, but does nothing
-> to prevent CPU-hotplug operations from migrating the timer.
-> 
-> This commit therefore brings the comment header into alignment with
-> reality.
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+This is a problem for userspace NUMA placement tools.  The amount of 
+time spent
+doing extra memory moves cancels out some of the NUMA performance 
+improvements.
+Furthermore, if the number of source and destination nodes are 
+different, if is impossible
+to maintain the previous interleaving layout anyway.
 
-I'm seeing double :-)
+This patch changes do_migrate_pages() to only preserve the relative 
+layout inside the
+program if the number of NUMA nodes in the source and destination mask 
+are the
+same. If the number is different, we do a much more efficient migration 
+by not touching
+memory that is in an allowed node.
 
-> 
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index a297ffc..7114336 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -861,7 +861,12 @@ EXPORT_SYMBOL(mod_timer);
->   *
->   * mod_timer_pinned() is a way to update the expire field of an
->   * active timer (if the timer is inactive it will be activated)
-> - * and not allow the timer to be migrated to a different CPU.
-> + * and to ensure that the timer is scheduled on the current CPU.
+This preserves the old behaviour for programs that want it, while 
+allowing a userspace
+NUMA placement tool to use the new, faster migration. This improves 
+performance in
+our tests by up to a factor of 7.
 
-Add space here.
 
-  + *
+Without this change migrating tasks from a cpuset containing nodes 0-7 
+to a cpuset containing
+nodes 3-4, we migrate from ALL the nodes even if they are in the both 
+the source and destination
+nodesets:
 
-> + * Note that this does not prevent the timer from being migrated
-> + * when the current CPU goes offline.  If this is a problem for
-> + * you, use CPU-hotplug notifiers to handle it correctly, for
-> + * example, cancelling the timer when the corresponding CPU goes
-> + * offline.
->   *
->   * mod_timer_pinned(timer, expires) is equivalent to:
->   *
+   Migrating 7 to 4
+   Migrating 6 to 3
+   Migrating 5 to 4
+   Migrating 4 to 3
+   Migrating 1 to 4
+   Migrating 3 to 4
+   Migrating 0 to 3
+   Migrating 2 to 3
 
-Adding a space will make the "Note" stand out more, and more likely seen
-by people who use this function.
 
-Other than that:
+With this change we only migrate from nodes that are not in the 
+destination nodesets:
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+   Migrating 7 to 4
+   Migrating 6 to 3
+   Migrating 5 to 4
+   Migrating 2 to 3
+   Migrating 1 to 4
+   Migrating 0 to 3
 
--- Steve
+Yet if we move from a cpuset containing nodes 2,3,4 to a cpuset 
+containing 3,4,5 we still
+do move everything so that we preserve the desired NUMA offsets:
 
+Migrating 4 to 5
+Migrating 3 to 4
+Migrating 2 to 3
+
+
+As far as performance is concerned this simple patch improves the time 
+it takes to move
+14, 20 and 26 large tasks from a cpuset containing nodes 0-7 to a cpuset 
+containing nodes
+1 & 3 by up to a factor of 7.  Here are the timings with and without the 
+patch:
+
+BEFORE PATCH -- Move times: 59, 140, 651 seconds
+============
+
+Moving 14 tasks from nodes (0-7) to nodes (1,3)
+numad(8780) do_migrate_pages (mm=0xffff88081d414400 
+from_nodes=0xffff880818c81d28 to_nodes=0xffff880818c81ce8 flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x7 dest=0x3 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x6 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x5 dest=0x3 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x4 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x2 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x1 dest=0x3 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d414400 source=0x0 dest=0x1 
+flags=0x4)
+(Above moves repeated for each of the 14 tasks...)
+PID 8890 moved to node(s) 1,3 in 59.2 seconds
+
+
+Moving 20 tasks from nodes (0-7) to nodes (1,4-5)
+numad(8780) do_migrate_pages (mm=0xffff88081d88c700 
+from_nodes=0xffff880818c81d28 to_nodes=0xffff880818c81ce8 flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x7 dest=0x4 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x6 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x3 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x2 dest=0x5 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x1 dest=0x4 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d88c700 source=0x0 dest=0x1 
+flags=0x4)
+(Above moves repeated for each of the 20 tasks...)
+PID 8962 moved to node(s) 1,4-5 in 139.88 seconds
+
+
+Moving 26 tasks from nodes (0-7) to nodes (1-3,5)
+numad(8780) do_migrate_pages (mm=0xffff88081d5bc740 
+from_nodes=0xffff880818c81d28 to_nodes=0xffff880818c81ce8 flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x7 dest=0x5 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x6 dest=0x3 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x5 dest=0x2 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x3 dest=0x5 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x2 dest=0x3 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x1 dest=0x2 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x0 dest=0x1 
+flags=0x4)
+numad(8780) migrate_to_node (mm=0xffff88081d5bc740 source=0x4 dest=0x1 
+flags=0x4)
+(Above moves repeated for each of the 26 tasks...)
+PID 9058 moved to node(s) 1-3,5 in 651.45 seconds
+
+
+
+AFTER PATCH -- Move times: 42, 56, 93 seconds
+===========
+
+Moving 14 tasks from nodes (0-7) to nodes (5,7)
+numad(33209) do_migrate_pages (mm=0xffff88101d5ff140 
+from_nodes=0xffff88101e7b5d28 to_nodes=0xffff88101e7b5ce8 flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x6 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x4 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x3 dest=0x7 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x2 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x1 dest=0x7 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d5ff140 source=0x0 dest=0x5 
+flags=0x4)
+(Above moves repeated for each of the 14 tasks...)
+PID 33221 moved to node(s) 5,7 in 41.67 seconds
+
+
+Moving 20 tasks from nodes (0-7) to nodes (1,3,5)
+numad(33209) do_migrate_pages (mm=0xffff88101d6c37c0 
+from_nodes=0xffff88101e7b5d28 to_nodes=0xffff88101e7b5ce8 flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d6c37c0 source=0x7 dest=0x3 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d6c37c0 source=0x6 dest=0x1 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d6c37c0 source=0x4 dest=0x3 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d6c37c0 source=0x2 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d6c37c0 source=0x0 dest=0x1 
+flags=0x4)
+(Above moves repeated for each of the 20 tasks...)
+PID 33289 moved to node(s) 1,3,5 in 56.3 seconds
+
+
+Moving 26 tasks from nodes (0-7) to nodes (1,3,5,7)
+numad(33209) do_migrate_pages (mm=0xffff88101d924400 
+from_nodes=0xffff88101e7b5d28 to_nodes=0xffff88101e7b5ce8 flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d924400 source=0x6 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d924400 source=0x4 dest=0x1 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d924400 source=0x2 dest=0x5 
+flags=0x4)
+numad(33209) migrate_to_node (mm=0xffff88101d924400 source=0x0 dest=0x1 
+flags=0x4)
+(Above moves repeated for each of the 26 tasks...)
+PID 33372 moved to node(s) 1,3,5,7 in 92.67 seconds
+
+
+Signed-off-by: Larry Woodman<lwoodman@redhat.com>
+
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index f563fa3..0a5308d 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1012,6 +1012,26 @@ int do_migrate_pages(struct mm_struct *mm,
+                 int dest = 0;
+
+                 for_each_node_mask(s, tmp) {
++
++                       /*
++                        * do_migrate_pages() tries to maintain the
++                        * relative node relationship of the pages
++                        * established between threads and memory areas.
++                        *
++                        * However if the number of source nodes is not
++                        * equal to the number of destination nodes we
++                        * can not preserve this node relative relationship.
++                        * In that case, skip copying memory from a node 
+that
++                        * is in the destination mask.
++                        *
++                        * Example: [2,3,4] -> [3,4,5] moves everything.
++                        *                 [0-7] - > [3,4,5] moves only 
+0,1,2,6,7.
++                        */
++
++                       if ((nodes_weight(*from_nodes) != 
+nodes_weight(*to_nodes)) &&
++                                               (node_isset(s, *to_nodes)))
++                               continue;
++
+                         d = node_remap(s, *from_nodes, *to_nodes);
+                         if (s == d)
+                                 continue;
 
