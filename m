@@ -1,46 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759102Ab2DZTzx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 15:55:53 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:39644 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758597Ab2DZTzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 15:55:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bojan Smojver <bojan@rexursive.com>
-Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for hibernate/thaw buffering
-Date: Thu, 26 Apr 2012 22:00:32 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Per Olofsson <pelle@debian.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-References: <1334267969.2573.14.camel@shrek.rexursive.com> <201204250012.00544.rjw@sisk.pl> <1335410904.2136.9.camel@shrek.rexursive.com>
-In-Reply-To: <1335410904.2136.9.camel@shrek.rexursive.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204262200.32663.rjw@sisk.pl>
+	id S1758961Ab2DZT6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 15:58:33 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:42447 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754505Ab2DZT6c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 15:58:32 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND v5 1/2] ohci-nxp: Driver cleanup
+Date: Thu, 26 Apr 2012 21:58:09 +0200
+Message-Id: <1335470290-3436-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 26, 2012, Bojan Smojver wrote:
-> On Wed, 2012-04-25 at 00:12 +0200, Rafael J. Wysocki wrote:
-> > Applied to linux-pm/linux-next.
-> 
-> Yeah, that was the wrong thing to do. The simpler patch I sent was for
-> stable only, as you requested.
+Cleanup for ohci-nxp.c:
 
-No, I didn't requested that.  There's nothing like stable-only patches,
-we only backport mainline commits to -stable.
+* Cleanup of resource handling (mem and irq), use devm_request_and_ioremap()
+* Use DMA_BIT_MASK()
+* Don't remove __devinit
+* Removed obsolete gpio.h include
+* More consistent bit access symbols
+* Removed unused extern declaration ocpi_enable()
+* Added error handling on i2c_get_adapter()
+* Whitespace cleanup
 
-> This patch should go to linux-next:
-> 
-> http://marc.info/?l=linux-kernel&m=133426808115262&w=2
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-OK
+---
 
-So I'll include it into my v3.5 push and I don't want to hear about how
-urgent it is any more.  Is that clear enough?
+Applies to v3.4-rc4
 
-Rafael
+I separated these two patches out from the series of LPC32xx conversion since
+most of the other patches are already integrated into the respective
+subsystem's -next branches.
+
+ drivers/usb/host/ohci-nxp.c |   44 ++++++++++++++++++++++++++------------------
+ 1 file changed, 26 insertions(+), 18 deletions(-)
+
+--- linux-2.6.orig/drivers/usb/host/ohci-nxp.c
++++ linux-2.6/drivers/usb/host/ohci-nxp.c
+@@ -29,7 +29,6 @@
+ 
+ #include <mach/platform.h>
+ #include <mach/irqs.h>
+-#include <asm/gpio.h>
+ 
+ #define USB_CONFIG_BASE		0x31020000
+ #define PWRMAN_BASE		0x40004000
+@@ -38,7 +37,9 @@
+ 
+ /* USB_CTRL bit defines */
+ #define USB_SLAVE_HCLK_EN	(1 << 24)
++#define USB_DEV_NEED_CLK_EN	(1 << 22)
+ #define USB_HOST_NEED_CLK_EN	(1 << 21)
++#define PAD_CONTROL_LAST_DRIVEN	(1 << 19)
+ 
+ #define USB_OTG_CLK_CTRL	IO_ADDRESS(USB_CONFIG_BASE + 0xFF4)
+ #define USB_OTG_CLK_STAT	IO_ADDRESS(USB_CONFIG_BASE + 0xFF8)
+@@ -117,7 +118,6 @@ static struct i2c_driver isp1301_driver;
+ static struct i2c_client *isp1301_i2c_client;
+ 
+ extern int usb_disabled(void);
+-extern int ocpi_enable(void);
+ 
+ static struct clk *usb_clk;
+ 
+@@ -220,7 +220,7 @@ static void isp1301_configure_lpc32xx(vo
+ 		ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR, ~0);
+ 
+ 	/* Enable usb_need_clk clock after transceiver is initialized */
+-	__raw_writel((__raw_readl(USB_CTRL) | (1 << 22)), USB_CTRL);
++	__raw_writel(__raw_readl(USB_CTRL) | USB_HOST_NEED_CLK_EN, USB_CTRL);
+ 
+ 	printk(KERN_INFO "ISP1301 Vendor ID  : 0x%04x\n",
+ 	      i2c_smbus_read_word_data(isp1301_i2c_client, 0x00));
+@@ -374,9 +374,13 @@ static int __devinit usb_hcd_nxp_probe(s
+ 	const struct hc_driver *driver = &ohci_nxp_hc_driver;
+ 	struct i2c_adapter *i2c_adap;
+ 	struct i2c_board_info i2c_info;
++	struct resource *res;
+ 
+ 	int ret = 0, irq;
+ 
++	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
++	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
++
+ 	dev_dbg(&pdev->dev, "%s: " DRIVER_DESC " (nxp)\n", hcd_name);
+ 	if (usb_disabled()) {
+ 		err("USB is disabled");
+@@ -384,16 +388,8 @@ static int __devinit usb_hcd_nxp_probe(s
+ 		goto out;
+ 	}
+ 
+-	if (pdev->num_resources != 2
+-	    || pdev->resource[0].flags != IORESOURCE_MEM
+-	    || pdev->resource[1].flags != IORESOURCE_IRQ) {
+-		err("Invalid resource configuration");
+-		ret = -ENODEV;
+-		goto out;
+-	}
+-
+ 	/* Enable AHB slave USB clock, needed for further USB clock control */
+-	__raw_writel(USB_SLAVE_HCLK_EN | (1 << 19), USB_CTRL);
++	__raw_writel(USB_SLAVE_HCLK_EN | PAD_CONTROL_LAST_DRIVEN, USB_CTRL);
+ 
+ 	ret = i2c_add_driver(&isp1301_driver);
+ 	if (ret < 0) {
+@@ -401,6 +397,11 @@ static int __devinit usb_hcd_nxp_probe(s
+ 		goto out;
+ 	}
+ 	i2c_adap = i2c_get_adapter(2);
++	if (!i2c_adap) {
++		err("failed on i2c_get_adapter");
++		goto out_i2c_driver;
++	}
++
+ 	memset(&i2c_info, 0, sizeof(struct i2c_board_info));
+ 	strlcpy(i2c_info.type, "isp1301_nxp", I2C_NAME_SIZE);
+ 	isp1301_i2c_client = i2c_new_probed_device(i2c_adap, &i2c_info,
+@@ -442,7 +443,7 @@ static int __devinit usb_hcd_nxp_probe(s
+ 	while ((__raw_readl(USB_OTG_CLK_STAT) & USB_CLOCK_MASK) !=
+ 	       USB_CLOCK_MASK) ;
+ 
+-	hcd = usb_create_hcd (driver, &pdev->dev, dev_name(&pdev->dev));
++	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
+ 	if (!hcd) {
+ 		err("Failed to allocate HC buffer");
+ 		ret = -ENOMEM;
+@@ -452,14 +453,21 @@ static int __devinit usb_hcd_nxp_probe(s
+ 	/* Set all USB bits in the Start Enable register */
+ 	nxp_set_usb_bits();
+ 
+-	hcd->rsrc_start = pdev->resource[0].start;
+-	hcd->rsrc_len = pdev->resource[0].end - pdev->resource[0].start + 1;
+-	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
+-		dev_dbg(&pdev->dev, "request_mem_region failed\n");
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "Failed to get MEM resource");
++		ret =  -ENOMEM;
++		goto out4;
++	}
++
++	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
++	if (!hcd->regs) {
++		err("Failed to devm_request_and_ioremap");
+ 		ret =  -ENOMEM;
+ 		goto out4;
+ 	}
+-	hcd->regs = (void __iomem *)pdev->resource[0].start;
++	hcd->rsrc_start = res->start;
++	hcd->rsrc_len = resource_size(res);
+ 
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
