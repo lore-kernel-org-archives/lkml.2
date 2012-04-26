@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759392Ab2DZWEO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 18:04:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34600 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757554Ab2DZWEN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 18:04:13 -0400
-Subject: Re: [PATCH RFC tip/core/rcu 6/6] rcu: Reduce cache-miss
- initialization latencies for large systems
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-In-Reply-To: <20120426202940.GL2407@linux.vnet.ibm.com>
-References: <20120423164159.GA13819@linux.vnet.ibm.com>
-	 <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335199347-13926-6-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335444707.13683.14.camel@twins>
-	 <20120426141213.GB2407@linux.vnet.ibm.com>
-	 <1335454137.13683.95.camel@twins>
-	 <20120426161509.GE2407@linux.vnet.ibm.com>
-	 <1335469319.2463.97.camel@laptop> <1335469664.2463.98.camel@laptop>
-	 <20120426202940.GL2407@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Apr 2012 00:04:05 +0200
-Message-ID: <1335477845.2463.131.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1759431Ab2DZWGm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 18:06:42 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:39944 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758866Ab2DZWGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 18:06:40 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bojan Smojver <bojan@rexursive.com>
+Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for hibernate/thaw buffering
+Date: Fri, 27 Apr 2012 00:11:20 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Per Olofsson <pelle@debian.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <1334267969.2573.14.camel@shrek.rexursive.com> <201204262200.32663.rjw@sisk.pl> <1335474828.2136.15.camel@shrek.rexursive.com>
+In-Reply-To: <1335474828.2136.15.camel@shrek.rexursive.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201204270011.20430.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-26 at 13:29 -0700, Paul E. McKenney wrote:
-> On Thu, Apr 26, 2012 at 09:47:44PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2012-04-26 at 21:41 +0200, Peter Zijlstra wrote:
-> > > 
-> > > I can very easily give you the size (nr cpus in) a node, still as long
-> > > as you iterate the cpu space linearly that's not going to be much
-> > > help.
-> > > 
-> > Oh, I forgot, the numa masks etc are available, depending on
-> > CONFIG_NUMA, as cpumask_of_node(n).
+On Thursday, April 26, 2012, Bojan Smojver wrote:
+> On Thu, 2012-04-26 at 22:00 +0200, Rafael J. Wysocki wrote:
 > 
-> These change with each CPU-hotplug operation?  Or is a given CPU
-> hotplug operation guaranteed to change only those node masks that
-> the CPU was (or will be, in the case of online) a member?
+> > No, I didn't requested that.  There's nothing like stable-only patches,
+> > we only backport mainline commits to -stable.
+> 
+> Yeah, you told me that my patch was not straightforward, so I broke off
+> part of it for -stable that would fix just the most critical problem.
 
-I'd have to check, but its either the last or they don't change at all
-and you have to mask out the offline cpus yourself.
+Which is entirely OK, but see below.
 
-NUMA topology doesn't actually change due to hotplug, so there's no
-reason to update masks that do not (or should not) contain the cpu under
-operation.
+> > > This patch should go to linux-next:
+> > > 
+> > > http://marc.info/?l=linux-kernel&m=133426808115262&w=2
+> > 
+> > OK
+> > 
+> > So I'll include it into my v3.5 push and I don't want to hear about how
+> > urgent it is any more.  Is that clear enough?
+> 
+> Look, I created a problem on some people's computer in 3.2. I feel
+> responsible for fixing it. I do not want their computers to hang because
+> of something I wrote, especially if there is a fix.
+> 
+> So, if I will say one more time. This patch is a fix for a regression,
+> caused by me, since 3.2. Please ask -stable maintainers to include it in
+> version in 3.2 and above.
 
+The -stable rules are such that it only is permitted to put a commit into
+-stable if the analogous commit is already in the mainline.  That also
+covers reverts and such.
 
+> If you want me to create a set of patches instead and then you backport
+> just one, let me know. I will do whatever is necessary to fix this
+> regression.
 
+Can you just create a second patch on top of what's in linux-next now?
+
+Rafael
