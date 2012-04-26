@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758489Ab2DZQcz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 12:32:55 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52901 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757815Ab2DZQcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 12:32:54 -0400
-Message-ID: <4F9978B1.3050203@wwwdotorg.org>
-Date: Thu, 26 Apr 2012 10:32:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1758531Ab2DZQfX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 12:35:23 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:54316 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758302Ab2DZQfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 12:35:21 -0400
+From: Jim Meyering <jim@meyering.net>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Josef Bacik <josef@redhat.com>
+Subject: [PATCH] Btrfs: avoid buffer overrun in btrfs_printk
+Date: Thu, 26 Apr 2012 18:35:12 +0200
+Message-ID: <87vckmwiwv.fsf@rho.meyering.net>
 MIME-Version: 1.0
-To: Dong Aisheng <b29396@freescale.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linus.walleij@stericsson.com,
-        s.hauer@pengutronix.de, shawn.guo@freescale.com, kernel@pengutronix.de,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, cjb@laptop.org,
-        b20223@freescale.com
-Subject: Re: [PATCH v3 4/4] mmc: sdhci-imx-esdhc: convert to use pinctrl subsystem
-References: <1335451227-27709-1-git-send-email-b29396@freescale.com> <1335451227-27709-4-git-send-email-b29396@freescale.com>
-In-Reply-To: <1335451227-27709-4-git-send-email-b29396@freescale.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 08:40 AM, Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> This driver is shared between many platforms. Currently only imx6q has
-> pinctrl support, to avoid breaking other platforms that do not have pinctrl
-> support to run this driver, enable pinctrl dummy state for them before
-> they also convert to pinctrl subsystem.
 
-The series,
+The buffer read-overrun would be triggered by a printk format
+starting with <N>, where N is a single digit.  NUL-terminate
+after strncpy.  Use memcpy, not strncpy, since we know the
+string we're copying fits in the destination buffer and
+contains no NUL byte.
 
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Signed-off-by: Jim Meyering <meyering@redhat.com>
+---
+ fs/btrfs/super.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-(My ack isn't meant to override or influence any discussions between
-Freescale maintainers re: the binding, but more that the binding seems
-to be /a/ reasonable solution, and is specified well enough that I
-understand what's going on there)
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 5ddf172..626f574 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -180,23 +180,24 @@ const char *logtypes[] = {
+ void btrfs_printk(struct btrfs_fs_info *fs_info, const char *fmt, ...)
+ {
+ 	struct super_block *sb = fs_info->sb;
+ 	char lvl[4];
+ 	struct va_format vaf;
+ 	va_list args;
+ 	const char *type = logtypes[4];
+
+ 	va_start(args, fmt);
+
+ 	if (fmt[0] == '<' && isdigit(fmt[1]) && fmt[2] == '>') {
+-		strncpy(lvl, fmt, 3);
++		memcpy(lvl, fmt, 3);
++		lvl[3] = '\0';
+ 		fmt += 3;
+ 		type = logtypes[fmt[1] - '0'];
+ 	} else
+ 		*lvl = '\0';
+
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+ 	printk("%sBTRFS %s (device %s): %pV", lvl, type, sb->s_id, &vaf);
+ }
+
+ /*
+--
+1.7.10.336.gc5e31
