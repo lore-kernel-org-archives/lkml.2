@@ -1,127 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759378Ab2DZUgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 16:36:17 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:39739 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759222Ab2DZUgO convert rfc822-to-8bit (ORCPT
+	id S1759376Ab2DZUjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 16:39:11 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:46548 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758960Ab2DZUjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 16:36:14 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: NeilBrown <neilb@suse.de>,
-        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: Re: [RFC][PATCH 5/8] epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll events are ready
-Date: Thu, 26 Apr 2012 22:40:53 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <201202070200.55505.rjw@sisk.pl> <201204222322.44278.rjw@sisk.pl> <20120426140324.0357b1a3@notabene.brown>
-In-Reply-To: <20120426140324.0357b1a3@notabene.brown>
+	Thu, 26 Apr 2012 16:39:09 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 1/3] ARM: omap2+: set IRQCHIP_SKIP_SET_WAKE for INTC interrupts.
+Organization: Texas Instruments, Inc.
+References: <20120425025637.7832.14013.stgit@notabene.brown>
+	<20120425030524.7832.52047.stgit@notabene.brown>
+Date: Thu, 26 Apr 2012 13:39:07 -0700
+In-Reply-To: <20120425030524.7832.52047.stgit@notabene.brown> (NeilBrown's
+	message of "Wed, 25 Apr 2012 13:05:24 +1000")
+Message-ID: <878vhi9qj8.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201204262240.54135.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 26, 2012, NeilBrown wrote:
-> On Sun, 22 Apr 2012 23:22:43 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > From: Arve Hjønnevåg <arve@android.com>
-> > 
-> > When an epoll_event, that has the EPOLLWAKEUP flag set, is ready, a
-> > wakeup_source will be active to prevent suspend. This can be used to
-> > handle wakeup events from a driver that support poll, e.g. input, if
-> > that driver wakes up the waitqueue passed to epoll before allowing
-> > suspend.
-> > 
-> > The current implementation uses an extra wakeup_source when
-> > ep_scan_ready_list runs. This can cause problems if a single thread
-> > is polling on wakeup events and frequent non-wakeup events (events
-> > usually arrive during thread freezing) using the same epoll file.
-> 
-> This is quite neat.
-> 
-> If I understand it correctly, you register file descriptors with epoll_ctl()
-> on an fd created with epoll_create(), and set the new EPOLLWAKEUP flag.
-> Then when a regular 'poll' or 'select' on the epoll fd reports that it is
-> readable you:
->   - get a wakelock
->   - use epoll_wait to collect the events
->   - process the events
->   - release your wakelock
->   - go back to poll() or select() on the epoll fd.
-> Correct?  As long as there are ready events with EPOLLWAKEUP set a
-> wakeup_source is held active and the system won't go to sleep.
-> 
-> My concern with this is about permissions.  It appears that any process could
-> wait of some fd (maybe a pipe they created themselves) with EPOLLWAKEUP, and
-> then simply never epoll_wait() for the event.  Then they would be keeping
-> the system awake.  I don't think that is acceptable.
+NeilBrown <neilb@suse.de> writes:
 
-I wonder what Arve has to say to that, but let me say that on systems without
-autosleep every process can go into an infinite busy loop which is going to
-drain battery relatively quickly just as well and I don't see why that's so
-much different.
+> All interrupts can wake-from-sleep (I think) so it should be
+> permissible to call enable_irq_wake().  Setting this flag allows that.
+>
+> It is needed because without this, an interrupt which is delivered
+> during late suspend will get ignored but will not cause suspend to
+> abort.
+> If enable_irq_wake() is called and succeeds, check_wakuep_irqs()
+> will abort the suspend if the interrupt has fired.
+>
+> Signed-off-by: NeilBrown <neilb@suse.de>
 
-> So there needs to be some way to limit who can effectively block suspend by
-> using EPOLLWAKEUP.
-> (This is one of the reasons I like an all-user-space solution.  Policy issues
-> like this can easily be decided in user-space but are clumsy to put into the
-> kernel).
-> 
-> Also, I'm having trouble understanding the ep->ws wakeup_source.
-> The epi->ws makes lots of sense and I think I understand it all.
-> However I don't see why you need a wakeup_source for the 'struct eventpoll'.
-> 
-> Every time that 'poll' decides to call the ->poll fop for the eventpoll, this
-> wakeup_source will be activated and deactivated which will abort any current
-> suspend cycle even if there are no events to report.
-> 
-> I suspect it can just go away.
+The name of this flag and the effect of setting it are somewhat
+confusing (e.g. why does skipping set_wake suddenly make wakeups work.)
+So I tried to make it clearer with a reworking of the changelog (below.)
 
-I'll leave this one entirely to Arve, if you don't mind. :-)
+If I understood this correctly, and if you're OK with the updated
+changelog, I'll queue this up for v3.5.
 
-> One last item that doesn't really belong here - but it is in context.
-> 
-> This mechanism is elegant because it provides a single implementation that
-> provides wakeup_source for almost any sort of device.  I would like to do the
-> same thing for interrupts.
-> Most (maybe all) of the wakeup device on my phone have an interrupt where the
-> body is run in a thread.  When the thread has done it's work the event is
-> visible to userspace so the EPOLLWAKEUP mechanism is all that is needed to
-> complete the path to user-space (or for my user-space solution, nothing else
-> is needed once it is visible to user-space).
-> So we just need to ensure a clear path from the "top half" interrupt handler
-> to the threaded handler.
-> So I imagine attaching a wakeup source to every interrupt for which 'wakeup'
-> is enabled, activating it when the top-half starts and relaxing it when the
-> bottom-half completes.  With this in place, almost all drivers would get
-> wakeup_source handling for free.
-> Does this seem reasonable to you.
+Thanks,
 
-Yes, it does.
+Kevin
 
-Wakeup devices have their own wakeup source objects anyway, so perhaps they may
-be used for this purpose somehow (just wondering).
+>From 644742ddae59731bc10aacde94645d7c49ca5ecd Mon Sep 17 00:00:00 2001
+From: NeilBrown <neilb@suse.de>
+Date: Wed, 25 Apr 2012 13:05:24 +1000
+Subject: [PATCH] ARM: omap2+: set IRQCHIP_SKIP_SET_WAKE for INTC interrupts.
 
-> I'm afraid I don't have code yet, but hope to find time in a few weeks.
-> 
-> One difficulty with that is that I have noticed a number of drivers that
-> potentially enable_irq_wake just before suspend and disable_irq_wake
-> immediately after (e.g. gpio_keys.c).  Allocating a wakeup_source on each
-> enable_irq_wake would be an unfortunate overhead.  Maybe we just allocate it
-> the first time enable_irq_wake is called ....
+Without an ->irq_set_wake() method in an irq_chip, calls to
+enable_irq_wake() will fail.  This also causes these interrupts to not
+be able to abort suspend (via check_wakeup_irqs() in late suspend.)
 
-I guess we can do something in analogy with device_wakeup_enable()?
+Currently, we don't implement ->irq_set_wake() for INTC interrupts
+because they default to be wakeup enabled by setting the GRPSEL bits
+in PM init.  Even though there is no ->irq_set_wake(), we want
+enable_irq_wake() to succeed so these interrupts can abort suspend
+when necessary.
 
-Rafael
+To fix, set IRQCHIP_SKIP_SET_WAKE flag for all the INTC
+interrupts which avoids trying to check irq_chip->irq_set_wake()
+and failing when it doesn't exist.
+
+Longer term, we need to implement ->irq_set_wake() for the INTC
+which can manage the appropriate GRPSEL bits.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+[khilman@ti.com: rework changelog]
+Signed-off-by: Kevin Hilman <khilman@ti.com>
+---
+ arch/arm/mach-omap2/irq.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
+index 65f0d257..b0790a9 100644
+--- a/arch/arm/mach-omap2/irq.c
++++ b/arch/arm/mach-omap2/irq.c
+@@ -148,6 +148,7 @@ omap_alloc_gc(void __iomem *base, unsigned int irq_start, unsigned int num)
+ 	ct->chip.irq_ack = omap_mask_ack_irq;
+ 	ct->chip.irq_mask = irq_gc_mask_disable_reg;
+ 	ct->chip.irq_unmask = irq_gc_unmask_enable_reg;
++	ct->chip.flags |= IRQCHIP_SKIP_SET_WAKE;
+ 
+ 	ct->regs.ack = INTC_CONTROL;
+ 	ct->regs.enable = INTC_MIR_CLEAR0;
+-- 
+1.7.9.2
+
