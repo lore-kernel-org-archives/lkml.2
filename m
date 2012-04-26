@@ -1,68 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638Ab2DZAKc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 20:10:32 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:32890 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932453Ab2DZAKb (ORCPT
+	id S932628Ab2DZAOy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 20:14:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47388 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932453Ab2DZAOw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 20:10:31 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F989207.5080208@jp.fujitsu.com>
-Date: Thu, 26 Apr 2012 09:08:39 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Wed, 25 Apr 2012 20:14:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="133858362"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        "sedat.dilek@gmail.com" <sedat.dilek@gmail.com>
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Lin, Ming M" <ming.m.lin@intel.com>
+Subject: RE: Warning: pnp 00:0b: can't evaluate _CRS: 12311
+Thread-Topic: Warning: pnp 00:0b: can't evaluate _CRS: 12311
+Thread-Index: AQHNITY8ggyhHlhlsU+L3vOq3I8c0JaoxPuAgACoCICAAAZTgIACkBZQgAB5pQD//5XrAIAAfL6AgAACkoCAAAvyAP//oX6g
+Date: Thu, 26 Apr 2012 00:14:50 +0000
+Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E346A779ED@ORSMSX101.amr.corp.intel.com>
+References: <CA+icZUWVwUr19xL0Dn5mHnZjQaVjj6VYD3BMMktEWO0vgoZEXw@mail.gmail.com>
+ <CA+icZUUGFaz0c-tHa9EGUxZaxPj_M=zrE+kE0dv5UMoA6GyN3w@mail.gmail.com>
+ <CAErSpo5vZSf_EZr6-XnAA8N2Luv6rA92YtZsidWZCZ8rarkPUQ@mail.gmail.com>
+ <CA+icZUU+asnLWAevwqKBgnvrmKNitL8-0+8ijDii4pt9VsjspA@mail.gmail.com>
+ <94F2FBAB4432B54E8AACC7DFDE6C92E346A77806@ORSMSX101.amr.corp.intel.com>
+ <CAErSpo5E3E=A+EEAZjmkYc8x3B==9ZtYufNaG4t8xQegtOfxfA@mail.gmail.com>
+ <94F2FBAB4432B54E8AACC7DFDE6C92E346A77908@ORSMSX101.amr.corp.intel.com>
+ <CAErSpo7Yj6_QZCSeNKXksiYayV53gkUubVBTnRRu8z1pyWeMQQ@mail.gmail.com>
+ <CA+icZUVHO-7SXq3+qz1Gh3yrWtT+R15iiRG0DCLbcKn2PchVHA@mail.gmail.com>
+ <CAErSpo4Jsx5C2JG6qtU=qnA6RFNH+H4mDajEuKgAFkAodakF3Q@mail.gmail.com>
+In-Reply-To: <CAErSpo4Jsx5C2JG6qtU=qnA6RFNH+H4mDajEuKgAFkAodakF3Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@openvz.org, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 09/23] kmem slab accounting basic infrastructure
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1334959051-18203-10-git-send-email-glommer@parallels.com> <4F975430.4090107@jp.fujitsu.com> <4F980C81.5060802@parallels.com>
-In-Reply-To: <4F980C81.5060802@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/25 23:38), Glauber Costa wrote:
+>                Method (_CRS, 0, NotSerialized)
+>                {
+>                    If (IGDS)
+>                    {
+>                        Return (CRS)
+>                    }
+>                }
+>            }
+>
+>I don't know whether this is legal or not.  If "(!IGDS)", _CRS
+>apparently don't return anything at all, and I don't know what happens
+>then.
 
-> On 04/24/2012 10:32 PM, KAMEZAWA Hiroyuki wrote:
->> (2012/04/21 6:57), Glauber Costa wrote:
+
+Yes, it is illegal to return nothing from _CRS.
+
+Newer versions of ACPICA (and iASL) will squawk at this, but we currently do not attempt to actually perform a runtime "repair".
+
+The driver is probably getting an Integer object of value zero, which might explain the behavior seen.
+
+Bob
+
+
+
+
+
+
+
+>-----Original Message-----
+>From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-
+>owner@vger.kernel.org] On Behalf Of Bjorn Helgaas
+>Sent: Wednesday, April 25, 2012 3:49 PM
+>To: sedat.dilek@gmail.com
+>Cc: Moore, Robert; linux-acpi@vger.kernel.org; Len Brown; linux-
+>kernel@vger.kernel.org; Lin, Ming M
+>Subject: Re: Warning: pnp 00:0b: can't evaluate _CRS: 12311
+>
+>On Wed, Apr 25, 2012 at 4:06 PM, Sedat Dilek <sedat.dilek@googlemail.com>
+>wrote:
+>> On Wed, Apr 25, 2012 at 11:57 PM, Bjorn Helgaas <bhelgaas@google.com>
+>wrote:
+>>> On Wed, Apr 25, 2012 at 3:39 PM, Moore, Robert <robert.moore@intel.com>
+>wrote:
+>>>> This disassembly might make more sense. From the looks of the ASL,
+>several of the address base and length fields are being updated
+>dynamically.  I don't see anything that would corrupt a resource
+>descriptor, however.
+>>>>
+>>>>
+>>>> Are we certain that the ACPI Error and pnp messages are directly
+>related to the PNP0C02 device ID?
+>>>>
+>>>> [    0.293699] system 00:0a: Plug and Play ACPI device, IDs PNP0c02
+>(active)
+>>>> [    0.294032] ACPI Error: Invalid/unsupported resource descriptor:
+>Type 0x00 (20120320/utresrc-650)
+>>>> [    0.294037] pnp 00:0b: can't evaluate _CRS: 12311
+>>>
+>>> Oh, I'm sorry, I just wasted your time.  I didn't notice the 0a/0b
+>>> mismatch.  You're right, the _CRS error is on 00:0b, and we don't know
+>>> what the path is or the PNP ID for 00:0b.
+>>>
+>>> Sedat, can you run "grep . /sys/bus/pnp/devices/*/id" please?  That
+>>> will at least show us the PNP ID of device 00:0b.
+>>>
+>>> Bjorn
 >>
->>> This patch adds the basic infrastructure for the accounting of the slab
->>> caches. To control that, the following files are created:
->>>
->>>   * memory.kmem.usage_in_bytes
->>>   * memory.kmem.limit_in_bytes
->>>   * memory.kmem.failcnt
->>>   * memory.kmem.max_usage_in_bytes
->>>
->>> They have the same meaning of their user memory counterparts. They reflect
->>> the state of the "kmem" res_counter.
->>>
->>> The code is not enabled until a limit is set. This can be tested by the flag
->>> "kmem_accounted". This means that after the patch is applied, no behavioral
->>> changes exists for whoever is still using memcg to control their memory usage.
->>>
->>
->> Hmm, res_counter never goes naeative ?
-> 
-> Why would it?
-> 
-> This one has more or less the same logic as the sock buffers.
-> 
-> If we are not accounted, the caches don't get created. If the caches
-> don't get created, we don't release them. (this is modulo bugs, of course)
-
-Okay. Please note how the logic works in description or Doc. 
-It's a bit complicated part.
-
-Thanks,
--Kame
-
-
+>> Here we go:
+>> ...
+>> /sys/bus/pnp/devices/00:0b/id:PNP0c01
+>
+>There's only one PNP0C01 device:
+>
+>            Device (^^MEM2)
+>            {
+>                Name (_HID, EisaId ("PNP0C01"))
+>                Name (_UID, 0x02)
+>                Name (CRS, ResourceTemplate ()
+>                {
+>                    Memory32Fixed (ReadWrite,
+>                        0x20000000,         // Address Base
+>                        0x00200000,         // Address Length
+>                        )
+>                    Memory32Fixed (ReadWrite,
+>                        0x40000000,         // Address Base
+>                        0x00200000,         // Address Length
+>                        )
+>                })
+>                Method (_CRS, 0, NotSerialized)
+>                {
+>                    If (IGDS)
+>                    {
+>                        Return (CRS)
+>                    }
+>                }
+>            }
+>
+>I don't know whether this is legal or not.  If "(!IGDS)", _CRS
+>apparently don't return anything at all, and I don't know what happens
+>then.
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
