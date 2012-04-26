@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab2DZMoJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 08:44:09 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:40471 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756534Ab2DZMoH (ORCPT
+	id S1756613Ab2DZMrQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 08:47:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51537 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756375Ab2DZMrP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 08:44:07 -0400
-Date: Thu, 26 Apr 2012 14:44:02 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Thomas Mingarelli <Thomas.Mingarelli@hp.com>
-Subject: [GIT PULL REQUEST] watchdog - v3.4-rc4 Fixes
-Message-ID: <20120426124402.GJ6553@spo001.leaseweb.com>
+	Thu, 26 Apr 2012 08:47:15 -0400
+Message-ID: <1335444391.13683.11.camel@twins>
+Subject: Re: [PATCH RFC tip/core/rcu 4/6] rcu: Clarify help text for
+ RCU_BOOST_PRIO
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Date: Thu, 26 Apr 2012 14:46:31 +0200
+In-Reply-To: <1335199347-13926-4-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120423164159.GA13819@linux.vnet.ibm.com>
+	 <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1335199347-13926-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 2012-04-23 at 09:42 -0700, Paul E. McKenney wrote:
+> +         This option specifies the real-time priority to which long-term
+> +         preempted RCU readers are to be boosted.  If you are working
+> +         with a real-time application that has one or more CPU-bound
+> +         threads running at a real-time priority level,
 
-Please pull from 'master' branch of
-	git://www.linux-watchdog.org/linux-watchdog.git
+Then your application is broken ;-) the kernel is known to mis-behave
+under these circumstances since it doesn't get to run house-keeping
+tasks. RCU is just one of these and elevating it doesn't make it work.
 
-It will fix the size when reading or writing to WD Timer port 0x72 in the
-hpwdt driver.
+>  you should set
+> +         RCU_BOOST_PRIO to a priority higher then the highest-priority
+> +         real-time CPU-bound thread.  The default RCU_BOOST_PRIO value
+> +         of 1 is appropriate in the common case, which is real-time
+> +         applications that do not have any CPU-bound threads.
 
-This will update the following files:
+Alternatively, 1 is the worst possible choice forcing people to consider
+the issue.
 
- hpwdt.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> +         Some real-time applications might not have a single real-time
+> +         thread that saturates a given CPU, but instead might have
+> +         multiple real-time threads that, taken together, fully utilize
+> +         that CPU.  In this case, you should set RCU_BOOST_PRIO to
+> +         a priority higher than the lowest-priority thread that is
+> +         conspiring to prevent the CPU from running any non-real-time
+> +         tasks.  For example, if one thread at priority 10 and another
+> +         thread at priority 5 are between themselves fully consuming
+> +         the CPU time on a given CPU, then RCU_BOOST_PRIO should be
+> +         set to priority 6 or higher. 
 
-with these Changes:
+I'd call this misleading, who's to say that preempting the 5 would yield
+enough time to complete the RCU work?
 
-commit d08c9a33b4aa6665b0ee3c4d1b57715fa0eae2a2
-Author: Mingarelli, Thomas <Thomas.Mingarelli@hp.com>
-Date:   Tue Apr 3 05:37:01 2012 +0000
+This all gets us back to the fun question of RCU delayed bandwidth
+budgeting.. ideally every 'task' that does call_rcu() should donate some
+of its budget towards the thread running the callback.
 
-    hpwdt: Only BYTE reads/writes to WD Timer port 0x72
-    
-    This patch is to correct the use of the iLO port 0x72 usage.
-    The port 0x72 is a byte size write/read and hpwdt is currently
-    writing a WORD.
-    
-    Signed-off by: Thomas Mingarelli <thomas.mingarelli@hp.com>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-
-For completeness, I added the overal diff below.
-
-Greetings,
-Wim.
-
-================================================================================
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index cbc7cee..9f13b89 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -435,16 +435,16 @@ static void hpwdt_start(void)
- {
- 	reload = SECS_TO_TICKS(soft_margin);
- 	iowrite16(reload, hpwdt_timer_reg);
--	iowrite16(0x85, hpwdt_timer_con);
-+	iowrite8(0x85, hpwdt_timer_con);
- }
- 
- static void hpwdt_stop(void)
- {
- 	unsigned long data;
- 
--	data = ioread16(hpwdt_timer_con);
-+	data = ioread8(hpwdt_timer_con);
- 	data &= 0xFE;
--	iowrite16(data, hpwdt_timer_con);
-+	iowrite8(data, hpwdt_timer_con);
- }
- 
- static void hpwdt_ping(void)
+Anyway, I'd argue both the old and new description are bonkers.
