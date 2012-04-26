@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab2DZLLK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 07:11:10 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:11247 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755231Ab2DZLLI (ORCPT
+	id S1756219Ab2DZLmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 07:42:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33942 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755715Ab2DZLme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 07:11:08 -0400
-X-IronPort-AV: E=Sophos;i="4.75,485,1330905600"; 
-   d="scan'208";a="12152568"
-Date: Thu, 26 Apr 2012 12:17:21 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "tobias.geiger@vido.info" <tobias.geiger@vido.info>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] [PATCH] xen: use the pirq number to check the
- pirq_eoi_map
-In-Reply-To: <4F991FF1.6000007@citrix.com>
-Message-ID: <alpine.DEB.2.00.1204261216030.26786@kaball-desktop>
-References: <1335366698-19875-1-git-send-email-stefano.stabellini@eu.citrix.com> <4F991FF1.6000007@citrix.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 26 Apr 2012 07:42:34 -0400
+Date: Thu, 26 Apr 2012 12:42:29 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>, Matt Mackall <mpm@selenic.com>,
+        Olof Johansson <olof@lixom.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Default Kconfig state for hw_random drivers
+Message-ID: <20120426114229.GG3207@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="APlYHCtpeOhspHkB"
+Content-Disposition: inline
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Apr 2012, David Vrabel wrote:
-> On 25/04/12 16:11, Stefano Stabellini wrote:
-> > In pirq_check_eoi_map use the pirq number rather than the Linux irq
-> > number to check whether an eoi is needed in the pirq_eoi_map.
-> 
-> What buggy behaviour does this patch fix?  It would be nice if this was
-> included in the patch description.
 
-The irq number is not always identical to the pirq number so if we
-wrongly use the irq number to check the pirq_eoi_map we are going to
-check for the wrong pirq to EOI. As a consequence some interrupts might
-not be EOI'ed by the guest correctly.
+--APlYHCtpeOhspHkB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+An Atmel hw_random driver just appeared in -next.  Since it's just a
+regular platform device it has no dependencies on any particular
+platform so following the behaviour of other hw_random drivers it's set
+to default enabled if hw_random is enabled, even on non-Atmel platforms.
+
+This doesn't feel like the right thing to do - it'd mean that most of
+the embedded RNGs would end up getting enabled by default which probably
+isn't what we want.
+
+--APlYHCtpeOhspHkB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPmTQlAAoJEBus8iNuMP3dnXkQAJ0fiWQ4q5EaIlcErYqIOP1/
+/rzf+XS6zVdRMItdngYtDbZ9vtT1603qgQWaxS17rQzdSfZpME1pp2KTNqvdjL2H
+SVXFsooROI4pniWlbipbZ/fv/EPMUtxcd86NV9E/dwHy30Dzrp4SLeImYhn2vaP8
+yYdXUvRQ8wOsSTJxRd8FrGdI5BNEbLAuL8s4Y2LVF+XqDfIB+5GzNS7xkwxQtWYv
+zTRMeIDVyJ+A7d2rqHvLP85Jv81USoGXxbDY7JkQmcTd8v5t7YLKHuMS7x6rTbRm
+ypINNwZ5X8uRrDPStnBTiwhRXCMLPGHJ9mpt+K97352iDdFt3Ubk6gNDRligMoWG
+lsfsRyo2CmAVzp+1lTob6Q6DnhL7rOIte1S8vpKEmS1rZgnmagQg8Qf29pkdTN/4
+KqShrQzGIjYC5Iw7V9crljcYLp/58N9hiED+3aqg8zS0vWHhND7xsENhxMnX08HD
+4dFcFAdNT8li5pyqOyMik+v7IMBSKXDMCQv7UVVKl/bn2ebCE2pilchkpxlwKFmF
+JDXVmCw5tlLBDD7utJm0SUzQamHl8NoasWTSie5eMQ5mM5nibUwelQm5UrFkArv7
+s0mHWbqENq60q/w3tRgFgAAjCr147VZuNRhvsk/LpE2zuu8F0j23lThPdDniZoW+
+bOrnCj8GM04ADOTbfXXd
+=jnX8
+-----END PGP SIGNATURE-----
+
+--APlYHCtpeOhspHkB--
