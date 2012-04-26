@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab2DZOpb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 10:45:31 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:52608
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751416Ab2DZOp3 (ORCPT
+	id S1756934Ab2DZOse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 10:48:34 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:9411 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab2DZOsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 10:45:29 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M33CZI-01-IYE-02
-X-M-MSG: 
-Date: Thu, 26 Apr 2012 16:45:14 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, <mingo@elte.hu>,
-        David Ahern <dsahern@gmail.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [BUG] perf stat: useless output for raw events with new event
- parser
-Message-ID: <20120426144514.GB18810@erda.amd.com>
-References: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
- <1335178132.28150.117.camel@twins>
- <CABPqkBQ2w3RLRwq3fsaJQ_L=_=H+5kounBeuxUv_fk1ksimTOQ@mail.gmail.com>
- <1335436031.13683.6.camel@twins>
- <20120426131220.GB5046@erda.amd.com>
- <1335450273.13683.76.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1335450273.13683.76.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Thu, 26 Apr 2012 10:48:33 -0400
+Message-ID: <1335451710.2529.4.camel@lorien2>
+Subject: Re: [PATCH  v2] leds: add new transient trigger for one shot timer
+ activation
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: NeilBrown <neilb@suse.de>
+Cc: shuahkhan@gmail.com, akpm@linux-foundation.org,
+        Jonas Bonn <jonas@southpole.se>, LKML <linux-kernel@vger.kernel.org>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>
+Date: Thu, 26 Apr 2012 08:48:30 -0600
+In-Reply-To: <20120426160227.214fcb17@notabene.brown>
+References: <1333310039.2879.4.camel@lorien2> <1334064283.10826.6.camel@ted>
+	 <1334507752.2723.3.camel@lorien2> <1334894674.3051.18.camel@lorien2>
+	 <1334983269.2435.90.camel@jerome.southpole.se>
+	 <1335138687.2882.20.camel@lorien2> <20120423115610.2da4d4d7@notabene.brown>
+	 <1335158999.5139.47.camel@jerome.southpole.se>
+	 <20120423154546.415bd6c0@notabene.brown> <1335219745.2850.7.camel@lorien2>
+	 <1335375758.5313.22.camel@lorien2> <20120426160227.214fcb17@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.04.12 16:24:33, Peter Zijlstra wrote:
-> On Thu, 2012-04-26 at 15:12 +0200, Robert Richter wrote:
-> > On 26.04.12 12:27:11, Peter Zijlstra wrote:
-> > > Furthermore, once we have a common format, we could even ask Intel/AMD
-> > > (and other vendors) to provide their data in this format.
-> > 
-> > I don't think that can be done with a reasonable effort. 
+On Thu, 2012-04-26 at 16:02 +1000, NeilBrown wrote:
+> On Wed, 25 Apr 2012 11:42:38 -0600 Shuah Khan <shuahkhan@gmail.com> wrote:
 > 
-> I'm thinking you mis-understand, all we're talking about is a copy of
-> your event list (BKDG Fam 10h Rev 3.48, section 3.14) in a usable
-> format.
-
-If it is not more complex than for libpfm4 am fine with it. I was
-worried about describing pmu capabilities in sysfs which can better be
-done with pmu specific code, once we know on which pmu we run.
-
-> Its an aid to simplify constructing raw events, nothing more.
+> > There was a suggestion to change units to seconds similar to "safe_delay_show" 
+> > and "safe_delay_store" in drivers/md/md.c. safe_delay_show shows time in
+> > seconds, however safe_delay_store still takes the value in msecs. This
+> > sounded like an asymmetric interface.
 > 
-> When I want to use funny events I'm staring at the Intel-SDM/AMD-BKDG
-> anyway and I find writing:
-> 
->   cpu/event=0x4e2,umask=0xf8/
-> 
-> A lot easier than:
-> 
->   r40000f8e2
+> I don't think you read the code properly.  "strict_strtoul_scaled" takes
+> a number like "0.20" and scales it to an integer...
+> (though your decision not to take that approach may still be justified).
 
-It is totally ok to have parser support for this. I simply do not see
-why we need to put the encoding into sysfs. We somehow know on which
-hardware we run and the parser should already know how to setup the
-syscall. So parsing the above finally ends in calling of something
-like:
+My bad. Yes you are right. strict_strtoul_scaled() does do scaling. This
+routine is currently defined in drivers/md/md.c. The right to do would
+be to move this routine to where kstrtoul() is for general consumption.
+Something I might take on as a separate task. :)
 
- setup_event_for_some_pmu(event, 0x4e2, 0xf8);
+-- Shuah
 
-We don't need any description of bit masks in sysfs for this.
-
-> So I'd be perfectly ok with adding something
-> like /sys/bus/events/device/*/name or so.
-
-Yes, something like this could be added to let userland know about the
-pmu.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
