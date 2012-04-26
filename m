@@ -1,51 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab2DZN3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 09:29:43 -0400
-Received: from seven.medozas.de ([188.40.89.202]:56141 "EHLO seven.medozas.de"
+	id S1756654Ab2DZNfI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 09:35:08 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:49697 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869Ab2DZN3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 09:29:42 -0400
-Date: Thu, 26 Apr 2012 15:29:38 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 5/6] rcu: Make __kfree_rcu() less
- dependent on compiler choices
-In-Reply-To: <1335444509.13683.13.camel@twins>
-Message-ID: <alpine.LNX.2.01.1204261526080.31482@frira.zrqbmnf.qr>
-References: <20120423164159.GA13819@linux.vnet.ibm.com>  <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>  <1335199347-13926-5-git-send-email-paulmck@linux.vnet.ibm.com> <1335444509.13683.13.camel@twins>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756001Ab2DZNfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 09:35:06 -0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+To: Linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Michael Tokarev <mjt@tls.msk.ru>,
+        Linus Torvalds <torvalds@linux-foundation.org>, autofs@vger.kernel.org,
+        Ian Kent <raven@themaw.net>, Thomas Meyer <thomas@m3y3r.de>,
+        stable@kernel.org
+Subject: [PATCH v2] Introduce a version6 of autofs interface, to fix design error.
+Date: Thu, 26 Apr 2012 17:34:49 +0400
+Message-Id: <1335447289-9909-1-git-send-email-mjt@msgid.tls.msk.ru>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch introduces a new autofs interface version, v6, which
+is exactly the same as v5 but uses better defined packet structure
+which does not change between architectures or platform bitness.
+Old interface is supported still.
 
-On Thursday 2012-04-26 14:48, Peter Zijlstra wrote:
->On Mon, 2012-04-23 at 09:42 -0700, Paul E. McKenney wrote:
->> Currently, __kfree_rcu() is implemented as an inline function, and
->> contains a BUILD_BUG_ON() that malfunctions if __kfree_rcu() is compiled
->> as an out-of-line function.  Unfortunately, there are compiler settings
->> (e.g., -O0) that can result in __kfree_rcu() being compiled out of line,
->> resulting in annoying build breakage.  This commit therefore converts
->> both __kfree_rcu() and __is_kfree_rcu_offset() from inline functions to
->> macros to prevent such misbehavior on the part of the compiler.
->
->The kernel very explicitly doesn't support being compiled with -O0, so
->this is a non-issue, I think you can make it work if you add
->-finline-functions.
->
->I'd drop this, either make the entire kernel compile or don't bother.
+Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Ian Kent <raven@themaw.net>
+Cc: Thomas Meyer <thomas@m3y3r.de>
+Cc: stable@kernel.org
+---
+ fs/autofs4/waitq.c       |    6 ++++--
+ include/linux/auto_fs4.h |   31 +++++++++++++++++++++++++++----
+ 2 files changed, 31 insertions(+), 6 deletions(-)
 
-It was not originally meant to make the entire kernel compile with -O0,
-but only select modules/.c files.
-That, or __always_inline just does not always inline.
+diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
+index da8876d..97866e8 100644
+--- a/fs/autofs4/waitq.c
++++ b/fs/autofs4/waitq.c
+@@ -145,7 +145,7 @@ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
+ 		break;
+ 	}
+ 	/*
+-	 * Kernel protocol v5 packet for handling indirect and direct
++	 * Kernel protocol v5/v6 packet for handling indirect and direct
+ 	 * mount missing and expire requests
+ 	 */
+ 	case autofs_ptype_missing_indirect:
+@@ -155,7 +155,9 @@ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
+ 	{
+ 		struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
+ 
+-		pktsz = sizeof(*packet);
++		pktsz = (sbi->version == 5) ?
++			sizeof(struct autofs_v5_bad_packet) :
++			sizeof(struct autofs_v5_packet);
+ 
+ 		packet->wait_queue_token = wq->wait_queue_token;
+ 		packet->len = wq->name.len;
+diff --git a/include/linux/auto_fs4.h b/include/linux/auto_fs4.h
+index e02982f..fdef141 100644
+--- a/include/linux/auto_fs4.h
++++ b/include/linux/auto_fs4.h
+@@ -20,11 +20,11 @@
+ #undef AUTOFS_MIN_PROTO_VERSION
+ #undef AUTOFS_MAX_PROTO_VERSION
+ 
+-#define AUTOFS_PROTO_VERSION		5
++#define AUTOFS_PROTO_VERSION		6
+ #define AUTOFS_MIN_PROTO_VERSION	3
+-#define AUTOFS_MAX_PROTO_VERSION	5
++#define AUTOFS_MAX_PROTO_VERSION	6
+ 
+-#define AUTOFS_PROTO_SUBVERSION		2
++#define AUTOFS_PROTO_SUBVERSION		0
+ 
+ /* Mask for expire behaviour */
+ #define AUTOFS_EXP_IMMEDIATE		1
+@@ -126,7 +126,7 @@ union autofs_packet_union {
+ 	struct autofs_packet_expire_multi expire_multi;
+ };
+ 
+-/* autofs v5 common packet struct */
++/* autofs v5/v6 common packet struct */
+ struct autofs_v5_packet {
+ 	struct autofs_packet_hdr hdr;
+ 	autofs_wqt_t wait_queue_token;
+@@ -138,6 +138,29 @@ struct autofs_v5_packet {
+ 	__u32 tgid;
+ 	__u32 len;
+ 	char name[NAME_MAX+1];
++
++	/* padding to make
++	 *   sizeof(autofs_v5_packet) % sizeof(__u64) == 0
++	 * on all arches */
++	char _pad[4];
++};
++
++/* earlier kernel interface used this structure for v5 packet,
++ * which is exactly the same as autofs_v5_packet above
++ * but does not have padding at the end.  The result was that
++ * sizeof it was 300 bytes on x86-32 and 304 bytes on x86-64.
++ * We keep it for compatibility with older userspace. */
++struct autofs_v5_bad_packet {
++	struct autofs_packet_hdr hdr;
++	autofs_wqt_t wait_queue_token;
++	__u32 dev;
++	__u64 ino;
++	__u32 uid;
++	__u32 gid;
++	__u32 pid;
++	__u32 tgid;
++	__u32 len;
++	char name[NAME_MAX+1];
+ };
+ 
+ typedef struct autofs_v5_packet autofs_packet_missing_indirect_t;
+-- 
+1.7.10
 
