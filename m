@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab2DZHxx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 03:53:53 -0400
+	id S1754528Ab2DZHyL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 03:54:11 -0400
 Received: from mail-lb0-f174.google.com ([209.85.217.174]:58284 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab2DZHxv (ORCPT
+	with ESMTP id S1754356Ab2DZHyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 03:53:51 -0400
-Subject: [PATCH next 00/12] mm: replace struct mem_cgroup_zone with struct
- lruvec
+	Thu, 26 Apr 2012 03:54:08 -0400
+Subject: [PATCH 04/12] mm/vmscan: push zone pointer into shrink_page_list()
 To: Andrew Morton <akpm@linux-foundation.org>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Thu, 26 Apr 2012 11:53:44 +0400
-Message-ID: <20120426074632.18961.17803.stgit@zurg>
+Date: Thu, 26 Apr 2012 11:54:04 +0400
+Message-ID: <20120426075404.18961.18621.stgit@zurg>
+In-Reply-To: <20120426074632.18961.17803.stgit@zurg>
+References: <20120426074632.18961.17803.stgit@zurg>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -22,70 +23,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset depends on Johannes Weiner's patch
-"mm: memcg: count pte references from every member of the reclaimed hierarchy".
+It doesn't need pointer to cgroup, pointer to zone is enough.
+This patch also kills "mz" argument of page_check_references(), it unused after
+"mm: memcg: count pte references from every member of the reclaimed hierarch"
 
-bloat-o-meter delta for patches 2..12
-
-add/remove: 6/6 grow/shrink: 6/14 up/down: 4414/-4625 (-211)
-function                                     old     new   delta
-shrink_page_list                               -    2270   +2270
-shrink_lruvec                                  -    1386   +1386
-update_isolated_counts                         -     376    +376
-lruvec_init                                    -     195    +195
-get_lruvec_size                                -      61     +61
-balance_pgdat                               1856    1904     +48
-mem_cgroup_shrink_node_zone                  283     302     +19
-shrink_inactive_list                         985    1003     +18
-mem_cgroup_get_lruvec_size                     -      18     +18
-mem_cgroup_create                           1453    1468     +15
-shrink_active_list                           824     830      +6
-shrink_zone                                  147     149      +2
-mem_control_stat_show                        750     745      -5
-mem_cgroup_zone_lruvec                        72      67      -5
-mem_cgroup_get_reclaim_stat_from_page        108     103      -5
-mem_cgroup_nr_lru_pages                      185     179      -6
-inactive_anon_is_low                         110     103      -7
-test_mem_cgroup_node_reclaimable             200     192      -8
-__mem_cgroup_free                            389     381      -8
-putback_inactive_pages                       634     620     -14
-mem_control_numa_stat_show                  1015    1001     -14
-static.isolate_lru_pages                     419     403     -16
-mem_cgroup_force_empty                      1694    1678     -16
-get_reclaim_stat                              30       -     -30
-mem_cgroup_zone_nr_lru_pages                  64       -     -64
-free_area_init_node                          849     784     -65
-mem_cgroup_inactive_anon_is_low              177      84     -93
-mem_cgroup_inactive_file_is_low              140      31    -109
-zone_nr_lru_pages                            110       -    -110
-static.update_isolated_counts                376       -    -376
-shrink_mem_cgroup_zone                      1381       -   -1381
-static.shrink_page_list                     2293       -   -2293
-
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
+ mm/vmscan.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-Konstantin Khlebnikov (12):
-      mm/vmscan: store "priority" in struct scan_control
-      mm: add link from struct lruvec to struct zone
-      mm/vmscan: push lruvec pointer into isolate_lru_pages()
-      mm/vmscan: push zone pointer into shrink_page_list()
-      mm/vmscan: push zone pointer into update_isolated_counts()
-      mm/vmscan: push lruvec pointer into putback_inactive_pages()
-      mm/vmscan: replace zone_nr_lru_pages() with get_lruvec_size()
-      mm/vmscan: push lruvec pointer into inactive_list_is_low()
-      mm/vmscan: push lruvec pointer into shrink_list()
-      mm/vmscan: push lruvec pointer into get_scan_count()
-      mm/vmscan: push lruvec pointer into should_continue_reclaim()
-      mm/vmscan: kill struct mem_cgroup_zone
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 49e79d5..44d5821 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -629,7 +629,6 @@ enum page_references {
+ };
+ 
+ static enum page_references page_check_references(struct page *page,
+-						  struct mem_cgroup_zone *mz,
+ 						  struct scan_control *sc)
+ {
+ 	int referenced_ptes, referenced_page;
+@@ -688,7 +687,7 @@ static enum page_references page_check_references(struct page *page,
+  * shrink_page_list() returns the number of reclaimed pages
+  */
+ static unsigned long shrink_page_list(struct list_head *page_list,
+-				      struct mem_cgroup_zone *mz,
++				      struct zone *zone,
+ 				      struct scan_control *sc,
+ 				      unsigned long *ret_nr_dirty,
+ 				      unsigned long *ret_nr_writeback)
+@@ -718,7 +717,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			goto keep;
+ 
+ 		VM_BUG_ON(PageActive(page));
+-		VM_BUG_ON(page_zone(page) != mz->zone);
++		VM_BUG_ON(page_zone(page) != zone);
+ 
+ 		sc->nr_scanned++;
+ 
+@@ -741,7 +740,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			goto keep;
+ 		}
+ 
+-		references = page_check_references(page, mz, sc);
++		references = page_check_references(page, sc);
+ 		switch (references) {
+ 		case PAGEREF_ACTIVATE:
+ 			goto activate_locked;
+@@ -931,7 +930,7 @@ keep:
+ 	 * will encounter the same problem
+ 	 */
+ 	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
+-		zone_set_flag(mz->zone, ZONE_CONGESTED);
++		zone_set_flag(zone, ZONE_CONGESTED);
+ 
+ 	free_hot_cold_page_list(&free_pages, 1);
+ 
+@@ -1309,7 +1308,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+ 
+ 	update_isolated_counts(mz, &page_list, &nr_anon, &nr_file);
+ 
+-	nr_reclaimed = shrink_page_list(&page_list, mz, sc,
++	nr_reclaimed = shrink_page_list(&page_list, zone, sc,
+ 						&nr_dirty, &nr_writeback);
+ 
+ 	spin_lock_irq(&zone->lru_lock);
 
-
- include/linux/memcontrol.h |   16 +--
- include/linux/mmzone.h     |   14 ++
- mm/memcontrol.c            |   33 +++--
- mm/mmzone.c                |   14 ++
- mm/page_alloc.c            |    8 -
- mm/vmscan.c                |  277 ++++++++++++++++++++------------------------
- 6 files changed, 177 insertions(+), 185 deletions(-)
-
--- 
-Signature
