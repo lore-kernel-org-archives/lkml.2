@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab2DZJBa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 05:01:30 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12439 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754694Ab2DZJB3 (ORCPT
+	id S1755609Ab2DZJFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 05:05:49 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:58036 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755521Ab2DZJFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 05:01:29 -0400
-Date: Thu, 26 Apr 2012 11:01:26 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        trivial@kernel.org, Xi Wang <xi.wang@gmail.com>,
-        Joe Perches <joe@perches.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Forest Bond <forest@alittletooquiet.net>
-Subject: Re: [PATCH 2/3] staging: vt6656: remove redundant parentheses from
- ioctl.c
-In-Reply-To: <20120424183516.GA31247@kroah.com>
-Message-ID: <alpine.LNX.2.00.1204261101170.17717@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1204212156260.25551@swampdragon.chaosbits.net> <alpine.LNX.2.00.1204212203030.25551@swampdragon.chaosbits.net> <20120424183516.GA31247@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 26 Apr 2012 05:05:47 -0400
+Date: Thu, 26 Apr 2012 05:05:42 -0400 (EDT)
+Message-Id: <20120426.050542.243663587525305831.davem@davemloft.net>
+To: xiong@qca.qualcomm.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com
+Subject: Re: [PATCH 00/10] atl1c: update hardware settings - v3
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1335421638-16304-1-git-send-email-xiong@qca.qualcomm.com>
+References: <1335421638-16304-1-git-send-email-xiong@qca.qualcomm.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 26 Apr 2012 02:05:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Apr 2012, Greg Kroah-Hartman wrote:
+From: xiong <xiong@qca.qualcomm.com>
+Date: Thu, 26 Apr 2012 14:27:08 +0800
 
-> On Sat, Apr 21, 2012 at 10:04:37PM +0200, Jesper Juhl wrote:
-> > I seriously doubt that anyone is confused about the precedence rules
-> > for "*" and "+" - remove redundant extra parentheses.
+> This update contains a serial of patches, most of them are hardware
+> settings related. register definitions are refined (or removed if
+> meaningless) for each patch.
 > 
-> You never really know, and as such, I'd prefer to just leave this as-is.
+> This is the third serial patches, after reviewed/applied the fourth
+> serial will be out.
 > 
-Fair enough :)
+> The patches have addressed all sparse and checkpatch warnings.
+> 
+> Following NICs are tested:
+> AR8131/AR8132/AR8151A/AR8152A/AR8152B
+> Test item includes:
+> build/install/uninstall/dhcp/ping/iperf/wol/reboot/etc.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+I've applied patches #1 until #9, patch #10 needs to be done
+differently.
 
+The PCI_DEV_FLAGS_MSI_INTX_DISABLE_BUG bit should be set via a PCI
+quirk entry in drivers/pci/quirks.c just as it is done for other
+devices which have this problem.
+
+Thank you.
