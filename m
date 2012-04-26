@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab2DZGA2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 02:00:28 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:50833 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607Ab2DZGA1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 02:00:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6692"; a="182785720"
-Message-ID: <293d03fc4c269b5359c0826b982cc4be.squirrel@www.codeaurora.org>
-In-Reply-To: <CAAQ0ZWQ_haRN-WHNzTMcjFvryRqjM58QoseC8WejBiqcDfSuPA@mail.gmail.com>
-References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
-    <1334192572-12499-14-git-send-email-mturquette@linaro.org>
-    <20120412064920.GH2445@S2101-09.ap.freescale.net>
-    <CAJOA=zMPQK-W_nbRztXCNdLHoTJU73ZnrxAS8VvvmzgdaVS2mQ@mail.gmail.com>
-    <CAAQ0ZWRg2jwNZ7Bx5j5NtCVveT_085VmFtPMhWW62-aO+kFfnw@mail.gmail.com>
-    <CAJOA=zPnQhq_3O00F4dfUbnywW-Riov7N76F3wraE67yy2MMuA@mail.gmail.com>
-    <CAAQ0ZWQ_haRN-WHNzTMcjFvryRqjM58QoseC8WejBiqcDfSuPA@mail.gmail.com>
-Date: Wed, 25 Apr 2012 23:00:26 -0700 (PDT)
-Subject: Re: [PATCH 13/13] clk: basic: improve parent_names & return errors
-From: "Saravana Kannan" <skannan@codeaurora.org>
-To: "Shawn Guo" <shawn.guo@linaro.org>
-Cc: linux-kernel@vger.kernel.org, "Saravana Kannan" <skannan@codeaurora.org>,
-        "Andrew Lunn" <andrew@lunn.ch>,
-        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Russell King" <linux@arm.linux.org.uk>, patches@linaro.org,
-        "Sascha Hauer" <s.hauer@pengutronix.de>,
-        "Rajendra Nayak" <rnayak@ti.com>, "Olof Johansson" <olof@lixom.net>,
-        linaro-dev@lists.linaro.org, arnd.bergmann@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+	id S1753464Ab2DZGCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 02:02:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39724 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752607Ab2DZGCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 02:02:35 -0400
+Date: Thu, 26 Apr 2012 16:02:27 +1000
+From: NeilBrown <neilb@suse.de>
+To: shuahkhan@gmail.com
+Cc: akpm@linux-foundation.org, Jonas Bonn <jonas@southpole.se>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>
+Subject: Re: [PATCH  v2] leds: add new transient trigger for one shot timer
+ activation
+Message-ID: <20120426160227.214fcb17@notabene.brown>
+In-Reply-To: <1335375758.5313.22.camel@lorien2>
+References: <1333310039.2879.4.camel@lorien2>
+	<1334064283.10826.6.camel@ted>
+	<1334507752.2723.3.camel@lorien2>
+	<1334894674.3051.18.camel@lorien2>
+	<1334983269.2435.90.camel@jerome.southpole.se>
+	<1335138687.2882.20.camel@lorien2>
+	<20120423115610.2da4d4d7@notabene.brown>
+	<1335158999.5139.47.camel@jerome.southpole.se>
+	<20120423154546.415bd6c0@notabene.brown>
+	<1335219745.2850.7.camel@lorien2>
+	<1335375758.5313.22.camel@lorien2>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/r3NBwOYtFcAXHb6iQm/ZXW5"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/r3NBwOYtFcAXHb6iQm/ZXW5
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, April 17, 2012 12:17 am, Shawn Guo wrote:
-> On 17 April 2012 11:50, Turquette, Mike <mturquette@ti.com> wrote:
->> That is a good question.  I think it is worth waiting on Saravana's
->> patch which exposes non-private members of struct clk via struct
->> clk_hw.  This will have an effect on both platform clock data and
->> code.
->
-> Saravana,
->
-> (*nudge*) (*nudge*) goes to you now :)
->
+On Wed, 25 Apr 2012 11:42:38 -0600 Shuah Khan <shuahkhan@gmail.com> wrote:
 
-Done! I especially like how it turned out.
+> There was a suggestion to change units to seconds similar to "safe_delay_=
+show"=20
+> and "safe_delay_store" in drivers/md/md.c. safe_delay_show shows time in
+> seconds, however safe_delay_store still takes the value in msecs. This
+> sounded like an asymmetric interface.
 
--Saravana
+I don't think you read the code properly.  "strict_strtoul_scaled" takes
+a number like "0.20" and scales it to an integer...
+(though your decision not to take that approach may still be justified).
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+NeilBrown
 
+--Sig_/r3NBwOYtFcAXHb6iQm/ZXW5
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBT5jk8znsnt1WYoG5AQJTVRAAvQqYDDicnm+9VfOs90Rlr/fHnSIw+2hi
+4kjspKilDI++JFnFmGQkko66Uc5MUxzO/SxkQA/snKKLsUZrh53bNa+oYabbcAhy
+H8DgLHfjImKRl6d6zp3zY/ES+bhRdfx9N5GkBiL3xBqtIWVJTLGswIq/970sWp4R
+aFnAuPNc2slejfE/Znmq+TQd1V2EYEE1p6mlUtmg+2hUVJptl+gCY6FxXryhd4hY
+Z4ocA2TKp4kpxjfJti38DajItZClKRmtpHcLptHU+hKPx8K2Lxl9jZP/d7yWzgOk
+9llvgK5U0Ae6tHquG1v1Sx/LXyuKlduTyHiYXJ9p/QRXBQpEZBvLB7Jbkz7N/A97
+kMMotTiB+hys+x6FC0qWbysyUajS1Pt3RpkqrRJmWm+UUq/r3dvp2I5DgR2RQ724
+bJtBYZqux4420a3amEo6BZT/MdLI51EaAUibcRrka+bKo/Vx3bxbxouXMG34Cna7
+BUn+xdlmC9HyjtNOzGdNdBHQ0jsVbMCI+LOE2hm++dkxUO79t6/IxFbJOr9n3Who
+du1ejDfb5P3TZmA4Fy0xMoCC7kEgyNuPmKsgKo+8udYcwaRHUjTKPtA4ip7zvVmM
+rFSDax0HJYCMwqOGEG0AFnYl7IRQa6qqGFl80UA1OjgZx6iIb41R1H/OXpoxyeCl
++SCWnN/OKSU=
+=og4k
+-----END PGP SIGNATURE-----
+
+--Sig_/r3NBwOYtFcAXHb6iQm/ZXW5--
