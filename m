@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab2DZLwI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 07:52:08 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53729 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab2DZLwF (ORCPT
+	id S1755288Ab2DZLwV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 07:52:21 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:32269 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab2DZLwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 07:52:05 -0400
-Date: Thu, 26 Apr 2012 13:52:00 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 2/4] misc: add LM3533 ambient light sensor driver
-Message-ID: <20120426115200.GA22245@localhost>
-References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
- <1334935826-12527-3-git-send-email-jhovold@gmail.com>
- <20120420155734.GE8327@kroah.com>
- <20120420172849.GB12376@localhost>
- <20120420173754.GA22222@kroah.com>
+	Thu, 26 Apr 2012 07:52:13 -0400
+Date: Thu, 26 Apr 2012 14:54:59 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rupesh Gujare <rgujare@ozmodevices.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix bug where kfree is called twice.
+Message-ID: <20120426115459.GE6447@mwanda>
+References: <1335394498-5046-1-git-send-email-rgujare@ozmodevices.com>
+ <20120426063858.GC6447@mwanda>
+ <4F990AE0.8040400@ozmodevices.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120420173754.GA22222@kroah.com>
+In-Reply-To: <4F990AE0.8040400@ozmodevices.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 10:37:54AM -0700, Greg Kroah-Hartman wrote:
-> On Fri, Apr 20, 2012 at 07:28:49PM +0200, Johan Hovold wrote:
-> > On Fri, Apr 20, 2012 at 08:57:34AM -0700, Greg Kroah-Hartman wrote:
-> > > On Fri, Apr 20, 2012 at 05:30:24PM +0200, Johan Hovold wrote:
-> > > > Add sub-driver for the ambient light sensor in National Semiconductor /
-> > > > TI LM3533 lighting power chips.
-> > > > 
-> > > > Raw ADC values as well as current ALS zone can be retrieved through
-> > > > sysfs. The ALS zone can also be read using a character device
-> > > > (/dev/lm3533-als) which is updated on zone changes (interrupt driven or
-> > > > polled).
-> > > > 
-> > > > The driver provides a configuration interface through sysfs.
-> > > 
-> > > Which seems to not be documented at all :(
-> > 
-> > There are the following sysfs entries for configuring ALS control:
+On Thu, Apr 26, 2012 at 09:44:16AM +0100, Rupesh Gujare wrote:
+> Hi Dan,
+> >It's a good patch and it fixes a bug, but could you resend with
+> >the subject:
+> >
+> >[PATCH] Staging: ozwpan: Fix bug where kfree is called twice.
+> Sorry about subject line. I should have spend a bit more time in
+> formatting subject line.
+> However it looks like Greg have already pulled this patch in
+> staging-next branch.
+> (Thanks Greg, for modifying subject line. I will be more careful next time.)
 > 
-> <snip>
+> However, I will be happy if you still want me to resend this patch
+> with correct subject line.
 > 
-> That's fine, but you need a Documentation/ABI entry for any new sysfs
-> file you create.
-> > > What about using the iio interface for this instead?  Doesn't that
-> > > already provide this standard interface you are looking for?
-> > 
-> > I had a look at iio last fall and decided not to use it at the time. I
-> > can't remember exactly what the reasons were right now, so I'll have
-> > to get back to you on this.
-> 
-> Please look into this, the iio framework is about to move out of the
-> staging tree for 3.5, so there should not be any reason for you to
-> create yet-another user api for this type of thing.
 
-We had an initial requirement to support fairly old kernels, but this
-have since been relaxed (and has of course never in itself been a valid
-reason to not use iio for upstream). As iio is moving out of staging, I
-see no problems using it, and the required changes appear quite small.
+Obviously don't resend.  *eyeroll*  I'll never ask you to resend
+stuff just because I'm on a power trip.
 
-I'll submit a v2 against iio and make sure to document the sysfs-entries.
+> >We don't like to put a lot of bureaucracy infront of people
+> >submitting actual bugfixes.  But you guys are the new maintainers
+> >and you're going to need to know all this stuff eventually.  Also
+> >could you give us a hint how likely the users are to hit this?
+> >Should this go into 3.4 or only 3.5?
+> I would have loved to get this patch in 3.4 as I am observing
+> occasional crashes.
+> However looks like Greg have queued it up for 3.5.
 
-Thanks,
-Johan
+Everything goes into linux-next first.  That should have been put
+in the changelog.  "We are seeing occasional crashes under load" or
+whatever...  It's Greg's call and all, but generally it can't hurt
+to ask nicely if you want stuff merged it into 3.4 as well.  ;)
+
+regards,
+dan carpenter
+
