@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705Ab2DZSRM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 14:17:12 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46821 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757030Ab2DZSRK convert rfc822-to-8bit (ORCPT
+	id S1758741Ab2DZSRl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 14:17:41 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:56792 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757030Ab2DZSRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 14:17:10 -0400
+	Thu, 26 Apr 2012 14:17:39 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-9.tower-131.messagelabs.com!1335464256!17581900!9
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] IPVS: ip_vs_ftp.c: local functions should not be exposed globally
+Date: Thu, 26 Apr 2012 11:17:28 -0700
+User-Agent: KMail/1.9.9
+CC: <netdev@vger.kernel.org>, <davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <1335456515-18857-1-git-send-email-gorcunov@gmail.com>
-References: <1335456515-18857-1-git-send-email-gorcunov@gmail.com>
-Date: Thu, 26 Apr 2012 11:17:08 -0700
-X-Google-Sender-Auth: uJGHA9hDybsMNS3CfGxqkEwvQYQ
-Message-ID: <CAGXu5j++rdN3yi4cRHiWcRTuzRYSbQyRHY5ZOrjGT=p2VG5ijA@mail.gmail.com>
-Subject: Re: c/r: prctl: Drop VMA flags test on PR_SET_MM_ stack data assignment
-From: Kees Cook <keescook@chromium.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204261117.28491.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 9:08 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> From: Cyrill Gorcunov <gorcunov@openvz.org>
->
-> With the
->
->  | commit b76437579d1344b612cf1851ae610c636cec7db0
->  | Author: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
->  | Date:   Wed Mar 21 16:34:04 2012 -0700
->  |
->  | procfs: mark thread stack correctly in proc/<pid>/maps
->
-> the stack allocated via clone() is marked in /proc/<pid>/maps as
-> [stack:%d] thus it might be out of the former mm->start_stack/end_stack
-> values (and even has some custom VMA flags set). So to be able to
-> restore mm->start_stack/end_stack drop vma flags test, but still
-> require the undrlied VMA to exist.
->
-> As always note this feature is under CONFIG_CHECKPOINT_RESTORE
-> and requires CAP_SYS_RESOURCE to be granted.
->
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Functions not referenced outside of a source file should be marked
+static to prevent it from being exposed globally.
 
-It'd be nice if there was some sensible per-thread kernel record of
-where the stack is expected to be. Regardless:
+This quiets the sparse warnings:
 
-Acked-by: Kees Cook <keescook@chromium.org>
+warning: symbol 'ip_vs_ftp_init' was not declared. Should it be static?
 
--- 
-Kees Cook
-Chrome OS Security
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+
+---
+
+diff --git a/net/netfilter/ipvs/ip_vs_ftp.c b/net/netfilter/ipvs/ip_vs_ftp.c
+index debb8c7..091bec9 100644
+--- a/net/netfilter/ipvs/ip_vs_ftp.c
++++ b/net/netfilter/ipvs/ip_vs_ftp.c
+@@ -483,7 +483,7 @@ static struct pernet_operations ip_vs_ftp_ops = {
+ 	.exit = __ip_vs_ftp_exit,
+ };
+ 
+-int __init ip_vs_ftp_init(void)
++static int __init ip_vs_ftp_init(void)
+ {
+ 	int rv;
+ 
