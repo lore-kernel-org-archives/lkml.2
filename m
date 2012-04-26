@@ -1,55 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab2DZCEB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 22:04:01 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46133 "EHLO
+	id S1753202Ab2DZCK4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 22:10:56 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49924 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab2DZCEA (ORCPT
+	with ESMTP id S1753024Ab2DZCKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 22:04:00 -0400
-X-AuditID: 9c930197-b7ca1ae0000069e6-88-4f98ad08828c
-Message-ID: <4F98AD2D.3070900@kernel.org>
-Date: Thu, 26 Apr 2012 11:04:29 +0900
+	Wed, 25 Apr 2012 22:10:52 -0400
+X-AuditID: 9c930197-b7ca1ae0000069e6-ab-4f98aea4299f
+To: undisclosed-recipients:;
+Message-ID: <4F98AEC9.4080500@kernel.org>
+Date: Thu, 26 Apr 2012 11:11:21 +0900
 From: Minchan Kim <minchan@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Nitin Gupta <ngupta@vflare.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Newsgroups: gmane.linux.kernel,gmane.linux.kernel.mm
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
         Dan Magenheimer <dan.magenheimer@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Subject: Re: [PATCH 6/6] zsmalloc: make zsmalloc portable
-References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-7-git-send-email-minchan@kernel.org> <4F980AFE.60901@vflare.org> <4F982862.4050302@linux.vnet.ibm.com>
-In-Reply-To: <4F982862.4050302@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-7-git-send-email-minchan@kernel.org>
+In-Reply-To: <1335334994-22138-7-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 01:37 AM, Seth Jennings wrote:
+On 04/25/2012 03:23 PM, Minchan Kim wrote:
 
-> Hey Minchan,
+> The zsmalloc uses __flush_tlb_one and set_pte.
+> It's very lower functions so that it makes arhcitecture dependency
+> so currently zsmalloc is used by only x86.
+> This patch changes them with map_vm_area and unmap_kernel_range so
+> it should work all architecture.
 > 
-> Thanks for the patches!
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/staging/zsmalloc/Kconfig         |    4 ----
+>  drivers/staging/zsmalloc/zsmalloc-main.c |   27 +++++++++++++++++----------
+>  drivers/staging/zsmalloc/zsmalloc_int.h  |    1 -
+>  3 files changed, 17 insertions(+), 15 deletions(-)
 > 
-> On 04/25/2012 09:32 AM, Nitin Gupta wrote:
->> I think Seth was working on this improvement but not sure about the
->> current status. Seth?
-> 
-> Yes, I looked at this option, and it is very clean and portable.
-> 
-> Unfortunately, IIRC, with our rate of mapping/unmapping,
-> flush_tlb_kernel_range() causes an IPI storm that effective
-> stalls the machine.
-> 
-> I'll apply your patch and try it out.
+> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
+> index a5ab720..9084565 100644
+> --- a/drivers/staging/zsmalloc/Kconfig
+> +++ b/drivers/staging/zsmalloc/Kconfig
+> @@ -1,9 +1,5 @@
+>  config ZSMALLOC
+>  	tristate "Memory allocator for compressed pages"
+> -	# X86 dependency is because of the use of __flush_tlb_one and set_pte
+> -	# in zsmalloc-main.c.
+> -	# TODO: convert these to portable functions
+> -	depends on X86
+>  	default n
+>  	help
+>  	  zsmalloc is a slab-based memory allocator designed to store
+> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> index ff089f8..cc017b1 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> @@ -442,7 +442,7 @@ static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
+>  		area = &per_cpu(zs_map_area, cpu);
+>  		if (area->vm)
+>  			break;
+> -		area->vm = alloc_vm_area(2 * PAGE_SIZE, area->vm_ptes);
+> +		area->vm = alloc_vm_area(2 * PAGE_SIZE, NULL);
+>  		if (!area->vm)
+>  			return notifier_from_errno(-ENOMEM);
+>  		break;
+> @@ -696,13 +696,22 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
+>  	} else {
+>  		/* this object spans two pages */
+>  		struct page *nextp;
+> +		struct page *pages[2];
+> +		struct page **page_array = &pages[0];
+> +		int err;
+>  
+>  		nextp = get_next_page(page);
+>  		BUG_ON(!nextp);
+>  
+> +		page_array[0] = page;
+> +		page_array[1] = nextp;
+>  
+> -		set_pte(area->vm_ptes[0], mk_pte(page, PAGE_KERNEL));
+> -		set_pte(area->vm_ptes[1], mk_pte(nextp, PAGE_KERNEL));
+> +		/*
+> +		 * map_vm_area never fail because we already allocated
+> +		 * pages for page table in alloc_vm_area.
+> +		 */
+> +		err = map_vm_area(area->vm, PAGE_KERNEL, &page_array);
+> +		BUG_ON(err);
+>  
+>  		/* We pre-allocated VM area so mapping can never fail */
+>  		area->vm_addr = area->vm->addr;
+> @@ -730,14 +739,12 @@ void zs_unmap_object(struct zs_pool *pool, void *handle)
+>  	off = obj_idx_to_offset(page, obj_idx, class->size);
+>  
+>  	area = &__get_cpu_var(zs_map_area);
+> -	if (off + class->size <= PAGE_SIZE) {
+> +	if (off + class->size <= PAGE_SIZE)
+>  		kunmap_atomic(area->vm_addr);
+> -	} else {
+> -		set_pte(area->vm_ptes[0], __pte(0));
+> -		set_pte(area->vm_ptes[1], __pte(0));
+> -		__flush_tlb_one((unsigned long)area->vm_addr);
+> -		__flush_tlb_one((unsigned long)area->vm_addr + PAGE_SIZE);
+> -	}
+> +	else
+> +		unmap_kernel_range((unsigned long)area->vm->addr,
+> +					PAGE_SIZE * 2);
+> +
 
 
-Seth, Thanks!
+I should have export unmap_kernel_range. :(
+Before that, I will look into another option to reduce IPI storm.
+
+Thanks.
 
 -- 
 Kind regards,
