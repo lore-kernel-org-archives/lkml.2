@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab2DZIzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 04:55:21 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:34338 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755389Ab2DZIzS convert rfc822-to-8bit (ORCPT
+	id S1755482Ab2DZIwr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 04:52:47 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:51560 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755346Ab2DZIwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 04:55:18 -0400
+	Thu, 26 Apr 2012 04:52:46 -0400
+Message-ID: <4F990321.60208@linux.vnet.ibm.com>
+Date: Thu, 26 Apr 2012 13:41:13 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <201204242315.00419.rjw@sisk.pl>
-References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
-	<CAF1ivSbOhUbE6wreRQ5E3jV5N_haHn1y9q48CU_OZFeCRTed+A@mail.gmail.com>
-	<20120424142457.GA5292@fedora>
-	<201204242315.00419.rjw@sisk.pl>
-Date: Thu, 26 Apr 2012 16:55:16 +0800
-Message-ID: <CAC=cRTPqSPLHvT+BXH7K3ff0u=pFCVAG6rLNSjntpj+ghgdM+Q@mail.gmail.com>
-Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
-From: huang ying <huang.ying.caritas@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Aaron Lu <aaron.lu@amd.com>, Lin Ming <ming.m.lin@intel.com>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Andiry Xu <andiry.xu@amd.com>,
-        Alex He <alex.he@amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Gleb Natapov <gleb@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        KVM <kvm@vger.kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        X86 <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Xen <xen-devel@lists.xensource.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC V6 1/5] kvm hypervisor : Add a hypercall to KVM hypervisor
+ to support pv-ticketlocks
+References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com> <20120423095947.30893.84029.sendpatchset@codeblue.in.ibm.com> <20120424095923.GS15413@redhat.com>
+In-Reply-To: <20120424095923.GS15413@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12042522-0260-0000-0000-000000F192F6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 5:15 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, April 24, 2012, Aaron Lu wrote:
->> On Tue, Apr 24, 2012 at 09:15:37PM +0800, Lin Ming wrote:
->> > >> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
->> > >> > index 7417267..734d946 100644
->> > >> > --- a/drivers/acpi/scan.c
->> > >> > +++ b/drivers/acpi/scan.c
->> > >> > @@ -908,6 +908,10 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
->> > >> >     device->power.states[ACPI_STATE_D3].flags.valid = 1;
->> > >> >     device->power.states[ACPI_STATE_D3].power = 0;
->> > >> >
->> > >> > +   /* Also set D3cold's explicit flag when _PS3 exists */
->> > >> > +   if (device->power.states[ACPI_STATE_D3_HOT].flags.explicit_set)
->> > >> > +           device->power.states[ACPI_STATE_D3].flags.explicit_set = 1;
->> > >>
->> > >> We should use ACPI_STATE_D3_COLD instead of ACPI_STATE_D3 to make thing
->> > >> clear.
->> > >>
->> > > Thanks for your suggestion.
->> > >
->> > > Well, considering all those ACPI_STATE_D3 used in tree, I don't think I
->> > > should use ACPI_STATE_D3_COLD here, especially the two lines above are
->> > > still using ACPI_STATE_D3.
->> > >
->> > > But if that is desired, we should probably change all the existing
->> > > ACPI_STATE_D3 macros to ACPI_STATE_D3_COLD to make things clear.
->> > >
->> > > Or we all use ACPI_STATE_D3, since it is defined as 4 and means D3 cold,
->> > > and people will learn this, won't they?
->> > >
->> > > What do you think?
->> >
->> > OK.
->> >
->> > But we may do more cleanup later.
->> >
+On 04/24/2012 03:29 PM, Gleb Natapov wrote:
+> On Mon, Apr 23, 2012 at 03:29:47PM +0530, Raghavendra K T wrote:
+>> From: Srivatsa Vaddagiri<vatsa@linux.vnet.ibm.com>
+[...]
+>> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+>> index 42b7393..edf56d4 100644
+>> --- a/virt/kvm/kvm_main.c
+>> +++ b/virt/kvm/kvm_main.c
+>> @@ -1500,6 +1500,14 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
+>>   		prepare_to_wait(&vcpu->wq,&wait, TASK_INTERRUPTIBLE);
 >>
->> Sure :-)
->> I think the first thing to do is to agree on which macro should be used,
->> ACPI_STATE_D3 or ACPI_STATE_D3_COLD. And then replace the other one
->> altogether.
+>>   		if (kvm_arch_vcpu_runnable(vcpu)) {
+>> +			/*
+>> +			 * This is the only safe place to reset unhalt flag.
+>> +			 * otherwise it results in loosing the notification
+>> +			 * which eventually can result in vcpu hangs.
+>> +			 */
+> Why this is the only safe place? Why clearing it in kvm/x86.c just after
+> call to kvm_vcpu_block() if KVM_REQ_UNHALT is set is not safe enough?
 >
-> I'd prefer to use ACPI_STATE_D3 wherever it makes sense, because that's
-> also well defined in older versions of ACPI (think pre-ACPI-4.0 BIOSes).
 
-Because the relationship between ACPI_STATE_D3 and ACPI_STATE_D3_COLD
-is confusing, I suggest to add some comments whenever will refer to D3
-or D3_COLD.
+Yes, You are Right. The acceptable window to reset the flag can be
+extended till there. and Good point about that is it removes the need
+for having the stubs for other archs and simplifies everything a lot. 
+Thanks for that.
 
-Best Regards,
-Huang Ying
+[ When I was experimenting with request bit, clearing request bit in the 
+same place was causing vm hang after some 16 iteration of stress test. I 
+had carried the same impression. Now I have done stress testing
+to ensure that the change works.  Basically as you know, my fear was 
+loosing kick(s) leads to vm hang eventually. ]
+
