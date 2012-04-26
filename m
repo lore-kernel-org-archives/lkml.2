@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758110Ab2DZRDm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 13:03:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64970 "EHLO
+	id S1757839Ab2DZRHG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 13:07:06 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43068 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756235Ab2DZRDl (ORCPT
+	with ESMTP id S1757624Ab2DZRHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 13:03:41 -0400
+	Thu, 26 Apr 2012 13:07:03 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, miklos@szeredi.hu, hch@infradead.org,
         michael.brantley@deshaw.com
-Subject: [PATCH v1 07/12] vfs: add a "reval" flag to args for user_path_parent
-Date: Thu, 26 Apr 2012 11:57:18 -0400
-Message-Id: <1335455843-16089-6-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v1 10/12] vfs: fix symlinkat to retry on ESTALE errors
+Date: Thu, 26 Apr 2012 11:57:21 -0400
+Message-Id: <1335455843-16089-9-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1335455843-16089-1-git-send-email-jlayton@redhat.com>
 References: <1335455843-16089-1-git-send-email-jlayton@redhat.com>
@@ -22,72 +22,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All of the current callers set this to "false" for now, but we'll fix
-them later to set it to true when they retry on an ESTALE error.
-
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+ fs/namei.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index e9da40b..b1b116b 100644
+index 3a8e5e4..b189dc5 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -1908,15 +1908,19 @@ int user_path_at(int dfd, const char __user *name, unsigned flags,
- }
- 
- static int user_path_parent(int dfd, const char __user *path,
--			struct nameidata *nd, char **name)
-+			struct nameidata *nd, char **name, bool reval)
- {
- 	char *s = getname(path);
- 	int error;
-+	unsigned int lookup_flags = LOOKUP_PARENT;
- 
- 	if (IS_ERR(s))
- 		return PTR_ERR(s);
- 
--	error = do_path_lookup(dfd, s, LOOKUP_PARENT, nd);
-+	if (reval)
-+		lookup_flags |= LOOKUP_REVAL;
-+
-+	error = do_path_lookup(dfd, s, lookup_flags, nd);
- 	if (error)
- 		putname(s);
- 	else
-@@ -2759,7 +2763,7 @@ static long do_rmdir(int dfd, const char __user *pathname)
+@@ -2957,12 +2957,14 @@ SYSCALL_DEFINE3(symlinkat, const char __user *, oldname,
+ 	char *from;
  	struct dentry *dentry;
- 	struct nameidata nd;
+ 	struct path path;
++	unsigned int try = 0;
  
--	error = user_path_parent(dfd, pathname, &nd, &name);
-+	error = user_path_parent(dfd, pathname, &nd, &name, false);
- 	if (error)
- 		return error;
+ 	from = getname(oldname);
+ 	if (IS_ERR(from))
+ 		return PTR_ERR(from);
  
-@@ -2856,7 +2860,7 @@ static long do_unlinkat(int dfd, const char __user *pathname)
- 	struct nameidata nd;
- 	struct inode *inode = NULL;
- 
--	error = user_path_parent(dfd, pathname, &nd, &name);
-+	error = user_path_parent(dfd, pathname, &nd, &name, false);
- 	if (error)
- 		return error;
- 
-@@ -3255,11 +3259,11 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 	char *to;
- 	int error;
- 
--	error = user_path_parent(olddfd, oldname, &oldnd, &from);
-+	error = user_path_parent(olddfd, oldname, &oldnd, &from, false);
- 	if (error)
- 		goto exit;
- 
--	error = user_path_parent(newdfd, newname, &newnd, &to);
-+	error = user_path_parent(newdfd, newname, &newnd, &to, false);
- 	if (error)
- 		goto exit1;
- 
+-	dentry = user_path_create(newdfd, newname, &path, false, false);
++retry:
++	dentry = user_path_create(newdfd, newname, &path, false, try);
+ 	error = PTR_ERR(dentry);
+ 	if (IS_ERR(dentry))
+ 		goto out_putname;
+@@ -2980,6 +2982,8 @@ out_dput:
+ 	dput(dentry);
+ 	mutex_unlock(&path.dentry->d_inode->i_mutex);
+ 	path_put(&path);
++	if (retry_estale(error, try++))
++		goto retry;
+ out_putname:
+ 	putname(from);
+ 	return error;
 -- 
 1.7.7.6
 
