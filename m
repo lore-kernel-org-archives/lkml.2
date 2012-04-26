@@ -1,124 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759623Ab2DZXsl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 19:48:41 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:37995 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758866Ab2DZXsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 19:48:40 -0400
-Date: Fri, 27 Apr 2012 01:48:19 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: count pte references from every member of
- the reclaimed hierarchy
-Message-ID: <20120426234819.GB1788@cmpxchg.org>
-References: <1335296144-29381-1-git-send-email-hannes@cmpxchg.org>
- <1335296144-29381-2-git-send-email-hannes@cmpxchg.org>
- <20120426143729.10f672ae.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120426143729.10f672ae.akpm@linux-foundation.org>
+	id S1759582Ab2DZX7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 19:59:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46387 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754266Ab2DZX7P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 19:59:15 -0400
+Date: Thu, 26 Apr 2012 16:59:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Russell King <linux@arm.linux.org.uk>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        linaro-kernel@lists.linaro.org, patches@linaro.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/9] cpu: Introduce clear_tasks_mm_cpumask() helper
+Message-Id: <20120426165911.00cebd31.akpm@linux-foundation.org>
+In-Reply-To: <20120423070736.GA30752@lizard>
+References: <20120423070641.GA27702@lizard>
+	<20120423070736.GA30752@lizard>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 02:37:29PM -0700, Andrew Morton wrote:
-> On Tue, 24 Apr 2012 21:35:44 +0200
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > --- a/include/linux/memcontrol.h
-> > +++ b/include/linux/memcontrol.h
-> > @@ -78,6 +78,7 @@ extern void mem_cgroup_uncharge_cache_page(struct page *page);
-> >  
-> >  extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
-> >  				     int order);
-> > +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *, struct mem_cgroup *);
+On Mon, 23 Apr 2012 00:07:36 -0700
+Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+
+> Many architectures clear tasks' mm_cpumask like this:
 > 
-> I dunno about you guys, but this practice of omitting the names of the
-> arguments in the declaration drives me bats.  It really does throw away
-> a *lot* of information.  It looks OK when one is initially reading the
-> code, but when I actually go in there and do some work on the code, it
-> makes things significantly harder.
-
-Humm, I only look at headers to roughly gauge an API, and jump to the
-definitions anyway when figuring out how to actually use them (because
-of the documentation, and because function names can be deceiving).
-
-But I don't mind adding the names, so I'll try to remember it.
-
-> >  int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
-> >  
-> >  extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
-> > @@ -91,10 +92,13 @@ static inline
-> >  int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
-> >  {
-> >  	struct mem_cgroup *memcg;
-> > +	int match;
-> > +
-> >  	rcu_read_lock();
-> >  	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-> > +	match = memcg && __mem_cgroup_same_or_subtree(cgroup, memcg);
-> >  	rcu_read_unlock();
-> > -	return cgroup == memcg;
-> > +	return match;
-> >  }
+> 	read_lock(&tasklist_lock);
+> 	for_each_process(p) {
+> 		if (p->mm)
+> 			cpumask_clear_cpu(cpu, mm_cpumask(p->mm));
+> 	}
+> 	read_unlock(&tasklist_lock);
 > 
-> mm_match_cgroup() really wants to return a bool type, no?
+> Depending on the context, the code above may have several problems,
+> such as:
+> 
+> 1. Working with task->mm w/o getting mm or grabing the task lock is
+>    dangerous as ->mm might disappear (exit_mm() assigns NULL under
+>    task_lock(), so tasklist lock is not enough).
+> 
+> 2. Checking for process->mm is not enough because process' main
+>    thread may exit or detach its mm via use_mm(), but other threads
+>    may still have a valid mm.
+> 
+> This patch implements a small helper function that does things
+> correctly, i.e.:
+> 
+> 1. We take the task's lock while whe handle its mm (we can't use
+>    get_task_mm()/mmput() pair as mmput() might sleep);
+> 
+> 2. To catch exited main thread case, we use find_lock_task_mm(),
+>    which walks up all threads and returns an appropriate task
+>    (with task lock held).
+> 
+> Also, Per Peter Zijlstra's idea, now we don't grab tasklist_lock in
+> the new helper, instead we take the rcu read lock. We can do this
+> because the function is called after the cpu is taken down and marked
+> offline, so no new tasks will get this cpu set in their mm mask.
+> 
 
----
-From: Johannes Weiner <hannes@cmpxchg.org>
-Subject: [patch] mm: memcg: clean up mm_match_cgroup() signature
+Seems reasonable.
 
-It really should return a boolean for match/no match.  And since it
-takes a memcg, not a cgroup, fix that parameter name as well.
+> --- a/include/linux/cpu.h
+> +++ b/include/linux/cpu.h
+> @@ -179,6 +179,7 @@ extern void put_online_cpus(void);
+>  #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
+>  #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
+>  #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
+> +void clear_tasks_mm_cpumask(int cpu);
+>  int cpu_down(unsigned int cpu);
+>  
+>  #ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index 2060c6e..ecdf499 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -10,6 +10,8 @@
+>  #include <linux/sched.h>
+>  #include <linux/unistd.h>
+>  #include <linux/cpu.h>
+> +#include <linux/oom.h>
+> +#include <linux/rcupdate.h>
+>  #include <linux/export.h>
+>  #include <linux/kthread.h>
+>  #include <linux/stop_machine.h>
+> @@ -171,6 +173,30 @@ void __ref unregister_cpu_notifier(struct notifier_block *nb)
+>  }
+>  EXPORT_SYMBOL(unregister_cpu_notifier);
+>  
+> +void clear_tasks_mm_cpumask(int cpu)
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- include/linux/memcontrol.h |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+The operation of this function was presumably obvious to you at the
+time you wrote it, but that isn't true of other people at later times.
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 76f9d9b..d3038a9 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -89,14 +89,14 @@ extern struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg);
- extern struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont);
- 
- static inline
--int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
-+bool mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *memcg)
- {
--	struct mem_cgroup *memcg;
--	int match;
-+	struct mem_cgroup *task_memcg;
-+	bool match;
- 
- 	rcu_read_lock();
--	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
--	match = memcg && __mem_cgroup_same_or_subtree(cgroup, memcg);
-+	task_memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-+	match = task_memcg && __mem_cgroup_same_or_subtree(memcg, task_memcg);
- 	rcu_read_unlock();
- 	return match;
- }
-@@ -281,10 +281,10 @@ static inline struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm
- 	return NULL;
- }
- 
--static inline int mm_match_cgroup(struct mm_struct *mm,
-+static inline bool mm_match_cgroup(struct mm_struct *mm,
- 		struct mem_cgroup *memcg)
- {
--	return 1;
-+	return true;
- }
- 
- static inline int task_in_mem_cgroup(struct task_struct *task,
--- 
-1.7.7.6
+Please document it?
+
+
+> +{
+> +	struct task_struct *p;
+> +
+> +	/*
+> +	 * This function is called after the cpu is taken down and marked
+> +	 * offline,
+
+hm, well.  Who said that this function will only ever be called
+after that CPU was taken down?  There is nothing in the function name
+nor in the (absent) documentation which enforces this precondition.
+
+If someone tries to use this function for a different purpose, or
+copies-and-modifies it for a different purpose, we just shot them in
+the foot.
+
+They'd be pretty dumb to do that without reading the local comment,
+but still...
+
+> 	 so its not like new tasks will ever get this cpu set in
+> +	 * their mm mask. -- Peter Zijlstra
+> +	 * Thus, we may use rcu_read_lock() here, instead of grabbing
+> +	 * full-fledged tasklist_lock.
+> +	 */
+> +	rcu_read_lock();
+> +	for_each_process(p) {
+> +		struct task_struct *t;
+> +
+> +		t = find_lock_task_mm(p);
+> +		if (!t)
+> +			continue;
+> +		cpumask_clear_cpu(cpu, mm_cpumask(t->mm));
+> +		task_unlock(t);
+> +	}
+> +	rcu_read_unlock();
+> +}
+
+It is good that this code exists under CONFIG_HOTPLUG_CPU.  Did you
+check that everything works correctly with CONFIG_HOTPLUG_CPU=n?
 
