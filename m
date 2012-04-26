@@ -1,123 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab2DZL5N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 07:57:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52586 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462Ab2DZL5M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 07:57:12 -0400
-Date: Thu, 26 Apr 2012 04:56:54 -0700
-From: "tip-bot for he, bo" <bo.he@intel.com>
-Message-ID: <tip-fb2cf2c660971bea0ad86a9a5c19ad39eab61344@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        stable@kernel.org, bo.he@intel.com, yanmin.zhang@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        yanmin.zhang@intel.com, stable@kernel.org, bo.he@intel.com,
-        tglx@linutronix.de
-In-Reply-To: <1335355161.5892.17.camel@hebo>
-References: <1335355161.5892.17.camel@hebo>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix OOPS when build_sched_domains()
-  percpu allocation fails
-Git-Commit-ID: fb2cf2c660971bea0ad86a9a5c19ad39eab61344
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755938Ab2DZMCb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 08:02:31 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:62043 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752111Ab2DZMC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 08:02:29 -0400
+X-IronPort-AV: E=Sophos;i="4.75,486,1330934400"; 
+   d="scan'208";a="643585029"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: kernel BUG at include/net/netns/generic.h:41
+Thread-Topic: kernel BUG at include/net/netns/generic.h:41
+Thread-Index: AQHNEPofLBggl9rQZUWE5n3mvfO03paISysAgASU6YCAAAEqgIAAAGMAgB/fvoCAAHzjAP//6DOg
+Date: Thu, 26 Apr 2012 12:02:17 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91A34FB@SACEXCMBX04-PRD.hq.netapp.com>
+References: <20120328002346.GB3077@redhat.com>
+ <20120402172600.GA3728@redhat.com>
+ <1333390230.13718.34.camel@lade.trondhjem.org>
+ <4F7DC37F.7090404@parallels.com> <20120405161241.GA23658@redhat.com>
+ <4F7DC4CC.9080502@parallels.com> <20120425225855.GA5537@redhat.com>
+ <4F98EA72.6010300@parallels.com>
+In-Reply-To: <4F98EA72.6010300@parallels.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Apr 2012 04:57:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3QC2evl013589
 
-Commit-ID:  fb2cf2c660971bea0ad86a9a5c19ad39eab61344
-Gitweb:     http://git.kernel.org/tip/fb2cf2c660971bea0ad86a9a5c19ad39eab61344
-Author:     he, bo <bo.he@intel.com>
-AuthorDate: Wed, 25 Apr 2012 19:59:21 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 26 Apr 2012 12:54:53 +0200
+> -----Original Message-----
+> From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
+> Sent: Thursday, April 26, 2012 2:26 AM
+> To: Dave Jones; Myklebust, Trond; Linux Kernel; netdev@vger.kernel.org
+> Subject: Re: kernel BUG at include/net/netns/generic.h:41
+> 
+> 26.04.2012 02:58, Dave Jones Ğ½Ğ°Ğ¿Ğ¸ÑĞ°Ğ»:
+> > On Thu, Apr 05, 2012 at 08:14:04PM +0400, Stanislav Kinsbursky wrote:
+> >   >  05.04.2012 20:12, Dave Jones Ğ¿Ğ¸ÑˆĞµÑ‚:
+> >   >  >  On Thu, Apr 05, 2012 at 08:08:31PM +0400, Stanislav Kinsbursky
+> wrote:
+> >   >  >
+> >   >  >    >   So, there are few questions to you, Dave:
+> >   >  >    >   1) can this happen (PipeFS mount attempt before SUNPRC
+> module insertion has
+> >   >  >    >   returned any value) in your case?
+> >   >  >
+> >   >  >  I don't know enough of what systemd is doing to answer this.
+> >   >  >
+> >   >  >    >   2) how often do you experience this problem? Not every boot, I
+> suppose?
+> >   >  >    >   3) And is it easy for you to reproduce?
+> >   >  >
+> >   >  >  It happens most the time, but not every time.
+> >   >  >
+> >   >
+> >   >  Ok, I'll send the patch soon.
+> >   >  Hope, it will help.
+> >   >
+> >   >  --
+> >   >  Best regards,
+> >   >  Stanislav Kinsbursky
+> >
+> > I didn't see a follow-up patch on this, and I'm still seeing the BUG in rc4.
+> >
+> > 	Dave
+> 
+> Dave, search for "SUNRPC: register PipeFS file system after pernet
+> sybsystem" in your mail.
+> You are in CC list.
 
-sched: Fix OOPS when build_sched_domains() percpu allocation fails
+Linus merged it last night together with the other NFS-related bugfixes...
 
-Under extreme memory used up situations, percpu allocation
-might fail. We hit it when system goes to suspend-to-ram,
-causing a kworker panic:
-
- EIP: [<c124411a>] build_sched_domains+0x23a/0xad0
- Kernel panic - not syncing: Fatal exception
- Pid: 3026, comm: kworker/u:3
- 3.0.8-137473-gf42fbef #1
-
- Call Trace:
-  [<c18cc4f2>] panic+0x66/0x16c
-  [...]
-  [<c1244c37>] partition_sched_domains+0x287/0x4b0
-  [<c12a77be>] cpuset_update_active_cpus+0x1fe/0x210
-  [<c123712d>] cpuset_cpu_inactive+0x1d/0x30
-  [...]
-
-With this fix applied build_sched_domains() will return -ENOMEM and
-the suspend attempt fails.
-
-Signed-off-by: he, bo <bo.he@intel.com>
-Reviewed-by: Zhang, Yanmin <yanmin.zhang@intel.com>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: <stable@kernel.org>
-Link: http://lkml.kernel.org/r/1335355161.5892.17.camel@hebo
-[ So, we fail to deallocate a CPU because we cannot allocate RAM :-/
-  I don't like that kind of sad behavior but nevertheless it should
-  not crash under high memory load. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c |   22 ++++++++++++++++------
- 1 files changed, 16 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4603b9d..0533a68 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6405,16 +6405,26 @@ static void __sdt_free(const struct cpumask *cpu_map)
- 		struct sd_data *sdd = &tl->data;
- 
- 		for_each_cpu(j, cpu_map) {
--			struct sched_domain *sd = *per_cpu_ptr(sdd->sd, j);
--			if (sd && (sd->flags & SD_OVERLAP))
--				free_sched_groups(sd->groups, 0);
--			kfree(*per_cpu_ptr(sdd->sd, j));
--			kfree(*per_cpu_ptr(sdd->sg, j));
--			kfree(*per_cpu_ptr(sdd->sgp, j));
-+			struct sched_domain *sd;
-+
-+			if (sdd->sd) {
-+				sd = *per_cpu_ptr(sdd->sd, j);
-+				if (sd && (sd->flags & SD_OVERLAP))
-+					free_sched_groups(sd->groups, 0);
-+				kfree(*per_cpu_ptr(sdd->sd, j));
-+			}
-+
-+			if (sdd->sg)
-+				kfree(*per_cpu_ptr(sdd->sg, j));
-+			if (sdd->sgp)
-+				kfree(*per_cpu_ptr(sdd->sgp, j));
- 		}
- 		free_percpu(sdd->sd);
-+		sdd->sd = NULL;
- 		free_percpu(sdd->sg);
-+		sdd->sg = NULL;
- 		free_percpu(sdd->sgp);
-+		sdd->sgp = NULL;
- 	}
- }
- 
+Cheers
+  Trond
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
