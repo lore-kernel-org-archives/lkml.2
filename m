@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903Ab2DZK10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 06:27:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50003 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883Ab2DZK1Y convert rfc822-to-8bit (ORCPT
+	id S1755868Ab2DZK2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 06:28:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34867 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755046Ab2DZK2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 06:27:24 -0400
-Message-ID: <1335436031.13683.6.camel@twins>
-Subject: Re: [BUG] perf stat: useless output for raw events with new event
- parser
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@elte.hu,
-        David Ahern <dsahern@gmail.com>,
-        Robert Richter <robert.richter@amd.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Date: Thu, 26 Apr 2012 12:27:11 +0200
-In-Reply-To: <CABPqkBQ2w3RLRwq3fsaJQ_L=_=H+5kounBeuxUv_fk1ksimTOQ@mail.gmail.com>
-References: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
-	 <1335178132.28150.117.camel@twins>
-	 <CABPqkBQ2w3RLRwq3fsaJQ_L=_=H+5kounBeuxUv_fk1ksimTOQ@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 26 Apr 2012 06:28:45 -0400
+Date: Thu, 26 Apr 2012 11:28:15 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Yilu Mao <ylmao@marvell.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: cache-l2x0.c: save aux ctrl for resume in case
+ that l2x0 is enabled before init
+Message-ID: <20120426102815.GE18136@arm.com>
+References: <1335235280-25148-1-git-send-email-ylmao@marvell.com>
+ <20120424082810.GA9367@arm.com>
+ <4F98D659.4030709@marvell.com>
+ <20120426083554.GB18136@arm.com>
+ <4F99148B.4020900@marvell.com>
+ <20120426094400.GD18136@arm.com>
+ <4F991ED6.8060109@marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F991ED6.8060109@marvell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-23 at 13:17 +0200, Stephane Eranian wrote:
-> On Mon, Apr 23, 2012 at 12:48 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Mon, 2012-04-23 at 12:45 +0200, Stephane Eranian wrote:
-> >> Hi,
+On Thu, Apr 26, 2012 at 11:09:26AM +0100, Yilu Mao wrote:
+> On 04/26/2012 05:44 PM, Catalin Marinas wrote:
+> > On Thu, Apr 26, 2012 at 10:25:31AM +0100, Yilu Mao wrote:
+> >> On 04/26/2012 04:35 PM, Catalin Marinas wrote:
+> >>> On Thu, Apr 26, 2012 at 06:00:09AM +0100, Yilu Mao wrote:
+> >>>> On 04/24/2012 04:28 PM, Catalin Marinas wrote:
+> >>>>> On Tue, Apr 24, 2012 at 03:41:20AM +0100, Yilu Mao wrote:
+> >>>>>> +	l2x0_saved_regs.aux_ctrl = aux;
+> >>>>>> +
+> >>>>>>     	aux&= aux_mask;
+> >>>>>>     	aux |= aux_val;
+> >>>>>
+> >>>>> I think that's the wrong place to save it, it should be after the
+> >>>>> masking was done.
+> >>>>>
+> >>>>> Anyway, if we cannot write this register in l2x0_init() because the L2
+> >>>>> was enabled, do we expect the L2 to be disabled during resume?
+> >>>>>
+> >>>> Sorry, I don't think so.
+> >>>> This is the right place to save it because we must make sure the saved
+> >>>> aux_ctrl is the same as what it is set.
+> >>>> If we save it after masking was done, the saved value will be different
+> >>>> because we can't actually change the real setting.
+> >>>
+> >>> And since we can't actually change the real setting on the resume path,
+> >>> why do we need to save it anyway. Is your L2 cache disabled on the
+> >>> resume path but not on the cold boot one?
 > >>
-> >> With the new event parser, one can express raw events field by field:
-> >>
-> >> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
-> >>
-> >> The problem with this is that the output of perf stat becomes useless:
-> >>
-> >> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
-> >> noploop for 1 seconds
-> >>
-> >>  Performance counter stats for 'noploop 1':
-> >>
-> >>         2395038678 pmu
-> >>             10787 pmu
-> >>                        ^^^^^^
-> >>        1.000802603 seconds time elapsed
+> >> We can't change L2 aux ctrl setting when do init because it has been
+> >> enabled.
 > >
-> > Yeah, I already complained about that.. Jolsa proposed adding a name=
-> > parameter so you could explicitly name your events. I think I've seen a
-> > patch adding that, but can't atm seem to locate it.
+> > This is normally for the case where the kernel running in non-secure
+> > mode is not allowed to write the L2 aux ctrl register. Does this
+> > permission change with core idle?
 > >
-> If the proposed solution is to add a pseudo field called "name", then I don't
-> see the point of this new parser compared to directly using my libpfm4
-> library which already allows:
-> 
->  perf stat -e inst_retired:any,wsm_unc:unc_cycles:u ...
-> And
->  perf record -e instr_retired:period=200000,cpu_clk_unhalted:freq=100 ...
-> 
-> If you have to make up names, you might as well, use the actual PMU
-> event names, but if you do so, why would you have to bother breaking
-> down the encoding into fields?
+> Yes, your understanding of previous mail is right. The L2 is enabled on 
+> code boot and it is disabled on the resume in our case.
 
-I'd like to use the event names, but really, when you do:
+But the kernel either runs in secure mode or the non-secure access to
+this register is allowed.
 
- cpu/event=instructions_retired,inv,cmask=16/
+> So if we don't have such patch, when core idle exit, L2 cache aux ctrl 
+> register will be set to 0x0 because l2x0_saved_regs.aux_ctrl is not 
+> initialized.
 
-is it still instructions_retired?
+You could still make sure that the mask passed doesn't affect the
+original setting and save it after masking.
 
-In SFO we spoke about exporting those event tables you have in libpfm4
-in some structured file format so that we both might use them, the
-primary difficulty in that (IIRC) was the umask constraints per event.
-
-I'm not too overly bothered by people specifying wrong events (at some
-point they really had better know wth they're doing anyway), so can we
-start with something that mostly works?
-
-I've already spoken with Jiri about adding this before all this parser
-stuff got implemented, so it should all be quite possible to add.
-
-Furthermore, once we have a common format, we could even ask Intel/AMD
-(and other vendors) to provide their data in this format.
-
-
+-- 
+Catalin
