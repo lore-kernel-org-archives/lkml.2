@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab2DZK0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 06:26:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19320 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750908Ab2DZK0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 06:26:46 -0400
-Date: Thu, 26 Apr 2012 12:10:30 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, eranian@google.com,
-        robert.richter@amd.com
-Subject: Re: [PATCHv2 0/6] perf, tool: event parsing enhancements/fixes
-Message-ID: <20120426101030.GA1659@m.brq.redhat.com>
-References: <1335371102-11358-1-git-send-email-jolsa@redhat.com>
- <87liljf2gi.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87liljf2gi.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755903Ab2DZK10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 06:27:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50003 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754883Ab2DZK1Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 06:27:24 -0400
+Message-ID: <1335436031.13683.6.camel@twins>
+Subject: Re: [BUG] perf stat: useless output for raw events with new event
+ parser
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@elte.hu,
+        David Ahern <dsahern@gmail.com>,
+        Robert Richter <robert.richter@amd.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Date: Thu, 26 Apr 2012 12:27:11 +0200
+In-Reply-To: <CABPqkBQ2w3RLRwq3fsaJQ_L=_=H+5kounBeuxUv_fk1ksimTOQ@mail.gmail.com>
+References: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
+	 <1335178132.28150.117.camel@twins>
+	 <CABPqkBQ2w3RLRwq3fsaJQ_L=_=H+5kounBeuxUv_fk1ksimTOQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 03:10:21PM +0900, Namhyung Kim wrote:
-> Hi,
-> 
-> On Wed, 25 Apr 2012 18:24:56 +0200, Jiri Olsa wrote:
-> > Hi,
-> > adding some enhancements/fixies for perf event parsing.
+On Mon, 2012-04-23 at 13:17 +0200, Stephane Eranian wrote:
+> On Mon, Apr 23, 2012 at 12:48 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Mon, 2012-04-23 at 12:45 +0200, Stephane Eranian wrote:
+> >> Hi,
+> >>
+> >> With the new event parser, one can express raw events field by field:
+> >>
+> >> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
+> >>
+> >> The problem with this is that the output of perf stat becomes useless:
+> >>
+> >> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
+> >> noploop for 1 seconds
+> >>
+> >>  Performance counter stats for 'noploop 1':
+> >>
+> >>         2395038678 pmu
+> >>             10787 pmu
+> >>                        ^^^^^^
+> >>        1.000802603 seconds time elapsed
 > >
-> > v2 changes:
-> >    - rebased to current tip tree
-> >    - 2/6 - ommitting pmu tests in case there's no pmu sysfs record
-> 
-> Nice! It bothered me somewhat so I was thinking about fixing it.
-> I guess we have a same problem on x86 rdpmc test too?
-
-right.. I haven't seen that code, so not sure how hard the fix would be
-
-jirka
-
-> 
-> Thanks,
-> Namhyung
-> 
-> 
-> >    - 6/6 - default the pmu event name to raw 0x<perf_event_attr::config>
+> > Yeah, I already complained about that.. Jolsa proposed adding a name=
+> > parameter so you could explicitly name your events. I think I've seen a
+> > patch adding that, but can't atm seem to locate it.
 > >
-> > Attached patches:
-> >   1/6 perf, tool: Split term type into value type and term type
-> >   2/6 perf, tool: Move parse event automated tests to separated object
-> >   3/6 perf, tool: Add support for displaying event parser debug info
-> >   4/6 perf, tool: Use allocated list for each parsed event
-> >   5/6 perf, tool: Separate 'mem:' event scanner bits
-> >   6/6 perf, tool: Add hardcoded name term for pmu events
-> >
-> > thanks,
-> > jirka
-> > ---
-> >  tools/perf/Makefile                 |   13 +-
-> >  tools/perf/builtin-test.c           |  552 +------------------------------
-> >  tools/perf/util/parse-events-test.c |  625 +++++++++++++++++++++++++++++++++++
-> >  tools/perf/util/parse-events.c      |  114 +++++--
-> >  tools/perf/util/parse-events.h      |   42 ++-
-> >  tools/perf/util/parse-events.l      |   26 ++-
-> >  tools/perf/util/parse-events.y      |   93 ++++--
-> >  tools/perf/util/pmu.c               |   74 +++--
-> >  8 files changed, 883 insertions(+), 656 deletions(-)
+> If the proposed solution is to add a pseudo field called "name", then I don't
+> see the point of this new parser compared to directly using my libpfm4
+> library which already allows:
+> 
+>  perf stat -e inst_retired:any,wsm_unc:unc_cycles:u ...
+> And
+>  perf record -e instr_retired:period=200000,cpu_clk_unhalted:freq=100 ...
+> 
+> If you have to make up names, you might as well, use the actual PMU
+> event names, but if you do so, why would you have to bother breaking
+> down the encoding into fields?
+
+I'd like to use the event names, but really, when you do:
+
+ cpu/event=instructions_retired,inv,cmask=16/
+
+is it still instructions_retired?
+
+In SFO we spoke about exporting those event tables you have in libpfm4
+in some structured file format so that we both might use them, the
+primary difficulty in that (IIRC) was the umask constraints per event.
+
+I'm not too overly bothered by people specifying wrong events (at some
+point they really had better know wth they're doing anyway), so can we
+start with something that mostly works?
+
+I've already spoken with Jiri about adding this before all this parser
+stuff got implemented, so it should all be quite possible to add.
+
+Furthermore, once we have a common format, we could even ask Intel/AMD
+(and other vendors) to provide their data in this format.
+
+
