@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab2DZJXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 05:23:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51679 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274Ab2DZJXQ (ORCPT
+	id S1754440Ab2DZJ2h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 05:28:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39763 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750972Ab2DZJ2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 05:23:16 -0400
-Date: Thu, 26 Apr 2012 02:23:03 -0700
-From: tip-bot for John Stultz <john.stultz@linaro.org>
-Message-ID: <tip-e48b5e825f9c471cbcbfd934a4c2df27e9d39635@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <1335300215-21427-1-git-send-email-john.stultz@linaro.org>
-References: <1335300215-21427-1-git-send-email-john.stultz@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] rtc:
-  Fix possible null pointer dereference in rtc-mpc5121.c
-Git-Commit-ID: e48b5e825f9c471cbcbfd934a4c2df27e9d39635
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 26 Apr 2012 05:28:36 -0400
+Date: Thu, 26 Apr 2012 10:28:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] twl-regulator: Allow CONFIG_TWL4030_ALLOW_UNSUPPORTED to
+ be requested.
+Message-ID: <20120426092832.GC3207@opensource.wolfsonmicro.com>
+References: <20120425122924.0f08f5dc@notabene.brown>
+ <20120425082417.GE3195@opensource.wolfsonmicro.com>
+ <20120425195956.5b3d9c2a@notabene.brown>
+ <20120425101258.GI3195@opensource.wolfsonmicro.com>
+ <20120425205002.104ff358@notabene.brown>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uh9ZiVrAOUUm9fzH"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Apr 2012 02:23:08 -0700 (PDT)
+In-Reply-To: <20120425205002.104ff358@notabene.brown>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e48b5e825f9c471cbcbfd934a4c2df27e9d39635
-Gitweb:     http://git.kernel.org/tip/e48b5e825f9c471cbcbfd934a4c2df27e9d39635
-Author:     John Stultz <john.stultz@linaro.org>
-AuthorDate: Tue, 24 Apr 2012 13:43:35 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 26 Apr 2012 11:17:01 +0200
 
-rtc: Fix possible null pointer dereference in rtc-mpc5121.c
+--uh9ZiVrAOUUm9fzH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Mark Loard pointed out:
-"For example, this beauty from rtc-mpc5121.c in the same update:
-   ...
-   rtc->rtc = rtc_device_register("mpc5200-rtc", &op->dev,
-                                   &mpc5200_rtc_ops, THIS_MODULE);
-   ...
+On Wed, Apr 25, 2012 at 08:50:02PM +1000, NeilBrown wrote:
 
-   rtc->rtc->uie_unsupported = 1;    // <<<< Ooops NULL pointer >>>>
+> So maybe something like that (completely untested as yet) ??
+> (and this seems to have changed between 3.3 and 3.4 which confused me
+> a bit.  But if you think this approach is OK I'll come up with something
+> that is right for 3.4).
 
-   if (IS_ERR(rtc->rtc)) {           // <<<< this needs to be earlier >>>>
-           err = PTR_ERR(rtc->rtc);
-           goto out_free_irq;
-   }
-   ..."
+Yes, that looks reasonable.
 
-This patch moves setting the uie_unsupported flag to after we validate
-the rtc->rtc pointer to resolve this.
+--uh9ZiVrAOUUm9fzH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Reported by: Mark Lord <kernel@teksavvy.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Link: http://lkml.kernel.org/r/1335300215-21427-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/rtc/rtc-mpc5121.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/drivers/rtc/rtc-mpc5121.c b/drivers/rtc/rtc-mpc5121.c
-index 42f5f82..029e421 100644
---- a/drivers/rtc/rtc-mpc5121.c
-+++ b/drivers/rtc/rtc-mpc5121.c
-@@ -360,12 +360,11 @@ static int __devinit mpc5121_rtc_probe(struct platform_device *op)
- 						&mpc5200_rtc_ops, THIS_MODULE);
- 	}
- 
--	rtc->rtc->uie_unsupported = 1;
--
- 	if (IS_ERR(rtc->rtc)) {
- 		err = PTR_ERR(rtc->rtc);
- 		goto out_free_irq;
- 	}
-+	rtc->rtc->uie_unsupported = 1;
- 
- 	return 0;
- 
+iQIcBAEBAgAGBQJPmRU5AAoJEBus8iNuMP3dWSsP/jBAuq3hjw7/fsGFvLI2Zp3+
+cnNQPi3bXsEgQW7z3aGdj8khERdN+XvpVYt9HrItvl1G2l0f8+2Xz82C3bjTXVFe
+R6EPcxTmRiirNqTWLSRcf9hquxOu6vq8YSsx2HeuWwHh+xNHuAN3RQdL/O5aMFkc
+TEfw+VyEVhU9+ycEtCrBEKVeeWE5HFcRZe3EiNdS/w/U1TenKNJocyu331ZPYth+
+F0O94q14gmm3v9pj/mtFcw6RYR9xZkPYqMDzZN4nd3bwY/O5H8JJpQhX1T0SE6ad
+gy0VdA6NnA2AjmkrxC683I84iVrQDgb4z4nykxR/czvHaDjpGnzo5m+KMD6V2gfn
+zmib+JkJrQXJtxprqj4/OQccJxJsO/7JEP4vcRQmQS6OlIjDTYdQbpcn8/e7Qjwr
+Vtv+YAX98S7bL9LWVDJzHDhUk4q7pqQsIZIbUVy5IbLa+tlZBD0ftxf721/S/R7o
+my6rvkaFQ7Sp9z/cfEJxaC7n24yS05G1QYwYJEB0gKG0OzVcVQ82A4x4kUgMtBKh
+UlndiLETffJ+y7vgtl1Y4EJcvNoo9hpJsVUiC3DyqWPckDizXOViUrnpOjvrEd1C
+Oi9MWBXQrAqrsP0LTJC8AJ3+4znEnbS6tpW0KXUVJqTzbHujTvdxkk43QypxXy6k
+uw96q3Wm65SKa+8C+ZfZ
+=pd0h
+-----END PGP SIGNATURE-----
+
+--uh9ZiVrAOUUm9fzH--
