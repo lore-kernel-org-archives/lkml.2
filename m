@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab2DZRjV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 13:39:21 -0400
-Received: from na3sys010aog105.obsmtp.com ([74.125.245.78]:46641 "HELO
-	na3sys010aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751255Ab2DZRjT (ORCPT
+	id S1754812Ab2DZRkz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 13:40:55 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1643 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007Ab2DZRkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 13:39:19 -0400
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Thu, 26 Apr 2012 10:39:10 -0700
-Message-Id: <1335461950-30597-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 26 Apr 2012 13:40:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 26 Apr 2012 10:40:53 -0700
+Message-ID: <4F998843.9080108@nvidia.com>
+Date: Thu, 26 Apr 2012 23:09:15 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2 3/4] ARM: dt: tegra: enable als and proximity sensor
+References: <1335183097-21104-1-git-send-email-ldewangan@nvidia.com> <1335183097-21104-5-git-send-email-ldewangan@nvidia.com> <4F958E42.6030506@wwwdotorg.org>
+In-Reply-To: <4F958E42.6030506@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Monday 23 April 2012 10:45 PM, Stephen Warren wrote:
+> On 04/23/2012 06:11 AM, Laxman Dewangan wrote:
+>> Add the device info for ALS and proximity sensor for tegra
+>> boards cardhu, ventana and seabridge.
+>>
+>> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
+> Thanks, applied.
+>
+> I made the following minor changes: s/PZ02/PZ2/ in .dts files,
+> s/seabridge/seaboard/ in commit description
+>
+> I note that the proximity detection doesn't appear to work on my Cardhu,
+> although the light sensor works. Is that expected? Both work on Seaboard
+> and Ventana.
 
-Please pull from
+Yes, there is problem in cardhu about component mounting for ir led. 
+This is fixed on other version of reference  board.
+So on cardhu, proximity sensing always return 0xFF.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/ib-fixes
-
-----------------------------------------------------------------
-
-A few fixes for regressions introduced in 3.4-rc1:
- - fix memory leak in mlx4
- - fix two problems with new MAD response generation code
-
-----------------------------------------------------------------
-Jack Morgenstein (2):
-      IB/mad: Set 'D' bit in response for unhandled MADs
-      IB/mad: Don't send response for failed MADs
-
-Jesper Juhl (1):
-      IB/mlx4: Fix memory leaks in ib_link_query_port()
-
-Roland Dreier (1):
-      Merge branches 'mad-response' and 'mlx4' into fixes
-
- drivers/infiniband/core/mad.c     |    8 +++++---
- drivers/infiniband/hw/mlx4/main.c |    2 +-
- 2 files changed, 6 insertions(+), 4 deletions(-)
