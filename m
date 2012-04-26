@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab2DZCiV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 22:38:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10821 "EHLO
+	id S1753762Ab2DZCi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 22:38:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10757 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab2DZChL (ORCPT
+	with ESMTP id S1752643Ab2DZChK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 22:37:11 -0400
-X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=m6zUCcfVnScA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=8XEjfe34XjmxG5zXbsgA:9 a=56Q5d-d8OoC3fkeB5q0A:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=upARtvWGIfCobXerBRAA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Wed, 25 Apr 2012 22:37:10 -0400
+X-Authority-Analysis: v=2.0 cv=MNHiabll c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=hye7S_sYQ4EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=5KKST3nhYfKchGJsNdYA:9 a=AZVu-Z0au8g6cMJEbnkA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=uGREW3pb6d3YDRYC_QgA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120426023708.168717736@goodmis.org>
+Message-Id: <20120426023707.067992109@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 25 Apr 2012 22:29:27 -0400
+Date: Wed, 25 Apr 2012 22:29:24 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 5/6][RFC] ftrace: Return record ip addr for ftrace_location()
+Subject: [PATCH 2/6][RFC] ftrace: Remove extra helper functions
 References: <20120426022922.683707508@goodmis.org>
-Content-Disposition: inline; filename=0005-ftrace-Return-record-ip-addr-for-ftrace_location.patch
+Content-Disposition: inline; filename=0002-ftrace-Remove-extra-helper-functions.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,93 +32,134 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-ftrace_location() is passed an addr, and returns 1 if the addr is
-on a ftrace nop (or caller to ftrace_caller), and 0 otherwise.
+The ftrace_record_ip() and ftrace_alloc_dyn_node() were from the
+time of the ftrace daemon. Although they were still used, they
+still make things a bit more complex than necessary.
 
-To let kprobes know if it should move a breakpoint or not, it
-must return the actual addr that is the start of the ftrace nop.
-This way a kprobe placed on the location of a ftrace nop, can
-instead be placed on the instruction after the nop. Even if the
-probe addr is on the second or later byte of the nop, it can
-simply be moved forward.
+Move the code into the one function that uses it, and remove the
+helper functions.
 
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h |    2 +-
- kernel/trace/ftrace.c  |   16 ++++++++++------
- 2 files changed, 11 insertions(+), 7 deletions(-)
+ kernel/trace/ftrace.c |   61 +++++++++++++++++++--------------------------=
+----
+ 1 file changed, 24 insertions(+), 37 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 0b55903..9310993 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -295,7 +295,7 @@ struct dyn_ftrace *ftrace_rec_iter_record(struct ftrace=
-_rec_iter *iter);
- int ftrace_update_record(struct dyn_ftrace *rec, int enable);
- int ftrace_test_record(struct dyn_ftrace *rec, int enable);
- void ftrace_run_stop_machine(int command);
--int ftrace_location(unsigned long ip);
-+unsigned long ftrace_location(unsigned long ip);
-=20
- extern ftrace_func_t ftrace_trace_function;
-=20
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 51e07f7..7e3c398 100644
+index 6a19e81..4e608f8 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -1393,7 +1393,7 @@ static int ftrace_cmp_recs(const void *a, const void =
-*b)
- 	return 0;
+@@ -1520,35 +1520,6 @@ static void ftrace_hash_rec_enable(struct ftrace_ops=
+ *ops,
+ 	__ftrace_hash_rec_update(ops, filter_hash, 1);
  }
 =20
--static int ftrace_location_range(unsigned long start, unsigned long end)
-+static unsigned long ftrace_location_range(unsigned long start, unsigned l=
-ong end)
+-static struct dyn_ftrace *ftrace_alloc_dyn_node(unsigned long ip)
+-{
+-	if (ftrace_pages->index =3D=3D ftrace_pages->size) {
+-		/* We should have allocated enough */
+-		if (WARN_ON(!ftrace_pages->next))
+-			return NULL;
+-		ftrace_pages =3D ftrace_pages->next;
+-	}
+-
+-	return &ftrace_pages->records[ftrace_pages->index++];
+-}
+-
+-static struct dyn_ftrace *
+-ftrace_record_ip(unsigned long ip)
+-{
+-	struct dyn_ftrace *rec;
+-
+-	if (ftrace_disabled)
+-		return NULL;
+-
+-	rec =3D ftrace_alloc_dyn_node(ip);
+-	if (!rec)
+-		return NULL;
+-
+-	rec->ip =3D ip;
+-
+-	return rec;
+-}
+-
+ static void print_ip_ins(const char *fmt, unsigned char *p)
  {
+ 	int i;
+@@ -3715,7 +3686,9 @@ static int ftrace_process_locs(struct module *mod,
+ 			       unsigned long *start,
+ 			       unsigned long *end)
+ {
++	struct ftrace_page *start_pg;
  	struct ftrace_page *pg;
- 	struct dyn_ftrace *rec;
-@@ -1410,7 +1410,7 @@ static int ftrace_location_range(unsigned long start,=
- unsigned long end)
- 			      sizeof(struct dyn_ftrace),
- 			      ftrace_cmp_recs);
- 		if (rec)
--			return 1;
-+			return rec->ip;
++	struct dyn_ftrace *rec;
+ 	unsigned long count;
+ 	unsigned long *p;
+ 	unsigned long addr;
+@@ -3730,8 +3703,8 @@ static int ftrace_process_locs(struct module *mod,
+ 	sort(start, count, sizeof(*start),
+ 	     ftrace_cmp_ips, ftrace_swap_ips);
+=20
+-	pg =3D ftrace_allocate_pages(count);
+-	if (!pg)
++	start_pg =3D ftrace_allocate_pages(count);
++	if (!start_pg)
+ 		return -ENOMEM;
+=20
+ 	mutex_lock(&ftrace_lock);
+@@ -3744,7 +3717,7 @@ static int ftrace_process_locs(struct module *mod,
+ 	if (!mod) {
+ 		WARN_ON(ftrace_pages || ftrace_pages_start);
+ 		/* First initialization */
+-		ftrace_pages =3D ftrace_pages_start =3D pg;
++		ftrace_pages =3D ftrace_pages_start =3D start_pg;
+ 	} else {
+ 		if (!ftrace_pages)
+ 			goto out;
+@@ -3755,11 +3728,11 @@ static int ftrace_process_locs(struct module *mod,
+ 				ftrace_pages =3D ftrace_pages->next;
+ 		}
+=20
+-		ftrace_pages->next =3D pg;
+-		ftrace_pages =3D pg;
++		ftrace_pages->next =3D start_pg;
  	}
 =20
- 	return 0;
-@@ -1420,12 +1420,12 @@ static int ftrace_location_range(unsigned long star=
-t, unsigned long end)
-  * ftrace_location - return true if the ip giving is a traced location
-  * @ip: the instruction pointer to check
-  *
-- * Returns 1 if @ip given is a pointer to a ftrace location.
-+ * Returns rec->ip if @ip given is a pointer to a ftrace location.
-  * That is, the instruction that is either a NOP or call to
-  * the function tracer. It checks the ftrace internal tables to
-  * determine if the address belongs or not.
-  */
--int ftrace_location(unsigned long ip)
-+unsigned long ftrace_location(unsigned long ip)
- {
- 	return ftrace_location_range(ip, ip);
- }
-@@ -1442,8 +1442,12 @@ int ftrace_location(unsigned long ip)
-  */
- int ftrace_text_reserved(void *start, void *end)
- {
--	return ftrace_location_range((unsigned long)start,
--				     (unsigned long)end);
-+	unsigned long ret;
+ 	p =3D start;
++	pg =3D start_pg;
+ 	while (p < end) {
+ 		addr =3D ftrace_call_adjust(*p++);
+ 		/*
+@@ -3770,12 +3743,26 @@ static int ftrace_process_locs(struct module *mod,
+ 		 */
+ 		if (!addr)
+ 			continue;
+-		if (!ftrace_record_ip(addr))
+-			break;
 +
-+	ret =3D ftrace_location_range((unsigned long)start,
-+				    (unsigned long)end);
++		if (pg->index =3D=3D pg->size) {
++			/* We should have allocated enough */
++			if (WARN_ON(!pg->next))
++				break;
++			pg =3D pg->next;
++		}
 +
-+	return (int)!!ret;
- }
++		rec =3D &pg->records[pg->index++];
++		rec->ip =3D addr;
+ 	}
 =20
- static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
++	/* We should have used all pages */
++	WARN_ON(pg->next);
++
++	/* Assign the last page to ftrace_pages */
++	ftrace_pages =3D pg;
++
+ 	/* These new locations need to be initialized */
+-	ftrace_new_pgs =3D pg;
++	ftrace_new_pgs =3D start_pg;
+=20
+ 	/*
+ 	 * We only need to disable interrupts on start up
 --=20
 1.7.9.5
 
@@ -131,19 +172,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPmLTUAAoJEIy3vGnGbaoALhIQAK8skJwNa8jbPxcvsZPiwf4C
-5ARSxzTNCDE4M3Q2i3J6T0N0t8rAgAg13qQDeiydj7+1oGToX0J4jBNHgnU0RTbh
-MWgOsr8gNVRdnp0n9ko7EerLnB/CRvlCLcx78hNx7pxp63/+7pmticqCtPVLMlGV
-AvSSfbdbltDYlcv7AnQhMA1Psfzi8gARwma+l/UmV/ODSnda00oWGW9bH2Yf/WPk
-5aP2vqQnLjF+eppnqP1ZNxkN6dH8gbmCwKFE/ismkK+pp/ZLSW9olVWGE+iEl0Ss
-FsZFSY6EDZKSrC8H6fceaoVlDeQT3BkpvIZ58kdxuoJ7ar+s1B8ZKkxlRtqK4AZN
-zwKyp59L1ALjNVetZpS3JD9mfzVNLwOAq1PdHjdUYSGidrN/0d1Vsm7op0EaHAN5
-d+Ea7YfexNqUyLCJ/nTxHyLoE3KhrsiMCF+t0z1bLEvsNKXaqOvSg7hzbhqGLBE6
-SxqA+G9gwSnjraqY/ydqbdU/TV6MIhBnYxdqAEEliAZBZvpGXY4g1Dcp1fxc515Q
-VR/zWwobQltWxyvf9EMf/jAgFZzlvd4lhkbHtPheRfeO0QQX7gb6TGwYFXHgWTvX
-hMPPgIuj25plGivIAdM+oGANcSsxeoSIcnM5COJlP54Mo6rPF4ng2K1CHRu8Xzrl
-j+bDxBnGKbfJjvHe2CVR
-=pWYR
+iQIcBAABAgAGBQJPmLTTAAoJEIy3vGnGbaoArFkQAN9moMxc3bfAMQgBgoiQBQbz
+ZgJy5X7CyOlLKBY9C2KVpcQhq6lI5ePXF5gFEpynaj5jyffxZCs2/NuDHDiO6Mst
+gFWFba8f+mBYpy+qIFbF1nP75OnEiVj6IPpg0WFruHwRogvpwNXMMOGN+hnUvWZ3
+r5AvNMR1QAVwL2FUbI4xOpmDqRRlL+/nK+Wtbj7JBYh+YlPXM5FTttaDeepehyZY
+wo8iCmx3OrDIObCplBNPP3IX4N4boukNX0bO5zlZBYa4fpuTHnkCZ7hEe3IfydIF
+Zj2PXVUGQK7U5cTBM7TvPQVAG7rRACDNusa1tMKmtK+txXMwhQEtY2po0hDDv5Y6
+XYo+s2U0VlnAzqwgSZT3EQZkpzy8dQBIkiOObWj/n/UfEtN5Rm3Pl2nmaS5abheV
+/qnbgI74NsWjFBYUqkFr0ccBHVreBXZ8Jz5v4deRUEgoba6BugAlUK3I+xHjgODW
+WMKBz7U8X33IOSmZr3Ueq8jHNg4ChPguMUoMivO0TH82OJainCgETlrDZc5Xnl6S
+RH9YCLnJ9z9DHqSjYjFDjJfqm9R/kcg1odJ3binZpDu2EWJ1X5ZXuuDHm+RkB5q4
+FaSd8VSzZVNFoOseokvUuI13P0A4dRs5VOWkeGGkPhNSCLFy1W6cJj3VDpsbKLNd
+biVhZoySkeCt8065IQmI
+=LTHr
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
