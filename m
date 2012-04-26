@@ -1,407 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab2DZITU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 04:19:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40395 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab2DZITQ (ORCPT
+	id S1754852Ab2DZIVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 04:21:49 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:36402 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754374Ab2DZIVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 04:19:16 -0400
-Date: Thu, 26 Apr 2012 01:19:10 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rakesh Iyer <riyer@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Viresh Kumar <viresh.kumar@st.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 2/2] Input: matrix_keymap - wire up device tree support
-Message-ID: <20120426081909.GA2726@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 Apr 2012 04:21:45 -0400
+X-Sasl-enc: xDFxpioF3aeMFhoXhm7oVowIJ2a5kjs2hHf3TgggrTMZ3oSy7wcP8+QcOg 1335428503
+Message-ID: <1335428498.6702.33.camel@perseus.themaw.net>
+Subject: Re: [PATCH] unbreak automount daemon after fixing autofs5 ABI
+From: Ian Kent <raven@themaw.net>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Meyer <thomas@m3y3r.de>, stable@kernel.org,
+        autofs@vger.kernel.org
+Date: Thu, 26 Apr 2012 16:21:38 +0800
+In-Reply-To: <1335421594-10499-1-git-send-email-mjt@msgid.tls.msk.ru>
+References: <1335421594-10499-1-git-send-email-mjt@msgid.tls.msk.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When platform keymap is not supplied to matrix_keypad_build_keymap()
-and device tree support is enabled, try locating specified property
-and load keymap from it. If property name is not defined, try using
-"linux,keymap".
+On Thu, 2012-04-26 at 10:26 +0400, Michael Tokarev wrote:
+> Patch 499f286dc02cde6b668e2d757dfe100cb0c43445, comitted
+> in Feb-2012, fixed a kernel<=>user interface which was
+> broken for mixed 32/64 user/kernel environment since its
+> introduction in 2006 by commit 5c0a32fc2cd0.  The problem
+> with this fix is that it broke userspace which were adopted
+> to the initial bug a year after its introduction, in
+> autofs-5.0.1.  So patch 499f286dc02cde6b broke a working
+> userspace.  This has been done because another user of
+> this interface emerged, systemd, which had the same prob
+> as old automount (<5.0.1) had.  So the end result was a
+> breakage of an old, widely used -- by all current and
+> previous distribution -- software (autofs5) in order to
+> unbreak a new not yet widely adopted software (systemd).
+> 
+> The real fix for this issue, in my opinion, is to adopt
+> the same fix in systemd as has been done in autofs5, and/or
+> to have a new interface without a bug wich both userspace
+> implementations will use.
+> 
+> Alternative is to find a way on the kernel side to see
+> which variant of userspace we're dealing with, by seeing
+> how many bytes for the structure in question the userspace
+> requests in read operation.  But since autofs uses regular
+> pipe code to read the data from kernel, and the said pipe
+> is opened in userspace before connecting it with the autofs
+> module, reads are not seen by autofs module directly, they're
+> seen by the pipe code.
+> 
+> So for now, below is a minimal quick fix which should sort
+> current mess.
+> 
+> Change 499f286dc02cde6b tries to fix the original interface
+> bug for 32bit userspace running on 64bit kernel.  But the
+> issue is that autofs5 already has a workaround for it, so
+> the end result is that the two (kernel & user) disagree
+> again.  "Fix" this by applying the in-kernel fix only if
+> the process is not named "automount" -- which is how autofs5
+> daemon is named.
 
-Based on earlier patch by Viresh Kumar <viresh.kumar@st.com>
+No, you cannot be sure the autofs binary is named automount.
+Not only that, this approach makes an unpleasant change even more
+unpleasant.
 
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
----
- drivers/input/keyboard/tegra-kbc.c  |   56 +++++++-----
- drivers/input/matrix-keymap.c       |  175 +++++++++++++++++++---------------
- include/linux/input/matrix_keypad.h |   18 ----
- 3 files changed, 130 insertions(+), 119 deletions(-)
+I still think that my original proposed patches were the better approach
+to handling this problem.
 
-diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
-index 6722d37..fba4991 100644
---- a/drivers/input/keyboard/tegra-kbc.c
-+++ b/drivers/input/keyboard/tegra-kbc.c
-@@ -619,8 +619,8 @@ tegra_kbc_check_pin_cfg(const struct tegra_kbc_platform_data *pdata,
- }
+My recommendation was that the major autofs kernel protocol version be
+bumped and a packed structure used from that version on. That allows
+user space to request that protocol version for communication at mount
+time. If systemd doesn't want to support earlier protocol versions then
+it can complain, instructing the user to update to a later kernel.
+
+I understand why that proposal was not well accepted but the fact
+remains, I did make a mistake and I did chose to work around it in user
+space rather than cope with the pain at the time. In hind site that may
+have been the wrong thing to do but that's history. So I believe the
+most sensible thing to do now is to take the approach that minimizes
+breakage.
+
+> 
+> This change should be applied to all 3.x stable series too,
+> since it breaks existing userspace for these kernels.
+> 
+> Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
+> Cc: Ian Kent <raven@themaw.net>
+> Cc: Thomas Meyer <thomas@m3y3r.de>
+> Cc: stable@kernel.org
+> Cc: autofs@vger.kernel.org
+> ---
+>  fs/autofs4/dev-ioctl.c |    3 ++-
+>  fs/autofs4/inode.c     |    3 ++-
+>  2 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
+> index 9dacb85..d5a4cb6 100644
+> --- a/fs/autofs4/dev-ioctl.c
+> +++ b/fs/autofs4/dev-ioctl.c
+> @@ -385,7 +385,8 @@ static int autofs_dev_ioctl_setpipefd(struct file *fp,
+>  		sbi->pipefd = pipefd;
+>  		sbi->pipe = pipe;
+>  		sbi->catatonic = 0;
+> -		sbi->compat_daemon = is_compat_task();
+> +		sbi->compat_daemon =
+> +			is_compat_task() && strcmp(current->comm, "automount");
+
+If this approach is used it might be better to use a length limited
+comparison so that if a distribution needs to have multiple packages
+side by side, perhaps v4 or 32 and 64 bit, they would most likely append
+something on the end of the binary name.
  
- #ifdef CONFIG_OF
--static struct tegra_kbc_platform_data * __devinit
--tegra_kbc_dt_parse_pdata(struct platform_device *pdev)
-+static struct tegra_kbc_platform_data * __devinit tegra_kbc_dt_parse_pdata(
-+	struct platform_device *pdev)
- {
- 	struct tegra_kbc_platform_data *pdata;
- 	struct device_node *np = pdev->dev.of_node;
-@@ -660,10 +660,6 @@ tegra_kbc_dt_parse_pdata(struct platform_device *pdev)
- 		pdata->pin_cfg[KBC_MAX_ROW + i].type = PIN_CFG_COL;
- 	}
- 
--	pdata->keymap_data = matrix_keyboard_of_fill_keymap(np, "linux,keymap");
--
--	/* FIXME: Add handling of linux,fn-keymap here */
--
- 	return pdata;
- }
- #else
-@@ -674,10 +670,36 @@ static inline struct tegra_kbc_platform_data *tegra_kbc_dt_parse_pdata(
- }
- #endif
- 
-+static int __devinit tegra_kbd_setup_keymap(struct tegra_kbc *kbc)
-+{
-+	const struct tegra_kbc_platform_data *pdata = kbc->pdata;
-+	const struct matrix_keymap_data *keymap_data = pdata->keymap_data;
-+	unsigned int keymap_rows = KBC_MAX_KEY;
-+	int retval;
-+
-+	if (pdata->use_fn_map)
-+		keymap_rows *= 2;
-+
-+	retval = matrix_keypad_build_keymap(keymap_data, NULL,
-+					    keymap_rows, KBC_MAX_COL,
-+					    kbc->keycode, kbc->idev);
-+	if (retval == -ENOSYS || retval == -ENOENT) {
-+		/*
-+		 * If there is no OF support in kernel or keymap
-+		 * property is missing, use default keymap.
-+		 */
-+		retval = matrix_keypad_build_keymap(
-+					&tegra_kbc_default_keymap_data, NULL,
-+					keymap_rows, KBC_MAX_COL,
-+					kbc->keycode, kbc->idev);
-+	}
-+
-+	return retval;
-+}
-+
- static int __devinit tegra_kbc_probe(struct platform_device *pdev)
- {
- 	const struct tegra_kbc_platform_data *pdata = pdev->dev.platform_data;
--	const struct matrix_keymap_data *keymap_data;
- 	struct tegra_kbc *kbc;
- 	struct input_dev *input_dev;
- 	struct resource *res;
-@@ -686,7 +708,6 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
- 	int num_rows = 0;
- 	unsigned int debounce_cnt;
- 	unsigned int scan_time_rows;
--	unsigned int keymap_rows;
- 
- 	if (!pdata)
- 		pdata = tegra_kbc_dt_parse_pdata(pdev);
-@@ -768,17 +789,9 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
- 	input_dev->open = tegra_kbc_open;
- 	input_dev->close = tegra_kbc_close;
- 
--	keymap_rows = KBC_MAX_KEY;
--	if (pdata->use_fn_map)
--		keymap_rows *= 2;
--
--	keymap_data = pdata->keymap_data ?: &tegra_kbc_default_keymap_data;
--
--	err = matrix_keypad_build_keymap(keymap_data, NULL,
--					 keymap_rows, KBC_MAX_COL,
--					 kbc->keycode, input_dev);
-+	err = tegra_kbd_setup_keymap(kbc);
- 	if (err) {
--		dev_err(&pdev->dev, "failed to build keymap\n");
-+		dev_err(&pdev->dev, "failed to setup keymap\n");
- 		goto err_put_clk;
- 	}
- 
-@@ -805,9 +818,6 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, kbc);
- 	device_init_wakeup(&pdev->dev, pdata->wakeup);
- 
--	if (!pdev->dev.platform_data)
--		matrix_keyboard_of_free_keymap(pdata->keymap_data);
--
- 	return 0;
- 
- err_free_irq:
-@@ -822,10 +832,8 @@ err_free_mem:
- 	input_free_device(input_dev);
- 	kfree(kbc);
- err_free_pdata:
--	if (!pdev->dev.platform_data) {
--		matrix_keyboard_of_free_keymap(pdata->keymap_data);
-+	if (!pdev->dev.platform_data)
- 		kfree(pdata);
--	}
- 
- 	return err;
- }
-diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
-index de7992d..b57531e 100644
---- a/drivers/input/matrix-keymap.c
-+++ b/drivers/input/matrix-keymap.c
-@@ -17,15 +17,91 @@
-  *
-  */
- 
-+#include <linux/device.h>
- #include <linux/kernel.h>
- #include <linux/types.h>
- #include <linux/input.h>
- #include <linux/of.h>
- #include <linux/export.h>
--#include <linux/gfp.h>
--#include <linux/slab.h>
- #include <linux/input/matrix_keypad.h>
- 
-+static bool matrix_keypad_map_key(struct input_dev *input_dev,
-+				  unsigned int rows, unsigned int cols,
-+				  unsigned int row_shift, unsigned int key)
-+{
-+	unsigned char *keymap = input_dev->keycode;
-+	unsigned int row = KEY_ROW(key);
-+	unsigned int col = KEY_COL(key);
-+	unsigned short code = KEY_VAL(key);
-+
-+	if (row >= rows || col >= cols) {
-+		dev_err(input_dev->dev.parent,
-+			"%s: invalid keymap entry 0x%x (row: %d, col: %d, rows: %d, cols: %d)\n",
-+			__func__, key, row, col, rows, cols);
-+		return false;
-+	}
-+
-+	keymap[MATRIX_SCAN_CODE(row, col, row_shift)] = code;
-+	__set_bit(code, input_dev->keybit);
-+
-+	return true;
-+}
-+
-+#ifdef CONFIG_OF
-+static int matrix_keypad_parse_of_keymap(const char *propname,
-+					 unsigned int rows, unsigned int cols,
-+					 struct input_dev *input_dev)
-+{
-+	struct device *dev = input_dev->dev.parent;
-+	struct device_node *np = dev->of_node;
-+	unsigned int row_shift = get_count_order(cols);
-+	unsigned int max_keys = rows << row_shift;
-+	unsigned int proplen, i, size;
-+	const __be32 *prop;
-+
-+	if (!np)
-+		return -ENODEV;
-+
-+	if (!propname)
-+		propname = "linux,keymap";
-+
-+	prop = of_get_property(np, propname, &proplen);
-+	if (!prop) {
-+		dev_err(dev, "OF: %s property not defined in %s\n",
-+			propname, np->full_name);
-+		return -ENODEV;
-+	}
-+
-+	if (proplen % sizeof(u32)) {
-+		dev_err(dev, "OF: Malformed keycode property %s in %s\n",
-+			propname, np->full_name);
-+		return -EINVAL;
-+	}
-+
-+	size = proplen / sizeof(u32);
-+	if (size > max_keys) {
-+		dev_err(dev, "OF: %s size overflow\n", propname);
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < size; i++) {
-+		unsigned int key = be32_to_cpup(prop + i);
-+
-+		if (!matrix_keypad_map_key(input_dev, rows, cols,
-+					   row_shift, key))
-+			return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+#else
-+static int matrix_keypad_parse_of_keymap(const char *propname,
-+					 unsigned int rows, unsigned int cols,
-+					 struct input_dev *input_dev)
-+{
-+	return -ENOSYS;
-+}
-+#endif
- 
- /**
-  * matrix_keypad_build_keymap - convert platform keymap into matrix keymap
-@@ -41,6 +117,13 @@
-  * This function converts platform keymap (encoded with KEY() macro) into
-  * an array of keycodes that is suitable for using in a standard matrix
-  * keyboard driver that uses row and col as indices.
-+ *
-+ * If @keymap_data is not supplied and device tree support is enabled
-+ * it will attempt load the keymap from property specified by @keymap_name
-+ * argument (or "linux,keymap" if @keymap_name is %NULL).
-+ *
-+ * Callers are expected to set up input_dev->dev.parent before calling this
-+ * function.
-  */
- int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
- 			       const char *keymap_name,
-@@ -50,6 +133,7 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
- {
- 	unsigned int row_shift = get_count_order(cols);
- 	int i;
-+	int error;
- 
- 	input_dev->keycode = keymap;
- 	input_dev->keycodesize = sizeof(*keymap);
-@@ -57,86 +141,23 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
- 
- 	__set_bit(EV_KEY, input_dev->evbit);
- 
--	for (i = 0; i < keymap_data->keymap_size; i++) {
--		unsigned int key = keymap_data->keymap[i];
--		unsigned int row = KEY_ROW(key);
--		unsigned int col = KEY_COL(key);
--		unsigned short code = KEY_VAL(key);
-+	if (keymap_data) {
-+		for (i = 0; i < keymap_data->keymap_size; i++) {
-+			unsigned int key = keymap_data->keymap[i];
- 
--		if (row >= rows || col >= cols) {
--			dev_err(input_dev->dev.parent,
--				"%s: invalid keymap entry %d (row: %d, col: %d, rows: %d, cols: %d)\n",
--				__func__, i, row, col, rows, cols);
--			return -EINVAL;
-+			if (!matrix_keypad_map_key(input_dev, rows, cols,
-+						   row_shift, key))
-+				return -EINVAL;
- 		}
--
--		keymap[MATRIX_SCAN_CODE(row, col, row_shift)] = code;
--		__set_bit(code, input_dev->keybit);
-+	} else {
-+		error = matrix_keypad_parse_of_keymap(keymap_name, rows, cols,
-+						      input_dev);
-+		if (error)
-+			return error;
- 	}
-+
- 	__clear_bit(KEY_RESERVED, input_dev->keybit);
- 
- 	return 0;
- }
- EXPORT_SYMBOL(matrix_keypad_build_keymap);
--
--#ifdef CONFIG_OF
--struct matrix_keymap_data *
--matrix_keyboard_of_fill_keymap(struct device_node *np,
--			       const char *propname)
--{
--	struct matrix_keymap_data *kd;
--	u32 *keymap;
--	int proplen, i;
--	const __be32 *prop;
--
--	if (!np)
--		return NULL;
--
--	if (!propname)
--		propname = "linux,keymap";
--
--	prop = of_get_property(np, propname, &proplen);
--	if (!prop)
--		return NULL;
--
--	if (proplen % sizeof(u32)) {
--		pr_warn("Malformed keymap property %s in %s\n",
--			propname, np->full_name);
--		return NULL;
--	}
--
--	kd = kzalloc(sizeof(*kd), GFP_KERNEL);
--	if (!kd)
--		return NULL;
--
--	kd->keymap = keymap = kzalloc(proplen, GFP_KERNEL);
--	if (!kd->keymap) {
--		kfree(kd);
--		return NULL;
--	}
--
--	kd->keymap_size = proplen / sizeof(u32);
--
--	for (i = 0; i < kd->keymap_size; i++) {
--		u32 tmp = be32_to_cpup(prop + i);
--		int key_code, row, col;
--
--		row = (tmp >> 24) & 0xff;
--		col = (tmp >> 16) & 0xff;
--		key_code = tmp & 0xffff;
--		keymap[i] = KEY(row, col, key_code);
--	}
--
--	return kd;
--}
--EXPORT_SYMBOL_GPL(matrix_keyboard_of_fill_keymap);
--
--void matrix_keyboard_of_free_keymap(const struct matrix_keymap_data *kd)
--{
--	if (kd) {
--		kfree(kd->keymap);
--		kfree(kd);
--	}
--}
--EXPORT_SYMBOL_GPL(matrix_keyboard_of_free_keymap);
--#endif
-diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h
-index e8fe08e..5f3aa6b 100644
---- a/include/linux/input/matrix_keypad.h
-+++ b/include/linux/input/matrix_keypad.h
-@@ -81,22 +81,4 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
- 			       unsigned short *keymap,
- 			       struct input_dev *input_dev);
- 
--#ifdef CONFIG_OF
--struct matrix_keymap_data *
--matrix_keyboard_of_fill_keymap(struct device_node *np, const char *propname);
--
--void matrix_keyboard_of_free_keymap(const struct matrix_keymap_data *kd);
--#else
--static inline struct matrix_keymap_data *
--matrix_keyboard_of_fill_keymap(struct device_node *np, const char *propname)
--{
--	return NULL;
--}
--
--static inline void
--matrix_keyboard_of_free_keymap(const struct matrix_keymap_data *kd)
--{
--}
--#endif
--
- #endif /* _MATRIX_KEYPAD_H */
--- 
-1.7.7.6
+>  	}
+>  out:
+>  	mutex_unlock(&sbi->wq_mutex);
+> diff --git a/fs/autofs4/inode.c b/fs/autofs4/inode.c
+> index d8dc002..b59f6a0 100644
+> --- a/fs/autofs4/inode.c
+> +++ b/fs/autofs4/inode.c
+> @@ -225,7 +225,8 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+>  	set_autofs_type_indirect(&sbi->type);
+>  	sbi->min_proto = 0;
+>  	sbi->max_proto = 0;
+> -	sbi->compat_daemon = is_compat_task();
+> +	sbi->compat_daemon =
+> +		is_compat_task() && strcmp(current->comm, "automount");
+>  	mutex_init(&sbi->wq_mutex);
+>  	mutex_init(&sbi->pipe_mutex);
+>  	spin_lock_init(&sbi->fs_lock);
 
 
--- 
-Dmitry
