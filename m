@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758844Ab2DZSaX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 14:30:23 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:35219 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756893Ab2DZSaV (ORCPT
+	id S1758996Ab2DZSfP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 14:35:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24937 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758840Ab2DZSfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 14:30:21 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-131.messagelabs.com!1335465012!2965336!28
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] IPVS: ip_vs_sync.c: local functions should not be exposed globally
-Date: Thu, 26 Apr 2012 11:29:53 -0700
-User-Agent: KMail/1.9.9
-CC: <netdev@vger.kernel.org>, <davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201204261129.53927.hartleys@visionengravers.com>
+	Thu, 26 Apr 2012 14:35:10 -0400
+X-Authority-Analysis: v=2.0 cv=MNHiabll c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=iWwiwmspfpwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=veH9cv2NsFq7cYbcpC0A:9 a=awwGenqusbT3hIxGhgIA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120426183508.947595283@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 26 Apr 2012 14:31:18 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 2/3][RFC] powerpc: Have patch_instruction detect faults
+References: <20120426183116.857877522@goodmis.org>
+Content-Disposition: inline; filename=0002-powerpc-Have-patch_instruction-detect-faults.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Functions not referenced outside of a source file should be marked
-static to prevent it from being exposed globally.
+From: Steven Rostedt <srostedt@redhat.com>
 
-This quiets the sparse warnings:
+For ftrace to use the patch_instruction code, it needs to check for
+faults on write. Ftrace updates code all over the kernel, and we need to
+know if code is updated or not due to protections that are placed on
+some portions of the kernel. If ftrace does not detect a fault, it will
+error later on, and it will be much more difficult to find the problem.
 
-warning: symbol 'ip_vs_sync_conn_v0' was not declared. Should it be static?
+By changing patch_instruction() to detect faults, then ftrace will be
+able to make use of it too.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
+ arch/powerpc/include/asm/code-patching.h |    4 ++--
+ arch/powerpc/lib/code-patching.c         |   14 ++++++++++----
+ 2 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
-index bf5e538..49a1fe8 100644
---- a/net/netfilter/ipvs/ip_vs_sync.c
-+++ b/net/netfilter/ipvs/ip_vs_sync.c
-@@ -446,7 +446,7 @@ ip_vs_sync_buff_create_v0(struct netns_ipvs *ipvs)
-  *      Version 0 , could be switched in by sys_ctl.
-  *      Add an ip_vs_conn information into the current sync_buff.
-  */
--void ip_vs_sync_conn_v0(struct net *net, struct ip_vs_conn *cp)
-+static void ip_vs_sync_conn_v0(struct net *net, struct ip_vs_conn *cp)
+diff --git a/arch/powerpc/include/asm/code-patching.h b/arch/powerpc/include/asm/code-patching.h
+index 37c32aba..a6f8c7a 100644
+--- a/arch/powerpc/include/asm/code-patching.h
++++ b/arch/powerpc/include/asm/code-patching.h
+@@ -26,8 +26,8 @@ unsigned int create_branch(const unsigned int *addr,
+ 			   unsigned long target, int flags);
+ unsigned int create_cond_branch(const unsigned int *addr,
+ 				unsigned long target, int flags);
+-void patch_branch(unsigned int *addr, unsigned long target, int flags);
+-void patch_instruction(unsigned int *addr, unsigned int instr);
++int patch_branch(unsigned int *addr, unsigned long target, int flags);
++int patch_instruction(unsigned int *addr, unsigned int instr);
+ 
+ int instr_is_relative_branch(unsigned int instr);
+ int instr_is_branch_to_addr(const unsigned int *instr, unsigned long addr);
+diff --git a/arch/powerpc/lib/code-patching.c b/arch/powerpc/lib/code-patching.c
+index 7c975d4..dd223b3 100644
+--- a/arch/powerpc/lib/code-patching.c
++++ b/arch/powerpc/lib/code-patching.c
+@@ -13,17 +13,23 @@
+ #include <linux/mm.h>
+ #include <asm/page.h>
+ #include <asm/code-patching.h>
++#include <asm/uaccess.h>
+ 
+ 
+-void patch_instruction(unsigned int *addr, unsigned int instr)
++int patch_instruction(unsigned int *addr, unsigned int instr)
  {
- 	struct netns_ipvs *ipvs = net_ipvs(net);
- 	struct ip_vs_sync_mesg_v0 *m;
+-	*addr = instr;
++	int err;
++
++	err = __put_user(instr, addr);
++	if (err)
++		return err;
+ 	asm ("dcbst 0, %0; sync; icbi 0,%0; sync; isync" : : "r" (addr));
++	return 0;
+ }
+ 
+-void patch_branch(unsigned int *addr, unsigned long target, int flags)
++int patch_branch(unsigned int *addr, unsigned long target, int flags)
+ {
+-	patch_instruction(addr, create_branch(addr, target, flags));
++	return patch_instruction(addr, create_branch(addr, target, flags));
+ }
+ 
+ unsigned int create_branch(const unsigned int *addr,
+-- 
+1.7.9.5
+
+
