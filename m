@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab2DZVMc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 17:12:32 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58433 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941Ab2DZVMb (ORCPT
+	id S1755303Ab2DZVNJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 17:13:09 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:38568 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754158Ab2DZVNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 17:12:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <1335451631-17826-1-git-send-email-blogic@openwrt.org>
-References: <1335451631-17826-1-git-send-email-blogic@openwrt.org>
-Date: Thu, 26 Apr 2012 23:12:30 +0200
-Message-ID: <CACRpkdYXtPKQz2hKkm4C=b5N8Dg4ioH94T-QQLorVFPmF8sRZw@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: enhance reporting of errors when loading from DT
-From: Linus Walleij <linus.walleij@linaro.org>
-To: John Crispin <blogic@openwrt.org>
-Cc: Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Apr 2012 17:13:06 -0400
+Subject: Re: [PATCH 07/13] perf evlist: Fix creation of cpu map
+From: Namhyung Kim <namhyung@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4F996433.7040003@gmail.com>
+References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
+	 <1335417327-11796-8-git-send-email-namhyung.kim@lge.com>
+	 <4F996433.7040003@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 Apr 2012 06:12:58 +0900
+Message-ID: <1335474778.1497.14.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 4:47 PM, John Crispin <blogic@openwrt.org> wrote:
+Hi,
 
-> There are a few places in the api where the code simply returns -EINVAL when
-> it finds an error. An example is pinmux_map_to_setting() which now reports an
-> error if we try to match a group with a function that it does not support.
->
-> The reporting of errors in pinconf_check_ops and pinmux_check_ops now has the
-> same style and is located inside the according functions and not the calling
-> code.
->
-> When the map is found in the DT but the default state can not be selected we
-> get an error to know that the code at least tried.
->
-> The patch also removes a stray word from one comment and a "->" from another
-> for the sake of consistency.
->
-> Finally we replace a few pr_err/debug() calls with dev_err/dbg().
->
-> Thanks go to Stephen Warren for reviewing the patch and enhancing the reporting
-> inside pinmux_map_to_setting().
->
-> Signed-off-by: John Crispin <blogic@openwrt.org>
-> Cc: Stephen Warren <swarren@nvidia.com>
-> Cc: linux-kernel@vger.kernel.org
+2012-04-26 (Thu), 09:05 -0600, David Ahern wrote:
+> On 4/25/12 11:15 PM, Namhyung Kim wrote:
+> > Currently, 'perf record -- sleep 1' creates a cpu map for all online
+> > cpus since it turns out calling cpu_map__new(NULL). Fix it. Also it
+> > is guaranteed that cpu_list is NULL if PID/TID is given by calling
+> > perf_target__validate(), so we can make the conditional bit simpler.
+> >
+> > This also fixes perf test 7 (Validate) failure on my 6 core machine:
+> >
+> >    $ cat /sys/devices/system/cpu/online
+> >    0-11
+> >    $ ./perf test -v 7
+> >     7: Validate PERF_RECORD_* events&  perf_sample fields:
+> >    --- start ---
+> >    perf_evlist__mmap: Operation not permitted
+> >    ---- end ----
+> >    Validate PERF_RECORD_* events&  perf_sample fields: FAILED!
+> 
+> Works fine for me with latest tip:
+> $ cat /sys/devices/system/cpu/online
+> 0-15
+> 
+> $ /tmp/perf/perf test -v 7
+>   7: Validate PERF_RECORD_* events & perf_sample fields:
+> --- start ---
+> 64740167922229 0 PERF_RECORD_SAMPLE
+> 64740167926354 0 PERF_RECORD_SAMPLE
+> 64740167928389 0 PERF_RECORD_SAMPLE
+> 64740167930832 0 PERF_RECORD_SAMPLE
+> 64740168404145 0 PERF_RECORD_COMM: sleep:16523
+> 64740168424672 0 PERF_RECORD_MMAP 16523/16523: [0x400000(0x6000) @ 0]: 
+> /bin/sleep
+> 64740168441676 0 PERF_RECORD_MMAP 16523/16523: [0x7f83de5bb000(0x224000) 
+> @ 0]: /lib64/ld-2.14.90.so
+> 64740168458460 0 PERF_RECORD_MMAP 16523/16523: [0x7fff009ff000(0x1000) @ 
+> 0x7fff009ff000]: [vdso]
+> 64740168586358 0 PERF_RECORD_MMAP 16523/16523: [0x7f83de203000(0x3b8000) 
+> @ 0]: /lib64/libc-2.14.90.so
+> 64741168625653 0 PERF_RECORD_EXIT(16523:16523):(16523:16523)
+> ---- end ----
+> Validate PERF_RECORD_* events & perf_sample fields: Ok
+> 
+> Is the failure a by-product of the other patches in this set?
+> 
 
-Thanks, applied with Stephens ACK.
+Hmm.. No, I can reproduce it without any of this series. And now I think
+that it is not related to the number of cpus. On my 4 core (no
+hyperthreading) machine at home, the result was same.
 
-Yours,
-Linus Walleij
+BTW, did you change sysctl settings?
+
+  $ cat /sys/devices/system/cpu/online 
+  0-3
+  $ grep . /proc/sys/kernel/perf_event_*
+  /proc/sys/kernel/perf_event_max_sample_rate:100000
+  /proc/sys/kernel/perf_event_mlock_kb:516
+  /proc/sys/kernel/perf_event_paranoid:1
+  $ ./perf test 7
+   7: Validate PERF_RECORD_* events & perf_sample fields: FAILED!
+  $ ./perf --version
+  perf version 3.4.rc1
+
+
+Thanks.
+
+-- 
+Regards,
+Namhyung Kim
+
+
