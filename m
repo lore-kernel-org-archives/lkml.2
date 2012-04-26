@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab2DZQWl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 12:22:41 -0400
+	id S1758562Ab2DZQWz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 12:22:55 -0400
 Received: from mail-yx0-f174.google.com ([209.85.213.174]:48640 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758484Ab2DZQWk (ORCPT
+	with ESMTP id S1757811Ab2DZQWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 12:22:40 -0400
+	Thu, 26 Apr 2012 12:22:54 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, miklos@szeredi.hu, hch@infradead.org,
         michael.brantley@deshaw.com
-Subject: [PATCH v1 11/12] vfs: fix linkat to retry on ESTALE errors
-Date: Thu, 26 Apr 2012 11:57:22 -0400
-Message-Id: <1335455843-16089-10-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v1 06/12] vfs: fix mkdir to retry on ESTALE errors
+Date: Thu, 26 Apr 2012 11:57:17 -0400
+Message-Id: <1335455843-16089-5-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1335455843-16089-1-git-send-email-jlayton@redhat.com>
 References: <1335455843-16089-1-git-send-email-jlayton@redhat.com>
@@ -24,44 +24,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+ fs/namei.c |   38 +++++++++++++++++++++-----------------
+ 1 files changed, 21 insertions(+), 17 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index b189dc5..0d54eb3 100644
+index 9ee6b4e..e9da40b 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -3054,6 +3054,7 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	struct path old_path, new_path;
- 	int how = 0;
+@@ -2659,26 +2659,30 @@ SYSCALL_DEFINE3(mkdirat, int, dfd, const char __user *, pathname, umode_t, mode)
+ 	struct dentry *dentry;
+ 	struct path path;
  	int error;
 +	unsigned int try = 0;
  
- 	if ((flags & ~(AT_SYMLINK_FOLLOW | AT_EMPTY_PATH)) != 0)
- 		return -EINVAL;
-@@ -3071,11 +3072,12 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	if (flags & AT_SYMLINK_FOLLOW)
- 		how |= LOOKUP_FOLLOW;
- 
-+retry:
- 	error = user_path_at(olddfd, oldname, how, &old_path);
- 	if (error)
- 		return error;
- 
--	new_dentry = user_path_create(newdfd, newname, &new_path, false, false);
-+	new_dentry = user_path_create(newdfd, newname, &new_path, false, try);
- 	error = PTR_ERR(new_dentry);
- 	if (IS_ERR(new_dentry))
- 		goto out;
-@@ -3098,7 +3100,10 @@ out_dput:
- 	path_put(&new_path);
- out:
- 	path_put(&old_path);
+-	dentry = user_path_create(dfd, pathname, &path, true, false);
+-	if (IS_ERR(dentry))
+-		return PTR_ERR(dentry);
 -
-+	if (retry_estale(error, try++)) {
-+		how |= LOOKUP_REVAL;
-+		goto retry;
-+	}
+-	if (!IS_POSIXACL(path.dentry->d_inode))
+-		mode &= ~current_umask();
+-	error = mnt_want_write(path.mnt);
+-	if (error)
+-		goto out_dput;
+-	error = security_path_mkdir(&path, dentry, mode);
+-	if (error)
+-		goto out_drop_write;
+-	error = vfs_mkdir(path.dentry->d_inode, dentry, mode);
++	do {
++		dentry = user_path_create(dfd, pathname, &path, true, try);
++		if (IS_ERR(dentry)) {
++			error = PTR_ERR(dentry);
++			break;
++		}
++		if (!IS_POSIXACL(path.dentry->d_inode))
++			mode &= ~current_umask();
++		error = mnt_want_write(path.mnt);
++		if (error)
++			goto out_dput;
++		error = security_path_mkdir(&path, dentry, mode);
++		if (error)
++			goto out_drop_write;
++		error = vfs_mkdir(path.dentry->d_inode, dentry, mode);
+ out_drop_write:
+-	mnt_drop_write(path.mnt);
++		mnt_drop_write(path.mnt);
+ out_dput:
+-	dput(dentry);
+-	mutex_unlock(&path.dentry->d_inode->i_mutex);
+-	path_put(&path);
++		dput(dentry);
++		mutex_unlock(&path.dentry->d_inode->i_mutex);
++		path_put(&path);
++	} while (retry_estale(error, try++));
  	return error;
  }
  
