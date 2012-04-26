@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab2DZKCy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 06:02:54 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:61410 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807Ab2DZKCw (ORCPT
+	id S1755892Ab2DZKHs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 06:07:48 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:26825 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754883Ab2DZKHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 06:02:52 -0400
-From: Ravishankar Karkala Mallikarjunayya <ravishankarkm32@gmail.com>
-To: gregkh@linuxfoundation.org, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 2/4] Staging: comedi: fix line over 80 character issue in daqboard2000.c
-Date: Thu, 26 Apr 2012 15:32:18 +0530
-Message-Id: <1335434540-13286-3-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1335434540-13286-1-git-send-email-ravishankar.km@greenturtles.in>
-References: <1335434540-13286-1-git-send-email-ravishankar.km@greenturtles.in>
+	Thu, 26 Apr 2012 06:07:47 -0400
+Message-ID: <4F991E6D.4020303@atmel.com>
+Date: Thu, 26 Apr 2012 12:07:41 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <avictor.za@gmail.com>,
+        <plagnioj@jcrosoft.com>
+Subject: Re: [GIT PULL] net/at91: at91_ether fixes for 3.4-rc
+References: <4F991210.8060409@atmel.com> <20120426.052006.1832921763623188173.davem@davemloft.net>
+In-Reply-To: <20120426.052006.1832921763623188173.davem@davemloft.net>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the daqboard2000.c file that fixes up a
-line over 80 character warning found by the checkpatch.pl tool.
+On 04/26/2012 11:20 AM, David Miller :
+> From: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Date: Thu, 26 Apr 2012 11:14:56 +0200
+> 
+>> Can you please pull those fixes for 3.4-rc? The ARM/AT91 part
+>> of modifications is pretty small and bounded to a single SoC so
+>> it will not mess with arm-soc git tree.
+> 
+> Please post the patches themselves to netdev.
+> 
+> You can give me pull requests, but those go into the "[PATCH 0/N] ..."
+> email, it doesn't preclude you're still having to post the actual
+> patches.
+> 
+> Otherwise nobody can review your work.
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
----
- drivers/staging/comedi/drivers/daqboard2000.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+Both patches have been posted on netdev (but independently):
 
-diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
-index 9958bd5..0061f12 100644
---- a/drivers/staging/comedi/drivers/daqboard2000.c
-+++ b/drivers/staging/comedi/drivers/daqboard2000.c
-@@ -412,9 +412,12 @@ static int daqboard2000_ai_insn_read(struct comedi_device *dev,
- 	    DAQBOARD2000_AcqResetScanListFifo |
- 	    DAQBOARD2000_AcqResetResultsFifo | DAQBOARD2000_AcqResetConfigPipe;
- 
--	/* If pacer clock is not set to some high value (> 10 us), we
--	   risk multiple samples to be put into the result FIFO. */
--	fpga->acqPacerClockDivLow = 1000000;	/* 1 second, should be long enough */
-+	/*
-+	 * If pacer clock is not set to some high value (> 10 us), we
-+	 * risk multiple samples to be put into the result FIFO.
-+	 */
-+	/* 1 second, should be long enough */
-+	fpga->acqPacerClockDivLow = 1000000;
- 	fpga->acqPacerClockDivHigh = 0;
- 
- 	gain = CR_RANGE(insn->chanspec);
+First has been posted on February 13th:
+http://www.spinics.net/lists/netdev/msg188868.html
+With a question from myself a few days ago:
+http://www.spinics.net/lists/netdev/msg196183.html
+And I can find ancestors back in May 2011...
+
+Second one has been posted on April 23rd:
+http://www.spinics.net/lists/netdev/msg196002.html
+
+So, should I repost both of them as patch series?
+
+Best regards,
 -- 
-1.7.0.4
-
+Nicolas Ferre
