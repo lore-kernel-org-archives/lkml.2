@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab2DZVQi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 17:16:38 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:55334 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754374Ab2DZVQg (ORCPT
+	id S1755709Ab2DZVSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 17:18:08 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:40251 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755059Ab2DZVSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 17:16:36 -0400
-Date: Thu, 26 Apr 2012 14:16:32 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Partha Basak <p-basak2@ti.com>
-Subject: Re: [ 43/62] usb: gadget: udc-core: fix asymmetric calls in
- remove_driver
-Message-ID: <20120426211632.GC372@kroah.com>
-References: <20120424223305.GA7748@kroah.com>
- <20120424223245.670329887@linuxfoundation.org>
- <20120426003435.GI3932@decadent.org.uk>
+	Thu, 26 Apr 2012 17:18:06 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: Emil Goode <emilgoode@gmail.com>
+Subject: Re: [PATCH] GFS2: Return -ENOMEM only if kmalloc fails
+Date: Thu, 26 Apr 2012 23:14:02 +0200
+User-Agent: KMail/1.13.5 (Linux/3.3.0-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: swhiteho@redhat.com, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <1335474778-6252-1-git-send-email-emilgoode@gmail.com>
+In-Reply-To: <1335474778-6252-1-git-send-email-emilgoode@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120426003435.GI3932@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204262314.02683.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 01:34:35AM +0100, Ben Hutchings wrote:
-> On Tue, Apr 24, 2012 at 03:33:24PM -0700, Greg KH wrote:
-> > 3.3-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Kishon Vijay Abraham I <kishon@ti.com>
-> > 
-> > commit 8ae8090c82eb407267001f75b3d256b3bd4ae691 upstream.
-> > 
-> > During modprobe of gadget driver, pullup is called after
-> > udc_start. In order to make the exit path symmetric when
-> > removing a gadget driver, call pullup before ->udc_stop.
-> [...]
+Am Donnerstag, 26. April 2012, 23:12:58 schrieb Emil Goode:
+> The error variable should be assigned the value of -ENOMEM
+> after the NULL check and not before.
+> 
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> ---
+>  fs/gfs2/acl.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/gfs2/acl.c b/fs/gfs2/acl.c
+> index 230eb0f..90f6328 100644
+> --- a/fs/gfs2/acl.c
+> +++ b/fs/gfs2/acl.c
+> @@ -174,8 +174,8 @@ int gfs2_acl_chmod(struct gfs2_inode *ip, struct iattr *attr)
 >  
-> It looks like commit 6d258a4c42089229b855fd706622029decf316d6
-> (previous patch in this series!) added another case where the
-> cleanup functions are called in the wrong order.
+>  	len = posix_acl_to_xattr(acl, NULL, 0);
+>  	data = kmalloc(len, GFP_NOFS);
+> -	error = -ENOMEM;
+>  	if (data == NULL)
+> +		error = -ENOMEM;
+>  		goto out;
 
-Felipe?  Any thoughts?
+Hint: read about the syntax of the if statement.
+Secondly, consider how the compiler can optimize the original.
+
+	Regards
+		Oliver
