@@ -1,55 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab2DZOse (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 10:48:34 -0400
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:9411 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339Ab2DZOsd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 10:48:33 -0400
-Message-ID: <1335451710.2529.4.camel@lorien2>
-Subject: Re: [PATCH  v2] leds: add new transient trigger for one shot timer
- activation
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: NeilBrown <neilb@suse.de>
-Cc: shuahkhan@gmail.com, akpm@linux-foundation.org,
-        Jonas Bonn <jonas@southpole.se>, LKML <linux-kernel@vger.kernel.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>
-Date: Thu, 26 Apr 2012 08:48:30 -0600
-In-Reply-To: <20120426160227.214fcb17@notabene.brown>
-References: <1333310039.2879.4.camel@lorien2> <1334064283.10826.6.camel@ted>
-	 <1334507752.2723.3.camel@lorien2> <1334894674.3051.18.camel@lorien2>
-	 <1334983269.2435.90.camel@jerome.southpole.se>
-	 <1335138687.2882.20.camel@lorien2> <20120423115610.2da4d4d7@notabene.brown>
-	 <1335158999.5139.47.camel@jerome.southpole.se>
-	 <20120423154546.415bd6c0@notabene.brown> <1335219745.2850.7.camel@lorien2>
-	 <1335375758.5313.22.camel@lorien2> <20120426160227.214fcb17@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757169Ab2DZOsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 10:48:50 -0400
+Received: from nbd.name ([46.4.11.11]:52355 "EHLO nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757033Ab2DZOss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 10:48:48 -0400
+From: John Crispin <blogic@openwrt.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: John Crispin <blogic@openwrt.org>, Stephen Warren <swarren@nvidia.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] pinctrl: enhance reporting of errors when loading from DT
+Date: Thu, 26 Apr 2012 16:47:11 +0200
+Message-Id: <1335451631-17826-1-git-send-email-blogic@openwrt.org>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-26 at 16:02 +1000, NeilBrown wrote:
-> On Wed, 25 Apr 2012 11:42:38 -0600 Shuah Khan <shuahkhan@gmail.com> wrote:
-> 
-> > There was a suggestion to change units to seconds similar to "safe_delay_show" 
-> > and "safe_delay_store" in drivers/md/md.c. safe_delay_show shows time in
-> > seconds, however safe_delay_store still takes the value in msecs. This
-> > sounded like an asymmetric interface.
-> 
-> I don't think you read the code properly.  "strict_strtoul_scaled" takes
-> a number like "0.20" and scales it to an integer...
-> (though your decision not to take that approach may still be justified).
+There are a few places in the api where the code simply returns -EINVAL when
+it finds an error. An example is pinmux_map_to_setting() which now reports an
+error if we try to match a group with a function that it does not support.
 
-My bad. Yes you are right. strict_strtoul_scaled() does do scaling. This
-routine is currently defined in drivers/md/md.c. The right to do would
-be to move this routine to where kstrtoul() is for general consumption.
-Something I might take on as a separate task. :)
+The reporting of errors in pinconf_check_ops and pinmux_check_ops now has the
+same style and is located inside the according functions and not the calling
+code.
 
--- Shuah
+When the map is found in the DT but the default state can not be selected we
+get an error to know that the code at least tried.
 
+The patch also removes a stray word from one comment and a "->" from another
+for the sake of consistency.
+
+Finally we replace a few pr_err/debug() calls with dev_err/dbg().
+
+Thanks go to Stephen Warren for reviewing the patch and enhancing the reporting
+inside pinmux_map_to_setting().
+
+Signed-off-by: John Crispin <blogic@openwrt.org>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/pinctrl/core.c    |   29 ++++++++++++++---------------
+ drivers/pinctrl/pinconf.c |   10 ++++++++--
+ drivers/pinctrl/pinmux.c  |   37 +++++++++++++++++++++++++++----------
+ 3 files changed, 49 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 59027ab..c41a168 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -1311,37 +1311,29 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
+ 	/* check core ops for sanity */
+ 	ret = pinctrl_check_ops(pctldev);
+ 	if (ret) {
+-		pr_err("%s pinctrl ops lacks necessary functions\n",
+-			pctldesc->name);
++		dev_err(dev, "pinctrl ops lacks necessary functions\n");
+ 		goto out_err;
+ 	}
+ 
+ 	/* If we're implementing pinmuxing, check the ops for sanity */
+ 	if (pctldesc->pmxops) {
+ 		ret = pinmux_check_ops(pctldev);
+-		if (ret) {
+-			pr_err("%s pinmux ops lacks necessary functions\n",
+-			       pctldesc->name);
++		if (ret)
+ 			goto out_err;
+-		}
+ 	}
+ 
+ 	/* If we're implementing pinconfig, check the ops for sanity */
+ 	if (pctldesc->confops) {
+ 		ret = pinconf_check_ops(pctldev);
+-		if (ret) {
+-			pr_err("%s pin config ops lacks necessary functions\n",
+-			       pctldesc->name);
++		if (ret)
+ 			goto out_err;
+-		}
+ 	}
+ 
+ 	/* Register all the pins */
+-	pr_debug("try to register %d pins on %s...\n",
+-		 pctldesc->npins, pctldesc->name);
++	dev_dbg(dev, "try to register %d pins ...\n",  pctldesc->npins);
+ 	ret = pinctrl_register_pins(pctldev, pctldesc->pins, pctldesc->npins);
+ 	if (ret) {
+-		pr_err("error during pin registration\n");
++		dev_err(dev, "error during pin registration\n");
+ 		pinctrl_free_pindescs(pctldev, pctldesc->pins,
+ 				      pctldesc->npins);
+ 		goto out_err;
+@@ -1356,8 +1348,15 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
+ 		struct pinctrl_state *s =
+ 			pinctrl_lookup_state_locked(pctldev->p,
+ 						    PINCTRL_STATE_DEFAULT);
+-		if (!IS_ERR(s))
+-			pinctrl_select_state_locked(pctldev->p, s);
++		if (IS_ERR(s)) {
++			dev_dbg(dev, "failed to lookup the default state\n");
++		} else {
++			ret = pinctrl_select_state_locked(pctldev->p, s);
++			if (ret) {
++				dev_err(dev,
++					"failed to select default state\n");
++			}
++		}
+ 	}
+ 
+ 	mutex_unlock(&pinctrl_mutex);
+diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
+index 384dcc1..2c56f60 100644
+--- a/drivers/pinctrl/pinconf.c
++++ b/drivers/pinctrl/pinconf.c
+@@ -28,11 +28,17 @@ int pinconf_check_ops(struct pinctrl_dev *pctldev)
+ 	const struct pinconf_ops *ops = pctldev->desc->confops;
+ 
+ 	/* We must be able to read out pin status */
+-	if (!ops->pin_config_get && !ops->pin_config_group_get)
++	if (!ops->pin_config_get && !ops->pin_config_group_get) {
++		dev_err(pctldev->dev,
++			"pinconf must be able to read out pin status\n");
+ 		return -EINVAL;
++	}
+ 	/* We have to be able to config the pins in SOME way */
+-	if (!ops->pin_config_set && !ops->pin_config_group_set)
++	if (!ops->pin_config_set && !ops->pin_config_group_set) {
++		dev_err(pctldev->dev,
++			"pinconf has to be able to set a pins config\n");
+ 		return -EINVAL;
++	}
+ 	return 0;
+ }
+ 
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index 1056e68..49545ac 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -42,9 +42,10 @@ int pinmux_check_ops(struct pinctrl_dev *pctldev)
+ 	    !ops->get_function_name ||
+ 	    !ops->get_function_groups ||
+ 	    !ops->enable ||
+-	    !ops->disable)
++	    !ops->disable) {
++		dev_err(pctldev->dev, "pinmux ops lacks necessary functions\n");
+ 		return -EINVAL;
+-
++	}
+ 	/* Check that all functions registered have names */
+ 	nfuncs = ops->get_functions_count(pctldev);
+ 	while (selector < nfuncs) {
+@@ -142,7 +143,7 @@ static int pin_request(struct pinctrl_dev *pctldev,
+ 		status = 0;
+ 
+ 	if (status) {
+-		dev_err(pctldev->dev, "->request on device %s failed for pin %d\n",
++		dev_err(pctldev->dev, "request on device %s failed for pin %d\n",
+ 		       pctldev->desc->name, pin);
+ 		module_put(pctldev->owner);
+ 	}
+@@ -329,17 +330,26 @@ int pinmux_map_to_setting(struct pinctrl_map const *map,
+ 	}
+ 
+ 	ret = pinmux_func_name_to_selector(pctldev, map->data.mux.function);
+-	if (ret < 0)
++	if (ret < 0) {
++		dev_err(pctldev->dev, "invalid function %s in map table\n",
++			map->data.mux.function);
+ 		return ret;
++	}
+ 	setting->data.mux.func = ret;
+ 
+ 	ret = pmxops->get_function_groups(pctldev, setting->data.mux.func,
+ 					  &groups, &num_groups);
+-	if (ret < 0)
++	if (ret < 0) {
++		dev_err(pctldev->dev, "can't query groups for function %s\n",
++			map->data.mux.function);
+ 		return ret;
+-	if (!num_groups)
++	}
++	if (!num_groups) {
++		dev_err(pctldev->dev,
++			"function %s can't be selected on any group\n",
++			map->data.mux.function);
+ 		return -EINVAL;
+-
++	}
+ 	if (map->data.mux.group) {
+ 		bool found = false;
+ 		group = map->data.mux.group;
+@@ -349,15 +359,22 @@ int pinmux_map_to_setting(struct pinctrl_map const *map,
+ 				break;
+ 			}
+ 		}
+-		if (!found)
++		if (!found) {
++			dev_err(pctldev->dev,
++				"invalid group \"%s\" for function \"%s\"\n",
++				group, map->data.mux.function);
+ 			return -EINVAL;
++		}
+ 	} else {
+ 		group = groups[0];
+ 	}
+ 
+ 	ret = pinctrl_get_group_selector(pctldev, group);
+-	if (ret < 0)
++	if (ret < 0) {
++		dev_err(pctldev->dev, "invalid group %s in map table\n",
++			map->data.mux.group);
+ 		return ret;
++	}
+ 	setting->data.mux.group = ret;
+ 
+ 	ret = pctlops->get_group_pins(pctldev, setting->data.mux.group, &pins,
+@@ -374,7 +391,7 @@ int pinmux_map_to_setting(struct pinctrl_map const *map,
+ 		ret = pin_request(pctldev, pins[i], map->dev_name, NULL);
+ 		if (ret) {
+ 			dev_err(pctldev->dev,
+-				"could not get request pin %d on device %s\n",
++				"could not request pin %d on device %s\n",
+ 				pins[i], pinctrl_dev_get_name(pctldev));
+ 			/* On error release all taken pins */
+ 			i--; /* this pin just failed */
+-- 
+1.7.9.1
 
