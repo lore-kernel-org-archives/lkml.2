@@ -1,58 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759594Ab2DZWpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 18:45:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60138 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab2DZWok (ORCPT
+	id S1759422Ab2DZWtK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 18:49:10 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41842 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab2DZWtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 18:44:40 -0400
+	Thu, 26 Apr 2012 18:49:09 -0400
+Date: Thu, 26 Apr 2012 15:49:06 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.4-rc4 oom killer out of control.
+In-Reply-To: <20120426224419.GA13598@redhat.com>
+Message-ID: <alpine.DEB.2.00.1204261547250.15785@chino.kir.corp.google.com>
+References: <20120426193551.GA24968@redhat.com> <alpine.DEB.2.00.1204261437470.28376@chino.kir.corp.google.com> <20120426215257.GA12908@redhat.com> <alpine.DEB.2.00.1204261517100.28376@chino.kir.corp.google.com> <20120426224419.GA13598@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4F99C74D.9050807@fold.natur.cuni.cz>
-References: <4F909CEB.3060407@fold.natur.cuni.cz>
-	<CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
-	<CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com>
-	<4F91473A.1080007@fold.natur.cuni.cz>
-	<CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com>
-	<4F919C22.1070608@fold.natur.cuni.cz>
-	<4F919CD5.7070004@fold.natur.cuni.cz>
-	<CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com>
-	<20120420231748.GB7069@xanatos>
-	<CAE9FiQX7JCZvL9S8ZOQQaHQ4nfU0XDj=8FmOfCtcz7WFjP8=Bg@mail.gmail.com>
-	<20120421132516.GC7069@xanatos>
-	<CAE9FiQUuHrsNPhPWAc9koOrW6Xc+ryOhf_nv2ZyWvG9XMAdNoA@mail.gmail.com>
-	<4F9711AA.1090803@fold.natur.cuni.cz>
-	<CAE9FiQWFAYHTKtv1_MF-SYTrBxUg3zYbfuuxu2uGXHGmEYSf5A@mail.gmail.com>
-	<4F99C74D.9050807@fold.natur.cuni.cz>
-Date: Thu, 26 Apr 2012 15:44:39 -0700
-X-Google-Sender-Auth: UIOycQnwNwDDhGp9Tnvo622lTtQ
-Message-ID: <CAE9FiQVmnah5y1-+jAcB-0X424spO8vCNj-EjFTKpi+S=e_Low@mail.gmail.com>
-Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
-From: Yinghai Lu <yinghai@kernel.org>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 3:08 PM, Martin Mokrejs
-<mmokrejs@fold.natur.cuni.cz> wrote:
->
->
-> Yinghai Lu wrote:
->>
->> Can you try boot the system without loading xhci driver ?
->
-> Bingo! Physical express card removal started to be notified correctly.
+On Thu, 26 Apr 2012, Dave Jones wrote:
 
-good, please get lspci -vvxxx -s 00:1c.7
-before removing that express card
-on both case.
+> Disabling it stops it hogging the cpu obviously, but there's still 8G of RAM
+> and 1G of used swap sitting around doing something.
+> 
 
-We can compare those two to find out why.
-
-Thanks
-
-Yinghai
+Right, I eluded to this in another email because the rss sizes from your 
+oom log weren't necessarily impressive.  Could you post the output of 
+/proc/meminfo?
