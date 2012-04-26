@@ -1,70 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab2DZPeF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 11:34:05 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:47223 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757000Ab2DZPeD (ORCPT
+	id S1757407Ab2DZPgB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 11:36:01 -0400
+Received: from 10.mo4.mail-out.ovh.net ([188.165.33.109]:54149 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752161Ab2DZPgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 11:34:03 -0400
-Date: Thu, 26 Apr 2012 17:35:01 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Subject: [pull] drm-intel-fixes for 3.4
-Message-ID: <20120426153501.GC5156@phenom.ffwll.local>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+	Thu, 26 Apr 2012 11:36:00 -0400
+X-Greylist: delayed 1244 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Apr 2012 11:36:00 EDT
+Date: Thu, 26 Apr 2012 17:15:36 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: b20223@freescale.com, linus.walleij@stericsson.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, kernel@pengutronix.de, cjb@laptop.org,
+        s.hauer@pengutronix.de, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH v3 2/4] pinctrl: pinctrl-imx: add imx pinctrl core
+ driver
+Message-ID: <20120426151536.GO9142@game.jcrosoft.org>
+References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
+ <1335451227-27709-2-git-send-email-b29396@freescale.com>
+ <20120426144446.GN9142@game.jcrosoft.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Operating-System: Linux phenom 3.2.0-2-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120426144446.GN9142@game.jcrosoft.org>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 7733243511994952551
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeggedrtdekucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeggedrtdekucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+> > +Examples:
+> > +usdhc@0219c000 { /* uSDHC4 */
+> > +	fsl,card-wired;
+> > +	vmmc-supply = <&reg_3p3v>;
+> > +	status = "okay";
+> > +	pinctrl-names = "default";
+> > +	pinctrl-0 = <&pinctrl_usdhc4_1>;
+> > +};
+> > +
+> > +iomuxc@020e0000 {
+> > +	compatible = "fsl,imx6q-iomuxc";
+> > +	reg = <0x020e0000 0x4000>;
+> > +
+> > +	/* shared pinctrl settings */
+> > +	usdhc4 {
+> > +		pinctrl_usdhc4_1: usdhc4grp-1 {
+> > +			fsl,pins = <1386 0x17059	/* MX6Q_PAD_SD4_CMD__USDHC4_CMD */
+> > +				    1392 0x17059	/* MX6Q_PAD_SD4_CLK__USDHC4_CLK	*/
+> > +				    1462 0x17059	/* MX6Q_PAD_SD4_DAT0__USDHC4_DAT0 */
+> > +				    1470 0x17059	/* MX6Q_PAD_SD4_DAT1__USDHC4_DAT1 */
+> > +				    1478 0x17059	/* MX6Q_PAD_SD4_DAT2__USDHC4_DAT2 */
+> > +				    1486 0x17059	/* MX6Q_PAD_SD4_DAT3__USDHC4_DAT3 */
+> > +				    1493 0x17059	/* MX6Q_PAD_SD4_DAT4__USDHC4_DAT4 */
+> > +				    1501 0x17059	/* MX6Q_PAD_SD4_DAT5__USDHC4_DAT5 */
+> > +				    1509 0x17059	/* MX6Q_PAD_SD4_DAT6__USDHC4_DAT6 */
+> > +				    1517 0x17059>;	/* MX6Q_PAD_SD4_DAT7__USDHC4_DAT7 */
+> honestly I don't like this it's obscure need to decode manually
+> 
+> I propose to use phandle
+> 
+> as example on uart you will want or not the rst/cts so you will have quite a
+> lot of bindings
+> 
+> so you can describe the pin configuration (function) and refer it by phandle
+> in the group
+We have on Imx mxc at91 and other SoC controler hich you configure per pin
 
-Nothing major here and imo can wait a bit if you don't have anything
-important in drm-fixes yet:
-- VGA load-detect fix. This bug seems to be as old as the load-detect code
-  (2.6.30), but needs stupid userspace (upowerd trying to detect
-  connectors on dpms-off outputs) to actually kill the machine. And
-  obviously a machine without VGA-hotplug, otherwise we don't do load
-  detect.
-- 2 interger overflow fixes for unpriviledged ioctls from Xi Wang.
+which means one pin have multiple function and the same function is on
+multiple pins
 
-Yours, Daniel
+so the groups are just a list of possible pins
 
-The following changes since commit 66f75a5d028beaf67c931435fdc3e7823125730c:
+Instead of re-inventing bindings we do need to come with a common binding whre
+it's possible
 
-  Linux 3.4-rc4 (2012-04-21 14:47:52 -0700)
+So instead I proppose (send in the v2) to use common way to describe the group
 
-are available in the git repository at:
+1) we describe one function per pin
 
-  git://people.freedesktop.org/~danvet/drm-intel drm-intel-fixes
+	functions {
+		rxd_pb12 {
+			atmel,pin-id = <44>;
+			atmel,mux = <0>;
+		};
 
-for you to fetch changes up to 44afb3a04391a74309d16180d1e4f8386fdfa745:
+		txd_pb13 {
+			atmel,pin-id = <45>;
+			atmel,pull = <2>;
+			atmel,mux = <0>;
+		};
 
-  drm/i915: fix integer overflow in i915_gem_do_execbuffer() (2012-04-23 22:32:15 +0200)
+		txd0_pb19 {
+			atmel,pin-id = <51>;
+			atmel,pull = <2>;
+			atmel,mux = <0>;
+		};
 
-----------------------------------------------------------------
-Daniel Vetter (1):
-      drm/i915: fixup load-detect on enabled, but not active pipe
+		rxd0_pb18 {
+			atmel,pin-id = <50>;
+			atmel,mux = <0>;
+		};
 
-Xi Wang (2):
-      drm/i915: fix integer overflow in i915_gem_execbuffer2()
-      drm/i915: fix integer overflow in i915_gem_do_execbuffer()
+		rts0_pb17 {
+			atmel,pin-id = <49>;
+			atmel,mux = <1>;
+		};
 
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    8 +++++++-
- drivers/gpu/drm/i915/intel_crt.c           |   29 +++++++++++-----------------
- 2 files changed, 18 insertions(+), 19 deletions(-)
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+		cts0_pb15 {
+			atmel,pin-id = <47>;
+			atmel,mux = <1>;
+		};
+	};
+
+
+advantage if you need to set a pull-up or any pin parameter different on your board
+you can overwrite it without re-creating a group
+
+This is controller specific
+
+and then we have the common bindings to describe the group
+by using phandle of the functions to describe the group
+
+	groups {
+		dbgu {
+			pinctrl,functions = < &rxd_pb12
+					      &txd_pb13 >;
+		};
+
+		uart0_rxd_txd {
+			pinctrl,functions = < &rxd0_pb18
+					      &txd0_pb19 >;
+		};
+
+		uart0_rts_cts {
+			pinctrl,functions = < &rxd0_pb18
+					      &txd0_pb19
+					      &rts0_pb17
+					      &cts0_pb15 >;
+		};
+	};
+
+this will be handle by a generic code in c
+
+Best Regards,
+J.
