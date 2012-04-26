@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab2DZAy6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 20:54:58 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:57299 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab2DZAy5 convert rfc822-to-8bit (ORCPT
+	id S1752161Ab2DZBTl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 21:19:41 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49934 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab2DZBTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Apr 2012 20:54:57 -0400
+	Wed, 25 Apr 2012 21:19:40 -0400
+X-AuditID: 9c93016f-b7cfcae00000449e-c4-4f98a2a7771e
+Message-ID: <4F98A2CC.4080104@kernel.org>
+Date: Thu, 26 Apr 2012 10:20:12 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAHnt0GWABX8qOVTinmSETUHxq1Y3NhqPOKxnUgcDtyf8wjtg_g@mail.gmail.com>
-References: <CAHnt0GXW-pyOUuBLB1n6qBP4WNGpET9er_HbJ29s5j5DE1xAdA@mail.gmail.com>
-	<20120425222819.GF8989@google.com>
-	<CAHnt0GWABX8qOVTinmSETUHxq1Y3NhqPOKxnUgcDtyf8wjtg_g@mail.gmail.com>
-Date: Wed, 25 Apr 2012 17:54:57 -0700
-X-Google-Sender-Auth: vkzLXkV5i2qp-TYm6ingnXx_F2c
-Message-ID: <CAE9FiQUyF+yw4vNL1YziGtm9wXgGSy55nesB+BxM-gG8Zu=YtQ@mail.gmail.com>
-Subject: Re: [BUG]memblock: fix overflow of array index
-From: Yinghai Lu <yinghai@kernel.org>
-To: Peter Teoh <htmldeveloper@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-mm@kvack.org
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 0/6] zsmalloc: clean up and fix arch dependency
+References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <4F97F0F1.2000506@vflare.org>
+In-Reply-To: <4F97F0F1.2000506@vflare.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 5:50 PM, Peter Teoh <htmldeveloper@gmail.com> wrote:
-> Thanks for the reply.   Just an educational question:  is it possible
-> to set one-byte per memblock?    And what is the minimum memblock
-> size?
+Hi Nitin,
 
-yes. 1 byte.
+On 04/25/2012 09:41 PM, Nitin Gupta wrote:
 
->
-> Even if 2G memblock is a huge number, it still seemed like a bug to me
-> that there is no check on the maximum number (which is 2G) of this
-> variable (assuming signed int).   Software can always purposely push
-> that number up and the system can panic?
+> Hi Minchan,
+> 
+> On 04/25/2012 02:23 AM, Minchan Kim wrote:
+> 
+>> This patchset has some clean up patches(1-5) and remove 
+>> set_bit, flush_tlb for portability in [6/6].
+>>
+>> Minchan Kim (6):
+>>   zsmalloc: use PageFlag macro instead of [set|test]_bit
+>>   zsmalloc: remove unnecessary alignment
+>>   zsmalloc: rename zspage_order with zspage_pages
+>>   zsmalloc: add/fix function comment
+>>   zsmalloc: remove unnecessary type casting
+>>   zsmalloc: make zsmalloc portable
+>>
+>>  drivers/staging/zsmalloc/Kconfig         |    4 --
+>>  drivers/staging/zsmalloc/zsmalloc-main.c |   73 +++++++++++++++++-------------
+>>  drivers/staging/zsmalloc/zsmalloc_int.h  |    3 +-
+>>  3 files changed, 43 insertions(+), 37 deletions(-)
+>>
+> 
+> 
+> Thanks for the fixes.
+> 
+> 
+> Your description is missing testing notes (especially since patch [6/6]
+> is not a cosmetic change). So, can you please add these either here in
+> patch 0 or as part of patch 6/6 description?
 
-before slab is ready? how?
 
-Thanks
+Will do in later version.
+Test is simply done in x86 and ARM qemu environment with zram so test coverage isn't good
+but [1-6] is just trivial while [7] is severe. As I see Seth's reply, he could test it enough
+and other architecture should work if it works in x86 because we used generic functions.
 
-Yinghai
+-- 
+Kind regards,
+Minchan Kim
