@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab2DZL4X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 07:56:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52571 "EHLO
+	id S1755826Ab2DZL5N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 07:57:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52586 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab2DZL4V (ORCPT
+	with ESMTP id S1752462Ab2DZL5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 07:56:21 -0400
-Date: Thu, 26 Apr 2012 04:56:04 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-eb95308ee2a69403909e111837b9068c64cfc349@git.kernel.org>
+	Thu, 26 Apr 2012 07:57:12 -0400
+Date: Thu, 26 Apr 2012 04:56:54 -0700
+From: "tip-bot for he, bo" <bo.he@intel.com>
+Message-ID: <tip-fb2cf2c660971bea0ad86a9a5c19ad39eab61344@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        tim.c.chen@linux.intel.com, akpm@linux-foundation.org,
+        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        stable@kernel.org, bo.he@intel.com, yanmin.zhang@intel.com,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, tim.c.chen@linux.intel.com,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        yanmin.zhang@intel.com, stable@kernel.org, bo.he@intel.com,
         tglx@linutronix.de
-In-Reply-To: <1335365763.28150.267.camel@twins>
-References: <1335365763.28150.267.camel@twins>
+In-Reply-To: <1335355161.5892.17.camel@hebo>
+References: <1335355161.5892.17.camel@hebo>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix more load-balancing fallout
-Git-Commit-ID: eb95308ee2a69403909e111837b9068c64cfc349
+Subject: [tip:sched/urgent] sched: Fix OOPS when build_sched_domains()
+  percpu allocation fails
+Git-Commit-ID: fb2cf2c660971bea0ad86a9a5c19ad39eab61344
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,122 +34,90 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Apr 2012 04:56:10 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Apr 2012 04:57:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eb95308ee2a69403909e111837b9068c64cfc349
-Gitweb:     http://git.kernel.org/tip/eb95308ee2a69403909e111837b9068c64cfc349
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 17 Apr 2012 13:38:40 +0200
+Commit-ID:  fb2cf2c660971bea0ad86a9a5c19ad39eab61344
+Gitweb:     http://git.kernel.org/tip/fb2cf2c660971bea0ad86a9a5c19ad39eab61344
+Author:     he, bo <bo.he@intel.com>
+AuthorDate: Wed, 25 Apr 2012 19:59:21 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 26 Apr 2012 12:54:52 +0200
+CommitDate: Thu, 26 Apr 2012 12:54:53 +0200
 
-sched: Fix more load-balancing fallout
+sched: Fix OOPS when build_sched_domains() percpu allocation fails
 
-Commits 367456c756a6 ("sched: Ditch per cgroup task lists for
-load-balancing") and 5d6523ebd ("sched: Fix load-balance wreckage")
-left some more wreckage.
+Under extreme memory used up situations, percpu allocation
+might fail. We hit it when system goes to suspend-to-ram,
+causing a kworker panic:
 
-By setting loop_max unconditionally to ->nr_running load-balancing
-could take a lot of time on very long runqueues (hackbench!). So keep
-the sysctl as max limit of the amount of tasks we'll iterate.
+ EIP: [<c124411a>] build_sched_domains+0x23a/0xad0
+ Kernel panic - not syncing: Fatal exception
+ Pid: 3026, comm: kworker/u:3
+ 3.0.8-137473-gf42fbef #1
 
-Furthermore, the min load filter for migration completely fails with
-cgroups since inequality in per-cpu state can easily lead to such
-small loads :/
+ Call Trace:
+  [<c18cc4f2>] panic+0x66/0x16c
+  [...]
+  [<c1244c37>] partition_sched_domains+0x287/0x4b0
+  [<c12a77be>] cpuset_update_active_cpus+0x1fe/0x210
+  [<c123712d>] cpuset_cpu_inactive+0x1d/0x30
+  [...]
 
-Furthermore the change to add new tasks to the tail of the queue
-instead of the head seems to have some effect.. not quite sure I
-understand why.
+With this fix applied build_sched_domains() will return -ENOMEM and
+the suspend attempt fails.
 
-Combined these fixes solve the huge hackbench regression reported by
-Tim when hackbench is ran in a cgroup.
-
-Reported-by: Tim Chen <tim.c.chen@linux.intel.com>
-Acked-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: he, bo <bo.he@intel.com>
+Reviewed-by: Zhang, Yanmin <yanmin.zhang@intel.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1335365763.28150.267.camel@twins
-[ got rid of the CONFIG_PREEMPT tuning and made small readability edits ]
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/1335355161.5892.17.camel@hebo
+[ So, we fail to deallocate a CPU because we cannot allocate RAM :-/
+  I don't like that kind of sad behavior but nevertheless it should
+  not crash under high memory load. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c     |   18 ++++++++++--------
- kernel/sched/features.h |    1 +
- 2 files changed, 11 insertions(+), 8 deletions(-)
+ kernel/sched/core.c |   22 ++++++++++++++++------
+ 1 files changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0d97ebd..e955364 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -784,7 +784,7 @@ account_entity_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 		update_load_add(&rq_of(cfs_rq)->load, se->load.weight);
- #ifdef CONFIG_SMP
- 	if (entity_is_task(se))
--		list_add_tail(&se->group_node, &rq_of(cfs_rq)->cfs_tasks);
-+		list_add(&se->group_node, &rq_of(cfs_rq)->cfs_tasks);
- #endif
- 	cfs_rq->nr_running++;
- }
-@@ -3215,6 +3215,8 @@ static int move_one_task(struct lb_env *env)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4603b9d..0533a68 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6405,16 +6405,26 @@ static void __sdt_free(const struct cpumask *cpu_map)
+ 		struct sd_data *sdd = &tl->data;
  
- static unsigned long task_h_load(struct task_struct *p);
- 
-+static const unsigned int sched_nr_migrate_break = 32;
+ 		for_each_cpu(j, cpu_map) {
+-			struct sched_domain *sd = *per_cpu_ptr(sdd->sd, j);
+-			if (sd && (sd->flags & SD_OVERLAP))
+-				free_sched_groups(sd->groups, 0);
+-			kfree(*per_cpu_ptr(sdd->sd, j));
+-			kfree(*per_cpu_ptr(sdd->sg, j));
+-			kfree(*per_cpu_ptr(sdd->sgp, j));
++			struct sched_domain *sd;
 +
- /*
-  * move_tasks tries to move up to load_move weighted load from busiest to
-  * this_rq, as part of a balancing operation within domain "sd".
-@@ -3242,7 +3244,7 @@ static int move_tasks(struct lb_env *env)
- 
- 		/* take a breather every nr_migrate tasks */
- 		if (env->loop > env->loop_break) {
--			env->loop_break += sysctl_sched_nr_migrate;
-+			env->loop_break += sched_nr_migrate_break;
- 			env->flags |= LBF_NEED_BREAK;
- 			break;
++			if (sdd->sd) {
++				sd = *per_cpu_ptr(sdd->sd, j);
++				if (sd && (sd->flags & SD_OVERLAP))
++					free_sched_groups(sd->groups, 0);
++				kfree(*per_cpu_ptr(sdd->sd, j));
++			}
++
++			if (sdd->sg)
++				kfree(*per_cpu_ptr(sdd->sg, j));
++			if (sdd->sgp)
++				kfree(*per_cpu_ptr(sdd->sgp, j));
  		}
-@@ -3252,7 +3254,7 @@ static int move_tasks(struct lb_env *env)
+ 		free_percpu(sdd->sd);
++		sdd->sd = NULL;
+ 		free_percpu(sdd->sg);
++		sdd->sg = NULL;
+ 		free_percpu(sdd->sgp);
++		sdd->sgp = NULL;
+ 	}
+ }
  
- 		load = task_h_load(p);
- 
--		if (load < 16 && !env->sd->nr_balance_failed)
-+		if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
- 			goto next;
- 
- 		if ((load / 2) > env->load_move)
-@@ -4407,7 +4409,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 		.dst_cpu	= this_cpu,
- 		.dst_rq		= this_rq,
- 		.idle		= idle,
--		.loop_break	= sysctl_sched_nr_migrate,
-+		.loop_break	= sched_nr_migrate_break,
- 	};
- 
- 	cpumask_copy(cpus, cpu_active_mask);
-@@ -4445,10 +4447,10 @@ redo:
- 		 * correctly treated as an imbalance.
- 		 */
- 		env.flags |= LBF_ALL_PINNED;
--		env.load_move = imbalance;
--		env.src_cpu = busiest->cpu;
--		env.src_rq = busiest;
--		env.loop_max = busiest->nr_running;
-+		env.load_move	= imbalance;
-+		env.src_cpu	= busiest->cpu;
-+		env.src_rq	= busiest;
-+		env.loop_max	= min_t(unsigned long, sysctl_sched_nr_migrate, busiest->nr_running);
- 
- more_balance:
- 		local_irq_save(flags);
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index e61fd73..de00a48 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -68,3 +68,4 @@ SCHED_FEAT(TTWU_QUEUE, true)
- 
- SCHED_FEAT(FORCE_SD_OVERLAP, false)
- SCHED_FEAT(RT_RUNTIME_SHARE, true)
-+SCHED_FEAT(LB_MIN, false)
