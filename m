@@ -1,100 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab2DZKNH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 06:13:07 -0400
-Received: from [133.145.228.5] ([133.145.228.5]:37541 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754850Ab2DZKNF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 06:13:05 -0400
-X-AuditID: b753bd60-9f483ba000000655-59-4f991f9b2225
-X-AuditID: b753bd60-9f483ba000000655-59-4f991f9b2225
-Message-ID: <4F991F99.8050301@hitachi.com>
-Date: Thu, 26 Apr 2012 19:12:41 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120420 Thunderbird/12.0
+	id S1755819Ab2DZKON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 06:14:13 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:10372 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754850Ab2DZKOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 06:14:12 -0400
+X-IronPort-AV: E=Sophos;i="4.75,485,1330923600"; 
+   d="scan'208";a="24562726"
+Message-ID: <4F991FF1.6000007@citrix.com>
+Date: Thu, 26 Apr 2012 11:14:09 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 6/6][RFC] kprobes: Allow probe on ftrace reserved text
- (but move it)
-References: <20120426022922.683707508@goodmis.org> <20120426023708.577576476@goodmis.org>
-In-Reply-To: <20120426023708.577576476@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <xen-devel@lists.xen.org>, <tobias.geiger@vido.info>,
+        <linux-kernel@vger.kernel.org>, <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [PATCH] xen: use the pirq number to check the	pirq_eoi_map
+References: <1335366698-19875-1-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1335366698-19875-1-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/26 11:29), Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> If a probe is placed on a ftrace nop (or ftrace_caller), simply move the
-> probe to the next instruction instead of rejecting it. This will allow
-> kprobes not to be affected by ftrace using the -mfentry gcc option which
-> will put the ftrace nop at the beginning of the function. As a very common
-> case for kprobes is to add a probe to the very beginning of a function
-> we need a way to handle the case when ftrace takes the first instruction.
+On 25/04/12 16:11, Stefano Stabellini wrote:
+> In pirq_check_eoi_map use the pirq number rather than the Linux irq
+> number to check whether an eoi is needed in the pirq_eoi_map.
 
-Hmm, I think you'd better introduce a flag(KPROBE_FLAG_MOVED) for
-adjustment of probed IP address. Caller or handler can fixup its IP
-or kprobes itself can do it.
+What buggy behaviour does this patch fix?  It would be nice if this was
+included in the patch description.
 
-> 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+David
+
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Tested-by: Tobias Geiger <tobias.geiger@vido.info>
 > ---
->  kernel/kprobes.c |   11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
+>  drivers/xen/events.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index c62b854..560d80e 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1319,10 +1319,20 @@ int __kprobes register_kprobe(struct kprobe *p)
->  	struct kprobe *old_p;
->  	struct module *probed_mod;
->  	kprobe_opcode_t *addr;
-> +	unsigned long ftrace_addr;
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 4b33acd..0a8a17c 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -274,7 +274,7 @@ static unsigned int cpu_from_evtchn(unsigned int evtchn)
 >  
->  	addr = kprobe_addr(p);
->  	if (IS_ERR(addr))
->  		return PTR_ERR(addr);
-> +
-> +	/*
-> +	 * If the address is located on a ftrace nop, set the
-> +	 * breakpoint to the following instruction.
-> +	 */
-> +	ftrace_addr = ftrace_location((unsigned long)addr);
-> +	if (unlikely(ftrace_addr))
-> +		addr = (kprobe_opcode_t *)(ftrace_addr + MCOUNT_INSN_SIZE);
-
-And also, you may need to use ftrace_text_reserved() here,
-or need a void ftrace_location() function for CONFIG_DYNAMIC_FTRACE=n.
-
-> +
->  	p->addr = addr;
+>  static bool pirq_check_eoi_map(unsigned irq)
+>  {
+> -	return test_bit(irq, pirq_eoi_map);
+> +	return test_bit(pirq_from_irq(irq), pirq_eoi_map);
+>  }
 >  
->  	ret = check_kprobe_rereg(p);
-> @@ -1333,7 +1343,6 @@ int __kprobes register_kprobe(struct kprobe *p)
->  	preempt_disable();
->  	if (!kernel_text_address((unsigned long) p->addr) ||
->  	    in_kprobes_functions((unsigned long) p->addr) ||
-> -	    ftrace_text_reserved(p->addr, p->addr) ||
->  	    jump_label_text_reserved(p->addr, p->addr)) {
->  		ret = -EINVAL;
->  		goto cannot_probe;
+>  static bool pirq_needs_eoi_flag(unsigned irq)
 
-Thanks,
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
