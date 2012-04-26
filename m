@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759556Ab2DZW3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 18:29:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45748 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759413Ab2DZW3L (ORCPT
+	id S1759559Ab2DZWaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 18:30:22 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39208 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754123Ab2DZWaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 18:29:11 -0400
-Date: Thu, 26 Apr 2012 15:29:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH 1/4] compiler.h: introduce unused_expression() macro
-Message-Id: <20120426152909.b1e653bf.akpm@linux-foundation.org>
-In-Reply-To: <20120425112623.26927.43229.stgit@zurg>
-References: <20120425112623.26927.43229.stgit@zurg>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Apr 2012 18:30:20 -0400
+Date: Thu, 26 Apr 2012 15:30:18 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.4-rc4 oom killer out of control.
+In-Reply-To: <20120426205320.GA30741@redhat.com>
+Message-ID: <alpine.DEB.2.00.1204261522450.28376@chino.kir.corp.google.com>
+References: <20120426193551.GA24968@redhat.com> <20120426205320.GA30741@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Apr 2012 15:26:23 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+On Thu, 26 Apr 2012, Dave Jones wrote:
 
-> Sometimes we want to check some expressions correctness in compile-time without
-> generating extra code. "(void)(e)" does not work if expression has side-effects.
-> This patch introduces macro unused_expression() which helps in this situation.
+> I rebooted, and reran the test, and within minutes, got it into a state
+> where it was killing things again fairly quickly.
+> This time however, it seems to have killed almost everything on the box,
+> but is still alive. The problem is that all the memory is eaten up by
+> something, and kswapd/ksmd is eating all the cpu.
+> (Attempting to profile with perf causes perf to be oom-killed).
 > 
-> Cast to "long" required because sizeof does not work for bit-fields.
+
+That makes sense since the oom killer will go along killing all user 
+processes and will leave kthreads such as kswapd and ksmd alone; them 
+using all of the cpu then, especially kswapd aggressively trying to 
+reclaim memory, would be typical.
+
+> A lot of VMAs in slab..
 > 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> ---
->  include/linux/compiler.h |    2 ++
->  1 file changed, 2 insertions(+)
+>  Active / Total Objects (% used)    : 467327 / 494733 (94.5%)
+>  Active / Total Slabs (% used)      : 18195 / 18195 (100.0%)
+>  Active / Total Caches (% used)     : 145 / 207 (70.0%)
+>  Active / Total Size (% used)       : 241177.72K / 263399.54K (91.6%)
+>  Minimum / Average / Maximum Object : 0.33K / 0.53K / 9.16K
 > 
-> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-> index 923d093..46fbda3 100644
-> --- a/include/linux/compiler.h
-> +++ b/include/linux/compiler.h
-> @@ -310,4 +310,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
->   */
->  #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
->  
-> +#define unused_expression(e) ((void)(sizeof((__force long)(e))))
-> +
+>   OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME    
+> 213216 213167  99%    0.49K   6663       32    106608K vm_area_struct
+>  74718  74674  99%    0.37K   3558       21     28464K anon_vma_chain
+>  37820  37663  99%    0.52K   1220       31     19520K anon_vma
+>  33263  33188  99%    0.51K   1073       31     17168K kmalloc-192
 
-hm, maybe.
+This all depends on the workload, but these numbers don't look 
+particularly surprising.
 
-Thing is, if anyone ever has an expression-with-side-effects within
-conditionally-compiled code then they probably have a bug, don't they?
-I mean, as an extreme example
+> active_anon:1565586 inactive_anon:283198 isolated_anon:0
+>  active_file:241 inactive_file:505 isolated_file:0
+>  unevictable:1414 dirty:14 writeback:0 unstable:0
+>  free:25817 slab_reclaimable:10704 slab_unreclaimable:56662
+>  mapped:262 shmem:45 pagetables:45795 bounce:0
 
-	VM_BUG_ON(do_something_important());
+You have ~7GB of an 8GB macine consumed by anonymous memory, 100MB isn't 
+allocatable probably because of /proc/sys/vm/lowmem_reserve_ratio and the 
+per-zone min watermarks.  263MB of slab isn't atypical considering the 
+workload and you certainly have a lot of memory allocated by pagetables.
 
-is a nice little hand-grenade.  Your patch will cause that (bad) code
-to newly fail at runtime, but our coverage testing is so awful that it
-would take a long time for the bug to be discovered.
+So I think what's going to happen if your merge my patch is that you'll 
+see a memory hog be killed and then something will be killed on a 
+consistent basis anytime you completely exhaust all memory like this but 
+nowhere near the amount you saw before without the patch which turns the 
+oom killer into a serial killer.
 
-It would be nice if we could cause the build to warn or outright fail
-if the unused_expression() argument would have caused any code
-generation.  But I can't suggest how to do that.
-
-
-Your changelogs assert that gcc is emitting code for these expressions,
-but details are not presented.  Please give examples - where is this
-code generation coming from, what is causing it?
-
-
-Bottom line: are these patches a workaround for gcc inadequacies, or
-are they a bandaid covering up poor kernel code?
-
+I would be interested to know where all this anonymous memory is coming 
+from, though, considering the largest rss size from your first global oom 
+condition posted in the first message of this thread was 639 pages, or 
+2.5MB.
