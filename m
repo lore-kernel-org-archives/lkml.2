@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab2DZFSK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 01:18:10 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44699 "EHLO
+	id S1753948Ab2DZFSd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 01:18:33 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50162 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538Ab2DZFQZ (ORCPT
+	with ESMTP id S1752165Ab2DZFQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 01:16:25 -0400
-X-AuditID: 9c93016f-b7cfcae00000449e-2b-4f98da2571ca
+	Thu, 26 Apr 2012 01:16:22 -0400
+X-AuditID: 9c93016f-b7cfcae00000449e-1e-4f98da233ff2
 From: Namhyung Kim <namhyung.kim@lge.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 09/13] perf target: Introduce perf_target_errno
-Date: Thu, 26 Apr 2012 14:15:23 +0900
-Message-Id: <1335417327-11796-10-git-send-email-namhyung.kim@lge.com>
+Subject: [PATCH 03/13] perf top: Convert to struct perf_target
+Date: Thu, 26 Apr 2012 14:15:17 +0900
+Message-Id: <1335417327-11796-4-git-send-email-namhyung.kim@lge.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
 References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
@@ -24,110 +24,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The perf_target_errno enumerations are used to indicate
-specific error cases on perf target operations. It'd
-help libperf being a more generic library.
+Use struct perf_target as it is introduced by previous patch.
+This is a preparation of further changes.
 
-Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 ---
- tools/perf/util/target.c |   33 ++++++++++++++++++++++-----------
- tools/perf/util/target.h |   20 +++++++++++++++++++-
- 2 files changed, 41 insertions(+), 12 deletions(-)
+ tools/perf/builtin-top.c |   33 +++++++++++++++++----------------
+ tools/perf/util/top.c    |   19 ++++++++++---------
+ tools/perf/util/top.h    |    6 +-----
+ 3 files changed, 28 insertions(+), 30 deletions(-)
 
-diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
-index 3fadf85dd7e3..04cc374b7c32 100644
---- a/tools/perf/util/target.c
-+++ b/tools/perf/util/target.c
-@@ -10,36 +10,47 @@
- #include "debug.h"
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 8ef59f8262bb..2c1c207627b4 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -588,7 +588,7 @@ static void *display_thread_tui(void *arg)
+ 	 * via --uid.
+ 	 */
+ 	list_for_each_entry(pos, &top->evlist->entries, node)
+-		pos->hists.uid_filter_str = top->uid_str;
++		pos->hists.uid_filter_str = top->target.uid_str;
  
+ 	perf_evlist__tui_browse_hists(top->evlist, help,
+ 				      perf_top__sort_new_samples,
+@@ -1016,7 +1016,7 @@ static int __cmd_top(struct perf_top *top)
+ 	if (ret)
+ 		goto out_delete;
  
--void perf_target__validate(struct perf_target *target)
-+enum perf_target_errno perf_target__validate(struct perf_target *target)
- {
-+	enum perf_target_errno ret = PERF_TARGET__SUCCESS;
-+
- 	if (target->pid)
- 		target->tid = target->pid;
+-	if (top->target_tid || top->uid != UINT_MAX)
++	if (top->target.tid || top->target.uid != UINT_MAX)
+ 		perf_event__synthesize_thread_map(&top->tool, top->evlist->threads,
+ 						  perf_event__process,
+ 						  &top->session->host_machine);
+@@ -1154,7 +1154,6 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 	struct perf_top top = {
+ 		.count_filter	     = 5,
+ 		.delay_secs	     = 2,
+-		.uid		     = UINT_MAX,
+ 		.freq		     = 1000, /* 1 KHz */
+ 		.mmap_pages	     = 128,
+ 		.sym_pcnt_filter     = 5,
+@@ -1166,13 +1165,13 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 		     parse_events_option),
+ 	OPT_INTEGER('c', "count", &top.default_interval,
+ 		    "event period to sample"),
+-	OPT_STRING('p', "pid", &top.target_pid, "pid",
++	OPT_STRING('p', "pid", &top.target.pid, "pid",
+ 		    "profile events on existing process id"),
+-	OPT_STRING('t', "tid", &top.target_tid, "tid",
++	OPT_STRING('t', "tid", &top.target.tid, "tid",
+ 		    "profile events on existing thread id"),
+-	OPT_BOOLEAN('a', "all-cpus", &top.system_wide,
++	OPT_BOOLEAN('a', "all-cpus", &top.target.system_wide,
+ 			    "system-wide collection from all CPUs"),
+-	OPT_STRING('C', "cpu", &top.cpu_list, "cpu",
++	OPT_STRING('C', "cpu", &top.target.cpu_list, "cpu",
+ 		    "list of cpus to monitor"),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
+@@ -1227,7 +1226,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 		    "Display raw encoding of assembly instructions (default)"),
+ 	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
+ 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
+-	OPT_STRING('u', "uid", &top.uid_str, "user", "user to profile"),
++	OPT_STRING('u', "uid", &top.target.uid_str, "user", "user to profile"),
+ 	OPT_END()
+ 	};
+ 
+@@ -1253,22 +1252,24 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 
+ 	setup_browser(false);
+ 
+-	top.uid = parse_target_uid(top.uid_str, top.target_tid, top.target_pid);
+-	if (top.uid_str != NULL && top.uid == UINT_MAX - 1)
++	top.target.uid = parse_target_uid(top.target.uid_str, top.target.tid,
++					  top.target.pid);
++	if (top.target.uid_str != NULL && top.target.uid == UINT_MAX - 1)
+ 		goto out_delete_evlist;
  
  	/* CPU and PID are mutually exclusive */
- 	if (target->tid && target->cpu_list) {
--		ui__warning("WARNING: PID switch overriding CPU\n");
--		sleep(1);
- 		target->cpu_list = NULL;
-+		if (ret == PERF_TARGET__SUCCESS)
-+			ret = PERF_TARGET__PID_OVERRIDE_CPU;
+-	if (top.target_tid && top.cpu_list) {
++	if (top.target.tid && top.target.cpu_list) {
+ 		printf("WARNING: PID switch overriding CPU\n");
+ 		sleep(1);
+-		top.cpu_list = NULL;
++		top.target.cpu_list = NULL;
  	}
  
- 	/* UID and PID are mutually exclusive */
- 	if (target->tid && target->uid_str) {
--		ui__warning("PID/TID switch overriding UID\n");
--		sleep(1);
- 		target->uid_str = NULL;
-+		if (ret == PERF_TARGET__SUCCESS)
-+			ret = PERF_TARGET__PID_OVERRIDE_UID;
- 	}
+-	if (top.target_pid)
+-		top.target_tid = top.target_pid;
++	if (top.target.pid)
++		top.target.tid = top.target.pid;
  
- 	/* UID and CPU are mutually exclusive */
- 	if (target->uid_str && target->cpu_list) {
--		ui__warning("UID switch overriding CPU\n");
--		sleep(1);
- 		target->cpu_list = NULL;
-+		if (ret == PERF_TARGET__SUCCESS)
-+			ret = PERF_TARGET__UID_OVERRIDE_CPU;
- 	}
+-	if (perf_evlist__create_maps(top.evlist, top.target_pid,
+-				     top.target_tid, top.uid, top.cpu_list) < 0)
++	if (perf_evlist__create_maps(top.evlist, top.target.pid,
++				     top.target.tid, top.target.uid,
++				     top.target.cpu_list) < 0)
+ 		usage_with_options(top_usage, options);
  
--	/* PID/UID and SYSTEM are mutually exclusive */
--	if ((target->tid || target->uid_str) && target->system_wide) {
--		ui__warning("PID/TID/UID switch overriding CPU\n");
--		sleep(1);
-+	/* PID and SYSTEM are mutually exclusive */
-+	if (target->tid && target->system_wide) {
- 		target->system_wide = false;
-+		if (ret == PERF_TARGET__SUCCESS)
-+			ret = PERF_TARGET__PID_OVERRIDE_SYSTEM;
- 	}
-+
-+	/* UID and SYSTEM are mutually exclusive */
-+	if (target->uid_str && target->system_wide) {
-+		target->system_wide = false;
-+		if (ret == PERF_TARGET__SUCCESS)
-+			ret = PERF_TARGET__UID_OVERRIDE_SYSTEM;
-+	}
-+
-+	return ret;
- }
-diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
-index 1348065ada5e..c3914c8a9890 100644
---- a/tools/perf/util/target.h
-+++ b/tools/perf/util/target.h
-@@ -12,6 +12,24 @@ struct perf_target {
- 	bool	     system_wide;
+ 	if (!top.evlist->nr_entries &&
+diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
+index 09fe579ccafb..abe0e8e95068 100644
+--- a/tools/perf/util/top.c
++++ b/tools/perf/util/top.c
+@@ -69,23 +69,24 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+ 
+ 	ret += SNPRINTF(bf + ret, size - ret, "], ");
+ 
+-	if (top->target_pid)
++	if (top->target.pid)
+ 		ret += SNPRINTF(bf + ret, size - ret, " (target_pid: %s",
+-				top->target_pid);
+-	else if (top->target_tid)
++				top->target.pid);
++	else if (top->target.tid)
+ 		ret += SNPRINTF(bf + ret, size - ret, " (target_tid: %s",
+-				top->target_tid);
+-	else if (top->uid_str != NULL)
++				top->target.tid);
++	else if (top->target.uid_str != NULL)
+ 		ret += SNPRINTF(bf + ret, size - ret, " (uid: %s",
+-				top->uid_str);
++				top->target.uid_str);
+ 	else
+ 		ret += SNPRINTF(bf + ret, size - ret, " (all");
+ 
+-	if (top->cpu_list)
++	if (top->target.cpu_list)
+ 		ret += SNPRINTF(bf + ret, size - ret, ", CPU%s: %s)",
+-				top->evlist->cpus->nr > 1 ? "s" : "", top->cpu_list);
++				top->evlist->cpus->nr > 1 ? "s" : "",
++				top->target.cpu_list);
+ 	else {
+-		if (top->target_tid)
++		if (top->target.tid)
+ 			ret += SNPRINTF(bf + ret, size - ret, ")");
+ 		else
+ 			ret += SNPRINTF(bf + ret, size - ret, ", %d CPU%s)",
+diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
+index ce61cb2d1acf..33347ca89ee4 100644
+--- a/tools/perf/util/top.h
++++ b/tools/perf/util/top.h
+@@ -13,6 +13,7 @@ struct perf_session;
+ struct perf_top {
+ 	struct perf_tool   tool;
+ 	struct perf_evlist *evlist;
++	struct perf_target target;
+ 	/*
+ 	 * Symbols will be added here in perf_event__process_sample and will
+ 	 * get out after decayed.
+@@ -23,10 +24,7 @@ struct perf_top {
+ 	u64		   guest_us_samples, guest_kernel_samples;
+ 	int		   print_entries, count_filter, delay_secs;
+ 	int		   freq;
+-	const char	   *target_pid, *target_tid;
+-	uid_t		   uid;
+ 	bool		   hide_kernel_symbols, hide_user_symbols, zero;
+-	bool		   system_wide;
+ 	bool		   use_tui, use_stdio;
+ 	bool		   sort_has_symbols;
+ 	bool		   dont_use_callchains;
+@@ -37,7 +35,6 @@ struct perf_top {
+ 	bool		   sample_id_all_missing;
+ 	bool		   exclude_guest_missing;
+ 	bool		   dump_symtab;
+-	const char	   *cpu_list;
+ 	struct hist_entry  *sym_filter_entry;
+ 	struct perf_evsel  *sym_evsel;
+ 	struct perf_session *session;
+@@ -47,7 +44,6 @@ struct perf_top {
+ 	int		   realtime_prio;
+ 	int		   sym_pcnt_filter;
+ 	const char	   *sym_filter;
+-	const char	   *uid_str;
  };
  
--void perf_target__validate(struct perf_target *target);
-+enum perf_target_errno {
-+	/*
-+	 * XXX: Just choose an arbitrary big number standard errno can't have
-+	 */
-+	__PERF_TARGET__ERRNO_START		= 0x10000,
-+
-+	PERF_TARGET__SUCCESS			= __PERF_TARGET__ERRNO_START,
-+
-+	/* for perf_target__validate() */
-+	PERF_TARGET__PID_OVERRIDE_CPU,
-+	PERF_TARGET__PID_OVERRIDE_UID,
-+	PERF_TARGET__UID_OVERRIDE_CPU,
-+	PERF_TARGET__PID_OVERRIDE_SYSTEM,
-+	PERF_TARGET__UID_OVERRIDE_SYSTEM,
-+
-+	__PERF_TARGET__ERRNO_END
-+};
-+
-+enum perf_target_errno perf_target__validate(struct perf_target *target);
- 
- #endif /* _PERF_TARGET_H */
+ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size);
 -- 
 1.7.10
 
