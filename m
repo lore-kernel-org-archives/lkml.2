@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab2DZOuO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 10:50:14 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:54900 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab2DZOuM (ORCPT
+	id S1757310Ab2DZOu2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 10:50:28 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:48617 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757235Ab2DZOuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 10:50:12 -0400
-Date: Thu, 26 Apr 2012 07:49:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 3/4] rcu: Make RCU_FAST_NO_HZ account
- for pauses out of idle
-Message-ID: <20120426144910.GC2407@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120423161539.GA6467@linux.vnet.ibm.com>
- <1335197761-6577-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1335197761-6577-3-git-send-email-paulmck@linux.vnet.ibm.com>
- <1335445242.13683.19.camel@twins>
+	Thu, 26 Apr 2012 10:50:24 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Qgye8aAVM1lJY4dFaXAtlC_9L_0JouEyG4NWu3O7JDXXZXp
+ f7Kvu2LslVZm4kQ9r8bsCQKh01kxmVUdzVaI3wk2E2kYQ7MGfq6PkYvmuCmy
+ USwGYgODDrke4UNbDE9JTe1xDaj2djnLYNcB5e.OOVYnX2DZSqXyLDoiq6qY
+ Yb5W88ZLbmFVwKnq.31TjKaqbc07ivjLhCT6kK8VvEP4Dbryd0wgTi20t8.a
+ fm4nhAN_K3qH8roGawBLaSe_DAguZkbGKidngGytu8J45qQdMjKe4t0gXa0R
+ P.xWv1K0rrWeU54mv3nm2gxWk.8O5qjfgA3YQsfqCJO.VoSsD5SXQ9TZWB8e
+ QLir_YO.Mom9T3y6CGMqqr20FWe2rPGXZFX6UYx3v7uNWGIUffU1k43eTN8t
+ x
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 26 Apr 2012 09:50:19 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Richard Davies <richard@arachsys.com>
+cc: Satoru Moriya <satoru.moriya@hds.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "jweiner@redhat.com" <jweiner@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "shaohua.li@intel.com" <shaohua.li@intel.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [RFC][PATCH] avoid swapping out with swappiness==0
+In-Reply-To: <20120424082019.GA18395@alpha.arachsys.com>
+Message-ID: <alpine.DEB.2.00.1204260948520.16059@router.home>
+References: <20120424082019.GA18395@alpha.arachsys.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335445242.13683.19.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042614-5518-0000-0000-000003F05863
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 03:00:42PM +0200, Peter Zijlstra wrote:
-> On Mon, 2012-04-23 at 09:16 -0700, Paul E. McKenney wrote:
-> >  static DEFINE_PER_CPU(int, rcu_dyntick_drain);
-> >  static DEFINE_PER_CPU(unsigned long, rcu_dyntick_holdoff);
-> >  static DEFINE_PER_CPU(struct timer_list, rcu_idle_gp_timer);
-> > +static DEFINE_PER_CPU(unsigned long, rcu_idle_gp_timer_expires);
-> > +static DEFINE_PER_CPU(bool, rcu_idle_first_pass);
-> > +static DEFINE_PER_CPU(unsigned long, rcu_nonlazy_posted);
-> > +static DEFINE_PER_CPU(unsigned long, rcu_nonlazy_posted_snap);
-> 
-> 
-> Wouldn't that all be prettier if it were in a struct of sorts?
-> 
-> struct rcu_dyntick {
-> 	int			drain;
-> 	unsigned long		holdoff;
-> 	struct timer_list	gp_timer;
-> 	unsigned long		gp_timer_expires;
-> 	bool			first_pass;
-> 	unsigned long		posted;
-> 	unsigned long		posted_snap;
-> };
-> 
-> static DEFINE_PER_CPU(struct rcu_dyntick, rcu_dyntick);
-> 
-> ( fwiw, bool doesn't have a well specified storage type )
-> 
-> This way you have more control over the placement, variables are forced
-> to be together, instead of at the mercy of whatever per_cpu and the
-> linker do, and you more clearly see the holes in the structure.
-> 
-> All the per_cpu() usage should still work like:
-> 
->   per_cpu(rcu_dyntick.first_pass, cpu) = 0;
+On Tue, 24 Apr 2012, Richard Davies wrote:
 
-Excellent point -- I have added that transformation to the todo list for 3.6.
+> I strongly believe that Linux should have a way to turn off swapping unless
+> absolutely necessary. This means that users like us can run with swap
+> present for emergency use, rather than having to disable it because of the
+> side effects.
 
-I must confess that I had no idea that you could say the above.  I would
-have expected to have to say the following:
-
-    per_cpu(rcu_dyntick, cpu).first_pass = 0;
-
-Not much difference either way, though.
-
-							Thanx, Paul
+Agree. And this ooperation mode should be the default behavior given that
+swapping is a very slow and tedious process these days.
 
