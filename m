@@ -1,201 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab2DZR0o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 13:26:44 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:41161 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab2DZR0m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 13:26:42 -0400
-Message-ID: <4F99854E.80102@gmail.com>
-Date: Thu, 26 Apr 2012 11:26:38 -0600
-From: Hakan Akkan <hakanakkan@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754170Ab2DZRaF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 13:30:05 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:58820 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753632Ab2DZRaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 13:30:02 -0400
+Date: Thu, 26 Apr 2012 10:28:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 4/6] rcu: Clarify help text for
+ RCU_BOOST_PRIO
+Message-ID: <20120426172859.GF2407@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120423164159.GA13819@linux.vnet.ibm.com>
+ <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1335199347-13926-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1335444391.13683.11.camel@twins>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] nohz/cpuset: enable addition&removal of cpus while in adaptive
- nohz mode
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335444391.13683.11.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042617-5806-0000-0000-000014A4A448
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently modifying cpuset.cpus mask of a cgroup does not
-update the reference counters for adaptive nohz mode if the
-cpuset already had cpuset.adaptive_nohz == 1. Fix it so that
-cpus can be added or removed from a adaptive_nohz cpuset.
+On Thu, Apr 26, 2012 at 02:46:31PM +0200, Peter Zijlstra wrote:
+> On Mon, 2012-04-23 at 09:42 -0700, Paul E. McKenney wrote:
+> > +         This option specifies the real-time priority to which long-term
+> > +         preempted RCU readers are to be boosted.  If you are working
+> > +         with a real-time application that has one or more CPU-bound
+> > +         threads running at a real-time priority level,
+> 
+> Then your application is broken ;-) the kernel is known to mis-behave
+> under these circumstances since it doesn't get to run house-keeping
+> tasks. RCU is just one of these and elevating it doesn't make it work.
 
-Apply to Frederic's nohz/cpuset-v2 kernel 3.3.0-rc7nohz/cpuset-v2+
-(commit abd48ecb412ff023582e97442a02a7cb162a1c4e)
+As you say, CPU-bound RT tasks have a number of problems, and RCU is but
+one of them.  That said, an RCU-induced memory-exhaustion system hang
+is an extremely unfriendly diagnostic message, and use of RCU priority
+boosting allows them a better debugging environment.
 
-Signed-off-by: Hakan Akkan <hakanakkan@gmail.com>
----
- kernel/cpuset.c |  107 ++++++++++++++++++++++++++++++++++++-------------------
- 1 files changed, 70 insertions(+), 37 deletions(-)
+> >  you should set
+> > +         RCU_BOOST_PRIO to a priority higher then the highest-priority
+> > +         real-time CPU-bound thread.  The default RCU_BOOST_PRIO value
+> > +         of 1 is appropriate in the common case, which is real-time
+> > +         applications that do not have any CPU-bound threads.
+> 
+> Alternatively, 1 is the worst possible choice forcing people to consider
+> the issue.
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index aa8304d..1446210 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -862,6 +862,8 @@ static void update_tasks_cpumask(struct cpuset *cs, struct ptr_heap *heap)
- 	cgroup_scan_tasks(&scan);
- }
- 
-+static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs);
-+
- /**
-  * update_cpumask - update the cpus_allowed mask of a cpuset and all tasks in it
-  * @cs: the cpuset to consider
-@@ -902,6 +904,11 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
- 	if (cpumask_equal(cs->cpus_allowed, trialcs->cpus_allowed))
- 		return 0;
- 
-+	/*
-+	 * Update adaptive nohz bits.
-+	 */
-+	update_nohz_cpus(cs,trialcs);
-+
- 	retval = heap_init(&heap, PAGE_SIZE, GFP_KERNEL, NULL);
- 	if (retval)
- 		return retval;
-@@ -1247,51 +1254,74 @@ static void cpu_exit_nohz(int cpu)
- 	preempt_enable();
- }
- 
--static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
-+static void update_cpu_nohz_flag(int cpu, int adjust)
-+{
-+	int ref = (per_cpu(cpu_adaptive_nohz_ref, cpu) += adjust);
-+	printk("cpu %d, adjust %d, ref %d\n", cpu, adjust, ref);
-+
-+	if (ref == 1 && adjust > 0) {
-+		cpumask_set_cpu(cpu, &nohz_cpuset_mask);
-+		/*
-+		 * The mask update needs to be visible right away
-+		 * so that this CPU is part of the cputime IPI
-+		 * update right now.
-+		 */
-+		 smp_mb();
-+	} else if (!ref) {
-+		/*
-+		 * The update to cpu_adaptive_nohz_ref must be
-+		 * visible right away. So that once we restart the tick
-+		 * from the IPI, it won't be stopped again due to cache
-+		 * update lag.
-+		 * FIXME: We probably need more to ensure this value is really
-+		 * visible right away.
-+		 */
-+		smp_mb();
-+		cpu_exit_nohz(cpu);
-+		/*
-+		 * Now that the tick has been restarted and cputimes
-+		 * flushed, we don't need anymore to be part of the
-+		 * cputime flush IPI.
-+		 */
-+		cpumask_clear_cpu(cpu, &nohz_cpuset_mask);
-+	}
-+}
-+
-+static void update_nohz_flag(struct cpuset *old_cs, struct cpuset *cs)
- {
- 	int cpu;
--	int val;
-+	int adjust;
- 
- 	if (is_adaptive_nohz(old_cs) == is_adaptive_nohz(cs))
- 		return;
- 
-+	adjust = is_adaptive_nohz(cs) ? 1 : -1;
- 	for_each_cpu(cpu, cs->cpus_allowed) {
--		if (is_adaptive_nohz(cs))
--			per_cpu(cpu_adaptive_nohz_ref, cpu) += 1;
--		else
--			per_cpu(cpu_adaptive_nohz_ref, cpu) -= 1;
--
--		val = per_cpu(cpu_adaptive_nohz_ref, cpu);
--
--		if (val == 1) {
--			cpumask_set_cpu(cpu, &nohz_cpuset_mask);
--			/*
--			 * The mask update needs to be visible right away
--			 * so that this CPU is part of the cputime IPI
--			 * update right now.
--			 */
--			 smp_mb();
--		} else if (!val) {
--			/*
--			 * The update to cpu_adaptive_nohz_ref must be
--			 * visible right away. So that once we restart the tick
--			 * from the IPI, it won't be stopped again due to cache
--			 * update lag.
--			 * FIXME: We probably need more to ensure this value is really
--			 * visible right away.
--			 */
--			smp_mb();
--			cpu_exit_nohz(cpu);
--			/*
--			 * Now that the tick has been restarted and cputimes
--			 * flushed, we don't need anymore to be part of the
--			 * cputime flush IPI.
--			 */
--			cpumask_clear_cpu(cpu, &nohz_cpuset_mask);
--		}
-+		update_cpu_nohz_flag(cpu, adjust);
- 	}
- }
-+
-+static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
-+{
-+	int cpu;
-+	cpumask_t cpus;
-+
-+	/*
-+	 * Only bother if the cpuset has adaptive nohz
-+	 */
-+	if (!is_adaptive_nohz(cs))
-+		return;
-+
-+	cpumask_xor(&cpus, old_cs->cpus_allowed, cs->cpus_allowed);
-+
-+	for_each_cpu(cpu, &cpus)
-+		update_cpu_nohz_flag(cpu,
-+			cpumask_test_cpu(cpu, cs->cpus_allowed) ? 1 : -1);
-+}
- #else
-+static inline void update_nohz_flag(struct cpuset *old_cs, struct cpuset *cs)
-+{
-+}
- static inline void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
- {
- }
-@@ -1362,7 +1392,7 @@ static int update_flag(cpuset_flagbits_t bit, struct cpuset *cs,
- 	spread_flag_changed = ((is_spread_slab(cs) != is_spread_slab(trialcs))
- 			|| (is_spread_page(cs) != is_spread_page(trialcs)));
- 
--	update_nohz_cpus(cs, trialcs);
-+	update_nohz_flag(cs, trialcs);
- 
- 	mutex_lock(&callback_mutex);
- 	cs->flags = trialcs->flags;
-@@ -2006,7 +2036,8 @@ static struct cgroup_subsys_state *cpuset_create(
- /*
-  * If the cpuset being removed has its flag 'sched_load_balance'
-  * enabled, then simulate turning sched_load_balance off, which
-- * will call async_rebuild_sched_domains().
-+ * will call async_rebuild_sched_domains(). Also update adaptive
-+ * nohz flag.
-  */
- 
- static void cpuset_destroy(struct cgroup_subsys *ss, struct cgroup *cont)
-@@ -2016,6 +2047,8 @@ static void cpuset_destroy(struct cgroup_subsys *ss, struct cgroup *cont)
- 	if (is_sched_load_balance(cs))
- 		update_flag(CS_SCHED_LOAD_BALANCE, cs, 0);
- 
-+	update_flag(CS_ADAPTIVE_NOHZ, cs, 0);
-+
- 	number_of_cpusets--;
- 	free_cpumask_var(cs->cpus_allowed);
- 	kfree(cs);
+You say that as if forcing people to consider the issue was a
+bad thing.  ;-)
+
+> > +         Some real-time applications might not have a single real-time
+> > +         thread that saturates a given CPU, but instead might have
+> > +         multiple real-time threads that, taken together, fully utilize
+> > +         that CPU.  In this case, you should set RCU_BOOST_PRIO to
+> > +         a priority higher than the lowest-priority thread that is
+> > +         conspiring to prevent the CPU from running any non-real-time
+> > +         tasks.  For example, if one thread at priority 10 and another
+> > +         thread at priority 5 are between themselves fully consuming
+> > +         the CPU time on a given CPU, then RCU_BOOST_PRIO should be
+> > +         set to priority 6 or higher. 
+> 
+> I'd call this misleading, who's to say that preempting the 5 would yield
+> enough time to complete the RCU work?
+
+Yep, hence the "or higher".
+
+> This all gets us back to the fun question of RCU delayed bandwidth
+> budgeting.. ideally every 'task' that does call_rcu() should donate some
+> of its budget towards the thread running the callback.
+
+There was an academic interested in that topic a few years ago, but
+I don't believe anything came of it.  An interesting approach would
+be to do EDF scheduling on the callbacks themselves, but having a
+separate thread for each callback sounds like overkill.
+
+> Anyway, I'd argue both the old and new description are bonkers.
+
+Indeed, my goal was "less bonkers" rather than "not bonkers".  A
+"not bonkers" description remains a long-term aspiration rather than
+a short-term goal for the moment.  I can only hope that the timeframe
+is shorter than it was for RCU back in the early 1990s.  ;-)
+
+							Thanx, Paul
 
