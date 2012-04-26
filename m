@@ -1,188 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757915Ab2DZTNE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 15:13:04 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:42887 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753983Ab2DZTNC (ORCPT
+	id S1757304Ab2DZTPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 15:15:17 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35154 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598Ab2DZTPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 15:13:02 -0400
-Subject: Re: [PATCH] slub: prevent validate_slab() error due to race
- condition
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, don.morris@hp.com
-In-Reply-To: <1335466658-29063-1-git-send-email-Waiman.Long@hp.com>
-References: <1335466658-29063-1-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Apr 2012 21:12:55 +0200
-Message-ID: <1335467575.2775.61.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Apr 2012 15:15:15 -0400
+MIME-Version: 1.0
+Date: Thu, 26 Apr 2012 13:15:14 -0600
+X-Google-Sender-Auth: xCFznIvFs460QXPhcZaoFZsuZKU
+Message-ID: <CAMLZHHTM6fojwcPAeyL07hz9U=7uNnxnwxm4kWY_-ffOtHm=vQ@mail.gmail.com>
+Subject: Hang while loading firmware when going into suspend
+From: Daniel Drake <dsd@laptop.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-26 at 14:57 -0400, Waiman Long wrote:
-> The SLUB memory allocator was changed substantially from 3.0 to 3.1 by
-> replacing some of page locking codes for updating the free object list
-> of the slab with double-quadword atomic exchange (cmpxchg_double_slab)
-> or a pseudo one using a page lock when debugging is turned on.  In the
-> normal case, that should be enough to make sure that the slab is in a
-> consistent state. However, when CONFIG_SLUB_DEBUG is turned on and the
-> Redzone debugging flag is set, the Redzone bytes are also used to mark
-> if an object is free or allocated. The extra state information in those
-> Redzone bytes is not protected by the cmpxchg_double_slab(). As a
-> result,
-> validate_slab() may report a Redzone error if the validation is
-> performed
-> while racing with a free to a debugged slab.
-> 
-> The problem was reported in
-> 
-> 	https://bugzilla.kernel.org/show_bug.cgi?id=42312
-> 
-> It is fairly easy to reproduce by passing in the kernel parameter of
-> "slub_debug=FZPU".  After booting, run the command (as root):
-> 
-> 	while true ; do ./slabinfo -v ; sleep 3 ; done
-> 
-> The slabinfo test code can be found in tools/vm/slabinfo.c.
-> 
-> At the same time, load the system with heavy I/O activities by, for
-> example, building the Linux kernel. The following kind of dmesg messages
-> will then be reported:
-> 
-> 	BUG names_cache: Redzone overwritten
-> 	SLUB: names_cache 3 slabs counted but counter=4
-> 
-> This patch fixes the BUG message by acquiring the node-level lock for
-> slabs flagged for debugging to avoid this possible racing condition.
-> The locking is done on the node-level lock instead of the more granular
-> page lock because the new code may speculatively acquire the node-level
-> lock later on. Acquiring the page lock and then the node lock may lead
-> to potential deadlock.
-> 
-> As the increment of slab node count and insertion of the new slab into
-> the partial or full slab list is not an atomic operation, there is a
-> small time window where the two may not match. This patch temporarily
-> works around this problem by allowing the node count to be one larger
-> than the number of slab presents in the lists. This workaround may not
-> work if more than one CPU is actively adding slab to the same node,
-> but it should be good enough to workaround the problem in most cases.
-> 
-> To really fix the issue, the overall synchronization between debug slub
-> operations and slub validation needs a revisit.
-> 
-> This patch also fixes a number of "code indent should use tabs where
-> possible" error reported by checkpatch.pl in the __slab_free() function
-> by replacing groups of 8-space tab by real tabs.
-> 
-> After applying the patch, the slub error and warnings are all gone in
-> the 4-CPU x86-64 test machine.
-> 
-> Signed-off-by: Waiman Long <waiman.long@hp.com>
-> Reviewed-by: Don Morris <don.morris@hp.com>
-> ---
->  mm/slub.c |   46 +++++++++++++++++++++++++++++++++-------------
->  1 files changed, 33 insertions(+), 13 deletions(-)
-> 
-> diff --git a/mm/slub.c b/mm/slub.c
-> index ffe13fd..4ca3140 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2445,8 +2445,18 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
->  
->  	stat(s, FREE_SLOWPATH);
->  
-> -	if (kmem_cache_debug(s) && !free_debug_processing(s, page, x, addr))
-> -		return;
-> +	if (kmem_cache_debug(s)) {
-> +		/*
-> +		 * We need to acquire the node lock to prevent spurious error
-> +		 * with validate_slab().
-> +		 */
-> +		n = get_node(s, page_to_nid(page));
-> +		spin_lock_irqsave(&n->list_lock, flags);
-> +		if (!free_debug_processing(s, page, x, addr)) {
-> +			spin_unlock_irqrestore(&n->list_lock, flags);
-> +			return;
-> +		}
+Hi,
 
-		missing spin_unlock_irqrestore(&n->list_lock, flags); ?
+I can easily reproduce a hang related to loading firmware
+(asynchronously) while going into suspend.
 
-> +	}
->  
->  	do {
->  		prior = page->freelist;
-> @@ -2467,7 +2477,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
->  
->  			else { /* Needs to be taken off a list */
->  
-> -	                        n = get_node(s, page_to_nid(page));
-> +				n = get_node(s, page_to_nid(page));
->  				/*
->  				 * Speculatively acquire the list_lock.
->  				 * If the cmpxchg does not succeed then we may
-> @@ -2501,10 +2511,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
->  		 * The list lock was not taken therefore no list
->  		 * activity can be necessary.
->  		 */
-> -                if (was_frozen)
-> -                        stat(s, FREE_FROZEN);
-> -                return;
-> -        }
-> +		if (was_frozen)
-> +			stat(s, FREE_FROZEN);
-> +		return;
-> +	}
->  
->  	/*
->  	 * was_frozen may have been set after we acquired the list_lock in
-> @@ -2514,7 +2524,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
->  		stat(s, FREE_FROZEN);
->  	else {
->  		if (unlikely(!inuse && n->nr_partial > s->min_partial))
-> -                        goto slab_empty;
-> +			goto slab_empty;
->  
->  		/*
->  		 * Objects left in the slab. If it was not on the partial list before
-> @@ -4122,7 +4132,7 @@ static void validate_slab_slab(struct kmem_cache *s, struct page *page,
->  static int validate_slab_node(struct kmem_cache *s,
->  		struct kmem_cache_node *n, unsigned long *map)
->  {
-> -	unsigned long count = 0;
-> +	unsigned long count = 0, n_count;
->  	struct page *page;
->  	unsigned long flags;
->  
-> @@ -4143,10 +4153,20 @@ static int validate_slab_node(struct kmem_cache *s,
->  		validate_slab_slab(s, page, map);
->  		count++;
->  	}
-> -	if (count != atomic_long_read(&n->nr_slabs))
-> -		printk(KERN_ERR "SLUB: %s %ld slabs counted but "
-> -			"counter=%ld\n", s->name, count,
-> -			atomic_long_read(&n->nr_slabs));
-> +	n_count = atomic_long_read(&n->nr_slabs);
-> +	/*
-> +	 * The following workaround is to greatly reduce the chance of counter
-> +	 * mismatch messages due to the fact that inc_slabs_node() and the
-> +	 * subsequent insertion into the partial or full slab list is not
-> +	 * atomic. Consequently, there is a small timing window when the two
-> +	 * are not in the same state. A possible fix is to take the node lock
-> +	 * while doing inc_slabs_node() and slab insertion, but that may
-> +	 * require substantial changes to existing slow path slab allocation
-> +	 * logic.
-> +	 */
-> +	if ((count != n_count) && (count + 1 != n_count))
-> +		printk(KERN_ERR "SLUB: %s %ld slabs counted but counter=%ld\n",
-> +			s->name, count, n_count);
->  
->  out:
->  	spin_unlock_irqrestore(&n->list_lock, flags);
+This is running on kernel 3.3.3.
+
+I run:
+
+echo mem > /sys/power/state; echo mem > /sys/power/state
+
+i.e. I tell the system to suspend, and when I wake it up it will go
+very quickly into suspend again.
+
+After waking up, it will start to re-detect the libertas SDIO wifi
+card which was completely powered down during suspend.
+This triggers a firmware loading sequence.
+However, the system then immediately goes into suspend, and at this
+point the system becomes unhappy.
+
+Here are the logs from the first wakeup into the second suspend,
+including DEBUG enabled in firmware_class.c
+
+[   49.389773] Restarting tasks ...
+[   49.404539] olpc-dcon: The CPU has control
+[   49.419371] done.
+[   49.440444] PM: Syncing filesystems ...
+[   49.505994] sdhci-pci 0000:00:0c.0: setting latency timer to 64
+[   49.540921] done.
+[   49.542865] PM: Preparing system for mem sleep
+[   49.577882] sdhci-pci 0000:00:0c.0: setting latency timer to 64
+[   49.654932] sdhci-pci 0000:00:0c.0: setting latency timer to 64
+[   49.753343] sdhci-pci 0000:00:0c.0: setting latency timer to 64
+[   49.890879] mmc1: new SDIO card at address 0001
+[   49.914515] libertas_sdio: get async now
+[   49.918506] Requesting libertas/sd8686_v9_helper.bin
+[   49.940231] libertas_sdio mmc1:0001:1: firmware: requesting
+libertas/sd8686_v9_helper.bin
+[   49.961299] helper_firmware_cb   (null)
+[   49.965200] Requesting libertas/sd8686_v8_helper.bin
+[   49.970283] Freezing user space processes ... (elapsed 0.11 seconds) done.
+[   50.092922] Freezing remaining freezable tasks ... (elapsed 0.01
+seconds) done.
+[   50.112828] PM: Entering mem sleep
+[   50.116749] dcon_source_switch to DCON
+[   50.142874] olpc-dcon: The DCON has control
+[   50.147634] i8042 kbd 00:04: wake-up capability enabled by ACPI
+[   50.153871] i8042 aux 00:03: wake-up capability disabled by ACPI
+[   50.160268] sdhci-pci 0000:00:0c.0: setting latency timer to 64
+[   50.167265] libertas_sdio mmc1:0001:1: mmc1:0001:1: suspend: PM flags = 0x3
+[   50.174370] viafb_suspend!
+[  109.980122] libertas_sdio mmc1:0001:1: firmware:
+libertas/sd8686_v8_helper.bin loading timed out
+[  109.989070] helper_firmware_cb   (null)
+[  109.992952] Requesting sd8686_helper.bin
+[  169.990109] libertas_sdio mmc1:0001:1: firmware: sd8686_helper.bin
+loading timed out
+[  169.997960] helper_firmware_cb   (null)
+[  170.001859] libertas_sdio: sdio got firmware -2   (null)   (null)
+[  170.008047] libertas_sdio: failed to find firmware (-2)
+[  170.013351] libertas: INIT FAILED
+[  170.016719] libertas: ret new state 2
+[  170.020781] mmc1: card 0001 removed
+[  170.024397] sdhci-pci 0000:00:0c.0: setting latency timer to 64
+[  170.031423] sdhci-pci 0000:00:0c.0: setting latency timer to 64
+[  170.038496] sdhci-pci 0000:00:0c.0: setting latency timer to 64
+[  170.060137] PM: suspend of devices complete after 119943.496 msecs
+
+Some weird things here:
+
+Early during the routine, we request a firmware that cannot be found:
+
+[   49.918506] Requesting libertas/sd8686_v9_helper.bin
+[   49.940231] libertas_sdio mmc1:0001:1: firmware: requesting
+libertas/sd8686_v9_helper.bin
+[   49.961299] helper_firmware_cb   (null)
+
+(The first and last lines are debug output from my driver, line 2
+comes from firmware_class)
+
+Then when we try to find a different firmware file, we don't get the
+firmware_class debug line that we saw above, only my driver debug:
+[   49.965200] Requesting libertas/sd8686_v8_helper.bin
+[   49.970283] Freezing user space processes ... (elapsed 0.11 seconds) done.
+
+Eventually we get a timeout, then we request another firmware, which
+also times out, and finally we fall into suspend after a long delay.
 
 
+Sidenote:
+There is a driver race in the current libertas code - in the above
+situation it will attempt to call the driver suspend routine even if
+probe hasn't finished (i.e. async firmware loading still underway). I
+have that solved locally in the tests above - the suspend routine will
+detect that probing/firmware loading is still ongoing and wait for
+that to complete before asking the hardware to suspend. However, in
+testing this change, I am facing the above issue with the firmware
+loader behaving badly when going into suspend.
+
+Thanks
+Daniel
