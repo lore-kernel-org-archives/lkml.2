@@ -1,106 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab2DZKjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 06:39:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34994 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754850Ab2DZKjL (ORCPT
+	id S1755775Ab2DZKnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 06:43:51 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:40993 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754353Ab2DZKnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 06:39:11 -0400
-Date: Thu, 26 Apr 2012 11:38:40 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Yilu Mao <ylmao@marvell.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "njiang1@marvell.com" <njiang1@marvell.com>
-Subject: Re: [PATCH] ARM: cache-l2x0.c: save aux ctrl for resume in case
- that l2x0 is enabled before init
-Message-ID: <20120426103840.GA6294@arm.com>
-References: <1335235280-25148-1-git-send-email-ylmao@marvell.com>
- <20120424082810.GA9367@arm.com>
- <4F98D659.4030709@marvell.com>
- <20120426083554.GB18136@arm.com>
- <4F99148B.4020900@marvell.com>
- <20120426094400.GD18136@arm.com>
- <4F991ED6.8060109@marvell.com>
- <20120426102815.GE18136@arm.com>
- <4F9924FB.7070308@marvell.com>
+	Thu, 26 Apr 2012 06:43:50 -0400
+X-AuditID: b753bd60-93c60ba000002c51-7f-4f9926e40ec6
+X-AuditID: b753bd60-93c60ba000002c51-7f-4f9926e40ec6
+Message-ID: <4F9926E2.4010100@hitachi.com>
+Date: Thu, 26 Apr 2012 19:43:46 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120420 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9924FB.7070308@marvell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 4/5] ftrace/x86: Have arch x86_64 use breakpoints instead
+ of stop machine
+References: <20120425184830.325105778@goodmis.org> <20120425184930.873468066@goodmis.org>
+In-Reply-To: <20120425184930.873468066@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 11:35:39AM +0100, Yilu Mao wrote:
-> On 04/26/2012 06:28 PM, Catalin Marinas wrote:
-> > On Thu, Apr 26, 2012 at 11:09:26AM +0100, Yilu Mao wrote:
-> >> On 04/26/2012 05:44 PM, Catalin Marinas wrote:
-> >>> On Thu, Apr 26, 2012 at 10:25:31AM +0100, Yilu Mao wrote:
-> >>>> On 04/26/2012 04:35 PM, Catalin Marinas wrote:
-> >>>>> On Thu, Apr 26, 2012 at 06:00:09AM +0100, Yilu Mao wrote:
-> >>>>>> On 04/24/2012 04:28 PM, Catalin Marinas wrote:
-> >>>>>>> On Tue, Apr 24, 2012 at 03:41:20AM +0100, Yilu Mao wrote:
-> >>>>>>>> +	l2x0_saved_regs.aux_ctrl = aux;
-> >>>>>>>> +
-> >>>>>>>>      	aux&= aux_mask;
-> >>>>>>>>      	aux |= aux_val;
-> >>>>>>>
-> >>>>>>> I think that's the wrong place to save it, it should be after the
-> >>>>>>> masking was done.
-> >>>>>>>
-> >>>>>>> Anyway, if we cannot write this register in l2x0_init() because the L2
-> >>>>>>> was enabled, do we expect the L2 to be disabled during resume?
-> >>>>>>>
-> >>>>>> Sorry, I don't think so.
-> >>>>>> This is the right place to save it because we must make sure the saved
-> >>>>>> aux_ctrl is the same as what it is set.
-> >>>>>> If we save it after masking was done, the saved value will be different
-> >>>>>> because we can't actually change the real setting.
-> >>>>>
-> >>>>> And since we can't actually change the real setting on the resume path,
-> >>>>> why do we need to save it anyway. Is your L2 cache disabled on the
-> >>>>> resume path but not on the cold boot one?
-> >>>>
-> >>>> We can't change L2 aux ctrl setting when do init because it has been
-> >>>> enabled.
-> >>>
-> >>> This is normally for the case where the kernel running in non-secure
-> >>> mode is not allowed to write the L2 aux ctrl register. Does this
-> >>> permission change with core idle?
-> >>>
-> >> Yes, your understanding of previous mail is right. The L2 is enabled on
-> >> code boot and it is disabled on the resume in our case.
-> >
-> > But the kernel either runs in secure mode or the non-secure access to
-> > this register is allowed.
-> >
-> >> So if we don't have such patch, when core idle exit, L2 cache aux ctrl
-> >> register will be set to 0x0 because l2x0_saved_regs.aux_ctrl is not
-> >> initialized.
-> >
-> > You could still make sure that the mask passed doesn't affect the
-> > original setting and save it after masking.
-> >
-> Do you mean the code is like this:
-> aux = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
-> aux &= aux_mask;
-> l2x0_saved_regs.aux_ctrl = aux;
+(2012/04/26 3:48), Steven Rostedt wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 > 
-> Then the saved value is not the same as real setting. So the restored 
-> value after core idle will not the same as before... This is not what we 
-> expected.
+> This method changes x86 to add a breakpoint to the mcount locations
+> instead of calling stop machine.
+> 
+> Now that iret can be handled by NMIs, we perform the following to
+> update code:
+> 
+> 1) Add a breakpoint to all locations that will be modified
+> 
+> 2) Sync all cores
+> 
+> 3) Update all locations to be either a nop or call (except breakpoint
+>    op)
+> 
+> 4) Sync all cores
+> 
+> 5) Remove the breakpoint with the new code.
+> 
+> 6) Sync all cores
+> 
+> [
+>   Added updates that Masami suggested:
+>    Use unlikely(modifying_ftrace_code) in int3 trap to keep kprobes efficient.
+>    Don't use NOTIFY_* in ftrace handler in int3 as it is not a notifier.
+> ]
 
-My point was that on your platform you pass an aux_mask that is meant to
-change the already set aux_ctlr value. Why do you pass such mask to be
-anything other than ~0UL in this case?
+I just have a few comments :)
+
+[...]
+> +int modifying_ftrace_code __read_mostly;
+> +
+> +/*
+> + * A breakpoint was added to the code address we are about to
+> + * modify, and this is the handle that will just skip over it.
+> + * We are either changing a nop into a trace call, or a trace
+> + * call to a nop. While the change is taking place, we treat
+> + * it just like it was a nop.
+> + */
+> +int ftrace_int3_handler(int cmd, const char *str,
+> +		 struct pt_regs *regs, long err, int trap, int sig)
+> +{
+> +	if (!modifying_ftrace_code || cmd != DIE_INT3 || !regs)
+> +		return 0;
+> +
+
+At this moment, all of these checks are meaningless, because
+this is not a handler but just a fixup code in int3 isr. :)
+So, I think you can just define "int ftrace_int3_fixup(regs)"
+for this purpose.
+
+> +	if (!ftrace_location(regs->ip - 1))
+> +		return 0;
+> +
+> +	regs->ip += MCOUNT_INSN_SIZE - 1;
+> +
+> +	return 1;
+> +}
+
+[...]
+
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index ff9281f1..1712485 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -50,6 +50,7 @@
+>  #include <asm/processor.h>
+>  #include <asm/debugreg.h>
+>  #include <linux/atomic.h>
+> +#include <asm/ftrace.h>
+>  #include <asm/traps.h>
+>  #include <asm/desc.h>
+>  #include <asm/i387.h>
+> @@ -303,8 +304,14 @@ gp_in_kernel:
+>  }
+>  
+>  /* May run on IST stack. */
+> -dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
+> +dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_code)
+>  {
+> +#ifdef CONFIG_FUNCTION_TRACER
+
+I guess CONFIG_DYNAMIC_FTRACE ?
+
+> +	/* ftrace must be first, everything else may cause a recursive crash */
+> +	if (unlikely(modifying_ftrace_code) &&
+> +	    ftrace_int3_handler(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP))
+> +		return;
+> +#endif
+
+Thank you!
 
 -- 
-Catalin
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
