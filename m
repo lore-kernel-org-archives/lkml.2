@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab2DZIcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 04:32:52 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:55252 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754682Ab2DZIct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 04:32:49 -0400
-Message-ID: <4F99082F.1040902@msgid.tls.msk.ru>
-Date: Thu, 26 Apr 2012 12:32:47 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+	id S1755303Ab2DZIfM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 04:35:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56224 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754481Ab2DZIfI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 04:35:08 -0400
+Date: Thu, 26 Apr 2012 09:35:04 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@stericsson.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Jonas ABERG <jonas.aberg@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] regulator: core: Keep boot_on regulators powered during
+ init
+Message-ID: <20120426083504.GA3207@opensource.wolfsonmicro.com>
+References: <1335173873-24301-1-git-send-email-ulf.hansson@stericsson.com>
+ <20120423101804.GA8318@opensource.wolfsonmicro.com>
+ <4F953455.3080002@stericsson.com>
+ <20120423110522.GB8318@opensource.wolfsonmicro.com>
+ <4F95495D.4050508@stericsson.com>
+ <4F954ED6.2040201@stericsson.com>
+ <20120423180140.GR8318@opensource.wolfsonmicro.com>
+ <CAJe_Zhd9gUJX05=q9Zjb5QX_SBtPYMBxDz5Gu+=H+GWt97Rf9w@mail.gmail.com>
 MIME-Version: 1.0
-To: Ian Kent <raven@themaw.net>
-CC: Linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Meyer <thomas@m3y3r.de>, stable@kernel.org,
-        autofs@vger.kernel.org
-Subject: Re: [PATCH] unbreak automount daemon after fixing autofs5 ABI
-References: <1335421594-10499-1-git-send-email-mjt@msgid.tls.msk.ru> <1335428498.6702.33.camel@perseus.themaw.net>
-In-Reply-To: <1335428498.6702.33.camel@perseus.themaw.net>
-X-Enigmail-Version: 1.4
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gBBFr7Ir9EOA20Yy"
+Content-Disposition: inline
+In-Reply-To: <CAJe_Zhd9gUJX05=q9Zjb5QX_SBtPYMBxDz5Gu+=H+GWt97Rf9w@mail.gmail.com>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.04.2012 12:21, Ian Kent wrote:
-> On Thu, 2012-04-26 at 10:26 +0400, Michael Tokarev wrote:
-[]
->> Change 499f286dc02cde6b tries to fix the original interface
->> bug for 32bit userspace running on 64bit kernel.  But the
->> issue is that autofs5 already has a workaround for it, so
->> the end result is that the two (kernel & user) disagree
->> again.  "Fix" this by applying the in-kernel fix only if
->> the process is not named "automount" -- which is how autofs5
->> daemon is named.
-> 
-> No, you cannot be sure the autofs binary is named automount.
 
-Well, I checked several distributions, all have the binary named
-this way.  Yes a user can rename it and it will break again, but
-it is at least better than now when it does not work at all.  And
-yes it is messy, just like current situation already is.
+--gBBFr7Ir9EOA20Yy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Not only that, this approach makes an unpleasant change even more
-> unpleasant.
-> 
-> I still think that my original proposed patches were the better approach
-> to handling this problem.
-> 
-> My recommendation was that the major autofs kernel protocol version be
-> bumped and a packed structure used from that version on. That allows
-> user space to request that protocol version for communication at mount
-> time. If systemd doesn't want to support earlier protocol versions then
-> it can complain, instructing the user to update to a later kernel.
+On Wed, Apr 25, 2012 at 09:04:01PM +0530, Jassi Brar wrote:
 
-This is exactly what I was proposing when I started my thread about
-3.0.24 autofs breakage -- to _revert_ the in-kernel fix and introduce
-a new interface (or variation thereof, in means of a new mount option
-or something).  This way, breakage and mess are both minimal.
+>  Shouldn't the bootloader be responsible for ensuring MMC is
+> put down after using it and before passing control to the kernel.
 
-Note that a major protocol changes aren't really needed, just a single
-mount option, which uses a right size of the structure.  Unless at the
-same time you want to change something else.
+You might want to try to ensure that bootloaders always do the right
+thing but I prefer to work on more achievable goals like world peace. :/
 
-> I understand why that proposal was not well accepted but the fact
+--gBBFr7Ir9EOA20Yy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-But I don't understand this ;)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> remains, I did make a mistake and I did chose to work around it in user
-> space rather than cope with the pain at the time. In hind site that may
-> have been the wrong thing to do but that's history. So I believe the
-> most sensible thing to do now is to take the approach that minimizes
-> breakage.
+iQIcBAEBAgAGBQJPmQivAAoJEBus8iNuMP3d93MP/3Re+83gXRmvEniYK2BDirSi
+BUAqCnt9bq5Mkw8XdfjoWT9M/uI51JXnsfGmKC5Ub1K++TUNuQyxOMyyWwaN7M/e
+2J6TSQK+uYeN3WjUJzMbno8S62vd0p+fJj527Rn0ePq+uniZ4ihvbuo+KQUuSd3+
+ei+cbHPko8lCki4oi1dW9SGYFCgxO42tIwajfdqwxaEaeR/pBda6DuSgiX+1rrfs
+uZJgV4AMb0tg7hc1d5xbnFtSk1LRn9UlA9tN4Fz4GQo1uvrnaCB2DSEoj2vDrHMG
+KoDknaEoHLFqQGR3JAbD/eht+Pw/0vBVlolIELnD15mbNGDf3OwOoQaN4COLmXzo
+xA/5d4Yx8yLzi3QCj4kAWN4/9N/htVKwEHCUI5K91wzdDJSvMA0O7f6XHP8ugWNO
+gSbUp4fXMaqXefyK+8ne3UWHhge5JEVeBVLXaHiUPn5M61BEnOGD8c1yxmke5G9G
+5svJk+jq1fCaRzcDqHWNpkIMaz55VWsn+ycOAy9t1NJ+8vOmPVAO1qg/NiMv6xBX
+IHrkM6Uj5muvZxqkSJ6kluq8C7rzEIp9spMsfqvkRaKf1dBpggPsb2Xm0IHTC/vt
+4Y9roQ6X0GGmJd3woOEO13wm76cvZN1RRFrI61pJurdwWmhYy5d03P7pRrH4MUYp
+pMd6JeFEa2Gp+XwNq4l1
+=Y4gO
+-----END PGP SIGNATURE-----
 
-No one complains to you now about the history, and it is not relevant
-now already, as we do have what we have.
-
-And yes I 100% agree that reverting that "fix" change in kernel and
-introducing a more sane "slightly new" interface is the way to go.
-
-Thank you!
-
-/mjt
+--gBBFr7Ir9EOA20Yy--
