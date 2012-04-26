@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486Ab2DZQoq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 12:44:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23125 "EHLO mga11.intel.com"
+	id S1758586Ab2DZQt7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 12:49:59 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:44817 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757752Ab2DZQoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 12:44:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="158712866"
-Subject: [GIT PULL] slave-dmaengine fixes
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Dan <dan.j.williams@intel.com>
+	id S1757849Ab2DZQt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 12:49:57 -0400
+Message-ID: <1335458867.2351.30.camel@groeck-laptop>
+Subject: Re: [ 03/62] hwmon: fam15h_power: fix bogus values with current
+ BIOSes
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Andre Przywara <andre.przywara@amd.com>,
+        Jean Delvare <khali@linux-fr.org>
+Date: Thu, 26 Apr 2012 09:47:47 -0700
+In-Reply-To: <20120426164308.GA18682@kroah.com>
+References: <20120424223305.GA7748@kroah.com>
+	 <20120424223242.251771207@linuxfoundation.org>
+	 <20120425194506.GG3932@decadent.org.uk>
+	 <1335387002.18790.145.camel@groeck-laptop>
+	 <20120426164308.GA18682@kroah.com>
+Organization: Ericsson
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Apr 2012 22:10:25 +0530
-Message-ID: <1335458425.31825.129.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2012-04-26 at 12:43 -0400, Greg KH wrote:
+> On Wed, Apr 25, 2012 at 01:50:02PM -0700, Guenter Roeck wrote:
+> > On Wed, 2012-04-25 at 15:45 -0400, Ben Hutchings wrote:
+> > > On Tue, Apr 24, 2012 at 03:32:44PM -0700, Greg KH wrote:
+> > > > 3.3-stable review patch.  If anyone has any objections, please let me know.
+> > > [...]
+> > > > +static void __devinit tweak_runavg_range(struct pci_dev *pdev)
+> > > > +{
+> > > > +	u32 val;
+> > > > +	const struct pci_device_id affected_device = {
+> > > > +		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
+> > > > +
+> > > > +	/*
+> > > > +	 * let this quirk apply only to the current version of the
+> > > > +	 * northbridge, since future versions may change the behavior
+> > > > +	 */
+> > > > +	if (!pci_match_id(&affected_device, pdev))
+> > > > +		return;
+> > > [...]
+> > > 
+> > > pci_match_id() takes an *array* of IDs which must be properly zero-
+> > > terminated.  This change is bogus and should be fixed up before it
+> > > goes into a stable update.
+> > 
+> > Good catch. I sent a patch to fix this in mainline a minute ago.
+> 
+> Is it in Linus's tree yet?  If so, what's the git commit id?  If not,
+> I'll have to drop it from this release.
 
-Please pull the following to recieve fixes of slave dma drivers.
-This round we have small fixes on few drivers
+It is not in Linus' tree yet. I plan to send the pull request tomorrow,
+after having it rest for another night in my tree (with nightly builds)
+and in linux-next.
 
-The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
-  Linus Torvalds (1):
-        Linux 3.4-rc1
+Please drop the patch for now. The fix will include a reference to it,
+so you can pull both patches once the fix shows up in Linus' tree.
 
-are available in the git repository at:
-  git://git.infradead.org/users/vkoul/slave-dma.git fixes
+Sorry for the trouble.
 
-Davide Ciminaghi (1):
-      dmaengine/amba-pl08x : reset phychan_hold on terminate all
+Thanks,
+Guenter
 
-Linus Walleij (2):
-      dma/ste_dma40: explicitly include regulator consumer header
-      dma/ste_dma40: fix erroneous comparison
-
-Narayanan G (1):
-      dma40: Improve the logic of stopping logical chan
-
-Nicolas Ferre (1):
-      dmaengine: at_hdmac: remove clear-on-read in atc_dostart()
-
-Olof Johansson (1):
-      dma: pl330: fix a couple of compilation warnings
-
-Shawn Guo (1):
-      dma: mxs-dma: enable channel in device_issue_pending call
-
-Vinod Koul (1):
-      dmaengine: imx-dma: dont complete descriptor for cyclic dma
-
- drivers/dma/amba-pl08x.c               |    1 +
- drivers/dma/at_hdmac.c                 |    4 -
- drivers/dma/imx-dma.c                  |    9 +-
- drivers/dma/mxs-dma.c                  |   10 +-
- drivers/dma/pl330.c                    |   25 ++-
- drivers/dma/ste_dma40.c                |  323 ++++++++++++++++++++------------
- drivers/dma/ste_dma40_ll.h             |    2 -
- drivers/mmc/host/mxs-mmc.c             |    3 +
- drivers/mtd/nand/gpmi-nand/gpmi-nand.c |    1 +
- 9 files changed, 230 insertions(+), 148 deletions(-)
-
-
-
--- 
-~Vinod
 
