@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062Ab2DZQFN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 12:05:13 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47500 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757715Ab2DZQFI (ORCPT
+	id S1758259Ab2DZQI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 12:08:56 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:55172 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756875Ab2DZQIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 12:05:08 -0400
-Message-ID: <4F997216.6080804@linux.vnet.ibm.com>
-Date: Thu, 26 Apr 2012 21:34:38 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Thu, 26 Apr 2012 12:08:53 -0400
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        KVM <kvm@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Xen <xen-devel@lists.xensource.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH RFC V6 5/5] Documentation/kvm : Add documentation on Hypercalls
- and features used for PV spinlock
-References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com> <20120423100034.30893.81866.sendpatchset@codeblue.in.ibm.com> <4F997058.6070509@landley.net>
-In-Reply-To: <4F997058.6070509@landley.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12042616-5564-0000-0000-0000025EC8D0
+In-Reply-To: <4F9711AA.1090803@fold.natur.cuni.cz>
+References: <4F909CEB.3060407@fold.natur.cuni.cz>
+	<CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
+	<CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com>
+	<4F91473A.1080007@fold.natur.cuni.cz>
+	<CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com>
+	<4F919C22.1070608@fold.natur.cuni.cz>
+	<4F919CD5.7070004@fold.natur.cuni.cz>
+	<CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com>
+	<20120420231748.GB7069@xanatos>
+	<CAE9FiQX7JCZvL9S8ZOQQaHQ4nfU0XDj=8FmOfCtcz7WFjP8=Bg@mail.gmail.com>
+	<20120421132516.GC7069@xanatos>
+	<CAE9FiQUuHrsNPhPWAc9koOrW6Xc+ryOhf_nv2ZyWvG9XMAdNoA@mail.gmail.com>
+	<4F9711AA.1090803@fold.natur.cuni.cz>
+Date: Thu, 26 Apr 2012 09:08:52 -0700
+X-Google-Sender-Auth: 44nxVTBPyjrCbaQnRv98hQW8jns
+Message-ID: <CAE9FiQWFAYHTKtv1_MF-SYTrBxUg3zYbfuuxu2uGXHGmEYSf5A@mail.gmail.com>
+Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
+From: Yinghai Lu <yinghai@kernel.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 09:27 PM, Rob Landley wrote:
-> On 04/23/2012 05:00 AM, Raghavendra K T wrote:
->> From: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
-> ...
->> --- /dev/null
->> +++ b/Documentation/virtual/kvm/hypercalls.txt
->> @@ -0,0 +1,59 @@
->> +KVM Hypercalls Documentation
->> +===========================
->> +Template for documentation is
->> +The documenenation for hypercalls should inlcude
+On Tue, Apr 24, 2012 at 1:48 PM, Martin Mokrejs
+<mmokrejs@fold.natur.cuni.cz> wrote:
+> (sorry for the re-send, now with the attached dmesg)
 >
-> What does the line about templates mean/
 >
-> documenenation? inlcude?
-
-I think I should correct some redundant statements here. The template is 
-meant for current "structure / layout of hypercall documentation".
-
->
->> +1. Hypercall name, value.
->> +2. Architecture(s)
->> +3. status (deprecated, obsolete, active)
->> +4. Purpose
->> +
->> +
->> +1. KVM_HC_VAPIC_POLL_IRQ
->> +------------------------
->> +value: 1
->> +Architecture: x86
->> +Purpose:
->
-> Purpose: none.
+> With the express card itself (no USB devices attached to it) I do not see
+> a difference. Is this what you wanted me to test?
 >
 
-Will add this when I respin the patch soon
+so disabling autosuspend make no difference.
 
-> Rob
+Can you try boot the system without loading xhci driver ?
 
-Thanks for review.
-
+Yinghai
