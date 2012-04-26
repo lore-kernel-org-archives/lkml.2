@@ -1,37 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759261Ab2DZVey (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 17:34:54 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34266 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757178Ab2DZVex (ORCPT
+	id S1759021Ab2DZVgy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 17:36:54 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:50954 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753141Ab2DZVgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 17:34:53 -0400
-Date: Thu, 26 Apr 2012 22:34:49 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Gerard Snitselaar <dev@snitselaar.org>
-Cc: sameo@linux.intel.com, ldewangan@nvidia.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd/tps65910: fix section mismatch in linux-next
-Message-ID: <20120426213449.GB9415@sirena.org.uk>
-References: <1335280435-2457-1-git-send-email-dev@snitselaar.org>
+	Thu, 26 Apr 2012 17:36:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335280435-2457-1-git-send-email-dev@snitselaar.org>
-X-Cookie: Time and tide wait for no man.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1335353894-22096-1-git-send-email-b29396@freescale.com>
+References: <1335353894-22096-1-git-send-email-b29396@freescale.com>
+Date: Thu, 26 Apr 2012 23:36:52 +0200
+Message-ID: <CACRpkdadLsqpb=X+BmomyRywf=SrgGpbW2B=Myo3zTn_xMHJ2g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: support gpio request deferred probing
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, swarren@wwwdotorg.org,
+        s.hauer@pengutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 24, 2012 at 08:13:55AM -0700, Gerard Snitselaar wrote:
+On Wed, Apr 25, 2012 at 1:38 PM, Dong Aisheng <b29396@freescale.com> wrote:
 
-> -static int tps65910_i2c_probe(struct i2c_client *i2c,
-> +static int __init tps65910_i2c_probe(struct i2c_client *i2c,
->  			    const struct i2c_device_id *id)
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+>
+> As pinctrl handles, it may be possible the pinctrl gpio ranges
+> are still not got registered when user call pinctrl_gpio_request.
+> Thus, add defer support for it too.
+>
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 
-I sent a separate fix for this earlier on - __init is the wrong
-annotation here, a device init function should be marked __devinit.
+Since nobody is saying anything and it looks reasonable,
+I just applied this.
+
+Thanks!
+Linus Walleij
