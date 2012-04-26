@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757114Ab2DZPFX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 11:05:23 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45424 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590Ab2DZPFV (ORCPT
+	id S1757394Ab2DZPFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 11:05:31 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:56817 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757265Ab2DZPF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 11:05:21 -0400
-Message-ID: <4F99642E.1010305@wwwdotorg.org>
-Date: Thu, 26 Apr 2012 09:05:18 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 26 Apr 2012 11:05:27 -0400
+Message-ID: <4F996433.7040003@gmail.com>
+Date: Thu, 26 Apr 2012 09:05:23 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120420 Thunderbird/12.0
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, Viresh Kumar <viresh.kumar@st.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Rakesh Iyer <riyer@nvidia.com>
-Subject: Re: [PATCH 2/2] Input: matrix_keymap - wire up device tree support
-References: <20120426081909.GA2726@core.coreip.homeip.net>
-In-Reply-To: <20120426081909.GA2726@core.coreip.homeip.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Namhyung Kim <namhyung.kim@lge.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/13] perf evlist: Fix creation of cpu map
+References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com> <1335417327-11796-8-git-send-email-namhyung.kim@lge.com>
+In-Reply-To: <1335417327-11796-8-git-send-email-namhyung.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 02:19 AM, Dmitry Torokhov wrote:
-> When platform keymap is not supplied to matrix_keypad_build_keymap()
-> and device tree support is enabled, try locating specified property
-> and load keymap from it. If property name is not defined, try using
-> "linux,keymap".
-> 
-> Based on earlier patch by Viresh Kumar <viresh.kumar@st.com>
+On 4/25/12 11:15 PM, Namhyung Kim wrote:
+> Currently, 'perf record -- sleep 1' creates a cpu map for all online
+> cpus since it turns out calling cpu_map__new(NULL). Fix it. Also it
+> is guaranteed that cpu_list is NULL if PID/TID is given by calling
+> perf_target__validate(), so we can make the conditional bit simpler.
+>
+> This also fixes perf test 7 (Validate) failure on my 6 core machine:
+>
+>    $ cat /sys/devices/system/cpu/online
+>    0-11
+>    $ ./perf test -v 7
+>     7: Validate PERF_RECORD_* events&  perf_sample fields:
+>    --- start ---
+>    perf_evlist__mmap: Operation not permitted
+>    ---- end ----
+>    Validate PERF_RECORD_* events&  perf_sample fields: FAILED!
 
-I think this series looks mostly OK. A few comments below.
+Works fine for me with latest tip:
+$ cat /sys/devices/system/cpu/online
+0-15
 
-We don't actually have the KBC driver hooked up on any boards yet, so I
-can't actually test this yet.
+$ /tmp/perf/perf test -v 7
+  7: Validate PERF_RECORD_* events & perf_sample fields:
+--- start ---
+64740167922229 0 PERF_RECORD_SAMPLE
+64740167926354 0 PERF_RECORD_SAMPLE
+64740167928389 0 PERF_RECORD_SAMPLE
+64740167930832 0 PERF_RECORD_SAMPLE
+64740168404145 0 PERF_RECORD_COMM: sleep:16523
+64740168424672 0 PERF_RECORD_MMAP 16523/16523: [0x400000(0x6000) @ 0]: 
+/bin/sleep
+64740168441676 0 PERF_RECORD_MMAP 16523/16523: [0x7f83de5bb000(0x224000) 
+@ 0]: /lib64/ld-2.14.90.so
+64740168458460 0 PERF_RECORD_MMAP 16523/16523: [0x7fff009ff000(0x1000) @ 
+0x7fff009ff000]: [vdso]
+64740168586358 0 PERF_RECORD_MMAP 16523/16523: [0x7f83de203000(0x3b8000) 
+@ 0]: /lib64/libc-2.14.90.so
+64741168625653 0 PERF_RECORD_EXIT(16523:16523):(16523:16523)
+---- end ----
+Validate PERF_RECORD_* events & perf_sample fields: Ok
 
-How will the linux,fn-keymap handling work? It looks like this code is
-allocating a keymap data structure with one additional row to represent
-fn-not-pressed vs. fn-pressed. I assume this will work without issue
-even though the second half is not filled in. Won't this allow the
-linux,keymap property entries to pass validation "if (row >= rows)" for
-one more row than it should?
+Is the failure a by-product of the other patches in this set?
 
-> diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
+David
 
-> +static int __devinit tegra_kbd_setup_keymap(struct tegra_kbc *kbc)
-> +{
-> +	const struct tegra_kbc_platform_data *pdata = kbc->pdata;
-> +	const struct matrix_keymap_data *keymap_data = pdata->keymap_data;
-> +	unsigned int keymap_rows = KBC_MAX_KEY;
-> +	int retval;
-> +
-> +	if (pdata->use_fn_map)
-> +		keymap_rows *= 2;
-> +
-> +	retval = matrix_keypad_build_keymap(keymap_data, NULL,
-> +					    keymap_rows, KBC_MAX_COL,
-> +					    kbc->keycode, kbc->idev);
-> +	if (retval == -ENOSYS || retval == -ENOENT) {
-
-This is looking for ENOSYS or ENOENT, but ...
-
-> diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
-
-> +static int matrix_keypad_parse_of_keymap(const char *propname,
-
-> +	if (!np)
-> +		return -ENODEV;
-
-Here and ...
-
-> +	prop = of_get_property(np, propname, &proplen);
-> +	if (!prop) {
-> +		dev_err(dev, "OF: %s property not defined in %s\n",
-> +			propname, np->full_name);
-> +		return -ENODEV;
-
-Here return ENODEV instead.
+>
+> Signed-off-by: Namhyung Kim<namhyung.kim@lge.com>
+> ---
+>   tools/perf/util/evlist.c |    5 +++--
+>   1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> index a43e2c56d1c6..556d98af1a0b 100644
+> --- a/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -608,8 +608,9 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
+>   	if (evlist->threads == NULL)
+>   		return -1;
+>
+> -	if (target->uid != UINT_MAX ||
+> -	    (target->cpu_list == NULL&&  target->tid))
+> +	if (target->uid != UINT_MAX || target->tid)
+> +		evlist->cpus = cpu_map__dummy_new();
+> +	else if (!target->system_wide&&  target->cpu_list == NULL)
+>   		evlist->cpus = cpu_map__dummy_new();
+>   	else
+>   		evlist->cpus = cpu_map__new(target->cpu_list);
 
