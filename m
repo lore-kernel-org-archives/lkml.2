@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757840Ab2DZPzB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 11:55:01 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43274 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757794Ab2DZPy5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 11:54:57 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, miklos@szeredi.hu, hch@infradead.org,
-        michael.brantley@deshaw.com
-Subject: [PATCH v1 00/12] vfs: add the ability to retry on ESTALE to several syscalls
-Date: Thu, 26 Apr 2012 11:54:39 -0400
-Message-Id: <1335455691-16003-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1757965Ab2DZPzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 11:55:20 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:9665 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757848Ab2DZPzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 11:55:11 -0400
+Subject: [PATCH 01/10] NFS: pass net to nfs_callback_down()
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Thu, 26 Apr 2012 19:54:59 +0400
+Message-ID: <20120426155459.3763.16742.stgit@localhost6.localdomain6>
+In-Reply-To: <20120426155250.3763.98748.stgit@localhost6.localdomain6>
+References: <20120426155250.3763.98748.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ESTALE errors are a source of pain for many users, primarily those who
-are doing work on NFS. When userspace provides a path to a syscall, then
-there's really little excuse for returning ESTALE. If userspace gave us
-a path that we had to lookup in order to do the call, then it's not
-particularly helpful to return ESTALE just because that path went stale
-before we could do the actual operation.
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-We can and should do better here. The kernel should instead catch that
-error and retry the lookup and call, while forcing a revalidation of all
-dentries involved.
+---
+ fs/nfs/callback.c |    4 ++--
+ fs/nfs/callback.h |    2 +-
+ fs/nfs/client.c   |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-Unfortunately fixing this requires touching the syscalls themselves, or
-at least their immediate helper functions. Not all syscalls can be
-retried -- only those that take a pathname as an argument.
-
-This set is a first "official" pass at adding ESTALE retry handling to
-various syscalls.  With this patchset, I've decided to take the
-relatively less controversial approach of just having the kernel retry
-once when it gets an ESTALE error. I still think that it's not as strong
-as it should be, but it should improve the situation in many common
-cases.
-
-I've also tried to engineer this in such a way that if we do decide that
-we need to retry more than once, then it should be easy to change that
-later. This should cover all of the syscalls in fs/stat.c and
-fs/namei.c.
-
-If this approach is reasonable I'll look at adding similar handling to
-other path-based vfs calls in a another set. A quick look shows that
-we have about 50-odd path-based syscalls that will need similar
-handling, so this is just a start.
-
-Comments welcome...
-
-Jeff Layton (12):
-  vfs: add a retry_estale helper function to handle retries on ESTALE
-  vfs: make fstatat retry on ESTALE errors from getattr call
-  vfs: fix readlinkat to retry on ESTALE
-  vfs: add new "reval" argument to kern_path_create and
-    user_path_create
-  vfs: fix mknodat to retry on ESTALE errors
-  vfs: fix mkdir to retry on ESTALE errors
-  vfs: add a "reval" flag to args for user_path_parent
-  vfs: make rmdir retry on ESTALE errors
-  vfs: make do_unlinkat retry on ESTALE errors
-  vfs: fix symlinkat to retry on ESTALE errors
-  vfs: fix linkat to retry on ESTALE errors
-  vfs: fix renameat to retry on ESTALE errors
-
- arch/powerpc/platforms/cell/spufs/syscalls.c |    2 +-
- drivers/base/devtmpfs.c                      |    7 +-
- fs/namei.c                                   |  233 +++++++++++++++-----------
- fs/ocfs2/refcounttree.c                      |    3 +-
- fs/stat.c                                    |   32 +++-
- include/linux/fs.h                           |   21 +++
- include/linux/namei.h                        |    4 +-
- net/unix/af_unix.c                           |    3 +-
- 8 files changed, 191 insertions(+), 114 deletions(-)
-
--- 
-1.7.7.6
+diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+index cff3940..d5bb1ae 100644
+--- a/fs/nfs/callback.c
++++ b/fs/nfs/callback.c
+@@ -322,7 +322,7 @@ out_err:
+ /*
+  * Kill the callback thread if it's no longer being used.
+  */
+-void nfs_callback_down(int minorversion)
++void nfs_callback_down(int minorversion, struct net *net)
+ {
+ 	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
+ 
+@@ -330,7 +330,7 @@ void nfs_callback_down(int minorversion)
+ 	cb_info->users--;
+ 	if (cb_info->users == 0 && cb_info->task != NULL) {
+ 		kthread_stop(cb_info->task);
+-		svc_shutdown_net(cb_info->serv, current->nsproxy->net_ns);
++		svc_shutdown_net(cb_info->serv, net);
+ 		svc_exit_thread(cb_info->rqst);
+ 		cb_info->serv = NULL;
+ 		cb_info->rqst = NULL;
+diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
+index a5527c9..6d900cf 100644
+--- a/fs/nfs/callback.h
++++ b/fs/nfs/callback.h
+@@ -194,7 +194,7 @@ extern __be32 nfs4_callback_recall(struct cb_recallargs *args, void *dummy,
+ 				   struct cb_process_state *cps);
+ #ifdef CONFIG_NFS_V4
+ extern int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt);
+-extern void nfs_callback_down(int minorversion);
++extern void nfs_callback_down(int minorversion, struct net *net);
+ extern int nfs4_validate_delegation_stateid(struct nfs_delegation *delegation,
+ 					    const nfs4_stateid *stateid);
+ extern int nfs4_set_callback_sessionid(struct nfs_client *clp);
+diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+index da7b5e4..44cd70f 100644
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -222,7 +222,7 @@ static void nfs4_shutdown_session(struct nfs_client *clp)
+ static void nfs4_destroy_callback(struct nfs_client *clp)
+ {
+ 	if (__test_and_clear_bit(NFS_CS_CALLBACK, &clp->cl_res_state))
+-		nfs_callback_down(clp->cl_mvops->minor_version);
++		nfs_callback_down(clp->cl_mvops->minor_version, clp->net);
+ }
+ 
+ static void nfs4_shutdown_client(struct nfs_client *clp)
 
