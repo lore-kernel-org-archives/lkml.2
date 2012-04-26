@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab2DZJej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 05:34:39 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:35614 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755622Ab2DZJei convert rfc822-to-8bit (ORCPT
+	id S1751770Ab2DZJfq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 05:35:46 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:34119 "EHLO
+	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750972Ab2DZJfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 05:34:38 -0400
+	Thu, 26 Apr 2012 05:35:44 -0400
+X-Greylist: delayed 15599 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Apr 2012 05:35:38 EDT
+Message-ID: <4F99148B.4020900@marvell.com>
+Date: Thu, 26 Apr 2012 17:25:31 +0800
+From: Yilu Mao <ylmao@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAJSTwE7StCny1U9eSpZA+mTay+cSLRzFthu3yy2zh+W7EnLD_A@mail.gmail.com>
-References: <CAJSTwE7StCny1U9eSpZA+mTay+cSLRzFthu3yy2zh+W7EnLD_A@mail.gmail.com>
-From: Seblu <seblu@seblu.net>
-Date: Thu, 26 Apr 2012 11:34:17 +0200
-X-Google-Sender-Auth: GsaKbb3Bp3GvKTTugIWaGc0rsKg
-Message-ID: <CAJSTwE7hG6m_12c8zp2EzQKGVRXesOuO5v_hP3LBfpme5ju5yQ@mail.gmail.com>
-Subject: Fwd: Linux stable 3.3.3, perf tools doesn't build on x86
-To: stable@vger.kernel.org
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Lu Mao <ylmao@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: cache-l2x0.c: save aux ctrl for resume in case that
+ l2x0 is enabled before init
+References: <1335235280-25148-1-git-send-email-ylmao@marvell.com> <20120424082810.GA9367@arm.com> <4F98D659.4030709@marvell.com> <20120426083554.GB18136@arm.com>
+In-Reply-To: <20120426083554.GB18136@arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-I would notify you about the new 3.3.3 stable kernel which doesn't
-allow compiling perf tools:
-
-# make
-...
-   CC util/sort.o
-   CC util/hist.o
-util/hist.c: In function '__hists__add_entry':
-util/hist.c:240:27: error: invalid type argument of '->' (have 'struct
-hist_entry')
-util/hist.c:241:23: error: invalid type argument of '->' (have 'struct
-hist_entry')
-make: *** [util/hist.o] Error 1
-# gcc -v
-Using built-in specs.
-COLLECT_GCC=gcc
-COLLECT_LTO_WRAPPER=/usr/lib/gcc/i686-pc-linux-gnu/4.7.0/lto-wrapper
-Target: i686-pc-linux-gnu
-Configured with: /build/src/gcc-4.7-20120414/configure --prefix=/usr
---libdir=/usr/lib --libexecdir=/usr/lib --mandir=/usr/share/man
---infodir=/usr/share/info --with-bugurl=https://bugs.archlinux.org/
---enable-languages=c,c++,ada,fortran,go,lto,objc,obj-c++
---enable-shared --enable-threads=posix --with-system-zlib
---enable-__cxa_atexit --disable-libunwind-exceptions
---enable-clocale=gnu --disable-libstdcxx-pch --enable-libstdcxx-time
---enable-gnu-unique-object --enable-linker-build-id --with-ppl
---enable-cloog-backend=isl --enable-lto --enable-gold
---enable-ld=default --enable-plugin --with-plugin-ld=ld.gold
---with-linker-hash-style=gnu --disable-multilib --disable-libssp
---disable-build-with-cxx --disable-build-poststage1-with-cxx
---enable-checking=release
-Thread model: posix
-gcc version 4.7.0 20120414 (prerelease) (GCC)
-
-Cheers,
-
---
-Sébastien Luttringer
-www.seblu.net
-
+On 04/26/2012 04:35 PM, Catalin Marinas wrote:
+> On Thu, Apr 26, 2012 at 06:00:09AM +0100, Yilu Mao wrote:
+>> On 04/24/2012 04:28 PM, Catalin Marinas wrote:
+>>> On Tue, Apr 24, 2012 at 03:41:20AM +0100, Yilu Mao wrote:
+>>>> +	l2x0_saved_regs.aux_ctrl = aux;
+>>>> +
+>>>>    	aux&= aux_mask;
+>>>>    	aux |= aux_val;
+>>>
+>>> I think that's the wrong place to save it, it should be after the
+>>> masking was done.
+>>>
+>>> Anyway, if we cannot write this register in l2x0_init() because the L2
+>>> was enabled, do we expect the L2 to be disabled during resume?
+>>>
+>> Sorry, I don't think so.
+>> This is the right place to save it because we must make sure the saved
+>> aux_ctrl is the same as what it is set.
+>> If we save it after masking was done, the saved value will be different
+>> because we can't actually change the real setting.
+>
+> And since we can't actually change the real setting on the resume path,
+> why do we need to save it anyway. Is your L2 cache disabled on the
+> resume path but not on the cold boot one?
+>
+We can't change L2 aux ctrl setting when do init because it has been 
+enabled. But we have the requirement to handle core idle. For CA9 core 
+idle, L2 controller may be reset. So we need to restore the L2 
+controller registers base on l2x0_saved_regs. This is why we need to 
+keep the value in l2x0_saved_regs to be the same as real setting.
 
 -- 
-Sébastien Luttringer
-www.seblu.net
+Thanks.
+
+Best Wishes,
+Yilu Mao
