@@ -1,52 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab2DZJFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 05:05:49 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:58036 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab2DZJFr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755544Ab2DZJFr (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 26 Apr 2012 05:05:47 -0400
-Date: Thu, 26 Apr 2012 05:05:42 -0400 (EDT)
-Message-Id: <20120426.050542.243663587525305831.davem@davemloft.net>
-To: xiong@qca.qualcomm.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com
-Subject: Re: [PATCH 00/10] atl1c: update hardware settings - v3
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1335421638-16304-1-git-send-email-xiong@qca.qualcomm.com>
-References: <1335421638-16304-1-git-send-email-xiong@qca.qualcomm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 26 Apr 2012 02:05:46 -0700 (PDT)
+Received: from out02.mta.xmission.com ([166.70.13.232]:53549 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab2DZJFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 05:05:45 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        linux-security-module@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <m11unyn70b.fsf@fess.ebiederm.org>
+	<1333862139-31737-16-git-send-email-ebiederm@xmission.com>
+	<20120418184847.GA4984@mail.hallyn.com>
+	<m1aa266meh.fsf@fess.ebiederm.org>
+	<20120424173347.GA14017@mail.hallyn.com>
+	<m14ns8lxyc.fsf@fess.ebiederm.org>
+	<20120424202301.GA11326@mail.hallyn.com>
+Date: Thu, 26 Apr 2012 02:09:44 -0700
+In-Reply-To: <20120424202301.GA11326@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Tue, 24 Apr 2012 20:23:01 +0000")
+Message-ID: <m1ehradfl3.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/N4zmDj0ZJ553ZPMWMM5jabCdD6DKdrro=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0093]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH 16/43] userns: Simplify the user_namespace by making userns->creator a kuid.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: xiong <xiong@qca.qualcomm.com>
-Date: Thu, 26 Apr 2012 14:27:08 +0800
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-> This update contains a serial of patches, most of them are hardware
-> settings related. register definitions are refined (or removed if
-> meaningless) for each patch.
-> 
-> This is the third serial patches, after reviewed/applied the fourth
-> serial will be out.
-> 
-> The patches have addressed all sparse and checkpatch warnings.
-> 
-> Following NICs are tested:
-> AR8131/AR8132/AR8151A/AR8152A/AR8152B
-> Test item includes:
-> build/install/uninstall/dhcp/ping/iperf/wol/reboot/etc.
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> "Serge E. Hallyn" <serge@hallyn.com> writes:
+>> 
+>> > Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> >> "Serge E. Hallyn" <serge@hallyn.com> writes:
+>> >> 
+>> >> > Quoting Eric W. Beiderman (ebiederm@xmission.com):
+>> >> >> From: Eric W. Biederman <ebiederm@xmission.com>
+>> >> >> 
+>> >> >> - Transform userns->creator from a user_struct reference to a simple
+>> >> >>   kuid_t, kgid_t pair.
+>> >> >> 
+>> >> >>   In cap_capable this allows the check to see if we are the creator of
+>> >> >>   a namespace to become the classic suser style euid permission check.
+>> >> >> 
+>> >> >>   This allows us to remove the need for a struct cred in the mapping
+>> >> >>   functions and still be able to dispaly the user namespace creators
+>> >> >>   uid and gid as 0.
+>> >> >> 
+>> >> >> - Remove the now unnecessary delayed_work in free_user_ns.
+>> >> >> 
+>> >> >>   All that is left for free_user_ns to do is to call kmem_cache_free
+>> >> >>   and put_user_ns.  Those functions can be called in any context
+>> >> >>   so call them directly from free_user_ns removing the need for delayed work.
+>> >> >> 
+>> >> >> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+>> >> >> ---
+>> >> >>  include/linux/user_namespace.h |    4 ++--
+>> >> >>  kernel/user.c                  |    7 ++++---
+>> >> >>  kernel/user_namespace.c        |   39 ++++++++++++++++++---------------------
+>> >> >>  security/commoncap.c           |    5 +++--
+>> >> >>  4 files changed, 27 insertions(+), 28 deletions(-)
+>> >> >> 
+>> >> >> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+>> >> >> index d767508..8a391bd 100644
+>> >> >> --- a/include/linux/user_namespace.h
+>> >> >> +++ b/include/linux/user_namespace.h
+>> >> >> @@ -9,8 +9,8 @@
+>> >> >>  struct user_namespace {
+>> >> >>  	struct kref		kref;
+>> >> >>  	struct user_namespace	*parent;
+>> >> >> -	struct user_struct	*creator;
+>> >> >> -	struct work_struct	destroyer;
+>> >> >> +	kuid_t			owner;
+>> >> >> +	kgid_t			group;
+>> >> >>  };
+>> >> >>  
+>> >> >>  extern struct user_namespace init_user_ns;
+>> >> >> diff --git a/kernel/user.c b/kernel/user.c
+>> >> >> index 025077e..cff3856 100644
+>> >> >> --- a/kernel/user.c
+>> >> >> +++ b/kernel/user.c
+>> >> >> @@ -25,7 +25,8 @@ struct user_namespace init_user_ns = {
+>> >> >>  	.kref = {
+>> >> >>  		.refcount	= ATOMIC_INIT(3),
+>> >> >>  	},
+>> >> >> -	.creator = &root_user,
+>> >> >> +	.owner = GLOBAL_ROOT_UID,
+>> >> >> +	.group = GLOBAL_ROOT_GID,
+>> >> >>  };
+>> >> >>  EXPORT_SYMBOL_GPL(init_user_ns);
+>> >> >>  
+>> >> >> @@ -54,9 +55,9 @@ struct hlist_head uidhash_table[UIDHASH_SZ];
+>> >> >>   */
+>> >> >>  static DEFINE_SPINLOCK(uidhash_lock);
+>> >> >>  
+>> >> >> -/* root_user.__count is 2, 1 for init task cred, 1 for init_user_ns->user_ns */
+>> >> >> +/* root_user.__count is 1, for init task cred */
+>> >> >>  struct user_struct root_user = {
+>> >> >> -	.__count	= ATOMIC_INIT(2),
+>> >> >> +	.__count	= ATOMIC_INIT(1),
+>> >> >>  	.processes	= ATOMIC_INIT(1),
+>> >> >>  	.files		= ATOMIC_INIT(0),
+>> >> >>  	.sigpending	= ATOMIC_INIT(0),
+>> >> >> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+>> >> >> index 898e973..f69741a 100644
+>> >> >> --- a/kernel/user_namespace.c
+>> >> >> +++ b/kernel/user_namespace.c
+>> >> >> @@ -27,6 +27,16 @@ int create_user_ns(struct cred *new)
+>> >> >>  {
+>> >> >>  	struct user_namespace *ns, *parent_ns = new->user_ns;
+>> >> >>  	struct user_struct *root_user;
+>> >> >> +	kuid_t owner = make_kuid(new->user_ns, new->euid);
+>> >> >> +	kgid_t group = make_kgid(new->user_ns, new->egid);
+>> >> >> +
+>> >> >> +	/* The creator needs a mapping in the parent user namespace
+>> >> >> +	 * or else we won't be able to reasonably tell userspace who
+>> >> >> +	 * created a user_namespace.
+>> >> >> +	 */
+>> >> >> +	if (!kuid_has_mapping(parent_ns, owner) ||
+>> >> >> +	    !kgid_has_mapping(parent_ns, group))
+>> >> >> +		return -EPERM;
+>> >> >>  
+>> >> >>  	ns = kmem_cache_alloc(user_ns_cachep, GFP_KERNEL);
+>> >> >>  	if (!ns)
+>> >> >> @@ -43,7 +53,9 @@ int create_user_ns(struct cred *new)
+>> >> >>  
+>> >> >>  	/* set the new root user in the credentials under preparation */
+>> >> >>  	ns->parent = parent_ns;
+>> >> >
+>> >> > I think in the past the creator cred pinned the ns->parent.  Do you now
+>> >> > need to explicitly pin ns->parent (and release it in free_user_ns())?
+>> >> 
+>> >> Yes we do have to explicitly reference count the parent namespace.
+>> >> But that happened in the patch 7:
+>> >> "userns: Add an explicit reference to the parent user namespace"
+>> 
+>> Make that patch 8 not patch 7: 
+>> "userns: Add an explicit reference to the parent user namespace"
+>> Perhaps the patch number reference pointed you to look at the wrong code.
+>
+> D'oh, yup.  That explains it better.
+>
+> And so parent_userns keeps the refcount from the cred 'new' after
+> new->ns = ns;  That works, thanks.
+>
+>> > Perhaps that suffices, but I'm not convinced.  The struct cred is
+>> > pinning it's own ns, but if t1 does clone(CLONE_NEWUSER) to produce
+>> > t2, which does the same to procduce t3, and then t2 exits, I'm not
+>> > seeing what will pin t2's userns.
+>> 
+>> t3's userns hold's a reference to the departed t2's userns.
+>> t2's userns hold's a reference to t1's userns.
+>> 
+>> free_user_ns does put that userns reference.
+>> 
+>> It is all there and explict.  Usernamespaces refer directly to each
+>
+> Actually can we make it just one tinge more explicit, and put a comment
+> above the 'new->user_ns = ns'?  There's currently the comment
+>
+>    /* Leave the reference to our user_ns with the new cred */
+>
+> But that's about the initial refcount on the new ns.  Perhaps change that to:
+>
+>    /*
+>     * Leave the reference to our new user_ns with the new cred,
+>     * and leave the reference on the old ns to pin new->parent_ns
+>     */
 
-I've applied patches #1 until #9, patch #10 needs to be done
-differently.
+I have added the following comment.  Hopefully that makes it clearer. */
 
-The PCI_DEV_FLAGS_MSI_INTX_DISABLE_BUG bit should be set via a PCI
-quirk entry in drivers/pci/quirks.c just as it is done for other
-devices which have this problem.
+	/* Leave the new->user_ns reference with the new user namespace. */
+>
+>> other.  That was all needed to get struct user out of the usernamespace
+>> game.
+>> 
+>> Eric
+>
+> Thanks, Eric.  So then
+>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+>
+> which, given the other nits are addressed, should cover the whole
+> set with my acks.
 
-Thank you.
+Hmm.  I don't have a record of you looking at my patch 23.
+"userns: Convert setting and getting uid and gid system calls to use kuid and kgid"
+
+Eric
