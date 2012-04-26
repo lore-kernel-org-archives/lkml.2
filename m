@@ -1,104 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab2DZH4r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 03:56:47 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42855 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754160Ab2DZHyD (ORCPT
+	id S1754322Ab2DZIGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 04:06:16 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:43938
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751671Ab2DZIGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 03:54:03 -0400
-Subject: [PATCH 03/12] mm/vmscan: push lruvec pointer into isolate_lru_pages()
-To: Andrew Morton <akpm@linux-foundation.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Thu, 26 Apr 2012 11:53:59 +0400
-Message-ID: <20120426075359.18961.96466.stgit@zurg>
-In-Reply-To: <20120426074632.18961.17803.stgit@zurg>
-References: <20120426074632.18961.17803.stgit@zurg>
-User-Agent: StGit/0.15
+	Thu, 26 Apr 2012 04:06:08 -0400
+X-SpamScore: -2
+X-BigFish: VS-2(zz154dMzz1202h1082kzz8275bh8275dhz2dh2a8h668h839hd24he5bh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng <b29396@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
+        <swarren@wwwdotorg.org>, <s.hauer@pengutronix.de>
+Subject: [PATCH v4 1/1] pinctrl: add pinctrl_provide_dummies interface for platforms to use
+Date: Thu, 26 Apr 2012 16:15:50 +0800
+Message-ID: <1335428150-12629-1-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves mem_cgroup_zone_lruvec() call from isolate_lru_pages() into
-shrink_[in]active_list(), further patches pushes it to shrink_zone() step by step.
+From: Dong Aisheng <dong.aisheng@linaro.org>
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Add a interface pinctrl_provide_dummies for platform to indicate
+whether it needs use pinctrl dummy state.
+
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 ---
- mm/vmscan.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ChangLog v3->v4:
+* remove dummy gpio support in pinctrl subsystem.
+  Let gpio driver decide whether it wants to use pinctrl gpio mux
+  function.
+ChangLog v2->v3:
+* Also changed the missed pinctrl gpio APIs in v1.
+ChangeLog v1->v2:
+* Based on sascha's suggestion, drop using kconfig since it will hide
+  pinctrl errors on all other boards.
+  See: https://lkml.org/lkml/2012/4/18/282
+  It seemed both Linus and Stephen agreed with this way, so i'm ok
+  with it too.
+* add dummy gpio support.
+  pinctrl gpio in the same situation as state.
+* patch name changed.
+  Original is pinctrl: handle dummy state in core.
+* split removing old dt dummy interface into a separate patch
+---
+ drivers/pinctrl/core.c          |   29 +++++++++++++++++++++++++++--
+ include/linux/pinctrl/machine.h |    5 ++++-
+ 2 files changed, 31 insertions(+), 3 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d81750c..49e79d5 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1027,7 +1027,7 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode)
-  * Appropriate locks must be held before calling this function.
-  *
-  * @nr_to_scan:	The number of pages to look through on the list.
-- * @mz:		The mem_cgroup_zone to pull pages from.
-+ * @lruvec:	The LRU vector to pull pages from.
-  * @dst:	The temp list to put pages on to.
-  * @nr_scanned:	The number of pages that were scanned.
-  * @sc:		The scan_control struct for this reclaim session
-@@ -1037,17 +1037,15 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode)
-  * returns how many pages were moved onto *@dst.
-  */
- static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
--		struct mem_cgroup_zone *mz, struct list_head *dst,
-+		struct lruvec *lruvec, struct list_head *dst,
- 		unsigned long *nr_scanned, struct scan_control *sc,
- 		isolate_mode_t mode, enum lru_list lru)
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index ea2412a..d302fdb 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -43,6 +43,8 @@ struct pinctrl_maps {
+ 	unsigned num_maps;
+ };
+ 
++static bool pinctrl_dummy_state;
++
+ /* Mutex taken by all entry points */
+ DEFINE_MUTEX(pinctrl_mutex);
+ 
+@@ -61,6 +63,19 @@ static LIST_HEAD(pinctrl_maps);
+ 			_i_ < _maps_node_->num_maps; \
+ 			i++, _map_ = &_maps_node_->maps[_i_])
+ 
++/**
++ * pinctrl_provide_dummies() - indicate if pinctrl provides dummy state support
++ *
++ * Usually this function is called by platforms without pinctrl driver support
++ * but run with some shared drivers using pinctrl APIs.
++ * After calling this function, the pinctrl core will return successfully
++ * with creating a dummy state for the driver to keep going smoothly.
++ */
++void pinctrl_provide_dummies(void)
++{
++	pinctrl_dummy_state = true;
++}
++
+ const char *pinctrl_dev_get_name(struct pinctrl_dev *pctldev)
  {
--	struct lruvec *lruvec;
- 	struct list_head *src;
- 	unsigned long nr_taken = 0;
- 	unsigned long scan;
- 	int file = is_file_lru(lru);
+ 	/* We're not allowed to register devices without name */
+@@ -720,8 +735,18 @@ static struct pinctrl_state *pinctrl_lookup_state_locked(struct pinctrl *p,
+ 	struct pinctrl_state *state;
  
--	lruvec = mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup);
- 	src = &lruvec->lists[lru];
+ 	state = find_state(p, name);
+-	if (!state)
+-		return ERR_PTR(-ENODEV);
++	if (!state) {
++		if (pinctrl_dummy_state) {
++			/* create dummy state */
++			dev_dbg(p->dev, "using pinctrl dummy state (%s)\n",
++				name);
++			state = create_state(p, name);
++			if (IS_ERR(state))
++				return state;
++		} else {
++			return ERR_PTR(-ENODEV);
++		}
++	}
  
- 	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
-@@ -1274,6 +1272,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
- 	int file = is_file_lru(lru);
- 	struct zone *zone = mz->zone;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
-+	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, mz->mem_cgroup);
+ 	return state;
+ }
+diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
+index e4d1de7..ec61e11 100644
+--- a/include/linux/pinctrl/machine.h
++++ b/include/linux/pinctrl/machine.h
+@@ -154,7 +154,7 @@ struct pinctrl_map {
  
- 	while (unlikely(too_many_isolated(zone, file, sc))) {
- 		congestion_wait(BLK_RW_ASYNC, HZ/10);
-@@ -1292,8 +1291,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+ extern int pinctrl_register_mappings(struct pinctrl_map const *map,
+ 				unsigned num_maps);
+-
++extern void pinctrl_provide_dummies(void);
+ #else
  
- 	spin_lock_irq(&zone->lru_lock);
+ static inline int pinctrl_register_mappings(struct pinctrl_map const *map,
+@@ -163,5 +163,8 @@ static inline int pinctrl_register_mappings(struct pinctrl_map const *map,
+ 	return 0;
+ }
  
--	nr_taken = isolate_lru_pages(nr_to_scan, mz, &page_list, &nr_scanned,
--				     sc, isolate_mode, lru);
-+	nr_taken = isolate_lru_pages(nr_to_scan, lruvec, &page_list,
-+				     &nr_scanned, sc, isolate_mode, lru);
- 	if (global_reclaim(sc)) {
- 		zone->pages_scanned += nr_scanned;
- 		if (current_is_kswapd())
-@@ -1439,6 +1438,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
- 	isolate_mode_t isolate_mode = 0;
- 	int file = is_file_lru(lru);
- 	struct zone *zone = mz->zone;
-+	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, mz->mem_cgroup);
- 
- 	lru_add_drain();
- 
-@@ -1449,8 +1449,8 @@ static void shrink_active_list(unsigned long nr_to_scan,
- 
- 	spin_lock_irq(&zone->lru_lock);
- 
--	nr_taken = isolate_lru_pages(nr_to_scan, mz, &l_hold, &nr_scanned, sc,
--				     isolate_mode, lru);
-+	nr_taken = isolate_lru_pages(nr_to_scan, lruvec, &l_hold,
-+				     &nr_scanned, sc, isolate_mode, lru);
- 	if (global_reclaim(sc))
- 		zone->pages_scanned += nr_scanned;
- 
++static inline void pinctrl_provide_dummies(void)
++{
++}
+ #endif /* !CONFIG_PINMUX */
+ #endif
+-- 
+1.7.0.4
+
 
