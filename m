@@ -1,130 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab2DZFOT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 01:14:19 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:58374 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751361Ab2DZFOB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 01:14:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120425134508.GE25053@n2100.arm.linux.org.uk>
-References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
-	<1328203851-20435-12-git-send-email-tarun.kanti@ti.com>
-	<13629551.hP3ZV1ajDo@vclass>
-	<CAC83ZvK630=6B-k2TfV3XBg8w7ZosLVDNE4ezjDYnn=hcXA48Q@mail.gmail.com>
-	<CAC83ZvJDDvCu8NKTOYh75USA3fvSAKEGaXXi9PtCM955K_keSA@mail.gmail.com>
-	<20120424160447.GI3739@atomide.com>
-	<CAC83Zv+CCLQfZHfqMcbof6JtA-hOK1PfX5Gs0BBVQhBAiWzX_g@mail.gmail.com>
-	<CAMQu2gzwijaSzXprEwTNTie3zCgFcNPonAexzrO_AWc2a8jOkw@mail.gmail.com>
-	<CAC83ZvKN_Qxw-9RPfpJaL5434j0HgysZ364F+b29rdSCQWhm7A@mail.gmail.com>
-	<20120425134508.GE25053@n2100.arm.linux.org.uk>
-Date: Thu, 26 Apr 2012 10:43:57 +0530
-Message-ID: <CAC83ZvL54bot+yQoRPPX3_9O5wfdpdBCNb4-Chw7sPyVFDBGSg@mail.gmail.com>
-Subject: Re: [PATCH v9 11/25] gpio/omap: cleanup omap_gpio_mod_init function
-From: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>, khilman@ti.com,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Charulatha V <charu@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752057Ab2DZFP5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 01:15:57 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:35016 "HELO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751060Ab2DZFPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 01:15:55 -0400
+From: Yilu Mao <ylmao@marvell.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux@arm.linux.org.uk, Baohua.Song@csr.com, santosh.shilimkar@ti.com,
+        robherring2@gmail.com, catalin.marinas@arm.com,
+        linux-arm-kernel@lists.infradead.org, Yilu Mao <ylmao@marvell.com>
+Subject: [PATCH v3] ARM: cache-l2x0.c: save aux ctrl for resume in case that l2x0 is enabled before init
+Date: Thu, 26 Apr 2012 13:08:57 +0800
+Message-Id: <1335416937-24724-1-git-send-email-ylmao@marvell.com>
+X-Mailer: git-send-email 1.7.5.4
+X-OriginalArrivalTime: 26 Apr 2012 05:09:11.0061 (UTC) FILETIME=[B731C450:01CD236A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 7:15 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Apr 25, 2012 at 06:24:14PM +0530, DebBarma, Tarun Kanti wrote:
->> On Wed, Apr 25, 2012 at 12:09 PM, Shilimkar, Santosh
->> <santosh.shilimkar@ti.com> wrote:
->> > On Wed, Apr 25, 2012 at 10:04 AM, DebBarma, Tarun Kanti
->> > <tarun.kanti@ti.com> wrote:
->> >> On Tue, Apr 24, 2012 at 9:34 PM, Tony Lindgren <tony@atomide.com> wrote:
->> >>> * DebBarma, Tarun Kanti <tarun.kanti@ti.com> [120424 08:40]:
->> >>>> Hi Janusz,
->> >>>>
->> >>>> On Tue, Apr 24, 2012 at 12:24 AM, DebBarma, Tarun Kanti
->> >>>> <tarun.kanti@ti.com> wrote:
->> >>>> > On Sat, Apr 21, 2012 at 7:33 PM, Janusz Krzysztofik
->> >>>> > <jkrzyszt@tis.icnet.pl> wrote:
->> >>>> >> On Thursday 02 of February 2012 23:00:37 Tarun Kanti DebBarma wrote:
->> >>>> >>> With register offsets now defined for respective OMAP versions we can get rid
->> >>>> >>> of cpu_class_* checks. This function now has common initialization code for
->> >>>> >>> all OMAP versions...
->> >>>> >>>
->> >>>> >>> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
->> >>>> >>> Signed-off-by: Charulatha V <charu@ti.com>
->> >>>> >>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> >>>> >>> Acked-by: Tony Lindgren <tony@atomide.com>
->> >>>> >>
->> >>>> >> Sorry for being so late with my comment for chanes already present in
->> >>>> >> mainline, but this patch breaks GPIO on Amstrad Delta at least, and I
->> >>>> >> have neither enough spare time nor enough experience with non OMAP1
->> >>>> >> machines to provide a solution myself.
->> >>>> > Yes, I looked at the omap_gpio_mod_init() and OMAP1 configurations are
->> >>>> > overwritten.
->> >>>> > Also looks like there is issue in making distinction between omap15xx
->> >>>> > and omap16xx.
->> >>>> > I will post a patch and you can help me testing it in OMAP1 platform.
->> >>>> > Thanks for pointing this out.
->> >>> ...
->> >>>
->> >>>> Here is the patch, with attachment as well. I have just tested on
->> >>>> OMAP4 platform.
->> >>>> Testing on other OMAP2+ platforms is pending. In the meantime can you please
->> >>>> validate on OMAP1 platform and confirm? Thanks.
->> >>>> --
->> >>>> Tarun
->> >>>>
->> >>>> From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
->> >>>> Date: Tue, 24 Apr 2012 20:34:32 +0530
->> >>>> Subject: [PATCH] gpio/omap: fix omap1 register overwrite in omap_gpio_mod_init
->> >>>>
->> >>>> Initialization of irqenable, irqstatus registers is the common
->> >>>> operation done in this function for all OMAP platforms, viz.
->> >>>> OMAP1, OMAP2+. The latter _gpio_rmw()'s to irqenable register
->> >>>> was overwriting the correctly programmed OMAP1 value at the
->> >>>> beginning. As a result, even though it worked on OMAP2+
->> >>>> platforms it was breaking OMAP1 functionality.
->> >>>
->> >>> Sounds like the original patch was never tested on omap1?
->> >> That's right, only bootup test was done on OMAP1710-SDP.
->> >>
->> >>>
->> >>>> On closer observation it is found that the first _gpio_rmw()
->> >>>> which is supposedly done to take care of OMAP1 platform is
->> >>>> generic enough and takes care of OMAP2+ platform as well.
->> >>>> Therefore remove the latter _gpio_rmw() to irqenable as they
->> >>>> are redundant.
->> >>>>
->> >>>> Also, changing the sequence and logic of initializing the
->> >>>> irqstatus.
->> >>>
->> >>> Please mention also the breaking commit here and get this fix
->> >>> merged as a regression as soon as it's tested for the current
->> >>> -rc series.
->> >> Sure, I will do that!
->> >
->> > Looks like it is regression on 3.4 as well so CC stable when you
->> > post the patch.
->> Ok, I will do that.
->
-> Correction.
->
-> Don't email your patch in any way to the stable folk _before_ it has been
-> taken into Linus' tree.  However, you _may_ add in the patch attributations
-> a Cc: <stable@vger.kernel.org> tag if you want the stable folk to
-> automatically pick up your patch when it _does_ end up in Linus' tree.
-> But... make sure that git send-email or whatever doesn't automatically
-> add that to the recipients for the emailed patch.
->
-> If you send the stable people a patch before its in mainline, you'll get
-> a whinge telling you to read Documentation/stable_kernel_rules.txt
+If l2x0 controller has been enabled when calling l2x0_init, the aux ctrl
+register will not be saved in l2x0_saved_regs. Therefore we can not use
+l2x0_saved_regs.aux_ctrl for resume later. This patch fixed the problem
+by saving aux ctrl in l2x0_saved_regs just after it's being read from
+the register.
 
-Alright, I will add Cc: <stable@vger.kernel.org> tag in the patch.
-Thanks.
---
-Tarun
+Signed-off-by: Yilu Mao <ylmao@marvell.com>
+---
+ arch/arm/mm/cache-l2x0.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index a53fd2a..f273c7e 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -320,6 +320,13 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
+ 	cache_id = readl_relaxed(l2x0_base + L2X0_CACHE_ID);
+ 	aux = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
+ 
++	/*
++	 * In case l2x controller is enabled, the aux ctrl register
++	 * can't be set. So the original value should be stored in
++	 * the l2x0_saved_regs for restoring when resume.
++	 */
++	l2x0_saved_regs.aux_ctrl = aux;
++
+ 	aux &= aux_mask;
+ 	aux |= aux_val;
+ 
+-- 
+1.7.5.4
+
