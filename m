@@ -1,56 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755819Ab2DZKON (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 06:14:13 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:10372 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754850Ab2DZKOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 06:14:12 -0400
-X-IronPort-AV: E=Sophos;i="4.75,485,1330923600"; 
-   d="scan'208";a="24562726"
-Message-ID: <4F991FF1.6000007@citrix.com>
-Date: Thu, 26 Apr 2012 11:14:09 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
-MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xen.org>, <tobias.geiger@vido.info>,
-        <linux-kernel@vger.kernel.org>, <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] [PATCH] xen: use the pirq number to check the	pirq_eoi_map
-References: <1335366698-19875-1-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1335366698-19875-1-git-send-email-stefano.stabellini@eu.citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1756035Ab2DZKOa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 06:14:30 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:58665 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755590Ab2DZKO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 06:14:29 -0400
+Date: Thu, 26 Apr 2012 06:12:12 -0400 (EDT)
+Message-Id: <20120426.061212.570213998793556907.davem@davemloft.net>
+To: nicolas.ferre@atmel.com
+Cc: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, avictor.za@gmail.com,
+        plagnioj@jcrosoft.com
+Subject: Re: [GIT PULL] net/at91: at91_ether fixes for 3.4-rc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F991E6D.4020303@atmel.com>
+References: <4F991210.8060409@atmel.com>
+	<20120426.052006.1832921763623188173.davem@davemloft.net>
+	<4F991E6D.4020303@atmel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 26 Apr 2012 03:12:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/04/12 16:11, Stefano Stabellini wrote:
-> In pirq_check_eoi_map use the pirq number rather than the Linux irq
-> number to check whether an eoi is needed in the pirq_eoi_map.
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Date: Thu, 26 Apr 2012 12:07:41 +0200
 
-What buggy behaviour does this patch fix?  It would be nice if this was
-included in the patch description.
+> So, should I repost both of them as patch series?
 
-David
-
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Tested-by: Tobias Geiger <tobias.geiger@vido.info>
-> ---
->  drivers/xen/events.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index 4b33acd..0a8a17c 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -274,7 +274,7 @@ static unsigned int cpu_from_evtchn(unsigned int evtchn)
->  
->  static bool pirq_check_eoi_map(unsigned irq)
->  {
-> -	return test_bit(irq, pirq_eoi_map);
-> +	return test_bit(pirq_from_irq(irq), pirq_eoi_map);
->  }
->  
->  static bool pirq_needs_eoi_flag(unsigned irq)
-
+Yes, with a leading "[PATCH 0/N] " posting as I asked.
