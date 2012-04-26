@@ -1,45 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758569Ab2DZQYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 12:24:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49974 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757575Ab2DZQYP (ORCPT
+	id S1758383Ab2DZQ2p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 12:28:45 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53756 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757625Ab2DZQ2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 12:24:15 -0400
-Message-ID: <4F9976AB.1020502@wwwdotorg.org>
-Date: Thu, 26 Apr 2012 10:24:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Dong Aisheng <b29396@freescale.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linus.walleij@stericsson.com,
-        s.hauer@pengutronix.de, shawn.guo@freescale.com, kernel@pengutronix.de,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, cjb@laptop.org,
-        b20223@freescale.com
-Subject: Re: [PATCH v4 1/4] dt: add of_get_child_count helper function
-References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
-In-Reply-To: <1335451227-27709-1-git-send-email-b29396@freescale.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Apr 2012 12:28:44 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, miklos@szeredi.hu, hch@infradead.org,
+        michael.brantley@deshaw.com
+Subject: [PATCH v1 05/12] vfs: fix mknodat to retry on ESTALE errors
+Date: Thu, 26 Apr 2012 11:57:16 -0400
+Message-Id: <1335455843-16089-4-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1335455843-16089-1-git-send-email-jlayton@redhat.com>
+References: <1335455843-16089-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 08:40 AM, Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> Currently most code to get child count in kernel are almost same,
-> add a helper to implement this function for dt to use.
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/namei.c |   62 ++++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 32 insertions(+), 30 deletions(-)
 
-> diff --git a/include/linux/of.h b/include/linux/of.h
+diff --git a/fs/namei.c b/fs/namei.c
+index 367b0f2..9ee6b4e 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2581,44 +2581,46 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
+ 	struct dentry *dentry;
+ 	struct path path;
+ 	int error;
++	unsigned int try = 0;
+ 
+ 	if (S_ISDIR(mode))
+ 		return -EPERM;
+ 
+-	dentry = user_path_create(dfd, filename, &path, false, false);
+-	if (IS_ERR(dentry))
+-		return PTR_ERR(dentry);
++	do {
++		dentry = user_path_create(dfd, filename, &path, false, try);
++		if (IS_ERR(dentry))
++			return PTR_ERR(dentry);
+ 
+-	if (!IS_POSIXACL(path.dentry->d_inode))
+-		mode &= ~current_umask();
+-	error = may_mknod(mode);
+-	if (error)
+-		goto out_dput;
+-	error = mnt_want_write(path.mnt);
+-	if (error)
+-		goto out_dput;
+-	error = security_path_mknod(&path, dentry, mode, dev);
+-	if (error)
+-		goto out_drop_write;
+-	switch (mode & S_IFMT) {
+-		case 0: case S_IFREG:
+-			error = vfs_create(path.dentry->d_inode,dentry,mode,NULL);
+-			break;
+-		case S_IFCHR: case S_IFBLK:
+-			error = vfs_mknod(path.dentry->d_inode,dentry,mode,
+-					new_decode_dev(dev));
+-			break;
+-		case S_IFIFO: case S_IFSOCK:
+-			error = vfs_mknod(path.dentry->d_inode,dentry,mode,0);
++		if (!IS_POSIXACL(path.dentry->d_inode))
++			mode &= ~current_umask();
++		error = may_mknod(mode);
++		if (error)
++			goto out_dput;
++		error = mnt_want_write(path.mnt);
++		if (error)
++			goto out_dput;
++		error = security_path_mknod(&path, dentry, mode, dev);
++		if (error)
++			goto out_drop_write;
++		switch (mode & S_IFMT) {
++			case 0: case S_IFREG:
++				error = vfs_create(path.dentry->d_inode, dentry, mode, NULL);
++				break;
++			case S_IFCHR: case S_IFBLK:
++				error = vfs_mknod(path.dentry->d_inode, dentry, mode,
++						new_decode_dev(dev));
++				break;
++			case S_IFIFO: case S_IFSOCK:
++				error = vfs_mknod(path.dentry->d_inode, dentry, mode, 0);
+ 			break;
+-	}
++		}
+ out_drop_write:
+-	mnt_drop_write(path.mnt);
++		mnt_drop_write(path.mnt);
+ out_dput:
+-	dput(dentry);
+-	mutex_unlock(&path.dentry->d_inode->i_mutex);
+-	path_put(&path);
+-
++		dput(dentry);
++		mutex_unlock(&path.dentry->d_inode->i_mutex);
++		path_put(&path);
++	} while (retry_estale(error, try++));
+ 	return error;
+ }
+ 
+-- 
+1.7.7.6
 
-> +static inline int of_get_child_count(const struct device_node *np)
-> +{
-> +	struct device_node *child = NULL;
-
-You don't actually need to initialize child here. It doesn't really
-matter here, but in a more complex function, it might hide a
-used-before-initialized error.
