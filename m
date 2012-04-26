@@ -1,167 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758058Ab2DZRn7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 13:43:59 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53791 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754557Ab2DZRla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 13:41:30 -0400
-From: Keerthy <j-keerthy@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <khilman@ti.com>, <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@lists.linux-foundation.org>
-CC: <j-pihet@ti.com>, <j-keerthy@ti.com>
-Subject: [PATCH V3 01/10] ARM: OMAP2+: SmartReflex: move the smartreflex header to include/linux/power 
-Date: Thu, 26 Apr 2012 23:10:32 +0530
-Message-ID: <1335462041-4949-2-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
+	id S1756505Ab2DZRvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 13:51:52 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:50537 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab2DZRvu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 13:51:50 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6693"; a="185226554"
+Message-ID: <4F998B34.4090403@codeaurora.org>
+Date: Thu, 26 Apr 2012 10:51:48 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH] Move most arches to asm-generic/current.h
+References: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean Pihet <j-pihet@ti.com>
+On 04/23/12 20:18, Stephen Boyd wrote:
+> Make get_current() into a static inline function in the
+> generic version of current.h so we match what almost every
+> architecture is doing. This allows us to move most of the arches
+> over to this generic header instead of redefining the same thing
+> over and over in each asm directory.
+>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: linux-arch@vger.kernel.org
+> ---
+> diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
+> index e423def..8b8f979 100644
+> --- a/arch/alpha/include/asm/Kbuild
+> +++ b/arch/alpha/include/asm/Kbuild
+> @@ -2,6 +2,7 @@ include include/asm-generic/Kbuild.asm
+>  
+>  header-y += compiler.h
+>  header-y += console.h
+> +header-y += current.h
 
-Move the smartreflex header file
-(arch/arm/mach-omap2/smartreflex.h) in a new header file
-include/linux/power/smartreflex.h.
+Oops. This should be generic-y not header-y.
 
-This change makes the SmartReflex implementation ready for the move
-to drivers/.
-
-Signed-off-by: Jean Pihet <j-pihet@ti.com>
-Signed-off-by: J Keerthy <j-keerthy@ti.com>
----
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |    4 ++--
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |    3 +--
- arch/arm/mach-omap2/smartreflex-class3.c           |    3 ++-
- arch/arm/mach-omap2/smartreflex.c                  |    3 +--
- arch/arm/mach-omap2/sr_device.c                    |    2 +-
- .../linux/power}/smartreflex.h                     |    7 ++++---
- 6 files changed, 11 insertions(+), 11 deletions(-)
- rename {arch/arm/mach-omap2 => include/linux/power}/smartreflex.h (98%)
-
-diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-index 0c65079..144d118 100644
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -14,6 +14,8 @@
-  *
-  * XXX these should be marked initdata for multi-OMAP kernels
-  */
-+#include <linux/power/smartreflex.h>
-+
- #include <plat/omap_hwmod.h>
- #include <mach/irqs.h>
- #include <plat/cpu.h>
-@@ -29,8 +31,6 @@
- #include <plat/dmtimer.h>
- 
- #include "omap_hwmod_common_data.h"
--
--#include "smartreflex.h"
- #include "prm-regbits-34xx.h"
- #include "cm-regbits-34xx.h"
- #include "wd_timer.h"
-diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-index 4906129..1079c79 100644
---- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-@@ -19,6 +19,7 @@
-  */
- 
- #include <linux/io.h>
-+#include <linux/power/smartreflex.h>
- 
- #include <plat/omap_hwmod.h>
- #include <plat/cpu.h>
-@@ -32,8 +33,6 @@
- #include <plat/common.h>
- 
- #include "omap_hwmod_common_data.h"
--
--#include "smartreflex.h"
- #include "cm1_44xx.h"
- #include "cm2_44xx.h"
- #include "prm44xx.h"
-diff --git a/arch/arm/mach-omap2/smartreflex-class3.c b/arch/arm/mach-omap2/smartreflex-class3.c
-index 955566e..ab8cf83 100644
---- a/arch/arm/mach-omap2/smartreflex-class3.c
-+++ b/arch/arm/mach-omap2/smartreflex-class3.c
-@@ -11,7 +11,8 @@
-  * published by the Free Software Foundation.
-  */
- 
--#include "smartreflex.h"
-+#include <linux/power/smartreflex.h>
-+#include "voltage.h"
- 
- static int sr_class3_enable(struct voltagedomain *voltdm)
- {
-diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
-index 008fbd7..98309d3 100644
---- a/arch/arm/mach-omap2/smartreflex.c
-+++ b/arch/arm/mach-omap2/smartreflex.c
-@@ -25,11 +25,10 @@
- #include <linux/delay.h>
- #include <linux/slab.h>
- #include <linux/pm_runtime.h>
-+#include <linux/power/smartreflex.h>
- 
- #include "common.h"
--
- #include "pm.h"
--#include "smartreflex.h"
- 
- #define SMARTREFLEX_NAME_LEN	16
- #define NVALUE_NAME_LEN		40
-diff --git a/arch/arm/mach-omap2/sr_device.c b/arch/arm/mach-omap2/sr_device.c
-index a503e1e..86e438e 100644
---- a/arch/arm/mach-omap2/sr_device.c
-+++ b/arch/arm/mach-omap2/sr_device.c
-@@ -17,6 +17,7 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  */
-+#include <linux/power/smartreflex.h>
- 
- #include <linux/err.h>
- #include <linux/slab.h>
-@@ -24,7 +25,6 @@
- 
- #include <plat/omap_device.h>
- 
--#include "smartreflex.h"
- #include "voltage.h"
- #include "control.h"
- #include "pm.h"
-diff --git a/arch/arm/mach-omap2/smartreflex.h b/include/linux/power/smartreflex.h
-similarity index 98%
-rename from arch/arm/mach-omap2/smartreflex.h
-rename to include/linux/power/smartreflex.h
-index 5809141..69eb270 100644
---- a/arch/arm/mach-omap2/smartreflex.h
-+++ b/include/linux/power/smartreflex.h
-@@ -17,12 +17,13 @@
-  * published by the Free Software Foundation.
-  */
- 
--#ifndef __ASM_ARM_OMAP_SMARTREFLEX_H
--#define __ASM_ARM_OMAP_SMARTREFLEX_H
-+#ifndef __POWER_SMARTREFLEX_H
-+#define __POWER_SMARTREFLEX_H
- 
-+#include <linux/types.h>
- #include <linux/platform_device.h>
- 
--#include "voltage.h"
-+#include <plat/voltage.h>
- 
- /*
-  * Different Smartreflex IPs version. The v1 is the 65nm version used in
 -- 
-1.7.5.4
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
