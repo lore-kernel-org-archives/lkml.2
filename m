@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab2DZPKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 11:10:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53754 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756375Ab2DZPKI convert rfc822-to-8bit (ORCPT
+	id S1757577Ab2DZPMs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 11:12:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58153 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757499Ab2DZPMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 11:10:08 -0400
-Message-ID: <1335452976.13683.88.camel@twins>
-Subject: Re: [PATCH RFC tip/core/rcu 3/4] rcu: Make RCU_FAST_NO_HZ account
- for pauses out of idle
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Date: Thu, 26 Apr 2012 17:09:36 +0200
-In-Reply-To: <20120426144910.GC2407@linux.vnet.ibm.com>
-References: <20120423161539.GA6467@linux.vnet.ibm.com>
-	 <1335197761-6577-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335197761-6577-3-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335445242.13683.19.camel@twins>
-	 <20120426144910.GC2407@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 26 Apr 2012 11:12:46 -0400
+Date: Thu, 26 Apr 2012 08:12:42 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] USB: remove CONFIG_USB_DEVICEFS
+Message-ID: <20120426151242.GA14774@kroah.com>
+References: <20120426001529.GA14006@kroah.com>
+ <Pine.LNX.4.44L0.1204261103120.1530-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1204261103120.1530-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-26 at 07:49 -0700, Paul E. McKenney wrote:
-> >   per_cpu(rcu_dyntick.first_pass, cpu) = 0;
-
-> I must confess that I had no idea that you could say the above.  I would
-> have expected to have to say the following:
+On Thu, Apr 26, 2012 at 11:06:45AM -0400, Alan Stern wrote:
+> On Wed, 25 Apr 2012, Greg Kroah-Hartman wrote:
 > 
->     per_cpu(rcu_dyntick, cpu).first_pass = 0; 
+> > This option has been deprecated for many years now, and no userspace
+> > tools use it anymore, so it should be safe to finally remove it.
+> > 
+> > Reported-by: Kay Sievers <kay@vrfy.org>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > ---
+> > Anyone object to me queuing this up for the 3.5 kernel release?
+> 
+> I'm not sure about this.  There are a few systems still floating around
+> that don't use udev; on those systems /proc/bus/usb is the only way for 
+> user programs to control USB devices.  Admittedly, I have no idea 
+> whether any such systems will be using 3.5 or later kernels...
 
-They both work and are afaik identical. The first takes the per-cpu
-address of rcu_dyntick and adds the offset of first_pass, then
-transforms the per-cpu address to a linear address. The second
-transforms the per-cpu address of rcu_dyntick, transforms it to a linear
-address and then adds the offset of first_pass, IOW:
+They don't have to use udev, they can use devtmpfs (which is what the
+majority of embedded systems use today), or they can just use static
+device nodes to get access to these devices, the char node is still
+present, we aren't getting rid of them at all.
 
- (&rcu_dyntick + offset) + per_cpu_offset == 
-		(&rcu_dyntick + per_cpu_offset) + offset
+thanks,
 
-
-
+greg k-h
