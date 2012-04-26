@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab2DZRMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 13:12:52 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:37203 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab2DZRMu (ORCPT
+	id S1753567Ab2DZRXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 13:23:12 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:41453 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab2DZRXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 13:12:50 -0400
-Message-ID: <1335460230.17002.62.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/4] ACPI: Set hotplug _OST support bit to _OSC
+	Thu, 26 Apr 2012 13:23:09 -0400
+Message-ID: <1335460849.18142.4.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 3/4] ACPI: Add _OST support for ACPI CPU hotplug
 From: Toshi Kani <toshi.kani@hp.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 26 Apr 2012 11:10:30 -0600
-In-Reply-To: <CAErSpo6Ofm8qHUophN+oXrsKKfnJXvaEJUfFkEFwbXLfb4xZ=g@mail.gmail.com>
+Date: Thu, 26 Apr 2012 11:20:49 -0600
+In-Reply-To: <CAErSpo5n22TLo+U3f_zHdkZSG=e7x4bySFPWtxT+ghYyenGc6A@mail.gmail.com>
 References: <1334096510-17319-1-git-send-email-toshi.kani@hp.com>
-	 <1334096510-17319-2-git-send-email-toshi.kani@hp.com>
-	 <CAErSpo6Ofm8qHUophN+oXrsKKfnJXvaEJUfFkEFwbXLfb4xZ=g@mail.gmail.com>
+	 <1334096510-17319-4-git-send-email-toshi.kani@hp.com>
+	 <CAErSpo5n22TLo+U3f_zHdkZSG=e7x4bySFPWtxT+ghYyenGc6A@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
@@ -25,144 +25,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-26 at 09:16 -0600, Bjorn Helgaas wrote:
+On Thu, 2012-04-26 at 09:22 -0600, Bjorn Helgaas wrote:
 > On Tue, Apr 10, 2012 at 4:21 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> > Added macro definitions of _OST source event and status codes.
-> > Also renamed OSC_SB_CPUHP_OST_SUPPORT to OSC_SB_HOTPLUG_OST_SUPPORT
-> > since this _OSC bit is not specific to CPU hotplug.  This bit is
-> > defined in table 6-147 of ACPI 5.0 as follows.
-> >
-> >  Bits:       3
-> >  Field Name: Insertion / Ejection _OST Processing Support
-> >  Definition: This bit is set if OSPM will evaluate the _OST
-> >              object defined under a device when processing
-> >              insertion and ejection source event codes.
-> >
-> > This patch sets OSC_SB_HOTPLUG_OST_SUPPORT to the platform-wide
-> > OSPM capabilities when CONFIG option of ACPI CPU hotplug or memory
-> > hotplug is enabled.
+> > Changed acpi_processor_hotplug_notify() to call ACPI _OST method
+> > when ACPI-based CPU hotplug operation completed.
 > >
 > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 > > ---
-> >  drivers/acpi/bus.c   |    5 +++++
-> >  include/linux/acpi.h |   26 +++++++++++++++++++++++++-
-> >  2 files changed, 30 insertions(+), 1 deletions(-)
+> >  drivers/acpi/processor_driver.c |   28 ++++++++++++++++++++--------
+> >  1 files changed, 20 insertions(+), 8 deletions(-)
 > >
-> > diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-> > index 3263b68..a492d64 100644
-> > --- a/drivers/acpi/bus.c
-> > +++ b/drivers/acpi/bus.c
-> > @@ -544,6 +544,11 @@ static void acpi_bus_osc_support(void)
-> >        capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_PPC_OST_SUPPORT;
-> >  #endif
+> > diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+> > index 0734086..5d9b5a8 100644
+> > --- a/drivers/acpi/processor_driver.c
+> > +++ b/drivers/acpi/processor_driver.c
+> > @@ -701,9 +701,9 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+> >  {
+> >        struct acpi_processor *pr;
+> >        struct acpi_device *device = NULL;
+> > +       u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+> >        int result;
 > >
-> > +#if defined(CONFIG_ACPI_HOTPLUG_CPU) || defined(CONFIG_ACPI_HOTPLUG_MEMORY) ||\
-> > +                defined(CONFIG_ACPI_HOTPLUG_MEMORY_MODULE)
-> > +       capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_HOTPLUG_OST_SUPPORT;
-> > +#endif
+> > -
+> >        switch (event) {
+> >        case ACPI_NOTIFY_BUS_CHECK:
+> >        case ACPI_NOTIFY_DEVICE_CHECK:
+> > @@ -715,14 +715,18 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+> >                if (!is_processor_present(handle))
+> >                        break;
+> >
+> > -               if (acpi_bus_get_device(handle, &device)) {
+> > -                       result = acpi_processor_device_add(handle, &device);
+> > -                       if (result)
+> > -                               printk(KERN_ERR PREFIX
+> > -                                           "Unable to add the device\n");
+> > +               if (!acpi_bus_get_device(handle, &device))
+> > +                       break;
+> > +
+> > +               result = acpi_processor_device_add(handle, &device);
+> > +               if (result) {
+> > +                       printk(KERN_ERR PREFIX "Unable to add the device\n");
 > 
-> This seems a bit strange to me.  For one thing, the _OSC discussion
-> doesn't seem to indicate that _OST support is specific to CPU or
-> memory hotplug.  If we tell the platform that we support _OST, the
-> platform can assume that we'll evaluate _OST for *any* device, which
-> is not the case.  I guess this is just another reason why we need
-> hotplug support in the ACPI core, not in the individual drivers.  Then
-> we wouldn't have the ifdefs at all.
+> You didn't add this problem, but since you're touching the code, I'll
+> point it out.  This message will look to the user like:
+> 
+>     ACPI: Unable to add the device
+> 
+> which is useless.  The user has no idea what device we're talking
+> about or why we can't add it, so he can't *do* anything with the
+> message.  Almost every printk of a constant string has this problem.
+> Using dev_err() instead of printk() would help a lot, as would
+> including the error code (result).  Of course, this would be a
+> separate patch that would update all the messages in the driver at the
+> same time.
 
-I agree, and it should be called for any device.  As you know, the issue
-is that the global system notify handler acpi_bus_notify() and driver's
-notify handler work independently, and their functionality conflicts
-each other.  I have not thought out yet, but my current thinking is that
-we may be able to integrate them into acpi_bus_notify() in the following
-way.  This model allows a choice -- use the default handler or driver's
-handler.  We can then call _OST for any device.  It can also eliminate
-redundant ACPI namespace walks performed by drivers when registering
-their notify handlers.  What do you think?
+I agree.  I will put it as one of my future items. :)
 
-struct acpi_device_ops {
-		:
-   acpi_op_sys_notify sys_notify;  // driver's system notify (new entry)
-}
-
-acpi_bus_notify()
-{
-	driver = lookup-driver-with-HID();
-
-	if ((driver) && (driver->ops->sys_notify)
-		driver->ops.sys_notify();
-	else
-		Call the system default notify handler;
-
-	Call _OST if present;
-}
-
-
-> The second thing is that the kernel should be correct at every point
-> in a patch series.  In this case, if only patch [1/4] is applied, we
-> claim to support _OST, but we actually don't.  So I think the patches
-> that add support for evaluating _OST should be first, and this one
-> should be last.  Or even better, a single patch could enable _OST
-> evaluation and add this _OSC bit at the same time.
-
-I see.  I will change the ordering, if that is OK.  I am a little afraid
-that the patches may be hard to review when combined into a single
-patch. 
-
-Thanks!
+Thanks,
 -Toshi
 
-
-> 
-> Bjorn
-> 
+> >                        break;
+> >                }
 > > +
-> >        if (!ghes_disable)
-> >                capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_APEI_SUPPORT;
-> >        if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
-> > diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> > index f421dd8..4127df8 100644
-> > --- a/include/linux/acpi.h
-> > +++ b/include/linux/acpi.h
-> > @@ -277,7 +277,7 @@ acpi_status acpi_run_osc(acpi_handle handle, struct acpi_osc_context *context);
-> >  #define OSC_SB_PAD_SUPPORT             1
-> >  #define OSC_SB_PPC_OST_SUPPORT         2
-> >  #define OSC_SB_PR3_SUPPORT             4
-> > -#define OSC_SB_CPUHP_OST_SUPPORT       8
-> > +#define OSC_SB_HOTPLUG_OST_SUPPORT     8
-> >  #define OSC_SB_APEI_SUPPORT            16
+> > +               ost_code = ACPI_OST_SC_SUCCESS;
+> >                break;
+> > +
+> >        case ACPI_NOTIFY_EJECT_REQUEST:
+> >                ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> >                                  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
+> > @@ -736,15 +740,23 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+> >                if (!pr) {
+> >                        printk(KERN_ERR PREFIX
+> >                                    "Driver data is NULL, dropping EJECT\n");
+> > -                       return;
+> > +                       break;
+> >                }
+> > +
+> > +               /* REVISIT: update when eject is supported */
+> > +               ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+> >                break;
+> > +
+> >        default:
+> >                ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> >                                  "Unsupported event [0x%x]\n", event));
+> > -               break;
+> > +
+> > +               /* non-hotplug event; possibly handled by other handler */
+> > +               return;
+> >        }
 > >
-> >  extern bool osc_sb_apei_support_acked;
-> > @@ -309,6 +309,30 @@ extern bool osc_sb_apei_support_acked;
+> > +       /* Inform firmware that the hotplug operation has completed */
+> > +       (void) acpi_evaluate_ost(handle, event, ost_code, NULL);
+> >        return;
+> >  }
 > >
-> >  extern acpi_status acpi_pci_osc_control_set(acpi_handle handle,
-> >                                             u32 *mask, u32 req);
-> > +
-> > +/* _OST General Processing Status Code */
-> > +#define ACPI_OST_SC_SUCCESS                    0x0
-> > +#define ACPI_OST_SC_NON_SPECIFIC_FAILURE       0x1
-> > +#define ACPI_OST_SC_UNRECOGNIZED_NOTIFY                0x2
-> > +
-> > +/* _OST OS Shutdown Processing (0x100) Status Code */
-> > +#define ACPI_OST_SC_OS_SHUTDOWN_DENIED         0x80
-> > +#define ACPI_OST_SC_OS_SHUTDOWN_IN_PROGRESS    0x81
-> > +#define ACPI_OST_SC_OS_SHUTDOWN_COMPLETED      0x82
-> > +#define ACPI_OST_SC_OS_SHUTDOWN_NOT_SUPPORTED  0x83
-> > +
-> > +/* _OST Ejection Request (0x3, 0x103) Status Code */
-> > +#define ACPI_OST_SC_EJECT_NOT_SUPPORTED                0x80
-> > +#define ACPI_OST_SC_DEVICE_IN_USE              0x81
-> > +#define ACPI_OST_SC_DEVICE_BUSY                        0x82
-> > +#define ACPI_OST_SC_EJECT_DEPENDENCY_BUSY      0x83
-> > +#define ACPI_OST_SC_EJECT_IN_PROGRESS          0x84
-> > +
-> > +/* _OST Insertion Request (0x200) Status Code */
-> > +#define ACPI_OST_SC_INSERT_IN_PROGRESS         0x80
-> > +#define ACPI_OST_SC_DRIVER_LOAD_FAILURE                0x81
-> > +#define ACPI_OST_SC_INSERT_NOT_SUPPORTED       0x82
-> > +
-> >  extern void acpi_early_init(void);
-> >
-> >  extern int acpi_nvs_register(__u64 start, __u64 size);
 > > --
 > > 1.7.7.6
 > >
