@@ -1,130 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab2DZRXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 13:23:12 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:41453 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab2DZRXJ (ORCPT
+	id S1753970Ab2DZR0o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 13:26:44 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41161 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab2DZR0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 13:23:09 -0400
-Message-ID: <1335460849.18142.4.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 3/4] ACPI: Add _OST support for ACPI CPU hotplug
-From: Toshi Kani <toshi.kani@hp.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 26 Apr 2012 11:20:49 -0600
-In-Reply-To: <CAErSpo5n22TLo+U3f_zHdkZSG=e7x4bySFPWtxT+ghYyenGc6A@mail.gmail.com>
-References: <1334096510-17319-1-git-send-email-toshi.kani@hp.com>
-	 <1334096510-17319-4-git-send-email-toshi.kani@hp.com>
-	 <CAErSpo5n22TLo+U3f_zHdkZSG=e7x4bySFPWtxT+ghYyenGc6A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+	Thu, 26 Apr 2012 13:26:42 -0400
+Message-ID: <4F99854E.80102@gmail.com>
+Date: Thu, 26 Apr 2012 11:26:38 -0600
+From: Hakan Akkan <hakanakkan@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] nohz/cpuset: enable addition&removal of cpus while in adaptive
+ nohz mode
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-26 at 09:22 -0600, Bjorn Helgaas wrote:
-> On Tue, Apr 10, 2012 at 4:21 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> > Changed acpi_processor_hotplug_notify() to call ACPI _OST method
-> > when ACPI-based CPU hotplug operation completed.
-> >
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > ---
-> >  drivers/acpi/processor_driver.c |   28 ++++++++++++++++++++--------
-> >  1 files changed, 20 insertions(+), 8 deletions(-)
-> >
-> > diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-> > index 0734086..5d9b5a8 100644
-> > --- a/drivers/acpi/processor_driver.c
-> > +++ b/drivers/acpi/processor_driver.c
-> > @@ -701,9 +701,9 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
-> >  {
-> >        struct acpi_processor *pr;
-> >        struct acpi_device *device = NULL;
-> > +       u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
-> >        int result;
-> >
-> > -
-> >        switch (event) {
-> >        case ACPI_NOTIFY_BUS_CHECK:
-> >        case ACPI_NOTIFY_DEVICE_CHECK:
-> > @@ -715,14 +715,18 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
-> >                if (!is_processor_present(handle))
-> >                        break;
-> >
-> > -               if (acpi_bus_get_device(handle, &device)) {
-> > -                       result = acpi_processor_device_add(handle, &device);
-> > -                       if (result)
-> > -                               printk(KERN_ERR PREFIX
-> > -                                           "Unable to add the device\n");
-> > +               if (!acpi_bus_get_device(handle, &device))
-> > +                       break;
-> > +
-> > +               result = acpi_processor_device_add(handle, &device);
-> > +               if (result) {
-> > +                       printk(KERN_ERR PREFIX "Unable to add the device\n");
-> 
-> You didn't add this problem, but since you're touching the code, I'll
-> point it out.  This message will look to the user like:
-> 
->     ACPI: Unable to add the device
-> 
-> which is useless.  The user has no idea what device we're talking
-> about or why we can't add it, so he can't *do* anything with the
-> message.  Almost every printk of a constant string has this problem.
-> Using dev_err() instead of printk() would help a lot, as would
-> including the error code (result).  Of course, this would be a
-> separate patch that would update all the messages in the driver at the
-> same time.
+Currently modifying cpuset.cpus mask of a cgroup does not
+update the reference counters for adaptive nohz mode if the
+cpuset already had cpuset.adaptive_nohz == 1. Fix it so that
+cpus can be added or removed from a adaptive_nohz cpuset.
 
-I agree.  I will put it as one of my future items. :)
+Apply to Frederic's nohz/cpuset-v2 kernel 3.3.0-rc7nohz/cpuset-v2+
+(commit abd48ecb412ff023582e97442a02a7cb162a1c4e)
 
-Thanks,
--Toshi
+Signed-off-by: Hakan Akkan <hakanakkan@gmail.com>
+---
+ kernel/cpuset.c |  107 ++++++++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 70 insertions(+), 37 deletions(-)
 
-> >                        break;
-> >                }
-> > +
-> > +               ost_code = ACPI_OST_SC_SUCCESS;
-> >                break;
-> > +
-> >        case ACPI_NOTIFY_EJECT_REQUEST:
-> >                ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-> >                                  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
-> > @@ -736,15 +740,23 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
-> >                if (!pr) {
-> >                        printk(KERN_ERR PREFIX
-> >                                    "Driver data is NULL, dropping EJECT\n");
-> > -                       return;
-> > +                       break;
-> >                }
-> > +
-> > +               /* REVISIT: update when eject is supported */
-> > +               ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-> >                break;
-> > +
-> >        default:
-> >                ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-> >                                  "Unsupported event [0x%x]\n", event));
-> > -               break;
-> > +
-> > +               /* non-hotplug event; possibly handled by other handler */
-> > +               return;
-> >        }
-> >
-> > +       /* Inform firmware that the hotplug operation has completed */
-> > +       (void) acpi_evaluate_ost(handle, event, ost_code, NULL);
-> >        return;
-> >  }
-> >
-> > --
-> > 1.7.7.6
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index aa8304d..1446210 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -862,6 +862,8 @@ static void update_tasks_cpumask(struct cpuset *cs, struct ptr_heap *heap)
+ 	cgroup_scan_tasks(&scan);
+ }
+ 
++static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs);
++
+ /**
+  * update_cpumask - update the cpus_allowed mask of a cpuset and all tasks in it
+  * @cs: the cpuset to consider
+@@ -902,6 +904,11 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
+ 	if (cpumask_equal(cs->cpus_allowed, trialcs->cpus_allowed))
+ 		return 0;
+ 
++	/*
++	 * Update adaptive nohz bits.
++	 */
++	update_nohz_cpus(cs,trialcs);
++
+ 	retval = heap_init(&heap, PAGE_SIZE, GFP_KERNEL, NULL);
+ 	if (retval)
+ 		return retval;
+@@ -1247,51 +1254,74 @@ static void cpu_exit_nohz(int cpu)
+ 	preempt_enable();
+ }
+ 
+-static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
++static void update_cpu_nohz_flag(int cpu, int adjust)
++{
++	int ref = (per_cpu(cpu_adaptive_nohz_ref, cpu) += adjust);
++	printk("cpu %d, adjust %d, ref %d\n", cpu, adjust, ref);
++
++	if (ref == 1 && adjust > 0) {
++		cpumask_set_cpu(cpu, &nohz_cpuset_mask);
++		/*
++		 * The mask update needs to be visible right away
++		 * so that this CPU is part of the cputime IPI
++		 * update right now.
++		 */
++		 smp_mb();
++	} else if (!ref) {
++		/*
++		 * The update to cpu_adaptive_nohz_ref must be
++		 * visible right away. So that once we restart the tick
++		 * from the IPI, it won't be stopped again due to cache
++		 * update lag.
++		 * FIXME: We probably need more to ensure this value is really
++		 * visible right away.
++		 */
++		smp_mb();
++		cpu_exit_nohz(cpu);
++		/*
++		 * Now that the tick has been restarted and cputimes
++		 * flushed, we don't need anymore to be part of the
++		 * cputime flush IPI.
++		 */
++		cpumask_clear_cpu(cpu, &nohz_cpuset_mask);
++	}
++}
++
++static void update_nohz_flag(struct cpuset *old_cs, struct cpuset *cs)
+ {
+ 	int cpu;
+-	int val;
++	int adjust;
+ 
+ 	if (is_adaptive_nohz(old_cs) == is_adaptive_nohz(cs))
+ 		return;
+ 
++	adjust = is_adaptive_nohz(cs) ? 1 : -1;
+ 	for_each_cpu(cpu, cs->cpus_allowed) {
+-		if (is_adaptive_nohz(cs))
+-			per_cpu(cpu_adaptive_nohz_ref, cpu) += 1;
+-		else
+-			per_cpu(cpu_adaptive_nohz_ref, cpu) -= 1;
+-
+-		val = per_cpu(cpu_adaptive_nohz_ref, cpu);
+-
+-		if (val == 1) {
+-			cpumask_set_cpu(cpu, &nohz_cpuset_mask);
+-			/*
+-			 * The mask update needs to be visible right away
+-			 * so that this CPU is part of the cputime IPI
+-			 * update right now.
+-			 */
+-			 smp_mb();
+-		} else if (!val) {
+-			/*
+-			 * The update to cpu_adaptive_nohz_ref must be
+-			 * visible right away. So that once we restart the tick
+-			 * from the IPI, it won't be stopped again due to cache
+-			 * update lag.
+-			 * FIXME: We probably need more to ensure this value is really
+-			 * visible right away.
+-			 */
+-			smp_mb();
+-			cpu_exit_nohz(cpu);
+-			/*
+-			 * Now that the tick has been restarted and cputimes
+-			 * flushed, we don't need anymore to be part of the
+-			 * cputime flush IPI.
+-			 */
+-			cpumask_clear_cpu(cpu, &nohz_cpuset_mask);
+-		}
++		update_cpu_nohz_flag(cpu, adjust);
+ 	}
+ }
++
++static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
++{
++	int cpu;
++	cpumask_t cpus;
++
++	/*
++	 * Only bother if the cpuset has adaptive nohz
++	 */
++	if (!is_adaptive_nohz(cs))
++		return;
++
++	cpumask_xor(&cpus, old_cs->cpus_allowed, cs->cpus_allowed);
++
++	for_each_cpu(cpu, &cpus)
++		update_cpu_nohz_flag(cpu,
++			cpumask_test_cpu(cpu, cs->cpus_allowed) ? 1 : -1);
++}
+ #else
++static inline void update_nohz_flag(struct cpuset *old_cs, struct cpuset *cs)
++{
++}
+ static inline void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
+ {
+ }
+@@ -1362,7 +1392,7 @@ static int update_flag(cpuset_flagbits_t bit, struct cpuset *cs,
+ 	spread_flag_changed = ((is_spread_slab(cs) != is_spread_slab(trialcs))
+ 			|| (is_spread_page(cs) != is_spread_page(trialcs)));
+ 
+-	update_nohz_cpus(cs, trialcs);
++	update_nohz_flag(cs, trialcs);
+ 
+ 	mutex_lock(&callback_mutex);
+ 	cs->flags = trialcs->flags;
+@@ -2006,7 +2036,8 @@ static struct cgroup_subsys_state *cpuset_create(
+ /*
+  * If the cpuset being removed has its flag 'sched_load_balance'
+  * enabled, then simulate turning sched_load_balance off, which
+- * will call async_rebuild_sched_domains().
++ * will call async_rebuild_sched_domains(). Also update adaptive
++ * nohz flag.
+  */
+ 
+ static void cpuset_destroy(struct cgroup_subsys *ss, struct cgroup *cont)
+@@ -2016,6 +2047,8 @@ static void cpuset_destroy(struct cgroup_subsys *ss, struct cgroup *cont)
+ 	if (is_sched_load_balance(cs))
+ 		update_flag(CS_SCHED_LOAD_BALANCE, cs, 0);
+ 
++	update_flag(CS_ADAPTIVE_NOHZ, cs, 0);
++
+ 	number_of_cpusets--;
+ 	free_cpumask_var(cs->cpus_allowed);
+ 	kfree(cs);
 
