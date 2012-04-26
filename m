@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757839Ab2DZRHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 13:07:06 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43068 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757624Ab2DZRHD (ORCPT
+	id S1758030Ab2DZRJe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 13:09:34 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:28920
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757624Ab2DZRJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 13:07:03 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, miklos@szeredi.hu, hch@infradead.org,
-        michael.brantley@deshaw.com
-Subject: [PATCH v1 10/12] vfs: fix symlinkat to retry on ESTALE errors
-Date: Thu, 26 Apr 2012 11:57:21 -0400
-Message-Id: <1335455843-16089-9-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1335455843-16089-1-git-send-email-jlayton@redhat.com>
-References: <1335455843-16089-1-git-send-email-jlayton@redhat.com>
+	Thu, 26 Apr 2012 13:09:33 -0400
+X-SpamScore: -5
+X-BigFish: PS-5(zz154dMzz1202hzzz2fh2a8h668h839hd25he5bh)
+X-Forefront-Antispam-Report: CIP:157.55.49.13;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0802HT003.namprd08.prod.outlook.com;RD:none;EFVD:NLI
+Message-ID: <4F99813B.1010806@ozmodevices.com>
+Date: Thu, 26 Apr 2012 18:09:15 +0100
+From: Rupesh Gujare <rgujare@ozmodevices.com>
+Organization: Ozmo Devices
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: <devel@driverdev.osuosl.org>, <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Fix bug where kfree is called twice.
+References: <1335394498-5046-1-git-send-email-rgujare@ozmodevices.com> <20120426063858.GC6447@mwanda> <4F990AE0.8040400@ozmodevices.com> <20120426115459.GE6447@mwanda>
+In-Reply-To: <20120426115459.GE6447@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [81.149.82.179]
+X-OriginatorOrg: ozmodevices.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/namei.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+Hi Greg,
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 3a8e5e4..b189dc5 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2957,12 +2957,14 @@ SYSCALL_DEFINE3(symlinkat, const char __user *, oldname,
- 	char *from;
- 	struct dentry *dentry;
- 	struct path path;
-+	unsigned int try = 0;
- 
- 	from = getname(oldname);
- 	if (IS_ERR(from))
- 		return PTR_ERR(from);
- 
--	dentry = user_path_create(newdfd, newname, &path, false, false);
-+retry:
-+	dentry = user_path_create(newdfd, newname, &path, false, try);
- 	error = PTR_ERR(dentry);
- 	if (IS_ERR(dentry))
- 		goto out_putname;
-@@ -2980,6 +2982,8 @@ out_dput:
- 	dput(dentry);
- 	mutex_unlock(&path.dentry->d_inode->i_mutex);
- 	path_put(&path);
-+	if (retry_estale(error, try++))
-+		goto retry;
- out_putname:
- 	putname(from);
- 	return error;
+> Everything goes into linux-next first. That should have been put in 
+> the changelog. "We are seeing occasional crashes under load" or 
+> whatever... It's Greg's call and all, but generally it can't hurt to 
+> ask nicely if you want stuff merged it into 3.4 as well. ;) 
+
+Is it possible to queue it up for 3.4 as well ?
+
 -- 
-1.7.7.6
+Regards,
+Rupesh Gujare
+
 
