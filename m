@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759235Ab2DZUJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 16:09:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53336 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751522Ab2DZUJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 16:09:34 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] extcon: Pacify the section mismatch checker
-Date: Thu, 26 Apr 2012 21:09:28 +0100
-Message-Id: <1335470968-10920-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	id S1759238Ab2DZULL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 16:11:11 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:57524 "EHLO ja.ssi.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758042Ab2DZULJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 16:11:09 -0400
+Date: Thu, 26 Apr 2012 23:11:54 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Simon Horman <horms@verge.net.au>
+Subject: Re: [PATCH] IPVS: ip_vs_sync.c: local functions should not be exposed
+ globally
+In-Reply-To: <201204261129.53927.hartleys@visionengravers.com>
+Message-ID: <alpine.LFD.2.00.1204262301160.2078@ja.ssi.bg>
+References: <201204261129.53927.hartleys@visionengravers.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The section mismatch checker can't figure out that it's safe for
-extcon_gpio to reference gpio_extcon_remove() without a _driver on
-the end of the name of the struct so add one to avoid warnings.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/extcon/extcon_gpio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+	Hello,
 
-diff --git a/drivers/extcon/extcon_gpio.c b/drivers/extcon/extcon_gpio.c
-index 5c0f085..fe7a07b 100644
---- a/drivers/extcon/extcon_gpio.c
-+++ b/drivers/extcon/extcon_gpio.c
-@@ -153,7 +153,7 @@ static int __devexit gpio_extcon_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static struct platform_driver gpio_extcon = {
-+static struct platform_driver gpio_extcon_driver = {
- 	.probe		= gpio_extcon_probe,
- 	.remove		= __devexit_p(gpio_extcon_remove),
- 	.driver		= {
-@@ -162,7 +162,7 @@ static struct platform_driver gpio_extcon = {
- 	},
- };
- 
--module_platform_driver(gpio_extcon);
-+module_platform_driver(gpio_extcon_driver);
- 
- MODULE_AUTHOR("Mike Lockwood <lockwood@android.com>");
- MODULE_DESCRIPTION("GPIO extcon driver");
--- 
-1.7.10
+On Thu, 26 Apr 2012, H Hartley Sweeten wrote:
 
+> Functions not referenced outside of a source file should be marked
+> static to prevent it from being exposed globally.
+> 
+> This quiets the sparse warnings:
+> 
+> warning: symbol 'ip_vs_sync_conn_v0' was not declared. Should it be static?
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> 
+> ---
+> 
+> diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
+> index bf5e538..49a1fe8 100644
+> --- a/net/netfilter/ipvs/ip_vs_sync.c
+> +++ b/net/netfilter/ipvs/ip_vs_sync.c
+> @@ -446,7 +446,7 @@ ip_vs_sync_buff_create_v0(struct netns_ipvs *ipvs)
+>   *      Version 0 , could be switched in by sys_ctl.
+>   *      Add an ip_vs_conn information into the current sync_buff.
+>   */
+> -void ip_vs_sync_conn_v0(struct net *net, struct ip_vs_conn *cp)
+> +static void ip_vs_sync_conn_v0(struct net *net, struct ip_vs_conn *cp)
+
+	The 3 patches for IPVS look correct but this change
+is already not needed after one of our planned changes:
+
+"ipvs: reduce sync rate with time thresholds"
+
+	Not sure how we will avoid the collision, may be
+Simon will take only the other 2 changes? Or David will
+take all changes and we have to rebase?
+
+>  {
+>  	struct netns_ipvs *ipvs = net_ipvs(net);
+>  	struct ip_vs_sync_mesg_v0 *m;
+> --
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
