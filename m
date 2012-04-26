@@ -1,60 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759000Ab2DZSf7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 14:35:59 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:34310 "EHLO
+	id S932128Ab2DZSg1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 14:36:27 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:34290 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758932Ab2DZSfL (ORCPT
+	with ESMTP id S1758898Ab2DZSfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 14:35:11 -0400
+	Thu, 26 Apr 2012 14:35:09 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/4] xen: use the pirq number to check the pirq_eoi_map
-Date: Thu, 26 Apr 2012 14:29:23 -0400
-Message-Id: <1335464965-24767-3-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3/4] xen/smp: Fix crash when booting with ACPI hotplug CPUs.
+Date: Thu, 26 Apr 2012 14:29:24 -0400
+Message-Id: <1335464965-24767-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
 In-Reply-To: <1335464965-24767-1-git-send-email-konrad.wilk@oracle.com>
 References: <1335464965-24767-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+When we boot on a machine that can hotplug CPUs and we
+are using 'dom0_max_vcpus=X' on the Xen hypervisor line
+to clip the amount of CPUs available to the initial domain,
+we get this:
 
-In pirq_check_eoi_map use the pirq number rather than the Linux irq
-number to check whether an eoi is needed in the pirq_eoi_map.
+(XEN) Command line: com1=115200,8n1 dom0_mem=8G noreboot dom0_max_vcpus=8 sync_console mce_verbosity=verbose console=com1,vga loglvl=all guest_loglvl=all
+.. snip..
+DMI: Intel Corporation S2600CP/S2600CP, BIOS SE5C600.86B.99.99.x032.072520111118 07/25/2011
+.. snip.
+SMP: Allowing 64 CPUs, 32 hotplug CPUs
+installing Xen timer for CPU 7
+cpu 7 spinlock event irq 361
+NMI watchdog: disabled (cpu7): hardware events not enabled
+Brought up 8 CPUs
+.. snip..
+	[acpi processor finds the CPUs are not initialized and starts calling
+	arch_register_cpu, which creates /sys/devices/system/cpu/cpu8/online]
+CPU 8 got hotplugged
+CPU 9 got hotplugged
+CPU 10 got hotplugged
+.. snip..
+initcall 1_acpi_battery_init_async+0x0/0x1b returned 0 after 406 usecs
+calling  erst_init+0x0/0x2bb @ 1
 
-The reason is that the irq number is not always identical to the
-pirq number so if we wrongly use the irq number to check the
-pirq_eoi_map we are going to check for the wrong pirq to EOI.
+	[and the scheduler sticks newly started tasks on the new CPUs, but
+	said CPUs cannot be initialized b/c the hypervisor has limited the
+	amount of vCPUS to 8 - as per the dom0_max_vcpus=8 flag.
+	The spinlock tries to kick the other CPU, but the structure for that
+	is not initialized and we crash.]
+BUG: unable to handle kernel paging request at fffffffffffffed8
+IP: [<ffffffff81035289>] xen_spin_lock+0x29/0x60
+PGD 180d067 PUD 180e067 PMD 0
+Oops: 0002 [#1] SMP
+CPU 7
+Modules linked in:
 
-As a consequence some interrupts might not be EOI'ed by the
-guest correctly.
+Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc2upstream-00001-gf5154e8 #1 Intel Corporation S2600CP/S2600CP
+RIP: e030:[<ffffffff81035289>]  [<ffffffff81035289>] xen_spin_lock+0x29/0x60
+RSP: e02b:ffff8801fb9b3a70  EFLAGS: 00010282
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Tested-by: Tobias Geiger <tobias.geiger@vido.info>
-[v1: Added some extra wording to git commit]
+With this patch, we cap the amount of vCPUS that the initial domain
+can run, to exactly what dom0_max_vcpus=X has specified.
+
+In the future, if there is a hypercall that will allow a running
+domain to expand past its initial set of vCPUS, this patch should
+be re-evaluated.
+
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/events.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/xen/smp.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 4b33acd..0a8a17c 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -274,7 +274,7 @@ static unsigned int cpu_from_evtchn(unsigned int evtchn)
- 
- static bool pirq_check_eoi_map(unsigned irq)
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 5fac691..05da787 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -178,6 +178,7 @@ static void __init xen_fill_possible_map(void)
+ static void __init xen_filter_cpu_maps(void)
  {
--	return test_bit(irq, pirq_eoi_map);
-+	return test_bit(pirq_from_irq(irq), pirq_eoi_map);
+ 	int i, rc;
++	unsigned int subtract;
+ 
+ 	if (!xen_initial_domain())
+ 		return;
+@@ -192,8 +193,22 @@ static void __init xen_filter_cpu_maps(void)
+ 		} else {
+ 			set_cpu_possible(i, false);
+ 			set_cpu_present(i, false);
++			subtract++;
+ 		}
+ 	}
++#ifdef CONFIG_HOTPLUG_CPU
++	/* This is akin to using 'nr_cpus' on the Linux command line.
++	 * Which is OK as when we use 'dom0_max_vcpus=X' we can only
++	 * have up to X, while nr_cpu_ids is greater than X. This
++	 * normally is not a problem, except when CPU hotplugging
++	 * is involved and then there might be more than X CPUs
++	 * in the guest - which will not work as there is no
++	 * hypercall to expand the max number of VCPUs an already
++	 * running guest has. So cap it up to X. */
++	if (subtract)
++		nr_cpu_ids = nr_cpu_ids - subtract;
++#endif
++
  }
  
- static bool pirq_needs_eoi_flag(unsigned irq)
+ static void __init xen_smp_prepare_boot_cpu(void)
 -- 
 1.7.7.5
 
