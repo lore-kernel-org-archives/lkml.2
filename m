@@ -1,96 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394Ab2DZPFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 11:05:31 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:56817 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757265Ab2DZPF1 (ORCPT
+	id S1757269Ab2DZPGJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 11:06:09 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:49371 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab2DZPGG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 11:05:27 -0400
-Message-ID: <4F996433.7040003@gmail.com>
-Date: Thu, 26 Apr 2012 09:05:23 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120420 Thunderbird/12.0
+	Thu, 26 Apr 2012 11:06:06 -0400
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung.kim@lge.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/13] perf evlist: Fix creation of cpu map
-References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com> <1335417327-11796-8-git-send-email-namhyung.kim@lge.com>
-In-Reply-To: <1335417327-11796-8-git-send-email-namhyung.kim@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1332765676.16159.108.camel@twins>
+References: <CAEbykaXUy7HEyW7mBaTNmB94NwyjuJBbA1R-H49Jjk5M-iL_fw@mail.gmail.com>
+	<1332409996.18960.511.camel@twins>
+	<CAEbykaUbkgCEcufTx4ZBSdqwrifVbV384Ru4xTyF7BXYtJ85Zg@mail.gmail.com>
+	<1332765676.16159.108.camel@twins>
+Date: Thu, 26 Apr 2012 17:06:04 +0200
+Message-ID: <CABPqkBRcjGuUhaSUnC7GeftV16_+T2L=C56imJyRckLuPJYWuA@mail.gmail.com>
+Subject: Re: [PATCH] perf: Fix RCU dereference check in perf_event_comm
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ari Savolainen <ari.m.savolainen@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/25/12 11:15 PM, Namhyung Kim wrote:
-> Currently, 'perf record -- sleep 1' creates a cpu map for all online
-> cpus since it turns out calling cpu_map__new(NULL). Fix it. Also it
-> is guaranteed that cpu_list is NULL if PID/TID is given by calling
-> perf_target__validate(), so we can make the conditional bit simpler.
+On Mon, Mar 26, 2012 at 2:41 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2012-03-22 at 13:36 +0200, Ari Savolainen wrote:
+>> 22. maaliskuuta 2012 11.53 Peter Zijlstra <a.p.zijlstra@chello.nl> kirjoitti:
+>> > On Thu, 2012-03-22 at 01:43 +0200, Ari Savolainen wrote:
+>> >> The warning below is printed when executing a command like
+>> >> sudo perf record su - user -c "echo hello"
+>> >>
+>> >> It's fixed by moving the call of perf_event_comm to be protected
+>> >> by the task lock.
+>> >
+>> > That seems like a rather poor solution since it increases the lock hold
+>> > time for no explained reason.
+>> >
+>> >> include/linux/cgroup.h:567 suspicious rcu_dereference_check() usage!
+>> >
+>> >>  [<ffffffff8109be55>] lockdep_rcu_suspicious+0xe5/0x100
+>> >>  [<ffffffff811131fa>] perf_event_comm+0x37a/0x4d0
+>> >
+>> > So where exactly is this, perf_event_comm_event() takes rcu_read_lock()
+>> > so I presume its before that.
+>>
+Sorry for late reply. Forgot about this issue.
+
+Did that warning occur while you were NOT measuring cgroup events?
+
+>> I think the warning comes from this source-level call path:
+>>
+>> perf_event_comm ->
+>>   perf_event_enable_on_exec ->
+>>     perf_cgroup_sched_out ->
+>>       perf_cgroup_from_task ->
+>>         task_subsys_state ->
+>>           task_subsys_state_check
+>>
+>> It seems there that path does not take rcu_read_lock(). Where should
+>> rcu_read_lock/unlock be added? In perf_group_sched_out around the
+>> calls of perf_cgroup_from_task? Like this:
 >
-> This also fixes perf test 7 (Validate) failure on my 6 core machine:
+> Ah, ok. So IIRC this too is not needed. As the comment near
+> perf_cgroup_from_task() says, we hold explicit references to the cgroup.
 >
->    $ cat /sys/devices/system/cpu/online
->    0-11
->    $ ./perf test -v 7
->     7: Validate PERF_RECORD_* events&  perf_sample fields:
->    --- start ---
->    perf_evlist__mmap: Operation not permitted
->    ---- end ----
->    Validate PERF_RECORD_* events&  perf_sample fields: FAILED!
-
-Works fine for me with latest tip:
-$ cat /sys/devices/system/cpu/online
-0-15
-
-$ /tmp/perf/perf test -v 7
-  7: Validate PERF_RECORD_* events & perf_sample fields:
---- start ---
-64740167922229 0 PERF_RECORD_SAMPLE
-64740167926354 0 PERF_RECORD_SAMPLE
-64740167928389 0 PERF_RECORD_SAMPLE
-64740167930832 0 PERF_RECORD_SAMPLE
-64740168404145 0 PERF_RECORD_COMM: sleep:16523
-64740168424672 0 PERF_RECORD_MMAP 16523/16523: [0x400000(0x6000) @ 0]: 
-/bin/sleep
-64740168441676 0 PERF_RECORD_MMAP 16523/16523: [0x7f83de5bb000(0x224000) 
-@ 0]: /lib64/ld-2.14.90.so
-64740168458460 0 PERF_RECORD_MMAP 16523/16523: [0x7fff009ff000(0x1000) @ 
-0x7fff009ff000]: [vdso]
-64740168586358 0 PERF_RECORD_MMAP 16523/16523: [0x7f83de203000(0x3b8000) 
-@ 0]: /lib64/libc-2.14.90.so
-64741168625653 0 PERF_RECORD_EXIT(16523:16523):(16523:16523)
----- end ----
-Validate PERF_RECORD_* events & perf_sample fields: Ok
-
-Is the failure a by-product of the other patches in this set?
-
-David
-
+> Ideally we'd come up with a better validation condition but all variants
+> I could come up with make the code ugly and might actually generate
+> worse code, the current true simply shuts it up.
 >
-> Signed-off-by: Namhyung Kim<namhyung.kim@lge.com>
+> Stephane any thoughts?
+>
 > ---
->   tools/perf/util/evlist.c |    5 +++--
->   1 file changed, 3 insertions(+), 2 deletions(-)
+>  kernel/events/core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-> index a43e2c56d1c6..556d98af1a0b 100644
-> --- a/tools/perf/util/evlist.c
-> +++ b/tools/perf/util/evlist.c
-> @@ -608,8 +608,9 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
->   	if (evlist->threads == NULL)
->   		return -1;
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index a6a9ec4..e423261 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -240,7 +240,7 @@ static void perf_ctx_unlock(struct perf_cpu_context *cpuctx,
+>  static inline struct perf_cgroup *
+>  perf_cgroup_from_task(struct task_struct *task)
+>  {
+> -       return container_of(task_subsys_state(task, perf_subsys_id),
+> +       return container_of(task_subsys_state_check(task, perf_subsys_id, true),
+>                        struct perf_cgroup, css);
+>  }
 >
-> -	if (target->uid != UINT_MAX ||
-> -	    (target->cpu_list == NULL&&  target->tid))
-> +	if (target->uid != UINT_MAX || target->tid)
-> +		evlist->cpus = cpu_map__dummy_new();
-> +	else if (!target->system_wide&&  target->cpu_list == NULL)
->   		evlist->cpus = cpu_map__dummy_new();
->   	else
->   		evlist->cpus = cpu_map__new(target->cpu_list);
-
+>
