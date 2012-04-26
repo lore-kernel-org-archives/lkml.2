@@ -1,220 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757782Ab2DZTUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 15:20:19 -0400
-Received: from 10.mo4.mail-out.ovh.net ([188.165.33.109]:47367 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752326Ab2DZTUQ (ORCPT
+	id S1758283Ab2DZTUb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 15:20:31 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:37722 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757997Ab2DZTUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 15:20:16 -0400
-Date: Thu, 26 Apr 2012 16:44:46 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: linux-kernel@vger.kernel.org, b20223@freescale.com,
-        linus.walleij@stericsson.com, devicetree-discuss@lists.ozlabs.org,
-        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
-        kernel@pengutronix.de, cjb@laptop.org, s.hauer@pengutronix.de
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [PATCH v3 2/4] pinctrl: pinctrl-imx: add imx pinctrl core
- driver
-Message-ID: <20120426144446.GN9142@game.jcrosoft.org>
-References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
- <1335451227-27709-2-git-send-email-b29396@freescale.com>
+	Thu, 26 Apr 2012 15:20:30 -0400
+Message-ID: <4F999FFB.3070408@hp.com>
+Date: Thu, 26 Apr 2012 12:20:27 -0700
+From: Don Morris <don.morris@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335451227-27709-2-git-send-email-b29396@freescale.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 7212514804219554663
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeggedrtdekucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: 0
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeggedrtdekucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Waiman Long <Waiman.Long@hp.com>, cl@linux-foundation.org,
+        penberg@kernel.org, mpm@selenic.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slub: prevent validate_slab() error due to race condition
+References: <1335466658-29063-1-git-send-email-Waiman.Long@hp.com> <1335467575.2775.61.camel@edumazet-glaptop>
+In-Reply-To: <1335467575.2775.61.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22:40 Thu 26 Apr     , Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+On 04/26/2012 12:12 PM, Eric Dumazet wrote:
+> On Thu, 2012-04-26 at 14:57 -0400, Waiman Long wrote:
+>> The SLUB memory allocator was changed substantially from 3.0 to 3.1 by
+>> replacing some of page locking codes for updating the free object list
+>> of the slab with double-quadword atomic exchange (cmpxchg_double_slab)
+>> or a pseudo one using a page lock when debugging is turned on.  In the
+>> normal case, that should be enough to make sure that the slab is in a
+>> consistent state. However, when CONFIG_SLUB_DEBUG is turned on and the
+>> Redzone debugging flag is set, the Redzone bytes are also used to mark
+>> if an object is free or allocated. The extra state information in those
+>> Redzone bytes is not protected by the cmpxchg_double_slab(). As a
+>> result,
+>> validate_slab() may report a Redzone error if the validation is
+>> performed
+>> while racing with a free to a debugged slab.
+>>
+>> The problem was reported in
+>>
+>> 	https://bugzilla.kernel.org/show_bug.cgi?id=42312
+>>
+>> It is fairly easy to reproduce by passing in the kernel parameter of
+>> "slub_debug=FZPU".  After booting, run the command (as root):
+>>
+>> 	while true ; do ./slabinfo -v ; sleep 3 ; done
+>>
+>> The slabinfo test code can be found in tools/vm/slabinfo.c.
+>>
+>> At the same time, load the system with heavy I/O activities by, for
+>> example, building the Linux kernel. The following kind of dmesg messages
+>> will then be reported:
+>>
+>> 	BUG names_cache: Redzone overwritten
+>> 	SLUB: names_cache 3 slabs counted but counter=4
+>>
+>> This patch fixes the BUG message by acquiring the node-level lock for
+>> slabs flagged for debugging to avoid this possible racing condition.
+>> The locking is done on the node-level lock instead of the more granular
+>> page lock because the new code may speculatively acquire the node-level
+>> lock later on. Acquiring the page lock and then the node lock may lead
+>> to potential deadlock.
+>>
+>> As the increment of slab node count and insertion of the new slab into
+>> the partial or full slab list is not an atomic operation, there is a
+>> small time window where the two may not match. This patch temporarily
+>> works around this problem by allowing the node count to be one larger
+>> than the number of slab presents in the lists. This workaround may not
+>> work if more than one CPU is actively adding slab to the same node,
+>> but it should be good enough to workaround the problem in most cases.
+>>
+>> To really fix the issue, the overall synchronization between debug slub
+>> operations and slub validation needs a revisit.
+>>
+>> This patch also fixes a number of "code indent should use tabs where
+>> possible" error reported by checkpatch.pl in the __slab_free() function
+>> by replacing groups of 8-space tab by real tabs.
+>>
+>> After applying the patch, the slub error and warnings are all gone in
+>> the 4-CPU x86-64 test machine.
+>>
+>> Signed-off-by: Waiman Long <waiman.long@hp.com>
+>> Reviewed-by: Don Morris <don.morris@hp.com>
+>> ---
+>>  mm/slub.c |   46 +++++++++++++++++++++++++++++++++-------------
+>>  1 files changed, 33 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/mm/slub.c b/mm/slub.c
+>> index ffe13fd..4ca3140 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -2445,8 +2445,18 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>>  
+>>  	stat(s, FREE_SLOWPATH);
+>>  
+>> -	if (kmem_cache_debug(s) && !free_debug_processing(s, page, x, addr))
+>> -		return;
+>> +	if (kmem_cache_debug(s)) {
+>> +		/*
+>> +		 * We need to acquire the node lock to prevent spurious error
+>> +		 * with validate_slab().
+>> +		 */
+>> +		n = get_node(s, page_to_nid(page));
+>> +		spin_lock_irqsave(&n->list_lock, flags);
+>> +		if (!free_debug_processing(s, page, x, addr)) {
+>> +			spin_unlock_irqrestore(&n->list_lock, flags);
+>> +			return;
+>> +		}
 > 
-> The driver has mux and config support while the gpio is still
-> not supported.
-> For select input setting, the driver will handle it internally
-> and do not need user to take care of it.
-> 
-> The pinctrl-imx core driver will parse the dts file and dynamically
-> create the pinmux functions and groups.
-> 
-> Each IMX SoC pinctrl driver should register pins with a pin register map
-> including mux register and config register and select input map to core
-> for proper operations.
-> 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> ---
-> ChangeLog: v2->v3:
-> * add missed SION bit set from device tree
->   Thanks for Richard Zhao's reminder.
-> ChangeLog: v1->v2:
-> * Change the binding a bit.
->   For fsl,pins property, change it from pin name strings to pin function id
->   which represents a pin working on a specific function. Then we can remove
->   fsl,mux property since the pin function id already contains the mux setting.
->   Also remove other pin config property in the first patch.
->   Because in the future, we will switch to use dtc macro, then using a lot of
->   propertys to represent the each pin config like pull, speed and etc seems
->   needless.
->   Then each pin entry in dts file becomes a pair of PIN_FUNC_ID and CONFIG:
->   fsl,pins = <PIN_FUNC_ID CONFIG ..>
->   See binding doc for details.
-> * Sascha raised a question that pins in the same group may have different
->   pad setting for example I2C_CLK needs pull up while I2C_DAT not.
->   The v1 driver can aslo handle this issue but needs split the different
->   pad setting pins into different groups which loses a bit flexibility.
->   Also suggested by Richard Zhao and Jason Liu, we may still want the iomux
->   v3 simililar using way that allows each pin has the abiblity to configure
->   its pad which seems reasonable because from HW point of view, FSL IMX are
->   indeed pin based SoC which should be able to set per pin.
->   So the main changes in this v2 patch are change to support per pin config.
->   Then the using of iomux is almost the same as the existing iomux v3 for
->   non dt imx platforms. See binding doc for example.
-> 
->   After introduce the new way, there're mainly two known issues:
->   1) Since many pins in the same group may have the same pad config setting,
->      thus there may be some data redundance, however, since it's one word
->      and it's purely describe hw i would think it's not a big issue.
->   2) Need a magic number to indicate no pad config need. In current iomux v3,
->      It's 1<<16 which is not used by IMX5, i used 1<<31 for both MX5 and MX6.
->      However, it's definitely possibile that in the future, the bit 31 may also
->      be used, that means we may need change the binding doc or just handle it in
->      driver for different SoCs.
->   3) Due to core limitation, the current pinconf_group_set/get only support
->      get/set the same config(a u32 value)for all the pins in the same group,
->      so i removed the imx_group_set/get functions support, instead, using
->      imx_pin_get/set.
->      About this limitation, we may need some futher discussion on if we may
->      need to enhance it to be more flexible to support configure different
->      pins in the same group.
-> * Refactor probe handling based on Stephen's suggestion.
-> * Enhanced the binding doc and split it into two part, pinctrl-imx common part
->   and pinctrl-soc driver part.
-> * Change functions name from imx_pmx_* to imx_pinctrl_*.
-> * Other fixes based on Sascha, Stephen, Linus, Shawn's comments.
-> ---
->  .../bindings/pinctrl/fsl,imx-pinctrl.txt           |   93 +++
->  drivers/pinctrl/Kconfig                            |    5 +
->  drivers/pinctrl/Makefile                           |    1 +
->  drivers/pinctrl/pinctrl-imx.c                      |  627 ++++++++++++++++++++
->  drivers/pinctrl/pinctrl-imx.h                      |  106 ++++
->  5 files changed, 832 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/pinctrl/fsl,imx-pinctrl.txt
->  create mode 100644 drivers/pinctrl/pinctrl-imx.c
->  create mode 100644 drivers/pinctrl/pinctrl-imx.h
-> 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/fsl,imx-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/fsl,imx-pinctrl.txt
-> new file mode 100644
-> index 0000000..e00c7fc
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pinctrl/fsl,imx-pinctrl.txt
-> @@ -0,0 +1,93 @@
-> +* Freescale IOMUX Controller (IOMUXC) for i.MX
-> +
-> +The IOMUX Controller (IOMUXC), together with the IOMUX, enables the IC
-> +to share one PAD to several functional blocks. The sharing is done by
-> +multiplexing the PAD input/output signals. For each PAD there are up to
-> +8 muxing options (called ALT modes). Since different modules require
-> +different PAD settings (like pull up, keeper, etc) the IOMUXC controls
-> +also the PAD settings parameters.
-> +
-> +Please refer to pinctrl-bindings.txt in this directory for details of the
-> +common pinctrl bindings used by client devices, including the meaning of the
-> +phrase "pin configuration node".
-> +
-> +Freescale IMX pin configuration node is a node of a group of pins which can be
-> +used for a specific device or function. This node represents both mux and config
-> +of the pins in that group. The 'mux' selects the function mode(also named mux
-> +mode) this pin can work on and the 'config' configures various pad settings
-> +such as pull-up, open drain, drive strength, etc.
-> +
-> +Required properties for iomux controller:
-> +- compatible: "fsl,<soc>-iomuxc"
-> +  Please refer to each fsl,<soc>-pinctrl.txt binding doc for supported SoCs.
-> +
-> +Required properties for pin configuration node:
-> +- fsl,pins: two integers array, represents a group of pins mux and config
-> +  setting. The format is fsl,pins = <PIN_FUNC_ID CONFIG>, PIN_FUNC_ID is a
-> +  pin working on a specific function, CONFIG is the pad setting value like
-> +  pull-up on this pin. Please refer to fsl,<soc>-pinctrl.txt for the valid
-> +  pins and functions of each SoC.
-> +
-> +Bits used for CONFIG:
-> +NO_PAD_CTL(1 << 31): indicate this pin does not need config.
-> +
-> +SION(1 << 30): Software Input On Field.
-> +Force the selected mux mode input path no matter of MUX_MODE functionality.
-> +By default the input path is determined by functionality of the selected
-> +mux mode (regular).
-> +
-> +Other bits are used for PAD setting.
-> +
-> +NOTE:
-> +Some requirements for using fsl,imx-pinctrl binding:
-> +1. We have pin function node defined under iomux controller node to represent
-> +   what pinmux functions this SoC supports.
-> +2. The pin configuration node intends to work on a specific function should
-> +   to be defined under that specific function node.
-> +   The function node's name should represent well about what function
-> +   this group of pins in this pin configuration node are working on.
-> +3. The driver can use the function node's name and pin configuration node's
-> +   name describe the pin function and group hierarchy.
-> +   For example, Linux IMX pinctrl driver takes the function node's name
-> +   as the function name and pin configuration node's name as group name to
-> +   create the map table.
-> +4. Each pin configuration node should have a phandle, devices can set pins
-> +   configurations by referring to the phandle of that pin configuration node.
-> +
-> +Examples:
-> +usdhc@0219c000 { /* uSDHC4 */
-> +	fsl,card-wired;
-> +	vmmc-supply = <&reg_3p3v>;
-> +	status = "okay";
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_usdhc4_1>;
-> +};
-> +
-> +iomuxc@020e0000 {
-> +	compatible = "fsl,imx6q-iomuxc";
-> +	reg = <0x020e0000 0x4000>;
-> +
-> +	/* shared pinctrl settings */
-> +	usdhc4 {
-> +		pinctrl_usdhc4_1: usdhc4grp-1 {
-> +			fsl,pins = <1386 0x17059	/* MX6Q_PAD_SD4_CMD__USDHC4_CMD */
-> +				    1392 0x17059	/* MX6Q_PAD_SD4_CLK__USDHC4_CLK	*/
-> +				    1462 0x17059	/* MX6Q_PAD_SD4_DAT0__USDHC4_DAT0 */
-> +				    1470 0x17059	/* MX6Q_PAD_SD4_DAT1__USDHC4_DAT1 */
-> +				    1478 0x17059	/* MX6Q_PAD_SD4_DAT2__USDHC4_DAT2 */
-> +				    1486 0x17059	/* MX6Q_PAD_SD4_DAT3__USDHC4_DAT3 */
-> +				    1493 0x17059	/* MX6Q_PAD_SD4_DAT4__USDHC4_DAT4 */
-> +				    1501 0x17059	/* MX6Q_PAD_SD4_DAT5__USDHC4_DAT5 */
-> +				    1509 0x17059	/* MX6Q_PAD_SD4_DAT6__USDHC4_DAT6 */
-> +				    1517 0x17059>;	/* MX6Q_PAD_SD4_DAT7__USDHC4_DAT7 */
-honestly I don't like this it's obscure need to decode manually
+> 		missing spin_unlock_irqrestore(&n->list_lock, flags); ?
 
-I propose to use phandle
+Note that he sets n here, hence the if() block on 2458 can not
+be taken (!n fails) and the if(likely(!n)) is not taken for the
+same reason. As such, the code falls through to the returns for
+either the slab being empty (or not) where the node lock is
+released (2529 / 2543).
 
-as example on uart you will want or not the rst/cts so you will have quite a
-lot of bindings
+Don Morris
 
-so you can describe the pin configuration (function) and refer it by phandle
-in the group
+> 
+>> +	}
+>>  
+>>  	do {
+>>  		prior = page->freelist;
+>> @@ -2467,7 +2477,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>>  
+>>  			else { /* Needs to be taken off a list */
+>>  
+>> -	                        n = get_node(s, page_to_nid(page));
+>> +				n = get_node(s, page_to_nid(page));
+>>  				/*
+>>  				 * Speculatively acquire the list_lock.
+>>  				 * If the cmpxchg does not succeed then we may
+>> @@ -2501,10 +2511,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>>  		 * The list lock was not taken therefore no list
+>>  		 * activity can be necessary.
+>>  		 */
+>> -                if (was_frozen)
+>> -                        stat(s, FREE_FROZEN);
+>> -                return;
+>> -        }
+>> +		if (was_frozen)
+>> +			stat(s, FREE_FROZEN);
+>> +		return;
+>> +	}
+>>  
+>>  	/*
+>>  	 * was_frozen may have been set after we acquired the list_lock in
+>> @@ -2514,7 +2524,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>>  		stat(s, FREE_FROZEN);
+>>  	else {
+>>  		if (unlikely(!inuse && n->nr_partial > s->min_partial))
+>> -                        goto slab_empty;
+>> +			goto slab_empty;
+>>  
+>>  		/*
+>>  		 * Objects left in the slab. If it was not on the partial list before
+>> @@ -4122,7 +4132,7 @@ static void validate_slab_slab(struct kmem_cache *s, struct page *page,
+>>  static int validate_slab_node(struct kmem_cache *s,
+>>  		struct kmem_cache_node *n, unsigned long *map)
+>>  {
+>> -	unsigned long count = 0;
+>> +	unsigned long count = 0, n_count;
+>>  	struct page *page;
+>>  	unsigned long flags;
+>>  
+>> @@ -4143,10 +4153,20 @@ static int validate_slab_node(struct kmem_cache *s,
+>>  		validate_slab_slab(s, page, map);
+>>  		count++;
+>>  	}
+>> -	if (count != atomic_long_read(&n->nr_slabs))
+>> -		printk(KERN_ERR "SLUB: %s %ld slabs counted but "
+>> -			"counter=%ld\n", s->name, count,
+>> -			atomic_long_read(&n->nr_slabs));
+>> +	n_count = atomic_long_read(&n->nr_slabs);
+>> +	/*
+>> +	 * The following workaround is to greatly reduce the chance of counter
+>> +	 * mismatch messages due to the fact that inc_slabs_node() and the
+>> +	 * subsequent insertion into the partial or full slab list is not
+>> +	 * atomic. Consequently, there is a small timing window when the two
+>> +	 * are not in the same state. A possible fix is to take the node lock
+>> +	 * while doing inc_slabs_node() and slab insertion, but that may
+>> +	 * require substantial changes to existing slow path slab allocation
+>> +	 * logic.
+>> +	 */
+>> +	if ((count != n_count) && (count + 1 != n_count))
+>> +		printk(KERN_ERR "SLUB: %s %ld slabs counted but counter=%ld\n",
+>> +			s->name, count, n_count);
+>>  
+>>  out:
+>>  	spin_unlock_irqrestore(&n->list_lock, flags);
+> 
+> 
+> .
+> 
 
-Best Regards,
-J.
