@@ -1,100 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab2DZI3C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 04:29:02 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:46772 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754374Ab2DZI2h (ORCPT
+	id S1755195Ab2DZI3i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 04:29:38 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:40718 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754549Ab2DZI2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 04:28:37 -0400
-Message-ID: <4F9905F0.6030402@st.com>
-Date: Thu, 26 Apr 2012 13:53:12 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Stephen Warren <swarren@nvidia.com>, Kyle Manna <kyle.manna@fuel7.com>,
-        Anirudh Ghayal <aghayal@codeaurora.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Yong Zhang <yong.zhang0@gmail.com>, Hui Wang <jason77.wang@gmail.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Trilok Soni <tsoni@codeaurora.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>, Rakesh Iyer <riyer@nvidia.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] Input: matrix-keymap - uninline and prepare for device
- tree support
-References: <20120426081750.GA2684@core.coreip.homeip.net>
-In-Reply-To: <20120426081750.GA2684@core.coreip.homeip.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Apr 2012 04:28:21 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, stern@rowland.harvard.edu,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v7 1/3] USB: Add driver for NXP ISP1301 USB transceiver
+Date: Thu, 26 Apr 2012 10:27:37 +0200
+Message-Id: <1335428859-26294-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/26/2012 1:47 PM, Dmitry Torokhov wrote:
-> diff --git a/drivers/input/keyboard/spear-keyboard.c b/drivers/input/keyboard/spear-keyboard.c
-> index 3b6b528..7c8f2bc 100644
-> --- a/drivers/input/keyboard/spear-keyboard.c
-> +++ b/drivers/input/keyboard/spear-keyboard.c
-> @@ -49,7 +49,9 @@
->  #define KEY_VALUE      0x00FFFFFF
->  #define ROW_MASK       0xF0
->  #define COLUMN_MASK    0x0F
-> -#define ROW_SHIFT      4
-> +#define NUM_ROWS       16
-> +#define NUM_COLS       16
-> +
->  #define KEY_MATRIX_SHIFT       6
-> 
->  struct spear_kbd {
-> @@ -60,7 +62,7 @@ struct spear_kbd {
->         unsigned int irq;
->         unsigned int mode;
->         unsigned short last_key;
-> -       unsigned short keycodes[256];
-> +       unsigned short keycodes[NUM_ROWS * NUM_COLS];
->  };
-> 
->  static irqreturn_t spear_kbd_interrupt(int irq, void *dev_id)
-> @@ -212,18 +214,17 @@ static int __devinit spear_kbd_probe(struct platform_device *pdev)
->         input_dev->open = spear_kbd_open;
->         input_dev->close = spear_kbd_close;
-> 
-> -       __set_bit(EV_KEY, input_dev->evbit);
-> +       error = matrix_keypad_build_keymap(keymap, NULL, NUM_ROWS, NUM_COLS,
-> +                                          kbd->keycodes, input_dev);
-> +       if (error) {
-> +               dev_err(&pdev->dev, "Failed to build keymap\n");
-> +               goto errr_put_clk;
-> +       }
-> +
->         if (pdata->rep)
->                 __set_bit(EV_REP, input_dev->evbit);
->         input_set_capability(input_dev, EV_MSC, MSC_SCAN);
-> 
-> -       input_dev->keycode = kbd->keycodes;
-> -       input_dev->keycodesize = sizeof(kbd->keycodes[0]);
-> -       input_dev->keycodemax = ARRAY_SIZE(kbd->keycodes);
-> -
-> -       matrix_keypad_build_keymap(keymap, ROW_SHIFT,
-> -                       input_dev->keycode, input_dev->keybit);
-> -
->         input_set_drvdata(input_dev, kbd);
-> 
->         error = request_irq(irq, spear_kbd_interrupt, 0, "keyboard", kbd);
+This new driver registers the NXP ISP1301 chip via the I2C subsystem.  The chip
+is the USB transceiver shared by ohci-nxp, lpc32xx_udc (gadget) and
+isp1301_omap.
 
-Have you rebased these patches over my patchset for SPEAr and Tegra?
+ISP1301 is a very low-level driver that primarily separates out the I2C client
+registration of the ISP1301 chip (including instantiation via DT), used by
+other drivers, and declares the chip's registers. It's only a helper driver for
+some OHCI and USB device drivers.  The driver can be considered as a register
+set extension of ohci-nxp, lpc32xx-udc and isp1301_omap, which in turn know
+best what to do with the low level functionality (individual ISP1301 registers
+and timing, see the different initialization strategies in those drivers).
+Those drivers previously internally duplicated ISP1301 register definitions
+which is solved by this new isp1301 driver. The ISP1301 registers exposed via
+isp1301.h can be accessed by other drivers using it with standard i2c_smbus_*()
+accesses.
 
--- 
-viresh
+Following patches let the respective USB host and gadget drivers use this
+driver, instead of duplicating ISP1301 handling.
+
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+---
+
+Applies to v3.4-rc4
+
+Changes since v6:
+* Documented helper driver concept of this driver in changelog
+
+Thanks to GregKH for reviewing!
+
+ Documentation/devicetree/bindings/usb/isp1301.txt |   25 ++++++
+ drivers/usb/Kconfig                               |    2 
+ drivers/usb/Makefile                              |    1 
+ drivers/usb/phy/Kconfig                           |   17 ++++
+ drivers/usb/phy/Makefile                          |    7 +
+ drivers/usb/phy/isp1301.c                         |   77 +++++++++++++++++++++
+ include/linux/usb/isp1301.h                       |   80 ++++++++++++++++++++++
+ 7 files changed, 209 insertions(+)
+
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/usb/isp1301.txt
+@@ -0,0 +1,25 @@
++* NXP ISP1301 USB transceiver
++
++Required properties:
++- compatible: must be "nxp,isp1301"
++- reg: I2C address of the ISP1301 device
++
++Optional properties of devices using ISP1301:
++- transceiver: phandle of isp1301 - this helps the ISP1301 driver to find the
++               ISP1301 instance associated with the respective USB driver
++
++Example:
++
++	isp1301: usb-transceiver@2c {
++		compatible = "nxp,isp1301";
++		reg = <0x2c>;
++	};
++
++	usbd@31020000 {
++		compatible = "nxp,lpc3220-udc";
++		reg = <0x31020000 0x300>;
++		interrupt-parent = <&mic>;
++		interrupts = <0x3d 0>, <0x3e 0>, <0x3c 0>, <0x3a 0>;
++		transceiver = <&isp1301>;
++		status = "okay";
++	};
+--- linux-2.6.orig/drivers/usb/Kconfig
++++ linux-2.6/drivers/usb/Kconfig
+@@ -177,6 +177,8 @@ source "drivers/usb/serial/Kconfig"
+ 
+ source "drivers/usb/misc/Kconfig"
+ 
++source "drivers/usb/phy/Kconfig"
++
+ source "drivers/usb/atm/Kconfig"
+ 
+ source "drivers/usb/gadget/Kconfig"
+--- linux-2.6.orig/drivers/usb/Makefile
++++ linux-2.6/drivers/usb/Makefile
+@@ -46,6 +46,7 @@ obj-$(CONFIG_USB_MICROTEK)	+= image/
+ obj-$(CONFIG_USB_SERIAL)	+= serial/
+ 
+ obj-$(CONFIG_USB)		+= misc/
++obj-$(CONFIG_USB)		+= phy/
+ obj-$(CONFIG_EARLY_PRINTK_DBGP)	+= early/
+ 
+ obj-$(CONFIG_USB_ATM)		+= atm/
+--- /dev/null
++++ linux-2.6/drivers/usb/phy/Kconfig
+@@ -0,0 +1,17 @@
++#
++# Physical Layer USB driver configuration
++#
++comment "USB Physical Layer drivers"
++	depends on USB
++
++config USB_ISP1301
++	tristate "NXP ISP1301 USB transceiver support"
++	depends on USB
++	depends on I2C
++	help
++	  Say Y here to add support for the NXP ISP1301 USB transceiver driver.
++	  This chip is typically used as USB transceiver for USB host, gadget
++	  and OTG drivers (to be selected separately).
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called isp1301.
+--- /dev/null
++++ linux-2.6/drivers/usb/phy/Makefile
+@@ -0,0 +1,7 @@
++#
++# Makefile for physical layer USB drivers
++#
++
++ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
++
++obj-$(CONFIG_USB_ISP1301)		+= isp1301.o
+--- /dev/null
++++ linux-2.6/drivers/usb/phy/isp1301.c
+@@ -0,0 +1,77 @@
++/*
++ * NXP ISP1301 USB transceiver driver
++ *
++ * Copyright (C) 2012 Roland Stigge
++ *
++ * Author: Roland Stigge <stigge@antcom.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/i2c.h>
++
++#define DRV_NAME		"isp1301"
++
++#define ISP1301_I2C_ADDR	0x2C
++
++static const unsigned short normal_i2c[] = {
++	ISP1301_I2C_ADDR, ISP1301_I2C_ADDR + 1, I2C_CLIENT_END
++};
++
++static const struct i2c_device_id isp1301_id[] = {
++	{ "isp1301", 0 },
++	{ }
++};
++
++static struct i2c_client *isp1301_i2c_client;
++
++static int isp1301_probe(struct i2c_client *client,
++			 const struct i2c_device_id *i2c_id)
++{
++	isp1301_i2c_client = client;
++	return 0;
++}
++
++static int isp1301_remove(struct i2c_client *client)
++{
++	return 0;
++}
++
++static struct i2c_driver isp1301_driver = {
++	.driver = {
++		.name = DRV_NAME,
++	},
++	.probe = isp1301_probe,
++	.remove = isp1301_remove,
++	.id_table = isp1301_id,
++};
++
++module_i2c_driver(isp1301_driver);
++
++static int match(struct device *dev, void *data)
++{
++	struct device_node *node = (struct device_node *)data;
++	return (dev->of_node == node) &&
++		(dev->driver == &isp1301_driver.driver);
++}
++
++struct i2c_client *isp1301_get_client(struct device_node *node)
++{
++	if (node) { /* reference of ISP1301 I2C node via DT */
++		struct device *dev = bus_find_device(&i2c_bus_type, NULL,
++						     node, match);
++		if (!dev)
++			return NULL;
++		return to_i2c_client(dev);
++	} else { /* non-DT: only one ISP1301 chip supported */
++		return isp1301_i2c_client;
++	}
++}
++EXPORT_SYMBOL_GPL(isp1301_get_client);
++
++MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
++MODULE_DESCRIPTION("NXP ISP1301 USB transceiver driver");
++MODULE_LICENSE("GPL");
+--- /dev/null
++++ linux-2.6/include/linux/usb/isp1301.h
+@@ -0,0 +1,80 @@
++/*
++ * NXP ISP1301 USB transceiver driver
++ *
++ * Copyright (C) 2012 Roland Stigge <stigge@antcom.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __LINUX_USB_ISP1301_H
++#define __LINUX_USB_ISP1301_H
++
++#include <linux/of.h>
++
++/* I2C Register definitions: */
++
++#define ISP1301_I2C_MODE_CONTROL_1	0x04	/* u8 read, set, +1 clear */
++
++#define MC1_SPEED_REG			(1 << 0)
++#define MC1_SUSPEND_REG			(1 << 1)
++#define MC1_DAT_SE0			(1 << 2)
++#define MC1_TRANSPARENT			(1 << 3)
++#define MC1_BDIS_ACON_EN		(1 << 4)
++#define MC1_OE_INT_EN			(1 << 5)
++#define MC1_UART_EN			(1 << 6)
++#define MC1_MASK			0x7f
++
++#define ISP1301_I2C_MODE_CONTROL_2	0x12	/* u8 read, set, +1 clear */
++
++#define MC2_GLOBAL_PWR_DN		(1 << 0)
++#define MC2_SPD_SUSP_CTRL		(1 << 1)
++#define MC2_BI_DI			(1 << 2)
++#define MC2_TRANSP_BDIR0		(1 << 3)
++#define MC2_TRANSP_BDIR1		(1 << 4)
++#define MC2_AUDIO_EN			(1 << 5)
++#define MC2_PSW_EN			(1 << 6)
++#define MC2_EN2V7			(1 << 7)
++
++#define ISP1301_I2C_OTG_CONTROL_1	0x06	/* u8 read, set, +1 clear */
++
++#define OTG1_DP_PULLUP			(1 << 0)
++#define OTG1_DM_PULLUP			(1 << 1)
++#define OTG1_DP_PULLDOWN		(1 << 2)
++#define OTG1_DM_PULLDOWN		(1 << 3)
++#define OTG1_ID_PULLDOWN		(1 << 4)
++#define OTG1_VBUS_DRV			(1 << 5)
++#define OTG1_VBUS_DISCHRG		(1 << 6)
++#define OTG1_VBUS_CHRG			(1 << 7)
++
++#define ISP1301_I2C_OTG_CONTROL_2	0x10	/* u8 readonly */
++
++#define OTG_B_SESS_END			(1 << 6)
++#define OTG_B_SESS_VLD			(1 << 7)
++
++#define ISP1301_I2C_INTERRUPT_SOURCE	0x8
++#define ISP1301_I2C_INTERRUPT_LATCH	0xA
++#define ISP1301_I2C_INTERRUPT_FALLING	0xC
++#define ISP1301_I2C_INTERRUPT_RISING	0xE
++
++#define INT_VBUS_VLD			(1 << 0)
++#define INT_SESS_VLD			(1 << 1)
++#define INT_DP_HI			(1 << 2)
++#define INT_ID_GND			(1 << 3)
++#define INT_DM_HI			(1 << 4)
++#define INT_ID_FLOAT			(1 << 5)
++#define INT_BDIS_ACON			(1 << 6)
++#define INT_CR_INT			(1 << 7)
++
++#define ISP1301_I2C_REG_CLEAR_ADDR	1	/* Register Address Modifier */
++
++struct i2c_client *isp1301_get_client(struct device_node *node);
++
++#endif /* __LINUX_USB_ISP1301_H */
