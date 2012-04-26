@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2DZChO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Apr 2012 22:37:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5204 "EHLO
+	id S1753383Ab2DZChN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 22:37:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10757 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113Ab2DZChJ (ORCPT
+	with ESMTP id S1752188Ab2DZChJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Apr 2012 22:37:09 -0400
-X-Authority-Analysis: v=2.0 cv=IaEFqBWa c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=_-UaAGdScbEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=CQKkfJl2KeeFz0EUn1AA:9 a=CQe82pGuQ8RVVRQGJf8A:7 a=QEXdDO2ut3YA:10 a=1mLKGT7Vnfs52oAO2g8A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Authority-Analysis: v=2.0 cv=MNHiabll c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=q_glbGhIPWYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=_IGxp2mfFUYWymhGOywA:9 a=9GTYEX1tESxK75rzqtoA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=adWdUm4Z51LiVkSNnZQA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120426022922.683707508@goodmis.org>
+Message-Id: <20120426023706.696930048@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 25 Apr 2012 22:29:22 -0400
+Date: Wed, 25 Apr 2012 22:29:23 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 0/6][RFC] tracing/kprobes: Get ready for -mfentry
+Subject: [PATCH 1/6][RFC] ftrace: Sort all function addresses, not just per page
+References: <20120426022922.683707508@goodmis.org>
+Content-Disposition: inline; filename=0001-ftrace-Sort-all-function-addresses-not-just-per-page.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,46 +30,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-As I want to add the -mfentry to allow for function tracing without
-frame pointers (as some distros are now disabling function tracing :-(
+From: Steven Rostedt <srostedt@redhat.com>
 
-I have to handle the case that a kprobe is placed on a ftrace nop.
-As ftrace nops with -mfentry will be the first instruction of a
-function, it being the location of a kprobe is a likely occurrence.
+Instead of just sorting the ip's of the functions per ftrace page,
+sort the entire list before adding them to the ftrace pages.
 
-Ideally, kprobes would just use the function tracing infrastructure
-to make an automatic optimized jump. But that is for another day as it
-requires a bit of work in the function tracer to handle regs and such.
+This will allow the bsearch algorithm to be sped up as it can
+also sort by pages, not just records within a page.
 
-So the quick fix for now is to simply move the probe to the next
-instruction after the ftrace nop. As the nop shouldn't be doing anything
-anyway (and tracing should return to the function in the same state)
-moving the location of the probe should not cause any harm.
-
-The first 5 patches are non controversial, and could probably just be
-pushed for 3.5 inclusion. The last patch makes the change to move the
-probe to the next instruction after the ftrace nop.
-
-Anyone see any problem with this?
-
--- Steve
-
-
-Steven Rostedt (6):
-      ftrace: Sort all function addresses, not just per page
-      ftrace: Remove extra helper functions
-      ftrace: Speed up search by skipping pages by address
-      ftrace: Consolidate ftrace_location() and ftrace_text_reserved()
-      ftrace: Return record ip addr for ftrace_location()
-      kprobes: Allow probe on ftrace reserved text (but move it)
-
-----
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
  include/asm-generic/vmlinux.lds.h |    2 +-
- include/linux/ftrace.h            |    2 +-
- kernel/kprobes.c                  |   11 ++-
- kernel/trace/ftrace.c             |  173 ++++++++++++++++++++-------------=
-----
- 4 files changed, 104 insertions(+), 84 deletions(-)
+ kernel/trace/ftrace.c             |   34 ++++++++++++++++++++++------------
+ 2 files changed, 23 insertions(+), 13 deletions(-)
+
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinu=
+x.lds.h
+index 8aeadf6..4e2e1cc 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -486,8 +486,8 @@
+ 	CPU_DISCARD(init.data)						\
+ 	MEM_DISCARD(init.data)						\
+ 	KERNEL_CTORS()							\
+-	*(.init.rodata)							\
+ 	MCOUNT_REC()							\
++	*(.init.rodata)							\
+ 	FTRACE_EVENTS()							\
+ 	TRACE_SYSCALLS()						\
+ 	DEV_DISCARD(init.rodata)					\
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 0fa92f6..6a19e81 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3688,15 +3688,27 @@ static __init int ftrace_init_dyn_debugfs(struct de=
+ntry *d_tracer)
+ 	return 0;
+ }
+=20
+-static void ftrace_swap_recs(void *a, void *b, int size)
++static int ftrace_cmp_ips(const void *a, const void *b)
+ {
+-	struct dyn_ftrace *reca =3D a;
+-	struct dyn_ftrace *recb =3D b;
+-	struct dyn_ftrace t;
++	const unsigned long *ipa =3D a;
++	const unsigned long *ipb =3D b;
+=20
+-	t =3D *reca;
+-	*reca =3D *recb;
+-	*recb =3D t;
++	if (*ipa > *ipb)
++		return 1;
++	if (*ipa < *ipb)
++		return -1;
++	return 0;
++}
++
++static void ftrace_swap_ips(void *a, void *b, int size)
++{
++	unsigned long *ipa =3D a;
++	unsigned long *ipb =3D b;
++	unsigned long t;
++
++	t =3D *ipa;
++	*ipa =3D *ipb;
++	*ipb =3D t;
+ }
+=20
+ static int ftrace_process_locs(struct module *mod,
+@@ -3715,6 +3727,9 @@ static int ftrace_process_locs(struct module *mod,
+ 	if (!count)
+ 		return 0;
+=20
++	sort(start, count, sizeof(*start),
++	     ftrace_cmp_ips, ftrace_swap_ips);
++
+ 	pg =3D ftrace_allocate_pages(count);
+ 	if (!pg)
+ 		return -ENOMEM;
+@@ -3762,11 +3777,6 @@ static int ftrace_process_locs(struct module *mod,
+ 	/* These new locations need to be initialized */
+ 	ftrace_new_pgs =3D pg;
+=20
+-	/* Make each individual set of pages sorted by ips */
+-	for (; pg; pg =3D pg->next)
+-		sort(pg->records, pg->index, sizeof(struct dyn_ftrace),
+-		     ftrace_cmp_recs, ftrace_swap_recs);
+-
+ 	/*
+ 	 * We only need to disable interrupts on start up
+ 	 * because we are modifying code that an interrupt
+--=20
+1.7.9.5
+
+
 
 --00GvhwF7k39YY
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -76,19 +133,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPmLTMAAoJEIy3vGnGbaoADWQQAOMn5AtLXtrcJmm4Y8d0jdUb
-+JaWygIe/Tq7PtDmcPLHVNqXhPew/bHhcpZ1pZU9lDTqyqM+/QxtlzQYeEAQbeOe
-902PGy9rcT6TUVrMinwKM74ZKRRfdas5jpn/DyJmnhzv47HVsGLF/Gcne8XehY0a
-slqrjlP1t8TGKW+1bE842DjuG7VMculxUvBZT+liIkd32JA2at1uqffn/UeDCKa5
-VX1boyh8B236idCX76wlGEANGa/QtS5lViadof1P5XFG72IAXbOP5iNqwzAIIP0a
-yMfZ5Pj785KfxLV54ZHHQ05b8D1yOJz+pXq6rB6tzj7YdD/r0JV8L3YExGePT1iS
-AgL+cCNMvS00UXTtstj1Vm4YYV8LxEemsRZEYuHqoY/51iwIw5xc4YT9LRmDkp00
-Oa5Jn24nP6uKukUHp9shq4ossCLXP38a3/J1+TsqHLJtLVGXG9UUzgPGsJh9PU5o
-RfiuF7DCNAXCdaxHZYfhERaen1aUsSHi0GY/vzYwyBbQQiHoux/+yWsSpf3Skn3S
-AamFehXXxvdG2Sl/h19ne5o/IUZq+oSrpWnpBeL+eYBo9oBR+ryl8WWprfUQcpXl
-vEXcHnGh0pn4utVq1dm7P3Uo0W0rBYI5+tpbbmLR8aQgu3hPqdSXzhGCLDHoKWgZ
-ZVpgQMuwmd4HskmuyikU
-=ximU
+iQIcBAABAgAGBQJPmLTSAAoJEIy3vGnGbaoAs2cQAN5/xNmEf4pzQuyz/+EbLFve
+6hD175ksBMdODpGuVS1Y6ccWDSd8B6aIpMVgnLuOzTVRzybOOk4pjysCzqTsExTs
+cIziP4xM8nOqpxb+Lx2v79dCV85QgUAcaic8dRoA/QktmieTOxvZq5lTH0ksUgRR
+8A+uPKOwjsy4pmphDbso/UH7ip0C7oXPSj4Am3sM9QO+SetZ4Ms4wb7um8kDIrHx
+ht9Gm2LUsaP/3USnjFtFL7hGY59p+rXZhdY1MnZJbUWRAUIy7vSdieoS9dMzLh6I
+A819eXV1cMSqrYTTqdJ9eDSLOw3Kb/Iwx4wmEoveGDMlLOuqjVIA/PGTHaiylN50
+SydgvI48vdmondIcVXChU/fCsVKG3abPEGKvZWfG/ULjOes7OcTWcGda8IRr+Sb1
+eqHPjNuWrqGiTKbOPmOyciUijwvN5BxypqqstjHn/z84pPEAzOPfDztdeNj6gi81
+iRTa/JIti9sWz3r9cnVA1ulEnsU5bEWaEi8v23c7UgAnpzBksVsh39FbpIhhUzyd
+csKSQkL9e58/KSFen9EvQCyVb2uUQVTG1JikQZ4ZNRdG4ThzaDVyT4eYpl6eltez
+HWBJMOSar88pmI+rlYrp9NwMO4NliQC4MSD86mvcgNLv4BIX2biwGLPBcdzBuE1T
+GB8P8NNPWFRpx3Ae/DP5
+=VGyx
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
