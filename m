@@ -1,108 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759273Ab2DZVhe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 17:37:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43933 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481Ab2DZVhd (ORCPT
+	id S1758746Ab2DZVkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 17:40:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59518 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab2DZVkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 17:37:33 -0400
-Date: Thu, 26 Apr 2012 14:37:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: count pte references from every member
- of the reclaimed hierarchy
-Message-Id: <20120426143729.10f672ae.akpm@linux-foundation.org>
-In-Reply-To: <1335296144-29381-2-git-send-email-hannes@cmpxchg.org>
-References: <1335296144-29381-1-git-send-email-hannes@cmpxchg.org>
-	<1335296144-29381-2-git-send-email-hannes@cmpxchg.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Apr 2012 17:40:51 -0400
+Date: Thu, 26 Apr 2012 14:40:48 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.4-rc4 oom killer out of control.
+In-Reply-To: <20120426193551.GA24968@redhat.com>
+Message-ID: <alpine.DEB.2.00.1204261437470.28376@chino.kir.corp.google.com>
+References: <20120426193551.GA24968@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Apr 2012 21:35:44 +0200
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Thu, 26 Apr 2012, Dave Jones wrote:
 
-> The rmap walker checking page table references has historically
-> ignored references from VMAs that were not part of the memcg that was
-> being reclaimed during memcg hard limit reclaim.
+> On a test machine that was running my system call fuzzer, I just saw
+> the oom killer take out everything but the process that was doing all
+> the memory exhausting.
 > 
-> When transitioning global reclaim to memcg hierarchy reclaim, I missed
-> that bit and now references from outside a memcg are ignored even
-> during global reclaim.
-> 
-> Reverting back to traditional behaviour - count all references during
-> global reclaim and only mind references of the memcg being reclaimed
-> during limit reclaim would be one option.
-> 
-> However, the more generic idea is to ignore references exactly then
-> when they are outside the hierarchy that is currently under reclaim;
-> because only then will their reclamation be of any use to help the
-> pressure situation.  It makes no sense to ignore references from a
-> sibling memcg and then evict a page that will be immediately refaulted
-> by that sibling which contributes to the same usage of the common
-> ancestor under reclaim.
-> 
-> The solution: make the rmap walker ignore references from VMAs that
-> are not part of the hierarchy that is being reclaimed.
-> 
-> Flat limit reclaim will stay the same, hierarchical limit reclaim will
-> mind the references only to pages that the hierarchy owns.  Global
-> reclaim, since it reclaims from all memcgs, will be fixed to regard
-> all references.
-> 
-> ...
->
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -78,6 +78,7 @@ extern void mem_cgroup_uncharge_cache_page(struct page *page);
->  
->  extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  				     int order);
-> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *, struct mem_cgroup *);
 
-I dunno about you guys, but this practice of omitting the names of the
-arguments in the declaration drives me bats.  It really does throw away
-a *lot* of information.  It looks OK when one is initially reading the
-code, but when I actually go in there and do some work on the code, it
-makes things significantly harder.
+Would it be possible to try the below patch?  It should kill the thread 
+using the most memory (which happens to only be a couple more megabytes on 
+your system), but it might just delay the inevitable since the system is 
+still in a pretty bad state.
 
->  int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
->  
->  extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
-> @@ -91,10 +92,13 @@ static inline
->  int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
->  {
->  	struct mem_cgroup *memcg;
-> +	int match;
-> +
->  	rcu_read_lock();
->  	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-> +	match = memcg && __mem_cgroup_same_or_subtree(cgroup, memcg);
->  	rcu_read_unlock();
-> -	return cgroup == memcg;
-> +	return match;
->  }
+KOSAKI-san suggested doing this before and I think it's the best direction 
+to go in anyway.
+---
+ fs/proc/base.c      |    5 +++--
+ include/linux/oom.h |    5 +++--
+ mm/oom_kill.c       |   39 ++++++++++++++-------------------------
+ 3 files changed, 20 insertions(+), 29 deletions(-)
 
-mm_match_cgroup() really wants to return a bool type, no?
-
-> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> +				  struct mem_cgroup *memcg)
-
-Like him.
-
-> +static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> +				       struct mem_cgroup *memcg)
-
-And him.
-
-
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -410,12 +410,13 @@ static const struct file_operations proc_lstats_operations = {
+ 
+ static int proc_oom_score(struct task_struct *task, char *buffer)
+ {
++	unsigned long totalpages = totalram_pages + total_swap_pages;
+ 	unsigned long points = 0;
+ 
+ 	read_lock(&tasklist_lock);
+ 	if (pid_alive(task))
+-		points = oom_badness(task, NULL, NULL,
+-					totalram_pages + total_swap_pages);
++		points = oom_badness(task, NULL, NULL, totalpages) *
++						1000 / totalpages;
+ 	read_unlock(&tasklist_lock);
+ 	return sprintf(buffer, "%lu\n", points);
+ }
+diff --git a/include/linux/oom.h b/include/linux/oom.h
+index 3d76475..e4c29bc 100644
+--- a/include/linux/oom.h
++++ b/include/linux/oom.h
+@@ -43,8 +43,9 @@ enum oom_constraint {
+ extern void compare_swap_oom_score_adj(int old_val, int new_val);
+ extern int test_set_oom_score_adj(int new_val);
+ 
+-extern unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+-			const nodemask_t *nodemask, unsigned long totalpages);
++extern unsigned long oom_badness(struct task_struct *p,
++		struct mem_cgroup *memcg, const nodemask_t *nodemask,
++		unsigned long totalpages);
+ extern int try_set_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+ extern void clear_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+ 
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 46bf2ed5..4bbf085 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -180,10 +180,10 @@ static bool oom_unkillable_task(struct task_struct *p,
+  * predictable as possible.  The goal is to return the highest value for the
+  * task consuming the most memory to avoid subsequent oom failures.
+  */
+-unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+-		      const nodemask_t *nodemask, unsigned long totalpages)
++unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
++			  const nodemask_t *nodemask, unsigned long totalpages)
+ {
+-	long points;
++	unsigned long points;
+ 
+ 	if (oom_unkillable_task(p, memcg, nodemask))
+ 		return 0;
+@@ -198,45 +198,33 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+ 	}
+ 
+ 	/*
+-	 * The memory controller may have a limit of 0 bytes, so avoid a divide
+-	 * by zero, if necessary.
+-	 */
+-	if (!totalpages)
+-		totalpages = 1;
+-
+-	/*
+ 	 * The baseline for the badness score is the proportion of RAM that each
+ 	 * task's rss, pagetable and swap space use.
+ 	 */
+-	points = get_mm_rss(p->mm) + p->mm->nr_ptes;
+-	points += get_mm_counter(p->mm, MM_SWAPENTS);
+-
+-	points *= 1000;
+-	points /= totalpages;
++	points = get_mm_rss(p->mm) + p->mm->nr_ptes +
++		 get_mm_counter(p->mm, MM_SWAPENTS);
+ 	task_unlock(p);
+ 
+ 	/*
+ 	 * Root processes get 3% bonus, just like the __vm_enough_memory()
+ 	 * implementation used by LSMs.
+ 	 */
+-	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		points -= 30;
++	if (has_capability_noaudit(p, CAP_SYS_ADMIN) && totalpages)
++		points -= 30 * totalpages / 1000;
+ 
+ 	/*
+ 	 * /proc/pid/oom_score_adj ranges from -1000 to +1000 such that it may
+ 	 * either completely disable oom killing or always prefer a certain
+ 	 * task.
+ 	 */
+-	points += p->signal->oom_score_adj;
++	points += p->signal->oom_score_adj * totalpages / 1000;
+ 
+ 	/*
+ 	 * Never return 0 for an eligible task that may be killed since it's
+ 	 * possible that no single user task uses more than 0.1% of memory and
+ 	 * no single admin tasks uses more than 3.0%.
+ 	 */
+-	if (points <= 0)
+-		return 1;
+-	return (points < 1000) ? points : 1000;
++	return points <= 0 ? 1 : points;
+ }
+ 
+ /*
+@@ -314,7 +302,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ {
+ 	struct task_struct *g, *p;
+ 	struct task_struct *chosen = NULL;
+-	*ppoints = 0;
++	unsigned long chosen_points = 0;
+ 
+ 	do_each_thread(g, p) {
+ 		unsigned int points;
+@@ -354,7 +342,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 			 */
+ 			if (p == current) {
+ 				chosen = p;
+-				*ppoints = 1000;
++				chosen_points = ULONG_MAX;
+ 			} else if (!force_kill) {
+ 				/*
+ 				 * If this task is not being ptraced on exit,
+@@ -367,12 +355,13 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 		}
+ 
+ 		points = oom_badness(p, memcg, nodemask, totalpages);
+-		if (points > *ppoints) {
++		if (points > chosen_points) {
+ 			chosen = p;
+-			*ppoints = points;
++			chosen_points = points;
+ 		}
+ 	} while_each_thread(g, p);
+ 
++	*ppoints = chosen_points * 1000 / totalpages;
+ 	return chosen;
+ }
+ 
