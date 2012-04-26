@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab2DZKHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 06:07:48 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:26825 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883Ab2DZKHr (ORCPT
+	id S1755789Ab2DZKNH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 06:13:07 -0400
+Received: from [133.145.228.5] ([133.145.228.5]:37541 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab2DZKNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 06:07:47 -0400
-Message-ID: <4F991E6D.4020303@atmel.com>
-Date: Thu, 26 Apr 2012 12:07:41 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Thu, 26 Apr 2012 06:13:05 -0400
+X-AuditID: b753bd60-9f483ba000000655-59-4f991f9b2225
+X-AuditID: b753bd60-9f483ba000000655-59-4f991f9b2225
+Message-ID: <4F991F99.8050301@hitachi.com>
+Date: Thu, 26 Apr 2012 19:12:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120420 Thunderbird/12.0
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <avictor.za@gmail.com>,
-        <plagnioj@jcrosoft.com>
-Subject: Re: [GIT PULL] net/at91: at91_ether fixes for 3.4-rc
-References: <4F991210.8060409@atmel.com> <20120426.052006.1832921763623188173.davem@davemloft.net>
-In-Reply-To: <20120426.052006.1832921763623188173.davem@davemloft.net>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 6/6][RFC] kprobes: Allow probe on ftrace reserved text
+ (but move it)
+References: <20120426022922.683707508@goodmis.org> <20120426023708.577576476@goodmis.org>
+In-Reply-To: <20120426023708.577576476@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.159.245.112]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 11:20 AM, David Miller :
-> From: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Date: Thu, 26 Apr 2012 11:14:56 +0200
+(2012/04/26 11:29), Steven Rostedt wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 > 
->> Can you please pull those fixes for 3.4-rc? The ARM/AT91 part
->> of modifications is pretty small and bounded to a single SoC so
->> it will not mess with arm-soc git tree.
+> If a probe is placed on a ftrace nop (or ftrace_caller), simply move the
+> probe to the next instruction instead of rejecting it. This will allow
+> kprobes not to be affected by ftrace using the -mfentry gcc option which
+> will put the ftrace nop at the beginning of the function. As a very common
+> case for kprobes is to add a probe to the very beginning of a function
+> we need a way to handle the case when ftrace takes the first instruction.
+
+Hmm, I think you'd better introduce a flag(KPROBE_FLAG_MOVED) for
+adjustment of probed IP address. Caller or handler can fixup its IP
+or kprobes itself can do it.
+
 > 
-> Please post the patches themselves to netdev.
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/kprobes.c |   11 ++++++++++-
+>  1 file changed, 10 insertions(+), 1 deletion(-)
 > 
-> You can give me pull requests, but those go into the "[PATCH 0/N] ..."
-> email, it doesn't preclude you're still having to post the actual
-> patches.
-> 
-> Otherwise nobody can review your work.
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index c62b854..560d80e 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1319,10 +1319,20 @@ int __kprobes register_kprobe(struct kprobe *p)
+>  	struct kprobe *old_p;
+>  	struct module *probed_mod;
+>  	kprobe_opcode_t *addr;
+> +	unsigned long ftrace_addr;
+>  
+>  	addr = kprobe_addr(p);
+>  	if (IS_ERR(addr))
+>  		return PTR_ERR(addr);
+> +
+> +	/*
+> +	 * If the address is located on a ftrace nop, set the
+> +	 * breakpoint to the following instruction.
+> +	 */
+> +	ftrace_addr = ftrace_location((unsigned long)addr);
+> +	if (unlikely(ftrace_addr))
+> +		addr = (kprobe_opcode_t *)(ftrace_addr + MCOUNT_INSN_SIZE);
 
-Both patches have been posted on netdev (but independently):
+And also, you may need to use ftrace_text_reserved() here,
+or need a void ftrace_location() function for CONFIG_DYNAMIC_FTRACE=n.
 
-First has been posted on February 13th:
-http://www.spinics.net/lists/netdev/msg188868.html
-With a question from myself a few days ago:
-http://www.spinics.net/lists/netdev/msg196183.html
-And I can find ancestors back in May 2011...
+> +
+>  	p->addr = addr;
+>  
+>  	ret = check_kprobe_rereg(p);
+> @@ -1333,7 +1343,6 @@ int __kprobes register_kprobe(struct kprobe *p)
+>  	preempt_disable();
+>  	if (!kernel_text_address((unsigned long) p->addr) ||
+>  	    in_kprobes_functions((unsigned long) p->addr) ||
+> -	    ftrace_text_reserved(p->addr, p->addr) ||
+>  	    jump_label_text_reserved(p->addr, p->addr)) {
+>  		ret = -EINVAL;
+>  		goto cannot_probe;
 
-Second one has been posted on April 23rd:
-http://www.spinics.net/lists/netdev/msg196002.html
+Thanks,
 
-So, should I repost both of them as patch series?
 
-Best regards,
 -- 
-Nicolas Ferre
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
