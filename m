@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759239Ab2D0QJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 12:09:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53266 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab2D0QJH (ORCPT
+	id S1759550Ab2D0QJU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 12:09:20 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:58296 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759067Ab2D0QJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 12:09:07 -0400
-Date: Fri, 27 Apr 2012 09:09:02 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Lockdep false positive in sysfs
-Message-ID: <20120427160902.GO27486@google.com>
-References: <20120426221753.GF27486@google.com>
- <Pine.LNX.4.44L0.1204271147330.1690-100000@iolanthe.rowland.org>
+	Fri, 27 Apr 2012 12:09:15 -0400
+Date: Fri, 27 Apr 2012 13:09:18 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/13] perf evlist: Fix creation of cpu map
+Message-ID: <20120427160918.GF27997@infradead.org>
+References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
+ <1335417327-11796-8-git-send-email-namhyung.kim@lge.com>
+ <4F996433.7040003@gmail.com>
+ <1335474778.1497.14.camel@leonhard>
+ <4F99BCAF.1080309@gmail.com>
+ <87397qhvvx.fsf@sejong.aot.lge.com>
+ <20120427150821.GA27997@infradead.org>
+ <4F9ABBF9.8080409@gmail.com>
+ <20120427160040.GD27997@infradead.org>
+ <4F9AC3B2.3080700@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1204271147330.1690-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4F9AC3B2.3080700@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Apr 27, 2012 at 11:57:02AM -0400, Alan Stern wrote:
-> By the way, do you know why attribute structures allow for dynamic keys 
-> as well as static keys?  I see dynamic keys are used by attribute 
-> containers, but I don't understand why.
-
-I have no idea.  Eric?
-
-> > > Another idea is to have A's method temporarily drop the sysfs readlock.  
-> > > Of course that would put the onus on the USB core of guaranteeing that
-> > > A cannot be removed while this happens, but we can handle that.
-> > 
-> > Yeah, that's an easier way out.  Please make it a proper sysfs API
-> > call tho so that people working on sysfs later can know of the special
-> > case.
+Em Fri, Apr 27, 2012 at 10:05:06AM -0600, David Ahern escreveu:
+> On 4/27/12 10:00 AM, Arnaldo Carvalho de Melo wrote:
+> >Em Fri, Apr 27, 2012 at 09:32:09AM -0600, David Ahern escreveu:
+> >>On 4/27/12 9:08 AM, Arnaldo Carvalho de Melo wrote:
+> >>>Ok, after this discussion, David, can I have your acked-by or tested-by?
+> >
+> >>I had reviewed the whole series yesterday, so you can add my
+> >
+> >>Reviewed-by: David Ahern<dsahern@gmail.com>
+> >
+> >>to the whole series if you want. I did not pull down the set and
+> >>apply to test it, and this particular patch requires prior ones so I
+> >>have not tested it.
+> >
+> >Fair enough, I'll add the Reviewed-by tag.
+> >
+> >I'm running 'perf test' after each patch. Doing it as root, but we need
+> >to automate this to do it as root, user, and user with each of the
+> >paranoid levels...
+> >
+> >- Arnaldo
 > 
-> I will.
+> Right - and that may include changing paranoid settings.
 > 
-> Would it be better to release just the lockdep annotation while
-> continuing to hold the actual lock, or to really drop the lock?
+> Also, the patchset is listed as RFC if that matters from running
+> through all the formalities. One of the reasons I was not motivated
+> to pull down the patches and apply/build/test.
 
-Just the lockdep annotation, I think.
+I'm ok with it, so I happily disregarded the RFC on it 8-)
 
-Thanks.
+And now that you reviewed it all too, even better.
 
--- 
-tejun
+Thanks,
+
+- Arnaldo
