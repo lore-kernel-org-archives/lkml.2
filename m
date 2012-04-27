@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761381Ab2D0UbL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 16:31:11 -0400
-Received: from mga14.intel.com ([143.182.124.37]:32723 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760239Ab2D0UbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 16:31:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="93971036"
-Message-ID: <4F9B020B.9050205@linux.intel.com>
-Date: Fri, 27 Apr 2012 13:31:07 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1761363Ab2D0UcH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 16:32:07 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:60563 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760645Ab2D0UcE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 16:32:04 -0400
+Date: Fri, 27 Apr 2012 13:31:59 -0700
+From: Tejun Heo <tj@kernel.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Han Ying <yinghan@google.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyuki@gmail.com
+Subject: Re: [RFC][PATCH 7/9 v2] cgroup: avoid attaching task to a cgroup
+ under rmdir()
+Message-ID: <20120427203159.GL26595@google.com>
+References: <4F9A327A.6050409@jp.fujitsu.com>
+ <4F9A366E.9020307@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: RFC: How to handle function tracing, frame pointers and -mfentry?
-References: <1335552399.28106.228.camel@gandalf.stny.rr.com> <20120427202701.GA5949@merkur.ravnborg.org>
-In-Reply-To: <20120427202701.GA5949@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F9A366E.9020307@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2012 01:27 PM, Sam Ravnborg wrote:
->>
->> My question is, how do I remove the dependency in kconfig based on the
->> compiler?
+On Fri, Apr 27, 2012 at 03:02:22PM +0900, KAMEZAWA Hiroyuki wrote:
+> attach_task() is done under cgroup_mutex() but ->pre_destroy() callback
+> in rmdir() isn't called under cgroup_mutex().
 > 
-> Allow the user to select one of:
-> 1) function tracer
-> 2) frame pointer
-> 3) none of the above
+> It's better to avoid attaching a task to a cgroup which
+> is under pre_destroy(). Considering memcg, the attached task may
+> increase resource usage after memcg's pre_destroy() confirms that
+> memcg is empty. This is not good.
 > 
-> This should be trivial to do in Kconfig language.
-> 
-> If "function tracer" is selected then use -mfentry if supported,
-> with a fallback to frame pointers.
-> 
-> This looks simple IMO and should be easy to implement too.
-> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Except it is the wrong thing.  This is not the only user of frame
-pointer.  What I think you mean is remove the dependency in Kconfig, but
-force the frame pointer enabled if -mfentry is not supported.
+Hmm... once memcg's pre_destroy() can't fail, I think what we should
+do is marking a cgroup DEAD before calling pre_destroy() and the
+existing cgroup_is_removed() check should be enough.  Patches upto
+this point already make ->pre_destroy() not fail, right?
 
-	-hpa
+Thanks.
 
-
+-- 
+tejun
