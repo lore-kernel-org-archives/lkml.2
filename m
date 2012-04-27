@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757742Ab2D0Xub (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 19:50:31 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48640 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757451Ab2D0Xu3 (ORCPT
+	id S1757955Ab2D0XvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 19:51:15 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:55554 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426Ab2D0XvM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 19:50:29 -0400
-Date: Sat, 28 Apr 2012 00:50:23 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120427235023.GR6871@ZenIV.linux.org.uk>
-References: <20120423180150.GA6871@ZenIV.linux.org.uk>
- <20120424072617.GB6871@ZenIV.linux.org.uk>
- <20120426183742.GA324@redhat.com>
- <20120426231942.GJ6871@ZenIV.linux.org.uk>
- <20120427172444.GA30267@redhat.com>
- <20120427184528.GL6871@ZenIV.linux.org.uk>
- <20120427202002.8ED632C0BF@topped-with-meat.com>
- <20120427211244.GO6871@ZenIV.linux.org.uk>
- <20120427212729.652542C0AF@topped-with-meat.com>
- <20120427231526.GP6871@ZenIV.linux.org.uk>
+	Fri, 27 Apr 2012 19:51:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120427231526.GP6871@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F9AD28C.60508@parallels.com>
+References: <4F9A327A.6050409@jp.fujitsu.com>
+	<4F9A343F.7020409@jp.fujitsu.com>
+	<4F9AD28C.60508@parallels.com>
+Date: Sat, 28 Apr 2012 08:51:11 +0900
+Message-ID: <CABEgKgrHXeXX1napajY-hRqDPB1snL1xWmrAVxVKkOGEvnJdkQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH 3/7 v2] res_counter: add res_counter_uncharge_until()
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Han Ying <yinghan@google.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 28, 2012 at 12:15:26AM +0100, Al Viro wrote:
+On Sat, Apr 28, 2012 at 2:08 AM, Glauber Costa <glommer@parallels.com> wrote:
+> On 04/27/2012 02:53 AM, KAMEZAWA Hiroyuki wrote:
+>>  From bb0168d5c85f62f36434956e4728a67d0cc41e55 Mon Sep 17 00:00:00 2001
+>> From: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>> Date: Thu, 26 Apr 2012 18:48:07 +0900
+>> Subject: [PATCH 3/9] memcg: add res_counter_uncharge_until()
+>>
+>> At killing res_counter which is a child of other counter,
+>> we need to do
+>>       res_counter_uncharge(child, xxx)
+>>       res_counter_charge(parent, xxx)
+>>
+>> This is not atomic and wasting cpu. This patch adds
+>> res_counter_uncharge_until(). This function's uncharge propagates
+>> to ancestors until specified res_counter.
+>>
+>>       res_counter_uncharge_until(child, parent, xxx)
+>>
+>> This ops is atomic and more efficient.
+>>
+>> Originaly-written-by: Frederic Weisbecker<fweisbec@gmail.com>
+>> Signed-off-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> I have been carrying Frederic's patch itself in my code for a while now.
+>
+> Why not just use it? What are you doing differently to justify writing a
+> patch yourself? It's a bit of credit giving as well
 
-> I think all such architectures need that check lifted to do_notify_resume()
-> (and the rest needs it killed, of course).  Including x86, by the look
-> of it - we _probably_ can't get there with TIF_NOTIFY_RESUME and
-> !user_mode(regs), but I'm not entirely sure of that.  arm is in about the
-> same situation; alpha, ppc{32,64}, sparc{32,64} and m68k really can't get
-> there like that (they all check it in the asm glue).  mips probably might,
-> unless I'm misreading their ret_from_fork()...  Fun.
+I don't need "charge" part for my purpose and have no justification to add it.
+And task-limit cgroup has no justification, either.
 
-I'm completely unfamiliar with tile assembler, so I might be missing something
-there, but AFAICS the following sequence can lead to do_signal() being
-called for a kernel thread:
-	kernel_thread()
-		ret_from_fork() in child
-			.Lresume_userspace
-				do_work_pending()
-					do_signal()
-and unlike many other, tile does _not_ check for !user_mode() anywhere
-relevant...  Broken?
+Thanks,
+-Kame
