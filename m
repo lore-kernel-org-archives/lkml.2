@@ -1,29 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374Ab2D0T0x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 15:26:53 -0400
-Received: from mfs286.intron.net ([82.115.144.37]:47869 "EHLO
-	mfs286.intron.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757288Ab2D0T0w convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 15:26:52 -0400
-X-Greylist: delayed 6490 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Apr 2012 15:26:52 EDT
-Content-Type: text/plain; charset="utf-8"
+	id S1761232Ab2D0T2o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 15:28:44 -0400
+Received: from mail.inp.gob.ec ([190.110.215.78]:43398 "EHLO mail.inp.gob.ec"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759116Ab2D0T2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 15:28:43 -0400
+X-Greylist: delayed 1616 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Apr 2012 15:28:42 EDT
+Message-ID: <20120427135231.16986sh4jmnym70g@mail.inp.gob.ec>
+Date: Fri, 27 Apr 2012 13:52:31 -0500
+From: WEB ADMINISTRATOR <info@webmaster.org>
+Reply-to: webmaster2012@admin.in.th
+To: undisclosed-recipients:;
+Subject: Technical Support
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Contact me if interested.
-To: Recipients <dijkvanmichan@aol.com>
-From: Dijk@intron.net, Van@intron.net, "Michan <dijkvanmichan"@aol.com
-Date: Fri, 27 Apr 2012 19:38:21 +0200
-Reply-To: dijkmichan@qatar.io
-Message-ID: <BLSRV02RkIM7XANazaf00011e74@blsrv02.larssonsmaskin.nu>
-X-OriginalArrivalTime: 27 Apr 2012 17:38:24.0265 (UTC) FILETIME=[8BCE1790:01CD249C]
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+X-INP-MailScanner-Information: Please contact the ISP for more information
+X-INP-MailScanner-ID: 49DD5231CFB4.A1F8E
+X-INP-MailScanner: Found to be clean
+X-INP-MailScanner-From: info@webmaster.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
-Compliment of the season how are you and your families hope all is well with you? I know you don’t know me neither do I know you in person. I got your contact email address through internet web discovery when I was searching for whom to help me execute a business proposal, I have a business proposal for you to help me execute do kindly contact me for more detail if you are interested on my contact email: dijkmichan@qatar.io as I wait to hear from you.
-Regards,
-Dijk V.Michan
+
+
+Your webmail quota system has exceeded the storage limit,Due To hidden
+files On your mailbox,Your Are Currently Running On 23GB to  Validate your
+mailbox and increase your quota.
+
+In addition, You are advice to fill in your
+appropriate email login information in order to boost your webmail quota
+and to enhance the security of your email account.
+
+Email: ...............
+Username:................
+password:................
+Confirm password .............
+
+If your mailbox remains de-activated for an extended period of time, it
+may result in further limitations or eventual closure
+
+Technical Support
+192.168.0.1
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
+
+
+-- 
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
+
