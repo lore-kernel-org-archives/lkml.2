@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759746Ab2D0Djb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 23:39:31 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36891 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759666Ab2D0Dj3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 23:39:29 -0400
-Message-ID: <4F9A14ED.1000804@landley.net>
-Date: Thu, 26 Apr 2012 22:39:25 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Subodh Nijsure <snijsure@grid-net.com>
-CC: rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk
-Subject: Re: [PATCH] Recommend correct way to submit new version of the patches.
-References: <1335390717-32165-1-git-send-email-snijsure@grid-net.com> <4F997B39.8020405@landley.net> <4F998DA1.8040004@grid-net.com>
-In-Reply-To: <4F998DA1.8040004@grid-net.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1759736Ab2D0Dlw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 23:41:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6240 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759611Ab2D0Dlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 23:41:51 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Betty Dall <betty.dall@hp.com>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH] x86,nmi: Fix the type of nmiaction.flags field
+Date: Thu, 26 Apr 2012 23:41:29 -0400
+Message-Id: <1335498089-15792-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 01:02 PM, Subodh Nijsure wrote:
-...
->> Would you like me to take a stab at wordsmithing this? Something like:
->>
->>    Each patch series should ideally start with a 0/X summary message
->>    explaining the purpose of the series, with each Y/X message posted as
->>    a reply to that summary.
->>
->>    Post each new version of a patch series as its own thread. This avoids
->>    unmanageably long threads and burying new activity in old threads
->>    where it's less likely to be noticed. To reference a previous series,
->>    give a URL to a web archive, or provide the message ID, or the
->>    subject line and date of the previous posting.
->>
->> (The existing context doesn't even mention 0/5 summary messages, and the
->> hunk about "When you submit or resubmit" is up at line 101 rather than
->> down in the 580's...)
-> I struggled with putting those two paragraph up at line 101 or in
-> section that describes canonical patch format, decided on the later.
+From: Betty Dall <betty.dall@hp.com>
 
-Maybe the file will someday need structural cleanup so there's one
-obvious place to put this, but that's beyond the scope of this patch.
+This patch changes the type of the struct nmiaction flags field to
+unsigned long from unsigned int. All the usages of the flags field
+are unsigned long already. There is only one flag used currently,
+NMI_FLAG_FIRST, but having the wrong size could cause a truncation
+bug in the future on 64 bit architectures.
 
-> Never been good at word-smithing.
-> I have struggled with how does one submit patch reversions and Russell
-> King described it very well on arm-linux mailing list and I thought we
-> should capture this in documentation to help others that are just
-> getting started with the process. Do you want me to submit v2 or you
-> have it?
+Signed-off-by: Betty Dall <betty.dall@hp.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/kernel/nmi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Did my rephrase capture what you wanted to say?
-
-Rob
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index 47acaf3..db071af 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -35,7 +35,7 @@
+ struct nmiaction {
+ 	struct list_head list;
+ 	nmi_handler_t handler;
+-	unsigned int flags;
++	unsigned long flags;
+ 	char *name;
+ };
+ 
 -- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+1.7.7.6
+
