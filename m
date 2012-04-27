@@ -1,157 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab2D0QY2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 12:24:28 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:53441 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757446Ab2D0QYZ (ORCPT
+	id S1759608Ab2D0QY0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 12:24:26 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:60399 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963Ab2D0QYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 12:24:25 -0400
-Subject: [RFC PATCH v1 1/5] KVM Guest: Add VCPU running/pre-empted state for
+	Fri, 27 Apr 2012 12:24:24 -0400
+Subject: [RFC PATCH v1 2/5] KVM-HV: Add VCPU running/pre-empted state for
  guest
 To: peterz@infradead.org, mingo@elte.hu
 From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
 Cc: jeremy@goop.org, mtosatti@redhat.com, kvm@vger.kernel.org, x86@kernel.org,
         vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, avi@redhat.com,
         hpa@zytor.com
-Date: Fri, 27 Apr 2012 21:53:33 +0530
-Message-ID: <20120427162314.27082.13703.stgit@abhimanyu>
+Date: Fri, 27 Apr 2012 21:53:51 +0530
+Message-ID: <20120427162342.27082.30667.stgit@abhimanyu>
 In-Reply-To: <20120427161727.27082.43096.stgit@abhimanyu>
 References: <20120427161727.27082.43096.stgit@abhimanyu>
 User-Agent: StGit/0.16-2-g0d85
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12042716-5816-0000-0000-000002530099
+x-cbid: 12042716-3864-0000-0000-000002765DA7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch adds guest code for msr between guest and hypervisor. The
-msr will export the vcpu running/pre-empted information to the guest
-from host. This will enable guest to intelligently send ipi to running
-vcpus and set flag for pre-empted vcpus. This will prevent waiting for
-vcpus that are not running.
+Hypervisor code to indicate guest running/pre-empteded status through
+msr.
 
 Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/kvm_para.h |   10 ++++++++++
- arch/x86/kernel/kvm.c           |   33 +++++++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    7 ++++++
+ arch/x86/kvm/cpuid.c            |    1 +
+ arch/x86/kvm/x86.c              |   44 ++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 51 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 77266d3..f57b5cc 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -24,6 +24,7 @@
- #define KVM_FEATURE_ASYNC_PF		4
- #define KVM_FEATURE_STEAL_TIME		5
- #define KVM_FEATURE_PV_UNHALT		6
-+#define KVM_FEATURE_VCPU_STATE          7
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index dad475b..12fe3c7 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -418,6 +418,13 @@ struct kvm_vcpu_arch {
+ 		struct kvm_steal_time steal;
+ 	} st;
  
- /* The last 8 bits are used to indicate how to interpret the flags field
-  * in pvclock structure. If no bits are set, all flags are ignored.
-@@ -39,6 +40,7 @@
- #define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
- #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
- #define MSR_KVM_STEAL_TIME  0x4b564d03
-+#define MSR_KVM_VCPU_STATE  0x4b564d04
- 
- struct kvm_steal_time {
- 	__u64 steal;
-@@ -51,6 +53,14 @@ struct kvm_steal_time {
- #define KVM_STEAL_VALID_BITS ((-1ULL << (KVM_STEAL_ALIGNMENT_BITS + 1)))
- #define KVM_STEAL_RESERVED_MASK (((1 << KVM_STEAL_ALIGNMENT_BITS) - 1 ) << 1)
- 
-+struct kvm_vcpu_state {
-+	__u32 state;
-+	__u32 pad[15];
-+};
++	/* indicates vcpu is running or preempted */
++	struct {
++		u64 msr_val;
++		struct gfn_to_hva_cache data;
++		struct kvm_vcpu_state vs;
++	} v_state;
 +
-+#define KVM_VCPU_STATE_ALIGN_BITS 5
-+#define KVM_VCPU_STATE_VALID_BITS ((-1ULL << (KVM_VCPU_STATE_ALIGN_BITS + 1)))
-+
- #define KVM_MAX_MMU_OP_BATCH           32
+ 	u64 last_guest_tsc;
+ 	u64 last_kernel_ns;
+ 	u64 last_host_tsc;
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index 7c93806..0588984 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -409,6 +409,7 @@ static int do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
+ 			     (1 << KVM_FEATURE_ASYNC_PF) |
+ 			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
++			     (1 << KVM_FEATURE_VCPU_STATE) |
+ 			     (1 << KVM_FEATURE_PV_UNHALT);
  
- #define KVM_ASYNC_PF_ENABLED			(1 << 0)
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 98f0378..bb686a6 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -64,6 +64,9 @@ static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
- static DEFINE_PER_CPU(struct kvm_steal_time, steal_time) __aligned(64);
- static int has_steal_clock = 0;
- 
-+DEFINE_PER_CPU(struct kvm_vcpu_state, vcpu_state) __aligned(64);
-+static int has_vcpu_state;
-+
- /*
-  * No need for any "IO delay" on KVM
+ 		if (sched_info_on())
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 8e5f57b..60546e9 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -789,12 +789,13 @@ EXPORT_SYMBOL_GPL(kvm_rdpmc);
+  * kvm-specific. Those are put in the beginning of the list.
   */
-@@ -291,6 +294,22 @@ static void kvm_register_steal_time(void)
- 		cpu, __pa(st));
+ 
+-#define KVM_SAVE_MSRS_BEGIN	9
++#define KVM_SAVE_MSRS_BEGIN	10
+ static u32 msrs_to_save[] = {
+ 	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
+ 	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
+ 	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
+ 	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN, MSR_KVM_STEAL_TIME,
++	MSR_KVM_VCPU_STATE,
+ 	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
+ 	MSR_STAR,
+ #ifdef CONFIG_X86_64
+@@ -1539,6 +1540,32 @@ static void record_steal_time(struct kvm_vcpu *vcpu)
+ 		&vcpu->arch.st.steal, sizeof(struct kvm_steal_time));
  }
  
-+static void kvm_register_vcpu_state(void)
++static void kvm_set_vcpu_state(struct kvm_vcpu *vcpu)
 +{
-+	int cpu = smp_processor_id();
-+	struct kvm_vcpu_state *v_state;
++	struct kvm_vcpu_state *vs = &vcpu->arch.v_state.vs;
++	struct gfn_to_hva_cache *ghc = &vcpu->arch.v_state.data;
 +
-+	if (!has_vcpu_state)
++	if (!(vcpu->arch.v_state.msr_val & KVM_MSR_ENABLED))
 +		return;
 +
-+	v_state = &per_cpu(vcpu_state, cpu);
-+	memset(v_state, 0, sizeof(*v_state));
-+
-+	wrmsrl(MSR_KVM_VCPU_STATE, (__pa(v_state) | KVM_MSR_ENABLED));
-+	printk(KERN_INFO "kvm-vcpustate: cpu %d, msr %lu\n",
-+		cpu, __pa(v_state));
++	vs->state = 1;
++	kvm_write_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
++	smp_wmb();
 +}
 +
- void __cpuinit kvm_guest_cpu_init(void)
- {
- 	if (!kvm_para_available())
-@@ -310,6 +329,9 @@ void __cpuinit kvm_guest_cpu_init(void)
- 
- 	if (has_steal_clock)
- 		kvm_register_steal_time();
-+
-+	if (has_vcpu_state)
-+		kvm_register_vcpu_state();
- }
- 
- static void kvm_pv_disable_apf(void *unused)
-@@ -361,6 +383,14 @@ void kvm_disable_steal_time(void)
- 	wrmsr(MSR_KVM_STEAL_TIME, 0, 0);
- }
- 
-+void kvm_disable_vcpu_state(void)
++static void kvm_clear_vcpu_state(struct kvm_vcpu *vcpu)
 +{
-+	if (!has_vcpu_state)
++	struct kvm_vcpu_state *vs = &vcpu->arch.v_state.vs;
++	struct gfn_to_hva_cache *ghc = &vcpu->arch.v_state.data;
++
++	if (!(vcpu->arch.v_state.msr_val & KVM_MSR_ENABLED))
 +		return;
 +
-+	wrmsr(MSR_KVM_VCPU_STATE, 0, 0);
++	vs->state = 0;
++	kvm_write_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
++	smp_wmb();
 +}
 +
- #ifdef CONFIG_SMP
- static void __init kvm_smp_prepare_boot_cpu(void)
+ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
  {
-@@ -379,6 +409,7 @@ static void __cpuinit kvm_guest_cpu_online(void *dummy)
+ 	bool pr = false;
+@@ -1654,6 +1681,14 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
  
- static void kvm_guest_cpu_offline(void *dummy)
- {
-+	kvm_disable_vcpu_state();
- 	kvm_disable_steal_time();
- 	kvm_pv_disable_apf(NULL);
- 	apf_task_wake_all();
-@@ -433,6 +464,8 @@ void __init kvm_guest_init(void)
- 		pv_time_ops.steal_clock = kvm_steal_clock;
- 	}
+ 		break;
  
-+	has_vcpu_state = 1;
++	case MSR_KVM_VCPU_STATE:
++		if (kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.v_state.data,
++					      data & KVM_VCPU_STATE_VALID_BITS))
++			return 1;
 +
- #ifdef CONFIG_SMP
- 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
- 	register_cpu_notifier(&kvm_cpu_notifier);
++		vcpu->arch.v_state.msr_val = data;
++		break;
++
+ 	case MSR_IA32_MCG_CTL:
+ 	case MSR_IA32_MCG_STATUS:
+ 	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
+@@ -1974,6 +2009,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+ 	case MSR_KVM_STEAL_TIME:
+ 		data = vcpu->arch.st.msr_val;
+ 		break;
++	case MSR_KVM_VCPU_STATE:
++		data = vcpu->arch.v_state.msr_val;
++		break;
+ 	case MSR_IA32_P5_MC_ADDR:
+ 	case MSR_IA32_P5_MC_TYPE:
+ 	case MSR_IA32_MCG_CAP:
+@@ -5324,6 +5362,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
+ 		kvm_load_guest_fpu(vcpu);
+ 	kvm_load_guest_xcr0(vcpu);
+ 
++	kvm_set_vcpu_state(vcpu);
++
+ 	vcpu->mode = IN_GUEST_MODE;
+ 
+ 	/* We should set ->mode before check ->requests,
+@@ -5374,6 +5414,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
+ 
+ 	vcpu->arch.last_guest_tsc = kvm_x86_ops->read_l1_tsc(vcpu);
+ 
++	kvm_clear_vcpu_state(vcpu);
+ 	vcpu->mode = OUTSIDE_GUEST_MODE;
+ 	smp_wmb();
+ 	local_irq_enable();
+@@ -6029,6 +6070,7 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
+ 	kvm_make_request(KVM_REQ_EVENT, vcpu);
+ 	vcpu->arch.apf.msr_val = 0;
+ 	vcpu->arch.st.msr_val = 0;
++	vcpu->arch.v_state.msr_val = 0;
+ 
+ 	kvmclock_reset(vcpu);
+ 
 
