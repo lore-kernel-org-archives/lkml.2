@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab2D0BUm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 21:20:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45349 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754812Ab2D0BUg (ORCPT
+	id S932190Ab2D0BVN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 21:21:13 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:44226 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757965Ab2D0BUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 21:20:36 -0400
+	Thu, 26 Apr 2012 21:20:38 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org,
         devicetree-discuss@lists.ozlabs.org,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org
-Subject: [PATCH v2 1/5] i2c: Convert i2c-octeon.c to use device tree.
-Date: Thu, 26 Apr 2012 18:20:26 -0700
-Message-Id: <1335489630-27017-2-git-send-email-ddaney.cavm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH v2 5/5] MIPS: Octeon: Use device tree to register serial ports.
+Date: Thu, 26 Apr 2012 18:20:30 -0700
+Message-Id: <1335489630-27017-6-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1335489630-27017-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1335489630-27017-1-git-send-email-ddaney.cavm@gmail.com>
@@ -29,380 +25,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-There are three parts to this:
+Switch to using the device tree to register serial ports.
 
-1) Remove the definitions of OCTEON_IRQ_TWSI and OCTEON_IRQ_TWSI2.
-   The interrupts are specified by the device tree and these hard
-   coded irq numbers block the used of the irq lines by the irq_domain
-   code.
+Add all the ports with compatible = "cavium,octeon-3860-uart".  Octeon serial
+ports have their own device type, required port flags, and I/O
+functions, so using of_serial.c is not indicated.
 
-2) Remove platform device setup code from octeon-platform.c, it is
-   now unused.
+We need to do this as late_initcall, as the 8250 driver must be
+initialized before we add any ports.  8250 initialization is done at
+device_initcall time.
 
-3) Convert i2c-octeon.c to use device tree.  Part of this includes
-   using the devm_* functions instead of the raw counterparts, thus
-   simplifying error handling.  No functionality is changed.
+The OCTEON_IRQ_UART{0,1,2} symbols are removed as they are now unused
+and interfere with irq_domain used by the device tree code.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
-Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
-Cc: "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org
 ---
- arch/mips/cavium-octeon/octeon-irq.c      |    2 -
- arch/mips/cavium-octeon/octeon-platform.c |   84 --------------------------
- arch/mips/include/asm/octeon/octeon.h     |    5 --
- drivers/i2c/busses/i2c-octeon.c           |   92 +++++++++++++++-------------
- 4 files changed, 49 insertions(+), 134 deletions(-)
+ arch/mips/cavium-octeon/octeon-irq.c |    4 -
+ arch/mips/cavium-octeon/serial.c     |  134 +++++++++++++--------------------
+ 2 files changed, 53 insertions(+), 85 deletions(-)
 
 diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
-index fc40d0b..c6b0b41 100644
+index a729728..f3d27ec 100644
 --- a/arch/mips/cavium-octeon/octeon-irq.c
 +++ b/arch/mips/cavium-octeon/octeon-irq.c
-@@ -1183,13 +1183,11 @@ static void __init octeon_irq_init_ciu(void)
+@@ -1175,9 +1175,6 @@ static void __init octeon_irq_init_ciu(void)
+ 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32, chip_mbox, handle_percpu_irq);
+ 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33, chip_mbox, handle_percpu_irq);
+ 
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART0, 0, 34, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART1, 0, 35, chip, handle_level_irq);
+-
  	for (i = 0; i < 4; i++)
- 		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_PCI_MSI0, 0, i + 40, chip, handle_level_irq);
- 
--	octeon_irq_set_ciu_mapping(OCTEON_IRQ_TWSI, 0, 45, chip, handle_level_irq);
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_RML, 0, 46, chip, handle_level_irq);
+ 		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_PCI_INT0, 0, i + 36, chip, handle_level_irq);
  	for (i = 0; i < 4; i++)
- 		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_TIMER0, 0, i + 52, chip, handle_edge_irq);
+@@ -1194,7 +1191,6 @@ static void __init octeon_irq_init_ciu(void)
+ 	for (i = 0; i < 16; i++)
+ 		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_WDOG0, 1, i + 0, chip_wd, handle_level_irq);
  
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_USB0, 0, 56, chip, handle_level_irq);
--	octeon_irq_set_ciu_mapping(OCTEON_IRQ_TWSI2, 0, 59, chip, handle_level_irq);
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MII0, 0, 62, chip, handle_level_irq);
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_BOOTDMA, 0, 63, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART2, 1, 16, chip, handle_level_irq);
+ 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_USB1, 1, 17, chip, handle_level_irq);
  
-diff --git a/arch/mips/cavium-octeon/octeon-platform.c b/arch/mips/cavium-octeon/octeon-platform.c
-index 2754bc2..f62a40f 100644
---- a/arch/mips/cavium-octeon/octeon-platform.c
-+++ b/arch/mips/cavium-octeon/octeon-platform.c
-@@ -168,90 +168,6 @@ out:
+ 	gpio_node = of_find_compatible_node(NULL, NULL, "cavium,octeon-3860-gpio");
+diff --git a/arch/mips/cavium-octeon/serial.c b/arch/mips/cavium-octeon/serial.c
+index 057f0ae..138b221 100644
+--- a/arch/mips/cavium-octeon/serial.c
++++ b/arch/mips/cavium-octeon/serial.c
+@@ -43,95 +43,67 @@ void octeon_serial_out(struct uart_port *up, int offset, int value)
+ 	cvmx_write_csr((uint64_t)(up->membase + (offset << 3)), (u8)value);
  }
- device_initcall(octeon_rng_device_init);
  
--static struct i2c_board_info __initdata octeon_i2c_devices[] = {
--	{
--		I2C_BOARD_INFO("ds1337", 0x68),
+-/*
+- * Allocated in .bss, so it is all zeroed.
+- */
+-#define OCTEON_MAX_UARTS 3
+-static struct plat_serial8250_port octeon_uart8250_data[OCTEON_MAX_UARTS + 1];
+-static struct platform_device octeon_uart8250_device = {
+-	.name			= "serial8250",
+-	.id			= PLAT8250_DEV_PLATFORM,
+-	.dev			= {
+-		.platform_data	= octeon_uart8250_data,
 -	},
 -};
 -
--static int __init octeon_i2c_devices_init(void)
--{
--	return i2c_register_board_info(0, octeon_i2c_devices,
--				       ARRAY_SIZE(octeon_i2c_devices));
+-static void __init octeon_uart_set_common(struct plat_serial8250_port *p)
++static int __devinit octeon_serial_probe(struct platform_device *pdev)
+ {
+-	p->flags = ASYNC_SKIP_TEST | UPF_SHARE_IRQ | UPF_FIXED_TYPE;
+-	p->type = PORT_OCTEON;
+-	p->iotype = UPIO_MEM;
+-	p->regshift = 3;	/* I/O addresses are every 8 bytes */
++	int irq, res;
++	struct resource *res_mem;
++	struct uart_port port;
++
++	/* All adaptors have an irq.  */
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0)
++		return irq;
++
++	memset(&port, 0, sizeof(port));
++
++	port.flags = ASYNC_SKIP_TEST | UPF_SHARE_IRQ | UPF_FIXED_TYPE;
++	port.type = PORT_OCTEON;
++	port.iotype = UPIO_MEM;
++	port.regshift = 3;
++	port.dev = &pdev->dev;
++
+ 	if (octeon_is_simulation())
+ 		/* Make simulator output fast*/
+-		p->uartclk = 115200 * 16;
++		port.uartclk = 115200 * 16;
+ 	else
+-		p->uartclk = octeon_get_io_clock_rate();
+-	p->serial_in = octeon_serial_in;
+-	p->serial_out = octeon_serial_out;
 -}
--arch_initcall(octeon_i2c_devices_init);
--
--#define OCTEON_I2C_IO_BASE 0x1180000001000ull
--#define OCTEON_I2C_IO_UNIT_OFFSET 0x200
--
--static struct octeon_i2c_data octeon_i2c_data[2];
--
--static int __init octeon_i2c_device_init(void)
++		port.uartclk = octeon_get_io_clock_rate();
+ 
+-static int __init octeon_serial_init(void)
 -{
--	struct platform_device *pd;
--	int ret = 0;
--	int port, num_ports;
+-	int enable_uart0;
+-	int enable_uart1;
+-	int enable_uart2;
+-	struct plat_serial8250_port *p;
 -
--	struct resource i2c_resources[] = {
--		{
--			.flags	= IORESOURCE_MEM,
--		}, {
--			.flags	= IORESOURCE_IRQ,
--		}
--	};
+-#ifdef CONFIG_CAVIUM_OCTEON_2ND_KERNEL
+-	/*
+-	 * If we are configured to run as the second of two kernels,
+-	 * disable uart0 and enable uart1. Uart0 is owned by the first
+-	 * kernel
+-	 */
+-	enable_uart0 = 0;
+-	enable_uart1 = 1;
+-#else
+-	/*
+-	 * We are configured for the first kernel. We'll enable uart0
+-	 * if the bootloader told us to use 0, otherwise will enable
+-	 * uart 1.
+-	 */
+-	enable_uart0 = (octeon_get_boot_uart() == 0);
+-	enable_uart1 = (octeon_get_boot_uart() == 1);
+-#ifdef CONFIG_KGDB
+-	enable_uart1 = 1;
+-#endif
+-#endif
 -
--	if (OCTEON_IS_MODEL(OCTEON_CN56XX) || OCTEON_IS_MODEL(OCTEON_CN52XX))
--		num_ports = 2;
--	else
--		num_ports = 1;
+-	/* Right now CN52XX is the only chip with a third uart */
+-	enable_uart2 = OCTEON_IS_MODEL(OCTEON_CN52XX);
 -
--	for (port = 0; port < num_ports; port++) {
--		octeon_i2c_data[port].sys_freq = octeon_get_io_clock_rate();
--		/*FIXME: should be examined. At the moment is set for 100Khz */
--		octeon_i2c_data[port].i2c_freq = 100000;
--
--		pd = platform_device_alloc("i2c-octeon", port);
--		if (!pd) {
--			ret = -ENOMEM;
--			goto out;
--		}
--
--		pd->dev.platform_data = octeon_i2c_data + port;
--
--		i2c_resources[0].start =
--			OCTEON_I2C_IO_BASE + (port * OCTEON_I2C_IO_UNIT_OFFSET);
--		i2c_resources[0].end = i2c_resources[0].start + 0x1f;
--		switch (port) {
--		case 0:
--			i2c_resources[1].start = OCTEON_IRQ_TWSI;
--			i2c_resources[1].end = OCTEON_IRQ_TWSI;
--			break;
--		case 1:
--			i2c_resources[1].start = OCTEON_IRQ_TWSI2;
--			i2c_resources[1].end = OCTEON_IRQ_TWSI2;
--			break;
--		default:
--			BUG();
--		}
--
--		ret = platform_device_add_resources(pd,
--						    i2c_resources,
--						    ARRAY_SIZE(i2c_resources));
--		if (ret)
--			goto fail;
--
--		ret = platform_device_add(pd);
--		if (ret)
--			goto fail;
+-	p = octeon_uart8250_data;
+-	if (enable_uart0) {
+-		/* Add a ttyS device for hardware uart 0 */
+-		octeon_uart_set_common(p);
+-		p->membase = (void *) CVMX_MIO_UARTX_RBR(0);
+-		p->mapbase = CVMX_MIO_UARTX_RBR(0) & ((1ull << 49) - 1);
+-		p->irq = OCTEON_IRQ_UART0;
+-		p++;
 -	}
--	return ret;
--fail:
--	platform_device_put(pd);
--out:
--	return ret;
--}
--device_initcall(octeon_i2c_device_init);
--
- /* Octeon SMI/MDIO interface.  */
- static int __init octeon_mdiobus_device_init(void)
- {
-diff --git a/arch/mips/include/asm/octeon/octeon.h b/arch/mips/include/asm/octeon/octeon.h
-index f72f768..1e2486e 100644
---- a/arch/mips/include/asm/octeon/octeon.h
-+++ b/arch/mips/include/asm/octeon/octeon.h
-@@ -215,11 +215,6 @@ struct octeon_cf_data {
- 	int		dma_engine;	/* -1 for no DMA */
- };
++	port.serial_in = octeon_serial_in;
++	port.serial_out = octeon_serial_out;
++	port.irq = irq;
  
--struct octeon_i2c_data {
--	unsigned int	sys_freq;
--	unsigned int	i2c_freq;
--};
--
- extern void octeon_write_lcd(const char *s);
- extern void octeon_check_cpu_bist(void);
- extern int octeon_get_boot_debug_flag(void);
-diff --git a/drivers/i2c/busses/i2c-octeon.c b/drivers/i2c/busses/i2c-octeon.c
-index ee139a5..f44c835 100644
---- a/drivers/i2c/busses/i2c-octeon.c
-+++ b/drivers/i2c/busses/i2c-octeon.c
-@@ -2,7 +2,7 @@
-  * (C) Copyright 2009-2010
-  * Nokia Siemens Networks, michael.lawnick.ext@nsn.com
-  *
-- * Portions Copyright (C) 2010 Cavium Networks, Inc.
-+ * Portions Copyright (C) 2010, 2011 Cavium Networks, Inc.
-  *
-  * This is a driver for the i2c adapter in Cavium Networks' OCTEON processors.
-  *
-@@ -11,17 +11,18 @@
-  * warranty of any kind, whether express or implied.
-  */
+-	if (enable_uart1) {
+-		/* Add a ttyS device for hardware uart 1 */
+-		octeon_uart_set_common(p);
+-		p->membase = (void *) CVMX_MIO_UARTX_RBR(1);
+-		p->mapbase = CVMX_MIO_UARTX_RBR(1) & ((1ull << 49) - 1);
+-		p->irq = OCTEON_IRQ_UART1;
+-		p++;
+-	}
+-	if (enable_uart2) {
+-		/* Add a ttyS device for hardware uart 2 */
+-		octeon_uart_set_common(p);
+-		p->membase = (void *) CVMX_MIO_UART2_RBR;
+-		p->mapbase = CVMX_MIO_UART2_RBR & ((1ull << 49) - 1);
+-		p->irq = OCTEON_IRQ_UART2;
+-		p++;
++	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (res_mem == NULL) {
++		dev_err(&pdev->dev, "found no memory resource\n");
++		return -ENXIO;
+ 	}
++	port.mapbase = res_mem->start;
++	port.membase = ioremap(res_mem->start, resource_size(res_mem));
  
-+#include <linux/platform_device.h>
-+#include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of_i2c.h>
-+#include <linux/delay.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/init.h>
--
--#include <linux/io.h>
- #include <linux/i2c.h>
--#include <linux/interrupt.h>
--#include <linux/delay.h>
--#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
+-	BUG_ON(p > &octeon_uart8250_data[OCTEON_MAX_UARTS]);
++	res = serial8250_register_port(&port);
  
- #include <asm/octeon/octeon.h>
- 
-@@ -65,7 +66,7 @@ struct octeon_i2c {
- 	wait_queue_head_t queue;
- 	struct i2c_adapter adap;
- 	int irq;
--	int twsi_freq;
-+	u32 twsi_freq;
- 	int sys_freq;
- 	resource_size_t twsi_phys;
- 	void __iomem *twsi_base;
-@@ -121,10 +122,8 @@ static u8 octeon_i2c_read_sw(struct octeon_i2c *i2c, u64 eop_reg)
-  */
- static void octeon_i2c_write_int(struct octeon_i2c *i2c, u64 data)
- {
--	u64 tmp;
--
- 	__raw_writeq(data, i2c->twsi_base + TWSI_INT);
--	tmp = __raw_readq(i2c->twsi_base + TWSI_INT);
-+	__raw_readq(i2c->twsi_base + TWSI_INT);
+-	return platform_device_register(&octeon_uart8250_device);
++	return res >= 0 ? 0 : res;
  }
  
- /**
-@@ -515,7 +514,6 @@ static int __devinit octeon_i2c_probe(struct platform_device *pdev)
- {
- 	int irq, result = 0;
- 	struct octeon_i2c *i2c;
--	struct octeon_i2c_data *i2c_data;
- 	struct resource *res_mem;
- 
- 	/* All adaptors have an irq.  */
-@@ -523,86 +521,90 @@ static int __devinit octeon_i2c_probe(struct platform_device *pdev)
- 	if (irq < 0)
- 		return irq;
- 
--	i2c = kzalloc(sizeof(*i2c), GFP_KERNEL);
-+	i2c = devm_kzalloc(&pdev->dev, sizeof(*i2c), GFP_KERNEL);
- 	if (!i2c) {
- 		dev_err(&pdev->dev, "kzalloc failed\n");
- 		result = -ENOMEM;
- 		goto out;
- 	}
- 	i2c->dev = &pdev->dev;
--	i2c_data = pdev->dev.platform_data;
- 
- 	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
- 	if (res_mem == NULL) {
- 		dev_err(i2c->dev, "found no memory resource\n");
- 		result = -ENXIO;
--		goto fail_region;
-+		goto out;
- 	}
-+	i2c->twsi_phys = res_mem->start;
-+	i2c->regsize = resource_size(res_mem);
- 
--	if (i2c_data == NULL) {
--		dev_err(i2c->dev, "no I2C frequency data\n");
-+	/*
-+	 * "clock-rate" is a legacy binding, the official binding is
-+	 * "clock-frequency".  Try the official one first and then
-+	 * fall back if it doesn't exist.
-+	 */
-+	if (of_property_read_u32(pdev->dev.of_node,
-+				 "clock-frequency", &i2c->twsi_freq) &&
-+	    of_property_read_u32(pdev->dev.of_node,
-+				 "clock-rate", &i2c->twsi_freq)) {
-+		dev_err(i2c->dev,
-+			"no I2C 'clock-rate' or 'clock-frequency' property\n");
- 		result = -ENXIO;
--		goto fail_region;
-+		goto out;
- 	}
- 
--	i2c->twsi_phys = res_mem->start;
--	i2c->regsize = resource_size(res_mem);
--	i2c->twsi_freq = i2c_data->i2c_freq;
--	i2c->sys_freq = i2c_data->sys_freq;
-+	i2c->sys_freq = octeon_get_io_clock_rate();
- 
--	if (!request_mem_region(i2c->twsi_phys, i2c->regsize, res_mem->name)) {
-+	if (!devm_request_mem_region(&pdev->dev, i2c->twsi_phys, i2c->regsize,
-+				      res_mem->name)) {
- 		dev_err(i2c->dev, "request_mem_region failed\n");
--		goto fail_region;
-+		goto out;
- 	}
--	i2c->twsi_base = ioremap(i2c->twsi_phys, i2c->regsize);
-+	i2c->twsi_base = devm_ioremap(&pdev->dev, i2c->twsi_phys, i2c->regsize);
- 
- 	init_waitqueue_head(&i2c->queue);
- 
- 	i2c->irq = irq;
- 
--	result = request_irq(i2c->irq, octeon_i2c_isr, 0, DRV_NAME, i2c);
-+	result = devm_request_irq(&pdev->dev, i2c->irq,
-+				  octeon_i2c_isr, 0, DRV_NAME, i2c);
- 	if (result < 0) {
- 		dev_err(i2c->dev, "failed to attach interrupt\n");
--		goto fail_irq;
-+		goto out;
- 	}
- 
- 	result = octeon_i2c_initlowlevel(i2c);
- 	if (result) {
- 		dev_err(i2c->dev, "init low level failed\n");
--		goto  fail_add;
-+		goto  out;
- 	}
- 
- 	result = octeon_i2c_setclock(i2c);
- 	if (result) {
- 		dev_err(i2c->dev, "clock init failed\n");
--		goto  fail_add;
-+		goto  out;
- 	}
- 
- 	i2c->adap = octeon_i2c_ops;
- 	i2c->adap.dev.parent = &pdev->dev;
--	i2c->adap.nr = pdev->id >= 0 ? pdev->id : 0;
-+	i2c->adap.dev.of_node = pdev->dev.of_node;
- 	i2c_set_adapdata(&i2c->adap, i2c);
- 	platform_set_drvdata(pdev, i2c);
- 
--	result = i2c_add_numbered_adapter(&i2c->adap);
-+	result = i2c_add_adapter(&i2c->adap);
- 	if (result < 0) {
- 		dev_err(i2c->dev, "failed to add adapter\n");
- 		goto fail_add;
- 	}
--
- 	dev_info(i2c->dev, "version %s\n", DRV_VERSION);
- 
--	return result;
-+	of_i2c_register_devices(&i2c->adap);
-+
-+	return 0;
- 
- fail_add:
- 	platform_set_drvdata(pdev, NULL);
--	free_irq(i2c->irq, i2c);
--fail_irq:
--	iounmap(i2c->twsi_base);
--	release_mem_region(i2c->twsi_phys, i2c->regsize);
--fail_region:
--	kfree(i2c);
- out:
- 	return result;
- };
-@@ -613,19 +615,24 @@ static int __devexit octeon_i2c_remove(struct platform_device *pdev)
- 
- 	i2c_del_adapter(&i2c->adap);
- 	platform_set_drvdata(pdev, NULL);
--	free_irq(i2c->irq, i2c);
--	iounmap(i2c->twsi_base);
--	release_mem_region(i2c->twsi_phys, i2c->regsize);
--	kfree(i2c);
- 	return 0;
- };
- 
-+static struct of_device_id octeon_i2c_match[] = {
+-device_initcall(octeon_serial_init);
++static struct of_device_id octeon_serial_match[] = {
 +	{
-+		.compatible = "cavium,octeon-3860-twsi",
++		.compatible = "cavium,octeon-3860-uart",
 +	},
 +	{},
 +};
-+MODULE_DEVICE_TABLE(of, octeon_i2c_match);
++MODULE_DEVICE_TABLE(of, octeon_serial_match);
 +
- static struct platform_driver octeon_i2c_driver = {
- 	.probe		= octeon_i2c_probe,
- 	.remove		= __devexit_p(octeon_i2c_remove),
- 	.driver		= {
- 		.owner	= THIS_MODULE,
- 		.name	= DRV_NAME,
-+		.of_match_table = octeon_i2c_match,
- 	},
- };
- 
-@@ -635,4 +642,3 @@ MODULE_AUTHOR("Michael Lawnick <michael.lawnick.ext@nsn.com>");
- MODULE_DESCRIPTION("I2C-Bus adapter for Cavium OCTEON processors");
- MODULE_LICENSE("GPL");
- MODULE_VERSION(DRV_VERSION);
--MODULE_ALIAS("platform:" DRV_NAME);
++static struct platform_driver octeon_serial_driver = {
++	.probe		= octeon_serial_probe,
++	.driver		= {
++		.owner	= THIS_MODULE,
++		.name	= "octeon_serial",
++		.of_match_table = octeon_serial_match,
++	},
++};
++
++static int __init octeon_serial_init(void)
++{
++	return platform_driver_register(&octeon_serial_driver);
++}
++late_initcall(octeon_serial_init);
 -- 
 1.7.2.3
 
