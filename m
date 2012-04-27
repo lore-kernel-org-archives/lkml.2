@@ -1,65 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761241Ab2D0TJM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 15:09:12 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:44854 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759592Ab2D0TJK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 15:09:10 -0400
-Date: Fri, 27 Apr 2012 15:08:49 -0400 (EDT)
-Message-Id: <20120427.150849.187285510481819228.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: mjt@tls.msk.ru, linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        raven@themaw.net, thomas@m3y3r.de, stable@kernel.org
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
- design error.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFwvFaxBT8Mdp5s4-6Gxy7nM4WVzbWna4RF_OUK3hnx+jQ@mail.gmail.com>
-References: <CA+55aFwud1nXRr+HpzH8rSkEWcZ_rJmoE7UtQt76D=A3qcb6GQ@mail.gmail.com>
-	<20120427.143402.1028957981042061092.davem@davemloft.net>
-	<CA+55aFwvFaxBT8Mdp5s4-6Gxy7nM4WVzbWna4RF_OUK3hnx+jQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
+	id S1761256Ab2D0TM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 15:12:56 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40995 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760458Ab2D0TMy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 15:12:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F9A359C.10107@jp.fujitsu.com>
+References: <4F9A327A.6050409@jp.fujitsu.com>
+	<4F9A359C.10107@jp.fujitsu.com>
+Date: Fri, 27 Apr 2012 12:12:52 -0700
+Message-ID: <CALWz4ixHGCqfWh1U+JyiJWTkGmCDtXQy1vbHRjrHaU_pOgGuBw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 5/9 v2] move charges to root at rmdir if
+ use_hierarchy is unset
+From: Ying Han <yinghan@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyuki@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 27 Apr 2012 12:08:52 -0700 (PDT)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 27 Apr 2012 11:42:58 -0700
+On Thu, Apr 26, 2012 at 10:58 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> Now, at removal of cgroup, ->pre_destroy() is called and move charges
+> to the parent cgroup. A major reason of -EBUSY returned by ->pre_destroy()
+> is that the 'moving' hits parent's resource limitation. It happens only
+> when use_hierarchy=0. This was a mistake of original design.(it's me...)
 
-> On Fri, Apr 27, 2012 at 11:34 AM, David Miller <davem@davemloft.net> wrote:
->>
->> If systemd wants to use version 5 of this thing, it has to have the
->> same workaround code automountd has.  It is systemd (and now the
->> kernel) which is broken.
-> 
-> There's no question that systemd is broken.
-> 
-> But those broken binaries are out in the wild. End of story.
+Nice patch, i can see how broken it is now with use_hierarchy=0...
 
-And my point is that automountd was out there longer, and encoded
-the "broken" structure size into the resulting binaries.
+nitpick on the documentation below:
 
->> We should have never touched version 5 of the data-structure.  Having
->> 5 years of workaround precedence in userspace proves this.
-> 
-> Umm. The thing is, those broken binaries *work* on 32-bit.  They were
-> *tested* on 32-bit. They were *shipped* on 32-bit.
+>
+> Considering use_hierarchy=0, all cgroups are treated as flat. So, no one
+> cannot justify moving charges to parent...parent and children are in
+> flat configuration, not hierarchical.
+>
+> This patch modifes to move charges to root cgroup at rmdir/force_empty
+> if use_hierarchy==0. This will much simplify rmdir() and reduce error
+> in ->pre_destroy.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  Documentation/cgroups/memory.txt |   12 ++++++----
+>  mm/memcontrol.c                  |   39 +++++++++++++------------------------
+>  2 files changed, 21 insertions(+), 30 deletions(-)
+>
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index 54c338d..82ce1ef 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -393,14 +393,14 @@ cgroup might have some charge associated with it, even though all
+>  tasks have migrated away from it. (because we charge against pages, not
+>  against tasks.)
+>
+> -Such charges are freed or moved to their parent. At moving, both of RSS
+> -and CACHES are moved to parent.
+> -rmdir() may return -EBUSY if freeing/moving fails. See 5.1 also.
+> +Such charges are freed or moved to their parent if use_hierarchy=1.
+> +if use_hierarchy=0, the charges will be moved to root cgroup.
 
-As were the automount binaries.
+It is more clear that we move the stats to root (if use_hierarchy==0)
+or parent (if use_hierarchy==1), and no change on the charge except
+uncharging from the child.
 
-systemd coded to an interface which did not exist in reality, and if
-they had used the automountd sources as a reference (the only other
-user of this interface) they would have seen this.
+--Ying
 
-Look, I can almost guarantee that whoever wrote the automountd
-workaround code looked at this situation and said "yeah, it's
-impossible to get this right in the kernel for all cases for v5, so
-let's just do it where we _can_ be absolutely certain and that's here
-in this userland routine doing the autofs stuff"
-
-And you know what, whoever that guy was, he was right.
+>
+>  Charges recorded in swap information is not updated at removal of cgroup.
+>  Recorded information is discarded and a cgroup which uses swap (swapcache)
+>  will be charged as a new owner of it.
+>
+> +About use_hierarchy, see Section 6.
+>
+>  5. Misc. interfaces.
+>
+> @@ -413,13 +413,15 @@ will be charged as a new owner of it.
+>
+>   Almost all pages tracked by this memory cgroup will be unmapped and freed.
+>   Some pages cannot be freed because they are locked or in-use. Such pages are
+> -  moved to parent and this cgroup will be empty. This may return -EBUSY if
+> -  VM is too busy to free/move all pages immediately.
+> +  moved to parent(if use_hierarchy==1) or root (if use_hierarchy==0) and this
+> +  cgroup will be empty.
+>
+>   Typical use case of this interface is that calling this before rmdir().
+>   Because rmdir() moves all pages to parent, some out-of-use page caches can be
+>   moved to the parent. If you want to avoid that, force_empty will be useful.
+>
+> +  About use_hierarchy, see Section 6.
+> +
+>  5.2 stat file
+>
+>  memory.stat file includes following statistics
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index ed53d64..62200f1 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2695,32 +2695,23 @@ static int mem_cgroup_move_parent(struct page *page,
+>        nr_pages = hpage_nr_pages(page);
+>
+>        parent = mem_cgroup_from_cont(pcg);
+> -       if (!parent->use_hierarchy) {
+> -               ret = __mem_cgroup_try_charge(NULL,
+> -                                       gfp_mask, nr_pages, &parent, false);
+> -               if (ret)
+> -                       goto put_back;
+> -       }
+> +       /*
+> +        * if use_hierarchy==0, move charges to root cgroup.
+> +        * in root cgroup, we don't touch res_counter
+> +        */
+> +       if (!parent->use_hierarchy)
+> +               parent = root_mem_cgroup;
+>
+>        if (nr_pages > 1)
+>                flags = compound_lock_irqsave(page);
+>
+> -       if (parent->use_hierarchy) {
+> -               ret = mem_cgroup_move_account(page, nr_pages,
+> -                                       pc, child, parent, false);
+> -               if (!ret)
+> -                       __mem_cgroup_cancel_local_charge(child, nr_pages);
+> -       } else {
+> -               ret = mem_cgroup_move_account(page, nr_pages,
+> -                                       pc, child, parent, true);
+> -
+> -               if (ret)
+> -                       __mem_cgroup_cancel_charge(parent, nr_pages);
+> -       }
+> +       ret = mem_cgroup_move_account(page, nr_pages,
+> +                               pc, child, parent, false);
+> +       if (!ret)
+> +               __mem_cgroup_cancel_local_charge(child, nr_pages);
+>
+>        if (nr_pages > 1)
+>                compound_unlock_irqrestore(page, flags);
+> -put_back:
+>        putback_lru_page(page);
+>  put:
+>        put_page(page);
+> @@ -3338,12 +3329,10 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
+>        csize = PAGE_SIZE << compound_order(page);
+>        /* If parent->use_hierarchy == 0, we need to charge parent */
+>        if (!parent->use_hierarchy) {
+> -               ret = res_counter_charge(&parent->hugepage[idx],
+> -                                        csize, &fail_res);
+> -               if (ret) {
+> -                       ret = -EBUSY;
+> -                       goto err_out;
+> -               }
+> +               parent = root_mem_cgroup;
+> +               /* root has no limit */
+> +               res_counter_charge_nofail(&parent->hugepage[idx],
+> +                                csize, &fail_res);
+>        }
+>        counter = &memcg->hugepage[idx];
+>        res_counter_uncharge_until(counter, counter->parent, csize);
+> --
+> 1.7.4.1
+>
+>
