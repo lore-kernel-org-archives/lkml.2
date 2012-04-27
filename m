@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760613Ab2D0Pkq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:40:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52502 "EHLO mx1.redhat.com"
+	id S1760687Ab2D0Pln (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:41:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42274 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760394Ab2D0Pkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:40:45 -0400
-Date: Fri, 27 Apr 2012 11:40:34 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jeff Moyer <jmoyer@redhat.com>, axboe@kernel.dk, ctalbott@google.com,
-        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, fengguang.wu@intel.com,
-        hughd@google.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 11/11] blkcg: implement per-blkg request allocation
-Message-ID: <20120427154033.GJ10579@redhat.com>
-References: <1335477561-11131-1-git-send-email-tj@kernel.org>
- <1335477561-11131-12-git-send-email-tj@kernel.org>
- <x49wr51usxi.fsf@segfault.boston.devel.redhat.com>
- <20120427150217.GK27486@google.com>
+	id S1760227Ab2D0Pll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 11:41:41 -0400
+Date: Fri, 27 Apr 2012 11:41:33 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Jim Rees <rees@umich.edu>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFSv4: Add modalias for "nfs4"
+Message-ID: <20120427154123.GE13189@zod.bos.redhat.com>
+References: <20120427131031.GA13189@zod.bos.redhat.com>
+ <20120427141918.GA15506@umich.edu>
+ <20120427144840.GB13189@zod.bos.redhat.com>
+ <1335538228.3910.1.camel@lade.trondhjem.org>
+ <20120427145352.GC13189@zod.bos.redhat.com>
+ <1335538927.3910.3.camel@lade.trondhjem.org>
+ <20120427151406.GD13189@zod.bos.redhat.com>
+ <1335540074.3910.9.camel@lade.trondhjem.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120427150217.GK27486@google.com>
+In-Reply-To: <1335540074.3910.9.camel@lade.trondhjem.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 08:02:17AM -0700, Tejun Heo wrote:
-> Hello,
-> 
-> On Fri, Apr 27, 2012 at 10:54:01AM -0400, Jeff Moyer wrote:
-> > > This patch implements per-blkg request_list.  Each blkg has its own
-> > > request_list and any IO allocates its request from the matching blkg
-> > > making blkcgs completely isolated in terms of request allocation.
+On Fri, Apr 27, 2012 at 03:21:15PM +0000, Myklebust, Trond wrote:
+> > > > OK.  So either this patch needs to go in, or something needs to add:
+> > > > 
+> > > > alias nfs4 nfs
+> > > > 
+> > > > to a conf file so modprobe picks it up.  I figured the kernel could add
+> > > > the alias itself.  Is there a reason not to?
+> > > 
+> > > Yes. This is a legacy feature that we want to encourage people to move
+> > > their systems off...
 > > 
-> > So, nr_requests is now actually nr_requests * # of blk cgroups.  Is that
-> > right?  Are you at all concerned about the amount of memory that can be
-> > tied up as the number of cgroups increases?
+> > So essentially what needs to happen is:
+> > 
+> > - Recent distros still ship the modalias in a conf file
+> > - Upstream nfs-utils starts translating 'mount -t nfs4' into 'mount -t
+> >   nfs -overs=4' in /sbin/mount.nfs4
+> > - Upstream releases that
+> > - Distros drop the alias.
+> > 
+> > Right?
 > 
-> Yeah, I thought about it and I don't think there's a single good
-> solution here.  The other extreme would be splitting nr_requests by
-> the number of cgroups but that seems even worse - each cgroup should
-> be able to hit maximum throughput.  Given that a lot of workloads tend
-> to regulate themselves before hitting nr_requests, I think it's best
-> to leave it as-is and treat each cgroup as having separate channel for
-> now.  It's a configurable parameter after all.
+> No. Really all we need to do is add a printf() to /sbin/mount.nfs4 to
+> the effect that this is a legacy feature and that '-t nfs -overs=4' is
+> the recommended mount option. Perhaps the distros can also have their
+> distro upgrade utilities edit /etc/fstab to upgrade those automatically.
+> 
+> Then the distros can drop the alias whenever they think it is
+> appropriate.
 
-So on a slow device a malicious application can easily create thousands
-of group, queue up tons of IO and create unreclaimable memory easily?
-Sounds little scary. 
+My limited experience shows that people won't change their habits until
+those habits simply no longer work.  Adding a printf is probably a fine
+thing to do, but I'm not sure it will have much impact on how people go
+about mounting NFSv4 filesystems.  That leads me to believe that the
+alias will be carried along for quite a while.
 
-I had used two separate limits. Per queue limit and per group limit
-(nr_requests and nr_group_requests). That had made implementation 
-complex and relied on user doing the right configuration so that one
-cgroup does not get serialized behind other once we hit nr_requests.
-I am not advocating that solution as it was not very nice either.
+Anyway, the immediate problem can be solved by just keeping the alias in
+a conf file.  If that's what is recommended for now, OK.
 
-Hmm.., tricky...
-
-Thanks
-Vivek
+josh
