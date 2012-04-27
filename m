@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab2D0RVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 13:21:49 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:42044 "EHLO imr4.ericy.com"
+	id S1760860Ab2D0RYf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 13:24:35 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:54853 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932290Ab2D0RVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 13:21:48 -0400
-Date: Fri, 27 Apr 2012 10:19:40 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.4-rc5
-Message-ID: <20120427171940.GA18027@ericsson.com>
+	id S1760380Ab2D0RYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 13:24:34 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 2/2] asm-generic: io: don't perform swab during {in,out} string functions
+Date: Fri, 27 Apr 2012 13:26:26 -0400
+User-Agent: KMail/1.13.7 (Linux/3.4.0-rc1; KDE/4.6.5; x86_64; ; )
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>,
+        Arnd Bergmann <arnd@arndb.de>
+References: <1335523376-14695-1-git-send-email-will.deacon@arm.com> <201204271219.00596.vapier@gentoo.org> <20120427165919.GD14743@mudshark.cambridge.arm.com>
+In-Reply-To: <20120427165919.GD14743@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cWoXeonUoKmBZSoM"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart1922423.01IvZoazHz";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204271326.29088.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---cWoXeonUoKmBZSoM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--nextPart1922423.01IvZoazHz
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
+On Friday 27 April 2012 12:59:19 Will Deacon wrote:
+> On Fri, Apr 27, 2012 at 05:18:58PM +0100, Mike Frysinger wrote:
+> > On Friday 27 April 2012 06:42:56 Will Deacon wrote:
+> > > The {in,out}s{b,w,l} functions are designed to operate on a stream of
+> > > bytes and therefore should not perform any byte-swapping, regardless =
+of
+> > > the CPU byte order.
+> >=20
+> > says who ?  where's the agreed upon documentation for this ?
+>=20
+> This specific case is actually documented in Linux Device Drivers
 
-Please pull hwmon fixes for Linux 3.4-rc5 from signed tag:
+if it isn't in the tree (either Documentation/ or in asm-generic/io.h itsel=
+f),=20
+i don't think it's acceptable to refer to it as guiding documentation
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+> appreciate that it's not especially clear. I had some offline discussion
+> with Arnd where we agreed on this -- it also means that asm-generic/io.h
+> matches what is done by bi-endian architectures providing their own
+> accessors.
 
-Thanks,
-Guenter
+please add start adding comments above these functions that clearly spell o=
+ut=20
+the expectations and behavior
+=2Dmike
 
-------
-
-The following changes since commit 66f75a5d028beaf67c931435fdc3e7823125730c:
-
-  Linux 3.4-rc4 (2012-04-21 14:47:52 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-for you to fetch changes up to c3e40a9972428d6e2d8e287ed0233a57a218c30f:
-
-  hwmon: (fam15h_power) Fix pci_device_id array (2012-04-26 08:40:08 -0700)
-
-----------------------------------------------------------------
-hwmon patches for 3.4-rc5
-
-Fix build warning in ad7314 driver
-Fix pci_device_id array access in fam15h_power driver, introduced by 00250ec
-
-----------------------------------------------------------------
-Guenter Roeck (2):
-      hwmon: (ad7314) Fix build warning
-      hwmon: (fam15h_power) Fix pci_device_id array
-
- drivers/hwmon/ad7314.c       |   12 +++++-------
- drivers/hwmon/fam15h_power.c |    9 ++++++---
- 2 files changed, 11 insertions(+), 10 deletions(-)
-
---cWoXeonUoKmBZSoM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--nextPart1922423.01IvZoazHz
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPmtUsAAoJEMsfJm/On5mBuoYQAJX/x2SaM80/DiNCmO3+pcXW
-gb7woQnl6rtzr5ozmfQZ7jE2jOM4H80u+iJNrQfC3jrK0yRjPfhqk2sJqKgtBlsY
-hns4NZH7DkkUAjT35HELMi7ZoWtPYmwZCpULWjbV8eQPtBFATdZDamcU1hxZUmvg
-lkys1kYsXvsXjTcnNpoYp2eSFmforgkBw88RsRI0dlxnCR/lp/PkJEr542WxxSnH
-NBXzyzKM0OqZ6L42nhrMzy6eTWW5WgG7No0Hf2HyEbM59QMTqjYl9HI8gmqMJjxi
-byTHYlcKSXLeBflar0V5MhsusKq3BqYE5psR5C9+BmuCdz7pPsF2MqN6hMDCymiW
-XEk9UItu/4PguMNcV6tvnS0MRDvt1olrARRILiXIMQSHiUMlT+cGakCeH3CG0ZBK
-E6oZXnzK3Gu5mK8LAmsT/Fye/3Zphx3bfY6hUKuqx/G2UCyY+LFIc/AGbV8SEjZ0
-PCbu5C0CwkXc6gID6OeTy1WUX01byUr4PrulmgPdeyEQsCnOYmim8/MQf/gPAfnl
-zrO4lceuGmHk+jp05bJKh/liKvhhW7x1Nu+NZ6HFaBPankh6Q6Q9fnfpc9L7AGMF
-k0feLef56emkqtS8pqHQtm6g8auN8X2pN3mTCnkWnKTFsIALEd/CEPIS0PG2FMEK
-zfsLrYPu5Qsi29NO8kFM
-=M4qn
+iQIcBAABAgAGBQJPmtbEAAoJEEFjO5/oN/WBxJQP/AiTVD+gAhxhRNnDlCuHodGx
+7kByGnX4yOvsEGaN+qxo4adVvs2bvy/B+lpkGUVNeqXK/BN91VMFIjq3iA95r3nj
+db1IaUUu/5+ctMUz6C8Xig5b8YYywUhRzhhq4Jlp3i6ILM91qfYeWS91TJ4AV6sD
+nGY0hI1RsCQz3ej2V133tC/fyzlk69BbYwbbl51xdTy9feYmwzrbKarYtYMVPDTL
+wO9dEvuwDVstJfrvClkE8mG9s60SEWjABI5+cgsB3nk6+G+UeyL5JPeXtv+hTN0B
+L90g/0PGOCf2JIPMjQF9MC+UqJVEsQTZFHET6YfnEbGgYXIoK4jv7064uuNim6dP
+WnkAC5LkaTJe8200Q+K8upiNO9LU+nhLbvd0rYP8QZM4Gm7X+X51LGMtvvrY/xz+
+sE3FZtWv2WQdgU9oc8VrqxvTVd1AYOKhy+rNCzJUWddmpMbYBcMVlcnLwbm/LZ9k
++aKeVT/Kh7JHj+eYrjfrBf+o4Mw6+jfrGwQETVv89gqS+o+k6FyigKvsraSdRlHN
+Rg1EegEKmyh8iQfSfac/oUx8iKJD2rSbrLmEyx8aS2rWeogbJxCrbfKq4XvRb1pb
+QA5Gp1PxaG0eKen55ZorV1eM5RyPcNsgvUMS7ZMybWn+wAVSIr9i6Af+HjmD5TjR
+I4cOO4+45y7/JIKKJGIf
+=wCjg
 -----END PGP SIGNATURE-----
 
---cWoXeonUoKmBZSoM--
+--nextPart1922423.01IvZoazHz--
