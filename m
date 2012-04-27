@@ -1,108 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760002Ab2D0K3m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 06:29:42 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56559 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759231Ab2D0K3k (ORCPT
+	id S1760071Ab2D0KhE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 06:37:04 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49913 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759804Ab2D0KhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 06:29:40 -0400
-X-Sasl-enc: 1xyHZyS+2H7TAFmngpp+3MnYr6UQoqM8gtzu9vVPEvGf 1335522579
-Message-ID: <4F9A7510.5010808@imap.cc>
-Date: Fri, 27 Apr 2012 12:29:36 +0200
-From: Tilman Schmidt <tilman@imap.cc>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
+	Fri, 27 Apr 2012 06:37:01 -0400
+Date: Fri, 27 Apr 2012 03:36:57 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Minchan Kim <minchan@kernel.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, npiggin@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, kosaki.motohiro@gmail.com,
+        Neil Brown <neilb@suse.de>, Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Sage Weil <sage@newdream.net>
+Subject: Re: [RFC] vmalloc: add warning in __vmalloc
+In-Reply-To: <1335516144-3486-1-git-send-email-minchan@kernel.org>
+Message-ID: <alpine.DEB.2.00.1204270323000.11866@chino.kir.corp.google.com>
+References: <1335516144-3486-1-git-send-email-minchan@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Karsten Keil <keil@b1-systems.de>
-CC: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>,
-        Hansjoerg Lipp <hjlipp@web.de>, i4ldeveloper@listserv.isdn4linux.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] isdn/gigaset: ratelimit CAPI message dumps
-References: <20120425-patch-gigaset-00.tilman@imap.cc> <20120425-patch-gigaset-01.tilman@imap.cc> <4F98EDB1.5090702@b1-systems.de>
-In-Reply-To: <4F98EDB1.5090702@b1-systems.de>
-X-Enigmail-Version: 1.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig8F741992D6CF69CD09BB719A"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig8F741992D6CF69CD09BB719A
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Fri, 27 Apr 2012, Minchan Kim wrote:
 
-Am 26.04.2012 08:39, schrieb Karsten Keil:
-> Am 26.04.2012 01:02, schrieb Tilman Schmidt:
->> Introduce a global ratelimit for CAPI message dumps to protect
->> against possible log flood.
->> Drop the ratelimit for ignored messages which is now covered by the
->> global one.
->=20
-> Hmm, I think the only CAPI messages which would need a ratelimit are
-> related to the DATA_B3 messages. If you need CAPI debug messages in mos=
-t
-> cases you do not need all of the DATA_B3, but you do not want to miss
-> any other message related to the call control. With a general rate limi=
-t
-> you do not have the control, which messages are logged and which are no=
-t.
+> Now there are several places to use __vmalloc with GFP_ATOMIC,
+> GFP_NOIO, GFP_NOFS but unfortunately __vmalloc calls map_vm_area
+> which calls alloc_pages with GFP_KERNEL to allocate page tables.
+> It means it's possible to happen deadlock.
+> I don't know why it doesn't have reported until now.
+> 
+> Firstly, I tried passing gfp_t to lower functions to support __vmalloc
+> with such flags but other mm guys don't want and decided that
+> all of caller should be fixed.
+> 
+> http://marc.info/?l=linux-kernel&m=133517143616544&w=2
+> 
+> To begin with, let's listen other's opinion whether they can fix it
+> by other approach without calling __vmalloc with such flags.
+> 
+> So this patch adds warning to detect and to be fixed hopely.
+> I Cced related maintainers.
+> If I miss someone, please Cced them.
+> 
+> side-note:
+>   I added WARN_ON instead of WARN_ONCE to detect all of callers
+>   and each WARN_ON for each flag to detect to use any flag easily.
+>   After we fix all of caller or reduce such caller, we can merge
+>   a warning with WARN_ONCE.
+> 
 
-The ratelimit introduced by this patch only applies to messages
-other than DATA_B3. Logging DATA_B3 messages is not done via
-dump_cmsg().
+I disagree with this approach since it's going to violently spam an 
+innocent kernel user's log with no ratelimiting and for a situation that 
+actually may not be problematic.
 
-I'd like to ratelimit specifically non-DATA_B3 messages because I
-saw a (possibly buggy) CAPI application flooding the log with
-FACILITY messages. Equally important, I'd like to make the
-ratelimit in do_nothing() / do_unsupported() bursty because I had
-a case where I needed to see several ignored/unhandled CAPI
-messages in quick succession. So this patch is killing two birds
-with one stone for me.
+Passing any of these bits (the difference between GFP_KERNEL and 
+GFP_ATOMIC) only means anything when we're going to do reclaim.  And I'm 
+suspecting we would have seen problems with this already since 
+pte_alloc_kernel() does __GFP_REPEAT on most architectures meaning that it 
+will loop infinitely in the page allocator until at least one page is 
+freed (since its an order-0 allocation) which would hardly ever happen if 
+__GFP_FS or __GFP_IO actually meant something in this context.
 
-The burst limit of 20 messages in 20 seconds is chosen to allow a
-complete call setup sequence to be logged, while limiting to one
-message per second in the long run.
+In other words, we would already have seen these deadlocks and it would 
+have been diagnosed as a vmalloc(GFP_ATOMIC) problem.  Where are those bug 
+reports?
 
-> And here maybe some cases, when even the DATA_B3 are important (e.g.
-> searching bugs in flow control), so I would make it still conditional
-> to allow to print all messages.
+At best, you'd need _some_ sort of ratelimiting like a static variable and 
+only allowing 100 WARN_ON()s which could output dozens of lines for each 
+call to vmalloc().
 
-DATA_B3 dumps produce an enormous amount of log data and are
-therefore controlled separately by the DEBUG_MCMD flag.
-Someone who enables that should know what she or he does.
-But if you need them, you need them all. A ratelimit doesn't
-make sense there in my experience.
+But the page allocator already has a might_sleep_if(gfp_mask & GFP_WAIT) 
+which will dump the stack for CONFIG_DEBUG_ATOMIC_SLEEP.  So for this 
+effect, just enable that config option and check your kernel log.
 
-> And I'm not sure, if this is really something for stable.
-
-It's pretty simple and localized, a net simplification, and only
-affects generation of debugging messages, so I think it's safe.
-But if you see a problem there I can drop the "CC: stable" line.
-
-Thanks,
-Tilman
-
---=20
-Tilman Schmidt                    E-Mail: tilman@imap.cc
-Bonn, Germany
-Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
-
-
---------------enig8F741992D6CF69CD09BB719A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk+adREACgkQQ3+did9BuFsvXwCeNQjoYNShl4J3+eQj6H+UQqRa
-jRwAnAjVIdpizcmJyGnfTWi2wDowWJFm
-=gL8t
------END PGP SIGNATURE-----
-
---------------enig8F741992D6CF69CD09BB719A--
+So I'm afraid this is complete overkill for something that we can't prove 
+is a problem in the first place and will potentially fill the kernel logs 
+for warnings where the allocation succeeds immediately.  If you want the 
+bug reports, ask people to enable CONFIG_DEBUG_ATOMIC_SLEEP.
