@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759945Ab2D0JQr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 05:16:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44117 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754254Ab2D0JQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 05:16:46 -0400
-Subject: Re: [RFC] vmalloc: add warning in __vmalloc
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, npiggin@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, kosaki.motohiro@gmail.com,
-        rientjes@google.com, Neil Brown <neilb@suse.de>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Sage Weil <sage@newdream.net>
-In-Reply-To: <1335516144-3486-1-git-send-email-minchan@kernel.org>
-References: <1335516144-3486-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Fri, 27 Apr 2012 10:16:00 +0100
-Message-ID: <1335518161.2686.2.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759960Ab2D0JWw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 05:22:52 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:46024 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754254Ab2D0JWu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 05:22:50 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20120427091405.GS3157@wantstofly.org>
+References: <1335517711-6522-1-git-send-email-sedat.dilek@gmail.com>
+	<20120427091405.GS3157@wantstofly.org>
+Date: Fri, 27 Apr 2012 11:22:49 +0200
+Message-ID: <CA+icZUVAK3NHmbG5kR1KhqGe9mAimWWzLz-MfXOXbyry3Sz73w@mail.gmail.com>
+Subject: Re: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Apr 27, 2012 at 11:14 AM, Lennert Buytenhek
+<buytenh@wantstofly.org> wrote:
+> On Fri, Apr 27, 2012 at 11:08:31AM +0200, Sedat Dilek wrote:
+>
+>> User lautriv asked for belkin N-1 WLAN device support on IRC.
+>>
+>> Further informations from lautriv:
+>> * marvell 80W8031, card-id 11ab:2a02
+>> * Debian/sid 3.2.x
+>>
+>> On [1] I found a report by Jim Cromie concerning same PCI device-id:
+>>
+>> 00:0e.0 Ethernet controller [0200]: Marvell Technology Group Ltd.
+>> 88W8361 [TopDog] 802.11n Wireless [11ab:2a02] (rev 03)
+>>       Subsystem: Marvell Technology Group Ltd. 88W8361 [TopDog] 802.11n Wireless [11ab:2a02]
+>>
+>> So, let's add 0x2a02 to PCI device table.
+>
+> Let's not.  There's no firmware for the 8361 that implements the
+> firmware interface currently implemented by the mwl8k driver, so
+> this is pretty useless.
+>
+>
+>> [1] http://www.spinics.net/lists/newbies/msg46601.html
+>
+> From that link:
+>
+> | I have a card which modprobes, despite a PCI-ID mismatch
+> |
+> | [...]
+> |
+> | Given the pci-id mismatch shouldnt this just fail to modprobe ?
+>
+> No.  That's not a bug -- you are free to load drivers for hardware
+> not currently in your system.
+>
+>
+>>  static DEFINE_PCI_DEVICE_TABLE(mwl8k_pci_id_table) = {
+>> +     { PCI_VDEVICE(MARVELL, 0x2a02), .driver_data = MWL8363, },
+>>       { PCI_VDEVICE(MARVELL, 0x2a0a), .driver_data = MWL8363, },
+>
+> A 8361 is certainly not a 8363.
 
-On Fri, 2012-04-27 at 17:42 +0900, Minchan Kim wrote:
-> Now there are several places to use __vmalloc with GFP_ATOMIC,
-> GFP_NOIO, GFP_NOFS but unfortunately __vmalloc calls map_vm_area
-> which calls alloc_pages with GFP_KERNEL to allocate page tables.
-> It means it's possible to happen deadlock.
-> I don't know why it doesn't have reported until now.
-> 
-> Firstly, I tried passing gfp_t to lower functions to support __vmalloc
-> with such flags but other mm guys don't want and decided that
-> all of caller should be fixed.
-> 
-> http://marc.info/?l=linux-kernel&m=133517143616544&w=2
-> 
-> To begin with, let's listen other's opinion whether they can fix it
-> by other approach without calling __vmalloc with such flags.
-> 
-> So this patch adds warning to detect and to be fixed hopely.
-> I Cced related maintainers.
-> If I miss someone, please Cced them.
-> 
-That seems ok to me. GFS2 only uses it as a back up in case the kmalloc
-call fails, and I suspect that we could easily eliminate it entirely
-since I doubt that it does actually ever fail in reality. If it were to
-fail then that is handled correctly anyway,
+Damn, I got confused by all the numbers. More coffee.
+Thanks for the clarification. I will inform the user on IRC.
+Sorry, for the noise.
 
-Steve.
+Are you planning to or even working on support (for) 8361 devices?
 
-> side-note:
->   I added WARN_ON instead of WARN_ONCE to detect all of callers
->   and each WARN_ON for each flag to detect to use any flag easily.
->   After we fix all of caller or reduce such caller, we can merge
->   a warning with WARN_ONCE.
-> 
-> Cc: Neil Brown <neilb@suse.de>
-> Cc: Artem Bityutskiy <dedekind1@gmail.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: "Theodore Ts'o" <tytso@mit.edu>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> Cc: Steven Whitehouse <swhiteho@redhat.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: Sage Weil <sage@newdream.net>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  mm/vmalloc.c |    9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index 94dff88..36beccb 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -1700,6 +1700,15 @@ static void *__vmalloc_node(unsigned long size, unsigned long align,
->  			    gfp_t gfp_mask, pgprot_t prot,
->  			    int node, void *caller)
->  {
-> +	/*
-> +	 * This function calls map_vm_area so that it allocates
-> +	 * page table with GFP_KERNEL so caller should avoid using
-> +	 * GFP_NOIO, GFP_NOFS and !__GFP_WAIT.
-> +	 */
-> +	WARN_ON(!(gfp_mask & __GFP_WAIT));
-> +	WARN_ON(!(gfp_mask & __GFP_IO));
-> +	WARN_ON(!(gfp_mask & __GFP_FS));
-> +
->  	return __vmalloc_node_range(size, align, VMALLOC_START, VMALLOC_END,
->  				gfp_mask, prot, node, caller);
->  }
-
-
+- Sedat -
