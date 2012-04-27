@@ -1,326 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759996Ab2D0NGg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 09:06:36 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:40473 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757114Ab2D0NGe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 09:06:34 -0400
+	id S1757628Ab2D0NKZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 09:10:25 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57260 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753632Ab2D0NKY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 09:10:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPRPZsCHAOvemogn7mWnWfykhANeEx5K=OG9Xt+veDjEWOiDYA@mail.gmail.com>
-References: <fa.CZQqvHf3CBfYWzhSDPNOWxTTD9w@ifi.uio.no>
-	<fa.Vmg5vDod2/oKvwyy9BcalhoT+Lo@ifi.uio.no>
-	<14969994.2790.1335342903511.JavaMail.geo-discussion-forums@vbbfr18>
-	<4F97BA60.4080505@ladisch.de>
-	<20120427082203.GB9233@aftab.osrc.amd.com>
-	<CAPRPZsCHAOvemogn7mWnWfykhANeEx5K=OG9Xt+veDjEWOiDYA@mail.gmail.com>
-Date: Fri, 27 Apr 2012 09:06:33 -0400
-Message-ID: <CA+5PVA6e-JaS809t9=4=SoxX4cFEYfxxb9-KAXk68ENGg6Kw8w@mail.gmail.com>
-Subject: Re: Unhandled IRQs on AMD E-450
-From: Josh Boyer <jwboyer@gmail.com>
-To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>,
-        Clemens Ladisch <clemens@ladisch.de>, andymatei@gmail.com,
-        "Huang, Shane" <Shane.Huang@amd.com>, Borislav Petkov <bp@amd64.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120427125410.GG18810@erda.amd.com>
+References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
+	<1333390758-10893-7-git-send-email-robert.richter@amd.com>
+	<1334398906.2528.49.camel@twins>
+	<20120423095659.GS9747@erda.amd.com>
+	<20120427123434.GF18810@erda.amd.com>
+	<CABPqkBS9FNmHBukzJqGJP1r5iqyLL9gz2g=3jvnt22pDxOdndA@mail.gmail.com>
+	<20120427125410.GG18810@erda.amd.com>
+Date: Fri, 27 Apr 2012 15:10:22 +0200
+Message-ID: <CABPqkBTS2NkFqjVT9HgzPT=TTo9oOc__H9ZDDbXJK7WRpO0Vgg@mail.gmail.com>
+Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS for
+ AMD CPUs
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 7:46 AM, Jeroen Van den Keybus
-<jeroen.vandenkeybus@gmail.com> wrote:
->> So why aren't you guys producing a proper patch for people to test?
+Robert,
+
+I did not follow the entire discussion, but based on your initial
+post:
+
+perf record -a -e cpu-cycles:p ...    # use ibs op counting cycle count
+perf record -a -e r076:p ...          # same as -e cpu-cycles:p
+perf record -a -e r0C1:p ...          # use ibs op counting micro-ops
+
+Each IBS sample contains a linear address that points to the
+instruction that was causing the sample to trigger. With ibs we have
+skid 0.
+
+Though the skid is 0, we map IBS sampling to following precise levels:
+
+ 1: RIP taken from IBS sample or (if invalid) from stack.
+
+I assume by stack you mean pt_regs, right?
+
+2: RIP always taken from IBS sample, samples with an invalid rip
+   are dropped. Thus samples of an event containing two precise
+   modifiers (e.g. r076:pp) only contain (precise) addresses
+   detected with IBS.
+
+I don't think you need the distinction between 1 and 2. You can
+always use the pt_regs IP as a fallback. You can mark that the
+IP is precise with the MISC_EXACT flag in the sample header.
+This is how it's done with PEBS. What's wrong with that?
+It may actually be better than dropping samples silently as it
+may introduce some bias.
+
+
+On Fri, Apr 27, 2012 at 2:54 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 27.04.12 14:39:21, Stephane Eranian wrote:
+>> On Fri, Apr 27, 2012 at 2:34 PM, Robert Richter <robert.richter@amd.com> wrote:
+>> > On 23.04.12 11:56:59, Robert Richter wrote:
+>> >> On 14.04.12 12:21:46, Peter Zijlstra wrote:
+>> >> > On Mon, 2012-04-02 at 20:19 +0200, Robert Richter wrote:
+>> >> > > + * We map IBS sampling to following precise levels:
+>> >> > > + *
+>> >> > > + *  1: RIP taken from IBS sample or (if invalid) from stack
+>> >> > > + *  2: RIP always taken from IBS sample, samples with an invalid rip
+>> >> > > + *     are dropped. Thus samples of an event containing two precise
+>> >> > > + *     modifiers (e.g. r076:pp) only contain (precise) addresses
+>> >> > > + *     detected with IBS.
+>> >> >
+>> >> >             /*
+>> >> >              * precise_ip:
+>> >> >              *
+>> >> >              *  0 - SAMPLE_IP can have arbitrary skid
+>> >> >              *  1 - SAMPLE_IP must have constant skid
+>> >> >              *  2 - SAMPLE_IP requested to have 0 skid
+>> >> >              *  3 - SAMPLE_IP must have 0 skid
+>> >> >              *
+>> >> >              *  See also PERF_RECORD_MISC_EXACT_IP
+>> >> >              */
+>> >> >
+>> >> > your 1 doesn't have constant skid. I would suggest only supporting 2 and
+>> >> > letting userspace drop !PERF_RECORD_MISC_EXACT_IP records if so desired.
+>> >>
+>> >> Ah, didn't notice the PERF_RECORD_MISC_EXACT_IP flag. Will set this
+>> >> flag for precise events.
+>> >
+>> Why not use 2? IBS has 0 skid, unless I am mistaken.
 >
-> I have been working on a patch for 3.4-rc2, in which I also
-> implemented another mechanism to detect a stuck interrupt (using a
-> level mechanism: an unhandled IRQ increases the level by, say, 10, and
-> a handled one reduces the level by 1. It is considered stuck when the
-> level reaches e.g. 100). It also implements proper dmesg reporting. I
-> also looked for x86'isms as suggested by Alan, but I think there's no
-> problem.
+> Events with r076:p would fail then. But r076:pp is actually better and
+> a subset of level 1. Thus both level should work.
 >
-> However, while testing, I noticed that the stuck interrupt detection
-> fired also on MSI interrupts in the 3.4 kernel under heavy load,
-> suggesting that these would also be suffering from being unhandled.
+> And there is still the question how samples with imprecise rip should
+> be handled. Sometimes we want to get all samples and sometimes all
+> samples should always contain a precise rip, other samples should be
+> dropped then. But there is no option or modifier for this yet.
 >
-> The patch also includes Clemens' patch to put the disk IRQ on MSI,
-> which makes the E450 board actually usable.
+> My suggestions was to use level 1 for all samples and level 2 for
+> samples that only contain a precise rip, saving level 3 for future
+> use.
 >
-> I haven't had time to debug the new issue (false stuck irq detection
-> in 3.4 - not too harmful since the interrupt is reenabled a second
-> later, but wrong nevertheless). If any of you is willing to help and
-> have a look into the code, I have attached it below.
+> -Robert
 >
-> (There's also a small patch that accidentally got in there to
-> reimplement cpu_possible_map, as it was needed by the fglrx driver I'm
-> using. Please disregard. Or use.)
+>>
+>> > Peter,
+>> >
+>> > I have a patch on top that implements the support of the
+>> > PERF_RECORD_MISC_EXACT_IP flag. But I am not quite sure about how to
+>> > use the precise levels. What do you suggest?
+>> >
+>> > Thanks,
+>> >
+>> > -Robert
+>> >
+>> >>
+>> >> Problem is that this flag is not yet well supported, only perf-top
+>> >> uses it to count the total number of exact samples. Esp. perf-annotate
+>> >> and perf-report do not support it, and there are no modifiers to
+>> >> select precise-only sampling (or is this level 3?).
+>> >>
+>> >> Both might be useful: You might need only precise-rip samples (perf-
+>> >> annotate usage), on the other side you want samples with every
+>> >> clock/ops count overflow (e.g. to get a counting statistic). The
+>> >> p-modifier specification (see perf-list) is not sufficient to select
+>> >> both of it.
+>> >>
+>> >> Another question I have: Isn't precise level 2 a special case of level
+>> >> 1 where the skid is constant and 0? The problem I see is, if people
+>> >> want to measure precise rip, they simply use r076:p. Level 2 (r076:pp)
+>> >> is actually better than 1, but they might think not to be able to
+>> >> sample precise-rip if we throw an error for r076:p. Thus, I would
+>> >> prefer to also allow level 1.
+>> >>
+>> >> > That said, mixing the IBS pmu into the regular core pmu isn't exactly
+>> >> > pretty..
+>> >>
+>> >> IBS is currently the only way to do precise-rip sampling on amd cpus.
+>> >> IBS events fit well with its corresponding perfctr events (0x76/
+>> >> 0xc1). So what don't you like with this approach? I will also post IBS
+>> >> perf tool support where IBS can be directly used.
+>> >>
+>> >> -Robert
+>> >>
+>> >> --
+>> >> Advanced Micro Devices, Inc.
+>> >> Operating System Research Center
+>> >
+>> > --
+>> > Advanced Micro Devices, Inc.
+>> > Operating System Research Center
+>> >
+>>
 >
-> Another problem is the arming of the timer (mod_timer), which may
-> cause an incorrect poll interval when a IRQ gets stuck while anotther
-> one is being polled (either because it's also stuck and polling or
-> because forced polling is on for that particular one).
-
-We've had a few bugs reported with this ASM108x chip in Fedora.  I
-took your original patch you submitted quite a while ago, and tweaked
-it a little.  We've been carrying it in Fedora and it makes things
-somewhat usable, but it's far from perfect.
-
-Essentially, it adds a PCI quirk to detect the buggy bridge and only
-changes the irqpolling mechanism if that bridge is detected.  That
-means that people without the buggy hardware aren't impacted by this
-at all, which was the first problem we hit.  Apparently there are
-some pieces of hardware that generate a small number of spurious IRQs
-"normally" and lowering the threshold to such a small value caused
-those machines to kick into polling mode when they really didn't need
-to.
-
-The other two issues we've run into with this patch are:
-
-1) While the quirk helps shield people without the buggy bridge, it
-doesn't help the case where people have the bridge, but they have no
-devices actually behind it.  That means such setups hit the polling
-mode when they don't really need to as described above.
-
-2) People, rightfully, complain that it makes inter-activity on their
-desktop pretty laggy.  The mouse pointer jumps around a lot and key
-strokes are often missed.  For a server class machine, I doubt it
-would matter much but Fedora is essentially a desktop distro so that
-tends to be a high priority.
-
-I've attached the minor rework of the original patch below for
-reference.
-
-josh
-
-----
-
-It seems that some motherboard designs using the ASM1083 PCI/PCIe
-bridge (PCI device ID 1b21:1080, Rev. 01) suffer from stuck IRQ lines
-on the PCI bus (causing the kernel to emit 'IRQxx: nobody cared' and
-disable the IRQ). The following patch is an attempt to mitigate the
-serious impact of permanently disabling an IRQ in that case and
-actually make PCI devices better usable on this platform.
-
-It seems that the bridge fails to issue a IRQ deassertion message on
-the PCIe bus, when the relevant driver causes the interrupting PCI
-device to deassert its IRQ line. To solve this issue, it was tried to
-re-issue an IRQ on a PCI device being able to do so (e1000 in this
-case), but we suspect that the attempt to re-assert/deassert may have
-occurred too soon after the initial IRQ for the ASM1083. Anyway, it
-didn't work but if, after some delay, a new IRQ occurred, the related
-IRQ deassertion message eventually did clear the IOAPIC IRQ. It would
-be useful to re-enable the IRQ here.
-
-Therefore the patch below to poll_spurious_irqs() in spurious.c is
-proposed, It does the following:
-
-1. lets the kernel decide that an IRQ is unhandled after only 10
-positives (instead of 100,000);
-2. briefly (a few seconds or so, currently 1 s) switches to polling
-IRQ at a higher rate than usual (100..1,000Hz instead of 10Hz,
-currently 100Hz), but not too high to avoid excessive CPU load. Any
-device drivers 'see' their interrupts handled with a higher latency
-than usual, but they will still operate properly;
-3. afterwards, simply reenable the IRQ.
-
-If proper operation of the PCIe legacy IRQ line emulation is restored
-after 3, the system operates again at normal performance. If the IRQ
-is still stuck after this procedure, the sequence repeats.
-
-If a genuinely stuck IRQ is used with this solution, the system would
-simply sustain short bursts of 10 unhandled IRQs per second, and use
-polling mode indefinitely at a moderate 100Hz rate. It seemed a good
-alternative to the default irqpoll behaviour to me, which is why I
-left it in poll_spurious_irqs() (instead of creating a new kernel
-option). Additionally, if any device happens to share an IRQ with a
-faulty one, that device is no longer banned forever.
-
-Debugging output is still present and may be removed. Bad IRQ
-reporting is also commented out now.
-
-I have now tried it for about 2 months and I can conclude the following:
-
-1. The patch works and, judging from my Firewire card interrupt on
-IRQ16, which repeats every 64 secs, I can confirm that the IRQ usually
-gets reset when a new IRQ arrives (polling mode runs for 64 seconds
-every time).
-2. When testing a SiL-3114 SATA PCI card behind the ASM1083, I could
-keep this running at fairly high speeds (50..70MB/s) for an hour or
-so, but eventually the SiL driver crashed. In such conditions the PCI
-system had to deal with a few hundred IRQs per second / polling mode
-kicking in every 5..10 seconds).
-
-I would like to thank Clemens Ladisch for his invaluable help in
-finding a solution (and providing a patch to avoid my SATA going down
-every time during debugging).
-
-
-Signed-off-by: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
-
-Make it less chatty.  Only kick it in if we detect an ASM1083 PCI bridge.
-
-Josh Boyer <jwboyer@redhat.com>
-======
-
---- linux-2.6.orig/kernel/irq/spurious.c
-+++ linux-2.6/kernel/irq/spurious.c
-@@ -18,6 +18,8 @@
-
- static int irqfixup __read_mostly;
-
-+int irq_poll_and_retry = 0;
-+
- #define POLL_SPURIOUS_IRQ_INTERVAL (HZ/10)
- static void poll_spurious_irqs(unsigned long dummy);
- static DEFINE_TIMER(poll_spurious_irq_timer, poll_spurious_irqs, 0, 0);
-@@ -141,12 +143,13 @@ out:
- static void poll_spurious_irqs(unsigned long dummy)
- {
- 	struct irq_desc *desc;
--	int i;
-+	int i, poll_again;
-
- 	if (atomic_inc_return(&irq_poll_active) != 1)
- 		goto out;
- 	irq_poll_cpu = smp_processor_id();
-
-+	poll_again = 0; /* Will stay false as long as no polling candidate is found */
- 	for_each_irq_desc(i, desc) {
- 		unsigned int state;
-
-@@ -159,14 +162,33 @@ static void poll_spurious_irqs(unsigned
- 		if (!(state & IRQS_SPURIOUS_DISABLED))
- 			continue;
-
--		local_irq_disable();
--		try_one_irq(i, desc, true);
--		local_irq_enable();
-+		/* We end up here with a disabled spurious interrupt.
-+		   desc->irqs_unhandled now tracks the number of times
-+		   the interrupt has been polled */
-+		if (irq_poll_and_retry) {
-+			if (desc->irqs_unhandled < 100) { /* 1 second delay with poll
-frequency 100 Hz */
-+				local_irq_disable();
-+				try_one_irq(i, desc, true);
-+				local_irq_enable();
-+				desc->irqs_unhandled++;
-+				poll_again = 1;
-+			} else {
-+				irq_enable(desc); /* Reenable the interrupt line */
-+				desc->depth--;
-+				desc->istate &= (~IRQS_SPURIOUS_DISABLED);
-+				desc->irqs_unhandled = 0;
-+			}
-+		} else {
-+			local_irq_disable();
-+			try_one_irq(i, desc, true);
-+			local_irq_enable();
-+		}
- 	}
-+	if (poll_again)
-+		mod_timer(&poll_spurious_irq_timer,
-+			  jiffies + POLL_SPURIOUS_IRQ_INTERVAL);
- out:
- 	atomic_dec(&irq_poll_active);
--	mod_timer(&poll_spurious_irq_timer,
--		  jiffies + POLL_SPURIOUS_IRQ_INTERVAL);
- }
-
- static inline int bad_action_ret(irqreturn_t action_ret)
-@@ -177,11 +199,19 @@ static inline int bad_action_ret(irqretu
- }
-
- /*
-- * If 99,900 of the previous 100,000 interrupts have not been handled
-+ * If 9 of the previous 10 interrupts have not been handled
-  * then assume that the IRQ is stuck in some manner. Drop a diagnostic
-  * and try to turn the IRQ off.
-  *
-- * (The other 100-of-100,000 interrupts may have been a correctly
-+ * Although this may cause early deactivation of a sporadically
-+ * malfunctioning IRQ line, the poll system will:
-+ * a) Poll it for 100 cycles at a 100 Hz rate
-+ * b) Reenable it afterwards
-+ *
-+ * In worst case, with current settings,  this will cause short bursts
-+ * of 10 interrupts every second.
-+ *
-+ * (The other single interrupt may have been a correctly
-  *  functioning device sharing an IRQ with the failing one)
-  */
- static void
-@@ -269,6 +299,8 @@ try_misrouted_irq(unsigned int irq, stru
- void note_interrupt(unsigned int irq, struct irq_desc *desc,
- 		    irqreturn_t action_ret)
- {
-+	int unhandled_thresh = 999000;
-+
- 	if (desc->istate & IRQS_POLL_INPROGRESS)
- 		return;
-
-@@ -302,19 +334,31 @@ void note_interrupt(unsigned int irq, st
- 	}
-
- 	desc->irq_count++;
--	if (likely(desc->irq_count < 100000))
--		return;
-+	if (!irq_poll_and_retry)
-+		if (likely(desc->irq_count < 100000))
-+			return;
-+	else
-+		if (likely(desc->irq_count < 10))
-+			return;
-
- 	desc->irq_count = 0;
--	if (unlikely(desc->irqs_unhandled > 99900)) {
-+	if (irq_poll_and_retry)
-+		unhandled_thresh = 9;
-+
-+	if (unlikely(desc->irqs_unhandled >= unhandled_thresh)) {
- 		/*
--		 * The interrupt is stuck
-+		 * The interrupt might be stuck
- 		 */
--		__report_bad_irq(irq, desc, action_ret);
-+		if (!irq_poll_and_retry) {
-+			__report_bad_irq(irq, desc, action_ret);
-+			printk(KERN_EMERG "Disabling IRQ %d\n", irq);
-+		} else {
-+			printk(KERN_INFO "IRQ %d might be stuck.  Polling\n",
-+				irq);
-+		}
- 		/*
- 		 * Now kill the IRQ
- 		 */
--		printk(KERN_EMERG "Disabling IRQ #%d\n", irq);
- 		desc->istate |= IRQS_SPURIOUS_DISABLED;
- 		desc->depth++;
- 		irq_disable(desc);
---- linux-2.6.orig/drivers/pci/quirks.c
-+++ linux-2.6/drivers/pci/quirks.c
-@@ -1677,6 +1677,22 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_IN
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL,	0x260a, quirk_intel_pcie_pm);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL,	0x260b, quirk_intel_pcie_pm);
-
-+/* ASM108x transparent PCI bridges apparently have broken IRQ deassert
-+ * handling.  This causes interrupts to get "stuck" and eventually disabled.
-+ * However, the interrupts are often shared and disabling them is fairly bad.
-+ * It's been somewhat successful to switch to polling mode and retry after
-+ * a bit, so let's do that.
-+ */
-+extern int irq_poll_and_retry;
-+static void quirk_asm108x_poll_interrupts(struct pci_dev *dev)
-+{
-+	dev_info(&dev->dev, "Buggy bridge found [%04x:%04x]\n",
-+		dev->vendor, dev->device);
-+	dev_info(&dev->dev, "Stuck interrupts will be polled and retried\n");
-+	irq_poll_and_retry = 1;
-+}
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ASMEDIA,	0x1080,	quirk_asm108x_poll_interrupts);
-+
- #ifdef CONFIG_X86_IO_APIC
- /*
-  * Boot interrupts on some chipsets cannot be turned off. For these chipsets,
+> --
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+>
