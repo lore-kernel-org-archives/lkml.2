@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761216Ab2D0SuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:50:04 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:64786 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757912Ab2D0SuC (ORCPT
+	id S1761226Ab2D0SwM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 14:52:12 -0400
+Received: from mga05.intel.com ([192.55.52.89]:48776 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760242Ab2D0SwK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 14:50:02 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-160.messagelabs.com!1335552489!4964891!106
-X-Originating-IP: [216.166.12.178]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: introduce 'comedi_get_board' helper function
-Date: Fri, 27 Apr 2012 11:49:48 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Fri, 27 Apr 2012 14:52:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201204271149.49035.hartleys@visionengravers.com>
+In-Reply-To: <20120427173417.GK6871@ZenIV.linux.org.uk>
+References: <1334865448.2429.35.camel@falcor>
+	<20120420004303.GB6871@ZenIV.linux.org.uk>
+	<alpine.LSU.2.00.1204201133340.1450@eggly.anvils>
+	<20120420190418.GK6871@ZenIV.linux.org.uk>
+	<CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
+	<20120420195833.GM6871@ZenIV.linux.org.uk>
+	<CA+55aFzaC8YfN_q1TxPbNgpD7AnoAVac2Bqa+ysEji3u7ZQ18A@mail.gmail.com>
+	<20120420221315.GN6871@ZenIV.linux.org.uk>
+	<CA+55aFzEwsW1kdLo2hpgW2PUCRkyaRxS_KB40iwmuk1FDgV+cg@mail.gmail.com>
+	<CALLzPKarZY11htkukZPi+7ny5r=au9hMdKBOy20wAdFjSBOyjA@mail.gmail.com>
+	<20120427173417.GK6871@ZenIV.linux.org.uk>
+Date: Fri, 27 Apr 2012 21:52:09 +0300
+Message-ID: <CALLzPKajCrfPz-V=9yftoq=FGQuMYvzCwFMKDcZpm+=QPnJJ1g@mail.gmail.com>
+Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
+ ima-appraisal patches)
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-fsdevel@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helper function is used to fetch the comedi_device board_ptr
-which is used during the attach to pass board specific information
-to the comedi drivers.
+On Fri, Apr 27, 2012 at 8:34 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Fri, Apr 27, 2012 at 10:35:25AM +0300, Kasatkin, Dmitry wrote:
+>
+>> But have you seen the proposed patch for __fput()?
+>> [PATCH v4 10/12] ima: defer calling __fput()
+>>
+>> It defers only of course the last AND mmap_sem is locked AND open for write.
+>>
+>>       if (current->mm && rwsem_is_locked(&current->mm->mmap_sem)) {
+>>               if (ima_defer_fput(file) == 0)
+>>                       return;
+>>       }
+>>
+>> Just 5 out of ~100,000 mmap_sem held fput() calls were deferred.
+>
+> Let me get it straight.
+>        a) You still ignore all the problems with that described in the
+> posting right in the beginning of this thread.
+>        b) You ignore the problems with semantics changes from user-visible
+> delays of fput() past the return from syscall (described in Linus' posting
+> upthread - they apply to this "solution" as well).
+>        c) You seem to consider the fact that this path will be exercised
+> very rarely, thus making any races on it damn hard to reproduce and debug
+> as a good thing.
+>
+> And as for the sentiment expressed in the beginning of your posting (that
+> smaller patch size is worth more than clean locking rules, maintainability
+> of resulting kernel, etc.)...  I'm sorry, but you guys need to decide
+> what IMA is.  If it's a first-class part of the kernel, you have your
+> priorities backwards...
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Hello,
 
----
+I do not ignore anything.
+I said that we were thinking about solution to get the list of file to
+fput them after mmap unlock.
+And I do understand the issues discussed.
+I just wanted to know more opinions on proposed patch.
 
-With this helper removing all the 'this_board' defines in the drivers
-will be easier (and cleaner).
-
-diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-index 300fd84..53a05dd 100644
---- a/drivers/staging/comedi/comedidev.h
-+++ b/drivers/staging/comedi/comedidev.h
-@@ -235,6 +235,11 @@ struct comedi_device {
- 	void (*close) (struct comedi_device *dev);
- };
- 
-+static inline const void *comedi_get_board(struct comedi_device *dev)
-+{
-+	return dev->board_ptr;
-+}
-+
- struct comedi_device_file_info {
- 	struct comedi_device *device;
- 	struct comedi_subdevice *read_subdevice;
+- Dmitry
