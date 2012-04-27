@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760381Ab2D0PCL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:02:11 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:12023 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760281Ab2D0PCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:02:09 -0400
-X-IronPort-AV: E=Sophos;i="4.75,491,1330934400"; 
-   d="scan'208";a="643863880"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Josh Boyer <jwboyer@redhat.com>
-CC: Jim Rees <rees@umich.edu>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] NFSv4: Add modalias for "nfs4"
-Thread-Topic: [PATCH] NFSv4: Add modalias for "nfs4"
-Thread-Index: AQHNJHcmB5tVtvMMXUiGbvC5SkV+epavLeAAgAAINQCAAACBAIAAAPSAgAACTYA=
-Date: Fri, 27 Apr 2012 15:02:07 +0000
-Message-ID: <1335538927.3910.3.camel@lade.trondhjem.org>
-References: <20120427131031.GA13189@zod.bos.redhat.com>
-	 <20120427141918.GA15506@umich.edu>
-	 <20120427144840.GB13189@zod.bos.redhat.com>
-	 <1335538228.3910.1.camel@lade.trondhjem.org>
-	 <20120427145352.GC13189@zod.bos.redhat.com>
-In-Reply-To: <20120427145352.GC13189@zod.bos.redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <F4505830B311D44383E0B95AE948040B@tahoe.netapp.com>
+	id S1760409Ab2D0PCZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:02:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35151 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760391Ab2D0PCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 11:02:23 -0400
+Date: Fri, 27 Apr 2012 08:02:17 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: axboe@kernel.dk, vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, fengguang.wu@intel.com,
+        hughd@google.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 11/11] blkcg: implement per-blkg request allocation
+Message-ID: <20120427150217.GK27486@google.com>
+References: <1335477561-11131-1-git-send-email-tj@kernel.org>
+ <1335477561-11131-12-git-send-email-tj@kernel.org>
+ <x49wr51usxi.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49wr51usxi.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3RF2OfU022463
 
-On Fri, 2012-04-27 at 10:53 -0400, Josh Boyer wrote:
-> On Fri, Apr 27, 2012 at 02:50:28PM +0000, Myklebust, Trond wrote:
-> > On Fri, 2012-04-27 at 10:48 -0400, Josh Boyer wrote:
-> > > On Fri, Apr 27, 2012 at 10:19:18AM -0400, Jim Rees wrote:
-> > > > Josh Boyer wrote:
-> > > > 
-> > > >   When NFSv4 is configured, the support goes into the nfs.ko module.
-> > > >   However, nfs-utils seems to pass "nfs4" as the fileststem type for
-> > > >   NFSv4 mounts.
-> > > > 
-> > > > Weren't we going to change that to nfs and use nfsvers to select nfs4?
-> > > 
-> > > I have, approximately, no idea.  At least the version of nfs-utils found
-> > > in Fedora 17 and rawhide, it's still using "nfs4".   I believe that is
-> > > nfs-utils-1.2.6-rc6 based.
-> > 
-> > nfs4 is still _supported_ in Fedora 17, rawhide and upstream as a legacy
-> > feature, but the recommended practice should be to mount -t nfs -overs=4
-> > (or -overs=4.1).
-> 
-> OK.  So either this patch needs to go in, or something needs to add:
-> 
-> alias nfs4 nfs
-> 
-> to a conf file so modprobe picks it up.  I figured the kernel could add
-> the alias itself.  Is there a reason not to?
+Hello,
 
-Yes. This is a legacy feature that we want to encourage people to move
-their systems off...
+On Fri, Apr 27, 2012 at 10:54:01AM -0400, Jeff Moyer wrote:
+> > This patch implements per-blkg request_list.  Each blkg has its own
+> > request_list and any IO allocates its request from the matching blkg
+> > making blkcgs completely isolated in terms of request allocation.
+> 
+> So, nr_requests is now actually nr_requests * # of blk cgroups.  Is that
+> right?  Are you at all concerned about the amount of memory that can be
+> tied up as the number of cgroups increases?
+
+Yeah, I thought about it and I don't think there's a single good
+solution here.  The other extreme would be splitting nr_requests by
+the number of cgroups but that seems even worse - each cgroup should
+be able to hit maximum throughput.  Given that a lot of workloads tend
+to regulate themselves before hitting nr_requests, I think it's best
+to leave it as-is and treat each cgroup as having separate channel for
+now.  It's a configurable parameter after all.
+
+Thanks.
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+tejun
