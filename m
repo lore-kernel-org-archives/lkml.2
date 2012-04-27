@@ -1,658 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab2D0W3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 18:29:21 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:13692 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab2D0W3U (ORCPT
+	id S1756171Ab2D0WbY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 18:31:24 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35132 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753736Ab2D0WbW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 18:29:20 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-132.messagelabs.com!1335565734!9917679!27
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor pcmuio driver to remove forward declarations
-Date: Fri, 27 Apr 2012 15:28:57 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Fri, 27 Apr 2012 18:31:22 -0400
+Date: Fri, 27 Apr 2012 17:31:18 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Eric =?utf-8?Q?B=C3=A9nard?= <eric@eukrea.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Greg KH <gregkh@linuxfoundation.org>,
+        Wolfram Sang <w.sang@pengutronix.de>, Chris Ball <cjb@laptop.org>
+Subject: Re: [ 14/62] mmc: unbreak sdhci-esdhc-imx on i.MX25
+Message-ID: <20120427223118.GE2821@burratino>
+References: <20120424223305.GA7748@kroah.com>
+ <20120424223243.200037983@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Message-ID: <201204271528.57861.hartleys@visionengravers.com>
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20120424223243.200037983@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactor the switch_page and pcmuio_stop_intr functions to avoid
-needing the forward declarations.
+Hi,
 
-Move the module_init/module_exit routines and the associated
-struct comedi_driver and other variables to the end of the source.
-This is more typical of how other drivers are written and removes
-the need for the forward declarations.
+Greg KH wrote:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 3.3-stable review patch.
+[...]
+> commit b89152824f993a9572b47eb31f4579feadeac34c upstream.
+>
+> This was broken by me in 37865fe91582582a6f6c00652f6a2b1ff71f8a78
+> ("mmc: sdhci-esdhc-imx: fix timeout on i.MX's sdhci") where more
+> extensive tests would have shown that read or write of data to the
+> card were failing (even if the partition table was correctly read).
 
+37865fe91582 is v2.6.37-rc4~24^2~7 so it sounds like this patch
+should also be applied to 3.0.y.
+
+Here's a straightforward backport to account for the lack of
+v3.1-rc1~321^2~77 ("mmc: sdhci: make sdhci-pltfm device drivers self
+registered") and v3.1-rc1~125^2^2~5 ("mmc: sdhci-esdhc-imx: get rid of
+the uses of cpu_is_mx").  Sensible?
+
+-- >8 --
+From: Eric Bénard <eric@eukrea.com>
+Date: Wed, 18 Apr 2012 02:30:20 +0200
+
+commit b89152824f993a9572b47eb31f4579feadeac34c upstream.
+
+This was broken by me in 37865fe91582582a6f6c00652f6a2b1ff71f8a78
+("mmc: sdhci-esdhc-imx: fix timeout on i.MX's sdhci") where more
+extensive tests would have shown that read or write of data to the
+card were failing (even if the partition table was correctly read).
+
+Signed-off-by: Eric Bénard <eric@eukrea.com>
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 ---
+Thanks,
+Jonathan
 
-diff --git a/drivers/staging/comedi/drivers/pcmuio.c b/drivers/staging/comedi/drivers/pcmuio.c
-index 661ba2e..de4f486 100644
---- a/drivers/staging/comedi/drivers/pcmuio.c
-+++ b/drivers/staging/comedi/drivers/pcmuio.c
-@@ -155,19 +155,6 @@ struct pcmuio_board {
- 	const int num_ports;
- };
- 
--static const struct pcmuio_board pcmuio_boards[] = {
--	{
--	 .name = "pcmuio48",
--	 .num_asics = 1,
--	 .num_ports = 6,
--	 },
--	{
--	 .name = "pcmuio96",
--	 .num_asics = 2,
--	 .num_ports = 12,
--	 },
--};
--
- /*
-  * Useful for shorthand access to the particular board structure
-  */
-@@ -218,262 +205,6 @@ struct pcmuio_private {
-  */
- #define devpriv ((struct pcmuio_private *)dev->private)
- #define subpriv ((struct pcmuio_subdev_private *)s->private)
--/*
-- * The struct comedi_driver structure tells the Comedi core module
-- * which functions to call to configure/deconfigure (attach/detach)
-- * the board, and also about the kernel module that contains
-- * the device code.
-- */
--static int pcmuio_attach(struct comedi_device *dev,
--			 struct comedi_devconfig *it);
--static int pcmuio_detach(struct comedi_device *dev);
--
--static struct comedi_driver driver = {
--	.driver_name = "pcmuio",
--	.module = THIS_MODULE,
--	.attach = pcmuio_attach,
--	.detach = pcmuio_detach,
--/* It is not necessary to implement the following members if you are
-- * writing a driver for a ISA PnP or PCI card */
--	/* Most drivers will support multiple types of boards by
--	 * having an array of board structures.  These were defined
--	 * in pcmuio_boards[] above.  Note that the element 'name'
--	 * was first in the structure -- Comedi uses this fact to
--	 * extract the name of the board without knowing any details
--	 * about the structure except for its length.
--	 * When a device is attached (by comedi_config), the name
--	 * of the device is given to Comedi, and Comedi tries to
--	 * match it by going through the list of board names.  If
--	 * there is a match, the address of the pointer is put
--	 * into dev->board_ptr and driver->attach() is called.
--	 *
--	 * Note that these are not necessary if you can determine
--	 * the type of board in software.  ISA PnP, PCI, and PCMCIA
--	 * devices are such boards.
--	 */
--	.board_name = &pcmuio_boards[0].name,
--	.offset = sizeof(struct pcmuio_board),
--	.num_names = ARRAY_SIZE(pcmuio_boards),
--};
--
--static int pcmuio_dio_insn_bits(struct comedi_device *dev,
--				struct comedi_subdevice *s,
--				struct comedi_insn *insn, unsigned int *data);
--static int pcmuio_dio_insn_config(struct comedi_device *dev,
--				  struct comedi_subdevice *s,
--				  struct comedi_insn *insn, unsigned int *data);
--
--static irqreturn_t interrupt_pcmuio(int irq, void *d);
--static void pcmuio_stop_intr(struct comedi_device *, struct comedi_subdevice *);
--static int pcmuio_cancel(struct comedi_device *dev, struct comedi_subdevice *s);
--static int pcmuio_cmd(struct comedi_device *dev, struct comedi_subdevice *s);
--static int pcmuio_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
--			  struct comedi_cmd *cmd);
--
--/* some helper functions to deal with specifics of this device's registers */
--static void init_asics(struct comedi_device *dev);	/* sets up/clears ASIC chips to defaults */
--static void switch_page(struct comedi_device *dev, int asic, int page);
--#ifdef notused
--static void lock_port(struct comedi_device *dev, int asic, int port);
--static void unlock_port(struct comedi_device *dev, int asic, int port);
--#endif
--
--/*
-- * Attach is called by the Comedi core to configure the driver
-- * for a particular board.  If you specified a board_name array
-- * in the driver structure, dev->board_ptr contains that
-- * address.
-- */
--static int pcmuio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
--{
--	struct comedi_subdevice *s;
--	int sdev_no, chans_left, n_subdevs, port, asic, thisasic_chanct = 0;
--	unsigned long iobase;
--	unsigned int irq[MAX_ASICS];
--
--	iobase = it->options[0];
--	irq[0] = it->options[1];
--	irq[1] = it->options[2];
--
--	dev_dbg(dev->hw_dev, "comedi%d: %s: io: %lx attached\n", dev->minor,
--		driver.driver_name, iobase);
--
--	dev->iobase = iobase;
--
--	if (!iobase || !request_region(iobase,
--				       thisboard->num_asics * ASIC_IOSIZE,
--				       driver.driver_name)) {
--		dev_err(dev->hw_dev, "I/O port conflict\n");
--		return -EIO;
--	}
--
--/*
-- * Initialize dev->board_name.  Note that we can use the "thisboard"
-- * macro now, since we just initialized it in the last line.
-- */
--	dev->board_name = thisboard->name;
--
--/*
-- * Allocate the private structure area.  alloc_private() is a
-- * convenient macro defined in comedidev.h.
-- */
--	if (alloc_private(dev, sizeof(struct pcmuio_private)) < 0) {
--		dev_warn(dev->hw_dev, "cannot allocate private data structure\n");
--		return -ENOMEM;
--	}
--
--	for (asic = 0; asic < MAX_ASICS; ++asic) {
--		devpriv->asics[asic].num = asic;
--		devpriv->asics[asic].iobase = dev->iobase + asic * ASIC_IOSIZE;
--		devpriv->asics[asic].irq = 0;	/* this gets actually set at the end of
--						   this function when we
--						   request_irqs */
--		spin_lock_init(&devpriv->asics[asic].spinlock);
--	}
--
--	chans_left = CHANS_PER_ASIC * thisboard->num_asics;
--	n_subdevs = CALC_N_SUBDEVS(chans_left);
--	devpriv->sprivs =
--	    kcalloc(n_subdevs, sizeof(struct pcmuio_subdev_private),
--		    GFP_KERNEL);
--	if (!devpriv->sprivs) {
--		dev_warn(dev->hw_dev, "cannot allocate subdevice private data structures\n");
--		return -ENOMEM;
--	}
--	/*
--	 * Allocate the subdevice structures.  alloc_subdevice() is a
--	 * convenient macro defined in comedidev.h.
--	 *
--	 * Allocate 2 subdevs (32 + 16 DIO lines) or 3 32 DIO subdevs for the
--	 * 96-channel version of the board.
--	 */
--	if (alloc_subdevices(dev, n_subdevs) < 0) {
--		dev_dbg(dev->hw_dev, "cannot allocate subdevice data structures\n");
--		return -ENOMEM;
--	}
--
--	port = 0;
--	asic = 0;
--	for (sdev_no = 0; sdev_no < (int)dev->n_subdevices; ++sdev_no) {
--		int byte_no;
--
--		s = dev->subdevices + sdev_no;
--		s->private = devpriv->sprivs + sdev_no;
--		s->maxdata = 1;
--		s->range_table = &range_digital;
--		s->subdev_flags = SDF_READABLE | SDF_WRITABLE;
--		s->type = COMEDI_SUBD_DIO;
--		s->insn_bits = pcmuio_dio_insn_bits;
--		s->insn_config = pcmuio_dio_insn_config;
--		s->n_chan = min(chans_left, MAX_CHANS_PER_SUBDEV);
--		subpriv->intr.asic = -1;
--		subpriv->intr.first_chan = -1;
--		subpriv->intr.asic_chan = -1;
--		subpriv->intr.num_asic_chans = -1;
--		subpriv->intr.active = 0;
--		s->len_chanlist = 1;
--
--		/* save the ioport address for each 'port' of 8 channels in the
--		   subdevice */
--		for (byte_no = 0; byte_no < PORTS_PER_SUBDEV; ++byte_no, ++port) {
--			if (port >= PORTS_PER_ASIC) {
--				port = 0;
--				++asic;
--				thisasic_chanct = 0;
--			}
--			subpriv->iobases[byte_no] =
--			    devpriv->asics[asic].iobase + port;
--
--			if (thisasic_chanct <
--			    CHANS_PER_PORT * INTR_PORTS_PER_ASIC
--			    && subpriv->intr.asic < 0) {
--				/* this is an interrupt subdevice, so setup the struct */
--				subpriv->intr.asic = asic;
--				subpriv->intr.active = 0;
--				subpriv->intr.stop_count = 0;
--				subpriv->intr.first_chan = byte_no * 8;
--				subpriv->intr.asic_chan = thisasic_chanct;
--				subpriv->intr.num_asic_chans =
--				    s->n_chan - subpriv->intr.first_chan;
--				dev->read_subdev = s;
--				s->subdev_flags |= SDF_CMD_READ;
--				s->cancel = pcmuio_cancel;
--				s->do_cmd = pcmuio_cmd;
--				s->do_cmdtest = pcmuio_cmdtest;
--				s->len_chanlist = subpriv->intr.num_asic_chans;
--			}
--			thisasic_chanct += CHANS_PER_PORT;
--		}
--		spin_lock_init(&subpriv->intr.spinlock);
--
--		chans_left -= s->n_chan;
--
--		if (!chans_left) {
--			asic = 0;	/* reset the asic to our first asic, to do intr subdevs */
--			port = 0;
--		}
--
--	}
--
--	init_asics(dev);	/* clear out all the registers, basically */
--
--	for (asic = 0; irq[0] && asic < MAX_ASICS; ++asic) {
--		if (irq[asic]
--		    && request_irq(irq[asic], interrupt_pcmuio,
--				   IRQF_SHARED, thisboard->name, dev)) {
--			int i;
--			/* unroll the allocated irqs.. */
--			for (i = asic - 1; i >= 0; --i) {
--				free_irq(irq[i], dev);
--				devpriv->asics[i].irq = irq[i] = 0;
--			}
--			irq[asic] = 0;
--		}
--		devpriv->asics[asic].irq = irq[asic];
--	}
--
--	dev->irq = irq[0];	/* grr.. wish comedi dev struct supported multiple
--				   irqs.. */
--
--	if (irq[0]) {
--		dev_dbg(dev->hw_dev, "irq: %u\n", irq[0]);
--		if (irq[1] && thisboard->num_asics == 2)
--			dev_dbg(dev->hw_dev, "second ASIC irq: %u\n", irq[1]);
--	} else {
--		dev_dbg(dev->hw_dev, "(IRQ mode disabled)\n");
--	}
--
--
--	return 1;
--}
--
--/*
-- * _detach is called to deconfigure a device.  It should deallocate
-- * resources.
-- * This function is also called when _attach() fails, so it should be
-- * careful not to release resources that were not necessarily
-- * allocated by _attach().  dev->private and dev->subdevices are
-- * deallocated automatically by the core.
-- */
--static int pcmuio_detach(struct comedi_device *dev)
--{
--	int i;
--
--	dev_dbg(dev->hw_dev, "comedi%d: %s: remove\n", dev->minor,
--		driver.driver_name);
--	if (dev->iobase)
--		release_region(dev->iobase, ASIC_IOSIZE * thisboard->num_asics);
--
--	for (i = 0; i < MAX_ASICS; ++i) {
--		if (devpriv->asics[i].irq)
--			free_irq(devpriv->asics[i].irq, dev);
--	}
--
--	if (devpriv && devpriv->sprivs)
--		kfree(devpriv->sprivs);
--
--	return 0;
--}
- 
- /* DIO devices are slightly special.  Although it is possible to
-  * implement the insn_read/insn_write interface, it is much more
-@@ -621,6 +352,21 @@ static int pcmuio_dio_insn_config(struct comedi_device *dev,
- 	return insn->n;
- }
- 
-+static void switch_page(struct comedi_device *dev, int asic, int page)
-+{
-+	if (asic < 0 || asic >= thisboard->num_asics)
-+		return;		/* paranoia */
-+	if (page < 0 || page >= NUM_PAGES)
-+		return;		/* more paranoia */
-+
-+	devpriv->asics[asic].pagelock &= ~REG_PAGE_MASK;
-+	devpriv->asics[asic].pagelock |= page << REG_PAGE_BITOFFSET;
-+
-+	/* now write out the shadow register */
-+	outb(devpriv->asics[asic].pagelock,
-+	     dev->iobase + ASIC_IOSIZE * asic + REG_PAGELOCK);
-+}
-+
- static void init_asics(struct comedi_device *dev)
- {				/* sets up an
- 				   ASIC chip to defaults */
-@@ -658,21 +404,6 @@ static void init_asics(struct comedi_device *dev)
+ drivers/mmc/host/sdhci-esdhc-imx.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
+index 92e543701836..6fe8cede4179 100644
+--- a/drivers/mmc/host/sdhci-esdhc-imx.c
++++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+@@ -245,8 +245,7 @@ static int esdhc_pltfm_init(struct sdhci_host *host, struct sdhci_pltfm_data *pd
  	}
- }
+ 	pltfm_host->priv = imx_data;
  
--static void switch_page(struct comedi_device *dev, int asic, int page)
--{
--	if (asic < 0 || asic >= thisboard->num_asics)
--		return;		/* paranoia */
--	if (page < 0 || page >= NUM_PAGES)
--		return;		/* more paranoia */
--
--	devpriv->asics[asic].pagelock &= ~REG_PAGE_MASK;
--	devpriv->asics[asic].pagelock |= page << REG_PAGE_BITOFFSET;
--
--	/* now write out the shadow register */
--	outb(devpriv->asics[asic].pagelock,
--	     dev->iobase + ASIC_IOSIZE * asic + REG_PAGELOCK);
--}
--
- #ifdef notused
- static void lock_port(struct comedi_device *dev, int asic, int port)
- {
-@@ -700,6 +431,27 @@ static void unlock_port(struct comedi_device *dev, int asic, int port)
- }
- #endif /* notused */
+-	if (!cpu_is_mx25())
+-		host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
++	host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
  
-+static void pcmuio_stop_intr(struct comedi_device *dev,
-+			     struct comedi_subdevice *s)
-+{
-+	int nports, firstport, asic, port;
-+
-+	asic = subpriv->intr.asic;
-+	if (asic < 0)
-+		return;		/* not an interrupt subdev */
-+
-+	subpriv->intr.enabled_mask = 0;
-+	subpriv->intr.active = 0;
-+	s->async->inttrig = 0;
-+	nports = subpriv->intr.num_asic_chans / CHANS_PER_PORT;
-+	firstport = subpriv->intr.asic_chan / CHANS_PER_PORT;
-+	switch_page(dev, asic, PAGE_ENAB);
-+	for (port = firstport; port < firstport + nports; ++port) {
-+		/* disable all intrs for this subdev.. */
-+		outb(0, devpriv->asics[asic].iobase + REG_ENAB0 + port);
-+	}
-+}
-+
- static irqreturn_t interrupt_pcmuio(int irq, void *d)
- {
- 	int asic, got1 = 0;
-@@ -852,27 +604,6 @@ static irqreturn_t interrupt_pcmuio(int irq, void *d)
- 	return IRQ_HANDLED;
- }
- 
--static void pcmuio_stop_intr(struct comedi_device *dev,
--			     struct comedi_subdevice *s)
--{
--	int nports, firstport, asic, port;
--
--	asic = subpriv->intr.asic;
--	if (asic < 0)
--		return;		/* not an interrupt subdev */
--
--	subpriv->intr.enabled_mask = 0;
--	subpriv->intr.active = 0;
--	s->async->inttrig = 0;
--	nports = subpriv->intr.num_asic_chans / CHANS_PER_PORT;
--	firstport = subpriv->intr.asic_chan / CHANS_PER_PORT;
--	switch_page(dev, asic, PAGE_ENAB);
--	for (port = firstport; port < firstport + nports; ++port) {
--		/* disable all intrs for this subdev.. */
--		outb(0, devpriv->asics[asic].iobase + REG_ENAB0 + port);
--	}
--}
--
- static int pcmuio_start_intr(struct comedi_device *dev,
- 			     struct comedi_subdevice *s)
- {
-@@ -1014,21 +745,221 @@ pcmuio_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 	return comedi_pcm_cmdtest(dev, s, cmd);
- }
- 
-+static int pcmuio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-+{
-+	struct comedi_subdevice *s;
-+	int sdev_no, chans_left, n_subdevs, port, asic, thisasic_chanct = 0;
-+	unsigned long iobase;
-+	unsigned int irq[MAX_ASICS];
-+
-+	iobase = it->options[0];
-+	irq[0] = it->options[1];
-+	irq[1] = it->options[2];
-+
-+	dev_dbg(dev->hw_dev, "comedi%d: %s: io: %lx attached\n", dev->minor,
-+		driver.driver_name, iobase);
-+
-+	dev->iobase = iobase;
-+
-+	if (!iobase || !request_region(iobase,
-+				       thisboard->num_asics * ASIC_IOSIZE,
-+				       driver.driver_name)) {
-+		dev_err(dev->hw_dev, "I/O port conflict\n");
-+		return -EIO;
-+	}
-+
- /*
-- * A convenient macro that defines init_module() and cleanup_module(),
-- * as necessary.
-+ * Initialize dev->board_name.  Note that we can use the "thisboard"
-+ * macro now, since we just initialized it in the last line.
-+ */
-+	dev->board_name = thisboard->name;
-+
-+/*
-+ * Allocate the private structure area.  alloc_private() is a
-+ * convenient macro defined in comedidev.h.
-  */
-+	if (alloc_private(dev, sizeof(struct pcmuio_private)) < 0) {
-+		dev_warn(dev->hw_dev, "cannot allocate private data structure\n");
-+		return -ENOMEM;
-+	}
-+
-+	for (asic = 0; asic < MAX_ASICS; ++asic) {
-+		devpriv->asics[asic].num = asic;
-+		devpriv->asics[asic].iobase = dev->iobase + asic * ASIC_IOSIZE;
-+		devpriv->asics[asic].irq = 0;	/* this gets actually set at the end of
-+						   this function when we
-+						   request_irqs */
-+		spin_lock_init(&devpriv->asics[asic].spinlock);
-+	}
-+
-+	chans_left = CHANS_PER_ASIC * thisboard->num_asics;
-+	n_subdevs = CALC_N_SUBDEVS(chans_left);
-+	devpriv->sprivs =
-+	    kcalloc(n_subdevs, sizeof(struct pcmuio_subdev_private),
-+		    GFP_KERNEL);
-+	if (!devpriv->sprivs) {
-+		dev_warn(dev->hw_dev, "cannot allocate subdevice private data structures\n");
-+		return -ENOMEM;
-+	}
-+	/*
-+	 * Allocate the subdevice structures.  alloc_subdevice() is a
-+	 * convenient macro defined in comedidev.h.
-+	 *
-+	 * Allocate 2 subdevs (32 + 16 DIO lines) or 3 32 DIO subdevs for the
-+	 * 96-channel version of the board.
-+	 */
-+	if (alloc_subdevices(dev, n_subdevs) < 0) {
-+		dev_dbg(dev->hw_dev, "cannot allocate subdevice data structures\n");
-+		return -ENOMEM;
-+	}
-+
-+	port = 0;
-+	asic = 0;
-+	for (sdev_no = 0; sdev_no < (int)dev->n_subdevices; ++sdev_no) {
-+		int byte_no;
-+
-+		s = dev->subdevices + sdev_no;
-+		s->private = devpriv->sprivs + sdev_no;
-+		s->maxdata = 1;
-+		s->range_table = &range_digital;
-+		s->subdev_flags = SDF_READABLE | SDF_WRITABLE;
-+		s->type = COMEDI_SUBD_DIO;
-+		s->insn_bits = pcmuio_dio_insn_bits;
-+		s->insn_config = pcmuio_dio_insn_config;
-+		s->n_chan = min(chans_left, MAX_CHANS_PER_SUBDEV);
-+		subpriv->intr.asic = -1;
-+		subpriv->intr.first_chan = -1;
-+		subpriv->intr.asic_chan = -1;
-+		subpriv->intr.num_asic_chans = -1;
-+		subpriv->intr.active = 0;
-+		s->len_chanlist = 1;
-+
-+		/* save the ioport address for each 'port' of 8 channels in the
-+		   subdevice */
-+		for (byte_no = 0; byte_no < PORTS_PER_SUBDEV; ++byte_no, ++port) {
-+			if (port >= PORTS_PER_ASIC) {
-+				port = 0;
-+				++asic;
-+				thisasic_chanct = 0;
-+			}
-+			subpriv->iobases[byte_no] =
-+			    devpriv->asics[asic].iobase + port;
-+
-+			if (thisasic_chanct <
-+			    CHANS_PER_PORT * INTR_PORTS_PER_ASIC
-+			    && subpriv->intr.asic < 0) {
-+				/* this is an interrupt subdevice, so setup the struct */
-+				subpriv->intr.asic = asic;
-+				subpriv->intr.active = 0;
-+				subpriv->intr.stop_count = 0;
-+				subpriv->intr.first_chan = byte_no * 8;
-+				subpriv->intr.asic_chan = thisasic_chanct;
-+				subpriv->intr.num_asic_chans =
-+				    s->n_chan - subpriv->intr.first_chan;
-+				dev->read_subdev = s;
-+				s->subdev_flags |= SDF_CMD_READ;
-+				s->cancel = pcmuio_cancel;
-+				s->do_cmd = pcmuio_cmd;
-+				s->do_cmdtest = pcmuio_cmdtest;
-+				s->len_chanlist = subpriv->intr.num_asic_chans;
-+			}
-+			thisasic_chanct += CHANS_PER_PORT;
-+		}
-+		spin_lock_init(&subpriv->intr.spinlock);
-+
-+		chans_left -= s->n_chan;
-+
-+		if (!chans_left) {
-+			asic = 0;	/* reset the asic to our first asic, to do intr subdevs */
-+			port = 0;
-+		}
-+
-+	}
-+
-+	init_asics(dev);	/* clear out all the registers, basically */
-+
-+	for (asic = 0; irq[0] && asic < MAX_ASICS; ++asic) {
-+		if (irq[asic]
-+		    && request_irq(irq[asic], interrupt_pcmuio,
-+				   IRQF_SHARED, thisboard->name, dev)) {
-+			int i;
-+			/* unroll the allocated irqs.. */
-+			for (i = asic - 1; i >= 0; --i) {
-+				free_irq(irq[i], dev);
-+				devpriv->asics[i].irq = irq[i] = 0;
-+			}
-+			irq[asic] = 0;
-+		}
-+		devpriv->asics[asic].irq = irq[asic];
-+	}
-+
-+	dev->irq = irq[0];	/* grr.. wish comedi dev struct supported multiple
-+				   irqs.. */
-+
-+	if (irq[0]) {
-+		dev_dbg(dev->hw_dev, "irq: %u\n", irq[0]);
-+		if (irq[1] && thisboard->num_asics == 2)
-+			dev_dbg(dev->hw_dev, "second ASIC irq: %u\n", irq[1]);
-+	} else {
-+		dev_dbg(dev->hw_dev, "(IRQ mode disabled)\n");
-+	}
-+
-+
-+	return 1;
-+}
-+
-+static int pcmuio_detach(struct comedi_device *dev)
-+{
-+	int i;
-+
-+	dev_dbg(dev->hw_dev, "comedi%d: %s: remove\n", dev->minor,
-+		driver.driver_name);
-+	if (dev->iobase)
-+		release_region(dev->iobase, ASIC_IOSIZE * thisboard->num_asics);
-+
-+	for (i = 0; i < MAX_ASICS; ++i) {
-+		if (devpriv->asics[i].irq)
-+			free_irq(devpriv->asics[i].irq, dev);
-+	}
-+
-+	if (devpriv && devpriv->sprivs)
-+		kfree(devpriv->sprivs);
-+
-+	return 0;
-+}
-+
-+static const struct pcmuio_board pcmuio_boards[] = {
-+	{
-+		.name		= "pcmuio48",
-+		.num_asics	= 1,
-+		.num_ports	= 6,
-+	}, {
-+		.name		= "pcmuio96",
-+		.num_asics	= 2,
-+		.num_ports	= 12,
-+	},
-+};
-+
-+static struct comedi_driver driver = {
-+	.driver_name	= "pcmuio",
-+	.module		= THIS_MODULE,
-+	.attach		= pcmuio_attach,
-+	.detach		= pcmuio_detach,
-+	.board_name	= &pcmuio_boards[0].name,
-+	.offset		= sizeof(struct pcmuio_board),
-+	.num_names	= ARRAY_SIZE(pcmuio_boards),
-+};
-+
- static int __init driver_init_module(void)
- {
- 	return comedi_driver_register(&driver);
- }
-+module_init(driver_init_module);
- 
- static void __exit driver_cleanup_module(void)
- {
- 	comedi_driver_unregister(&driver);
- }
--
--module_init(driver_init_module);
- module_exit(driver_cleanup_module);
- 
- MODULE_AUTHOR("Comedi http://www.comedi.org");
+ 	if (cpu_is_mx25() || cpu_is_mx35()) {
+ 		/* Fix errata ENGcm07207 present on i.MX25 and i.MX35 */
+-- 
+1.7.10
+
