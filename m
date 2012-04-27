@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759532Ab2D0ILd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:11:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45176 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756968Ab2D0IL3 (ORCPT
+	id S1759667Ab2D0INA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:13:00 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55930 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759186Ab2D0IM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:11:29 -0400
-Date: Fri, 27 Apr 2012 16:11:22 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Dong Aisheng <b29396@freescale.com>, b20223@freescale.com,
-        linus.walleij@stericsson.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        kernel@pengutronix.de, cjb@laptop.org, s.hauer@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 2/4] pinctrl: pinctrl-imx: add imx pinctrl core driver
-Message-ID: <20120427081120.GT2234@S2101-09.ap.freescale.net>
-References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
- <1335451227-27709-2-git-send-email-b29396@freescale.com>
- <20120426144446.GN9142@game.jcrosoft.org>
- <20120426151536.GO9142@game.jcrosoft.org>
- <20120427054842.GJ2234@S2101-09.ap.freescale.net>
- <20120427062816.GQ9142@game.jcrosoft.org>
- <20120427072503.GP2234@S2101-09.ap.freescale.net>
- <20120427071104.GS9142@game.jcrosoft.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120427071104.GS9142@game.jcrosoft.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Apr 2012 04:12:57 -0400
+From: Richard Cochran <richardcochran@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH RFC V1 0/5] Rationalize time keeping
+Date: Fri, 27 Apr 2012 10:12:39 +0200
+Message-Id: <cover.1335510125.git.richardcochran@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 09:11:04AM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> except duplicate bindings instead having common one make no sense either
-> 
-> so imx, at91 and ST (STB SoC and other does have the same type of pin IP
-> 
-> to not come with a common bindig means we are doint the same crap as before
-> 
-> with switch to DT
-> 
-It can be every different in hardware details from one pin based
-controller to another.  mxs pinctrl is another pin based IP, and Dong
-tried to approach a binding working good for both imx and mxs, but in
-the end we agree imx binding does not work so good for mxs, and vice
-versa.  And that's why pinctrl core binding design leaves out the
-platform specific binding.
+Just in time for this year's leap second, this patch series presents a
+solution for the UTC leap second mess.
+
+Of course, the POSIX UTC system is broken by design, and the Linux
+kernel cannot fix that. However, what we can do is correctly execute
+leap seconds and always report the time variables (UTC time, TAI
+offset, and leap second status) with consistency.
+
+The basic idea is to keep the internal time using a continuous
+timescale and to convert to UTC by testing the time value against the
+current threshold and adding the appropriate offset. Since the UTC
+time and the leap second status is provided on demand, this eliminates
+the need to set a timer or to constantly monitor for leap seconds, as
+was done up until now.
+
+Patches 2 and 3 are just trivial stuff I saw along the way.
+
+* Benefits
+  - Fixes the buggy, inconsistent time reporting surrounding a leap
+    second event.
+  - Opens the possibility of offering a rational time source to user
+    space. [ Trivial to offer clock_gettime(CLOCK_TAI) for example. ]
+
+* Performance Impacts
+** con
+   - Small extra cost when reading the time (one integer addition plus
+     one integer test).
+** pro
+   - Removes repetitive, periodic division (secs % 86400 == 0) the whole
+     day long preceding a leap second.
+   - Cost of maintaining leap second status goes to the user of the
+     NTP adjtimex() interface, if any.
+
+* Todo
+  - The function __current_kernel_time accesses the time variables
+    without taking the lock. I can't figure that out.
+
+
+Richard Cochran (5):
+  Add functions to convert continuous timescales to UTC.
+  ntp: Fix a stale comment and a few stray newlines.
+  timekeeping: Fix a few minor newline issues.
+  timekeeping: Offer an interface to manipulate leap seconds.
+  timekeeping: Use a continuous timescale to tell time.
+
+ include/linux/timex.h      |    2 +-
+ kernel/time/Kconfig        |   12 ++
+ kernel/time/leap-seconds.h |   23 ++++
+ kernel/time/ntp.c          |   87 ++++------------
+ kernel/time/timekeeping.c  |  252 +++++++++++++++++++++++++++++++++++++++++---
+ kernel/time/utc-tai.h      |   99 +++++++++++++++++
+ 6 files changed, 391 insertions(+), 84 deletions(-)
+ create mode 100644 kernel/time/leap-seconds.h
+ create mode 100644 kernel/time/utc-tai.h
 
 -- 
-Regards,
-Shawn
+1.7.2.5
+
