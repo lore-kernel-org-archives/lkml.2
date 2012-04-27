@@ -1,140 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760320Ab2D0Ozu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 10:55:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760165Ab2D0Ozt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 10:55:49 -0400
-Date: Fri, 27 Apr 2012 11:52:13 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 06/10] KVM: MMU: fast path of handling guest page fault
-Message-ID: <20120427145213.GB28796@amt.cnet>
-References: <4F9776D2.7020506@linux.vnet.ibm.com>
- <4F9777A4.208@linux.vnet.ibm.com>
- <20120426234535.GA5057@amt.cnet>
- <4F9A3445.2060305@linux.vnet.ibm.com>
+	id S1760347Ab2D0O7p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 10:59:45 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:21005 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1760318Ab2D0O7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 10:59:44 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: lvrb9s0VM1m7J_rFNjWEYKyZOk6DvMBAkuYtxJQZ_6okDMi
+ IN7f6lNsHCACqgSKev0iGmmq1KbvHEXq05xpA0BEseCMe77qO7HE46fsw4CG
+ 6hAChyLEiXQ2nNLTgANmgf4VfwN4WVbRF1IVNjbuvtdTazFhZY0tHIlsg5T4
+ NchKj8ahxvqtw0qqj7nFZoHKWc1DdekqdDnF9_x3_2ooNyfabXiBofCtAaEg
+ OKt3otC.AmrHLN1.zQrZJI3bM2kqXRD4eqpkSoVNcd_8L7KxnooylW1Lsqt1
+ clQeHWooGlz8joRBj8t8byryaLgAqNgXsL2meCimNUppVVq0ycBo9jfhcie4
+ VaRcvW8ET0au05EHT5M53m9xwVjVvQd0b9YTNNu2f4gyNe7K9_EeepeQoKxh
+ G
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 27 Apr 2012 09:59:40 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Waiman Long <Waiman.Long@hp.com>
+cc: penberg@kernel.org, mpm@selenic.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, don.morris@hp.com
+Subject: Re: [PATCH] slub: prevent validate_slab() error due to race
+ condition
+In-Reply-To: <1335466658-29063-1-git-send-email-Waiman.Long@hp.com>
+Message-ID: <alpine.DEB.2.00.1204270911080.29198@router.home>
+References: <1335466658-29063-1-git-send-email-Waiman.Long@hp.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9A3445.2060305@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 01:53:09PM +0800, Xiao Guangrong wrote:
-> On 04/27/2012 07:45 AM, Marcelo Tosatti wrote:
-> 
-> 
-> >> +static bool
-> >> +fast_pf_fix_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-> >> +		  u64 *sptep, u64 spte)
-> >> +{
-> >> +	gfn_t gfn;
-> >> +
-> >> +	spin_lock(&vcpu->kvm->mmu_lock);
-> >> +
-> >> +	/* The spte has been changed. */
-> >> +	if (*sptep != spte)
-> >> +		goto exit;
-> >> +
-> >> +	gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
-> >> +
-> >> +	*sptep = spte | PT_WRITABLE_MASK;
-> >> +	mark_page_dirty(vcpu->kvm, gfn);
-> >> +
-> >> +exit:
-> >> +	spin_unlock(&vcpu->kvm->mmu_lock);
-> > 
-> > There was a misunderstanding. 
-> 
-> 
-> Sorry, Marcelo! It is still not clear for me now. :(
-> 
-> > The suggestion is to change codepaths that
-> > today assume that a side effect of holding mmu_lock is that sptes are
-> > not updated or read before attempting to introduce any lockless spte
-> > updates.
-> > 
-> > example)
-> > 
-> >         u64 mask, old_spte = *sptep;
-> > 
-> >         if (!spte_has_volatile_bits(old_spte) || (new_spte & mask) == mask)
-> >                 __update_clear_spte_fast(sptep, new_spte);
-> >         else
-> >                 old_spte = __update_clear_spte_slow(sptep, new_spte);
-> > 
-> > The local old_spte copy might be stale by the
-> > time "spte_has_volatile_bits(old_spte)" reads the writable bit.
-> > 
-> > example)
-> > 
-> > 
-> > VCPU0                                       VCPU1
-> > set_spte
-> > mmu_spte_update decides fast write 
-> > mov newspte to sptep
-> > (non-locked write instruction)
-> > newspte in store buffer
-> > 
-> >                                             lockless spte read path reads stale value
-> > 
-> > spin_unlock(mmu_lock) 
-> > 
-> > Depending on the what stale value CPU1 read and what decision it took
-> > this can be a problem, say the new bits (and we do not want to verify
-> > every single case). The spte write from inside mmu_lock should always be
-> > atomic now?
-> > 
-> > So these details must be exposed to the reader, they are hidden now
-> > (note mmu_spte_update is already a maze, its getting too deep).
-> > 
-> 
-> 
-> Actually, in this patch, all the spte update is under mmu-lock, and we
-> lockless-ly read spte , but the spte will be verified again after holding
-> mmu-lock.
 
-Yes but the objective you are aiming for is to read and write sptes
-without mmu_lock. That is, i am not talking about this patch. 
-Please read carefully the two examples i gave (separated by "example)").
+On Thu, 26 Apr 2012, Waiman Long wrote:
 
-> +	spin_lock(&vcpu->kvm->mmu_lock);
-> +
-> +	/* The spte has been changed. */
-> +	if (*sptep != spte)
-> +		goto exit;
-> +
-> +	gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
-> +
-> +	*sptep = spte | PT_WRITABLE_MASK;
-> +	mark_page_dirty(vcpu->kvm, gfn);
-> +
-> +exit:
-> +	spin_unlock(&vcpu->kvm->mmu_lock);
-> 
-> Is not the same as both read/update spte under mmu-lock?
-> 
-> Hmm, this is what you want?
+> The SLUB memory allocator was changed substantially from 3.0 to 3.1 by
+> replacing some of page locking codes for updating the free object list
+> of the slab with double-quadword atomic exchange (cmpxchg_double_slab)
+> or a pseudo one using a page lock when debugging is turned on.  In the
+> normal case, that should be enough to make sure that the slab is in a
+> consistent state. However, when CONFIG_SLUB_DEBUG is turned on and the
+> Redzone debugging flag is set, the Redzone bytes are also used to mark
+> if an object is free or allocated. The extra state information in those
+> Redzone bytes is not protected by the cmpxchg_double_slab(). As a
+> result,
+> validate_slab() may report a Redzone error if the validation is
+> performed
+> while racing with a free to a debugged slab.
 
-The rules for code under mmu_lock should be:
+Right. The problem is unique to validate_slab because no one else outside
+the slab has access to that object that is to be freed.
 
-1) Spte updates under mmu lock must always be atomic and 
-with locked instructions.
-2) Spte values must be read once, and appropriate action
-must be taken when writing them back in case their value 
-has changed (remote TLB flush might be required).
+> This patch fixes the BUG message by acquiring the node-level lock for
+> slabs flagged for debugging to avoid this possible racing condition.
+> The locking is done on the node-level lock instead of the more granular
+> page lock because the new code may speculatively acquire the node-level
+> lock later on. Acquiring the page lock and then the node lock may lead
+> to potential deadlock.
 
-The maintenance of:
+Correct that would address the issue.
 
-- gpte writable bit 
-- protected by dirty log
+> As the increment of slab node count and insertion of the new slab into
+> the partial or full slab list is not an atomic operation, there is a
+> small time window where the two may not match. This patch temporarily
+> works around this problem by allowing the node count to be one larger
+> than the number of slab presents in the lists. This workaround may not
+> work if more than one CPU is actively adding slab to the same node,
+> but it should be good enough to workaround the problem in most cases.
 
-Bits is tricky. We should think of a way to simplify things 
-and get rid of them (or at least one of them), if possible.
+Well yeah that is not a real fix. Its been racy for a long time.
 
+> To really fix the issue, the overall synchronization between debug slub
+> operations and slub validation needs a revisit.
+
+True. The sync between validation and concurrent operations was not in
+focus so far. Validation was used (at least by me) so far only to validate
+that the slab structures are still okay after running some tests.
+
+Lets just do this in steps. First patch here is a simple taking of the
+node lock in free_debug_processing. This is similar to what you have done
+but the changes are made to the debugging function instead. Then we can
+look at how to address the slab counting issue in a separate patch.
+
+
+Subject: slub: Take node lock during object free checks
+
+This is needed for proper synchronization with validate_slab()
+as pointed out by Waiman Long <Waiman.Long@hp.com>
+
+Reported-by: Waiman Long <Waiman.Long@hp.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+
+---
+ mm/slub.c |   30 ++++++++++++++++++------------
+ 1 file changed, 18 insertions(+), 12 deletions(-)
+
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2012-04-27 09:40:00.000000000 -0500
++++ linux-2.6/mm/slub.c	2012-04-27 09:50:15.000000000 -0500
+@@ -1082,13 +1082,13 @@ bad:
+ 	return 0;
+ }
+
+-static noinline int free_debug_processing(struct kmem_cache *s,
+-		 struct page *page, void *object, unsigned long addr)
++static noinline struct kmem_cache_node *free_debug_processing(
++	struct kmem_cache *s, struct page *page, void *object,
++	unsigned long addr, unsigned long *flags)
+ {
+-	unsigned long flags;
+-	int rc = 0;
++	struct kmem_cache_node *n = get_node(s, page_to_nid(page));
+
+-	local_irq_save(flags);
++	spin_lock_irqsave(&n->list_lock, *flags);
+ 	slab_lock(page);
+
+ 	if (!check_slab(s, page))
+@@ -1126,15 +1126,19 @@ static noinline int free_debug_processin
+ 		set_track(s, object, TRACK_FREE, addr);
+ 	trace(s, page, object, 0);
+ 	init_object(s, object, SLUB_RED_INACTIVE);
+-	rc = 1;
+ out:
+ 	slab_unlock(page);
+-	local_irq_restore(flags);
+-	return rc;
++	/*
++	 * Keep node_lock to preserve integrity
++	 * until the object is actually freed
++	 */
++	return n;
+
+ fail:
++	slab_unlock(page);
++	spin_unlock_irqrestore(&n->list_lock, *flags);
+ 	slab_fix(s, "Object at 0x%p not freed", object);
+-	goto out;
++	return NULL;
+ }
+
+ static int __init setup_slub_debug(char *str)
+@@ -1227,8 +1231,9 @@ static inline void setup_object_debug(st
+ static inline int alloc_debug_processing(struct kmem_cache *s,
+ 	struct page *page, void *object, unsigned long addr) { return 0; }
+
+-static inline int free_debug_processing(struct kmem_cache *s,
+-	struct page *page, void *object, unsigned long addr) { return 0; }
++static inline struct kmem_cache_node *free_debug_processing(
++	struct kmem_cache *s, struct page *page, void *object,
++	unsigned long addr, unsigned long *flags) { return NULL; }
+
+ static inline int slab_pad_check(struct kmem_cache *s, struct page *page)
+ 			{ return 1; }
+@@ -2445,7 +2450,8 @@ static void __slab_free(struct kmem_cach
+
+ 	stat(s, FREE_SLOWPATH);
+
+-	if (kmem_cache_debug(s) && !free_debug_processing(s, page, x, addr))
++	if (kmem_cache_debug(s) &&
++		!(n = free_debug_processing(s, page, x, addr, &flags)))
+ 		return;
+
+ 	do {
