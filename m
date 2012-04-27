@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760788Ab2D0Uhv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 16:37:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40205 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751039Ab2D0Uhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 16:37:50 -0400
-Message-ID: <4F9B0378.70906@zytor.com>
-Date: Fri, 27 Apr 2012 13:37:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S932158Ab2D0Ukn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 16:40:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53415 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab2D0Ukm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 16:40:42 -0400
+Date: Fri, 27 Apr 2012 13:40:35 -0700
+From: Tejun Heo <tj@kernel.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Han Ying <yinghan@google.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyuki@gmail.com
+Subject: Re: [RFC][PATCH 8/9 v2] cgroup: avoid creating new cgroup under a
+ cgroup being destroyed
+Message-ID: <20120427204035.GN26595@google.com>
+References: <4F9A327A.6050409@jp.fujitsu.com>
+ <4F9A36DE.30301@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Mark Lord <kernel@teksavvy.com>
-CC: Michael Tokarev <mjt@tls.msk.ru>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>, autofs@vger.kernel.org,
-        Ian Kent <raven@themaw.net>, Thomas Meyer <thomas@m3y3r.de>,
-        stable@kernel.org
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix design
- error.
-References: <1335447289-9909-1-git-send-email-mjt@msgid.tls.msk.ru> <CA+55aFxEP7-+N7vTPZ-4hD-UirZ=+YMJh2x3EjZvUmjjyOchtg@mail.gmail.com> <4F9A6ABA.6050503@msgid.tls.msk.ru> <4F9ABF90.5060404@teksavvy.com>
-In-Reply-To: <4F9ABF90.5060404@teksavvy.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F9A36DE.30301@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2012 08:47 AM, Mark Lord wrote:
-> On 12-04-27 05:45 AM, Michael Tokarev wrote:
-> ..
->> Please note: the talk is about 32bit userspace on 64bit kernel,
->> which should be quite rare these days, or something of less
->> priority.
+On Fri, Apr 27, 2012 at 03:04:14PM +0900, KAMEZAWA Hiroyuki wrote:
+> When ->pre_destroy() is called, it should be guaranteed that
+> new child cgroup is not created under a cgroup, where pre_destroy()
+> is running. If not, ->pre_destroy() must check children and
+> return -EBUSY, which causes warning.
 > 
-> 
-> I suspect 32bit-PAE is more common than 32/64,
-> but both are valid and not uncommon in the wild.
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-32-on-64 is a very important use case, because it lets us get people off
-32-bit kernels.
+Hmm... I'm getting confused more.  Why do we need these cgroup changes
+at all?  cgroup still has cgrp->count check and
+cgroup_clear_css_refs() after pre_destroy() calls.  The order of
+changes should be,
 
-	-hpa
+* Make memcg pre_destroy() not fail; however, pre_destroy() should
+  still be ready to be retried.  That's the defined interface.
 
+* cgroup core updated to drop pre_destroy() retrying and guarantee
+  that pre_destroy() invocation will happen only once.
+
+* memcg and other cgroups can update their pre_destroy() if the "won't
+  be retried" part can simplify their implementations.
+
+So, there's no reason to be updating cgroup pre_destroy() semantics at
+this point and these updates actually break cgroup API as it currently
+stands.  The only change necessary is memcg's pre_destroy() not
+returning zero.
+
+Thanks.
+
+-- 
+tejun
