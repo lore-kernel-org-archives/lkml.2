@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759655Ab2D0DCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 23:02:49 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60698 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758159Ab2D0DCG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 23:02:06 -0400
+	id S1759555Ab2D0DB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 23:01:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758159Ab2D0DB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 23:01:57 -0400
+Date: Thu, 26 Apr 2012 22:02:24 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: 3.4-rc4 oom killer out of control.
+Message-ID: <20120427020224.GA22927@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+References: <20120426193551.GA24968@redhat.com>
+ <alpine.DEB.2.00.1204261437470.28376@chino.kir.corp.google.com>
+ <20120426215257.GA12908@redhat.com>
+ <alpine.DEB.2.00.1204261517100.28376@chino.kir.corp.google.com>
+ <20120426224419.GA13598@redhat.com>
+ <20120427005448.GD23877@home.goodmis.org>
 MIME-Version: 1.0
-In-Reply-To: <1334384779-532-1-git-send-email-mad_soft@inbox.ru>
-References: <1334384779-532-1-git-send-email-mad_soft@inbox.ru>
-Date: Fri, 27 Apr 2012 11:02:05 +0800
-Message-ID: <CAN1soZwQ9BBp+=mZZm6tL+r2j5-wX-mFkeBPCOuqCGkibZ0R1g@mail.gmail.com>
-Subject: Re: [PATCH] arm/sa1100: fix sa1100-rtc memory resource
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Dmitry Artamonow <mad_soft@inbox.ru>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120427005448.GD23877@home.goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 14, 2012 at 2:26 PM, Dmitry Artamonow <mad_soft@inbox.ru> wrote:
-> DEFINE_RES_MEM() takes the size of resource as a second argument,
-> not the end address. Passing end address leads to following error
-> in runtime during device registration:
-> sa1100-rtc: failed to claim resource 0
->
-> Fix it.
->
-> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
-> ---
->  arch/arm/mach-sa1100/generic.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> For reference: bug was introduced by commit 3888c09074
-> ("rtc: sa1100: declare irq in resource")
->
-> diff --git a/arch/arm/mach-sa1100/generic.c b/arch/arm/mach-sa1100/generic.c
-> index 7c524b4..16be4c5 100644
-> --- a/arch/arm/mach-sa1100/generic.c
-> +++ b/arch/arm/mach-sa1100/generic.c
-> @@ -306,7 +306,7 @@ void sa11x0_register_irda(struct irda_platform_data *irda)
->  }
->
->  static struct resource sa1100_rtc_resources[] = {
-> -       DEFINE_RES_MEM(0x90010000, 0x9001003f),
-> +       DEFINE_RES_MEM(0x90010000, 0x40),
->        DEFINE_RES_IRQ_NAMED(IRQ_RTC1Hz, "rtc 1Hz"),
->        DEFINE_RES_IRQ_NAMED(IRQ_RTCAlrm, "rtc alarm"),
->  };
-> --
-> 1.7.5.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Thu, Apr 26, 2012 at 08:54:48PM -0400, Steven Rostedt wrote:
+ 
+ > >  > full_scans is just a counter of how many times it has scanned mergable 
+ > >  > memory so it should be increasing constantly.  Whether pages_to_scan == 
+ > >  > 1250 and sleep_millisecs == 20 is good for your system is unknown.  You 
+ > >  > may want to try disabling ksm entirely (echo 0 > /sys/kernel/mm/ksm/run) 
+ > >  > to see if it significantly increases responsiveness for your workload.
+ > > 
+ > 
+ > You didn't happen to see any RCU CPU stalls, did you?
 
-Applied
+nothing got reported in dmesg..
 
-Regards
-Haojian
+	Dave
