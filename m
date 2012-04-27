@@ -1,77 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758577Ab2D0Mgb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 08:36:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41868 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754237Ab2D0Mga (ORCPT
+	id S1758694Ab2D0MjN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 08:39:13 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35390 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757169Ab2D0MjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 08:36:30 -0400
-Date: Fri, 27 Apr 2012 13:36:26 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        balbi@ti.com, Herbert Xu <herbert@gondor.hengli.com.au>,
-        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org
-Subject: Re: Default Kconfig state for hw_random drivers
-Message-ID: <20120427123626.GH18260@opensource.wolfsonmicro.com>
-References: <20120426114229.GG3207@opensource.wolfsonmicro.com>
- <CAOesGMj2eZvWek86D2MKQMPY9qAsC0D2MsYyN-+RPUr5gDFn4A@mail.gmail.com>
- <4F9A91A8.4050608@atmel.com>
+	Fri, 27 Apr 2012 08:39:11 -0400
+Subject: [PATCH 1/2] proc: report file/anon bit in /proc/pid/pagemap
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Pavel Emelyanov <xemul@parallels.com>
+Date: Fri, 27 Apr 2012 16:39:01 +0400
+Message-ID: <20120427123901.2132.47969.stgit@zurg>
+In-Reply-To: <4F91BC8A.9020503@parallels.com>
+References: <4F91BC8A.9020503@parallels.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0XhtP95kHFp3KGBe"
-Content-Disposition: inline
-In-Reply-To: <4F9A91A8.4050608@atmel.com>
-X-Cookie: You will triumph over your enemy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an implementation of Andrew's proposal to extend the pagemap file
+bits to report what is missing about tasks' working set.
 
---0XhtP95kHFp3KGBe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The problem with the working set detection is multilateral. In the criu
+(checkpoint/restore) project we dump the tasks' memory into image files
+and to do it properly we need to detect which pages inside mappings are
+really in use. The mincore syscall I though could help with this did not.
+First, it doesn't report swapped pages, thus we cannot find out which
+parts of anonymous mappings to dump. Next, it does report pages from page
+cache as present even if they are not mapped, and it doesn't make
+difference between private pages that has been cow-ed and private pages
+that has not been cow-ed.
 
-On Fri, Apr 27, 2012 at 02:31:36PM +0200, Nicolas Ferre wrote:
+Note, that issue with swap pages is critical -- we must dump swap pages to
+image file. But the issues with file pages are optimization -- we can take
+all file pages to image, this would be correct, but if we know that a page
+is not mapped or not cow-ed, we can remove them from dump file. The dump
+would still be self-consistent, though significantly smaller in size (up
+to 10 times smaller on real apps).
 
-> I had the same kind of discussion with Felipe and Arnd in this thread:
-> http://thread.gmane.org/gmane.linux.ports.arm.kernel/122248/focus=122304
+Andrew noticed, that the proc pagemap file solved 2 of 3 above issues -- it
+reports whether a page is present or swapped and it doesn't report not
+mapped page cache pages. But, it doesn't distinguish cow-ed file pages from
+not cow-ed.
 
-> The conclusion came out after Arnd's strong arguments:
-> http://article.gmane.org/gmane.linux.ports.arm.kernel/122962
+I would like to make the last unused bit in this file to report whether the
+page mapped into respective pte is PageAnon or not.
 
-> Maybe adding a "default" directive can be an valid option?
+v2:
+* Rebase to uptodate kernel
+* Fix file/anon bit reporting for migration entries
+* Fix frame bits interval comment, it uses 55 lower bits (64 - 3 - 6)
 
-There is one, that's the problem - the driver is defaulting to the same
-state as the main hw_random option (as is idiomatic for this subsystem).
-This means that if you've enabled any hw_random device this driver will
-be enabled by default.  I would argue that this default directive only
-makes sense if there's an explicit dependency limiting the platforms it
-can build on.  If it can build on any platform then omitting the default
-and just defaulting to N as is normal for drivers would be better.
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+---
+ Documentation/vm/pagemap.txt |    2 +-
+ fs/proc/task_mmu.c           |   44 +++++++++++++++++++++++++++---------------
+ 2 files changed, 29 insertions(+), 17 deletions(-)
 
---0XhtP95kHFp3KGBe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/Documentation/vm/pagemap.txt b/Documentation/vm/pagemap.txt
+index 4600cbe..7587493 100644
+--- a/Documentation/vm/pagemap.txt
++++ b/Documentation/vm/pagemap.txt
+@@ -16,7 +16,7 @@ There are three components to pagemap:
+     * Bits 0-4   swap type if swapped
+     * Bits 5-54  swap offset if swapped
+     * Bits 55-60 page shift (page size = 1<<page shift)
+-    * Bit  61    reserved for future use
++    * Bit  61    page is file-page or shared-anon
+     * Bit  62    page swapped
+     * Bit  63    page present
+ 
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 2d60492..bc3df31 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -700,6 +700,7 @@ struct pagemapread {
+ 
+ #define PM_PRESENT          PM_STATUS(4LL)
+ #define PM_SWAP             PM_STATUS(2LL)
++#define PM_FILE             PM_STATUS(1LL)
+ #define PM_NOT_PRESENT      PM_PSHIFT(PAGE_SHIFT)
+ #define PM_END_OF_BUFFER    1
+ 
+@@ -733,20 +734,31 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
+ 	return err;
+ }
+ 
+-static u64 swap_pte_to_pagemap_entry(pte_t pte)
++static void pte_to_pagemap_entry(pagemap_entry_t *pme,
++		struct vm_area_struct *vma, unsigned long addr, pte_t pte)
+ {
+-	swp_entry_t e = pte_to_swp_entry(pte);
+-	return swp_type(e) | (swp_offset(e) << MAX_SWAPFILES_SHIFT);
+-}
++	u64 frame, flags;
++	struct page *page = NULL;
++
++	if (pte_present(pte)) {
++		frame = pte_pfn(pte);
++		flags = PM_PRESENT;
++		page = vm_normal_page(vma, addr, pte);
++	} if (is_swap_pte(pte)) {
++		swp_entry_t entry = pte_to_swp_entry(pte);
++
++		frame = swp_type(entry) |
++			(swp_offset(entry) << MAX_SWAPFILES_SHIFT);
++		flags = PM_SWAP;
++		if (is_migration_entry(entry))
++			page = migration_entry_to_page(entry);
++	} else
++		return;
+ 
+-static void pte_to_pagemap_entry(pagemap_entry_t *pme, pte_t pte)
+-{
+-	if (is_swap_pte(pte))
+-		*pme = make_pme(PM_PFRAME(swap_pte_to_pagemap_entry(pte))
+-				| PM_PSHIFT(PAGE_SHIFT) | PM_SWAP);
+-	else if (pte_present(pte))
+-		*pme = make_pme(PM_PFRAME(pte_pfn(pte))
+-				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
++	if (page && !PageAnon(page))
++		flags |= PM_FILE;
++
++	*pme = make_pme(PM_PFRAME(frame) | PM_PSHIFT(PAGE_SHIFT) | flags);
+ }
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+@@ -809,7 +821,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 		if (vma && (vma->vm_start <= addr) &&
+ 		    !is_vm_hugetlb_page(vma)) {
+ 			pte = pte_offset_map(pmd, addr);
+-			pte_to_pagemap_entry(&pme, *pte);
++			pte_to_pagemap_entry(&pme, vma, addr, *pte);
+ 			/* unmap before userspace copy */
+ 			pte_unmap(pte);
+ 		}
+@@ -861,11 +873,11 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+  * For each page in the address space, this file contains one 64-bit entry
+  * consisting of the following:
+  *
+- * Bits 0-55  page frame number (PFN) if present
++ * Bits 0-54  page frame number (PFN) if present
+  * Bits 0-4   swap type if swapped
+- * Bits 5-55  swap offset if swapped
++ * Bits 5-54  swap offset if swapped
+  * Bits 55-60 page shift (page size = 1<<page shift)
+- * Bit  61    reserved for future use
++ * Bit  61    page is file-page or shared-anon
+  * Bit  62    page swapped
+  * Bit  63    page present
+  *
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPmpKoAAoJEBus8iNuMP3dMfIP/R8jgdE84jDZxEwbOJ6jv6lJ
-UGzuDCdSx0Wt28mNE9FP5FBPMZYQhlvuhY6eeoQM259dr+TaKk2qwmZskg2xmocl
-EqRpj+Sfg2HAErhUz/DVmJtjhXQpvaRH+pEqFcDJBjERHcE64N7Um2iZVYKe2r21
-ZuqRsd/E6dh97RqbrwwHBQ8YpVFHTsEYSpa4vEDOjFFNSIGzYZq2jf35SfcAyYBg
-4xdRHOHovJT42/WbKkZBhJbzHHouyEoieIiH+rxs8C41Onhuy/tOobU1coHGW5tY
-AP/3KZ+Tr3SSC6FA5EQmw8mLKXtlk68P7blmc5cQ7+7oPDlhg3RETZuhuk3YhZRE
-j86OZFmZDhqBHeqpB08q8UOFGFDVWmoMWtq4hdsgv6BYAMW8xi2zoSPdz/LOYUe9
-hB1bZ8Z8Mb2IuZK0qzMPzQ8hoPa+5aS4rZfUtbEmFQhf1oILqjxrUel66T6AClIP
-zTGm6EJ/zLKp2ISw5qnXWV58GgnRKyjMB1wu5IBxPciurpyATF/tAki4GMT8XdWm
-9YNKiG2bxsUeEdywWjWfuozNBYtzbvWYMDr+qDHDDpIfu+UUT2eMTsS0BJ2u/Vqo
-pWSbVTfl+fg5k+wnWjCPFADO5BBZBM+v3+2Kbf2lPhcv277pnk3Y9l7kcnvbx6DP
-a44dFMFeNY1eS+T/R3Zb
-=+OAQ
------END PGP SIGNATURE-----
-
---0XhtP95kHFp3KGBe--
