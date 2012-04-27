@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761232Ab2D0T2o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 15:28:44 -0400
-Received: from mail.inp.gob.ec ([190.110.215.78]:43398 "EHLO mail.inp.gob.ec"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759116Ab2D0T2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 15:28:43 -0400
-X-Greylist: delayed 1616 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Apr 2012 15:28:42 EDT
-Message-ID: <20120427135231.16986sh4jmnym70g@mail.inp.gob.ec>
-Date: Fri, 27 Apr 2012 13:52:31 -0500
-From: WEB ADMINISTRATOR <info@webmaster.org>
-Reply-to: webmaster2012@admin.in.th
-To: undisclosed-recipients:;
-Subject: Technical Support
+	id S1761317Ab2D0T3G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 15:29:06 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:48722 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761022Ab2D0T3E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 15:29:04 -0400
+Date: Fri, 27 Apr 2012 12:29:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        fmhess@users.sourceforge.net, abbotti@mev.co.uk
+Subject: Re: [PATCH] staging: comedi: introduce 'comedi_get_board' helper
+ function
+Message-ID: <20120427192900.GA14158@kroah.com>
+References: <201204271149.49035.hartleys@visionengravers.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
-X-INP-MailScanner-Information: Please contact the ISP for more information
-X-INP-MailScanner-ID: 49DD5231CFB4.A1F8E
-X-INP-MailScanner: Found to be clean
-X-INP-MailScanner-From: info@webmaster.org
+In-Reply-To: <201204271149.49035.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 27, 2012 at 11:49:48AM -0700, H Hartley Sweeten wrote:
+> This helper function is used to fetch the comedi_device board_ptr
+> which is used during the attach to pass board specific information
+> to the comedi drivers.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: Mori Hess <fmhess@users.sourceforge.net>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+> 
+> With this helper removing all the 'this_board' defines in the drivers
+> will be easier (and cleaner).
+> 
+> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+> index 300fd84..53a05dd 100644
+> --- a/drivers/staging/comedi/comedidev.h
+> +++ b/drivers/staging/comedi/comedidev.h
+> @@ -235,6 +235,11 @@ struct comedi_device {
+>  	void (*close) (struct comedi_device *dev);
+>  };
+>  
+> +static inline const void *comedi_get_board(struct comedi_device *dev)
+> +{
+> +	return dev->board_ptr;
+> +}
 
+"traditionally" the *get* functions increment a reference count of the
+pointer it returns, which isn't happening here.
 
-Your webmail quota system has exceeded the storage limit,Due To hidden
-files On your mailbox,Your Are Currently Running On 23GB to  Validate your
-mailbox and increase your quota.
+How about renaming this to just be comedi_board() instead?
 
-In addition, You are advice to fill in your
-appropriate email login information in order to boost your webmail quota
-and to enhance the security of your email account.
+thanks,
 
-Email: ...............
-Username:................
-password:................
-Confirm password .............
-
-If your mailbox remains de-activated for an extended period of time, it
-may result in further limitations or eventual closure
-
-Technical Support
-192.168.0.1
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
-
-
--- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
-
+greg k-h
