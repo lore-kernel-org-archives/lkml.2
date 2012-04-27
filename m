@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760171Ab2D0No4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 09:44:56 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:47574 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757185Ab2D0Noz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 09:44:55 -0400
+	id S1760185Ab2D0Nr5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 09:47:57 -0400
+Received: from fieldses.org ([174.143.236.118]:55834 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755930Ab2D0Nry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 09:47:54 -0400
+Date: Fri, 27 Apr 2012 09:47:52 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, swhiteho@redhat.com
+Subject: Re: [PATCH 0/6] Get rid of I_MUTEX_QUOTA use
+Message-ID: <20120427134752.GD14973@fieldses.org>
+References: <1335387467-4928-1-git-send-email-jack@suse.cz>
+ <20120425212532.GB3251@fieldses.org>
+ <20120426132608.GA10368@quack.suse.cz>
 MIME-Version: 1.0
-Date: Fri, 27 Apr 2012 17:44:54 +0400
-Message-ID: <CADF-jewF126u0ix9e5XoH_a6ndHakTeR=N0JKmPgi1qQFTw7OA@mail.gmail.com>
-Subject: percpu embed allocator problem
-From: Pavel Panteleev <panteleevp@gmail.com>
-To: linux-mm@kvak.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120426132608.GA10368@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Thu, Apr 26, 2012 at 03:26:08PM +0200, Jan Kara wrote:
+> On Wed 25-04-12 17:25:32, J. Bruce Fields wrote:
+> > On Wed, Apr 25, 2012 at 10:57:41PM +0200, Jan Kara wrote:
+> > > 
+> > >   Hello,
+> > > 
+> > >   this patch set changes generic quota code (and filesystems relying on it)
+> > > so that they don't use special locking class I_MUTEX_QUOTA. The only remaining
+> > > user of I_MUTEX_QUOTA is GFS2. If noone has objections, I can merge these
+> > > patches through my tree or Bruce, you can take them as your work depends
+> > > on these changes.
+> > 
+> > My changes will likely need to go through Al, and depend on GFS2 being
+> > fixed as well.
+> > 
+> > So it's up to Al.  Best might be to just merge it through your tree and
+> > let us sort it out in the next merge window?
+>   OK, I've added patches to my tree for now. I also sent a patch for GFS2
+> but after some investigation that's mostly a cleanup grade and Steven can
+> merge it independently. Quota inode in GFS2 is hidden system file so there
+> should be no locking problems with it wrt your patches.
 
-I have the following problem with pcpu embed allocator in kernel
-2.6.33.1. pcpu_embed_first_chunk() function allocate only size_sum =
-(ai->static_size + ai->reserved_size + ai->dyn_size) for an unit in
-the group. So, for 4 groups (1 unit in each) and with memory only on
-the first node I have the following:
+OK.  In that case I suppose I'd like Al to take patches 1-4 of the 5 I
+posted most recently (followups to
+http://mid.gmane.org/20120425152041.GA751@fieldses.org), probably after
+your fixes go in.  I'll resend if necessary after they go in.
 
-pcpu_embed_first_chunk(): ai->groups[0].base_offset=0x0
-pcpu_embed_first_chunk(): ai->groups[1].base_offset=0xa000
-pcpu_embed_first_chunk(): ai->groups[2].base_offset=0x14000
-pcpu_embed_first_chunk(): ai->groups[3].base_offset=0x1e000
+(I'm also going ahead and pushing out the rest of my delegation patches,
+to be merged for 3.5; that solves most of my delegation problem, leaving
+just a race in rename to be closed by those 4 patches.)
 
-pcpu_embed_first_chunk(): ai->unit_size=0x10000
-
-It means, that for each group memory of size_sum=0xa000 is used only.
-So, in the case of memory only on the first node, memory for the
-following group will be allocated near the memory of the previous
-group. Even though memory of size_sum=0xa000 is used only, but
-ai->unit_size=0x10000.
-
-After filling group_offsets and group_sizes in
-pcpu_setup_first_chunk() function we have, that (group_offsets[i] +
-group_sizes[i]) can be larger than group_offsets[i+1]. But in
-pcpu_get_vm_areas() function there is checker, which tell us, that
-such situation is impossible:
-
-BUG_ON(start2 >= start && start2 < end);
-
-May be  I should not use embed allocator in such situation?
-
-
-Best regards,
-Pavel V. Panteleev
+--b.
