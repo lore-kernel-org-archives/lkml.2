@@ -1,136 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab2D0WsS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 18:48:18 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:58181 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab2D0WsR (ORCPT
+	id S1756427Ab2D0Wt4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 18:49:56 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:44643 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab2D0Wtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 18:48:17 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-127.messagelabs.com!1335566873!4212547!32
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor pcmad driver to remove forward declarations
-Date: Fri, 27 Apr 2012 15:48:07 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Fri, 27 Apr 2012 18:49:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201204271548.07918.hartleys@visionengravers.com>
+In-Reply-To: <20120427234215.079a1565@pyramind.ukuu.org.uk>
+References: <20120427.151433.1007849975903946491.davem@davemloft.net>
+ <20120427.151651.2274764174217164454.davem@davemloft.net> <CA+55aFzPbAprx-iT0TYh24uS7+JnL92mbTg_js6Cd_O0q+Dvmw@mail.gmail.com>
+ <20120427.152404.2292425516870981391.davem@davemloft.net> <CA+55aFzGO+PHmjjVgxnYawbB-wFAqHtkh19vTv1AwQNpc9MsWg@mail.gmail.com>
+ <20120427234215.079a1565@pyramind.ukuu.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 27 Apr 2012 15:49:32 -0700
+X-Google-Sender-Auth: YHqd_QShY8ypQS1RKv5tE9NYyG0
+Message-ID: <CA+55aFxoGXgVhPyU6ObOnowpCNVYCyaVeFswLx_vJ3c4KBf3yw@mail.gmail.com>
+Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
+ design error.
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: David Miller <davem@davemloft.net>, mjt@tls.msk.ru,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org, raven@themaw.net,
+        thomas@m3y3r.de, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the module_init/module_exit routines and the associated
-struct comedi_driver and other variables to the end of the source.
-This is more typical of how other drivers are written and removes
-the need for the forward declarations.
+On Fri, Apr 27, 2012 at 3:42 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> Comments? The patch looks fairly simple. The "packetized pipe" might
+>> even be useful for other users and maybe we might want to expose it as
+>> an actual pipe fcntl, but right now the only thing that sets that flag
+>> is autofs.
+>
+> The obvious way to set the flag would seem to me to also btake O_DIRECT
+> on the pipe as meaning this ?
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Hmm. That would work, then if you wanted to create a packet pipe, you'd just use
 
----
+   if (pipe2(fd, O_DIRECT | O_NONBLOCK)) {
+     perror("Kernel doesn't support packetized pipes");
+     return -1;
+  }
 
-diff --git a/drivers/staging/comedi/drivers/pcmad.c b/drivers/staging/comedi/drivers/pcmad.c
-index 23b3d77..fe8ef66 100644
---- a/drivers/staging/comedi/drivers/pcmad.c
-+++ b/drivers/staging/comedi/drivers/pcmad.c
-@@ -57,19 +57,8 @@ struct pcmad_board_struct {
- 	const char *name;
- 	int n_ai_bits;
- };
--static const struct pcmad_board_struct pcmad_boards[] = {
--	{
--	 .name = "pcmad12",
--	 .n_ai_bits = 12,
--	 },
--	{
--	 .name = "pcmad16",
--	 .n_ai_bits = 16,
--	 },
--};
- 
- #define this_board ((const struct pcmad_board_struct *)(dev->board_ptr))
--#define n_pcmad_boards ARRAY_SIZE(pcmad_boards)
- 
- struct pcmad_priv_struct {
- 	int differential;
-@@ -77,31 +66,6 @@ struct pcmad_priv_struct {
- };
- #define devpriv ((struct pcmad_priv_struct *)dev->private)
- 
--static int pcmad_attach(struct comedi_device *dev, struct comedi_devconfig *it);
--static int pcmad_detach(struct comedi_device *dev);
--static struct comedi_driver driver_pcmad = {
--	.driver_name = "pcmad",
--	.module = THIS_MODULE,
--	.attach = pcmad_attach,
--	.detach = pcmad_detach,
--	.board_name = &pcmad_boards[0].name,
--	.num_names = n_pcmad_boards,
--	.offset = sizeof(pcmad_boards[0]),
--};
--
--static int __init driver_pcmad_init_module(void)
--{
--	return comedi_driver_register(&driver_pcmad);
--}
--
--static void __exit driver_pcmad_cleanup_module(void)
--{
--	comedi_driver_unregister(&driver_pcmad);
--}
--
--module_init(driver_pcmad_init_module);
--module_exit(driver_pcmad_cleanup_module);
--
- #define TIMEOUT	100
- 
- static int pcmad_ai_insn_read(struct comedi_device *dev,
-@@ -188,6 +152,37 @@ static int pcmad_detach(struct comedi_device *dev)
- 	return 0;
- }
- 
-+static const struct pcmad_board_struct pcmad_boards[] = {
-+	{
-+		.name		= "pcmad12",
-+		.n_ai_bits	= 12,
-+	}, {
-+		.name		= "pcmad16",
-+		.n_ai_bits	= 16,
-+	},
-+};
-+static struct comedi_driver driver_pcmad = {
-+	.driver_name	= "pcmad",
-+	.module		= THIS_MODULE,
-+	.attach		= pcmad_attach,
-+	.detach		= pcmad_detach,
-+	.board_name	= &pcmad_boards[0].name,
-+	.num_names	= ARRAY_SIZE(pcmad_boards),
-+	.offset		= sizeof(pcmad_boards[0]),
-+};
-+
-+static int __init driver_pcmad_init_module(void)
-+{
-+	return comedi_driver_register(&driver_pcmad);
-+}
-+module_init(driver_pcmad_init_module);
-+
-+static void __exit driver_pcmad_cleanup_module(void)
-+{
-+	comedi_driver_unregister(&driver_pcmad);
-+}
-+module_exit(driver_pcmad_cleanup_module);
-+
- MODULE_AUTHOR("Comedi http://www.comedi.org");
- MODULE_DESCRIPTION("Comedi low-level driver");
- MODULE_LICENSE("GPL");
+which means that if user space wants to use packetized pipes for other
+things, it now has a nice way of testing whether the kernel supports
+it (because older kernels would return -EINVAL - for once we actually
+verify that only the flags we support are set).
+
+And that maybe we wouldn't even need the extra flag in the "struct
+pipe" at all - we could just check it in file->f_flags.
+
+Let my try that.
+
+                   Linus
