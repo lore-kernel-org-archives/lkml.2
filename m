@@ -1,97 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760079Ab2D0KwV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 06:52:21 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44162 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759607Ab2D0KwU convert rfc822-to-8bit (ORCPT
+	id S1760123Ab2D0K5w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 06:57:52 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:37506 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759764Ab2D0K5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 06:52:20 -0400
+	Fri, 27 Apr 2012 06:57:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <1335521331-16199-1-git-send-email-dbaryshkov@gmail.com>
-References: <1335521331-16199-1-git-send-email-dbaryshkov@gmail.com>
-Date: Fri, 27 Apr 2012 12:52:19 +0200
-Message-ID: <CACRpkdZbr9CvCWx_a2Cf1MiJE_FDLQM4qipqRbnTRw+jM8U7gA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: add a driver for GPIO pins found on AMD-8111 south
- bridge chips
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20120427101732.GX3157@wantstofly.org>
+References: <1335517711-6522-1-git-send-email-sedat.dilek@gmail.com>
+	<20120427091405.GS3157@wantstofly.org>
+	<CA+icZUVAK3NHmbG5kR1KhqGe9mAimWWzLz-MfXOXbyry3Sz73w@mail.gmail.com>
+	<20120427094007.GU3157@wantstofly.org>
+	<CA+icZUUiYwpHpqe5_kz1rLzTT13qQMwpNpDH7EOaRrVi_c8Z2Q@mail.gmail.com>
+	<20120427094637.GV3157@wantstofly.org>
+	<CA+icZUXNZ=exTnR=OgD_9bpt_0s-KnR+v-K6u+XzQr4HBoTQHQ@mail.gmail.com>
+	<20120427095842.GW3157@wantstofly.org>
+	<CA+icZUWuynSaPE4pdxzoP783pw7r=5x27ewXN_pkR5VS=0kKUg@mail.gmail.com>
+	<20120427101732.GX3157@wantstofly.org>
+Date: Fri, 27 Apr 2012 12:57:50 +0200
+Message-ID: <CA+icZUUnJPeDmL9xXfvj62an40bXwwaOnrJmxmLN_cBt9PyCZA@mail.gmail.com>
+Subject: Re: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/mixed; boundary=00248c6a66bab59acc04bea6f901
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 12:08 PM, Dmitry Eremin-Solenikov
-<dbaryshkov@gmail.com> wrote:
+--00248c6a66bab59acc04bea6f901
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> Add a driver to use GPIO pins available on several AMD south bridges
-> (currently only AMD 8111 is supported).
+On Fri, Apr 27, 2012 at 12:17 PM, Lennert Buytenhek
+<buytenh@wantstofly.org> wrote:
+> On Fri, Apr 27, 2012 at 12:12:13PM +0200, Sedat Dilek wrote:
 >
-> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>> >> >> >> Are you planning to or even working on support (for) 8361 devic=
+es?
+>> >> >> >
+>> >> >> > I don't have any such plans, and I don't know of anyone who does=
+.
+>> >> >>
+>> >> >> Does 8361 require firmware support?
+>> >> >
+>> >> > What do you mean by that?
+>> >>
+>> >> IIRC ath5k for example needs no external firmware file.
+>> >
+>> > The 8361 requires firmware to be loaded into it before it'll do
+>> > anything useful.
+>> >
+>> >
+>> >> >> Does a firmware file exist (name?)?
+>> >> >
+>> >> > There's firmware for the 8361 out there, however, that version of
+>> >> > the firmware implements a firmware API that is different from the
+>> >> > one that mwl8k currently implements.
+>> >> >
+>> >> > You could add 8361 support to mwl8k, but then you'd have to go over
+>> >> > all the firmware command invocations in mwl8k and make sure that th=
+ey
+>> >> > will work on the 8361 firmware that you're trying to support as wel=
+l.
+>> >>
+>> >> Without having a 8361 this will be even harder to walk through.
+>> >>
+>> >> Anyway, thanks for your detailed explanations.
+>> >>
+>> >> What's the alternative for such affected users?
+>> >> Use ndis-wrapper?
+>> >
+>> > I'm not sure. =C2=A0I've never tried to get a 8361 work under Linux.
+>>
+>> Just found on [1] this same wrong patch in [2] :-).
+>> Dunno if [3] worked and from where they have stolen fw-files.
+>>
+>> - Sedat -
+>>
+>> [1] https://dev.openwrt.org/ticket/7209
+>> [2] https://dev.openwrt.org/attachment/ticket/7209/mwl8k_fix_pci_id.patc=
+h
+>> [3] https://dev.openwrt.org/attachment/ticket/7209/mwl8k_8361p.patch
+>
+> I doubt that [3] is really all that's needed to make it work. =C2=A0But i=
+f
+> there's someone for whom it works, I'd like them to run some tests on
+> mwl8k + [3] on 88w8361p.
 
-Mainly nitpicks, it's looking good overall...
+Just asked lautriv to do so (he will do against linux-3.3.3), lets' see.
+Also, I refreshed and adapted a bit the instructions (see attachment).
 
-> +       spin_lock_irqsave(&agp->lock, flags);
-> +       temp = ioread8(agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
-> +       temp = (temp & 0x1c) | (!!value);
+- Sedat -
 
-This is a bit idomatic but I think I understand what's going on. However this
-0x1C magic could be better of with some #define AMD_8111_GPIO_FOO don't
-you think?
+--00248c6a66bab59acc04bea6f901
+Content-Type: text/plain; charset=US-ASCII; name="mwl8k_extract_firmware.txt"
+Content-Disposition: attachment; filename="mwl8k_extract_firmware.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h1j4m2kc0
 
-> +static int amd_gpio_get(struct gpio_chip *chip, unsigned offset)
-> +{
-> +       struct amd_gpio *agp = to_agp(chip);
-> +       u8 temp;
-> +
-> +       temp = ioread8(agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
-> +
-> +       dev_dbg(&agp->pdev->dev, "Getting gpio %d, reg=%02x\n", offset, temp);
-> +
-> +       return !!(temp & 0x20);
-
-And this could be #define AMD_8111_GPIO_INVAL or so (I bet this bit has a
-name in the datasheet, right?)
-
-> +static int amd_gpio_dirout(struct gpio_chip *chip, unsigned offset, int value)
-> +{
-> +       struct amd_gpio *agp = to_agp(chip);
-> +       u8 temp;
-> +       unsigned long flags;
-> +
-> +       spin_lock_irqsave(&agp->lock, flags);
-> +       temp = ioread8(agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
-> +       temp = (temp & 0x10) | 0x4 | (!!value);
-
-And so on...
-
-> +       iowrite8(temp, agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
-> +       spin_unlock_irqrestore(&agp->lock, flags);
-> +
-> +       dev_dbg(&agp->pdev->dev, "Dirout gpio %d, value %d, reg=%02x\n", offset, !!value, temp);
-> +
-> +       return 0;
-> +}
-
-> +static int __init mod_init(void)
-
-amd_gpio_init() maybe? These names are nice for e.g. ftrace.
-
-> +       printk(KERN_INFO "AMD-8111 GPIO detected\n");
-
-pr_info() & friends are nice shorthands for this.
-
-> +static void __exit mod_exit(void)
-
-amd_gpio_mod_exit()?
-
-> +MODULE_AUTHOR("The Linux Kernel team");
-
-Don't be shy, put in your own name :-)
-
-Yours,
-Linus Walleij
+IyMjIEhFTFAtMTogaHR0cHM6Ly9mb3J1bS5vcGVud3J0Lm9yZy92aWV3dG9waWMucGhwP3BpZD0x
+MDMyNDMjcDEwMzI0MwojIyMgSEVMUC0yOiBodHRwczovL2ZvcnVtLm9wZW53cnQub3JnL3ZpZXd0
+b3BpYy5waHA/cGlkPTExMDAwNCNwMTEwMDA0CgojIyMgRnJvbSBIRUxQLTE6CgpUbyBleHRyYWN0
+IHRoZSBmaXJtd2FyZSBmb3IgdGhlIG13bDhrIGRyaXZlciwgb3BlbiB5b3VyIFVidW50dSB0ZXJt
+aW5hbDoKCnN1ZG8gYXB0LWdldCBpbnN0YWxsIGNhYmV4dHJhY3QgdW5zaGllbGQKCm1rZGlyIG13
+bDhrCmNkIG13bDhrCgp3Z2V0IC1PIG1ydjhrX2V4dHJhY3RfZncuYyAnaHR0cDovL21hcmMuaW5m
+by8/bD1saW51eC13aXJlbGVzcyZtPTEyNjU0MDY3NDQxOTMzMCZxPXAzJwp3Z2V0IGZ0cDovL2Rv
+d25sb2Fkcy5uZXRnZWFyLmNvbS9maWxlcy93bjMxMXRfNF8yX3NldHVwLmV4ZQoKbWtkaXIgbWVz
+cwpjYWJleHRyYWN0IC1GIERpc2sxL2RhdGEqLiogLWQgbWVzcyB3bjMxMXRfNF8yX3NldHVwLmV4
+ZQp1bnNoaWVsZCAtZyBEcml2ZXIgLWQgbWVzcyB4IG1lc3MvRGlzazEvZGF0YTEuY2FiCmdjYyAt
+byBtcnY4a19leHRyYWN0X2Z3IG1ydjhrX2V4dHJhY3RfZncuYwouL21ydjhrX2V4dHJhY3RfZncg
+bWVzcy9Ecml2ZXIvbmV0bXcxNDUuc3lzCnJtIC1yIG1lc3MKCm1kNXN1bSAtYiAqLmZ3Cm12IGZt
+aW1hZ2VfOFhYMS5mdyBmbWltYWdlXzgzNjMuZncKbXYgaGVscGVyXzhYWDEuZncgaGVscGVyXzgz
+NjMuZncKCiMjIyBGcm9tIEhFTFAtMjogRm9yIE1hcndlbGwgODM2MVAKCm1kNXN1bSAtYiAqLmZ3
+IHwgZWdyZXAgJzQ4Yzc5YjA4NWY3ZjVhNTkwZDNkYmMxNTY0N2U1MTlmfDBmZTExZjQxNWFkYmJk
+NWU4Y2EwMzY0MTcwNWM0YTZjJwpbIE9VVFBVVCBdCjQ4Yzc5YjA4NWY3ZjVhNTkwZDNkYmMxNTY0
+N2U1MTlmICpmbWltYWdlXzhYWDAuZncKMGZlMTFmNDE1YWRiYmQ1ZThjYTAzNjQxNzA1YzRhNmMg
+KmhlbHBlcl84WFgwLmZ3CgptdiBmbWltYWdlXzhYWDAuZncgZm1pbWFnZV84MzYxcC5mdwptdiBo
+ZWxwZXJfOFhYMC5mdyBoZWxwZXJfODM2MXAuZncKCiMjIyBQQVRDSDogaHR0cHM6Ly9kZXYub3Bl
+bndydC5vcmcvYXR0YWNobWVudC90aWNrZXQvNzIwOS9td2w4a184MzYxcC5wYXRjaAoKCi1kaWxl
+a3MgLy8gMjctQXByLTIwMTIKCg==
+--00248c6a66bab59acc04bea6f901--
