@@ -1,141 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab2D0MW3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 08:22:29 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:47610 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab2D0MW2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 08:22:28 -0400
-Date: Fri, 27 Apr 2012 14:22:22 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, devel@openvz.org,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 17/23] kmem controller charge/uncharge infrastructure
-Message-ID: <20120427122219.GC3514@somewhere.redhat.com>
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
- <1335138820-26590-6-git-send-email-glommer@parallels.com>
- <alpine.DEB.2.00.1204231522320.13535@chino.kir.corp.google.com>
- <20120424142232.GC8626@somewhere>
- <4F9759C0.1070805@jp.fujitsu.com>
+	id S1758281Ab2D0MYt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 08:24:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44245 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757185Ab2D0MYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 08:24:46 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <greg@kroah.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH v5 0/7] Add TI EMIF SDRAM controller driver
+Date: Fri, 27 Apr 2012 17:54:02 +0530
+Message-ID: <1335529449-28046-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <y>
+References: <y>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9759C0.1070805@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 10:56:16AM +0900, KAMEZAWA Hiroyuki wrote:
-> (2012/04/24 23:22), Frederic Weisbecker wrote:
-> 
-> > On Mon, Apr 23, 2012 at 03:25:59PM -0700, David Rientjes wrote:
-> >> On Sun, 22 Apr 2012, Glauber Costa wrote:
-> >>
-> >>> +/*
-> >>> + * Return the kmem_cache we're supposed to use for a slab allocation.
-> >>> + * If we are in interrupt context or otherwise have an allocation that
-> >>> + * can't fail, we return the original cache.
-> >>> + * Otherwise, we will try to use the current memcg's version of the cache.
-> >>> + *
-> >>> + * If the cache does not exist yet, if we are the first user of it,
-> >>> + * we either create it immediately, if possible, or create it asynchronously
-> >>> + * in a workqueue.
-> >>> + * In the latter case, we will let the current allocation go through with
-> >>> + * the original cache.
-> >>> + *
-> >>> + * This function returns with rcu_read_lock() held.
-> >>> + */
-> >>> +struct kmem_cache *__mem_cgroup_get_kmem_cache(struct kmem_cache *cachep,
-> >>> +					     gfp_t gfp)
-> >>> +{
-> >>> +	struct mem_cgroup *memcg;
-> >>> +	int idx;
-> >>> +
-> >>> +	gfp |=  cachep->allocflags;
-> >>> +
-> >>> +	if ((current->mm == NULL))
-> >>> +		return cachep;
-> >>> +
-> >>> +	if (cachep->memcg_params.memcg)
-> >>> +		return cachep;
-> >>> +
-> >>> +	idx = cachep->memcg_params.id;
-> >>> +	VM_BUG_ON(idx == -1);
-> >>> +
-> >>> +	memcg = mem_cgroup_from_task(current);
-> >>> +	if (!mem_cgroup_kmem_enabled(memcg))
-> >>> +		return cachep;
-> >>> +
-> >>> +	if (rcu_access_pointer(memcg->slabs[idx]) == NULL) {
-> >>> +		memcg_create_cache_enqueue(memcg, cachep);
-> >>> +		return cachep;
-> >>> +	}
-> >>> +
-> >>> +	return rcu_dereference(memcg->slabs[idx]);
-> >>> +}
-> >>> +EXPORT_SYMBOL(__mem_cgroup_get_kmem_cache);
-> >>> +
-> >>> +void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id)
-> >>> +{
-> >>> +	rcu_assign_pointer(cachep->memcg_params.memcg->slabs[id], NULL);
-> >>> +}
-> >>> +
-> >>> +bool __mem_cgroup_charge_kmem(gfp_t gfp, size_t size)
-> >>> +{
-> >>> +	struct mem_cgroup *memcg;
-> >>> +	bool ret = true;
-> >>> +
-> >>> +	rcu_read_lock();
-> >>> +	memcg = mem_cgroup_from_task(current);
-> >>
-> >> This seems horribly inconsistent with memcg charging of user memory since 
-> >> it charges to p->mm->owner and you're charging to p.  So a thread attached 
-> >> to a memcg can charge user memory to one memcg while charging slab to 
-> >> another memcg?
-> > 
-> > Charging to the thread rather than the process seem to me the right behaviour:
-> > you can have two threads of a same process attached to different cgroups.
-> > 
-> > Perhaps it is the user memory memcg that needs to be fixed?
-> > 
-> 
-> There is a problem of OOM-Kill.
-> To free memory by killing process, 'mm' should be released by kill.
-> So, oom-killer just finds a leader of process.
-> 
-> Assume A process X consists of thread A, B and A is thread-group-leader.
-> 
-> Put thread A into cgroup/Gold
->     thread B into cgroup/Silver.
-> 
-> If we do accounting based on threads, we can't do anything at OOM in cgroup/Silver.
-> An idea 'Killing thread-A to kill thread-B'..... breaks isolation.
+Add a driver for the EMIF SDRAM controller used in Texas Instrument SoCs
 
-Right. But then if one wanted true isolation without worrying about such
-side effect, he would avoid to scatter a thread group across more than one
-memcg.
+EMIF is an SDRAM controller that supports, based on its revision,
+one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
+for LPDDR2.
 
->  
-> As far as resources used by process, I think accounting should be done per process.
-> It's not tied to thread.
+The driver supports the following features:
+- Calculates the DDR AC timing parameters to be set in EMIF
+  registers using data from the device data-sheets and based
+  on the DDR frequency. If data from data-sheets is not available
+  default timing values from the JEDEC spec are used. These
+  will be safe, but not necessarily optimal
+- API for changing timings during DVFS or at boot-up
+- Temperature alert configuration and handling of temperature
+  alerts, if any for LPDDR2 devices
+  * temperature alert is based on periodic polling of MR4 mode
+    register in DDR devices automatically performed by hardware
+  * timings are de-rated and brought back to nominal when
+    temperature raises and falls respectively
+- Cache of calculated register values to avoid re-calculating
+  them
 
-Yep, makes sense. Especially as thread B might free memory allocated by thread A.
-Maintaining a per thread granularity would create too much mess.
+The driver will need some minor updates when it is eventually
+integrated with Dynamic Voltage and Frequency Scaling (DVFS).
+This can not be done now as DVFS support is not available in
+the mainline yet.
 
-> About kmem, if we count task_struct, page tables, etc...which can be freed by
-> OOM-Killer i.e. it's allocated for 'process', should be aware of OOM problem.
-> Using mm->owner makes sense to me until someone finds a great idea to handle
-> OOM situation rather than task killing.
+Discussions with Santosh Shilimkar <santosh.shilimkar@ti.com>
+were immensely helpful in shaping up the interfaces. Vibhore Vardhan
+<vvardhan@gmail.com> did the initial code snippet for thermal
+handling.
 
-kmem is different because the memory allocated is in essence available to every
-threads. Because this becomes a global resource, I don't find the accounting to p->mm->owner
-more relevant than to p.
+Testing: 
+- The driver is tested on OMAP4430 SDP.
+- The driver in a slightly adapted form is also tested on OMAP5.
+- Since mainline kernel doesn't have DVFS support yet,
+  testing was done using a test module.
+- Temperature alert handling was tested with simulated interrupts
+  and faked temperature values as testing all cases in real-life
+  scenarios is difficult.
+- Tested the driver as a module
+
+Cc: Greg KH <greg@kroah.com>
+
+v5:
+- Moved the EMIF driver to drivers/memory as per discussion thread [2]
+
+v4:
+- Converted instances of EXPORT_SYMBOL to EXPORT_SYMBOL_GPL
+- Removed un-necessary "#ifndef __ASSEMBLY__'
+- Minor formatting fix
+
+v2:
+- Fixed a bug found in the implementation of errata i728
+  workaround
+- Fixed the value of frequency printed in debugfs
+- Dropped the hwmod patch as Paul has already posted a
+  a hwmod series [1] that adds hwmod for EMIF
+- Converted instances of __init to __init_or_module
+
+Regards
+Santosh
+
+[1] http://thread.gmane.org/gmane.linux.ports.arm.omap/72855
+[2] https://lkml.org/lkml/2012/4/12/173
+
+
+Aneesh V (7):
+  ddr: add LPDDR2 data from JESD209-2
+  memory: emif: add register definitions for EMIF
+  memory: emif: add basic infrastructure for EMIF driver
+  memory: emif: handle frequency and voltage change events
+  memory: emif: add interrupt and temperature handling
+  memory: emif: add one-time settings
+  memory: emif: add debugfs entries for emif
+
+ Documentation/memory-devices/ti-emif.txt |   57 +
+ drivers/Kconfig                          |    4 +
+ drivers/Makefile                         |    3 +
+ drivers/memory/Kconfig                   |   22 +
+ drivers/memory/Makefile                  |    5 +
+ drivers/memory/emif.c                    | 1670 ++++++++++++++++++++++++++++++
+ drivers/memory/emif.h                    |  589 +++++++++++
+ include/linux/platform_data/emif_plat.h  |  128 +++
+ include/memory/jedec_ddr.h               |  175 ++++
+ lib/Kconfig                              |    8 +
+ lib/Makefile                             |    2 +
+ lib/jedec_ddr_data.c                     |  135 +++
+ 12 files changed, 2798 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/memory-devices/ti-emif.txt
+ create mode 100644 drivers/memory/Kconfig
+ create mode 100644 drivers/memory/Makefile
+ create mode 100644 drivers/memory/emif.c
+ create mode 100644 drivers/memory/emif.h
+ create mode 100644 include/linux/platform_data/emif_plat.h
+ create mode 100644 include/memory/jedec_ddr.h
+ create mode 100644 lib/jedec_ddr_data.c
+
+-- 
+1.7.5.4
+
