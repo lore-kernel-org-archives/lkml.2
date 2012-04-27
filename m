@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab2D0VBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 17:01:18 -0400
-Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:40810 "EHLO
-	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751679Ab2D0VBQ (ORCPT
+	id S1752778Ab2D0VJn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 17:09:43 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:50898 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab2D0VJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 17:01:16 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: "J\, KEERTHY" <j-keerthy@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        j-pihet@ti.com
-Subject: Re: [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-Organization: Texas Instruments, Inc.
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
-	<20120426191159.GA9415@sirena.org.uk>
-	<CAJ6a13a6WN9h1QZynpEOf-R6RXwWBZ2eOPkTeNc15JX_YfAz_w@mail.gmail.com>
-	<20120427175657.GP18260@opensource.wolfsonmicro.com>
-Date: Fri, 27 Apr 2012 14:01:17 -0700
-In-Reply-To: <20120427175657.GP18260@opensource.wolfsonmicro.com> (Mark
-	Brown's message of "Fri, 27 Apr 2012 18:56:58 +0100")
-Message-ID: <87397o3n4y.fsf@ti.com>
+	Fri, 27 Apr 2012 17:09:40 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Tejun Heo <tj@kernel.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <87haw55eed.fsf@xmission.com>
+	<Pine.LNX.4.44L0.1204271410470.1690-100000@iolanthe.rowland.org>
+	<20120427201704.GK26595@google.com>
+Date: Fri, 27 Apr 2012 14:09:22 -0700
+In-Reply-To: <20120427201704.GK26595@google.com> (Tejun Heo's message of "Fri,
+	27 Apr 2012 13:17:04 -0700")
+Message-ID: <878vhg3mrh.fsf@xmission.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+0u4jhAERQoo2oC4giX3MtOU+uN0iXVow=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0018]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Tejun Heo <tj@kernel.org>
+X-Spam-Relay-Country: **
+Subject: Re: Lockdep false positive in sysfs
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Tejun Heo <tj@kernel.org> writes:
 
-Mark Brown <broonie@opensource.wolfsonmicro.com> writes:
-
-> On Fri, Apr 27, 2012 at 11:09:10AM +0530, J, KEERTHY wrote:
+> On Fri, Apr 27, 2012 at 02:27:26PM -0400, Alan Stern wrote:
+>> Which do you prefer: temporarily dropping the lockdep annotation, or
+>> deferring the work to the per-task work queue?  Note that these "flush
+>> before returning to userspace" things aren't in the kernel yet.
 >
->> Devfreq and cpufreq are related to dynamic frequency/voltage switching between
->> pre defined Operating Performance Points or the OPPs. Every OPP being
->> a voltage/frequency pair. Smartreflex is a different
->> power management technique.
->
-> But presumably these things should integrate somehow - for example,
-> should devfreq and cpufreq be providing inputs into what AVS is doing,
-> and if so how?
+> It's about lockdep.  Let's not spill out to other areas unnecessarily.
+> I'd much prefer just working around lockdep annotation.
 
-The way it is currently designed, cpufreq/devfreq/regulator layers don't
-need to know about AVS.
+It is also about a locking scheme that makes analysis hard.
 
-The higher-level layers only know about the "nominal" voltage.  AVS
-hardware does automatic, adaptive, micro-adjustments around that nominal
-voltage, and these micro-adjustments are managed by the AVS hardware
-sending commands to the PMIC.  (specifically, on OMAP, the AVS sensors
-provide inputs to the voltage processor (VP) which provide inputs to the
-voltage controller (VC) which sends commands to the PMIC[1].)
+Doing something so we don't have false lockdep warnings is good
+so people can concentrate on things that are clearly problems.
 
-The driver proposed here is primarily for initializing the various
-parameters/sensitivity/etc. of the AVS hardware, but the actual voltage
-adjustments are done in hardware by VC/VP.
+However it would be nice if we could sort out the locking so that it
+isn't so tricky that neither lockdep nor sparse can figure it out.
 
-The only thing the higher-level layers might potentially need to do to
-enable/disable AVS around transitions (e.g. when changing OPP, AVS is
-disabled before changing OPP and only re-enabled when the new nominal
-voltage has been acheived.)
+I have the sneaking suspicion that idioms that tangle up our automatic
+tools are also idioms that are likely to result in maintenance problems
+at some point.
 
-On OMAP, we handle this inside the OMAP-specific voltage layer which is
-called by the regulator framework, so even the regulators do not need
-any knowledge of AVS.
+Another possibility to to look at the situation and realize that pci has
+a maxium depth of 256 (bus numbers). And that usb also has a maxium
+depth of I believe 256 ( If I read it right usb hubs are transparent to
+usb enumeration so the maximum depth is the maximum number of usb ids
+and I think the usb id is a 8 bit number).  I don't think anything else
+even nests so deeply.  So it may be reasonable to declare an array of
+256 or perhaps 1024 lockdep keys and limit the device tree when lockdep
+is enabled to 1024 layers deep.
 
-Kevin
+At which point we are at a point where lockdep can actually analyze the
+behavior.
 
-[1] Figure 3-76 in OMAP4430 ES2.1 Public TRM vAD provides a 
-    detailed diagram:
-    http://www.ti.com/pdfs/wtbu/OMAP4430_ES2.x_PUBLIC_TRM_vAD.zip
+I don't mind the attitude we are clever careful programmers we can
+handle the complexity and we can get away without the tool help us, but
+I would much rather see the attitude that we are clever careful
+programmers and we can figure out how to make the tool help us instead
+of just ignoring it.
+
+Eric
