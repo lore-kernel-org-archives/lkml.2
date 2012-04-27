@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760802Ab2D0Q4O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 12:56:14 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:44903 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1760631Ab2D0Q4L (ORCPT
+	id S1760751Ab2D0RAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 13:00:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54575 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756764Ab2D0RAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 12:56:11 -0400
-Message-ID: <4F9ACFC4.6010002@xenotime.net>
-Date: Fri, 27 Apr 2012 09:56:36 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Fri, 27 Apr 2012 13:00:07 -0400
+Date: Fri, 27 Apr 2012 17:59:19 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 2/2] asm-generic: io: don't perform swab during {in,out}
+ string functions
+Message-ID: <20120427165919.GD14743@mudshark.cambridge.arm.com>
+References: <1335523376-14695-1-git-send-email-will.deacon@arm.com>
+ <1335523376-14695-2-git-send-email-will.deacon@arm.com>
+ <201204271219.00596.vapier@gentoo.org>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-rdma@vger.kernel.org
-Subject: Re: inux-next: Tree for Apr 27 (infiniband/hw/ocrdma)
-References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au>
-In-Reply-To: <20120427161146.95422142968526faaff615d4@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201204271219.00596.vapier@gentoo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 11:11 PM, Stephen Rothwell wrote:
-
-> Hi all,
+On Fri, Apr 27, 2012 at 05:18:58PM +0100, Mike Frysinger wrote:
+> On Friday 27 April 2012 06:42:56 Will Deacon wrote:
+> > The {in,out}s{b,w,l} functions are designed to operate on a stream of
+> > bytes and therefore should not perform any byte-swapping, regardless of
+> > the CPU byte order.
 > 
-> Changes since 20120424:
+> says who ?  where's the agreed upon documentation for this ?
 
+This specific case is actually documented in Linux Device Drivers, but I
+appreciate that it's not especially clear. I had some offline discussion
+with Arnd where we agreed on this -- it also means that asm-generic/io.h
+matches what is done by bi-endian architectures providing their own
+accessors.
 
-
-when IPV6 is not enabled:
-
-ERROR: "register_inet6addr_notifier" [drivers/infiniband/hw/ocrdma/ocrdma.ko] undefined!
-ERROR: "unregister_inet6addr_notifier" [drivers/infiniband/hw/ocrdma/ocrdma.ko] undefined!
-
-
-
-
-~Randy
-
+Will
