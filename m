@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760665Ab2D0PiY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:38:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46326 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760396Ab2D0PiX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:38:23 -0400
-Message-ID: <4F9ABD67.3060704@lwfinger.net>
-Date: Fri, 27 Apr 2012 10:38:15 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
+	id S1760613Ab2D0Pkq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:40:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52502 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760394Ab2D0Pkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 11:40:45 -0400
+Date: Fri, 27 Apr 2012 11:40:34 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jeff Moyer <jmoyer@redhat.com>, axboe@kernel.dk, ctalbott@google.com,
+        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, fengguang.wu@intel.com,
+        hughd@google.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 11/11] blkcg: implement per-blkg request allocation
+Message-ID: <20120427154033.GJ10579@redhat.com>
+References: <1335477561-11131-1-git-send-email-tj@kernel.org>
+ <1335477561-11131-12-git-send-email-tj@kernel.org>
+ <x49wr51usxi.fsf@segfault.boston.devel.redhat.com>
+ <20120427150217.GK27486@google.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Regression in 32-bit ppc kernel
-References: <4F973026.3020103@lwfinger.net>  <1335311621.15830.42.camel@pasglop> <4F976352.4060001@lwfinger.net>  <1335327081.21961.28.camel@pasglop> <4F98117C.7080309@lwfinger.net> <1335390257.21961.53.camel@pasglop>
-In-Reply-To: <1335390257.21961.53.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120427150217.GK27486@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 04:44 PM, Benjamin Herrenschmidt wrote:
->
-> Do we know what the bad interrupt maps to ? Also what is the value of
-> NR_IRQ and do you have SPARSE_IRQ enabled ? Can you try with the latter
-> disabled and NR_IRQ set to something large, such as 128 ?
->
-> (You may be able to check the interrupt mapping in debugfs)
+On Fri, Apr 27, 2012 at 08:02:17AM -0700, Tejun Heo wrote:
+> Hello,
+> 
+> On Fri, Apr 27, 2012 at 10:54:01AM -0400, Jeff Moyer wrote:
+> > > This patch implements per-blkg request_list.  Each blkg has its own
+> > > request_list and any IO allocates its request from the matching blkg
+> > > making blkcgs completely isolated in terms of request allocation.
+> > 
+> > So, nr_requests is now actually nr_requests * # of blk cgroups.  Is that
+> > right?  Are you at all concerned about the amount of memory that can be
+> > tied up as the number of cgroups increases?
+> 
+> Yeah, I thought about it and I don't think there's a single good
+> solution here.  The other extreme would be splitting nr_requests by
+> the number of cgroups but that seems even worse - each cgroup should
+> be able to hit maximum throughput.  Given that a lot of workloads tend
+> to regulate themselves before hitting nr_requests, I think it's best
+> to leave it as-is and treat each cgroup as having separate channel for
+> now.  It's a configurable parameter after all.
 
-Sorry, I was unable to find anything in debugfs to help me learn about interrupt 
-mapping. The value of CONFIG_NR_IRQS is already 512. I have not tried reducing 
-it to 128. The setting for CONFIG_SPARSE_IRQ was on, and changing it to off did 
-not make any difference.
+So on a slow device a malicious application can easily create thousands
+of group, queue up tons of IO and create unreclaimable memory easily?
+Sounds little scary. 
 
-I finished the bisection, which led to
+I had used two separate limits. Per queue limit and per group limit
+(nr_requests and nr_group_requests). That had made implementation 
+complex and relied on user doing the right configuration so that one
+cgroup does not get serialized behind other once we hit nr_requests.
+I am not advocating that solution as it was not very nice either.
 
-commit a79dd5ae5a8f49688d65b89a859f2b98a7ee5538
-Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date:   Thu Dec 15 11:13:03 2011 +1100
+Hmm.., tricky...
 
-     tty/serial/pmac_zilog: Fix suspend & resume
-
-As this seemed to be an improbable result, I did the full test by checking out 
-the previous commit (43ca5d3). That resulted in a "good" result. Then I used 
-quilt to add commit a79dd5a as a patch and the fault returned. I then noticed 
-that you said in the commit message that "I removed some code for handling 
-unexpected interrupt which should never be hit...". It appears that my box does 
-indeed hit such an unexpected interrupt.
-
-I could always get rid of the fault by disabling CONFIG_SERIAL_PMACZILOG, but I 
-would like to fix the problem if possible.
-
-Thanks,
-
-Larry
-
+Thanks
+Vivek
