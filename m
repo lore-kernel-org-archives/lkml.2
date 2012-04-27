@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761178Ab2D0Sph (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:45:37 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35160 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757624Ab2D0Spe (ORCPT
+	id S1761210Ab2D0Sqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 14:46:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33155 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759022Ab2D0Sqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 14:45:34 -0400
-Date: Fri, 27 Apr 2012 19:45:29 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Roland McGrath <roland@hack.frob.com>
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120427184528.GL6871@ZenIV.linux.org.uk>
-References: <CA+55aFxia+u3VAf0qN-2wv7DyAQZK-Z8=n=cqUvo--+C905aFg@mail.gmail.com>
- <20120420160848.GG6871@ZenIV.linux.org.uk>
- <20120420164239.GH6871@ZenIV.linux.org.uk>
- <CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com>
- <20120420180748.GI6871@ZenIV.linux.org.uk>
- <20120423180150.GA6871@ZenIV.linux.org.uk>
- <20120424072617.GB6871@ZenIV.linux.org.uk>
- <20120426183742.GA324@redhat.com>
- <20120426231942.GJ6871@ZenIV.linux.org.uk>
- <20120427172444.GA30267@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120427172444.GA30267@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Apr 2012 14:46:42 -0400
+X-Authority-Analysis: v=2.0 cv=IaEFqBWa c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=YAiA9tJJwu8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Wjc7B1I3CYzanoRTeO0A:9 a=p6ILm6DmrjC-AHdWMZ0A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1335552399.28106.228.camel@gandalf.stny.rr.com>
+Subject: RFC: How to handle function tracing, frame pointers and -mfentry?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Fri, 27 Apr 2012 14:46:39 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 07:24:44PM +0200, Oleg Nesterov wrote:
-> > static inline sigset_t *sigmask_to_save(void)
-> > {
-> > 	struct sigset *res = &current->blocked;
-> > 	if (unlikely(test_restore_sigmask()))
-> > 		res = current->saved_sigmask;
-> > 	return res;
-> > }
-> 
-> Perhaps... but test_*_restore_sigmask() depends on TIF_ or TS_
+I have code that implements -mfentry for the function tracer.
 
-... and is in thread_info.h; you might want to pull it again ;-)
-Right now the signal.git#master is at 349b4565ad9e9b891245590319567c0a042046d9
+For those that are unfamiliar with this, it was introduced into gcc in
+4.6.0 for x86 only. Used with the -pg option, it replaces mcount with
+fentry, and is placed at the first instruction of a function (instead of
+after the frame has been built, as mcount does).
 
-> > Umm...  Probably, and as far as I can see all callers are only reached if
-> > we have SIGPENDING, but that requires at least documenting what's going on.
-> 
-> WARN_ON(!test_bit(TIF_SIGPENDING)) looks like the perfect documentation ;)
+So what's my problem?  With -mfentry, function tracer does not depend on
+frame pointers. As frame pointers may add overhead, some distros
+(Debian) has disabled frame pointers from their kernels and with that,
+has also disabled function tracing.
 
-OK, I'm convinced.  Done.
+Currently, function tracing selects CONFIG_FRAME_POINTER for various
+archs (including x86), as the kernel will not compile without it, if
+function tracing is enabled. But if -mfentry is available with the
+compiler, it does not have this dependency. The kernel will compile fine
+with -pg -mfentry and without frame pointers.
 
-BTW, I've a better name than set_current_blocked_carefully(); the thing
-is, only 3 callers out of 63 are _not_ immediately preceded by excluding
-SIGKILL/SIGSTOP out of the set.  So I've copied the existing variant
-to __set_current_blocked() and folded that sigdelsetmask(...) into the
-set_current_blocked().
+My question is, how do I remove the dependency in kconfig based on the
+compiler?
 
-> The only comment I have,
-> 38671a3e831ed7327affb24d715f98bb99c80e56 m68k: add TIF_NOTIFY_RESUME and handle it
-> forgets to unexport do_signal().
+I've tried a few things and here's some ideas:
 
-Meh...  The thing is, there are _two_ of them.  signal_mm.c and signal_no.c
-badly need merging, with common stuff moved to signal.c.  I really hate
-to see static function that isn't called anywhere in file it's defined in,
-leaving one to trace what happens to include that file.  Running into that
-in USB code is bloody annoying and I'd rather not add to that pile.  It's
-certainly a valid C, but it's hell on casual reader...
+1) Have kconfig detect if -mfentry is supported with the current
+compiler. If it is, then enable a "auto" config called
+CONFIG_CC_HAS_FENTRY, and allow function tracer be able to select
+FRAME_POINTER if that's not defined.
 
-	BTW, I'm somewhat tempted to do the following: *ALL* calls of
-tracehook_signal_handler() are now immediately preceded by block_signals().
-Moreover, tracehook_signal_handler(...., 0) is currently a no-op, so
-it could be painlessly added after the remaining block_signals() instances.
-How about *folding* block_signals() (along with clear_restore_sigmask())
-into tracehook_signal_handler()?  I don't know if anyone has conflicting
-plans for that sucker; Roland?
+I actually got this to work, but it only works if the host compiler is
+the same as the compiler building the kernel. Which in lots of cases is
+not (my default setup does not have this).
 
-	Even more ambitious variant: take the "setting sigframe up has
-failed, send ourselves SIGSEGV" in there as well (adding an extra argument
-to tell which one it is).  Hell knows; I know at least one place where
-such failure does _not_ lead to SIGSEGV, but there we do do_exit(SIGILL)
-right in setup_..._frame() and do_exit() never returns.  There might be
-other such suckers...
- 
-> The last thing. Matt, could you please look at
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal.git ? It seems to me
-> you already sent some of these changes (use set_current_blocked/block_sigmask).
-> Perhaps there are alreay in -mm or linux-next?
+2) Remove the select entirely. On build, if the compiler fails because
+it does not support -pg running without frame pointers, have a big error
+message telling the user they can't have function tracing without frame
+pointers and that they either need to enable frame pointers or disable
+function tracing.
+
+3) Add frame pointers silently if gcc fails to build with gcc -pg.
+
+I personally do not really care which approach is taken (or a new
+approach that I didn't list). I just want to be able to build a kernel
+with function tracing and without frame pointers on x86.
+
+Thanks,
+
+-- Steve
+
+
