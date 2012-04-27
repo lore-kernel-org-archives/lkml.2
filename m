@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab2D0VYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 17:24:47 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57356 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab2D0VYq convert rfc822-to-8bit (ORCPT
+	id S1754328Ab2D0V1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 17:27:17 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53191 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754127Ab2D0V1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 17:24:46 -0400
+	Fri, 27 Apr 2012 17:27:16 -0400
+Date: Fri, 27 Apr 2012 14:27:13 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
+In-Reply-To: <20120427132343.fbb443b9.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com>
+References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au> <4F9ABF9C.2070707@xenotime.net> <alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com> <20120427132343.fbb443b9.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201204272314.39715.rjw@sisk.pl>
-References: <201202070200.55505.rjw@sisk.pl>
-	<201204270004.27958.rjw@sisk.pl>
-	<CAMP5Xgce6EPfpCaYN+34iuUxLpV9j9LoWYrQ21xcJiANuQ3VpQ@mail.gmail.com>
-	<201204272314.39715.rjw@sisk.pl>
-Date: Fri, 27 Apr 2012 14:17:55 -0700
-Message-ID: <CAMP5Xgeq2y+dcifY7tkuQVgUSpzrLHXsPpHBq+7zu=mE+wD0Ng@mail.gmail.com>
-Subject: Re: [RFC][PATCH 8/8] PM / Sleep: Add user space interface for
- manipulating wakeup sources
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: NeilBrown <neilb@suse.de>, John Stultz <johnstul@us.ibm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/4/27 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Friday, April 27, 2012, Arve Hjønnevåg wrote:
->> 2012/4/26 Rafael J. Wysocki <rjw@sisk.pl>:
->> ...
->> > ---
->> > From: Rafael J. Wysocki <rjw@sisk.pl>
->> > Subject: PM / Sleep: Add user space interface for manipulating wakeup sources, v3
->> >
->> > Android allows user space to manipulate wakelocks using two
->> > sysfs file located in /sys/power/, wake_lock and wake_unlock.
->> > Writing a wakelock name and optionally a timeout to the wake_lock
->> > file causes the wakelock whose name was written to be acquired (it
->> > is created before is necessary), optionally with the given timeout.
->> > Writing the name of a wakelock to wake_unlock causes that wakelock
->> > to be released.
->> >
->> > Implement an analogous interface for user space using wakeup sources.
->> > Add the /sys/power/wake_lock and /sys/power/wake_unlock files
->> > allowing user space to create, activate and deactivate wakeup
->> > sources, such that writing a name and optionally a timeout to
->> > wake_lock causes the wakeup source of that name to be activated,
->> > optionally with the given timeout.  If that wakeup source doesn't
->> > exist, it will be created and then activated.  Writing a name to
->> > wake_unlock causes the wakeup source of that name, if there is one,
->> > to be deactivated.  Wakeup sources created with the help of
->> > wake_lock that haven't been used for more than 5 minutes are garbage
->> > collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
->>
->> I think it would be better if the garbage collection and limit was
->> configurable and optional. I would probably turn both features off
->> since I do not want to chase down bugs because a wakelock was ignored,
->> and I think the garbage collection will erase stats that we care
->> about.
->
-> OK, but would you mind if I added the configurability as a separate incremental
-> patch?
->
+On Fri, 27 Apr 2012, Andrew Morton wrote:
 
-That is fine with me.
+> Seems reasonable.  But the CONFIG_HUGETLB_PAGE=y,
+> CONFIG_MEM_RES_CTLR_HUGETLB=n combination will cause unneeded code
+> generation and space consumption in memcontrol.c.
+> 
+> I wonder if we can additionally do, within memcontrol.c:
+> 
+> /*
+>  * Nice comment goes here
+>  */
+> #ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+> #define HUGE_MAX_HSTATE_FOO HUGE_MAX_HSTATE
+> #else
+> #define HUGE_MAX_HSTATE_FOO 0
+> #endif
+> 
+> and s/HUGE_MAX_HSTATE/HUGE_MAX_HSTATE_FOO/ in that file.
+> 
 
--- 
-Arve Hjønnevåg
+I haven't looked at the hugetlb memcg controller in-depth (yet), but I 
+really think we should start considering breaking things like this off 
+into its own cgroup.  The hugetlb extension seems like something that 
+could be easily separtated, but perhaps I'm saying "easily" because I 
+haven't looked at the implementation.
+
+mm/memcontrol.c in linux-next is 5877 lines and, if history is any guide, 
+it's going to continue growing.
+
+If the hugetlb usage isn't charged against the memcg's 
+memory.usage_in_bytes like thp is, then I really think it should be its 
+own cgroup.  From the hugetlb perspective absent any cgroups, things like 
+hstates (since we're talking about HUGE_MAX_HSTATE) are global resources 
+and so you'd need to preallocate these on the command line or via sysfs 
+before you could mmap them.  So if my assumption that the hugetlb memcg 
+controller is only governing these global resources and charging a set of 
+tasks for what they use, then it really has no business in mm/memcontrol.c 
+to begin with, in my opinion.
