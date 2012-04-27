@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760547Ab2D0PUi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:20:38 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:38951 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760531Ab2D0PUf (ORCPT
+	id S1760558Ab2D0PUt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:20:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61293 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760473Ab2D0PUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:20:35 -0400
+	Fri, 27 Apr 2012 11:20:44 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
@@ -15,9 +15,9 @@ To: Yinghai Lu <yinghai@kernel.org>,
 Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v2 04/19] PCI: serialize hotplug operations triggered by PCI hotplug sysfs interfaces
-Date: Fri, 27 Apr 2012 23:16:45 +0800
-Message-Id: <1335539820-11232-5-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH v2 05/19] PCI: correctly flush workqueue when destroy pcie hotplug controller
+Date: Fri, 27 Apr 2012 23:16:46 +0800
+Message-Id: <1335539820-11232-6-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335539820-11232-1-git-send-email-jiang.liu@huawei.com>
 References: <1335539820-11232-1-git-send-email-jiang.liu@huawei.com>
@@ -27,65 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Use PCI hotplug lock to globally serialize hotplug operations triggered by
-PCI hotplug sysfs interfaces.
+When destroying a PCIe hotplug controller, all work items associated with
+that controller should be flushed.  Function pcie_cleanup_slot() calls
+cancel_delayed_work() and flush_workqueue() to achieve that.
+Function flush_workqueue() will flush all work items already submitted,
+but new work items submitted by those already submitted work items may
+still be in live state when returning from flush_workqueue().
+
+For the extreme case, pciehp driver may expierence following calling path:
+1) pcie_isr() -> pciehp_handle_xxx() -> queue_interrupt_event()->queue_work()
+2) interrupt_event_handler() -> handle_button_press_event() ->
+   queue_delayed_work()
+3) pciehp_queue_pushbutton_work() -> queue_work()
+
+So enhance pcie_cleanup_slot() to correctly flush workqueue when destroying
+PCIe hotplug controller.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/pci/hotplug/pci_hotplug_core.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
+ drivers/pci/hotplug/pciehp_hpc.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/pci/hotplug/pci_hotplug_core.c b/drivers/pci/hotplug/pci_hotplug_core.c
-index 1572665..9bbbe3e 100644
---- a/drivers/pci/hotplug/pci_hotplug_core.c
-+++ b/drivers/pci/hotplug/pci_hotplug_core.c
-@@ -39,6 +39,7 @@
- #include <linux/mutex.h>
- #include <linux/pci.h>
- #include <linux/pci_hotplug.h>
-+#include <linux/delay.h>
- #include <asm/uaccess.h>
- #include "../pci.h"
- 
-@@ -121,6 +122,17 @@ static ssize_t power_write_file(struct pci_slot *pci_slot, const char *buf,
- 		retval = -ENODEV;
- 		goto exit;
- 	}
+diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
+index a960fae..98b775f 100644
+--- a/drivers/pci/hotplug/pciehp_hpc.c
++++ b/drivers/pci/hotplug/pciehp_hpc.c
+@@ -889,8 +889,20 @@ static int pcie_init_slot(struct controller *ctrl)
+ static void pcie_cleanup_slot(struct controller *ctrl)
+ {
+ 	struct slot *slot = ctrl->slot;
+-	cancel_delayed_work(&slot->work);
 +
-+	/* Avoid deadlock with pci_hp_deregister() */
-+	while (!pci_hotplug_try_enter()) {
-+		/* Check whether the slot has been deregistered. */
-+		if (list_empty(&slot->slot_list)) {
-+			retval = -ENODEV;
-+			goto exit_put;
-+		}
-+		msleep(1);
-+	}
++	/*
++	 * Following workqueue flushing logic is to deal with the special
++	 * call path:
++	 * 1) pcie_isr() -> pciehp_handle_xxx() ->
++	 *    queue_interrupt_event(pciehp_wq_event)->queue_work(pciehp_wq)
++	 * 2) interrupt_event_handler() -> handle_button_press_event() ->
++	 *    queue_delayed_work(pciehp_wq)
++	 * 3) pciehp_queue_pushbutton_work() -> queue_work(pciehp_wq)
++	 */
+ 	flush_workqueue(pciehp_wq);
++	cancel_delayed_work_sync(&slot->work);
++	flush_workqueue(pciehp_wq);
 +
- 	switch (power) {
- 		case 0:
- 			if (slot->ops->disable_slot)
-@@ -136,8 +148,10 @@ static ssize_t power_write_file(struct pci_slot *pci_slot, const char *buf,
- 			err ("Illegal value specified for power\n");
- 			retval = -EINVAL;
- 	}
--	module_put(slot->ops->owner);
+ 	kfree(slot);
+ }
  
-+	pci_hotplug_exit();
-+exit_put:
-+	module_put(slot->ops->owner);
- exit:	
- 	if (retval)
- 		return retval;
-@@ -500,7 +514,7 @@ int pci_hp_deregister(struct hotplug_slot *hotplug)
- 		return -ENODEV;
- 	}
- 
--	list_del(&hotplug->slot_list);
-+	list_del_init(&hotplug->slot_list);
- 
- 	slot = hotplug->pci_slot;
- 	fs_remove_slot(slot);
 -- 
 1.7.5.4
 
