@@ -1,99 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758688Ab2D0Mpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 08:45:43 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:49949 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757271Ab2D0Mpm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 08:45:42 -0400
-Date: Fri, 27 Apr 2012 14:45:38 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: acme@redhat.com, peterz@infradead.org, mingo@elte.hu,
-        robert.richter@amd.com, joro@8bytes.org, gleb@redhat.com
-Subject: [PATCH] perf stat: fix case where guest/host monitoring is not
- supported by kernel
-Message-ID: <20120427124538.GA7230@quad>
+	id S1759000Ab2D0Msj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 08:48:39 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:37781
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757271Ab2D0Msi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 08:48:38 -0400
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:220.225.38.51;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC02.kpit.com;RD:none;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "m.grzeschik@pengutronix.de" <m.grzeschik@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anthony Olech <Anthony.Olech@diasemi.com>
+Subject: RE: [Patch] Touch: DA9052/53 touch screen driver v2
+Thread-Topic: [Patch] Touch: DA9052/53 touch screen driver v2
+Thread-Index: AQHNH4lk4PQTk97+3kOpYk3/p0Sjd5aqAgtQgASmGnA=
+Date: Fri, 27 Apr 2012 12:46:52 +0000
+Message-ID: <C3AE124F08223B42BC95AEB82F0F6CED2D562697@KCHJEXMB02.kpit.com>
+References: <1334924925.3752.14.camel@dhruva>
+ <20120421063855.GA2360@core.coreip.homeip.net> 
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.10.38.22]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > On Fri, Apr 20, 2012 at 05:58:45PM +0530, Ashish Jangam wrote:
+> > Why did you switch to using irq_base here? da9052_onkey driver does not
+> > do that, should it?
+> On i.mx53 loco board irq_base was required so to keep driver working across
+> boards this was introduced. Need to fix this in onkey driver.
+> >
+> > Thanks.
+If the patch looks good then please ACK it. 
 
-By default, perf stat sets exclude_guest = 1. But when you run perf on a kernel
-which does not support  host/guest filtering, then you get an error saying
-the event in unsupported. This comes from the fact that when the
-perf_event_attr struct passed by the user is larger than the one known to 
-the kernel there is safety check which ensures that all unknown bits are
-zero. But here, exclude_guest is 1 (part of the unknown bits) and thus the
-perf_event_open() syscall return EINVAL.
-
-To my surprise, running perf record on the same kernel did not exhibit
-the problem. The reason is that perf record handles the problem by
-catching the error and retrying with guest/host excludes set to zero.
-For some reason, this was not done with perf stat. This patch fixes
-this problem.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index dde9e17..6e1c1f9 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -283,6 +283,8 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
- {
- 	struct perf_event_attr *attr = &evsel->attr;
- 	struct xyarray *group_fd = NULL;
-+	bool exclude_guest_missing = false;
-+	int ret;
- 
- 	if (group && evsel != first)
- 		group_fd = first->fd;
-@@ -293,16 +295,39 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
- 
- 	attr->inherit = !no_inherit;
- 
--	if (system_wide)
--		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
-+retry:
-+	if (exclude_guest_missing)
-+		evsel->attr.exclude_guest = evsel->attr.exclude_host = 0;
-+
-+	if (system_wide) {
-+		ret = perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
- 						group, group_fd);
-+		if (ret)
-+			goto check_ret;
-+		return 0;
-+	}
-+
- 	if (!target_pid && !target_tid && (!group || evsel == first)) {
- 		attr->disabled = 1;
- 		attr->enable_on_exec = 1;
- 	}
- 
--	return perf_evsel__open_per_thread(evsel, evsel_list->threads,
--					   group, group_fd);
-+	ret = perf_evsel__open_per_thread(evsel, evsel_list->threads,
-+					  group, group_fd);
-+	if (!ret)
-+		return 0;
-+	/* fall through */
-+check_ret:
-+	if (ret && errno == EINVAL) {
-+		if (!exclude_guest_missing &&
-+		    (evsel->attr.exclude_guest || evsel->attr.exclude_host)) {
-+			pr_debug("Old kernel, cannot exclude "
-+				 "guest or host samples.\n");
-+			exclude_guest_missing = true;
-+			goto retry;
-+		}
-+	}
-+	return ret;
- }
- 
- /*
