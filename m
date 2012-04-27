@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760193Ab2D0NyI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 09:54:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27050 "EHLO mx1.redhat.com"
+	id S1760181Ab2D0NzL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 09:55:11 -0400
+Received: from fieldses.org ([174.143.236.118]:50134 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757185Ab2D0NyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 09:54:05 -0400
-Date: Fri, 27 Apr 2012 09:53:21 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org, devel@openvz.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v4 1/3] make jump_labels wait while updates are in place
-Message-ID: <20120427135320.GA13762@redhat.com>
-References: <1335480667-8301-1-git-send-email-glommer@parallels.com>
- <1335480667-8301-2-git-send-email-glommer@parallels.com>
- <20120427004305.GC23877@home.goodmis.org>
+	id S1758058Ab2D0NzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 09:55:09 -0400
+Date: Fri, 27 Apr 2012 09:55:07 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH 2/3] SUNRPC: check rpcbind clients usage counter before
+ decrement
+Message-ID: <20120427135507.GE14973@fieldses.org>
+References: <20120425132314.13800.6813.stgit@localhost6.localdomain6>
+ <20120425133749.13800.24003.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120427004305.GC23877@home.goodmis.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20120425133749.13800.24003.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 08:43:06PM -0400, Steven Rostedt wrote:
-> On Thu, Apr 26, 2012 at 07:51:05PM -0300, Glauber Costa wrote:
-> > In mem cgroup, we need to guarantee that two concurrent updates
-> > of the jump_label interface wait for each other. IOW, we can't have
-> > other updates returning while the first one is still patching the
-> > kernel around, otherwise we'll race.
-> 
-> But it shouldn't. The code as is should prevent that.
-> 
-> > 
-> > I believe this is something that can fit well in the static branch
-> > API, without noticeable disadvantages:
-> > 
-> > * in the common case, it will be a quite simple lock/unlock operation
-> > * Every context that calls static_branch_slow* already expects to be
-> >   in sleeping context because it will mutex_lock the unlikely case.
-> > * static_key_slow_inc is not expected to be called in any fast path,
-> >   otherwise it would be expected to have quite a different name. Therefore
-> >   the mutex + atomic combination instead of just an atomic should not kill
-> >   us.
-> > 
-> > Signed-off-by: Glauber Costa <glommer@parallels.com>
-> > CC: Tejun Heo <tj@kernel.org>
-> > CC: Li Zefan <lizefan@huawei.com>
-> > CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > CC: Johannes Weiner <hannes@cmpxchg.org>
-> > CC: Michal Hocko <mhocko@suse.cz>
-> > CC: Ingo Molnar <mingo@elte.hu>
-> > CC: Jason Baron <jbaron@redhat.com>
-> > ---
-> >  kernel/jump_label.c |   21 +++++++++++----------
-> >  1 files changed, 11 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> > index 4304919..5d09cb4 100644
-> > --- a/kernel/jump_label.c
-> > +++ b/kernel/jump_label.c
-> > @@ -57,17 +57,16 @@ static void jump_label_update(struct static_key *key, int enable);
-> >  
-> >  void static_key_slow_inc(struct static_key *key)
-> >  {
-> > +	jump_label_lock();
-> >  	if (atomic_inc_not_zero(&key->enabled))
-> > -		return;
-> 
-> If key->enabled is not zero, there's nothing to be done. As the jump
-> label has already been enabled. Note, the key->enabled doesn't get set
-> until after the jump label is updated. Thus, if two tasks were to come
-> in, they both would be locked on the jump_label_lock().
-> 
+On Wed, Apr 25, 2012 at 05:37:49PM +0400, Stanislav Kinsbursky wrote:
+> Registering service with svc_bind() can fail. In this case service will be
+> destroyed and during destruction it will try to unregister itself from rpcbind.
+> In this case unregister have to be skipped.
 
-Right, for x86 which uses stop_machine currently, we guarantee that all
-cpus are going to see the updated code, before the inc of key->enabled.
-However, other arches (sparc, mips, powerpc, for example), seem to be
-using much lighter weight updates, which I hope are ok :)
+Isn't this a preexisting bug, in which case perhaps Trond should at it
+to his list of bugs to submit now?
 
-Thanks,
+--b.
 
--Jason
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> 
+> ---
+>  net/sunrpc/rpcb_clnt.c |   12 +++++++-----
+>  1 files changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+> index 78ac39f..4c38b33 100644
+> --- a/net/sunrpc/rpcb_clnt.c
+> +++ b/net/sunrpc/rpcb_clnt.c
+> @@ -180,14 +180,16 @@ void rpcb_put_local(struct net *net)
+>  	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+>  	struct rpc_clnt *clnt = sn->rpcb_local_clnt;
+>  	struct rpc_clnt *clnt4 = sn->rpcb_local_clnt4;
+> -	int shutdown;
+> +	int shutdown = 0;
+>  
+>  	spin_lock(&sn->rpcb_clnt_lock);
+> -	if (--sn->rpcb_users == 0) {
+> -		sn->rpcb_local_clnt = NULL;
+> -		sn->rpcb_local_clnt4 = NULL;
+> +	if (sn->rpcb_users) {
+> +		if (--sn->rpcb_users == 0) {
+> +			sn->rpcb_local_clnt = NULL;
+> +			sn->rpcb_local_clnt4 = NULL;
+> +		}
+> +		shutdown = !sn->rpcb_users;
+>  	}
+> -	shutdown = !sn->rpcb_users;
+>  	spin_unlock(&sn->rpcb_clnt_lock);
+>  
+>  	if (shutdown) {
+> 
