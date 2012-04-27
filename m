@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760300Ab2D0Ohz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 10:37:55 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:12656
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758823Ab2D0Ohy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 10:37:54 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M357AZ-02-11N-02
-X-M-MSG: 
-Date: Fri, 27 Apr 2012 16:37:45 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 2/2][RESEND] x86/pci/amd: Enable early_fill_mp_bus_to_node on
- AMD family 15h models 0-0xf
-Message-ID: <20120427143745.GD27535@alberich.amd.com>
-References: <20120427143410.GB27535@alberich.amd.com>
+	id S1760256Ab2D0OnJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 10:43:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758823Ab2D0OnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 10:43:06 -0400
+Date: Fri, 27 Apr 2012 10:42:58 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, fengguang.wu@intel.com,
+        hughd@google.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 02/11] blkcg: __blkg_lookup_create() doesn't have to fail
+ on radix tree preload failure
+Message-ID: <20120427144258.GI10579@redhat.com>
+References: <1335477561-11131-1-git-send-email-tj@kernel.org>
+ <1335477561-11131-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120427143410.GB27535@alberich.amd.com>
+In-Reply-To: <1335477561-11131-3-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 26, 2012 at 02:59:12PM -0700, Tejun Heo wrote:
+> __blkg_lookup_create() currently fails if radix_tree_preload() fails;
+> however, preload failrue doesn't imply insertion failure.  Don't fail
+> __blkg_lookup_create() on preload failure.
+> 
 
-While at it avoid calling this function on family 11h (aka Griffin)
-which was a mobile part and doesn't support NUMA.
+Hi Tejun,
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/pci/amd_bus.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+If we are going to try the insertion anyway irrespective of the fact
+whether preload succeeded or not, they why call radix_tree_preload()
+at all? How does that help?
 
-diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
-index 0384e69..d552b29 100644
---- a/arch/x86/pci/amd_bus.c
-+++ b/arch/x86/pci/amd_bus.c
-@@ -27,7 +27,7 @@ static struct pci_hostbridge_probe pci_probes[] __initdata = {
- 	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1100 },
- 	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1200 },
- 	{ 0xff, 0, PCI_VENDOR_ID_AMD, 0x1200 },
--	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1300 },
-+	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1600 },
- };
- 
- /**
--- 
-1.7.8.5
-
-
-
+Thanks
+Vivek
