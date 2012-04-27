@@ -1,112 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab2D0Mev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 08:34:51 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:14345
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757169Ab2D0Met (ORCPT
+	id S1758577Ab2D0Mgb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 08:36:31 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41868 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754237Ab2D0Mga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 08:34:49 -0400
-X-SpamScore: -13
-X-BigFish: VPS-13(zz936eK1432N98dK4015Izz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M351LP-02-5EU-02
-X-M-MSG: 
-Date: Fri, 27 Apr 2012 14:34:34 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS for
- AMD CPUs
-Message-ID: <20120427123434.GF18810@erda.amd.com>
-References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
- <1333390758-10893-7-git-send-email-robert.richter@amd.com>
- <1334398906.2528.49.camel@twins>
- <20120423095659.GS9747@erda.amd.com>
+	Fri, 27 Apr 2012 08:36:30 -0400
+Date: Fri, 27 Apr 2012 13:36:26 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        balbi@ti.com, Herbert Xu <herbert@gondor.hengli.com.au>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org
+Subject: Re: Default Kconfig state for hw_random drivers
+Message-ID: <20120427123626.GH18260@opensource.wolfsonmicro.com>
+References: <20120426114229.GG3207@opensource.wolfsonmicro.com>
+ <CAOesGMj2eZvWek86D2MKQMPY9qAsC0D2MsYyN-+RPUr5gDFn4A@mail.gmail.com>
+ <4F9A91A8.4050608@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0XhtP95kHFp3KGBe"
 Content-Disposition: inline
-In-Reply-To: <20120423095659.GS9747@erda.amd.com>
+In-Reply-To: <4F9A91A8.4050608@atmel.com>
+X-Cookie: You will triumph over your enemy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.04.12 11:56:59, Robert Richter wrote:
-> On 14.04.12 12:21:46, Peter Zijlstra wrote:
-> > On Mon, 2012-04-02 at 20:19 +0200, Robert Richter wrote:
-> > > + * We map IBS sampling to following precise levels:
-> > > + *
-> > > + *  1: RIP taken from IBS sample or (if invalid) from stack
-> > > + *  2: RIP always taken from IBS sample, samples with an invalid rip
-> > > + *     are dropped. Thus samples of an event containing two precise
-> > > + *     modifiers (e.g. r076:pp) only contain (precise) addresses
-> > > + *     detected with IBS.
-> > 
-> > 		/*
-> > 		 * precise_ip:
-> > 		 *
-> > 		 *  0 - SAMPLE_IP can have arbitrary skid
-> > 		 *  1 - SAMPLE_IP must have constant skid
-> > 		 *  2 - SAMPLE_IP requested to have 0 skid
-> > 		 *  3 - SAMPLE_IP must have 0 skid
-> > 		 *
-> > 		 *  See also PERF_RECORD_MISC_EXACT_IP
-> > 		 */
-> > 
-> > your 1 doesn't have constant skid. I would suggest only supporting 2 and
-> > letting userspace drop !PERF_RECORD_MISC_EXACT_IP records if so desired.
-> 
-> Ah, didn't notice the PERF_RECORD_MISC_EXACT_IP flag. Will set this
-> flag for precise events.
 
-Peter,
+--0XhtP95kHFp3KGBe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I have a patch on top that implements the support of the
-PERF_RECORD_MISC_EXACT_IP flag. But I am not quite sure about how to
-use the precise levels. What do you suggest?
+On Fri, Apr 27, 2012 at 02:31:36PM +0200, Nicolas Ferre wrote:
 
-Thanks,
+> I had the same kind of discussion with Felipe and Arnd in this thread:
+> http://thread.gmane.org/gmane.linux.ports.arm.kernel/122248/focus=122304
 
--Robert
+> The conclusion came out after Arnd's strong arguments:
+> http://article.gmane.org/gmane.linux.ports.arm.kernel/122962
 
-> 
-> Problem is that this flag is not yet well supported, only perf-top
-> uses it to count the total number of exact samples. Esp. perf-annotate
-> and perf-report do not support it, and there are no modifiers to
-> select precise-only sampling (or is this level 3?).
-> 
-> Both might be useful: You might need only precise-rip samples (perf-
-> annotate usage), on the other side you want samples with every
-> clock/ops count overflow (e.g. to get a counting statistic). The
-> p-modifier specification (see perf-list) is not sufficient to select
-> both of it.
-> 
-> Another question I have: Isn't precise level 2 a special case of level
-> 1 where the skid is constant and 0? The problem I see is, if people
-> want to measure precise rip, they simply use r076:p. Level 2 (r076:pp)
-> is actually better than 1, but they might think not to be able to
-> sample precise-rip if we throw an error for r076:p. Thus, I would
-> prefer to also allow level 1.
-> 
-> > That said, mixing the IBS pmu into the regular core pmu isn't exactly
-> > pretty..
-> 
-> IBS is currently the only way to do precise-rip sampling on amd cpus.
-> IBS events fit well with its corresponding perfctr events (0x76/
-> 0xc1). So what don't you like with this approach? I will also post IBS
-> perf tool support where IBS can be directly used.
-> 
-> -Robert
-> 
-> -- 
-> Advanced Micro Devices, Inc.
-> Operating System Research Center
+> Maybe adding a "default" directive can be an valid option?
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+There is one, that's the problem - the driver is defaulting to the same
+state as the main hw_random option (as is idiomatic for this subsystem).
+This means that if you've enabled any hw_random device this driver will
+be enabled by default.  I would argue that this default directive only
+makes sense if there's an explicit dependency limiting the platforms it
+can build on.  If it can build on any platform then omitting the default
+and just defaulting to N as is normal for drivers would be better.
 
+--0XhtP95kHFp3KGBe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPmpKoAAoJEBus8iNuMP3dMfIP/R8jgdE84jDZxEwbOJ6jv6lJ
+UGzuDCdSx0Wt28mNE9FP5FBPMZYQhlvuhY6eeoQM259dr+TaKk2qwmZskg2xmocl
+EqRpj+Sfg2HAErhUz/DVmJtjhXQpvaRH+pEqFcDJBjERHcE64N7Um2iZVYKe2r21
+ZuqRsd/E6dh97RqbrwwHBQ8YpVFHTsEYSpa4vEDOjFFNSIGzYZq2jf35SfcAyYBg
+4xdRHOHovJT42/WbKkZBhJbzHHouyEoieIiH+rxs8C41Onhuy/tOobU1coHGW5tY
+AP/3KZ+Tr3SSC6FA5EQmw8mLKXtlk68P7blmc5cQ7+7oPDlhg3RETZuhuk3YhZRE
+j86OZFmZDhqBHeqpB08q8UOFGFDVWmoMWtq4hdsgv6BYAMW8xi2zoSPdz/LOYUe9
+hB1bZ8Z8Mb2IuZK0qzMPzQ8hoPa+5aS4rZfUtbEmFQhf1oILqjxrUel66T6AClIP
+zTGm6EJ/zLKp2ISw5qnXWV58GgnRKyjMB1wu5IBxPciurpyATF/tAki4GMT8XdWm
+9YNKiG2bxsUeEdywWjWfuozNBYtzbvWYMDr+qDHDDpIfu+UUT2eMTsS0BJ2u/Vqo
+pWSbVTfl+fg5k+wnWjCPFADO5BBZBM+v3+2Kbf2lPhcv277pnk3Y9l7kcnvbx6DP
+a44dFMFeNY1eS+T/R3Zb
+=+OAQ
+-----END PGP SIGNATURE-----
+
+--0XhtP95kHFp3KGBe--
