@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab2D0GEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 02:04:25 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44895 "EHLO
+	id S1753914Ab2D0GGT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 02:06:19 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35633 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab2D0GEY (ORCPT
+	with ESMTP id S1751788Ab2D0GGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 02:04:24 -0400
+	Fri, 27 Apr 2012 02:06:17 -0400
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F9A366E.9020307@jp.fujitsu.com>
-Date: Fri, 27 Apr 2012 15:02:22 +0900
+Message-ID: <4F9A36DE.30301@jp.fujitsu.com>
+Date: Fri, 27 Apr 2012 15:04:14 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120420 Thunderbird/12.0
 MIME-Version: 1.0
@@ -22,8 +22,8 @@ CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Han Ying <yinghan@google.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyuki@gmail.com
-Subject: [RFC][PATCH 7/9 v2] cgroup: avoid attaching task to a cgroup under
- rmdir()
+Subject: [RFC][PATCH 8/9 v2] cgroup: avoid creating new cgroup under a cgroup
+ being destroyed
 References: <4F9A327A.6050409@jp.fujitsu.com>
 In-Reply-To: <4F9A327A.6050409@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-2022-JP
@@ -32,49 +32,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-attach_task() is done under cgroup_mutex() but ->pre_destroy() callback
-in rmdir() isn't called under cgroup_mutex().
-
-It's better to avoid attaching a task to a cgroup which
-is under pre_destroy(). Considering memcg, the attached task may
-increase resource usage after memcg's pre_destroy() confirms that
-memcg is empty. This is not good.
+When ->pre_destroy() is called, it should be guaranteed that
+new child cgroup is not created under a cgroup, where pre_destroy()
+is running. If not, ->pre_destroy() must check children and
+return -EBUSY, which causes warning.
 
 Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- kernel/cgroup.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ kernel/cgroup.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index ad8eae5..7a3076b 100644
+index 7a3076b..003ceed 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -1953,6 +1953,9 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 	if (cgrp == oldcgrp)
- 		return 0;
+@@ -3970,6 +3970,15 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
  
-+	if (test_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags))
+ 	mutex_lock(&cgroup_mutex);
+ 
++	/*
++	 * prevent making child cgroup when ->pre_destroy() is running.
++	 */
++	if (test_bit(CGRP_WAIT_ON_RMDIR, &parent->flags)) {
++		mutex_unlock(&cgroup_mutex);
++		atomic_dec(&sb->s_active);
 +		return -EBUSY;
++	}
 +
- 	tset.single.task = tsk;
- 	tset.single.cgrp = oldcgrp;
+ 	init_cgroup_housekeeping(cgrp);
  
-@@ -4181,7 +4184,6 @@ again:
- 		mutex_unlock(&cgroup_mutex);
- 		return -EBUSY;
- 	}
--	mutex_unlock(&cgroup_mutex);
- 
- 	/*
- 	 * In general, subsystem has no css->refcnt after pre_destroy(). But
-@@ -4193,6 +4195,7 @@ again:
- 	 * and css_tryget() and cgroup_wakeup_rmdir_waiter() implementation.
- 	 */
- 	set_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
-+	mutex_unlock(&cgroup_mutex);
- 
- 	/*
- 	 * Call pre_destroy handlers of subsys. Notify subsystems
+ 	cgrp->parent = parent;
 -- 
 1.7.4.1
 
