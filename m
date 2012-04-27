@@ -1,78 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759229Ab2D0AHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 20:07:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47664 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752077Ab2D0AHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 20:07:46 -0400
-Date: Fri, 27 Apr 2012 10:07:35 +1000
-From: NeilBrown <neilb@suse.de>
+	id S1759377Ab2D0AQQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 20:16:16 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:37635 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754520Ab2D0AQP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 20:16:15 -0400
+Message-ID: <1335485772.2136.21.camel@shrek.rexursive.com>
+Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for
+ hibernate/thaw buffering
+From: Bojan Smojver <bojan@rexursive.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: John Stultz <johnstul@us.ibm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 8/8] PM / Sleep: Add user space interface for
- manipulating wakeup sources
-Message-ID: <20120427100735.77e75cc6@notabene.brown>
-In-Reply-To: <201204270004.27958.rjw@sisk.pl>
-References: <201202070200.55505.rjw@sisk.pl>
-	<201204242327.17626.rjw@sisk.pl>
-	<20120426163143.42f707b0@notabene.brown>
-	<201204270004.27958.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Cc: Per Olofsson <pelle@debian.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Date: Fri, 27 Apr 2012 10:16:12 +1000
+In-Reply-To: <201204270011.20430.rjw@sisk.pl>
+References: <1334267969.2573.14.camel@shrek.rexursive.com>
+	 <201204262200.32663.rjw@sisk.pl>
+	 <1335474828.2136.15.camel@shrek.rexursive.com>
+	 <201204270011.20430.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/lnGgcYhHJyb+IoSzjh56y/2"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/lnGgcYhHJyb+IoSzjh56y/2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2012-04-27 at 00:11 +0200, Rafael J. Wysocki wrote:
+> Can you just create a second patch on top of what's in linux-next now?
 
-On Fri, 27 Apr 2012 00:04:27 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+Here it is.
 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Sleep: Add user space interface for manipulating wakeup sou=
-rces, v3
+---------------------------------------
+Hibernation/thaw fixes/improvements:
 
-Reviewed-by: NeilBrown <neilb@suse.de>
+1. Do not allocate memory for buffers from emergency pools, unless
+absolutely required. Do not warn about and do not retry non-essential
+failed allocations.
 
-Thanks.
-NeilBrown
+2. Do not check the amount of free pages left on every single page
+write, but wait until one map is completely populated and then check.
 
+3. Set maximum number of pages for read buffering consistently, instead
+of inadvertently depending on the size of the sector type.
 
---Sig_/lnGgcYhHJyb+IoSzjh56y/2
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+4. Fix copyright line, which I missed when I submitted the hibernation
+threading patch.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+5. Dispense with bit shifting arithmetic to improve readability.
 
-iQIVAwUBT5njSDnsnt1WYoG5AQJxPQ/+KvQQruvb8ey38DX9UrLDNq3RsAwMuRva
-qyGjhb2PCn0Cmf7iORWXrTGh3b5D552BVREhQc4YJpBCcPLZZOt9IHjwkrfbiHuo
-E96ENYs24qYXHjQVkYo2A782H/MgG9PxOeGUhWFf6hG2zg+O4+nvWQVyRUMAaTDO
-taYD+I6xp49BlRL/AphXYd77p/KIOOBxS/av39OiQmIxtxXyl7K29gRCPC+TUVGk
-0/Qcj/FYPFD1IvIyTQ6cXl19mhA4jZoBLonf4QL15i3JIaJM3wVRJL6xvE8YYGnE
-0MAK5gviT4g/ijEd3pOtNYdNy/l7SD6KaQfwHmjuDKRgCSlwirk4Hn63agifej3X
-6/kBaitAbpSG4wkSATnNLLexiH3JAhcfbJNv8+uMbDJQRPNOWzMfnuwq0JivN+6l
-TuzAN+Smw/FiyMUUlN6IBm5Qmfrm0a7G0/bQs4SHaRidogpmmxNIQrR+Yjb/Zgp4
-LkYDN3L8F1aLmhhzCcRJ2gdQSVCUgZThzlDGmqWO1Ab+cRxsIIstFWDdDqRsb0Cs
-tKeu7fgsBJA2w8nEq/vLXXYy2EDLgzwN8kvr3MG7A3ySi/0WpMuMnjZGRRnDNxeI
-sE6X+PW0pdU4FSbjGLiXUI5gIkAkYdEKkA4WAEbo0HmfGjaGh4trf8eT8T42H06u
-i7itTR1Uobc=
-=Ncgi
------END PGP SIGNATURE-----
+6. Really recalculate the number of pages required to be free after all
+allocations have been done.
 
---Sig_/lnGgcYhHJyb+IoSzjh56y/2--
+7. Fix calculation of pages required for read buffering. Only count in
+pages that do not belong to high memory.
+
+Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+---
+ kernel/power/swap.c |   62 ++++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 39 insertions(+), 23 deletions(-)
+
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index eef311a..11e22c0 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -6,7 +6,7 @@
+  *
+  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
+  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
+- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
++ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
+  *
+  * This file is released under the GPLv2.
+  *
+@@ -282,14 +282,17 @@ static int write_page(void *buf, sector_t offset, struct bio **bio_chain)
+ 		return -ENOSPC;
+ 
+ 	if (bio_chain) {
+-		src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++		src = (void *)__get_free_page(__GFP_WAIT | __GFP_NOWARN |
++		                              __GFP_NORETRY);
+ 		if (src) {
+ 			copy_page(src, buf);
+ 		} else {
+ 			ret = hib_wait_on_bio_chain(bio_chain); /* Free pages */
+ 			if (ret)
+ 				return ret;
+-			src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++			src = (void *)__get_free_page(__GFP_WAIT |
++			                              __GFP_NOWARN |
++			                              __GFP_NORETRY);
+ 			if (src) {
+ 				copy_page(src, buf);
+ 			} else {
+@@ -367,12 +370,17 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
+ 		clear_page(handle->cur);
+ 		handle->cur_swap = offset;
+ 		handle->k = 0;
+-	}
+-	if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
+-		error = hib_wait_on_bio_chain(bio_chain);
+-		if (error)
+-			goto out;
+-		handle->reqd_free_pages = reqd_free_pages();
++
++		if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
++			error = hib_wait_on_bio_chain(bio_chain);
++			if (error)
++				goto out;
++			/*
++			 * Recalculate the number of required free pages, to
++			 * make sure we never take more than half.
++			 */
++			handle->reqd_free_pages = reqd_free_pages();
++		}
+ 	}
+  out:
+ 	return error;
+@@ -419,8 +427,9 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+ /* Maximum number of threads for compression/decompression. */
+ #define LZO_THREADS	3
+ 
+-/* Maximum number of pages for read buffering. */
+-#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
++/* Minimum/maximum number of pages for read buffering. */
++#define LZO_MIN_RD_PAGES	1024
++#define LZO_MAX_RD_PAGES	8192
+ 
+ 
+ /**
+@@ -631,12 +640,6 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 	}
+ 
+ 	/*
+-	 * Adjust number of free pages after all allocations have been done.
+-	 * We don't want to run out of pages when writing.
+-	 */
+-	handle->reqd_free_pages = reqd_free_pages();
+-
+-	/*
+ 	 * Start the CRC32 thread.
+ 	 */
+ 	init_waitqueue_head(&crc->go);
+@@ -657,6 +660,12 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 		goto out_clean;
+ 	}
+ 
++	/*
++	 * Adjust the number of required free pages after all allocations have
++	 * been done. We don't want to run out of pages when writing.
++	 */
++	handle->reqd_free_pages = reqd_free_pages();
++
+ 	printk(KERN_INFO
+ 		"PM: Using %u thread(s) for compression.\n"
+ 		"PM: Compressing and saving image data (%u pages) ...     ",
+@@ -1067,7 +1076,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 	unsigned i, thr, run_threads, nr_threads;
+ 	unsigned ring = 0, pg = 0, ring_size = 0,
+ 	         have = 0, want, need, asked = 0;
+-	unsigned long read_pages;
++	unsigned long read_pages = 0;
+ 	unsigned char **page = NULL;
+ 	struct dec_data *data = NULL;
+ 	struct crc_data *crc = NULL;
+@@ -1079,7 +1088,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 	nr_threads = num_online_cpus() - 1;
+ 	nr_threads = clamp_val(nr_threads, 1, LZO_THREADS);
+ 
+-	page = vmalloc(sizeof(*page) * LZO_READ_PAGES);
++	page = vmalloc(sizeof(*page) * LZO_MAX_RD_PAGES);
+ 	if (!page) {
+ 		printk(KERN_ERR "PM: Failed to allocate LZO page\n");
+ 		ret = -ENOMEM;
+@@ -1144,15 +1153,22 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 	}
+ 
+ 	/*
+-	 * Adjust number of pages for read buffering, in case we are short.
++	 * Set the number of pages for read buffering.
++	 * This is complete guesswork, because we'll only know the real
++	 * picture once prepare_image() is called, which is much later on
++	 * during the image load phase. We'll assume the worst case and
++	 * say that none of the image pages are from high memory.
+ 	 */
+-	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
+-	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
++	if (low_free_pages() > snapshot_get_image_size())
++		read_pages = (low_free_pages() - snapshot_get_image_size()) / 2;
++	read_pages = clamp_val(read_pages, LZO_MIN_RD_PAGES, LZO_MAX_RD_PAGES);
+ 
+ 	for (i = 0; i < read_pages; i++) {
+ 		page[i] = (void *)__get_free_page(i < LZO_CMP_PAGES ?
+ 		                                  __GFP_WAIT | __GFP_HIGH :
+-		                                  __GFP_WAIT);
++		                                  __GFP_WAIT | __GFP_NOWARN |
++		                                  __GFP_NORETRY);
++
+ 		if (!page[i]) {
+ 			if (i < LZO_CMP_PAGES) {
+ 				ring_size = i;
+---------------------------------------
+
+-- 
+Bojan
+
