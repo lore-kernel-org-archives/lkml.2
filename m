@@ -1,113 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761183Ab2D0SaG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:30:06 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53226 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761122Ab2D0SaC (ORCPT
+	id S1761188Ab2D0Sef (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 14:34:35 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:44517 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761145Ab2D0See (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 14:30:02 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: netdev@vger.kernel.org
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC 2/2] netfilter: conntrack: replace mutex with cmpxchg
-Date: Fri, 27 Apr 2012 14:28:53 -0400
-Message-Id: <1335551333-6103-2-git-send-email-bpoirier@suse.de>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1335551333-6103-1-git-send-email-bpoirier@suse.de>
-References: <1335551333-6103-1-git-send-email-bpoirier@suse.de>
+	Fri, 27 Apr 2012 14:34:34 -0400
+Date: Fri, 27 Apr 2012 14:34:02 -0400 (EDT)
+Message-Id: <20120427.143402.1028957981042061092.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: mjt@tls.msk.ru, linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        raven@themaw.net, thomas@m3y3r.de, stable@kernel.org
+Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
+ design error.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+55aFwud1nXRr+HpzH8rSkEWcZ_rJmoE7UtQt76D=A3qcb6GQ@mail.gmail.com>
+References: <CA+55aFxEP7-+N7vTPZ-4hD-UirZ=+YMJh2x3EjZvUmjjyOchtg@mail.gmail.com>
+	<4F9A6ABA.6050503@msgid.tls.msk.ru>
+	<CA+55aFwud1nXRr+HpzH8rSkEWcZ_rJmoE7UtQt76D=A3qcb6GQ@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 27 Apr 2012 11:34:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This mutex protects a single pointer.
----
- net/netfilter/nf_conntrack_ecache.c |   38 +++++++++-------------------------
- 1 files changed, 10 insertions(+), 28 deletions(-)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 27 Apr 2012 11:19:13 -0700
 
-diff --git a/net/netfilter/nf_conntrack_ecache.c b/net/netfilter/nf_conntrack_ecache.c
-index 0134009..603eb69 100644
---- a/net/netfilter/nf_conntrack_ecache.c
-+++ b/net/netfilter/nf_conntrack_ecache.c
-@@ -25,8 +25,6 @@
- #include <net/netfilter/nf_conntrack_core.h>
- #include <net/netfilter/nf_conntrack_extend.h>
- 
--static DEFINE_MUTEX(nf_ct_ecache_mutex);
--
- /* deliver cached events and clear cache entry - must be called with locally
-  * disabled softirqs */
- void nf_ct_deliver_cached_events(struct nf_conn *ct)
-@@ -80,52 +78,36 @@ EXPORT_SYMBOL_GPL(nf_ct_deliver_cached_events);
- int nf_conntrack_register_notifier(struct net *net,
- 				   struct nf_ct_event_notifier *new)
- {
--	int ret = 0;
--
--	mutex_lock(&nf_ct_ecache_mutex);
--	if (net->ct.nf_conntrack_event_cb != NULL)
--		ret = -EBUSY;
-+	if (cmpxchg(&net->ct.nf_conntrack_event_cb, NULL, new) != NULL)
-+		return -EBUSY;
- 	else
--		net->ct.nf_conntrack_event_cb = new;
--	mutex_unlock(&nf_ct_ecache_mutex);
--
--	return ret;
-+		return 0;
- }
- EXPORT_SYMBOL_GPL(nf_conntrack_register_notifier);
- 
- void nf_conntrack_unregister_notifier(struct net *net,
- 				      struct nf_ct_event_notifier *new)
- {
--	mutex_lock(&nf_ct_ecache_mutex);
--	BUG_ON(net->ct.nf_conntrack_event_cb != new);
--	net->ct.nf_conntrack_event_cb = NULL;
--	mutex_unlock(&nf_ct_ecache_mutex);
-+	if (xchg(&net->ct.nf_conntrack_event_cb, NULL) != new)
-+		BUG();
- }
- EXPORT_SYMBOL_GPL(nf_conntrack_unregister_notifier);
- 
- int nf_ct_expect_register_notifier(struct net *net,
- 				   struct nf_exp_event_notifier *new)
- {
--	int ret = 0;
--
--	mutex_lock(&nf_ct_ecache_mutex);
--	if (net->ct.nf_expect_event_cb != NULL)
--		ret = -EBUSY;
-+	if (cmpxchg(&net->ct.nf_expect_event_cb, NULL, new) != NULL)
-+		return -EBUSY;
- 	else
--		net->ct.nf_expect_event_cb = new;
--	mutex_unlock(&nf_ct_ecache_mutex);
--
--	return ret;
-+		return 0;
- }
- EXPORT_SYMBOL_GPL(nf_ct_expect_register_notifier);
- 
- void nf_ct_expect_unregister_notifier(struct net *net,
- 				      struct nf_exp_event_notifier *new)
- {
--	mutex_lock(&nf_ct_ecache_mutex);
--	BUG_ON(net->ct.nf_expect_event_cb != new);
--	net->ct.nf_expect_event_cb = NULL;
--	mutex_unlock(&nf_ct_ecache_mutex);
-+	if (xchg(&net->ct.nf_expect_event_cb, NULL) != new)
-+		BUG();
- }
- EXPORT_SYMBOL_GPL(nf_ct_expect_unregister_notifier);
- 
--- 
-1.7.7
+> So to me, a version 6 with just this fix is just completely pointless.
+> We can't just ignore existing binaries. You don't like ignoring
+> existing 'automount' binaries, and Thomas doesn't like ignoring
+> existing 'systemd' binaries. And I don't like ignoring *any* binaries
+> that are shipped with distributions - especially when they are central
+> and hard to work around.
 
+I think what we did was break a kernel exported interface which had
+5 years of precedence.  Ugly, or broken, it was the state of affairs
+and userland did embrace it. :-)
+
+If systemd wants to use version 5 of this thing, it has to have the
+same workaround code automountd has.  It is systemd (and now the
+kernel) which is broken.
+
+We should have never touched version 5 of the data-structure.  Having
+5 years of workaround precedence in userspace proves this.
+
+And we should create a version 6 as has been proposed.
