@@ -1,69 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab2D0Frk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 01:47:40 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49732 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab2D0Frj (ORCPT
+	id S1754412Ab2D0Fsu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 01:48:50 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:41722 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab2D0Fst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 01:47:39 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F9A327A.6050409@jp.fujitsu.com>
-Date: Fri, 27 Apr 2012 14:45:30 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120420 Thunderbird/12.0
+	Fri, 27 Apr 2012 01:48:49 -0400
+Date: Fri, 27 Apr 2012 13:48:44 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Dong Aisheng <b29396@freescale.com>, b20223@freescale.com,
+        linus.walleij@stericsson.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        kernel@pengutronix.de, cjb@laptop.org, s.hauer@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 2/4] pinctrl: pinctrl-imx: add imx pinctrl core driver
+Message-ID: <20120427054842.GJ2234@S2101-09.ap.freescale.net>
+References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
+ <1335451227-27709-2-git-send-email-b29396@freescale.com>
+ <20120426144446.GN9142@game.jcrosoft.org>
+ <20120426151536.GO9142@game.jcrosoft.org>
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Han Ying <yinghan@google.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyuki@gmail.com
-Subject: [RFC][PATCH 0/7 v2] memcg: prevent failure in pre_destroy()
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120426151536.GO9142@game.jcrosoft.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a v2 patch for preventing failure in memcg->pre_destroy().
-With this patch, ->pre_destroy() will never return error code and
-users will not see warning at rmdir(). And this work will simplify
-memcg->pre_destroy(), largely.
+On Thu, Apr 26, 2012 at 05:15:36PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> We have on Imx mxc at91 and other SoC controler hich you configure per pin
+> 
+> which means one pin have multiple function and the same function is on
+> multiple pins
+> 
+> so the groups are just a list of possible pins
+> 
+> Instead of re-inventing bindings we do need to come with a common binding whre
+> it's possible
+> 
+> So instead I proppose (send in the v2) to use common way to describe the group
+> 
+Let's see how many nodes we will have in device tree.  For imx6q
+example, there are 332 pins and each pin has up to 8 function selects.
+We will end up with having 332 x 8 = 2656 sub nodes under node
+"functions".  Device tree simply cannot afford such a bloating.
 
-This patch is based on linux-next + hugetlb memory control patches.
+Regards,
+Shawn
 
-I post this as RFC because I'll have vacation in the next week and
-hugetlb patches are not visible in linux-next yet.
-So, I'm not in hurry. Please review when you have time.
-
-I'll rebase this onto memcg-devel in the next post.
-== BTW, memory cgroup's github is here == 
-git://github.com/mstsxfx/memcg-devel.git
-
-Since v1, Whole patch designs are changed. In this version, I didn't
-remove ->pre_destroy() but make it succeed always. There are no
-asynchronous operation and no big patches. But this introduces
-2 changes to cgroup core.
-
-After this series, if use_hierarchy==0, all resources will be moved
-to root cgroup at rmdir() or force_empty().
-
-Brief patch conents are
-
-0001 : my version of compile-fix for linux-next, Aneesh will post his own version.
-0002 : fix error code in hugetlb_force_memcg_empty
-0003 : add res_counter_uncharge_until()
-0004 : use res_counter_uncharge_until() at move_parent()
-0005 : move charges to root cgroup at rmdir, if use_hierarchy=0
-0006 : clean up mem_cgroup_move_account()
-0007 : cgroup : avoid attaching task to cgroup where ->pre_destroy() is running.
-0008 : cgroup : avoid creating a new cgroup under a cgroup where ->pre_destroy() is running.
-0009 : remove -EINTR from memcg->pre_destroy().
-
-Thanks,
--Kame
-
+> 1) we describe one function per pin
+> 
+> 	functions {
+> 		rxd_pb12 {
+> 			atmel,pin-id = <44>;
+> 			atmel,mux = <0>;
+> 		};
+> 
+> 		txd_pb13 {
+> 			atmel,pin-id = <45>;
+> 			atmel,pull = <2>;
+> 			atmel,mux = <0>;
+> 		};
+> 
+> 		txd0_pb19 {
+> 			atmel,pin-id = <51>;
+> 			atmel,pull = <2>;
+> 			atmel,mux = <0>;
+> 		};
+> 
+> 		rxd0_pb18 {
+> 			atmel,pin-id = <50>;
+> 			atmel,mux = <0>;
+> 		};
+> 
+> 		rts0_pb17 {
+> 			atmel,pin-id = <49>;
+> 			atmel,mux = <1>;
+> 		};
+> 
+> 		cts0_pb15 {
+> 			atmel,pin-id = <47>;
+> 			atmel,mux = <1>;
+> 		};
+> 	};
+> 
+> 
+> advantage if you need to set a pull-up or any pin parameter different on your board
+> you can overwrite it without re-creating a group
+> 
+> This is controller specific
+> 
+> and then we have the common bindings to describe the group
+> by using phandle of the functions to describe the group
+> 
+> 	groups {
+> 		dbgu {
+> 			pinctrl,functions = < &rxd_pb12
+> 					      &txd_pb13 >;
+> 		};
+> 
+> 		uart0_rxd_txd {
+> 			pinctrl,functions = < &rxd0_pb18
+> 					      &txd0_pb19 >;
+> 		};
+> 
+> 		uart0_rts_cts {
+> 			pinctrl,functions = < &rxd0_pb18
+> 					      &txd0_pb19
+> 					      &rts0_pb17
+> 					      &cts0_pb15 >;
+> 		};
+> 	};
+> 
+> this will be handle by a generic code in c
+> 
+> Best Regards,
+> J.
