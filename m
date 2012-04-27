@@ -1,78 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760129Ab2D0LPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 07:15:54 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:13490
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759841Ab2D0LPo (ORCPT
+	id S1760016Ab2D0LUP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 07:20:15 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.245]:52301 "EHLO
+	nasmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755389Ab2D0LUN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 07:15:44 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 27 Apr 2012 19:24:57 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        Zhao Richard-B20223 <B20223@freescale.com>
-Subject: Re: [PATCH v3 2/4] pinctrl: pinctrl-imx: add imx pinctrl core
- driver
-Message-ID: <20120427112457.GG826@shlinux2.ap.freescale.net>
-References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
- <1335451227-27709-2-git-send-email-b29396@freescale.com>
- <20120427085402.GV2234@S2101-09.ap.freescale.net>
+	Fri, 27 Apr 2012 07:20:13 -0400
+From: "Chen, Bo" <Bo.Chen@atmel.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "alan@linux.intel.com" <alan@linux.intel.com>,
+        "rick@efn.org" <rick@efn.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-arm-kernel@lists.arm.linux.org.uk" 
+	<linux-arm-kernel@lists.arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [Query] serial: AT91:  Add SIM Driver
+Thread-Topic: [Query] serial: AT91:  Add SIM Driver
+Thread-Index: AQHNIT97IHJvDx2tRsOQLbzjAsUm2pauW71w
+Date: Fri, 27 Apr 2012 11:19:18 +0000
+Message-ID: <7AD597EA49E297498E79AFA326C986BB0D31A5CE@penmbx02>
+References: <7AD597EA49E297498E79AFA326C986BB0D317277@penmbx01>
+ <20120423115440.5bb1c7eb@pyramind.ukuu.org.uk>
+In-Reply-To: <20120423115440.5bb1c7eb@pyramind.ukuu.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.217.3.106]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120427085402.GV2234@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 04:54:05PM +0800, Shawn Guo wrote:
-> On Thu, Apr 26, 2012 at 10:40:25PM +0800, Dong Aisheng wrote:
-> > +/**
-> > + * struct imx_pin_reg - describe a pin reg map
-> > + * The last 3 members are used for select input setting
-> > + * @pid: pin id
-> > + * @mux_reg: mux register offset
-> > + * @conf_reg: config register offset
-> > + * @mux_mode: mux mode
-> > + * @input_reg: select input register offset for this mux if any
-> > + *  0 if no select input setting needed.
-> > + * @input_val: the value set to select input register
-> > + */
-> > +struct imx_pin_reg {
-> > +	unsigned int pid;
-> > +	unsigned int mux_reg;
-> > +	unsigned int conf_reg;
-> > +	unsigned int mux_mode;
-> > +	unsigned int input_reg;
-> > +	unsigned int input_val;
-> > +};
-> 
-> Since the array of this struct is big, I would suggest define the type
-> of the members as size-efficient as possible, for example, u16 is enough
-> for pid, and reg offset, while u8 is enough for mux_mode?
-> 
-Yes, reasonable.
-Will change to that in v4.
+Hi Alan,
 
-Regards
-Dong Aisheng
+> One way would be to make ISO7816 a line discipline (the layer which sits about the tty).
 
+>Your user space interface would then be
+
+>	int ldisc = N_ISO7816;
+>	ioctl(tty_fd, TIOCSETD, &ldisc);
+
+Make ISO7816 a line discipline would register it in driver(atmel_serial.c or a new named driver) via tty_register_ldisc(N_ISO7816, &tty_ldisc_ops)
+If I use ioctl(tty_fd, TIOCSETD, &ldisc), it will close current line discipline and open a new line discipline related to ISO7816 (tty_register_ldisc(N_ISO7816, &tty_ldisc_ops))?
+
+> at which point the read/write/ioctl etc calls on your tty will also be    > routed via your ldisc so you can manage them and provide ISO7816 sensible > interfaces
+
+Does it mean when I call read/write/ioctl in user space, it will call tty_ldisc_ops functions (ISO7816 line discipline has been opened) such as gsmld_read/gsmld_write/gsmld_ioctl in N_gsm.c? What I need to do is to implement the interface in tty_ldisc_ops?
+
+
+> Take a look at the gsmld_ parts of drivers/tty/n_gsm.c for a fairly full  > example of a line discipline. You can ignore most of the rest of the code  > there, the rest is implementing GSM mux and virtual ttys.
+
+What is the reasonable way to add this line discipline, in atmel_serial.c or create a new driver (build as a module and dynamically load)? Would it be accepted by kernel mainline?
+
+Thanks,
+Bo Chen
+
+
+
+
+
+-----Original Message-----
+From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk] 
+Sent: 2012年4月23日 18:55
+To: Chen, Bo
+Cc: alan@linux.intel.com; rick@efn.org; linux-serial@vger.kernel.org; linux-arm-kernel@lists.arm.linux.org.uk; linux-kernel@vger.kernel.org
+Subject: Re: [Query] serial: AT91: Add SIM Driver
+
+> I mean to create a char driver which contains ioctl interface to control GPIOs connected to SIM card VCC and RESET.
+
+We have a GPIO layer and existing GPIO interface support so the gpio side
+if they are kept independent ought to be easy. However I wonder if the
+separate gpio control will make the userspace side harder ?
+
+> Thirdly, I want to use usual tty function (read / write) to implement the ATR / send or receive command / PPS.
+> That means tty usual driver read or write will be called by user space application such as openct or else to realize the ATR and PPS.
+> Openct may also call above char driver to realize the power or reset function.
+
+That may be difficult to get right because of the tty object lifetime
+and the locking rules. One way would be to make ISO7816 a line discipline
+(the layer which sits about the tty).
+
+Your user space interface would then be
+
+	int ldisc = N_ISO7816;
+	ioctl(tty_fd, TIOCSETD, &ldisc);
+
+at which point the read/write/ioctl etc calls on your tty will also be
+routed via your ldisc so you can manage them and provide ISO7816 sensible
+interfaces.
+
+You'd still need a way for the ldisc to ask the tty device to manage the
+GPIO lines but I don't think that is too tricky to add.
+
+That way it would at least keep everything in one place and avoid adding
+new strange paths calling into the tty layer code via non tty devices.
+
+
+Take a look at the gsmld_ parts of drivers/tty/n_gsm.c for a fairly full
+example of a line discipline. You can ignore most of the rest of the code
+there, the rest is implementing GSM mux and virtual ttys.
+
+The two thing s it doesn't use are
+
+tty_set_termios(tty, &whatever)
+
+which is a helper for the ldisc or similar to set the terminal state
+itself. 
+
+and
+
+tty->driver->ops->tiocmget/tiocmset/etc
+
+for doing things like modem lines. One way to handle the gpios
+transparently might be to map them to the nearest equivalent 'modem' line
+when in ISO7816 mode.
+
+The tty also sees the ldisc change via tty->ops->set_ldisc(). This is
+used by some drivers already for things like automatically selecting IRDA
+FIR mode when in IRDA modes.
+
+In your case the driver would set/exit ISO7816 mode when it saw this.
+
+Alan
