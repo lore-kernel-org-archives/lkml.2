@@ -1,66 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab2D0VbN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 17:31:13 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:55404 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753562Ab2D0VbL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 17:31:11 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "DebBarma\, Tarun Kanti" <tarun.kanti@ti.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Shilimkar\, Santosh" <santosh.shilimkar@ti.com>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Charulatha V <charu@ti.com>
-Subject: Re: [PATCH v9 11/25] gpio/omap: cleanup omap_gpio_mod_init function
-Organization: Texas Instruments, Inc.
-References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
-	<1328203851-20435-12-git-send-email-tarun.kanti@ti.com>
-	<13629551.hP3ZV1ajDo@vclass>
-	<CAC83ZvK630=6B-k2TfV3XBg8w7ZosLVDNE4ezjDYnn=hcXA48Q@mail.gmail.com>
-	<CAC83ZvJDDvCu8NKTOYh75USA3fvSAKEGaXXi9PtCM955K_keSA@mail.gmail.com>
-	<20120424160447.GI3739@atomide.com>
-	<CAC83Zv+CCLQfZHfqMcbof6JtA-hOK1PfX5Gs0BBVQhBAiWzX_g@mail.gmail.com>
-	<CAMQu2gzwijaSzXprEwTNTie3zCgFcNPonAexzrO_AWc2a8jOkw@mail.gmail.com>
-	<CAC83ZvKN_Qxw-9RPfpJaL5434j0HgysZ364F+b29rdSCQWhm7A@mail.gmail.com>
-	<20120425134508.GE25053@n2100.arm.linux.org.uk>
-	<CAC83ZvL54bot+yQoRPPX3_9O5wfdpdBCNb4-Chw7sPyVFDBGSg@mail.gmail.com>
-Date: Fri, 27 Apr 2012 14:31:11 -0700
-In-Reply-To: <CAC83ZvL54bot+yQoRPPX3_9O5wfdpdBCNb4-Chw7sPyVFDBGSg@mail.gmail.com>
-	(Tarun Kanti DebBarma's message of "Thu, 26 Apr 2012 10:43:57 +0530")
-Message-ID: <87pqaszwtc.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1754782Ab2D0Vgr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 17:36:47 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:21923 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab2D0Vgq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 17:36:46 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-7.tower-131.messagelabs.com!1335562598!20664919!8
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: refactor serial2002 driver to remove forward declarations
+Date: Fri, 27 Apr 2012 14:36:26 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204271436.26454.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"DebBarma, Tarun Kanti" <tarun.kanti@ti.com> writes:
+Move the module_init/module_exit routines and the associated
+struct comedi_driver and other variables to the end of the source.
+This is more typical of how other drivers are written and removes
+the need for the forward declarations.
 
-> On Wed, Apr 25, 2012 at 7:15 PM, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
 
-[...]
-
->> Correction.
->>
->> Don't email your patch in any way to the stable folk _before_ it has been
->> taken into Linus' tree.  However, you _may_ add in the patch attributations
->> a Cc: <stable@vger.kernel.org> tag if you want the stable folk to
->> automatically pick up your patch when it _does_ end up in Linus' tree.
->> But... make sure that git send-email or whatever doesn't automatically
->> add that to the recipients for the emailed patch.
->>
->> If you send the stable people a patch before its in mainline, you'll get
->> a whinge telling you to read Documentation/stable_kernel_rules.txt
->
-> Alright, I will add Cc: <stable@vger.kernel.org> tag in the patch.
-
-If you do that, be sure to use --suppress-cc=bodycc when you send it
-with git-send-email.
-
-Kevin
+diff --git a/drivers/staging/comedi/drivers/serial2002.c b/drivers/staging/comedi/drivers/serial2002.c
+index d880c2f..a034b10 100644
+--- a/drivers/staging/comedi/drivers/serial2002.c
++++ b/drivers/staging/comedi/drivers/serial2002.c
+@@ -43,20 +43,10 @@ Status: in development
+ #include <linux/serial.h>
+ #include <linux/poll.h>
+ 
+-/*
+- * Board descriptions for two imaginary boards.  Describing the
+- * boards in this way is optional, and completely driver-dependent.
+- * Some drivers use arrays such as this, other do not.
+- */
+ struct serial2002_board {
+ 	const char *name;
+ };
+ 
+-static const struct serial2002_board serial2002_boards[] = {
+-	{
+-	 .name = "serial2002"}
+-};
+-
+ /*
+  * Useful for shorthand access to the particular board structure
+  */
+@@ -89,35 +79,6 @@ struct serial2002_private {
+  */
+ #define devpriv ((struct serial2002_private *)dev->private)
+ 
+-static int serial2002_attach(struct comedi_device *dev,
+-			     struct comedi_devconfig *it);
+-static int serial2002_detach(struct comedi_device *dev);
+-struct comedi_driver driver_serial2002 = {
+-	.driver_name = "serial2002",
+-	.module = THIS_MODULE,
+-	.attach = serial2002_attach,
+-	.detach = serial2002_detach,
+-	.board_name = &serial2002_boards[0].name,
+-	.offset = sizeof(struct serial2002_board),
+-	.num_names = ARRAY_SIZE(serial2002_boards),
+-};
+-
+-static int serial2002_di_rinsn(struct comedi_device *dev,
+-			       struct comedi_subdevice *s,
+-			       struct comedi_insn *insn, unsigned int *data);
+-static int serial2002_do_winsn(struct comedi_device *dev,
+-			       struct comedi_subdevice *s,
+-			       struct comedi_insn *insn, unsigned int *data);
+-static int serial2002_ai_rinsn(struct comedi_device *dev,
+-			       struct comedi_subdevice *s,
+-			       struct comedi_insn *insn, unsigned int *data);
+-static int serial2002_ao_winsn(struct comedi_device *dev,
+-			       struct comedi_subdevice *s,
+-			       struct comedi_insn *insn, unsigned int *data);
+-static int serial2002_ao_rinsn(struct comedi_device *dev,
+-			       struct comedi_subdevice *s,
+-			       struct comedi_insn *insn, unsigned int *data);
+-
+ struct serial_data {
+ 	enum { is_invalid, is_digital, is_channel } kind;
+ 	int index;
+@@ -901,17 +862,32 @@ static int serial2002_detach(struct comedi_device *dev)
+ 	return 0;
+ }
+ 
++static const struct serial2002_board serial2002_boards[] = {
++	{
++		.name	= "serial2002"
++	},
++};
++
++struct comedi_driver driver_serial2002 = {
++	.driver_name	= "serial2002",
++	.module		= THIS_MODULE,
++	.attach		= serial2002_attach,
++	.detach		= serial2002_detach,
++	.board_name	= &serial2002_boards[0].name,
++	.offset		= sizeof(struct serial2002_board),
++	.num_names	= ARRAY_SIZE(serial2002_boards),
++};
++
+ static int __init driver_serial2002_init_module(void)
+ {
+ 	return comedi_driver_register(&driver_serial2002);
+ }
++module_init(driver_serial2002_init_module);
+ 
+ static void __exit driver_serial2002_cleanup_module(void)
+ {
+ 	comedi_driver_unregister(&driver_serial2002);
+ }
+-
+-module_init(driver_serial2002_init_module);
+ module_exit(driver_serial2002_cleanup_module);
+ 
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
