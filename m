@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758755Ab2D0QHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 12:07:45 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41335 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820Ab2D0QHo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 12:07:44 -0400
-Date: Fri, 27 Apr 2012 13:07:48 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hagen Paul Pfeifer <hagen@jauu.net>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL 0/4] perf/annotate loop detection V2, fixes
-Message-ID: <20120427160748.GE27997@infradead.org>
-References: <1335452777-27326-1-git-send-email-acme@infradead.org>
- <20120427072153.GB4766@gmail.com>
- <20120427080613.GA7359@gmail.com>
- <20120427153119.GC27997@infradead.org>
- <1335541737.2463.135.camel@laptop>
+	id S1759048Ab2D0QJB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 12:09:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30506 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757712Ab2D0QJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 12:09:00 -0400
+Message-ID: <4F9AC44A.5000509@redhat.com>
+Date: Fri, 27 Apr 2012 13:07:38 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1335541737.2463.135.camel@laptop>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Joe Perches <joe@perches.com>
+CC: Borislav Petkov <bp@amd64.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
+        Jason Uhlenkott <juhlenko@akamai.com>,
+        Tim Small <tim@buttersideup.com>,
+        Ranganathan Desikan <ravi@jetztechnologies.com>,
+        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Egor Martovetsky <egor@pasemi.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hitoshi Mitake <h.mitake@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?UTF-8?B?TmlrbGFzIFPDtmRlcmx1bmQ=?= 
+	<niklas.soderlund@ericsson.com>,
+        Shaohui Xie <Shaohui.Xie@freescale.com>,
+        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to work
+ with layers
+References: <1335289087-11337-1-git-send-email-mchehab@redhat.com>  <1335291342-14922-1-git-send-email-mchehab@redhat.com>  <20120427133304.GE9626@aftab.osrc.amd.com> <1335535895.25521.7.camel@joe2Laptop>
+In-Reply-To: <1335535895.25521.7.camel@joe2Laptop>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Apr 27, 2012 at 05:48:57PM +0200, Peter Zijlstra escreveu:
-> On Fri, 2012-04-27 at 12:31 -0300, Arnaldo Carvalho de Melo wrote:
-> > Yeah, there are some unused graphical chars. But perhaps we should just
-> > use ↓ again?
-> > 
-> >      0.00 │┌─→ c0:    cmp    %rax,%rbx
-> >      0.00 ││          mov    %rax,%rcx
-> >      0.00 ││      ↓   ↓je    5dd
-> >      0.00 ││   cc:    test   %rcx,%rcx
-> >      0.00 ││      ↓   ↓je    da
-> >      0.00 ││          mov    0x8(%rcx),%esi
-> >      0.00 ││          shr    $0x4,%esi
-> >      0.00 ││          sub    $0x2,%esi
-> >      0.00 ││   da:    mov    %rcx,0x10(%rbx)
-> >      0.00 ││          mov    %rcx,%rax
-> >      0.00 ││          cmpl   $0x0,%fs:0x18
-> >      0.00 ││      ↓   ↓je    ed
-> >      0.00 ││          lock   cmpxchg %rbx,(%rdx)
-> >      0.00 ││          cmp    %rax,%rcx
-> >           ││
-> >      0.00 │└──────↑ } jne    c0
-> > 
-> > Does it still stands out? I think so, we expect a letter there,
-> > something very different is there, matching the other down arrowsome
-> > columns to the left. 
+Em 27-04-2012 11:11, Joe Perches escreveu:
+> On Fri, 2012-04-27 at 15:33 +0200, Borislav Petkov wrote:
+>> this patch gives
+>>
+>> [    8.278399] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 0: dimm0 (0:0:0): row 0, chan 0
 > 
-> That just looks daft.. what's wrong with the single up/down arrow?
+> One too many __func__'s in some combination of the
+> pr_fmt and/or dbg call and/or the actual call site?
 
-Yeah, that too, or perhaps we can bring the instruction column closer to
-the jump column and then that makes it stand out better?
- 
-> Also, can we keep all this on the list please?
+Yes. This is a common issue at the EDAC core: on several places, it calls the
+edac debug macros (DEBUGF0...DEBUGF4) passing a __func__ as an argument, while
+the debug macros already handles that. I suspect that, in the past, the __func__
+were not at the macros, but some patch added it there, and forgot to fix the
+occurrences of its call.
 
- Content-Type: text/plain; charset="UTF-8"
- Content-Transfer-Encoding: 8bit
+This is something that needs to be reviewed at the entire EDAC core (and likely
+at the drivers).
 
-Is doing the trick with keeping the arrows, etc, readable here, I'll
-check what is wrong with git-send-email that corrupted the messages when
-I tried using it to post patches.
+I opted to not touch on this at the existing debug logic, as I think that the
+better is to address all those issues on one separate patch, after fixing the
+EDAC core bugs.
+> 
+>>> diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
+> []
+>>> @@ -447,8 +447,13 @@ static inline void pci_write_bits32(struct pci_dev *pdev, int offset,
+>>>  
+>>>  #endif				/* CONFIG_PCI */
+>>>  
+>>> -extern struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+>>> -					  unsigned nr_chans, int edac_index);
+>>> +struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+>>> +				   unsigned nr_chans, int edac_index);
+>>
+>> Why not "extern"?
+> 
+> Using extern function prototypes in .h files
+> isn't generally necessary nor is extern the
+> more common kernel style.
 
-- Arnaldo
+Yes. I never add extern on the code I write.
 
+While CodingStyle doesn't explicitly say anything about that, its spirit
+seem to indicate to that the right thing is avoid using it, like, for 
+example:
+	"Chapter 4: Naming
+
+	C is a Spartan language, and so should your naming be."
+
+(also on other places, like avoiding to use {} for single-statement if's).
+
+So, useless clauses like "extern" doesn't seem to be the best choice.
+
+Regards,
+Mauro
