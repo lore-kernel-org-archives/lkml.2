@@ -1,61 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760639Ab2D0S4w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:56:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36002 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820Ab2D0S4u (ORCPT
+	id S1761165Ab2D0S6O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 14:58:14 -0400
+Received: from fw.wantstofly.org ([80.101.37.227]:62928 "EHLO
+	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820Ab2D0S6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 14:56:50 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] irqdomain: print a warning if domains contain IRQ 0
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CACRpkdYpPLNnuivcN9CsG6ZHsZ7=AOkYv9OSGjfiLFi1ouh03g@mail.gmail.com>
-References: <1334756420-12019-1-git-send-email-linus.walleij@stericsson.com> <1334787792.3143.19.camel@pasglop> <20120419182917.2F64E3E0700@localhost> <CACRpkdYpPLNnuivcN9CsG6ZHsZ7=AOkYv9OSGjfiLFi1ouh03g@mail.gmail.com>
-Date: Fri, 27 Apr 2012 12:56:48 -0600
-Message-Id: <20120427185648.47F393E0B4D@localhost>
+	Fri, 27 Apr 2012 14:58:13 -0400
+Date: Fri, 27 Apr 2012 20:58:09 +0200
+From: Lennert Buytenhek <buytenh@wantstofly.org>
+To: sedat.dilek@gmail.com
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lautriv <admin@coldplug.net>,
+        Jim Cromie <jim.cromie@gmail.com>
+Subject: Re: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
+Message-ID: <20120427185809.GZ3157@wantstofly.org>
+References: <CA+icZUVAK3NHmbG5kR1KhqGe9mAimWWzLz-MfXOXbyry3Sz73w@mail.gmail.com>
+ <20120427094007.GU3157@wantstofly.org>
+ <CA+icZUUiYwpHpqe5_kz1rLzTT13qQMwpNpDH7EOaRrVi_c8Z2Q@mail.gmail.com>
+ <20120427094637.GV3157@wantstofly.org>
+ <CA+icZUXNZ=exTnR=OgD_9bpt_0s-KnR+v-K6u+XzQr4HBoTQHQ@mail.gmail.com>
+ <20120427095842.GW3157@wantstofly.org>
+ <CA+icZUWuynSaPE4pdxzoP783pw7r=5x27ewXN_pkR5VS=0kKUg@mail.gmail.com>
+ <20120427101732.GX3157@wantstofly.org>
+ <CA+icZUUnJPeDmL9xXfvj62an40bXwwaOnrJmxmLN_cBt9PyCZA@mail.gmail.com>
+ <CA+icZUV76wSBj88EpzmWbO=u2dP23yi5P98nN2KZehBUni9mEg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+icZUV76wSBj88EpzmWbO=u2dP23yi5P98nN2KZehBUni9mEg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Apr 2012 08:38:05 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Apr 19, 2012 at 8:29 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> 
-> > This is indeed specific to the legacy domain.  I think the patch is
-> > good and it will help weed out unintended irq0 users.  However, it
-> > requires the following additional fix I think.  It will need to be
-> > tested to make sure it doesn't break PowerPC ISA users.
+On Fri, Apr 27, 2012 at 03:29:26PM +0200, Sedat Dilek wrote:
+
+> >>> >> >> >> Are you planning to or even working on support (for) 8361 devices?
+> >>> >> >> >
+> >>> >> >> > I don't have any such plans, and I don't know of anyone who does.
+> >>> >> >>
+> >>> >> >> Does 8361 require firmware support?
+> >>> >> >
+> >>> >> > What do you mean by that?
+> >>> >>
+> >>> >> IIRC ath5k for example needs no external firmware file.
+> >>> >
+> >>> > The 8361 requires firmware to be loaded into it before it'll do
+> >>> > anything useful.
+> >>> >
+> >>> >
+> >>> >> >> Does a firmware file exist (name?)?
+> >>> >> >
+> >>> >> > There's firmware for the 8361 out there, however, that version of
+> >>> >> > the firmware implements a firmware API that is different from the
+> >>> >> > one that mwl8k currently implements.
+> >>> >> >
+> >>> >> > You could add 8361 support to mwl8k, but then you'd have to go over
+> >>> >> > all the firmware command invocations in mwl8k and make sure that they
+> >>> >> > will work on the 8361 firmware that you're trying to support as well.
+> >>> >>
+> >>> >> Without having a 8361 this will be even harder to walk through.
+> >>> >>
+> >>> >> Anyway, thanks for your detailed explanations.
+> >>> >>
+> >>> >> What's the alternative for such affected users?
+> >>> >> Use ndis-wrapper?
+> >>> >
+> >>> > I'm not sure. �I've never tried to get a 8361 work under Linux.
+> >>>
+> >>> Just found on [1] this same wrong patch in [2] :-).
+> >>> Dunno if [3] worked and from where they have stolen fw-files.
+> >>>
+> >>> - Sedat -
+> >>>
+> >>> [1] https://dev.openwrt.org/ticket/7209
+> >>> [2] https://dev.openwrt.org/attachment/ticket/7209/mwl8k_fix_pci_id.patch
+> >>> [3] https://dev.openwrt.org/attachment/ticket/7209/mwl8k_8361p.patch
+> >>
+> >> I doubt that [3] is really all that's needed to make it work. �But if
+> >> there's someone for whom it works, I'd like them to run some tests on
+> >> mwl8k + [3] on 88w8361p.
 > >
-> > g.
+> > Just asked lautriv to do so (he will do against linux-3.3.3), lets' see.
+> > Also, I refreshed and adapted a bit the instructions (see attachment).
 > >
-> > diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-> > index d0995bd..31f1f88 100644
-> > --- a/include/linux/irqdomain.h
-> > +++ b/include/linux/irqdomain.h
-> > @@ -138,7 +138,7 @@ static inline struct irq_domain *irq_domain_add_legacy_isa(
-> >                                const struct irq_domain_ops *ops,
-> >                                void *host_data)
-> >  {
-> > -       return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS, 0, 0, ops,
-> > +       return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS-1, 1, 1, ops,
-> >                                     host_data);
+> > - Sedat -
 > 
-> Hm, so what does this do? If I fold it into my patch I need some
-> kind of blurb...
+> [ CC Jim Cromie ]
 > 
-> I'm guessing it bumps the ISA IRQs with one to avoid using IRQ0 which
-> seems like a valid patch on its own, and that the old code was
-> used for actively ignoring IRQ 0 on ISA (not used or whatever)?
+> Now, with extracted firmware files renamed & copied to
+> /lib/firmware/mwl8k/ and applied patch (see attachment) against
+> Linux-3.4-rc4+ I am seeing with modinfo:
+> 
+> $ sudo modinfo mwl8k
+> filename:
+> /lib/modules/3.4.0-rc4-5-generic/kernel/drivers/net/wireless/mwl8k.ko
+> license:        GPL
+> author:         Lennert Buytenhek <buytenh@marvell.com>
+> version:        0.13
+> description:    Marvell TOPDOG(R) 802.11 Wireless Network Driver
+> firmware:       mwl8k/fmimage_8366_ap-2.fw
+> firmware:       mwl8k/fmimage_8366.fw
+> firmware:       mwl8k/helper_8366.fw
+> firmware:       mwl8k/fmimage_8687.fw
+> firmware:       mwl8k/helper_8687.fw
+> firmware:       mwl8k/fmimage_8363.fw
+> firmware:       mwl8k/helper_8363.fw
+> firmware:       mwl8k/fmimage_8361p.fw
+> firmware:       mwl8k/helper_8361p.fw
+> srcversion:     9E1479A05C8D67E6AE90746
+> alias:          pci:v000011ABd00002A43sv*sd*bc*sc*i*
+> alias:          pci:v000011ABd00002A40sv*sd*bc*sc*i*
+> alias:          pci:v000011ABd00002A30sv*sd*bc*sc*i*
+> alias:          pci:v000011ABd00002A2Bsv*sd*bc*sc*i*
+> alias:          pci:v000011ABd00002A24sv*sd*bc*sc*i*
+> alias:          pci:v000011ABd00002A0Csv*sd*bc*sc*i*
+> alias:          pci:v000011ABd00002A0Asv*sd*bc*sc*i*
+> alias:          pci:v000011ABd00002A02sv*sd*bc*sc*i* <--- 8361P:
+> 0x2a02 PCI device-id
+> depends:        mac80211,cfg80211
+> vermagic:       3.4.0-rc4-5-generic SMP mod_unload modversions
+> parm:           ap_mode_default:Set to 1 to make ap mode the default
+> instead of sta mode (bool)
+> 
+> $ ls -l /lib/firmware/mwl8k/
+> insgesamt 456
+> -rw-r--r-- 1 root root  75848 Apr 27 13:49 fmimage_8361p.fw <---
+> 8361P: Firmware image
+> -rw-r--r-- 1 root root 101780 M�r 19 19:32 fmimage_8366_ap-1.fw
+> -rw-r--r-- 1 root root 101976 M�r 19 19:32 fmimage_8366_ap-2.fw
+> -rw-r--r-- 1 root root  96664 M�r 19 19:32 fmimage_8366.fw
+> -rw-r--r-- 1 root root  73252 Feb 23 20:07 fmimage_8687.fw
+> -rw-r--r-- 1 root root   2476 Apr 27 13:49 helper_8361p.fw <--- 8361P:
+> Helper image
+> -rw-r--r-- 1 root root   2476 M�r 19 19:32 helper_8366.fw
+> -rw-r--r-- 1 root root   2476 Feb 23 20:07 helper_8687.fw
+> 
+> As said... ***compile-tested*** only here.
 
-Yes, that is exactly what it does.  The fact that 0 is allowed but
-never used is an artifact of how this code used to be only for ISA and
-both irq and hwirq base numbers were hard coded to 0 for that.
+Which doesn't say much at all, but..
 
-The reworked legacy domain allowed both irq base and hwirq base to be
-non-zero, but the check for 0 code remained.
 
-g.
+> I had a short query with lautriv on #linux-wireless this afternoon:
+> * mwl8k kernel-module was autoloaded
+> * wlan0 interface got fired up
+> * ESSID was accepted
+> * logs reported 802.11bgn support is active
+> * (he tested on Linux-3.3.3)
+> 
+> With WPA/WPA2 lautriv had some problems as his installation was
+> missing wpasupplicant.
+> He setup a classic /etc/network/interfaces.
+> After resetting his router mwl8k worked nicely.
+> 
+> Unfortunately, he was on the run and promised me to send logs and do
+> more testing this evening.
 
+..but this is pretty interesting.  I thought that the only available
+8361p firmware used an incompatible firmware API, and I didn't know
+of the existence of an apparently compatible firmware.
+
+
+> So, Lennert if you want more testing - What? How? etc.
+
+For one, the output of 'iw phy', please.
+
+Also, does monitor mode work?  Do you get plausible channel/rxpower
+values in tcpdump in monitor mode?
+
+Are there any messages in the syslog about failing commands?
+
+
+thanks,
+Lennert
