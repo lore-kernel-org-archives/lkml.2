@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760660Ab2D0Szg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:55:36 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44614 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820Ab2D0Sze (ORCPT
+	id S1760639Ab2D0S4w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 14:56:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36002 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820Ab2D0S4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 14:55:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwvFaxBT8Mdp5s4-6Gxy7nM4WVzbWna4RF_OUK3hnx+jQ@mail.gmail.com>
-References: <CA+55aFxEP7-+N7vTPZ-4hD-UirZ=+YMJh2x3EjZvUmjjyOchtg@mail.gmail.com>
- <4F9A6ABA.6050503@msgid.tls.msk.ru> <CA+55aFwud1nXRr+HpzH8rSkEWcZ_rJmoE7UtQt76D=A3qcb6GQ@mail.gmail.com>
- <20120427.143402.1028957981042061092.davem@davemloft.net> <CA+55aFwvFaxBT8Mdp5s4-6Gxy7nM4WVzbWna4RF_OUK3hnx+jQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 27 Apr 2012 11:55:12 -0700
-X-Google-Sender-Auth: xFeE5hFRI-B66DDXLFSvWHqcH_g
-Message-ID: <CA+55aFyLk-uPMVaic19YOWdvdj2pv4R+E3s7UQ6voAy6UkO_Sg@mail.gmail.com>
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
- design error.
-To: David Miller <davem@davemloft.net>
-Cc: mjt@tls.msk.ru, linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        raven@themaw.net, thomas@m3y3r.de, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 27 Apr 2012 14:56:50 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] irqdomain: print a warning if domains contain IRQ 0
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CACRpkdYpPLNnuivcN9CsG6ZHsZ7=AOkYv9OSGjfiLFi1ouh03g@mail.gmail.com>
+References: <1334756420-12019-1-git-send-email-linus.walleij@stericsson.com> <1334787792.3143.19.camel@pasglop> <20120419182917.2F64E3E0700@localhost> <CACRpkdYpPLNnuivcN9CsG6ZHsZ7=AOkYv9OSGjfiLFi1ouh03g@mail.gmail.com>
+Date: Fri, 27 Apr 2012 12:56:48 -0600
+Message-Id: <20120427185648.47F393E0B4D@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 11:42 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> There's no question that systemd is broken.
+On Fri, 20 Apr 2012 08:38:05 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Apr 19, 2012 at 8:29 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> 
+> > This is indeed specific to the legacy domain.  I think the patch is
+> > good and it will help weed out unintended irq0 users.  However, it
+> > requires the following additional fix I think.  It will need to be
+> > tested to make sure it doesn't break PowerPC ISA users.
+> >
+> > g.
+> >
+> > diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+> > index d0995bd..31f1f88 100644
+> > --- a/include/linux/irqdomain.h
+> > +++ b/include/linux/irqdomain.h
+> > @@ -138,7 +138,7 @@ static inline struct irq_domain *irq_domain_add_legacy_isa(
+> >                                const struct irq_domain_ops *ops,
+> >                                void *host_data)
+> >  {
+> > -       return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS, 0, 0, ops,
+> > +       return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS-1, 1, 1, ops,
+> >                                     host_data);
+> 
+> Hm, so what does this do? If I fold it into my patch I need some
+> kind of blurb...
+> 
+> I'm guessing it bumps the ISA IRQs with one to avoid using IRQ0 which
+> seems like a valid patch on its own, and that the old code was
+> used for actively ignoring IRQ 0 on ISA (not used or whatever)?
 
-Actually, I'll take that back.
+Yes, that is exactly what it does.  The fact that 0 is allowed but
+never used is an artifact of how this code used to be only for ISA and
+both irq and hwirq base numbers were hard coded to 0 for that.
 
-Yes, systemd has breakage. But it's actually automount that is the
-truly broken piece of sh*t.
+The reworked legacy domain allowed both irq base and hwirq base to be
+non-zero, but the check for 0 code remained.
 
-I think that 'automount' is even more broken. The fact that the
-automount maintainers knew about this, and added TOTALLY BROKEN code
-to their automount source tree, over five years ago, because the
-authors clearly did not understand what the f*ck they were doing,
-that's the real problem.
+g.
 
-Look at the automount source code:
-
-        if (pkt_len % 8) {
-                if (strcmp(un.machine, "alpha") == 0 ||
-                    strcmp(un.machine, "ia64") == 0 ||
-                    strcmp(un.machine, "x86_64") == 0 ||
-                    strcmp(un.machine, "ppc64") == 0)
-                        pkt_len += 4;
-
-        }
-
-and realize that the above is *wrong*. It's complete and utter shit.
-It's actively insane. The above source code makes zero sense.
-
-The whole issue does not *exist* on alpha, ia64, or ppc64 (or sparc64,
-which isn't even listed), because those architectures don't have the
-issue that their 32-bit version has different default alignment for a
-64-bit entity.
-
-So autofs-tools was and remains actively *wrong*.
-
-In contrast, the systemd source code actually makes sense. We should
-point to it as the *correct* user, and autofs as the legacy bug.
-
-Which is why I actually think that it makes more sense to special-case
-the real bug - in automount. It's why I think that it's ok to do the
-strcmp(), and why the strcmp should check for "automount", not
-"systemd".
-
-I just think it needs a big honking comment that explains it. Something like
-
-   int autofs_compat_interface()
-   {
-      if (!is_compat_task())
-            return 0;
-      /* "autofs" has crazy shit going on working around an old compat
-bug, and actually
-          expects the non-compat size with a 64-bit kernel */
-      if (!strcmp(current->comm, "automount"))
-            return 0;
-      return 1;
-   }
-
-because it really is an autofs bug.
-
-If the autofs people had understood what they were doing, none of this
-would ever have happened.
-
-Still, checking for strings is ugly. I do think it would be even
-better if we could trigger on another difference, but whatever..
-
-                    Linus
