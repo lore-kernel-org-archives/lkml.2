@@ -1,347 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760545Ab2D0PbX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:31:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44337 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760405Ab2D0PbV (ORCPT
+	id S1760634Ab2D0PcP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:32:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59873 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760416Ab2D0PcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:31:21 -0400
-Date: Fri, 27 Apr 2012 12:31:19 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hagen Paul Pfeifer <hagen@jauu.net>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL 0/4] perf/annotate loop detection V2, fixes
-Message-ID: <20120427153119.GC27997@infradead.org>
-References: <1335452777-27326-1-git-send-email-acme@infradead.org>
- <20120427072153.GB4766@gmail.com>
- <20120427080613.GA7359@gmail.com>
+	Fri, 27 Apr 2012 11:32:13 -0400
+Message-ID: <4F9ABBF9.8080409@gmail.com>
+Date: Fri, 27 Apr 2012 09:32:09 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120420 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120427080613.GA7359@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/13] perf evlist: Fix creation of cpu map
+References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com> <1335417327-11796-8-git-send-email-namhyung.kim@lge.com> <4F996433.7040003@gmail.com> <1335474778.1497.14.camel@leonhard> <4F99BCAF.1080309@gmail.com> <87397qhvvx.fsf@sejong.aot.lge.com> <20120427150821.GA27997@infradead.org>
+In-Reply-To: <20120427150821.GA27997@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Apr 27, 2012 at 10:06:13AM +0200, Ingo Molnar escreveu:
-> * Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > [...]
-> > 
-> > This would require for us to draw all loops that are 
-> > interesting: probably all backwards jumping ones, with some 
-> > nesting limit of 5 or so. I think we really need this loop 
-> > graph for this UI to have low visual overhead :-/
-> > 
-> > Beyond improving visual stability of the output, this would 
-> > also obviously be (much) more informative as for reasonably 
-> > sized functions it would show all the current loop contexts - 
-> > which is very useful when one tries to make sense of a 
-> > function in assembly.
-> 
-> My (silent) hope would be that if we make assembly output more 
-> obvious, more structured visually then more people will read 
-> assembly code.
+On 4/27/12 9:08 AM, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Apr 27, 2012 at 09:16:18AM +0900, Namhyung Kim escreveu:
+>> Hi,
+>>
+>> On Thu, 26 Apr 2012 15:22:55 -0600, David Ahern wrote:
+>>> On 4/26/12 3:12 PM, Namhyung Kim wrote:
+>>>> Hmm.. No, I can reproduce it without any of this series. And now I think
+>>>> that it is not related to the number of cpus. On my 4 core (no
+>>>> hyperthreading) machine at home, the result was same.
+>>>>
+>>>> BTW, did you change sysctl settings?
+>>>>
+>>>>     $ cat /sys/devices/system/cpu/online
+>>>>     0-3
+>>>>     $ grep . /proc/sys/kernel/perf_event_*
+>>>>     /proc/sys/kernel/perf_event_max_sample_rate:100000
+>>>>     /proc/sys/kernel/perf_event_mlock_kb:516
+>>>>     /proc/sys/kernel/perf_event_paranoid:1
+>>>
+>>> $ grep . /proc/sys/kernel/perf_event_*
+>>> /proc/sys/kernel/perf_event_max_sample_rate:100000
+>>> /proc/sys/kernel/perf_event_mlock_kb:516
+>>> /proc/sys/kernel/perf_event_paranoid:-1
+>>>
+>>> That last one is the key. I have it set to not paranoid and usually
+>>> run perf a non-root user.
+>>>
+>>
+>> That's exactly what I want to see :). On perf_mmap() we have:
+>>
+>> 	if ((locked>  lock_limit)&&  perf_paranoid_tracepoint_raw()&&
+>> 		!capable(CAP_IPC_LOCK)) {
+>> 		ret = -EPERM;
+>> 		goto unlock;
+>> 	}
+>>
+>> So as long as you set perf_event_paranoid to -1 or run perf test as
+>> root, you cannot see the failure.
+>
+> Ok, after this discussion, David, can I have your acked-by or tested-by?
+>
+> - Arnaldo
 
-Well, the idea is to improve the experience of people who _already_ look
-at assembly output so that they can become slightly (or a lot, hey, one
-can dream) more productive, as we get older we need better eye lenses
-8-)
+I had reviewed the whole series yesterday, so you can add my
 
-Doing that we would eventually have something that would make more
-people join this existing assembly lovers club.
- 
-> Note that once we have loop nesting there are countless other 
-> possibilities as well to augment the output.
+Reviewed-by: David Ahern <dsahern@gmail.com>
 
-Yeah, ponies!
- 
-> ( Note that I pile on a couple of visual suggestions below - so 
->   the output becomes more and more complex - ideally we want to 
->   pick the ones from below that we like and skip the ones that 
->   are not so good. )
-> 
-> 1) Loop grouping
-> 
-> We could slightly group the assembly instructions themselves 
-> as well:
-> 
->     0.00 │       ↓ jmp    cc
->     0.00 │         nopl   0x0(%rax)
->          │
->     0.00 │┌─→ c0:  cmp    %rax,%rbx
->     0.00 ││        mov    %rax,%rcx
->     0.00 ││      ↓ je     5dd
->     0.00 ││   cc:  test   %rcx,%rcx
->     0.00 ││      ↓ je     da
->     0.00 ││        mov    0x8(%rcx),%esi
->     0.00 ││        shr    $0x4,%esi
->     0.00 ││        sub    $0x2,%esi
->     0.00 ││   da:  mov    %rcx,0x10(%rbx)
->     0.00 ││        mov    %rcx,%rax
->     0.00 ││        cmpl   $0x0,%fs:0x18
->     0.00 ││      ↓ je     ed
->     0.00 ││        lock   cmpxchg %rbx,(%rdx)
->     0.00 ││        cmp    %rax,%rcx
->     0.00 │└──────↑ jne    c0
->          │
->     0.00 │         test   %rcx,%rcx
->     0.00 │       ↓ je     104
->     0.00 │         cmp    %r12d,%esi
->     0.00 │       ↓ jne    719
-> 
-> See that by using a newline how much clearer the loop stands 
-> out, visually?
+to the whole series if you want. I did not pull down the set and apply 
+to test it, and this particular patch requires prior ones so I have not 
+tested it.
 
-Linus also made that suggestion, agreed.
- 
-> 2) Nesting
-> 
-> The classic C method to show nesting is to use curly braces and 
-> slight indentation:
-> 
->     0.00 │       ↓ jmp    cc
->     0.00 │         nopl   0x0(%rax)
->          │
->          │         {
->     0.00 │┌─→ c0:    cmp    %rax,%rbx
->     0.00 ││          mov    %rax,%rcx
->     0.00 ││      ↓   je     5dd
->     0.00 ││   cc:    test   %rcx,%rcx
->     0.00 ││      ↓   je     da
->     0.00 ││          mov    0x8(%rcx),%esi
->     0.00 ││          shr    $0x4,%esi
->     0.00 ││          sub    $0x2,%esi
->     0.00 ││   da:    mov    %rcx,0x10(%rbx)
->     0.00 ││          mov    %rcx,%rax
->     0.00 ││          cmpl   $0x0,%fs:0x18
->     0.00 ││      ↓   je     ed
->     0.00 ││          lock   cmpxchg %rbx,(%rdx)
->     0.00 ││          cmp    %rax,%rcx
->          ││
->     0.00 │└──────↑ } jne    c0
->          │
->     0.00 │         test   %rcx,%rcx
->     0.00 │       ↓ je     104
->     0.00 │         cmp    %r12d,%esi
->     0.00 │       ↓ jne    719
-
-I guess we could do away with the {, the spaces before/after the loop
-+ the indentation (that Arjan also suggested on G+) should be enough,
-right?
- 
-> 3) Separating out forward conditional jumps
-> 
->     0.00 │       ↓ jmp    cc
->     0.00 │         nopl   0x0(%rax)
->          │
->          │         {
->     0.00 │┌─→ c0:    cmp    %rax,%rbx
->     0.00 ││          mov    %rax,%rcx
->     0.00 ││      ↓   .je    5dd
->     0.00 ││   cc:    test   %rcx,%rcx
->     0.00 ││      ↓   .je    da
->     0.00 ││          mov    0x8(%rcx),%esi
->     0.00 ││          shr    $0x4,%esi
->     0.00 ││          sub    $0x2,%esi
->     0.00 ││   da:    mov    %rcx,0x10(%rbx)
->     0.00 ││          mov    %rcx,%rax
->     0.00 ││          cmpl   $0x0,%fs:0x18
->     0.00 ││      ↓   .je    ed
->     0.00 ││          lock   cmpxchg %rbx,(%rdx)
->     0.00 ││          cmp    %rax,%rcx
->          ││
->     0.00 │└──────↑ } jne    c0
->          │
->     0.00 │         test   %rcx,%rcx
->     0.00 │       ↓ .je    104
->     0.00 │         cmp    %r12d,%esi
->     0.00 │       ↓ .jne   719
-> 
-> So the forward conditional jumps get moved by one character to 
-> the right and get prefixed with '.', which has the following 
-> effects:
-> 
->  - the flow of all the 'other', register modifying and loop 
->    instructions can be seen more clearly
-> 
->  - the 'exception' forward conditional jumps get moved into the 
->    visual background, slightly.
-> 
->  - blocks of instructions with no branches amongst them are more 
->    clearly visible.
-> 
-> If '.' is too aggressive or too confusing then some other 
-> (possibly graphical) character could be used as well?
-
-Yeah, there are some unused graphical chars. But perhaps we should just
-use ↓ again?
-
-     0.00 │┌─→ c0:    cmp    %rax,%rbx
-     0.00 ││          mov    %rax,%rcx
-     0.00 ││      ↓   ↓je    5dd
-     0.00 ││   cc:    test   %rcx,%rcx
-     0.00 ││      ↓   ↓je    da
-     0.00 ││          mov    0x8(%rcx),%esi
-     0.00 ││          shr    $0x4,%esi
-     0.00 ││          sub    $0x2,%esi
-     0.00 ││   da:    mov    %rcx,0x10(%rbx)
-     0.00 ││          mov    %rcx,%rax
-     0.00 ││          cmpl   $0x0,%fs:0x18
-     0.00 ││      ↓   ↓je    ed
-     0.00 ││          lock   cmpxchg %rbx,(%rdx)
-     0.00 ││          cmp    %rax,%rcx
-          ││
-     0.00 │└──────↑ } jne    c0
-
-Does it still stands out? I think so, we expect a letter there,
-something very different is there, matching the other down arrowsome
-columns to the left.
-
-> 4) Marking labels
-> 
-> I'd argue we bring in <ab> as label markers:
-> 
->     0.00 │       ↓ jmp    <cc>
->     0.00 │         nopl   0x0(%rax)
->          │
->          │         {
->     0.00 │┌─→ c0:    cmp    %rax,%rbx
->     0.00 ││          mov    %rax,%rcx
->     0.00 ││      ↓   .je    <5dd>
->     0.00 ││   cc:    test   %rcx,%rcx
->     0.00 ││      ↓   .je    <da>
->     0.00 ││          mov    0x8(%rcx),%esi
->     0.00 ││          shr    $0x4,%esi
->     0.00 ││          sub    $0x2,%esi
->     0.00 ││   da:    mov    %rcx,0x10(%rbx)
->     0.00 ││          mov    %rcx,%rax
->     0.00 ││          cmpl   $0x0,%fs:0x18
->     0.00 ││      ↓   .je    <ed>
->     0.00 ││          lock   cmpxchg %rbx,(%rdx)
->     0.00 ││          cmp    %rax,%rcx
->          ││
->     0.00 │└──────↑ } jne    <c0>
->          │
->     0.00 │         test   %rcx,%rcx
->     0.00 │       ↓ .je    <104>
->     0.00 │         cmp    %r12d,%esi
->     0.00 │       ↓ .jne   <719>
-> 
-> Note how much easier it becomes to read the body of the loop: 
-> the <> labels are clearly separated from constants/offsets 
-> within the other assembly instructions. In the current output 
-> the two easily 'mix', which is bad.
-
-I think the <> is enough, i.e. no need for capitalization, as a bonus
-point, it is already what is used in raw assembly mode, i.e. a subset of
-users are already used to that visual cue.
- 
-> 5)
-> 
-> Another trick we could use to separate labels from constants 
-> more clearly is capitalization:
-> 
->     0.00 │       ↓ jmp    <CC>
->     0.00 │         nopl   0x0(%rax)
->          │
->          │         {
->     0.00 │┌─→ C0:    cmp    %rax,%rbx
->     0.00 ││          mov    %rax,%rcx
->     0.00 ││      ↓   .je    <5DD>
->     0.00 ││   CC:    test   %rcx,%rcx
->     0.00 ││      ↓   .je    <DA>
->     0.00 ││          mov    0x8(%rcx),%esi
->     0.00 ││          shr    $0x4,%esi
->     0.00 ││          sub    $0x2,%esi
->     0.00 ││   DA:    mov    %rcx,0x10(%rbx)
->     0.00 ││          mov    %rcx,%rax
->     0.00 ││          cmpl   $0x0,%fs:0x18
->     0.00 ││      ↓   .je    <ED>
->     0.00 ││          lock   cmpxchg %rbx,(%rdx)
->     0.00 ││          cmp    %rax,%rcx
->          ││
->     0.00 │└──────↑ } jne    <C0>
->          │
->     0.00 │         test   %rcx,%rcx
->     0.00 │       ↓ .je    <104>
->     0.00 │         cmp    %r12d,%esi
->     0.00 │       ↓ .jne   <719>
-> 
-> I'm not entirely convinced we want this one.
-> 
-> 6) Making callq's to function symbols more C-alike
-> 
-> Before:
-> 
->     0.00 ││  70:  mov    %rbx,%rdi
->     0.00 ││       callq  _IO_switch_to_main_get_area
->     0.00 ││       mov    0x8(%rbx),%rdx
->     0.00 ││       mov    0x10(%rbx),%rsi
->     0.00 ││       cmp    %rsi,%rdx
-> 
-> After:
-> 
->     0.00 ││  70:  mov    %rbx,%rdi
->     0.00 ││       callq  _IO_switch_to_main_get_area()
->     0.00 ││       mov    0x8(%rbx),%rdx
->     0.00 ││       mov    0x10(%rbx),%rsi
->     0.00 ││       cmp    %rsi,%rdx
-> 
-> The () makes it easier to separate the 'function' purpose of the 
-> symbol.
-
-Yes, I agreed already with that one, just was waiting a bit more to see
-if somebody else would disagree (hint, hint)
- 
-> This would be especially useful once we start looking into 
-> debuginfo data and start symbolising stack frame offsets and 
-> data references:
-> 
-> Before:
-> 
->     0.00 │   1b3:  mov    -0x38(%rbp),%rdx
->     0.00 │         mov    -0x34(%rbp),%rcx
->     0.00 │         mov    0x335fb4(%rip),%eax        # 392a5b0b60 <perturb_byte>
-> 
-> After:
-> 
->   #
->   # PARAM:idx          : 0x38
->   # PARAM:addr         : 0x34
->   # DATA:perturb_byte  : 0x392a5b0b60
->   #
-> 
->   ...
-> 
->     0.00 │   1b3:  mov    P:idx....(%rbp),%rdx
->     0.00 │         mov    P:addr...(%rbp),%rcx
->     0.00 │         mov    D:pertu..(%rip),%eax
-> 
-> Where 'P:' stands for parameter, 'D:' for data, and the symbol 
-> names are length-culled to a fixed width 6 chars, to make the 
-> registers align better and to not interfere with other textual 
-> output. There's a summary at the top, to still have all the raw 
-> binary data available - but 'o' can be pressed as well to see 
-> the raw values.
-> 
-> This way it still looks like assembly - but is *much* more 
-> informative.
-
-Yeah, there were some ideas related to figuring out what values are in
-what registers at each line, easy for things like constants, requires a
-bit more thought for other cases.
- 
-- Arnaldo
+David
