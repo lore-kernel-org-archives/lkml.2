@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760753Ab2D0PtV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:49:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44815 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760390Ab2D0PtS (ORCPT
+	id S1760763Ab2D0Pt2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:49:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37439 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760442Ab2D0PtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:49:18 -0400
-Subject: Re: [GIT PULL 0/4] perf/annotate loop detection V2, fixes
+	Fri, 27 Apr 2012 11:49:25 -0400
+Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS
+ for AMD CPUs
 From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hagen Paul Pfeifer <hagen@jauu.net>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <20120427153119.GC27997@infradead.org>
-References: <1335452777-27326-1-git-send-email-acme@infradead.org>
-	 <20120427072153.GB4766@gmail.com> <20120427080613.GA7359@gmail.com>
-	 <20120427153119.GC27997@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120427151852.GH18810@erda.amd.com>
+References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
+	 <1333390758-10893-7-git-send-email-robert.richter@amd.com>
+	 <1334398906.2528.49.camel@twins> <20120423095659.GS9747@erda.amd.com>
+	 <20120427123434.GF18810@erda.amd.com>
+	 <CABPqkBS9FNmHBukzJqGJP1r5iqyLL9gz2g=3jvnt22pDxOdndA@mail.gmail.com>
+	 <20120427125410.GG18810@erda.amd.com>
+	 <CABPqkBTS2NkFqjVT9HgzPT=TTo9oOc__H9ZDDbXJK7WRpO0Vgg@mail.gmail.com>
+	 <20120427151852.GH18810@erda.amd.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Apr 2012 17:48:57 +0200
-Message-ID: <1335541737.2463.135.camel@laptop>
+Date: Fri, 27 Apr 2012 17:30:35 +0200
+Message-ID: <1335540635.2463.134.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-27 at 12:31 -0300, Arnaldo Carvalho de Melo wrote:
-> > So the forward conditional jumps get moved by one character to 
-> > the right and get prefixed with '.', which has the following 
-> > effects:
-> > 
-> >  - the flow of all the 'other', register modifying and loop 
-> >    instructions can be seen more clearly
-> > 
-> >  - the 'exception' forward conditional jumps get moved into the 
-> >    visual background, slightly.
-> > 
-> >  - blocks of instructions with no branches amongst them are more 
-> >    clearly visible.
-> > 
-> > If '.' is too aggressive or too confusing then some other 
-> > (possibly graphical) character could be used as well?
-> 
-> Yeah, there are some unused graphical chars. But perhaps we should just
-> use ↓ again?
-> 
->      0.00 │┌─→ c0:    cmp    %rax,%rbx
->      0.00 ││          mov    %rax,%rcx
->      0.00 ││      ↓   ↓je    5dd
->      0.00 ││   cc:    test   %rcx,%rcx
->      0.00 ││      ↓   ↓je    da
->      0.00 ││          mov    0x8(%rcx),%esi
->      0.00 ││          shr    $0x4,%esi
->      0.00 ││          sub    $0x2,%esi
->      0.00 ││   da:    mov    %rcx,0x10(%rbx)
->      0.00 ││          mov    %rcx,%rax
->      0.00 ││          cmpl   $0x0,%fs:0x18
->      0.00 ││      ↓   ↓je    ed
->      0.00 ││          lock   cmpxchg %rbx,(%rdx)
->      0.00 ││          cmp    %rax,%rcx
->           ││
->      0.00 │└──────↑ } jne    c0
-> 
-> Does it still stands out? I think so, we expect a letter there,
-> something very different is there, matching the other down arrowsome
-> columns to the left. 
+On Fri, 2012-04-27 at 17:18 +0200, Robert Richter wrote:
+> There is nothing wrong with it. I already implemented that the
+> MISC_EXACT flag is supported. But, the flag is basically not used in
+> the perf tool and there is no modifier or so to only get a precise
+> rip. 
 
-That just looks daft.. what's wrong with the single up/down arrow?
+Just because userspace doesn't dtrt doesnt mean its a good idea to wreck
+the kernel side of things.
 
-Also, can we keep all this on the list please?
+Instead fix the userspace.
+
+I'll simply not take patches that silently drops samples.
 
