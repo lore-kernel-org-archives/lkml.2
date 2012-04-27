@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab2D0IfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:35:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34324 "EHLO
+	id S1759125Ab2D0IgQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:36:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34336 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758820Ab2D0IfU (ORCPT
+	with ESMTP id S1758927Ab2D0IgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:35:20 -0400
-Date: Fri, 27 Apr 2012 01:34:56 -0700
+	Fri, 27 Apr 2012 04:36:12 -0400
+Date: Fri, 27 Apr 2012 01:35:46 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-l8gbejzpglnwiwk43450h31g@git.kernel.org>
+Message-ID: <tip-mwshob8n12jlsu458ghvheos@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, fweisbec@gmail.com,
@@ -19,9 +19,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
         dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate browser:
-  Use a vertical line as percentage separator
-Git-Commit-ID: cf2dacc5608ca950d6a7a92bf6a5f9f9bcf13b92
+Subject: [tip:perf/core] perf annotate: Add missing jump variants
+Git-Commit-ID: 3f862fd076275c442dfe295eddb5650a6e0aecd4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,21 +29,23 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 27 Apr 2012 01:35:02 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 27 Apr 2012 01:35:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cf2dacc5608ca950d6a7a92bf6a5f9f9bcf13b92
-Gitweb:     http://git.kernel.org/tip/cf2dacc5608ca950d6a7a92bf6a5f9f9bcf13b92
+Commit-ID:  3f862fd076275c442dfe295eddb5650a6e0aecd4
+Gitweb:     http://git.kernel.org/tip/3f862fd076275c442dfe295eddb5650a6e0aecd4
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 19 Apr 2012 15:19:17 -0300
+AuthorDate: Thu, 19 Apr 2012 17:10:12 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 19 Apr 2012 17:08:31 -0300
+CommitDate: Thu, 19 Apr 2012 17:10:12 -0300
 
-perf annotate browser: Use a vertical line as percentage separator
+perf annotate: Add missing jump variants
 
-Where we had ':'.
+Taken from binutils:
+
+[acme@sandy binutils-2.22]$ grep ^j opcodes/i386-opc.tbl | cut -d, -f1 | sort -u
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -53,26 +54,54 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-l8gbejzpglnwiwk43450h31g@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-mwshob8n12jlsu458ghvheos@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/annotate.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ tools/perf/util/annotate.c |   29 +++++++++++++++++++++++++++++
+ 1 files changed, 29 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 34b86ea..e760326 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -71,8 +71,10 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 		slsmg_write_nstring(" ", 9);
- 	}
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index d8e2f41..e70cbb4 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -70,11 +70,40 @@ static struct ins instructions[] = {
+ 	{ .name = "call",  .ops  = &call_ops, },
+ 	{ .name = "callq", .ops  = &call_ops, },
+ 	{ .name = "ja",	   .ops  = &jump_ops, },
++	{ .name = "jae",   .ops  = &jump_ops, },
++	{ .name = "jb",	   .ops  = &jump_ops, },
++	{ .name = "jbe",   .ops  = &jump_ops, },
++	{ .name = "jc",	   .ops  = &jump_ops, },
++	{ .name = "jcxz",  .ops  = &jump_ops, },
+ 	{ .name = "je",	   .ops  = &jump_ops, },
++	{ .name = "jecxz", .ops  = &jump_ops, },
++	{ .name = "jg",	   .ops  = &jump_ops, },
++	{ .name = "jge",   .ops  = &jump_ops, },
++	{ .name = "jl",    .ops  = &jump_ops, },
++	{ .name = "jle",   .ops  = &jump_ops, },
+ 	{ .name = "jmp",   .ops  = &jump_ops, },
+ 	{ .name = "jmpq",  .ops  = &jump_ops, },
++	{ .name = "jna",   .ops  = &jump_ops, },
++	{ .name = "jnae",  .ops  = &jump_ops, },
++	{ .name = "jnb",   .ops  = &jump_ops, },
++	{ .name = "jnbe",  .ops  = &jump_ops, },
++	{ .name = "jnc",   .ops  = &jump_ops, },
+ 	{ .name = "jne",   .ops  = &jump_ops, },
++	{ .name = "jng",   .ops  = &jump_ops, },
++	{ .name = "jnge",  .ops  = &jump_ops, },
++	{ .name = "jnl",   .ops  = &jump_ops, },
++	{ .name = "jnle",  .ops  = &jump_ops, },
++	{ .name = "jno",   .ops  = &jump_ops, },
++	{ .name = "jnp",   .ops  = &jump_ops, },
++	{ .name = "jns",   .ops  = &jump_ops, },
++	{ .name = "jnz",   .ops  = &jump_ops, },
++	{ .name = "jo",	   .ops  = &jump_ops, },
++	{ .name = "jp",	   .ops  = &jump_ops, },
++	{ .name = "jpe",   .ops  = &jump_ops, },
++	{ .name = "jpo",   .ops  = &jump_ops, },
++	{ .name = "jrcxz", .ops  = &jump_ops, },
+ 	{ .name = "js",	   .ops  = &jump_ops, },
++	{ .name = "jz",	   .ops  = &jump_ops, },
+ };
  
--	SLsmg_write_char(':');
--	slsmg_write_nstring(" ", 8);
-+	SLsmg_set_char_set(1);
-+	SLsmg_write_char(SLSMG_VLINE_CHAR);
-+	SLsmg_set_char_set(0);
-+	SLsmg_write_char(' ');
- 
- 	/* The scroll bar isn't being used */
- 	if (!self->navkeypressed)
+ static int ins__cmp(const void *name, const void *insp)
