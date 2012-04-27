@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760693Ab2D0Psu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:48:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35792 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759972Ab2D0Pss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:48:48 -0400
-Date: Fri, 27 Apr 2012 11:48:41 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jeff Moyer <jmoyer@redhat.com>, axboe@kernel.dk, ctalbott@google.com,
-        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, fengguang.wu@intel.com,
-        hughd@google.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 11/11] blkcg: implement per-blkg request allocation
-Message-ID: <20120427154841.GA16237@redhat.com>
-References: <1335477561-11131-1-git-send-email-tj@kernel.org>
- <1335477561-11131-12-git-send-email-tj@kernel.org>
- <x49wr51usxi.fsf@segfault.boston.devel.redhat.com>
- <20120427150217.GK27486@google.com>
- <20120427154033.GJ10579@redhat.com>
- <20120427154502.GM27486@google.com>
+	id S1760743Ab2D0PtG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:49:06 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54893 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760709Ab2D0PtE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 11:49:04 -0400
+Message-ID: <4F9ABFEC.3090107@wwwdotorg.org>
+Date: Fri, 27 Apr 2012 09:49:00 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120427154502.GM27486@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "balbi@ti.com" <balbi@ti.com>, Stephen Warren <swarren@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 2/4] ARM: tegra: Add SMMU enabler in AHB
+References: <20120426202610.GA30690@arwen.pp.htv.fi><4F99B0F8.4040308@wwwdotorg.org><20120426203847.GC30690@arwen.pp.htv.fi> <20120427.094826.1181797260264746303.hdoyu@nvidia.com>
+In-Reply-To: <20120427.094826.1181797260264746303.hdoyu@nvidia.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 08:45:02AM -0700, Tejun Heo wrote:
-> On Fri, Apr 27, 2012 at 11:40:34AM -0400, Vivek Goyal wrote:
-> > On Fri, Apr 27, 2012 at 08:02:17AM -0700, Tejun Heo wrote:
-> > > Hello,
-> > > 
-> > > On Fri, Apr 27, 2012 at 10:54:01AM -0400, Jeff Moyer wrote:
-> > > > > This patch implements per-blkg request_list.  Each blkg has its own
-> > > > > request_list and any IO allocates its request from the matching blkg
-> > > > > making blkcgs completely isolated in terms of request allocation.
-> > > > 
-> > > > So, nr_requests is now actually nr_requests * # of blk cgroups.  Is that
-> > > > right?  Are you at all concerned about the amount of memory that can be
-> > > > tied up as the number of cgroups increases?
-> > > 
-> > > Yeah, I thought about it and I don't think there's a single good
-> > > solution here.  The other extreme would be splitting nr_requests by
-> > > the number of cgroups but that seems even worse - each cgroup should
-> > > be able to hit maximum throughput.  Given that a lot of workloads tend
-> > > to regulate themselves before hitting nr_requests, I think it's best
-> > > to leave it as-is and treat each cgroup as having separate channel for
-> > > now.  It's a configurable parameter after all.
-> > 
-> > So on a slow device a malicious application can easily create thousands
-> > of group, queue up tons of IO and create unreclaimable memory easily?
-> > Sounds little scary. 
+On 04/27/2012 12:48 AM, Hiroshi Doyu wrote:
+...
+> Then, what about something like the following?
 > 
-> Malicious application may just jack up nr_requests.
+>  static int tegra_ahb_match_by_smmu(struct device *dev, void *data)
+>  {
+>  	struct tegra_ahb *ahb = dev_get_drvdata(dev);
+>  	struct device_node *dn = data;
+>  
+>  	return (ahb->dev->of_node == dn) ? 1 : 0
+>  }
 
-Not an unpriviliged malicious application. In typical cgroup scenario, we
-can allow unpriviliged users to create child cgroups so that it can
-further subdivide its resources to its children group. (ex. put firefox
-in one cgroup, open office in another group etc.).
+I imagine that function and the driver_find_device() call that uses it
+will be pretty common. It may make sense as a drivers/of utility
+function, although perhaps we can wait until later to refactor it, once
+we actually have multiple pieces of code that do this same thing.
 
-So it is not same as jack up nr_requests.
+>  int tegra_ahb_enable_smmu(struct device_node *ahb)
+>  {
+>  	struct device *dev;
+>  	u32 val;
+>  
+>  	dev = driver_find_device(&tegra_ahb_driver.driver, NULL, ahb,
+>  				 tegra_ahb_match_by_smmu);
+>  	if (!dev)
+>  		return -ENODEV;
 
-Thanks
-Vivek
+Yes, -EPROBE_DEFER here as you mentioned in your followup email.
+
+>  
+>  	val = gizmo_readl(ahb, AHB_ARBITRATION_XBAR_CTRL);
+>  	val |= AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE;
+>  	gizmo_writel(ahb, val, AHB_ARBITRATION_XBAR_CTRL);
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL(tegra_ahb_enable_smmu);
+> 
+> 	Modified arch/arm/boot/dts/tegra30.dtsi
+> diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+> index 655bc47..28f9138 100644
+> --- a/arch/arm/boot/dts/tegra30.dtsi
+> +++ b/arch/arm/boot/dts/tegra30.dtsi
+> @@ -242,5 +242,6 @@
+>  	smmu {
+>  		compatible = "nvidia,tegra30-smmu";
+>  		mc = <&mc>;
+> +		ahb = <&ahb>;
+>  	};
+>  };
+
+Yes, that's probably the best (even only) way to connect the two drivers
+precisely.
