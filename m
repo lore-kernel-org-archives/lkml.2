@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759765Ab2D0IkW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:40:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34432 "EHLO
+	id S1759809Ab2D0IlO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:41:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34445 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759189Ab2D0IkU (ORCPT
+	with ESMTP id S1759201Ab2D0IlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:40:20 -0400
-Date: Fri, 27 Apr 2012 01:39:56 -0700
+	Fri, 27 Apr 2012 04:41:10 -0400
+Date: Fri, 27 Apr 2012 01:40:46 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-tnpfijuomrntbnl5vr6ibdwa@git.kernel.org>
+Message-ID: <tip-x1dlc4d5aukj72g45o15s75k@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, efault@gmx.de,
-        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, efault@gmx.de, peterz@infradead.org,
-        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate browser:
-  Add visual cue for retq instruction
-Git-Commit-ID: 4ea08b522071c6c34098b7a880aac3551abecd75
+Subject: [tip:perf/core] perf annotate browser: Handle retq instructions
+Git-Commit-ID: c4cceae3ba786c136b0cf568359863d74897a48a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,63 +29,57 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 27 Apr 2012 01:40:01 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 27 Apr 2012 01:40:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4ea08b522071c6c34098b7a880aac3551abecd75
-Gitweb:     http://git.kernel.org/tip/4ea08b522071c6c34098b7a880aac3551abecd75
+Commit-ID:  c4cceae3ba786c136b0cf568359863d74897a48a
+Gitweb:     http://git.kernel.org/tip/c4cceae3ba786c136b0cf568359863d74897a48a
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 20 Apr 2012 15:51:40 -0300
+AuthorDate: Fri, 20 Apr 2012 15:57:15 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 20 Apr 2012 15:51:40 -0300
+CommitDate: Fri, 20 Apr 2012 15:57:15 -0300
 
-perf annotate browser: Add visual cue for retq instruction
+perf annotate browser: Handle retq instructions
 
-Just use a left arrow prefixing retqs.
+By just returning to the previous function being annotated or to the top
+main screen when popping out the base of the annotation stack.
 
-Requested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-tnpfijuomrntbnl5vr6ibdwa@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-x1dlc4d5aukj72g45o15s75k@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/annotate.c |   17 +++++++++++++----
- 1 files changed, 13 insertions(+), 4 deletions(-)
+ tools/perf/ui/browsers/annotate.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
 
 diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 63206ca..d0c606e 100644
+index d0c606e..38f4c6f 100644
 --- a/tools/perf/ui/browsers/annotate.c
 +++ b/tools/perf/ui/browsers/annotate.c
-@@ -127,11 +127,20 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 
- 			dl->ins->ops->scnprintf(dl->ins, bf, sizeof(bf), &dl->ops,
- 						!ab->use_offset);
--			printed += 2;
--		} else
--			scnprintf(bf, sizeof(bf), "  %-6.6s %s", dl->name, dl->ops.raw);
-+		} else {
-+			if (strcmp(dl->name, "retq")) {
-+				slsmg_write_nstring(" ", 2);
-+			} else {
-+				SLsmg_set_char_set(1);
-+				SLsmg_write_char(SLSMG_LARROW_CHAR);
-+				SLsmg_set_char_set(0);
-+				SLsmg_write_char(' ');
+@@ -599,10 +599,15 @@ show_help:
+ 				ui_helpline__puts("Huh? No selection. Report to linux-kernel@vger.kernel.org");
+ 			else if (self->selection->offset == -1)
+ 				ui_helpline__puts("Actions are only available for assembly lines.");
+-			else if (!self->selection->ins ||
+-				 !(annotate_browser__jump(self) ||
+-				   annotate_browser__callq(self, evidx, timer, arg, delay_secs)))
+-				ui_helpline__puts("Actions are only available for the 'callq' and jump instructions.");
++			else if (!self->selection->ins) {
++				if (strcmp(self->selection->name, "retq"))
++					goto show_sup_ins;
++				goto out;
++			} else if (!(annotate_browser__jump(self) ||
++				     annotate_browser__callq(self, evidx, timer, arg, delay_secs))) {
++show_sup_ins:
++				ui_helpline__puts("Actions are only available for 'callq', 'retq' & jump instructions.");
 +			}
-+
-+			scnprintf(bf, sizeof(bf), "%-6.6s %s", dl->name, dl->ops.raw);
-+		}
- 
--		slsmg_write_nstring(bf, width - 10 - printed);
-+		slsmg_write_nstring(bf, width - 12 - printed);
- 	}
- 
- 	if (current_entry)
+ 			continue;
+ 		case K_LEFT:
+ 		case K_ESC:
