@@ -1,320 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759637Ab2D0AtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 20:49:00 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:62663 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758748Ab2D0AsI (ORCPT
+	id S1757871Ab2D0Ayx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 20:54:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14759 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757676Ab2D0Ayu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 20:48:08 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v8 2/4] MIPS: Octeon: Setup irq_domains for interrupts.
-Date: Thu, 26 Apr 2012 17:47:56 -0700
-Message-Id: <1335487678-26223-3-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1335487678-26223-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1335487678-26223-1-git-send-email-ddaney.cavm@gmail.com>
+	Thu, 26 Apr 2012 20:54:50 -0400
+X-Authority-Analysis: v=2.0 cv=XbcLPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wom5GMh1gUkA:10 a=8xI6fpuu62oA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=GjSqNkNEZbADVVEzodEA:9 a=PoQBQgkK49-Fye0Trg0A:7 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=Df9nz59i8zphUh7-:21 a=ytnUpkZCZqaaWZAf:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Date: Thu, 26 Apr 2012 20:54:48 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: 3.4-rc4 oom killer out of control.
+Message-ID: <20120427005448.GD23877@home.goodmis.org>
+References: <20120426193551.GA24968@redhat.com>
+ <alpine.DEB.2.00.1204261437470.28376@chino.kir.corp.google.com>
+ <20120426215257.GA12908@redhat.com>
+ <alpine.DEB.2.00.1204261517100.28376@chino.kir.corp.google.com>
+ <20120426224419.GA13598@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120426224419.GA13598@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Thu, Apr 26, 2012 at 06:44:19PM -0400, Dave Jones wrote:
+> On Thu, Apr 26, 2012 at 03:20:34PM -0700, David Rientjes wrote:
+>  > On Thu, 26 Apr 2012, Dave Jones wrote:
+>  > 
+>  > > /sys/kernel/mm/ksm/full_scans is increasing constantly
+>  > > 
+>  > > full_scans: 146370
+>  > > pages_shared: 1
+>  > > pages_sharing: 4
+>  > > pages_to_scan: 1250
+>  > > pages_unshared: 867
+>  > > pages_volatile: 1
+>  > > run: 1
+>  > > sleep_millisecs: 20
+>  > > 
+>  > 
+>  > full_scans is just a counter of how many times it has scanned mergable 
+>  > memory so it should be increasing constantly.  Whether pages_to_scan == 
+>  > 1250 and sleep_millisecs == 20 is good for your system is unknown.  You 
+>  > may want to try disabling ksm entirely (echo 0 > /sys/kernel/mm/ksm/run) 
+>  > to see if it significantly increases responsiveness for your workload.
+> 
 
-Create two domains.  One for the GPIO lines, and the other for on-chip
-sources.
+You didn't happen to see any RCU CPU stalls, did you?
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/cavium-octeon/octeon-irq.c |  215 ++++++++++++++++++++++++++++++++--
- 1 files changed, 206 insertions(+), 9 deletions(-)
+-- Steve
 
-diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
-index 89b6f27..fc40d0b 100644
---- a/arch/mips/cavium-octeon/octeon-irq.c
-+++ b/arch/mips/cavium-octeon/octeon-irq.c
-@@ -3,14 +3,17 @@
-  * License.  See the file "COPYING" in the main directory of this archive
-  * for more details.
-  *
-- * Copyright (C) 2004-2008, 2009, 2010, 2011 Cavium Networks
-+ * Copyright (C) 2004-2012 Cavium, Inc.
-  */
- 
- #include <linux/interrupt.h>
-+#include <linux/irqdomain.h>
- #include <linux/bitops.h>
- #include <linux/percpu.h>
-+#include <linux/slab.h>
- #include <linux/irq.h>
- #include <linux/smp.h>
-+#include <linux/of.h>
- 
- #include <asm/octeon/octeon.h>
- 
-@@ -42,9 +45,9 @@ struct octeon_core_chip_data {
- 
- static struct octeon_core_chip_data octeon_irq_core_chip_data[MIPS_CORE_IRQ_LINES];
- 
--static void __init octeon_irq_set_ciu_mapping(int irq, int line, int bit,
--					      struct irq_chip *chip,
--					      irq_flow_handler_t handler)
-+static void octeon_irq_set_ciu_mapping(int irq, int line, int bit,
-+				       struct irq_chip *chip,
-+				       irq_flow_handler_t handler)
- {
- 	union octeon_ciu_chip_data cd;
- 
-@@ -838,6 +841,178 @@ static struct irq_chip octeon_irq_chip_ciu_wd = {
- 	.irq_mask = octeon_irq_dummy_mask,
- };
- 
-+static bool octeon_irq_ciu_is_edge(unsigned int line, unsigned int bit)
-+{
-+	bool edge = false;
-+
-+	if (line == 0)
-+		switch (bit) {
-+		case 48 ... 49: /* GMX DRP */
-+		case 50: /* IPD_DRP */
-+		case 52 ... 55: /* Timers */
-+		case 58: /* MPI */
-+			edge = true;
-+			break;
-+		default:
-+			break;
-+		}
-+	else /* line == 1 */
-+		switch (bit) {
-+		case 47: /* PTP */
-+			edge = true;
-+			break;
-+		default:
-+			break;
-+		}
-+	return edge;
-+}
-+
-+struct octeon_irq_gpio_domain_data {
-+	unsigned int base_hwirq;
-+};
-+
-+static int octeon_irq_gpio_xlat(struct irq_domain *d,
-+				struct device_node *node,
-+				const u32 *intspec,
-+				unsigned int intsize,
-+				unsigned long *out_hwirq,
-+				unsigned int *out_type)
-+{
-+	unsigned int type;
-+	unsigned int pin;
-+	unsigned int trigger;
-+	struct octeon_irq_gpio_domain_data *gpiod;
-+
-+	if (d->of_node != node)
-+		return -EINVAL;
-+
-+	if (intsize < 2)
-+		return -EINVAL;
-+
-+	pin = intspec[0];
-+	if (pin >= 16)
-+		return -EINVAL;
-+
-+	trigger = intspec[1];
-+
-+	switch (trigger) {
-+	case 1:
-+		type = IRQ_TYPE_EDGE_RISING;
-+		break;
-+	case 2:
-+		type = IRQ_TYPE_EDGE_FALLING;
-+		break;
-+	case 4:
-+		type = IRQ_TYPE_LEVEL_HIGH;
-+		break;
-+	case 8:
-+		type = IRQ_TYPE_LEVEL_LOW;
-+		break;
-+	default:
-+		pr_err("Error: (%s) Invalid irq trigger specification: %x\n",
-+		       node->name,
-+		       trigger);
-+		type = IRQ_TYPE_LEVEL_LOW;
-+		break;
-+	}
-+	*out_type = type;
-+	gpiod = d->host_data;
-+	*out_hwirq = gpiod->base_hwirq + pin;
-+
-+	return 0;
-+}
-+
-+static int octeon_irq_ciu_xlat(struct irq_domain *d,
-+			       struct device_node *node,
-+			       const u32 *intspec,
-+			       unsigned int intsize,
-+			       unsigned long *out_hwirq,
-+			       unsigned int *out_type)
-+{
-+	unsigned int ciu, bit;
-+
-+	ciu = intspec[0];
-+	bit = intspec[1];
-+
-+	if (ciu > 1 || bit > 63)
-+		return -EINVAL;
-+
-+	/* These are the GPIO lines */
-+	if (ciu == 0 && bit >= 16 && bit < 32)
-+		return -EINVAL;
-+
-+	*out_hwirq = (ciu << 6) | bit;
-+	*out_type = 0;
-+
-+	return 0;
-+}
-+
-+static struct irq_chip *octeon_irq_ciu_chip;
-+static struct irq_chip *octeon_irq_gpio_chip;
-+
-+static bool octeon_irq_virq_in_range(unsigned int virq)
-+{
-+	/* We cannot let it overflow the mapping array. */
-+	if (virq < (1ul << 8 * sizeof (octeon_irq_ciu_to_irq[0][0])))
-+		return true;
-+
-+	WARN_ONCE(true, "virq out of range %u.\n", virq);
-+	return false;
-+}
-+
-+static int octeon_irq_ciu_map(struct irq_domain *d,
-+			      unsigned int virq, irq_hw_number_t hw)
-+{
-+	unsigned int line = hw >> 6;
-+	unsigned int bit = hw & 63;
-+
-+	if (!octeon_irq_virq_in_range(virq))
-+		return -EINVAL;
-+
-+	if (line > 1 || octeon_irq_ciu_to_irq[line][bit] != 0)
-+		return -EINVAL;
-+
-+	if (octeon_irq_ciu_is_edge(line, bit))
-+		octeon_irq_set_ciu_mapping(virq, line, bit,
-+					   octeon_irq_ciu_chip,
-+					   handle_level_irq);
-+	else
-+		octeon_irq_set_ciu_mapping(virq, line, bit,
-+					   octeon_irq_ciu_chip,
-+					   handle_edge_irq);
-+
-+	return 0;
-+}
-+
-+static int octeon_irq_gpio_map(struct irq_domain *d,
-+			       unsigned int virq, irq_hw_number_t hw)
-+{
-+	unsigned int line = hw >> 6;
-+	unsigned int bit = hw & 63;
-+
-+	if (!octeon_irq_virq_in_range(virq))
-+		return -EINVAL;
-+
-+	if (line > 1 || octeon_irq_ciu_to_irq[line][bit] != 0)
-+		return -EINVAL;
-+
-+	octeon_irq_set_ciu_mapping(virq, line, bit,
-+				   octeon_irq_gpio_chip,
-+				   octeon_irq_handle_gpio);
-+
-+	return 0;
-+}
-+
-+static struct irq_domain_ops octeon_irq_domain_ciu_ops = {
-+	.map = octeon_irq_ciu_map,
-+	.xlate = octeon_irq_ciu_xlat,
-+};
-+
-+static struct irq_domain_ops octeon_irq_domain_gpio_ops = {
-+	.map = octeon_irq_gpio_map,
-+	.xlate = octeon_irq_gpio_xlat,
-+};
-+
- static void octeon_irq_ip2_v1(void)
- {
- 	const unsigned long core_id = cvmx_get_core_num();
-@@ -963,7 +1138,8 @@ static void __init octeon_irq_init_ciu(void)
- 	struct irq_chip *chip;
- 	struct irq_chip *chip_mbox;
- 	struct irq_chip *chip_wd;
--	struct irq_chip *chip_gpio;
-+	struct device_node *gpio_node;
-+	struct device_node *ciu_node;
- 
- 	octeon_irq_init_ciu_percpu();
- 	octeon_irq_setup_secondary = octeon_irq_setup_secondary_ciu;
-@@ -977,15 +1153,16 @@ static void __init octeon_irq_init_ciu(void)
- 		chip = &octeon_irq_chip_ciu_v2;
- 		chip_mbox = &octeon_irq_chip_ciu_mbox_v2;
- 		chip_wd = &octeon_irq_chip_ciu_wd_v2;
--		chip_gpio = &octeon_irq_chip_ciu_gpio_v2;
-+		octeon_irq_gpio_chip = &octeon_irq_chip_ciu_gpio_v2;
- 	} else {
- 		octeon_irq_ip2 = octeon_irq_ip2_v1;
- 		octeon_irq_ip3 = octeon_irq_ip3_v1;
- 		chip = &octeon_irq_chip_ciu;
- 		chip_mbox = &octeon_irq_chip_ciu_mbox;
- 		chip_wd = &octeon_irq_chip_ciu_wd;
--		chip_gpio = &octeon_irq_chip_ciu_gpio;
-+		octeon_irq_gpio_chip = &octeon_irq_chip_ciu_gpio;
- 	}
-+	octeon_irq_ciu_chip = chip;
- 	octeon_irq_ip4 = octeon_irq_ip4_mask;
- 
- 	/* Mips internal */
-@@ -994,8 +1171,6 @@ static void __init octeon_irq_init_ciu(void)
- 	/* CIU_0 */
- 	for (i = 0; i < 16; i++)
- 		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_WORKQ0, 0, i + 0, chip, handle_level_irq);
--	for (i = 0; i < 16; i++)
--		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GPIO0, 0, i + 16, chip_gpio, octeon_irq_handle_gpio);
- 
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32, chip_mbox, handle_percpu_irq);
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33, chip_mbox, handle_percpu_irq);
-@@ -1026,6 +1201,28 @@ static void __init octeon_irq_init_ciu(void)
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_USB1, 1, 17, chip, handle_level_irq);
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MII1, 1, 18, chip, handle_level_irq);
- 
-+	gpio_node = of_find_compatible_node(NULL, NULL, "cavium,octeon-3860-gpio");
-+	if (gpio_node) {
-+		struct octeon_irq_gpio_domain_data *gpiod;
-+
-+		gpiod = kzalloc(sizeof (*gpiod), GFP_KERNEL);
-+		if (gpiod) {
-+			/* gpio domain host_data is the base hwirq number. */
-+			gpiod->base_hwirq = 16;
-+			irq_domain_add_linear(gpio_node, 16, &octeon_irq_domain_gpio_ops, gpiod);
-+			of_node_put(gpio_node);
-+		} else
-+			pr_warning("Cannot allocate memory for GPIO irq_domain.\n");
-+	} else
-+		pr_warning("Cannot find device node for cavium,octeon-3860-gpio.\n");
-+
-+	ciu_node = of_find_compatible_node(NULL, NULL, "cavium,octeon-3860-ciu");
-+	if (ciu_node) {
-+		irq_domain_add_tree(ciu_node, &octeon_irq_domain_ciu_ops, NULL);
-+		of_node_put(ciu_node);
-+	} else
-+		pr_warning("Cannot find device node for cavium,octeon-3860-ciu.\n");
-+
- 	/* Enable the CIU lines */
- 	set_c0_status(STATUSF_IP3 | STATUSF_IP2);
- 	clear_c0_status(STATUSF_IP4);
--- 
-1.7.2.3
-
+> Disabling it stops it hogging the cpu obviously, but there's still 8G of RAM
+> and 1G of used swap sitting around doing something.
+> 
+> # free
+>              total       used       free     shared    buffers     cached
+> Mem:       8149440    8025716     123724          0        148       7764
+> -/+ buffers/cache:    8017804     131636
+> Swap:      1423736    1066112     357624
+> 
+> SysRq : Show Memory
+> Mem-Info:
+> Node 0 DMA per-cpu:
+> CPU    0: hi:    0, btch:   1 usd:   0
+> CPU    1: hi:    0, btch:   1 usd:   0
+> CPU    2: hi:    0, btch:   1 usd:   0
+> CPU    3: hi:    0, btch:   1 usd:   0
+> Node 0 DMA32 per-cpu:
+> CPU    0: hi:  186, btch:  31 usd:  19
+> CPU    1: hi:  186, btch:  31 usd: 175
+> CPU    2: hi:  186, btch:  31 usd: 140
+> CPU    3: hi:  186, btch:  31 usd: 182
+> Node 0 Normal per-cpu:
+> CPU    0: hi:  186, btch:  31 usd: 167
+> CPU    1: hi:  186, btch:  31 usd: 176
+> CPU    2: hi:  186, btch:  31 usd: 102
+> CPU    3: hi:  186, btch:  31 usd:  94
+> active_anon:1529737 inactive_anon:306307 isolated_anon:0
+>  active_file:1124 inactive_file:2170 isolated_file:0
+>  unevictable:1414 dirty:1 writeback:0 unstable:0
+>  free:35645 slab_reclaimable:10150 slab_unreclaimable:56678
+>  mapped:404 shmem:48 pagetables:45796 bounce:0
+> Node 0 DMA free:15876kB min:128kB low:160kB high:192kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15652kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:32kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
+> lowmem_reserve[]: 0 3246 8034 8034
+> Node 0 DMA32 free:62632kB min:27252kB low:34064kB high:40876kB active_anon:2637356kB inactive_anon:527504kB active_file:72kB inactive_file:84kB unevictable:788kB isolated(anon):0kB isolated(file):0kB present:3324200kB mlocked:788kB dirty:0kB writeback:0kB mapped:212kB shmem:72kB slab_reclaimable:944kB slab_unreclaimable:24736kB kernel_stack:336kB pagetables:30028kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:116 all_unreclaimable? no
+> lowmem_reserve[]: 0 0 4788 4788
+> Node 0 Normal free:64072kB min:40196kB low:50244kB high:60292kB active_anon:3481592kB inactive_anon:697724kB active_file:4424kB inactive_file:8596kB unevictable:4868kB isolated(anon):0kB isolated(file):0kB present:4902912kB mlocked:4868kB dirty:4kB writeback:0kB mapped:1404kB shmem:120kB slab_reclaimable:39656kB slab_unreclaimable:201944kB kernel_stack:2968kB pagetables:153156kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+> lowmem_reserve[]: 0 0 0 0
+> Node 0 DMA: 1*4kB 0*8kB 0*16kB 0*32kB 2*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB 3*4096kB = 15876kB
+> Node 0 DMA32: 214*4kB 124*8kB 65*16kB 55*32kB 32*64kB 15*128kB 9*256kB 7*512kB 7*1024kB 4*2048kB 8*4096kB = 62632kB
+> Node 0 Normal: 670*4kB 573*8kB 402*16kB 468*32kB 171*64kB 73*128kB 31*256kB 12*512kB 1*1024kB 0*2048kB 0*4096kB = 64064kB
+> 5683 total pagecache pages
+> 2341 pages in swap cache
+> Swap cache stats: add 2029253, delete 2026912, find 483987/484568
+> Free swap  = 343568kB
+> Total swap = 1423736kB
+> 2097136 pages RAM
+> 59776 pages reserved
+> 891838 pages shared
+> 1996710 pages non-shared
+> 
+> 
+> All that anon memory seems to be unaccounted for.
+> 
+> [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
+> [  351]     0   351     4372        2   3     -17         -1000 udevd
+> [  818]     0   818    18861       26   0     -17         -1000 sshd
+> [ 1199]     0  1199     4372        2   3     -17         -1000 udevd
+> [ 1214]     0  1214     4371        2   1     -17         -1000 udevd
+> [28963]     0 28963    30988      271   2       0             0 sshd
+> [28987]    81 28987     5439      150   3     -13          -900 dbus-daemon
+> [28990]     0 28990     7085      136   0       0             0 systemd-logind
+> [28995]  1000 28995    31023      373   1       0             0 sshd
+> [29008]  1000 29008    29864      875   2       0             0 bash
+> [29132]  1000 29132    44732      155   3       0             0 sudo
+> [29135]     0 29135    29870     1094   3       0             0 bash
+> [29521]     0 29521     4877      196   0       0             0 systemd-kmsg-sy
+> [29541]     0 29541    27232      211   3       0             0 agetty
+> [29553]     0 29553    29870      875   2       0             0 bash
+> 
+> 	Dave
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
