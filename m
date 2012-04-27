@@ -1,151 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759582Ab2DZX7Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 19:59:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46387 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754266Ab2DZX7P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 19:59:15 -0400
-Date: Thu, 26 Apr 2012 16:59:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	id S1759229Ab2D0AHs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 20:07:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47664 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752077Ab2D0AHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 20:07:46 -0400
+Date: Fri, 27 Apr 2012 10:07:35 +1000
+From: NeilBrown <neilb@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: John Stultz <johnstul@us.ibm.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
         John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        linaro-kernel@lists.linaro.org, patches@linaro.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/9] cpu: Introduce clear_tasks_mm_cpumask() helper
-Message-Id: <20120426165911.00cebd31.akpm@linux-foundation.org>
-In-Reply-To: <20120423070736.GA30752@lizard>
-References: <20120423070641.GA27702@lizard>
-	<20120423070736.GA30752@lizard>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 8/8] PM / Sleep: Add user space interface for
+ manipulating wakeup sources
+Message-ID: <20120427100735.77e75cc6@notabene.brown>
+In-Reply-To: <201204270004.27958.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl>
+	<201204242327.17626.rjw@sisk.pl>
+	<20120426163143.42f707b0@notabene.brown>
+	<201204270004.27958.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/lnGgcYhHJyb+IoSzjh56y/2"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Apr 2012 00:07:36 -0700
-Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+--Sig_/lnGgcYhHJyb+IoSzjh56y/2
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> Many architectures clear tasks' mm_cpumask like this:
-> 
-> 	read_lock(&tasklist_lock);
-> 	for_each_process(p) {
-> 		if (p->mm)
-> 			cpumask_clear_cpu(cpu, mm_cpumask(p->mm));
-> 	}
-> 	read_unlock(&tasklist_lock);
-> 
-> Depending on the context, the code above may have several problems,
-> such as:
-> 
-> 1. Working with task->mm w/o getting mm or grabing the task lock is
->    dangerous as ->mm might disappear (exit_mm() assigns NULL under
->    task_lock(), so tasklist lock is not enough).
-> 
-> 2. Checking for process->mm is not enough because process' main
->    thread may exit or detach its mm via use_mm(), but other threads
->    may still have a valid mm.
-> 
-> This patch implements a small helper function that does things
-> correctly, i.e.:
-> 
-> 1. We take the task's lock while whe handle its mm (we can't use
->    get_task_mm()/mmput() pair as mmput() might sleep);
-> 
-> 2. To catch exited main thread case, we use find_lock_task_mm(),
->    which walks up all threads and returns an appropriate task
->    (with task lock held).
-> 
-> Also, Per Peter Zijlstra's idea, now we don't grab tasklist_lock in
-> the new helper, instead we take the rcu read lock. We can do this
-> because the function is called after the cpu is taken down and marked
-> offline, so no new tasks will get this cpu set in their mm mask.
-> 
+On Fri, 27 Apr 2012 00:04:27 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-Seems reasonable.
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM / Sleep: Add user space interface for manipulating wakeup sou=
+rces, v3
 
-> --- a/include/linux/cpu.h
-> +++ b/include/linux/cpu.h
-> @@ -179,6 +179,7 @@ extern void put_online_cpus(void);
->  #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
->  #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
->  #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
-> +void clear_tasks_mm_cpumask(int cpu);
->  int cpu_down(unsigned int cpu);
->  
->  #ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index 2060c6e..ecdf499 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -10,6 +10,8 @@
->  #include <linux/sched.h>
->  #include <linux/unistd.h>
->  #include <linux/cpu.h>
-> +#include <linux/oom.h>
-> +#include <linux/rcupdate.h>
->  #include <linux/export.h>
->  #include <linux/kthread.h>
->  #include <linux/stop_machine.h>
-> @@ -171,6 +173,30 @@ void __ref unregister_cpu_notifier(struct notifier_block *nb)
->  }
->  EXPORT_SYMBOL(unregister_cpu_notifier);
->  
-> +void clear_tasks_mm_cpumask(int cpu)
+Reviewed-by: NeilBrown <neilb@suse.de>
 
-The operation of this function was presumably obvious to you at the
-time you wrote it, but that isn't true of other people at later times.
-
-Please document it?
+Thanks.
+NeilBrown
 
 
-> +{
-> +	struct task_struct *p;
-> +
-> +	/*
-> +	 * This function is called after the cpu is taken down and marked
-> +	 * offline,
+--Sig_/lnGgcYhHJyb+IoSzjh56y/2
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-hm, well.  Who said that this function will only ever be called
-after that CPU was taken down?  There is nothing in the function name
-nor in the (absent) documentation which enforces this precondition.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-If someone tries to use this function for a different purpose, or
-copies-and-modifies it for a different purpose, we just shot them in
-the foot.
+iQIVAwUBT5njSDnsnt1WYoG5AQJxPQ/+KvQQruvb8ey38DX9UrLDNq3RsAwMuRva
+qyGjhb2PCn0Cmf7iORWXrTGh3b5D552BVREhQc4YJpBCcPLZZOt9IHjwkrfbiHuo
+E96ENYs24qYXHjQVkYo2A782H/MgG9PxOeGUhWFf6hG2zg+O4+nvWQVyRUMAaTDO
+taYD+I6xp49BlRL/AphXYd77p/KIOOBxS/av39OiQmIxtxXyl7K29gRCPC+TUVGk
+0/Qcj/FYPFD1IvIyTQ6cXl19mhA4jZoBLonf4QL15i3JIaJM3wVRJL6xvE8YYGnE
+0MAK5gviT4g/ijEd3pOtNYdNy/l7SD6KaQfwHmjuDKRgCSlwirk4Hn63agifej3X
+6/kBaitAbpSG4wkSATnNLLexiH3JAhcfbJNv8+uMbDJQRPNOWzMfnuwq0JivN+6l
+TuzAN+Smw/FiyMUUlN6IBm5Qmfrm0a7G0/bQs4SHaRidogpmmxNIQrR+Yjb/Zgp4
+LkYDN3L8F1aLmhhzCcRJ2gdQSVCUgZThzlDGmqWO1Ab+cRxsIIstFWDdDqRsb0Cs
+tKeu7fgsBJA2w8nEq/vLXXYy2EDLgzwN8kvr3MG7A3ySi/0WpMuMnjZGRRnDNxeI
+sE6X+PW0pdU4FSbjGLiXUI5gIkAkYdEKkA4WAEbo0HmfGjaGh4trf8eT8T42H06u
+i7itTR1Uobc=
+=Ncgi
+-----END PGP SIGNATURE-----
 
-They'd be pretty dumb to do that without reading the local comment,
-but still...
-
-> 	 so its not like new tasks will ever get this cpu set in
-> +	 * their mm mask. -- Peter Zijlstra
-> +	 * Thus, we may use rcu_read_lock() here, instead of grabbing
-> +	 * full-fledged tasklist_lock.
-> +	 */
-> +	rcu_read_lock();
-> +	for_each_process(p) {
-> +		struct task_struct *t;
-> +
-> +		t = find_lock_task_mm(p);
-> +		if (!t)
-> +			continue;
-> +		cpumask_clear_cpu(cpu, mm_cpumask(t->mm));
-> +		task_unlock(t);
-> +	}
-> +	rcu_read_unlock();
-> +}
-
-It is good that this code exists under CONFIG_HOTPLUG_CPU.  Did you
-check that everything works correctly with CONFIG_HOTPLUG_CPU=n?
-
+--Sig_/lnGgcYhHJyb+IoSzjh56y/2--
