@@ -1,85 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760088Ab2D0Kjl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 06:39:41 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:54358 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759818Ab2D0Kjj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 06:39:39 -0400
-Date: Fri, 27 Apr 2012 12:39:29 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Han Ying <yinghan@google.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyuki@gmail.com
-Subject: Re: [RFC][PATCH 7/9 v2] cgroup: avoid attaching task to a cgroup
- under rmdir()
-Message-ID: <20120427103927.GA3514@somewhere.redhat.com>
-References: <4F9A327A.6050409@jp.fujitsu.com>
- <4F9A366E.9020307@jp.fujitsu.com>
+	id S1759915Ab2D0Kkt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 06:40:49 -0400
+Received: from ALUM-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.17]:42335 "EHLO
+	alum-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753968Ab2D0Kkr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 06:40:47 -0400
+X-AuditID: 12074411-b7f596d000000932-bb-4f9a77ae8625
+Message-Id: <201204271040.q3RAQkSY007701@outgoing-alum.mit.edu>
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9A366E.9020307@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: $650,500.00 USD.
+To: Recipients <s.i.parry-jones@dur.ac.uk>
+From: United Nations Trust Funds <s.i.parry-jones@dur.ac.uk>
+Date: Fri, 27 Apr 2012 03:39:59 -0700
+Reply-To: un.trustfund12@cafuc.net
+X-Antivirus: avast! (VPS 120426-1, 04/26/2012), Outbound message
+X-Antivirus-Status: Clean
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsUixO6iqLuufJa/wf8bBhZXdrxlsZhy8yaj
+	xdyZ95ks5t55zmyxYOJLNovpZ+cyW9z6M4/FYt6mlcwWl3fNYbNYtPQYk8XnTXoWXy68YLfY
+	2DOJ1eLYAjGLw1/vMVtcaz3EZNH44y+LxYMnQE3vXs9kt/iwbC6zg4jH/96JTB5vP5xl8lhw
+	YhOTx9R/n9k8mn/MY/T48H8ns8ef5X/ZPK6d/8ro8X7fVTaPMycamD2OPD/N7tFycCO7x+7O
+	LnaPz5vkPI7O28/qcfzcNfYAgSgum5TUnMyy1CJ9uwSujAMn+tgKBCse/b7I3MDI28XIySEh
+	YCJxqWk5E4QtJnHh3nq2LkYuDiGBy4wS83e8Y4dw1jNJXD93ghGkilfAXuJF72sWEJtZQE/i
+	xtQpbBBxQYmTM59AxbUlli18zdzFyAFkq0l87SoBCQsLSErca3oAVi4ioCXRt+MoWAmbgLXE
+	6ld5IGEWAVWJ40enMoKEhQSUJK5u94A4zUFi06N+ZghbUuLJ7cmMExgFZiG5YRaSG2YhuWEW
+	wg0LGFlWMcol5pTm6uYmZuYUpybrFicn5uWlFuma6uVmluilppRuYoREvOAOxhkn5Q4xCnAw
+	KvHwLk6f6S/EmlhWXJl7iFGCg1lJhPdH8Cx/Id6UxMqq1KL8+KLSnNTiQ4zSHCxK4rx8S9T9
+	hATSE0tSs1NTC1KLYLJMHJxSDYzqa3IsJRz7TRmeX1w6R/qmxo2tXVse86cWf/tnJr/FqPv4
+	uqajC8SuBrRyvXEvWfcxRtA/UnKq1fntyso31N3WuT+ff1Ny5q0CN9EqPdelrxatXJYyvf4p
+	B4Ou7ardUmf+K/9Y5cNutyGRe1L/cVHHLdH3JgfvanuyM7hpjdWu3b9EY/lkxY4psRRnJBpq
+	MRcVJwIApPKZ1/QCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 03:02:22PM +0900, KAMEZAWA Hiroyuki wrote:
-> attach_task() is done under cgroup_mutex() but ->pre_destroy() callback
-> in rmdir() isn't called under cgroup_mutex().
-> 
-> It's better to avoid attaching a task to a cgroup which
-> is under pre_destroy(). Considering memcg, the attached task may
-> increase resource usage after memcg's pre_destroy() confirms that
-> memcg is empty. This is not good.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  kernel/cgroup.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index ad8eae5..7a3076b 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -1953,6 +1953,9 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
->  	if (cgrp == oldcgrp)
->  		return 0;
->  
-> +	if (test_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags))
-> +		return -EBUSY;
-> +
-
-You probably need to update cgroup_attach_proc() as well?
-
->  	tset.single.task = tsk;
->  	tset.single.cgrp = oldcgrp;
->  
-> @@ -4181,7 +4184,6 @@ again:
->  		mutex_unlock(&cgroup_mutex);
->  		return -EBUSY;
->  	}
-> -	mutex_unlock(&cgroup_mutex);
->  
->  	/*
->  	 * In general, subsystem has no css->refcnt after pre_destroy(). But
-> @@ -4193,6 +4195,7 @@ again:
->  	 * and css_tryget() and cgroup_wakeup_rmdir_waiter() implementation.
->  	 */
->  	set_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
-> +	mutex_unlock(&cgroup_mutex);
->  
->  	/*
->  	 * Call pre_destroy handlers of subsys. Notify subsystems
-> -- 
-> 1.7.4.1
-> 
-> 
+Reply to claim.
