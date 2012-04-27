@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759932Ab2D0JEE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 05:04:04 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:35044
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759677Ab2D0JEC (ORCPT
+	id S1759947Ab2D0JJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 05:09:16 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43253 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968Ab2D0JJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 05:04:02 -0400
-X-SpamScore: -15
-X-BigFish: VS-15(zz146fI1432N98dK1447Mzz1202hzzz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 27 Apr 2012 17:13:22 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        Zhao Richard-B20223 <B20223@freescale.com>
-Subject: Re: [PATCH v3 4/4] mmc: sdhci-imx-esdhc: convert to use pinctrl
- subsystem
-Message-ID: <20120427091321.GF826@shlinux2.ap.freescale.net>
-References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
- <1335451227-27709-4-git-send-email-b29396@freescale.com>
- <20120427073504.GS17184@pengutronix.de>
- <20120427082930.GC826@shlinux2.ap.freescale.net>
- <20120427083142.GY17184@pengutronix.de>
- <20120427085445.GE826@shlinux2.ap.freescale.net>
- <20120427084744.GB17184@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120427084744.GB17184@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+	Fri, 27 Apr 2012 05:09:13 -0400
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Lennert Buytenhek <buytenh@wantstofly.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, stable@vger.kernel.org
+Subject: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
+Date: Fri, 27 Apr 2012 11:08:31 +0200
+Message-Id: <1335517711-6522-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 04:47:44PM +0800, Sascha Hauer wrote:
-> On Fri, Apr 27, 2012 at 04:54:46PM +0800, Dong Aisheng wrote:
-> > On Fri, Apr 27, 2012 at 04:31:42PM +0800, Sascha Hauer wrote:
-> > > On Fri, Apr 27, 2012 at 04:29:31PM +0800, Dong Aisheng wrote:
-> > > > mach-imx27ipcam.c          mach-mx31ads.c             mach-mx51_babbage.o        mach-pca100.c
-> > > > mach-imx27lite.c           mach-mx31ads.o             mach-mx51_efikamx.c        mach-pcm037.c
-> > > > 
-> > > > Some of them i'm not familiar and i don't know whether they may use pinctrl
-> > > > so i just patched the affected ones.
-> > > > 
-> > > > One lazy method may be just patch all board files without pinctrl support
-> > > > and it will not cause any error.
-> > > > 
-> > > > What's your suggestion?
-> > > > 
-> > > > > pinctrl. Let's add the provide_dummies call to the SoCs instead which
-> > > > > do not have pinctrl yet.
-> > > > > 
-> > > > You meant add provide_dummies call in imx*_soc_init call?
-> > > > We could do it but there might be a case that some boards are converted
-> > > > to use pinctrl while others still not but they're based on the same soc.
-> > > > For examples, 4 mx53 boards and we may not be able to convert them all at
-> > > > the same time.
-> > > 
-> > > My point is that none of the mx5 boards have pinctrl since there is no
-> > > SoC driver for it.
-> > > For DT based boards pinctrl should be mandatory once the SoC has pinctrl
-> > > support. All non DT boards probably won't get pinctrl anyway.
-> > > 
-> > Ok, so i would be fine for me to change it in imx*_soc_init.
-> > BTW, there're:
-> > imx1_soc_init()
-> > imx25_soc_init()
-> > imx27_soc_init()
-> > imx31_soc_init()
-> > imx35_soc_init()
-> > imx50_soc_init()
-> > imx51_soc_init()
-> > imx53_soc_init()
-> > 
-> > I'm not sure about mx1, mx27, mx31
-> > Do you think if i could add them all?
-> 
-> Of course. Or do you see a pinctrl driver for any i.MX except i.MX6?
-> 
-My understanding is that besides if have pinctrl driver, calling provide_dummies
-also depends on whether it really has drivers using pinctrl.
-Anyway, will update it soon.
-Thanks for the confirm.
+User lautriv asked for belkin N-1 WLAN device support on IRC.
 
-Regards
-Dong Aisheng
+Further informations from lautriv:
+* marvell 80W8031, card-id 11ab:2a02
+* Debian/sid 3.2.x
+
+On [1] I found a report by Jim Cromie concerning same PCI device-id:
+
+00:0e.0 Ethernet controller [0200]: Marvell Technology Group Ltd.
+88W8361 [TopDog] 802.11n Wireless [11ab:2a02] (rev 03)
+	Subsystem: Marvell Technology Group Ltd. 88W8361 [TopDog] 802.11n Wireless [11ab:2a02]
+
+So, let's add 0x2a02 to PCI device table.
+
+[1] http://www.spinics.net/lists/newbies/msg46601.html
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+---
+ drivers/net/wireless/mwl8k.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/wireless/mwl8k.c b/drivers/net/wireless/mwl8k.c
+index b48674b..16f0a9a 100644
+--- a/drivers/net/wireless/mwl8k.c
++++ b/drivers/net/wireless/mwl8k.c
+@@ -5264,6 +5264,7 @@ MODULE_FIRMWARE("mwl8k/fmimage_8366.fw");
+ MODULE_FIRMWARE(MWL8K_8366_AP_FW(MWL8K_8366_AP_FW_API));
+ 
+ static DEFINE_PCI_DEVICE_TABLE(mwl8k_pci_id_table) = {
++	{ PCI_VDEVICE(MARVELL, 0x2a02), .driver_data = MWL8363, },
+ 	{ PCI_VDEVICE(MARVELL, 0x2a0a), .driver_data = MWL8363, },
+ 	{ PCI_VDEVICE(MARVELL, 0x2a0c), .driver_data = MWL8363, },
+ 	{ PCI_VDEVICE(MARVELL, 0x2a24), .driver_data = MWL8363, },
+-- 
+1.7.9.5
 
