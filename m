@@ -1,276 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759839Ab2D0Kmg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 06:42:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50658 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292Ab2D0Kmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 06:42:35 -0400
-Message-ID: <4F9A7813.20405@redhat.com>
-Date: Fri, 27 Apr 2012 07:42:27 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1759818Ab2D0KnT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 06:43:19 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63863 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755359Ab2D0KnR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 06:43:17 -0400
+Date: Fri, 27 Apr 2012 03:43:14 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Minchan Kim <minchan@kernel.org>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC] propagate gfp_t to page table alloc functions
+In-Reply-To: <4F9A0360.3030900@kernel.org>
+Message-ID: <alpine.DEB.2.00.1204270340450.11866@chino.kir.corp.google.com>
+References: <1335171318-4838-1-git-send-email-minchan@kernel.org> <4F963742.2030607@jp.fujitsu.com> <4F963B8E.9030105@kernel.org> <CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com> <4F965413.9010305@kernel.org>
+ <CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com> <20120424143015.99fd8d4a.akpm@linux-foundation.org> <4F973BF2.4080406@jp.fujitsu.com> <CAHGf_=r09BCxXeuE8dSti4_SrT5yahrQCwJh=NrrA3rsUhhu_w@mail.gmail.com> <4F973FB8.6050103@jp.fujitsu.com>
+ <20120424172554.c9c330dd.akpm@linux-foundation.org> <4F98914C.2060505@jp.fujitsu.com> <alpine.DEB.2.00.1204251715420.19452@chino.kir.corp.google.com> <4F9A0360.3030900@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: [PATCH EDACv16 2/2] amd64_edac: convert driver to use the new
- edac ABI
-References: <1335289087-11337-1-git-send-email-mchehab@redhat.com> <1335291342-14922-1-git-send-email-mchehab@redhat.com> <1335291342-14922-2-git-send-email-mchehab@redhat.com>
-In-Reply-To: <1335291342-14922-2-git-send-email-mchehab@redhat.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 24-04-2012 15:15, Mauro Carvalho Chehab escreveu:
-> The legacy edac ABI is going to be removed. Port the driver to use
-> and benefit from the new API functionality.
-> 
-> Cc: Doug Thompson <norsk5@yahoo.com>
-> Cc: Borislav Petkov <borislav.petkov@amd.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+On Fri, 27 Apr 2012, Minchan Kim wrote:
 
-Ping?
+> > Maybe a per-thread_info variant of gfp_allowed_mask?  So Andrew's 
+> > set_current_gfp() becomes set_current_gfp_allowed() that does
+> > 
+> > 	void set_current_gfp_allowed(gfp_t gfp_mask)
+> > 	{
+> > 		current->gfp_allowed = gfp_mask & gfp_allowed_mask;
+> > 	}
+> > 
+> > and then the page allocator does
+> > 
+> > 	gfp_mask &= current->gfp_allowed;
+> > 
+> > rather than how it currently does
+> > 
+> > 	gfp_mask &= gfp_allowed_mask;
+> > 
+> > and then the caller of set_current_gfp_allowed() cleans up with 
+> > set_current_gfp_allowed(__GFP_BITS_MASK).
+> 
 
-> ---
-> 
-> v16: Only context changes
-> 
->  drivers/edac/amd64_edac.c |  137 ++++++++++++++++++++++++++++++---------------
->  1 files changed, 92 insertions(+), 45 deletions(-)
-> 
-> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-> index 6d6ec68..b13d5a0 100644
-> --- a/drivers/edac/amd64_edac.c
-> +++ b/drivers/edac/amd64_edac.c
-> @@ -1039,6 +1039,37 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
->  	int channel, csrow;
->  	u32 page, offset;
->  
-> +	error_address_to_page_and_offset(sys_addr, &page, &offset);
-> +
-> +	/*
-> +	 * Find out which node the error address belongs to. This may be
-> +	 * different from the node that detected the error.
-> +	 */
-> +	src_mci = find_mc_by_sys_addr(mci, sys_addr);
-> +	if (!src_mci) {
-> +		amd64_mc_err(mci, "failed to map error addr 0x%lx to a node\n",
-> +			     (unsigned long)sys_addr);
-> +		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-> +				     page, offset, syndrome,
-> +				     -1, -1, -1,
-> +				     EDAC_MOD_STR,
-> +				     "failed to map error addr to a node",
-> +				     NULL);
-> +		return;
-> +	}
-> +
-> +	/* Now map the sys_addr to a CSROW */
-> +	csrow = sys_addr_to_csrow(src_mci, sys_addr);
-> +	if (csrow < 0) {
-> +		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-> +				     page, offset, syndrome,
-> +				     -1, -1, -1,
-> +				     EDAC_MOD_STR,
-> +				     "failed to map error addr to a csrow",
-> +				     NULL);
-> +		return;
-> +	}
-> +
->  	/* CHIPKILL enabled */
->  	if (pvt->nbcfg & NBCFG_CHIPKILL) {
->  		channel = get_channel_from_ecc_syndrome(mci, syndrome);
-> @@ -1048,9 +1079,15 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
->  			 * 2 DIMMs is in error. So we need to ID 'both' of them
->  			 * as suspect.
->  			 */
-> -			amd64_mc_warn(mci, "unknown syndrome 0x%04x - possible "
-> -					   "error reporting race\n", syndrome);
-> -			edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
-> +			amd64_mc_warn(src_mci, "unknown syndrome 0x%04x - "
-> +				      "possible error reporting race\n",
-> +				      syndrome);
-> +			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-> +					     page, offset, syndrome,
-> +					     csrow, -1, -1,
-> +					     EDAC_MOD_STR,
-> +					     "unknown syndrome - possible error reporting race",
-> +					     NULL);
->  			return;
->  		}
->  	} else {
-> @@ -1065,28 +1102,10 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
->  		channel = ((sys_addr & BIT(3)) != 0);
->  	}
->  
-> -	/*
-> -	 * Find out which node the error address belongs to. This may be
-> -	 * different from the node that detected the error.
-> -	 */
-> -	src_mci = find_mc_by_sys_addr(mci, sys_addr);
-> -	if (!src_mci) {
-> -		amd64_mc_err(mci, "failed to map error addr 0x%lx to a node\n",
-> -			     (unsigned long)sys_addr);
-> -		edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
-> -		return;
-> -	}
-> -
-> -	/* Now map the sys_addr to a CSROW */
-> -	csrow = sys_addr_to_csrow(src_mci, sys_addr);
-> -	if (csrow < 0) {
-> -		edac_mc_handle_ce_no_info(src_mci, EDAC_MOD_STR);
-> -	} else {
-> -		error_address_to_page_and_offset(sys_addr, &page, &offset);
-> -
-> -		edac_mc_handle_ce(src_mci, page, offset, syndrome, csrow,
-> -				  channel, EDAC_MOD_STR);
-> -	}
-> +	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, src_mci,
-> +			     page, offset, syndrome,
-> +			     csrow, channel, -1,
-> +			     EDAC_MOD_STR, "", NULL);
->  }
->  
->  static int ddr2_cs_size(unsigned i, bool dct_width)
-> @@ -1568,15 +1587,20 @@ static void f1x_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
->  	u32 page, offset;
->  	int nid, csrow, chan = 0;
->  
-> +	error_address_to_page_and_offset(sys_addr, &page, &offset);
-> +
->  	csrow = f1x_translate_sysaddr_to_cs(pvt, sys_addr, &nid, &chan);
->  
->  	if (csrow < 0) {
-> -		edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
-> +		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-> +				     page, offset, syndrome,
-> +				     -1, -1, -1,
-> +				     EDAC_MOD_STR,
-> +				     "failed to map error addr to a csrow",
-> +				     NULL);
->  		return;
->  	}
->  
-> -	error_address_to_page_and_offset(sys_addr, &page, &offset);
-> -
->  	/*
->  	 * We need the syndromes for channel detection only when we're
->  	 * ganged. Otherwise @chan should already contain the channel at
-> @@ -1585,16 +1609,10 @@ static void f1x_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
->  	if (dct_ganging_enabled(pvt))
->  		chan = get_channel_from_ecc_syndrome(mci, syndrome);
->  
-> -	if (chan >= 0)
-> -		edac_mc_handle_ce(mci, page, offset, syndrome, csrow, chan,
-> -				  EDAC_MOD_STR);
-> -	else
-> -		/*
-> -		 * Channel unknown, report all channels on this CSROW as failed.
-> -		 */
-> -		for (chan = 0; chan < mci->csrows[csrow].nr_channels; chan++)
-> -			edac_mc_handle_ce(mci, page, offset, syndrome,
-> -					  csrow, chan, EDAC_MOD_STR);
-> +	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-> +				page, offset, syndrome,
-> +				csrow, chan, -1,
-> +				EDAC_MOD_STR, "", NULL);
->  }
->  
->  /*
-> @@ -1875,7 +1893,12 @@ static void amd64_handle_ce(struct mem_ctl_info *mci, struct mce *m)
->  	/* Ensure that the Error Address is VALID */
->  	if (!(m->status & MCI_STATUS_ADDRV)) {
->  		amd64_mc_err(mci, "HW has no ERROR_ADDRESS available\n");
-> -		edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
-> +		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-> +				     0, 0, 0,
-> +				     -1, -1, -1,
-> +				     EDAC_MOD_STR,
-> +				     "HW has no ERROR_ADDRESS available",
-> +				     NULL);
->  		return;
->  	}
->  
-> @@ -1899,11 +1922,17 @@ static void amd64_handle_ue(struct mem_ctl_info *mci, struct mce *m)
->  
->  	if (!(m->status & MCI_STATUS_ADDRV)) {
->  		amd64_mc_err(mci, "HW has no ERROR_ADDRESS available\n");
-> -		edac_mc_handle_ue_no_info(log_mci, EDAC_MOD_STR);
-> +		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-> +				     0, 0, 0,
-> +				     -1, -1, -1,
-> +				     EDAC_MOD_STR,
-> +				     "HW has no ERROR_ADDRESS available",
-> +				     NULL);
->  		return;
->  	}
->  
->  	sys_addr = get_error_address(m);
-> +	error_address_to_page_and_offset(sys_addr, &page, &offset);
->  
->  	/*
->  	 * Find out which node the error address belongs to. This may be
-> @@ -1913,7 +1942,11 @@ static void amd64_handle_ue(struct mem_ctl_info *mci, struct mce *m)
->  	if (!src_mci) {
->  		amd64_mc_err(mci, "ERROR ADDRESS (0x%lx) NOT mapped to a MC\n",
->  				  (unsigned long)sys_addr);
-> -		edac_mc_handle_ue_no_info(log_mci, EDAC_MOD_STR);
-> +		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-> +				     page, offset, 0,
-> +				     -1, -1, -1,
-> +				     EDAC_MOD_STR,
-> +				     "ERROR ADDRESS NOT mapped to a MC", NULL);
->  		return;
->  	}
->  
-> @@ -1923,10 +1956,17 @@ static void amd64_handle_ue(struct mem_ctl_info *mci, struct mce *m)
->  	if (csrow < 0) {
->  		amd64_mc_err(mci, "ERROR_ADDRESS (0x%lx) NOT mapped to CS\n",
->  				  (unsigned long)sys_addr);
-> -		edac_mc_handle_ue_no_info(log_mci, EDAC_MOD_STR);
-> +		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-> +				     page, offset, 0,
-> +				     -1, -1, -1,
-> +				     EDAC_MOD_STR,
-> +				     "ERROR ADDRESS NOT mapped to CS",
-> +				     NULL);
->  	} else {
-> -		error_address_to_page_and_offset(sys_addr, &page, &offset);
-> -		edac_mc_handle_ue(log_mci, page, offset, csrow, EDAC_MOD_STR);
-> +		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-> +				     page, offset, 0,
-> +				     csrow, -1, -1,
-> +				     EDAC_MOD_STR, "", NULL);
->  	}
->  }
->  
-> @@ -2486,6 +2526,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
->  	struct amd64_pvt *pvt = NULL;
->  	struct amd64_family_type *fam_type = NULL;
->  	struct mem_ctl_info *mci = NULL;
-> +	struct edac_mc_layer layers[2];
->  	int err = 0, ret;
->  	u8 nid = get_node_id(F2);
->  
-> @@ -2520,7 +2561,13 @@ static int amd64_init_one_instance(struct pci_dev *F2)
->  		goto err_siblings;
->  
->  	ret = -ENOMEM;
-> -	mci = edac_mc_alloc(0, pvt->csels[0].b_cnt, pvt->channel_count, nid);
-> +	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
-> +	layers[0].size = pvt->csels[0].b_cnt;
-> +	layers[0].is_virt_csrow = true;
-> +	layers[1].type = EDAC_MC_LAYER_CHANNEL;
-> +	layers[1].size = pvt->channel_count;
-> +	layers[1].is_virt_csrow = false;
-> +	mci = new_edac_mc_alloc(nid, ARRAY_SIZE(layers), layers, false, 0);
->  	if (!mci)
->  		goto err_siblings;
->  
+[trimmed the newsgroups from the reply, not sure what the point is?]
 
+> Caller should restore old gfp_mask instead of __GFP_BITS_MASK in case of
+> nesting.And how do we care of atomic context?
+> 
+
+Eek, I'm hoping these aren't going to be nested but sure that seems 
+appropraite if they are.  (I'm also hoping these will only be either 
+__GFP_HIGH or __GFP_BITS_MASK and no other combinations.)
+
+Forcing atomic context would just be set_current_gfp_allowed(__GFP_HIGH).
