@@ -1,91 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760071Ab2D0KhE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 06:37:04 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49913 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759804Ab2D0KhB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 06:37:01 -0400
-Date: Fri, 27 Apr 2012 03:36:57 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Minchan Kim <minchan@kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, npiggin@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, kosaki.motohiro@gmail.com,
-        Neil Brown <neilb@suse.de>, Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Sage Weil <sage@newdream.net>
-Subject: Re: [RFC] vmalloc: add warning in __vmalloc
-In-Reply-To: <1335516144-3486-1-git-send-email-minchan@kernel.org>
-Message-ID: <alpine.DEB.2.00.1204270323000.11866@chino.kir.corp.google.com>
-References: <1335516144-3486-1-git-send-email-minchan@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1760098Ab2D0Khm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 06:37:42 -0400
+Received: from ALUM-MAILSEC-SCANNER-2.MIT.EDU ([18.7.68.13]:65206 "EHLO
+	alum-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759927Ab2D0Khk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 06:37:40 -0400
+X-AuditID: 1207440d-b7f336d00000097b-d1-4f9a76f3ee66
+Message-Id: <201204271037.q3RAZb5D010783@outgoing-alum.mit.edu>
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: $650,500.00 USD.
+To: Recipients <s.i.parry-jones@dur.ac.uk>
+From: United Nations Trust Funds <s.i.parry-jones@dur.ac.uk>
+Date: Fri, 27 Apr 2012 03:36:58 -0700
+Reply-To: un.trustfund12@cafuc.net
+X-Antivirus: avast! (VPS 120426-1, 04/26/2012), Outbound message
+X-Antivirus-Status: Clean
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsUixO6iqPu5bJa/wZqt3BZXdrxlsZhy8yaj
+	xYKJL9ksbv2Zx2Lxc/tJFou5PzcxW1zeNYfNYtHSY0wWnzfpWXyfOIXRYmPPJFaLYwvELL5s
+	sLY40HCaxeLl9Y/sFo0//rJYNG9tYLd48ARoxLvXM9ktlt+9wO4g4vG/dyKTx/mFF9k93n44
+	y+Sx5/AHNo8FJzYxecyZcYTNY+Xfaawe185/ZfR4v+8qm8eZEw3MHpcaWlg8Wg5uZPf4vmsj
+	q8fnTXIep75+Zg/gj+KySUnNySxLLdK3S+DKOHCij61AsOLR74vMDYy8XYycHBICJhJX93ax
+	QNhiEhfurWfrYuTiEBK4zCjR9/chO4Sznkmi+cshZpAqXgF7ifNLm1hBbGYBPYkbU6ewQcQF
+	JU7OfMICEdeWWLbwNVA9B5CtJvG1qwQkLCwgKXGv6QFYuYiAlkTfjqNgJWwC1hKrX+WBhFkE
+	VCVufN/IChIWElCSuLrdA+I0B4lNj/qZIWxJiSe3JzNOYBSYheSGWUhumIXkhlkINyxgZFnF
+	KJeYU5qrm5uYmVOcmqxbnJyYl5dapGukl5tZopeaUrqJERLlvDsY/6+TOcQowMGoxMP7K3Om
+	vxBrYllxZe4hRgkOZiUR3h/Bs/yFeFMSK6tSi/Lji0pzUosPMUpzsCiJ86otUfcTEkhPLEnN
+	Tk0tSC2CyTJxcEo1MNb4P9i489RU5+k9X3gPv/h58IfvXdfg7MfFC1OdZcuVJq/5e1/L/5Be
+	stnH787BP0xeBcz9Gn1cKvF3CtPF3w+f7hKZGVBzXcN2Tr/xp1mG4ZFXc/k9i1trbddUdAlf
+	qbA9kq3UPznsp/zVUxwdize/td/xXHnnsxO8t/9qC4UzLw1bxiT8d68SS3FGoqEWc1FxIgCc
+	1j4x7gIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Apr 2012, Minchan Kim wrote:
-
-> Now there are several places to use __vmalloc with GFP_ATOMIC,
-> GFP_NOIO, GFP_NOFS but unfortunately __vmalloc calls map_vm_area
-> which calls alloc_pages with GFP_KERNEL to allocate page tables.
-> It means it's possible to happen deadlock.
-> I don't know why it doesn't have reported until now.
-> 
-> Firstly, I tried passing gfp_t to lower functions to support __vmalloc
-> with such flags but other mm guys don't want and decided that
-> all of caller should be fixed.
-> 
-> http://marc.info/?l=linux-kernel&m=133517143616544&w=2
-> 
-> To begin with, let's listen other's opinion whether they can fix it
-> by other approach without calling __vmalloc with such flags.
-> 
-> So this patch adds warning to detect and to be fixed hopely.
-> I Cced related maintainers.
-> If I miss someone, please Cced them.
-> 
-> side-note:
->   I added WARN_ON instead of WARN_ONCE to detect all of callers
->   and each WARN_ON for each flag to detect to use any flag easily.
->   After we fix all of caller or reduce such caller, we can merge
->   a warning with WARN_ONCE.
-> 
-
-I disagree with this approach since it's going to violently spam an 
-innocent kernel user's log with no ratelimiting and for a situation that 
-actually may not be problematic.
-
-Passing any of these bits (the difference between GFP_KERNEL and 
-GFP_ATOMIC) only means anything when we're going to do reclaim.  And I'm 
-suspecting we would have seen problems with this already since 
-pte_alloc_kernel() does __GFP_REPEAT on most architectures meaning that it 
-will loop infinitely in the page allocator until at least one page is 
-freed (since its an order-0 allocation) which would hardly ever happen if 
-__GFP_FS or __GFP_IO actually meant something in this context.
-
-In other words, we would already have seen these deadlocks and it would 
-have been diagnosed as a vmalloc(GFP_ATOMIC) problem.  Where are those bug 
-reports?
-
-At best, you'd need _some_ sort of ratelimiting like a static variable and 
-only allowing 100 WARN_ON()s which could output dozens of lines for each 
-call to vmalloc().
-
-But the page allocator already has a might_sleep_if(gfp_mask & GFP_WAIT) 
-which will dump the stack for CONFIG_DEBUG_ATOMIC_SLEEP.  So for this 
-effect, just enable that config option and check your kernel log.
-
-So I'm afraid this is complete overkill for something that we can't prove 
-is a problem in the first place and will potentially fill the kernel logs 
-for warnings where the allocation succeeds immediately.  If you want the 
-bug reports, ask people to enable CONFIG_DEBUG_ATOMIC_SLEEP.
+Reply to claim.
