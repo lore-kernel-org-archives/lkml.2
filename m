@@ -1,39 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab2D0Gsp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 02:48:45 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58100 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab2D0Gso (ORCPT
+	id S1756422Ab2D0Gsu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 02:48:50 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17796 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756274Ab2D0Gsr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 02:48:44 -0400
-Message-ID: <4F9A413B.50704@gmail.com>
-Date: Fri, 27 Apr 2012 14:48:27 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Fri, 27 Apr 2012 02:48:47 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 26 Apr 2012 23:48:38 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "balbi@ti.com" <balbi@ti.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Apr 2012 08:48:26 +0200
+Subject: Re: [PATCHv3 2/4] ARM: tegra: Add SMMU enabler in AHB
+Thread-Topic: [PATCHv3 2/4] ARM: tegra: Add SMMU enabler in AHB
+Thread-Index: Ac0kQcNKR1ZZSE+ARzGvK/rd8EmnGA==
+Message-ID: <20120427.094826.1181797260264746303.hdoyu@nvidia.com>
+References: <20120426202610.GA30690@arwen.pp.htv.fi><4F99B0F8.4040308@wwwdotorg.org><20120426203847.GC30690@arwen.pp.htv.fi>
+In-Reply-To: <20120426203847.GC30690@arwen.pp.htv.fi>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Jason Wessel <jason.wessel@windriver.com>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, rusty@rustcorp.com.au
-Subject: Re: [RFC PATCH 0/8] backtrace/oops with source/line information
-References: <1334957394-12086-1-git-send-email-jason.wessel@windriver.com>
-In-Reply-To: <1334957394-12086-1-git-send-email-jason.wessel@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2012 05:29 AM, Jason Wessel wrote:
->
-> The key difference here is that you get the source line information in
-> any kind of oops/panic/backtrace, including inside kernel modules.  Of
-> course this comes at the expense of some memory you do not get to use
-> because these tables have to get stored in a place that is accessible
-> after a crash.  On a system with 4 gigs of ram however, the cost is
-> nearly insignificant when you have to give up a few megs for the
-> capability.  The idea is to make it a bit easier to just jump into a
-> source tree without having to use any tools to decode the dump (which
-> I know every kernel developer out there already has anwyay :-)
+From: Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCHv3 2/4] ARM: tegra: Add SMMU enabler in AHB
+Date: Thu, 26 Apr 2012 22:38:48 +0200
+Message-ID: <20120426203847.GC30690@arwen.pp.htv.fi>
 
-So is the vmlinux size, right?
+> * PGP Signed by an unknown key
+> 
+> Hi,
+> 
+> On Thu, Apr 26, 2012 at 02:32:56PM -0600, Stephen Warren wrote:
+> > On 04/26/2012 02:26 PM, Felipe Balbi wrote:
+> > > Hi,
+> > > 
+> > > On Thu, Apr 26, 2012 at 01:55:13PM -0600, Stephen Warren wrote:
+> > >> On 04/25/2012 05:07 AM, Hiroshi DOYU wrote:
+> > >>> Add extern func, "tegra_ahb_enable_smmu()" to inform AHB that SMMU is
+> > >>> ready.
+> > >>
+> > >>> +#ifdef CONFIG_ARCH_TEGRA_3x_SOC
+> > >>> +static int __tegra_ahb_enable_smmu(struct device *dev, void *data)
+> > >> ...
+> > >>> +int tegra_ahb_enable_smmu(void)
+> > >>> +{
+> > >>> +	return driver_for_each_device(&tegra_ahb_driver.driver, NULL, NULL,
+> > >>> +				      __tegra_ahb_enable_smmu);
+> > >>> +}
+> > >>> +EXPORT_SYMBOL(tegra_ahb_enable_smmu);
+> > >>> +#endif
+> > >>
+> > >> That looks like a neat solution to avoid having a global device object.
+> > > 
+> > > except that it won't work always. If you happen to have two AHB bridges,
+> > > each using a separate smmu but only one smmu is ready, this will set
+> > > SMMU_INIT_DONE on both bridges.
+> > 
+> > There is only 1.
+> 
+> that's why there's a "if you happen to have" statement. If you stick to
+> this "there is only 1" argument, why do you even make this into a
+> platform driver ? Just stick the entire code hidden on the
+> machine_init() code. Drivers a supposed to be able to instantiated
+> multiple times and always work, this method won't work if tegra99999
+> ends up with two AHB bridges/SMMUs
+> 
+> > >> However, if that driver_for_each_device finds no devices, the function
+> > >> still succeeds. That doesn't seem right, and doesn't allow e.g. the SMMU
+> > >> to defer its probe until the AHB driver has completed.
+> > >>
+> > >> Perhaps add a local int variable to tegra_ahb_enable_smmu(), pass the
+> > >> address to __tegra_ahb_enable_smmu, and have it increment the int. Then,
+> > >> after calling driver_for_each_device,:
+> > >>
+> > >> if (!ahb_device_count)
+> > >>     return -EPROBE_DEFER
+> > >> if (WARN_ON(ahb_device_count != 1))
+> > >>     return -EINVAL;
+> > >> return 0;
+> > > 
+> > > that would look, well, weird. Why don't you just different initcall
+> > > leves for this ? Maybe smmu goes into postcore_initcall() and tegra_ahb
+> > > goes into postcore_initcall_sync() ?? then you know that SMMU will be
+> > > ready by the time you call tegra_ahb probe. Well, unless smmu's probe
+> > > fail, but then again, IIUC it won't work anyway...
+> > 
+> > Uggh. I'd rather all these devices just got instantiated from device
+> > tree and relied on deferred probe to manage any ordering, rather than
+> > playing complex games with multiple initcall levels (and in the end
+> > probably having to invent more and more initcall levels to correctly
+> > represent all the dependencies).
+> 
+> then do that... it'll be better than current trickery with
+> driver_for_each_device() and my initcall trickery ;-)
+
+Then, what about something like the following?
+
+ static int tegra_ahb_match_by_smmu(struct device *dev, void *data)
+ {
+ 	struct tegra_ahb *ahb = dev_get_drvdata(dev);
+ 	struct device_node *dn = data;
+ 
+ 	return (ahb->dev->of_node == dn) ? 1 : 0
+ }
+ 
+ int tegra_ahb_enable_smmu(struct device_node *ahb)
+ {
+ 	struct device *dev;
+ 	u32 val;
+ 
+ 	dev = driver_find_device(&tegra_ahb_driver.driver, NULL, ahb,
+ 				 tegra_ahb_match_by_smmu);
+ 	if (!dev)
+ 		return -ENODEV;
+ 
+ 	val = gizmo_readl(ahb, AHB_ARBITRATION_XBAR_CTRL);
+ 	val |= AHB_ARBITRATION_XBAR_CTRL_SMMU_INIT_DONE;
+ 	gizmo_writel(ahb, val, AHB_ARBITRATION_XBAR_CTRL);
+ 	return 0;
+ }
+ EXPORT_SYMBOL(tegra_ahb_enable_smmu);
+
+	Modified arch/arm/boot/dts/tegra30.dtsi
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+index 655bc47..28f9138 100644
+--- a/arch/arm/boot/dts/tegra30.dtsi
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -242,5 +242,6 @@
+ 	smmu {
+ 		compatible = "nvidia,tegra30-smmu";
+ 		mc = <&mc>;
++		ahb = <&ahb>;
+ 	};
+ };
