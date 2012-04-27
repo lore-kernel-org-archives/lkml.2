@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759550Ab2D0QJU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 12:09:20 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:58296 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759067Ab2D0QJP (ORCPT
+	id S1759575Ab2D0QKC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 12:10:02 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:2472
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758889Ab2D0QKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 12:09:15 -0400
-Date: Fri, 27 Apr 2012 13:09:18 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+	Fri, 27 Apr 2012 12:10:00 -0400
+X-SpamScore: -12
+X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzzz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M35BKH-02-8OB-02
+X-M-MSG: 
+Date: Fri, 27 Apr 2012 18:09:22 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/13] perf evlist: Fix creation of cpu map
-Message-ID: <20120427160918.GF27997@infradead.org>
-References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
- <1335417327-11796-8-git-send-email-namhyung.kim@lge.com>
- <4F996433.7040003@gmail.com>
- <1335474778.1497.14.camel@leonhard>
- <4F99BCAF.1080309@gmail.com>
- <87397qhvvx.fsf@sejong.aot.lge.com>
- <20120427150821.GA27997@infradead.org>
- <4F9ABBF9.8080409@gmail.com>
- <20120427160040.GD27997@infradead.org>
- <4F9AC3B2.3080700@gmail.com>
+Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS for
+ AMD CPUs
+Message-ID: <20120427160922.GI18810@erda.amd.com>
+References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
+ <1333390758-10893-7-git-send-email-robert.richter@amd.com>
+ <1334398906.2528.49.camel@twins>
+ <20120423095659.GS9747@erda.amd.com>
+ <20120427123434.GF18810@erda.amd.com>
+ <CABPqkBS9FNmHBukzJqGJP1r5iqyLL9gz2g=3jvnt22pDxOdndA@mail.gmail.com>
+ <20120427125410.GG18810@erda.amd.com>
+ <1335540633.2463.133.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4F9AC3B2.3080700@gmail.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <1335540633.2463.133.camel@laptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Apr 27, 2012 at 10:05:06AM -0600, David Ahern escreveu:
-> On 4/27/12 10:00 AM, Arnaldo Carvalho de Melo wrote:
-> >Em Fri, Apr 27, 2012 at 09:32:09AM -0600, David Ahern escreveu:
-> >>On 4/27/12 9:08 AM, Arnaldo Carvalho de Melo wrote:
-> >>>Ok, after this discussion, David, can I have your acked-by or tested-by?
-> >
-> >>I had reviewed the whole series yesterday, so you can add my
-> >
-> >>Reviewed-by: David Ahern<dsahern@gmail.com>
-> >
-> >>to the whole series if you want. I did not pull down the set and
-> >>apply to test it, and this particular patch requires prior ones so I
-> >>have not tested it.
-> >
-> >Fair enough, I'll add the Reviewed-by tag.
-> >
-> >I'm running 'perf test' after each patch. Doing it as root, but we need
-> >to automate this to do it as root, user, and user with each of the
-> >paranoid levels...
-> >
-> >- Arnaldo
+On 27.04.12 17:30:33, Peter Zijlstra wrote:
+> On Fri, 2012-04-27 at 14:54 +0200, Robert Richter wrote:
+> > My suggestions was to use level 1 for all samples and level 2 for
+> > samples that only contain a precise rip, saving level 3 for future
+> > use. 
 > 
-> Right - and that may include changing paranoid settings.
-> 
-> Also, the patchset is listed as RFC if that matters from running
-> through all the formalities. One of the reasons I was not motivated
-> to pull down the patches and apply/build/test.
+> No.
 
-I'm ok with it, so I happily disregarded the RFC on it 8-)
+Ok, will look how to handle this in userspace.
 
-And now that you reviewed it all too, even better.
+But do you agree to have level 1 and 2 mapped to ibs, not just only
+level 2 (since I don't want to fail with r076:p)?
 
-Thanks,
+-Robert
 
-- Arnaldo
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
