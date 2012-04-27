@@ -1,41 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760630Ab2D0P0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:26:43 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:34210 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760484Ab2D0P0k (ORCPT
+	id S1760650Ab2D0P0y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:26:54 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:54713 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760481Ab2D0P0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:26:40 -0400
-Date: Fri, 27 Apr 2012 17:26:35 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Hakan Akkan <hakanakkan@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nohz/cpuset: enable addition&removal of cpus while in
- adaptive nohz mode
-Message-ID: <20120427152632.GD3514@somewhere.redhat.com>
-References: <4F99854E.80102@gmail.com>
+	Fri, 27 Apr 2012 11:26:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F99854E.80102@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [189.25.3.224]
+In-Reply-To: <20120427141115.GB1011@pervalidus>
+References: <20120427013225.GA1011@pervalidus>
+	<CAJK5xJRPF1XtXXYtZ_GQONstPrBa_eaeqW=XACSx+giFWBpfnQ@mail.gmail.com>
+	<20120427083456.GB21929@liondog.tnic>
+	<20120427141115.GB1011@pervalidus>
+Date: Fri, 27 Apr 2012 12:26:49 -0300
+Message-ID: <CAJK5xJTsKZVsb1vwXzdCmeZ+oOLiv0eB9A0GkShu0rM8Xac6Jg@mail.gmail.com>
+Subject: Re: What may be causing this kernel panic ?
+From: =?ISO-8859-1?Q?Fr=E9d=E9ric_L=2E_W=2E_Meunier?= 
+	<fredlwm@fredlwm.net>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=14dae9cfccb4ae269c04beaabb45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 11:26:38AM -0600, Hakan Akkan wrote:
-> Currently modifying cpuset.cpus mask of a cgroup does not
-> update the reference counters for adaptive nohz mode if the
-> cpuset already had cpuset.adaptive_nohz == 1. Fix it so that
-> cpus can be added or removed from a adaptive_nohz cpuset.
-> 
-> Apply to Frederic's nohz/cpuset-v2 kernel 3.3.0-rc7nohz/cpuset-v2+
-> (commit abd48ecb412ff023582e97442a02a7cb162a1c4e)
-> 
-> Signed-off-by: Hakan Akkan <hakanakkan@gmail.com>
+--14dae9cfccb4ae269c04beaabb45
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-It was in my TODO list, thanks a lot for fixing this!
+2012/4/27 Fr=E9d=E9ric L. W. <fredlwm@fredlwm.net>:
+> On Fri, Apr 27, 2012 at 10:34:56AM +0200, Borislav Petkov wrote:
+>> On Fri, Apr 27, 2012 at 03:11:11AM -0300, Fr=E9d=E9ric L. W. Meunier wro=
+te:
+>> > https://sites.google.com/a/fredlwm.net/fredlwm/home/kernelpanic2.png
+>> > is more complete and shows something about the keyboard, I guess.
+>>
+>> Can you pls attach this second kernelpanic2.jpg to the mail too - the
+>> thing above wants a login/pwd.
+>
+> Sorry, I thought it was public. Try
+> http://img826.imageshack.us/img826/198/kernelpanic2.png
 
-The patch looks very nice. I'll test it and apply to my tree if it passes
-basic testing.
+Better yet, I got the full kernel panic from a serial console.
+
+--14dae9cfccb4ae269c04beaabb45
+Content-Type: text/plain; charset=US-ASCII; name="kernelpanic.txt"
+Content-Disposition: attachment; filename="kernelpanic.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h1je93pw0
+
+WyAgIDI2LjY4NTcyNF0gQlVHOiB1bmFibGUgdG8gaGFuZGxlIGtlcm5lbCBwYWdpbmcgcmVxdWVz
+dCBhdCBmZmZmZmZmZjAwMDAwMDc5ClsgICAyNi42ODY1NTFdIElQOiBbPGZmZmZmZmZmODExNzJl
+Mzc+XSBwdXRzX3F1ZXVlLmlzcmEuMTUrMHgyNS8weDNiClsgICAyNi42ODY1NTFdIFBHRCAxNjA3
+MDY3IFBVRCAwClsgICAyNi42ODY1NTFdIE9vcHM6IDAwMDAgWyMxXSBQUkVFTVBUIFNNUApbICAg
+MjYuNjg2NTUxXSBDUFUgMApbICAgMjYuNjg2NTUxXSBNb2R1bGVzIGxpbmtlZCBpbjogYWdwZ2Fy
+dCBzbmRfaW50ZWw4eDAgc25kX2FjOTdfY29kZWMgYWM5N19idXMgc25kX3BjbSBwc21vdXNlIHBy
+b2Nlc3NvciBzbmRfcGFnZV9hbGxvYyBqb3lkZXYgZXZkZXYgdGhlcm1hbF9zeXMgc25kX3RpbWVy
+IGJ1dHRvbiBlMTAwMCBpMmNfcGlpeDQgc25kIGh3bW9uIGkyY19jb3JlIHNnIHNvdW5kY29yZSBs
+b29wIGV4dDQgY3JjMTZkClsgICAyNi42ODY1NTFdClsgICAyNi42ODY1NTFdIFBpZDogMCwgY29t
+bTogc3dhcHBlci8wIE5vdCB0YWludGVkIDMuMy4zICMyIGlubm90ZWsgR21iSCBWaXJ0dWFsQm94
+ClsgICAyNi42ODY1NTFdIFJJUDogMDAxMDpbPGZmZmZmZmZmODExNzJlMzc+XSAgWzxmZmZmZmZm
+ZjgxMTcyZTM3Pl0gcHV0c19xdWV1ZS5pc3JhLjE1KzB4MjUvMHgzYgpbICAgMjYuNjg2NTUxXSBS
+U1A6IDAwMTg6ZmZmZjg4MDAwZjYwM2MwOCAgRUZMQUdTOiAwMDAxMDA4NgpbICAgMjYuNjg2NTUx
+XSBSQVg6IDAwMDAwMDAwMDAwMDAwMDEgUkJYOiBmZmZmODgwMDBlN2EyODAwIFJDWDogZmZmZmZm
+ZmY4MTAzOTIwMQpbICAgMjYuNjg2NTUxXSBSRFg6IDAwMDAwMDAwMDAwMDAwMDAgUlNJOiBmZmZm
+ZmZmZjAwMDAwMDc5IFJESTogZmZmZjg4MDAwZTdhMjgwMApbICAgMjYuNjg2NTUxXSBSQlA6IGZm
+ZmY4ODAwMGY2MDNjMTggUjA4OiAwMDAwMDAwMDAwMDAwMDAwIFIwOTogMDAwMDAwMDAwMDAwMDA3
+ZgpbICAgMjYuNjg2NTUxXSBSMTA6IDAwMDAwMDAwMDAwMDAwMjcgUjExOiBmZmZmZmZmZjgxNzA0
+ZTc4IFIxMjogZmZmZmZmZmYwMDAwMDA3OQpbICAgMjYuNjg2NTUxXSBSMTM6IDAwMDAwMDAwMDAw
+MDAwMDEgUjE0OiBmZmZmZmZmZjgxNjJmMTAyIFIxNTogMDAwMDAwMDAwMDAwMDAwMApbICAgMjYu
+Njg2NTUxXSBGUzogIDAwMDA3ZjBhNjQ2M2M3NDAoMDAwMCkgR1M6ZmZmZjg4MDAwZjYwMDAwMCgw
+MDAwKSBrbmxHUzowMDAwMDAwMDAwMDAwMDAwClsgICAyNi42ODY1NTFdIENTOiAgMDAxMCBEUzog
+MDAwMCBFUzogMDAwMCBDUjA6IDAwMDAwMDAwODAwNTAwM2IKWyAgIDI2LjY4NjU1MV0gQ1IyOiBm
+ZmZmZmZmZjAwMDAwMDc5IENSMzogMDAwMDAwMDAwZTdkZjAwMCBDUjQ6IDAwMDAwMDAwMDAwMDA2
+ZjAKWyAgIDI2LjY4NjU1MV0gRFIwOiAwMDAwMDAwMDAwMDAwMDAwIERSMTogMDAwMDAwMDAwMDAw
+MDAwMCBEUjI6IDAwMDAwMDAwMDAwMDAwMDAKWyAgIDI2LjY4NjU1MV0gRFIzOiAwMDAwMDAwMDAw
+MDAwMDAwIERSNjogMDAwMDAwMDBmZmZmMGZmMCBEUjc6IDAwMDAwMDAwMDAwMDA0MDAKWyAgIDI2
+LjY4NjU1MV0gUHJvY2VzcyBzd2FwcGVyLzAgKHBpZDogMCwgdGhyZWFkaW5mbyBmZmZmZmZmZjgx
+NjAwMDAwLCB0YXNrIGZmZmZmZmZmODE2MGQwMjApClsgICAyNi42ODY1NTFdIFN0YWNrOgpbICAg
+MjYuNjg2NTUxXSAgZmZmZjg4MDAwZjAwODAwMCAwMDAwMDAwMDAwMDAwMDNkIGZmZmY4ODAwMGY2
+MDNjMjggZmZmZmZmZmY4MTE3MmVlZApbICAgMjYuNjg2NTUxXSAgZmZmZjg4MDAwZjYwM2M5OCBm
+ZmZmZmZmZjgxMTczYTUyIGZmZmZmZmZmODEwNDYzMDEgMDBmZjg4MDAwZTY0OTgwMApbICAgMjYu
+Njg2NTUxXSAgZmZmZjg4MDAwMDAwMDAwMSBmZmZmODgwMDBmMDA4MDAwIDAwMDAwMDAwMDAwMDAw
+MDEgMDAwMGYxMDIwMDAwMDAwMApbICAgMjYuNjg2NTUxXSBDYWxsIFRyYWNlOgpbICAgMjYuNjg2
+NTUxXSAgPElSUT4KWyAgIDI2LjY4NjU1MV0gIFs8ZmZmZmZmZmY4MTE3MmVlZD5dIGtfZm4rMHgy
+MS8weDIzClsgICAyNi42ODY1NTFdICBbPGZmZmZmZmZmODExNzNhNTI+XSBrYmRfZXZlbnQrMHg1
+MGQvMHg1NzcKWyAgIDI2LjY4NjU1MV0gIFs8ZmZmZmZmZmY4MTA0NjMwMT5dID8gdHJ5X3RvX3dh
+a2VfdXArMHgxNTgvMHgxYzMKWyAgIDI2LjY4NjU1MV0gIFs8ZmZmZmZmZmY4MTE5Mzk2ZD5dIGlu
+cHV0X3Bhc3NfZXZlbnQrMHg4Zi8weGQ1ClsgICAyNi42ODY1NTFdICBbPGZmZmZmZmZmODExOTU2
+NjA+XSBpbnB1dF9oYW5kbGVfZXZlbnQrMHg0NzkvMHg0ODgKWyAgIDI2LjY4NjU1MV0gIFs8ZmZm
+ZmZmZmY4MTE4MTZmZD5dID8gYWRkX3RpbWVyX3JhbmRvbW5lc3MrMHgxMTcvMHgxMWUKWyAgIDI2
+LjY4NjU1MV0gIFs8ZmZmZmZmZmY4MTE5NTc2MT5dIGlucHV0X2V2ZW50KzB4NjQvMHg4MwpbICAg
+MjYuNjg2NTUxXSAgWzxmZmZmZmZmZjgxMTk4OTZiPl0gYXRrYmRfaW50ZXJydXB0KzB4NDZhLzB4
+NTM3ClsgICAyNi42ODY1NTFdICBbPGZmZmZmZmZmODEwNGYwOWM+XSA/IGt0aW1lX2dldCsweDU3
+LzB4OTAKWyAgIDI2LjY4NjU1MV0gIFs8ZmZmZmZmZmY4MTE5MDk2ND5dIHNlcmlvX2ludGVycnVw
+dCsweDQwLzB4N2MKWyAgIDI2LjY4NjU1MV0gIFs8ZmZmZmZmZmY4MTE5MTk0Yj5dIGk4MDQyX2lu
+dGVycnVwdCsweDI5NC8weDJhNgpbICAgMjYuNjg2NTUxXSAgWzxmZmZmZmZmZjgxMDY3MzY5Pl0g
+aGFuZGxlX2lycV9ldmVudF9wZXJjcHUrMHgyOS8weDExYgpbICAgMjYuNjg2NTUxXSAgWzxmZmZm
+ZmZmZjgxMDY3NDk3Pl0gaGFuZGxlX2lycV9ldmVudCsweDNjLzB4NWQKWyAgIDI2LjY4NjU1MV0g
+IFs8ZmZmZmZmZmY4MTAxOGU3YT5dID8gYWNrX0FQSUNfaXJxKzB4MTAvMHgxMgpbICAgMjYuNjg2
+NTUxXSAgWzxmZmZmZmZmZjgxMDY5OWJmPl0gaGFuZGxlX2VkZ2VfaXJxKzB4OWMvMHhjMQpbICAg
+MjYuNjg2NTUxXSAgWzxmZmZmZmZmZjgxMDAzZmUzPl0gaGFuZGxlX2lycSsweDFmLzB4MjUKWyAg
+IDI2LjY4NjU1MV0gIFs8ZmZmZmZmZmY4MTAwM2QwZT5dIGRvX0lSUSsweDQ4LzB4YTAKWyAgIDI2
+LjY4NjU1MV0gIFs8ZmZmZmZmZmY4MTIyMzFlYj5dIGNvbW1vbl9pbnRlcnJ1cHQrMHg2Yi8weDZi
+ClsgICAyNi42ODY1NTFdICA8RU9JPgpbICAgMjYuNjg2NTUxXSAgWzxmZmZmZmZmZjgxMjIyZWUz
+Pl0gPyBfcmF3X3NwaW5fdW5sb2NrX2lycXJlc3RvcmUrMHgyMS8weDJjClsgICAyNi42ODY1NTFd
+ICBbPGZmZmZmZmZmODEwMDk2Nzc+XSA/IGRlZmF1bHRfaWRsZSsweDIyLzB4MzcKWyAgIDI2LjY4
+NjU1MV0gIFs8ZmZmZmZmZmY4MTAwOTY3MT5dID8gZGVmYXVsdF9pZGxlKzB4MWMvMHgzNwpbICAg
+MjYuNjg2NTUxXSAgWzxmZmZmZmZmZjgxMDA5ODQyPl0gYW1kX2U0MDBfaWRsZSsweGNlLzB4ZDAK
+WyAgIDI2LjY4NjU1MV0gIFs8ZmZmZmZmZmY4MTAwMTIyYT5dIGNwdV9pZGxlKzB4NjQvMHhiMgpb
+ICAgMjYuNjg2NTUxXSAgWzxmZmZmZmZmZjgxMjBkZmM4Pl0gcmVzdF9pbml0KzB4OGMvMHg5MApb
+ICAgMjYuNjg2NTUxXSAgWzxmZmZmZmZmZjgxNjRkODlmPl0gc3RhcnRfa2VybmVsKzB4MzFiLzB4
+MzI3ClsgICAyNi42ODY1NTFdICBbPGZmZmZmZmZmODE2NGQwYjE+XSB4ODZfNjRfc3RhcnRfcmVz
+ZXJ2YXRpb25zKzB4YWUvMHhiMgpbICAgMjYuNjg2NTUxXSAgWzxmZmZmZmZmZjgxNjRkMDAwPl0g
+PyAweGZmZmZmZmZmODE2NGNmZmYKWyAgIDI2LjY4NjU1MV0gIFs8ZmZmZmZmZmY4MTY0ZDFhMT5d
+IHg4Nl82NF9zdGFydF9rZXJuZWwrMHhlYy8weGYzClsgICAyNi42ODY1NTFdIENvZGU6IDAxIDVi
+IDQxIDVjIDVkIGMzIDU1IDQ4IDg1IGZmIDQ4IDg5IGU1IDQxIDU0IDQ5IDg5IGY0IDUzIDQ4IDg5
+IGZiIDc1IDEzIGViIDIyIDQwIDBmIGI2IGY2IDMxIGQyIDQ4IDg5IGRmIDQ5IGZmIGM0IGU4IDAw
+IGY3IGZmIGZmIDw0MT4gOGEgMzQgMjQgNDAgODQgZjYgNzUgZTYgNDggODkgZGYgZTggNmIgZjcg
+ZmYgZmYgNWIgNDEgNWMgNWQKWyAgIDI2LjY4NjU1MV0gUklQICBbPGZmZmZmZmZmODExNzJlMzc+
+XSBwdXRzX3F1ZXVlLmlzcmEuMTUrMHgyNS8weDNiClsgICAyNi42ODY1NTFdICBSU1AgPGZmZmY4
+ODAwMGY2MDNjMDg+ClsgICAyNi42ODY1NTFdIENSMjogZmZmZmZmZmYwMDAwMDA3OQpbICAgMjYu
+Njg2NTUxXSAtLS1bIGVuZCB0cmFjZSBmNGNhZGNkOGI2NGViM2EyIF0tLS0KWyAgIDI2LjY4NjU1
+MV0gS2VybmVsIHBhbmljIC0gbm90IHN5bmNpbmc6IEZhdGFsIGV4Y2VwdGlvbiBpbiBpbnRlcnJ1
+cHQKCiA=
+--14dae9cfccb4ae269c04beaabb45--
