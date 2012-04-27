@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760202Ab2D0OLu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 10:11:50 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42759 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759990Ab2D0OLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 10:11:48 -0400
-Message-ID: <1335535895.25521.7.camel@joe2Laptop>
-Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to
- work with layers
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Tim Small <tim@buttersideup.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Egor Martovetsky <egor@pasemi.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Niklas =?ISO-8859-1?Q?S=F6derlund?= 
-	<niklas.soderlund@ericsson.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
-Date: Fri, 27 Apr 2012 10:11:35 -0400
-In-Reply-To: <20120427133304.GE9626@aftab.osrc.amd.com>
-References: <1335289087-11337-1-git-send-email-mchehab@redhat.com>
-	 <1335291342-14922-1-git-send-email-mchehab@redhat.com>
-	 <20120427133304.GE9626@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1760230Ab2D0ORK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 10:17:10 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:42623 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760216Ab2D0ORJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 10:17:09 -0400
+Date: Fri, 27 Apr 2012 07:17:04 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Pavel V. Panteleev" <pp_84@mail.ru>
+Cc: linux-mm <linux-mm@kvak.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        andi <andi@firstfloor.org>
+Subject: Re: percpu allocator
+Message-ID: <20120427141704.GH27486@google.com>
+References: <E1SNhwY-0007ui-V7.pp_84-mail-ru@f220.mail.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1SNhwY-0007ui-V7.pp_84-mail-ru@f220.mail.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-27 at 15:33 +0200, Borislav Petkov wrote:
-> this patch gives
+Hello,
+
+On Fri, Apr 27, 2012 at 01:58:26PM +0400, Pavel V. Panteleev wrote:
+> I have the following problem with pcpu embed allocator in kernel
+> 2.6.33.1. pcpu_embed_first_chunk() function allocate only size_sum =
+> (ai->static_size + ai->reserved_size + ai->dyn_size) for an unit in
+> the group. So, for 4 groups (1 unit in each) and with memory only on
+> the first node I have the following:
 > 
-> [    8.278399] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 0: dimm0 (0:0:0): row 0, chan 0
-
-One too many __func__'s in some combination of the
-pr_fmt and/or dbg call and/or the actual call site?
-
-> > diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-[]
-> > @@ -447,8 +447,13 @@ static inline void pci_write_bits32(struct pci_dev *pdev, int offset,
-> >  
-> >  #endif				/* CONFIG_PCI */
-> >  
-> > -extern struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
-> > -					  unsigned nr_chans, int edac_index);
-> > +struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
-> > +				   unsigned nr_chans, int edac_index);
+> pcpu_embed_first_chunk(): ai->groups[0].base_offset=0x0
+> pcpu_embed_first_chunk(): ai->groups[1].base_offset=0xa000
+> pcpu_embed_first_chunk(): ai->groups[2].base_offset=0x14000
+> pcpu_embed_first_chunk(): ai->groups[3].base_offset=0x1e000
 > 
-> Why not "extern"?
-
-Using extern function prototypes in .h files
-isn't generally necessary nor is extern the
-more common kernel style.
-
-> > +static inline void edac_mc_handle_ce(struct mem_ctl_info *mci,
-> >  			      unsigned long page_frame_number,
-> >  			      unsigned long offset_in_page,
-> >  			      unsigned long syndrome, int row, int channel,
-> > -			      const char *msg);
+>  pcpu_embed_first_chunk(): ai->unit_size=0x10000
 > 
-> Strange alignment, pls do
+> It means, that for each group memory of size_sum=0xa000 is used
+> only. So, in the case of memory only on the first node, memory for
+> the following group will be allocated near the memory of the
+> previous group. Even though memory of size_sum=0xa000 is used only,
+> but ai->unit_size=0x10000.
+>
+> After filling group_offsets and group_sizes in
+> pcpu_setup_first_chunk() function we have, that (group_offsets[i] +
+> group_sizes[i]) can be larger than group_offsets[i+1]. But in
+> pcpu_get_vm_areas() function there is checker, which tell us, that
+> such situation is impossible:
 > 
-> static inline void edac_mc_handle_ce(struct...,
-> 				     unsigned...,
-> 				     ...,
-> 				     ...);
+> BUG_ON(start2 >= start && start2 < end);
 > 
+> May be I should not use embed allocator in such situation? 
 
-or
+Nice catch.  pcpu_embed_first_chunk() allocates full unit and then
+free whatever is unused (for alignment, IIRC) before proceeding to the
+next group.  What it should do is first allocate and prepare all
+groups and then free whatever is unused.  I'll write up a patch.
 
-static inline
-void edac_mc_handle_ce(struct ..., etc)
+Thanks.
 
-or
-
-static inline void
-edac_mc_handle_ce(...)
-
-
+-- 
+tejun
