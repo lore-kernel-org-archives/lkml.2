@@ -1,140 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760062Ab2D0Myg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 08:54:36 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:52717
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758539Ab2D0Myf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 08:54:35 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zz9371I936eK1432N98dK4015Izz1202hzz8275bhz2dh668h839hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M352IC-01-0PT-02
-X-M-MSG: 
-Date: Fri, 27 Apr 2012 14:54:10 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS for
- AMD CPUs
-Message-ID: <20120427125410.GG18810@erda.amd.com>
-References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
- <1333390758-10893-7-git-send-email-robert.richter@amd.com>
- <1334398906.2528.49.camel@twins>
- <20120423095659.GS9747@erda.amd.com>
- <20120427123434.GF18810@erda.amd.com>
- <CABPqkBS9FNmHBukzJqGJP1r5iqyLL9gz2g=3jvnt22pDxOdndA@mail.gmail.com>
+	id S1760149Ab2D0Mz4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 08:55:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57006 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758996Ab2D0Mzz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 08:55:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: Default Kconfig state for hw_random drivers
+Date: Fri, 27 Apr 2012 12:55:36 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Olof Johansson <olof@lixom.net>,
+        balbi@ti.com, Herbert Xu <herbert@gondor.hengli.com.au>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org
+References: <20120426114229.GG3207@opensource.wolfsonmicro.com> <4F9A91A8.4050608@atmel.com> <20120427123626.GH18260@opensource.wolfsonmicro.com>
+In-Reply-To: <20120427123626.GH18260@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <CABPqkBS9FNmHBukzJqGJP1r5iqyLL9gz2g=3jvnt22pDxOdndA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204271255.36789.arnd@arndb.de>
+X-Provags-ID: V02:K0:yssZoFjLMgtIP9+nJ9xTCTkzn2bIf9/UKQVeqax/Iea
+ aFiCHRmDu8EUArLu7iEnKqKxVCTa1RbSmbpCE3hnfRFgH6NQmw
+ +vEANUVwIOOqDjrhQWeSHIm3N4dVXpV4dDCd2iSxJpt9jVWPRL
+ v8ow7ppMzZGoqZNqoG/3dSWIf/MlFB9Vt9fY1pWA0KPatBi1/f
+ TlnW6m4XfLc1bfQzMZGgPbeL2Fegw2fFHCtnbTP2Hv/s+EO8Ye
+ r7BJKSWep0dD3YavlvcfNM+RBiikZUF6tc4e7DxEtOQ82b59wL
+ weatbxGl0cGZFm69FGq9wgV4gQQRFYBuNcteEWrHQQ7zytd4A8
+ ms+BQStf3A2haNljOoEc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.04.12 14:39:21, Stephane Eranian wrote:
-> On Fri, Apr 27, 2012 at 2:34 PM, Robert Richter <robert.richter@amd.com> wrote:
-> > On 23.04.12 11:56:59, Robert Richter wrote:
-> >> On 14.04.12 12:21:46, Peter Zijlstra wrote:
-> >> > On Mon, 2012-04-02 at 20:19 +0200, Robert Richter wrote:
-> >> > > + * We map IBS sampling to following precise levels:
-> >> > > + *
-> >> > > + *  1: RIP taken from IBS sample or (if invalid) from stack
-> >> > > + *  2: RIP always taken from IBS sample, samples with an invalid rip
-> >> > > + *     are dropped. Thus samples of an event containing two precise
-> >> > > + *     modifiers (e.g. r076:pp) only contain (precise) addresses
-> >> > > + *     detected with IBS.
-> >> >
-> >> >             /*
-> >> >              * precise_ip:
-> >> >              *
-> >> >              *  0 - SAMPLE_IP can have arbitrary skid
-> >> >              *  1 - SAMPLE_IP must have constant skid
-> >> >              *  2 - SAMPLE_IP requested to have 0 skid
-> >> >              *  3 - SAMPLE_IP must have 0 skid
-> >> >              *
-> >> >              *  See also PERF_RECORD_MISC_EXACT_IP
-> >> >              */
-> >> >
-> >> > your 1 doesn't have constant skid. I would suggest only supporting 2 and
-> >> > letting userspace drop !PERF_RECORD_MISC_EXACT_IP records if so desired.
-> >>
-> >> Ah, didn't notice the PERF_RECORD_MISC_EXACT_IP flag. Will set this
-> >> flag for precise events.
-> >
-> Why not use 2? IBS has 0 skid, unless I am mistaken.
+On Friday 27 April 2012, Mark Brown wrote:
+> There is one, that's the problem - the driver is defaulting to the same
+> state as the main hw_random option (as is idiomatic for this subsystem).
+> This means that if you've enabled any hw_random device this driver will
+> be enabled by default.  I would argue that this default directive only
+> makes sense if there's an explicit dependency limiting the platforms it
+> can build on.  If it can build on any platform then omitting the default
+> and just defaulting to N as is normal for drivers would be better.
 
-Events with r076:p would fail then. But r076:pp is actually better and
-a subset of level 1. Thus both level should work.
+How about making it default to (HW_RANDOM && ARCH_AT91) then?
 
-And there is still the question how samples with imprecise rip should
-be handled. Sometimes we want to get all samples and sometimes all
-samples should always contain a precise rip, other samples should be
-dropped then. But there is no option or modifier for this yet.
-
-My suggestions was to use level 1 for all samples and level 2 for
-samples that only contain a precise rip, saving level 3 for future
-use.
-
--Robert
-
-> 
-> > Peter,
-> >
-> > I have a patch on top that implements the support of the
-> > PERF_RECORD_MISC_EXACT_IP flag. But I am not quite sure about how to
-> > use the precise levels. What do you suggest?
-> >
-> > Thanks,
-> >
-> > -Robert
-> >
-> >>
-> >> Problem is that this flag is not yet well supported, only perf-top
-> >> uses it to count the total number of exact samples. Esp. perf-annotate
-> >> and perf-report do not support it, and there are no modifiers to
-> >> select precise-only sampling (or is this level 3?).
-> >>
-> >> Both might be useful: You might need only precise-rip samples (perf-
-> >> annotate usage), on the other side you want samples with every
-> >> clock/ops count overflow (e.g. to get a counting statistic). The
-> >> p-modifier specification (see perf-list) is not sufficient to select
-> >> both of it.
-> >>
-> >> Another question I have: Isn't precise level 2 a special case of level
-> >> 1 where the skid is constant and 0? The problem I see is, if people
-> >> want to measure precise rip, they simply use r076:p. Level 2 (r076:pp)
-> >> is actually better than 1, but they might think not to be able to
-> >> sample precise-rip if we throw an error for r076:p. Thus, I would
-> >> prefer to also allow level 1.
-> >>
-> >> > That said, mixing the IBS pmu into the regular core pmu isn't exactly
-> >> > pretty..
-> >>
-> >> IBS is currently the only way to do precise-rip sampling on amd cpus.
-> >> IBS events fit well with its corresponding perfctr events (0x76/
-> >> 0xc1). So what don't you like with this approach? I will also post IBS
-> >> perf tool support where IBS can be directly used.
-> >>
-> >> -Robert
-> >>
-> >> --
-> >> Advanced Micro Devices, Inc.
-> >> Operating System Research Center
-> >
-> > --
-> > Advanced Micro Devices, Inc.
-> > Operating System Research Center
-> >
-> 
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+	Arnd
