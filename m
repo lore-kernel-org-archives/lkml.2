@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760072Ab2D0Jjg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 05:39:36 -0400
-Received: from ALUM-MAILSEC-SCANNER-3.MIT.EDU ([18.7.68.14]:65479 "EHLO
-	alum-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760060Ab2D0Jjf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 05:39:35 -0400
-X-AuditID: 1207440e-b7f256d0000008c1-25-4f9a695626aa
-Message-Id: <201204270938.q3R9cb7a022492@outgoing-alum.mit.edu>
-Content-Type: text/plain; charset=US-ASCII
+	id S932187Ab2D0JkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 05:40:13 -0400
+Received: from fw.wantstofly.org ([80.101.37.227]:63320 "EHLO
+	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759915Ab2D0JkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 05:40:11 -0400
+Date: Fri, 27 Apr 2012 11:40:07 +0200
+From: Lennert Buytenhek <buytenh@wantstofly.org>
+To: sedat.dilek@gmail.com
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
+Message-ID: <20120427094007.GU3157@wantstofly.org>
+References: <1335517711-6522-1-git-send-email-sedat.dilek@gmail.com>
+ <20120427091405.GS3157@wantstofly.org>
+ <CA+icZUVAK3NHmbG5kR1KhqGe9mAimWWzLz-MfXOXbyry3Sz73w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: $650,500.00 USD.
-To: Recipients <s.i.parry-jones@dur.ac.uk>
-From: United Nations Trust Funds <s.i.parry-jones@dur.ac.uk>
-Date: Fri, 27 Apr 2012 02:37:44 -0700
-Reply-To: un.trustfund12@cafuc.net
-X-Antivirus: avast! (VPS 120426-1, 04/26/2012), Outbound message
-X-Antivirus-Status: Clean
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPIsWRmVeSWpSXmKPExsUixO6iqBuWOcvfYPpaNosrO96yWMzctI7N
-	YsHEl2wWb37OY7W49Wcei8Wum7fZLX5uP8liMfuAvMXcn5uYLS7vmsNm8X3iFEaLjT2TWC2+
-	bLC2ONBwmsXi5fWP7BaNP/6yWDRvbWC3ePAEqP1V3xkWi4b+K2wOIh7/eycyeZxfeJHd4+2H
-	s0weew5/YPO4ftjEY8an+SweLVcjPVb+ncbq0XTmKLPHtfNfGT3e77vK5nHmRAOzx6WGFhaP
-	77s2snp83iTncXTeftYAwSgum5TUnMyy1CJ9uwSujAMn+tgKBCse/b7I3MDI28XIySEhYCJx
-	es83ZghbTOLCvfVsXYxcHEIClxklOnctZ4Zw1jNJrGhvBKviFbCXuHZzOxuIzSygJ3Fj6hQ2
-	iLigxMmZT1gg4toSyxa+BqrnALLVJL52lYCEhQUkJe41PQArFxHQkujbcRSshE3AWmL1qzyQ
-	MIuAqsSGBUcZQcJCAkoSV7d7QJzmILHpUT/UmZIST25PZpzAKDALyQ2zkNwwC8kNsxBuWMDI
-	sopRLjGnNFc3NzEzpzg1Wbc4OTEvL7VI11gvN7NELzWldBMjJNr5djC2r5c5xCjAwajEw7s4
-	faa/EGtiWXFl7iFGCQ5mJRHeH8Gz/IV4UxIrq1KL8uOLSnNSiw8xSnOwKInzqi1R9xMSSE8s
-	Sc1OTS1ILYLJMnFwSjUwJtqzC2kkHLP7eXaSWUTc77w10jFdc+WfODBVLlr0w2Ryh6NrooaO
-	178kx+K/WaU7NrwsUa3ufGgy7fHs6oQ8pd9apQ83JNTE/H191+/W64q8LCNmxa2L11V/EJOb
-	MM383JdS1fT/9y7pBc22O+sr+YWl03NChBM/52urd0EJZn+N/15fsLBGiaU4I9FQi7moOBEA
-	m69HX/ICAAA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUVAK3NHmbG5kR1KhqGe9mAimWWzLz-MfXOXbyry3Sz73w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reply to claim.
+On Fri, Apr 27, 2012 at 11:22:49AM +0200, Sedat Dilek wrote:
+
+> Are you planning to or even working on support (for) 8361 devices?
+
+I don't have any such plans, and I don't know of anyone who does.
