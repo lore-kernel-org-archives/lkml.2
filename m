@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760185Ab2D0Nr5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 09:47:57 -0400
-Received: from fieldses.org ([174.143.236.118]:55834 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab2D0Nry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 09:47:54 -0400
-Date: Fri, 27 Apr 2012 09:47:52 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, swhiteho@redhat.com
-Subject: Re: [PATCH 0/6] Get rid of I_MUTEX_QUOTA use
-Message-ID: <20120427134752.GD14973@fieldses.org>
-References: <1335387467-4928-1-git-send-email-jack@suse.cz>
- <20120425212532.GB3251@fieldses.org>
- <20120426132608.GA10368@quack.suse.cz>
+	id S1760190Ab2D0NtS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 09:49:18 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:37557 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760118Ab2D0NtQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 09:49:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120426132608.GA10368@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAPRPZsDDEYUf2a+=ZbwvFw+qJku0UvMLf0+eNDvw+FbinCbysA@mail.gmail.com>
+References: <fa.CZQqvHf3CBfYWzhSDPNOWxTTD9w@ifi.uio.no>
+	<fa.Vmg5vDod2/oKvwyy9BcalhoT+Lo@ifi.uio.no>
+	<14969994.2790.1335342903511.JavaMail.geo-discussion-forums@vbbfr18>
+	<4F97BA60.4080505@ladisch.de>
+	<20120427082203.GB9233@aftab.osrc.amd.com>
+	<CAPRPZsCHAOvemogn7mWnWfykhANeEx5K=OG9Xt+veDjEWOiDYA@mail.gmail.com>
+	<CA+5PVA6e-JaS809t9=4=SoxX4cFEYfxxb9-KAXk68ENGg6Kw8w@mail.gmail.com>
+	<CAPRPZsDDEYUf2a+=ZbwvFw+qJku0UvMLf0+eNDvw+FbinCbysA@mail.gmail.com>
+Date: Fri, 27 Apr 2012 09:49:16 -0400
+Message-ID: <CA+5PVA4NJ4fB-qEVB45sz48E7kCdwZ+O5D9jvk16z4hrXSgCwQ@mail.gmail.com>
+Subject: Re: Unhandled IRQs on AMD E-450
+From: Josh Boyer <jwboyer@gmail.com>
+To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>,
+        Clemens Ladisch <clemens@ladisch.de>, andymatei@gmail.com,
+        "Huang, Shane" <Shane.Huang@amd.com>, Borislav Petkov <bp@amd64.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 03:26:08PM +0200, Jan Kara wrote:
-> On Wed 25-04-12 17:25:32, J. Bruce Fields wrote:
-> > On Wed, Apr 25, 2012 at 10:57:41PM +0200, Jan Kara wrote:
-> > > 
-> > >   Hello,
-> > > 
-> > >   this patch set changes generic quota code (and filesystems relying on it)
-> > > so that they don't use special locking class I_MUTEX_QUOTA. The only remaining
-> > > user of I_MUTEX_QUOTA is GFS2. If noone has objections, I can merge these
-> > > patches through my tree or Bruce, you can take them as your work depends
-> > > on these changes.
-> > 
-> > My changes will likely need to go through Al, and depend on GFS2 being
-> > fixed as well.
-> > 
-> > So it's up to Al.  Best might be to just merge it through your tree and
-> > let us sort it out in the next merge window?
->   OK, I've added patches to my tree for now. I also sent a patch for GFS2
-> but after some investigation that's mostly a cleanup grade and Steven can
-> merge it independently. Quota inode in GFS2 is hidden system file so there
-> should be no locking problems with it wrt your patches.
+On Fri, Apr 27, 2012 at 9:28 AM, Jeroen Van den Keybus
+<jeroen.vandenkeybus@gmail.com> wrote:
+>> Apparently there are
+>> some pieces of hardware that generate a small number of spurious IRQs
+>> "normally" and lowering the threshold to such a small value caused
+>> those machines to kick into polling mode when they really didn't need
+>> to.
+>
+> Hm. I'd really expect a spurious IRQ to happen as its name suggests:
+> spuriously. What kind of hardware behaves like this ?
 
-OK.  In that case I suppose I'd like Al to take patches 1-4 of the 5 I
-posted most recently (followups to
-http://mid.gmane.org/20120425152041.GA751@fieldses.org), probably after
-your fixes go in.  I'll resend if necessary after they go in.
+I'd have to go back and look through all the bug reports.  Essentially,
+it wound up being "this used to work fine, now I get stuck in polling
+mode".  When we dropped the patch in those cases, it went back to
+working fine.
 
-(I'm also going ahead and pushing out the rest of my delegation patches,
-to be merged for 3.5; that solves most of my delegation problem, leaving
-just a race in rename to be closed by those 4 patches.)
+I'm not sure if it was a matter of a shared IRQ hitting quickly in
+succession, or if it was really small bursts of spurious IRQs.
 
---b.
+>> 1) While the quirk helps shield people without the buggy bridge, it
+>> doesn't help the case where people have the bridge, but they have no
+>> devices actually behind it.  That means such setups hit the polling
+>> mode when they don't really need to as described above.
+>
+> Curious, the polling mode is left until a new spurious IRQ is detected.
+
+Yes, except the threshold was lowered from 100000 to 10 in the original
+patch.  Apparently that's too low.
+
+>> 2) People, rightfully, complain that it makes inter-activity on their
+>> desktop pretty laggy.  The mouse pointer jumps around a lot and key
+>> strokes are often missed.  For a server class machine, I doubt it
+>> would matter much but Fedora is essentially a desktop distro so that
+>> tends to be a high priority.
+>
+> Again, I am a bit surprised. However, according to your patch:
+>
+>> +       if (!irq_poll_and_retry)
+>> +               if (likely(desc->irq_count < 100000))
+>> +                       return;
+>> +       else
+>> +               if (likely(desc->irq_count < 10))
+>> +                       return;
+>
+> Don't you mean :
+>
+> +       if (!irq_poll_and_retry) {
+> +               if (likely(desc->irq_count < 100000))
+> +                       return;
+> +       }
+> +       else {
+> +               if (likely(desc->irq_count < 10))
+> +                       return;
+> +       }
+
+Indeed.  Probably do.
+
+josh
