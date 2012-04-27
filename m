@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760110Ab2D0KtN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 06:49:13 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38314 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968Ab2D0KtL (ORCPT
+	id S1760079Ab2D0KwV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 06:52:21 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44162 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759607Ab2D0KwU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 06:49:11 -0400
-From: John Kacur <jkacur@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>
-Cc: rt-users <linux-rt-users@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Sommerseth <davids@redhat.com>, John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT] [scsi-qla2xxx] Fix BUG: sleeping function called from invalid context
-Date: Fri, 27 Apr 2012 12:48:46 +0200
-Message-Id: <1335523726-10024-1-git-send-email-jkacur@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 27 Apr 2012 06:52:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <1335521331-16199-1-git-send-email-dbaryshkov@gmail.com>
+References: <1335521331-16199-1-git-send-email-dbaryshkov@gmail.com>
+Date: Fri, 27 Apr 2012 12:52:19 +0200
+Message-ID: <CACRpkdZbr9CvCWx_a2Cf1MiJE_FDLQM4qipqRbnTRw+jM8U7gA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: add a driver for GPIO pins found on AMD-8111 south
+ bridge chips
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The relevant part of the traceback follows
-[   11.307652]  [<ffffffff81077b27>] __might_sleep+0xe7/0x110
-[   11.307663]  [<ffffffff8150e524>] rt_spin_lock+0x24/0x60
-[   11.307670]  [<ffffffff8150da78>] ? rt_spin_lock_slowunlock+0x78/0x90
-[   11.307703]  [<ffffffffa0272d83>] qla24xx_intr_handler+0x63/0x2d0 [qla2xxx]
-[   11.307736]  [<ffffffffa0262307>] qla2x00_poll+0x67/0x90 [qla2xxx]
+On Fri, Apr 27, 2012 at 12:08 PM, Dmitry Eremin-Solenikov
+<dbaryshkov@gmail.com> wrote:
 
-Function qla2x00_poll does local_irq_save() before calling qla24xx_intr_handler
-which has a spinlock. Since spinlocks are sleepable on rt, it is not allowed
-to call them with interrupts disabled. Therefore we use local_irq_save_nort()
-instead which saves flags without disabling interrupts.
+> Add a driver to use GPIO pins available on several AMD south bridges
+> (currently only AMD 8111 is supported).
+>
+> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-This fix needs to be applied to v3.0-rt, v3.2-rt and v3.4-rt
+Mainly nitpicks, it's looking good overall...
 
-Suggested-by: Thomas Gleixner
-Signed-off-by: John Kacur <jkacur@redhat.com>
----
- drivers/scsi/qla2xxx/qla_inline.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> +       spin_lock_irqsave(&agp->lock, flags);
+> +       temp = ioread8(agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
+> +       temp = (temp & 0x1c) | (!!value);
 
-diff --git a/drivers/scsi/qla2xxx/qla_inline.h b/drivers/scsi/qla2xxx/qla_inline.h
-index 6e45764..28d9a8d 100644
---- a/drivers/scsi/qla2xxx/qla_inline.h
-+++ b/drivers/scsi/qla2xxx/qla_inline.h
-@@ -36,12 +36,12 @@ qla2x00_poll(struct rsp_que *rsp)
- {
- 	unsigned long flags;
- 	struct qla_hw_data *ha = rsp->hw;
--	local_irq_save(flags);
-+	local_irq_save_nort(flags);
- 	if (IS_QLA82XX(ha))
- 		qla82xx_poll(0, rsp);
- 	else
- 		ha->isp_ops->intr_handler(0, rsp);
--	local_irq_restore(flags);
-+	local_irq_restore_nort(flags);
- }
- 
- static inline uint8_t *
--- 
-1.7.1
+This is a bit idomatic but I think I understand what's going on. However this
+0x1C magic could be better of with some #define AMD_8111_GPIO_FOO don't
+you think?
 
+> +static int amd_gpio_get(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       struct amd_gpio *agp = to_agp(chip);
+> +       u8 temp;
+> +
+> +       temp = ioread8(agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
+> +
+> +       dev_dbg(&agp->pdev->dev, "Getting gpio %d, reg=%02x\n", offset, temp);
+> +
+> +       return !!(temp & 0x20);
+
+And this could be #define AMD_8111_GPIO_INVAL or so (I bet this bit has a
+name in the datasheet, right?)
+
+> +static int amd_gpio_dirout(struct gpio_chip *chip, unsigned offset, int value)
+> +{
+> +       struct amd_gpio *agp = to_agp(chip);
+> +       u8 temp;
+> +       unsigned long flags;
+> +
+> +       spin_lock_irqsave(&agp->lock, flags);
+> +       temp = ioread8(agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
+> +       temp = (temp & 0x10) | 0x4 | (!!value);
+
+And so on...
+
+> +       iowrite8(temp, agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
+> +       spin_unlock_irqrestore(&agp->lock, flags);
+> +
+> +       dev_dbg(&agp->pdev->dev, "Dirout gpio %d, value %d, reg=%02x\n", offset, !!value, temp);
+> +
+> +       return 0;
+> +}
+
+> +static int __init mod_init(void)
+
+amd_gpio_init() maybe? These names are nice for e.g. ftrace.
+
+> +       printk(KERN_INFO "AMD-8111 GPIO detected\n");
+
+pr_info() & friends are nice shorthands for this.
+
+> +static void __exit mod_exit(void)
+
+amd_gpio_mod_exit()?
+
+> +MODULE_AUTHOR("The Linux Kernel team");
+
+Don't be shy, put in your own name :-)
+
+Yours,
+Linus Walleij
