@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761315Ab2D0U1F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 16:27:05 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:55921 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760531Ab2D0U1D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 16:27:03 -0400
-Date: Fri, 27 Apr 2012 22:27:01 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: RFC: How to handle function tracing, frame pointers and
-	-mfentry?
-Message-ID: <20120427202701.GA5949@merkur.ravnborg.org>
-References: <1335552399.28106.228.camel@gandalf.stny.rr.com>
+	id S1761349Ab2D0U3T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 16:29:19 -0400
+Received: from ns.amnesiak.org ([95.130.11.136]:45437 "EHLO amnesiak.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760531Ab2D0U3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 16:29:17 -0400
+X-Greylist: delayed 556 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Apr 2012 16:29:17 EDT
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Subject: Re: [Linux-zigbee-devel] [PATCH 2/2] net/ieee802154/6lowpan.c:  reuse =?UTF-8?Q?eth=5Fmac=5Faddr=28=29?=
+X-PHP-Originating-Script: 0:main.inc
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335552399.28106.228.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Fri, 27 Apr 2012 22:21:05 +0200
+From: Tony Cheneau <tony.cheneau+zigbeedev@amnesiak.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>, <netdev@vger.kernel.org>,
+        Danny Kukawka <dkukawka@suse.de>, <linux-kernel@vger.kernel.org>,
+        <linux-zigbee-devel@lists.sourceforge.net>,
+        "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <1329914199-30862-3-git-send-email-danny.kukawka@bisect.de>
+References: <1329914199-30862-1-git-send-email-danny.kukawka@bisect.de>
+ <1329914199-30862-3-git-send-email-danny.kukawka@bisect.de>
+Message-ID: <92f4dc09fca1e6ec54f12ca61b8b8e55@amnesiak.org>
+User-Agent: Roundcube Webmail/0.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 02:46:39PM -0400, Steven Rostedt wrote:
-> I have code that implements -mfentry for the function tracer.
-> 
-> For those that are unfamiliar with this, it was introduced into gcc in
-> 4.6.0 for x86 only. Used with the -pg option, it replaces mcount with
-> fentry, and is placed at the first instruction of a function (instead of
-> after the frame has been built, as mcount does).
-> 
-> So what's my problem?  With -mfentry, function tracer does not depend on
-> frame pointers. As frame pointers may add overhead, some distros
-> (Debian) has disabled frame pointers from their kernels and with that,
-> has also disabled function tracing.
-> 
-> Currently, function tracing selects CONFIG_FRAME_POINTER for various
-> archs (including x86), as the kernel will not compile without it, if
-> function tracing is enabled. But if -mfentry is available with the
-> compiler, it does not have this dependency. The kernel will compile fine
-> with -pg -mfentry and without frame pointers.
-> 
-> My question is, how do I remove the dependency in kconfig based on the
-> compiler?
+Hello,
 
-Allow the user to select one of:
-1) function tracer
-2) frame pointer
-3) none of the above
+I believe the following patch should not have been applied and should 
+now be reverted.
+The reason is because eth_mac_addr() is not functionally equivalent to 
+lowpan_set_address() that it replaces:
+- lowpan_set_address() copies dev->addr_len bytes, where dev->addr_len 
+is set to 8 bytes for IEEE802154 devices (this is an IEEE EUI-64 
+address). Hence, the function copies the full 8 bytes of the address.
+- eth_mac_addr() copies ETH_ALEN bytes, where ETH_ALEN is set to 6. 
+Hence, the function copies only 6 bytes of the 8 bytes address. So, 2 
+bytes of the address are never copied.
 
-This should be trivial to do in Kconfig language.
+Does this sound reasonable?
 
-If "function tracer" is selected then use -mfentry if supported,
-with a fallback to frame pointers.
+Regards,
+Tony
 
-This looks simple IMO and should be easy to implement too.
 
-	Sam
+Le 22.02.2012 14:36, Danny Kukawka a écrit :
+> Use eth_mac_addr() for .ndo_set_mac_address, remove
+> lowpan_set_address since it do currently the same as
+> eth_mac_addr(). Additional advantage: eth_mac_addr() already
+> checks if the given address is valid
+>
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> ---
+>  net/ieee802154/6lowpan.c |   16 ++--------------
+>  1 files changed, 2 insertions(+), 14 deletions(-)
+>
+> diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
+> index e4ecc1e..3685158 100644
+> --- a/net/ieee802154/6lowpan.c
+> +++ b/net/ieee802154/6lowpan.c
+> @@ -55,6 +55,7 @@
+>  #include <linux/module.h>
+>  #include <linux/moduleparam.h>
+>  #include <linux/netdevice.h>
+> +#include <linux/etherdevice.h>
+>  #include <net/af_ieee802154.h>
+>  #include <net/ieee802154.h>
+>  #include <net/ieee802154_netdev.h>
+> @@ -924,19 +925,6 @@ drop:
+>  	return -EINVAL;
+>  }
+>
+> -static int lowpan_set_address(struct net_device *dev, void *p)
+> -{
+> -	struct sockaddr *sa = p;
+> -
+> -	if (netif_running(dev))
+> -		return -EBUSY;
+> -
+> -	/* TODO: validate addr */
+> -	memcpy(dev->dev_addr, sa->sa_data, dev->addr_len);
+> -
+> -	return 0;
+> -}
+> -
+>  static int lowpan_get_mac_header_length(struct sk_buff *skb)
+>  {
+>  	/*
+> @@ -1062,7 +1050,7 @@ static struct header_ops lowpan_header_ops = {
+>
+>  static const struct net_device_ops lowpan_netdev_ops = {
+>  	.ndo_start_xmit		= lowpan_xmit,
+> -	.ndo_set_mac_address	= lowpan_set_address,
+> +	.ndo_set_mac_address	= eth_mac_addr,
+>  };
+>
+>  static void lowpan_setup(struct net_device *dev)
+
