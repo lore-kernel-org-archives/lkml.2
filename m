@@ -1,127 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759032Ab2D0MjT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 08:39:19 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40149 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757169Ab2D0MjP (ORCPT
+	id S1760054Ab2D0MjZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 08:39:25 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35390 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759916Ab2D0MjW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 08:39:15 -0400
-Subject: [PATCH 2/2] proc: report page->index instead of pfn for non-linear
- mappings in /proc/pid/pagemap
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Pavel Emelyanov <xemul@parallels.com>
-Date: Fri, 27 Apr 2012 16:39:11 +0400
-Message-ID: <20120427123910.2132.7022.stgit@zurg>
-In-Reply-To: <4F91BC8A.9020503@parallels.com>
-References: <4F91BC8A.9020503@parallels.com>
-User-Agent: StGit/0.15
+	Fri, 27 Apr 2012 08:39:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120427123434.GF18810@erda.amd.com>
+References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
+	<1333390758-10893-7-git-send-email-robert.richter@amd.com>
+	<1334398906.2528.49.camel@twins>
+	<20120423095659.GS9747@erda.amd.com>
+	<20120427123434.GF18810@erda.amd.com>
+Date: Fri, 27 Apr 2012 14:39:21 +0200
+Message-ID: <CABPqkBS9FNmHBukzJqGJP1r5iqyLL9gz2g=3jvnt22pDxOdndA@mail.gmail.com>
+Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS for
+ AMD CPUs
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently there is no way to find out current layout of non-linear mapping.
-Also there is no way to distinguish ordinary file mapping from non-linear mapping.
+On Fri, Apr 27, 2012 at 2:34 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 23.04.12 11:56:59, Robert Richter wrote:
+>> On 14.04.12 12:21:46, Peter Zijlstra wrote:
+>> > On Mon, 2012-04-02 at 20:19 +0200, Robert Richter wrote:
+>> > > + * We map IBS sampling to following precise levels:
+>> > > + *
+>> > > + *  1: RIP taken from IBS sample or (if invalid) from stack
+>> > > + *  2: RIP always taken from IBS sample, samples with an invalid rip
+>> > > + *     are dropped. Thus samples of an event containing two precise
+>> > > + *     modifiers (e.g. r076:pp) only contain (precise) addresses
+>> > > + *     detected with IBS.
+>> >
+>> >             /*
+>> >              * precise_ip:
+>> >              *
+>> >              *  0 - SAMPLE_IP can have arbitrary skid
+>> >              *  1 - SAMPLE_IP must have constant skid
+>> >              *  2 - SAMPLE_IP requested to have 0 skid
+>> >              *  3 - SAMPLE_IP must have 0 skid
+>> >              *
+>> >              *  See also PERF_RECORD_MISC_EXACT_IP
+>> >              */
+>> >
+>> > your 1 doesn't have constant skid. I would suggest only supporting 2 and
+>> > letting userspace drop !PERF_RECORD_MISC_EXACT_IP records if so desired.
+>>
+>> Ah, didn't notice the PERF_RECORD_MISC_EXACT_IP flag. Will set this
+>> flag for precise events.
+>
+Why not use 2? IBS has 0 skid, unless I am mistaken.
 
-Now in pagemap non-linear pte can be recognized as present swapped file-backed,
-or as non-present non-swapped file-backed for non-present non-linear file-pte:
-
-    present swapped file    data        description
-    0       0       0       null        non-present
-    0       0       1       page-index  non-linear file-pte
-    0       1       0       swap-entry  anon-page in swap, migration or hwpoison
-    0       1       1       swap-entry  file-page in migration or hwpoison
-    1       0       0       page-pfn    present private-anon or special page
-    1       0       1       page-pfn    present file or shared-anon page
-    1       1       0       none        impossible combination
-    1       1       1       page-index  non-linear file-page
-
-[ the last unused combination 1-1-0 can be used for special pages, if anyone want this ]
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Rik van Riel <riel@redhat.com>
----
- Documentation/vm/pagemap.txt |   15 +++++++++++++++
- fs/proc/task_mmu.c           |   13 +++++++++++--
- 2 files changed, 26 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/vm/pagemap.txt b/Documentation/vm/pagemap.txt
-index 7587493..6800dda 100644
---- a/Documentation/vm/pagemap.txt
-+++ b/Documentation/vm/pagemap.txt
-@@ -13,6 +13,7 @@ There are three components to pagemap:
-    fs/proc/task_mmu.c, above pagemap_read):
- 
-     * Bits 0-54  page frame number (PFN) if present
-+    * Bits 0-54  page index for non-linear mappings
-     * Bits 0-4   swap type if swapped
-     * Bits 5-54  swap offset if swapped
-     * Bits 55-60 page shift (page size = 1<<page shift)
-@@ -26,6 +27,20 @@ There are three components to pagemap:
-    precisely which pages are mapped (or in swap) and comparing mapped
-    pages between processes.
- 
-+   For non-linear file mappings page index is reported instead of PFN.
-+   Non-linear pte can be recognized as present swapped file-backed or
-+   non-present non-swapped file-backed.
-+
-+    present swapped file    data	description
-+    0       0       0       null	non-present
-+    0       0       1       page-index	non-linear file-pte
-+    0       1       0       swap-entry	anon-page in swap, migration or hwpoison
-+    0       1       1       swap-entry	file-page in migration or hwpoison
-+    1       0       0       page-pfn	present private-anon or special page
-+    1       0       1       page-pfn	present file or shared-anon page
-+    1       1       0       none	impossible combination
-+    1       1       1       page-index	non-linear file-page
-+
-    Efficient users of this interface will use /proc/pid/maps to
-    determine which areas of memory are actually mapped and llseek to
-    skip over unmapped regions.
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index bc3df31..fcc802f 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -744,6 +744,9 @@ static void pte_to_pagemap_entry(pagemap_entry_t *pme,
- 		frame = pte_pfn(pte);
- 		flags = PM_PRESENT;
- 		page = vm_normal_page(vma, addr, pte);
-+	} if (pte_file(pte)) {
-+		frame = pte_to_pgoff(pte);
-+		flags = PM_FILE;
- 	} if (is_swap_pte(pte)) {
- 		swp_entry_t entry = pte_to_swp_entry(pte);
- 
-@@ -755,8 +758,13 @@ static void pte_to_pagemap_entry(pagemap_entry_t *pme,
- 	} else
- 		return;
- 
--	if (page && !PageAnon(page))
--		flags |= PM_FILE;
-+	if (page) {
-+		if (vma->vm_flags & VM_NONLINEAR) {
-+			frame = page->index;
-+			flags = PM_FILE | PM_SWAP | PM_PRESENT;
-+		} else if (!PageAnon(page))
-+			flags |= PM_FILE;
-+	}
- 
- 	*pme = make_pme(PM_PFRAME(frame) | PM_PSHIFT(PAGE_SHIFT) | flags);
- }
-@@ -874,6 +882,7 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
-  * consisting of the following:
-  *
-  * Bits 0-54  page frame number (PFN) if present
-+ * Bits 0-54  page index for non-linear mappings
-  * Bits 0-4   swap type if swapped
-  * Bits 5-54  swap offset if swapped
-  * Bits 55-60 page shift (page size = 1<<page shift)
-
+> Peter,
+>
+> I have a patch on top that implements the support of the
+> PERF_RECORD_MISC_EXACT_IP flag. But I am not quite sure about how to
+> use the precise levels. What do you suggest?
+>
+> Thanks,
+>
+> -Robert
+>
+>>
+>> Problem is that this flag is not yet well supported, only perf-top
+>> uses it to count the total number of exact samples. Esp. perf-annotate
+>> and perf-report do not support it, and there are no modifiers to
+>> select precise-only sampling (or is this level 3?).
+>>
+>> Both might be useful: You might need only precise-rip samples (perf-
+>> annotate usage), on the other side you want samples with every
+>> clock/ops count overflow (e.g. to get a counting statistic). The
+>> p-modifier specification (see perf-list) is not sufficient to select
+>> both of it.
+>>
+>> Another question I have: Isn't precise level 2 a special case of level
+>> 1 where the skid is constant and 0? The problem I see is, if people
+>> want to measure precise rip, they simply use r076:p. Level 2 (r076:pp)
+>> is actually better than 1, but they might think not to be able to
+>> sample precise-rip if we throw an error for r076:p. Thus, I would
+>> prefer to also allow level 1.
+>>
+>> > That said, mixing the IBS pmu into the regular core pmu isn't exactly
+>> > pretty..
+>>
+>> IBS is currently the only way to do precise-rip sampling on amd cpus.
+>> IBS events fit well with its corresponding perfctr events (0x76/
+>> 0xc1). So what don't you like with this approach? I will also post IBS
+>> perf tool support where IBS can be directly used.
+>>
+>> -Robert
+>>
+>> --
+>> Advanced Micro Devices, Inc.
+>> Operating System Research Center
+>
+> --
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+>
