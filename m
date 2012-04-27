@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760751Ab2D0RAJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 13:00:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54575 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756764Ab2D0RAH (ORCPT
+	id S1760451Ab2D0RDw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 13:03:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43300 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab2D0RDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 13:00:07 -0400
-Date: Fri, 27 Apr 2012 17:59:19 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 2/2] asm-generic: io: don't perform swab during {in,out}
- string functions
-Message-ID: <20120427165919.GD14743@mudshark.cambridge.arm.com>
-References: <1335523376-14695-1-git-send-email-will.deacon@arm.com>
- <1335523376-14695-2-git-send-email-will.deacon@arm.com>
- <201204271219.00596.vapier@gentoo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201204271219.00596.vapier@gentoo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Apr 2012 13:03:51 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] spi: fix spi.h kernel-doc warning
+To: Randy Dunlap <rdunlap@xenotime.net>, LKML <linux-kernel@vger.kernel.org>,
+        spi-devel-general@lists.sourceforge.net
+In-Reply-To: <4F8E04E6.60005@xenotime.net>
+References: <4F8E04E6.60005@xenotime.net>
+Date: Fri, 27 Apr 2012 11:03:47 -0600
+Message-Id: <20120427170347.BEA843E0B4D@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 05:18:58PM +0100, Mike Frysinger wrote:
-> On Friday 27 April 2012 06:42:56 Will Deacon wrote:
-> > The {in,out}s{b,w,l} functions are designed to operate on a stream of
-> > bytes and therefore should not perform any byte-swapping, regardless of
-> > the CPU byte order.
+On Tue, 17 Apr 2012 17:03:50 -0700, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
 > 
-> says who ?  where's the agreed upon documentation for this ?
+> Fix kernel-doc warning in spi.h (copy/pasto):
+> 
+> Warning(include/linux/spi/spi.h:365): No description found for parameter 'unprepare_transfer_hardware'
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 
-This specific case is actually documented in Linux Device Drivers, but I
-appreciate that it's not especially clear. I had some offline discussion
-with Arnd where we agreed on this -- it also means that asm-generic/io.h
-matches what is done by bi-endian architectures providing their own
-accessors.
+Applied, thanks.
 
-Will
+g.
+
+> ---
+>  include/linux/spi/spi.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- lnx-34-rc3.orig/include/linux/spi/spi.h
+> +++ lnx-34-rc3/include/linux/spi/spi.h
+> @@ -254,7 +254,7 @@ static inline void spi_unregister_driver
+>   *	driver is finished with this message, it must call
+>   *	spi_finalize_current_message() so the subsystem can issue the next
+>   *	transfer
+> - * @prepare_transfer_hardware: there are currently no more messages on the
+> + * @unprepare_transfer_hardware: there are currently no more messages on the
+>   *	queue so the subsystem notifies the driver that it may relax the
+>   *	hardware by issuing this call
+>   *
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
