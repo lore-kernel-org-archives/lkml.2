@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761286Ab2D0TPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 15:15:04 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:44917 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760458Ab2D0TPC (ORCPT
+	id S1761301Ab2D0TPQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 15:15:16 -0400
+Received: from mga10.intel.com ([192.55.52.92]:52314 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760475Ab2D0TPL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 15:15:02 -0400
-Date: Fri, 27 Apr 2012 15:14:33 -0400 (EDT)
-Message-Id: <20120427.151433.1007849975903946491.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: mjt@tls.msk.ru, linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        raven@themaw.net, thomas@m3y3r.de, stable@kernel.org
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
- design error.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFyLk-uPMVaic19YOWdvdj2pv4R+E3s7UQ6voAy6UkO_Sg@mail.gmail.com>
-References: <20120427.143402.1028957981042061092.davem@davemloft.net>
-	<CA+55aFwvFaxBT8Mdp5s4-6Gxy7nM4WVzbWna4RF_OUK3hnx+jQ@mail.gmail.com>
-	<CA+55aFyLk-uPMVaic19YOWdvdj2pv4R+E3s7UQ6voAy6UkO_Sg@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 27 Apr 2012 12:14:35 -0700 (PDT)
+	Fri, 27 Apr 2012 15:15:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALLzPKajCrfPz-V=9yftoq=FGQuMYvzCwFMKDcZpm+=QPnJJ1g@mail.gmail.com>
+References: <1334865448.2429.35.camel@falcor>
+	<20120420004303.GB6871@ZenIV.linux.org.uk>
+	<alpine.LSU.2.00.1204201133340.1450@eggly.anvils>
+	<20120420190418.GK6871@ZenIV.linux.org.uk>
+	<CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
+	<20120420195833.GM6871@ZenIV.linux.org.uk>
+	<CA+55aFzaC8YfN_q1TxPbNgpD7AnoAVac2Bqa+ysEji3u7ZQ18A@mail.gmail.com>
+	<20120420221315.GN6871@ZenIV.linux.org.uk>
+	<CA+55aFzEwsW1kdLo2hpgW2PUCRkyaRxS_KB40iwmuk1FDgV+cg@mail.gmail.com>
+	<CALLzPKarZY11htkukZPi+7ny5r=au9hMdKBOy20wAdFjSBOyjA@mail.gmail.com>
+	<20120427173417.GK6871@ZenIV.linux.org.uk>
+	<CALLzPKajCrfPz-V=9yftoq=FGQuMYvzCwFMKDcZpm+=QPnJJ1g@mail.gmail.com>
+Date: Fri, 27 Apr 2012 22:15:10 +0300
+Message-ID: <CALLzPKZsWWZAx5WHGm5Eafwb6chJvOFKDnaneYvD3FJ=-Q_fUg@mail.gmail.com>
+Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
+ ima-appraisal patches)
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-fsdevel@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 27 Apr 2012 11:55:12 -0700
-
-> On Fri, Apr 27, 2012 at 11:42 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
+On Fri, Apr 27, 2012 at 9:52 PM, Kasatkin, Dmitry
+<dmitry.kasatkin@intel.com> wrote:
+> On Fri, Apr 27, 2012 at 8:34 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> On Fri, Apr 27, 2012 at 10:35:25AM +0300, Kasatkin, Dmitry wrote:
 >>
->> There's no question that systemd is broken.
-> 
-> Actually, I'll take that back.
-> 
-> Yes, systemd has breakage. But it's actually automount that is the
-> truly broken piece of sh*t.
-> 
-> I think that 'automount' is even more broken. The fact that the
-> automount maintainers knew about this, and added TOTALLY BROKEN code
-> to their automount source tree, over five years ago, because the
-> authors clearly did not understand what the f*ck they were doing,
-> that's the real problem.
+>>> But have you seen the proposed patch for __fput()?
+>>> [PATCH v4 10/12] ima: defer calling __fput()
+>>>
+>>> It defers only of course the last AND mmap_sem is locked AND open for write.
+>>>
+>>>       if (current->mm && rwsem_is_locked(&current->mm->mmap_sem)) {
+>>>               if (ima_defer_fput(file) == 0)
+>>>                       return;
+>>>       }
+>>>
+>>> Just 5 out of ~100,000 mmap_sem held fput() calls were deferred.
+>>
+>> Let me get it straight.
+>>        a) You still ignore all the problems with that described in the
+>> posting right in the beginning of this thread.
+>>        b) You ignore the problems with semantics changes from user-visible
+>> delays of fput() past the return from syscall (described in Linus' posting
+>> upthread - they apply to this "solution" as well).
+>>        c) You seem to consider the fact that this path will be exercised
+>> very rarely, thus making any races on it damn hard to reproduce and debug
+>> as a good thing.
+>>
+>> And as for the sentiment expressed in the beginning of your posting (that
+>> smaller patch size is worth more than clean locking rules, maintainability
+>> of resulting kernel, etc.)...  I'm sorry, but you guys need to decide
+>> what IMA is.  If it's a first-class part of the kernel, you have your
+>> priorities backwards...
+>
+> Hello,
+>
+> I do not ignore anything.
+> I said that we were thinking about solution to get the list of file to
+> fput them after mmap unlock.
+> And I do understand the issues discussed.
+> I just wanted to know more opinions on proposed patch.
+>
+> - Dmitry
 
-I respectfully disagree.
+For sure we are happy to see the discussion about the problem. Thanks
+for your attention to it.
+And our target to solve it in best possible way.
+So let's agree the solution and we will be happy to implement the patch.
 
-It's ugly as shit, but it is the only one place where one can be
-absolutely sure that we are dealing with a pipe passing those v5
-things around.
-
-All these hacks we have been talking about, assuming the mount means
-the pipe is for passing structure so-and-so around, and now trying
-to find some other check such as one on current->comm...
-
-That's better?
-
-Only the application really knows.  And I bet the person who wrote
-that automountd code you find so distasteful analyzed this and came
-to realize how difficult the kernel side would be to get right.
-
-So they decided that the datastructure on 32-bit changes based upon
-whether we run on a 64-bit kernel or not, that's the interface the
-kernel has always exported, and therefore that's the interface it
-choose to use.
+- Dmitry
