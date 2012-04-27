@@ -1,142 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760318Ab2D0PQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:16:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51878 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759256Ab2D0PQv (ORCPT
+	id S1760430Ab2D0PTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:19:06 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:34785
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760145Ab2D0PTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:16:51 -0400
-Date: Fri, 27 Apr 2012 12:16:42 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hagen Paul Pfeifer <hagen@jauu.net>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL 0/4] perf/annotate loop detection V2, fixes
-Message-ID: <20120427151642.GB27997@infradead.org>
-References: <1335452777-27326-1-git-send-email-acme@infradead.org>
- <20120427072153.GB4766@gmail.com>
+	Fri, 27 Apr 2012 11:19:03 -0400
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M3597J-02-4IM-02
+X-M-MSG: 
+Date: Fri, 27 Apr 2012 17:18:52 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS for
+ AMD CPUs
+Message-ID: <20120427151852.GH18810@erda.amd.com>
+References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
+ <1333390758-10893-7-git-send-email-robert.richter@amd.com>
+ <1334398906.2528.49.camel@twins>
+ <20120423095659.GS9747@erda.amd.com>
+ <20120427123434.GF18810@erda.amd.com>
+ <CABPqkBS9FNmHBukzJqGJP1r5iqyLL9gz2g=3jvnt22pDxOdndA@mail.gmail.com>
+ <20120427125410.GG18810@erda.amd.com>
+ <CABPqkBTS2NkFqjVT9HgzPT=TTo9oOc__H9ZDDbXJK7WRpO0Vgg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120427072153.GB4766@gmail.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <CABPqkBTS2NkFqjVT9HgzPT=TTo9oOc__H9ZDDbXJK7WRpO0Vgg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Apr 27, 2012 at 09:21:53AM +0200, Ingo Molnar escreveu:
-> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> > Arnaldo Carvalho de Melo (4):
-> >       perf annotate browser: Handle NULL jump targets
-> >       perf annotate: Disambiguage offsets and addresses in operands
-> >       perf annotate: Mark jump instructions with no offset
-> >       perf annotate browser: Don't draw jump connectors for out of function jumps
-
-> Pulled, thanks a lot Arnaldo!
-
-> Works pretty well here, the segfaults are gone. I think we can 
-> use it as a starting point so I've pulled it into perf/core.
-
-> One thing that we need to fix with this new scheme is the visual 
-> dynamism/unpredictability of the loop drawing:
-
-Yeah, something to experiment, when Linus suggested it he was afraid
-that we would get way too many lines, but Arjan has since requested that
-we have a key to toggle showing all jumps at the same time, so that is
-what I'm going to do.
-
-Then we can check how that goes.
- 
-> As I move the cursor line up and down the current loop is shown 
-> and it flips in and out of view depending on where I am. In one 
-> way it's a feature (it shows the currently interesting loop) - 
-
-That is why probably we want to get a
-show-me-just-the-current-loop/show-me-all-loops toggle key.
-
-> but in another way that kind of 'active' UI element draws my eye 
-> all the time and it gets tiring and hard to ignore when I'm not 
-> interested in the current loop but look at other elements of the 
-> UI output.
+On 27.04.12 15:10:22, Stephane Eranian wrote:
+> perf record -a -e cpu-cycles:p ...    # use ibs op counting cycle count
+> perf record -a -e r076:p ...          # same as -e cpu-cycles:p
+> perf record -a -e r0C1:p ...          # use ibs op counting micro-ops
 > 
-> It would be better to have a stable image of loops that is 
-> static and scrolls up and down with the rest of the image. When 
-> I press 'o' to see the raw disassembly it should probably 
-> disappear completely.
-
-Right, that can be done as well, but perhaps its better to have a 'j'
-key that cycles thru:
-
-. Show me just the current loop
-. Show me all loops
-. No loops please
-
-That can be used in both raw and augmented mode.
- 
-> This would require for us to draw all loops that are 
-> interesting: probably all backwards jumping ones, with some 
-> nesting limit of 5 or so. I think we really need this loop graph 
-> for this UI to have low visual overhead :-/
-
-Well, when first marking the jump targets we'll notice how many loops
-there are, reserve N columns for them, then just have a loop where right
-now we have the current loop arrow drawing code.
- 
-> Beyond improving visual stability of the output, this would also 
-> obviously be (much) more informative as for reasonably sized 
-> functions it would show all the current loop contexts - which is 
-> very useful when one tries to make sense of a function in 
-> assembly.
+> Each IBS sample contains a linear address that points to the
+> instruction that was causing the sample to trigger. With ibs we have
+> skid 0.
 > 
-> Doing that will take up some screen real estate on the left, 
-> because with increasing nesting levels there will be parallel 
-> lines and crossing lines - I did a quick ASCII mockup and I 
-> think it will be fine, as long as we have a hotkey that makes it 
-> easy to show/hide the loop graph.
+> Though the skid is 0, we map IBS sampling to following precise levels:
+> 
+>  1: RIP taken from IBS sample or (if invalid) from stack.
+> 
+> I assume by stack you mean pt_regs, right?
 
-'j' or 'l', I'll check which one is available
- 
-> If it's all concentrated within a narrow vertical column it also 
-> does not clutter the output and is easy to ignore when it's not 
-> needed.
-> 
-> How and whether labels should be mixed with this graph output 
-> remains to be seen - my intuition is that the two should be 
-> integrated, like the current code does it.
-> 
-> ( Once we have that done and gather some experience with it can 
->   we decide whether to show it by default. )
+Right.
 
-Right, hence all the toggle keys, to experiment with combinations of
-output formats.
+> 
+> 2: RIP always taken from IBS sample, samples with an invalid rip
+>    are dropped. Thus samples of an event containing two precise
+>    modifiers (e.g. r076:pp) only contain (precise) addresses
+>    detected with IBS.
+> 
+> I don't think you need the distinction between 1 and 2. You can
+> always use the pt_regs IP as a fallback. You can mark that the
+> IP is precise with the MISC_EXACT flag in the sample header.
+> This is how it's done with PEBS. What's wrong with that?
+> It may actually be better than dropping samples silently as it
+> may introduce some bias.
 
-> We can also save some screen real estate on the left side of the 
-> screen, the instruction overhead percentage column. Right now 
-> the largest entry possible is:
-> 
->   100.00 ││        lea    (%rbx,%r12,1),%r14
-> 
-> This could be trimmed by two characters to:
-> 
->  100.0 ││        lea    (%rbx,%r12,1),%r14
-> 
-> This saves a space before the percent value and reduces the 
-> width of the output - I think 0.1% granularity ought to be 
-> enough in practice. We should also probably hide entries below 
-> 0.1% overhead as if they got no hits at all.
+There is nothing wrong with it. I already implemented that the
+MISC_EXACT flag is supported. But, the flag is basically not used in
+the perf tool and there is no modifier or so to only get a precise
+rip.
 
-Right, that will be used as well when I implement a suggestin Stephane
-made while in San Francisco: To show multiple overhead columns for
-sessions with multiple events, helping to correlate them.
+Supose you want to use perf-annotate you only want to get precise
+rips. With the levels suggested above you can do so with:
 
-- Arnaldo
+ perf record -a -e r076:pp ... | perf annotate ...
+
+(Note the double-p.)
+
+For non-biased sampling (e.g. counting or statistic numbers) you take
+level 1 and you get every sample:
+
+ perf record -a -e r076:p ...
+
+There is the lack of a modifier to evaluate MISC_EXACT the same way.
+That's why my choice of the levels above. Didn't have a better idea.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
