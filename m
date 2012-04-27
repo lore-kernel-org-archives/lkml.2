@@ -1,52 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761416Ab2D0Upx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 16:45:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40286 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760645Ab2D0Upw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 16:45:52 -0400
-Message-ID: <4F9B055E.6030404@zytor.com>
-Date: Fri, 27 Apr 2012 13:45:18 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1752160Ab2D0Ut4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 16:49:56 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44681 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab2D0Uty (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 16:49:54 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: torvalds@linux-foundation.org, mjt@tls.msk.ru,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org, raven@themaw.net,
-        thomas@m3y3r.de, stable@kernel.org
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix design
- error.
-References: <CA+55aFwud1nXRr+HpzH8rSkEWcZ_rJmoE7UtQt76D=A3qcb6GQ@mail.gmail.com> <20120427.143402.1028957981042061092.davem@davemloft.net> <CA+55aFwvFaxBT8Mdp5s4-6Gxy7nM4WVzbWna4RF_OUK3hnx+jQ@mail.gmail.com> <20120427.150849.187285510481819228.davem@davemloft.net>
-In-Reply-To: <20120427.150849.187285510481819228.davem@davemloft.net>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [189.25.3.224]
+In-Reply-To: <4F9ABE54.4060603@teksavvy.com>
+References: <20120427013225.GA1011@pervalidus>
+	<CAJK5xJRPF1XtXXYtZ_GQONstPrBa_eaeqW=XACSx+giFWBpfnQ@mail.gmail.com>
+	<20120427083456.GB21929@liondog.tnic>
+	<20120427141115.GB1011@pervalidus>
+	<CAJK5xJTsKZVsb1vwXzdCmeZ+oOLiv0eB9A0GkShu0rM8Xac6Jg@mail.gmail.com>
+	<4F9ABE54.4060603@teksavvy.com>
+Date: Fri, 27 Apr 2012 17:49:53 -0300
+Message-ID: <CAJK5xJSPK7eVEVQMb_CO8Pfg2qPdbDs8EC=Z1++C=g5QGpqpzw@mail.gmail.com>
+Subject: Re: What may be causing this kernel panic ?
+From: =?ISO-8859-1?Q?Fr=E9d=E9ric_L=2E_W=2E_Meunier?= 
+	<fredlwm@fredlwm.net>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=00235445ba88158fbb04beaf3fbd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2012 12:08 PM, David Miller wrote:
->>
->> Umm. The thing is, those broken binaries *work* on 32-bit.  They were
->> *tested* on 32-bit. They were *shipped* on 32-bit.
-> 
-> As were the automount binaries.
-> 
-> systemd coded to an interface which did not exist in reality, and if
-> they had used the automountd sources as a reference (the only other
-> user of this interface) they would have seen this.
-> 
-> Look, I can almost guarantee that whoever wrote the automountd
-> workaround code looked at this situation and said "yeah, it's
-> impossible to get this right in the kernel for all cases for v5, so
-> let's just do it where we _can_ be absolutely certain and that's here
-> in this userland routine doing the autofs stuff"
-> 
-> And you know what, whoever that guy was, he was right.
+--00235445ba88158fbb04beaf3fbd
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-The workaround in automount is a mistake too, though.  The better
-solution would have been to swallow the extra zero field; data driven.
+2012/4/27 Mark Lord <kernel@teksavvy.com>:
+> If anyone goes into the code to look at this, I do wonder if it might be
+> related to a bug I've been seeing in 3.2.xx/3.3.xx whereby the input syst=
+em
+> (or X11?) often fails to notice I've released a keyboard button..
+> and the auto-repeat just keeps on going until I press/release another but=
+ton
+> to stop it.
+>
+> Bot the ooops above and the repeat issue could be due to the same/similar=
+ race
+> somewhere in there. =A0Or not. =A0Just keep your eyes and mind open to th=
+e possibility. :)
 
-	-hpa
+Well, I sort of bisected it compiling 3.2.0, 3.1.0, 3.0.0, 2.6.39,
+2.6.38, 2.6.37 and 2.6.36, which was the first to not panic. I'm
+attaching the 2.6.37 panic.
 
+--00235445ba88158fbb04beaf3fbd
+Content-Type: text/plain; charset=US-ASCII; name="panic-2.6.37.txt"
+Content-Disposition: attachment; filename="panic-2.6.37.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h1jpssns0
+
+WyAgIDMxLjc5OTc1NV0gQlVHOiB1bmFibGUgdG8gaGFuZGxlIGtlcm5lbCBwYWdpbmcgcmVxdWVz
+dCBhdCBmZmZmZmZmZjAwMDAwMDc5ClsgICAzMS44MDAyOTBdIElQOiBbPGZmZmZmZmZmODExNWNj
+YzM+XSBwdXRzX3F1ZXVlLmlzcmEuMTMrMHgyNS8weDNiClsgICAzMS44MDAyOTBdIFBHRCAxNjA1
+MDY3IFBVRCAwClsgICAzMS44MDAyOTBdIE9vcHM6IDAwMDAgWyMxXSBQUkVFTVBUIFNNUApbICAg
+MzEuODAwMjkwXSBsYXN0IHN5c2ZzIGZpbGU6IC9zeXMvZGV2aWNlcy92aXJ0dWFsL3ZjL3Zjc2E2
+L3VldmVudApbICAgMzEuODAwMjkwXSBDUFUgMApbICAgMzEuODAwMjkwXSBNb2R1bGVzIGxpbmtl
+ZCBpbjogYWdwZ2FydCBqb3lkZXYgc25kX2ludGVsOHgwIHNuZF9hYzk3X2NvZGVjIGFjOTdfYnVz
+IHVzYmhpZCBzbmRfcGNtIHNuZF9wYWdlX2FsbG9jIHByb2Nlc3NvciBzbmRfdGltZXIgaGlkIGky
+Y19waWl4NCBzbmQgdGhlcm1hbF9zeXMgZTEwMDAgYnV0dG9uIHNnIGh3bW9uIGkyY19jb3JlIHBz
+bW91c2Ugc291bmRjb3JlIGV2ZGV2IGxvb3AgZXh0NCBjcmMxNiBqZApbICAgMzEuODAwMjkwXQpb
+ICAgMzEuODAwMjkwXSBQaWQ6IDAsIGNvbW06IHN3YXBwZXIgTm90IHRhaW50ZWQgMi42LjM3ICM2
+IC9WaXJ0dWFsQm94ClsgICAzMS44MDAyOTBdIFJJUDogMDAxMDpbPGZmZmZmZmZmODExNWNjYzM+
+XSAgWzxmZmZmZmZmZjgxMTVjY2MzPl0gcHV0c19xdWV1ZS5pc3JhLjEzKzB4MjUvMHgzYgpbICAg
+MzEuODAwMjkwXSBSU1A6IDAwMTg6ZmZmZjg4MDAwZjgwM2MyOCAgRUZMQUdTOiAwMDAxMDA4Ngpb
+ICAgMzEuODAwMjkwXSBSQVg6IDAwMDAwMDAwMDAwMDAwMDEgUkJYOiBmZmZmODgwMDBlNjI2MDAw
+IFJDWDogZmZmZmZmZmY4MTZkOTAwMQpbICAgMzEuODAwMjkwXSBSRFg6IDAwMDAwMDAwMDAwMDAw
+MDAgUlNJOiBmZmZmZmZmZjAwMDAwMDc5IFJESTogZmZmZjg4MDAwZTYyNjAwMApbICAgMzEuODAw
+MjkwXSBSQlA6IGZmZmY4ODAwMGY4MDNjMzggUjA4OiAwMDAwMDAwMDAwMDAwMDAwIFIwOTogMDAw
+MDAwMDAwMDAwMDA3ZgpbICAgMzEuODAwMjkwXSBSMTA6IDAwMDAwMDAwMDAwMDAwNTMgUjExOiBm
+ZmZmZmZmZjgxNmRiNGE4IFIxMjogZmZmZmZmZmYwMDAwMDA3OQpbICAgMzEuODAwMjkwXSBSMTM6
+IDAwMDAwMDAwMDAwMDAwMDEgUjE0OiBmZmZmZmZmZjgxNjJmMTAyIFIxNTogMDAwMDAwMDAwMDAw
+MDAwMApbICAgMzEuODAwMjkwXSBGUzogIDAwMDA3ZmYzMmVmMTY3NDAoMDAwMCkgR1M6ZmZmZjg4
+MDAwZjgwMDAwMCgwMDAwKSBrbmxHUzowMDAwMDAwMDAwMDAwMDAwClsgICAzMS44MDAyOTBdIENT
+OiAgMDAxMCBEUzogMDAwMCBFUzogMDAwMCBDUjA6IDAwMDAwMDAwODAwNTAwM2IKWyAgIDMxLjgw
+MDI5MF0gQ1IyOiBmZmZmZmZmZjAwMDAwMDc5IENSMzogMDAwMDAwMDAwZTMyNjAwMCBDUjQ6IDAw
+MDAwMDAwMDAwMDA2ZjAKWyAgIDMxLjgwMDI5MF0gRFIwOiAwMDAwMDAwMDAwMDAwMDAwIERSMTog
+MDAwMDAwMDAwMDAwMDAwMCBEUjI6IDAwMDAwMDAwMDAwMDAwMDAKWyAgIDMxLjgwMDI5MF0gRFIz
+OiAwMDAwMDAwMDAwMDAwMDAwIERSNjogMDAwMDAwMDBmZmZmMGZmMCBEUjc6IDAwMDAwMDAwMDAw
+MDA0MDAKWyAgIDMxLjgwMDI5MF0gUHJvY2VzcyBzd2FwcGVyIChwaWQ6IDAsIHRocmVhZGluZm8g
+ZmZmZmZmZmY4MTYwMDAwMCwgdGFzayBmZmZmZmZmZjgxNjBiMDIwKQpbICAgMzEuODAwMjkwXSBT
+dGFjazoKWyAgIDMxLjgwMDI5MF0gIGZmZmY4ODAwMGY0MDgwMDAgMDAwMDAwMDAwMDAwMDAzZCBm
+ZmZmODgwMDBmODAzYzQ4IGZmZmZmZmZmODExNWNkNzkKWyAgIDMxLjgwMDI5MF0gIGZmZmY4ODAw
+MGY4MDNjYjggZmZmZmZmZmY4MTE1ZDhjZCAwMDAwMDAwMDAwMDAwMDAxIDAwMDAwMDAwMDAwMDAw
+MDAKWyAgIDMxLjgwMDI5MF0gIGZmZmY4ODAwMGY4MTEwYzAgZmZmZjg4MDAwZjQwODAwMCAwMDAw
+MDAwMDAwMDAwMDAxIDAwMDBmMTAyMDAwMDAwMDAKWyAgIDMxLjgwMDI5MF0gQ2FsbCBUcmFjZToK
+WyAgIDMxLjgwMDI5MF0gIDxJUlE+ClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODExNWNkNzk+
+XSBrX2ZuKzB4MjEvMHgyMwpbICAgMzEuODAwMjkwXSAgWzxmZmZmZmZmZjgxMTVkOGNkPl0ga2Jk
+X2V2ZW50KzB4NGZjLzB4NTY2ClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODExNTg5ZWI+XSA/
+IHN5c3JxX2ZpbHRlcisweDAvMHgxNTkKWyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTE3ZDIy
+Zj5dIGlucHV0X3Bhc3NfZXZlbnQrMHg5Yi8weGViClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZm
+ODExN2VlZWM+XSBpbnB1dF9oYW5kbGVfZXZlbnQrMHg0ODQvMHg0OTMKWyAgIDMxLjgwMDI5MF0g
+IFs8ZmZmZmZmZmY4MTE2NGFlNT5dID8gYWRkX3RpbWVyX3JhbmRvbW5lc3MrMHgxMzEvMHgxMzgK
+WyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTE3ZjA2Zj5dIGlucHV0X2V2ZW50KzB4NjYvMHg4
+MwpbICAgMzEuODAwMjkwXSAgWzxmZmZmZmZmZjgxMTgxZjhmPl0gYXRrYmRfaW50ZXJydXB0KzB4
+NDZhLzB4NTM3ClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODEwNGMyYzg+XSA/IHRpbWVrZWVw
+aW5nX2dldF9ucysweDEzLzB4MzUKWyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTE3OWM4ND5d
+IHNlcmlvX2ludGVycnVwdCsweDQwLzB4N2EKWyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTE3
+YjIwMT5dIGk4MDQyX2ludGVycnVwdCsweDI4Ni8weDI5OApbICAgMzEuODAwMjkwXSAgWzxmZmZm
+ZmZmZjgxMDYzZjNjPl0gaGFuZGxlX0lSUV9ldmVudCsweDI0LzB4YTgKWyAgIDMxLjgwMDI5MF0g
+IFs8ZmZmZmZmZmY4MTA2NWQ2Mz5dIGhhbmRsZV9lZGdlX2lycSsweGY2LzB4MTQyClsgICAzMS44
+MDAyOTBdICBbPGZmZmZmZmZmODEwMDUyNGY+XSBoYW5kbGVfaXJxKzB4MWYvMHgyNQpbICAgMzEu
+ODAwMjkwXSAgWzxmZmZmZmZmZjgxMDA0ZjZiPl0gZG9fSVJRKzB4NTMvMHhhYgpbICAgMzEuODAw
+MjkwXSAgWzxmZmZmZmZmZjgxMjA1ZjEzPl0gcmV0X2Zyb21faW50cisweDAvMHhhClsgICAzMS44
+MDAyOTBdICA8RU9JPgpbICAgMzEuODAwMjkwXSAgWzxmZmZmZmZmZjgxMDA5ZTZmPl0gPyBkZWZh
+dWx0X2lkbGUrMHgyMi8weDM3ClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODEwMDllNjk+XSA/
+IGRlZmF1bHRfaWRsZSsweDFjLzB4MzcKWyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTAwYTA0
+NT5dIGMxZV9pZGxlKzB4Y2UvMHhkMApbICAgMzEuODAwMjkwXSAgWzxmZmZmZmZmZjgxMDAxMWFm
+Pl0gPyBlbnRlcl9pZGxlKzB4MjAvMHgyMgpbICAgMzEuODAwMjkwXSAgWzxmZmZmZmZmZjgxMDAx
+MjQyPl0gY3B1X2lkbGUrMHg1Ni8weDljClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODExZjIy
+NDg+XSByZXN0X2luaXQrMHg4Yy8weDkwClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODE2NDli
+NDA+XSBzdGFydF9rZXJuZWwrMHgzNGEvMHgzNTcKWyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4
+MTY0OTI5Zj5dIHg4Nl82NF9zdGFydF9yZXNlcnZhdGlvbnMrMHhhZi8weGIzClsgICAzMS44MDAy
+OTBdICBbPGZmZmZmZmZmODE2NDkzOTg+XSB4ODZfNjRfc3RhcnRfa2VybmVsKzB4ZjUvMHhmYwpb
+ICAgMzEuODAwMjkwXSBDb2RlOiAwMSA1YiA0MSA1YyA1ZCBjMyA1NSA0OCA4NSBmZiA0OCA4OSBl
+NSA0MSA1NCA0OSA4OSBmNCA1MyA0OCA4OSBmYiA3NSAxMyBlYiAyMiA0MCAwZiBiNiBmNiAzMSBk
+MiA0OCA4OSBkZiA0OSBmZiBjNCBlOCAwNCBmNyBmZiBmZiA8NDE+IDhhIDM0IDI0IDQwIDg0IGY2
+IDc1IGU2IDQ4IDg5IGRmIGU4IDUyIGY3IGZmIGZmIDViIDQxIDVjIDVkClsgICAzMS44MDAyOTBd
+IFJJUCAgWzxmZmZmZmZmZjgxMTVjY2MzPl0gcHV0c19xdWV1ZS5pc3JhLjEzKzB4MjUvMHgzYgpb
+ICAgMzEuODAwMjkwXSAgUlNQIDxmZmZmODgwMDBmODAzYzI4PgpbICAgMzEuODAwMjkwXSBDUjI6
+IGZmZmZmZmZmMDAwMDAwNzkKWyAgIDMxLjgwMDI5MF0gLS0tWyBlbmQgdHJhY2UgOTJhYmQ3NGJh
+ZGNlZmM4NyBdLS0tClsgICAzMS44MDAyOTBdIEtlcm5lbCBwYW5pYyAtIG5vdCBzeW5jaW5nOiBG
+YXRhbCBleGNlcHRpb24gaW4gaW50ZXJydXB0ClsgICAzMS44MDAyOTBdIFBpZDogMCwgY29tbTog
+c3dhcHBlciBUYWludGVkOiBHICAgICAgRCAgICAgMi42LjM3ICM2ClsgICAzMS44MDAyOTBdIENh
+bGwgVHJhY2U6ClsgICAzMS44MDAyOTBdICA8SVJRPiAgWzxmZmZmZmZmZjgxMjAwZDBkPl0gcGFu
+aWMrMHg5Yi8weDFhMApbICAgMzEuODAwMjkwXSAgWzxmZmZmZmZmZjgxMDA2NjYwPl0gb29wc19l
+bmQrMHhhNy8weGI4ClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODEyMDA4M2M+XSBub19jb250
+ZXh0KzB4MWZlLzB4MjBkClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODEwMjc5YjQ+XSA/IGNo
+ZWNrX3ByZWVtcHRfY3VycisweDNiLzB4NmYKWyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTIw
+MDlkOT5dIF9fYmFkX2FyZWFfbm9zZW1hcGhvcmUrMHgxOGUvMHgxYjEKWyAgIDMxLjgwMDI5MF0g
+IFs8ZmZmZmZmZmY4MTAyYzRhYz5dID8gdHJ5X3RvX3dha2VfdXArMHgxYTYvMHgxYjgKWyAgIDMx
+LjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTIwMGEwYT5dIGJhZF9hcmVhX25vc2VtYXBob3JlKzB4ZS8w
+eDEwClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODEwMWVkNmM+XSBkb19wYWdlX2ZhdWx0KzB4
+MTYwLzB4MmZjClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODEwNDI4MmU+XSA/IHdxX3dvcmtl
+cl93YWtpbmdfdXArMHhlLzB4MjcKWyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTAyOTA4YT5d
+ID8gdHR3dV9wb3N0X2FjdGl2YXRpb24rMHhhNi8weGFmClsgICAzMS44MDAyOTBdICBbPGZmZmZm
+ZmZmODEwMmM0YWM+XSA/IHRyeV90b193YWtlX3VwKzB4MWE2LzB4MWI4ClsgICAzMS44MDAyOTBd
+ICBbPGZmZmZmZmZmODEyMDYxNGY+XSBwYWdlX2ZhdWx0KzB4MWYvMHgzMApbICAgMzEuODAwMjkw
+XSAgWzxmZmZmZmZmZjgxMTVjY2MzPl0gPyBwdXRzX3F1ZXVlLmlzcmEuMTMrMHgyNS8weDNiClsg
+ICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODExNWNkNzk+XSBrX2ZuKzB4MjEvMHgyMwpbICAgMzEu
+ODAwMjkwXSAgWzxmZmZmZmZmZjgxMTVkOGNkPl0ga2JkX2V2ZW50KzB4NGZjLzB4NTY2ClsgICAz
+MS44MDAyOTBdICBbPGZmZmZmZmZmODExNTg5ZWI+XSA/IHN5c3JxX2ZpbHRlcisweDAvMHgxNTkK
+WyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTE3ZDIyZj5dIGlucHV0X3Bhc3NfZXZlbnQrMHg5
+Yi8weGViClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODExN2VlZWM+XSBpbnB1dF9oYW5kbGVf
+ZXZlbnQrMHg0ODQvMHg0OTMKWyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTE2NGFlNT5dID8g
+YWRkX3RpbWVyX3JhbmRvbW5lc3MrMHgxMzEvMHgxMzgKWyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZm
+ZmY4MTE3ZjA2Zj5dIGlucHV0X2V2ZW50KzB4NjYvMHg4MwpbICAgMzEuODAwMjkwXSAgWzxmZmZm
+ZmZmZjgxMTgxZjhmPl0gYXRrYmRfaW50ZXJydXB0KzB4NDZhLzB4NTM3ClsgICAzMS44MDAyOTBd
+ICBbPGZmZmZmZmZmODEwNGMyYzg+XSA/IHRpbWVrZWVwaW5nX2dldF9ucysweDEzLzB4MzUKWyAg
+IDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTE3OWM4ND5dIHNlcmlvX2ludGVycnVwdCsweDQwLzB4
+N2EKWyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTE3YjIwMT5dIGk4MDQyX2ludGVycnVwdCsw
+eDI4Ni8weDI5OApbICAgMzEuODAwMjkwXSAgWzxmZmZmZmZmZjgxMDYzZjNjPl0gaGFuZGxlX0lS
+UV9ldmVudCsweDI0LzB4YTgKWyAgIDMxLjgwMDI5MF0gIFs8ZmZmZmZmZmY4MTA2NWQ2Mz5dIGhh
+bmRsZV9lZGdlX2lycSsweGY2LzB4MTQyClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODEwMDUy
+NGY+XSBoYW5kbGVfaXJxKzB4MWYvMHgyNQpbICAgMzEuODAwMjkwXSAgWzxmZmZmZmZmZjgxMDA0
+ZjZiPl0gZG9fSVJRKzB4NTMvMHhhYgpbICAgMzEuODAwMjkwXSAgWzxmZmZmZmZmZjgxMjA1ZjEz
+Pl0gcmV0X2Zyb21faW50cisweDAvMHhhClsgICAzMS44MDAyOTBdICA8RU9JPiAgWzxmZmZmZmZm
+ZjgxMDA5ZTZmPl0gPyBkZWZhdWx0X2lkbGUrMHgyMi8weDM3ClsgICAzMS44MDAyOTBdICBbPGZm
+ZmZmZmZmODEwMDllNjk+XSA/IGRlZmF1bHRfaWRsZSsweDFjLzB4MzcKWyAgIDMxLjgwMDI5MF0g
+IFs8ZmZmZmZmZmY4MTAwYTA0NT5dIGMxZV9pZGxlKzB4Y2UvMHhkMApbICAgMzEuODAwMjkwXSAg
+WzxmZmZmZmZmZjgxMDAxMWFmPl0gPyBlbnRlcl9pZGxlKzB4MjAvMHgyMgpbICAgMzEuODAwMjkw
+XSAgWzxmZmZmZmZmZjgxMDAxMjQyPl0gY3B1X2lkbGUrMHg1Ni8weDljClsgICAzMS44MDAyOTBd
+ICBbPGZmZmZmZmZmODExZjIyNDg+XSByZXN0X2luaXQrMHg4Yy8weDkwClsgICAzMS44MDAyOTBd
+ICBbPGZmZmZmZmZmODE2NDliNDA+XSBzdGFydF9rZXJuZWwrMHgzNGEvMHgzNTcKWyAgIDMxLjgw
+MDI5MF0gIFs8ZmZmZmZmZmY4MTY0OTI5Zj5dIHg4Nl82NF9zdGFydF9yZXNlcnZhdGlvbnMrMHhh
+Zi8weGIzClsgICAzMS44MDAyOTBdICBbPGZmZmZmZmZmODE2NDkzOTg+XSB4ODZfNjRfc3RhcnRf
+a2VybmVsKzB4ZjUvMHhmYwoKIA==
+--00235445ba88158fbb04beaf3fbd--
