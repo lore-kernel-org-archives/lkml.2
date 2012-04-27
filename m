@@ -1,65 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760661Ab2D0Paa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:30:30 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:42953 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760484Ab2D0Pa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:30:28 -0400
-Message-ID: <4F9ABA74.8040404@linux.vnet.ibm.com>
-Date: Fri, 27 Apr 2012 08:25:40 -0700
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	id S1760545Ab2D0PbX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:31:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44337 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760405Ab2D0PbV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 11:31:21 -0400
+Date: Fri, 27 Apr 2012 12:31:19 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL 0/4] perf/annotate loop detection V2, fixes
+Message-ID: <20120427153119.GC27997@infradead.org>
+References: <1335452777-27326-1-git-send-email-acme@infradead.org>
+ <20120427072153.GB4766@gmail.com>
+ <20120427080613.GA7359@gmail.com>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/3] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE
- flags
-References: <1335289787-11089-1-git-send-email-john.stultz@linaro.org> <1335289787-11089-3-git-send-email-john.stultz@linaro.org> <20120427003953.GC9541@dastard>
-In-Reply-To: <20120427003953.GC9541@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042715-6078-0000-0000-00000A71C259
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120427080613.GA7359@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 05:39 PM, Dave Chinner wrote:
-> As it is, I'm still not sold on these being an fadvise() interface
-> because all it really is a delayed hole punching interface whose
-> functionailty is currently specific to tmpfs. The behaviour cannot
-> be implemented sanely by anything else at this point.
-...
-> IOWs, the specification you are describing means that FADV_VOLATILE
-> could be correctly implemented as an immediate hole punch by every
-> filesystem that supports hole punching.
+Em Fri, Apr 27, 2012 at 10:06:13AM +0200, Ingo Molnar escreveu:
+> * Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > [...]
+> > 
+> > This would require for us to draw all loops that are 
+> > interesting: probably all backwards jumping ones, with some 
+> > nesting limit of 5 or so. I think we really need this loop 
+> > graph for this UI to have low visual overhead :-/
+> > 
+> > Beyond improving visual stability of the output, this would 
+> > also obviously be (much) more informative as for reasonably 
+> > sized functions it would show all the current loop contexts - 
+> > which is very useful when one tries to make sense of a 
+> > function in assembly.
+> 
+> My (silent) hope would be that if we make assembly output more 
+> obvious, more structured visually then more people will read 
+> assembly code.
 
-Ahhh, I think I see where you're going with this.
+Well, the idea is to improve the experience of people who _already_ look
+at assembly output so that they can become slightly (or a lot, hey, one
+can dream) more productive, as we get older we need better eye lenses
+8-)
 
-1. Data written to a file somehow (mmap(), write()) and is on disk
-2. mmap() the data, and fault it in
-3. Do a small write to it
-4. set FADV_VOLATILE on it
+Doing that we would eventually have something that would make more
+people join this existing assembly lovers club.
+ 
+> Note that once we have loop nesting there are countless other 
+> possibilities as well to augment the output.
 
-Now we've got a dirty page which can theoretically be tossed out.  But,
-we've got old data on the disk and no real way to tell that it was old
-if it got faulted in again.  It's a much cleaner situation to just drop
-that data off the disk (hole punch) than to leave it around.  Is that
-the concern?
+Yeah, ponies!
+ 
+> ( Note that I pile on a couple of visual suggestions below - so 
+>   the output becomes more and more complex - ideally we want to 
+>   pick the ones from below that we like and skip the ones that 
+>   are not so good. )
+> 
+> 1) Loop grouping
+> 
+> We could slightly group the assembly instructions themselves 
+> as well:
+> 
+>     0.00 │       ↓ jmp    cc
+>     0.00 │         nopl   0x0(%rax)
+>          │
+>     0.00 │┌─→ c0:  cmp    %rax,%rbx
+>     0.00 ││        mov    %rax,%rcx
+>     0.00 ││      ↓ je     5dd
+>     0.00 ││   cc:  test   %rcx,%rcx
+>     0.00 ││      ↓ je     da
+>     0.00 ││        mov    0x8(%rcx),%esi
+>     0.00 ││        shr    $0x4,%esi
+>     0.00 ││        sub    $0x2,%esi
+>     0.00 ││   da:  mov    %rcx,0x10(%rbx)
+>     0.00 ││        mov    %rcx,%rax
+>     0.00 ││        cmpl   $0x0,%fs:0x18
+>     0.00 ││      ↓ je     ed
+>     0.00 ││        lock   cmpxchg %rbx,(%rdx)
+>     0.00 ││        cmp    %rax,%rcx
+>     0.00 │└──────↑ jne    c0
+>          │
+>     0.00 │         test   %rcx,%rcx
+>     0.00 │       ↓ je     104
+>     0.00 │         cmp    %r12d,%esi
+>     0.00 │       ↓ jne    719
+> 
+> See that by using a newline how much clearer the loop stands 
+> out, visually?
 
-But, we have other APIs that act this way, tossing out dirty data
-without reflecting that on-disk (MADV_DONTNEED at least).  Is it really
-a stretch to define the FADV_VOLATILE to behave the same way?  IOW,
-Should the behavior _really_ be hole punching?  That'll cost us I/O to
-throw away data during memory reclaim since we have to go write the
-information about the hole.  Seems like a much more appropriate thing to
-just toss the data out since the app can handle it.
+Linus also made that suggestion, agreed.
+ 
+> 2) Nesting
+> 
+> The classic C method to show nesting is to use curly braces and 
+> slight indentation:
+> 
+>     0.00 │       ↓ jmp    cc
+>     0.00 │         nopl   0x0(%rax)
+>          │
+>          │         {
+>     0.00 │┌─→ c0:    cmp    %rax,%rbx
+>     0.00 ││          mov    %rax,%rcx
+>     0.00 ││      ↓   je     5dd
+>     0.00 ││   cc:    test   %rcx,%rcx
+>     0.00 ││      ↓   je     da
+>     0.00 ││          mov    0x8(%rcx),%esi
+>     0.00 ││          shr    $0x4,%esi
+>     0.00 ││          sub    $0x2,%esi
+>     0.00 ││   da:    mov    %rcx,0x10(%rbx)
+>     0.00 ││          mov    %rcx,%rax
+>     0.00 ││          cmpl   $0x0,%fs:0x18
+>     0.00 ││      ↓   je     ed
+>     0.00 ││          lock   cmpxchg %rbx,(%rdx)
+>     0.00 ││          cmp    %rax,%rcx
+>          ││
+>     0.00 │└──────↑ } jne    c0
+>          │
+>     0.00 │         test   %rcx,%rcx
+>     0.00 │       ↓ je     104
+>     0.00 │         cmp    %r12d,%esi
+>     0.00 │       ↓ jne    719
 
+I guess we could do away with the {, the spaces before/after the loop
++ the indentation (that Arjan also suggested on G+) should be enough,
+right?
+ 
+> 3) Separating out forward conditional jumps
+> 
+>     0.00 │       ↓ jmp    cc
+>     0.00 │         nopl   0x0(%rax)
+>          │
+>          │         {
+>     0.00 │┌─→ c0:    cmp    %rax,%rbx
+>     0.00 ││          mov    %rax,%rcx
+>     0.00 ││      ↓   .je    5dd
+>     0.00 ││   cc:    test   %rcx,%rcx
+>     0.00 ││      ↓   .je    da
+>     0.00 ││          mov    0x8(%rcx),%esi
+>     0.00 ││          shr    $0x4,%esi
+>     0.00 ││          sub    $0x2,%esi
+>     0.00 ││   da:    mov    %rcx,0x10(%rbx)
+>     0.00 ││          mov    %rcx,%rax
+>     0.00 ││          cmpl   $0x0,%fs:0x18
+>     0.00 ││      ↓   .je    ed
+>     0.00 ││          lock   cmpxchg %rbx,(%rdx)
+>     0.00 ││          cmp    %rax,%rcx
+>          ││
+>     0.00 │└──────↑ } jne    c0
+>          │
+>     0.00 │         test   %rcx,%rcx
+>     0.00 │       ↓ .je    104
+>     0.00 │         cmp    %r12d,%esi
+>     0.00 │       ↓ .jne   719
+> 
+> So the forward conditional jumps get moved by one character to 
+> the right and get prefixed with '.', which has the following 
+> effects:
+> 
+>  - the flow of all the 'other', register modifying and loop 
+>    instructions can be seen more clearly
+> 
+>  - the 'exception' forward conditional jumps get moved into the 
+>    visual background, slightly.
+> 
+>  - blocks of instructions with no branches amongst them are more 
+>    clearly visible.
+> 
+> If '.' is too aggressive or too confusing then some other 
+> (possibly graphical) character could be used as well?
+
+Yeah, there are some unused graphical chars. But perhaps we should just
+use ↓ again?
+
+     0.00 │┌─→ c0:    cmp    %rax,%rbx
+     0.00 ││          mov    %rax,%rcx
+     0.00 ││      ↓   ↓je    5dd
+     0.00 ││   cc:    test   %rcx,%rcx
+     0.00 ││      ↓   ↓je    da
+     0.00 ││          mov    0x8(%rcx),%esi
+     0.00 ││          shr    $0x4,%esi
+     0.00 ││          sub    $0x2,%esi
+     0.00 ││   da:    mov    %rcx,0x10(%rbx)
+     0.00 ││          mov    %rcx,%rax
+     0.00 ││          cmpl   $0x0,%fs:0x18
+     0.00 ││      ↓   ↓je    ed
+     0.00 ││          lock   cmpxchg %rbx,(%rdx)
+     0.00 ││          cmp    %rax,%rcx
+          ││
+     0.00 │└──────↑ } jne    c0
+
+Does it still stands out? I think so, we expect a letter there,
+something very different is there, matching the other down arrowsome
+columns to the left.
+
+> 4) Marking labels
+> 
+> I'd argue we bring in <ab> as label markers:
+> 
+>     0.00 │       ↓ jmp    <cc>
+>     0.00 │         nopl   0x0(%rax)
+>          │
+>          │         {
+>     0.00 │┌─→ c0:    cmp    %rax,%rbx
+>     0.00 ││          mov    %rax,%rcx
+>     0.00 ││      ↓   .je    <5dd>
+>     0.00 ││   cc:    test   %rcx,%rcx
+>     0.00 ││      ↓   .je    <da>
+>     0.00 ││          mov    0x8(%rcx),%esi
+>     0.00 ││          shr    $0x4,%esi
+>     0.00 ││          sub    $0x2,%esi
+>     0.00 ││   da:    mov    %rcx,0x10(%rbx)
+>     0.00 ││          mov    %rcx,%rax
+>     0.00 ││          cmpl   $0x0,%fs:0x18
+>     0.00 ││      ↓   .je    <ed>
+>     0.00 ││          lock   cmpxchg %rbx,(%rdx)
+>     0.00 ││          cmp    %rax,%rcx
+>          ││
+>     0.00 │└──────↑ } jne    <c0>
+>          │
+>     0.00 │         test   %rcx,%rcx
+>     0.00 │       ↓ .je    <104>
+>     0.00 │         cmp    %r12d,%esi
+>     0.00 │       ↓ .jne   <719>
+> 
+> Note how much easier it becomes to read the body of the loop: 
+> the <> labels are clearly separated from constants/offsets 
+> within the other assembly instructions. In the current output 
+> the two easily 'mix', which is bad.
+
+I think the <> is enough, i.e. no need for capitalization, as a bonus
+point, it is already what is used in raw assembly mode, i.e. a subset of
+users are already used to that visual cue.
+ 
+> 5)
+> 
+> Another trick we could use to separate labels from constants 
+> more clearly is capitalization:
+> 
+>     0.00 │       ↓ jmp    <CC>
+>     0.00 │         nopl   0x0(%rax)
+>          │
+>          │         {
+>     0.00 │┌─→ C0:    cmp    %rax,%rbx
+>     0.00 ││          mov    %rax,%rcx
+>     0.00 ││      ↓   .je    <5DD>
+>     0.00 ││   CC:    test   %rcx,%rcx
+>     0.00 ││      ↓   .je    <DA>
+>     0.00 ││          mov    0x8(%rcx),%esi
+>     0.00 ││          shr    $0x4,%esi
+>     0.00 ││          sub    $0x2,%esi
+>     0.00 ││   DA:    mov    %rcx,0x10(%rbx)
+>     0.00 ││          mov    %rcx,%rax
+>     0.00 ││          cmpl   $0x0,%fs:0x18
+>     0.00 ││      ↓   .je    <ED>
+>     0.00 ││          lock   cmpxchg %rbx,(%rdx)
+>     0.00 ││          cmp    %rax,%rcx
+>          ││
+>     0.00 │└──────↑ } jne    <C0>
+>          │
+>     0.00 │         test   %rcx,%rcx
+>     0.00 │       ↓ .je    <104>
+>     0.00 │         cmp    %r12d,%esi
+>     0.00 │       ↓ .jne   <719>
+> 
+> I'm not entirely convinced we want this one.
+> 
+> 6) Making callq's to function symbols more C-alike
+> 
+> Before:
+> 
+>     0.00 ││  70:  mov    %rbx,%rdi
+>     0.00 ││       callq  _IO_switch_to_main_get_area
+>     0.00 ││       mov    0x8(%rbx),%rdx
+>     0.00 ││       mov    0x10(%rbx),%rsi
+>     0.00 ││       cmp    %rsi,%rdx
+> 
+> After:
+> 
+>     0.00 ││  70:  mov    %rbx,%rdi
+>     0.00 ││       callq  _IO_switch_to_main_get_area()
+>     0.00 ││       mov    0x8(%rbx),%rdx
+>     0.00 ││       mov    0x10(%rbx),%rsi
+>     0.00 ││       cmp    %rsi,%rdx
+> 
+> The () makes it easier to separate the 'function' purpose of the 
+> symbol.
+
+Yes, I agreed already with that one, just was waiting a bit more to see
+if somebody else would disagree (hint, hint)
+ 
+> This would be especially useful once we start looking into 
+> debuginfo data and start symbolising stack frame offsets and 
+> data references:
+> 
+> Before:
+> 
+>     0.00 │   1b3:  mov    -0x38(%rbp),%rdx
+>     0.00 │         mov    -0x34(%rbp),%rcx
+>     0.00 │         mov    0x335fb4(%rip),%eax        # 392a5b0b60 <perturb_byte>
+> 
+> After:
+> 
+>   #
+>   # PARAM:idx          : 0x38
+>   # PARAM:addr         : 0x34
+>   # DATA:perturb_byte  : 0x392a5b0b60
+>   #
+> 
+>   ...
+> 
+>     0.00 │   1b3:  mov    P:idx....(%rbp),%rdx
+>     0.00 │         mov    P:addr...(%rbp),%rcx
+>     0.00 │         mov    D:pertu..(%rip),%eax
+> 
+> Where 'P:' stands for parameter, 'D:' for data, and the symbol 
+> names are length-culled to a fixed width 6 chars, to make the 
+> registers align better and to not interfere with other textual 
+> output. There's a summary at the top, to still have all the raw 
+> binary data available - but 'o' can be pressed as well to see 
+> the raw values.
+> 
+> This way it still looks like assembly - but is *much* more 
+> informative.
+
+Yeah, there were some ideas related to figuring out what values are in
+what registers at each line, easy for things like constants, requires a
+bit more thought for other cases.
+ 
+- Arnaldo
