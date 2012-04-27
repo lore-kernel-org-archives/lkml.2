@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759719Ab2D0D1A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 23:27:00 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:9129
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759700Ab2D0D0x (ORCPT
+	id S1759706Ab2D0De0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 23:34:26 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:37926 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759677Ab2D0DeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 23:26:53 -0400
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1202h1082kzz8275bh8275dhz2dh2a8h668h839hd24he5bh)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng <b29396@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linus.walleij@stericsson.com>,
-        <swarren@wwwdotorg.org>, <s.hauer@pengutronix.de>,
-        <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
-        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <cjb@laptop.org>, <b20223@freescale.com>
-Subject: [PATCH v5 1/1] dt: add of_get_child_count helper function
-Date: Fri, 27 Apr 2012 11:36:20 +0800
-Message-ID: <1335497780-1164-1-git-send-email-b29396@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20120427032831.GE26070@shlinux2.ap.freescale.net>
-References: <20120427032831.GE26070@shlinux2.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Thu, 26 Apr 2012 23:34:25 -0400
+Date: Thu, 26 Apr 2012 23:32:13 -0400 (EDT)
+Message-Id: <20120426.233213.2080676231209264997.davem@davemloft.net>
+To: sam@ravnborg.org
+Cc: yinghai@kernel.org, tj@kernel.org, mhocko@suse.cz, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Weirdness in __alloc_bootmem_node_high
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120424.030050.767238391336824492.davem@davemloft.net>
+References: <20120422.220054.1961736352806510855.davem@davemloft.net>
+	<20120424063236.GA23963@merkur.ravnborg.org>
+	<20120424.030050.767238391336824492.davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 26 Apr 2012 20:32:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dong Aisheng <dong.aisheng@linaro.org>
+From: David Miller <davem@davemloft.net>
+Date: Tue, 24 Apr 2012 03:00:50 -0400 (EDT)
 
-Currently most code to get child count in kernel are almost same,
-add a helper to implement this function for dt to use.
+> From: Sam Ravnborg <sam@ravnborg.org>
+> Date: Tue, 24 Apr 2012 08:32:36 +0200
+> 
+>> On Sun, Apr 22, 2012 at 10:00:54PM -0400, David Miller wrote:
+>>> diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+>>> index db4e821..3763302 100644
+>>> --- a/arch/sparc/Kconfig
+>>> +++ b/arch/sparc/Kconfig
+>>> @@ -109,6 +109,9 @@ config NEED_PER_CPU_EMBED_FIRST_CHUNK
+>>>  config NEED_PER_CPU_PAGE_FIRST_CHUNK
+>>>  	def_bool y if SPARC64
+>>>  
+>>> +config NO_BOOTMEM
+>>> +	def_bool y if SPARC64
+>> 
+>> mm/Kconfig define NO_BOOTMEM so you can just add a "select NO_BOOTMEM"
+>> to SPARC64.
+> 
+> I was merely following the lead on x86 :-) but yes it should
+> probably be a select.
 
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+So I merged mainline into sparc-next to get the mm/nobootmem.c fix,
+and then added in the sparc64 NO_BOOTMEM conversion.
 
----
-Rob missed this patch for 3.4 kernel.
-Based on Rob's suggestion, we can get it go in with pinctrl driver.
-Since Rob once had applied it, i added Rob's ack.
-See:
-https://lkml.org/lkml/2012/4/14/239
-
-changes v4->v5:
- * do not initialize child node pointer based on Stephen's suggestion.
-
-changes v3->v4:
- * addressed Grant's suggestion to use for_each_child_of_node.
-
-changes v2->v3:
- Addressed some people's comments:
- * do not use assignment as expression
- * return 0 for non-dt case
-
-Changes v1->v2:
- * change the name from of_get_child_number to of_get_child_count
----
- include/linux/of.h |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/of.h b/include/linux/of.h
-index e3f942d..2ec1083 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -193,6 +193,17 @@ extern struct device_node *of_get_next_child(const struct device_node *node,
- 	for (child = of_get_next_child(parent, NULL); child != NULL; \
- 	     child = of_get_next_child(parent, child))
- 
-+static inline int of_get_child_count(const struct device_node *np)
-+{
-+	struct device_node *child;
-+	int num = 0;
-+
-+	for_each_child_of_node(np, child)
-+		num++;
-+
-+	return num;
-+}
-+
- extern struct device_node *of_find_node_with_property(
- 	struct device_node *from, const char *prop_name);
- #define for_each_node_with_property(dn, prop_name) \
-@@ -300,6 +311,11 @@ static inline bool of_have_populated_dt(void)
- #define for_each_child_of_node(parent, child) \
- 	while (0)
- 
-+static inline int of_get_child_count(const struct device_node *np)
-+{
-+	return 0;
-+}
-+
- static inline int of_device_is_compatible(const struct device_node *device,
- 					  const char *name)
- {
--- 
-1.7.0.4
-
-
+Just FYI.
