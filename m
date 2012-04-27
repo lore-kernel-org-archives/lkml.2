@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760826Ab2D0RFw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 13:05:52 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48617 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758624Ab2D0RFu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 13:05:50 -0400
-X-Sasl-enc: e3RfA0Gmld1PZObbclv15+PvjdlWBfpXW/+4EtUTdj4K 1335546349
-Date: Fri, 27 Apr 2012 10:05:48 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: linux-next: manual merge of the staging tree with the
- driver-core tree
-Message-ID: <20120427170548.GB2789@kroah.com>
-References: <20120427143114.d141038158ea4923399d1d1a@canb.auug.org.au>
+	id S1760816Ab2D0RK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 13:10:59 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:39137 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759978Ab2D0RK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 13:10:57 -0400
+Message-ID: <4F9AD31F.8080109@msgid.tls.msk.ru>
+Date: Fri, 27 Apr 2012 21:10:55 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120427143114.d141038158ea4923399d1d1a@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>
+CC: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        autofs@vger.kernel.org, raven@themaw.net, thomas@m3y3r.de,
+        stable@kernel.org
+Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix design
+ error.
+References: <1335447289-9909-1-git-send-email-mjt@msgid.tls.msk.ru> <CA+55aFxEP7-+N7vTPZ-4hD-UirZ=+YMJh2x3EjZvUmjjyOchtg@mail.gmail.com> <4F9A6ABA.6050503@msgid.tls.msk.ru> <20120427.122207.795060203454499065.davem@davemloft.net>
+In-Reply-To: <20120427.122207.795060203454499065.davem@davemloft.net>
+X-Enigmail-Version: 1.4
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 02:31:14PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On 27.04.2012 20:22, David Miller wrote:
+> From: Michael Tokarev <mjt@tls.msk.ru>
+> Date: Fri, 27 Apr 2012 13:45:30 +0400
 > 
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/Kconfig drivers/Makefile between commit de55d8716ac5 ("Extcon
-> (external connector): import Android's switch class and modify") from the
-> driver-core tree and commits a980e046098b ("IIO: Move the core files to
-> drivers/iio") and db3b9e990e75 ("Staging: VME: move VME drivers out of
-> staging") from the staging tree.
+>> Please note: the talk is about 32bit userspace on 64bit kernel,
+>> which should be quite rare these days, or something of less
+>> priority.
 > 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+> You're talking about %99 of powerpc and sparc systems.
 
-Thanks, that looks correct.
+Nope.  Only about x86 32 on 64 bits, and only with 3.3 kernel.
+The original problem does not exist on ppc, at least as far as
+I understand.
 
-greg k-h
+/mjt
+
