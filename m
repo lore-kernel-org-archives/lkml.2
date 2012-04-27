@@ -1,97 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab2D0HfK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 03:35:10 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33750 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756567Ab2D0HfI (ORCPT
+	id S1757885Ab2D0Hf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 03:35:29 -0400
+Received: from mga05.intel.com ([192.55.52.89]:7795 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757513Ab2D0Hf0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 03:35:08 -0400
-Date: Fri, 27 Apr 2012 09:35:04 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linus.walleij@stericsson.com,
-        swarren@wwwdotorg.org, shawn.guo@freescale.com, kernel@pengutronix.de,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, cjb@laptop.org,
-        b20223@freescale.com
-Subject: Re: [PATCH v3 4/4] mmc: sdhci-imx-esdhc: convert to use pinctrl
- subsystem
-Message-ID: <20120427073504.GS17184@pengutronix.de>
-References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
- <1335451227-27709-4-git-send-email-b29396@freescale.com>
+	Fri, 27 Apr 2012 03:35:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335451227-27709-4-git-send-email-b29396@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:32:28 up 166 days, 15:19, 56 users,  load average: 0.02, 0.54,
- 0.90
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <CA+55aFzEwsW1kdLo2hpgW2PUCRkyaRxS_KB40iwmuk1FDgV+cg@mail.gmail.com>
+References: <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
+	<1334772473.2137.22.camel@falcor>
+	<20120418183938.GH6589@ZenIV.linux.org.uk>
+	<1334865448.2429.35.camel@falcor>
+	<20120420004303.GB6871@ZenIV.linux.org.uk>
+	<alpine.LSU.2.00.1204201133340.1450@eggly.anvils>
+	<20120420190418.GK6871@ZenIV.linux.org.uk>
+	<CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
+	<20120420195833.GM6871@ZenIV.linux.org.uk>
+	<CA+55aFzaC8YfN_q1TxPbNgpD7AnoAVac2Bqa+ysEji3u7ZQ18A@mail.gmail.com>
+	<20120420221315.GN6871@ZenIV.linux.org.uk>
+	<CA+55aFzEwsW1kdLo2hpgW2PUCRkyaRxS_KB40iwmuk1FDgV+cg@mail.gmail.com>
+Date: Fri, 27 Apr 2012 10:35:25 +0300
+Message-ID: <CALLzPKarZY11htkukZPi+7ny5r=au9hMdKBOy20wAdFjSBOyjA@mail.gmail.com>
+Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
+ ima-appraisal patches)
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 10:40:27PM +0800, Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> This driver is shared between many platforms. Currently only imx6q has
-> pinctrl support, to avoid breaking other platforms that do not have pinctrl
-> support to run this driver, enable pinctrl dummy state for them before
-> they also convert to pinctrl subsystem.
-> 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> ---
-> This patch depends on:
-> pinctrl: add pinctrl_provide_dummies interface for platforms to use
-> http://www.spinics.net/lists/arm-kernel/msg171538.html
-> 
-> ChangeLog v2->v3:
->  * patch name updated.
->    v1 name is ARM: imx6q: switch to use pinctrl driver
->  * using pinctrl dummy state to avoid breaking other platforms to use this
->    driver.
-> 
-> ChangeLog v1->v2:
->  * using updated binding
-> ---
->  arch/arm/boot/dts/imx6q-arm2.dts               |    4 +++
->  arch/arm/boot/dts/imx6q.dtsi                   |   32 ++++++++++++++++++++++++
->  arch/arm/mach-imx/Kconfig                      |    2 +
->  arch/arm/mach-imx/eukrea_mbimxsd35-baseboard.c |    2 +
->  arch/arm/mach-imx/mach-cpuimx51.c              |    2 +
->  arch/arm/mach-imx/mach-cpuimx51sd.c            |    2 +
->  arch/arm/mach-imx/mach-eukrea_cpuimx25.c       |    2 +
->  arch/arm/mach-imx/mach-mx25_3ds.c              |    2 +
->  arch/arm/mach-imx/mach-mx35_3ds.c              |    2 +
->  arch/arm/mach-imx/mach-mx51_3ds.c              |    2 +
->  arch/arm/mach-imx/mach-mx51_babbage.c          |    2 +
->  arch/arm/mach-imx/mach-mx51_efikamx.c          |    2 +
->  arch/arm/mach-imx/mach-mx51_efikasb.c          |    2 +
->  arch/arm/mach-imx/mach-mx53_ard.c              |    2 +
->  arch/arm/mach-imx/mach-mx53_evk.c              |    2 +
->  arch/arm/mach-imx/mach-mx53_loco.c             |    2 +
->  arch/arm/mach-imx/mach-mx53_smd.c              |    2 +
->  arch/arm/mach-imx/mach-pcm043.c                |    2 +
->  arch/arm/mach-imx/mach-vpr200.c                |    2 +
+On Sat, Apr 21, 2012 at 1:35 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> On Fri, Apr 20, 2012 at 3:13 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Kinda-sorta.  I agree that such helpers make sense, but you are too
+> > optimistic about the number of such places.  And clusterfuck around
+> > mremap() is fairly deep, so propagating all way back to up_write()
+> > wont' be fun.
+>
+> Fair enough.
+>
+> I'll do the helpers and see how much they get rid of, just because
+> looking at all the callers, those helpers seem to be obviously the
+> right thing anyway. So even if we don't do anything else, we can
+> improve things regardless.
+>
+> For do_brk(), for example, it looks like do_brk() itself should
+> actually be entirely static to mm/mmap.c, because every single caller
+> from the outside actually wants the self-locking version.
+>
+> So plan right now: do "vm_xyzzy()" helper functions that do
+> "do_xyzzy()" and take the lock (and do not take the "mm" argument,
+> because it had better always be the current one - keep the calling
+> convention as simple as possible).
+>
+>                   Linus
 
-Here you are patching only the boards which happen to use the esdhc
-controller, so we need to patch other boards when another driver gains
-pinctrl. Let's add the provide_dummies call to the SoCs instead which
-do not have pinctrl yet.
+Moi Linus,
 
-Sascha
+Taking the list of files to fput out of do_munmap() and doing it after
+unlocking mmap sem
+was one of possible solutions when we discussed it with Mimi.
+But we were looking for the solution with less modifications of existing kernel.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+In fact IMA is already doing some work before taking mmap sem.
+---
+	ret = ima_file_mmap(filep, prot);
+	if (ret < 0)
+		return ret;
+	down_write(&current->mm->mmap_sem);
+--
+
+But have you seen the proposed patch for __fput()?
+[PATCH v4 10/12] ima: defer calling __fput()
+
+It defers only of course the last AND mmap_sem is locked AND open for write.
+
+	if (current->mm && rwsem_is_locked(&current->mm->mmap_sem)) {
+		if (ima_defer_fput(file) == 0)
+			return;
+	}
+
+Just 5 out of ~100,000 mmap_sem held fput() calls were deferred.
+
+t.
+- Dmitry
