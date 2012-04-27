@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760789Ab2D0Qx5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 12:53:57 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54447 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758382Ab2D0Qx4 (ORCPT
+	id S1760805Ab2D0QyH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 12:54:07 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:35180 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758382Ab2D0QyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 12:53:56 -0400
-Date: Fri, 27 Apr 2012 17:53:06 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/2] asm-generic: io: remove {read,write} string functions
-Message-ID: <20120427165306.GC14743@mudshark.cambridge.arm.com>
-References: <1335523376-14695-1-git-send-email-will.deacon@arm.com>
- <201204271217.50048.vapier@gentoo.org>
+	Fri, 27 Apr 2012 12:54:01 -0400
+Date: Fri, 27 Apr 2012 09:53:56 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Cc: ShuoX Liu <shuox.liu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH] percpu, x86: don't use PMD_SIZE as embedded atom_size on
+ 32bit
+Message-ID: <20120427165356.GA26595@google.com>
+References: <4F97BA98.6010001@intel.com>
+ <20120425222429.GE8989@google.com>
+ <1335405672.14538.135.camel@ymzhang.sh.intel.com>
+ <20120426224946.GG27486@google.com>
+ <1335488964.14538.159.camel@ymzhang.sh.intel.com>
+ <1335516994.14538.160.camel@ymzhang.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201204271217.50048.vapier@gentoo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1335516994.14538.160.camel@ymzhang.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+With the embed percpu first chunk allocator, x86 uses either PAGE_SIZE
+or PMD_SIZE for atom_size.  PMD_SIZE is used when CPU supports PSE so
+that percpu areas are aligned to PMD mappings and possibly allow using
+PMD mappings in vmalloc areas in the future.  Using larger atom_size
+doesn't waste actual memory; however, it does require larger vmalloc
+space allocation later on for !first chunks.
 
-On Fri, Apr 27, 2012 at 05:17:47PM +0100, Mike Frysinger wrote:
-> On Friday 27 April 2012 06:42:55 Will Deacon wrote:
-> > The {read,write}s{b,w,l} functions are not defined across all
-> > architectures and therefore shouldn't be used by portable drivers. We
-> > should encourage driver writers to use the io{read,write}{8,16,32}_rep
-> > functions instead.
-> 
-> well, that isn't true today as a grep of the drivers/ tree shows.  perhaps we 
-> should fix that first ?  quite a number of architectures do implement these.
+With reasonably sized vmalloc area, PMD_SIZE shouldn't be a problem
+but x86_32 at this point is anything but reasonable in terms of
+address space and using later atom_size reportedly leads to frequent
+percpu allocation failures on certain setups.
 
-Sure, and architectures can continue to implement these if they're using
-drivers that require them (I'll reintroduce them for blackfin). They
-shouldn't be used for new architectures though, so any drivers that are
-required by folks using asm-generic/io.h will need converting.
+This patch makes x86_32 always use PAGE_SIZE as atom_size for embed
+first chunk allocator.
 
-> > This patch removes the {read,write} string functions for the generic IO
-> > header as they have no place in a new architecture port.
-> 
-> i don't see any file anywhere that describes what the baseline API is supposed 
-> to be, and what each set of funcs are for.  there is just the random ugliness 
-> in each arch's asm/io.h cobbled together until things work.  i think that also 
-> needs to be addressed before we go extending/contracting the API provides by 
-> asm-generic/io.h.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Yanmin Zhang <yanmin.zhang@intel.com>
+Reported-by: ShuoX Liu <shuox.liu@intel.com>
+LKML-Reference: <4F97BA98.6010001@intel.com>
+Cc: stable@vger.kernel.org
+---
+Can you please verify this resolves the issue you guys are seeing?
+Once verified, I'll push it through percpu/for-3.5-fixes.
 
-I agree that it's a bit of a mess, but if we can keep the asm-generic
-interfaces clean then it can help driver writers see what we have as a
-common base. If a driver is not portable (maybe for some
-architecture-specific device) then they could use extra accessors if they
-really need to.
+Thanks.
 
-The point of removing these functions is to make it clear that they're not
-part of the baseline API and instead encourage people to use other accessors
-instead if they want to write portable code.
+ arch/x86/kernel/setup_percpu.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-Will
+diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
+index 71f4727..ed96573 100644
+--- a/arch/x86/kernel/setup_percpu.c
++++ b/arch/x86/kernel/setup_percpu.c
+@@ -185,10 +185,22 @@ void __init setup_per_cpu_areas(void)
+ #endif
+ 	rc = -EINVAL;
+ 	if (pcpu_chosen_fc != PCPU_FC_PAGE) {
+-		const size_t atom_size = cpu_has_pse ? PMD_SIZE : PAGE_SIZE;
+ 		const size_t dyn_size = PERCPU_MODULE_RESERVE +
+ 			PERCPU_DYNAMIC_RESERVE - PERCPU_FIRST_CHUNK_RESERVE;
++		size_t atom_size;
+ 
++		/*
++		 * If PSE is available, use PMD_SIZE for atom_size so that
++		 * embedded percpu areas are aligned to PMD.  This, in the
++		 * future, can also allow using PMD mappings in vmalloc
++		 * area.  Use PAGE_SIZE on 32bit as vmalloc space is highly
++		 * contended and large vmalloc area alloc can easily fail.
++		 */
++		atom_size = PAGE_SIZE;
++#ifdef CONFIG_X86_64
++		if (cpu_has_pse)
++			atom_size = PMD_SIZE;
++#endif
+ 		rc = pcpu_embed_first_chunk(PERCPU_FIRST_CHUNK_RESERVE,
+ 					    dyn_size, atom_size,
+ 					    pcpu_cpu_distance,
