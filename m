@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab2D0HZO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 03:25:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38778 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab2D0HZM (ORCPT
+	id S1756989Ab2D0Hay (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 03:30:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46422 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab2D0Hax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 03:25:12 -0400
-Date: Fri, 27 Apr 2012 15:25:05 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
+	Fri, 27 Apr 2012 03:30:53 -0400
+Date: Fri, 27 Apr 2012 09:30:48 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
 To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Dong Aisheng <b29396@freescale.com>, b20223@freescale.com,
-        linus.walleij@stericsson.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        kernel@pengutronix.de, cjb@laptop.org, s.hauer@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org
+Cc: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
+        b20223@freescale.com, linus.walleij@stericsson.com,
+        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
+        cjb@laptop.org
 Subject: Re: [PATCH v3 2/4] pinctrl: pinctrl-imx: add imx pinctrl core driver
-Message-ID: <20120427072503.GP2234@S2101-09.ap.freescale.net>
+Message-ID: <20120427073048.GR17184@pengutronix.de>
 References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
  <1335451227-27709-2-git-send-email-b29396@freescale.com>
  <20120426144446.GN9142@game.jcrosoft.org>
- <20120426151536.GO9142@game.jcrosoft.org>
- <20120427054842.GJ2234@S2101-09.ap.freescale.net>
- <20120427062816.GQ9142@game.jcrosoft.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120427062816.GQ9142@game.jcrosoft.org>
+In-Reply-To: <20120426144446.GN9142@game.jcrosoft.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:24:51 up 166 days, 15:11, 55 users,  load average: 3.09, 2.37,
+ 1.46
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 08:28:16AM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 13:48 Fri 27 Apr     , Shawn Guo wrote:
-> > On Thu, Apr 26, 2012 at 05:15:36PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > > We have on Imx mxc at91 and other SoC controler hich you configure per pin
-> > > 
-> > > which means one pin have multiple function and the same function is on
-> > > multiple pins
-> > > 
-> > > so the groups are just a list of possible pins
-> > > 
-> > > Instead of re-inventing bindings we do need to come with a common binding whre
-> > > it's possible
-> > > 
-> > > So instead I proppose (send in the v2) to use common way to describe the group
-> > > 
-> > Let's see how many nodes we will have in device tree.  For imx6q
-> > example, there are 332 pins and each pin has up to 8 function selects.
-> > We will end up with having 332 x 8 = 2656 sub nodes under node
-> > "functions".  Device tree simply cannot afford such a bloating.
-> device tree can offord it
+On Thu, Apr 26, 2012 at 04:44:46PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > +			fsl,pins = <1386 0x17059	/* MX6Q_PAD_SD4_CMD__USDHC4_CMD */
+> > +				    1392 0x17059	/* MX6Q_PAD_SD4_CLK__USDHC4_CLK	*/
+> > +				    1462 0x17059	/* MX6Q_PAD_SD4_DAT0__USDHC4_DAT0 */
+> > +				    1470 0x17059	/* MX6Q_PAD_SD4_DAT1__USDHC4_DAT1 */
+> > +				    1478 0x17059	/* MX6Q_PAD_SD4_DAT2__USDHC4_DAT2 */
+> > +				    1486 0x17059	/* MX6Q_PAD_SD4_DAT3__USDHC4_DAT3 */
+> > +				    1493 0x17059	/* MX6Q_PAD_SD4_DAT4__USDHC4_DAT4 */
+> > +				    1501 0x17059	/* MX6Q_PAD_SD4_DAT5__USDHC4_DAT5 */
+> > +				    1509 0x17059	/* MX6Q_PAD_SD4_DAT6__USDHC4_DAT6 */
+> > +				    1517 0x17059>;	/* MX6Q_PAD_SD4_DAT7__USDHC4_DAT7 */
+> honestly I don't like this it's obscure need to decode manually
 > 
-No.  Device tree maintainers has told that.  Looking into the clock DT
-binding discussion, you will find that Grant does not like to have
-even 100~200 nodes to represent an entire clock tree in the DT.
-
-With your proposal (actually this has been proposed long time before),
-to represent the pins for a 24bit display, it easily consumes 28 nodes
-on mach-mxs, while my binding only needs one node.  So in short, the
-proposal has been discussed and it's not a sensible one.
-
-Regards,
-Shawn
-
-> except you are going to have hundereds of duplicated pinctrl configuration
-> as different board will have different mux which is impossbile to maintain
-> either
+> I propose to use phandle
 > 
-> and I do not expect we add all the configuration possible but just the common
-> one
+> as example on uart you will want or not the rst/cts so you will have quite a
+> lot of bindings
 > 
-> Best Regards,
-> J.
+> so you can describe the pin configuration (function) and refer it by phandle
+> in the group
+
+I don't exactly know where are you aiming at. I think that you want a
+collection of pin groups somewhere and want to refer to it in the device
+nodes. No, please don't. There's no way to come up with a common group
+needed for example for the IPU (image processing unit). What pins you
+want to use here depends on the number of data lines you have on your
+panel and what type of panel you have. You can always use the remaining
+pins for somethin else. SPI is another example. The SPI unit has some
+dedicated chip select lines. The exact number of used chip selects is
+board specific.
+
+Sascha
+
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
