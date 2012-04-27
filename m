@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761249Ab2D0S7E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:59:04 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42015 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760475Ab2D0S7A (ORCPT
+	id S1761247Ab2D0TAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 15:00:35 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:44320 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758940Ab2D0TAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 14:59:00 -0400
-Subject: Re: [PATCH RFC 1/2] netfilter: conntrack: remove RCU usage in
- conntrack notifier
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Benjamin Poirier <bpoirier@suse.de>
-Cc: netdev@vger.kernel.org, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1335551333-6103-1-git-send-email-bpoirier@suse.de>
-References: <1335551333-6103-1-git-send-email-bpoirier@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Apr 2012 20:58:51 +0200
-Message-ID: <1335553131.2775.252.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Apr 2012 15:00:34 -0400
+Date: Fri, 27 Apr 2012 13:00:33 -0600
+From: Khalid Aziz <khalid.aziz@hp.com>
+To: linux-kernel@vger.kernel.org
+Cc: bhelgaas@google.com, linux-pci@vger.kernel.org
+Subject: [PATCH] Disable Bus Master on PCI device shutdown
+Message-ID: <20120427190033.GA17588@ldl.usa.hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-27 at 14:28 -0400, Benjamin Poirier wrote:
-> I think that the rcu usage in this code is pointless. It should either be
-> removed or, if it was intended to protect against something, it ought to make
-> that clear.
-> 
-> 1) The code does not make use of the deferred deletion/wait for completion rcu
-> api (ie. synchronize_rcu(), call_rcu()).
-> 2) It does not benefit from the barriers implied by the rcu primitives used.
-> The code deals with callback pointers. There's no need to order writes to the
-> function code (!) before writes to the function pointers here.
-> ---
+Disable Bus Master bit on the device in
+pci_device_shutdown() to ensure PCI devices do not continue
+to DMA data after shutdown. This can cause memory
+corruption in case of a kexec where the current kernel
+shuts down and transfers control to a new kernel while a
+PCI device continues to DMA to memory that does not belong
+to it any more in the new kernel.
 
-At a first glance, this seems pretty wrong.
-
-code can disappear under you, thats for sure.
-
-CONFIG_NF_CT_NETLINK=m
-
-hint : module unload contains an rcu barrier.
+I have tested this code on two laptops, two workstations and
+a 16-socket server. kexec worked correctly on all of them.
 
 
+Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+---
+ drivers/pci/pci-driver.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 6b54b23..9db5940 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -420,6 +420,12 @@ static void pci_device_shutdown(struct device *dev)
+ 	pci_msi_shutdown(pci_dev);
+ 	pci_msix_shutdown(pci_dev);
+ 
++	/* 
++	 * Turn off Bus Master bit on the device to tell it to not
++	 * continue to do DMA
++	 */
++	pci_disable_device(pci_dev);
++
+ 	/*
+ 	 * Devices may be enabled to wake up by runtime PM, but they need not
+ 	 * be supposed to wake up the system from its "power off" state (e.g.
+-- 
+1.7.8.3
 
