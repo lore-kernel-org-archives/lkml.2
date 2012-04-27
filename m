@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760451Ab2D0RDw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 13:03:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43300 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab2D0RDv (ORCPT
+	id S1760811Ab2D0RFj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 13:05:39 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55242 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758624Ab2D0RFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 13:03:51 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] spi: fix spi.h kernel-doc warning
-To: Randy Dunlap <rdunlap@xenotime.net>, LKML <linux-kernel@vger.kernel.org>,
-        spi-devel-general@lists.sourceforge.net
-In-Reply-To: <4F8E04E6.60005@xenotime.net>
-References: <4F8E04E6.60005@xenotime.net>
-Date: Fri, 27 Apr 2012 11:03:47 -0600
-Message-Id: <20120427170347.BEA843E0B4D@localhost>
+	Fri, 27 Apr 2012 13:05:38 -0400
+X-Sasl-enc: AxH6X+O1Vr9jSfd6Vvd/6q/IyN5Y7XKEC7czi6zINff7 1335546337
+Date: Fri, 27 Apr 2012 10:05:36 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>
+Subject: Re: linux-next: manual merge of the staging tree with Linus' tree
+Message-ID: <20120427170536.GA2789@kroah.com>
+References: <20120427143703.f6946999cbca5509e22820a6@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120427143703.f6946999cbca5509e22820a6@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Apr 2012 17:03:50 -0700, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
+On Fri, Apr 27, 2012 at 02:37:03PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> Fix kernel-doc warning in spi.h (copy/pasto):
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/vt6656/ioctl.c between commit 17b7e1ba1e2e ("staging:
+> vt6656: Don't leak memory in drivers/staging/vt6656/ioctl.c::private_ioctl
+> ()") from Linus' tree and commit 62ef30b5781d ("staging: vt6656: Remove
+> redundant casts from ioctl.c") from the staging tree.
 > 
-> Warning(include/linux/spi/spi.h:365): No description found for parameter 'unprepare_transfer_hardware'
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Applied, thanks.
+Thanks, that looks correct.
 
-g.
-
-> ---
->  include/linux/spi/spi.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- lnx-34-rc3.orig/include/linux/spi/spi.h
-> +++ lnx-34-rc3/include/linux/spi/spi.h
-> @@ -254,7 +254,7 @@ static inline void spi_unregister_driver
->   *	driver is finished with this message, it must call
->   *	spi_finalize_current_message() so the subsystem can issue the next
->   *	transfer
-> - * @prepare_transfer_hardware: there are currently no more messages on the
-> + * @unprepare_transfer_hardware: there are currently no more messages on the
->   *	queue so the subsystem notifies the driver that it may relax the
->   *	hardware by issuing this call
->   *
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+greg k-h
