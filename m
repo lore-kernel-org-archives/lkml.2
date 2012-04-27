@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab2D0Fki (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 01:40:38 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18639 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab2D0Fkg (ORCPT
+	id S1754048Ab2D0Frk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 01:47:40 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49732 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab2D0Frj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 01:40:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 26 Apr 2012 22:40:19 -0700
-Date: Fri, 27 Apr 2012 08:40:15 +0300
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv3 1/4] ARM: tegra: Add AHB driver
-Message-ID: <20120427084015.cb7c8e00c7d9a4cd01faa5ae@nvidia.com>
-In-Reply-To: <20120426215903.GH24211@n2100.arm.linux.org.uk>
-References: <1335352072-4001-1-git-send-email-hdoyu@nvidia.com>
-	<4F99A740.3080407@wwwdotorg.org>
-	<20120426215903.GH24211@n2100.arm.linux.org.uk>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-X-NVConfidentiality: public
+	Fri, 27 Apr 2012 01:47:39 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F9A327A.6050409@jp.fujitsu.com>
+Date: Fri, 27 Apr 2012 14:45:30 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120420 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Han Ying <yinghan@google.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyuki@gmail.com
+Subject: [RFC][PATCH 0/7 v2] memcg: prevent failure in pre_destroy()
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Apr 2012 23:59:03 +0200
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+This is a v2 patch for preventing failure in memcg->pre_destroy().
+With this patch, ->pre_destroy() will never return error code and
+users will not see warning at rmdir(). And this work will simplify
+memcg->pre_destroy(), largely.
 
-> On Thu, Apr 26, 2012 at 01:51:28PM -0600, Stephen Warren wrote:
-> > On 04/25/2012 05:07 AM, Hiroshi DOYU wrote:
-> > > The AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
-> > > High-performance Bus (AHB) architecture.
-> > > 
-> > > The AHB Arbiter controls AHB bus master arbitration. This effectively
-> > > forms a second level of arbitration for access to the memory
-> > > controller through the AHB Slave Memory device. The AHB pre-fetch
-> > > logic can be configured to enhance performance for devices doing
-> > > sequential access. Each AHB master is assigned to either the high or
-> > > low priority bin. Both Tegra20/30 have this AHB bus.
-> > > 
-> > > Some of configuration param could be passed from DT too.
-> > 
-> > I think this code looks reasonable. I'd like to see an ack from Russell,
-> > Arnd, and Olof on the final location of the files though.
-> 
-> Well, the big question which needs answering is whether this AHB software
-> interface is something specific to Tegra or whether it really is something
-> generic.  There's been some hints in the previous thread that it's
-> specific to Tegra, so it may not after all make sense for it to be a
-> generic driver.
-> 
-> However, we _have_ decided "no more drivers under arch/arm".  So I really
-> don't want to see "struct xxx_driver" appearing in any code under that
-> subdirectory or one of its decendents.  I don't have much more to say
-> about location than that.
+This patch is based on linux-next + hugetlb memory control patches.
 
-What about having this driver under "drivers/amba"?
+I post this as RFC because I'll have vacation in the next week and
+hugetlb patches are not visible in linux-next yet.
+So, I'm not in hurry. Please review when you have time.
 
-If other similiar drivers are coming up, it's easy to find rather than
-having this arch/arm/mach-*. There may be some possibility of
-generalization later, then. Also it meets the requirement of no
-"struct xxxx_driver" under arch/arm. Arnd?
+I'll rebase this onto memcg-devel in the next post.
+== BTW, memory cgroup's github is here == 
+git://github.com/mstsxfx/memcg-devel.git
+
+Since v1, Whole patch designs are changed. In this version, I didn't
+remove ->pre_destroy() but make it succeed always. There are no
+asynchronous operation and no big patches. But this introduces
+2 changes to cgroup core.
+
+After this series, if use_hierarchy==0, all resources will be moved
+to root cgroup at rmdir() or force_empty().
+
+Brief patch conents are
+
+0001 : my version of compile-fix for linux-next, Aneesh will post his own version.
+0002 : fix error code in hugetlb_force_memcg_empty
+0003 : add res_counter_uncharge_until()
+0004 : use res_counter_uncharge_until() at move_parent()
+0005 : move charges to root cgroup at rmdir, if use_hierarchy=0
+0006 : clean up mem_cgroup_move_account()
+0007 : cgroup : avoid attaching task to cgroup where ->pre_destroy() is running.
+0008 : cgroup : avoid creating a new cgroup under a cgroup where ->pre_destroy() is running.
+0009 : remove -EINTR from memcg->pre_destroy().
+
+Thanks,
+-Kame
+
