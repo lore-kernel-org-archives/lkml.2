@@ -1,215 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759096Ab2D0I2h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:28:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34157 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755116Ab2D0I2f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:28:35 -0400
-Date: Fri, 27 Apr 2012 01:28:17 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-7vzlh66n5or46n27ji658cnl@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate: Disassembler instruction parsing
-Git-Commit-ID: 4f9d03251b9d202ebce805757360ef0fac5eb74e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1759313Ab2D0I3I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:29:08 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59853 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759281Ab2D0I3G convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 04:29:06 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 27 Apr 2012 01:28:22 -0700 (PDT)
+In-Reply-To: <20120427082203.GB9233@aftab.osrc.amd.com>
+References: <fa.CZQqvHf3CBfYWzhSDPNOWxTTD9w@ifi.uio.no>
+	<fa.Vmg5vDod2/oKvwyy9BcalhoT+Lo@ifi.uio.no>
+	<14969994.2790.1335342903511.JavaMail.geo-discussion-forums@vbbfr18>
+	<4F97BA60.4080505@ladisch.de>
+	<20120427082203.GB9233@aftab.osrc.amd.com>
+Date: Fri, 27 Apr 2012 11:29:04 +0300
+Message-ID: <CABTASCzHqRDHNXLTzfFh7__vv2Zhhr+2X6kKxUxRJ_3Ud2yv=A@mail.gmail.com>
+Subject: Re: Unhandled IRQs on AMD E-450
+From: Andrei Matei <andymatei@gmail.com>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>, "Huang, Shane" <Shane.Huang@amd.com>,
+        Borislav Petkov <bp@amd64.org>, linux-kernel@vger.kernel.org,
+        Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4f9d03251b9d202ebce805757360ef0fac5eb74e
-Gitweb:     http://git.kernel.org/tip/4f9d03251b9d202ebce805757360ef0fac5eb74e
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 18 Apr 2012 13:58:34 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 18 Apr 2012 13:58:34 -0300
+How come ASUS is treating its expensive board clients like this? This
+issue is going on for months now and nothing happends. I would really
+like my money back for this board
 
-perf annotate: Disassembler instruction parsing
+On Fri, Apr 27, 2012 at 11:22 AM, Borislav Petkov
+<borislav.petkov@amd.com> wrote:
+> On Wed, Apr 25, 2012 at 10:48:32AM +0200, Clemens Ladisch wrote:
+>> andymatei@gmail.com wrote:
+>> > I have bought the Asus E45M1-M PRO to use in my home storage. [...]
+>> > I get "Disabling IRQ 16" and "Disabling IRQ 19". [...]
+>> > Is there a patch or something that resolves this issue yet?
+>>
+>> As far as I remember, this is a hardware bug in the ASMedia PCIe/PCI
+>> bridge.  This can neither easily nor completely be worked around in
+>> software.
+>
+> So, I got noted of this discussion: https://lkml.org/lkml/2012/1/30/216
+>
+> So why aren't you guys producing a proper patch for people to test?
+> Simply get everyone of the bugreporters to give it a try and if all is
+> well, Linus said he'll take it.
+>
+> Clemens, Jeroen?
+>
+> --
+> Regards/Gruss,
+> Boris.
+>
+> Advanced Micro Devices GmbH
+> Einsteinring 24, 85609 Dornach
+> GM: Alberto Bozzo
+> Reg: Dornach, Landkreis Muenchen
+> HRB Nr. 43632 WEEE Registernr: 129 19551
+>
 
-So that at disassembly time we parse targets, etc.
 
-Supporting jump instructions initially, call functions are next.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-7vzlh66n5or46n27ji658cnl@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/browsers/annotate.c |   19 ++---------
- tools/perf/util/annotate.c        |   63 +++++++++++++++++++++++++++++++++++++
- tools/perf/util/annotate.h        |   13 +++++++
- 3 files changed, 79 insertions(+), 16 deletions(-)
-
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 0bc3e65..bdbb54f 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -315,26 +315,13 @@ struct disasm_line *annotate_browser__find_offset(struct annotate_browser *brows
- 
- static bool annotate_browser__jump(struct annotate_browser *browser)
- {
--	const char *jumps[] = { "je", "jne", "ja", "jmpq", "js", "jmp", NULL };
- 	struct disasm_line *dl = browser->selection;
--	s64 idx, offset;
--	char *s;
--	int i = 0;
--
--	while (jumps[i] && strcmp(dl->name, jumps[i]))
--		++i;
-+	s64 idx;
- 
--	if (jumps[i] == NULL)
-+	if (!dl->ins || !ins__is_jump(dl->ins))
- 		return false;
- 
--	s = strchr(dl->operands, '+');
--	if (s++ == NULL) {
--		ui_helpline__puts("Invallid jump instruction.");
--		return true;
--	}
--
--	offset = strtoll(s, NULL, 16);
--	dl = annotate_browser__find_offset(browser, offset, &idx);
-+	dl = annotate_browser__find_offset(browser, dl->target, &idx);
- 	if (dl == NULL) {
- 		ui_helpline__puts("Invallid jump offset");
- 		return true;
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index a72585a..4ee2c07 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -18,6 +18,53 @@
- 
- const char 	*disassembler_style;
- 
-+static int jump_ops__parse_target(const char *operands, u64 *target)
-+{
-+	const char *s = strchr(operands, '+');
-+
-+	if (s++ == NULL)
-+		return -1;
-+
-+	*target = strtoll(s, NULL, 16);
-+	return 0;
-+}
-+
-+static struct ins_ops jump_ops = {
-+	.parse_target = jump_ops__parse_target,
-+};
-+
-+bool ins__is_jump(const struct ins *ins)
-+{
-+	return ins->ops == &jump_ops;
-+}
-+
-+
-+/*
-+ * Must be sorted by name!
-+ */
-+static struct ins instructions[] = {
-+	{ .name = "ja",	   .ops  = &jump_ops, },
-+	{ .name = "je",	   .ops  = &jump_ops, },
-+	{ .name = "jmp",   .ops  = &jump_ops, },
-+	{ .name = "jmpq",  .ops  = &jump_ops, },
-+	{ .name = "jne",   .ops  = &jump_ops, },
-+	{ .name = "js",	   .ops  = &jump_ops, },
-+};
-+
-+static int ins__cmp(const void *name, const void *insp)
-+{
-+	const struct ins *ins = insp;
-+
-+	return strcmp(name, ins->name);
-+}
-+
-+static struct ins *ins__find(const char *name)
-+{
-+	const int nmemb = ARRAY_SIZE(instructions);
-+
-+	return bsearch(name, instructions, nmemb, sizeof(struct ins), ins__cmp);
-+}
-+
- int symbol__annotate_init(struct map *map __used, struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
-@@ -78,6 +125,20 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
- 	return 0;
- }
- 
-+static void disasm_line__init_ins(struct disasm_line *dl)
-+{
-+	dl->ins = ins__find(dl->name);
-+
-+	if (dl->ins == NULL)
-+		return;
-+
-+	if (!dl->ins->ops)
-+		return;
-+
-+	if (dl->ins->ops->parse_target)
-+		dl->ins->ops->parse_target(dl->operands, &dl->target);
-+}
-+
- static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privsize)
- {
- 	struct disasm_line *dl = zalloc(sizeof(*dl) + privsize);
-@@ -117,6 +178,8 @@ static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privs
- 				while (isspace(dl->operands[0]))
- 					++dl->operands;
- 			}
-+
-+			disasm_line__init_ins(dl);
- 		}
- 	}
- 
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index dd7636d..934c6fe 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -7,11 +7,24 @@
- #include <linux/list.h>
- #include <linux/rbtree.h>
- 
-+struct ins_ops {
-+	int (*parse_target)(const char *operands, u64 *target);
-+};
-+
-+struct ins {
-+	const char     *name;
-+	struct ins_ops *ops;
-+};
-+
-+bool ins__is_jump(const struct ins *ins);
-+
- struct disasm_line {
- 	struct list_head node;
- 	s64		 offset;
-+	u64		 target;
- 	char		 *line;
- 	char		 *name;
-+	struct ins	 *ins;
- 	char		 *operands;
- };
- 
+-- 
+Andrei Matei
+IT Manager @ Daromex SRL
+0744 700 445
+andrei@matei.ro
+andymatei@gmail.com
