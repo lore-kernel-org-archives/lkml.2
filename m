@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761001Ab2D0SJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:09:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46741 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760941Ab2D0SJ1 (ORCPT
+	id S1761014Ab2D0SNg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 14:13:36 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50697 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760968Ab2D0SNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 14:09:27 -0400
-Date: Fri, 27 Apr 2012 15:09:29 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hagen Paul Pfeifer <hagen@jauu.net>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL 0/4] perf/annotate loop detection V2, fixes
-Message-ID: <20120427180929.GI27997@infradead.org>
-References: <1335452777-27326-1-git-send-email-acme@infradead.org>
- <20120427072153.GB4766@gmail.com>
- <20120427080613.GA7359@gmail.com>
- <20120427153119.GC27997@infradead.org>
- <1335541737.2463.135.camel@laptop>
- <20120427160748.GE27997@infradead.org>
- <1335543613.13683.112.camel@twins>
+	Fri, 27 Apr 2012 14:13:34 -0400
+Date: Fri, 27 Apr 2012 11:13:31 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, devel@openvz.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 17/23] kmem controller charge/uncharge infrastructure
+In-Reply-To: <20120427113841.GB3514@somewhere.redhat.com>
+Message-ID: <alpine.DEB.2.00.1204271110370.28516@chino.kir.corp.google.com>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1335138820-26590-6-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1204231522320.13535@chino.kir.corp.google.com> <20120424142232.GC8626@somewhere>
+ <alpine.DEB.2.00.1204241319360.753@chino.kir.corp.google.com> <20120427113841.GB3514@somewhere.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335543613.13683.112.camel@twins>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Apr 27, 2012 at 06:20:13PM +0200, Peter Zijlstra escreveu:
-> On Fri, 2012-04-27 at 13:07 -0300, Arnaldo Carvalho de Melo wrote:
-> > Yeah, that too, or perhaps we can bring the instruction column closer to
-> > the jump column and then that makes it stand out better? 
+On Fri, 27 Apr 2012, Frederic Weisbecker wrote:
+
+> > No, because memory is represented by mm_struct, not task_struct, so you 
+> > must charge to p->mm->owner to allow for moving threads amongst memcgs 
+> > later for memory.move_charge_at_immigrate.  You shouldn't be able to 
+> > charge two different memcgs for memory represented by a single mm.
 > 
-> Well, there should be at least one space between the arrows and the
-> instruction, otherwise it reads funny. And looking at the above that's
-> already the case, except for that indenting you did.
+> The idea I had was more that only the memcg of the thread that does the allocation
+> is charged. But the problem is that this allocation can be later deallocated
+> from another thread. So probably charging the owner is indeed the only sane
+> way to go with user memory.
+> 
 
-Right, I just looked again at then unindented output, nevermind then :-)
-
-- Arnaldo
+It's all really the same concept: if we want to move memory of a process, 
+willingly free memory in the process itself, or free memory of a process 
+by way of the oom killer, we need a way to do that for the entire process 
+so the accounting makes sense afterwards.  And since we have that 
+requirement for user memory, it makes sense that its consistent with slab 
+as well.  I don't think a thread of a process should be able to charge 
+slab to one memcg while its user memory is charged to another memcg.
