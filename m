@@ -1,34 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab2D0W0H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 18:26:07 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:59794 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755816Ab2D0W0F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 18:26:05 -0400
-Message-ID: <4F9B1CF5.70205@linaro.org>
-Date: Fri, 27 Apr 2012 15:25:57 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V1 3/5] timekeeping: Fix a few minor newline issues.
-References: <cover.1335510125.git.richardcochran@gmail.com> <06c2be99fe106eba4552002ebf0839db3a34b5ec.1335510125.git.richardcochran@gmail.com>
-In-Reply-To: <06c2be99fe106eba4552002ebf0839db3a34b5ec.1335510125.git.richardcochran@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756187Ab2D0W0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 18:26:31 -0400
+Received: from gate.crashing.org ([63.228.1.57]:45506 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753148Ab2D0W0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 18:26:30 -0400
+Message-ID: <1335565573.20866.7.camel@pasglop>
+Subject: Re: Regression in 32-bit ppc kernel
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 28 Apr 2012 08:26:13 +1000
+In-Reply-To: <4F9ABD67.3060704@lwfinger.net>
+References: <4F973026.3020103@lwfinger.net>
+	 <1335311621.15830.42.camel@pasglop> <4F976352.4060001@lwfinger.net>
+	 <1335327081.21961.28.camel@pasglop> <4F98117C.7080309@lwfinger.net>
+	 <1335390257.21961.53.camel@pasglop> <4F9ABD67.3060704@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042722-2398-0000-0000-0000062E3659
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2012 01:12 AM, Richard Cochran wrote:
-> Signed-off-by: Richard Cochran<richardcochran@gmail.com>
+On Fri, 2012-04-27 at 10:38 -0500, Larry Finger wrote:
 
-Queued.
-thanks
--john
+> Sorry, I was unable to find anything in debugfs to help me learn about interrupt 
+> mapping. The value of CONFIG_NR_IRQS is already 512. I have not tried reducing 
+> it to 128. The setting for CONFIG_SPARSE_IRQ was on, and changing it to off did 
+> not make any difference.
+> 
+> I finished the bisection, which led to
+> 
+> commit a79dd5ae5a8f49688d65b89a859f2b98a7ee5538
+> Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Date:   Thu Dec 15 11:13:03 2011 +1100
+> 
+>      tty/serial/pmac_zilog: Fix suspend & resume
+> 
+> As this seemed to be an improbable result, I did the full test by checking out 
+> the previous commit (43ca5d3). That resulted in a "good" result. Then I used 
+> quilt to add commit a79dd5a as a patch and the fault returned. I then noticed 
+> that you said in the commit message that "I removed some code for handling 
+> unexpected interrupt which should never be hit...". It appears that my box does 
+> indeed hit such an unexpected interrupt.
+> 
+> I could always get rid of the fault by disabling CONFIG_SERIAL_PMACZILOG, but I 
+> would like to fix the problem if possible.
+
+Right, it should be fixed. I need to understand where the unexpected
+interrupt comes from. Can you tell me (or remind me) what specific
+machine model you are using ? Are you putting the console on the serial
+port ?
+
+Cheers,
+Ben.
+
 
