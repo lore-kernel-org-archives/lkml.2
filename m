@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab2D0V1c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 17:27:32 -0400
-Received: from toast.topped-with-meat.com ([204.197.218.159]:48136 "EHLO
-	topped-with-meat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444Ab2D0V1a (ORCPT
+	id S1754696Ab2D0V1j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 17:27:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13710 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754242Ab2D0V1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 17:27:30 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 27 Apr 2012 17:27:37 -0400
+X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=szhx8aRwONgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=D67S0rkNl-27A0lcCLwA:9 a=c7-O5rpMhBeuY3nvB00A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1335562054.28106.239.camel@gandalf.stny.rr.com>
+Subject: Re: RFC: How to handle function tracing, frame pointers and
+ -mfentry?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Fri, 27 Apr 2012 17:27:34 -0400
+In-Reply-To: <4F9B0B9B.9020909@linux.intel.com>
+References: <1335552399.28106.228.camel@gandalf.stny.rr.com>
+	  <20120427202701.GA5949@merkur.ravnborg.org>
+	  <4F9B020B.9050205@linux.intel.com>
+	 <1335560259.28106.234.camel@gandalf.stny.rr.com>
+	 <4F9B0B9B.9020909@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@hack.frob.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-X-Fcc: ~/Mail/lkml
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-In-Reply-To: Al Viro's message of  Friday, 27 April 2012 22:12:44 +0100 <20120427211244.GO6871@ZenIV.linux.org.uk>
-References: <20120420164239.GH6871@ZenIV.linux.org.uk>
-	<CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com>
-	<20120420180748.GI6871@ZenIV.linux.org.uk>
-	<20120423180150.GA6871@ZenIV.linux.org.uk>
-	<20120424072617.GB6871@ZenIV.linux.org.uk>
-	<20120426183742.GA324@redhat.com>
-	<20120426231942.GJ6871@ZenIV.linux.org.uk>
-	<20120427172444.GA30267@redhat.com>
-	<20120427184528.GL6871@ZenIV.linux.org.uk>
-	<20120427202002.8ED632C0BF@topped-with-meat.com>
-	<20120427211244.GO6871@ZenIV.linux.org.uk>
-X-Zippy-Says: BRYLCREAM is CREAM O' WHEAT in another DIMENSION..
-Message-Id: <20120427212729.652542C0AF@topped-with-meat.com>
-Date: Fri, 27 Apr 2012 14:27:29 -0700 (PDT)
-X-CMAE-Score: 0
-X-CMAE-Analysis: v=2.0 cv=e8d9udV/ c=1 sm=1 a=No4if-_LAocA:10
-		a=Z6MIti7PxpgA:10 a=kj9zAlcOel0A:10 a=keYpsyYYbXNozSzVF_oA:9
-		a=CjuIK1q_8ugA:10 a=WkljmVdYkabdwxfqvArNOQ==:117
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> OK...  FWIW, it sounds like an argument for using it (or a function in
-> kernel/signal.c that would call it) on all architectures.
+On Fri, 2012-04-27 at 14:11 -0700, H. Peter Anvin wrote:
+> On 04/27/2012 01:57 PM, Steven Rostedt wrote:
+> >>
+> >> Except it is the wrong thing.  This is not the only user of frame
+> >> pointer.  What I think you mean is remove the dependency in Kconfig, but
+> >> force the frame pointer enabled if -mfentry is not supported.
+> > 
+> > You mean option 3?
+> > 
+> > 3) Add frame pointers silently if gcc fails to build with gcc -pg.
+> > 
+> 
+> Yes, your option 3.
+> 
 
-That was certainly always the intent.  But I only touched myself the arch's
-that I was prepared to test reasonably.
+Actually, I just noticed this in the Makefile:
 
-> Note that there's an extra complication on alpha and itanic - we have more
-> than just struct pt_regs * there.  If we care about the rest of registers
-> (struct switch_stack on alpha), we probably need to do something about that.
-
-The presumed plan so far was just that anybody would use user_regset for
-any serious tracer/debugger stuff.  That is certainly much more costly on
-ia64 than passing along a few more values.  If anybody ever cares, the
-tracehook functions' signatures can always be adjusted in the future.
-
-> I wonder how alpha and itanic deal with do_coredump(), BTW - it gets
-> pt_regs, but not the rest...
-
-The expectation was that every arch would eventually switch on
-CORE_DUMP_USE_REGSET.  (Looks like so far 12 do and so ~16 don't.)
-Certainly avoiding the overhead of user_regset for core dumping is not
-worth any new code complexity or extra arch hooks, since that overhead
-even on the worst-case arch (ia64) has got to be marginal in comparison
-to all the memory-copying and i/o going on.  For imagined potential
-tracing/fancier-debugging cases that might be used in high-throughput
-ways the question would be different, but such uses still remain to be
-implemented.
+ifdef CONFIG_FRAME_POINTER
+KBUILD_CFLAGS   += -fno-omit-frame-pointer -fno-optimize-sibling-calls
+else
+# Some targets (ARM with Thumb2, for example), can't be built with frame
+# pointers.  For those, we don't have FUNCTION_TRACER automatically
+# select FRAME_POINTER.  However, FUNCTION_TRACER adds -pg, and this is
+# incompatible with -fomit-frame-pointer with current GCC, so we don't use
+# -fomit-frame-pointer with FUNCTION_TRACER.
+ifndef CONFIG_FUNCTION_TRACER
+KBUILD_CFLAGS   += -fomit-frame-pointer
+endif
+endif
 
 
-Thanks,
-Roland
+Because of ARM thumb2, -fomit-frame-pointer is not added if
+CONFIG_FRAME_POINTER is not set and FUNCTION_TRACER is. As it is fine to
+just use '-pg', which gcc will add frame pointers if needed, and it is
+only a problem if both -pg and -fomit-frame-pointer is set. We only need
+to remove the select without doing anything else.
+
+If -mfentry is added with -pg, and -fno-omit-frame-pointer is not set,
+gcc will not add frame pointers by default.
+
+So it seems that gcc took care of this problem for me :-)
+
+I'll go and make a patch that simply removes the select.
+
+Sorry for the noise ;-)
+
+-- Steve
+
+
