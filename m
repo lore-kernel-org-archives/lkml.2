@@ -1,508 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758324Ab2D0BdS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 21:33:18 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:55051 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755264Ab2D0BdR (ORCPT
+	id S1758303Ab2D0BqQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 21:46:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15309 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757779Ab2D0BqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 21:33:17 -0400
-X-AuditID: b753bd60-a3089ba000000655-13-4f99f75afb60
-X-AuditID: b753bd60-a3089ba000000655-13-4f99f75afb60
-Message-ID: <4F99F755.80606@hitachi.com>
-Date: Fri, 27 Apr 2012 10:33:09 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120420 Thunderbird/12.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/2 v2] ftrace/x86: Have arch x86_64 use breakpoints
- instead of stop machine
-References: <20120426173404.666092637@goodmis.org> <20120426173717.060120642@goodmis.org>
-In-Reply-To: <20120426173717.060120642@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 26 Apr 2012 21:46:15 -0400
+X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=1X7j-zY8138A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=9w63ueyTJhxQJwMxuGEA:9 a=OLN5pBgYiS4kSg2211sA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1335491171.28106.190.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 0/2 v2] [GIT PULL] tracing: updates for 3.5
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Thu, 26 Apr 2012 21:46:11 -0400
+In-Reply-To: <20120426173404.666092637@goodmis.org>
+References: <20120426173404.666092637@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/27 2:34), Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> This method changes x86 to add a breakpoint to the mcount locations
-> instead of calling stop machine.
-> 
-> Now that iret can be handled by NMIs, we perform the following to
-> update code:
-> 
-> 1) Add a breakpoint to all locations that will be modified
-> 
-> 2) Sync all cores
-> 
-> 3) Update all locations to be either a nop or call (except breakpoint
->    op)
-> 
-> 4) Sync all cores
-> 
-> 5) Remove the breakpoint with the new code.
-> 
-> 6) Sync all cores
-> 
-> [
->   Added updates that Masami suggested:
->    Use unlikely(modifying_ftrace_code) in int3 trap to keep kprobes efficient.
->    Don't use NOTIFY_* in ftrace handler in int3 as it is not a notifier.
-> ]
+Hi Peter,
 
-This looks good to me :)
+I see you pulled in the patches individually instead of doing a git
+pull. But you missed the three patches that were in the previous pull
+request (that I only left out to not spam LKML as they were not
+changed). Also, without the git pull, it makes my repo out of sync with
+tip. As that is usually how I know what was pushed upstream or not.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+-- Steve
 
+
+On Thu, 2012-04-26 at 13:34 -0400, Steven Rostedt wrote:
+> Ingo,
 > 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
+> Although only two patches are in this, it really contains the 5 patches
+> that I pushed out earlier. As only patch 4/5 changed, instead of
+> spamming LKML with the same patches 1-3, I'm only reposting 4 and 5.
+> 
+> Patch 5 just came along for the ride (same as the previous post).
+> 
+> Patch 4 (here it's patch 1) was update as per Masami's suggestions (again).
+> 
+> Thanks!
+> 
+> -- Steve
+> 
+> Please pull the latest tip/perf/core-2 tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/perf/core-2
+> 
+> Head SHA1: e2017387836dcb963fcbefa767f9f20282349c75
+> 
+> 
+> Steven Rostedt (2):
+>       ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine
+>       ftrace/x86: Remove the complex ftrace NMI handling code
+> 
+> ----
+>  arch/x86/Kconfig              |    1 -
 >  arch/x86/include/asm/ftrace.h |    3 +
->  arch/x86/kernel/ftrace.c      |  342 +++++++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/ftrace.c      |  511 +++++++++++++++++++++++++++--------------
+>  arch/x86/kernel/nmi.c         |   10 +-
 >  arch/x86/kernel/traps.c       |    8 +-
 >  include/linux/ftrace.h        |    6 +
->  4 files changed, 358 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-> index 268c783..18d9005 100644
-> --- a/arch/x86/include/asm/ftrace.h
-> +++ b/arch/x86/include/asm/ftrace.h
-> @@ -34,6 +34,7 @@
->  
->  #ifndef __ASSEMBLY__
->  extern void mcount(void);
-> +extern int modifying_ftrace_code;
->  
->  static inline unsigned long ftrace_call_adjust(unsigned long addr)
->  {
-> @@ -50,6 +51,8 @@ struct dyn_arch_ftrace {
->  	/* No extra data needed for x86 */
->  };
->  
-> +int ftrace_int3_handler(struct pt_regs *regs);
-> +
->  #endif /*  CONFIG_DYNAMIC_FTRACE */
->  #endif /* __ASSEMBLY__ */
->  #endif /* CONFIG_FUNCTION_TRACER */
-> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-> index c9a281f..80af347 100644
-> --- a/arch/x86/kernel/ftrace.c
-> +++ b/arch/x86/kernel/ftrace.c
-> @@ -20,6 +20,7 @@
->  #include <linux/init.h>
->  #include <linux/list.h>
->  #include <linux/module.h>
-> +#include <linux/kprobes.h>
->  
->  #include <trace/syscall.h>
->  
-> @@ -334,6 +335,347 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
->  	return ret;
->  }
->  
-> +int modifying_ftrace_code __read_mostly;
-> +
-> +/*
-> + * A breakpoint was added to the code address we are about to
-> + * modify, and this is the handle that will just skip over it.
-> + * We are either changing a nop into a trace call, or a trace
-> + * call to a nop. While the change is taking place, we treat
-> + * it just like it was a nop.
-> + */
-> +int ftrace_int3_handler(struct pt_regs *regs)
-> +{
-> +	if (WARN_ON_ONCE(!regs))
-> +		return 0;
-> +
-> +	if (!ftrace_location(regs->ip - 1))
-> +		return 0;
-> +
-> +	regs->ip += MCOUNT_INSN_SIZE - 1;
-> +
-> +	return 1;
-> +}
-> +
-> +static int ftrace_write(unsigned long ip, const char *val, int size)
-> +{
-> +	/*
-> +	 * On x86_64, kernel text mappings are mapped read-only with
-> +	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
-> +	 * of the kernel text mapping to modify the kernel text.
-> +	 *
-> +	 * For 32bit kernels, these mappings are same and we can use
-> +	 * kernel identity mapping to modify code.
-> +	 */
-> +	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
-> +		ip = (unsigned long)__va(__pa(ip));
-> +
-> +	return probe_kernel_write((void *)ip, val, size);
-> +}
-> +
-> +static int add_break(unsigned long ip, const char *old)
-> +{
-> +	unsigned char replaced[MCOUNT_INSN_SIZE];
-> +	unsigned char brk = BREAKPOINT_INSTRUCTION;
-> +
-> +	if (probe_kernel_read(replaced, (void *)ip, MCOUNT_INSN_SIZE))
-> +		return -EFAULT;
-> +
-> +	/* Make sure it is what we expect it to be */
-> +	if (memcmp(replaced, old, MCOUNT_INSN_SIZE) != 0)
-> +		return -EINVAL;
-> +
-> +	if (ftrace_write(ip, &brk, 1))
-> +		return -EPERM;
-> +
-> +	return 0;
-> +}
-> +
-> +static int add_brk_on_call(struct dyn_ftrace *rec, unsigned long addr)
-> +{
-> +	unsigned const char *old;
-> +	unsigned long ip = rec->ip;
-> +
-> +	old = ftrace_call_replace(ip, addr);
-> +
-> +	return add_break(rec->ip, old);
-> +}
-> +
-> +
-> +static int add_brk_on_nop(struct dyn_ftrace *rec)
-> +{
-> +	unsigned const char *old;
-> +
-> +	old = ftrace_nop_replace();
-> +
-> +	return add_break(rec->ip, old);
-> +}
-> +
-> +static int add_breakpoints(struct dyn_ftrace *rec, int enable)
-> +{
-> +	unsigned long ftrace_addr;
-> +	int ret;
-> +
-> +	ret = ftrace_test_record(rec, enable);
-> +
-> +	ftrace_addr = (unsigned long)FTRACE_ADDR;
-> +
-> +	switch (ret) {
-> +	case FTRACE_UPDATE_IGNORE:
-> +		return 0;
-> +
-> +	case FTRACE_UPDATE_MAKE_CALL:
-> +		/* converting nop to call */
-> +		return add_brk_on_nop(rec);
-> +
-> +	case FTRACE_UPDATE_MAKE_NOP:
-> +		/* converting a call to a nop */
-> +		return add_brk_on_call(rec, ftrace_addr);
-> +	}
-> +	return 0;
-> +}
-> +
-> +/*
-> + * On error, we need to remove breakpoints. This needs to
-> + * be done caefully. If the address does not currently have a
-> + * breakpoint, we know we are done. Otherwise, we look at the
-> + * remaining 4 bytes of the instruction. If it matches a nop
-> + * we replace the breakpoint with the nop. Otherwise we replace
-> + * it with the call instruction.
-> + */
-> +static int remove_breakpoint(struct dyn_ftrace *rec)
-> +{
-> +	unsigned char ins[MCOUNT_INSN_SIZE];
-> +	unsigned char brk = BREAKPOINT_INSTRUCTION;
-> +	const unsigned char *nop;
-> +	unsigned long ftrace_addr;
-> +	unsigned long ip = rec->ip;
-> +
-> +	/* If we fail the read, just give up */
-> +	if (probe_kernel_read(ins, (void *)ip, MCOUNT_INSN_SIZE))
-> +		return -EFAULT;
-> +
-> +	/* If this does not have a breakpoint, we are done */
-> +	if (ins[0] != brk)
-> +		return -1;
-> +
-> +	nop = ftrace_nop_replace();
-> +
-> +	/*
-> +	 * If the last 4 bytes of the instruction do not match
-> +	 * a nop, then we assume that this is a call to ftrace_addr.
-> +	 */
-> +	if (memcmp(&ins[1], &nop[1], MCOUNT_INSN_SIZE - 1) != 0) {
-> +		/*
-> +		 * For extra paranoidism, we check if the breakpoint is on
-> +		 * a call that would actually jump to the ftrace_addr.
-> +		 * If not, don't touch the breakpoint, we make just create
-> +		 * a disaster.
-> +		 */
-> +		ftrace_addr = (unsigned long)FTRACE_ADDR;
-> +		nop = ftrace_call_replace(ip, ftrace_addr);
-> +
-> +		if (memcmp(&ins[1], &nop[1], MCOUNT_INSN_SIZE - 1) != 0)
-> +			return -EINVAL;
-> +	}
-> +
-> +	return probe_kernel_write((void *)ip, &nop[0], 1);
-> +}
-> +
-> +static int add_update_code(unsigned long ip, unsigned const char *new)
-> +{
-> +	/* skip breakpoint */
-> +	ip++;
-> +	new++;
-> +	if (ftrace_write(ip, new, MCOUNT_INSN_SIZE - 1))
-> +		return -EPERM;
-> +	return 0;
-> +}
-> +
-> +static int add_update_call(struct dyn_ftrace *rec, unsigned long addr)
-> +{
-> +	unsigned long ip = rec->ip;
-> +	unsigned const char *new;
-> +
-> +	new = ftrace_call_replace(ip, addr);
-> +	return add_update_code(ip, new);
-> +}
-> +
-> +static int add_update_nop(struct dyn_ftrace *rec)
-> +{
-> +	unsigned long ip = rec->ip;
-> +	unsigned const char *new;
-> +
-> +	new = ftrace_nop_replace();
-> +	return add_update_code(ip, new);
-> +}
-> +
-> +static int add_update(struct dyn_ftrace *rec, int enable)
-> +{
-> +	unsigned long ftrace_addr;
-> +	int ret;
-> +
-> +	ret = ftrace_test_record(rec, enable);
-> +
-> +	ftrace_addr = (unsigned long)FTRACE_ADDR;
-> +
-> +	switch (ret) {
-> +	case FTRACE_UPDATE_IGNORE:
-> +		return 0;
-> +
-> +	case FTRACE_UPDATE_MAKE_CALL:
-> +		/* converting nop to call */
-> +		return add_update_call(rec, ftrace_addr);
-> +
-> +	case FTRACE_UPDATE_MAKE_NOP:
-> +		/* converting a call to a nop */
-> +		return add_update_nop(rec);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int finish_update_call(struct dyn_ftrace *rec, unsigned long addr)
-> +{
-> +	unsigned long ip = rec->ip;
-> +	unsigned const char *new;
-> +
-> +	new = ftrace_call_replace(ip, addr);
-> +
-> +	if (ftrace_write(ip, new, 1))
-> +		return -EPERM;
-> +
-> +	return 0;
-> +}
-> +
-> +static int finish_update_nop(struct dyn_ftrace *rec)
-> +{
-> +	unsigned long ip = rec->ip;
-> +	unsigned const char *new;
-> +
-> +	new = ftrace_nop_replace();
-> +
-> +	if (ftrace_write(ip, new, 1))
-> +		return -EPERM;
-> +	return 0;
-> +}
-> +
-> +static int finish_update(struct dyn_ftrace *rec, int enable)
-> +{
-> +	unsigned long ftrace_addr;
-> +	int ret;
-> +
-> +	ret = ftrace_update_record(rec, enable);
-> +
-> +	ftrace_addr = (unsigned long)FTRACE_ADDR;
-> +
-> +	switch (ret) {
-> +	case FTRACE_UPDATE_IGNORE:
-> +		return 0;
-> +
-> +	case FTRACE_UPDATE_MAKE_CALL:
-> +		/* converting nop to call */
-> +		return finish_update_call(rec, ftrace_addr);
-> +
-> +	case FTRACE_UPDATE_MAKE_NOP:
-> +		/* converting a call to a nop */
-> +		return finish_update_nop(rec);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static void do_sync_core(void *data)
-> +{
-> +	sync_core();
-> +}
-> +
-> +static void run_sync(void)
-> +{
-> +	int enable_irqs = irqs_disabled();
-> +
-> +	/* We may be called with interrupts disbled (on bootup). */
-> +	if (enable_irqs)
-> +		local_irq_enable();
-> +	on_each_cpu(do_sync_core, NULL, 1);
-> +	if (enable_irqs)
-> +		local_irq_disable();
-> +}
-> +
-> +static void ftrace_replace_code(int enable)
-> +{
-> +	struct ftrace_rec_iter *iter;
-> +	struct dyn_ftrace *rec;
-> +	const char *report = "adding breakpoints";
-> +	int count = 0;
-> +	int ret;
-> +
-> +	for_ftrace_rec_iter(iter) {
-> +		rec = ftrace_rec_iter_record(iter);
-> +
-> +		ret = add_breakpoints(rec, enable);
-> +		if (ret)
-> +			goto remove_breakpoints;
-> +		count++;
-> +	}
-> +
-> +	run_sync();
-> +
-> +	report = "updating code";
-> +
-> +	for_ftrace_rec_iter(iter) {
-> +		rec = ftrace_rec_iter_record(iter);
-> +
-> +		ret = add_update(rec, enable);
-> +		if (ret)
-> +			goto remove_breakpoints;
-> +	}
-> +
-> +	run_sync();
-> +
-> +	report = "removing breakpoints";
-> +
-> +	for_ftrace_rec_iter(iter) {
-> +		rec = ftrace_rec_iter_record(iter);
-> +
-> +		ret = finish_update(rec, enable);
-> +		if (ret)
-> +			goto remove_breakpoints;
-> +	}
-> +
-> +	run_sync();
-> +
-> +	return;
-> +
-> + remove_breakpoints:
-> +	ftrace_bug(ret, rec ? rec->ip : 0);
-> +	printk(KERN_WARNING "Failed on %s (%d):\n", report, count);
-> +	for_ftrace_rec_iter(iter) {
-> +		rec = ftrace_rec_iter_record(iter);
-> +		remove_breakpoint(rec);
-> +	}
-> +}
-> +
-> +void arch_ftrace_update_code(int command)
-> +{
-> +	modifying_ftrace_code++;
-> +
-> +	if (command & FTRACE_UPDATE_CALLS)
-> +		ftrace_replace_code(1);
-> +	else if (command & FTRACE_DISABLE_CALLS)
-> +		ftrace_replace_code(0);
-> +
-> +	if (command & FTRACE_UPDATE_TRACE_FUNC)
-> +		ftrace_update_ftrace_func(ftrace_trace_function);
-> +
-> +	if (command & FTRACE_START_FUNC_RET)
-> +		ftrace_enable_ftrace_graph_caller();
-> +	else if (command & FTRACE_STOP_FUNC_RET)
-> +		ftrace_disable_ftrace_graph_caller();
-> +
-> +	modifying_ftrace_code--;
-> +}
-> +
->  int __init ftrace_dyn_arch_init(void *data)
->  {
->  	/* The return code is retured via data */
-> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> index ff9281f1..92d5756 100644
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -50,6 +50,7 @@
->  #include <asm/processor.h>
->  #include <asm/debugreg.h>
->  #include <linux/atomic.h>
-> +#include <asm/ftrace.h>
->  #include <asm/traps.h>
->  #include <asm/desc.h>
->  #include <asm/i387.h>
-> @@ -303,8 +304,13 @@ gp_in_kernel:
->  }
->  
->  /* May run on IST stack. */
-> -dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
-> +dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_code)
->  {
-> +#ifdef CONFIG_DYNAMIC_FTRACE
-> +	/* ftrace must be first, everything else may cause a recursive crash */
-> +	if (unlikely(modifying_ftrace_code) && ftrace_int3_handler(regs))
-> +		return;
-> +#endif
->  #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
->  	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
->  				SIGTRAP) == NOTIFY_STOP)
-> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-> index 72a6cab..0b55903 100644
-> --- a/include/linux/ftrace.h
-> +++ b/include/linux/ftrace.h
-> @@ -286,6 +286,12 @@ struct ftrace_rec_iter *ftrace_rec_iter_start(void);
->  struct ftrace_rec_iter *ftrace_rec_iter_next(struct ftrace_rec_iter *iter);
->  struct dyn_ftrace *ftrace_rec_iter_record(struct ftrace_rec_iter *iter);
->  
-> +#define for_ftrace_rec_iter(iter)		\
-> +	for (iter = ftrace_rec_iter_start();	\
-> +	     iter;				\
-> +	     iter = ftrace_rec_iter_next(iter))
-> +
-> +
->  int ftrace_update_record(struct dyn_ftrace *rec, int enable);
->  int ftrace_test_record(struct dyn_ftrace *rec, int enable);
->  void ftrace_run_stop_machine(int command);
+>  6 files changed, 364 insertions(+), 175 deletions(-)
 
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
