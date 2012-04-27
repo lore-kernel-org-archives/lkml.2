@@ -1,167 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096Ab2D0UKZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 16:10:25 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:1498 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab2D0UKY (ORCPT
+	id S1758150Ab2D0UNO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 16:13:14 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:30779 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155Ab2D0UNN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 16:10:24 -0400
-Message-ID: <4F9AFD28.2030801@hp.com>
-Date: Fri, 27 Apr 2012 16:10:16 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Fri, 27 Apr 2012 16:13:13 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-7.tower-127.messagelabs.com!1335557569!4192560!35
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
+Date: Fri, 27 Apr 2012 15:13:05 -0500
+Subject: RE: [PATCH] staging: comedi: introduce 'comedi_get_board' helper
+ function
+Thread-Topic: [PATCH] staging: comedi: introduce 'comedi_get_board' helper
+ function
+Thread-Index: Ac0krApMSbmUjjA8SbuTCk3dmtDjCQABaOnA
+Message-ID: <ADE657CA350FB648AAC2C43247A983F002069887EFFF@AUSP01VMBX24.collaborationhost.net>
+References: <201204271149.49035.hartleys@visionengravers.com>
+ <20120427192900.GA14158@kroah.com>
+In-Reply-To: <20120427192900.GA14158@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: "penberg@kernel.org" <penberg@kernel.org>,
-        "mpm@selenic.com" <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Morris, Donald George (HP-UX Cupertino)" <don.morris@hp.com>
-Subject: Re: [PATCH] slub: prevent validate_slab() error due to race condition
-References: <1335466658-29063-1-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.00.1204270911080.29198@router.home>
-In-Reply-To: <alpine.DEB.2.00.1204270911080.29198@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/27/2012 10:59 AM, Christoph Lameter wrote:
-> On Thu, 26 Apr 2012, Waiman Long wrote:
+On Friday, April 27, 2012 12:29 PM, Greg KH wrote:
+> On Fri, Apr 27, 2012 at 11:49:48AM -0700, H Hartley Sweeten wrote:
+>> This helper function is used to fetch the comedi_device board_ptr
+>> which is used during the attach to pass board specific information
+>> to the comedi drivers.
+>> 
+>> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+>> Cc: Ian Abbott <abbotti@mev.co.uk>
+>> Cc: Mori Hess <fmhess@users.sourceforge.net>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> 
+>> ---
+>> 
+>> With this helper removing all the 'this_board' defines in the drivers
+>> will be easier (and cleaner).
+>> 
+>> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+>> index 300fd84..53a05dd 100644
+>> --- a/drivers/staging/comedi/comedidev.h
+>> +++ b/drivers/staging/comedi/comedidev.h
+>> @@ -235,6 +235,11 @@ struct comedi_device {
+>>  	void (*close) (struct comedi_device *dev);
+>>  };
+>>  
+>> +static inline const void *comedi_get_board(struct comedi_device *dev)
+>> +{
+>> +	return dev->board_ptr;
+>> +}
 >
->> The SLUB memory allocator was changed substantially from 3.0 to 3.1 by
->> replacing some of page locking codes for updating the free object list
->> of the slab with double-quadword atomic exchange (cmpxchg_double_slab)
->> or a pseudo one using a page lock when debugging is turned on.  In the
->> normal case, that should be enough to make sure that the slab is in a
->> consistent state. However, when CONFIG_SLUB_DEBUG is turned on and the
->> Redzone debugging flag is set, the Redzone bytes are also used to mark
->> if an object is free or allocated. The extra state information in those
->> Redzone bytes is not protected by the cmpxchg_double_slab(). As a
->> result,
->> validate_slab() may report a Redzone error if the validation is
->> performed
->> while racing with a free to a debugged slab.
-> Right. The problem is unique to validate_slab because no one else outside
-> the slab has access to that object that is to be freed.
->
->> This patch fixes the BUG message by acquiring the node-level lock for
->> slabs flagged for debugging to avoid this possible racing condition.
->> The locking is done on the node-level lock instead of the more granular
->> page lock because the new code may speculatively acquire the node-level
->> lock later on. Acquiring the page lock and then the node lock may lead
->> to potential deadlock.
-> Correct that would address the issue.
->
->> As the increment of slab node count and insertion of the new slab into
->> the partial or full slab list is not an atomic operation, there is a
->> small time window where the two may not match. This patch temporarily
->> works around this problem by allowing the node count to be one larger
->> than the number of slab presents in the lists. This workaround may not
->> work if more than one CPU is actively adding slab to the same node,
->> but it should be good enough to workaround the problem in most cases.
-> Well yeah that is not a real fix. Its been racy for a long time.
->
->> To really fix the issue, the overall synchronization between debug slub
->> operations and slub validation needs a revisit.
-> True. The sync between validation and concurrent operations was not in
-> focus so far. Validation was used (at least by me) so far only to validate
-> that the slab structures are still okay after running some tests.
->
-> Lets just do this in steps. First patch here is a simple taking of the
-> node lock in free_debug_processing. This is similar to what you have done
-> but the changes are made to the debugging function instead. Then we can
-> look at how to address the slab counting issue in a separate patch.
->
+> "traditionally" the *get* functions increment a reference count of the
+> pointer it returns, which isn't happening here.
 
-Thank for the quick response. I have no problem for moving the node-lock 
-taking into free_debug_processing. Of the 2 problems that are reported, 
-this is a more serious one and so need to be fixed sooner rather than 
-later. For the other one, we can take more time to find a better solution.
+I was trying to model it after dev_get_drvdata. But I see what you mean.
 
-So are you going to integrate your change to the mainline?
+> How about renaming this to just be comedi_board() instead?
 
-> Subject: slub: Take node lock during object free checks
->
-> This is needed for proper synchronization with validate_slab()
-> as pointed out by Waiman Long<Waiman.Long@hp.com>
->
-> Reported-by: Waiman Long<Waiman.Long@hp.com>
-> Signed-off-by: Christoph Lameter<cl@linux.com>
->
->
-> ---
->   mm/slub.c |   30 ++++++++++++++++++------------
->   1 file changed, 18 insertions(+), 12 deletions(-)
->
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c	2012-04-27 09:40:00.000000000 -0500
-> +++ linux-2.6/mm/slub.c	2012-04-27 09:50:15.000000000 -0500
-> @@ -1082,13 +1082,13 @@ bad:
->   	return 0;
->   }
->
-> -static noinline int free_debug_processing(struct kmem_cache *s,
-> -		 struct page *page, void *object, unsigned long addr)
-> +static noinline struct kmem_cache_node *free_debug_processing(
-> +	struct kmem_cache *s, struct page *page, void *object,
-> +	unsigned long addr, unsigned long *flags)
->   {
-> -	unsigned long flags;
-> -	int rc = 0;
-> +	struct kmem_cache_node *n = get_node(s, page_to_nid(page));
->
-> -	local_irq_save(flags);
-> +	spin_lock_irqsave(&n->list_lock, *flags);
->   	slab_lock(page);
->
->   	if (!check_slab(s, page))
-> @@ -1126,15 +1126,19 @@ static noinline int free_debug_processin
->   		set_track(s, object, TRACK_FREE, addr);
->   	trace(s, page, object, 0);
->   	init_object(s, object, SLUB_RED_INACTIVE);
-> -	rc = 1;
->   out:
->   	slab_unlock(page);
-> -	local_irq_restore(flags);
-> -	return rc;
-> +	/*
-> +	 * Keep node_lock to preserve integrity
-> +	 * until the object is actually freed
-> +	 */
-> +	return n;
->
->   fail:
-> +	slab_unlock(page);
-> +	spin_unlock_irqrestore(&n->list_lock, *flags);
->   	slab_fix(s, "Object at 0x%p not freed", object);
-> -	goto out;
-> +	return NULL;
->   }
->
->   static int __init setup_slub_debug(char *str)
-> @@ -1227,8 +1231,9 @@ static inline void setup_object_debug(st
->   static inline int alloc_debug_processing(struct kmem_cache *s,
->   	struct page *page, void *object, unsigned long addr) { return 0; }
->
-> -static inline int free_debug_processing(struct kmem_cache *s,
-> -	struct page *page, void *object, unsigned long addr) { return 0; }
-> +static inline struct kmem_cache_node *free_debug_processing(
-> +	struct kmem_cache *s, struct page *page, void *object,
-> +	unsigned long addr, unsigned long *flags) { return NULL; }
->
->   static inline int slab_pad_check(struct kmem_cache *s, struct page *page)
->   			{ return 1; }
-> @@ -2445,7 +2450,8 @@ static void __slab_free(struct kmem_cach
->
->   	stat(s, FREE_SLOWPATH);
->
-> -	if (kmem_cache_debug(s)&&  !free_debug_processing(s, page, x, addr))
-> +	if (kmem_cache_debug(s)&&
-> +		!(n = free_debug_processing(s, page, x, addr,&flags)))
->   		return;
->
->   	do {
+Or comedi_board_ptr... Either one works for me but I do like the shorter
+name you suggested.
+
+I'll post an updated patch shortly using the comedi_board name.
+
+Regards,
+Hartley
 
