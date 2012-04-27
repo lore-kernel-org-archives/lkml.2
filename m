@@ -1,175 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761256Ab2D0TM4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 15:12:56 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40995 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760458Ab2D0TMy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 15:12:54 -0400
+	id S1761261Ab2D0TOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 15:14:40 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:43103 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760458Ab2D0TOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 15:14:39 -0400
+Message-ID: <4F9AF00A.5040604@linaro.org>
+Date: Fri, 27 Apr 2012 12:14:18 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <4F9A359C.10107@jp.fujitsu.com>
-References: <4F9A327A.6050409@jp.fujitsu.com>
-	<4F9A359C.10107@jp.fujitsu.com>
-Date: Fri, 27 Apr 2012 12:12:52 -0700
-Message-ID: <CALWz4ixHGCqfWh1U+JyiJWTkGmCDtXQy1vbHRjrHaU_pOgGuBw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 5/9 v2] move charges to root at rmdir if
- use_hierarchy is unset
-From: Ying Han <yinghan@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyuki@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Dave Chinner <david@fromorbit.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/3] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE
+ flags
+References: <1335289787-11089-1-git-send-email-john.stultz@linaro.org> <1335289787-11089-3-git-send-email-john.stultz@linaro.org> <20120427003953.GC9541@dastard>
+In-Reply-To: <20120427003953.GC9541@dastard>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042719-5806-0000-0000-000014AF7912
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 10:58 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> Now, at removal of cgroup, ->pre_destroy() is called and move charges
-> to the parent cgroup. A major reason of -EBUSY returned by ->pre_destroy()
-> is that the 'moving' hits parent's resource limitation. It happens only
-> when use_hierarchy=0. This was a mistake of original design.(it's me...)
+On 04/26/2012 05:39 PM, Dave Chinner wrote:
+> On Tue, Apr 24, 2012 at 10:49:46AM -0700, John Stultz wrote:
+>> @@ -128,6 +129,19 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+>>   			invalidate_mapping_pages(mapping, start_index,
+>>   						end_index);
+>>   		break;
+>> +	case POSIX_FADV_VOLATILE:
+>> +		/* First and last PARTIAL page! */
+>> +		start_index = offset>>  PAGE_CACHE_SHIFT;
+>> +		end_index = endbyte>>  PAGE_CACHE_SHIFT;
+>> +		ret = mapping_range_volatile(mapping, start_index, end_index);
+>> +		break;
+>> +	case POSIX_FADV_NONVOLATILE:
+>> +		/* First and last PARTIAL page! */
+>> +		start_index = offset>>  PAGE_CACHE_SHIFT;
+>> +		end_index = endbyte>>  PAGE_CACHE_SHIFT;
+>> +		ret = mapping_range_nonvolatile(mapping, start_index,
+>> +								end_index);
+> As it is, I'm still not sold on these being an fadvise() interface
+> because all it really is a delayed hole punching interface whose
+> functionailty is currently specific to tmpfs. The behaviour cannot
+> be implemented sanely by anything else at this point.
+Yea. So I spent some time looking at the various hole punching 
+mechanisms and they aren't all together consistent across filesystems. 
+For instance, on some filesystems (ext4 and mostly disk backed fs) you 
+have to use fallocate(fd, |FALLOC_FL_PUNCH_HOLE,...)|, while on tmpfs, 
+its madvise(...,MADV_REMOVE).   So in a way, currently, the 
+FADVISE_VOLATILE is closer to a delayed MADVISE_REMOVE.
 
-Nice patch, i can see how broken it is now with use_hierarchy=0...
 
-nitpick on the documentation below:
+>> + * The goal behind volatile ranges is to allow applications to interact
+>> + * with the kernel's cache management infrastructure.  In particular an
+>> + * application can say "this memory contains data that might be useful in
+>> + * the future, but can be reconstructed if necessary, so if the kernel
+>> + * needs, it can zap and reclaim this memory without having to swap it out.
+> This is what I mean - the definition of volatility is specific to a
+> filesystem implementation - one that doesn't store persistent data.
+Well,  I'd like to think that it could be extended to do delayed hole 
+punching on disk backed persistent files, but again, currently there's 
+no unified way to punch holes across the disk and memory backed 
+filesystems.
 
->
-> Considering use_hierarchy=0, all cgroups are treated as flat. So, no one
-> cannot justify moving charges to parent...parent and children are in
-> flat configuration, not hierarchical.
->
-> This patch modifes to move charges to root cgroup at rmdir/force_empty
-> if use_hierarchy==0. This will much simplify rmdir() and reduce error
-> in ->pre_destroy.
->
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  Documentation/cgroups/memory.txt |   12 ++++++----
->  mm/memcontrol.c                  |   39 +++++++++++++------------------------
->  2 files changed, 21 insertions(+), 30 deletions(-)
->
-> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> index 54c338d..82ce1ef 100644
-> --- a/Documentation/cgroups/memory.txt
-> +++ b/Documentation/cgroups/memory.txt
-> @@ -393,14 +393,14 @@ cgroup might have some charge associated with it, even though all
->  tasks have migrated away from it. (because we charge against pages, not
->  against tasks.)
->
-> -Such charges are freed or moved to their parent. At moving, both of RSS
-> -and CACHES are moved to parent.
-> -rmdir() may return -EBUSY if freeing/moving fails. See 5.1 also.
-> +Such charges are freed or moved to their parent if use_hierarchy=1.
-> +if use_hierarchy=0, the charges will be moved to root cgroup.
+If other filesystems implemented vmtruncate_range for hole punching, we 
+could (modulo the circular mutex lock issue of calling vmtruncate_range 
+from a shrinker) support this on other filesystems.
 
-It is more clear that we move the stats to root (if use_hierarchy==0)
-or parent (if use_hierarchy==1), and no change on the charge except
-uncharging from the child.
+Are there inherent reasons why vmtruncate_range isn't implemented (or 
+can't be sanely implemented) by non-tmpfs filesystems?
 
---Ying
 
+>> + * The proposed mechanism - at a high level - is for user-space to be able
+>> + * to say "This memory is volatile" and then later "this memory is no longer
+>> + * volatile".  If the content of the memory is still available the second
+>> + * request succeeds.  If not, the memory is marked non-volatile and an
+>> + * error is returned to denote that the contents have been lost.
+> For a filesystem, it's not "memory" that is volatile - it is the
+> *data* that we have to consider that these hints apply to, and that
+> implies both in memory and on stable storage. because you are
+> targetting a filesystem without persisten storage, you are using
+> "memory" interchangably with "data". That basically results in an
+> interface that can only be used by non-persistent filesystems.
+> However, for managing on-disk caches of fixed sizes, being able to
+> mark regions as volatile or not is just as helpful to them as it is
+> to memory based caches on tmpfs....
 >
->  Charges recorded in swap information is not updated at removal of cgroup.
->  Recorded information is discarded and a cgroup which uses swap (swapcache)
->  will be charged as a new owner of it.
->
-> +About use_hierarchy, see Section 6.
->
->  5. Misc. interfaces.
->
-> @@ -413,13 +413,15 @@ will be charged as a new owner of it.
->
->   Almost all pages tracked by this memory cgroup will be unmapped and freed.
->   Some pages cannot be freed because they are locked or in-use. Such pages are
-> -  moved to parent and this cgroup will be empty. This may return -EBUSY if
-> -  VM is too busy to free/move all pages immediately.
-> +  moved to parent(if use_hierarchy==1) or root (if use_hierarchy==0) and this
-> +  cgroup will be empty.
->
->   Typical use case of this interface is that calling this before rmdir().
->   Because rmdir() moves all pages to parent, some out-of-use page caches can be
->   moved to the parent. If you want to avoid that, force_empty will be useful.
->
-> +  About use_hierarchy, see Section 6.
-> +
->  5.2 stat file
->
->  memory.stat file includes following statistics
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index ed53d64..62200f1 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2695,32 +2695,23 @@ static int mem_cgroup_move_parent(struct page *page,
->        nr_pages = hpage_nr_pages(page);
->
->        parent = mem_cgroup_from_cont(pcg);
-> -       if (!parent->use_hierarchy) {
-> -               ret = __mem_cgroup_try_charge(NULL,
-> -                                       gfp_mask, nr_pages, &parent, false);
-> -               if (ret)
-> -                       goto put_back;
-> -       }
-> +       /*
-> +        * if use_hierarchy==0, move charges to root cgroup.
-> +        * in root cgroup, we don't touch res_counter
-> +        */
-> +       if (!parent->use_hierarchy)
-> +               parent = root_mem_cgroup;
->
->        if (nr_pages > 1)
->                flags = compound_lock_irqsave(page);
->
-> -       if (parent->use_hierarchy) {
-> -               ret = mem_cgroup_move_account(page, nr_pages,
-> -                                       pc, child, parent, false);
-> -               if (!ret)
-> -                       __mem_cgroup_cancel_local_charge(child, nr_pages);
-> -       } else {
-> -               ret = mem_cgroup_move_account(page, nr_pages,
-> -                                       pc, child, parent, true);
-> -
-> -               if (ret)
-> -                       __mem_cgroup_cancel_charge(parent, nr_pages);
-> -       }
-> +       ret = mem_cgroup_move_account(page, nr_pages,
-> +                               pc, child, parent, false);
-> +       if (!ret)
-> +               __mem_cgroup_cancel_local_charge(child, nr_pages);
->
->        if (nr_pages > 1)
->                compound_unlock_irqrestore(page, flags);
-> -put_back:
->        putback_lru_page(page);
->  put:
->        put_page(page);
-> @@ -3338,12 +3329,10 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
->        csize = PAGE_SIZE << compound_order(page);
->        /* If parent->use_hierarchy == 0, we need to charge parent */
->        if (!parent->use_hierarchy) {
-> -               ret = res_counter_charge(&parent->hugepage[idx],
-> -                                        csize, &fail_res);
-> -               if (ret) {
-> -                       ret = -EBUSY;
-> -                       goto err_out;
-> -               }
-> +               parent = root_mem_cgroup;
-> +               /* root has no limit */
-> +               res_counter_charge_nofail(&parent->hugepage[idx],
-> +                                csize, &fail_res);
->        }
->        counter = &memcg->hugepage[idx];
->        res_counter_uncharge_until(counter, counter->parent, csize);
-> --
-> 1.7.4.1
->
->
+> So why can't you implement this as fallocate() flags, and then make
+> the tmpfs implementation of those fallocate flags do the right
+> things?  I think fallocate is the right interface, because this is
+> simply an extension of the existing hole punching implementation.
+> IOWs, the specification you are describing means that FADV_VOLATILE
+> could be correctly implemented as an immediate hole punch by every
+> filesystem that supports hole punching.
+
+So yea, I'm fine with changing interface as long as fallocate is where 
+the consensus is.  I'm not sure I maybe understand the subtlety of the 
+interface differences, and it doesn't necessarily seem more intuitive to 
+me (as seems more advisory then allocation based).  But I can give it a 
+shot.
+
+Another way we could go is using madvise, somewhat mimicing the 
+MADVISE_REMOVE call, which again, is not implemented everywhere.
+
+Although as DaveH said, doing the hole punch on disk is extra overhead. 
+But I agree it makes more sense from a least-surprise approach (no data 
+is less surprising then old data after a purge).
+
+As for your immediate hole punch thought, that could work, although 
+FADV_VOLATILE would be just as correctly implemented by not purging any 
+of data on disk backed files.  Either way, a difference might be 
+slightly confusing for users (since either way changes the global LRU 
+purge behavior).
+
+> This probably won't perform wonderfully, which is where the range
+> tracking and delayed punching (and the implied memory freeing)
+> optimiation comes into play. Sure, for tmpfs this can be implemented
+> as a shrinker, but for real filesystems that have to punch blocks a
+> shrinker is really the wrong context to be running such
+> transactions. However, using the fallocate() interface allows each
+> filesytsem to optimise the delayed hole punching as they see best,
+> something that cannot be done with this fadvise() interface.
+
+So if a shrinker isn't the right context, what would be a good context 
+for delayed hole punching?
+
+
+> It's all great that this can replace a single function in ashmem,
+> but focussing purely on ashmem misses the point that this
+> functionality has wider use, and that using a different interface
+> allows independently tailored and optimised implementations of that
+> functionality....
+
+Very much agreed, I'd like this to be more generically usable as well.
+
+Thanks again for the helpful feedback! Let me know your thoughts on my 
+questions above, and I'll start working on seeing what is required to 
+switch over to fallocate().
+
+thanks
+-john
+
+
+
