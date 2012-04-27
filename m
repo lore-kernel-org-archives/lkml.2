@@ -1,118 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761075Ab2D0STn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:19:43 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:43500 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760965Ab2D0STj (ORCPT
+	id S1761104Ab2D0SUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 14:20:00 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:59644 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761094Ab2D0ST5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 14:19:39 -0400
-From: Sameer Nanda <snanda@chromium.org>
-To: mingo@redhat.com, peterz@infradead.org, len.brown@intel.com, pavel@ucw.cz,
-        rjw@sisk.pl, akpm@linux-foundation.org, dzickus@redhat.com,
-        msb@chromium.org
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, olofj@chromium.org,
-        Sameer Nanda <snanda@chromium.org>
-Subject: [PATCH] watchdog: fix for lockup detector breakage on resume
-Date: Fri, 27 Apr 2012 11:10:40 -0700
-Message-Id: <1335550240-17765-1-git-send-email-snanda@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Fri, 27 Apr 2012 14:19:57 -0400
+Date: Fri, 27 Apr 2012 21:18:36 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: "Turquette, Mike" <mturquette@ti.com>
+Cc: Rajendra Nayak <rnayak@ti.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: constify parent name arrays in macros
+Message-ID: <20120427181833.GA24587@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1335529693-14280-1-git-send-email-rnayak@ti.com>
+ <CAJOA=zNzkOvzdFSuSzC015ELZWE+Jtj=H5P9fbQSHW3HZdsZow@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
+Content-Disposition: inline
+In-Reply-To: <CAJOA=zNzkOvzdFSuSzC015ELZWE+Jtj=H5P9fbQSHW3HZdsZow@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On the suspend/resume path the boot CPU does not go though an
-offline->online transition.  This breaks the NMI detector
-post-resume since it depends on PMU state that is lost when
-the system gets suspended.
 
-Fix this by forcing a CPU offline->online transition for the
-lockup detector on the boot CPU during resume.
+--k+w/mQv8wyuph6w0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Sameer Nanda <snanda@chromium.org>
----
-To provide more context, we enable NMI watchdog on
-Chrome OS.  We have seen several reports of systems freezing
-up completely which indicated that the NMI watchdog was not
-firing for some reason.
+On Fri, Apr 27, 2012 at 10:55:50AM -0700, Turquette, Mike wrote:
+> On Fri, Apr 27, 2012 at 5:28 AM, Rajendra Nayak <rnayak@ti.com> wrote:
+> > parent name array is now expected to be const char *, make
+> > the relevent changes in the clk macros which define
+> > default clock types.
+> >
+> > Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+>=20
+> Good catch Rajendra.  I'll pull it into clk-next.
+>=20
+> Regards,
+> Mike
+>=20
+> > ---
+> > =A0include/linux/clk-private.h | =A0 =A06 +++---
+> > =A01 files changed, 3 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+> > index eeae7a3..6ebec83 100644
+> > --- a/include/linux/clk-private.h
+> > +++ b/include/linux/clk-private.h
+> > @@ -70,7 +70,7 @@ struct clk {
+> > =A0#define DEFINE_CLK_FIXED_RATE(_name, _flags, _rate, =A0 =A0 =A0 =A0 =
+=A0 =A0\
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0_fixed_r=
+ate_flags) =A0 =A0 =A0 =A0 =A0 =A0 =A0\
+> > =A0 =A0 =A0 =A0static struct clk _name; =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0=
+ =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0\
+> > - =A0 =A0 =A0 static char *_name##_parent_names[] =3D {}; =A0 =A0 =A0 =
+=A0 =A0 =A0 =A0 \
+> > + =A0 =A0 =A0 static const char *_name##_parent_names[] =3D {}; =A0 =A0=
+ =A0 =A0 \
 
-Debugging further, we found a simple way of repro'ing system
-freezes -- issuing the command 'tasket 1 sh -c "echo nmilockup > /proc/breakme"'
-after the system has been suspended/resumed one or more times.
+does it make sense to have this as:
 
-With this patch in place, the system freeze result in panics,
-as expected.  These panics provide a nice stack trace for us
-to debug the actual issue causing the freeze.
+static const char * const _name##_parent_names[] =3D { }; ??
 
+--=20
+balbi
 
- include/linux/sched.h  |    4 ++++
- kernel/power/suspend.c |    3 +++
- kernel/watchdog.c      |   16 ++++++++++++++++
- 3 files changed, 23 insertions(+), 0 deletions(-)
+--k+w/mQv8wyuph6w0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 81a173c..118cc38 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -317,6 +317,7 @@ extern int proc_dowatchdog_thresh(struct ctl_table *table, int write,
- 				  size_t *lenp, loff_t *ppos);
- extern unsigned int  softlockup_panic;
- void lockup_detector_init(void);
-+void lockup_detector_bootcpu_resume(void);
- #else
- static inline void touch_softlockup_watchdog(void)
- {
-@@ -330,6 +331,9 @@ static inline void touch_all_softlockup_watchdogs(void)
- static inline void lockup_detector_init(void)
- {
- }
-+static inline void lockup_detector_bootcpu_resume(void)
-+{
-+}
- #endif
- 
- #ifdef CONFIG_DETECT_HUNG_TASK
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index 396d262..0d262a8 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -177,6 +177,9 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
- 	arch_suspend_enable_irqs();
- 	BUG_ON(irqs_disabled());
- 
-+	/* Kick the lockup detector */
-+	lockup_detector_bootcpu_resume();
-+
-  Enable_cpus:
- 	enable_nonboot_cpus();
- 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index df30ee0..dd2ac93 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -585,6 +585,22 @@ static struct notifier_block __cpuinitdata cpu_nfb = {
- 	.notifier_call = cpu_callback
- };
- 
-+void lockup_detector_bootcpu_resume(void)
-+{
-+	void *cpu = (void *)(long)smp_processor_id();
-+
-+	/*
-+	 * On the suspend/resume path the boot CPU does not go though the
-+	 * offline->online transition. This breaks the NMI detector post
-+	 * resume. Force an offline->online transition for the boot CPU on
-+	 * resume.
-+	 */
-+	cpu_callback(&cpu_nfb, CPU_DEAD, cpu);
-+	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
-+
-+	return;
-+}
-+
- void __init lockup_detector_init(void)
- {
- 	void *cpu = (void *)(long)smp_processor_id();
--- 
-1.7.7.3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJPmuL5AAoJEIaOsuA1yqREJYMP/3Czt8OckpTHZwQDhyqi/f0l
+XIjp2Da/RRl/4vAY4jfTwLAj/R3MipLdBkT7hNIqeXXataScMVZXUj3VgjlFbe1o
+dRANh9oV+Il59z2tHgpT4vN+YhCw+bNgxmB8zntJWIK1+EhkV3efxfG0qRM9uQZp
+Jyyq+vULWLscwD/ju1U4GY9JqwKeewByzHGgc0VeUrqVQAiEN7w9j/a9k2uZQ9xF
++9zXj7UYNq/KenZunH/sRPIedUhvDrgnC1kgpqK7NhOOLI9MJEWaR/CZhS0PgS1P
+5NgF4HvdW9UUGK1cUlYGiOgzadKgXeDlP78+eSJ4yXDLWV/AISGCUz6BoVZSzYt+
+Gi6n6hCcseDuphbN/9d7eYFvQxMQDh/ePi+J+sJiJaUSnCfT0dqgogaoAVjC0TzT
+IS/QpxN/Z9WWqwtQ5l4TRq41ZOfW1m+7sYlYFxc9pTrw7XD8IDrZ+/07BLFgf17m
+VvvagNGYRs3iO4w18cbAkv7SKx3zZAWMOTmb5NRVzadhPhvgNbuHcDQMNgpswqj4
+I85yCROMNxJyI8hX4N3yW7wADnub0glo1pSOSTJ4U+inQr/GGC5VBhIdvkt+n1PY
+Aj+HhAUue6VbllCMnRl0zHbPWGMcS/YflN6N0HbixuB7LhVwdhu50GwPb6EmZfd3
+cF4JNj0GMrYAAj1FWzo9
+=iLIb
+-----END PGP SIGNATURE-----
+
+--k+w/mQv8wyuph6w0--
