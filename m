@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761014Ab2D0SNg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:13:36 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50697 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760968Ab2D0SNe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 14:13:34 -0400
-Date: Fri, 27 Apr 2012 11:13:31 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, devel@openvz.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 17/23] kmem controller charge/uncharge infrastructure
-In-Reply-To: <20120427113841.GB3514@somewhere.redhat.com>
-Message-ID: <alpine.DEB.2.00.1204271110370.28516@chino.kir.corp.google.com>
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1335138820-26590-6-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1204231522320.13535@chino.kir.corp.google.com> <20120424142232.GC8626@somewhere>
- <alpine.DEB.2.00.1204241319360.753@chino.kir.corp.google.com> <20120427113841.GB3514@somewhere.redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1761028Ab2D0SOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 14:14:36 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22213 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760990Ab2D0SOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 14:14:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="93929615"
+Message-ID: <4F9AE20A.6000202@linux.intel.com>
+Date: Fri, 27 Apr 2012 11:14:34 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 0/2 v2] [GIT PULL] tracing: updates for 3.5
+References: <20120426173404.666092637@goodmis.org>  <1335491171.28106.190.camel@gandalf.stny.rr.com> <1335491689.28106.192.camel@gandalf.stny.rr.com>
+In-Reply-To: <1335491689.28106.192.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Apr 2012, Frederic Weisbecker wrote:
-
-> > No, because memory is represented by mm_struct, not task_struct, so you 
-> > must charge to p->mm->owner to allow for moving threads amongst memcgs 
-> > later for memory.move_charge_at_immigrate.  You shouldn't be able to 
-> > charge two different memcgs for memory represented by a single mm.
+On 04/26/2012 06:54 PM, Steven Rostedt wrote:
 > 
-> The idea I had was more that only the memcg of the thread that does the allocation
-> is charged. But the problem is that this allocation can be later deallocated
-> from another thread. So probably charging the owner is indeed the only sane
-> way to go with user memory.
+> Peter,
+> 
+> I just realized that these two patches contained a Cc to you, but the
+> cover letter did not Cc you. Probably confused you in what to pull.
+> 
+> Sorry about that.
 > 
 
-It's all really the same concept: if we want to move memory of a process, 
-willingly free memory in the process itself, or free memory of a process 
-by way of the oom killer, we need a way to do that for the entire process 
-so the accounting makes sense afterwards.  And since we have that 
-requirement for user memory, it makes sense that its consistent with slab 
-as well.  I don't think a thread of a process should be able to charge 
-slab to one memcg while its user memory is charged to another memcg.
+Joy.  Let me figure out the remaining patches and pull them in.
+
+	-hpa
+
