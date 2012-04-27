@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532Ab2D0BOj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 21:14:39 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:65005 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab2D0BOi (ORCPT
+	id S1758206Ab2D0BUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 21:20:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64088 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754147Ab2D0BUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 21:14:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F998FDE.5020104@redhat.com>
-References: <4F998FDE.5020104@redhat.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Thu, 26 Apr 2012 21:14:16 -0400
-Message-ID: <CAHGf_=qLX7gofwHoSKpHLp7nvD6qJtHbmYzAR0UQ42JbfnYerw@mail.gmail.com>
-Subject: Re: [PATCH -mm V3] do_migrate_pages() calls migrate_to_node() even if
- task is already on a correct node
-To: lwoodman@redhat.com
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Motohiro Kosaki <mkosaki@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Apr 2012 21:20:36 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
+        netdev@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        " David S. Miller" <davem@davemloft.net>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        linux-i2c@vger.kernel.org
+Subject: [PATCH v2 0/5] MIPS: OCTEON: Convert some device to use Device Tree.
+Date: Thu, 26 Apr 2012 18:20:25 -0700
+Message-Id: <1335489630-27017-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3R1EjBf018077
 
-> @@ -1012,6 +1012,26 @@ int do_migrate_pages(struct mm_struct *mm,
->                int dest = 0;
->
->                for_each_node_mask(s, tmp) {
-> +
-> +                       /*
-> +                        * do_migrate_pages() tries to maintain the
-> +                        * relative node relationship of the pages
-> +                        * established between threads and memory areas.
-> +                        *
-> +                        * However if the number of source nodes is not
-> +                        * equal to the number of destination nodes we
-> +                        * can not preserve this node relative relationship.
-> +                        * In that case, skip copying memory from a node
-> that
-> +                        * is in the destination mask.
-> +                        *
-> +                        * Example: [2,3,4] -> [3,4,5] moves everything.
-> +                        *                 [0-7] - > [3,4,5] moves only
-> 0,1,2,6,7.
-> +                        */
-> +
-> +                       if ((nodes_weight(*from_nodes) !=
-> nodes_weight(*to_nodes)) &&
-> +                                               (node_isset(s, *to_nodes)))
-> +                               continue;
-> +
->                        d = node_remap(s, *from_nodes, *to_nodes);
->                        if (s == d)
->                                continue;
+From: David Daney <david.daney@cavium.com>
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+This patch set depends on the previous set to add Device Tree to
+OCTEON.  That set can be found among other places here:
+
+http://marc.info/?l=linux-kernel&m=133548781607480
+
+For v2:
+
+No functional changes, but minor clean-ups to use some new device tree
+helper functions.
+
+Some Acked-bys added.
+
+I am suggesting that all these go via Ralf's linux-mips.org tree as
+they depend on other patches in that tree.
+
+>From v1:
+
+The patches are for drivers scattered throughout the tree, but there
+is an order dependency as well as the dependency mentioned above, so
+it may be preferable to merge them all via Ralf's linux-mips.org tree
+rather that separately via the various device sub-system maintainers.
+
+The mdio-octeon.c and octeon_mgmt patches were already Acked-by davem.
+
+The i2c has been seen before, but to my knowledge was never acked.
+
+The octeon_ethernet patch is in staging and has also been seen before.
+
+The serial patch is new.
+
+
+David Daney (5):
+  i2c: Convert i2c-octeon.c to use device tree.
+  netdev: mdio-octeon.c: Convert to use device tree.
+  netdev: octeon_mgmt: Convert to use device tree.
+  staging: octeon_ethernet: Convert to use device tree.
+  MIPS: Octeon: Use device tree to register serial ports.
+
+ arch/mips/cavium-octeon/octeon-irq.c      |    8 -
+ arch/mips/cavium-octeon/octeon-platform.c |  176 ----------------
+ arch/mips/cavium-octeon/serial.c          |  134 +++++--------
+ arch/mips/include/asm/octeon/octeon.h     |    5 -
+ drivers/i2c/busses/i2c-octeon.c           |   92 +++++----
+ drivers/net/ethernet/octeon/octeon_mgmt.c |  312 +++++++++++++++++++----------
+ drivers/net/phy/mdio-octeon.c             |   92 ++++++---
+ drivers/staging/octeon/ethernet-mdio.c    |   28 ++--
+ drivers/staging/octeon/ethernet.c         |  153 +++++++++-----
+ drivers/staging/octeon/octeon-ethernet.h  |    3 +
+ 10 files changed, 484 insertions(+), 519 deletions(-)
+
+Cc: netdev@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc:  David S. Miller <davem@davemloft.net>
+Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
+Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
+Cc: "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org
+-- 
+1.7.2.3
+
