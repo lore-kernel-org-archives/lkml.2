@@ -1,78 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759603Ab2D0ISY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:18:24 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57153 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756613Ab2D0ISU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:18:20 -0400
-X-Sasl-enc: e8sPeRJsh/EeDT4RLtX2gKgdlLfNwiCvOpYmmNayEgdAUL3ObwYH9F+PvA 1335514698
-From: Ian Kent <raven@themaw.net>
-Subject: [PATCH] cifs - check S_AUTOMOUNT in revalidate
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>,
-        linux-cifs@vger.kernel.org,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 27 Apr 2012 16:18:15 +0800
-Message-ID: <20120427081815.4478.26011.stgit@perseus.themaw.net>
-User-Agent: StGIT/0.14.3
+	id S1759787Ab2D0IUO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:20:14 -0400
+Received: from ALUM-MAILSEC-SCANNER-1.MIT.EDU ([18.7.68.12]:59497 "EHLO
+	alum-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758481Ab2D0IUJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 04:20:09 -0400
+X-AuditID: 1207440c-b7fc26d0000008c0-a4-4f9a56b8ffa0
+Message-Id: <201204270819.q3R8ITLX000606@outgoing-alum.mit.edu>
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: $650,500.00 USD.
+To: Recipients <s.i.parry-jones@dur.ac.uk>
+From: United Nations Trust Funds <s.i.parry-jones@dur.ac.uk>
+Date: Fri, 27 Apr 2012 01:19:23 -0700
+Reply-To: untrustfund12@pbot.org
+X-Antivirus: avast! (VPS 120426-1, 04/26/2012), Outbound message
+X-Antivirus-Status: Clean
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsUixO6iqLsjbJa/wa8DWhZ3zrxit1hy5AiT
+	xcaFS1gsDjfdYrNYNPc8s8W7OW2sFv2r/rBYNL7pY7Q4vO81u8XR7s/sFnOmFlrsO3KH2aL/
+	XzOzxcT+I2wWl3fNYbPo2bCV1eLThWPsFu9PiFlMbv3H6iDs8XmTnMezT7eZPNbevcruse3Q
+	CnaPXXPyPM7tWMLkMWntGXaPD++PsHlcXPGM2WNp6wFmj09P97AEcEdx2aSk5mSWpRbp2yVw
+	ZRw40cdWIFjx6PdF5gZG3i5GTg4JAROJf22rmSFsMYkL99azdTFycQgJXGaUmHBzG5Sznkli
+	7vUJrCBVvAL2EqtPbACzmQX0JG5MncIGEReUODnzCQtEXFti2cLXQFM5gGw1ia9dJSBhYQFJ
+	iXtND8DKRQS0JPp2HAUrYROwllj9Kg/EZBFQlfi2whikQkhAQaK18SQbxGkOEpse9UOdKSnx
+	5PZkxgmMArOQ3DALyQ2zkNwwC+GGBYwsqxjlEnNKc3VzEzNzilOTdYuTE/PyUot0DfVyM0v0
+	UlNKNzFCYpZnB+O3dTKHGAU4GJV4eBenz/QXYk0sK67MPcQowcGsJML7I3iWvxBvSmJlVWpR
+	fnxRaU5q8SFGaQ4WJXFe1SXqfkIC6YklqdmpqQWpRTBZJg5OqQbGuCtrg28IvgtaPVeB/61/
+	ZrrYT37P9dvDVy/b+fmpF5vOumkM/zgy9lg0XysWLAl7Xf9w99wUvusnVzbeORLyeue2f0X/
+	A67E/44wab3z65GQ4oawyScKt/d8efHjMc/zDJ3Tgasn7Uj99pE3aPLkt423Xi9XjbowO0TE
+	exrvCSdWm9v2mny8UkosxRmJhlrMRcWJAGNTZWrVAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When revalidating a dentry, if the inode wasn't known to be a dfs
-entry when the dentry was instantiated, such as when created via
-->readdir(), the DCACHE_NEED_AUTOMOUNT flag needs to be set on the
-dentry in ->d_revalidate().
-
-The false return from cifs_d_revalidate(), due to the inode now
-being marked with the S_AUTOMOUNT flag, might not invalidate the
-dentry if there is a concurrent unlazy path walk. This is because
-the dentry reference count will be at least 2 in this case causing
-d_invalidate() to return EBUSY. So the asumption that the dentry
-will be discarded then correctly instantiated via ->lookup() might
-not hold.
-
-Signed-off-by: Ian Kent <raven@themaw.net>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Cc: Steve French <smfrench@gmail.com>
-Cc: linux-cifs@vger.kernel.org
----
-
- fs/cifs/dir.c |   17 ++++++++++++-----
- 1 files changed, 12 insertions(+), 5 deletions(-)
-
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index d172c8e..ec4e9a2 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -668,12 +668,19 @@ cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
- 			return 0;
- 		else {
- 			/*
--			 * Forcibly invalidate automounting directory inodes
--			 * (remote DFS directories) so to have them
--			 * instantiated again for automount
-+			 * If the inode wasn't known to be a dfs entry when
-+			 * the dentry was instantiated, such as when created
-+			 * via ->readdir(), it needs to be set now since the
-+			 * attributes will have been updated by
-+			 * cifs_revalidate_dentry().
- 			 */
--			if (IS_AUTOMOUNT(direntry->d_inode))
--				return 0;
-+			if (IS_AUTOMOUNT(direntry->d_inode) &&
-+			   !(direntry->d_flags & DCACHE_NEED_AUTOMOUNT)) {
-+				spin_lock(&direntry->d_lock);
-+				direntry->d_flags |= DCACHE_NEED_AUTOMOUNT;
-+				spin_unlock(&direntry->d_lock);
-+			}
-+
- 			return 1;
- 		}
- 	}
-
+Reply to claim.
