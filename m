@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760984Ab2D0SFi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:05:38 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51044 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760794Ab2D0SFg (ORCPT
+	id S1761001Ab2D0SJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 14:09:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46741 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760941Ab2D0SJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 14:05:36 -0400
+	Fri, 27 Apr 2012 14:09:27 -0400
+Date: Fri, 27 Apr 2012 15:09:29 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL 0/4] perf/annotate loop detection V2, fixes
+Message-ID: <20120427180929.GI27997@infradead.org>
+References: <1335452777-27326-1-git-send-email-acme@infradead.org>
+ <20120427072153.GB4766@gmail.com>
+ <20120427080613.GA7359@gmail.com>
+ <20120427153119.GC27997@infradead.org>
+ <1335541737.2463.135.camel@laptop>
+ <20120427160748.GE27997@infradead.org>
+ <1335543613.13683.112.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <20120427152323.GB2419@linux.vnet.ibm.com>
-References: <CA+1xoqcPSCA+iNdMETZMhXpmGaVkC2ACCJZAt4CSBkaoVwVvGQ@mail.gmail.com>
- <20120427152323.GB2419@linux.vnet.ibm.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Fri, 27 Apr 2012 20:05:15 +0200
-Message-ID: <CA+1xoqc+283VNm6Ai7O9LCQk_12K6jpXUGKwKe7sTJff3cuX_w@mail.gmail.com>
-Subject: Re: async pf: INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected
-To: paulmck@linux.vnet.ibm.com
-Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335543613.13683.112.camel@twins>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 5:23 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->
-> On Thu, Apr 26, 2012 at 04:50:35PM +0200, Sasha Levin wrote:
-> > Hi all.
-> >
-> > I got a "INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected"
-> > warning
-> > while running LTP inside a KVM guest using the recent -next kernel.
-> >
-> > It seems that it was initially originated from rcu_torture_rea(), but I
-> > don't think that it's a problem with RCU itself (I'll cc. Paul just in
-> > case). RCU torture was indeed configured to run during the testing.
->
-> I might be missing something, but I don't see how RCU is involved in
-> this one.
+Em Fri, Apr 27, 2012 at 06:20:13PM +0200, Peter Zijlstra escreveu:
+> On Fri, 2012-04-27 at 13:07 -0300, Arnaldo Carvalho de Melo wrote:
+> > Yeah, that too, or perhaps we can bring the instruction column closer to
+> > the jump column and then that makes it stand out better? 
+> 
+> Well, there should be at least one space between the arrows and the
+> instruction, otherwise it reads funny. And looking at the above that's
+> already the case, except for that indenting you did.
 
-It happened due to a rcutorture thread:
+Right, I just looked again at then unindented output, nevermind then :-)
 
-[ 4248.579019] rcu_torture_rea/1615 [HC0[0]:SC0[0]:HE0:SE1] is trying
-to acquire:
-[ 4248.579019]  (pgd_lock){+.+...}, at: [<ffffffff81089476>] pgd_free+0x26/0xa0
-
-rcutorture has never triggered anything on my tests up until now, and
-is probably not responsible for the actual warning in this case, just
-figured I should cc you in case I'm wrong :)
+- Arnaldo
