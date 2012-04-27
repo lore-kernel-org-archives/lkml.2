@@ -1,99 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760993Ab2D0SDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:03:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40217 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760940Ab2D0SDs (ORCPT
+	id S1760979Ab2D0SDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 14:03:50 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:35926 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760676Ab2D0SDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Apr 2012 14:03:48 -0400
-Date: Fri, 27 Apr 2012 15:03:51 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hagen Paul Pfeifer <hagen@jauu.net>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 0/4] perf/annotate loop detection V2, fixes
-Message-ID: <20120427180351.GH27997@infradead.org>
-References: <1335452777-27326-1-git-send-email-acme@infradead.org>
- <CA+55aFy7QLXRWQSjUiYNhX5B9p-0AJ4LSWc=km8hJ55ku=ho0A@mail.gmail.com>
- <20120427164643.GG27997@infradead.org>
- <CA+55aFyZ+pMRn_Na_o5A3yWeUbXj2J_FVS8jbHgdD-UfPbOD5g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyZ+pMRn_Na_o5A3yWeUbXj2J_FVS8jbHgdD-UfPbOD5g@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: Device tree conversion of spi device vs. controller_data
+To: Roland Stigge <stigge@antcom.de>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <4F87D157.2020700@antcom.de>
+References: <4F816772.5000607@antcom.de> <20120413032945.0C76B3E07AC@localhost> <4F87D157.2020700@antcom.de>
+Date: Fri, 27 Apr 2012 12:03:44 -0600
+Message-Id: <20120427180344.F023D3E171B@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Apr 27, 2012 at 10:12:45AM -0700, Linus Torvalds escreveu:
-> On Fri, Apr 27, 2012 at 9:46 AM, Arnaldo Carvalho de Melo
-> <acme@infradead.org> wrote:
-> > Em Fri, Apr 27, 2012 at 09:35:58AM -0700, Linus Torvalds escreveu:
-> >> Btw, don't get me wrong. I really like the changes. It's just that now
-> >> that the asm is almost readable, the remaining stupid default decode
-> >> format details just show up so much more clearly.
-> >
-> > Hey, I love the comments and suggestions, keep them coming when you feel
-> > like doing it.
+On Fri, 13 Apr 2012 09:10:15 +0200, Roland Stigge <stigge@antcom.de> wrote:
+> On 04/13/2012 05:29 AM, Grant Likely wrote:
+> >> upon DT conversion of LPC32xx, I came across the at25 spi eeprom which
+> >> needs .controller_data in struct spi_board_info for slave registration
+> >> via spi_register_board_info() (non-DT-case).
+> >>
+> >> In the DT case, we need to eliminate this explicit registering call.
+> >> Therefore, I need to somehow replace the .controller_data passing in the
+> >> DT case to pass this data to the spi core. But I can't find such a
+> >> mechanism (v3.4-rc2). Is there already a concept or API that I
+> >> overlooked (please just point me to it) or what can I do to solve this?
+> >> (Looks like a general issue for spi slave registration via DT).
+> > 
+> > Can you point me at specific code?
+> > 
+> > .controller_data is owned by the spi_master driver.  The eeprom driver
+> > shouldn't be accessing it directly at all; but I'll need to look at
+> > specific code to really understand what is going on.
 > 
-> I found another problem, and I think this one is more fundamental.
+> Please have a look at arch/arm/mach-lpc32xx/phy3250.c :
 > 
-> The "loop detection" is completely and utterly broken.
+> static struct pl022_config_chip spi0_chip_info = {
+>         .com_mode               = INTERRUPT_TRANSFER,
+>         .iface                  = SSP_INTERFACE_MOTOROLA_SPI,
+>         .hierarchy              = SSP_MASTER,
+>         .slave_tx_disable       = 0,
+>         .rx_lev_trig            = SSP_RX_4_OR_MORE_ELEM,
+>         .tx_lev_trig            = SSP_TX_4_OR_MORE_EMPTY_LOC,
+>         .ctrl_len               = SSP_BITS_8,
+>         .wait_state             = SSP_MWIRE_WAIT_ZERO,
+>         .duplex                 = SSP_MICROWIRE_CHANNEL_FULL_DUPLEX,
+>         .cs_control             = phy3250_spi_cs_set,
 
-Arjan noticed that too ;-)
- 
-> It seems to think that a backwards jump implies a loop. But that's not
-> at all true.
+phy3250_spi_cs_set is only a wrapper around gpio_set_value().  GPIO CS
+manipulation should be handled by the core pl022 spi driver, so that
+gets rid of the hardest part of this conversion (callbacks in platform
+data).
 
-Yeah, the jump has to be conditional.
+The pl022_config_chip structure is 100% owned by the spi controller
+(pl022).  If the bus driver depends on this structure, then it is the
+responsibility of the bus driver to allocate one and set the
+controller data pointer for each of the child devices.  You may need
+to add pl022-specific properties to each of the child nodes to
+populate this data correctly if it cannot be determined with other
+means.
 
-I should have reworded the "loop detection" with "basic jump arrows" in
-the first place.
- 
-> In fact, many backwards jumps are the *reverse* of loops. They are due
-> to *cold* code, that is totally uninteresting, and that was done
-> out-of-line. The backwards jump is not a loop at all, it's a jump back
-> to the hot code. In fact, it's often a jump back to the *exit* of a
-> function, when the cold code returns an error value (but the actual
-> code to do the "return" part was generated earlier as part of the hot
-> normal case code).
+There is no existing API for this since it is entirely pl022 specific
+code.
 
-That makes me think if another thing to add to the TODO isn't to detect
-those cold code blocks from hot ones, even without profiling, just by
-looking at these well known patterns.
-
-Profiling would just prove that when done.
-
-Such cold blocks could start folded, so that what appeared on the screen
-at first would be just the hot path.
- 
-> So making a big deal out of it as if it was a loop can be actively
-> wrong and misleading.
+> };
 > 
-> (And yes, I'm looking at an example of that right now -
-> __d_lookup_rcu() has this, for example)
+> ...
 > 
-> Now, it's often nice to see the line to find the branch target
-> (whether it's a loop or not), but you don't show them for forwards
-> branches, you only show them for backwards branches, as if the
-> backwards branches were somehow more important. But they really really
-> aren't.
+>         static struct spi_eeprom eeprom = {
+>                 .name = "at25256a",
+>                 .byte_len = 0x8000,
+>                 .page_size = 64,
+>                 .flags = EE_ADDR2,
 
-Yeah, there has to be a key to press over jumps to ask for it to point
-to its target.
+This data is easy and is 'owned' by the eeprom data.  It can be
+directly converted into device tree properties in the eeprom node.
 
-In addition another key to press anywhere to ask for the current loop,
-if any, and this key, if pressed twice, should show a capped number of
-loops, something like that.
+>         };
+> 
+>         static struct spi_board_info info[] = {
+>                 {
+>                         .modalias = "at25",
+>                         .max_speed_hz = 5000000,
+>                         .bus_num = 0,
+>                         .chip_select = 0,
+>                         .mode = SPI_MODE_0,
+>                         .platform_data = &eeprom,
+>                         .controller_data = &spi0_chip_info,
+>                 },
+>         };
 
-- Arnaldo
+Everything in spi_board_info directly translates over to DT today.  You
+shouldn't have any problems here.
+
+> 
+> 	spi_register_board_info(info, ARRAY_SIZE(info));
+> 
+> Trying to replace .controller_data at this point with device tree
+> settings passing, I struggled with missing resp. node properties.
+> 
+> Any hint how this can be done?
+> 
+> Thanks in advance,
+> 
+> Roland
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
