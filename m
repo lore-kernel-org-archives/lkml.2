@@ -1,326 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760034Ab2D0Mtn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 08:49:43 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:32480
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757374Ab2D0Mtm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 08:49:42 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz936eK1432N98dKc8kzz1202hzz8275bhz2dh2a8h668h839h93fhd24hd2bhbe9i)
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: Re: [PATCH] Watchdog: DA9052/53 PMIC watchdog support v3
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        Anthony Olech <Anthony.Olech@diasemi.com>, <sameo@linux.intel.com>
-In-Reply-To: <1334753066.8143.44.camel@dhruva>
-References: <1334753066.8143.44.camel@dhruva>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Apr 2012 18:16:26 +0530
-Message-ID: <1335530786.3313.0.camel@dhruva>
+	id S1760062Ab2D0Myg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 08:54:36 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:52717
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758539Ab2D0Myf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 08:54:35 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zz9371I936eK1432N98dK4015Izz1202hzz8275bhz2dh668h839hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M352IC-01-0PT-02
+X-M-MSG: 
+Date: Fri, 27 Apr 2012 14:54:10 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS for
+ AMD CPUs
+Message-ID: <20120427125410.GG18810@erda.amd.com>
+References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
+ <1333390758-10893-7-git-send-email-robert.richter@amd.com>
+ <1334398906.2528.49.camel@twins>
+ <20120423095659.GS9747@erda.amd.com>
+ <20120427123434.GF18810@erda.amd.com>
+ <CABPqkBS9FNmHBukzJqGJP1r5iqyLL9gz2g=3jvnt22pDxOdndA@mail.gmail.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <CABPqkBS9FNmHBukzJqGJP1r5iqyLL9gz2g=3jvnt22pDxOdndA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If there are no comments then can this patch get ACK'ed?
-On Wed, 2012-04-18 at 18:14 +0530, Ashish Jangam wrote:
-> This driver adds support for the watchdog functionality provided by the Dialog
-> Semiconductor DA9052 PMIC chip.
-> 
-> Signed-off-by: Anthony Olech <Anthony.Olech@diasemi.com>
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> ---
-> Changes since V3:
-> - Add new watchdog framework
-> Changes since V2:
-> - Code restructured for simplicty.
-> - Add watchdog documentation.
-> - Remove Auto strobing feature.
-> - Remove strobe filtering flag.
-> ---
->  Documentation/watchdog/watchdog-parameters.txt |    3 +
->  drivers/watchdog/Kconfig                       |    7 +
->  drivers/watchdog/Makefile                      |    1 +
->  drivers/watchdog/da9052_wdt.c                  |  223 ++++++++++++++++++++++++
->  4 files changed, 234 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/watchdog/watchdog-parameters.txt b/Documentation/watchdog/watchdog-parameters.txt
-> index 17ddd82..b1a65eb 100644
-> --- a/Documentation/watchdog/watchdog-parameters.txt
-> +++ b/Documentation/watchdog/watchdog-parameters.txt
-> @@ -78,6 +78,9 @@ wd0_timeout: Default watchdog0 timeout in 1/10secs
->  wd1_timeout: Default watchdog1 timeout in 1/10secs
->  wd2_timeout: Default watchdog2 timeout in 1/10secs
->  -------------------------------------------------
-> +da9052_wdt:
-> +timeout: Watchdog timeout in seconds. 2<= timeout <=131, default=4.096s
-> +-------------------------------------------------
->  davinci_wdt:
->  heartbeat: Watchdog heartbeat period in seconds from 1 to 600, default 60
->  -------------------------------------------------
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index eeea76f..ece08cf 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -64,6 +64,13 @@ config SOFT_WATCHDOG
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called softdog.
->  
-> +config DA9052_WATCHDOG
-> +	tristate "Dialog DA9052 Watchdog"
-> +	depends on PMIC_DA9052
-> +	select WATCHDOG_CORE
-> +	help
-> +	  Support for the watchdog in the DA9052 PMIC.
-> +
->  config WM831X_WATCHDOG
->  	tristate "WM831x watchdog"
->  	depends on MFD_WM831X
-> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> index e8f479a..b3032e9 100644
-> --- a/drivers/watchdog/Makefile
-> +++ b/drivers/watchdog/Makefile
-> @@ -167,3 +167,4 @@ obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
->  obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
->  obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
->  obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
-> +obj-$(CONFIG_DA9052_WATCHDOG) += da9052_wdt.o
-> diff --git a/drivers/watchdog/da9052_wdt.c b/drivers/watchdog/da9052_wdt.c
-> new file mode 100644
-> index 0000000..ca7f907
-> --- /dev/null
-> +++ b/drivers/watchdog/da9052_wdt.c
-> @@ -0,0 +1,223 @@
-> +/*
-> + * System monitoring driver for DA9052 PMICs.
-> + *
-> + * Copyright(c) 2012 Dialog Semiconductor Ltd.
-> + *
-> + * Author: Dajun Chen <dchen@diasemi.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/delay.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/time.h>
-> +#include <linux/watchdog.h>
-> +#include <linux/types.h>
-> +#include <linux/kernel.h>
-> +
-> +#include <linux/mfd/da9052/reg.h>
-> +#include <linux/mfd/da9052/da9052.h>
-> +
-> +#define DA9052_DEF_TIMEOUT	4
-> +
-> +struct da9052_wdt_drvdata {
-> +	struct watchdog_device wdt;
-> +	struct da9052 *da9052;
-> +	struct mutex lock;
-> +};
-> +
-> +static const struct {
-> +	u8 reg_val;
-> +	int time;  /* Seconds */
-> +} da9052_wdt_maps[] = {
-> +	{ 1, 2 },
-> +	{ 2, 4 },
-> +	{ 3, 8 },
-> +	{ 4, 16 },
-> +	{ 5, 32 },
-> +	{ 5, 33 },  /* Actual time  32.768s so included both 32s and 33s */
-> +	{ 6, 65 },
-> +	{ 6, 66 },  /* Actual time 65.536s so include both, 65s and 66s */
-> +	{ 7, 131 },
-> +};
-> +
-> +static int da9052_wdt_set_timeout(struct watchdog_device *wdt_dev,
-> +				  unsigned int timeout)
-> +{
-> +	struct da9052_wdt_drvdata *driver_data = watchdog_get_drvdata(wdt_dev);
-> +	struct da9052 *da9052 = driver_data->da9052;
-> +	int ret, i;
-> +
-> +	/* Disable the Watchdog timer before setting
-> +	 * new time out.
-> +	 */
-> +	ret = da9052_reg_update(da9052, DA9052_CONTROL_D_REG,
-> +				DA9052_CONTROLD_TWDSCALE, 0);
-> +	if (ret < 0) {
-> +		dev_err(da9052->dev, "Failed to disable watchdog bit, %d\n",
-> +			ret);
-> +		return ret;
-> +	}
-> +	if (timeout) {
-> +		/* To change the timeout, da9052 needs to
-> +		 * be disabled for at least 150 us.
-> +		 */
-> +		udelay(150);
-> +
-> +		/* Set the desired timeout */
-> +		for (i = 0; i < ARRAY_SIZE(da9052_wdt_maps); i++)
-> +			if (da9052_wdt_maps[i].time == timeout)
-> +				break;
-> +
-> +		if (i == ARRAY_SIZE(da9052_wdt_maps))
-> +			ret = -EINVAL;
-> +		else
-> +			ret = da9052_reg_update(da9052, DA9052_CONTROL_D_REG,
-> +						DA9052_CONTROLD_TWDSCALE,
-> +						da9052_wdt_maps[i].reg_val);
-> +		if (ret < 0) {
-> +			dev_err(da9052->dev,
-> +				"Failed to update timescale bit, %d\n", ret);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int da9052_wdt_start(struct watchdog_device *wdt_dev)
-> +{
-> +	struct da9052_wdt_drvdata *driver_data = watchdog_get_drvdata(wdt_dev);
-> +	int ret = 0;
-> +
-> +	mutex_lock(&driver_data->lock);
-> +	ret = da9052_wdt_set_timeout(wdt_dev, DA9052_DEF_TIMEOUT);
-> +	mutex_unlock(&driver_data->lock);
-> +
-> +	return ret;
-> +}
-> +
-> +static int da9052_wdt_stop(struct watchdog_device *wdt_dev)
-> +{
-> +	struct da9052_wdt_drvdata *driver_data = watchdog_get_drvdata(wdt_dev);
-> +	struct da9052 *da9052 = driver_data->da9052;
-> +	int ret = 0;
-> +
-> +	mutex_lock(&driver_data->lock);
-> +	ret = da9052_reg_update(da9052, DA9052_CONTROL_D_REG,
-> +				DA9052_CONTROLD_TWDSCALE, 0);
-> +	mutex_unlock(&driver_data->lock);
-> +
-> +	return ret;
-> +}
-> +
-> +static int da9052_wdt_ping(struct watchdog_device *wdt_dev)
-> +{
-> +	struct da9052_wdt_drvdata *driver_data = watchdog_get_drvdata(wdt_dev);
-> +	struct da9052 *da9052 = driver_data->da9052;
-> +	int ret;
-> +
-> +	mutex_lock(&driver_data->lock);
-> +	/* Reset the watchdog timer */
-> +	ret = da9052_reg_update(da9052, DA9052_CONTROL_D_REG,
-> +				DA9052_CONTROLD_WATCHDOG, 1 << 7);
-> +	if (ret < 0)
-> +		goto err_strobe;
-> +
-> +	/* FIXME: Reset the watchdog core, in general PMIC
-> +	 * is supposed to do this
-> +	 */
-> +	ret = da9052_reg_update(da9052, DA9052_CONTROL_D_REG,
-> +				DA9052_CONTROLD_WATCHDOG, 0 << 7);
-> +err_strobe:
-> +	mutex_unlock(&driver_data->lock);
-> +	return ret;
-> +}
-> +
-> +static struct watchdog_info da9052_wdt_info = {
-> +	.options	= WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
-> +	.identity	= "DA9052 Watchdog",
-> +};
-> +
-> +static const struct watchdog_ops da9052_wdt_ops = {
-> +	.owner = THIS_MODULE,
-> +	.start = da9052_wdt_start,
-> +	.stop = da9052_wdt_stop,
-> +	.ping = da9052_wdt_ping,
-> +	.set_timeout = da9052_wdt_set_timeout,
-> +};
-> +
-> +
-> +static int __devinit da9052_wdt_probe(struct platform_device *pdev)
-> +{
-> +	struct da9052 *da9052 = dev_get_drvdata(pdev->dev.parent);
-> +	struct da9052_wdt_drvdata *driver_data;
-> +	struct watchdog_device *da9052_wdt;
-> +	int ret;
-> +
-> +	driver_data = devm_kzalloc(&pdev->dev, sizeof(*driver_data),
-> +				   GFP_KERNEL);
-> +	if (!driver_data) {
-> +		dev_err(da9052->dev, "Unable to alloacate watchdog device\n");
-> +		ret = -ENOMEM;
-> +		goto err;
-> +	}
-> +	mutex_init(&driver_data->lock);
-> +	driver_data->da9052 = da9052;
-> +
-> +	da9052_wdt = &driver_data->wdt;
-> +
-> +	da9052_wdt->info = &da9052_wdt_info;
-> +	da9052_wdt->ops = &da9052_wdt_ops;
-> +	watchdog_set_drvdata(da9052_wdt, driver_data);
-> +
-> +	ret = da9052_reg_update(da9052, DA9052_CONTROL_D_REG,
-> +				DA9052_CONTROLD_TWDSCALE, 0);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "Failed to disable watchdog bits, %d\n",
-> +			ret);
-> +		goto err;
-> +	}
-> +
-> +	ret = watchdog_register_device(&driver_data->wdt);
-> +	if (ret != 0) {
-> +		dev_err(da9052->dev, "watchdog_register_device() failed: %d\n",
-> +			ret);
-> +		goto err;
-> +	}
-> +
-> +	dev_set_drvdata(&pdev->dev, driver_data);
-> +err:
-> +	return ret;
-> +}
-> +
-> +static int __devexit da9052_wdt_remove(struct platform_device *pdev)
-> +{
-> +	struct da9052_wdt_drvdata *driver_data = dev_get_drvdata(&pdev->dev);
-> +
-> +	watchdog_unregister_device(&driver_data->wdt);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver da9052_wdt_driver = {
-> +	.probe = da9052_wdt_probe,
-> +	.remove = __devexit_p(da9052_wdt_remove),
-> +	.driver = {
-> +		.name	= "da9052-watchdog",
-> +	},
-> +};
-> +
-> +module_platform_driver(da9052_wdt_driver);
-> +
-> +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
-> +MODULE_DESCRIPTION("DA9052 SM Device Driver");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:da9052-wdt");
-> +
+On 27.04.12 14:39:21, Stephane Eranian wrote:
+> On Fri, Apr 27, 2012 at 2:34 PM, Robert Richter <robert.richter@amd.com> wrote:
+> > On 23.04.12 11:56:59, Robert Richter wrote:
+> >> On 14.04.12 12:21:46, Peter Zijlstra wrote:
+> >> > On Mon, 2012-04-02 at 20:19 +0200, Robert Richter wrote:
+> >> > > + * We map IBS sampling to following precise levels:
+> >> > > + *
+> >> > > + *  1: RIP taken from IBS sample or (if invalid) from stack
+> >> > > + *  2: RIP always taken from IBS sample, samples with an invalid rip
+> >> > > + *     are dropped. Thus samples of an event containing two precise
+> >> > > + *     modifiers (e.g. r076:pp) only contain (precise) addresses
+> >> > > + *     detected with IBS.
+> >> >
+> >> >             /*
+> >> >              * precise_ip:
+> >> >              *
+> >> >              *  0 - SAMPLE_IP can have arbitrary skid
+> >> >              *  1 - SAMPLE_IP must have constant skid
+> >> >              *  2 - SAMPLE_IP requested to have 0 skid
+> >> >              *  3 - SAMPLE_IP must have 0 skid
+> >> >              *
+> >> >              *  See also PERF_RECORD_MISC_EXACT_IP
+> >> >              */
+> >> >
+> >> > your 1 doesn't have constant skid. I would suggest only supporting 2 and
+> >> > letting userspace drop !PERF_RECORD_MISC_EXACT_IP records if so desired.
+> >>
+> >> Ah, didn't notice the PERF_RECORD_MISC_EXACT_IP flag. Will set this
+> >> flag for precise events.
+> >
+> Why not use 2? IBS has 0 skid, unless I am mistaken.
 
+Events with r076:p would fail then. But r076:pp is actually better and
+a subset of level 1. Thus both level should work.
+
+And there is still the question how samples with imprecise rip should
+be handled. Sometimes we want to get all samples and sometimes all
+samples should always contain a precise rip, other samples should be
+dropped then. But there is no option or modifier for this yet.
+
+My suggestions was to use level 1 for all samples and level 2 for
+samples that only contain a precise rip, saving level 3 for future
+use.
+
+-Robert
+
+> 
+> > Peter,
+> >
+> > I have a patch on top that implements the support of the
+> > PERF_RECORD_MISC_EXACT_IP flag. But I am not quite sure about how to
+> > use the precise levels. What do you suggest?
+> >
+> > Thanks,
+> >
+> > -Robert
+> >
+> >>
+> >> Problem is that this flag is not yet well supported, only perf-top
+> >> uses it to count the total number of exact samples. Esp. perf-annotate
+> >> and perf-report do not support it, and there are no modifiers to
+> >> select precise-only sampling (or is this level 3?).
+> >>
+> >> Both might be useful: You might need only precise-rip samples (perf-
+> >> annotate usage), on the other side you want samples with every
+> >> clock/ops count overflow (e.g. to get a counting statistic). The
+> >> p-modifier specification (see perf-list) is not sufficient to select
+> >> both of it.
+> >>
+> >> Another question I have: Isn't precise level 2 a special case of level
+> >> 1 where the skid is constant and 0? The problem I see is, if people
+> >> want to measure precise rip, they simply use r076:p. Level 2 (r076:pp)
+> >> is actually better than 1, but they might think not to be able to
+> >> sample precise-rip if we throw an error for r076:p. Thus, I would
+> >> prefer to also allow level 1.
+> >>
+> >> > That said, mixing the IBS pmu into the regular core pmu isn't exactly
+> >> > pretty..
+> >>
+> >> IBS is currently the only way to do precise-rip sampling on amd cpus.
+> >> IBS events fit well with its corresponding perfctr events (0x76/
+> >> 0xc1). So what don't you like with this approach? I will also post IBS
+> >> perf tool support where IBS can be directly used.
+> >>
+> >> -Robert
+> >>
+> >> --
+> >> Advanced Micro Devices, Inc.
+> >> Operating System Research Center
+> >
+> > --
+> > Advanced Micro Devices, Inc.
+> > Operating System Research Center
+> >
+> 
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
