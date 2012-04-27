@@ -1,128 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab2D0EjM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 00:39:12 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:40765 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab2D0EjL (ORCPT
+	id S1752155Ab2D0Eks (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 00:40:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37650 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab2D0Ekq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 00:39:11 -0400
-X-AuditID: cbfee60e-b7b3bae000007458-8c-4f9a22edbc9f
-Date: Fri, 27 Apr 2012 04:39:09 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] PM: devfreq: init performance/powersave governor
-To: Xiaoguang Chen <chenxg@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "khilman@ti.com" <khilman@ti.com>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "mturquette@ti.com" <mturquette@ti.com>, "rjw@sisk.pl" <rjw@sisk.pl>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20120427043352411@myungjoo.ham
-Msgkey: 20120427043352411@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120427043352411@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <15852322.15281335501548956.JavaMail.weblogic@epml25>
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Fri, 27 Apr 2012 00:40:46 -0400
+MIME-Version: 1.0
+Date: Thu, 26 Apr 2012 21:40:46 -0700
+Message-ID: <CAK3+h2xG+r15XKa_imx0m6xPnfXYE22YdMBoeLpW2VrjD_4C0Q@mail.gmail.com>
+Subject: Silent kernel/hardware lockup debug
+From: Vincent Li <vincent.mc.li@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3R4dHfA019033
 
-> Performance and powersave governor's get_target_freq
-> is not called if driver chooses one of these two governors.
-> Add init function in governor profile to call update_devfreq
-> which will call get_target_freq subsequently.
-> 
-> Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Hi,
 
-Hello Xiaoguang,
+I am running centos 6 based kernel (2.6.32-71.18.2.el6.x86_64) with a
+few external kernel modules on a system with 12 cpu. the OS is on
+raid1 and LVM. the system sometimes locks up with nothing on the
+console, sysrq magic does not work, no softlockup/hardlockup message,
+I even turned on all kernel lock debugging, still nothing when the
+system locks up. but this lockup happens rarely and maybe only once
+for a few weeks or months.
+
+then I found a way to  reproduce this weird silent kernel/hardware
+lockup by running following code a few times in  a day:
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
+
+main ()
+{
+  time_t now;
+
+  time(&now);
+  printf("%s", ctime(&now));
+
+  char *timestamp = ctime(&now);
+
+  FILE *ofp;
+  char *outputFilename = "/var/log/lockupcli.log";
 
 
-Yes, if we do not call any QoS, min/max, OPP interfaces or enable polling, we need to call this at init. In fact, this is a bugfix patch.
+  ofp = fopen(outputFilename, "a");
 
-Thank you!
+  if (ofp == NULL) {
+     fprintf(stderr, "Can't open output file %s!\n", outputFilename);
+     exit(1);
+  }
 
-Cheers!
-MyungJoo.
+  fprintf(ofp, "executed lockupcli at: %s\n", timestamp);
 
+  fsync((int)ofp);
+  fsync((int)ofp);
 
+  fclose(ofp);
 
-> ---
->  drivers/devfreq/governor_performance.c |    7 +++++++
->  drivers/devfreq/governor_powersave.c   |    7 +++++++
->  2 files changed, 14 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/devfreq/governor_performance.c b/drivers/devfreq/governor_performance.c
-> index 574a06b..af75ddd 100644
-> --- a/drivers/devfreq/governor_performance.c
-> +++ b/drivers/devfreq/governor_performance.c
-> @@ -10,6 +10,7 @@
->   */
->  
->  #include <linux/devfreq.h>
-> +#include "governor.h"
->  
->  static int devfreq_performance_func(struct devfreq *df,
->  				    unsigned long *freq)
-> @@ -25,8 +26,14 @@ static int devfreq_performance_func(struct devfreq *df,
->  	return 0;
->  }
->  
-> +static int performance_init(struct devfreq *devfreq)
-> +{
-> +	return update_devfreq(devfreq);
-> +}
-> +
->  const struct devfreq_governor devfreq_performance = {
->  	.name = "performance",
-> +	.init = performance_init,
->  	.get_target_freq = devfreq_performance_func,
->  	.no_central_polling = true,
->  };
-> diff --git a/drivers/devfreq/governor_powersave.c b/drivers/devfreq/governor_powersave.c
-> index d742d4a..fec0cdb 100644
-> --- a/drivers/devfreq/governor_powersave.c
-> +++ b/drivers/devfreq/governor_powersave.c
-> @@ -10,6 +10,7 @@
->   */
->  
->  #include <linux/devfreq.h>
-> +#include "governor.h"
->  
->  static int devfreq_powersave_func(struct devfreq *df,
->  				  unsigned long *freq)
-> @@ -22,8 +23,14 @@ static int devfreq_powersave_func(struct devfreq *df,
->  	return 0;
->  }
->  
-> +static int powersave_init(struct devfreq *devfreq)
-> +{
-> +	return update_devfreq(devfreq);
-> +}
-> +
->  const struct devfreq_governor devfreq_powersave = {
->  	.name = "powersave",
-> +	.init = powersave_init,
->  	.get_target_freq = devfreq_powersave_func,
->  	.no_central_polling = true,
->  };
-> -- 
-> 1.7.0.4
-> 
-> 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+  printf("sleep 5 seconds to save log file to disk\n" );
+  sleep(5);
+  printf("starting clear interrupt flag loop\n" );
+
+  iopl(3);
+
+  for (;;) { asm("cli"); }
+
+}
+
+this code will first trigger NMI watchdog oops and kernel panic, then
+cause the system reboot. the weird part is that after kernel panic
+reboot, the system boots up and runs fine for 10 - 50 mintues, then
+the kernel/hardware locks up all the sudden and nothing on the console
+output. console is not responding and sysrq magic key does not work.
+I run above test code in a cron job every hour and the kernel/hardware
+locks up silent 3 - 5 times in 24 hours. If I don't run above test
+code, the system stays up running fine for days, weeks, months.
+
+so I am thinking what the test code did to make this silent
+kernel/hardware lockup happen more frequent. the theory I have in mind
+is that the test code caused kernel panic and may affected kernel file
+system activity either in raid1 or lvm or something else. I searched
+linux-raid mailing list and found one or two deadlock bugs in raid1,
+but it appears all fixed in 2.6.32. I am aslo suspecting maybe these
+external kernel modules may also cause the silent lockup, but I don't
+have code access to these external kernel modules.
+
+so I am seeking advices from broad kernel community on how to
+diagnosis this slient kernel/hardware lockup, is it possible some
+kernel file system or I/O activity caused the silent lockup? I am also
+thinking maybe unloading these external kernel modules and do the same
+test to eliminate the possibility of external kernel modules causing
+the problem, is that good to try?
+
+I didn't post dmesg and .config since it contains external kernel
+modules configs that may not be allowed by external partners, I can
+remove those configs info if you think that would help you give better
+advices.
+
+Thanks
+
+Vincent
