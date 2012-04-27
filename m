@@ -1,195 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab2D0VT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 17:19:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42831 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab2D0VT0 (ORCPT
+	id S1754106Ab2D0VYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 17:24:47 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57356 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab2D0VYq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 17:19:26 -0400
-Date: Fri, 27 Apr 2012 14:19:22 -0700
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk
-Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, fengguang.wu@intel.com,
-        hughd@google.com, akpm@linux-foundation.org
-Subject: [PATCH UPDATED 03/11] blkcg: make root blkcg allocation use
- %GFP_KERNEL
-Message-ID: <20120427211922.GR26595@google.com>
-References: <1335477561-11131-1-git-send-email-tj@kernel.org>
- <1335477561-11131-4-git-send-email-tj@kernel.org>
+	Fri, 27 Apr 2012 17:24:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335477561-11131-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201204272314.39715.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl>
+	<201204270004.27958.rjw@sisk.pl>
+	<CAMP5Xgce6EPfpCaYN+34iuUxLpV9j9LoWYrQ21xcJiANuQ3VpQ@mail.gmail.com>
+	<201204272314.39715.rjw@sisk.pl>
+Date: Fri, 27 Apr 2012 14:17:55 -0700
+Message-ID: <CAMP5Xgeq2y+dcifY7tkuQVgUSpzrLHXsPpHBq+7zu=mE+wD0Ng@mail.gmail.com>
+Subject: Re: [RFC][PATCH 8/8] PM / Sleep: Add user space interface for
+ manipulating wakeup sources
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: NeilBrown <neilb@suse.de>, John Stultz <johnstul@us.ibm.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, blkcg_activate_policy() depends on %GFP_ATOMIC allocation
-from __blkg_lookup_create() for root blkcg creation.  This could make
-policy fail unnecessarily.
+2012/4/27 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Friday, April 27, 2012, Arve Hjønnevåg wrote:
+>> 2012/4/26 Rafael J. Wysocki <rjw@sisk.pl>:
+>> ...
+>> > ---
+>> > From: Rafael J. Wysocki <rjw@sisk.pl>
+>> > Subject: PM / Sleep: Add user space interface for manipulating wakeup sources, v3
+>> >
+>> > Android allows user space to manipulate wakelocks using two
+>> > sysfs file located in /sys/power/, wake_lock and wake_unlock.
+>> > Writing a wakelock name and optionally a timeout to the wake_lock
+>> > file causes the wakelock whose name was written to be acquired (it
+>> > is created before is necessary), optionally with the given timeout.
+>> > Writing the name of a wakelock to wake_unlock causes that wakelock
+>> > to be released.
+>> >
+>> > Implement an analogous interface for user space using wakeup sources.
+>> > Add the /sys/power/wake_lock and /sys/power/wake_unlock files
+>> > allowing user space to create, activate and deactivate wakeup
+>> > sources, such that writing a name and optionally a timeout to
+>> > wake_lock causes the wakeup source of that name to be activated,
+>> > optionally with the given timeout.  If that wakeup source doesn't
+>> > exist, it will be created and then activated.  Writing a name to
+>> > wake_unlock causes the wakeup source of that name, if there is one,
+>> > to be deactivated.  Wakeup sources created with the help of
+>> > wake_lock that haven't been used for more than 5 minutes are garbage
+>> > collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
+>>
+>> I think it would be better if the garbage collection and limit was
+>> configurable and optional. I would probably turn both features off
+>> since I do not want to chase down bugs because a wakelock was ignored,
+>> and I think the garbage collection will erase stats that we care
+>> about.
+>
+> OK, but would you mind if I added the configurability as a separate incremental
+> patch?
+>
 
-Make blkg_alloc() take @gfp_mask, __blkg_lookup_create() take an
-optional @new_blkg for preallocated blkg, and blkcg_activate_policy()
-preload radix tree and preallocate blkg with %GFP_KERNEL before trying
-to create the root blkg.
+That is fine with me.
 
-v2: __blkg_lookup_create() was returning %NULL on blkg alloc failure
-   instead of ERR_PTR() value.  Fixed.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
----
-Failure path bug fixed.  git branch updated accordingly.  All other patches
-apply as-is.
-
-Thanks.
-
- block/blk-cgroup.c |   59 +++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 43 insertions(+), 16 deletions(-)
-
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index af61db0..cbeeb54 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -91,16 +91,18 @@ static void blkg_free(struct blkcg_gq *blkg)
-  * blkg_alloc - allocate a blkg
-  * @blkcg: block cgroup the new blkg is associated with
-  * @q: request_queue the new blkg is associated with
-+ * @gfp_mask: allocation mask to use
-  *
-  * Allocate a new blkg assocating @blkcg and @q.
-  */
--static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q)
-+static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q,
-+				   gfp_t gfp_mask)
- {
- 	struct blkcg_gq *blkg;
- 	int i;
- 
- 	/* alloc and init base part */
--	blkg = kzalloc_node(sizeof(*blkg), GFP_ATOMIC, q->node);
-+	blkg = kzalloc_node(sizeof(*blkg), gfp_mask, q->node);
- 	if (!blkg)
- 		return NULL;
- 
-@@ -117,7 +119,7 @@ static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q)
- 			continue;
- 
- 		/* alloc per-policy data and attach it to blkg */
--		pd = kzalloc_node(pol->pd_size, GFP_ATOMIC, q->node);
-+		pd = kzalloc_node(pol->pd_size, gfp_mask, q->node);
- 		if (!pd) {
- 			blkg_free(blkg);
- 			return NULL;
-@@ -175,8 +177,13 @@ struct blkcg_gq *blkg_lookup(struct blkcg *blkcg, struct request_queue *q)
- }
- EXPORT_SYMBOL_GPL(blkg_lookup);
- 
-+/*
-+ * If @new_blkg is %NULL, this function tries to allocate a new one as
-+ * necessary using %GFP_ATOMIC.  @new_blkg is always consumed on return.
-+ */
- static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
--					     struct request_queue *q)
-+					     struct request_queue *q,
-+					     struct blkcg_gq *new_blkg)
- {
- 	struct blkcg_gq *blkg;
- 	int ret;
-@@ -188,18 +195,24 @@ static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
- 	blkg = __blkg_lookup(blkcg, q);
- 	if (blkg) {
- 		rcu_assign_pointer(blkcg->blkg_hint, blkg);
--		return blkg;
-+		goto out_free;
- 	}
- 
- 	/* blkg holds a reference to blkcg */
--	if (!css_tryget(&blkcg->css))
--		return ERR_PTR(-EINVAL);
-+	if (!css_tryget(&blkcg->css)) {
-+		blkg = ERR_PTR(-EINVAL);
-+		goto out_free;
-+	}
- 
- 	/* allocate */
--	ret = -ENOMEM;
--	blkg = blkg_alloc(blkcg, q);
--	if (unlikely(!blkg))
--		goto err_put;
-+	if (!new_blkg) {
-+		new_blkg = blkg_alloc(blkcg, q, GFP_ATOMIC);
-+		if (unlikely(!new_blkg)) {
-+			blkg = ERR_PTR(-ENOMEM);
-+			goto out_put;
-+		}
-+	}
-+	blkg = new_blkg;
- 
- 	/* insert */
- 	spin_lock(&blkcg->lock);
-@@ -212,10 +225,13 @@ static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
- 
- 	if (!ret)
- 		return blkg;
--err_put:
-+
-+	blkg = ERR_PTR(ret);
-+out_put:
- 	css_put(&blkcg->css);
--	blkg_free(blkg);
--	return ERR_PTR(ret);
-+out_free:
-+	blkg_free(new_blkg);
-+	return blkg;
- }
- 
- struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
-@@ -227,7 +243,7 @@ struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
- 	 */
- 	if (unlikely(blk_queue_bypass(q)))
- 		return ERR_PTR(blk_queue_dead(q) ? -EINVAL : -EBUSY);
--	return __blkg_lookup_create(blkcg, q);
-+	return __blkg_lookup_create(blkcg, q, NULL);
- }
- EXPORT_SYMBOL_GPL(blkg_lookup_create);
- 
-@@ -727,19 +743,30 @@ int blkcg_activate_policy(struct request_queue *q,
- 	struct blkcg_gq *blkg;
- 	struct blkg_policy_data *pd, *n;
- 	int cnt = 0, ret;
-+	bool preloaded;
- 
- 	if (blkcg_policy_enabled(q, pol))
- 		return 0;
- 
-+	/* preallocations for root blkg */
-+	blkg = blkg_alloc(&blkcg_root, q, GFP_KERNEL);
-+	if (!blkg)
-+		return -ENOMEM;
-+
-+	preloaded = !radix_tree_preload(GFP_KERNEL);
-+
- 	blk_queue_bypass_start(q);
- 
- 	/* make sure the root blkg exists and count the existing blkgs */
- 	spin_lock_irq(q->queue_lock);
- 
- 	rcu_read_lock();
--	blkg = __blkg_lookup_create(&blkcg_root, q);
-+	blkg = __blkg_lookup_create(&blkcg_root, q, blkg);
- 	rcu_read_unlock();
- 
-+	if (preloaded)
-+		radix_tree_preload_end();
-+
- 	if (IS_ERR(blkg)) {
- 		ret = PTR_ERR(blkg);
- 		goto out_unlock;
 -- 
-1.7.7.3
-
+Arve Hjønnevåg
