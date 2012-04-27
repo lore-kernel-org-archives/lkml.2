@@ -1,51 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760177Ab2D0OHR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 10:07:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28542 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758636Ab2D0OHO (ORCPT
+	id S1760209Ab2D0OIW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 10:08:22 -0400
+Received: from relay.parallels.com ([195.214.232.42]:39906 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759972Ab2D0OIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 10:07:14 -0400
-X-Authority-Analysis: v=2.0 cv=IaEFqBWa c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Co6SMZqKBZgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=pGHU-0qZd6m6RciWSMoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1335535630.28106.209.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v4 1/3] make jump_labels wait while updates are in place
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org, devel@openvz.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Fri, 27 Apr 2012 10:07:10 -0400
-In-Reply-To: <20120427135320.GA13762@redhat.com>
-References: <1335480667-8301-1-git-send-email-glommer@parallels.com>
-	 <1335480667-8301-2-git-send-email-glommer@parallels.com>
-	 <20120427004305.GC23877@home.goodmis.org>
-	 <20120427135320.GA13762@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Fri, 27 Apr 2012 10:08:20 -0400
+Message-ID: <4F9AA84D.8090604@parallels.com>
+Date: Fri, 27 Apr 2012 18:08:13 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 2/3] SUNRPC: check rpcbind clients usage counter before
+ decrement
+References: <20120425132314.13800.6813.stgit@localhost6.localdomain6> <20120425133749.13800.24003.stgit@localhost6.localdomain6> <20120427135507.GE14973@fieldses.org>
+In-Reply-To: <20120427135507.GE14973@fieldses.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-27 at 09:53 -0400, Jason Baron wrote:
+On 27.04.2012 17:55, J. Bruce Fields wrote:
+> On Wed, Apr 25, 2012 at 05:37:49PM +0400, Stanislav Kinsbursky wrote:
+>> Registering service with svc_bind() can fail. In this case service will be
+>> destroyed and during destruction it will try to unregister itself from rpcbind.
+>> In this case unregister have to be skipped.
+>
+> Isn't this a preexisting bug, in which case perhaps Trond should at it
+> to his list of bugs to submit now?
+>
 
-> Right, for x86 which uses stop_machine currently, we guarantee that all
-> cpus are going to see the updated code, before the inc of key->enabled.
-> However, other arches (sparc, mips, powerpc, for example), seem to be
-> using much lighter weight updates, which I hope are ok :)
+Not it's not.
 
-And x86 will soon be removing stop_machine() from its path too. But all
-archs should perform some kind of memory sync after patching code. Thus
-the update should be treated as if a memory barrier was added after it,
-and before the inc.
+Previously, in case of bind operations failure, rpcb_put_local() wasn't called, 
+but service data was destroyed instead:
 
--- Steve
+-	if (svc_uses_rpcbind(serv)) {
+-		if (svc_rpcb_setup(serv, current->nsproxy->net_ns) < 0) {
+-			kfree(serv->sv_pools);
+-			kfree(serv);
+-			return NULL;
+-		}
+-		if (!serv->sv_shutdown)
+-			serv->sv_shutdown = svc_rpcb_cleanup;
+-	}
+
+Now (with svc_bind() introduction) service can be created, but svc_bind() could 
+fail. And thus svc_destroy() have to be called. Which will call rpcb_put_local().
+
+And the problem here that svc_bind() can fail before incrementing of rpcb usage 
+counter.
+
+> --b.
+>
+>>
+>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>>
+>> ---
+>>   net/sunrpc/rpcb_clnt.c |   12 +++++++-----
+>>   1 files changed, 7 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+>> index 78ac39f..4c38b33 100644
+>> --- a/net/sunrpc/rpcb_clnt.c
+>> +++ b/net/sunrpc/rpcb_clnt.c
+>> @@ -180,14 +180,16 @@ void rpcb_put_local(struct net *net)
+>>   	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+>>   	struct rpc_clnt *clnt = sn->rpcb_local_clnt;
+>>   	struct rpc_clnt *clnt4 = sn->rpcb_local_clnt4;
+>> -	int shutdown;
+>> +	int shutdown = 0;
+>>
+>>   	spin_lock(&sn->rpcb_clnt_lock);
+>> -	if (--sn->rpcb_users == 0) {
+>> -		sn->rpcb_local_clnt = NULL;
+>> -		sn->rpcb_local_clnt4 = NULL;
+>> +	if (sn->rpcb_users) {
+>> +		if (--sn->rpcb_users == 0) {
+>> +			sn->rpcb_local_clnt = NULL;
+>> +			sn->rpcb_local_clnt4 = NULL;
+>> +		}
+>> +		shutdown = !sn->rpcb_users;
+>>   	}
+>> -	shutdown = !sn->rpcb_users;
+>>   	spin_unlock(&sn->rpcb_clnt_lock);
+>>
+>>   	if (shutdown) {
+>>
 
 
+-- 
+Best regards,
+Stanislav Kinsbursky
