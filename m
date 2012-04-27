@@ -1,95 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759845Ab2D0Imx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:42:53 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61450 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759546Ab2D0Imv (ORCPT
+	id S1759863Ab2D0InA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:43:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34474 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759849Ab2D0Imz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:42:51 -0400
-X-AuditID: 9c930197-b7ca1ae0000069e6-91-4f9a5c07e9ae
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, npiggin@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, kosaki.motohiro@gmail.com,
-        rientjes@google.com, Minchan Kim <minchan@kernel.org>,
-        Neil Brown <neilb@suse.de>, Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Sage Weil <sage@newdream.net>
-Subject: [RFC] vmalloc: add warning in __vmalloc
-Date: Fri, 27 Apr 2012 17:42:24 +0900
-Message-Id: <1335516144-3486-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 27 Apr 2012 04:42:55 -0400
+Date: Fri, 27 Apr 2012 01:42:25 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-5gairf6or7dazlx3ocxwvftm@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, efault@gmx.de,
+        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, efault@gmx.de, peterz@infradead.org,
+        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf annotate browser: Initial loop detection
+Git-Commit-ID: a3f895be1f1ed17f66e6e71adeef0cc7f937512c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 27 Apr 2012 01:42:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now there are several places to use __vmalloc with GFP_ATOMIC,
-GFP_NOIO, GFP_NOFS but unfortunately __vmalloc calls map_vm_area
-which calls alloc_pages with GFP_KERNEL to allocate page tables.
-It means it's possible to happen deadlock.
-I don't know why it doesn't have reported until now.
+Commit-ID:  a3f895be1f1ed17f66e6e71adeef0cc7f937512c
+Gitweb:     http://git.kernel.org/tip/a3f895be1f1ed17f66e6e71adeef0cc7f937512c
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 24 Apr 2012 14:24:28 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 24 Apr 2012 14:24:28 -0300
 
-Firstly, I tried passing gfp_t to lower functions to support __vmalloc
-with such flags but other mm guys don't want and decided that
-all of caller should be fixed.
+perf annotate browser: Initial loop detection
 
-http://marc.info/?l=linux-kernel&m=133517143616544&w=2
+Simple algorithm, just look for the next backward jump that points to
+before the cursor.
 
-To begin with, let's listen other's opinion whether they can fix it
-by other approach without calling __vmalloc with such flags.
+Then draw an arrow connecting the jump to its target.
 
-So this patch adds warning to detect and to be fixed hopely.
-I Cced related maintainers.
-If I miss someone, please Cced them.
+Do this as you move the cursor, entering/exiting possible loops.
 
-side-note:
-  I added WARN_ON instead of WARN_ONCE to detect all of callers
-  and each WARN_ON for each flag to detect to use any flag easily.
-  After we fix all of caller or reduce such caller, we can merge
-  a warning with WARN_ONCE.
+Ex (graph chars replaced to avoid mail encoding woes):
 
-Cc: Neil Brown <neilb@suse.de>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: James Morris <jmorris@namei.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Sage Weil <sage@newdream.net>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+avc_has_perm_flags
+    0.00 |         nopl   0x0(%rax)
+    5.36 |+-> 68:  mov    (%rax),%rax
+    5.15 ||        test   %rax,%rax
+    0.00 ||      v je     130
+    2.96 ||   74:  cmp    -0x20(%rax),%ebx
+   47.38 ||        lea    -0x20(%rax),%rcx
+    0.28 ||      ^ jne    68
+    3.16 ||        cmp    -0x18(%rax),%dx
+    0.00 |+------^ jne    68
+    4.92 |         cmp    0x4(%rcx),%r13d
+    0.00 |       v jne    68
+    1.15 |         test   %rcx,%rcx
+    0.00 |       v je     130
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-5gairf6or7dazlx3ocxwvftm@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- mm/vmalloc.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ tools/perf/ui/browser.c           |   39 +++++++++++++++++++++++
+ tools/perf/ui/browser.h           |    2 +
+ tools/perf/ui/browsers/annotate.c |   61 ++++++++++++++++++++++++++++++++++--
+ 3 files changed, 98 insertions(+), 4 deletions(-)
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 94dff88..36beccb 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1700,6 +1700,15 @@ static void *__vmalloc_node(unsigned long size, unsigned long align,
- 			    gfp_t gfp_mask, pgprot_t prot,
- 			    int node, void *caller)
- {
-+	/*
-+	 * This function calls map_vm_area so that it allocates
-+	 * page table with GFP_KERNEL so caller should avoid using
-+	 * GFP_NOIO, GFP_NOFS and !__GFP_WAIT.
-+	 */
-+	WARN_ON(!(gfp_mask & __GFP_WAIT));
-+	WARN_ON(!(gfp_mask & __GFP_IO));
-+	WARN_ON(!(gfp_mask & __GFP_FS));
-+
- 	return __vmalloc_node_range(size, align, VMALLOC_START, VMALLOC_END,
- 				gfp_mask, prot, node, caller);
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index 973ff74..32ac116 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -600,6 +600,45 @@ void ui_browser__write_graph(struct ui_browser *browser __used, int graph)
+ 	SLsmg_set_char_set(0);
  }
--- 
-1.7.9.5
-
+ 
++void __ui_browser__line_arrow_up(struct ui_browser *browser, unsigned int column,
++				 u64 start, u64 end, int start_width)
++{
++	unsigned int row, end_row;
++
++	SLsmg_set_char_set(1);
++
++	if (start < browser->top_idx + browser->height) {
++		row = start - browser->top_idx;
++		ui_browser__gotorc(browser, row, column);
++		SLsmg_write_char(SLSMG_LLCORN_CHAR);
++		ui_browser__gotorc(browser, row, column + 1);
++		SLsmg_draw_hline(start_width);
++
++		if (row-- == 0)
++			goto out;
++	} else
++		row = browser->height - 1;
++
++	if (end > browser->top_idx)
++		end_row = end - browser->top_idx;
++	else
++		end_row = 0;
++
++	ui_browser__gotorc(browser, end_row, column);
++	SLsmg_draw_vline(row - end_row + 1);
++
++	ui_browser__gotorc(browser, end_row, column);
++	if (end >= browser->top_idx) {
++		SLsmg_write_char(SLSMG_ULCORN_CHAR);
++		ui_browser__gotorc(browser, end_row, column + 1);
++		SLsmg_write_char(SLSMG_HLINE_CHAR);
++		ui_browser__gotorc(browser, end_row, column + 2);
++		SLsmg_write_char(SLSMG_RARROW_CHAR);
++	}
++out:
++	SLsmg_set_char_set(0);
++}
++
+ void ui_browser__init(void)
+ {
+ 	int i = 0;
+diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
+index ce20975..2f226cb 100644
+--- a/tools/perf/ui/browser.h
++++ b/tools/perf/ui/browser.h
+@@ -38,6 +38,8 @@ void ui_browser__reset_index(struct ui_browser *self);
+ 
+ void ui_browser__gotorc(struct ui_browser *self, int y, int x);
+ void ui_browser__write_graph(struct ui_browser *browser, int graph);
++void __ui_browser__line_arrow_up(struct ui_browser *browser, unsigned int column,
++				 u64 start, u64 end, int start_width);
+ void __ui_browser__show_title(struct ui_browser *browser, const char *title);
+ void ui_browser__show_title(struct ui_browser *browser, const char *title);
+ int ui_browser__show(struct ui_browser *self, const char *title,
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index c3fc6f3..9e3310c 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -94,13 +94,13 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+ 			addr += ab->start;
+ 
+ 		if (!ab->use_offset) {
+-			printed = scnprintf(bf, sizeof(bf), "%" PRIx64 ":", addr);
++			printed = scnprintf(bf, sizeof(bf), "  %" PRIx64 ":", addr);
+ 		} else {
+ 			if (bdl->jump_target) {
+-				printed = scnprintf(bf, sizeof(bf), "%*" PRIx64 ":",
++				printed = scnprintf(bf, sizeof(bf), "  %*" PRIx64 ":",
+ 						    ab->offset_width, addr);
+ 			} else {
+-				printed = scnprintf(bf, sizeof(bf), "%*s ",
++				printed = scnprintf(bf, sizeof(bf), "  %*s ",
+ 						    ab->offset_width, " ");
+ 			}
+ 		}
+@@ -141,6 +141,59 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+ 		ab->selection = dl;
+ }
+ 
++static void annotate_browser__draw_current_loop(struct ui_browser *browser)
++{
++	struct annotate_browser *ab = container_of(browser, struct annotate_browser, b);
++	struct map_symbol *ms = browser->priv;
++	struct symbol *sym = ms->sym;
++	struct annotation *notes = symbol__annotation(sym);
++	struct disasm_line *cursor = ab->selection, *pos = cursor, *target;
++	struct browser_disasm_line *bcursor = disasm_line__browser(cursor),
++				   *btarget, *bpos;
++	unsigned int from, to, start_width = 2;
++
++	list_for_each_entry_from(pos, &notes->src->source, node) {
++		if (!pos->ins || !ins__is_jump(pos->ins))
++			continue;
++
++		target = ab->offsets[pos->ops.target];
++		if (!target)
++			continue;
++
++		btarget = disasm_line__browser(target);
++		if (btarget->idx <= bcursor->idx)
++			goto found;
++	}
++
++	return;
++
++found:
++	bpos = disasm_line__browser(pos);
++	if (ab->hide_src_code) {
++		from = bpos->idx_asm;
++		to = btarget->idx_asm;
++	} else {
++		from = (u64)bpos->idx;
++		to = (u64)btarget->idx;
++	}
++
++	ui_browser__set_color(browser, HE_COLORSET_CODE);
++
++	if (!bpos->jump_target)
++		start_width += ab->offset_width + 1;
++
++	__ui_browser__line_arrow_up(browser, 10, from, to, start_width);
++}
++
++static unsigned int annotate_browser__refresh(struct ui_browser *browser)
++{
++	int ret = ui_browser__list_head_refresh(browser);
++
++	annotate_browser__draw_current_loop(browser);
++
++	return ret;
++}
++
+ static double disasm_line__calc_percent(struct disasm_line *dl, struct symbol *sym, int evidx)
+ {
+ 	double percent = 0.0;
+@@ -666,7 +719,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 	};
+ 	struct annotate_browser browser = {
+ 		.b = {
+-			.refresh = ui_browser__list_head_refresh,
++			.refresh = annotate_browser__refresh,
+ 			.seek	 = ui_browser__list_head_seek,
+ 			.write	 = annotate_browser__write,
+ 			.filter  = disasm_line__filter,
