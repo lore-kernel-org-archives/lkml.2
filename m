@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab2D0M2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 08:28:20 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51690 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab2D0M2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 08:28:18 -0400
-From: Rajendra Nayak <rnayak@ti.com>
-To: <mturquette@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Rajendra Nayak <rnayak@ti.com>
-Subject: [PATCH] clk: constify parent name arrays in macros
-Date: Fri, 27 Apr 2012 17:58:13 +0530
-Message-ID: <1335529693-14280-1-git-send-email-rnayak@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1757767Ab2D0Mbw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 08:31:52 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:15872 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab2D0Mbv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 08:31:51 -0400
+Message-ID: <4F9A91A8.4050608@atmel.com>
+Date: Fri, 27 Apr 2012 14:31:36 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Olof Johansson <olof@lixom.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>, <balbi@ti.com>
+CC: Herbert Xu <herbert@gondor.hengli.com.au>, Matt Mackall <mpm@selenic.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: Default Kconfig state for hw_random drivers
+References: <20120426114229.GG3207@opensource.wolfsonmicro.com> <CAOesGMj2eZvWek86D2MKQMPY9qAsC0D2MsYyN-+RPUr5gDFn4A@mail.gmail.com>
+In-Reply-To: <CAOesGMj2eZvWek86D2MKQMPY9qAsC0D2MsYyN-+RPUr5gDFn4A@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-parent name array is now expected to be const char *, make
-the relevent changes in the clk macros which define
-default clock types.
+On 04/26/2012 04:17 PM, Olof Johansson :
+> On Thu, Apr 26, 2012 at 4:42 AM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+>> An Atmel hw_random driver just appeared in -next.  Since it's just a
+>> regular platform device it has no dependencies on any particular
+>> platform so following the behaviour of other hw_random drivers it's set
+>> to default enabled if hw_random is enabled, even on non-Atmel platforms.
+>>
+>> This doesn't feel like the right thing to do - it'd mean that most of
+>> the embedded RNGs would end up getting enabled by default which probably
+>> isn't what we want.
+> 
+> Indeed, thanks for catching this. The driver isn't new but it had a
+> previous dependency on just one AT91 chip family.
+> 
+> Looking at other options in the same Kconfig, it would be appropriate
+> to make it depend on ARCH_AT91 instead.
+> 
+> Nicolas?
 
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
----
- include/linux/clk-private.h |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Hi,
 
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index eeae7a3..6ebec83 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -70,7 +70,7 @@ struct clk {
- #define DEFINE_CLK_FIXED_RATE(_name, _flags, _rate,		\
- 				_fixed_rate_flags)		\
- 	static struct clk _name;				\
--	static char *_name##_parent_names[] = {};		\
-+	static const char *_name##_parent_names[] = {};		\
- 	static struct clk_fixed_rate _name##_hw = {		\
- 		.hw = {						\
- 			.clk = &_name,				\
-@@ -85,7 +85,7 @@ struct clk {
- 				_flags, _reg, _bit_idx,		\
- 				_gate_flags, _lock)		\
- 	static struct clk _name;				\
--	static char *_name##_parent_names[] = {			\
-+	static const char *_name##_parent_names[] = {		\
- 		_parent_name,					\
- 	};							\
- 	static struct clk *_name##_parents[] = {		\
-@@ -107,7 +107,7 @@ struct clk {
- 				_flags, _reg, _shift, _width,	\
- 				_divider_flags, _lock)		\
- 	static struct clk _name;				\
--	static char *_name##_parent_names[] = {			\
-+	static const char *_name##_parent_names[] = {		\
- 		_parent_name,					\
- 	};							\
- 	static struct clk *_name##_parents[] = {		\
+I had the same kind of discussion with Felipe and Arnd in this thread:
+http://thread.gmane.org/gmane.linux.ports.arm.kernel/122248/focus=122304
+
+The conclusion came out after Arnd's strong arguments:
+http://article.gmane.org/gmane.linux.ports.arm.kernel/122962
+
+Maybe adding a "default" directive can be an valid option?
+
+Best regards,
 -- 
-1.7.1
-
+Nicolas Ferre
