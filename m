@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab2D0FRx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 01:17:53 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51460 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab2D0FRw convert rfc822-to-8bit (ORCPT
+	id S1752906Ab2D0FaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 01:30:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65464 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab2D0FaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 01:17:52 -0400
+	Fri, 27 Apr 2012 01:30:19 -0400
+Date: Fri, 27 Apr 2012 13:30:09 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linus.walleij@stericsson.com,
+        swarren@wwwdotorg.org, s.hauer@pengutronix.de, shawn.guo@freescale.com,
+        kernel@pengutronix.de, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, cjb@laptop.org, b20223@freescale.com
+Subject: Re: [PATCH v3 2/4] pinctrl: pinctrl-imx: add imx pinctrl core driver
+Message-ID: <20120427053007.GH2234@S2101-09.ap.freescale.net>
+References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
+ <1335451227-27709-2-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <20120426153241.6d4762a2.akpm@linux-foundation.org>
-References: <20120425112623.26927.43229.stgit@zurg>
-	<20120425112629.26927.21609.stgit@zurg>
-	<CAMuHMdW7eQh8eaNZrwRHqduPYCjNXv+LriZoH6-ERdkHH2qL8g@mail.gmail.com>
-	<20120426153241.6d4762a2.akpm@linux-foundation.org>
-Date: Fri, 27 Apr 2012 07:17:50 +0200
-X-Google-Sender-Auth: MjKUYtkQJHUuNWuIs6mjKKo6uf0
-Message-ID: <CAMuHMdXzLaPoGinwG9EAL5VYAbMdmx+U5m1Fg+53DAQgdi1hxg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] bug: completely remove code of disabled VM_BUG_ON()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335451227-27709-2-git-send-email-b29396@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 00:32, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed, 25 Apr 2012 16:40:32 +0200
-> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->
->> On Wed, Apr 25, 2012 at 13:26, Konstantin Khlebnikov
->> <khlebnikov@openvz.org> wrote:
->> > Even if CONFIG_DEBUG_VM=n gcc genereates code for some VM_BUG_ON()
->>
->> That's because of the side effects of the expression
->>
->> https://lkml.org/lkml/2012/4/25/146
->>
->> But IRIC, we do want them here?
->>
->
-> AFAICT (lkml.org appears to be having a meltdown), you've gone and
-> linked to this very thread.
->
-> Please try again, this time avoiding hyperlinks ;)
-
-Yeah, I noticed after the fact. I wanted to look up the definition of
-unused_expression(), which obviously wasn't in my tree yet ;-)
-
-Still, I think people started relyong on the side effects, didn't they?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+On Thu, Apr 26, 2012 at 10:40:25PM +0800, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> The driver has mux and config support while the gpio is still
+> not supported.
+> For select input setting, the driver will handle it internally
+> and do not need user to take care of it.
+> 
+> The pinctrl-imx core driver will parse the dts file and dynamically
+> create the pinmux functions and groups.
+> 
+> Each IMX SoC pinctrl driver should register pins with a pin register map
+> including mux register and config register and select input map to core
+> for proper operations.
+> 
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
