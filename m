@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759992Ab2D0NQd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 09:16:33 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:48963 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756683Ab2D0NQb (ORCPT
+	id S1759970Ab2D0N2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 09:28:03 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39404 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756683Ab2D0N2C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 09:16:31 -0400
-Message-ID: <4F9A9C26.9080404@ti.com>
-Date: Fri, 27 Apr 2012 18:46:22 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Fri, 27 Apr 2012 09:28:02 -0400
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: "Mohammed, Afzal" <afzal@ti.com>, "V, Aneesh" <aneesh@ti.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mgreer@animalcreek.com" <mgreer@animalcreek.com>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Hunter, Jon" <jon-hunter@ti.com>
-Subject: Re: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
-References: <1331934707-29487-1-git-send-email-aneesh@ti.com> <alpine.DEB.2.00.1204112042070.29473@utopia.booyaka.com> <20120412030044.GA26236@kroah.com> <CAM=4YEQ6_+7xPwi2jucks1P9p8tO3cSG7S0s=VVJVrueb4fB=g@mail.gmail.com> <C8443D0743D26F4388EA172BF4E2A7A93E96E7C5@DBDE01.ent.ti.com> <CAMQu2gz2CD+-kcSF2HVGWWrjk3DmsGgcuucBXan5NqtVUSwa2w@mail.gmail.com> <20120423142717.GA32380@kroah.com> <CAMQu2gxoP8qOT6DP_QJkNVyTp3uzVYgbkJuNz7k9fx4fh2iPmg@mail.gmail.com>
-In-Reply-To: <CAMQu2gxoP8qOT6DP_QJkNVyTp3uzVYgbkJuNz7k9fx4fh2iPmg@mail.gmail.com>
+In-Reply-To: <CA+5PVA6e-JaS809t9=4=SoxX4cFEYfxxb9-KAXk68ENGg6Kw8w@mail.gmail.com>
+References: <fa.CZQqvHf3CBfYWzhSDPNOWxTTD9w@ifi.uio.no>
+	<fa.Vmg5vDod2/oKvwyy9BcalhoT+Lo@ifi.uio.no>
+	<14969994.2790.1335342903511.JavaMail.geo-discussion-forums@vbbfr18>
+	<4F97BA60.4080505@ladisch.de>
+	<20120427082203.GB9233@aftab.osrc.amd.com>
+	<CAPRPZsCHAOvemogn7mWnWfykhANeEx5K=OG9Xt+veDjEWOiDYA@mail.gmail.com>
+	<CA+5PVA6e-JaS809t9=4=SoxX4cFEYfxxb9-KAXk68ENGg6Kw8w@mail.gmail.com>
+Date: Fri, 27 Apr 2012 15:28:00 +0200
+Message-ID: <CAPRPZsDDEYUf2a+=ZbwvFw+qJku0UvMLf0+eNDvw+FbinCbysA@mail.gmail.com>
+Subject: Re: Unhandled IRQs on AMD E-450
+From: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>,
+        Clemens Ladisch <clemens@ladisch.de>, andymatei@gmail.com,
+        "Huang, Shane" <Shane.Huang@amd.com>, Borislav Petkov <bp@amd64.org>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+> Apparently there are
+> some pieces of hardware that generate a small number of spurious IRQs
+> "normally" and lowering the threshold to such a small value caused
+> those machines to kick into polling mode when they really didn't need
+> to.
 
-On Monday 23 April 2012 08:14 PM, Shilimkar, Santosh wrote:
-> On Mon, Apr 23, 2012 at 7:57 PM, Greg KH <greg@kroah.com> wrote:
->> On Mon, Apr 23, 2012 at 04:34:46PM +0530, Shilimkar, Santosh wrote:
->>> Afzal,
->>>
->>> On Mon, Apr 23, 2012 at 4:26 PM, Mohammed, Afzal <afzal@ti.com> wrote:
->>>> Hi Aneesh,
->>>>
->>>> On Fri, Apr 13, 2012 at 01:28:55, V, Aneesh wrote:
->>>>
->>>>> Thanks. I will wait for your review then. Once I have your comments
->>>>> I will re-work and submit in the new directory structure proposed.
->>>>
->>>> Do you have a plan on submitting EMIF driver in the new proposed
->>>> (drivers/memory) directory. Or shall I submit GPMC driver by creating
->>>> the new "memory" directory.
->>>>
->>>  Greg mentioned that he plans to do a review of EMIF driver. We were waiting
->>> for his comments before sending the updated series.
->>
->> No, don't wait for me, please resend, I was waiting for you :)
-> 
-> Thanks Greg !!
-> Will start working on updating the patch set and post it on list.
-> 
-Have posted the updated version [1] as per discussion on
-this thread.
+Hm. I'd really expect a spurious IRQ to happen as its name suggests:
+spuriously. What kind of hardware behaves like this ?
 
-Regards
-Santosh
+> 1) While the quirk helps shield people without the buggy bridge, it
+> doesn't help the case where people have the bridge, but they have no
+> devices actually behind it.  That means such setups hit the polling
+> mode when they don't really need to as described above.
 
-[1] http://www.spinics.net/lists/arm-kernel/msg171869.html
+Curious, the polling mode is left until a new spurious IRQ is detected.
+
+> 2) People, rightfully, complain that it makes inter-activity on their
+> desktop pretty laggy.  The mouse pointer jumps around a lot and key
+> strokes are often missed.  For a server class machine, I doubt it
+> would matter much but Fedora is essentially a desktop distro so that
+> tends to be a high priority.
+
+Again, I am a bit surprised. However, according to your patch:
+
+> +       if (!irq_poll_and_retry)
+> +               if (likely(desc->irq_count < 100000))
+> +                       return;
+> +       else
+> +               if (likely(desc->irq_count < 10))
+> +                       return;
+
+Don't you mean :
+
++       if (!irq_poll_and_retry) {
++               if (likely(desc->irq_count < 100000))
++                       return;
++       }
++       else {
++               if (likely(desc->irq_count < 10))
++                       return;
++       }
+
+Jeroen.
