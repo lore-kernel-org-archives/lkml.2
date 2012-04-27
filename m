@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758735Ab2D0CKi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 22:10:38 -0400
-Received: from linux-sh.org ([111.68.239.195]:60127 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757840Ab2D0CKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 22:10:36 -0400
-Date: Fri, 27 Apr 2012 11:10:31 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sh fixes for 3.4-rc5
-Message-ID: <20120427021031.GB7988@linux-sh.org>
+	id S1759411Ab2D0CR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 22:17:29 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55999 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757954Ab2D0CR2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 22:17:28 -0400
+Message-ID: <4F9A01B6.2050502@wwwdotorg.org>
+Date: Thu, 26 Apr 2012 20:17:26 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
+        s.hauer@pengutronix.de
+Subject: Re: [PATCH 1/2] pinctrl: support gpio request deferred probing
+References: <1335353894-22096-1-git-send-email-b29396@freescale.com> <CACRpkdadLsqpb=X+BmomyRywf=SrgGpbW2B=Myo3zTn_xMHJ2g@mail.gmail.com>
+In-Reply-To: <CACRpkdadLsqpb=X+BmomyRywf=SrgGpbW2B=Myo3zTn_xMHJ2g@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 82b769063598d01a8b24abf250a53f8b437e09f1:
+On 04/26/2012 03:36 PM, Linus Walleij wrote:
+> On Wed, Apr 25, 2012 at 1:38 PM, Dong Aisheng <b29396@freescale.com> wrote:
+> 
+>> From: Dong Aisheng <dong.aisheng@linaro.org>
+>>
+>> As pinctrl handles, it may be possible the pinctrl gpio ranges
+>> are still not got registered when user call pinctrl_gpio_request.
+>> Thus, add defer support for it too.
+>>
+>> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> Since nobody is saying anything and it looks reasonable,
+> I just applied this.
 
-  Merge branch 'stable' of git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile (2012-04-26 15:36:27 -0700)
-
-are available in the git repository at:
-
-  git://github.com/pmundt/linux-sh.git sh-for-linus
-
-Nobuhiro Iwamatsu (1):
-      sh: Fix up tracepoint build fallout from static key introduction.
-
-Paul Mundt (2):
-      Merge branch 'sh/st-integration' into sh/urgent
-      Merge branch 'sh/urgent' into sh-fixes-for-linus
-
-Stuart Menefy (1):
-      sh: Fix error synchronising kernel page tables
-
- arch/sh/include/asm/atomic.h |    2 +-
- arch/sh/mm/fault_32.c        |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+I didn't look at this, because V4 was sent without this patch, so I
+assumed it'd been dropped by Dong. Was I wrong?
