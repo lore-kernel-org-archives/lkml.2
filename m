@@ -1,42 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760715Ab2D0Prb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:47:31 -0400
-Received: from ironport-out.teksavvy.com ([206.248.143.162]:54375 "EHLO
-	ironport-out.teksavvy.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759972Ab2D0Pra (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:47:30 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApQHACxOgk8Y9geI/2dsb2JhbAANNoVzsCSCCAEDAQKEHgEBBCNVARALDgwCBRYLAgIJAwIBAgFFBg0BBwEBtCSKGIEvjhOBGASpJQ
-X-IronPort-AV: E=Sophos;i="4.75,391,1330923600"; 
-   d="scan'208";a="177133512"
-Message-ID: <4F9ABF90.5060404@teksavvy.com>
-Date: Fri, 27 Apr 2012 11:47:28 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1760693Ab2D0Psu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:48:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35792 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759972Ab2D0Pss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 11:48:48 -0400
+Date: Fri, 27 Apr 2012 11:48:41 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jeff Moyer <jmoyer@redhat.com>, axboe@kernel.dk, ctalbott@google.com,
+        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, fengguang.wu@intel.com,
+        hughd@google.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 11/11] blkcg: implement per-blkg request allocation
+Message-ID: <20120427154841.GA16237@redhat.com>
+References: <1335477561-11131-1-git-send-email-tj@kernel.org>
+ <1335477561-11131-12-git-send-email-tj@kernel.org>
+ <x49wr51usxi.fsf@segfault.boston.devel.redhat.com>
+ <20120427150217.GK27486@google.com>
+ <20120427154033.GJ10579@redhat.com>
+ <20120427154502.GM27486@google.com>
 MIME-Version: 1.0
-To: Michael Tokarev <mjt@tls.msk.ru>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>, autofs@vger.kernel.org,
-        Ian Kent <raven@themaw.net>, Thomas Meyer <thomas@m3y3r.de>,
-        stable@kernel.org
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix design
- error.
-References: <1335447289-9909-1-git-send-email-mjt@msgid.tls.msk.ru> <CA+55aFxEP7-+N7vTPZ-4hD-UirZ=+YMJh2x3EjZvUmjjyOchtg@mail.gmail.com> <4F9A6ABA.6050503@msgid.tls.msk.ru>
-In-Reply-To: <4F9A6ABA.6050503@msgid.tls.msk.ru>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120427154502.GM27486@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-04-27 05:45 AM, Michael Tokarev wrote:
-..
-> Please note: the talk is about 32bit userspace on 64bit kernel,
-> which should be quite rare these days, or something of less
-> priority.
+On Fri, Apr 27, 2012 at 08:45:02AM -0700, Tejun Heo wrote:
+> On Fri, Apr 27, 2012 at 11:40:34AM -0400, Vivek Goyal wrote:
+> > On Fri, Apr 27, 2012 at 08:02:17AM -0700, Tejun Heo wrote:
+> > > Hello,
+> > > 
+> > > On Fri, Apr 27, 2012 at 10:54:01AM -0400, Jeff Moyer wrote:
+> > > > > This patch implements per-blkg request_list.  Each blkg has its own
+> > > > > request_list and any IO allocates its request from the matching blkg
+> > > > > making blkcgs completely isolated in terms of request allocation.
+> > > > 
+> > > > So, nr_requests is now actually nr_requests * # of blk cgroups.  Is that
+> > > > right?  Are you at all concerned about the amount of memory that can be
+> > > > tied up as the number of cgroups increases?
+> > > 
+> > > Yeah, I thought about it and I don't think there's a single good
+> > > solution here.  The other extreme would be splitting nr_requests by
+> > > the number of cgroups but that seems even worse - each cgroup should
+> > > be able to hit maximum throughput.  Given that a lot of workloads tend
+> > > to regulate themselves before hitting nr_requests, I think it's best
+> > > to leave it as-is and treat each cgroup as having separate channel for
+> > > now.  It's a configurable parameter after all.
+> > 
+> > So on a slow device a malicious application can easily create thousands
+> > of group, queue up tons of IO and create unreclaimable memory easily?
+> > Sounds little scary. 
+> 
+> Malicious application may just jack up nr_requests.
 
+Not an unpriviliged malicious application. In typical cgroup scenario, we
+can allow unpriviliged users to create child cgroups so that it can
+further subdivide its resources to its children group. (ex. put firefox
+in one cgroup, open office in another group etc.).
 
-I suspect 32bit-PAE is more common than 32/64,
-but both are valid and not uncommon in the wild.
+So it is not same as jack up nr_requests.
+
+Thanks
+Vivek
