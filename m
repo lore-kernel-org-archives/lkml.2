@@ -1,144 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab2D0AiP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 20:38:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58982 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab2D0AiN convert rfc822-to-8bit (ORCPT
+	id S1759126Ab2D0AkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 20:40:05 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:44495 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754072Ab2D0AkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 20:38:13 -0400
+	Thu, 26 Apr 2012 20:40:04 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAJbpmU95LapK/2dsb2JhbABFsXOBCIIJAQEFOhwjEAgDGC4UJQMhE4gMvBwTinWFU2MElXyJWYZognqBQw
+Date: Fri, 27 Apr 2012 10:39:53 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/3] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE
+ flags
+Message-ID: <20120427003953.GC9541@dastard>
+References: <1335289787-11089-1-git-send-email-john.stultz@linaro.org>
+ <1335289787-11089-3-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1335447289-9909-1-git-send-email-mjt@msgid.tls.msk.ru>
-References: <1335447289-9909-1-git-send-email-mjt@msgid.tls.msk.ru>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 26 Apr 2012 17:37:52 -0700
-X-Google-Sender-Auth: aVpxwkvwZV84RL9W5uZ_xH-R3Fo
-Message-ID: <CA+55aFxEP7-+N7vTPZ-4hD-UirZ=+YMJh2x3EjZvUmjjyOchtg@mail.gmail.com>
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
- design error.
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Linux-kernel <linux-kernel@vger.kernel.org>, autofs@vger.kernel.org,
-        Ian Kent <raven@themaw.net>, Thomas Meyer <thomas@m3y3r.de>,
-        stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335289787-11089-3-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-None of this fixes the fact that current 'systemd' binaries just use
-'union autofs_v5_packet_union' and do a sizeof on it.
+On Tue, Apr 24, 2012 at 10:49:46AM -0700, John Stultz wrote:
+> This patch provides new fadvise flags that can be used to mark
+> file pages as volatile, which will allow it to be discarded if the
+> kernel wants to reclaim memory.
 
-We're not breaking systemd either. You seem to not care about that,
-but as long as you just blindly continue to not care, I'm going to
-continue to not care about the patches.
+.....
 
-It's that simple.
+> @@ -18,4 +18,9 @@
+>  #define POSIX_FADV_NOREUSE	5 /* Data will be accessed once.  */
+>  #endif
+>  
+> +#define POSIX_FADV_VOLATILE	8  /* _can_ toss, but don't toss now */
+> +#define POSIX_FADV_NONVOLATILE	9  /* Remove VOLATILE flag */
 
-It is unfortunate that we have this idiocy with different packages
-having different breakage due to the stupidity of the v5 packet, but
-it's REALITY. A simple revert won't fix it, and saying "and here is
-version 6" won't matter one whit to existing packages.
+These aren't POSIX standards, so I don't think they should have the
+POSIX_ prefix. Besides....
 
-               Linus
+....
+> @@ -128,6 +129,19 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+>  			invalidate_mapping_pages(mapping, start_index,
+>  						end_index);
+>  		break;
+> +	case POSIX_FADV_VOLATILE:
+> +		/* First and last PARTIAL page! */
+> +		start_index = offset >> PAGE_CACHE_SHIFT;
+> +		end_index = endbyte >> PAGE_CACHE_SHIFT;
+> +		ret = mapping_range_volatile(mapping, start_index, end_index);
+> +		break;
+> +	case POSIX_FADV_NONVOLATILE:
+> +		/* First and last PARTIAL page! */
+> +		start_index = offset >> PAGE_CACHE_SHIFT;
+> +		end_index = endbyte >> PAGE_CACHE_SHIFT;
+> +		ret = mapping_range_nonvolatile(mapping, start_index,
+> +								end_index);
 
-On Thu, Apr 26, 2012 at 6:34 AM, Michael Tokarev <mjt@tls.msk.ru> wrote:
-> This patch introduces a new autofs interface version, v6, which
-> is exactly the same as v5 but uses better defined packet structure
-> which does not change between architectures or platform bitness.
-> Old interface is supported still.
->
-> Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
-> Cc: Ian Kent <raven@themaw.net>
-> Cc: Thomas Meyer <thomas@m3y3r.de>
-> Cc: stable@kernel.org
-> ---
->  fs/autofs4/waitq.c       |    6 ++++--
->  include/linux/auto_fs4.h |   31 +++++++++++++++++++++++++++----
->  2 files changed, 31 insertions(+), 6 deletions(-)
->
-> diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
-> index da8876d..97866e8 100644
-> --- a/fs/autofs4/waitq.c
-> +++ b/fs/autofs4/waitq.c
-> @@ -145,7 +145,7 @@ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
->                break;
->        }
->        /*
-> -        * Kernel protocol v5 packet for handling indirect and direct
-> +        * Kernel protocol v5/v6 packet for handling indirect and direct
->         * mount missing and expire requests
->         */
->        case autofs_ptype_missing_indirect:
-> @@ -155,7 +155,9 @@ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
->        {
->                struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
->
-> -               pktsz = sizeof(*packet);
-> +               pktsz = (sbi->version == 5) ?
-> +                       sizeof(struct autofs_v5_bad_packet) :
-> +                       sizeof(struct autofs_v5_packet);
->
->                packet->wait_queue_token = wq->wait_queue_token;
->                packet->len = wq->name.len;
-> diff --git a/include/linux/auto_fs4.h b/include/linux/auto_fs4.h
-> index e02982f..fdef141 100644
-> --- a/include/linux/auto_fs4.h
-> +++ b/include/linux/auto_fs4.h
-> @@ -20,11 +20,11 @@
->  #undef AUTOFS_MIN_PROTO_VERSION
->  #undef AUTOFS_MAX_PROTO_VERSION
->
-> -#define AUTOFS_PROTO_VERSION           5
-> +#define AUTOFS_PROTO_VERSION           6
->  #define AUTOFS_MIN_PROTO_VERSION       3
-> -#define AUTOFS_MAX_PROTO_VERSION       5
-> +#define AUTOFS_MAX_PROTO_VERSION       6
->
-> -#define AUTOFS_PROTO_SUBVERSION                2
-> +#define AUTOFS_PROTO_SUBVERSION                0
->
->  /* Mask for expire behaviour */
->  #define AUTOFS_EXP_IMMEDIATE           1
-> @@ -126,7 +126,7 @@ union autofs_packet_union {
->        struct autofs_packet_expire_multi expire_multi;
->  };
->
-> -/* autofs v5 common packet struct */
-> +/* autofs v5/v6 common packet struct */
->  struct autofs_v5_packet {
->        struct autofs_packet_hdr hdr;
->        autofs_wqt_t wait_queue_token;
-> @@ -138,6 +138,29 @@ struct autofs_v5_packet {
->        __u32 tgid;
->        __u32 len;
->        char name[NAME_MAX+1];
-> +
-> +       /* padding to make
-> +        *   sizeof(autofs_v5_packet) % sizeof(__u64) == 0
-> +        * on all arches */
-> +       char _pad[4];
-> +};
-> +
-> +/* earlier kernel interface used this structure for v5 packet,
-> + * which is exactly the same as autofs_v5_packet above
-> + * but does not have padding at the end.  The result was that
-> + * sizeof it was 300 bytes on x86-32 and 304 bytes on x86-64.
-> + * We keep it for compatibility with older userspace. */
-> +struct autofs_v5_bad_packet {
-> +       struct autofs_packet_hdr hdr;
-> +       autofs_wqt_t wait_queue_token;
-> +       __u32 dev;
-> +       __u64 ino;
-> +       __u32 uid;
-> +       __u32 gid;
-> +       __u32 pid;
-> +       __u32 tgid;
-> +       __u32 len;
-> +       char name[NAME_MAX+1];
->  };
->
->  typedef struct autofs_v5_packet autofs_packet_missing_indirect_t;
-> --
-> 1.7.10
->
+As it is, I'm still not sold on these being an fadvise() interface
+because all it really is a delayed hole punching interface whose
+functionailty is currently specific to tmpfs. The behaviour cannot
+be implemented sanely by anything else at this point.
+
+> + * The goal behind volatile ranges is to allow applications to interact
+> + * with the kernel's cache management infrastructure.  In particular an
+> + * application can say "this memory contains data that might be useful in
+> + * the future, but can be reconstructed if necessary, so if the kernel
+> + * needs, it can zap and reclaim this memory without having to swap it out.
+
+This is what I mean - the definition of volatility is specific to a
+filesystem implementation - one that doesn't store persistent data.
+
+> + * The proposed mechanism - at a high level - is for user-space to be able
+> + * to say "This memory is volatile" and then later "this memory is no longer
+> + * volatile".  If the content of the memory is still available the second
+> + * request succeeds.  If not, the memory is marked non-volatile and an
+> + * error is returned to denote that the contents have been lost.
+
+For a filesystem, it's not "memory" that is volatile - it is the
+*data* that we have to consider that these hints apply to, and that
+implies both in memory and on stable storage. because you are
+targetting a filesystem without persisten storage, you are using
+"memory" interchangably with "data". That basically results in an
+interface that can only be used by non-persistent filesystems.
+However, for managing on-disk caches of fixed sizes, being able to
+mark regions as volatile or not is just as helpful to them as it is
+to memory based caches on tmpfs....
+
+So why can't you implement this as fallocate() flags, and then make
+the tmpfs implementation of those fallocate flags do the right
+things?  I think fallocate is the right interface, because this is
+simply an extension of the existing hole punching implementation.
+IOWs, the specification you are describing means that FADV_VOLATILE
+could be correctly implemented as an immediate hole punch by every
+filesystem that supports hole punching.
+
+This probably won't perform wonderfully, which is where the range
+tracking and delayed punching (and the implied memory freeing)
+optimiation comes into play. Sure, for tmpfs this can be implemented
+as a shrinker, but for real filesystems that have to punch blocks a
+shrinker is really the wrong context to be running such
+transactions. However, using the fallocate() interface allows each
+filesytsem to optimise the delayed hole punching as they see best,
+something that cannot be done with this fadvise() interface.
+
+It's all great that this can replace a single function in ashmem,
+but focussing purely on ashmem misses the point that this
+functionality has wider use, and that using a different interface
+allows independently tailored and optimised implementations of that
+functionality....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
