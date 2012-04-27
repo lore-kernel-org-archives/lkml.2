@@ -1,87 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757659Ab2D0BH0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 21:07:26 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34259 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab2D0BHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 21:07:24 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F99F0BE.2060402@jp.fujitsu.com>
-Date: Fri, 27 Apr 2012 10:05:02 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120420 Thunderbird/12.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, devel@openvz.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>
-Subject: Re: [PATCH v4 1/3] make jump_labels wait while updates are in place
-References: <1335480667-8301-1-git-send-email-glommer@parallels.com> <1335480667-8301-2-git-send-email-glommer@parallels.com> <20120427004305.GC23877@home.goodmis.org>
-In-Reply-To: <20120427004305.GC23877@home.goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757726Ab2D0BJN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 21:09:13 -0400
+Received: from mga14.intel.com ([143.182.124.37]:43887 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753845Ab2D0BJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Apr 2012 21:09:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="135948039"
+Message-ID: <1335488964.14538.159.camel@ymzhang.sh.intel.com>
+Subject: Re: [PATCH] mm: percpu: Add PCPU_FC_FIXED to pcpu_fc for setting
+ fixed pcpu_atom_size.
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: ShuoX Liu <shuox.liu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Apr 2012 09:09:24 +0800
+In-Reply-To: <20120426224946.GG27486@google.com>
+References: <4F97BA98.6010001@intel.com> <20120425222429.GE8989@google.com>
+	 <1335405672.14538.135.camel@ymzhang.sh.intel.com>
+	 <20120426224946.GG27486@google.com>
+Organization: MCG
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/27 9:43), Steven Rostedt wrote:
+On Thu, 2012-04-26 at 15:49 -0700, Tejun Heo wrote:
+> Hello,
+> 
+> On Thu, Apr 26, 2012 at 10:01:12AM +0800, Yanmin Zhang wrote:
+> > [    0.000000] SMP: Allowing 2 CPUs, 0 hotplug CPUs
+> > [    0.000000] nr_irqs_gsi: 85
+> > [    0.000000] Allocating PCI resources starting at 40000000 (gap: 40000000:bec00000)
+> > [    0.000000] setup_percpu: NR_CPUS:2 nr_cpumask_bits:2 nr_cpu_ids:2 nr_node_ids:1
+> > [    0.000000] PERCPU: Embedded 12 pages/cpu @f6400000 s25280 r0 d23872 u2097152
+> > [    0.000000] pcpu-alloc: s25280 r0 d23872 u2097152 alloc=1*4194304
+> > [    0.000000] pcpu-alloc: [0] 0 1
+> 
+> Heh, I was getting confused, forget the distance thing, so it's single
+> group w/ 4MiB allocation size.
+> 
+> > PERCPU: allocation failed, size=252 align=4, failed to allocate new chunk
+> 
+> Which later fails percpu allocation due to vmalloc space exhaustion.
+> How long does that take to happen?
+It depends. Sometimes it fails in 400 seconds after booting. We run MTBF and other
+stress testing. Sometimes even with other non-stress testing, pecpu allocation
+fails. Most drivers or upper layers expect the percpu allocation should succeed. If
+not, although mostly there is no OOPS in kernel, upper applications wouldn't work.
 
-> On Thu, Apr 26, 2012 at 07:51:05PM -0300, Glauber Costa wrote:
->> In mem cgroup, we need to guarantee that two concurrent updates
->> of the jump_label interface wait for each other. IOW, we can't have
->> other updates returning while the first one is still patching the
->> kernel around, otherwise we'll race.
 > 
-> But it shouldn't. The code as is should prevent that.
+> > vmallocinfo is attached. From the vmallocinfo, we could find the VM space
+> > is fragmented. We would write another patch to clean it up.
 > 
->>
->> I believe this is something that can fit well in the static branch
->> API, without noticeable disadvantages:
->>
->> * in the common case, it will be a quite simple lock/unlock operation
->> * Every context that calls static_branch_slow* already expects to be
->>   in sleeping context because it will mutex_lock the unlikely case.
->> * static_key_slow_inc is not expected to be called in any fast path,
->>   otherwise it would be expected to have quite a different name. Therefore
->>   the mutex + atomic combination instead of just an atomic should not kill
->>   us.
->>
->> Signed-off-by: Glauber Costa <glommer@parallels.com>
->> CC: Tejun Heo <tj@kernel.org>
->> CC: Li Zefan <lizefan@huawei.com>
->> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> CC: Johannes Weiner <hannes@cmpxchg.org>
->> CC: Michal Hocko <mhocko@suse.cz>
->> CC: Ingo Molnar <mingo@elte.hu>
->> CC: Jason Baron <jbaron@redhat.com>
->> ---
->>  kernel/jump_label.c |   21 +++++++++++----------
->>  1 files changed, 11 insertions(+), 10 deletions(-)
->>
->> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
->> index 4304919..5d09cb4 100644
->> --- a/kernel/jump_label.c
->> +++ b/kernel/jump_label.c
->> @@ -57,17 +57,16 @@ static void jump_label_update(struct static_key *key, int enable);
->>  
->>  void static_key_slow_inc(struct static_key *key)
->>  {
->> +	jump_label_lock();
->>  	if (atomic_inc_not_zero(&key->enabled))
->> -		return;
-> 
-> If key->enabled is not zero, there's nothing to be done. As the jump
-> label has already been enabled. Note, the key->enabled doesn't get set
-> until after the jump label is updated. Thus, if two tasks were to come
-> in, they both would be locked on the jump_label_lock().
-> 
+> Whee... ah well, 128M isn't that big after all.
+Indeed, so we need tune the memory utilization carefully on i386.
+We did work out other patches at other places/drivers to fix other OOM issues.
 
-Ah, sorry, I misunderstood somthing. I'm sorry, Glauber.
+> 
+> > > > If using PERCPU_FC_PAGE, system can't go to deep sleep states.
+> > > 
+> > > Why?
+> >
+> > Medfield has 2 cpu threads. Only when all the 2 threads enter deep C states,
+> > for example, C6, the core would enter C6. If booting kernel with percpu_alloc=page,
+> > cpu core often aborts the C6 entering. We don't know why. C6 is aborted under
+> > many conditions. One is when there is pending interrupt. I suspect with page size
+> > alloc, it might trigger more cache miss. Just before calls mwait to enter
+> > C6, we record some statistics data and that might trigger the cache miss
+> > to abort the C6. It's just a _GUESS_.
+> > 
+> > We tried atom_size with 32k, 128k, 256k. There is no power regression.
+> 
+> So, the difference between EMBED and PAGE is how the first chunk which
+> contains all the static percpu variables and some dynamic area for
+> optimization is allocated.  For EMBED, it's just kmallocd which means
+> that it piggy backs on the default kernel linear mapping thus avoiding
+> adding any extra TLB pressure.  For PAGE, all those percpu areas end
+> up getting re-mapped in vmalloc area using 4k pages, so if TLB
+> pressure can affect entering C6, that could be it.
+Thanks for the explanation.
 
--Kame
+> 
+> > We can't fix FC_PAGE power regression. If we do so, we need contact many
+> > hardware architects. Current kernel supports FC_PAGE and PMD_SIZE, why
+> > not to allow admin to choose other values?
+> 
+> If this is something which is met in the field commonly, we need to
+> fix the default behavior rather than introducing some arcane boot
+> param.
+We just add a new value input method instead of introducing new parameter.
+
+>   IIRC, the reasons PMD_SIZE is used for atom_size are so that
+> percpu areas are aligned to PSE mapping, maybe later we can make use
+> of PSE mapping in vmalloc area too, and it didn't seem to hurt
+> anything.
+Well, vmalloc area might use different prot to map physical pages.
+So sharing one PMD huge page by many vmalloc areas might be not good.
+
+> 
+> If the large unit size is becoming a problem on i386, we can just use
+> PAGE_SIZE as atom_size.  Can you please verify that atom_size of 4k w/
+> EMBED also resolves the power issue?
+We are enable Android ICS which is based on kernel 3.0.8. It seems there is
+no much change between 3.0.8 and the latest kernel.
+With 3.0.8, although we could set percpualloc=embed, atom_size would becomes
+PMD_SIZE.
+With our patch, we could do the experiment as we could configure percpu_alloc=4K
+easily. We would let you know the testing result of atom_size=4K && first_chunk_embedded.
+
+Yanmin
+
 
