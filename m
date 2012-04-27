@@ -1,85 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984Ab2D0UFi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 16:05:38 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39657 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752544Ab2D0UFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 16:05:10 -0400
-Date: Fri, 27 Apr 2012 16:05:00 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>,
-        Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Subject: Re: [PATCH 05/23] ext4: Calculate and verify superblock checksum
-Message-ID: <20120427200500.GA29481@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"Darrick J. Wong" <djwong@us.ibm.com>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	Sunil Mushran <sunil.mushran@oracle.com>,
-	Martin K Petersen <martin.petersen@oracle.com>,
-	Greg Freemyer <greg.freemyer@gmail.com>,
-	Amir Goldstein <amir73il@gmail.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-	Joel Becker <jlbec@evilplan.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-References: <20120306204750.1663.96751.stgit@elm3b70.beaverton.ibm.com>
- <20120306204828.1663.39312.stgit@elm3b70.beaverton.ibm.com>
+	id S1757096Ab2D0UKZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 16:10:25 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:1498 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab2D0UKY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 16:10:24 -0400
+Message-ID: <4F9AFD28.2030801@hp.com>
+Date: Fri, 27 Apr 2012 16:10:16 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120306204828.1663.39312.stgit@elm3b70.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: Christoph Lameter <cl@linux.com>
+CC: "penberg@kernel.org" <penberg@kernel.org>,
+        "mpm@selenic.com" <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Morris, Donald George (HP-UX Cupertino)" <don.morris@hp.com>
+Subject: Re: [PATCH] slub: prevent validate_slab() error due to race condition
+References: <1335466658-29063-1-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.00.1204270911080.29198@router.home>
+In-Reply-To: <alpine.DEB.2.00.1204270911080.29198@router.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 12:48:28PM -0800, Darrick J. Wong wrote:
-> diff --git a/fs/ext4/ext4_jbd2.c b/fs/ext4/ext4_jbd2.c
-> index aca1790..90f7c2e 100644
-> --- a/fs/ext4/ext4_jbd2.c
-> +++ b/fs/ext4/ext4_jbd2.c
-> @@ -138,16 +138,23 @@ int __ext4_handle_dirty_metadata(const char *where, unsigned int line,
->  }
->  
->  int __ext4_handle_dirty_super(const char *where, unsigned int line,
-> -			      handle_t *handle, struct super_block *sb)
-> +			      handle_t *handle, struct super_block *sb,
-> +			      int now)
->  {
->  	struct buffer_head *bh = EXT4_SB(sb)->s_sbh;
->  	int err = 0;
->  
->  	if (ext4_handle_valid(handle)) {
-> +		ext4_superblock_csum_set(sb,
-> +				(struct ext4_super_block *)bh->b_data);
->  		err = jbd2_journal_dirty_metadata(handle, bh);
->  		if (err)
->  			ext4_journal_abort_handle(where, line, __func__,
->  						  bh, handle, err);
-> +	} else if (now) {
-> +		ext4_superblock_csum_set(sb,
-> +				(struct ext4_super_block *)bh->b_data);
-> +		mark_buffer_dirty(bh);
->  	} else
->  		sb->s_dirt = 1;
->  	return err;
+On 4/27/2012 10:59 AM, Christoph Lameter wrote:
+> On Thu, 26 Apr 2012, Waiman Long wrote:
+>
+>> The SLUB memory allocator was changed substantially from 3.0 to 3.1 by
+>> replacing some of page locking codes for updating the free object list
+>> of the slab with double-quadword atomic exchange (cmpxchg_double_slab)
+>> or a pseudo one using a page lock when debugging is turned on.  In the
+>> normal case, that should be enough to make sure that the slab is in a
+>> consistent state. However, when CONFIG_SLUB_DEBUG is turned on and the
+>> Redzone debugging flag is set, the Redzone bytes are also used to mark
+>> if an object is free or allocated. The extra state information in those
+>> Redzone bytes is not protected by the cmpxchg_double_slab(). As a
+>> result,
+>> validate_slab() may report a Redzone error if the validation is
+>> performed
+>> while racing with a free to a debugged slab.
+> Right. The problem is unique to validate_slab because no one else outside
+> the slab has access to that object that is to be freed.
+>
+>> This patch fixes the BUG message by acquiring the node-level lock for
+>> slabs flagged for debugging to avoid this possible racing condition.
+>> The locking is done on the node-level lock instead of the more granular
+>> page lock because the new code may speculatively acquire the node-level
+>> lock later on. Acquiring the page lock and then the node lock may lead
+>> to potential deadlock.
+> Correct that would address the issue.
+>
+>> As the increment of slab node count and insertion of the new slab into
+>> the partial or full slab list is not an atomic operation, there is a
+>> small time window where the two may not match. This patch temporarily
+>> works around this problem by allowing the node count to be one larger
+>> than the number of slab presents in the lists. This workaround may not
+>> work if more than one CPU is actively adding slab to the same node,
+>> but it should be good enough to workaround the problem in most cases.
+> Well yeah that is not a real fix. Its been racy for a long time.
+>
+>> To really fix the issue, the overall synchronization between debug slub
+>> operations and slub validation needs a revisit.
+> True. The sync between validation and concurrent operations was not in
+> focus so far. Validation was used (at least by me) so far only to validate
+> that the slab structures are still okay after running some tests.
+>
+> Lets just do this in steps. First patch here is a simple taking of the
+> node lock in free_debug_processing. This is similar to what you have done
+> but the changes are made to the debugging function instead. Then we can
+> look at how to address the slab counting issue in a separate patch.
+>
 
-What's the point of having the ext4_handle_dirty_super_now() variant?
+Thank for the quick response. I have no problem for moving the node-lock 
+taking into free_debug_processing. Of the 2 problems that are reported, 
+this is a more serious one and so need to be fixed sooner rather than 
+later. For the other one, we can take more time to find a better solution.
 
-I don't see the point of having this?
+So are you going to integrate your change to the mainline?
 
-						- Ted
+> Subject: slub: Take node lock during object free checks
+>
+> This is needed for proper synchronization with validate_slab()
+> as pointed out by Waiman Long<Waiman.Long@hp.com>
+>
+> Reported-by: Waiman Long<Waiman.Long@hp.com>
+> Signed-off-by: Christoph Lameter<cl@linux.com>
+>
+>
+> ---
+>   mm/slub.c |   30 ++++++++++++++++++------------
+>   1 file changed, 18 insertions(+), 12 deletions(-)
+>
+> Index: linux-2.6/mm/slub.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slub.c	2012-04-27 09:40:00.000000000 -0500
+> +++ linux-2.6/mm/slub.c	2012-04-27 09:50:15.000000000 -0500
+> @@ -1082,13 +1082,13 @@ bad:
+>   	return 0;
+>   }
+>
+> -static noinline int free_debug_processing(struct kmem_cache *s,
+> -		 struct page *page, void *object, unsigned long addr)
+> +static noinline struct kmem_cache_node *free_debug_processing(
+> +	struct kmem_cache *s, struct page *page, void *object,
+> +	unsigned long addr, unsigned long *flags)
+>   {
+> -	unsigned long flags;
+> -	int rc = 0;
+> +	struct kmem_cache_node *n = get_node(s, page_to_nid(page));
+>
+> -	local_irq_save(flags);
+> +	spin_lock_irqsave(&n->list_lock, *flags);
+>   	slab_lock(page);
+>
+>   	if (!check_slab(s, page))
+> @@ -1126,15 +1126,19 @@ static noinline int free_debug_processin
+>   		set_track(s, object, TRACK_FREE, addr);
+>   	trace(s, page, object, 0);
+>   	init_object(s, object, SLUB_RED_INACTIVE);
+> -	rc = 1;
+>   out:
+>   	slab_unlock(page);
+> -	local_irq_restore(flags);
+> -	return rc;
+> +	/*
+> +	 * Keep node_lock to preserve integrity
+> +	 * until the object is actually freed
+> +	 */
+> +	return n;
+>
+>   fail:
+> +	slab_unlock(page);
+> +	spin_unlock_irqrestore(&n->list_lock, *flags);
+>   	slab_fix(s, "Object at 0x%p not freed", object);
+> -	goto out;
+> +	return NULL;
+>   }
+>
+>   static int __init setup_slub_debug(char *str)
+> @@ -1227,8 +1231,9 @@ static inline void setup_object_debug(st
+>   static inline int alloc_debug_processing(struct kmem_cache *s,
+>   	struct page *page, void *object, unsigned long addr) { return 0; }
+>
+> -static inline int free_debug_processing(struct kmem_cache *s,
+> -	struct page *page, void *object, unsigned long addr) { return 0; }
+> +static inline struct kmem_cache_node *free_debug_processing(
+> +	struct kmem_cache *s, struct page *page, void *object,
+> +	unsigned long addr, unsigned long *flags) { return NULL; }
+>
+>   static inline int slab_pad_check(struct kmem_cache *s, struct page *page)
+>   			{ return 1; }
+> @@ -2445,7 +2450,8 @@ static void __slab_free(struct kmem_cach
+>
+>   	stat(s, FREE_SLOWPATH);
+>
+> -	if (kmem_cache_debug(s)&&  !free_debug_processing(s, page, x, addr))
+> +	if (kmem_cache_debug(s)&&
+> +		!(n = free_debug_processing(s, page, x, addr,&flags)))
+>   		return;
+>
+>   	do {
+
