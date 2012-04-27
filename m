@@ -1,96 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760877Ab2D0RPb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 13:15:31 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54885 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760840Ab2D0RPZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 13:15:25 -0400
-Date: Fri, 27 Apr 2012 18:14:33 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        Arnd Bergmann <arnd@arndb.de>, Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [PATCH 1/2] asm-generic: io: remove {read,write} string functions
-Message-ID: <20120427171433.GE14743@mudshark.cambridge.arm.com>
-References: <1335523376-14695-1-git-send-email-will.deacon@arm.com>
- <4F9AC806.60608@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9AC806.60608@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760889Ab2D0RPz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 13:15:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3923 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760565Ab2D0RPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 13:15:53 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, gregkh@linuxfoundation.org,
+        lwoodman@redhat.com, jbaron@redhat.com, dzickus@redhat.com
+Subject: [RFC PATCH] tty, add kref to sysrq handlers
+Date: Fri, 27 Apr 2012 13:15:42 -0400
+Message-Id: <1335546942-28524-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 05:23:34PM +0100, H. Peter Anvin wrote:
-> On 04/27/2012 03:42 AM, Will Deacon wrote:
-> > The {read,write}s{b,w,l} functions are not defined across all
-> > architectures and therefore shouldn't be used by portable drivers. We
-> > should encourage driver writers to use the io{read,write}{8,16,32}_rep
-> > functions instead.
-> 
-> Why is that?  ioread/write are great if the address space is undefined,
-> but do we need the extra overhead in any other cases?
+On a large system with a large number of tasks, the output of
 
-I think it's because in reality not many drivers are using
-the {read,write}s{b,w,l} accessors:
+echo t > /proc/sysrq-trigger
 
-drivers/bluetooth/btmrvl_sdio.c
-drivers/bluetooth/btsdio.c
-drivers/i2c/busses/i2c-tegra.c
-drivers/mmc/core/sdio_io.c
-drivers/mmc/host/msm_sdcc.c
-drivers/mmc/host/mvsdio.c
-drivers/mmc/host/omap.c
-drivers/mmc/host/tmio_mmc.h
-drivers/mtd/nand/atmel_nand.c
-drivers/mtd/nand/gpio.c
-drivers/mtd/nand/omap2.c
-drivers/mtd/nand/pxa3xx_nand.c
-drivers/mtd/nand/s3c2410.c
-drivers/net/ethernet/8390/ax88796.c
-drivers/net/ethernet/8390/etherh.c
-drivers/net/ethernet/davicom/dm9000.c
-drivers/net/ethernet/seeq/ether3.c
-drivers/net/ethernet/smsc/smc911x.h
-drivers/net/ethernet/smsc/smc91x.h
-drivers/net/ethernet/smsc/smsc911x.c
-drivers/net/wireless/ath/ath6kl/sdio.c
-drivers/net/wireless/brcm80211/brcmfmac/bcmsdh_sdmmc.c
-drivers/net/wireless/libertas/if_sdio.c
-drivers/net/wireless/mwifiex/sdio.c
-drivers/net/wireless/wl12xx/sdio.c
-drivers/parport/parport_ip32.c
-drivers/pci/hotplug/ibmphp_core.c
-drivers/pci/hotplug/ibmphp_ebda.c
-drivers/pci/hotplug/ibmphp.h
-drivers/pci/hotplug/ibmphp_hpc.c
-drivers/scsi/arm/arxescsi.c
-drivers/scsi/arm/cumana_2.c
-drivers/scsi/arm/oak.c
-drivers/ssb/sdio.c
-drivers/usb/gadget/at91_udc.c
-drivers/usb/gadget/s3c2410_udc.c
-drivers/usb/gadget/s3c-hsotg.c
-drivers/usb/host/isp1362.h
-drivers/usb/musb/am35x.c
-drivers/usb/musb/musb_core.c
-drivers/usb/musb/musb_io.h
-drivers/usb/musb/tusb6010.c
+can take a long period of time.  If this period is greater than the period
+of the current clocksource, the clocksource watchdog will mark the
+clocksource as unstable and fail the clocksource over.
 
-If you remove the architecture-specific drivers, there's really not a lot left
-and, even then, we only need to convert those drivers which are intended to
-be portable between architectures where the string functions are not
-consistently available.
+The problem with sysrq is that __handle_sysrq() takes a spin_lock with
+interrupts disabled and disables interrupts for the duration of the
+handler.  If this happens during sysrq-t on a large system with a large
+number of tasks, the result is a "brown-out" of the system.
 
-By overheads, I assume you're referring to the IO_COND check on the address
-space? I wouldn't expect this to be noticeable compared to the cost of the
-I/O access and I'm not sure it's worth worrying about for the sake of the
-small number of drivers affected.
+The spin_lock in question, sysrq_key_table_lock, is in place to prevent
+the removal of a sysrq handler while it is being executed in
+__handle_sysrq().
 
-Will
+There are two possiblities in dealing with this lock.  The first (which is
+not implemented, but has been tested) is the complete removal of the lock.
+All instances of unregister_sysrq_key() in the kernel occur during module
+remove.  These module remove functions are executed in the context of a
+stop_machine() so AFAICT it is not possible for both the sysrq_handler and the
+module remove code to be running in parallel.
+
+If the lock were removed, however, there is one _unlikely_ circumstance in
+which the array would be left unprotected.  That would be the situation in
+which a module was loaded and the sysrq handler was registered during the
+execution of the module.  Again, the possibility of the scenario is very
+small and given the existing usage of unregister_sysrq_key() in the tree
+it seems like removing the lock is sufficient.
+
+If that is not acceptable, then I propose to do what is done below -- a
+kref is added to each sysrq handler and is incremented and decremented in
+__handle_sysrq().  This, while more complicated, leads to minimizing the
+time that the sysrq_key_table_lock is acquired and results in a functional
+sysrq-t.
+
+I've tested both options and I no longer see the clocksource watchdog
+marking the TSC clocksource as unstable.
+
+Of course, I'm more than willing to hear additional suggestions.  A rw
+lock still requires that it be taken with irqs disabled so IMO it is out
+of the question.
+
+P.
+
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: gregkh@linuxfoundation.org
+Cc: lwoodman@redhat.com
+Cc: jbaron@redhat.com
+Cc: dzickus@redhat.com
+---
+ drivers/tty/sysrq.c   |   42 +++++++++++++++++++++++++++++++++++++++---
+ include/linux/sysrq.h |    2 ++
+ 2 files changed, 41 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 05728894..38c6ae6 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -458,6 +458,20 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
+ 	&sysrq_ftrace_dump_op,		/* z */
+ };
+
++void sysrq_release(struct kref *kref)
++{
++	struct sysrq_key_op *release_op;
++	int i;
++	unsigned long flags;
++
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	release_op = container_of(kref, struct sysrq_key_op, kref);
++	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
++		if (sysrq_key_table[i] == release_op)
++			sysrq_key_table[i] = NULL;
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++}
++
+ /* key2index calculation, -1 on invalid index */
+ static int sysrq_key_table_key2index(int key)
+ {
+@@ -502,7 +516,6 @@ void __handle_sysrq(int key, bool check_mask)
+ 	int i;
+ 	unsigned long flags;
+
+-	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 	/*
+ 	 * Raise the apparent loglevel to maximum so that the sysrq header
+ 	 * is shown to provide the user with positive feedback.  We do not
+@@ -513,7 +526,12 @@ void __handle_sysrq(int key, bool check_mask)
+ 	console_loglevel = 7;
+ 	printk(KERN_INFO "SysRq : ");
+
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+         op_p = __sysrq_get_key_op(key);
++	if (op_p)
++		kref_get(&op_p->kref);
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++
+         if (op_p) {
+ 		/*
+ 		 * Should we check for enabled operations (/proc/sysrq-trigger
+@@ -526,9 +544,14 @@ void __handle_sysrq(int key, bool check_mask)
+ 		} else {
+ 			printk("This sysrq operation is disabled.\n");
+ 		}
++
++		spin_lock_irqsave(&sysrq_key_table_lock, flags);
++		kref_put(&op_p->kref, sysrq_release);
++		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ 	} else {
+ 		printk("HELP : ");
+ 		/* Only print the help msg once per handler */
++		spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 		for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++) {
+ 			if (sysrq_key_table[i]) {
+ 				int j;
+@@ -541,10 +564,10 @@ void __handle_sysrq(int key, bool check_mask)
+ 				printk("%s ", sysrq_key_table[i]->help_msg);
+ 			}
+ 		}
++		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ 		printk("\n");
+ 		console_loglevel = orig_log_level;
+ 	}
+-	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ }
+
+ void handle_sysrq(int key)
+@@ -837,7 +860,12 @@ static int __sysrq_swap_key_ops(int key, struct sysrq_key_op *insert_op_p,
+
+ 	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 	if (__sysrq_get_key_op(key) == remove_op_p) {
+-		__sysrq_put_key_op(key, insert_op_p);
++		if (!remove_op_p) { /* register */
++			__sysrq_put_key_op(key, insert_op_p);
++			kref_init(&insert_op_p->kref);
++		}
++		if (!insert_op_p) /* unregister */
++			kref_put(&remove_op_p->kref, sysrq_release);
+ 		retval = 0;
+ 	} else {
+ 		retval = -1;
+@@ -898,6 +926,14 @@ static inline void sysrq_init_procfs(void)
+
+ static int __init sysrq_init(void)
+ {
++	int i;
++
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
++		if (sysrq_key_table[i])
++			kref_init(&sysrq_key_table[i]->kref);
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++
+ 	sysrq_init_procfs();
+
+ 	if (sysrq_on())
+diff --git a/include/linux/sysrq.h b/include/linux/sysrq.h
+index 7faf933..d458f39 100644
+--- a/include/linux/sysrq.h
++++ b/include/linux/sysrq.h
+@@ -16,6 +16,7 @@
+
+ #include <linux/errno.h>
+ #include <linux/types.h>
++#include <linux/kref.h>
+
+ /* Enable/disable SYSRQ support by default (0==no, 1==yes). */
+ #define SYSRQ_DEFAULT_ENABLE	1
+@@ -36,6 +37,7 @@ struct sysrq_key_op {
+ 	char *help_msg;
+ 	char *action_msg;
+ 	int enable_mask;
++	struct kref kref;
+ };
+
+ #ifdef CONFIG_MAGIC_SYSRQ
+--
+1.7.7.2
+---
+ drivers/tty/sysrq.c   |   42 +++++++++++++++++++++++++++++++++++++++---
+ include/linux/sysrq.h |    2 ++
+ 2 files changed, 41 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 0572889..38c6ae6 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -458,6 +458,20 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
+ 	&sysrq_ftrace_dump_op,		/* z */
+ };
+ 
++void sysrq_release(struct kref *kref)
++{
++	struct sysrq_key_op *release_op;
++	int i;
++	unsigned long flags;
++
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	release_op = container_of(kref, struct sysrq_key_op, kref);
++	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
++		if (sysrq_key_table[i] == release_op)
++			sysrq_key_table[i] = NULL;
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++}
++
+ /* key2index calculation, -1 on invalid index */
+ static int sysrq_key_table_key2index(int key)
+ {
+@@ -502,7 +516,6 @@ void __handle_sysrq(int key, bool check_mask)
+ 	int i;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 	/*
+ 	 * Raise the apparent loglevel to maximum so that the sysrq header
+ 	 * is shown to provide the user with positive feedback.  We do not
+@@ -513,7 +526,12 @@ void __handle_sysrq(int key, bool check_mask)
+ 	console_loglevel = 7;
+ 	printk(KERN_INFO "SysRq : ");
+ 
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+         op_p = __sysrq_get_key_op(key);
++	if (op_p)
++		kref_get(&op_p->kref);
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++
+         if (op_p) {
+ 		/*
+ 		 * Should we check for enabled operations (/proc/sysrq-trigger
+@@ -526,9 +544,14 @@ void __handle_sysrq(int key, bool check_mask)
+ 		} else {
+ 			printk("This sysrq operation is disabled.\n");
+ 		}
++
++		spin_lock_irqsave(&sysrq_key_table_lock, flags);
++		kref_put(&op_p->kref, sysrq_release);
++		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ 	} else {
+ 		printk("HELP : ");
+ 		/* Only print the help msg once per handler */
++		spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 		for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++) {
+ 			if (sysrq_key_table[i]) {
+ 				int j;
+@@ -541,10 +564,10 @@ void __handle_sysrq(int key, bool check_mask)
+ 				printk("%s ", sysrq_key_table[i]->help_msg);
+ 			}
+ 		}
++		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ 		printk("\n");
+ 		console_loglevel = orig_log_level;
+ 	}
+-	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ }
+ 
+ void handle_sysrq(int key)
+@@ -837,7 +860,12 @@ static int __sysrq_swap_key_ops(int key, struct sysrq_key_op *insert_op_p,
+ 
+ 	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 	if (__sysrq_get_key_op(key) == remove_op_p) {
+-		__sysrq_put_key_op(key, insert_op_p);
++		if (!remove_op_p) { /* register */
++			__sysrq_put_key_op(key, insert_op_p);
++			kref_init(&insert_op_p->kref);
++		}
++		if (!insert_op_p) /* unregister */
++			kref_put(&remove_op_p->kref, sysrq_release);
+ 		retval = 0;
+ 	} else {
+ 		retval = -1;
+@@ -898,6 +926,14 @@ static inline void sysrq_init_procfs(void)
+ 
+ static int __init sysrq_init(void)
+ {
++	int i;
++
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
++		if (sysrq_key_table[i])
++			kref_init(&sysrq_key_table[i]->kref);
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++
+ 	sysrq_init_procfs();
+ 
+ 	if (sysrq_on())
+diff --git a/include/linux/sysrq.h b/include/linux/sysrq.h
+index 7faf933..d458f39 100644
+--- a/include/linux/sysrq.h
++++ b/include/linux/sysrq.h
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/errno.h>
+ #include <linux/types.h>
++#include <linux/kref.h>
+ 
+ /* Enable/disable SYSRQ support by default (0==no, 1==yes). */
+ #define SYSRQ_DEFAULT_ENABLE	1
+@@ -36,6 +37,7 @@ struct sysrq_key_op {
+ 	char *help_msg;
+ 	char *action_msg;
+ 	int enable_mask;
++	struct kref kref;
+ };
+ 
+ #ifdef CONFIG_MAGIC_SYSRQ
+-- 
+1.7.1
+
