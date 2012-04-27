@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab2D0X6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 19:58:11 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43326 "EHLO
+	id S1757839Ab2D0X7K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 19:59:10 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:55610 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab2D0X6J convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757255Ab2D0X7J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 19:58:09 -0400
+	Fri, 27 Apr 2012 19:59:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F9AD455.9030306@parallels.com>
+In-Reply-To: <20120427182018.GI26595@google.com>
 References: <4F9A327A.6050409@jp.fujitsu.com>
 	<4F9A34B2.8080103@jp.fujitsu.com>
-	<4F9AD455.9030306@parallels.com>
-Date: Sat, 28 Apr 2012 08:58:08 +0900
-Message-ID: <CABEgKgpfhM-AFBZLjUGNE_oA0VykTOEhrnR-k+fpuR2CeBgiXw@mail.gmail.com>
+	<20120427182018.GI26595@google.com>
+Date: Sat, 28 Apr 2012 08:59:08 +0900
+Message-ID: <CABEgKgooq6EUFRC2-19QxACpGN5+EHn=OwPzk+tMBLy-pYM9XQ@mail.gmail.com>
 Subject: Re: [RFC][PATCH 4/7 v2] memcg: use res_counter_uncharge_until in move_parent
 From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
+To: Tejun Heo <tj@kernel.org>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
         Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Han Ying <yinghan@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Han Ying <yinghan@google.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -32,111 +32,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 28, 2012 at 2:16 AM, Glauber Costa <glommer@parallels.com> wrote:
-> On 04/27/2012 02:54 AM, KAMEZAWA Hiroyuki wrote:
+On Sat, Apr 28, 2012 at 3:20 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Fri, Apr 27, 2012 at 02:54:58PM +0900, KAMEZAWA Hiroyuki wrote:
 >> By using res_counter_uncharge_until(), we can avoid
 >> unnecessary charging.
 >>
->> Signed-off-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 >> ---
->>   mm/memcontrol.c |   63 ++++++++++++++++++++++++++++++++++++------------------
->>   1 files changed, 42 insertions(+), 21 deletions(-)
+>>  mm/memcontrol.c |   63 ++++++++++++++++++++++++++++++++++++------------------
+>>  1 files changed, 42 insertions(+), 21 deletions(-)
 >>
 >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
 >> index 613bb15..ed53d64 100644
 >> --- a/mm/memcontrol.c
 >> +++ b/mm/memcontrol.c
 >> @@ -2420,6 +2420,24 @@ static void __mem_cgroup_cancel_charge(struct mem_cgroup *memcg,
->>   }
+>>  }
 >>
->>   /*
+>>  /*
 >> + * Cancel chages in this cgroup....doesn't propagates to parent cgroup.
->> + * This is useful when moving usage to parent cgroup.
->> + */
->> +static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
->> +                                     unsigned int nr_pages)
->> +{
->> +     if (!mem_cgroup_is_root(memcg)) {
->> +             unsigned long bytes = nr_pages * PAGE_SIZE;
->> +
->> +             res_counter_uncharge_until(&memcg->res,
->> +                                     memcg->res.parent, bytes);
->> +             if (do_swap_account)
->> +                     res_counter_uncharge_until(&memcg->memsw,
->> +                                             memcg->memsw.parent, bytes);
->> +     }
->> +}
 >
-> Kame, this is a nitpick, but I usually prefer to write this like:
->
-> if (mem_cgroup_is_root(memcg))
->   return;
->
-> res_counter...
->
-> Specially with memcg, where function names are bigger than average, in
-> comparison.
->
-> the code itself seems fine.
->
-Ok, I'll use that style in the next post.
+>             ^typo                                     ^ unnecessary s
 
->> +/*
->>    * A helper function to get mem_cgroup from ID. must be called under
->>    * rcu_read_lock(). The caller must check css_is_removed() or some if
->>    * it's concern. (dropping refcnt from swap can be called against removed
->> @@ -2677,16 +2695,28 @@ static int mem_cgroup_move_parent(struct page *page,
->>       nr_pages = hpage_nr_pages(page);
->>
->>       parent = mem_cgroup_from_cont(pcg);
->> -     ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages,&parent, false);
->> -     if (ret)
->> -             goto put_back;
->> +     if (!parent->use_hierarchy) {
-> Can we avoid testing for use hierarchy ?
-> Specially given this might go away.
->
-> parent_mem_cgroup() already bundles this information. So maybe we can
-> test for parent_mem_cgroup(parent) == NULL. It is the same thing after all.
+Ya, thanks. I'll fix it.
 
-We need to find parent even if use_hierarchy==0 in this patch.
-I'll consider to use it in later patch, thank you for pointing out.
-
-
->> +             ret = __mem_cgroup_try_charge(NULL,
->> +                                     gfp_mask, nr_pages,&parent, false);
->> +             if (ret)
->> +                     goto put_back;
->> +     }
->
-> Why? If we are not hierarchical, we should not charge the parent, right?
-Current implementation moves charges to parent regardless of use_hierarchy.
-It's handled in  a following patch.
-
->
->>       if (nr_pages>  1)
->>               flags = compound_lock_irqsave(page);
->>
->> -     ret = mem_cgroup_move_account(page, nr_pages, pc, child, parent, true);
->> -     if (ret)
->> -             __mem_cgroup_cancel_charge(parent, nr_pages);
->> +     if (parent->use_hierarchy) {
->> +             ret = mem_cgroup_move_account(page, nr_pages,
->> +                                     pc, child, parent, false);
->> +             if (!ret)
->> +                     __mem_cgroup_cancel_local_charge(child, nr_pages);
->> +     } else {
->> +             ret = mem_cgroup_move_account(page, nr_pages,
->> +                                     pc, child, parent, true);
->> +
->> +             if (ret)
->> +                     __mem_cgroup_cancel_charge(parent, nr_pages);
->> +     }
->
-> Calling move account also seems not necessary to me. If we are not
-> uncharging + charging, we won't even touch the parent.
-
-we need to overwrite pc->mem_cgroup and touch other statistics.
-
-Thanks,
 -Kame
