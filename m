@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab2D0VKZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 17:10:25 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:17675 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab2D0VKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 17:10:22 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-127.messagelabs.com!1335561016!4190230!16
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] staging: comedi: introduce 'comedi_board' helper function
-Date: Fri, 27 Apr 2012 14:10:15 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	id S1753048Ab2D0VMG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 17:12:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25894 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752544Ab2D0VMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 17:12:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="159188102"
+Message-ID: <4F9B0B9B.9020909@linux.intel.com>
+Date: Fri, 27 Apr 2012 14:11:55 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: RFC: How to handle function tracing, frame pointers and -mfentry?
+References: <1335552399.28106.228.camel@gandalf.stny.rr.com>  <20120427202701.GA5949@merkur.ravnborg.org>  <4F9B020B.9050205@linux.intel.com> <1335560259.28106.234.camel@gandalf.stny.rr.com>
+In-Reply-To: <1335560259.28106.234.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201204271410.15793.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helper function is used to fetch the comedi_device board_ptr
-which is used during the attach to pass board specific information
-to the comedi drivers.
+On 04/27/2012 01:57 PM, Steven Rostedt wrote:
+>>
+>> Except it is the wrong thing.  This is not the only user of frame
+>> pointer.  What I think you mean is remove the dependency in Kconfig, but
+>> force the frame pointer enabled if -mfentry is not supported.
+> 
+> You mean option 3?
+> 
+> 3) Add frame pointers silently if gcc fails to build with gcc -pg.
+> 
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Yes, your option 3.
 
----
+	-hypa
 
-V2: change name
-
-With this helper removing all the 'this_board' defines in the drivers
-will be easier (and cleaner).
-
-diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-index 300fd84..02e4ae0 100644
---- a/drivers/staging/comedi/comedidev.h
-+++ b/drivers/staging/comedi/comedidev.h
-@@ -235,6 +235,11 @@ struct comedi_device {
- 	void (*close) (struct comedi_device *dev);
- };
- 
-+static inline const void *comedi_board(struct comedi_device *dev)
-+{
-+	return dev->board_ptr;
-+}
-+
- struct comedi_device_file_info {
- 	struct comedi_device *device;
- 	struct comedi_subdevice *read_subdevice;
