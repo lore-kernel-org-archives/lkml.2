@@ -1,151 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab2D0F4z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 01:56:55 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45486 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab2D0F4y (ORCPT
+	id S1755826Ab2D0F7O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 01:59:14 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50401 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab2D0F7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 01:56:54 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F9A34B2.8080103@jp.fujitsu.com>
-Date: Fri, 27 Apr 2012 14:54:58 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120420 Thunderbird/12.0
-MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Han Ying <yinghan@google.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyuki@gmail.com
-Subject: [RFC][PATCH 4/7 v2] memcg: use res_counter_uncharge_until in move_parent
-References: <4F9A327A.6050409@jp.fujitsu.com>
-In-Reply-To: <4F9A327A.6050409@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Apr 2012 01:59:12 -0400
+Date: Fri, 27 Apr 2012 12:02:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20120427120205.3860dd924261ee7a7c42eda4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__27_Apr_2012_12_02_05_+1000_0+kj1ht.5khjefHK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By using res_counter_uncharge_until(), we can avoid 
-unnecessary charging.
+--Signature=_Fri__27_Apr_2012_12_02_05_+1000_0+kj1ht.5khjefHK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   63 ++++++++++++++++++++++++++++++++++++------------------
- 1 files changed, 42 insertions(+), 21 deletions(-)
+Hi all,
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 613bb15..ed53d64 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2420,6 +2420,24 @@ static void __mem_cgroup_cancel_charge(struct mem_cgroup *memcg,
- }
- 
- /*
-+ * Cancel chages in this cgroup....doesn't propagates to parent cgroup.
-+ * This is useful when moving usage to parent cgroup.
-+ */
-+static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
-+					unsigned int nr_pages)
-+{
-+	if (!mem_cgroup_is_root(memcg)) {
-+		unsigned long bytes = nr_pages * PAGE_SIZE;
-+
-+		res_counter_uncharge_until(&memcg->res,
-+					memcg->res.parent, bytes);
-+		if (do_swap_account)
-+			res_counter_uncharge_until(&memcg->memsw,
-+						memcg->memsw.parent, bytes);
-+	}
-+}
-+
-+/*
-  * A helper function to get mem_cgroup from ID. must be called under
-  * rcu_read_lock(). The caller must check css_is_removed() or some if
-  * it's concern. (dropping refcnt from swap can be called against removed
-@@ -2677,16 +2695,28 @@ static int mem_cgroup_move_parent(struct page *page,
- 	nr_pages = hpage_nr_pages(page);
- 
- 	parent = mem_cgroup_from_cont(pcg);
--	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &parent, false);
--	if (ret)
--		goto put_back;
-+	if (!parent->use_hierarchy) {
-+		ret = __mem_cgroup_try_charge(NULL,
-+					gfp_mask, nr_pages, &parent, false);
-+		if (ret)
-+			goto put_back;
-+	}
- 
- 	if (nr_pages > 1)
- 		flags = compound_lock_irqsave(page);
- 
--	ret = mem_cgroup_move_account(page, nr_pages, pc, child, parent, true);
--	if (ret)
--		__mem_cgroup_cancel_charge(parent, nr_pages);
-+	if (parent->use_hierarchy) {
-+		ret = mem_cgroup_move_account(page, nr_pages,
-+					pc, child, parent, false);
-+		if (!ret)
-+			__mem_cgroup_cancel_local_charge(child, nr_pages);
-+	} else {
-+		ret = mem_cgroup_move_account(page, nr_pages,
-+					pc, child, parent, true);
-+
-+		if (ret)
-+			__mem_cgroup_cancel_charge(parent, nr_pages);
-+	}
- 
- 	if (nr_pages > 1)
- 		compound_unlock_irqrestore(page, flags);
-@@ -3295,6 +3325,7 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
- 	struct cgroup *pcgrp = cgroup->parent;
- 	struct mem_cgroup *parent = mem_cgroup_from_cont(pcgrp);
- 	struct mem_cgroup *memcg  = mem_cgroup_from_cont(cgroup);
-+	struct res_counter *counter;
- 
- 	if (!get_page_unless_zero(page))
- 		goto out;
-@@ -3305,28 +3336,18 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
- 		goto err_out;
- 
- 	csize = PAGE_SIZE << compound_order(page);
--	/*
--	 * If we have use_hierarchy set we can never fail here. So instead of
--	 * using res_counter_uncharge use the open-coded variant which just
--	 * uncharge the child res_counter. The parent will retain the charge.
--	 */
--	if (parent->use_hierarchy) {
--		unsigned long flags;
--		struct res_counter *counter;
--
--		counter = &memcg->hugepage[idx];
--		spin_lock_irqsave(&counter->lock, flags);
--		res_counter_uncharge_locked(counter, csize);
--		spin_unlock_irqrestore(&counter->lock, flags);
--	} else {
-+	/* If parent->use_hierarchy == 0, we need to charge parent */
-+	if (!parent->use_hierarchy) {
- 		ret = res_counter_charge(&parent->hugepage[idx],
- 					 csize, &fail_res);
- 		if (ret) {
- 			ret = -EBUSY;
- 			goto err_out;
- 		}
--		res_counter_uncharge(&memcg->hugepage[idx], csize);
- 	}
-+	counter = &memcg->hugepage[idx];
-+	res_counter_uncharge_until(counter, counter->parent, csize);
-+
- 	pc->mem_cgroup = parent;
- err_out:
- 	unlock_page_cgroup(pc);
--- 
-1.7.4.1
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/ethernet/intel/e1000e/param.c between commit 727c356f4d79
+("e1000e: Fix default interrupt throttle rate not set in NIC HW") from
+the net tree and commit 6ad651456e3c ("e1000e: cleanup remaining strings
+split across multiple lines") from the net-next tree.
 
+The former included the change from the latter, so I used that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Fri__27_Apr_2012_12_02_05_+1000_0+kj1ht.5khjefHK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPmf4dAAoJEECxmPOUX5FEflkP/1jeHrlFOLJE21sat9zSfDmm
+Olhc3cUQM5HXoAKhei2npS4IGU5IjPJ9rl10RBxhAGb8VxWin/Vc4JkbtMa6EhEi
+toAEEgtx/WRzG7U76RkAf6dCs16ocXuok41NuVMrb6aTd1+hy4/UHjlWC32ql4Ah
+y00cjG1/P0zXeUbQhJR1btr6UoKVoL7PJcuO77US8FFGOA2PqAUA6UfDuNw3SEGr
+IXSexeEhvFayE4iITjXRtfxA+Ok7bb4Rmg8Z0QJbYlR+MpAprsQ+jP/eKXXeDm6H
+rpQbMeho4bUdiXtU9QyeiJIALFChl7V7jNhDF+cAPlrgmq2MRX6XIlsOj846cxz6
+/wxP+GWsJm6XxVdlVZ3wDcB4Es4Ylp7v4738SIo/51Vn2vnsRYIkctfdUYSUNQoe
+C9WA2Kfc3wY8lxVDc14VL1iA0GOiTMs4xE9rsgQBv/+u46GUcgOhjoBFWJ/v7R4N
+lgz4kdKvlUq5FoD2KKyOGyfNRlM9N3LW8W0f9lyb5ga/a+ZeqnduYHHhzeC8udrO
+IUHYs4WBv/sfvlsgPZITyIHll9s9bHrHSMUnktrGGUnyLUg1yWK0kxzGGk/NhZrb
+14TVEAK9C2z4hLew+aENEZRFV6bz334TlcgKoRWfYZl/TY2LhEX0nyap+RwVTSGe
+sstA2PmlujhXIw7tO5ji
+=PFYo
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__27_Apr_2012_12_02_05_+1000_0+kj1ht.5khjefHK--
