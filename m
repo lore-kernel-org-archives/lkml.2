@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab2D0IQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:16:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33894 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754254Ab2D0IQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:16:52 -0400
-Message-ID: <4F9A55EC.20804@zytor.com>
-Date: Fri, 27 Apr 2012 01:16:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1759603Ab2D0ISY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:18:24 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57153 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756613Ab2D0ISU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 04:18:20 -0400
+X-Sasl-enc: e8sPeRJsh/EeDT4RLtX2gKgdlLfNwiCvOpYmmNayEgdAUL3ObwYH9F+PvA 1335514698
+From: Ian Kent <raven@themaw.net>
+Subject: [PATCH] cifs - check S_AUTOMOUNT in revalidate
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>,
+        linux-cifs@vger.kernel.org,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Apr 2012 16:18:15 +0800
+Message-ID: <20120427081815.4478.26011.stgit@perseus.themaw.net>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/4] compiler.h: introduce unused_expression() macro
-References: <20120425112623.26927.43229.stgit@zurg>
-In-Reply-To: <20120425112623.26927.43229.stgit@zurg>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 04:26 AM, Konstantin Khlebnikov wrote:
-> Sometimes we want to check some expressions correctness in compile-time without
-> generating extra code. "(void)(e)" does not work if expression has side-effects.
-> This patch introduces macro unused_expression() which helps in this situation.
-> 
-> Cast to "long" required because sizeof does not work for bit-fields.
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> ---
->  include/linux/compiler.h |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-> index 923d093..46fbda3 100644
-> --- a/include/linux/compiler.h
-> +++ b/include/linux/compiler.h
-> @@ -310,4 +310,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
->   */
->  #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
->  
-> +#define unused_expression(e) ((void)(sizeof((__force long)(e))))
-> +
+When revalidating a dentry, if the inode wasn't known to be a dfs
+entry when the dentry was instantiated, such as when created via
+->readdir(), the DCACHE_NEED_AUTOMOUNT flag needs to be set on the
+dentry in ->d_revalidate().
 
-OK, bikeshedding a bit:
+The false return from cifs_d_revalidate(), due to the inode now
+being marked with the S_AUTOMOUNT flag, might not invalidate the
+dentry if there is a concurrent unlazy path walk. This is because
+the dentry reference count will be at least 2 in this case causing
+d_invalidate() to return EBUSY. So the asumption that the dentry
+will be discarded then correctly instantiated via ->lookup() might
+not hold.
 
-"unused_expression()" doesn't sound like something that inhibits side
-effects, especially since "unused" applied to an argument or variable
-means "don't make a fuss over this not being used."
+Signed-off-by: Ian Kent <raven@themaw.net>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Cc: Steve French <smfrench@gmail.com>
+Cc: linux-cifs@vger.kernel.org
+---
 
-	-hpa
+ fs/cifs/dir.c |   17 ++++++++++++-----
+ 1 files changed, 12 insertions(+), 5 deletions(-)
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
+index d172c8e..ec4e9a2 100644
+--- a/fs/cifs/dir.c
++++ b/fs/cifs/dir.c
+@@ -668,12 +668,19 @@ cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
+ 			return 0;
+ 		else {
+ 			/*
+-			 * Forcibly invalidate automounting directory inodes
+-			 * (remote DFS directories) so to have them
+-			 * instantiated again for automount
++			 * If the inode wasn't known to be a dfs entry when
++			 * the dentry was instantiated, such as when created
++			 * via ->readdir(), it needs to be set now since the
++			 * attributes will have been updated by
++			 * cifs_revalidate_dentry().
+ 			 */
+-			if (IS_AUTOMOUNT(direntry->d_inode))
+-				return 0;
++			if (IS_AUTOMOUNT(direntry->d_inode) &&
++			   !(direntry->d_flags & DCACHE_NEED_AUTOMOUNT)) {
++				spin_lock(&direntry->d_lock);
++				direntry->d_flags |= DCACHE_NEED_AUTOMOUNT;
++				spin_unlock(&direntry->d_lock);
++			}
++
+ 			return 1;
+ 		}
+ 	}
 
