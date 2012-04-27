@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759863Ab2D0InA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:43:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34474 "EHLO
+	id S1759879Ab2D0Ink (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:43:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34486 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759849Ab2D0Imz (ORCPT
+	with ESMTP id S1759838Ab2D0Inh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:42:55 -0400
-Date: Fri, 27 Apr 2012 01:42:25 -0700
+	Fri, 27 Apr 2012 04:43:37 -0400
+Date: Fri, 27 Apr 2012 01:43:15 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-5gairf6or7dazlx3ocxwvftm@git.kernel.org>
+Message-ID: <tip-inzjrzyqhkzyv78met2vula6@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, efault@gmx.de,
-        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, hagen@jauu.net, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, efault@gmx.de, peterz@infradead.org,
-        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, hagen@jauu.net,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate browser: Initial loop detection
-Git-Commit-ID: a3f895be1f1ed17f66e6e71adeef0cc7f937512c
+Subject: [tip:perf/core] perf annotate browser: Handle NULL jump targets
+Git-Commit-ID: 9481ede909e08418c9379665ee9f25335d20dd06
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,211 +29,86 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 27 Apr 2012 01:42:31 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 27 Apr 2012 01:43:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a3f895be1f1ed17f66e6e71adeef0cc7f937512c
-Gitweb:     http://git.kernel.org/tip/a3f895be1f1ed17f66e6e71adeef0cc7f937512c
+Commit-ID:  9481ede909e08418c9379665ee9f25335d20dd06
+Gitweb:     http://git.kernel.org/tip/9481ede909e08418c9379665ee9f25335d20dd06
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 24 Apr 2012 14:24:28 -0300
+AuthorDate: Wed, 25 Apr 2012 07:48:42 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 24 Apr 2012 14:24:28 -0300
+CommitDate: Wed, 25 Apr 2012 07:48:42 -0300
 
-perf annotate browser: Initial loop detection
+perf annotate browser: Handle NULL jump targets
 
-Simple algorithm, just look for the next backward jump that points to
-before the cursor.
+In annotate_browser__mark_jump_targets
 
-Then draw an arrow connecting the jump to its target.
+702                     dlt = browser->offsets[dl->ops.target];
+703                     bdlt = disasm_line__browser(dlt);
+704                     bdlt->jump_target = true;
+705             }
+706
+707     }
 
-Do this as you move the cursor, entering/exiting possible loops.
+(gdb) p size
+$5 = 2415
+(gdb) p offset
+$6 = 140
+(gdb) p dl->ops.target
+$7 = 143
+(gdb) p browser->offsets[143]
+$8 = (struct disasm_line *) 0x0
+(gdb) p dl->name
+$9 = 0x2363bd0 "je"
+(gdb)
 
-Ex (graph chars replaced to avoid mail encoding woes):
+Really strange, the code assumed that at the jump target we would have
+an assembly line, but only in the previous instruction offset we have a
+'lock':
 
-avc_has_perm_flags
-    0.00 |         nopl   0x0(%rax)
-    5.36 |+-> 68:  mov    (%rax),%rax
-    5.15 ||        test   %rax,%rax
-    0.00 ||      v je     130
-    2.96 ||   74:  cmp    -0x20(%rax),%ebx
-   47.38 ||        lea    -0x20(%rax),%rcx
-    0.28 ||      ^ jne    68
-    3.16 ||        cmp    -0x18(%rax),%dx
-    0.00 |+------^ jne    68
-    4.92 |         cmp    0x4(%rcx),%r13d
-    0.00 |       v jne    68
-    1.15 |         test   %rcx,%rcx
-    0.00 |       v je     130
+(gdb) p browser->offsets[144]
+$10 = (struct disasm_line *) 0x0
+(gdb) p browser->offsets[142]
+$11 = (struct disasm_line *) 0x27bd620
+(gdb) p browser->offsets[142]->name
+$12 = 0x237a8a0 "lock"
+(gdb)
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+I'll study this more, but for now I'll just check if there is a
+disasm_line at dl->ops.target, i.e. a valid jump target.
+
+Reported-by: Hagen Paul Pfeifer <hagen@jauu.net>
+Reported-by: Ingo Molnar <mingo@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-5gairf6or7dazlx3ocxwvftm@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-inzjrzyqhkzyv78met2vula6@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browser.c           |   39 +++++++++++++++++++++++
- tools/perf/ui/browser.h           |    2 +
- tools/perf/ui/browsers/annotate.c |   61 ++++++++++++++++++++++++++++++++++--
- 3 files changed, 98 insertions(+), 4 deletions(-)
+ tools/perf/ui/browsers/annotate.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
-index 973ff74..32ac116 100644
---- a/tools/perf/ui/browser.c
-+++ b/tools/perf/ui/browser.c
-@@ -600,6 +600,45 @@ void ui_browser__write_graph(struct ui_browser *browser __used, int graph)
- 	SLsmg_set_char_set(0);
- }
- 
-+void __ui_browser__line_arrow_up(struct ui_browser *browser, unsigned int column,
-+				 u64 start, u64 end, int start_width)
-+{
-+	unsigned int row, end_row;
-+
-+	SLsmg_set_char_set(1);
-+
-+	if (start < browser->top_idx + browser->height) {
-+		row = start - browser->top_idx;
-+		ui_browser__gotorc(browser, row, column);
-+		SLsmg_write_char(SLSMG_LLCORN_CHAR);
-+		ui_browser__gotorc(browser, row, column + 1);
-+		SLsmg_draw_hline(start_width);
-+
-+		if (row-- == 0)
-+			goto out;
-+	} else
-+		row = browser->height - 1;
-+
-+	if (end > browser->top_idx)
-+		end_row = end - browser->top_idx;
-+	else
-+		end_row = 0;
-+
-+	ui_browser__gotorc(browser, end_row, column);
-+	SLsmg_draw_vline(row - end_row + 1);
-+
-+	ui_browser__gotorc(browser, end_row, column);
-+	if (end >= browser->top_idx) {
-+		SLsmg_write_char(SLSMG_ULCORN_CHAR);
-+		ui_browser__gotorc(browser, end_row, column + 1);
-+		SLsmg_write_char(SLSMG_HLINE_CHAR);
-+		ui_browser__gotorc(browser, end_row, column + 2);
-+		SLsmg_write_char(SLSMG_RARROW_CHAR);
-+	}
-+out:
-+	SLsmg_set_char_set(0);
-+}
-+
- void ui_browser__init(void)
- {
- 	int i = 0;
-diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
-index ce20975..2f226cb 100644
---- a/tools/perf/ui/browser.h
-+++ b/tools/perf/ui/browser.h
-@@ -38,6 +38,8 @@ void ui_browser__reset_index(struct ui_browser *self);
- 
- void ui_browser__gotorc(struct ui_browser *self, int y, int x);
- void ui_browser__write_graph(struct ui_browser *browser, int graph);
-+void __ui_browser__line_arrow_up(struct ui_browser *browser, unsigned int column,
-+				 u64 start, u64 end, int start_width);
- void __ui_browser__show_title(struct ui_browser *browser, const char *title);
- void ui_browser__show_title(struct ui_browser *browser, const char *title);
- int ui_browser__show(struct ui_browser *self, const char *title,
 diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index c3fc6f3..9e3310c 100644
+index 9e3310c..4c83fe3 100644
 --- a/tools/perf/ui/browsers/annotate.c
 +++ b/tools/perf/ui/browsers/annotate.c
-@@ -94,13 +94,13 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 			addr += ab->start;
- 
- 		if (!ab->use_offset) {
--			printed = scnprintf(bf, sizeof(bf), "%" PRIx64 ":", addr);
-+			printed = scnprintf(bf, sizeof(bf), "  %" PRIx64 ":", addr);
- 		} else {
- 			if (bdl->jump_target) {
--				printed = scnprintf(bf, sizeof(bf), "%*" PRIx64 ":",
-+				printed = scnprintf(bf, sizeof(bf), "  %*" PRIx64 ":",
- 						    ab->offset_width, addr);
- 			} else {
--				printed = scnprintf(bf, sizeof(bf), "%*s ",
-+				printed = scnprintf(bf, sizeof(bf), "  %*s ",
- 						    ab->offset_width, " ");
- 			}
+@@ -700,6 +700,13 @@ static void annotate_browser__mark_jump_targets(struct annotate_browser *browser
  		}
-@@ -141,6 +141,59 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 		ab->selection = dl;
- }
  
-+static void annotate_browser__draw_current_loop(struct ui_browser *browser)
-+{
-+	struct annotate_browser *ab = container_of(browser, struct annotate_browser, b);
-+	struct map_symbol *ms = browser->priv;
-+	struct symbol *sym = ms->sym;
-+	struct annotation *notes = symbol__annotation(sym);
-+	struct disasm_line *cursor = ab->selection, *pos = cursor, *target;
-+	struct browser_disasm_line *bcursor = disasm_line__browser(cursor),
-+				   *btarget, *bpos;
-+	unsigned int from, to, start_width = 2;
-+
-+	list_for_each_entry_from(pos, &notes->src->source, node) {
-+		if (!pos->ins || !ins__is_jump(pos->ins))
+ 		dlt = browser->offsets[dl->ops.target];
++		/*
++ 		 * FIXME: Oops, no jump target? Buggy disassembler? Or do we
++ 		 * have to adjust to the previous offset?
++ 		 */
++		if (dlt == NULL)
 +			continue;
 +
-+		target = ab->offsets[pos->ops.target];
-+		if (!target)
-+			continue;
-+
-+		btarget = disasm_line__browser(target);
-+		if (btarget->idx <= bcursor->idx)
-+			goto found;
-+	}
-+
-+	return;
-+
-+found:
-+	bpos = disasm_line__browser(pos);
-+	if (ab->hide_src_code) {
-+		from = bpos->idx_asm;
-+		to = btarget->idx_asm;
-+	} else {
-+		from = (u64)bpos->idx;
-+		to = (u64)btarget->idx;
-+	}
-+
-+	ui_browser__set_color(browser, HE_COLORSET_CODE);
-+
-+	if (!bpos->jump_target)
-+		start_width += ab->offset_width + 1;
-+
-+	__ui_browser__line_arrow_up(browser, 10, from, to, start_width);
-+}
-+
-+static unsigned int annotate_browser__refresh(struct ui_browser *browser)
-+{
-+	int ret = ui_browser__list_head_refresh(browser);
-+
-+	annotate_browser__draw_current_loop(browser);
-+
-+	return ret;
-+}
-+
- static double disasm_line__calc_percent(struct disasm_line *dl, struct symbol *sym, int evidx)
- {
- 	double percent = 0.0;
-@@ -666,7 +719,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 	};
- 	struct annotate_browser browser = {
- 		.b = {
--			.refresh = ui_browser__list_head_refresh,
-+			.refresh = annotate_browser__refresh,
- 			.seek	 = ui_browser__list_head_seek,
- 			.write	 = annotate_browser__write,
- 			.filter  = disasm_line__filter,
+ 		bdlt = disasm_line__browser(dlt);
+ 		bdlt->jump_target = true;
+ 	}
