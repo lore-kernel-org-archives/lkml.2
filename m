@@ -1,59 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760692Ab2D0SnW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 14:43:22 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:34978 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757288Ab2D0SnU convert rfc822-to-8bit (ORCPT
+	id S1761025Ab2D0So2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 14:44:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45220 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820Ab2D0So1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 14:43:20 -0400
+	Fri, 27 Apr 2012 14:44:27 -0400
+Date: Fri, 27 Apr 2012 11:44:24 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
+In-Reply-To: <4F9ABF9C.2070707@xenotime.net>
+Message-ID: <alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com>
+References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au> <4F9ABF9C.2070707@xenotime.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120427.143402.1028957981042061092.davem@davemloft.net>
-References: <CA+55aFxEP7-+N7vTPZ-4hD-UirZ=+YMJh2x3EjZvUmjjyOchtg@mail.gmail.com>
- <4F9A6ABA.6050503@msgid.tls.msk.ru> <CA+55aFwud1nXRr+HpzH8rSkEWcZ_rJmoE7UtQt76D=A3qcb6GQ@mail.gmail.com>
- <20120427.143402.1028957981042061092.davem@davemloft.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 27 Apr 2012 11:42:58 -0700
-X-Google-Sender-Auth: VpW5LbwrHIr2eRhta2_EV5EolD0
-Message-ID: <CA+55aFwvFaxBT8Mdp5s4-6Gxy7nM4WVzbWna4RF_OUK3hnx+jQ@mail.gmail.com>
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
- design error.
-To: David Miller <davem@davemloft.net>
-Cc: mjt@tls.msk.ru, linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        raven@themaw.net, thomas@m3y3r.de, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 11:34 AM, David Miller <davem@davemloft.net> wrote:
->
-> If systemd wants to use version 5 of this thing, it has to have the
-> same workaround code automountd has.  It is systemd (and now the
-> kernel) which is broken.
+On Fri, 27 Apr 2012, Randy Dunlap wrote:
 
-There's no question that systemd is broken.
+> On 04/26/2012 11:11 PM, Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20120424:
+> 
+> 
+> 
+> uml on x86_64 (defconfig):
+> 
+> mm/memcontrol.c:256:30: error: 'HUGE_MAX_HSTATE' undeclared here (not in a function)
+> 
 
-But those broken binaries are out in the wild. End of story.
+This is because of "memcg: add HugeTLB extension" from -mm.
 
-> We should have never touched version 5 of the data-structure.  Having
-> 5 years of workaround precedence in userspace proves this.
-
-Umm. The thing is, those broken binaries *work* on 32-bit.  They were
-*tested* on 32-bit. They were *shipped* on 32-bit.
-
-And we really do want to make it just work for people to build 64-bit
-kernels. It is simply not acceptably to say "hey, you have 32-bit user
-land, so use a 32-bit kernel". It's not a different ABI, never has
-been.
-
-It's entirely pointless to talk about some next version. THAT FIXES
-NOTHING. What's so hard to understand? This is an existing problem,
-and making a v6 DOES NOT FIX ANYTHING AT ALL.
-
-And people who bring it up as a "fix" are entirely missing the point.
-
-Seriously.
-
-                      Linus
+This patch is legal in C99, I wonder if Andrew would let us get away with 
+something like this so there's no a dozen #ifdefs in mm/memcontrol.c?
+---
+diff --git a/arch/powerpc/include/asm/page.h b/arch/powerpc/include/asm/page.h
+--- a/arch/powerpc/include/asm/page.h
++++ b/arch/powerpc/include/asm/page.h
+@@ -39,13 +39,13 @@
+ #ifndef __ASSEMBLY__
+ #ifdef CONFIG_HUGETLB_PAGE
+ extern unsigned int HPAGE_SHIFT;
++#define HUGE_MAX_HSTATE		(MMU_PAGE_COUNT-1)
+ #else
+ #define HPAGE_SHIFT PAGE_SHIFT
+ #endif
+ #define HPAGE_SIZE		((1UL) << HPAGE_SHIFT)
+ #define HPAGE_MASK		(~(HPAGE_SIZE - 1))
+ #define HUGETLB_PAGE_ORDER	(HPAGE_SHIFT - PAGE_SHIFT)
+-#define HUGE_MAX_HSTATE		(MMU_PAGE_COUNT-1)
+ #endif
+ 
+ /* We do define AT_SYSINFO_EHDR but don't use the gate mechanism */
+diff --git a/arch/tile/include/asm/page.h b/arch/tile/include/asm/page.h
+--- a/arch/tile/include/asm/page.h
++++ b/arch/tile/include/asm/page.h
+@@ -136,9 +136,8 @@ static inline __attribute_const__ int get_order(unsigned long size)
+ 
+ #define HUGETLB_PAGE_ORDER	(HPAGE_SHIFT - PAGE_SHIFT)
+ 
+-#define HUGE_MAX_HSTATE		6
+-
+ #ifdef CONFIG_HUGETLB_PAGE
++#define HUGE_MAX_HSTATE		6
+ #define HAVE_ARCH_HUGETLB_UNMAPPED_AREA
+ #endif
+ 
+diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+--- a/arch/x86/include/asm/page_types.h
++++ b/arch/x86/include/asm/page_types.h
+@@ -25,7 +25,9 @@
+ #define HPAGE_MASK		(~(HPAGE_SIZE - 1))
+ #define HUGETLB_PAGE_ORDER	(HPAGE_SHIFT - PAGE_SHIFT)
+ 
++#ifdef CONFIG_HUGETLB_PAGE
+ #define HUGE_MAX_HSTATE 2
++#endif
+ 
+ #define PAGE_OFFSET		((unsigned long)__PAGE_OFFSET)
+ 
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -324,6 +324,7 @@ static inline int hstate_index(struct hstate *h)
+ 
+ #else
+ struct hstate {};
++#define HUGE_MAX_HSTATE 0
+ #define alloc_huge_page_node(h, nid) NULL
+ #define alloc_bootmem_huge_page(h) NULL
+ #define hstate_file(f) NULL
