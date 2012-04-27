@@ -1,102 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759458Ab2D0IK3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:10:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35278 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756968Ab2D0IKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:10:25 -0400
-Date: Fri, 27 Apr 2012 10:10:21 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: count pte references from every member of
- the reclaimed hierarchy
-Message-ID: <20120427081021.GA6969@tiehlicka.suse.cz>
-References: <1335296144-29381-1-git-send-email-hannes@cmpxchg.org>
- <1335296144-29381-2-git-send-email-hannes@cmpxchg.org>
- <20120426143729.10f672ae.akpm@linux-foundation.org>
- <20120426234819.GB1788@cmpxchg.org>
+	id S1759532Ab2D0ILd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:11:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45176 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756968Ab2D0IL3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 04:11:29 -0400
+Date: Fri, 27 Apr 2012 16:11:22 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Dong Aisheng <b29396@freescale.com>, b20223@freescale.com,
+        linus.walleij@stericsson.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        kernel@pengutronix.de, cjb@laptop.org, s.hauer@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 2/4] pinctrl: pinctrl-imx: add imx pinctrl core driver
+Message-ID: <20120427081120.GT2234@S2101-09.ap.freescale.net>
+References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
+ <1335451227-27709-2-git-send-email-b29396@freescale.com>
+ <20120426144446.GN9142@game.jcrosoft.org>
+ <20120426151536.GO9142@game.jcrosoft.org>
+ <20120427054842.GJ2234@S2101-09.ap.freescale.net>
+ <20120427062816.GQ9142@game.jcrosoft.org>
+ <20120427072503.GP2234@S2101-09.ap.freescale.net>
+ <20120427071104.GS9142@game.jcrosoft.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120426234819.GB1788@cmpxchg.org>
+In-Reply-To: <20120427071104.GS9142@game.jcrosoft.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 27-04-12 01:48:19, Johannes Weiner wrote:
-[...]
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: [patch] mm: memcg: clean up mm_match_cgroup() signature
+On Fri, Apr 27, 2012 at 09:11:04AM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> except duplicate bindings instead having common one make no sense either
 > 
-> It really should return a boolean for match/no match.  And since it
-> takes a memcg, not a cgroup, fix that parameter name as well.
+> so imx, at91 and ST (STB SoC and other does have the same type of pin IP
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  include/linux/memcontrol.h |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
+> to not come with a common bindig means we are doint the same crap as before
 > 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 76f9d9b..d3038a9 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -89,14 +89,14 @@ extern struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg);
->  extern struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont);
->  
->  static inline
-> -int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
-> +bool mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *memcg)
->  {
-> -	struct mem_cgroup *memcg;
-> -	int match;
-> +	struct mem_cgroup *task_memcg;
-> +	bool match;
->  
->  	rcu_read_lock();
-> -	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-> -	match = memcg && __mem_cgroup_same_or_subtree(cgroup, memcg);
-> +	task_memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-> +	match = task_memcg && __mem_cgroup_same_or_subtree(memcg, task_memcg);
->  	rcu_read_unlock();
->  	return match;
->  }
-> @@ -281,10 +281,10 @@ static inline struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm
->  	return NULL;
->  }
->  
-> -static inline int mm_match_cgroup(struct mm_struct *mm,
-> +static inline bool mm_match_cgroup(struct mm_struct *mm,
->  		struct mem_cgroup *memcg)
->  {
-> -	return 1;
-> +	return true;
->  }
->  
->  static inline int task_in_mem_cgroup(struct task_struct *task,
-> -- 
-> 1.7.7.6
+> with switch to DT
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+It can be every different in hardware details from one pin based
+controller to another.  mxs pinctrl is another pin based IP, and Dong
+tried to approach a binding working good for both imx and mxs, but in
+the end we agree imx binding does not work so good for mxs, and vice
+versa.  And that's why pinctrl core binding design leaves out the
+platform specific binding.
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Regards,
+Shawn
