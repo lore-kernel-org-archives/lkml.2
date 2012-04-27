@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760190Ab2D0NtS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 09:49:18 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:37557 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760118Ab2D0NtQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 09:49:16 -0400
+	id S1760193Ab2D0NyI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 09:54:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27050 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757185Ab2D0NyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 09:54:05 -0400
+Date: Fri, 27 Apr 2012 09:53:21 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org, devel@openvz.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v4 1/3] make jump_labels wait while updates are in place
+Message-ID: <20120427135320.GA13762@redhat.com>
+References: <1335480667-8301-1-git-send-email-glommer@parallels.com>
+ <1335480667-8301-2-git-send-email-glommer@parallels.com>
+ <20120427004305.GC23877@home.goodmis.org>
 MIME-Version: 1.0
-In-Reply-To: <CAPRPZsDDEYUf2a+=ZbwvFw+qJku0UvMLf0+eNDvw+FbinCbysA@mail.gmail.com>
-References: <fa.CZQqvHf3CBfYWzhSDPNOWxTTD9w@ifi.uio.no>
-	<fa.Vmg5vDod2/oKvwyy9BcalhoT+Lo@ifi.uio.no>
-	<14969994.2790.1335342903511.JavaMail.geo-discussion-forums@vbbfr18>
-	<4F97BA60.4080505@ladisch.de>
-	<20120427082203.GB9233@aftab.osrc.amd.com>
-	<CAPRPZsCHAOvemogn7mWnWfykhANeEx5K=OG9Xt+veDjEWOiDYA@mail.gmail.com>
-	<CA+5PVA6e-JaS809t9=4=SoxX4cFEYfxxb9-KAXk68ENGg6Kw8w@mail.gmail.com>
-	<CAPRPZsDDEYUf2a+=ZbwvFw+qJku0UvMLf0+eNDvw+FbinCbysA@mail.gmail.com>
-Date: Fri, 27 Apr 2012 09:49:16 -0400
-Message-ID: <CA+5PVA4NJ4fB-qEVB45sz48E7kCdwZ+O5D9jvk16z4hrXSgCwQ@mail.gmail.com>
-Subject: Re: Unhandled IRQs on AMD E-450
-From: Josh Boyer <jwboyer@gmail.com>
-To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>,
-        Clemens Ladisch <clemens@ladisch.de>, andymatei@gmail.com,
-        "Huang, Shane" <Shane.Huang@amd.com>, Borislav Petkov <bp@amd64.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120427004305.GC23877@home.goodmis.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 9:28 AM, Jeroen Van den Keybus
-<jeroen.vandenkeybus@gmail.com> wrote:
->> Apparently there are
->> some pieces of hardware that generate a small number of spurious IRQs
->> "normally" and lowering the threshold to such a small value caused
->> those machines to kick into polling mode when they really didn't need
->> to.
->
-> Hm. I'd really expect a spurious IRQ to happen as its name suggests:
-> spuriously. What kind of hardware behaves like this ?
+On Thu, Apr 26, 2012 at 08:43:06PM -0400, Steven Rostedt wrote:
+> On Thu, Apr 26, 2012 at 07:51:05PM -0300, Glauber Costa wrote:
+> > In mem cgroup, we need to guarantee that two concurrent updates
+> > of the jump_label interface wait for each other. IOW, we can't have
+> > other updates returning while the first one is still patching the
+> > kernel around, otherwise we'll race.
+> 
+> But it shouldn't. The code as is should prevent that.
+> 
+> > 
+> > I believe this is something that can fit well in the static branch
+> > API, without noticeable disadvantages:
+> > 
+> > * in the common case, it will be a quite simple lock/unlock operation
+> > * Every context that calls static_branch_slow* already expects to be
+> >   in sleeping context because it will mutex_lock the unlikely case.
+> > * static_key_slow_inc is not expected to be called in any fast path,
+> >   otherwise it would be expected to have quite a different name. Therefore
+> >   the mutex + atomic combination instead of just an atomic should not kill
+> >   us.
+> > 
+> > Signed-off-by: Glauber Costa <glommer@parallels.com>
+> > CC: Tejun Heo <tj@kernel.org>
+> > CC: Li Zefan <lizefan@huawei.com>
+> > CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > CC: Johannes Weiner <hannes@cmpxchg.org>
+> > CC: Michal Hocko <mhocko@suse.cz>
+> > CC: Ingo Molnar <mingo@elte.hu>
+> > CC: Jason Baron <jbaron@redhat.com>
+> > ---
+> >  kernel/jump_label.c |   21 +++++++++++----------
+> >  1 files changed, 11 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+> > index 4304919..5d09cb4 100644
+> > --- a/kernel/jump_label.c
+> > +++ b/kernel/jump_label.c
+> > @@ -57,17 +57,16 @@ static void jump_label_update(struct static_key *key, int enable);
+> >  
+> >  void static_key_slow_inc(struct static_key *key)
+> >  {
+> > +	jump_label_lock();
+> >  	if (atomic_inc_not_zero(&key->enabled))
+> > -		return;
+> 
+> If key->enabled is not zero, there's nothing to be done. As the jump
+> label has already been enabled. Note, the key->enabled doesn't get set
+> until after the jump label is updated. Thus, if two tasks were to come
+> in, they both would be locked on the jump_label_lock().
+> 
 
-I'd have to go back and look through all the bug reports.  Essentially,
-it wound up being "this used to work fine, now I get stuck in polling
-mode".  When we dropped the patch in those cases, it went back to
-working fine.
+Right, for x86 which uses stop_machine currently, we guarantee that all
+cpus are going to see the updated code, before the inc of key->enabled.
+However, other arches (sparc, mips, powerpc, for example), seem to be
+using much lighter weight updates, which I hope are ok :)
 
-I'm not sure if it was a matter of a shared IRQ hitting quickly in
-succession, or if it was really small bursts of spurious IRQs.
+Thanks,
 
->> 1) While the quirk helps shield people without the buggy bridge, it
->> doesn't help the case where people have the bridge, but they have no
->> devices actually behind it.  That means such setups hit the polling
->> mode when they don't really need to as described above.
->
-> Curious, the polling mode is left until a new spurious IRQ is detected.
-
-Yes, except the threshold was lowered from 100000 to 10 in the original
-patch.  Apparently that's too low.
-
->> 2) People, rightfully, complain that it makes inter-activity on their
->> desktop pretty laggy.  The mouse pointer jumps around a lot and key
->> strokes are often missed.  For a server class machine, I doubt it
->> would matter much but Fedora is essentially a desktop distro so that
->> tends to be a high priority.
->
-> Again, I am a bit surprised. However, according to your patch:
->
->> +       if (!irq_poll_and_retry)
->> +               if (likely(desc->irq_count < 100000))
->> +                       return;
->> +       else
->> +               if (likely(desc->irq_count < 10))
->> +                       return;
->
-> Don't you mean :
->
-> +       if (!irq_poll_and_retry) {
-> +               if (likely(desc->irq_count < 100000))
-> +                       return;
-> +       }
-> +       else {
-> +               if (likely(desc->irq_count < 10))
-> +                       return;
-> +       }
-
-Indeed.  Probably do.
-
-josh
+-Jason
