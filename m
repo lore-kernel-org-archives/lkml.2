@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760305Ab2D0OtU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 10:49:20 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58837 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758837Ab2D0OtT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 10:49:19 -0400
-Date: Fri, 27 Apr 2012 15:51:43 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Chen, Bo" <Bo.Chen@atmel.com>
-Cc: "alan@linux.intel.com" <alan@linux.intel.com>,
-        "rick@efn.org" <rick@efn.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-arm-kernel@lists.arm.linux.org.uk" 
-	<linux-arm-kernel@lists.arm.linux.org.uk>,
+	id S1760295Ab2D0Oub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 10:50:31 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:22402 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760020Ab2D0Ou3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 10:50:29 -0400
+X-IronPort-AV: E=Sophos;i="4.75,491,1330934400"; 
+   d="scan'208";a="643860505"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Josh Boyer <jwboyer@redhat.com>
+CC: Jim Rees <rees@umich.edu>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Query] serial: AT91:  Add SIM Driver
-Message-ID: <20120427155143.6b9720a3@pyramind.ukuu.org.uk>
-In-Reply-To: <7AD597EA49E297498E79AFA326C986BB0D31A5CE@penmbx02>
-References: <7AD597EA49E297498E79AFA326C986BB0D317277@penmbx01>
-	<20120423115440.5bb1c7eb@pyramind.ukuu.org.uk>
-	<7AD597EA49E297498E79AFA326C986BB0D31A5CE@penmbx02>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] NFSv4: Add modalias for "nfs4"
+Thread-Topic: [PATCH] NFSv4: Add modalias for "nfs4"
+Thread-Index: AQHNJHcmB5tVtvMMXUiGbvC5SkV+epavLeAAgAAINQCAAACBAA==
+Date: Fri, 27 Apr 2012 14:50:28 +0000
+Message-ID: <1335538228.3910.1.camel@lade.trondhjem.org>
+References: <20120427131031.GA13189@zod.bos.redhat.com>
+	 <20120427141918.GA15506@umich.edu>
+	 <20120427144840.GB13189@zod.bos.redhat.com>
+In-Reply-To: <20120427144840.GB13189@zod.bos.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <E63E257AB343AF48BC41454E291160A4@tahoe.netapp.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3REocc7022395
 
-On Fri, 27 Apr 2012 11:19:18 +0000
-"Chen, Bo" <Bo.Chen@atmel.com> wrote:
-
-> Hi Alan,
+On Fri, 2012-04-27 at 10:48 -0400, Josh Boyer wrote:
+> On Fri, Apr 27, 2012 at 10:19:18AM -0400, Jim Rees wrote:
+> > Josh Boyer wrote:
+> > 
+> >   When NFSv4 is configured, the support goes into the nfs.ko module.
+> >   However, nfs-utils seems to pass "nfs4" as the fileststem type for
+> >   NFSv4 mounts.
+> > 
+> > Weren't we going to change that to nfs and use nfsvers to select nfs4?
 > 
-> > One way would be to make ISO7816 a line discipline (the layer which sits about the tty).
-> 
-> >Your user space interface would then be
-> 
-> >	int ldisc = N_ISO7816;
-> >	ioctl(tty_fd, TIOCSETD, &ldisc);
-> 
-> Make ISO7816 a line discipline would register it in driver(atmel_serial.c or a new named driver) via tty_register_ldisc(N_ISO7816, &tty_ldisc_ops)
+> I have, approximately, no idea.  At least the version of nfs-utils found
+> in Fedora 17 and rawhide, it's still using "nfs4".   I believe that is
+> nfs-utils-1.2.6-rc6 based.
 
-Yes
+nfs4 is still _supported_ in Fedora 17, rawhide and upstream as a legacy
+feature, but the recommended practice should be to mount -t nfs -overs=4
+(or -overs=4.1).
 
-> If I use ioctl(tty_fd, TIOCSETD, &ldisc), it will close current line discipline and open a new line discipline related to ISO7816 (tty_register_ldisc(N_ISO7816, &tty_ldisc_ops))?
+Cheers
+  Trond
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Yes
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-> > at which point the read/write/ioctl etc calls on your tty will also be    > routed via your ldisc so you can manage them and provide ISO7816 sensible > interfaces
-> 
-> Does it mean when I call read/write/ioctl in user space, it will call tty_ldisc_ops functions (ISO7816 line discipline has been opened) such as gsmld_read/gsmld_write/gsmld_ioctl in N_gsm.c? What I need to do is to implement the interface in tty_ldisc_ops?
-
-Yes. The read and write methods get called with the user buffer and size
-requested being passed. The ioctl handler is called as well as part of the
-standard tty handlers so that a line discipline can implement its own
-ioctls.
-
-> What is the reasonable way to add this line discipline, in atmel_serial.c or create a new driver (build as a module and dynamically load)? Would it be accepted by kernel mainline?
-
-Probably as a separate driver. That makes it easier to test and to review.
-
-Alan
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
