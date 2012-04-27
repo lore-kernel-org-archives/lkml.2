@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab2D0PWL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:22:11 -0400
+	id S1760641Ab2D0PWW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:22:22 -0400
 Received: from mail-pz0-f51.google.com ([209.85.210.51]:50093 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932115Ab2D0PWI (ORCPT
+	with ESMTP id S1760338Ab2D0PWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:22:08 -0400
+	Fri, 27 Apr 2012 11:22:17 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
@@ -15,9 +15,9 @@ To: Yinghai Lu <yinghai@kernel.org>,
 Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v2 14/19] PCI: fix race windows when shutting down cpcihp controller
-Date: Fri, 27 Apr 2012 23:16:55 +0800
-Message-Id: <1335539820-11232-15-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH v2 15/19] PCI: hold a reference count to the PCI bus used by cpcihp drivers
+Date: Fri, 27 Apr 2012 23:16:56 +0800
+Message-Id: <1335539820-11232-16-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335539820-11232-1-git-send-email-jiang.liu@huawei.com>
 References: <1335539820-11232-1-git-send-email-jiang.liu@huawei.com>
@@ -27,110 +27,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-When cpci_hp_stop() is called to disabled cpcihp controller, it will disable
-interrupt for that controller. But there's small window for event_thread()
-to reenable the interrupt again. So stop the worker thread before disabling
-the interrupt.
-
-If check_slots() returns error, ther working thread (cpci_thread) will exit.
-Later when cpci_stop_thread() or cpci_hp_intr() tries to access cpci_thread,
-it may have already been destroyed. So hold a reference count to cpci_thread
-to avoid invalid memory access.
+The PCI bus used by cpcihp drivers may be removed at runtime through
+/sys/devices/pcissss:bb/ssss\:bb\:dd.f/.../remove interface, so hold
+a reference count to the PCI bus to avoid invalid memory access.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/pci/hotplug/cpci_hotplug_core.c |   27 +++++++++++++++++----------
- 1 files changed, 17 insertions(+), 10 deletions(-)
+ drivers/pci/hotplug/cpcihp_generic.c |    7 +++++--
+ drivers/pci/hotplug/cpcihp_zt5550.c  |    7 +++++--
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pci/hotplug/cpci_hotplug_core.c b/drivers/pci/hotplug/cpci_hotplug_core.c
-index 7898023..68e43c7 100644
---- a/drivers/pci/hotplug/cpci_hotplug_core.c
-+++ b/drivers/pci/hotplug/cpci_hotplug_core.c
-@@ -60,7 +60,6 @@ static atomic_t extracting;
- int cpci_debug;
- static struct cpci_hp_controller *controller;
- static struct task_struct *cpci_thread;
--static int thread_finished;
- 
- static int enable_slot(struct hotplug_slot *slot);
- static int disable_slot(struct hotplug_slot *slot);
-@@ -341,7 +340,8 @@ cpci_hp_intr(int irq, void *data)
- 	controller->ops->disable_irq();
- 
- 	/* Trigger processing by the event thread */
--	wake_up_process(cpci_thread);
-+	if (cpci_thread)
-+		wake_up_process(cpci_thread);
- 	return IRQ_HANDLED;
- }
- 
-@@ -508,7 +508,6 @@ event_thread(void *data)
- 				msleep(500);
- 			} else if (rc < 0) {
- 				dbg("%s - error checking slots", __func__);
--				thread_finished = 1;
- 				goto out;
- 			}
- 		} while (atomic_read(&extracting) && !kthread_should_stop());
-@@ -540,7 +539,6 @@ poll_thread(void *data)
- 					msleep(500);
- 				} else if (rc < 0) {
- 					dbg("%s - error checking slots", __func__);
--					thread_finished = 1;
- 					goto out;
- 				}
- 			} while (atomic_read(&extracting) && !kthread_should_stop());
-@@ -562,15 +560,24 @@ cpci_start_thread(void)
- 		err("Can't start up our thread");
- 		return PTR_ERR(cpci_thread);
+diff --git a/drivers/pci/hotplug/cpcihp_generic.c b/drivers/pci/hotplug/cpcihp_generic.c
+index 518f387..f002be5 100644
+--- a/drivers/pci/hotplug/cpcihp_generic.c
++++ b/drivers/pci/hotplug/cpcihp_generic.c
+@@ -163,7 +163,7 @@ static int __init cpcihp_generic_init(void)
+ 			err("Invalid bridge device %s", bridge);
+ 			bus = NULL;
+ 		} else
+-			bus = dev->subordinate;
++			bus = pci_bus_get(dev->subordinate);
+ 		pci_dev_put(dev);
  	}
--	thread_finished = 0;
-+	get_task_struct(cpci_thread);
-+
- 	return 0;
- }
- 
- static void
- cpci_stop_thread(void)
- {
--	kthread_stop(cpci_thread);
--	thread_finished = 1;
-+	struct task_struct *tp;
-+
-+	if (cpci_thread) {
-+		local_irq_disable();
-+		tp = cpci_thread;
-+		cpci_thread = NULL;
-+		local_irq_enable();
-+		kthread_stop(tp);
-+		put_task_struct(tp);
-+	}
- }
- 
- int
-@@ -627,8 +634,7 @@ cpci_hp_unregister_controller(struct cpci_hp_controller *old_controller)
- 	int status = 0;
- 
- 	if (controller) {
--		if (!thread_finished)
--			cpci_stop_thread();
-+		cpci_stop_thread();
- 		if (controller->irq)
- 			free_irq(controller->irq, controller->dev_id);
- 		controller = NULL;
-@@ -680,12 +686,13 @@ cpci_hp_stop(void)
- {
- 	if (!controller)
- 		return -ENODEV;
-+	cpci_stop_thread();
- 	if (controller->irq) {
- 		/* Stop enum interrupt processing */
- 		dbg("%s - disabling irq", __func__);
- 		controller->ops->disable_irq();
-+		synchronize_irq(controller->irq);
+ 	if (!bus) {
+@@ -179,7 +179,7 @@ static int __init cpcihp_generic_init(void)
+ 	if(status != 0) {
+ 		err("Could not register cPCI hotplug controller");
+ 		status = -ENODEV;
+-		goto init_find_bus_error;
++		goto init_register_controller_error;
  	}
--	cpci_stop_thread();
- 	return 0;
+ 	dbg("registered controller");
+ 
+@@ -202,6 +202,8 @@ init_start_error:
+ 	cpci_hp_unregister_bus(bus);
+ init_bus_register_error:
+ 	cpci_hp_unregister_controller(&generic_hpc);
++init_register_controller_error:
++	pci_bus_put(bus);
+ init_find_bus_error:
+ 	release_region(port, 1);
+ 	err("status = %d", status);
+@@ -214,6 +216,7 @@ static void __exit cpcihp_generic_exit(void)
+ 	cpci_hp_stop();
+ 	cpci_hp_unregister_bus(bus);
+ 	cpci_hp_unregister_controller(&generic_hpc);
++	pci_bus_put(bus);
+ 	release_region(port, 1);
+ }
+ 
+diff --git a/drivers/pci/hotplug/cpcihp_zt5550.c b/drivers/pci/hotplug/cpcihp_zt5550.c
+index 8a6f968..6606520 100644
+--- a/drivers/pci/hotplug/cpcihp_zt5550.c
++++ b/drivers/pci/hotplug/cpcihp_zt5550.c
+@@ -241,9 +241,9 @@ static int zt5550_hc_init_one (struct pci_dev *pdev, const struct pci_device_id
+ 	if(!(bus0_dev = pci_get_device(PCI_VENDOR_ID_DEC,
+ 					 PCI_DEVICE_ID_DEC_21154, NULL))) {
+ 		status = -ENODEV;
+-		goto init_register_error;
++		goto init_find_bus_error;
+ 	}
+-	bus0 = bus0_dev->subordinate;
++	bus0 = pci_bus_get(bus0_dev->subordinate);
+ 	pci_dev_put(bus0_dev);
+ 
+ 	status = cpci_hp_register_bus(bus0, 0x0a, 0x0f);
+@@ -265,6 +265,8 @@ static int zt5550_hc_init_one (struct pci_dev *pdev, const struct pci_device_id
+ init_start_error:
+ 	cpci_hp_unregister_bus(bus0);
+ init_register_error:
++	pci_bus_put(bus0);
++init_find_bus_error:
+ 	cpci_hp_unregister_controller(&zt5550_hpc);
+ init_hc_error:
+ 	err("status = %d", status);
+@@ -278,6 +280,7 @@ static void __devexit zt5550_hc_remove_one(struct pci_dev *pdev)
+ 	cpci_hp_stop();
+ 	cpci_hp_unregister_bus(bus0);
+ 	cpci_hp_unregister_controller(&zt5550_hpc);
++	pci_bus_put(bus0);
+ 	zt5550_hc_cleanup();
  }
  
 -- 
