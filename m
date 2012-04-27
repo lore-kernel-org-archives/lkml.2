@@ -1,90 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759694Ab2D0D0s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Apr 2012 23:26:48 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:32958 "HELO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759673Ab2D0D0r (ORCPT
+	id S1759719Ab2D0D1A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Apr 2012 23:27:00 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:9129
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759700Ab2D0D0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Apr 2012 23:26:47 -0400
-From: Xiaoguang Chen <chenxg@marvell.com>
-To: linux-kernel@vger.kernel.org
-Cc: myungjoo.ham@samsung.com, khilman@ti.com, kyungmin.park@samsung.com,
-        mturquette@ti.com, rjw@sisk.pl, Xiaoguang Chen <chenxg@marvell.com>
-Subject: [PATCH] PM: devfreq: init performance/powersave governor
-Date: Fri, 27 Apr 2012 11:16:59 +0800
-Message-Id: <1335496619-17815-1-git-send-email-chenxg@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-X-OriginalArrivalTime: 27 Apr 2012 03:17:38.0763 (UTC) FILETIME=[4CAFE1B0:01CD2424]
+	Thu, 26 Apr 2012 23:26:53 -0400
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzz8275bh8275dhz2dh2a8h668h839hd24he5bh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng <b29396@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linus.walleij@stericsson.com>,
+        <swarren@wwwdotorg.org>, <s.hauer@pengutronix.de>,
+        <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
+        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <cjb@laptop.org>, <b20223@freescale.com>
+Subject: [PATCH v5 1/1] dt: add of_get_child_count helper function
+Date: Fri, 27 Apr 2012 11:36:20 +0800
+Message-ID: <1335497780-1164-1-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20120427032831.GE26070@shlinux2.ap.freescale.net>
+References: <20120427032831.GE26070@shlinux2.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Performance and powersave governor's get_target_freq
-is not called if driver chooses one of these two governors.
-Add init function in governor profile to call update_devfreq
-which will call get_target_freq subsequently.
+From: Dong Aisheng <dong.aisheng@linaro.org>
 
-Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+Currently most code to get child count in kernel are almost same,
+add a helper to implement this function for dt to use.
+
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+
 ---
- drivers/devfreq/governor_performance.c |    7 +++++++
- drivers/devfreq/governor_powersave.c   |    7 +++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+Rob missed this patch for 3.4 kernel.
+Based on Rob's suggestion, we can get it go in with pinctrl driver.
+Since Rob once had applied it, i added Rob's ack.
+See:
+https://lkml.org/lkml/2012/4/14/239
 
-diff --git a/drivers/devfreq/governor_performance.c b/drivers/devfreq/governor_performance.c
-index 574a06b..af75ddd 100644
---- a/drivers/devfreq/governor_performance.c
-+++ b/drivers/devfreq/governor_performance.c
-@@ -10,6 +10,7 @@
-  */
+changes v4->v5:
+ * do not initialize child node pointer based on Stephen's suggestion.
+
+changes v3->v4:
+ * addressed Grant's suggestion to use for_each_child_of_node.
+
+changes v2->v3:
+ Addressed some people's comments:
+ * do not use assignment as expression
+ * return 0 for non-dt case
+
+Changes v1->v2:
+ * change the name from of_get_child_number to of_get_child_count
+---
+ include/linux/of.h |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/of.h b/include/linux/of.h
+index e3f942d..2ec1083 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -193,6 +193,17 @@ extern struct device_node *of_get_next_child(const struct device_node *node,
+ 	for (child = of_get_next_child(parent, NULL); child != NULL; \
+ 	     child = of_get_next_child(parent, child))
  
- #include <linux/devfreq.h>
-+#include "governor.h"
- 
- static int devfreq_performance_func(struct devfreq *df,
- 				    unsigned long *freq)
-@@ -25,8 +26,14 @@ static int devfreq_performance_func(struct devfreq *df,
- 	return 0;
- }
- 
-+static int performance_init(struct devfreq *devfreq)
++static inline int of_get_child_count(const struct device_node *np)
 +{
-+	return update_devfreq(devfreq);
++	struct device_node *child;
++	int num = 0;
++
++	for_each_child_of_node(np, child)
++		num++;
++
++	return num;
 +}
 +
- const struct devfreq_governor devfreq_performance = {
- 	.name = "performance",
-+	.init = performance_init,
- 	.get_target_freq = devfreq_performance_func,
- 	.no_central_polling = true,
- };
-diff --git a/drivers/devfreq/governor_powersave.c b/drivers/devfreq/governor_powersave.c
-index d742d4a..fec0cdb 100644
---- a/drivers/devfreq/governor_powersave.c
-+++ b/drivers/devfreq/governor_powersave.c
-@@ -10,6 +10,7 @@
-  */
+ extern struct device_node *of_find_node_with_property(
+ 	struct device_node *from, const char *prop_name);
+ #define for_each_node_with_property(dn, prop_name) \
+@@ -300,6 +311,11 @@ static inline bool of_have_populated_dt(void)
+ #define for_each_child_of_node(parent, child) \
+ 	while (0)
  
- #include <linux/devfreq.h>
-+#include "governor.h"
- 
- static int devfreq_powersave_func(struct devfreq *df,
- 				  unsigned long *freq)
-@@ -22,8 +23,14 @@ static int devfreq_powersave_func(struct devfreq *df,
- 	return 0;
- }
- 
-+static int powersave_init(struct devfreq *devfreq)
++static inline int of_get_child_count(const struct device_node *np)
 +{
-+	return update_devfreq(devfreq);
++	return 0;
 +}
 +
- const struct devfreq_governor devfreq_powersave = {
- 	.name = "powersave",
-+	.init = powersave_init,
- 	.get_target_freq = devfreq_powersave_func,
- 	.no_central_polling = true,
- };
+ static inline int of_device_is_compatible(const struct device_node *device,
+ 					  const char *name)
+ {
 -- 
 1.7.0.4
+
 
