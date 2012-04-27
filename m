@@ -1,101 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760209Ab2D0OIW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 10:08:22 -0400
-Received: from relay.parallels.com ([195.214.232.42]:39906 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759972Ab2D0OIU (ORCPT
+	id S1760066Ab2D0OLV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 10:11:21 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:65203 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757350Ab2D0OLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 10:08:20 -0400
-Message-ID: <4F9AA84D.8090604@parallels.com>
-Date: Fri, 27 Apr 2012 18:08:13 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Fri, 27 Apr 2012 10:11:20 -0400
+Date: Fri, 27 Apr 2012 11:11:15 -0300
+From: =?iso-8859-1?B?RnLpZOlyaWMgTC4gVy4=?= Meunier 
+	<fredlwm@fredlwm.net>
+To: linux-kernel@vger.kernel.org
+Subject: Re: What may be causing this kernel panic ?
+Message-ID: <20120427141115.GB1011@pervalidus>
+References: <20120427013225.GA1011@pervalidus>
+ <CAJK5xJRPF1XtXXYtZ_GQONstPrBa_eaeqW=XACSx+giFWBpfnQ@mail.gmail.com>
+ <20120427083456.GB21929@liondog.tnic>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 2/3] SUNRPC: check rpcbind clients usage counter before
- decrement
-References: <20120425132314.13800.6813.stgit@localhost6.localdomain6> <20120425133749.13800.24003.stgit@localhost6.localdomain6> <20120427135507.GE14973@fieldses.org>
-In-Reply-To: <20120427135507.GE14973@fieldses.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120427083456.GB21929@liondog.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.04.2012 17:55, J. Bruce Fields wrote:
-> On Wed, Apr 25, 2012 at 05:37:49PM +0400, Stanislav Kinsbursky wrote:
->> Registering service with svc_bind() can fail. In this case service will be
->> destroyed and during destruction it will try to unregister itself from rpcbind.
->> In this case unregister have to be skipped.
->
-> Isn't this a preexisting bug, in which case perhaps Trond should at it
-> to his list of bugs to submit now?
->
+On Fri, Apr 27, 2012 at 10:34:56AM +0200, Borislav Petkov wrote:
+> On Fri, Apr 27, 2012 at 03:11:11AM -0300, Frédéric L. W. Meunier wrote:
+> > https://sites.google.com/a/fredlwm.net/fredlwm/home/kernelpanic2.png
+> > is more complete and shows something about the keyboard, I guess.
+> 
+> Can you pls attach this second kernelpanic2.jpg to the mail too - the
+> thing above wants a login/pwd.
 
-Not it's not.
-
-Previously, in case of bind operations failure, rpcb_put_local() wasn't called, 
-but service data was destroyed instead:
-
--	if (svc_uses_rpcbind(serv)) {
--		if (svc_rpcb_setup(serv, current->nsproxy->net_ns) < 0) {
--			kfree(serv->sv_pools);
--			kfree(serv);
--			return NULL;
--		}
--		if (!serv->sv_shutdown)
--			serv->sv_shutdown = svc_rpcb_cleanup;
--	}
-
-Now (with svc_bind() introduction) service can be created, but svc_bind() could 
-fail. And thus svc_destroy() have to be called. Which will call rpcb_put_local().
-
-And the problem here that svc_bind() can fail before incrementing of rpcb usage 
-counter.
-
-> --b.
->
->>
->> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>
->> ---
->>   net/sunrpc/rpcb_clnt.c |   12 +++++++-----
->>   1 files changed, 7 insertions(+), 5 deletions(-)
->>
->> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
->> index 78ac39f..4c38b33 100644
->> --- a/net/sunrpc/rpcb_clnt.c
->> +++ b/net/sunrpc/rpcb_clnt.c
->> @@ -180,14 +180,16 @@ void rpcb_put_local(struct net *net)
->>   	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
->>   	struct rpc_clnt *clnt = sn->rpcb_local_clnt;
->>   	struct rpc_clnt *clnt4 = sn->rpcb_local_clnt4;
->> -	int shutdown;
->> +	int shutdown = 0;
->>
->>   	spin_lock(&sn->rpcb_clnt_lock);
->> -	if (--sn->rpcb_users == 0) {
->> -		sn->rpcb_local_clnt = NULL;
->> -		sn->rpcb_local_clnt4 = NULL;
->> +	if (sn->rpcb_users) {
->> +		if (--sn->rpcb_users == 0) {
->> +			sn->rpcb_local_clnt = NULL;
->> +			sn->rpcb_local_clnt4 = NULL;
->> +		}
->> +		shutdown = !sn->rpcb_users;
->>   	}
->> -	shutdown = !sn->rpcb_users;
->>   	spin_unlock(&sn->rpcb_clnt_lock);
->>
->>   	if (shutdown) {
->>
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
+Sorry, I thought it was public. Try 
+http://img826.imageshack.us/img826/198/kernelpanic2.png
