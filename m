@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab2D0Req (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 13:34:46 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58253 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760331Ab2D0Reo (ORCPT
+	id S1760932Ab2D0RfL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 13:35:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47901 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760909Ab2D0RfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 13:34:44 -0400
-Date: Fri, 27 Apr 2012 18:34:18 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
- ima-appraisal patches)
-Message-ID: <20120427173417.GK6871@ZenIV.linux.org.uk>
-References: <1334865448.2429.35.camel@falcor>
- <20120420004303.GB6871@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1204201133340.1450@eggly.anvils>
- <20120420190418.GK6871@ZenIV.linux.org.uk>
- <CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
- <20120420195833.GM6871@ZenIV.linux.org.uk>
- <CA+55aFzaC8YfN_q1TxPbNgpD7AnoAVac2Bqa+ysEji3u7ZQ18A@mail.gmail.com>
- <20120420221315.GN6871@ZenIV.linux.org.uk>
- <CA+55aFzEwsW1kdLo2hpgW2PUCRkyaRxS_KB40iwmuk1FDgV+cg@mail.gmail.com>
- <CALLzPKarZY11htkukZPi+7ny5r=au9hMdKBOy20wAdFjSBOyjA@mail.gmail.com>
+	Fri, 27 Apr 2012 13:35:09 -0400
+Date: Fri, 27 Apr 2012 18:35:06 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Olof Johansson <olof@lixom.net>,
+        balbi@ti.com, Herbert Xu <herbert@gondor.hengli.com.au>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org
+Subject: Re: Default Kconfig state for hw_random drivers
+Message-ID: <20120427173504.GK18260@opensource.wolfsonmicro.com>
+References: <20120426114229.GG3207@opensource.wolfsonmicro.com>
+ <4F9A91A8.4050608@atmel.com>
+ <20120427123626.GH18260@opensource.wolfsonmicro.com>
+ <201204271255.36789.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IA03tywDYuoVKXrw"
 Content-Disposition: inline
-In-Reply-To: <CALLzPKarZY11htkukZPi+7ny5r=au9hMdKBOy20wAdFjSBOyjA@mail.gmail.com>
+In-Reply-To: <201204271255.36789.arnd@arndb.de>
+X-Cookie: You will triumph over your enemy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 10:35:25AM +0300, Kasatkin, Dmitry wrote:
 
-> But have you seen the proposed patch for __fput()?
-> [PATCH v4 10/12] ima: defer calling __fput()
-> 
-> It defers only of course the last AND mmap_sem is locked AND open for write.
-> 
-> 	if (current->mm && rwsem_is_locked(&current->mm->mmap_sem)) {
-> 		if (ima_defer_fput(file) == 0)
-> 			return;
-> 	}
-> 
-> Just 5 out of ~100,000 mmap_sem held fput() calls were deferred.
+--IA03tywDYuoVKXrw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Let me get it straight.
-	a) You still ignore all the problems with that described in the
-posting right in the beginning of this thread.
-	b) You ignore the problems with semantics changes from user-visible
-delays of fput() past the return from syscall (described in Linus' posting
-upthread - they apply to this "solution" as well).
-	c) You seem to consider the fact that this path will be exercised
-very rarely, thus making any races on it damn hard to reproduce and debug
-as a good thing.  
+On Fri, Apr 27, 2012 at 12:55:36PM +0000, Arnd Bergmann wrote:
+> On Friday 27 April 2012, Mark Brown wrote:
 
-And as for the sentiment expressed in the beginning of your posting (that
-smaller patch size is worth more than clean locking rules, maintainability
-of resulting kernel, etc.)...  I'm sorry, but you guys need to decide
-what IMA is.  If it's a first-class part of the kernel, you have your
-priorities backwards...
+> > There is one, that's the problem - the driver is defaulting to the same
+> > state as the main hw_random option (as is idiomatic for this subsystem).
+> > This means that if you've enabled any hw_random device this driver will
+> > be enabled by default.  I would argue that this default directive only
+> > makes sense if there's an explicit dependency limiting the platforms it
+> > can build on.  If it can build on any platform then omitting the default
+> > and just defaulting to N as is normal for drivers would be better.
+
+> How about making it default to (HW_RANDOM && ARCH_AT91) then?
+
+Yes, something like that would do the job too.
+
+--IA03tywDYuoVKXrw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPmti+AAoJEBus8iNuMP3dK8EP/1ulTqpuDuGrwjC3X/3T+qCp
+JsAAxc5PqzMug7guG33ld0S/mero3CvRVi3bbOV+lbIWjs9IaNysm2guFNo2RRwd
+jnZ77c3Bxs7wAtFH36UVsIVjyk+2dxWIhgmnlwKFP6h5m+zDdCMnxdw/PeM0FcSs
+LY+eRprSFUcU0xJ0jj5Vqedaf8hAfe4ihDVnYWBq6QBbUsvLy8rEEiVPfRychsUz
+pdis/n0NlxZ/nFqcM2stkHiVhWPpmB5WOyUy4h1vM/WgWeAwC1tLiQ7EYekKNa+d
+QST/KOz3Jkpuuc72ihhnB3FcyAzhqX+QUwjLrsMUKWJLR3AwsSWJIh6dBE61H1Ph
+0pO0NHMXC1VL5jcucKiY61XdaaguPs3UBDAt/oebHd7H1owrOGs/ISLXexkainC0
+llr4J9/ZL3ssM1cJBaFyCZU4klycRarDiAtE/yiypyrgZnFWOdadjIgz7Z/gpVKG
+LKur1IAF96qroLxGV1pxqHprHPWTcl4mdiE3+7UiUbrKQLFHORQARljxn8mkAvym
+UR517eDgF5Ydq8fxJvHYPC3WfFozajYIJFfGSZRjXmeY+lrkm69AcYkrYLuC7JbK
+bzXV6cUSmEK9YuzYGJMsUDHlsui6wNSjEMNuRlmkVhas63l8tVVkp15iMjfwgchs
+Kz4bua/heSHcE4Cv28H0
+=fXtt
+-----END PGP SIGNATURE-----
+
+--IA03tywDYuoVKXrw--
