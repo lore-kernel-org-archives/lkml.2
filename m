@@ -1,46 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760816Ab2D0RK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 13:10:59 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:39137 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759978Ab2D0RK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 13:10:57 -0400
-Message-ID: <4F9AD31F.8080109@msgid.tls.msk.ru>
-Date: Fri, 27 Apr 2012 21:10:55 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        autofs@vger.kernel.org, raven@themaw.net, thomas@m3y3r.de,
-        stable@kernel.org
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix design
- error.
-References: <1335447289-9909-1-git-send-email-mjt@msgid.tls.msk.ru> <CA+55aFxEP7-+N7vTPZ-4hD-UirZ=+YMJh2x3EjZvUmjjyOchtg@mail.gmail.com> <4F9A6ABA.6050503@msgid.tls.msk.ru> <20120427.122207.795060203454499065.davem@davemloft.net>
-In-Reply-To: <20120427.122207.795060203454499065.davem@davemloft.net>
-X-Enigmail-Version: 1.4
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1760830Ab2D0RLv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 13:11:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65397 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760780Ab2D0RLt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 13:11:49 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] spi/spi-ep93xx.c: use dma_transfer_direction instead of dma_data_direction
+To: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: spi-devel-general@lists.sourceforge.net, vinod.koul@linux.intel.com
+In-Reply-To: <201204171846.37245.hartleys@visionengravers.com>
+References: <201204171846.37245.hartleys@visionengravers.com>
+Date: Fri, 27 Apr 2012 11:11:46 -0600
+Message-Id: <20120427171146.B18373E0B4D@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.04.2012 20:22, David Miller wrote:
-> From: Michael Tokarev <mjt@tls.msk.ru>
-> Date: Fri, 27 Apr 2012 13:45:30 +0400
+On Tue, 17 Apr 2012 18:46:36 -0700, H Hartley Sweeten <hartleys@visionengravers.com> wrote:
+> A new enum indicating the dma channel direction was introduced by:
 > 
->> Please note: the talk is about 32bit userspace on 64bit kernel,
->> which should be quite rare these days, or something of less
->> priority.
+> commit 49920bc66984a512f4bcc7735a61642cd0e4d6f2
+>     dmaengine: add new enum dma_transfer_direction
 > 
-> You're talking about %99 of powerpc and sparc systems.
+> The following commit changed spi-ep93xx to use the new enum:
+> 
+> commit a485df4b4404379786c4bdd258bc528b2617449d
+>     spi, serial: move to dma_transfer_direction
+> 
+> In doing so a sparse warning was introduced: 
+> 
+> warning: mixing different enum types
+>    int enum dma_data_direction  versus
+>    int enum dma_transfer_direction
+> 
+> This is produced because the 'dir' passed in ep93xx_spi_dma_prepare
+> is an enum dma_data_direction and is being used to set the
+> dma_slave_config 'direction' which is now an enum dma_transfer_direction.
+> 
+> Fix this by converting spi-ep93xx to use the new enum type in all
+> places.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Vinod Koul <vinod.koul@linux.intel.com>
 
-Nope.  Only about x86 32 on 64 bits, and only with 3.3 kernel.
-The original problem does not exist on ppc, at least as far as
-I understand.
+Applied, thanks.
 
-/mjt
+g.
 
+> 
+> ---
+> 
+> diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
+> index 6db2887..e805507 100644
+> --- a/drivers/spi/spi-ep93xx.c
+> +++ b/drivers/spi/spi-ep93xx.c
+> @@ -545,13 +545,12 @@ static void ep93xx_spi_pio_transfer(struct ep93xx_spi *espi)
+>   * in case of failure.
+>   */
+>  static struct dma_async_tx_descriptor *
+> -ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+> +ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_transfer_direction dir)
+>  {
+>  	struct spi_transfer *t = espi->current_msg->state;
+>  	struct dma_async_tx_descriptor *txd;
+>  	enum dma_slave_buswidth buswidth;
+>  	struct dma_slave_config conf;
+> -	enum dma_transfer_direction slave_dirn;
+>  	struct scatterlist *sg;
+>  	struct sg_table *sgt;
+>  	struct dma_chan *chan;
+> @@ -567,14 +566,13 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+>  	memset(&conf, 0, sizeof(conf));
+>  	conf.direction = dir;
+>  
+> -	if (dir == DMA_FROM_DEVICE) {
+> +	if (dir == DMA_DEV_TO_MEM) {
+>  		chan = espi->dma_rx;
+>  		buf = t->rx_buf;
+>  		sgt = &espi->rx_sgt;
+>  
+>  		conf.src_addr = espi->sspdr_phys;
+>  		conf.src_addr_width = buswidth;
+> -		slave_dirn = DMA_DEV_TO_MEM;
+>  	} else {
+>  		chan = espi->dma_tx;
+>  		buf = t->tx_buf;
+> @@ -582,7 +580,6 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+>  
+>  		conf.dst_addr = espi->sspdr_phys;
+>  		conf.dst_addr_width = buswidth;
+> -		slave_dirn = DMA_MEM_TO_DEV;
+>  	}
+>  
+>  	ret = dmaengine_slave_config(chan, &conf);
+> @@ -633,8 +630,7 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+>  	if (!nents)
+>  		return ERR_PTR(-ENOMEM);
+>  
+> -	txd = dmaengine_prep_slave_sg(chan, sgt->sgl, nents,
+> -					slave_dirn, DMA_CTRL_ACK);
+> +	txd = dmaengine_prep_slave_sg(chan, sgt->sgl, nents, dir, DMA_CTRL_ACK);
+>  	if (!txd) {
+>  		dma_unmap_sg(chan->device->dev, sgt->sgl, sgt->nents, dir);
+>  		return ERR_PTR(-ENOMEM);
+> @@ -651,12 +647,12 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+>   * unmapped.
+>   */
+>  static void ep93xx_spi_dma_finish(struct ep93xx_spi *espi,
+> -				  enum dma_data_direction dir)
+> +				  enum dma_transfer_direction dir)
+>  {
+>  	struct dma_chan *chan;
+>  	struct sg_table *sgt;
+>  
+> -	if (dir == DMA_FROM_DEVICE) {
+> +	if (dir == DMA_DEV_TO_MEM) {
+>  		chan = espi->dma_rx;
+>  		sgt = &espi->rx_sgt;
+>  	} else {
+> @@ -677,16 +673,16 @@ static void ep93xx_spi_dma_transfer(struct ep93xx_spi *espi)
+>  	struct spi_message *msg = espi->current_msg;
+>  	struct dma_async_tx_descriptor *rxd, *txd;
+>  
+> -	rxd = ep93xx_spi_dma_prepare(espi, DMA_FROM_DEVICE);
+> +	rxd = ep93xx_spi_dma_prepare(espi, DMA_DEV_TO_MEM);
+>  	if (IS_ERR(rxd)) {
+>  		dev_err(&espi->pdev->dev, "DMA RX failed: %ld\n", PTR_ERR(rxd));
+>  		msg->status = PTR_ERR(rxd);
+>  		return;
+>  	}
+>  
+> -	txd = ep93xx_spi_dma_prepare(espi, DMA_TO_DEVICE);
+> +	txd = ep93xx_spi_dma_prepare(espi, DMA_MEM_TO_DEV);
+>  	if (IS_ERR(txd)) {
+> -		ep93xx_spi_dma_finish(espi, DMA_FROM_DEVICE);
+> +		ep93xx_spi_dma_finish(espi, DMA_DEV_TO_MEM);
+>  		dev_err(&espi->pdev->dev, "DMA TX failed: %ld\n", PTR_ERR(rxd));
+>  		msg->status = PTR_ERR(txd);
+>  		return;
+> @@ -705,8 +701,8 @@ static void ep93xx_spi_dma_transfer(struct ep93xx_spi *espi)
+>  
+>  	wait_for_completion(&espi->wait);
+>  
+> -	ep93xx_spi_dma_finish(espi, DMA_TO_DEVICE);
+> -	ep93xx_spi_dma_finish(espi, DMA_FROM_DEVICE);
+> +	ep93xx_spi_dma_finish(espi, DMA_MEM_TO_DEV);
+> +	ep93xx_spi_dma_finish(espi, DMA_DEV_TO_MEM);
+>  }
+>  
+>  /**
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
