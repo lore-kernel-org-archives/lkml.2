@@ -1,86 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759465Ab2D0Ibs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:31:48 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54873 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756649Ab2D0Ibq (ORCPT
+	id S1759666Ab2D0IcI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:32:08 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52380 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755444Ab2D0IcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:31:46 -0400
-Date: Fri, 27 Apr 2012 10:31:42 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Dong Aisheng <aisheng.dong@freescale.com>
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        Zhao Richard-B20223 <B20223@freescale.com>
-Subject: Re: [PATCH v3 4/4] mmc: sdhci-imx-esdhc: convert to use pinctrl
- subsystem
-Message-ID: <20120427083142.GY17184@pengutronix.de>
-References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
- <1335451227-27709-4-git-send-email-b29396@freescale.com>
- <20120427073504.GS17184@pengutronix.de>
- <20120427082930.GC826@shlinux2.ap.freescale.net>
+	Fri, 27 Apr 2012 04:32:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120427082930.GC826@shlinux2.ap.freescale.net>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:21:41 up 166 days, 16:08, 54 users,  load average: 21.93, 12.52,
- 6.20
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Date: Fri, 27 Apr 2012 16:32:05 +0800
+Message-ID: <CANuKeP=zodr8kUzqurjrtWQ2EBAw7cL5Xw=MZVdjsN6KKyfb+Q@mail.gmail.com>
+Subject: What does Linux need to do for supporting LER(intel's live error
+ recovery) ?
+From: Lin-Bao Zhang <2004.zhang@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lin-Bao Zhang <2004.zhang@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 04:29:31PM +0800, Dong Aisheng wrote:
-> mach-imx27ipcam.c          mach-mx31ads.c             mach-mx51_babbage.o        mach-pca100.c
-> mach-imx27lite.c           mach-mx31ads.o             mach-mx51_efikamx.c        mach-pcm037.c
-> 
-> Some of them i'm not familiar and i don't know whether they may use pinctrl
-> so i just patched the affected ones.
-> 
-> One lazy method may be just patch all board files without pinctrl support
-> and it will not cause any error.
-> 
-> What's your suggestion?
-> 
-> > pinctrl. Let's add the provide_dummies call to the SoCs instead which
-> > do not have pinctrl yet.
-> > 
-> You meant add provide_dummies call in imx*_soc_init call?
-> We could do it but there might be a case that some boards are converted
-> to use pinctrl while others still not but they're based on the same soc.
-> For examples, 4 mx53 boards and we may not be able to convert them all at
-> the same time.
+we know Intel has release IV-bridge CPU which has LER feature .
+1, I want to know what linux needs to do for supporting LER feature .
 
-My point is that none of the mx5 boards have pinctrl since there is no
-SoC driver for it.
-For DT based boards pinctrl should be mandatory once the SoC has pinctrl
-support. All non DT boards probably won't get pinctrl anyway.
+2, what's the difference between AER and LER ?
 
-Sascha
+another point: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=a654e5ee4f2213844d23361eda4955fe9efaf35f
+aer_recover_queue() is called when recoverable PCIe AER errors are
+notified by firmware to do the recovery work.
+Signed-off-by: Huang Ying <ying.huang@intel.com
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+this patch claimed that Linux kernel has supported firmware first
+feature and can call correctly original devices' recovery functions .
+my question is that :
+3, if CPU supports LER feature ,we linux kernel will enhance this patch ?
