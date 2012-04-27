@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760443Ab2D0PMj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:12:39 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:59664 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760370Ab2D0PMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:12:38 -0400
-Date: Fri, 27 Apr 2012 17:12:30 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Joe Perches <joe@perches.com>
-Cc: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Tim Small <tim@buttersideup.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Egor Martovetsky <egor@pasemi.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Niklas =?iso-8859-1?Q?S=F6derlund?= 
-	<niklas.soderlund@ericsson.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to work
- with layers
-Message-ID: <20120427151230.GB18798@aftab.osrc.amd.com>
-References: <1335289087-11337-1-git-send-email-mchehab@redhat.com>
- <1335291342-14922-1-git-send-email-mchehab@redhat.com>
- <20120427133304.GE9626@aftab.osrc.amd.com>
- <1335535895.25521.7.camel@joe2Laptop>
+	id S1760433Ab2D0POk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:14:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759972Ab2D0POj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 11:14:39 -0400
+Date: Fri, 27 Apr 2012 11:14:06 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Jim Rees <rees@umich.edu>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFSv4: Add modalias for "nfs4"
+Message-ID: <20120427151406.GD13189@zod.bos.redhat.com>
+References: <20120427131031.GA13189@zod.bos.redhat.com>
+ <20120427141918.GA15506@umich.edu>
+ <20120427144840.GB13189@zod.bos.redhat.com>
+ <1335538228.3910.1.camel@lade.trondhjem.org>
+ <20120427145352.GC13189@zod.bos.redhat.com>
+ <1335538927.3910.3.camel@lade.trondhjem.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1335535895.25521.7.camel@joe2Laptop>
+In-Reply-To: <1335538927.3910.3.camel@lade.trondhjem.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 10:11:35AM -0400, Joe Perches wrote:
-> > > -extern struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
-> > > -					  unsigned nr_chans, int edac_index);
-> > > +struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
-> > > +				   unsigned nr_chans, int edac_index);
+On Fri, Apr 27, 2012 at 03:02:07PM +0000, Myklebust, Trond wrote:
+> On Fri, 2012-04-27 at 10:53 -0400, Josh Boyer wrote:
+> > On Fri, Apr 27, 2012 at 02:50:28PM +0000, Myklebust, Trond wrote:
+> > > On Fri, 2012-04-27 at 10:48 -0400, Josh Boyer wrote:
+> > > > On Fri, Apr 27, 2012 at 10:19:18AM -0400, Jim Rees wrote:
+> > > > > Josh Boyer wrote:
+> > > > > 
+> > > > >   When NFSv4 is configured, the support goes into the nfs.ko module.
+> > > > >   However, nfs-utils seems to pass "nfs4" as the fileststem type for
+> > > > >   NFSv4 mounts.
+> > > > > 
+> > > > > Weren't we going to change that to nfs and use nfsvers to select nfs4?
+> > > > 
+> > > > I have, approximately, no idea.  At least the version of nfs-utils found
+> > > > in Fedora 17 and rawhide, it's still using "nfs4".   I believe that is
+> > > > nfs-utils-1.2.6-rc6 based.
+> > > 
+> > > nfs4 is still _supported_ in Fedora 17, rawhide and upstream as a legacy
+> > > feature, but the recommended practice should be to mount -t nfs -overs=4
+> > > (or -overs=4.1).
 > > 
-> > Why not "extern"?
+> > OK.  So either this patch needs to go in, or something needs to add:
+> > 
+> > alias nfs4 nfs
+> > 
+> > to a conf file so modprobe picks it up.  I figured the kernel could add
+> > the alias itself.  Is there a reason not to?
 > 
-> Using extern function prototypes in .h files
-> isn't generally necessary nor is extern the
-> more common kernel style.
+> Yes. This is a legacy feature that we want to encourage people to move
+> their systems off...
 
-Searching for it, there's this discussion, for example:
-http://gcc.gnu.org/ml/gcc/2009-04/msg00812.html
+So essentially what needs to happen is:
 
-Maybe we should put a small note in Documentation/CodingStyle what the
-kernel preference is and hold people to it.
+- Recent distros still ship the modalias in a conf file
+- Upstream nfs-utils starts translating 'mount -t nfs4' into 'mount -t
+  nfs -overs=4' in /sbin/mount.nfs4
+- Upstream releases that
+- Distros drop the alias.
 
--- 
-Regards/Gruss,
-Boris.
+Right?
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+josh
