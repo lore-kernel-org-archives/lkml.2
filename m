@@ -1,65 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760465Ab2D0PPs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:15:48 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:57540 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760365Ab2D0PPr (ORCPT
+	id S1760318Ab2D0PQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:16:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51878 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759256Ab2D0PQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:15:47 -0400
-Date: Fri, 27 Apr 2012 08:15:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 6/6] rcu: Reduce cache-miss
- initialization latencies for large systems
-Message-ID: <20120427151518.GA2419@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120423164159.GA13819@linux.vnet.ibm.com>
- <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1335199347-13926-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <1335501371.10374.30.camel@marge.simpson.net>
+	Fri, 27 Apr 2012 11:16:51 -0400
+Date: Fri, 27 Apr 2012 12:16:42 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL 0/4] perf/annotate loop detection V2, fixes
+Message-ID: <20120427151642.GB27997@infradead.org>
+References: <1335452777-27326-1-git-send-email-acme@infradead.org>
+ <20120427072153.GB4766@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1335501371.10374.30.camel@marge.simpson.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120427072153.GB4766@gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042715-4242-0000-0000-0000017A8813
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 06:36:11AM +0200, Mike Galbraith wrote:
-> On Mon, 2012-04-23 at 09:42 -0700, Paul E. McKenney wrote: 
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > Commit #0209f649 (rcu: limit rcu_node leaf-level fanout) set an upper
-> > limit of 16 on the leaf-level fanout for the rcu_node tree.  This was
-> > needed to reduce lock contention that was induced by the synchronization
-> > of scheduling-clock interrupts, which was in turn needed to improve
-> > energy efficiency for moderate-sized lightly loaded servers.
-> > 
-> > However, reducing the leaf-level fanout means that there are more
-> > leaf-level rcu_node structures in the tree, which in turn means that
-> > RCU's grace-period initialization incurs more cache misses.  This is
-> > not a problem on moderate-sized servers with only a few tens of CPUs,
+Em Fri, Apr 27, 2012 at 09:21:53AM +0200, Ingo Molnar escreveu:
+> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> > Arnaldo Carvalho de Melo (4):
+> >       perf annotate browser: Handle NULL jump targets
+> >       perf annotate: Disambiguage offsets and addresses in operands
+> >       perf annotate: Mark jump instructions with no offset
+> >       perf annotate browser: Don't draw jump connectors for out of function jumps
+
+> Pulled, thanks a lot Arnaldo!
+
+> Works pretty well here, the segfaults are gone. I think we can 
+> use it as a starting point so I've pulled it into perf/core.
+
+> One thing that we need to fix with this new scheme is the visual 
+> dynamism/unpredictability of the loop drawing:
+
+Yeah, something to experiment, when Linus suggested it he was afraid
+that we would get way too many lines, but Arjan has since requested that
+we have a key to toggle showing all jumps at the same time, so that is
+what I'm going to do.
+
+Then we can check how that goes.
+ 
+> As I move the cursor line up and down the current loop is shown 
+> and it flips in and out of view depending on where I am. In one 
+> way it's a feature (it shows the currently interesting loop) - 
+
+That is why probably we want to get a
+show-me-just-the-current-loop/show-me-all-loops toggle key.
+
+> but in another way that kind of 'active' UI element draws my eye 
+> all the time and it gets tiring and hard to ignore when I'm not 
+> interested in the current loop but look at other elements of the 
+> UI output.
 > 
-> With a distro config (4096 CPUs) interrupt latency is bad even on a
-> quad.  Traversing empty nodes taking locks and cache misses hurts.
+> It would be better to have a stable image of loops that is 
+> static and scrolls up and down with the rest of the image. When 
+> I press 'o' to see the raw disassembly it should probably 
+> disappear completely.
 
-Agreed -- and I will be working on an additional patch that makes RCU
-avoid initializing its data structures for CPUs that don't exist.
+Right, that can be done as well, but perhaps its better to have a 'j'
+key that cycles thru:
 
-That said, increasing the leaf-level fanout from 16 to 64 should reduce
-the latency pain by a factor of four.  In addition, I would expect that
-real-time builds of the kernel would set NR_CPUS to some value much
-smaller than 4096.  ;-)
+. Show me just the current loop
+. Show me all loops
+. No loops please
 
-							Thanx, Paul
+That can be used in both raw and augmented mode.
+ 
+> This would require for us to draw all loops that are 
+> interesting: probably all backwards jumping ones, with some 
+> nesting limit of 5 or so. I think we really need this loop graph 
+> for this UI to have low visual overhead :-/
 
+Well, when first marking the jump targets we'll notice how many loops
+there are, reserve N columns for them, then just have a loop where right
+now we have the current loop arrow drawing code.
+ 
+> Beyond improving visual stability of the output, this would also 
+> obviously be (much) more informative as for reasonably sized 
+> functions it would show all the current loop contexts - which is 
+> very useful when one tries to make sense of a function in 
+> assembly.
+> 
+> Doing that will take up some screen real estate on the left, 
+> because with increasing nesting levels there will be parallel 
+> lines and crossing lines - I did a quick ASCII mockup and I 
+> think it will be fine, as long as we have a hotkey that makes it 
+> easy to show/hide the loop graph.
+
+'j' or 'l', I'll check which one is available
+ 
+> If it's all concentrated within a narrow vertical column it also 
+> does not clutter the output and is easy to ignore when it's not 
+> needed.
+> 
+> How and whether labels should be mixed with this graph output 
+> remains to be seen - my intuition is that the two should be 
+> integrated, like the current code does it.
+> 
+> ( Once we have that done and gather some experience with it can 
+>   we decide whether to show it by default. )
+
+Right, hence all the toggle keys, to experiment with combinations of
+output formats.
+
+> We can also save some screen real estate on the left side of the 
+> screen, the instruction overhead percentage column. Right now 
+> the largest entry possible is:
+> 
+>   100.00 ││        lea    (%rbx,%r12,1),%r14
+> 
+> This could be trimmed by two characters to:
+> 
+>  100.0 ││        lea    (%rbx,%r12,1),%r14
+> 
+> This saves a space before the percent value and reduces the 
+> width of the output - I think 0.1% granularity ought to be 
+> enough in practice. We should also probably hide entries below 
+> 0.1% overhead as if they got no hits at all.
+
+Right, that will be used as well when I implement a suggestin Stephane
+made while in San Francisco: To show multiple overhead columns for
+sessions with multiple events, helping to correlate them.
+
+- Arnaldo
