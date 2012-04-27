@@ -1,87 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759898Ab2D0IqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:46:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34532 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759691Ab2D0IqM (ORCPT
+	id S1759883Ab2D0Irv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:47:51 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50130 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759691Ab2D0Irs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:46:12 -0400
-Date: Fri, 27 Apr 2012 01:45:44 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-ax2sss463eu88wgl9ee8a6b6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate browser: Don'
- t draw jump connectors for out of function jumps
-Git-Commit-ID: 38b31bd0cefbb0e69a182d9a94b09a7e648549dc
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 27 Apr 2012 04:47:48 -0400
+Date: Fri, 27 Apr 2012 10:47:44 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Dong Aisheng <aisheng.dong@freescale.com>
+Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        Zhao Richard-B20223 <B20223@freescale.com>
+Subject: Re: [PATCH v3 4/4] mmc: sdhci-imx-esdhc: convert to use pinctrl
+ subsystem
+Message-ID: <20120427084744.GB17184@pengutronix.de>
+References: <1335451227-27709-1-git-send-email-b29396@freescale.com>
+ <1335451227-27709-4-git-send-email-b29396@freescale.com>
+ <20120427073504.GS17184@pengutronix.de>
+ <20120427082930.GC826@shlinux2.ap.freescale.net>
+ <20120427083142.GY17184@pengutronix.de>
+ <20120427085445.GE826@shlinux2.ap.freescale.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 27 Apr 2012 01:45:50 -0700 (PDT)
+In-Reply-To: <20120427085445.GE826@shlinux2.ap.freescale.net>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:46:52 up 166 days, 16:33, 55 users,  load average: 2.13, 3.95,
+ 4.41
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  38b31bd0cefbb0e69a182d9a94b09a7e648549dc
-Gitweb:     http://git.kernel.org/tip/38b31bd0cefbb0e69a182d9a94b09a7e648549dc
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 25 Apr 2012 14:18:42 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 25 Apr 2012 14:18:42 -0300
+On Fri, Apr 27, 2012 at 04:54:46PM +0800, Dong Aisheng wrote:
+> On Fri, Apr 27, 2012 at 04:31:42PM +0800, Sascha Hauer wrote:
+> > On Fri, Apr 27, 2012 at 04:29:31PM +0800, Dong Aisheng wrote:
+> > > mach-imx27ipcam.c          mach-mx31ads.c             mach-mx51_babbage.o        mach-pca100.c
+> > > mach-imx27lite.c           mach-mx31ads.o             mach-mx51_efikamx.c        mach-pcm037.c
+> > > 
+> > > Some of them i'm not familiar and i don't know whether they may use pinctrl
+> > > so i just patched the affected ones.
+> > > 
+> > > One lazy method may be just patch all board files without pinctrl support
+> > > and it will not cause any error.
+> > > 
+> > > What's your suggestion?
+> > > 
+> > > > pinctrl. Let's add the provide_dummies call to the SoCs instead which
+> > > > do not have pinctrl yet.
+> > > > 
+> > > You meant add provide_dummies call in imx*_soc_init call?
+> > > We could do it but there might be a case that some boards are converted
+> > > to use pinctrl while others still not but they're based on the same soc.
+> > > For examples, 4 mx53 boards and we may not be able to convert them all at
+> > > the same time.
+> > 
+> > My point is that none of the mx5 boards have pinctrl since there is no
+> > SoC driver for it.
+> > For DT based boards pinctrl should be mandatory once the SoC has pinctrl
+> > support. All non DT boards probably won't get pinctrl anyway.
+> > 
+> Ok, so i would be fine for me to change it in imx*_soc_init.
+> BTW, there're:
+> imx1_soc_init()
+> imx25_soc_init()
+> imx27_soc_init()
+> imx31_soc_init()
+> imx35_soc_init()
+> imx50_soc_init()
+> imx51_soc_init()
+> imx53_soc_init()
+> 
+> I'm not sure about mx1, mx27, mx31
+> Do you think if i could add them all?
 
-perf annotate browser: Don't draw jump connectors for out of function jumps
+Of course. Or do you see a pinctrl driver for any i.MX except i.MX6?
 
-As described in the previous patch. Next step is to properly label those
-jumps by using a -> arrow, i.e. not backwards/forwards, and allow the
-user to navigate to this other function when enter or -> is pressed.
+Sascha
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ax2sss463eu88wgl9ee8a6b6@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/browsers/annotate.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 73e1ef0..077380b 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -153,7 +153,8 @@ static void annotate_browser__draw_current_loop(struct ui_browser *browser)
- 	unsigned int from, to, start_width = 2;
- 
- 	list_for_each_entry_from(pos, &notes->src->source, node) {
--		if (!pos->ins || !ins__is_jump(pos->ins))
-+		if (!pos->ins || !ins__is_jump(pos->ins) ||
-+		    !disasm_line__has_offset(pos))
- 			continue;
- 
- 		target = ab->offsets[pos->ops.target.offset];
-@@ -689,7 +690,8 @@ static void annotate_browser__mark_jump_targets(struct annotate_browser *browser
- 		struct disasm_line *dl = browser->offsets[offset], *dlt;
- 		struct browser_disasm_line *bdlt;
- 
--		if (!dl || !dl->ins || !ins__is_jump(dl->ins))
-+		if (!dl || !dl->ins || !ins__is_jump(dl->ins) ||
-+		    !disasm_line__has_offset(dl))
- 			continue;
- 
- 		if (dl->ops.target.offset >= size) {
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
