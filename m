@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab2D0VJn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 17:09:43 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:50898 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab2D0VJk (ORCPT
+	id S1752996Ab2D0VKK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 17:10:10 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:42039 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752812Ab2D0VKA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 17:09:40 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Tejun Heo <tj@kernel.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <87haw55eed.fsf@xmission.com>
-	<Pine.LNX.4.44L0.1204271410470.1690-100000@iolanthe.rowland.org>
-	<20120427201704.GK26595@google.com>
-Date: Fri, 27 Apr 2012 14:09:22 -0700
-In-Reply-To: <20120427201704.GK26595@google.com> (Tejun Heo's message of "Fri,
-	27 Apr 2012 13:17:04 -0700")
-Message-ID: <878vhg3mrh.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 27 Apr 2012 17:10:00 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
+Subject: Re: [RFC][PATCH 8/8] PM / Sleep: Add user space interface for manipulating wakeup sources
+Date: Fri, 27 Apr 2012 23:14:39 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: NeilBrown <neilb@suse.de>, John Stultz <johnstul@us.ibm.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+References: <201202070200.55505.rjw@sisk.pl> <201204270004.27958.rjw@sisk.pl> <CAMP5Xgce6EPfpCaYN+34iuUxLpV9j9LoWYrQ21xcJiANuQ3VpQ@mail.gmail.com>
+In-Reply-To: <CAMP5Xgce6EPfpCaYN+34iuUxLpV9j9LoWYrQ21xcJiANuQ3VpQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+0u4jhAERQoo2oC4giX3MtOU+uN0iXVow=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0018]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Tejun Heo <tj@kernel.org>
-X-Spam-Relay-Country: **
-Subject: Re: Lockdep false positive in sysfs
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201204272314.39715.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+On Friday, April 27, 2012, Arve Hjønnevåg wrote:
+> 2012/4/26 Rafael J. Wysocki <rjw@sisk.pl>:
+> ...
+> > ---
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Subject: PM / Sleep: Add user space interface for manipulating wakeup sources, v3
+> >
+> > Android allows user space to manipulate wakelocks using two
+> > sysfs file located in /sys/power/, wake_lock and wake_unlock.
+> > Writing a wakelock name and optionally a timeout to the wake_lock
+> > file causes the wakelock whose name was written to be acquired (it
+> > is created before is necessary), optionally with the given timeout.
+> > Writing the name of a wakelock to wake_unlock causes that wakelock
+> > to be released.
+> >
+> > Implement an analogous interface for user space using wakeup sources.
+> > Add the /sys/power/wake_lock and /sys/power/wake_unlock files
+> > allowing user space to create, activate and deactivate wakeup
+> > sources, such that writing a name and optionally a timeout to
+> > wake_lock causes the wakeup source of that name to be activated,
+> > optionally with the given timeout.  If that wakeup source doesn't
+> > exist, it will be created and then activated.  Writing a name to
+> > wake_unlock causes the wakeup source of that name, if there is one,
+> > to be deactivated.  Wakeup sources created with the help of
+> > wake_lock that haven't been used for more than 5 minutes are garbage
+> > collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
+> 
+> I think it would be better if the garbage collection and limit was
+> configurable and optional. I would probably turn both features off
+> since I do not want to chase down bugs because a wakelock was ignored,
+> and I think the garbage collection will erase stats that we care
+> about.
 
-> On Fri, Apr 27, 2012 at 02:27:26PM -0400, Alan Stern wrote:
->> Which do you prefer: temporarily dropping the lockdep annotation, or
->> deferring the work to the per-task work queue?  Note that these "flush
->> before returning to userspace" things aren't in the kernel yet.
->
-> It's about lockdep.  Let's not spill out to other areas unnecessarily.
-> I'd much prefer just working around lockdep annotation.
+OK, but would you mind if I added the configurability as a separate incremental
+patch?
 
-It is also about a locking scheme that makes analysis hard.
-
-Doing something so we don't have false lockdep warnings is good
-so people can concentrate on things that are clearly problems.
-
-However it would be nice if we could sort out the locking so that it
-isn't so tricky that neither lockdep nor sparse can figure it out.
-
-I have the sneaking suspicion that idioms that tangle up our automatic
-tools are also idioms that are likely to result in maintenance problems
-at some point.
-
-Another possibility to to look at the situation and realize that pci has
-a maxium depth of 256 (bus numbers). And that usb also has a maxium
-depth of I believe 256 ( If I read it right usb hubs are transparent to
-usb enumeration so the maximum depth is the maximum number of usb ids
-and I think the usb id is a 8 bit number).  I don't think anything else
-even nests so deeply.  So it may be reasonable to declare an array of
-256 or perhaps 1024 lockdep keys and limit the device tree when lockdep
-is enabled to 1024 layers deep.
-
-At which point we are at a point where lockdep can actually analyze the
-behavior.
-
-I don't mind the attitude we are clever careful programmers we can
-handle the complexity and we can get away without the tool help us, but
-I would much rather see the attitude that we are clever careful
-programmers and we can figure out how to make the tool help us instead
-of just ignoring it.
-
-Eric
+Rafael
