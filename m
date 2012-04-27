@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760923Ab2D0R3Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 13:29:24 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43956 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760326Ab2D0R3X (ORCPT
+	id S932300Ab2D0Req (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 13:34:46 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58253 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760331Ab2D0Reo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 13:29:23 -0400
-Date: Fri, 27 Apr 2012 13:28:50 -0400 (EDT)
-Message-Id: <20120427.132850.1570993918539888078.davem@davemloft.net>
-To: mjt@tls.msk.ru
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        autofs@vger.kernel.org, raven@themaw.net, thomas@m3y3r.de,
-        stable@kernel.org
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
- design error.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F9AD31F.8080109@msgid.tls.msk.ru>
-References: <4F9A6ABA.6050503@msgid.tls.msk.ru>
-	<20120427.122207.795060203454499065.davem@davemloft.net>
-	<4F9AD31F.8080109@msgid.tls.msk.ru>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 27 Apr 2012 10:28:54 -0700 (PDT)
+	Fri, 27 Apr 2012 13:34:44 -0400
+Date: Fri, 27 Apr 2012 18:34:18 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-fsdevel@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
+ ima-appraisal patches)
+Message-ID: <20120427173417.GK6871@ZenIV.linux.org.uk>
+References: <1334865448.2429.35.camel@falcor>
+ <20120420004303.GB6871@ZenIV.linux.org.uk>
+ <alpine.LSU.2.00.1204201133340.1450@eggly.anvils>
+ <20120420190418.GK6871@ZenIV.linux.org.uk>
+ <CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
+ <20120420195833.GM6871@ZenIV.linux.org.uk>
+ <CA+55aFzaC8YfN_q1TxPbNgpD7AnoAVac2Bqa+ysEji3u7ZQ18A@mail.gmail.com>
+ <20120420221315.GN6871@ZenIV.linux.org.uk>
+ <CA+55aFzEwsW1kdLo2hpgW2PUCRkyaRxS_KB40iwmuk1FDgV+cg@mail.gmail.com>
+ <CALLzPKarZY11htkukZPi+7ny5r=au9hMdKBOy20wAdFjSBOyjA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALLzPKarZY11htkukZPi+7ny5r=au9hMdKBOy20wAdFjSBOyjA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Tokarev <mjt@tls.msk.ru>
-Date: Fri, 27 Apr 2012 21:10:55 +0400
+On Fri, Apr 27, 2012 at 10:35:25AM +0300, Kasatkin, Dmitry wrote:
 
-> On 27.04.2012 20:22, David Miller wrote:
->> From: Michael Tokarev <mjt@tls.msk.ru>
->> Date: Fri, 27 Apr 2012 13:45:30 +0400
->> 
->>> Please note: the talk is about 32bit userspace on 64bit kernel,
->>> which should be quite rare these days, or something of less
->>> priority.
->> 
->> You're talking about %99 of powerpc and sparc systems.
+> But have you seen the proposed patch for __fput()?
+> [PATCH v4 10/12] ima: defer calling __fput()
 > 
-> Nope.  Only about x86 32 on 64 bits, and only with 3.3 kernel.
-> The original problem does not exist on ppc, at least as far as
-> I understand.
+> It defers only of course the last AND mmap_sem is locked AND open for write.
+> 
+> 	if (current->mm && rwsem_is_locked(&current->mm->mmap_sem)) {
+> 		if (ima_defer_fput(file) == 0)
+> 			return;
+> 	}
+> 
+> Just 5 out of ~100,000 mmap_sem held fput() calls were deferred.
 
-I was making a general point about 32-bit userspace on a 64-bit
-kernel, but yes for this specific bug the issue doesn't exist.
+Let me get it straight.
+	a) You still ignore all the problems with that described in the
+posting right in the beginning of this thread.
+	b) You ignore the problems with semantics changes from user-visible
+delays of fput() past the return from syscall (described in Linus' posting
+upthread - they apply to this "solution" as well).
+	c) You seem to consider the fact that this path will be exercised
+very rarely, thus making any races on it damn hard to reproduce and debug
+as a good thing.  
+
+And as for the sentiment expressed in the beginning of your posting (that
+smaller patch size is worth more than clean locking rules, maintainability
+of resulting kernel, etc.)...  I'm sorry, but you guys need to decide
+what IMA is.  If it's a first-class part of the kernel, you have your
+priorities backwards...
