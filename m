@@ -1,97 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab2D0VMv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 17:12:51 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34390 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab2D0VMt (ORCPT
+	id S1753461Ab2D0VNB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 17:13:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57980 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606Ab2D0VM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 17:12:49 -0400
-Date: Fri, 27 Apr 2012 22:12:44 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Roland McGrath <roland@hack.frob.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120427211244.GO6871@ZenIV.linux.org.uk>
-References: <20120420164239.GH6871@ZenIV.linux.org.uk>
- <CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com>
- <20120420180748.GI6871@ZenIV.linux.org.uk>
- <20120423180150.GA6871@ZenIV.linux.org.uk>
- <20120424072617.GB6871@ZenIV.linux.org.uk>
- <20120426183742.GA324@redhat.com>
- <20120426231942.GJ6871@ZenIV.linux.org.uk>
- <20120427172444.GA30267@redhat.com>
- <20120427184528.GL6871@ZenIV.linux.org.uk>
- <20120427202002.8ED632C0BF@topped-with-meat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120427202002.8ED632C0BF@topped-with-meat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Apr 2012 17:12:59 -0400
+Date: Fri, 27 Apr 2012 14:12:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sameer Nanda <snanda@chromium.org>
+Cc: mingo@redhat.com, peterz@infradead.org, len.brown@intel.com, pavel@ucw.cz,
+        rjw@sisk.pl, dzickus@redhat.com, msb@chromium.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        olofj@chromium.org
+Subject: Re: [PATCH] watchdog: fix for lockup detector breakage on resume
+Message-Id: <20120427141257.c90f43e0.akpm@linux-foundation.org>
+In-Reply-To: <1335550240-17765-1-git-send-email-snanda@chromium.org>
+References: <1335550240-17765-1-git-send-email-snanda@chromium.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 01:20:02PM -0700, Roland McGrath wrote:
+On Fri, 27 Apr 2012 11:10:40 -0700
+Sameer Nanda <snanda@chromium.org> wrote:
 
-> But I will say that the intent of tracehook_signal_handler has always
-> been what its kerneldoc says: Call it once when handler setup is
-> complete (exactly once per signal delivery, so potentially multiple
-> times before actually returning to user mode).  Though it is indeed a
-> no-op today when stepping==0, we want its use to continue to conform
-> to that exact definition so that one day we could add e.g. a
-> PTRACE_EVENT_SIGNAL_HANDLED feature just by hacking tracehook.h and
-> not have to go back into every arch's signal code and recover
-> understanding of how the call is being used.  (It was more than enough
-> work to do that once when I broke out and documented the tracehook.h
-> interfaces the first time.)  You know, as if we thought modularity
-> were a useful notion.
+> On the suspend/resume path the boot CPU does not go though an
+> offline->online transition.  This breaks the NMI detector
+> post-resume since it depends on PMU state that is lost when
+> the system gets suspended.
+> 
+> Fix this by forcing a CPU offline->online transition for the
+> lockup detector on the boot CPU during resume.
+> 
+> Signed-off-by: Sameer Nanda <snanda@chromium.org>
+> ---
+> To provide more context, we enable NMI watchdog on
+> Chrome OS.  We have seen several reports of systems freezing
+> up completely which indicated that the NMI watchdog was not
+> firing for some reason.
+> 
+> Debugging further, we found a simple way of repro'ing system
+> freezes -- issuing the command 'tasket 1 sh -c "echo nmilockup > /proc/breakme"'
+> after the system has been suspended/resumed one or more times.
+> 
+> With this patch in place, the system freeze result in panics,
+> as expected.  These panics provide a nice stack trace for us
+> to debug the actual issue causing the freeze.
+> 
+> ...
+>
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -317,6 +317,7 @@ extern int proc_dowatchdog_thresh(struct ctl_table *table, int write,
+>  				  size_t *lenp, loff_t *ppos);
+>  extern unsigned int  softlockup_panic;
+>  void lockup_detector_init(void);
+> +void lockup_detector_bootcpu_resume(void);
+>  #else
+>  static inline void touch_softlockup_watchdog(void)
+>  {
+> @@ -330,6 +331,9 @@ static inline void touch_all_softlockup_watchdogs(void)
+>  static inline void lockup_detector_init(void)
+>  {
+>  }
+> +static inline void lockup_detector_bootcpu_resume(void)
+> +{
+> +}
+>  #endif
+>  
+>  #ifdef CONFIG_DETECT_HUNG_TASK
+> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> index 396d262..0d262a8 100644
+> --- a/kernel/power/suspend.c
+> +++ b/kernel/power/suspend.c
+> @@ -177,6 +177,9 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
+>  	arch_suspend_enable_irqs();
+>  	BUG_ON(irqs_disabled());
+>  
+> +	/* Kick the lockup detector */
+> +	lockup_detector_bootcpu_resume();
+> +
+>   Enable_cpus:
+>  	enable_nonboot_cpus();
+>  
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index df30ee0..dd2ac93 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -585,6 +585,22 @@ static struct notifier_block __cpuinitdata cpu_nfb = {
+>  	.notifier_call = cpu_callback
+>  };
+>  
+> +void lockup_detector_bootcpu_resume(void)
+> +{
+> +	void *cpu = (void *)(long)smp_processor_id();
+> +
+> +	/*
+> +	 * On the suspend/resume path the boot CPU does not go though the
+> +	 * offline->online transition. This breaks the NMI detector post
+> +	 * resume. Force an offline->online transition for the boot CPU on
+> +	 * resume.
+> +	 */
+> +	cpu_callback(&cpu_nfb, CPU_DEAD, cpu);
+> +	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
+> +
+> +	return;
+> +}
 
-OK...  FWIW, it sounds like an argument for using it (or a function in
-kernel/signal.c that would call it) on all architectures.
+I have issues with the comment ;) It describes some old bug which isn't
+there any more and which nobody cares about.  A better comment would
+simply describe the function in the usual fashion.  Something like
+this:
 
-Note that there's an extra complication on alpha and itanic - we have more
-than just struct pt_regs * there.  If we care about the rest of registers
-(struct switch_stack on alpha), we probably need to do something about that.
-Hell knows...  On alpha, in particular, we always get switch_stack argument
-of do_notify_resume() et.al. at the constant offset below pt_regs one -
-        mov     $sp, $16
-        bsr     $1, do_switch_stack
-        mov     $sp, $17
-is how it's done.  So there we could switch to use of container_of().  On
-ia64 we have struct sigscratch with pt_regs embedded into it, so there
-container_of() is also reasonable.  I wonder how alpha and itanic deal
-with do_coredump(), BTW - it gets pt_regs, but not the rest...
+--- a/kernel/watchdog.c~nmi-watchdog-fix-for-lockup-detector-breakage-on-resume-fix
++++ a/kernel/watchdog.c
+@@ -597,20 +597,17 @@ static struct notifier_block __cpuinitda
+ 	.notifier_call = cpu_callback
+ };
+ 
++/*
++ * On entry to suspend we force an offline->online transition on the boot CPU so
++ * that PMU state is available to that CPU when it comes back online after
++ * resume.  This information is required for restarting the NMI watchdog.
++ */
+ void lockup_detector_bootcpu_resume(void)
+ {
+ 	void *cpu = (void *)(long)smp_processor_id();
+ 
+-	/*
+-	 * On the suspend/resume path the boot CPU does not go though the
+-	 * offline->online transition. This breaks the NMI detector post
+-	 * resume. Force an offline->online transition for the boot CPU on
+-	 * resume.
+-	 */
+ 	cpu_callback(&cpu_nfb, CPU_DEAD, cpu);
+ 	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
+-
+-	return;
+ }
+ 
+ void __init lockup_detector_init(void)
+_
 
-Another fun story: x86 and mips has do_notify_resume() with void *unused as
-its second argument.  It used to be sigset_t *oldset and it remains unused
-since 2006 or so.  Three years later arch/score went in - with the same
-void *unused as the second argument of do_notify_resume().  Gotta love the
-cargo-cult programming...
 
-BTW, what's the story with 'cookie' argument of get_signal_to_deliver()?
-Everything passes NULL in it and nothing actually looks at the value
-passed (it's passed further without being looked at, until it reaches
-ptrace_signal_deliver(), which ignores it completely on all architectures).
-AFAICS, it's a rudiment of something that was used only on sparc and got
-discarded as hopeless in commit 28e6103665301ce60634e8a77f0b657c6cc099de
-Author: David S. Miller <davem@davemloft.net>
-Date:   Sun May 11 02:07:19 2008 -0700
-    sparc: Fix debugger syscall restart interactions.
-Is there anything else to it?  If not, I'd rather get rid of that thing...
-Frankly, I'm somewhat tempted to add something like
-struct k_sigcontext {
-	int sig;
-	siginfo_t info;
-	struct k_sigaction ka;
-}; and turn get_signal_to_deliver into
-bool get_signal_to_deliver(struct k_sigcontext *ctx, struct pt_regs *regs),
-with ctx passed through handle_signal/setup_frame/tracehook_signal_deliver
-instead of the same triple shoved into three arguments, in more or less
-random order as it's done now.  Perhaps let tracehook_signal_deliver() keep
-its type and semantics and introduce
-void signal_delivered(struct k_sigcontext *, struct pt_regs *, int stepping)
-that would be called by all handle_signal() after successful frame setup
-and would call tracehook_... itself, after having done block_sigmask()...
+But I'm not sure how accurate it is.  Is it true that the PMU data was
+required for starting the NMI hardware?
+
+
+Also, this is all dead code if CONFIG_SUSPEND=n, so how about
+
+--- a/include/linux/sched.h~nmi-watchdog-fix-for-lockup-detector-breakage-on-resume-fix-fix
++++ a/include/linux/sched.h
+@@ -317,7 +317,6 @@ extern int proc_dowatchdog_thresh(struct
+ 				  size_t *lenp, loff_t *ppos);
+ extern unsigned int  softlockup_panic;
+ void lockup_detector_init(void);
+-void lockup_detector_bootcpu_resume(void);
+ #else
+ static inline void touch_softlockup_watchdog(void)
+ {
+@@ -331,6 +330,11 @@ static inline void touch_all_softlockup_
+ static inline void lockup_detector_init(void)
+ {
+ }
++#endif
++
++#if defined(CONFIG_LOCKUP_DETECTOR) && defined(CONFIG_SUSPEND)
++void lockup_detector_bootcpu_resume(void);
++#else
+ static inline void lockup_detector_bootcpu_resume(void)
+ {
+ }
+--- a/kernel/watchdog.c~nmi-watchdog-fix-for-lockup-detector-breakage-on-resume-fix-fix
++++ a/kernel/watchdog.c
+@@ -597,6 +597,7 @@ static struct notifier_block __cpuinitda
+ 	.notifier_call = cpu_callback
+ };
+ 
++#ifdef CONFIG_SUSPEND
+ /*
+  * On entry to suspend we force an offline->online transition on the boot CPU so
+  * that PMU state is available to that CPU when it comes back online after
+@@ -609,6 +610,7 @@ void lockup_detector_bootcpu_resume(void
+ 	cpu_callback(&cpu_nfb, CPU_DEAD, cpu);
+ 	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
+ }
++#endif
+ 
+ void __init lockup_detector_init(void)
+ {
+_
+
