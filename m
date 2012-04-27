@@ -1,126 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab2D0WyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 18:54:12 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:54758 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385Ab2D0WyL (ORCPT
+	id S1756769Ab2D0Wyp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 18:54:45 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59310 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756562Ab2D0Wyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 18:54:11 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-132.messagelabs.com!1335567249!9926672!3
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor pcm3724 driver to remove forward declarations
-Date: Fri, 27 Apr 2012 15:54:00 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Fri, 27 Apr 2012 18:54:43 -0400
+Date: Fri, 27 Apr 2012 17:54:38 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [ 54/62] nfsd: fix error values returned by nfsd4_lockt() when
+ nfsd_open() fails
+Message-ID: <20120427225438.GG2821@burratino>
+References: <20120424223305.GA7748@kroah.com>
+ <20120424223246.607005556@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201204271554.01382.hartleys@visionengravers.com>
+In-Reply-To: <20120424223246.607005556@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the module_init/module_exit routines and the associated
-struct comedi_driver and other variables to the end of the source.
-This is more typical of how other drivers are written and removes
-the need for the forward declarations.
+Greg KH wrote:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 3.3-stable review patch.
+[...]
+> commit 04da6e9d63427b2d0fd04766712200c250b3278f upstream.
+>
+> nfsd_open() already returns an NFS error value; only vfs_test_lock()
+> result needs to be fed through nfserrno().  Broken by commit 55ef12
+> (nfsd: Ensure nfsv4 calls the underlying filesystem on LOCKT)
+> three years ago...
 
+The regression was introduced in v2.6.29-rc1~177^2~14, so presumably
+2.6.32.y and 3.0.y need this.  Here's a blind backport to 3.0.y ---
+the only conflict encountered is of the unrelated-changes-on-adjacent-
+lines kind, against
+
+  v3.2-rc1~80^2~63 nfsd4: eliminate unused lt_stateowner
+  v3.2-rc1~80^2~58 nfsd4: split stateowners into open and lockowners
+
+Untested, so thoughts and testing would be welcome as usual.
+
+-- >8 --
+From: Al Viro <viro@zeniv.linux.org.uk>
+Date: Fri, 13 Apr 2012 00:00:04 -0400
+
+commit 04da6e9d63427b2d0fd04766712200c250b3278f upstream.
+
+nfsd_open() already returns an NFS error value; only vfs_test_lock()
+result needs to be fed through nfserrno().  Broken by commit 55ef12
+(nfsd: Ensure nfsv4 calls the underlying filesystem on LOCKT)
+three years ago...
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 ---
+Thanks,
+Jonathan
 
-diff --git a/drivers/staging/comedi/drivers/pcm3724.c b/drivers/staging/comedi/drivers/pcm3724.c
-index 4601703..88a354b 100644
---- a/drivers/staging/comedi/drivers/pcm3724.c
-+++ b/drivers/staging/comedi/drivers/pcm3724.c
-@@ -62,10 +62,6 @@ Copy/pasted/hacked from pcm724.c
- #define CR_A_MODE(a)	((a)<<5)
- #define CR_CW		0x80
- 
--static int pcm3724_attach(struct comedi_device *dev,
--			  struct comedi_devconfig *it);
--static int pcm3724_detach(struct comedi_device *dev);
+ fs/nfsd/nfs4state.c |   23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
+
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index ecd8152965ee..92f7eb7c5863 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3956,16 +3956,14 @@ out:
+  * vfs_test_lock.  (Arguably perhaps test_lock should be done with an
+  * inode operation.)
+  */
+-static int nfsd_test_lock(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file_lock *lock)
++static __be32 nfsd_test_lock(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file_lock *lock)
+ {
+ 	struct file *file;
+-	int err;
 -
- struct pcm3724_board {
- 	const char *name;	/*  driver name */
- 	int dio;		/*  num of DIO */
-@@ -80,35 +76,8 @@ struct priv_pcm3724 {
- 	int dio_2;
- };
- 
--static const struct pcm3724_board boardtypes[] = {
--	{"pcm3724", 48, 2, 0x00fc, PCM3724_SIZE,},
--};
--
- #define this_board ((const struct pcm3724_board *)dev->board_ptr)
- 
--static struct comedi_driver driver_pcm3724 = {
--	.driver_name = "pcm3724",
--	.module = THIS_MODULE,
--	.attach = pcm3724_attach,
--	.detach = pcm3724_detach,
--	.board_name = &boardtypes[0].name,
--	.num_names = ARRAY_SIZE(boardtypes),
--	.offset = sizeof(struct pcm3724_board),
--};
--
--static int __init driver_pcm3724_init_module(void)
--{
--	return comedi_driver_register(&driver_pcm3724);
--}
--
--static void __exit driver_pcm3724_cleanup_module(void)
--{
--	comedi_driver_unregister(&driver_pcm3724);
--}
--
--module_init(driver_pcm3724_init_module);
--module_exit(driver_pcm3724_cleanup_module);
--
- /* (setq c-basic-offset 8) */
- 
- static int subdev_8255_cb(int dir, int port, int data, unsigned long arg)
-@@ -318,6 +287,32 @@ static int pcm3724_detach(struct comedi_device *dev)
- 	return 0;
+-	err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_READ, &file);
+-	if (err)
+-		return err;
+-	err = vfs_test_lock(file, lock);
+-	nfsd_close(file);
++	__be32 err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_READ, &file);
++	if (!err) {
++		err = nfserrno(vfs_test_lock(file, lock));
++		nfsd_close(file);
++	}
+ 	return err;
  }
  
-+static const struct pcm3724_board boardtypes[] = {
-+	{ "pcm3724", 48, 2, 0x00fc, PCM3724_SIZE, },
-+};
+@@ -3978,7 +3976,6 @@ nfsd4_lockt(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ {
+ 	struct inode *inode;
+ 	struct file_lock file_lock;
+-	int error;
+ 	__be32 status;
+ 
+ 	if (locks_in_grace())
+@@ -4030,12 +4027,10 @@ nfsd4_lockt(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 
+ 	nfs4_transform_lock_offset(&file_lock);
+ 
+-	status = nfs_ok;
+-	error = nfsd_test_lock(rqstp, &cstate->current_fh, &file_lock);
+-	if (error) {
+-		status = nfserrno(error);
++	status = nfsd_test_lock(rqstp, &cstate->current_fh, &file_lock);
++	if (status)
+ 		goto out;
+-	}
 +
-+static struct comedi_driver driver_pcm3724 = {
-+	.driver_name	= "pcm3724",
-+	.module		= THIS_MODULE,
-+	.attach		= pcm3724_attach,
-+	.detach		= pcm3724_detach,
-+	.board_name	= &boardtypes[0].name,
-+	.num_names	= ARRAY_SIZE(boardtypes),
-+	.offset		= sizeof(struct pcm3724_board),
-+};
-+
-+static int __init driver_pcm3724_init_module(void)
-+{
-+	return comedi_driver_register(&driver_pcm3724);
-+}
-+module_init(driver_pcm3724_init_module);
-+
-+static void __exit driver_pcm3724_cleanup_module(void)
-+{
-+	comedi_driver_unregister(&driver_pcm3724);
-+}
-+module_exit(driver_pcm3724_cleanup_module);
-+
- MODULE_AUTHOR("Comedi http://www.comedi.org");
- MODULE_DESCRIPTION("Comedi low-level driver");
- MODULE_LICENSE("GPL");
+ 	if (file_lock.fl_type != F_UNLCK) {
+ 		status = nfserr_denied;
+ 		nfs4_set_lock_denied(&file_lock, &lockt->lt_denied);
+-- 
+1.7.10
+
