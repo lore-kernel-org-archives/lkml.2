@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759575Ab2D0QKC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 12:10:02 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:2472
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758889Ab2D0QKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 12:10:00 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M35BKH-02-8OB-02
-X-M-MSG: 
-Date: Fri, 27 Apr 2012 18:09:22 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS for
- AMD CPUs
-Message-ID: <20120427160922.GI18810@erda.amd.com>
-References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
- <1333390758-10893-7-git-send-email-robert.richter@amd.com>
- <1334398906.2528.49.camel@twins>
- <20120423095659.GS9747@erda.amd.com>
- <20120427123434.GF18810@erda.amd.com>
- <CABPqkBS9FNmHBukzJqGJP1r5iqyLL9gz2g=3jvnt22pDxOdndA@mail.gmail.com>
- <20120427125410.GG18810@erda.amd.com>
- <1335540633.2463.133.camel@laptop>
+	id S1759126Ab2D0QP4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 12:15:56 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:49036 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755535Ab2D0QPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 12:15:55 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 1/2] asm-generic: io: remove {read,write} string functions
+Date: Fri, 27 Apr 2012 12:17:47 -0400
+User-Agent: KMail/1.13.7 (Linux/3.4.0-rc1; KDE/4.6.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
+        Arnd Bergmann <arnd@arndb.de>
+References: <1335523376-14695-1-git-send-email-will.deacon@arm.com>
+In-Reply-To: <1335523376-14695-1-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1335540633.2463.133.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: multipart/signed;
+  boundary="nextPart43101981.vTPyFn72dx";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204271217.50048.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.04.12 17:30:33, Peter Zijlstra wrote:
-> On Fri, 2012-04-27 at 14:54 +0200, Robert Richter wrote:
-> > My suggestions was to use level 1 for all samples and level 2 for
-> > samples that only contain a precise rip, saving level 3 for future
-> > use. 
-> 
-> No.
+--nextPart43101981.vTPyFn72dx
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Ok, will look how to handle this in userspace.
+On Friday 27 April 2012 06:42:55 Will Deacon wrote:
+> The {read,write}s{b,w,l} functions are not defined across all
+> architectures and therefore shouldn't be used by portable drivers. We
+> should encourage driver writers to use the io{read,write}{8,16,32}_rep
+> functions instead.
 
-But do you agree to have level 1 and 2 mapped to ibs, not just only
-level 2 (since I don't want to fail with r076:p)?
+well, that isn't true today as a grep of the drivers/ tree shows.  perhaps =
+we=20
+should fix that first ?  quite a number of architectures do implement these.
 
--Robert
+> This patch removes the {read,write} string functions for the generic IO
+> header as they have no place in a new architecture port.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+i don't see any file anywhere that describes what the baseline API is suppo=
+sed=20
+to be, and what each set of funcs are for.  there is just the random ugline=
+ss=20
+in each arch's asm/io.h cobbled together until things work.  i think that a=
+lso=20
+needs to be addressed before we go extending/contracting the API provides b=
+y=20
+asm-generic/io.h.
+=2Dmike
 
+--nextPart43101981.vTPyFn72dx
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJPmsatAAoJEEFjO5/oN/WBRPEP/ilUxgnBt/l8K8yaZWzj9EkO
+hDAWMCZ6xHsKjUXWqXHafFpcWZZN4jRV+4sovpM3p/fto1b7zMpx8JeHYY0lCpjV
+D/A6gKDTvexcRYbC0kM1d6uAlpbAFZd2R63/qtkgB2tEms631p/hc9zHqIcPd7qq
+zSu7ppM+hece860o1rBuCAcnWf1GivxDEn1Wp6mHpUNSIw1ql5cYOTOomnmXOaIv
+AFXWaFZXZAaqatj7bSp5eOjjOLwmaHIFl5+lvKkIaY+OhI6VFD/yziIi+7H0zkxo
+02Uo/w8hgBYA3l3FqO6E/bOOj6Ta6uQEtAiDQ4xJ6wfOvUciexOcByz5zAAXfpGH
+BRCM+Dcdd5TLCS3bi02/73UI6m5rGpYWztixQZXCSgas8wW/tfMz9vUaEhTTJYyT
+oOV/DCJe8RZXt28RQyHr6tYx92d0BBVhEGV1YbTd4tpMMM/5UafMnrPRgaffMfZJ
+NwwSIi18OZAFlRAFU4HtaZ40dVeRLmgUuTOGgSJA/JUYt8VkxmI7vktgniIrd8Ux
+9iMvZGoV9cj9QdrnoKFh9CaMx2yTV05yuDNQ/MKMi8h0H6+9+HARRbfw26UKEjqr
+BWXzf8z61oMMvWOow6t4l5prQP0S2lu0koMmoqVsYNtHU12Iz/hfW3nAN95i2BwR
+7hV0dQMDNMIto3nkvpt1
+=L65U
+-----END PGP SIGNATURE-----
+
+--nextPart43101981.vTPyFn72dx--
