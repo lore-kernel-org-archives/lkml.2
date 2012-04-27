@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759818Ab2D0KnT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 06:43:19 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63863 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755359Ab2D0KnR (ORCPT
+	id S1760048Ab2D0Knv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 06:43:51 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46738 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756006Ab2D0Knu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 06:43:17 -0400
-Date: Fri, 27 Apr 2012 03:43:14 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Minchan Kim <minchan@kernel.org>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC] propagate gfp_t to page table alloc functions
-In-Reply-To: <4F9A0360.3030900@kernel.org>
-Message-ID: <alpine.DEB.2.00.1204270340450.11866@chino.kir.corp.google.com>
-References: <1335171318-4838-1-git-send-email-minchan@kernel.org> <4F963742.2030607@jp.fujitsu.com> <4F963B8E.9030105@kernel.org> <CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com> <4F965413.9010305@kernel.org>
- <CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com> <20120424143015.99fd8d4a.akpm@linux-foundation.org> <4F973BF2.4080406@jp.fujitsu.com> <CAHGf_=r09BCxXeuE8dSti4_SrT5yahrQCwJh=NrrA3rsUhhu_w@mail.gmail.com> <4F973FB8.6050103@jp.fujitsu.com>
- <20120424172554.c9c330dd.akpm@linux-foundation.org> <4F98914C.2060505@jp.fujitsu.com> <alpine.DEB.2.00.1204251715420.19452@chino.kir.corp.google.com> <4F9A0360.3030900@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 27 Apr 2012 06:43:50 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: uclinux-dist-devel@blackfin.uclinux.org, Will Deacon <will.deacon@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Mike Frysinger <vapier@gentoo.org>
+Subject: [PATCH 2/2] asm-generic: io: don't perform swab during {in,out} string functions
+Date: Fri, 27 Apr 2012 11:42:56 +0100
+Message-Id: <1335523376-14695-2-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1335523376-14695-1-git-send-email-will.deacon@arm.com>
+References: <1335523376-14695-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Apr 2012, Minchan Kim wrote:
+The {in,out}s{b,w,l} functions are designed to operate on a stream of
+bytes and therefore should not perform any byte-swapping, regardless of
+the CPU byte order.
 
-> > Maybe a per-thread_info variant of gfp_allowed_mask?  So Andrew's 
-> > set_current_gfp() becomes set_current_gfp_allowed() that does
-> > 
-> > 	void set_current_gfp_allowed(gfp_t gfp_mask)
-> > 	{
-> > 		current->gfp_allowed = gfp_mask & gfp_allowed_mask;
-> > 	}
-> > 
-> > and then the page allocator does
-> > 
-> > 	gfp_mask &= current->gfp_allowed;
-> > 
-> > rather than how it currently does
-> > 
-> > 	gfp_mask &= gfp_allowed_mask;
-> > 
-> > and then the caller of set_current_gfp_allowed() cleans up with 
-> > set_current_gfp_allowed(__GFP_BITS_MASK).
-> 
+This patch fixes the generic IO header so that {in,out}s{b,w,l} call
+the __raw_{read,write} functions directly rather than going via the
+endian-correcting accessors.
 
-[trimmed the newsgroups from the reply, not sure what the point is?]
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ include/asm-generic/io.h |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-> Caller should restore old gfp_mask instead of __GFP_BITS_MASK in case of
-> nesting.And how do we care of atomic context?
-> 
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index 3607921..403b861 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -148,7 +148,7 @@ static inline void insb(unsigned long addr, void *buffer, int count)
+ 	if (count) {
+ 		u8 *buf = buffer;
+ 		do {
+-			u8 x = inb(addr);
++			u8 x = __raw_readb(addr + PCI_IOBASE);
+ 			*buf++ = x;
+ 		} while (--count);
+ 	}
+@@ -161,7 +161,7 @@ static inline void insw(unsigned long addr, void *buffer, int count)
+ 	if (count) {
+ 		u16 *buf = buffer;
+ 		do {
+-			u16 x = inw(addr);
++			u16 x = __raw_readw(addr + PCI_IOBASE);
+ 			*buf++ = x;
+ 		} while (--count);
+ 	}
+@@ -174,7 +174,7 @@ static inline void insl(unsigned long addr, void *buffer, int count)
+ 	if (count) {
+ 		u32 *buf = buffer;
+ 		do {
+-			u32 x = inl(addr);
++			u32 x = __raw_readl(addr + PCI_IOBASE);
+ 			*buf++ = x;
+ 		} while (--count);
+ 	}
+@@ -187,7 +187,7 @@ static inline void outsb(unsigned long addr, const void *buffer, int count)
+ 	if (count) {
+ 		const u8 *buf = buffer;
+ 		do {
+-			outb(*buf++, addr);
++			__raw_writeb(*buf++, addr + PCI_IOBASE);
+ 		} while (--count);
+ 	}
+ }
+@@ -199,7 +199,7 @@ static inline void outsw(unsigned long addr, const void *buffer, int count)
+ 	if (count) {
+ 		const u16 *buf = buffer;
+ 		do {
+-			outw(*buf++, addr);
++			__raw_writew(*buf++, addr + PCI_IOBASE);
+ 		} while (--count);
+ 	}
+ }
+@@ -211,7 +211,7 @@ static inline void outsl(unsigned long addr, const void *buffer, int count)
+ 	if (count) {
+ 		const u32 *buf = buffer;
+ 		do {
+-			outl(*buf++, addr);
++			__raw_writel(*buf++, addr + PCI_IOBASE);
+ 		} while (--count);
+ 	}
+ }
+-- 
+1.7.4.1
 
-Eek, I'm hoping these aren't going to be nested but sure that seems 
-appropraite if they are.  (I'm also hoping these will only be either 
-__GFP_HIGH or __GFP_BITS_MASK and no other combinations.)
-
-Forcing atomic context would just be set_current_gfp_allowed(__GFP_HIGH).
