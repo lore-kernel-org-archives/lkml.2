@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639Ab2D0Nht (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 09:37:49 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:18765 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab2D0Nhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 09:37:48 -0400
-Message-ID: <4F9AA11E.3040800@parallels.com>
-Date: Fri, 27 Apr 2012 17:37:34 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1760171Ab2D0No4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 09:44:56 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:47574 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757185Ab2D0Noz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 09:44:55 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/2] proc: report file/anon bit in /proc/pid/pagemap
-References: <4F91BC8A.9020503@parallels.com> <20120427123901.2132.47969.stgit@zurg>
-In-Reply-To: <20120427123901.2132.47969.stgit@zurg>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Date: Fri, 27 Apr 2012 17:44:54 +0400
+Message-ID: <CADF-jewF126u0ix9e5XoH_a6ndHakTeR=N0JKmPgi1qQFTw7OA@mail.gmail.com>
+Subject: percpu embed allocator problem
+From: Pavel Panteleev <panteleevp@gmail.com>
+To: linux-mm@kvak.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2012 04:39 PM, Konstantin Khlebnikov wrote:
-> This is an implementation of Andrew's proposal to extend the pagemap file
-> bits to report what is missing about tasks' working set.
-> 
-> The problem with the working set detection is multilateral. In the criu
-> (checkpoint/restore) project we dump the tasks' memory into image files
-> and to do it properly we need to detect which pages inside mappings are
-> really in use. The mincore syscall I though could help with this did not.
-> First, it doesn't report swapped pages, thus we cannot find out which
-> parts of anonymous mappings to dump. Next, it does report pages from page
-> cache as present even if they are not mapped, and it doesn't make
-> difference between private pages that has been cow-ed and private pages
-> that has not been cow-ed.
-> 
-> Note, that issue with swap pages is critical -- we must dump swap pages to
-> image file. But the issues with file pages are optimization -- we can take
-> all file pages to image, this would be correct, but if we know that a page
-> is not mapped or not cow-ed, we can remove them from dump file. The dump
-> would still be self-consistent, though significantly smaller in size (up
-> to 10 times smaller on real apps).
-> 
-> Andrew noticed, that the proc pagemap file solved 2 of 3 above issues -- it
-> reports whether a page is present or swapped and it doesn't report not
-> mapped page cache pages. But, it doesn't distinguish cow-ed file pages from
-> not cow-ed.
-> 
-> I would like to make the last unused bit in this file to report whether the
-> page mapped into respective pte is PageAnon or not.
-> 
-> v2:
-> * Rebase to uptodate kernel
-> * Fix file/anon bit reporting for migration entries
-> * Fix frame bits interval comment, it uses 55 lower bits (64 - 3 - 6)
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Rik van Riel <riel@redhat.com>
+Hello!
 
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
+I have the following problem with pcpu embed allocator in kernel
+2.6.33.1. pcpu_embed_first_chunk() function allocate only size_sum =
+(ai->static_size + ai->reserved_size + ai->dyn_size) for an unit in
+the group. So, for 4 groups (1 unit in each) and with memory only on
+the first node I have the following:
 
+pcpu_embed_first_chunk(): ai->groups[0].base_offset=0x0
+pcpu_embed_first_chunk(): ai->groups[1].base_offset=0xa000
+pcpu_embed_first_chunk(): ai->groups[2].base_offset=0x14000
+pcpu_embed_first_chunk(): ai->groups[3].base_offset=0x1e000
+
+pcpu_embed_first_chunk(): ai->unit_size=0x10000
+
+It means, that for each group memory of size_sum=0xa000 is used only.
+So, in the case of memory only on the first node, memory for the
+following group will be allocated near the memory of the previous
+group. Even though memory of size_sum=0xa000 is used only, but
+ai->unit_size=0x10000.
+
+After filling group_offsets and group_sizes in
+pcpu_setup_first_chunk() function we have, that (group_offsets[i] +
+group_sizes[i]) can be larger than group_offsets[i+1]. But in
+pcpu_get_vm_areas() function there is checker, which tell us, that
+such situation is impossible:
+
+BUG_ON(start2 >= start && start2 < end);
+
+May be  I should not use embed allocator in such situation?
+
+
+Best regards,
+Pavel V. Panteleev
