@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459Ab2D0Xhe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 19:37:34 -0400
-Received: from mail-vx0-f202.google.com ([209.85.220.202]:52537 "EHLO
-	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab2D0Xhc (ORCPT
+	id S1757575Ab2D0Xhl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 19:37:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51413 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756534Ab2D0Xhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 19:37:32 -0400
-Subject: [PATCH 0/4] Physical memory info formatting
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 27 Apr 2012 17:37:30 -0600
-Message-ID: <20120427233620.25317.67562.stgit@bhelgaas.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	Fri, 27 Apr 2012 19:37:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1a0aaa16-df06-40bf-88c7-28180455e6b9@email.android.com>
+References: <20120227115905.GB9943@elte.hu>
+	<1332974587-15452-1-git-send-email-kjwinchester@gmail.com>
+	<4F99A69B.4040004@zytor.com>
+	<CAELBVzAi_yndZbDc0TkXhbqzn2wULpnsFMA_dop=Uvaii8tkqg@mail.gmail.com>
+	<1a0aaa16-df06-40bf-88c7-28180455e6b9@email.android.com>
+Date: Fri, 27 Apr 2012 20:37:36 -0300
+Message-ID: <CAELBVzAN33S4_VATnO7FaNjNaObqHsp+OXPsQYeve1N_qUztcA@mail.gmail.com>
+Subject: Re: [PATCH v5 0/5] x86: Cleanup and simplify cpu-specific data
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Borislav Petkov <bp@alien8.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no functional changes in these patches; they just add a little
-consistency to printing out physical memory information.
+On 26 April 2012 18:21, H. Peter Anvin <hpa@zytor.com> wrote:
+> Against mainline would be better, unless it actively conflicts with something in tip.
+>
 
-For example:
+Alright, my git/make skills must be lacking.  I just checked out
+3.4-rc4 to a new branch, and then git cherry-picked my 5 patches onto
+that branch.  Then I ran:
 
-    -BIOS-provided physical RAM map:
-    +e820: BIOS-provided physical RAM map:
-    - BIOS-e820: 0000000000000100 - 000000000009e000 (usable)
-    +BIOS-e820: [mem 0x0000000000000100-0x000000000009dfff] usable
-    - BIOS-e820: 000000000009e000 - 00000000000a0000 (reserved)
-    +BIOS-e820: [mem 0x000000000009e000-0x000000000009ffff] reserved
+$ make ARCH=i386 allnoconfig
+$ make ARCH=i386
 
-    -found SMP MP-table at [ffff8800000fce90] fce90
-    +found SMP MP-table at [mem 0x000fce90-0x000fce9f] mapped at [ffff8800000fce90]
-    -initial memory mapped : 0 - 20000000
-    +initial memory mapped: [mem 0x00000000-0x1fffffff]
-    -Base memory trampoline at [ffff88000009c000] 9c000 size 8192
-    +Base memory trampoline [mem 0x0009c000-0x0009dfff] mapped at [ffff88000009c000]
+And the build completed without warnings or errors.  Should that be
+equivalent to what you did to build i386 allnoconfig?  If so, then I
+wonder why I would not see those problems.
 
-    -SRAT: Node 0 PXM 0 0-80000000
-    +SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
+Can anyone offer any advice?
 
-    -NUMA: Node 0 [0,80000000) + [100000000,880000000) -> [0,880000000)
-    +NUMA: Node 0 [mem 0x00000000-0x7fffffff] + [mem 0x100000000-0x87fffffff] -> [mem 0x00000000-0x87fffffff]
-
-    ...
-
----
-
-Bjorn Helgaas (4):
-      x86: print e820 physical addresses consistently with other parts of kernel
-      x86: print physical addresses consistently with other parts of kernel
-      swiotlb: print physical addresses consistently with other parts of kernel
-      mm: print physical addresses consistently with other parts of kernel
-
-
- arch/x86/kernel/e820.c       |   53 +++++++++++++++++++++---------------------
- arch/x86/kernel/mpparse.c    |   10 +++++---
- arch/x86/kernel/setup.c      |   16 ++++++-------
- arch/x86/kernel/trampoline.c |    5 ++--
- arch/x86/mm/init.c           |   16 +++++++------
- arch/x86/mm/numa.c           |   32 +++++++++++++------------
- arch/x86/mm/numa_emulation.c |    4 ++-
- arch/x86/mm/pat.c            |   42 +++++++++++++++------------------
- arch/x86/mm/srat.c           |    5 ++--
- lib/swiotlb.c                |    8 ++----
- mm/memory_hotplug.c          |   14 ++++++-----
- mm/page_alloc.c              |   19 +++++++++------
- 12 files changed, 115 insertions(+), 109 deletions(-)
+Thanks,
 
 -- 
-Bjorn
+Kevin
