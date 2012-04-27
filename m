@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760918Ab2D0Rjl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 13:39:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40196 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756764Ab2D0Rjj (ORCPT
+	id S1760901Ab2D0Rmm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 13:42:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50612 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760425Ab2D0Rml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 13:39:39 -0400
-Date: Fri, 27 Apr 2012 10:39:35 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: ShuoX Liu <shuox.liu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH v2] percpu, x86: don't use PMD_SIZE as embedded atom_size
- on 32bit
-Message-ID: <20120427173935.GE26595@google.com>
-References: <4F97BA98.6010001@intel.com>
- <20120425222429.GE8989@google.com>
- <1335405672.14538.135.camel@ymzhang.sh.intel.com>
- <20120426224946.GG27486@google.com>
- <1335488964.14538.159.camel@ymzhang.sh.intel.com>
- <1335516994.14538.160.camel@ymzhang.sh.intel.com>
- <20120427165356.GA26595@google.com>
+	Fri, 27 Apr 2012 13:42:41 -0400
+Date: Fri, 27 Apr 2012 18:42:36 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] ASoC: da7210: Minor bugfix for non pll
+ slave mode
+Message-ID: <20120427174235.GM18260@opensource.wolfsonmicro.com>
+References: <1335525244.22171.16.camel@matrix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kunpHVz1op/+13PW"
 Content-Disposition: inline
-In-Reply-To: <20120427165356.GA26595@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1335525244.22171.16.camel@matrix>
+X-Cookie: You will triumph over your enemy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the embed percpu first chunk allocator, x86 uses either PAGE_SIZE
-or PMD_SIZE for atom_size.  PMD_SIZE is used when CPU supports PSE so
-that percpu areas are aligned to PMD mappings and possibly allow using
-PMD mappings in vmalloc areas in the future.  Using larger atom_size
-doesn't waste actual memory; however, it does require larger vmalloc
-space allocation later on for !first chunks.
 
-With reasonably sized vmalloc area, PMD_SIZE shouldn't be a problem
-but x86_32 at this point is anything but reasonable in terms of
-address space and using larger atom_size reportedly leads to frequent
-percpu allocation failures on certain setups.
+--kunpHVz1op/+13PW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-As there is no reason to not use PMD_SIZE on x86_64 as vmalloc space
-is aplenty and most x86_64 configurations support PSE, fix the issue
-by always using PMD_SIZE on x86_64 and PAGE_SIZE on x86_32.
+On Fri, Apr 27, 2012 at 04:44:04PM +0530, Ashish Chavan wrote:
+> This patch fixes a bug discovered during testing of non pll slave mode.
+> Due to the bug chip was not getting correctly configured and as a result
+> there was no sound output while playback. After applying this patch,
+> both pll and non pll modes work fine.
 
-v2: drop cpu_has_pse test and make x86_64 always use PMD_SIZE and
-    x86_32 PAGE_SIZE as suggested by hpa.
+Applied, thanks.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Yanmin Zhang <yanmin.zhang@intel.com>
-Reported-by: ShuoX Liu <shuox.liu@intel.com>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-LKML-Reference: <4F97BA98.6010001@intel.com>
-Cc: stable@vger.kernel.org
----
- arch/x86/kernel/setup_percpu.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+--kunpHVz1op/+13PW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
-index 71f4727..5a98aa2 100644
---- a/arch/x86/kernel/setup_percpu.c
-+++ b/arch/x86/kernel/setup_percpu.c
-@@ -185,10 +185,22 @@ void __init setup_per_cpu_areas(void)
- #endif
- 	rc = -EINVAL;
- 	if (pcpu_chosen_fc != PCPU_FC_PAGE) {
--		const size_t atom_size = cpu_has_pse ? PMD_SIZE : PAGE_SIZE;
- 		const size_t dyn_size = PERCPU_MODULE_RESERVE +
- 			PERCPU_DYNAMIC_RESERVE - PERCPU_FIRST_CHUNK_RESERVE;
-+		size_t atom_size;
- 
-+		/*
-+		 * On 64bit, use PMD_SIZE for atom_size so that embedded
-+		 * percpu areas are aligned to PMD.  This, in the future,
-+		 * can also allow using PMD mappings in vmalloc area.  Use
-+		 * PAGE_SIZE on 32bit as vmalloc space is highly contended
-+		 * and large vmalloc area allocs can easily fail.
-+		 */
-+#ifdef CONFIG_X86_64
-+		atom_size = PMD_SIZE;
-+#else
-+		atom_size = PAGE_SIZE;
-+#endif
- 		rc = pcpu_embed_first_chunk(PERCPU_FIRST_CHUNK_RESERVE,
- 					    dyn_size, atom_size,
- 					    pcpu_cpu_distance,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPmtneAAoJEBus8iNuMP3dvzkP/1qTRPYHAB9q1uOHUE9C6xlY
+4SFUhN6uz6XS2MBwXkqapld9qmeCTTcp4e5lxaPS/37Yy4OeZKDBgg8xC/z/sDnq
+alGYaSKfZuie5qE0enBnvDdlFAEwg31jzIGWhv9cRwoSE66rAtuWaP2XiPMZGqil
+RRnoiDfj6pa2li8nmZSPMPwPHy9z1v17kZkHA5iwrFaBPDFiGhJQ/YhSwBPu6Qru
+O7RCnQbdec3n1nTnVTbIc2IZQFx2oMB/CtZbA35IxN5789VCalbv8ELcWzFwtMnc
+rteZcbjcTx4ik0nhQqCzIFO7zNB/WCdmg0WWYfZeT/ZyZBUqeXpinRgutKY2B/zL
+ByVgQJLftC0tTUCDCt0kSFfwGEh4/3hKrC3GhKfEQDiUeuDHT6qlE9tR7C9N1pnq
+bTXu/9VmQNcH5vzIUKkSIAIStdkM+YxuY80J6E0uGMqLjRyVjzql7kJNKiW/EmhA
+m08m2RmMGiNTDEUn/OQ0KYlRnYoMthE3oQqyfeIwKb++dsjS1COQMeq0P0xw9Dfn
+vx57iSpjOqgEsG5T9ch0h4i1YTx2IFj46tZ1zzYXkvYMtabUissss6hvh5J70vjV
+73nv83NObVzB1zxB/2HZaZRYhqZ6kM8/ViNIrdWB3tFhQca7XOKD3Nixq32/Ebsd
+Vrzfu9Wzn+GtY9ZaJr/o
+=wgYu
+-----END PGP SIGNATURE-----
+
+--kunpHVz1op/+13PW--
