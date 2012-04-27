@@ -1,128 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760016Ab2D0LUP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 07:20:15 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.245]:52301 "EHLO
-	nasmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755389Ab2D0LUN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 07:20:13 -0400
-From: "Chen, Bo" <Bo.Chen@atmel.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: "alan@linux.intel.com" <alan@linux.intel.com>,
-        "rick@efn.org" <rick@efn.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-arm-kernel@lists.arm.linux.org.uk" 
-	<linux-arm-kernel@lists.arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [Query] serial: AT91:  Add SIM Driver
-Thread-Topic: [Query] serial: AT91:  Add SIM Driver
-Thread-Index: AQHNIT97IHJvDx2tRsOQLbzjAsUm2pauW71w
-Date: Fri, 27 Apr 2012 11:19:18 +0000
-Message-ID: <7AD597EA49E297498E79AFA326C986BB0D31A5CE@penmbx02>
-References: <7AD597EA49E297498E79AFA326C986BB0D317277@penmbx01>
- <20120423115440.5bb1c7eb@pyramind.ukuu.org.uk>
-In-Reply-To: <20120423115440.5bb1c7eb@pyramind.ukuu.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.217.3.106]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	id S1760140Ab2D0Lau (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 07:30:50 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:32138 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759923Ab2D0Lat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 07:30:49 -0400
+Message-ID: <4F9A835C.2020801@openvz.org>
+Date: Fri, 27 Apr 2012 15:30:36 +0400
+From: Andrey Vagin <avagin@openvz.org>
+Reply-To: avagin@openvz.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: lockdep reports about recursive locking in kmemleak
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+Hello,
 
-> One way would be to make ISO7816 a line discipline (the layer which sits about the tty).
+I found a following message in dmesg. Probably we should to do something 
+similar as for debug_objects, it sets own class for parent->list_lock. 
+Does anyone want to fix that?
 
->Your user space interface would then be
+=============================================
+[ INFO: possible recursive locking detected ]
+3.3.0+ #87 Not tainted
+---------------------------------------------
+udevd/847 is trying to acquire lock:
+  (&(&parent->list_lock)->rlock){-.-...}, at: [<ffffffff811783f1>] 
+cache_alloc_refill+0xa1/0x300
 
->	int ldisc = N_ISO7816;
->	ioctl(tty_fd, TIOCSETD, &ldisc);
+but task is already holding lock:
+  (&(&parent->list_lock)->rlock){-.-...}, at: [<ffffffff81177628>] 
+cache_flusharray+0x68/0x180
 
-Make ISO7816 a line discipline would register it in driver(atmel_serial.c or a new named driver) via tty_register_ldisc(N_ISO7816, &tty_ldisc_ops)
-If I use ioctl(tty_fd, TIOCSETD, &ldisc), it will close current line discipline and open a new line discipline related to ISO7816 (tty_register_ldisc(N_ISO7816, &tty_ldisc_ops))?
+other info that might help us debug this:
+  Possible unsafe locking scenario:
 
-> at which point the read/write/ioctl etc calls on your tty will also be    > routed via your ldisc so you can manage them and provide ISO7816 sensible > interfaces
+        CPU0
+        ----
+   lock(&(&parent->list_lock)->rlock);
+   lock(&(&parent->list_lock)->rlock);
 
-Does it mean when I call read/write/ioctl in user space, it will call tty_ldisc_ops functions (ISO7816 line discipline has been opened) such as gsmld_read/gsmld_write/gsmld_ioctl in N_gsm.c? What I need to do is to implement the interface in tty_ldisc_ops?
+  *** DEADLOCK ***
+
+  May be due to missing lock nesting notation
+
+1 lock held by udevd/847:
+  #0:  (&(&parent->list_lock)->rlock){-.-...}, at: [<ffffffff81177628>] 
+cache_flusharray+0x68/0x180
+
+stack backtrace:
+Pid: 847, comm: udevd Not tainted 3.3.0+ #87
+Call Trace:
+  [<ffffffff810b835a>] __lock_acquire+0x126a/0x1730
+  [<ffffffff810b73f2>] ? __lock_acquire+0x302/0x1730
+  [<ffffffff810b88d1>] lock_acquire+0xb1/0x1a0
+  [<ffffffff811783f1>] ? cache_alloc_refill+0xa1/0x300
+  [<ffffffff8118cdb9>] ? create_object+0x39/0x2e0
+  [<ffffffff8153a141>] _raw_spin_lock+0x41/0x50
+  [<ffffffff811783f1>] ? cache_alloc_refill+0xa1/0x300
+  [<ffffffff811783f1>] cache_alloc_refill+0xa1/0x300
+  [<ffffffff810b73f2>] ? __lock_acquire+0x302/0x1730
+  [<ffffffff8118cdb9>] ? create_object+0x39/0x2e0
+  [<ffffffff81179cbc>] kmem_cache_alloc+0x2cc/0x320
+  [<ffffffff8118cdb9>] create_object+0x39/0x2e0
+  [<ffffffff810b73f2>] ? __lock_acquire+0x302/0x1730
+  [<ffffffff8151fade>] kmemleak_alloc+0x5e/0xc0
+  [<ffffffff81179b2c>] kmem_cache_alloc+0x13c/0x320
+  [<ffffffff81294d99>] __debug_object_init+0x3b9/0x3d0
+  [<ffffffff812944fa>] ? debug_object_activate+0xca/0x190
+  [<ffffffff81294dff>] debug_object_init+0x1f/0x30
+  [<ffffffff810767d7>] rcuhead_fixup_activate+0x27/0x70
+  [<ffffffff81293d35>] debug_object_fixup+0x15/0x20
+  [<ffffffff8129450c>] debug_object_activate+0xdc/0x190
+  [<ffffffff81177b50>] ? kmem_cache_shrink+0x70/0x70
+  [<ffffffff810f0d12>] __call_rcu+0x42/0x1e0
+  [<ffffffff810f0ee5>] call_rcu_sched+0x15/0x20
+  [<ffffffff81177113>] slab_destroy+0x153/0x160
+  [<ffffffff81177628>] ? cache_flusharray+0x68/0x180
+  [<ffffffff81177179>] free_block+0x59/0x230
+  [<ffffffff81177655>] cache_flusharray+0x95/0x180
+  [<ffffffff81176dbf>] ? kmem_cache_free+0x11f/0x320
+  [<ffffffff81176f6c>] kmem_cache_free+0x2cc/0x320
+  [<ffffffff8115b5b1>] ? __put_anon_vma+0x61/0xb0
+  [<ffffffff8115b5b1>] __put_anon_vma+0x61/0xb0
+  [<ffffffff8115bb8b>] unlink_anon_vmas+0x13b/0x1a0
+  [<ffffffff8114fac1>] free_pgtables+0x91/0x120
+  [<ffffffff81156101>] exit_mmap+0xb1/0x120
+  [<ffffffff8104e24b>] mmput+0x7b/0x120
+  [<ffffffff81053d68>] exit_mm+0x108/0x130
+  [<ffffffff8153aa70>] ? _raw_spin_unlock_irq+0x30/0x50
+  [<ffffffff81056277>] do_exit+0x167/0x970
+  [<ffffffff811b36c3>] ? mntput+0x23/0x40
+  [<ffffffff81192f6d>] ? fput+0x1ad/0x280
+  [<ffffffff8153ae59>] ? retint_swapgs+0x13/0x1b
+  [<ffffffff81056adb>] do_group_exit+0x5b/0xd0
+  [<ffffffff81056b67>] sys_exit_group+0x17/0x20
+  [<ffffffff81543729>] system_call_fastpath+0x16/0x1b
 
 
-> Take a look at the gsmld_ parts of drivers/tty/n_gsm.c for a fairly full  > example of a line discipline. You can ignore most of the rest of the code  > there, the rest is implementing GSM mux and virtual ttys.
 
-What is the reasonable way to add this line discipline, in atmel_serial.c or create a new driver (build as a module and dynamically load)? Would it be accepted by kernel mainline?
-
-Thanks,
-Bo Chen
-
-
-
-
-
------Original Message-----
-From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk] 
-Sent: 2012年4月23日 18:55
-To: Chen, Bo
-Cc: alan@linux.intel.com; rick@efn.org; linux-serial@vger.kernel.org; linux-arm-kernel@lists.arm.linux.org.uk; linux-kernel@vger.kernel.org
-Subject: Re: [Query] serial: AT91: Add SIM Driver
-
-> I mean to create a char driver which contains ioctl interface to control GPIOs connected to SIM card VCC and RESET.
-
-We have a GPIO layer and existing GPIO interface support so the gpio side
-if they are kept independent ought to be easy. However I wonder if the
-separate gpio control will make the userspace side harder ?
-
-> Thirdly, I want to use usual tty function (read / write) to implement the ATR / send or receive command / PPS.
-> That means tty usual driver read or write will be called by user space application such as openct or else to realize the ATR and PPS.
-> Openct may also call above char driver to realize the power or reset function.
-
-That may be difficult to get right because of the tty object lifetime
-and the locking rules. One way would be to make ISO7816 a line discipline
-(the layer which sits about the tty).
-
-Your user space interface would then be
-
-	int ldisc = N_ISO7816;
-	ioctl(tty_fd, TIOCSETD, &ldisc);
-
-at which point the read/write/ioctl etc calls on your tty will also be
-routed via your ldisc so you can manage them and provide ISO7816 sensible
-interfaces.
-
-You'd still need a way for the ldisc to ask the tty device to manage the
-GPIO lines but I don't think that is too tricky to add.
-
-That way it would at least keep everything in one place and avoid adding
-new strange paths calling into the tty layer code via non tty devices.
-
-
-Take a look at the gsmld_ parts of drivers/tty/n_gsm.c for a fairly full
-example of a line discipline. You can ignore most of the rest of the code
-there, the rest is implementing GSM mux and virtual ttys.
-
-The two thing s it doesn't use are
-
-tty_set_termios(tty, &whatever)
-
-which is a helper for the ldisc or similar to set the terminal state
-itself. 
-
-and
-
-tty->driver->ops->tiocmget/tiocmset/etc
-
-for doing things like modem lines. One way to handle the gpios
-transparently might be to map them to the nearest equivalent 'modem' line
-when in ISO7816 mode.
-
-The tty also sees the ldisc change via tty->ops->set_ldisc(). This is
-used by some drivers already for things like automatically selecting IRDA
-FIR mode when in IRDA modes.
-
-In your case the driver would set/exit ISO7816 mode when it saw this.
-
-Alan
