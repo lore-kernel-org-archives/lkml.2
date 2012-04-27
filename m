@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760926Ab2D0Rgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 13:36:40 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42845 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756818Ab2D0Rgj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 13:36:39 -0400
-Date: Fri, 27 Apr 2012 18:39:22 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] tty, add kref to sysrq handlers
-Message-ID: <20120427183922.47436912@pyramind.ukuu.org.uk>
-In-Reply-To: <1335546920-28492-1-git-send-email-prarit@redhat.com>
-References: <1335546920-28492-1-git-send-email-prarit@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1760930Ab2D0Rhl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 13:37:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47920 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756764Ab2D0Rhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 13:37:40 -0400
+Message-ID: <4F9AD961.30605@redhat.com>
+Date: Fri, 27 Apr 2012 13:37:37 -0400
+From: Peter Jones <pjones@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Matthew Garrett <mjg@redhat.com>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] efifb: Skip DMI checks if the bootloader knows what it's
+ doing
+References: <1335538451-4395-1-git-send-email-mjg@redhat.com>
+In-Reply-To: <1335538451-4395-1-git-send-email-mjg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If the lock were removed, however, there is one _unlikely_ circumstance in
-> which the array would be left unprotected.  That would be the situation in
-> which a module was loaded and the sysrq handler was registered during the
-> execution of the module.  Again, the possibility of the scenario is very
-> small and given the existing usage of unregister_sysrq_key() in the tree
-> it seems like removing the lock is sufficient.
+On 04/27/2012 10:54 AM, Matthew Garrett wrote:
+> The majority of the DMI checks in efifb are for cases where the bootloader
+> has provided invalid information. However, on some machines the overrides
+> may do more harm than good due to configuration differences between machines
+> with the same machine identifier. It turns out that it's possible for the
+> bootloader to get the correct information on GOP-based systems, but we
+> can't guarantee that the kernel's being booted with one that's been updated
+> to do so. Add support for a capabilities flag that can be set by the
+> bootloader, and skip the DMI checks in that case.
+>
+> Signed-off-by: Matthew Garrett<mjg@redhat.com>
 
-It's asking for later disasters I think.
+Looks right to me.
 
-I'm not sure I see we need a kref - that looks like overkill, and its
-probably even more elegantly done with RCU ?
+Acked-by: Peter Jones <pjones@redhat.com>
 
-> Of course, I'm more than willing to hear additional suggestions.  A rw
-> lock still requires that it be taken with irqs disabled so IMO it is out
-> of the question.
+> ---
+>   drivers/video/efifb.c       |    4 +++-
+>   include/linux/screen_info.h |    2 ++
+>   2 files changed, 5 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+> index b4a632a..932abaa 100644
+> --- a/drivers/video/efifb.c
+> +++ b/drivers/video/efifb.c
+> @@ -553,7 +553,9 @@ static int __init efifb_init(void)
+>   	int ret;
+>   	char *option = NULL;
+>
+> -	dmi_check_system(dmi_system_table);
+> +	if (screen_info.orig_video_isVGA != VIDEO_TYPE_EFI ||
+> +	    !(screen_info.capabilities&  VIDEO_CAPABILITY_SKIP_QUIRKS))
+> +		dmi_check_system(dmi_system_table);
+>
+>   	if (screen_info.orig_video_isVGA != VIDEO_TYPE_EFI)
+>   		return -ENODEV;
+> diff --git a/include/linux/screen_info.h b/include/linux/screen_info.h
+> index 899fbb4..fb3c5a8 100644
+> --- a/include/linux/screen_info.h
+> +++ b/include/linux/screen_info.h
+> @@ -68,6 +68,8 @@ struct screen_info {
+>
+>   #define VIDEO_FLAGS_NOCURSOR	(1<<  0) /* The video mode has no cursor set */
+>
+> +#define VIDEO_CAPABILITY_SKIP_QUIRKS	(1<<  0)
+> +
+>   #ifdef __KERNEL__
+>   extern struct screen_info screen_info;
+>
 
-One approach would be to defer the work. Is there any reason a slow sysrq
-handler shouldn't be expected to behave itself and schedule work to run
-later. The module unload killing the work will take care of all the other
-unload stuff.
 
-Alan
+-- 
+         Peter
+
+Any connection between your reality and mine is purely coincidental.
+
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
