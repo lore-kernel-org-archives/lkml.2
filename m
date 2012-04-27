@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759778Ab2D0Iij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 04:38:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34387 "EHLO
+	id S1759784Ab2D0Ijc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 04:39:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34405 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759495Ab2D0Iif (ORCPT
+	with ESMTP id S1758960Ab2D0Ij3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 04:38:35 -0400
-Date: Fri, 27 Apr 2012 01:38:16 -0700
+	Fri, 27 Apr 2012 04:39:29 -0400
+Date: Fri, 27 Apr 2012 01:39:06 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-bwse2wib954y0db7dq91bes5@git.kernel.org>
+Message-ID: <tip-hkx848wdbs6n7bcp3ymr9yus@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org, efault@gmx.de,
@@ -21,8 +21,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate browser: Suppress the callq address
-Git-Commit-ID: d22328855666464731ee95d9e1e8d35dc7a39d8d
+Subject: [tip:perf/core] perf annotate browser:
+  Add visual cues on jump lines
+Git-Commit-ID: 51a0d455b5f44cb4680e0a89f99860b669e40d0f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,29 +32,70 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 27 Apr 2012 01:38:21 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 27 Apr 2012 01:39:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d22328855666464731ee95d9e1e8d35dc7a39d8d
-Gitweb:     http://git.kernel.org/tip/d22328855666464731ee95d9e1e8d35dc7a39d8d
+Commit-ID:  51a0d455b5f44cb4680e0a89f99860b669e40d0f
+Gitweb:     http://git.kernel.org/tip/51a0d455b5f44cb4680e0a89f99860b669e40d0f
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 20 Apr 2012 15:26:47 -0300
+AuthorDate: Fri, 20 Apr 2012 15:40:20 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 20 Apr 2012 15:26:47 -0300
+CommitDate: Fri, 20 Apr 2012 15:40:20 -0300
 
-perf annotate browser: Suppress the callq address
+perf annotate browser: Add visual cues on jump lines
 
-    0.00 |       callq  ffffffff8112f190 <__mod_zone_page_state>
+Using up/down arrows just before the instruction, replacing the actual chars
+with approximations to avoid mail encoding snafus:
 
-Becomes:
+avtab_search_node
+    0.00 |      push   %rbp
+    0.00 |      mov    %rsp,%rbp
+    0.00 |      callq  mcount
+    0.00 |      movzwl 0x6(%rsi),%edx
+    0.00 |      and    $0x7fff,%dx
+    0.00 |      test   %rdi,%rdi
+    0.00 |    v jne    20
+    0.00 | 17:  xor    %eax,%eax
+    0.00 | 19:  leaveq
+    0.00 |      retq
+    0.00 |      nopl   0x0(%rax,%rax,1)
+    0.00 | 20:  mov    (%rdi),%rax
+    0.00 |      test   %rax,%rax
+    0.00 |    ^ je     17
+    0.00 |      movzwl (%rsi),%ecx
+    0.00 |      movzwl 0x2(%rsi),%r9d
+    0.00 |      movzwl 0x4(%rsi),%r8d
+    0.00 |      movzwl %cx,%esi
+    0.00 |      movzwl %r9w,%r10d
+    0.00 |      shl    $0x9,%esi
+    0.00 |      lea    (%rsi,%r10,4),%esi
+    0.00 |      lea    (%r8,%rsi,1),%esi
+    0.00 |      and    0x10(%rdi),%si
+    0.00 |      movzwl %si,%esi
+    0.00 |      mov    (%rax,%rsi,8),%rax
+    0.00 |      test   %rax,%rax
+    0.00 |    ^ je     19
+    0.00 |      nopw   0x0(%rax,%rax,1)
+    0.00 | 60:  cmp    %cx,(%rax)
+    0.00 |    v jne    7e
+    0.00 |      cmp    %r9w,0x2(%rax)
+    0.00 |    v jne    7e
+    0.00 |      cmp    %r8w,0x4(%rax)
+    0.00 |    v jne    79
+    0.00 |      test   %dx,0x6(%rax)
+    0.00 |    ^ jne    19
+    0.00 | 79:  cmp    %r8w,0x4(%rax)
+   93.04 | 7e:^ ja     17
+    2.53 |      mov    0x10(%rax),%rax
+    4.43 |      test   %rax,%rax
+    0.00 |    ^ jne    60
+    0.00 |      leaveq
+    0.00 |      retq
 
-    0.00 |       callq  __mod_zone_page_state
-
-But if you press 'o' it gets verbose, i.e. as in objdump -dS:
-
-    0.00 | ffffffff8116bdda:  callq  ffffffff8112f190 <__mod_zone_page_state>
+Next low hanging fruit is to use left arrow for retqs, then work on clearling
+marking loops.
 
 Requested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: David Ahern <dsahern@gmail.com>
@@ -64,87 +106,35 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-bwse2wib954y0db7dq91bes5@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-hkx848wdbs6n7bcp3ymr9yus@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/annotate.c |   43 +++++++++++++++++++++++++++++++++++++++++--
- tools/perf/util/annotate.h |    1 +
- 2 files changed, 42 insertions(+), 2 deletions(-)
+ tools/perf/ui/browsers/annotate.c |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 7f6c14b..b07d7d1 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -20,12 +20,50 @@ const char 	*disassembler_style;
- 
- static int call__parse(struct ins_operands *ops)
- {
--	ops->target = strtoull(ops->raw, NULL, 16);
-+	char *endptr, *tok, *name;
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index c2bbfc7..63206ca 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -113,9 +113,20 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+ 		if (change_color)
+ 			ui_browser__set_color(self, color);
+ 		if (dl->ins && dl->ins->ops->scnprintf) {
++			if (ins__is_jump(dl->ins)) {
++				bool fwd = dl->ops.target > (u64)dl->offset;
 +
-+	ops->target = strtoull(ops->raw, &endptr, 16);
++				SLsmg_set_char_set(1);
++				SLsmg_write_char(fwd ? SLSMG_DARROW_CHAR :
++						       SLSMG_UARROW_CHAR);
++				SLsmg_set_char_set(0);
++				SLsmg_write_char(' ');
++			} else {
++				slsmg_write_nstring(" ", 2);
++			}
 +
-+	name = strchr(endptr, '<');
-+	if (name == NULL)
-+		goto indirect_call;
-+
-+	name++;
-+
-+	tok = strchr(name, '>');
-+	if (tok == NULL)
-+		return -1;
-+
-+	*tok = '\0';
-+	ops->target_name = strdup(name);
-+	*tok = '>';
-+
-+	return ops->target_name == NULL ? -1 : 0;
-+
-+indirect_call:
-+	tok = strchr(endptr, '*');
-+	if (tok == NULL)
-+		return -1;
-+
-+	ops->target = strtoull(tok + 1, NULL, 16);
- 	return 0;
- }
- 
-+static int call__scnprintf(struct ins *ins, char *bf, size_t size,
-+			   struct ins_operands *ops, bool addrs)
-+{
-+	if (addrs)
-+		return scnprintf(bf, size, "%-6.6s %s", ins->name, ops->raw);
-+
-+	if (ops->target_name)
-+		return scnprintf(bf, size, "%-6.6s %s", ins->name, ops->target_name);
-+
-+	return scnprintf(bf, size, "%-6.6s *%" PRIx64, ins->name, ops->target);
-+}
-+
- static struct ins_ops call_ops = {
--	.parse = call__parse,
-+	.parse	   = call__parse,
-+	.scnprintf = call__scnprintf,
- };
- 
- bool ins__is_call(const struct ins *ins)
-@@ -251,6 +289,7 @@ void disasm_line__free(struct disasm_line *dl)
- {
- 	free(dl->line);
- 	free(dl->name);
-+	free(dl->ops.target_name);
- 	free(dl);
- }
- 
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index a6f60d5..8a8af0d 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -11,6 +11,7 @@ struct ins;
- 
- struct ins_operands {
- 	char	*raw;
-+	char	*target_name;
- 	u64	target;
- };
- 
+ 			dl->ins->ops->scnprintf(dl->ins, bf, sizeof(bf), &dl->ops,
+ 						!ab->use_offset);
+-			slsmg_write_nstring(" ", 2);
+ 			printed += 2;
+ 		} else
+ 			scnprintf(bf, sizeof(bf), "  %-6.6s %s", dl->name, dl->ops.raw);
