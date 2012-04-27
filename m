@@ -1,137 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab2D0Vgr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 17:36:47 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:21923 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab2D0Vgq (ORCPT
+	id S1754882Ab2D0Vgv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 17:36:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58314 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971Ab2D0Vgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 17:36:46 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-131.messagelabs.com!1335562598!20664919!8
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor serial2002 driver to remove forward declarations
-Date: Fri, 27 Apr 2012 14:36:26 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 27 Apr 2012 17:36:48 -0400
+Date: Fri, 27 Apr 2012 14:36:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
+Message-Id: <20120427143646.8209627e.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com>
+References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au>
+	<4F9ABF9C.2070707@xenotime.net>
+	<alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com>
+	<20120427132343.fbb443b9.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201204271436.26454.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the module_init/module_exit routines and the associated
-struct comedi_driver and other variables to the end of the source.
-This is more typical of how other drivers are written and removes
-the need for the forward declarations.
+On Fri, 27 Apr 2012 14:27:13 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
+> On Fri, 27 Apr 2012, Andrew Morton wrote:
+> 
+> > Seems reasonable.  But the CONFIG_HUGETLB_PAGE=y,
+> > CONFIG_MEM_RES_CTLR_HUGETLB=n combination will cause unneeded code
+> > generation and space consumption in memcontrol.c.
+> > 
+> > I wonder if we can additionally do, within memcontrol.c:
+> > 
+> > /*
+> >  * Nice comment goes here
+> >  */
+> > #ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+> > #define HUGE_MAX_HSTATE_FOO HUGE_MAX_HSTATE
+> > #else
+> > #define HUGE_MAX_HSTATE_FOO 0
+> > #endif
+> > 
+> > and s/HUGE_MAX_HSTATE/HUGE_MAX_HSTATE_FOO/ in that file.
+> > 
+> 
+> I haven't looked at the hugetlb memcg controller in-depth (yet), but I 
+> really think we should start considering breaking things like this off 
+> into its own cgroup.  The hugetlb extension seems like something that 
+> could be easily separtated, but perhaps I'm saying "easily" because I 
+> haven't looked at the implementation.
+> 
+> mm/memcontrol.c in linux-next is 5877 lines and, if history is any guide, 
+> it's going to continue growing.
+> 
+> If the hugetlb usage isn't charged against the memcg's 
+> memory.usage_in_bytes like thp is, then I really think it should be its 
+> own cgroup.  From the hugetlb perspective absent any cgroups, things like 
+> hstates (since we're talking about HUGE_MAX_HSTATE) are global resources 
+> and so you'd need to preallocate these on the command line or via sysfs 
+> before you could mmap them.  So if my assumption that the hugetlb memcg 
+> controller is only governing these global resources and charging a set of 
+> tasks for what they use, then it really has no business in mm/memcontrol.c 
+> to begin with, in my opinion.
 
-diff --git a/drivers/staging/comedi/drivers/serial2002.c b/drivers/staging/comedi/drivers/serial2002.c
-index d880c2f..a034b10 100644
---- a/drivers/staging/comedi/drivers/serial2002.c
-+++ b/drivers/staging/comedi/drivers/serial2002.c
-@@ -43,20 +43,10 @@ Status: in development
- #include <linux/serial.h>
- #include <linux/poll.h>
- 
--/*
-- * Board descriptions for two imaginary boards.  Describing the
-- * boards in this way is optional, and completely driver-dependent.
-- * Some drivers use arrays such as this, other do not.
-- */
- struct serial2002_board {
- 	const char *name;
- };
- 
--static const struct serial2002_board serial2002_boards[] = {
--	{
--	 .name = "serial2002"}
--};
--
- /*
-  * Useful for shorthand access to the particular board structure
-  */
-@@ -89,35 +79,6 @@ struct serial2002_private {
-  */
- #define devpriv ((struct serial2002_private *)dev->private)
- 
--static int serial2002_attach(struct comedi_device *dev,
--			     struct comedi_devconfig *it);
--static int serial2002_detach(struct comedi_device *dev);
--struct comedi_driver driver_serial2002 = {
--	.driver_name = "serial2002",
--	.module = THIS_MODULE,
--	.attach = serial2002_attach,
--	.detach = serial2002_detach,
--	.board_name = &serial2002_boards[0].name,
--	.offset = sizeof(struct serial2002_board),
--	.num_names = ARRAY_SIZE(serial2002_boards),
--};
--
--static int serial2002_di_rinsn(struct comedi_device *dev,
--			       struct comedi_subdevice *s,
--			       struct comedi_insn *insn, unsigned int *data);
--static int serial2002_do_winsn(struct comedi_device *dev,
--			       struct comedi_subdevice *s,
--			       struct comedi_insn *insn, unsigned int *data);
--static int serial2002_ai_rinsn(struct comedi_device *dev,
--			       struct comedi_subdevice *s,
--			       struct comedi_insn *insn, unsigned int *data);
--static int serial2002_ao_winsn(struct comedi_device *dev,
--			       struct comedi_subdevice *s,
--			       struct comedi_insn *insn, unsigned int *data);
--static int serial2002_ao_rinsn(struct comedi_device *dev,
--			       struct comedi_subdevice *s,
--			       struct comedi_insn *insn, unsigned int *data);
--
- struct serial_data {
- 	enum { is_invalid, is_digital, is_channel } kind;
- 	int index;
-@@ -901,17 +862,32 @@ static int serial2002_detach(struct comedi_device *dev)
- 	return 0;
- }
- 
-+static const struct serial2002_board serial2002_boards[] = {
-+	{
-+		.name	= "serial2002"
-+	},
-+};
-+
-+struct comedi_driver driver_serial2002 = {
-+	.driver_name	= "serial2002",
-+	.module		= THIS_MODULE,
-+	.attach		= serial2002_attach,
-+	.detach		= serial2002_detach,
-+	.board_name	= &serial2002_boards[0].name,
-+	.offset		= sizeof(struct serial2002_board),
-+	.num_names	= ARRAY_SIZE(serial2002_boards),
-+};
-+
- static int __init driver_serial2002_init_module(void)
- {
- 	return comedi_driver_register(&driver_serial2002);
- }
-+module_init(driver_serial2002_init_module);
- 
- static void __exit driver_serial2002_cleanup_module(void)
- {
- 	comedi_driver_unregister(&driver_serial2002);
- }
--
--module_init(driver_serial2002_init_module);
- module_exit(driver_serial2002_cleanup_module);
- 
- MODULE_AUTHOR("Comedi http://www.comedi.org");
+Minor matter: that's non-responsive to my suggestion.
+
+Major matter: that's a big fat nack to this patchset:
+
+hugetlb-rename-max_hstate-to-hugetlb_max_hstate.patch
+hugetlbfs-dont-use-err_ptr-with-vm_fault-values.patch
+hugetlbfs-add-an-inline-helper-for-finding-hstate-index.patch
+hugetlb-use-mmu_gather-instead-of-a-temporary-linked-list-for-accumulating-pages.patch
+hugetlb-use-mmu_gather-instead-of-a-temporary-linked-list-for-accumulating-pages-fix.patch
+hugetlb-use-mmu_gather-instead-of-a-temporary-linked-list-for-accumulating-pages-fix-fix.patch
+hugetlb-avoid-taking-i_mmap_mutex-in-unmap_single_vma-for-hugetlb.patch
+hugetlb-simplify-migrate_huge_page.patch
+memcg-add-hugetlb-extension.patch
+memcg-add-hugetlb-extension-fix.patch
+hugetlb-add-charge-uncharge-calls-for-hugetlb-alloc-free.patch
+memcg-track-resource-index-in-cftype-private.patch
+hugetlbfs-add-memcg-control-files-for-hugetlbfs.patch
+hugetlbfs-add-memcg-control-files-for-hugetlbfs-use-scnprintf-instead-of-sprintf.patch
+hugetlbfs-add-memcg-control-files-for-hugetlbfs-use-scnprintf-instead-of-sprintf-fix.patch
+hugetlbfs-add-a-list-for-tracking-in-use-hugetlb-pages.patch
+memcg-move-hugetlb-resource-count-to-parent-cgroup-on-memcg-removal.patch
+memcg-move-hugetlb-resource-count-to-parent-cgroup-on-memcg-removal-fix.patch
+memcg-move-hugetlb-resource-count-to-parent-cgroup-on-memcg-removal-fix-fix.patch
+hugetlb-migrate-memcg-info-from-oldpage-to-new-page-during-migration.patch
+hugetlb-migrate-memcg-info-from-oldpage-to-new-page-during-migration-fix.patch
+memcg-add-memory-controller-documentation-for-hugetlb-management.patch
+
+so please take it up at a convenient time, in the appropriate
+thread, with the appropriate cc's!
+
