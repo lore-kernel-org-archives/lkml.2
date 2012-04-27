@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760698Ab2D0Pm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 11:42:59 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:44536 "EHLO
+	id S1760677Ab2D0PpJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 11:45:09 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:44533 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760252Ab2D0Pm6 (ORCPT
+	with ESMTP id S1760319Ab2D0PpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 11:42:58 -0400
-Date: Fri, 27 Apr 2012 08:42:53 -0700
+	Fri, 27 Apr 2012 11:45:07 -0400
+Date: Fri, 27 Apr 2012 08:45:02 -0700
 From: Tejun Heo <tj@kernel.org>
-To: "Pavel V. Panteleev" <pp_84@mail.ru>,
-        Christoph Lameter <cl@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvak.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        andi <andi@firstfloor.org>
-Subject: [PATCH] percpu: pcpu_embed_first_chunk() should free unused parts
- after all allocs are complete
-Message-ID: <20120427154253.GL27486@google.com>
-References: <E1SNhwY-0007ui-V7.pp_84-mail-ru@f220.mail.ru>
- <20120427141704.GH27486@google.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>, axboe@kernel.dk, ctalbott@google.com,
+        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, fengguang.wu@intel.com,
+        hughd@google.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 11/11] blkcg: implement per-blkg request allocation
+Message-ID: <20120427154502.GM27486@google.com>
+References: <1335477561-11131-1-git-send-email-tj@kernel.org>
+ <1335477561-11131-12-git-send-email-tj@kernel.org>
+ <x49wr51usxi.fsf@segfault.boston.devel.redhat.com>
+ <20120427150217.GK27486@google.com>
+ <20120427154033.GJ10579@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120427141704.GH27486@google.com>
+In-Reply-To: <20120427154033.GJ10579@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pcpu_embed_first_chunk() allocates memory for each node, copies percpu
-data and frees unused portions of it before proceeding to the next
-group.  This assumes that allocations for different nodes doesn't
-overlap; however, depending on memory topology, the bootmem allocator
-may end up allocating memory from a different node than the requested
-one which may overlap with the portion freed from one of the previous
-percpu areas.  This leads to percpu groups for different nodes
-overlapping which is a serious bug.
+On Fri, Apr 27, 2012 at 11:40:34AM -0400, Vivek Goyal wrote:
+> On Fri, Apr 27, 2012 at 08:02:17AM -0700, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On Fri, Apr 27, 2012 at 10:54:01AM -0400, Jeff Moyer wrote:
+> > > > This patch implements per-blkg request_list.  Each blkg has its own
+> > > > request_list and any IO allocates its request from the matching blkg
+> > > > making blkcgs completely isolated in terms of request allocation.
+> > > 
+> > > So, nr_requests is now actually nr_requests * # of blk cgroups.  Is that
+> > > right?  Are you at all concerned about the amount of memory that can be
+> > > tied up as the number of cgroups increases?
+> > 
+> > Yeah, I thought about it and I don't think there's a single good
+> > solution here.  The other extreme would be splitting nr_requests by
+> > the number of cgroups but that seems even worse - each cgroup should
+> > be able to hit maximum throughput.  Given that a lot of workloads tend
+> > to regulate themselves before hitting nr_requests, I think it's best
+> > to leave it as-is and treat each cgroup as having separate channel for
+> > now.  It's a configurable parameter after all.
+> 
+> So on a slow device a malicious application can easily create thousands
+> of group, queue up tons of IO and create unreclaimable memory easily?
+> Sounds little scary. 
 
-This patch separates out copy & partial free from the allocation loop
-such that all allocations are complete before partial frees happen.
-
-This also fixes overlapping frees which could happen on allocation
-failure path - out_free_areas path frees whole groups but the groups
-could have portions freed at that point.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: stable@vger.kernel.org
-Reported-by: "Pavel V. Panteleev" <pp_84@mail.ru>
-LKML-Reference: <E1SNhwY-0007ui-V7.pp_84-mail-ru@f220.mail.ru>
----
-Can you please verify this patch fixes the problem?
+Malicious application may just jack up nr_requests.
 
 Thanks.
 
- mm/percpu.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/mm/percpu.c b/mm/percpu.c
-index f47af91..7975693 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1650,6 +1650,16 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
- 		areas[group] = ptr;
- 
- 		base = min(ptr, base);
-+	}
-+
-+	/*
-+	 * Copy data and free unused parts.  This should happen after all
-+	 * allocations are complete; otherwise, we may end up with
-+	 * overlapping groups.
-+	 */
-+	for (group = 0; group < ai->nr_groups; group++) {
-+		struct pcpu_group_info *gi = &ai->groups[group];
-+		void *ptr = areas[group];
- 
- 		for (i = 0; i < gi->nr_units; i++, ptr += ai->unit_size) {
- 			if (gi->cpu_map[i] == NR_CPUS) {
+-- 
+tejun
