@@ -1,33 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399Ab2D1Jvn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 05:51:43 -0400
-Received: from [117.102.80.50] ([117.102.80.50]:47104 "EHLO mail.hits.co.id"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751539Ab2D1Jvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 05:51:41 -0400
-X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Apr 2012 05:51:41 EDT
-Date: Sat, 28 Apr 2012 16:46:37 +0700 (WIT)
-From: Capt James Hans <fajar2007@hits.co.id>
-Reply-To: Capt James Hans <jameshns@yahoo.com>
-Subject: Greeting from Kabul...
-Message-ID: <f813144c-0189-46e8-bf4c-edf050f48635@mail.hits.co.id>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1752984Ab2D1Jxr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 05:53:47 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:46338 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab2D1Jxn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 05:53:43 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6694"; a="185825782"
+X-IronPort-AV: E=Sophos;i="4.75,493,1330934400"; 
+   d="scan'208";a="206249193"
+From: "Huang, Xiong" <xiong@qca.qualcomm.com>
+To: "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>
+Subject: RE: [PATCH 01/10] atl1c: add workaround for issue of bit
+ INTX-disable for MSI interrupt
+Thread-Topic: [PATCH 01/10] atl1c: add workaround for issue of bit
+ INTX-disable for MSI interrupt
+Thread-Index: AQHNJOKAD2P3W9jpYECANiAnmgx9uZav8kEAgAALViA=
+Date: Sat, 28 Apr 2012 09:53:41 +0000
+Message-ID: <157393863283F442885425D2C454285623D5F96D@nasanexd02a.na.qualcomm.com>
+References: <1335578325-21326-1-git-send-email-xiong@qca.qualcomm.com>
+ <1335578325-21326-2-git-send-email-xiong@qca.qualcomm.com>
+ <20120428020510.GJ14465@tux>
+In-Reply-To: <20120428020510.GJ14465@tux>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.231.66.158]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [210.187.205.239]
-X-Mailer: Zimbra 7.0.0_GA_3077 (zclient/7.0.0_GA_3077)
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks Luis,  just one question:
+
+I don't know which kernel version contains the updated pci/quirks.c, so, 
+if I write the patch file (a 58-drivers-pci-quirks.patch) as:
+
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,22))
++	pdev->dev_flags |= PCI_DEV_FLAGS_MSI_INTX_DISABLE_BUG;
++#endif
 
 
-Hello,
+It seems not good for the kernel with updated pci/quirks.c
 
-I am Cpt. James Hans an officer of the U.S Army, serving with the 82nd Airborne Division Peace keeping force in Kabul,Afghanistan.
+Any better suggestion ? thanks
 
-We are currently in Afghanistan and I have some important items that i need to ship to you.I need you to reply only if you are interested.I will explain further when i get a response from you and here is my private email: jameshns@yahoo.com
 
-Cpt. James Hans.
+-Xiong
+
+> -----Original Message-----
+> From: Luis R. Rodriguez [mailto:mcgrof@gmail.com] On Behalf Of Luis R.
+> Rodriguez
+> Sent: Saturday, April 28, 2012 10:05
+> To: Huang, Xiong
+> Cc: davem@davemloft.net; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org; qca-linux-team; nic-devel
+> Subject: Re: [PATCH 01/10] atl1c: add workaround for issue of bit INTX-disable
+> for MSI interrupt
+> 
+> On Sat, Apr 28, 2012 at 09:58:36AM +0800, xiong wrote:
+> > All supported devices have one issue that msi interrupt doesn't assert
+> > if pci command register bit (PCI_COMMAND_INTX_DISABLE) is set.
+> > Add workaround in drivers/pci/quirks.c
+> >
+> > Signed-off-by: xiong <xiong@qca.qualcomm.com>
+> > ---
+> >  drivers/pci/quirks.c |   12 ++++++++++++
+> >  1 files changed, 12 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index
+> > 4bf7102..953ec3f 100644
+> > --- a/drivers/pci/quirks.c
+> > +++ b/drivers/pci/quirks.c
+> > @@ -2626,6 +2626,18 @@
+> DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI,
+> > 0x4374,  DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x4375,
+> >  			quirk_msi_intx_disable_bug);
+> >
+> > +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATTANSIC, 0x1062,
+> > +			quirk_msi_intx_disable_bug);
+> > +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATTANSIC, 0x1063,
+> > +			quirk_msi_intx_disable_bug);
+> > +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATTANSIC, 0x2060,
+> > +			quirk_msi_intx_disable_bug);
+> > +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATTANSIC, 0x2062,
+> > +			quirk_msi_intx_disable_bug);
+> > +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATTANSIC, 0x1073,
+> > +			quirk_msi_intx_disable_bug);
+> > +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATTANSIC, 0x1083,
+> > +			quirk_msi_intx_disable_bug);
+> >  #endif /* CONFIG_PCI_MSI */
+> 
+> Xiong -- just a heads up, I think to backport these then you can send me patches
+> for compat-wireless to do the work around itself on the driver on a patch under
+> patches/ you can say create a 58-drivers-pci-quirks.patch which pathces your
+> driver there.
+> 
+>   Luis
