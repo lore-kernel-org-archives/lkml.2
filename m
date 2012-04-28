@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab2D1Uio (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 16:38:44 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48115 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753065Ab2D1Uim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 16:38:42 -0400
-Message-ID: <1335645521.4191.13.camel@joe2Laptop>
-Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to
- work with layers
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Tim Small <tim@buttersideup.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Egor Martovetsky <egor@pasemi.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Niklas =?ISO-8859-1?Q?S=F6derlund?= 
-	<niklas.soderlund@ericsson.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
-Date: Sat, 28 Apr 2012 13:38:41 -0700
-In-Reply-To: <20120428085223.GB26065@aftab.osrc.amd.com>
-References: <1335289087-11337-1-git-send-email-mchehab@redhat.com>
-	 <1335291342-14922-1-git-send-email-mchehab@redhat.com>
-	 <20120427133304.GE9626@aftab.osrc.amd.com>
-	 <1335535895.25521.7.camel@joe2Laptop> <4F9AC44A.5000509@redhat.com>
-	 <20120428085223.GB26065@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754837Ab2D1Upu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 16:45:50 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36741 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753333Ab2D1Upt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 16:45:49 -0400
+From: Alexander Tarasikov <alexander.tarasikov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: airlied@linux.ie
+Subject: [PATCH] drivers:gpu:vga_switcheroo: Work around dramatic power drain 
+Date: Sun, 29 Apr 2012 00:45:27 +0400
+Message-Id: <1335645928-30993-1-git-send-email-alexander.tarasikov@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-28 at 10:52 +0200, Borislav Petkov wrote:
-> On Fri, Apr 27, 2012 at 01:07:38PM -0300, Mauro Carvalho Chehab wrote:
-> > Yes. This is a common issue at the EDAC core: on several places, it calls the
-> > edac debug macros (DEBUGF0...DEBUGF4) passing a __func__ as an argument, while
-> > the debug macros already handles that. I suspect that, in the past, the __func__
-> > were not at the macros, but some patch added it there, and forgot to fix the
-> > occurrences of its call.
-> 
-> The patch that added it is d357cbb445208 and you reviewed it.
-> 
-> > This is something that needs to be reviewed at the entire EDAC core (and likely
-> > at the drivers).
-> 
-> Looks like a job for a newbie to get her/his feet wet with kernel work.
 
-Looks to me more like a lazy maintainer/developer who doesn't
-want to bother with a few minutes work.
+Hello! Many modern laptops featuring hybrid graphics show a huge raise in
+power drain after a suspend/resume cycle which is caused by the discrete
+adapter ignoring ACPI-issued power off call after a resume.
 
+This behaviour (increase in power consumption) has been observed on several
+machines by many users. This machines include Thinkpad X220, HP Elitebook and
+Sony VAIO series, so this may apply to all laptops.
 
+One of the workarounds is to do an ON/OFF cycle via switcheroo from userland
+on each resume but this causes confusion in the VGA BIOS which thinks the card
+is already ON and that leads to the GPU lockup and system slowdown for a minute
+or so. This kind of behaviour is absolutely unacceptable.
+
+I propose this patch as a workaround. It creates a new module parameter
+(vga_switcheroo.resume_powercut). When it is set to 1, on resume the driver
+will iterate over the list of registered cards and disable all inactive cards
+ignoring their power state in switcheroo struct (ON/OFF).
+
+I have tested this on my laptop (which is Sony VAIO SA3S9R with i5, HM67,
+HD3000 and Radeon 6630M).
+Without this patch, the idle power consumption is 7-9W. After a suspend/resume
+cycle that jumps to 15-19W. With the patch, the consumption is always below
+10W after numerous suspend/resume cycles.
+
+I agree that the implementation may be far from clean, therefore I have
+not enabled the parameter by default. I am welcome to any suggestions on
+improving the implementation but I think that it would not hurt to include
+it as-is so that users can test it and report their impressions/bugs. Please
+review the patch and forward it to downstream projects if you are involved in
+any that may be interested (i.e., ubuntu kernel team).
