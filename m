@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab2D1JMI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 05:12:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44451 "EHLO
+	id S1754294Ab2D1JM5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 05:12:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44464 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab2D1JMF (ORCPT
+	with ESMTP id S1751833Ab2D1JMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 05:12:05 -0400
-Date: Sat, 28 Apr 2012 02:11:44 -0700
+	Sat, 28 Apr 2012 05:12:54 -0400
+Date: Sat, 28 Apr 2012 02:12:34 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-e80e7813cd772cf30597024b371e73df9736de8d@git.kernel.org>
+Message-ID: <tip-a4cfc31da34eacafd9f6b16e149448bf0ef6d0b2@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rusty@rustcorp.com.au, schwidefsky@de.ibm.com, peterz@infradead.org,
+        jesper.nilsson@axis.com, rusty@rustcorp.com.au, peterz@infradead.org,
         srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, peterz@infradead.org, schwidefsky@de.ibm.com,
+        jesper.nilsson@axis.com, rusty@rustcorp.com.au, peterz@infradead.org,
         srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
         tglx@linutronix.de
-In-Reply-To: <20120420124557.652574928@linutronix.de>
-References: <20120420124557.652574928@linutronix.de>
+In-Reply-To: <20120420124557.789657793@linutronix.de>
+References: <20120420124557.789657793@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] s390: Use generic idle thread allocation
-Git-Commit-ID: e80e7813cd772cf30597024b371e73df9736de8d
+Subject: [tip:smp/hotplug] cris: Use generic idle thread allocation
+Git-Commit-ID: a4cfc31da34eacafd9f6b16e149448bf0ef6d0b2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,114 +31,84 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Apr 2012 02:11:50 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Apr 2012 02:12:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e80e7813cd772cf30597024b371e73df9736de8d
-Gitweb:     http://git.kernel.org/tip/e80e7813cd772cf30597024b371e73df9736de8d
+Commit-ID:  a4cfc31da34eacafd9f6b16e149448bf0ef6d0b2
+Gitweb:     http://git.kernel.org/tip/a4cfc31da34eacafd9f6b16e149448bf0ef6d0b2
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 20 Apr 2012 13:05:52 +0000
+AuthorDate: Fri, 20 Apr 2012 13:05:53 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Thu, 26 Apr 2012 12:06:11 +0200
 
-s390: Use generic idle thread allocation
+cris: Use generic idle thread allocation
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Link: http://lkml.kernel.org/r/20120420124557.652574928@linutronix.de
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+Link: http://lkml.kernel.org/r/20120420124557.789657793@linutronix.de
 
 ---
- arch/s390/Kconfig      |    1 +
- arch/s390/kernel/smp.c |   33 ++-------------------------------
- 2 files changed, 3 insertions(+), 31 deletions(-)
+ arch/cris/Kconfig               |    1 +
+ arch/cris/arch-v32/kernel/smp.c |   12 ++----------
+ 2 files changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index 9015060..15cab3e 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -122,6 +122,7 @@ config S390
- 	select ARCH_INLINE_WRITE_UNLOCK_BH
- 	select ARCH_INLINE_WRITE_UNLOCK_IRQ
- 	select ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
-+	select GENERIC_SMP_IDLE_THREAD
+diff --git a/arch/cris/Kconfig b/arch/cris/Kconfig
+index b3abfb0..2995035 100644
+--- a/arch/cris/Kconfig
++++ b/arch/cris/Kconfig
+@@ -49,6 +49,7 @@ config CRIS
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_IRQ_SHOW
+ 	select GENERIC_IOMAP
++	select GENERIC_SMP_IDLE_THREAD if ETRAX_ARCH_V32
  
- config SCHED_OMIT_FRAME_POINTER
- 	def_bool y
-diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
-index fc827aa..992b7b9 100644
---- a/arch/s390/kernel/smp.c
-+++ b/arch/s390/kernel/smp.c
-@@ -85,7 +85,6 @@ enum {
+ config HZ
+ 	int
+diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
+index 125ee2d..ebe2cb3 100644
+--- a/arch/cris/arch-v32/kernel/smp.c
++++ b/arch/cris/arch-v32/kernel/smp.c
+@@ -108,17 +108,12 @@ void __init smp_cpus_done(unsigned int max_cpus)
  
- struct pcpu {
- 	struct cpu cpu;
--	struct task_struct *idle;	/* idle process for the cpu */
- 	struct _lowcore *lowcore;	/* lowcore page(s) for the cpu */
- 	unsigned long async_stack;	/* async stack for the cpu */
- 	unsigned long panic_stack;	/* panic stack for the cpu */
-@@ -721,26 +720,9 @@ static void __cpuinit smp_start_secondary(void *cpuvoid)
- 	cpu_idle();
- }
- 
--struct create_idle {
--	struct work_struct work;
+ /* Bring one cpu online.*/
+ static int __init
+-smp_boot_one_cpu(int cpuid)
++smp_boot_one_cpu(int cpuid, struct task_struct idle)
+ {
+ 	unsigned timeout;
 -	struct task_struct *idle;
--	struct completion done;
--	int cpu;
--};
+ 	cpumask_t cpu_mask;
+ 
+ 	cpumask_clear(&cpu_mask);
+-	idle = fork_idle(cpuid);
+-	if (IS_ERR(idle))
+-		panic("SMP: fork failed for CPU:%d", cpuid);
 -
--static void __cpuinit smp_fork_idle(struct work_struct *work)
--{
--	struct create_idle *c_idle;
+ 	task_thread_info(idle)->cpu = cpuid;
+ 
+ 	/* Information to the CPU that is about to boot */
+@@ -142,9 +137,6 @@ smp_boot_one_cpu(int cpuid)
+ 		barrier();
+ 	}
+ 
+-	put_task_struct(idle);
+-	idle = NULL;
 -
--	c_idle = container_of(work, struct create_idle, work);
--	c_idle->idle = fork_idle(c_idle->cpu);
--	complete(&c_idle->done);
--}
--
- /* Upping and downing of CPUs */
+ 	printk(KERN_CRIT "SMP: CPU:%d is stuck.\n", cpuid);
+ 	return -1;
+ }
+@@ -209,7 +201,7 @@ unsigned long cache_decay_ticks = 1;
+ 
  int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
  {
--	struct create_idle c_idle;
- 	struct pcpu *pcpu;
- 	int rc;
+-	smp_boot_one_cpu(cpu);
++	smp_boot_one_cpu(cpu, tidle);
+ 	return cpu_online(cpu) ? 0 : -ENOSYS;
+ }
  
-@@ -750,22 +732,12 @@ int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
- 	if (pcpu_sigp_retry(pcpu, sigp_initial_cpu_reset, 0) !=
- 	    sigp_order_code_accepted)
- 		return -EIO;
--	if (!pcpu->idle) {
--		c_idle.done = COMPLETION_INITIALIZER_ONSTACK(c_idle.done);
--		INIT_WORK_ONSTACK(&c_idle.work, smp_fork_idle);
--		c_idle.cpu = cpu;
--		schedule_work(&c_idle.work);
--		wait_for_completion(&c_idle.done);
--		if (IS_ERR(c_idle.idle))
--			return PTR_ERR(c_idle.idle);
--		pcpu->idle = c_idle.idle;
--	}
--	init_idle(pcpu->idle, cpu);
-+
- 	rc = pcpu_alloc_lowcore(pcpu, cpu);
- 	if (rc)
- 		return rc;
- 	pcpu_prepare_secondary(pcpu, cpu);
--	pcpu_attach_task(pcpu, pcpu->idle);
-+	pcpu_attach_task(pcpu, tidle);
- 	pcpu_start_fn(pcpu, smp_start_secondary, NULL);
- 	while (!cpu_online(cpu))
- 		cpu_relax();
-@@ -852,7 +824,6 @@ void __init smp_prepare_boot_cpu(void)
- 	struct pcpu *pcpu = pcpu_devices;
- 
- 	boot_cpu_address = stap();
--	pcpu->idle = current;
- 	pcpu->state = CPU_STATE_CONFIGURED;
- 	pcpu->address = boot_cpu_address;
- 	pcpu->lowcore = (struct _lowcore *)(unsigned long) store_prefix();
