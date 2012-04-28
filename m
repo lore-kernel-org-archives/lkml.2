@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab2D1Iw4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 04:52:56 -0400
+	id S1753791Ab2D1IxB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 04:53:01 -0400
 Received: from mga02.intel.com ([134.134.136.20]:29098 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753281Ab2D1Iwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 04:52:53 -0400
+	id S1753607Ab2D1Iw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 04:52:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="134675347"
+   d="scan'208";a="134675353"
 From: Alex Shi <alex.shi@intel.com>
 To: andi.kleen@intel.com, tim.c.chen@linux.intel.com, jeremy@goop.org,
         chrisw@sous-sol.org, akataria@vmware.com, tglx@linutronix.de,
@@ -19,260 +19,250 @@ Cc: riel@redhat.com, luto@mit.edu, alex.shi@intel.com, avi@redhat.com,
         fenghua.yu@intel.com, borislav.petkov@amd.com, yinghai@kernel.org,
         cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
         yongjie.ren@intel.com
-Subject: [PATCH 0/3] TLB flush range optimization
-Date: Sat, 28 Apr 2012 16:51:36 +0800
-Message-Id: <1335603099-2624-1-git-send-email-alex.shi@intel.com>
+Subject: [PATCH 1/3] x86/tlb_info: get last level TLB entry number of CPU
+Date: Sat, 28 Apr 2012 16:51:37 +0800
+Message-Id: <1335603099-2624-2-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1335603099-2624-1-git-send-email-alex.shi@intel.com>
+References: <1335603099-2624-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry. forget cc to lkml just now. Added.
+For 4KB pages, x86 CPU has 2 or 1 level TLB, first level is data TLB and
+instruction TLB, second level is shared TLB for both data and instructions.
 
-This patcheset change flush_tlb_range from flushing all to one by one
-'invlpg'. The following macro benchmark measured the performance improvement.
-and the testing result show in the related commit log.
+For hupe page TLB, usually there is just one level and seperated by 2MB/4MB
+and 1GB.
 
-Any comments are appreciated!
+Although each levels TLB size is important for performance tuning, but for
+genernal and rude optimizing, just last level TLB entry number is suitable.
+And in fact, last level TLB has the biggest entry number.
 
-Thanks for comments from Andi and Tim in developing!
+This patch will get the biggest TLB entry number and use it in furture TLB
+optimizing.
 
---------------
-/*
-   mprotect.c
-   This is a macrobenchmark for TLB flush range testing.
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ arch/x86/include/asm/processor.h |   12 +++
+ arch/x86/kernel/cpu/common.c     |  163 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/cpu.h        |    1 +
+ 3 files changed, 176 insertions(+), 0 deletions(-)
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License.
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 4fa7dcc..a91504b 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -61,6 +61,18 @@ static inline void *current_text_addr(void)
+ # define ARCH_MIN_MMSTRUCT_ALIGN	0
+ #endif
+ 
++enum tlb_infos {
++	ENTRIES,
++	/* ASS_WAYS, */
++	NR_INFO
++};
++
++extern u16 __read_mostly tlb_lli_4k[NR_INFO];
++extern u16 __read_mostly tlb_lli_2m[NR_INFO];
++extern u16 __read_mostly tlb_lli_4m[NR_INFO];
++extern u16 __read_mostly tlb_lld_4k[NR_INFO];
++extern u16 __read_mostly tlb_lld_2m[NR_INFO];
++extern u16 __read_mostly tlb_lld_4m[NR_INFO];
+ /*
+  *  CPU type and hardware bug flags. Kept separately for each CPU.
+  *  Members of this structure are referenced in head.S, so think twice
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index cf79302..5f14a70 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -452,6 +452,167 @@ void __cpuinit cpu_detect_cache_sizes(struct cpuinfo_x86 *c)
+ 	c->x86_cache_size = l2size;
+ }
+ 
++#define TLB_INST_4K	0x01
++#define TLB_INST_4M	0x02
++#define TLB_INST_2M_4M	0x03
++
++#define TLB_INST_ALL	0x05
++#define TLB_INST_1G	0x06
++
++#define TLB_DATA_4K	0x11
++#define TLB_DATA_4M	0x12
++#define TLB_DATA_2M_4M	0x13
++#define TLB_DATA_4K_4M	0x14
++
++#define TLB_DATA_1G	0x16
++
++#define TLB_DATA0_4K	0x21
++#define TLB_DATA0_4M	0x22
++#define TLB_DATA0_2M_4M	0x23
++
++#define STLB_4K		0x41
++
++struct _tlb_table {
++	unsigned char descriptor;
++	char tlb_type;
++	unsigned int entries;
++	/* unsigned int ways; */
++	char info[128];
++};
++
++static const struct _tlb_table tlb_table[] = {
++	{ 0x01, TLB_INST_4K,		32,	" TLB_INST 4 KByte pages, 4-way set associative" },
++	{ 0x02, TLB_INST_4M,		2,	" TLB_INST 4 MByte pages, full associative" },
++	{ 0x03, TLB_DATA_4K,		64,	" TLB_DATA 4 KByte pages, 4-way set associative" },
++	{ 0x04, TLB_DATA_4M,		8,	" TLB_DATA 4 MByte pages, 4-way set associative" },
++	{ 0x05, TLB_DATA_4M,		32,	" TLB_DATA 4 MByte pages, 4-way set associative" },
++	{ 0x0b, TLB_INST_4M,		4,	" TLB_INST 4 MByte pages, 4-way set associative" },
++	{ 0x4f, TLB_INST_4K,		32, 	" TLB_INST 4 KByte pages */" },
++	{ 0x50, TLB_INST_ALL,		64, 	" TLB_INST 4 KByte and 2-MByte or 4-MByte pages" },
++	{ 0x51, TLB_INST_ALL,		128,	" TLB_INST 4 KByte and 2-MByte or 4-MByte pages" },
++	{ 0x52, TLB_INST_ALL,		256,	" TLB_INST 4 KByte and 2-MByte or 4-MByte pages" },
++	{ 0x55, TLB_INST_2M_4M,		7, 	" TLB_INST 2-MByte or 4-MByte pages, fully associative" },
++	{ 0x56, TLB_DATA0_4M,		16,	" TLB_DATA0 4 MByte pages, 4-way set associative" },
++	{ 0x57, TLB_DATA0_4K,		16,	" TLB_DATA0 4 KByte pages, 4-way associative" },
++	{ 0x59, TLB_DATA0_4K,		16,	" TLB_DATA0 4 KByte pages, fully associative" },
++	{ 0x5a, TLB_DATA0_2M_4M,	32,	" TLB_DATA0 2-MByte or 4 MByte pages, 4-way set associative" },
++	{ 0x5b, TLB_DATA_4K_4M,		64,	" TLB_DATA 4 KByte and 4 MByte pages" },
++	{ 0x5c, TLB_DATA_4K_4M,		128,	" TLB_DATA 4 KByte and 4 MByte pages" },
++	{ 0x5d, TLB_DATA_4K_4M,		256,	" TLB_DATA 4 KByte and 4 MByte pages" },
++	{ 0xb0, TLB_INST_4K,		128,	" TLB_INST 4 KByte pages, 4-way set associative" },
++	{ 0xb1, TLB_INST_2M_4M,		4,	" TLB_INST 2M pages, 4-way, 8 entries or 4M pages, 4-way entries" },
++	{ 0xb2, TLB_INST_4K,		64,	" TLB_INST 4KByte pages, 4-way set associative" },
++	{ 0xb3, TLB_DATA_4K,		128,	" TLB_DATA 4 KByte pages, 4-way set associative" },
++	{ 0xb4, TLB_DATA_4K,		256,	" TLB_DATA 4 KByte pages, 4-way associative" },
++	{ 0xba, TLB_DATA_4K,		64,	" TLB_DATA 4 KByte pages, 4-way associative" },
++	{ 0xc0, TLB_DATA_4K_4M,		8,	" TLB_DATA 4 KByte and 4 MByte pages, 4-way associative" },
++	{ 0xca, STLB_4K,		512,	" STLB 4 KByte pages, 4-way associative" },
++	{ 0x00, 0, 0 }
++};
++
++u16 __read_mostly tlb_lli_4k[NR_INFO];
++u16 __read_mostly tlb_lli_2m[NR_INFO];
++u16 __read_mostly tlb_lli_4m[NR_INFO];
++u16 __read_mostly tlb_lld_4k[NR_INFO];
++u16 __read_mostly tlb_lld_2m[NR_INFO];
++u16 __read_mostly tlb_lld_4m[NR_INFO];
++
++void tlb_lookup(const unsigned char desc)
++{
++	unsigned char k;
++	if (desc == 0)
++		return;
++
++	/* look up this descriptor in the table */
++	for (k = 0; tlb_table[k].descriptor != desc && \
++			tlb_table[k].descriptor != 0; k++)
++		;
++
++	if (tlb_table[k].tlb_type == 0)
++		return;
++
++	switch (tlb_table[k].tlb_type) {
++	case STLB_4K:
++		if (tlb_lli_4k[ENTRIES] < tlb_table[k].entries)
++			tlb_lli_4k[ENTRIES] = tlb_table[k].entries;
++		if (tlb_lld_4k[ENTRIES] < tlb_table[k].entries)
++			tlb_lld_4k[ENTRIES] = tlb_table[k].entries;
++		break;
++	case TLB_INST_ALL:
++		if (tlb_lli_4k[ENTRIES] < tlb_table[k].entries)
++			tlb_lli_4k[ENTRIES] = tlb_table[k].entries;
++		if (tlb_lli_2m[ENTRIES] < tlb_table[k].entries)
++			tlb_lli_2m[ENTRIES] = tlb_table[k].entries;
++		if (tlb_lli_4m[ENTRIES] < tlb_table[k].entries)
++			tlb_lli_4m[ENTRIES] = tlb_table[k].entries;
++		break;
++	case TLB_INST_4K:
++		if (tlb_lli_4k[ENTRIES] < tlb_table[k].entries)
++			tlb_lli_4k[ENTRIES] = tlb_table[k].entries;
++		break;
++	case TLB_INST_4M:
++		if (tlb_lli_4m[ENTRIES] < tlb_table[k].entries)
++			tlb_lli_4m[ENTRIES] = tlb_table[k].entries;
++		break;
++	case TLB_INST_2M_4M:
++		if (tlb_lli_2m[ENTRIES] < tlb_table[k].entries)
++			tlb_lli_2m[ENTRIES] = tlb_table[k].entries;
++		if (tlb_lli_4m[ENTRIES] < tlb_table[k].entries)
++			tlb_lli_4m[ENTRIES] = tlb_table[k].entries;
++		break;
++	case TLB_DATA_4K:
++	case TLB_DATA0_4K:
++		if (tlb_lld_4k[ENTRIES] < tlb_table[k].entries)
++			tlb_lld_4k[ENTRIES] = tlb_table[k].entries;
++		break;
++	case TLB_DATA_4M:
++	case TLB_DATA0_4M:
++		if (tlb_lld_4m[ENTRIES] < tlb_table[k].entries)
++			tlb_lld_4m[ENTRIES] = tlb_table[k].entries;
++		break;
++	case TLB_DATA_2M_4M:
++	case TLB_DATA0_2M_4M:
++		if (tlb_lld_2m[ENTRIES] < tlb_table[k].entries)
++			tlb_lld_2m[ENTRIES] = tlb_table[k].entries;
++		if (tlb_lld_4m[ENTRIES] < tlb_table[k].entries)
++			tlb_lld_4m[ENTRIES] = tlb_table[k].entries;
++		break;
++	case TLB_DATA_4K_4M:
++		if (tlb_lld_4k[ENTRIES] < tlb_table[k].entries)
++			tlb_lld_4k[ENTRIES] = tlb_table[k].entries;
++		if (tlb_lld_4m[ENTRIES] < tlb_table[k].entries)
++			tlb_lld_4m[ENTRIES] = tlb_table[k].entries;
++		break;
++	}
++}
++void __cpuinit cpu_detect_tlb_sizes()
++{
++	int i, j, n;
++	unsigned int regs[4];
++	unsigned char *desc = (unsigned char *)regs;
++
++	/* Number of times to iterate */
++	n = cpuid_eax(2) & 0xFF;
++
++	for (i = 0 ; i < n ; i++) {
++		cpuid(2, &regs[0], &regs[1], &regs[2], &regs[3]);
++
++		/* If bit 31 is set, this is an unknown format */
++		for (j = 0 ; j < 3 ; j++)
++			if (regs[j] & (1 << 31))
++				regs[j] = 0;
++
++		/* Byte 0 is level count, not a descriptor */
++		for (j = 1 ; j < 16 ; j++)
++			tlb_lookup(desc[j]);
++	}
++	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n" \
++		"Last level dTLB entires: 4KB %d, 2MB %d, 4MB %d\n",
++		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
++		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
++		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES]);
++}
++
+ void __cpuinit detect_ht(struct cpuinfo_x86 *c)
+ {
+ #ifdef CONFIG_X86_HT
+@@ -911,6 +1072,8 @@ void __init identify_boot_cpu(void)
+ #else
+ 	vgetcpu_set_mode();
+ #endif
++	if (boot_cpu_data.cpuid_level >= 2)
++		cpu_detect_tlb_sizes();
+ }
+ 
+ void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/cpu.h b/arch/x86/kernel/cpu/cpu.h
+index 8bacc78..a102ed1 100644
+--- a/arch/x86/kernel/cpu/cpu.h
++++ b/arch/x86/kernel/cpu/cpu.h
+@@ -34,4 +34,5 @@ extern const struct cpu_dev *const __x86_cpu_dev_start[],
+ 
+ extern void get_cpu_cap(struct cpuinfo_x86 *c);
+ extern void cpu_detect_cache_sizes(struct cpuinfo_x86 *c);
++extern void cpu_detect_tlb_sizes(void);
+ #endif /* ARCH_X86_CPU_H */
+-- 
+1.7.5.4
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-   Copyright (C) Intel 2012
-   Coypright Alex Shi alex.shi@intel.com 
-
-   gcc -o mprotect mprotect.c -lrt -lpthread -O2
-
-    #perf stat -e r881,r882,r884 -e r801,r802,r810,r820,r840,r880,r807 -e rc01 -e r4901,r4902,r4910,r4920,r4940,r4980 -e r5f01  -e rbd01,rdb20  -e r4f02 -e r8004,r8201,r8501,r8502,r8504,r8510,r8520,r8540,r8580  -e rae01,rc820,rc102,rc900 -e r8600  -e rcb10  ./mprotect 
-*/
-
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/mman.h>
-#include <time.h>
-#include <sys/types.h>
-#include <pthread.h>
-
-#define FILE_SIZE	(1024*1024*1024)
-
-#define PAGE_SIZE 	4096
-
-#ifndef MAP_HUGETLB
-#define MAP_HUGETLB	0x40000
-#endif
-
-
-long getnsec(clockid_t clockid) {
-        struct timespec ts;
-        if (clock_gettime(clockid, &ts) == -1)
-                perror("clock_gettime failed");
-        return (long) ts.tv_sec * 1000000000 + (long) ts.tv_nsec;
-}
-
-//data for threads
-struct data{
-	int *readp;
-	void *startaddr;
-	int rw;
-	int loop;
-};
-volatile int * threadstart;
-//thread for memory accessing
-void *accessmm(void *data){
-	struct data *d = data;
-	long *actimes;
-	char x;
-	int i, k;
-	int randn[PAGE_SIZE];
-	
-	for (i=0;i<PAGE_SIZE; i++)
-		randn[i] = rand();
-
-	actimes = malloc(sizeof(long));
-
-	while (*threadstart == 0 )
-		usleep(1);
-
-	if (d->rw == 0)
-		for (*actimes=0; *threadstart == 1; (*actimes)++)
-			for (k=0; k < *d->readp; k++)
-				x = *(volatile char *)(d->startaddr + randn[k]%FILE_SIZE); 
-	else
-		for (*actimes=0; *threadstart == 1; (*actimes)++)
-			for (k=0; k < *d->readp; k++)
-				*(char *)(d->startaddr + randn[k]%FILE_SIZE) = 1; 
-	return actimes;
-}
-
-int main(int argc, char *argv[])
-{
-        static  char            optstr[] = "n:l:p:w:ht:";
-	int n = 32;	/* default flush entries number */
-	int l = 1024; 	/* default loop times */
-	int p = 512;	/* default accessed page number, after mprotect */
-	int er = 0, rw = 0, h = 0, t = 0; /* d: debug; h: use huge page; t thread number */
-	int pagesize = PAGE_SIZE; /*default for regular page */
-	volatile char x;
-
-	int i, j, k, c;
-	void *m1, *startaddr;
-	volatile void *tempaddr;
-	clockid_t clockid = CLOCK_MONOTONIC;
-	unsigned long start, stop, mptime, actime;
-	int randn[PAGE_SIZE];
-
-	pthread_t	pid[1024];
-	void * res;
-	struct data data;
-
-	for (i=0;i<PAGE_SIZE; i++)
-		randn[i] = rand();
-
-        while ((c = getopt(argc, argv, optstr)) != EOF)
-                switch (c) {
-                case 'n':
-                        n = atoi(optarg);
-                        break;
-                case 'l':
-                        l = atoi(optarg);
-                        break;
-                case 'p':
-                        p = atoi(optarg);
-                        break;
-                case 'h':
-                        h = 1;
-                        break;
-                case 'w':
-                        rw = atoi(optarg);
-                        break;
-                case 't':
-                        t = atoi(optarg);
-                        break;
-                case '?':
-                        er = 1;
-                        break;
-                }
-        if (er) {
-                printf("usage: %s %s\n", argv[0], optstr);
-                exit(1);
-	}
-
-	printf("my pid is %d n=%d l=%d p=%d t=%d\n", getpid(), n, l, p, t);	
-	if (h == 0){
-		startaddr = mmap(0, FILE_SIZE, PROT_READ|PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-	} else {
-		startaddr = mmap(0, FILE_SIZE, PROT_READ|PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED | MAP_HUGETLB, -1, 0);
-		pagesize = 2*1024*1024;
-	}
-	if (startaddr == MAP_FAILED) {
-		perror("mmap");
-		exit(1);
-	}
-
-	start = getnsec(clockid);
-	//access whole memory, will generate many page faults 
-	for (tempaddr = startaddr; tempaddr < startaddr + FILE_SIZE; tempaddr += pagesize)
-		memset((char *)tempaddr, 0, 1);
-        stop = getnsec(clockid);
-       	printf("get 256K pages with one byte writing uses %lums, %luns/time \n", 
-		(stop - start)/1000000, (stop-start)*pagesize/FILE_SIZE);
-
-	//thread created, and goes to sleep
-	threadstart = malloc(sizeof(int));
-	*threadstart = 0;
-	data.readp = &p; data.startaddr = startaddr; data.rw = rw; data.loop = l;
-	for (i=0; i< t; i++)
-		if(pthread_create(&pid[i], NULL, accessmm, &data))
-			perror("pthread create");
-	//wait for randn[] filling.
-	if (t!=0)	sleep(1);
-
-	mptime = actime = 0;
-	if (h == 0) {
-		m1 = mmap(0, n * pagesize, PROT_READ|PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-	} else {
-		m1 = mmap(0, n * pagesize, PROT_READ|PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED | MAP_HUGETLB, -1, 0);
-	}
-	if (m1 == MAP_FAILED) {
-		perror("mmap");
-		exit(1);
-	}
-	if (t != 0)
-		start = getnsec(clockid);
-	//kick threads, let them running.
-	*threadstart = 1;
-	for (j=0; j < l; j++) {
-		for (i=1; i <= n; i++) {
-			unsigned long prot[2]={PROT_READ, PROT_WRITE|PROT_READ};
-
-			if (t == 0)
-				start = getnsec(clockid);
-
-			if(mprotect(m1, i*pagesize, prot[i%2])==-1) {
-				perror("mprotect");
-				goto end;
-			}
-			if (t == 0) {
-				stop = getnsec(clockid);
-				mptime += stop - start;
-			}
-
-			if (t == 0) {
-				// access p number pages 
-				start = stop; 
-				if (rw == 0)
-					for (k=0; k < p; k++)
-						x = *(volatile char *)(startaddr + randn[k]%FILE_SIZE);
-				else
-					for (k=0; k < p; k++)
-						*(char *)(startaddr + randn[k]%FILE_SIZE) = 1;
-				actime += getnsec(clockid) - start;
-			} 
-		}
-	}
-	//to avoid accessmm miss *threadstart == 1
-	usleep(5);
-	*threadstart = 0;
-	if (t != 0) {
-		stop = getnsec(clockid);
-		mptime += stop - start;
-	}
-	munmap(m1, n*pagesize);
-
-	//get threads' result.
-	for (i=0; i< t; i++) {
-		if (pthread_join(pid[i], &res))
-			perror("pthread_join");
-		actime += *(long*)res;
-	}
-end:
-	if ( t == 0 ) 
-	       	printf("mprotect use %lums %luns/time, memory access uses %lums %luns/time \n",
-			 mptime/1000000, mptime/(l*n), actime/1000000, actime/p/l/n);
-	else
-		printf("mprotect use %lums %luns/time, %ld times/thread/ms, cost %ldns/time\n",
-			 mptime/1000000, mptime/(l*n), actime*p*1000000/t/mptime, mptime*t/(actime*p));
-	exit(0);
-}
