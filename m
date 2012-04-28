@@ -1,139 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab2D1JK2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 05:10:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44428 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab2D1JKX (ORCPT
+	id S1754081Ab2D1JLL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 05:11:11 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:53426 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217Ab2D1JLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 05:10:23 -0400
-Date: Sat, 28 Apr 2012 02:10:04 -0700
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-360014a36170464ebd9935514f0e0e3d558b0e56@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rusty@rustcorp.com.au, peterz@infradead.org,
-        srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        ralf@linux-mips.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, peterz@infradead.org,
-        srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        ralf@linux-mips.org, tglx@linutronix.de
-In-Reply-To: <20120420124557.512158271@linutronix.de>
-References: <20120420124557.512158271@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] mips: Use generic idle thread allocation
-Git-Commit-ID: 360014a36170464ebd9935514f0e0e3d558b0e56
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 28 Apr 2012 05:11:10 -0400
+Date: Sat, 28 Apr 2012 11:11:08 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: RFC: How to handle function tracing, frame pointers and
+	-mfentry?
+Message-ID: <20120428091108.GA6847@merkur.ravnborg.org>
+References: <1335552399.28106.228.camel@gandalf.stny.rr.com> <20120428083603.GJ27374@one.firstfloor.org> <20120428085028.GA6507@merkur.ravnborg.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Apr 2012 02:10:09 -0700 (PDT)
+In-Reply-To: <20120428085028.GA6507@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  360014a36170464ebd9935514f0e0e3d558b0e56
-Gitweb:     http://git.kernel.org/tip/360014a36170464ebd9935514f0e0e3d558b0e56
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 20 Apr 2012 13:05:51 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 26 Apr 2012 12:06:11 +0200
+On Sat, Apr 28, 2012 at 10:50:28AM +0200, Sam Ravnborg wrote:
+> > 
+> > I just measured and a null compile (nothing changes) of a current
+> > tree calls "gcc" 141 times.
+> Something is wrong then which must be fixed.
+> There are 55 uses of cc-option in */x86/*
+> And only 7 uses of cc-option in the top-level Makefile.
+> 
+> So it looks like we evalute the same assignmet twice or more.
 
-mips: Use generic idle thread allocation
+"make defconfig" in my box calls gcc 50 times.
+This looks much closer to the actual usage of cc-option in the
+above mentioned files.
+How did you manage to achieve 144 calls to gcc?
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Link: http://lkml.kernel.org/r/20120420124557.512158271@linutronix.de
+Any specific configuration that triggers this?
 
----
- arch/mips/Kconfig      |    1 +
- arch/mips/kernel/smp.c |   54 +-----------------------------------------------
- 2 files changed, 2 insertions(+), 53 deletions(-)
-
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index ce30e2f..186fc8c 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -29,6 +29,7 @@ config MIPS
- 	select HAVE_MEMBLOCK
- 	select HAVE_MEMBLOCK_NODE_MAP
- 	select ARCH_DISCARD_MEMBLOCK
-+	select GENERIC_SMP_IDLE_THREAD
- 
- menu "Machine selection"
- 
-diff --git a/arch/mips/kernel/smp.c b/arch/mips/kernel/smp.c
-index 41079b2..71a95f5 100644
---- a/arch/mips/kernel/smp.c
-+++ b/arch/mips/kernel/smp.c
-@@ -186,61 +186,9 @@ void __devinit smp_prepare_boot_cpu(void)
- 	cpu_set(0, cpu_callin_map);
- }
- 
--/*
-- * Called once for each "cpu_possible(cpu)".  Needs to spin up the cpu
-- * and keep control until "cpu_online(cpu)" is set.  Note: cpu is
-- * physical, not logical.
-- */
--static struct task_struct *cpu_idle_thread[NR_CPUS];
--
--struct create_idle {
--	struct work_struct work;
--	struct task_struct *idle;
--	struct completion done;
--	int cpu;
--};
--
--static void __cpuinit do_fork_idle(struct work_struct *work)
--{
--	struct create_idle *c_idle =
--		container_of(work, struct create_idle, work);
--
--	c_idle->idle = fork_idle(c_idle->cpu);
--	complete(&c_idle->done);
--}
--
- int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
- {
--	struct task_struct *idle;
--
--	/*
--	 * Processor goes to start_secondary(), sets online flag
--	 * The following code is purely to make sure
--	 * Linux can schedule processes on this slave.
--	 */
--	if (!cpu_idle_thread[cpu]) {
--		/*
--		 * Schedule work item to avoid forking user task
--		 * Ported from arch/x86/kernel/smpboot.c
--		 */
--		struct create_idle c_idle = {
--			.cpu    = cpu,
--			.done   = COMPLETION_INITIALIZER_ONSTACK(c_idle.done),
--		};
--
--		INIT_WORK_ONSTACK(&c_idle.work, do_fork_idle);
--		schedule_work(&c_idle.work);
--		wait_for_completion(&c_idle.done);
--		idle = cpu_idle_thread[cpu] = c_idle.idle;
--
--		if (IS_ERR(idle))
--			panic(KERN_ERR "Fork failed for CPU %d", cpu);
--	} else {
--		idle = cpu_idle_thread[cpu];
--		init_idle(idle, cpu);
--	}
--
--	mp_ops->boot_secondary(cpu, idle);
-+	mp_ops->boot_secondary(cpu, tidle);
- 
- 	/*
- 	 * Trust is futile.  We should really have timeouts ...
+	Sam
