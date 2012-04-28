@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab2D1SJc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 14:09:32 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53685 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab2D1SJa (ORCPT
+	id S1754767Ab2D1SQl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 14:16:41 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39574 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab2D1SQj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 14:09:30 -0400
-Message-ID: <4F9C3252.7020508@lwfinger.net>
-Date: Sat, 28 Apr 2012 13:09:22 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
+	Sat, 28 Apr 2012 14:16:39 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: davem@davemloft.net, ericvh@gmail.com, jvrao@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davej@redhat.com
+Subject: Re: [PATCH] 9p: disconnect channel when PCI device is removed
+In-Reply-To: <CA+1xoqfQ0Cj5pibxN8ZTXbksezH4NqOERaiYav=D7BA+v86m3A@mail.gmail.com>
+References: <1334353716-19483-1-git-send-email-levinsasha928@gmail.com> <87iph118pd.fsf@skywalker.in.ibm.com> <CA+1xoqfgA6DJL7ztMOdfLZedV6YwzZPUfbovFykdSSZy0Aio6w@mail.gmail.com> <87ehrodjt6.fsf@skywalker.in.ibm.com> <CA+1xoqfQ0Cj5pibxN8ZTXbksezH4NqOERaiYav=D7BA+v86m3A@mail.gmail.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Sat, 28 Apr 2012 23:46:26 +0530
+Message-ID: <87d36rafid.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Regression in 32-bit ppc kernel
-References: <4F973026.3020103@lwfinger.net>  <1335311621.15830.42.camel@pasglop> <4F976352.4060001@lwfinger.net>  <1335327081.21961.28.camel@pasglop> <4F98117C.7080309@lwfinger.net>  <1335390257.21961.53.camel@pasglop> <4F9ABD67.3060704@lwfinger.net>  <1335565573.20866.7.camel@pasglop> <4F9B3398.9060701@lwfinger.net> <1335573757.20866.12.camel@pasglop>
-In-Reply-To: <1335573757.20866.12.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+x-cbid: 12042808-1396-0000-0000-0000010F645D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2012 07:42 PM, Benjamin Herrenschmidt wrote:
+Sasha Levin <levinsasha928@gmail.com> writes:
+
+> On Mon, Apr 16, 2012 at 12:59 PM, Aneesh Kumar K.V
+> <aneesh.kumar@linux.vnet.ibm.com> wrote:
+>> Sasha Levin <levinsasha928@gmail.com> writes:
+>>
+>>> On Sun, Apr 15, 2012 at 2:27 PM, Aneesh Kumar K.V
+>>> <aneesh.kumar@linux.vnet.ibm.com> wrote:
+>>>> Sasha Levin <levinsasha928@gmail.com> writes:
+>>>>
+>>>>> When a virtio_9p pci device is being removed, we should close down any
+>>>>> active channels and free up resources, we're not supposed to BUG() if there's
+>>>>> still an open channel since it's a valid case when removing the PCI device.
+>>>>>
+>>>>> Otherwise, removing the PCI device with an open channel would cause the
+>>>>> following BUG():
+>>>>>
+>>>> ...
+>>>>
+>>>>> diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
+>>>>> index 3d43206..5af18d1 100644
+>>>>> --- a/net/9p/trans_virtio.c
+>>>>> +++ b/net/9p/trans_virtio.c
+>>>>> @@ -615,7 +615,8 @@ static void p9_virtio_remove(struct virtio_device *vdev)
+>>>>>  {
+>>>>>       struct virtio_chan *chan = vdev->priv;
+>>>>>
+>>>>> -     BUG_ON(chan->inuse);
+>>>>> +     if (chan->inuse)
+>>>>> +             p9_virtio_close(chan->client);
+>>>>>       vdev->config->del_vqs(vdev);
+>>>>>
+>>>>>       mutex_lock(&virtio_9p_lock);
+>>>>
+>>>> But an umount should have resulted in p9_virtio_close ? How are you
+>>>> removing the device ? Are you removing the device with file system
+>>>> mounted  ?. In that case may be we should return EBUSY ?
+>>>
+>>> I signal the underlying PCI device to remove (echo 1 >
+>>> /sys/devices/pci0000\:00/[...]/remove), we can't really prevent that
+>>> thing so we must clean up ourselves.
+>>
+>> What does that mean for the mounted file system ? What would happen to
+>> the pending fs operations in that case ?
 >
-> Ok, so you do have a serial port, probably two even :-) One of them is
-> connected to the infra red transceiver and the other one is probably
-> connected to the internal modem.
->
-> (The modem itself might not use it, some of these machines use an
-> i2s/i2c modem, some use a usb modem, but the serial port is wired to the
-> connector regardless).
+> I'm guessing that all of them should be canceled.
 
-I have done a little more debugging. The problem is definitely coming from 
-drivers/tty/serial/pmac_zilog.c. I am getting ChanB interrupts while open, which 
-causes the following code segment to return IRQ_NONE:
+Pending operation we can cancel, but what about dirty pages in cached
+mode ? Also how does virtio-blk handle this ? 
 
-        if (r3 & (CHBEXT | CHBTxIP | CHBRxIP)) {
-                if (!ZS_IS_OPEN(uap_a)) {
-                        pmz_debug("ChanB interrupt while open !\n");
-                        goto skip_b;
-                }
-                write_zsreg(uap_b, R0, RES_H_IUS);
-                zssync(uap_b);
-                if (r3 & CHBEXT)
+> virtio-pci simulates
+> a PCI device, if the PCI device is unplugged there's not much to do
+> about the filesystem or pending requests.
 
-When this section is entered, r3 == 0x2 (CHBTxIP).
+Ideal thing to do would be to make remove return -EBUSY; let the user
+umount. But looking at the code, I guess there is no easy way to return
+error from remove callback ?
 
-Larry
+-aneesh
+
