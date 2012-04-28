@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab2D1SCN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 14:02:13 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39851 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171Ab2D1SCM (ORCPT
+	id S1754800Ab2D1SCz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 14:02:55 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45959 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747Ab2D1SCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 14:02:12 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
-In-Reply-To: <20120427143646.8209627e.akpm@linux-foundation.org>
-References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au> <4F9ABF9C.2070707@xenotime.net> <alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com> <20120427132343.fbb443b9.akpm@linux-foundation.org> <alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com> <20120427143646.8209627e.akpm@linux-foundation.org>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Sat, 28 Apr 2012 23:31:45 +0530
-Message-ID: <87fwbnag6u.fsf@skywalker.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12042807-0260-0000-0000-000000F46969
+	Sat, 28 Apr 2012 14:02:23 -0400
+Date: Sat, 28 Apr 2012 19:05:02 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Preston Fick <pffick@gmail.com>
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, preston.fick@silabs.com,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] usb: cp210x: Added support for GPIO (CP2103/4/5)
+Message-ID: <20120428190502.32eaf294@pyramind.ukuu.org.uk>
+In-Reply-To: <1335632134-2488-1-git-send-email-preston.fick@silabs.com>
+References: <1335632134-2488-1-git-send-email-preston.fick@silabs.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
 
-> On Fri, 27 Apr 2012 14:27:13 -0700 (PDT)
-> David Rientjes <rientjes@google.com> wrote:
->
->> On Fri, 27 Apr 2012, Andrew Morton wrote:
->> 
->> > Seems reasonable.  But the CONFIG_HUGETLB_PAGE=y,
->> > CONFIG_MEM_RES_CTLR_HUGETLB=n combination will cause unneeded code
->> > generation and space consumption in memcontrol.c.
->> > 
->> > I wonder if we can additionally do, within memcontrol.c:
->> > 
->> > /*
->> >  * Nice comment goes here
->> >  */
->> > #ifdef CONFIG_MEM_RES_CTLR_HUGETLB
->> > #define HUGE_MAX_HSTATE_FOO HUGE_MAX_HSTATE
->> > #else
->> > #define HUGE_MAX_HSTATE_FOO 0
->> > #endif
->> > 
->> > and s/HUGE_MAX_HSTATE/HUGE_MAX_HSTATE_FOO/ in that file.
->> > 
->> 
->> I haven't looked at the hugetlb memcg controller in-depth (yet), but I 
->> really think we should start considering breaking things like this off 
->> into its own cgroup.  The hugetlb extension seems like something that 
->> could be easily separtated, but perhaps I'm saying "easily" because I 
->> haven't looked at the implementation.
->> 
->> mm/memcontrol.c in linux-next is 5877 lines and, if history is any guide, 
->> it's going to continue growing.
->> 
->> If the hugetlb usage isn't charged against the memcg's 
->> memory.usage_in_bytes like thp is, then I really think it should be its 
->> own cgroup.  From the hugetlb perspective absent any cgroups, things like 
->> hstates (since we're talking about HUGE_MAX_HSTATE) are global resources 
->> and so you'd need to preallocate these on the command line or via sysfs 
->> before you could mmap them.  So if my assumption that the hugetlb memcg 
->> controller is only governing these global resources and charging a set of 
->> tasks for what they use, then it really has no business in mm/memcontrol.c 
->> to begin with, in my opinion.
->
+>   */
+> @@ -424,8 +430,8 @@ static int cp210x_open(struct tty_struct *tty, struct usb_serial_port *port)
+>  
+>  	dbg("%s - port %d", __func__, port->number);
+>  
+> -	result = cp210x_set_config_single(port, CP210X_IFC_ENABLE,
+> -								UART_ENABLE);
+> +	result = cp210x_set_config(port, REQTYPE_HOST_TO_INTERFACE,
+> +				CP210X_IFC_ENABLE, UART_ENABLE, NULL, 0);
 
-My first version was to do it as a seperate controller 
+These kind of unrelated changes make review hard. Why are they there ?
 
-http://thread.gmane.org/gmane.linux.kernel.mm/73826
+> +	case IOCTL_GPIOGET:
+> +		if ((port_priv->bPartNumber == CP2103_PARTNUM) ||
 
-But the feedback I received was to do it as a part of memcg extension,
-because what the controller is limiting is memory albeit a different
-type. AFAIU there is also this goal of avoiding controller proliferation.
 
--aneesh
+All the part specific stuff in ifs rapidly gets unmaintainable. Better to
+set up a port_priv->get_gpio/set_gpio.
 
+>  /*
+>   * cp210x_get_termios
+>   * Reads the baud rate, data bits, parity, stop bits and flow control mode
+> @@ -490,14 +565,16 @@ static void cp210x_get_termios_port(struct usb_serial_port *port,
+>  
+>  	dbg("%s - port %d", __func__, port->number);
+>  
+> -	cp210x_get_config(port, CP210X_GET_BAUDRATE, &baud, 4);
+> +	cp210x_get_config(port, REQTYPE_INTERFACE_TO_HOST,
+> +			CP210X_GET_BAUDRATE, 0, &baud, 4);
+
+
+And again it disturbs all the rest of the code for no apparent good
+reason.
+
+  
+The large number of changes all over the code for a single localised
+feature change ought to be flagging up that it's not being done in a
+clean way.
+
+The other question is whether having some custom gpio poking interface is
+actually a good idea. I suspect probably not. The kernel gpio layer can
+help a bit but doesn't really solve the problem as there is no way to tie
+a gpio to a port. Given how many devices seem to have gpios these days I
+wonder if we need a gpio setting interface via termiox.
+
+We could also the agree how that maps onto the extra gpio lines used with
+SIM card readers and the like so we can standardise that.
+
+Alan
