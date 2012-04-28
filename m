@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab2D1QZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 12:25:26 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:2638 "EHLO relay.sw.ru"
+	id S1754486Ab2D1Qfi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 12:35:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46749 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752311Ab2D1QZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 12:25:25 -0400
-Message-ID: <4F9C19DB.2050601@parallels.com>
-Date: Sat, 28 Apr 2012 20:24:59 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1752981Ab2D1Qfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 12:35:36 -0400
+Message-ID: <4F9C1C31.7060507@zytor.com>
+Date: Sat, 28 Apr 2012 09:34:57 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH bugfix] proc/pagemap: correctly report non-present ptes
- and holes between vmas
-References: <20120428162229.15658.56316.stgit@zurg>
-In-Reply-To: <20120428162229.15658.56316.stgit@zurg>
+To: Andi Kleen <andi@firstfloor.org>
+CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: RFC: How to handle function tracing, frame pointers and -mfentry?
+References: <1335552399.28106.228.camel@gandalf.stny.rr.com> <20120428083603.GJ27374@one.firstfloor.org>
+In-Reply-To: <20120428083603.GJ27374@one.firstfloor.org>
+X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2012 08:22 PM, Konstantin Khlebnikov wrote:
-> This patch resets current pagemap-entry if current pte isn't present,
-> or if current vma is over. Otherwise pagemap reports last entry again and again.
+On 04/28/2012 01:36 AM, Andi Kleen wrote:
 > 
-> non-present pte reporting was broken in commit v3.3-3738-g092b50b
-> ("pagemap: introduce data structure for pagemap entry")
+> Kconfig just needs to learn how to run the target compiler
 > 
-> reporting for holes was broken in commit v3.3-3734-g5aaabe8
-> ("pagemap: avoid splitting thp when reading /proc/pid/pagemap")
+> I think that's the right direction. Right now our main
+> Makefiles get polluted more and more with "test compiles", each
+> of which makes a "null make" slower and slower. 
 > 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Reported-by: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Andi Kleen <ak@linux.intel.com>
+> I just measured and a null compile (nothing changes) of a current
+> tree calls "gcc" 141 times.
+> 
+> All this stuff should be cached in the Kconfig instead.
+> 
+> It may break some obscure setups (that can be probably fixed without
+> too much effort), but the development turnaround improvement
+> for everyone else would be worth it.
+> 
 
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
+I don't think it is a performance issue as much as a utility issue.
+When Kconfig can't actually reflect what is built into the resulting
+kernel, that is a problem.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
