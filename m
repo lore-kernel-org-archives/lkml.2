@@ -1,87 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab2D1CAN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 22:00:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57745 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759011Ab2D1CAI (ORCPT
+	id S1759168Ab2D1CA0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 22:00:26 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:48308 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759037Ab2D1CAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 22:00:08 -0400
-Date: Fri, 27 Apr 2012 19:00:03 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Han Ying <yinghan@google.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 8/9 v2] cgroup: avoid creating new cgroup under a
- cgroup being destroyed
-Message-ID: <20120428020003.GA26573@mtj.dyndns.org>
-References: <4F9A327A.6050409@jp.fujitsu.com>
- <4F9A36DE.30301@jp.fujitsu.com>
- <20120427204035.GN26595@google.com>
- <CABEgKgrJ68wU-L17zwN4_htX948TNFnLVgts=hFeY7QG3etwCA@mail.gmail.com>
+	Fri, 27 Apr 2012 22:00:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6694"; a="185773710"
+X-IronPort-AV: E=Sophos;i="4.75,493,1330934400"; 
+   d="scan'208";a="120639726"
+From: xiong <xiong@qca.qualcomm.com>
+To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
+        xiong <xiong@qca.qualcomm.com>
+Subject: [PATCH 08/10] atl1c: do MAC-reset when PHY link down
+Date: Sat, 28 Apr 2012 09:58:43 +0800
+Message-ID: <1335578325-21326-9-git-send-email-xiong@qca.qualcomm.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1335578325-21326-1-git-send-email-xiong@qca.qualcomm.com>
+References: <1335578325-21326-1-git-send-email-xiong@qca.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABEgKgrJ68wU-L17zwN4_htX948TNFnLVgts=hFeY7QG3etwCA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, KAME.
+There may be tx-skbs still pending in HW when PHY link down.
+Reset MAC will make the DMA engine go to the start point.
+and release all pending skbs.
+Note: Reset MAC will clear any interrupt status and mask.
 
-On Sat, Apr 28, 2012 at 09:20:52AM +0900, Hiroyuki Kamezawa wrote:
-> What I thought was...
-> Assume a memory cgoup A, with use_hierarchy==1.
-> 
-> 1.  thread:0   start calling pre->destroy of cgroup A
-> 2.  thread:0   it sometimes calls cond_resched or other sleep functions.
-> 3.  thread:1   create a cgroup B under "A"
-> 4.  thread:1   attach a thread X to cgroup A/B
-> 5.  res_counter of A charged up. but pre_destroy() can't find what happens
->     because it scans LRU of A.
-> 
-> So, we have -EBUSY now. I considered some options to fix this.
-> 
-> option 1) just return 0 instead of -EBUSY when pre_destroy() finds a
-> task or a child.
-> 
-> There is a race....even if we return 0 here and expects cgroup code
-> can catch it,
-> the thread or a child we found may be moved to other cgroup before we check it
-> in cgroup's final check.
-> In that case, the cgroup will be freed before full-ack of
-> pre_destory() and the charges
-> will be lost.
+Signed-off-by: xiong <xiong@qca.qualcomm.com>
+Tested-by: Liu David <dwliu@qca.qualcomm.com>
+---
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |   74 ++++++++++++++--------
+ 1 files changed, 47 insertions(+), 27 deletions(-)
 
-So, cgroup code won't proceed with rmdir if children are created
-inbetween and note that the race condition of lost charge you
-described above existed before this change - ie. new cgroup could be
-created after pre_destroy() is complete.
-
-The current cgroup rmdir code is transitional.  It has to support both
-retrying and non-retrying pre_destroy()s and that means we can't mark
-the cgroup DEAD before starting invoking pre_destroy(); however, we
-can do that once memcg's pre_destroy() is converted which will also
-remove all the WAIT_ON_RMDIR mechanism and the above described race.
-
-There really isn't much point in trying to make the current cgroup
-rmdir behave perfectly when the next step is removing all the fixed up
-parts.
-
-So, IMHO, just making pre_destroy() clean up its own charges and
-always returning 0 is enough.  There's no need to fix up old
-non-critical race condition at this point in the patch stream.  cgroup
-rmdir simplification will make them disappear anyway.
-
-Thanks.
-
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+index e082901..f410d84 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -60,6 +60,10 @@ static void atl1c_clean_rx_irq(struct atl1c_adapter *adapter,
+ 		   int *work_done, int work_to_do);
+ static int atl1c_up(struct atl1c_adapter *adapter);
+ static void atl1c_down(struct atl1c_adapter *adapter);
++static int atl1c_reset_mac(struct atl1c_hw *hw);
++static void atl1c_reset_dma_ring(struct atl1c_adapter *adapter);
++static int atl1c_configure(struct atl1c_adapter *adapter);
++static int atl1c_alloc_rx_buffer(struct atl1c_adapter *adapter);
+ 
+ static const u16 atl1c_pay_load_size[] = {
+ 	128, 256, 512, 1024, 2048, 4096,
+@@ -256,14 +260,16 @@ static void atl1c_check_link_status(struct atl1c_adapter *adapter)
+ 
+ 	if ((phy_data & BMSR_LSTATUS) == 0) {
+ 		/* link down */
++		netif_carrier_off(netdev);
++		netif_stop_queue(netdev);
+ 		hw->hibernate = true;
+-		if (atl1c_stop_mac(hw) != 0)
++		if (atl1c_reset_mac(hw) != 0)
+ 			if (netif_msg_hw(adapter))
+-				dev_warn(&pdev->dev, "stop mac failed\n");
++				dev_warn(&pdev->dev, "reset mac failed\n");
+ 		atl1c_set_aspm(hw, SPEED_0);
+ 		atl1c_post_phy_linkchg(hw, SPEED_0);
+-		netif_carrier_off(netdev);
+-		netif_stop_queue(netdev);
++		atl1c_reset_dma_ring(adapter);
++		atl1c_configure(adapter);
+ 	} else {
+ 		/* Link Up */
+ 		hw->hibernate = false;
+@@ -341,8 +347,11 @@ static void atl1c_common_task(struct work_struct *work)
+ 	}
+ 
+ 	if (test_and_clear_bit(ATL1C_WORK_EVENT_LINK_CHANGE,
+-		&adapter->work_event))
++		&adapter->work_event)) {
++		atl1c_irq_disable(adapter);
+ 		atl1c_check_link_status(adapter);
++		atl1c_irq_enable(adapter);
++	}
+ }
+ 
+ 
+@@ -1232,9 +1241,6 @@ static int atl1c_reset_mac(struct atl1c_hw *hw)
+ 	struct pci_dev *pdev = adapter->pdev;
+ 	u32 ctrl_data = 0;
+ 
+-	AT_WRITE_REG(hw, REG_IMR, 0);
+-	AT_WRITE_REG(hw, REG_ISR, ISR_DIS_INT);
+-
+ 	atl1c_stop_mac(hw);
+ 	/*
+ 	 * Issue Soft Reset to the MAC.  This will reset the chip's
+@@ -1373,7 +1379,7 @@ static void atl1c_set_aspm(struct atl1c_hw *hw, u16 link_speed)
+  *
+  * Configure the Tx /Rx unit of the MAC after a reset.
+  */
+-static int atl1c_configure(struct atl1c_adapter *adapter)
++static int atl1c_configure_mac(struct atl1c_adapter *adapter)
+ {
+ 	struct atl1c_hw *hw = &adapter->hw;
+ 	u32 master_ctrl_data = 0;
+@@ -1436,6 +1442,25 @@ static int atl1c_configure(struct atl1c_adapter *adapter)
+ 	return 0;
+ }
+ 
++static int atl1c_configure(struct atl1c_adapter *adapter)
++{
++	struct net_device *netdev = adapter->netdev;
++	int num;
++
++	atl1c_init_ring_ptrs(adapter);
++	atl1c_set_multi(netdev);
++	atl1c_restore_vlan(adapter);
++
++	num = atl1c_alloc_rx_buffer(adapter);
++	if (unlikely(num == 0))
++		return -ENOMEM;
++
++	if (atl1c_configure_mac(adapter))
++		return -EIO;
++
++	return 0;
++}
++
+ static void atl1c_update_hw_stats(struct atl1c_adapter *adapter)
+ {
+ 	u16 hw_reg_addr = 0;
+@@ -2196,41 +2221,38 @@ static int atl1c_request_irq(struct atl1c_adapter *adapter)
+ 	return err;
+ }
+ 
++
++static void atl1c_reset_dma_ring(struct atl1c_adapter *adapter)
++{
++	/* release tx-pending skbs and reset tx/rx ring index */
++	atl1c_clean_tx_ring(adapter, atl1c_trans_normal);
++	atl1c_clean_tx_ring(adapter, atl1c_trans_high);
++	atl1c_clean_rx_ring(adapter);
++}
++
+ static int atl1c_up(struct atl1c_adapter *adapter)
+ {
+ 	struct net_device *netdev = adapter->netdev;
+-	int num;
+ 	int err;
+ 
+ 	netif_carrier_off(netdev);
+-	atl1c_init_ring_ptrs(adapter);
+-	atl1c_set_multi(netdev);
+-	atl1c_restore_vlan(adapter);
+ 
+-	num = atl1c_alloc_rx_buffer(adapter);
+-	if (unlikely(num == 0)) {
+-		err = -ENOMEM;
+-		goto err_alloc_rx;
+-	}
+-
+-	if (atl1c_configure(adapter)) {
+-		err = -EIO;
++	err = atl1c_configure(adapter);
++	if (unlikely(err))
+ 		goto err_up;
+-	}
+ 
+ 	err = atl1c_request_irq(adapter);
+ 	if (unlikely(err))
+ 		goto err_up;
+ 
++	atl1c_check_link_status(adapter);
+ 	clear_bit(__AT_DOWN, &adapter->flags);
+ 	napi_enable(&adapter->napi);
+ 	atl1c_irq_enable(adapter);
+-	atl1c_check_link_status(adapter);
+ 	netif_start_queue(netdev);
+ 	return err;
+ 
+ err_up:
+-err_alloc_rx:
+ 	atl1c_clean_rx_ring(adapter);
+ 	return err;
+ }
+@@ -2256,9 +2278,7 @@ static void atl1c_down(struct atl1c_adapter *adapter)
+ 
+ 	adapter->link_speed = SPEED_0;
+ 	adapter->link_duplex = -1;
+-	atl1c_clean_tx_ring(adapter, atl1c_trans_normal);
+-	atl1c_clean_tx_ring(adapter, atl1c_trans_high);
+-	atl1c_clean_rx_ring(adapter);
++	atl1c_reset_dma_ring(adapter);
+ }
+ 
+ /*
 -- 
-tejun
+1.7.7
+
