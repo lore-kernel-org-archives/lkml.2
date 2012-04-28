@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab2D1Izu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 04:55:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42387 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab2D1Izs convert rfc822-to-8bit (ORCPT
+	id S1752692Ab2D1JDV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 05:03:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44244 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab2D1JDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 04:55:48 -0400
+	Sat, 28 Apr 2012 05:03:18 -0400
+Date: Sat, 28 Apr 2012 02:01:55 -0700
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <tip-bda3bdc9afce46302810e12ca1790ce08b9c40ce@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rusty@rustcorp.com.au, peterz@infradead.org,
+        srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, takata@linux-m32r.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, peterz@infradead.org,
+        srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        takata@linux-m32r.org, tglx@linutronix.de
+In-Reply-To: <20120420124556.899547554@linutronix.de>
+References: <20120420124556.899547554@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:smp/hotplug] m32r: Remove pointless function prototypes
+Git-Commit-ID: bda3bdc9afce46302810e12ca1790ce08b9c40ce
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <87ehrodjt6.fsf@skywalker.in.ibm.com>
-References: <1334353716-19483-1-git-send-email-levinsasha928@gmail.com>
- <87iph118pd.fsf@skywalker.in.ibm.com> <CA+1xoqfgA6DJL7ztMOdfLZedV6YwzZPUfbovFykdSSZy0Aio6w@mail.gmail.com>
- <87ehrodjt6.fsf@skywalker.in.ibm.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Sat, 28 Apr 2012 10:55:26 +0200
-Message-ID: <CA+1xoqfQ0Cj5pibxN8ZTXbksezH4NqOERaiYav=D7BA+v86m3A@mail.gmail.com>
-Subject: Re: [PATCH] 9p: disconnect channel when PCI device is removed
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: davem@davemloft.net, ericvh@gmail.com, jvrao@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davej@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Apr 2012 02:02:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 12:59 PM, Aneesh Kumar K.V
-<aneesh.kumar@linux.vnet.ibm.com> wrote:
-> Sasha Levin <levinsasha928@gmail.com> writes:
->
->> On Sun, Apr 15, 2012 at 2:27 PM, Aneesh Kumar K.V
->> <aneesh.kumar@linux.vnet.ibm.com> wrote:
->>> Sasha Levin <levinsasha928@gmail.com> writes:
->>>
->>>> When a virtio_9p pci device is being removed, we should close down any
->>>> active channels and free up resources, we're not supposed to BUG() if there's
->>>> still an open channel since it's a valid case when removing the PCI device.
->>>>
->>>> Otherwise, removing the PCI device with an open channel would cause the
->>>> following BUG():
->>>>
->>> ...
->>>
->>>> diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
->>>> index 3d43206..5af18d1 100644
->>>> --- a/net/9p/trans_virtio.c
->>>> +++ b/net/9p/trans_virtio.c
->>>> @@ -615,7 +615,8 @@ static void p9_virtio_remove(struct virtio_device *vdev)
->>>>  {
->>>>       struct virtio_chan *chan = vdev->priv;
->>>>
->>>> -     BUG_ON(chan->inuse);
->>>> +     if (chan->inuse)
->>>> +             p9_virtio_close(chan->client);
->>>>       vdev->config->del_vqs(vdev);
->>>>
->>>>       mutex_lock(&virtio_9p_lock);
->>>
->>> But an umount should have resulted in p9_virtio_close ? How are you
->>> removing the device ? Are you removing the device with file system
->>> mounted  ?. In that case may be we should return EBUSY ?
->>
->> I signal the underlying PCI device to remove (echo 1 >
->> /sys/devices/pci0000\:00/[...]/remove), we can't really prevent that
->> thing so we must clean up ourselves.
->
-> What does that mean for the mounted file system ? What would happen to
-> the pending fs operations in that case ?
+Commit-ID:  bda3bdc9afce46302810e12ca1790ce08b9c40ce
+Gitweb:     http://git.kernel.org/tip/bda3bdc9afce46302810e12ca1790ce08b9c40ce
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Fri, 20 Apr 2012 13:05:41 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 26 Apr 2012 12:06:08 +0200
 
-I'm guessing that all of them should be canceled. virtio-pci simulates
-a PCI device, if the PCI device is unplugged there's not much to do
-about the filesystem or pending requests.
+m32r: Remove pointless function prototypes
+
+Already declared in include/linux/smp.h
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Hirokazu Takata <takata@linux-m32r.org>
+Link: http://lkml.kernel.org/r/20120420124556.899547554@linutronix.de
+---
+ arch/m32r/kernel/smpboot.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/arch/m32r/kernel/smpboot.c b/arch/m32r/kernel/smpboot.c
+index cfdbe5d..31541c9 100644
+--- a/arch/m32r/kernel/smpboot.c
++++ b/arch/m32r/kernel/smpboot.c
+@@ -109,12 +109,8 @@ static unsigned int calibration_result;
+ /* Function Prototypes                                                       */
+ /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
+ 
+-void smp_prepare_boot_cpu(void);
+-void smp_prepare_cpus(unsigned int);
+ static void init_ipi_lock(void);
+ static void do_boot_cpu(int);
+-int __cpu_up(unsigned int);
+-void smp_cpus_done(unsigned int);
+ 
+ int start_secondary(void *);
+ static void smp_callin(void);
