@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab2D1JNv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 05:13:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44479 "EHLO
+	id S1754385Ab2D1JOi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 05:14:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44492 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928Ab2D1JNs (ORCPT
+	with ESMTP id S1752393Ab2D1JOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 05:13:48 -0400
-Date: Sat, 28 Apr 2012 02:13:24 -0700
+	Sat, 28 Apr 2012 05:14:36 -0400
+Date: Sat, 28 Apr 2012 02:14:14 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-6bba2682c62e432eaf7b82f8ca182e8c73256e74@git.kernel.org>
+Message-ID: <tip-ea0588cb6b201c38b0120c4ad38bc548d5dde29a@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rusty@rustcorp.com.au, peterz@infradead.org,
+        rusty@rustcorp.com.au, peterz@infradead.org, lethal@linux-sh.org,
         srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        vapier@gentoo.org, tglx@linutronix.de
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, peterz@infradead.org,
-        srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        vapier@gentoo.org, tglx@linutronix.de
-In-Reply-To: <20120420124557.717064871@linutronix.de>
-References: <20120420124557.717064871@linutronix.de>
+        srivatsa.bhat@linux.vnet.ibm.com, lethal@linux-sh.org,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de
+In-Reply-To: <20120420124557.855203626@linutronix.de>
+References: <20120420124557.855203626@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] blackfin: Use generic idle thread allocation
-Git-Commit-ID: 6bba2682c62e432eaf7b82f8ca182e8c73256e74
+Subject: [tip:smp/hotplug] sh: Use generic idle thread allocation
+Git-Commit-ID: ea0588cb6b201c38b0120c4ad38bc548d5dde29a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,75 +31,85 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Apr 2012 02:13:30 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Apr 2012 02:14:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6bba2682c62e432eaf7b82f8ca182e8c73256e74
-Gitweb:     http://git.kernel.org/tip/6bba2682c62e432eaf7b82f8ca182e8c73256e74
+Commit-ID:  ea0588cb6b201c38b0120c4ad38bc548d5dde29a
+Gitweb:     http://git.kernel.org/tip/ea0588cb6b201c38b0120c4ad38bc548d5dde29a
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 20 Apr 2012 13:05:53 +0000
+AuthorDate: Fri, 20 Apr 2012 13:05:54 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Thu, 26 Apr 2012 12:06:12 +0200
 
-blackfin: Use generic idle thread allocation
+sh: Use generic idle thread allocation
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Link: http://lkml.kernel.org/r/20120420124557.717064871@linutronix.de
-
+Acked-by: Paul Mundt <lethal@linux-sh.org>
+Link: http://lkml.kernel.org/r/20120420124557.855203626@linutronix.de
 ---
- arch/blackfin/Kconfig           |    1 +
- arch/blackfin/mach-common/smp.c |   19 +------------------
- 2 files changed, 2 insertions(+), 18 deletions(-)
+ arch/sh/Kconfig                 |    1 +
+ arch/sh/include/asm/processor.h |    4 ----
+ arch/sh/kernel/smp.c            |   14 +-------------
+ 3 files changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-index 373a690..779b9c8 100644
---- a/arch/blackfin/Kconfig
-+++ b/arch/blackfin/Kconfig
-@@ -37,6 +37,7 @@ config BLACKFIN
- 	select GENERIC_IRQ_PROBE
- 	select IRQ_PER_CPU if SMP
- 	select HAVE_NMI_WATCHDOG if NMI_WATCHDOG
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index ff9e033..244cfd0 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -28,6 +28,7 @@ config SUPERH
+ 	select RTC_LIB
+ 	select GENERIC_ATOMIC64
+ 	select GENERIC_IRQ_SHOW
 +	select GENERIC_SMP_IDLE_THREAD
+ 	help
+ 	  The SuperH is a RISC processor targeted for use in embedded systems
+ 	  and consumer electronics; it was also used in the Sega Dreamcast
+diff --git a/arch/sh/include/asm/processor.h b/arch/sh/include/asm/processor.h
+index a229c39..6d87912 100644
+--- a/arch/sh/include/asm/processor.h
++++ b/arch/sh/include/asm/processor.h
+@@ -85,10 +85,6 @@ struct sh_cpuinfo {
+ 	struct tlb_info itlb;
+ 	struct tlb_info dtlb;
  
- config GENERIC_CSUM
- 	def_bool y
-diff --git a/arch/blackfin/mach-common/smp.c b/arch/blackfin/mach-common/smp.c
-index d0cddd9..00bbe67 100644
---- a/arch/blackfin/mach-common/smp.c
-+++ b/arch/blackfin/mach-common/smp.c
-@@ -340,27 +340,10 @@ void smp_send_stop(void)
- 	return;
- }
+-#ifdef CONFIG_SMP
+-	struct task_struct *idle;
+-#endif
+-
+ 	unsigned int phys_bits;
+ 	unsigned long flags;
+ } __attribute__ ((aligned(L1_CACHE_BYTES)));
+diff --git a/arch/sh/kernel/smp.c b/arch/sh/kernel/smp.c
+index ebb76e2..b86e9ca 100644
+--- a/arch/sh/kernel/smp.c
++++ b/arch/sh/kernel/smp.c
+@@ -220,22 +220,10 @@ extern struct {
+ 	void *thread_info;
+ } stack_start;
  
 -int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
-+int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
++int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tsk)
  {
- 	int ret;
--	struct blackfin_cpudata *ci = &per_cpu(cpu_data, cpu);
--	struct task_struct *idle = ci->idle;
+-	struct task_struct *tsk;
+ 	unsigned long timeout;
  
--	if (idle) {
--		free_task(idle);
--		idle = NULL;
+-	tsk = cpu_data[cpu].idle;
+-	if (!tsk) {
+-		tsk = fork_idle(cpu);
+-		if (IS_ERR(tsk)) {
+-			pr_err("Failed forking idle task for cpu %d\n", cpu);
+-			return PTR_ERR(tsk);
+-		}
+-
+-		cpu_data[cpu].idle = tsk;
 -	}
 -
--	if (!idle) {
--		idle = fork_idle(cpu);
--		if (IS_ERR(idle)) {
--			printk(KERN_ERR "CPU%u: fork() failed\n", cpu);
--			return PTR_ERR(idle);
--		}
--		ci->idle = idle;
--	} else {
--		init_idle(idle, cpu);
--	}
- 	secondary_stack = task_stack_page(idle) + THREAD_SIZE;
+ 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
  
- 	ret = platform_boot_secondary(cpu, idle);
+ 	/* Fill in data in head.S for secondary cpus */
