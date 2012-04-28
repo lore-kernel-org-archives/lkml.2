@@ -1,157 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab2D1QiS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 12:38:18 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60058 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab2D1QiR (ORCPT
+	id S1754479Ab2D1Qym (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 12:54:42 -0400
+Received: from fed1rmfepi102.cox.net ([68.230.241.133]:58951 "EHLO
+	fed1rmfepi102.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab2D1Qyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 12:38:17 -0400
-Message-ID: <4F9C1CF5.3050706@linaro.org>
-Date: Sat, 28 Apr 2012 17:38:13 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120402 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Anton Vorontsov <anton.vorontsov@linaro.org>, linux-kernel@vger.kernel.org,
-        Karl Komierowski <karl.komierowski@stericsson.com>,
-        Arun Murthy <arun.murthy@stericsson.com>
-Subject: Re: [PATCH 1/3] power/ab8500_charger: harden platform data check
-References: <1334304949-18301-1-git-send-email-linus.walleij@stericsson.com> <CACRpkdaM=OecD=M_J9X9shYKQkWO03mhb2BFxCWOeocr8_m=DQ@mail.gmail.com>
-In-Reply-To: <CACRpkdaM=OecD=M_J9X9shYKQkWO03mhb2BFxCWOeocr8_m=DQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 28 Apr 2012 12:54:41 -0400
+X-Greylist: delayed 650 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Apr 2012 12:54:41 EDT
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020209.4F9C1E42.0032,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=RVIG98EmAZX5jXArMQd8FxtCZcYhwc9mn7hyf7cAkwU=
+ c=1 sm=1 a=7Z963bPbTNcA:10 a=Ih8C5AGSRc4A:10 a=kj9zAlcOel0A:10
+ a=EnxFWsjfTqQ6QKiSKHQd6A==:17 a=YImvlnZFAAAA:8 a=ArPv7U__Cm-GsaDrKyIA:9
+ a=x4WlgF_pc_y6SsgT0WIA:7 a=CjuIK1q_8ugA:10 a=TAieoWEYySMA:10
+ a=F-eJaHdYkBQA:10 a=IXwbdqTHNtwA:10 a=EnxFWsjfTqQ6QKiSKHQd6A==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+From: "Bob Kaufman" <bob@inncareers.com>
+To: Web Images <linux-kernel@vger.kernel.org>
+Date: Sat, 28 Apr 2012 09:43:08 -0800
+Subject: May I submit you for this high focus, high paying Cirrus position?
+Mime-Version: 1.0
+X-Mailer: XyberSleuth - TalentHook
+Content-Type: text/plain; charset=us-ascii
+Message-Id: <20120428164346.GMRM29577.fed1rmfepo201.cox.net@fed1rmimpo209.cox.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Find my version of the 3 patches below.
 
-These also clean up some ugliness and brings the variable initialisation 
-formatting more into line with other drivers. If you like them I can 
-officially send them to the MLs as patches.
+May I submit you for this high focus, high paying CIRRUS LOGIC position?
 
-Your call of course.
+Send me your resume. What we are working with is not usable. 
 
-On 28/04/12 13:59, Linus Walleij wrote:
-> On Fri, Apr 13, 2012 at 10:15 AM, Linus Walleij
-> <linus.walleij@stericsson.com>  wrote:
-> 
->> From: Linus Walleij<linus.walleij@linaro.org>
->>
->> If no platform data at all is supplied the driver crashes,
->> extend the checks to be more careful so we can compile in the
->> driver and boot also without platform data present.
->>
->> Cc: Arun Murthy<arun.murthy@stericsson.com>
->> Signed-off-by: Linus Walleij<linus.walleij@linaro.org>
-> 
-> Anton have you picked these three patches for the -rc:s?
-> 
-> It seems Lee Jones is facing the problems so would be nice to
-> have this upstream.
-> 
-> Yours,
-> Linus Walleij
+Senior Systems Engineer - Low Power Audio Products
+Cirrus Logic    Texas - Austin 
 
-diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
-index d8bb993..a2ebcb4 100644
---- a/drivers/power/ab8500_btemp.c
-+++ b/drivers/power/ab8500_btemp.c
-@@ -964,10 +964,15 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
- {
- 	int irq, i, ret = 0;
- 	u8 val;
--	struct abx500_bm_plat_data *plat_data;
-+	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
-+	struct ab8500_btemp *di;
-+
-+	if (!plat_data) {
-+		dev_err(&pdev->dev, "No platform data\n");
-+		return -EINVAL;
-+	}
- 
--	struct ab8500_btemp *di =
--		kzalloc(sizeof(struct ab8500_btemp), GFP_KERNEL);
-+	di = kzalloc(sizeof(struct ab8500_btemp), GFP_KERNEL);
- 	if (!di)
- 		return -ENOMEM;
- 
-@@ -977,7 +982,6 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
- 	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
- 
- 	/* get btemp specific platform data */
--	plat_data = pdev->dev.platform_data;
- 	di->pdata = plat_data->btemp;
- 	if (!di->pdata) {
- 		dev_err(di->dev, "no btemp platform data supplied\n");
+As a mixed-signal audio Systems Engineer, you will be responsible for contributing to the Marketing Requirements Document and developing the detailed Design and Test Specifications for new low power mixed-signal data converter ICs for portable audio applications. You will work closely with our customers and our internal design, applications, validation, marketing, and product-test organizations. 
 
-##############################################################################
+5+ to 7 years of experience 
+Management Experience Required - No
+Minimum Education - Master's Degree
 
-diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-index e2b4acc..a4e37a8 100644
---- a/drivers/power/ab8500_charger.c
-+++ b/drivers/power/ab8500_charger.c
-@@ -2534,10 +2534,15 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
- static int __devinit ab8500_charger_probe(struct platform_device *pdev)
- {
- 	int irq, i, charger_status, ret = 0;
--	struct abx500_bm_plat_data *plat_data;
-+	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
-+	struct ab8500_charger *di;
- 
--	struct ab8500_charger *di =
--		kzalloc(sizeof(struct ab8500_charger), GFP_KERNEL);
-+	if (!plat_data) {
-+		dev_err(&pdev->dev, "No platform data\n");
-+		return -EINVAL;
-+	}
-+
-+	di = kzalloc(sizeof(struct ab8500_charger), GFP_KERNEL);
- 	if (!di)
- 		return -ENOMEM;
- 
-@@ -2550,7 +2555,6 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
- 	spin_lock_init(&di->usb_state.usb_lock);
- 
- 	/* get charger specific platform data */
--	plat_data = pdev->dev.platform_data;
- 	di->pdata = plat_data->charger;
- 
- 	if (!di->pdata) {
+Willingness to Travel - Occasionally
 
-##############################################################################
+When we receive your resume we will arrange for a confidential telephone call. We will be happy to answer any questions you may have at that tme. 
 
-diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
-index c22f2f0..d88bc47 100644
---- a/drivers/power/ab8500_fg.c
-+++ b/drivers/power/ab8500_fg.c
-@@ -2446,10 +2446,15 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
- {
- 	int i, irq;
- 	int ret = 0;
--	struct abx500_bm_plat_data *plat_data;
-+	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
-+	struct ab8500_fg *di;
-+
-+	if (!plat_data) {
-+		dev_err(&pdev->dev, "No platform data\n");
-+		return -EINVAL;
-+	}
- 
--	struct ab8500_fg *di =
--		kzalloc(sizeof(struct ab8500_fg), GFP_KERNEL);
-+	di = kzalloc(sizeof(struct ab8500_fg), GFP_KERNEL);
- 	if (!di)
- 		return -ENOMEM;
- 
-@@ -2461,7 +2466,6 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
- 	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
- 
- 	/* get fg specific platform data */
--	plat_data = pdev->dev.platform_data;
- 	di->pdata = plat_data->fg;
- 	if (!di->pdata) {
- 		dev_err(di->dev, "no fg platform data supplied\n");
--- 
-1.7.9.1
+Sincerely,
+Bob Kaufman
+
+bob@inncareers.com
+
+www.inncareers.com 
+
+Main office 516-554-8843
+
+
+innCareers is a research company that does career placements. We seek out special situations and special people. 
+
+
+
+
+
+
+
+
+
+
+
+
