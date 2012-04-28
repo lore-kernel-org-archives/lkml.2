@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab2D1Cgq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 22:36:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56770 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab2D1Cgo (ORCPT
+	id S1758707Ab2D1CmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 22:42:13 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42347 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752Ab2D1CmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 22:36:44 -0400
-From: Ben Minerds <puzzleduck@gmail.com>
-To: wgreathouse@smva.com
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        puzzleduck@gmail.com
-Subject: [PATCH] USB: serial: Changes to conform with coding style
-Date: Sat, 28 Apr 2012 13:36:35 +1000
-Message-Id: <1335584195-15607-1-git-send-email-puzzleduck@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Fri, 27 Apr 2012 22:42:12 -0400
+Date: Sat, 28 Apr 2012 03:42:08 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
+Message-ID: <20120428024208.GS6871@ZenIV.linux.org.uk>
+References: <20120423180150.GA6871@ZenIV.linux.org.uk>
+ <20120424072617.GB6871@ZenIV.linux.org.uk>
+ <20120426183742.GA324@redhat.com>
+ <20120426231942.GJ6871@ZenIV.linux.org.uk>
+ <20120427172444.GA30267@redhat.com>
+ <20120427184528.GL6871@ZenIV.linux.org.uk>
+ <20120427202002.8ED632C0BF@topped-with-meat.com>
+ <20120427211244.GO6871@ZenIV.linux.org.uk>
+ <20120427212729.652542C0AF@topped-with-meat.com>
+ <20120427231526.GP6871@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120427231526.GP6871@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed some spaces before tabs and reformatted switch statement.
+On Sat, Apr 28, 2012 at 12:15:26AM +0100, Al Viro wrote:
 
-Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
----
- drivers/usb/serial/belkin_sa.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+> I think all such architectures need that check lifted to do_notify_resume()
+> (and the rest needs it killed, of course).  Including x86, by the look
+> of it - we _probably_ can't get there with TIF_NOTIFY_RESUME and
+> !user_mode(regs), but I'm not entirely sure of that.  arm is in about the
+> same situation; alpha, ppc{32,64}, sparc{32,64} and m68k really can't get
+> there like that (they all check it in the asm glue).  mips probably might,
+> unless I'm misreading their ret_from_fork()...  Fun.
 
-diff --git a/drivers/usb/serial/belkin_sa.c b/drivers/usb/serial/belkin_sa.c
-index a52e0d2..35b0d3d 100644
---- a/drivers/usb/serial/belkin_sa.c
-+++ b/drivers/usb/serial/belkin_sa.c
-@@ -2,17 +2,17 @@
-  * Belkin USB Serial Adapter Driver
-  *
-  *  Copyright (C) 2000		William Greathouse (wgreathouse@smva.com)
-- *  Copyright (C) 2000-2001 	Greg Kroah-Hartman (greg@kroah.com)
-+ *  Copyright (C) 2000-2001	Greg Kroah-Hartman (greg@kroah.com)
-  *  Copyright (C) 2010		Johan Hovold (jhovold@gmail.com)
-  *
-  *  This program is largely derived from work by the linux-usb group
-  *  and associated source files.  Please see the usb/serial files for
-  *  individual credits and copyrights.
-  *
-- * 	This program is free software; you can redistribute it and/or modify
-- * 	it under the terms of the GNU General Public License as published by
-- * 	the Free Software Foundation; either version 2 of the License, or
-- * 	(at your option) any later version.
-+ *	This program is free software; you can redistribute it and/or modify
-+ *	it under the terms of the GNU General Public License as published by
-+ *	the Free Software Foundation; either version 2 of the License, or
-+ *	(at your option) any later version.
-  *
-  * See Documentation/usb/usb-serial.txt for more information on using this
-  * driver
-@@ -403,7 +403,8 @@ static void belkin_sa_set_termios(struct tty_struct *tty,
- 		case CS8:
- 			urb_value = BELKIN_SA_DATA_BITS(8);
- 			break;
--		default: dbg("CSIZE was not CS5-CS8, using default of 8");
-+		default:
-+			dbg("CSIZE was not CS5-CS8, using default of 8");
- 			urb_value = BELKIN_SA_DATA_BITS(8);
- 			break;
- 		}
--- 
-1.7.2.5
+It's actually worse than I thought - we can't just lift that check
+to do_notify_resume() and be done with that.  Suppose do_signal() does
+get called on e.g. i386 or arm with !user_mode(regs).  What'll happen next?
 
+We have TIF_SIGPENDING set in thread flags - otherwise we wouldn't get
+there at all.  OK, do_signal() doesn't do anything and returns.  So does
+do_notify_resume().  And we are back into the loop in asm glue, rereading
+the thread flags (still unchanged), checking if anything is to be done
+(yes, it is - TIF_SIGPENDING is still set), calling do_notify_resume(),
+ad infinitum.
+
+Lifting the check into do_notify_resume() will not help at all, obviously.
+
+AFAICS we can get hit by that.  At least i386, arm and mips have
+ret_from_fork going straight to "return from syscall" path, no checks for
+return to user mode done.  And process created by kernel_thread() will
+go there.  It's a narrow race, but AFAICS it's not impossible to hit -
+guess the PID of kernel thread to be launched, send it a signal and hit
+the moment before it gets to executing the payload.
+
+It's probably not exploitable unless you are root, since most of the
+threads are spawned either by kthreadd or by khelper, both running as
+root.  OTOH, there might be other places leading to the same fun - e.g.
+kernel_execve() goes through the normal syscall return path almost on
+everything and in case of failure it returns to kernel mode.  Again,
+that one is unlikely to be exploitable (it only happens from root-owned
+threads), but I'm not sure if anything else gets there; IIRC, there had
+been an effort to get rid of issuing syscalls via int/syscall/trap/whatnot,
+but I don't remember how far did it go, especially under arch...
+
+Comments?
