@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab2D1TFB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 15:05:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35737 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab2D1TFA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 15:05:00 -0400
-Date: Sat, 28 Apr 2012 12:06:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasikanth babu <sasikanth.v19@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm: memblock - Handled failure of debug fs entries
- creation
-Message-Id: <20120428120657.4982a248.akpm@linux-foundation.org>
-In-Reply-To: <CAOJFanUu_RD2UNgFg4gNuPte+jOA95ejMtq53UCo6vLaLohmQQ@mail.gmail.com>
-References: <1335383992-19419-1-git-send-email-sasikanth.v19@gmail.com>
-	<20120426162108.b654a920.akpm@linux-foundation.org>
-	<CAOJFanUu_RD2UNgFg4gNuPte+jOA95ejMtq53UCo6vLaLohmQQ@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752270Ab2D1TN1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 15:13:27 -0400
+Received: from [12.216.194.150] ([12.216.194.150]:36125 "EHLO king.tilera.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751335Ab2D1TNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 15:13:25 -0400
+X-Greylist: delayed 910 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Apr 2012 15:13:25 EDT
+Message-Id: <201204281858.q3SIwC7H014319@farm-0027.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Sat, 28 Apr 2012 14:51:43 -0400
+Subject: [PATCH] arch/tile: avoid calling do_signal() after fork from a kernel thread
+References: <20120423180150.GA6871@ZenIV.linux.org.uk>
+ <20120424072617.GB6871@ZenIV.linux.org.uk>
+ <20120426183742.GA324@redhat.com>
+ <20120426231942.GJ6871@ZenIV.linux.org.uk>
+ <20120427172444.GA30267@redhat.com>
+ <20120427184528.GL6871@ZenIV.linux.org.uk>
+ <20120427202002.8ED632C0BF@topped-with-meat.com>
+ <20120427211244.GO6871@ZenIV.linux.org.uk>
+ <20120427212729.652542C0AF@topped-with-meat.com>
+ <20120427231526.GP6871@ZenIV.linux.org.uk>
+ <20120427235023.GR6871@ZenIV.linux.org.uk>
+In-Reply-To: <20120427235023.GR6871@ZenIV.linux.org.uk>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 28 Apr 2012 18:58:14.0523 (UTC) FILETIME=[DD6F34B0:01CD2570]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 29 Apr 2012 00:32:26 +0530 Sasikanth babu <sasikanth.v19@gmail.com> wrote:
+Calling interrupt_return will check the privilege of the context we're
+returning to avoid the possibility of kernel threads doing any kind
+of userspace actions (including signal handling) after a fork.
 
-> > Fact is, debugfs_create_dir() and debugfs_create_file() are stupid
-> > interfaces which don't provide the caller (and hence the user) with any
-> > information about why they failed.  Perhaps memblock_init_debugfs()
-> > should return -EWESUCK.
-> >
-> 
->    I'm working on a patch which address this issue. debugfs_create_XXX
-> calls
->    will return proper error codes, and fixing the existing code not each
-> and every part  but the code
->    which handles the values returned by debufs_create_XXX otherwise it will
-> break the existing
->    functionality .
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+Al, thanks for noticing this.  I've queued it up for 3.4.
 
-Excellent!
+Do you have a case that might provoke the signal behavior in the
+unpatched code?  The patched code passes our internal regressions.
 
-> (any suggestions or opinions ?)
+ arch/tile/kernel/intvec_32.S |    2 +-
+ arch/tile/kernel/intvec_64.S |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Well, don't modify the existing interfaces: create new ones and we can
-migrate gradually.  But you're probably already doing that.
+diff --git a/arch/tile/kernel/intvec_32.S b/arch/tile/kernel/intvec_32.S
+index 5d56a1e..d0f48ca 100644
+--- a/arch/tile/kernel/intvec_32.S
++++ b/arch/tile/kernel/intvec_32.S
+@@ -1274,7 +1274,7 @@ STD_ENTRY(ret_from_fork)
+ 	FEEDBACK_REENTER(ret_from_fork)
+ 	{
+ 	 movei  r30, 0               /* not an NMI */
+-	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
++	 j      interrupt_return
+ 	}
+ 	STD_ENDPROC(ret_from_fork)
+ 
+diff --git a/arch/tile/kernel/intvec_64.S b/arch/tile/kernel/intvec_64.S
+index 49d9d66..252924b 100644
+--- a/arch/tile/kernel/intvec_64.S
++++ b/arch/tile/kernel/intvec_64.S
+@@ -1120,7 +1120,7 @@ STD_ENTRY(ret_from_fork)
+ 	FEEDBACK_REENTER(ret_from_fork)
+ 	{
+ 	 movei  r30, 0               /* not an NMI */
+-	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
++	 j      interrupt_return
+ 	}
+ 	STD_ENDPROC(ret_from_fork)
+ 
+-- 
+1.6.5.2
+
