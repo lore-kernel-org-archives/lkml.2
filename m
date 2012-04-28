@@ -1,131 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab2D1RkO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 13:40:14 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:41728 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753171Ab2D1RkM (ORCPT
+	id S1754743Ab2D1SCN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 14:02:13 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39851 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753171Ab2D1SCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 13:40:12 -0400
-Message-ID: <4F9C2B94.7080404@xenotime.net>
-Date: Sat, 28 Apr 2012 10:40:36 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sat, 28 Apr 2012 14:02:12 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
+In-Reply-To: <20120427143646.8209627e.akpm@linux-foundation.org>
+References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au> <4F9ABF9C.2070707@xenotime.net> <alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com> <20120427132343.fbb443b9.akpm@linux-foundation.org> <alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com> <20120427143646.8209627e.akpm@linux-foundation.org>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Sat, 28 Apr 2012 23:31:45 +0530
+Message-ID: <87fwbnag6u.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-doc@vger.kernel.org, Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] docs: update HOWTO for 2.6.x -> 3.x versioning
-References: <20120419061645.GA25127@www.outflux.net>
-In-Reply-To: <20120419061645.GA25127@www.outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12042807-0260-0000-0000-000000F46969
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2012 11:16 PM, Kees Cook wrote:
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-> The HOWTO document needed updating for the new kernel versioning. The
-> git URI for -next was updated as well.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+> On Fri, 27 Apr 2012 14:27:13 -0700 (PDT)
+> David Rientjes <rientjes@google.com> wrote:
+>
+>> On Fri, 27 Apr 2012, Andrew Morton wrote:
+>> 
+>> > Seems reasonable.  But the CONFIG_HUGETLB_PAGE=y,
+>> > CONFIG_MEM_RES_CTLR_HUGETLB=n combination will cause unneeded code
+>> > generation and space consumption in memcontrol.c.
+>> > 
+>> > I wonder if we can additionally do, within memcontrol.c:
+>> > 
+>> > /*
+>> >  * Nice comment goes here
+>> >  */
+>> > #ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+>> > #define HUGE_MAX_HSTATE_FOO HUGE_MAX_HSTATE
+>> > #else
+>> > #define HUGE_MAX_HSTATE_FOO 0
+>> > #endif
+>> > 
+>> > and s/HUGE_MAX_HSTATE/HUGE_MAX_HSTATE_FOO/ in that file.
+>> > 
+>> 
+>> I haven't looked at the hugetlb memcg controller in-depth (yet), but I 
+>> really think we should start considering breaking things like this off 
+>> into its own cgroup.  The hugetlb extension seems like something that 
+>> could be easily separtated, but perhaps I'm saying "easily" because I 
+>> haven't looked at the implementation.
+>> 
+>> mm/memcontrol.c in linux-next is 5877 lines and, if history is any guide, 
+>> it's going to continue growing.
+>> 
+>> If the hugetlb usage isn't charged against the memcg's 
+>> memory.usage_in_bytes like thp is, then I really think it should be its 
+>> own cgroup.  From the hugetlb perspective absent any cgroups, things like 
+>> hstates (since we're talking about HUGE_MAX_HSTATE) are global resources 
+>> and so you'd need to preallocate these on the command line or via sysfs 
+>> before you could mmap them.  So if my assumption that the hugetlb memcg 
+>> controller is only governing these global resources and charging a set of 
+>> tasks for what they use, then it really has no business in mm/memcontrol.c 
+>> to begin with, in my opinion.
+>
 
+My first version was to do it as a seperate controller 
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+http://thread.gmane.org/gmane.linux.kernel.mm/73826
 
-Greg or Rob can merge...
+But the feedback I received was to do it as a part of memcg extension,
+because what the controller is limiting is memory albeit a different
+type. AFAIU there is also this goal of avoiding controller proliferation.
 
-Thanks.
+-aneesh
 
-> ---
->  Documentation/HOWTO |   32 ++++++++++++++++----------------
->  1 files changed, 16 insertions(+), 16 deletions(-)
-> 
-> diff --git a/Documentation/HOWTO b/Documentation/HOWTO
-> index f7ade3b..59c080f 100644
-> --- a/Documentation/HOWTO
-> +++ b/Documentation/HOWTO
-> @@ -218,16 +218,16 @@ The development process
->  Linux kernel development process currently consists of a few different
->  main kernel "branches" and lots of different subsystem-specific kernel
->  branches.  These different branches are:
-> -  - main 2.6.x kernel tree
-> -  - 2.6.x.y -stable kernel tree
-> -  - 2.6.x -git kernel patches
-> +  - main 3.x kernel tree
-> +  - 3.x.y -stable kernel tree
-> +  - 3.x -git kernel patches
->    - subsystem specific kernel trees and patches
-> -  - the 2.6.x -next kernel tree for integration tests
-> +  - the 3.x -next kernel tree for integration tests
->  
-> -2.6.x kernel tree
-> +3.x kernel tree
->  -----------------
-> -2.6.x kernels are maintained by Linus Torvalds, and can be found on
-> -kernel.org in the pub/linux/kernel/v2.6/ directory.  Its development
-> +3.x kernels are maintained by Linus Torvalds, and can be found on
-> +kernel.org in the pub/linux/kernel/v3.x/ directory.  Its development
->  process is as follows:
->    - As soon as a new kernel is released a two weeks window is open,
->      during this period of time maintainers can submit big diffs to
-> @@ -262,20 +262,20 @@ mailing list about kernel releases:
->  	released according to perceived bug status, not according to a
->  	preconceived timeline."
->  
-> -2.6.x.y -stable kernel tree
-> +3.x.y -stable kernel tree
->  ---------------------------
-> -Kernels with 4-part versions are -stable kernels. They contain
-> +Kernels with 3-part versions are -stable kernels. They contain
->  relatively small and critical fixes for security problems or significant
-> -regressions discovered in a given 2.6.x kernel.
-> +regressions discovered in a given 3.x kernel.
->  
->  This is the recommended branch for users who want the most recent stable
->  kernel and are not interested in helping test development/experimental
->  versions.
->  
-> -If no 2.6.x.y kernel is available, then the highest numbered 2.6.x
-> +If no 3.x.y kernel is available, then the highest numbered 3.x
->  kernel is the current stable kernel.
->  
-> -2.6.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
-> +3.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
->  are released as needs dictate.  The normal release period is approximately
->  two weeks, but it can be longer if there are no pressing problems.  A
->  security-related problem, instead, can cause a release to happen almost
-> @@ -285,7 +285,7 @@ The file Documentation/stable_kernel_rules.txt in the kernel tree
->  documents what kinds of changes are acceptable for the -stable tree, and
->  how the release process works.
->  
-> -2.6.x -git patches
-> +3.x -git patches
->  ------------------
->  These are daily snapshots of Linus' kernel tree which are managed in a
->  git repository (hence the name.) These patches are usually released
-> @@ -317,13 +317,13 @@ revisions to it, and maintainers can mark patches as under review,
->  accepted, or rejected.  Most of these patchwork sites are listed at
->  http://patchwork.kernel.org/.
->  
-> -2.6.x -next kernel tree for integration tests
-> +3.x -next kernel tree for integration tests
->  ---------------------------------------------
-> -Before updates from subsystem trees are merged into the mainline 2.6.x
-> +Before updates from subsystem trees are merged into the mainline 3.x
->  tree, they need to be integration-tested.  For this purpose, a special
->  testing repository exists into which virtually all subsystem trees are
->  pulled on an almost daily basis:
-> -	http://git.kernel.org/?p=linux/kernel/git/sfr/linux-next.git
-> +	http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git
->  	http://linux.f-seidel.de/linux-next/pmwiki/
->  
->  This way, the -next kernel gives a summary outlook onto what will be
-
-
-
--- 
-~Randy
