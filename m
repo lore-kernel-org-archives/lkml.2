@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab2D1OTt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 10:19:49 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:36892 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752463Ab2D1OTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 10:19:47 -0400
-Date: Sat, 28 Apr 2012 10:19:33 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>,
-        Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Subject: Re: [PATCH 15/23] jbd2: Change disk layout for metadata
- checksumming
-Message-ID: <20120428141933.GB29481@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"Darrick J. Wong" <djwong@us.ibm.com>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	Sunil Mushran <sunil.mushran@oracle.com>,
-	Martin K Petersen <martin.petersen@oracle.com>,
-	Greg Freemyer <greg.freemyer@gmail.com>,
-	Amir Goldstein <amir73il@gmail.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-	Joel Becker <jlbec@evilplan.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-References: <20120306204750.1663.96751.stgit@elm3b70.beaverton.ibm.com>
- <20120306204941.1663.56283.stgit@elm3b70.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120306204941.1663.56283.stgit@elm3b70.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1754389Ab2D1OYo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 10:24:44 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:50640 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab2D1OYn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 10:24:43 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: akpm@linux-foundation.org, rohit.seth@intel.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH] mm: fix devision by 0 in percpu_pagelist_fraction
+Date: Sat, 28 Apr 2012 16:25:31 +0200
+Message-Id: <1335623131-15728-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 12:49:41PM -0800, Darrick J. Wong wrote:
-> @@ -177,11 +189,17 @@ typedef struct journal_block_tag_s
->  	__be32		t_blocknr;	/* The on-disk block number */
->  	__be32		t_flags;	/* See below */
->  	__be32		t_blocknr_high; /* most-significant high 32bits. */
-> +	__be32		t_checksum;	/* crc32c(uuid+seq+block) */
->  } journal_block_tag_t;
->  
->  #define JBD2_TAG_SIZE32 (offsetof(journal_block_tag_t, t_blocknr_high))
->  #define JBD2_TAG_SIZE64 (sizeof(journal_block_tag_t))
+percpu_pagelist_fraction_sysctl_handler() has only considered -EINVAL as a possible error
+from proc_dointvec_minmax(). If any other error is returned, it would proceed to divide by
+zero since percpu_pagelist_fraction wasn't getting initialized at any point. For example,
+writing 0 bytes into the proc file would trigger the issue.
 
-There's a problem with this patch here --- we are changing the size of
-journal_block_tag_t, which is an on-disk data structure.  So for
-64-bit journals, this represents a format change.  This means that if
-you have a 64-bit file system that needs to have its journal
-recovered, if the journal was written with an older kernel, and then
-we try to recover it with a new kernel, things won't be good.
-Similarly, for e2fsck's recovery code, it's not going to be able to
-recover 64-bit file systems using current coding, since this patch
-series changes the size of JBD2_TAG_SIZE64.
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ mm/page_alloc.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-What we need to do is something like this:
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1b951de..1e00729 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -106,7 +106,7 @@ unsigned long totalreserve_pages __read_mostly;
+  */
+ unsigned long dirty_balance_reserve __read_mostly;
+ 
+-int percpu_pagelist_fraction;
++int percpu_pagelist_fraction = 8;
+ gfp_t gfp_allowed_mask __read_mostly = GFP_BOOT_MASK;
+ 
+ #ifdef CONFIG_PM_SLEEP
+@@ -5271,7 +5271,7 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
+ 	int ret;
+ 
+ 	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
+-	if (!write || (ret == -EINVAL))
++	if (!write || (ret < 0))
+ 		return ret;
+ 	for_each_populated_zone(zone) {
+ 		for_each_possible_cpu(cpu) {
+-- 
+1.7.8.5
 
-#define JBD2_TAG_SIZE64 (offsetof(journal_block_tag_t, t_checksum))
-#define JBD2_TAG_SIZE_CSUM (sizeof(journal_block_tag_t))
-
-And then change the code appropriately in e2fsprogs and in the kernel
-to use the correct tag size depending on the journal options.
-
-       	   	       	    	      	     - Ted
