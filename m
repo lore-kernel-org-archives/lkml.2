@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284Ab2D1Eme (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 00:42:34 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:55236 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750847Ab2D1Emd (ORCPT
+	id S1751424Ab2D1FGc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 01:06:32 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:45191
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750847Ab2D1FG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 00:42:33 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19fNb0KDa9fVZ2aM6fkdMI1XvNPCUo2GmD99Qj4/P
-	ioa35G0Kp1kG/U
-Message-ID: <1335588142.7498.21.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC tip/core/rcu 6/6] rcu: Reduce cache-miss
- initialization latencies for large systems
-From: Mike Galbraith <efault@gmx.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Date: Sat, 28 Apr 2012 06:42:22 +0200
-In-Reply-To: <20120427151518.GA2419@linux.vnet.ibm.com>
-References: <20120423164159.GA13819@linux.vnet.ibm.com>
-	 <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335199347-13926-6-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335501371.10374.30.camel@marge.simpson.net>
-	 <20120427151518.GA2419@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Sat, 28 Apr 2012 01:06:29 -0400
+X-IronPort-AV: E=Sophos;i="4.75,494,1330902000"; 
+   d="scan'208";a="141926293"
+Date: Sat, 28 Apr 2012 07:06:16 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: dwmw2@infradead.org
+cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: question about fs/jffs2/readinode.c
+Message-ID: <alpine.DEB.2.02.1204280701210.1917@hadrien>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-27 at 08:15 -0700, Paul E. McKenney wrote: 
-> On Fri, Apr 27, 2012 at 06:36:11AM +0200, Mike Galbraith wrote:
-> > On Mon, 2012-04-23 at 09:42 -0700, Paul E. McKenney wrote: 
-> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > Commit #0209f649 (rcu: limit rcu_node leaf-level fanout) set an upper
-> > > limit of 16 on the leaf-level fanout for the rcu_node tree.  This was
-> > > needed to reduce lock contention that was induced by the synchronization
-> > > of scheduling-clock interrupts, which was in turn needed to improve
-> > > energy efficiency for moderate-sized lightly loaded servers.
-> > > 
-> > > However, reducing the leaf-level fanout means that there are more
-> > > leaf-level rcu_node structures in the tree, which in turn means that
-> > > RCU's grace-period initialization incurs more cache misses.  This is
-> > > not a problem on moderate-sized servers with only a few tens of CPUs,
-> > 
-> > With a distro config (4096 CPUs) interrupt latency is bad even on a
-> > quad.  Traversing empty nodes taking locks and cache misses hurts.
-> 
-> Agreed -- and I will be working on an additional patch that makes RCU
-> avoid initializing its data structures for CPUs that don't exist.
+The function read_direntry in fs/jffs2/readinode.c contains the following 
+code:
 
-That's still on my todo list too, your initial patch (and my butchery
-thereof to skip taking lock) showed this helps a heap.
+         err = jffs2_flash_read(c, (ref_offset(ref)) + read,
+                                rd->nsize - already, &read, &fd->name[already]);
+ 	if (unlikely(read != rd->nsize - already) && likely(!err))
+                       return -EIO;
 
-> That said, increasing the leaf-level fanout from 16 to 64 should reduce
-> the latency pain by a factor of four.  In addition, I would expect that
-> real-time builds of the kernel would set NR_CPUS to some value much
-> smaller than 4096.  ;-)
+         if (unlikely(err)) {
+                 JFFS2_ERROR("read remainder of name: error %d\n", err);
+                 jffs2_free_full_dirent(fd);
+                 return -EIO;
+         }
 
-Yup, else you would have heard whimpering months ago ;-)
+Is it intentional that the first if doesn't free fd?  At first I thought 
+that that might be the case, because what would be the point of having two 
+conditionals if they are going to do the same thing.  But I can't see why 
+fd should not be freed either, so maybe the two conditionals are just 
+there to give different error messages?
 
--Mike
-
+thanks,
+julia
