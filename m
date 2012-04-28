@@ -1,89 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab2D1Jbm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 05:31:42 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:49391 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab2D1Jbj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 05:31:39 -0400
+	id S1754354Ab2D1Jd3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 05:33:29 -0400
+Received: from mx1.b1-systems.de ([217.11.58.35]:37667 "EHLO mx1.b1-systems.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751935Ab2D1Jd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 05:33:28 -0400
+Message-ID: <4F9BB87C.4050103@b1-systems.de>
+Date: Sat, 28 Apr 2012 11:29:32 +0200
+From: Karsten Keil <keil@b1-systems.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <20120428020003.GA26573@mtj.dyndns.org>
-References: <4F9A327A.6050409@jp.fujitsu.com>
-	<4F9A36DE.30301@jp.fujitsu.com>
-	<20120427204035.GN26595@google.com>
-	<CABEgKgrJ68wU-L17zwN4_htX948TNFnLVgts=hFeY7QG3etwCA@mail.gmail.com>
-	<20120428020003.GA26573@mtj.dyndns.org>
-Date: Sat, 28 Apr 2012 18:31:38 +0900
-Message-ID: <CABEgKgpPXPu3L6oS6+2+dZmcPS=t-ZR7PnCvm0mo8UFeXPHDog@mail.gmail.com>
-Subject: Re: [RFC][PATCH 8/9 v2] cgroup: avoid creating new cgroup under a
- cgroup being destroyed
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Han Ying <yinghan@google.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Tilman Schmidt <tilman@imap.cc>
+CC: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>,
+        Hansjoerg Lipp <hjlipp@web.de>, i4ldeveloper@listserv.isdn4linux.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] isdn/gigaset: ratelimit CAPI message dumps
+References: <20120425-patch-gigaset-00.tilman@imap.cc> <20120425-patch-gigaset-01.tilman@imap.cc> <4F98EDB1.5090702@b1-systems.de> <4F9A7510.5010808@imap.cc>
+In-Reply-To: <4F9A7510.5010808@imap.cc>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 28, 2012 at 11:00 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hi, KAME.
->
-> On Sat, Apr 28, 2012 at 09:20:52AM +0900, Hiroyuki Kamezawa wrote:
->> What I thought was...
->> Assume a memory cgoup A, with use_hierarchy==1.
->>
->> 1. †thread:0 † start calling pre->destroy of cgroup A
->> 2. †thread:0 † it sometimes calls cond_resched or other sleep functions.
->> 3. †thread:1 † create a cgroup B under "A"
->> 4. †thread:1 † attach a thread X to cgroup A/B
->> 5. †res_counter of A charged up. but pre_destroy() can't find what happens
->> † † because it scans LRU of A.
->>
->> So, we have -EBUSY now. I considered some options to fix this.
->>
->> option 1) just return 0 instead of -EBUSY when pre_destroy() finds a
->> task or a child.
->>
->> There is a race....even if we return 0 here and expects cgroup code
->> can catch it,
->> the thread or a child we found may be moved to other cgroup before we check it
->> in cgroup's final check.
->> In that case, the cgroup will be freed before full-ack of
->> pre_destory() and the charges
->> will be lost.
->
-> So, cgroup code won't proceed with rmdir if children are created
-> inbetween and note that the race condition of lost charge you
-> described above existed before this change - ie. new cgroup could be
-> created after pre_destroy() is complete.
->
-> The current cgroup rmdir code is transitional. †It has to support both
-> retrying and non-retrying pre_destroy()s and that means we can't mark
-> the cgroup DEAD before starting invoking pre_destroy(); however, we
-> can do that once memcg's pre_destroy() is converted which will also
-> remove all the WAIT_ON_RMDIR mechanism and the above described race.
->
-> There really isn't much point in trying to make the current cgroup
-> rmdir behave perfectly when the next step is removing all the fixed up
-> parts.
->
-> So, IMHO, just making pre_destroy() clean up its own charges and
-> always returning 0 is enough. †There's no need to fix up old
-> non-critical race condition at this point in the patch stream. †cgroup
-> rmdir simplification will make them disappear anyway.
->
-So, hmm, ok. I'll drop patch 7 & 8. memcg may return -EBUSY in very very
-race case but users will not see it in the most case.
-I'll fix limit, move-charge and use_hierarchy problem first.
-Thanks,
--Kame
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Am 27.04.2012 12:29, schrieb Tilman Schmidt:
+> Am 26.04.2012 08:39, schrieb Karsten Keil:
+>> Am 26.04.2012 01:02, schrieb Tilman Schmidt:
+>>> Introduce a global ratelimit for CAPI message dumps to protect
+>>>  against possible log flood. Drop the ratelimit for ignored 
+>>> messages which is now covered by the global one.
+>> 
+>> Hmm, I think the only CAPI messages which would need a ratelimit 
+>> are related to the DATA_B3 messages. If you need CAPI debug 
+>> messages in most cases you do not need all of the DATA_B3, but 
+>> you do not want to miss any other message related to the call 
+>> control. With a general rate limit you do not have the control, 
+>> which messages are logged and which are not.
+> 
+> The ratelimit introduced by this patch only applies to messages 
+> other than DATA_B3. Logging DATA_B3 messages is not done via 
+> dump_cmsg().
+> 
+
+Thanks for the clarification, forget about my objection.
+I ack this patch now.
+
+> I'd like to ratelimit specifically non-DATA_B3 messages because I 
+> saw a (possibly buggy) CAPI application flooding the log with 
+> FACILITY messages. Equally important, I'd like to make the 
+> ratelimit in do_nothing() / do_unsupported() bursty because I had
+> a case where I needed to see several ignored/unhandled CAPI
+> messages in quick succession. So this patch is killing two birds
+> with one stone for me.
+> 
+> The burst limit of 20 messages in 20 seconds is chosen to allow a 
+> complete call setup sequence to be logged, while limiting to one 
+> message per second in the long run.
+> 
+>> And here maybe some cases, when even the DATA_B3 are important 
+>> (e.g. searching bugs in flow control), so I would make it still 
+>> conditional to allow to print all messages.
+> 
+> DATA_B3 dumps produce an enormous amount of log data and are 
+> therefore controlled separately by the DEBUG_MCMD flag. Someone
+> who enables that should know what she or he does. But if you need
+> them, you need them all. A ratelimit doesn't make sense there in
+> my experience.
+> 
+>> And I'm not sure, if this is really something for stable.
+> 
+> It's pretty simple and localized, a net simplification, and only 
+> affects generation of debugging messages, so I think it's safe.
+> But if you see a problem there I can drop the "CC: stable" line.
+> 
+
+I let the decision about it to you and the stable maintainers.
+
+- -- 
+Karsten Keil
+Linux Kernel Development
+Tel: +49 175 7249132
+Mail: keil@b1-systems.de
+
+B1 Systems GmbH
+Osterfeldstraﬂe 7 / 85088 Vohburg / http://www.b1-systems.de
+GF: Ralph Dehner / Unternehmenssitz: Vohburg / AG: Ingolstadt,HRB 3537
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk+buHwACgkQo5VVC52CNcRoygCfWwPlWZ+A48OwEkr/MtK6PeNG
+0UEAnipdxPSZDKa4s99LlGYwvggWIIAJ
+=CLr6
+-----END PGP SIGNATURE-----
