@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab2D1OYo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 10:24:44 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:50640 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab2D1OYn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 10:24:43 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: akpm@linux-foundation.org, rohit.seth@intel.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH] mm: fix devision by 0 in percpu_pagelist_fraction
-Date: Sat, 28 Apr 2012 16:25:31 +0200
-Message-Id: <1335623131-15728-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.5
+	id S1754433Ab2D1O1E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 10:27:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39357 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754067Ab2D1O1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 10:27:01 -0400
+Date: Sat, 28 Apr 2012 16:26:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Louis Rilling <louis.rilling@kerlabs.com>
+Subject: Re: [RFC PATCH] namespaces: fix leak on fork() failure
+Message-ID: <20120428142605.GA20248@redhat.com>
+References: <1335604790.5995.22.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335604790.5995.22.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-percpu_pagelist_fraction_sysctl_handler() has only considered -EINVAL as a possible error
-from proc_dointvec_minmax(). If any other error is returned, it would proceed to divide by
-zero since percpu_pagelist_fraction wasn't getting initialized at any point. For example,
-writing 0 bytes into the proc file would trigger the issue.
+On 04/28, Mike Galbraith wrote:
+>
+> Greetings,
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- mm/page_alloc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Hi,
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1b951de..1e00729 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -106,7 +106,7 @@ unsigned long totalreserve_pages __read_mostly;
-  */
- unsigned long dirty_balance_reserve __read_mostly;
- 
--int percpu_pagelist_fraction;
-+int percpu_pagelist_fraction = 8;
- gfp_t gfp_allowed_mask __read_mostly = GFP_BOOT_MASK;
- 
- #ifdef CONFIG_PM_SLEEP
-@@ -5271,7 +5271,7 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
- 	int ret;
- 
- 	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
--	if (!write || (ret == -EINVAL))
-+	if (!write || (ret < 0))
- 		return ret;
- 	for_each_populated_zone(zone) {
- 		for_each_possible_cpu(cpu) {
--- 
-1.7.8.5
+Add CC's. I never understood the proc/namespace interaction in details,
+and it seems to me I forgot everything.
+
+> SIGCHLD delivery during fork() may cause failure,
+
+Or any other reason to fail after copy_namespaces()
+
+> resulting in the aborted
+> child being cloned with CLONE_NEWPID leaking namespaces due to proc being
+> mounted during pid namespace creation, but not unmounted on fork() failure.
+
+Heh. Please look at http://marc.info/?l=linux-kernel&m=127687751003902
+and the whole thread, there are a lot more problems here.
+
+But this particular one looks simple iirc.
+
+> @@ -216,6 +216,14 @@ void switch_task_namespaces(struct task_struct *p, struct nsproxy *new)
+>  	rcu_assign_pointer(p->nsproxy, new);
+>
+>  	if (ns && atomic_dec_and_test(&ns->count)) {
+> +		/* Handle fork() failure, unmount proc before proceeding */
+> +		if (unlikely(!new && !((p->flags & PF_EXITING)))) {
+> +			struct pid_namespace *pid_ns = ns->pid_ns;
+> +
+> +			if (pid_ns && pid_ns != &init_pid_ns)
+> +				pid_ns_release_proc(pid_ns);
+> +		}
+> +
+>  		/*
+>  		 * wait for others to get what they want from this nsproxy.
+>  		 *
+
+At first glance this looks correct. But the PF_EXITING check doesn't
+look very nice imho. It is needed to detect the case when the caller
+is copy_process()->bad_fork_cleanup_namespaces and p is not current.
+
+Perhaps it would be more clean to add the explicit
+
+	 bad_fork_cleanup_namespaces:
+	+	if (unlikely(clone_flags & CLONE_NEWPID))
+	+		pid_ns_release_proc(...);
+		exit_task_namespaces(p);
+		
+		
+code into this error path in copy_process?
+
+Oleg.
 
