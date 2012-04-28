@@ -1,198 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab2D1JQb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 05:16:31 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:34672 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754433Ab2D1JQ3 (ORCPT
+	id S1754609Ab2D1JRH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 05:17:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44538 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab2D1JRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 05:16:29 -0400
-Date: Sat, 28 Apr 2012 11:16:21 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Tim Small <tim@buttersideup.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Egor Martovetsky <egor@pasemi.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Niklas =?iso-8859-1?Q?S=F6derlund?= 
-	<niklas.soderlund@ericsson.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to work
- with layers
-Message-ID: <20120428091621.GE26065@aftab.osrc.amd.com>
-References: <1335289087-11337-1-git-send-email-mchehab@redhat.com>
- <1335291342-14922-1-git-send-email-mchehab@redhat.com>
- <20120427133304.GE9626@aftab.osrc.amd.com>
- <4F9ADCE3.2030506@redhat.com>
+	Sat, 28 Apr 2012 05:17:06 -0400
+Date: Sat, 28 Apr 2012 02:16:46 -0700
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <tip-9a1347237492f273f84ec39962b5806c70b2806a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rusty@rustcorp.com.au, peterz@infradead.org,
+        srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        jejb@parisc-linux.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, peterz@infradead.org,
+        srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        jejb@parisc-linux.org, tglx@linutronix.de
+In-Reply-To: <20120420124557.988947805@linutronix.de>
+References: <20120420124557.988947805@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:smp/hotplug] parisc: Use generic idle thread allocation
+Git-Commit-ID: 9a1347237492f273f84ec39962b5806c70b2806a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4F9ADCE3.2030506@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Apr 2012 02:16:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 02:52:35PM -0300, Mauro Carvalho Chehab wrote:
+Commit-ID:  9a1347237492f273f84ec39962b5806c70b2806a
+Gitweb:     http://git.kernel.org/tip/9a1347237492f273f84ec39962b5806c70b2806a
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Fri, 20 Apr 2012 13:05:56 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 26 Apr 2012 12:06:13 +0200
 
-[..]
+parisc: Use generic idle thread allocation
 
-> >> +struct mem_ctl_info *new_edac_mc_alloc(unsigned edac_index,
-> >> +				   unsigned n_layers,
-> >> +				   struct edac_mc_layer *layers,
-> >> +				   bool rev_order,
-> >> +				   unsigned sz_pvt)
-> > 
-> > strange function argument vertical alignment
-> > 
-> >>  {
-> >>  	void *ptr = NULL;
-> >>  	struct mem_ctl_info *mci;
-> >> -	struct csrow_info *csi, *csrow;
-> >> +	struct edac_mc_layer *lay;
-> > 
-> > As before, call this "layers" pls.
-> > 
-> >> +	struct csrow_info *csi, *csr;
-> >>  	struct rank_info *chi, *chp, *chan;
-> >>  	struct dimm_info *dimm;
-> >> +	u32 *ce_per_layer[EDAC_MAX_LAYERS], *ue_per_layer[EDAC_MAX_LAYERS];
-> >>  	void *pvt;
-> >> -	unsigned size;
-> >> -	int row, chn;
-> >> +	unsigned size, tot_dimms, count, pos[EDAC_MAX_LAYERS];
-> >> +	unsigned tot_csrows, tot_cschannels;
-> > 
-> > No need to call this "tot_cschannels" - "tot_channels" should be enough.
-> > 
-> >> +	int i, j;
-> >>  	int err;
-> >> +	int row, chn;
-> > 
-> > All those local variables should be sorted in a reverse christmas tree
-> > order:
-> > 
-> > 	u32 this_is_the_longest_array_name[LENGTH];
-> > 	void *shorter_named_variable;
-> > 	unsigned long size;
-> > 	int i;
-> > 
-> > 	...
-> 
-> Why? There's nothing at the CodingStyle saying about how the vars should
-> be ordered. If you want to enforce some particular order, please do it
-> yourself, but apply it consistently among the entire subsystem.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: James E.J. Bottomley <jejb@parisc-linux.org>
+Link: http://lkml.kernel.org/r/20120420124557.988947805@linutronix.de
+---
+ arch/parisc/Kconfig      |    1 +
+ arch/parisc/kernel/smp.c |   23 ++---------------------
+ 2 files changed, 3 insertions(+), 21 deletions(-)
 
-First of all, this way it is more readable. Second of all, maybe we
-should hold it down in CodingStyle. Third of all, you touch this code so you
-could fix it up to be more readable while you're at it.
-
-> >> +
-> >> +	BUG_ON(n_layers > EDAC_MAX_LAYERS);
-> > 
-> > 
-> > Push this BUG_ON up into edac_mc_alloc as the first thing this function
-> > does.
-> 
-> It is already the first thing at the function.
-
-Ah, that happens later in the patchset where you rename it back to
-edac_mc_alloc, ok.
-
-> > Also, is it valid to have n_layers == 0? The memcpy call below
-> > will do nothing.
-> 
-> Changed to:
-> 	BUG_ON(n_layers > EDAC_MAX_LAYERS || n_layers == 0);
-
-Really? Look below.
-
-> 
-> >> +	/*
-> >> +	 * Calculate the total amount of dimms and csrows/cschannels while
-> >> +	 * in the old API emulation mode
-> >> +	 */
-> >> +	tot_dimms = 1;
-> >> +	tot_cschannels = 1;
-> >> +	tot_csrows = 1;
-> > 
-> > Those initializations can be done above at variable declaration time.
-> 
-> Yes, but the compiled code will be the same anyway, as gcc will optimize
-
-Hey, are you looking at compiled code or at source code? Because I'm
-looking at source code, and it is a pretty safe bet the majority of the
-people here do that too.
-
-> it, either by using registers for those vars or by moving the initialization
-> to the top of the function.
-> 
-> This function is too complex, so it is better to initialize those vars
-> just before the loops that are calculating those totals.
-
-Simply initialize those variables at declaration time and that's it.
-Initializing them before the loop doesn't make the function less complex
-- splitting it and sanitizing it does.
-
-> > 
-> >> +	for (i = 0; i < n_layers; i++) {
-> >> +		tot_dimms *= layers[i].size;
-> >> +		if (layers[i].is_virt_csrow)
-> >> +			tot_csrows *= layers[i].size;
-> >> +		else
-> >> +			tot_cschannels *= layers[i].size;
-> >> +	}
-
-[..]
-
-> -struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
-> -				unsigned nr_chans, int edac_index)
-> +struct mem_ctl_info *new_edac_mc_alloc(unsigned edac_index,
-> +				       unsigned n_layers,
-> +				       struct edac_mc_layer *layers,
-> +				       bool rev_order,
-> +				       unsigned sz_pvt)
->  {
->  	void *ptr = NULL;
->  	struct mem_ctl_info *mci;
-> -	struct csrow_info *csi, *csrow;
-> +	struct edac_mc_layer *layer;
-> +	struct csrow_info *csi, *csr;
->  	struct rank_info *chi, *chp, *chan;
->  	struct dimm_info *dimm;
-> +	u32 *ce_per_layer[EDAC_MAX_LAYERS], *ue_per_layer[EDAC_MAX_LAYERS];
->  	void *pvt;
-> -	unsigned size;
-> -	int row, chn;
-> +	unsigned size, tot_dimms, count, pos[EDAC_MAX_LAYERS];
-> +	unsigned tot_csrows, tot_channels, tot_errcount = 0;
-> +	int i, j;
->  	int err;
-> +	int row, chn;
-> +	bool per_rank = false;
-> +
-> +	BUG_ON(n_layers > EDAC_MAX_LAYERS);
-
-	^^^^^^
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
+index 242a1b7..ddb8b24 100644
+--- a/arch/parisc/Kconfig
++++ b/arch/parisc/Kconfig
+@@ -17,6 +17,7 @@ config PARISC
+ 	select GENERIC_PCI_IOMAP
+ 	select IRQ_PER_CPU
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
++	select GENERIC_SMP_IDLE_THREAD
+ 
+ 	help
+ 	  The PA-RISC microprocessor is designed by Hewlett-Packard and used
+diff --git a/arch/parisc/kernel/smp.c b/arch/parisc/kernel/smp.c
+index eae8cd8..f64f381 100644
+--- a/arch/parisc/kernel/smp.c
++++ b/arch/parisc/kernel/smp.c
+@@ -334,26 +334,11 @@ void __init smp_callin(void)
+ /*
+  * Bring one cpu online.
+  */
+-int __cpuinit smp_boot_one_cpu(int cpuid)
++int __cpuinit smp_boot_one_cpu(int cpuid, struct task_struct *idle)
+ {
+ 	const struct cpuinfo_parisc *p = &per_cpu(cpu_data, cpuid);
+-	struct task_struct *idle;
+ 	long timeout;
+ 
+-	/* 
+-	 * Create an idle task for this CPU.  Note the address wed* give 
+-	 * to kernel_thread is irrelevant -- it's going to start
+-	 * where OS_BOOT_RENDEVZ vector in SAL says to start.  But
+-	 * this gets all the other task-y sort of data structures set
+-	 * up like we wish.   We need to pull the just created idle task 
+-	 * off the run queue and stuff it into the init_tasks[] array.  
+-	 * Sheesh . . .
+-	 */
+-
+-	idle = fork_idle(cpuid);
+-	if (IS_ERR(idle))
+-		panic("SMP: fork failed for CPU:%d", cpuid);
+-
+ 	task_thread_info(idle)->cpu = cpuid;
+ 
+ 	/* Let _start know what logical CPU we're booting
+@@ -397,10 +382,6 @@ int __cpuinit smp_boot_one_cpu(int cpuid)
+ 		udelay(100);
+ 		barrier();
+ 	}
+-
+-	put_task_struct(idle);
+-	idle = NULL;
+-
+ 	printk(KERN_CRIT "SMP: CPU:%d is stuck.\n", cpuid);
+ 	return -1;
+ 
+@@ -452,7 +433,7 @@ void smp_cpus_done(unsigned int cpu_max)
+ int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
+ {
+ 	if (cpu != 0 && cpu < parisc_max_cpus)
+-		smp_boot_one_cpu(cpu);
++		smp_boot_one_cpu(cpu, tidle);
+ 
+ 	return cpu_online(cpu) ? 0 : -ENOSYS;
+ }
