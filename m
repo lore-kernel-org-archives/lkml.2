@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab2D1SCz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 14:02:55 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45959 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754747Ab2D1SCX (ORCPT
+	id S1754706Ab2D1SJc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 14:09:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53685 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637Ab2D1SJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 14:02:23 -0400
-Date: Sat, 28 Apr 2012 19:05:02 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Preston Fick <pffick@gmail.com>
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, preston.fick@silabs.com,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] usb: cp210x: Added support for GPIO (CP2103/4/5)
-Message-ID: <20120428190502.32eaf294@pyramind.ukuu.org.uk>
-In-Reply-To: <1335632134-2488-1-git-send-email-preston.fick@silabs.com>
-References: <1335632134-2488-1-git-send-email-preston.fick@silabs.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 28 Apr 2012 14:09:30 -0400
+Message-ID: <4F9C3252.7020508@lwfinger.net>
+Date: Sat, 28 Apr 2012 13:09:22 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Regression in 32-bit ppc kernel
+References: <4F973026.3020103@lwfinger.net>  <1335311621.15830.42.camel@pasglop> <4F976352.4060001@lwfinger.net>  <1335327081.21961.28.camel@pasglop> <4F98117C.7080309@lwfinger.net>  <1335390257.21961.53.camel@pasglop> <4F9ABD67.3060704@lwfinger.net>  <1335565573.20866.7.camel@pasglop> <4F9B3398.9060701@lwfinger.net> <1335573757.20866.12.camel@pasglop>
+In-Reply-To: <1335573757.20866.12.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/27/2012 07:42 PM, Benjamin Herrenschmidt wrote:
+>
+> Ok, so you do have a serial port, probably two even :-) One of them is
+> connected to the infra red transceiver and the other one is probably
+> connected to the internal modem.
+>
+> (The modem itself might not use it, some of these machines use an
+> i2s/i2c modem, some use a usb modem, but the serial port is wired to the
+> connector regardless).
 
->   */
-> @@ -424,8 +430,8 @@ static int cp210x_open(struct tty_struct *tty, struct usb_serial_port *port)
->  
->  	dbg("%s - port %d", __func__, port->number);
->  
-> -	result = cp210x_set_config_single(port, CP210X_IFC_ENABLE,
-> -								UART_ENABLE);
-> +	result = cp210x_set_config(port, REQTYPE_HOST_TO_INTERFACE,
-> +				CP210X_IFC_ENABLE, UART_ENABLE, NULL, 0);
+I have done a little more debugging. The problem is definitely coming from 
+drivers/tty/serial/pmac_zilog.c. I am getting ChanB interrupts while open, which 
+causes the following code segment to return IRQ_NONE:
 
-These kind of unrelated changes make review hard. Why are they there ?
+        if (r3 & (CHBEXT | CHBTxIP | CHBRxIP)) {
+                if (!ZS_IS_OPEN(uap_a)) {
+                        pmz_debug("ChanB interrupt while open !\n");
+                        goto skip_b;
+                }
+                write_zsreg(uap_b, R0, RES_H_IUS);
+                zssync(uap_b);
+                if (r3 & CHBEXT)
 
-> +	case IOCTL_GPIOGET:
-> +		if ((port_priv->bPartNumber == CP2103_PARTNUM) ||
+When this section is entered, r3 == 0x2 (CHBTxIP).
 
-
-All the part specific stuff in ifs rapidly gets unmaintainable. Better to
-set up a port_priv->get_gpio/set_gpio.
-
->  /*
->   * cp210x_get_termios
->   * Reads the baud rate, data bits, parity, stop bits and flow control mode
-> @@ -490,14 +565,16 @@ static void cp210x_get_termios_port(struct usb_serial_port *port,
->  
->  	dbg("%s - port %d", __func__, port->number);
->  
-> -	cp210x_get_config(port, CP210X_GET_BAUDRATE, &baud, 4);
-> +	cp210x_get_config(port, REQTYPE_INTERFACE_TO_HOST,
-> +			CP210X_GET_BAUDRATE, 0, &baud, 4);
-
-
-And again it disturbs all the rest of the code for no apparent good
-reason.
-
-  
-The large number of changes all over the code for a single localised
-feature change ought to be flagging up that it's not being done in a
-clean way.
-
-The other question is whether having some custom gpio poking interface is
-actually a good idea. I suspect probably not. The kernel gpio layer can
-help a bit but doesn't really solve the problem as there is no way to tie
-a gpio to a port. Given how many devices seem to have gpios these days I
-wonder if we need a gpio setting interface via termiox.
-
-We could also the agree how that maps onto the extra gpio lines used with
-SIM card readers and the like so we can standardise that.
-
-Alan
+Larry
