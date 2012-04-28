@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966Ab2D1AB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 20:01:26 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:37103 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757417Ab2D1ABY convert rfc822-to-8bit (ORCPT
+	id S1758008Ab2D1ACh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 20:02:37 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47908 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756824Ab2D1ACg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 20:01:24 -0400
+	Fri, 27 Apr 2012 20:02:36 -0400
+Message-ID: <4F9B3398.9060701@lwfinger.net>
+Date: Fri, 27 Apr 2012 19:02:32 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CALWz4ixHGCqfWh1U+JyiJWTkGmCDtXQy1vbHRjrHaU_pOgGuBw@mail.gmail.com>
-References: <4F9A327A.6050409@jp.fujitsu.com>
-	<4F9A359C.10107@jp.fujitsu.com>
-	<CALWz4ixHGCqfWh1U+JyiJWTkGmCDtXQy1vbHRjrHaU_pOgGuBw@mail.gmail.com>
-Date: Sat, 28 Apr 2012 09:01:23 +0900
-Message-ID: <CABEgKgpCyWhe1KMgcF7ob0myzcCypNbw5SebhVpSX_Xaz7yOBw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 5/9 v2] move charges to root at rmdir if
- use_hierarchy is unset
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Ying Han <yinghan@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Regression in 32-bit ppc kernel
+References: <4F973026.3020103@lwfinger.net>  <1335311621.15830.42.camel@pasglop> <4F976352.4060001@lwfinger.net>  <1335327081.21961.28.camel@pasglop> <4F98117C.7080309@lwfinger.net>  <1335390257.21961.53.camel@pasglop> <4F9ABD67.3060704@lwfinger.net> <1335565573.20866.7.camel@pasglop>
+In-Reply-To: <1335565573.20866.7.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 28, 2012 at 4:12 AM, Ying Han <yinghan@google.com> wrote:
-> On Thu, Apr 26, 2012 at 10:58 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> Now, at removal of cgroup, ->pre_destroy() is called and move charges
->> to the parent cgroup. A major reason of -EBUSY returned by ->pre_destroy()
->> is that the 'moving' hits parent's resource limitation. It happens only
->> when use_hierarchy=0. This was a mistake of original design.(it's me...)
+On 04/27/2012 05:26 PM, Benjamin Herrenschmidt wrote:
+> On Fri, 2012-04-27 at 10:38 -0500, Larry Finger wrote:
 >
-> Nice patch, i can see how broken it is now with use_hierarchy=0...
+>> Sorry, I was unable to find anything in debugfs to help me learn about interrupt
+>> mapping. The value of CONFIG_NR_IRQS is already 512. I have not tried reducing
+>> it to 128. The setting for CONFIG_SPARSE_IRQ was on, and changing it to off did
+>> not make any difference.
+>>
+>> I finished the bisection, which led to
+>>
+>> commit a79dd5ae5a8f49688d65b89a859f2b98a7ee5538
+>> Author: Benjamin Herrenschmidt<benh@kernel.crashing.org>
+>> Date:   Thu Dec 15 11:13:03 2011 +1100
+>>
+>>       tty/serial/pmac_zilog: Fix suspend&  resume
+>>
+>> As this seemed to be an improbable result, I did the full test by checking out
+>> the previous commit (43ca5d3). That resulted in a "good" result. Then I used
+>> quilt to add commit a79dd5a as a patch and the fault returned. I then noticed
+>> that you said in the commit message that "I removed some code for handling
+>> unexpected interrupt which should never be hit...". It appears that my box does
+>> indeed hit such an unexpected interrupt.
+>>
+>> I could always get rid of the fault by disabling CONFIG_SERIAL_PMACZILOG, but I
+>> would like to fix the problem if possible.
 >
-> nitpick on the documentation below:
->
->>
->> Considering use_hierarchy=0, all cgroups are treated as flat. So, no one
->> cannot justify moving charges to parent...parent and children are in
->> flat configuration, not hierarchical.
->>
->> This patch modifes to move charges to root cgroup at rmdir/force_empty
->> if use_hierarchy==0. This will much simplify rmdir() and reduce error
->> in ->pre_destroy.
->>
->> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> ---
->>  Documentation/cgroups/memory.txt |   12 ++++++----
->>  mm/memcontrol.c                  |   39 +++++++++++++------------------------
->>  2 files changed, 21 insertions(+), 30 deletions(-)
->>
->> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
->> index 54c338d..82ce1ef 100644
->> --- a/Documentation/cgroups/memory.txt
->> +++ b/Documentation/cgroups/memory.txt
->> @@ -393,14 +393,14 @@ cgroup might have some charge associated with it, even though all
->>  tasks have migrated away from it. (because we charge against pages, not
->>  against tasks.)
->>
->> -Such charges are freed or moved to their parent. At moving, both of RSS
->> -and CACHES are moved to parent.
->> -rmdir() may return -EBUSY if freeing/moving fails. See 5.1 also.
->> +Such charges are freed or moved to their parent if use_hierarchy=1.
->> +if use_hierarchy=0, the charges will be moved to root cgroup.
->
-> It is more clear that we move the stats to root (if use_hierarchy==0)
-> or parent (if use_hierarchy==1), and no change on the charge except
-> uncharging from the child.
->
+> Right, it should be fixed. I need to understand where the unexpected
+> interrupt comes from. Can you tell me (or remind me) what specific
+> machine model you are using ? Are you putting the console on the serial
+> port ?
 
-Seems nicer. I'll use your text in next ver.
+It is a 15" Powerbook G4. I think they call it a Titanium. The console is not on 
+a serial port. In fact, the reason that I did not think this patch was a problem 
+is because the serial port does not appear to be connected to an external port. 
+I was unaware that there was a serial port on the motherboard. There is a modem 
+jack, but no 9 or 25-pin connectors that would indicate a standard serial port.
 
-Thanks,
--Kame
+There are two stack dumps with the same trace. I posted the first, but the 
+second is preceded by the lines
+
+[<c02adca0] pmz_interrupt
+Disabling IRQ #23
+ttyPZ1: IrDA setup for 57600 bps, dongle version: 4
+ttyPZ1: IrDA setup for 115200 bps, dongle version: 4
+irq23: nobody cared (try booting with the "irqpoll" option
+
+As I am not sure how to put options in with yaboot, I have not tried that.
+
+Larry
+
+
