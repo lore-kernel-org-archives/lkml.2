@@ -1,99 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab2D1IxI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 04:53:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29098 "EHLO mga02.intel.com"
+	id S1753538Ab2D1IzI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 04:55:08 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:3965 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753781Ab2D1IxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 04:53:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="134675372"
-From: Alex Shi <alex.shi@intel.com>
-To: andi.kleen@intel.com, tim.c.chen@linux.intel.com, jeremy@goop.org,
-        chrisw@sous-sol.org, akataria@vmware.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
-        fweisbec@gmail.com
-Cc: riel@redhat.com, luto@mit.edu, alex.shi@intel.com, avi@redhat.com,
-        len.brown@intel.com, paul.gortmaker@windriver.com, dhowells@redhat.com,
-        fenghua.yu@intel.com, borislav.petkov@amd.com, yinghai@kernel.org,
-        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
-        yongjie.ren@intel.com
-Subject: [PATCH 3/3] x86/tlb: fall back to flush all when meet a THP large page
-Date: Sat, 28 Apr 2012 16:51:39 +0800
-Message-Id: <1335603099-2624-4-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1335603099-2624-1-git-send-email-alex.shi@intel.com>
-References: <1335603099-2624-1-git-send-email-alex.shi@intel.com>
+	id S1752231Ab2D1IzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 04:55:05 -0400
+X-Server-Uuid: B730DE51-FC43-4C83-941F-F1F78A914BDD
+Message-ID: <4F9BB05E.4020800@broadcom.com>
+Date: Sat, 28 Apr 2012 10:54:54 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411
+ Thunderbird/11.0.1
+MIME-Version: 1.0
+To: "Anatolij Gustschin" <agust@denx.de>
+cc: linux-kernel@vger.kernel.org, "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Keshava Munegowda" <Keshava_mgowda@ti.com>
+Subject: Re: [PATCH] mfd: omap-ush-host: Fix build breakage
+References: <1335114510-29413-1-git-send-email-agust@denx.de>
+In-Reply-To: <1335114510-29413-1-git-send-email-agust@denx.de>
+X-WSS-ID: 63856FEC3E024518126-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to flush large pages by PAGE_SIZE step, that just waste
-time. and actually, large page don't need 'invlpg' optimizing according
-to our macro benchmark. So, just flush whole TLB is enough for them.
+On 04/22/2012 07:08 PM, Anatolij Gustschin wrote:
+> Commit 1fcb57d0f6e1150003d222051aaaf4bc4a9ccc94 (ARM: OMAP3: USB: Fix
+> the EHCI ULPI PHY reset issue) removed #include<linux/gpio.h>  which
+> indirectly includes 'plat/cpu.h'. This caused build breakage:
+>
+> drivers/mfd/omap-usb-host.c: In function 'omap_usbhs_init':
+> drivers/mfd/omap-usb-host.c:525:3: error: implicit declaration of function 'cpu_is_omap3430'
+> drivers/mfd/omap-usb-host.c:525:3: error: implicit declaration of function 'omap_rev'
+> drivers/mfd/omap-usb-host.c:525:43: error: 'OMAP3430_REV_ES2_1' undeclared (first use in this function)
+>
+> Include<plat/cpu.h>  to fix it.
+>
+> Signed-off-by: Anatolij Gustschin<agust@denx.de>
+> Cc: Keshava Munegowda<Keshava_mgowda@ti.com>
 
-The following result is tested on a 2CPU * 4cores * 2HT NHM EP machine,
-with THP 'always' setting.
+Build failed on OMAP4 Pandaboard as well. Applied the patch and 
+successfully built.
 
-Multi-thread testing, '-t' paramter is thread number:
-                       without this patch 	with this patch
-./mprotect -t 1         14ns                       13ns
-./mprotect -t 2         13ns                       13ns
-./mprotect -t 4         12ns                       11ns
-./mprotect -t 8         14ns                       10ns
-./mprotect -t 16        28ns                       28ns
-./mprotect -t 32        54ns                       52ns
-./mprotect -t 128       200ns                      200ns
+Tested-by: Arend van Spriel <arend@broadcom.com>
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- arch/x86/mm/tlb.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
+Gr. AvS
 
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index c4e694d..049fcdf 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -316,12 +316,20 @@ void flush_tlb_mm(struct mm_struct *mm)
- 
- #define FLUSHALL_BAR	16
- 
-+/* Is better to have a vm_flags to show if large pages exist in a VMA? */
-+static inline int in_large_page(struct mm_struct *mm, unsigned long addr){
-+	pmd_t *pmd;
-+	pmd = pmd_offset(pud_offset(pgd_offset(mm, addr), addr), addr);
-+	return pmd_large(*pmd);
-+}
-+
- void flush_tlb_range(struct vm_area_struct *vma,
- 				   unsigned long start, unsigned long end)
- {
- 	struct mm_struct *mm;
- 
- 	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB) {
-+flush_all:
- 		flush_tlb_mm(vma->vm_mm);
- 		return;
- 	}
-@@ -345,9 +353,15 @@ void flush_tlb_range(struct vm_area_struct *vma,
- 				local_flush_tlb();
- 			else {
- 				for (addr = start; addr <= end;
--						addr += PAGE_SIZE)
-+						addr += HPAGE_SIZE)
-+					if (in_large_page(mm, addr)) {
-+						preempt_enable();
-+						goto flush_all;
-+					}
-+				for (addr = start; addr <= end;
-+						addr += PAGE_SIZE) {
- 					__flush_tlb_single(addr);
--
-+				}
- 				if (cpumask_any_but(mm_cpumask(mm),
- 					smp_processor_id()) < nr_cpu_ids)
- 					flush_tlb_others(mm_cpumask(mm), mm,
--- 
-1.7.5.4
 
