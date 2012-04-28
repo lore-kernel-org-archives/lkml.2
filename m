@@ -1,110 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab2D1GTP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 02:19:15 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:60493 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab2D1GTN convert rfc822-to-8bit (ORCPT
+	id S1752920Ab2D1GZV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 02:25:21 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:57458 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751640Ab2D1GZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 02:19:13 -0400
+	Sat, 28 Apr 2012 02:25:18 -0400
+Message-ID: <4F9B8D1C.6090400@marvell.com>
+Date: Sat, 28 Apr 2012 14:24:28 +0800
+From: Yilu Mao <ylmao@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120428003928.GA16805@elliptictech.com>
-References: <CA+55aFzQD4UyPVDQesrWq7JkM=BoQevdJpQt1YyaG10MtfM-Pw@mail.gmail.com>
-	<20120422040715.GA30689@elliptictech.com>
-	<CA+55aFwGrb_sOjHFWe6tYwf8mmNsFbqKAhz=bq2ofiU+F+wVvA@mail.gmail.com>
-	<20120422164023.GA32342@elliptictech.com>
-	<20120423000554.GA893@elliptictech.com>
-	<20120423024558.GD13840@phenom.dumpdata.com>
-	<20120424010345.GA30674@elliptictech.com>
-	<20120425013537.GA11959@elliptictech.com>
-	<1335322574.1821.8.camel@nisroch>
-	<1335504021.5311.0.camel@nisroch>
-	<20120428003928.GA16805@elliptictech.com>
-Date: Sat, 28 Apr 2012 02:19:12 -0400
-Message-ID: <CADnq5_N8Cf4ONL5TNA-Wmif7cty070TRrTOnUpqdiGhWbVbj=w@mail.gmail.com>
-Subject: Re: Linux 3.4-rc4
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: Ben Skeggs <skeggsb@gmail.com>, Martin Peres <martin.peres@labri.fr>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Lu Mao <ylmao@marvell.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ning Jiang <njiang1@marvell.com>
+Subject: Re: [PATCH] ARM: cache-l2x0.c: save aux ctrl for resume in case that
+ l2x0 is enabled before init
+References: <20120424082810.GA9367@arm.com> <4F98D659.4030709@marvell.com> <20120426083554.GB18136@arm.com> <4F99148B.4020900@marvell.com> <20120426094400.GD18136@arm.com> <4F991ED6.8060109@marvell.com> <20120426102815.GE18136@arm.com> <4F9924FB.7070308@marvell.com> <20120426103840.GA6294@arm.com> <4F9927F2.5060408@marvell.com> <20120426105651.GB6294@arm.com> <4F992B80.6040207@marvell.com>
+In-Reply-To: <4F992B80.6040207@marvell.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 8:39 PM, Nick Bowler <nbowler@elliptictech.com> wrote:
-> Hi Ben,
->
-> On 2012-04-27 15:20 +1000, Ben Skeggs wrote:
->> Does this patch help you at all?
+On 04/26/2012 07:03 PM, Lu Mao wrote:
+> On 04/26/2012 06:56 PM, Catalin Marinas wrote:
+>> On Thu, Apr 26, 2012 at 11:48:18AM +0100, Yilu Mao wrote:
+>>> On 04/26/2012 06:38 PM, Catalin Marinas wrote:
+>>>> On Thu, Apr 26, 2012 at 11:35:39AM +0100, Yilu Mao wrote:
+>>>>> On 04/26/2012 06:28 PM, Catalin Marinas wrote:
+>>>>>> On Thu, Apr 26, 2012 at 11:09:26AM +0100, Yilu Mao wrote:
+>>>>>>> On 04/26/2012 05:44 PM, Catalin Marinas wrote:
+>>>>>>>> On Thu, Apr 26, 2012 at 10:25:31AM +0100, Yilu Mao wrote:
+>>>>>>>>> On 04/26/2012 04:35 PM, Catalin Marinas wrote:
+>>>>>>>>>> On Thu, Apr 26, 2012 at 06:00:09AM +0100, Yilu Mao wrote:
+>>>>>>>>>>> On 04/24/2012 04:28 PM, Catalin Marinas wrote:
+>>>>>>>>>>>> On Tue, Apr 24, 2012 at 03:41:20AM +0100, Yilu Mao wrote:
+>>>>>>>>>>>>> +	l2x0_saved_regs.aux_ctrl = aux;
+>>>>>>>>>>>>> +
+>>>>>>>>>>>>>         	aux&= aux_mask;
+>>>>>>>>>>>>>         	aux |= aux_val;
+>>>>>>>>>>>>
+>>>>>>>>>>>> I think that's the wrong place to save it, it should be after the
+>>>>>>>>>>>> masking was done.
+>>>>>>>>>>>>
+>>>>>>>>>>>> Anyway, if we cannot write this register in l2x0_init() because the L2
+>>>>>>>>>>>> was enabled, do we expect the L2 to be disabled during resume?
+>>>>>>>>>>>>
+>>>>>>>>>>> Sorry, I don't think so.
+>>>>>>>>>>> This is the right place to save it because we must make sure the saved
+>>>>>>>>>>> aux_ctrl is the same as what it is set.
+>>>>>>>>>>> If we save it after masking was done, the saved value will be different
+>>>>>>>>>>> because we can't actually change the real setting.
+>>>>>>>>>>
+>>>>>>>>>> And since we can't actually change the real setting on the resume path,
+>>>>>>>>>> why do we need to save it anyway. Is your L2 cache disabled on the
+>>>>>>>>>> resume path but not on the cold boot one?
+>>>>>>>>>
+>>>>>>>>> We can't change L2 aux ctrl setting when do init because it has been
+>>>>>>>>> enabled.
+>>>>>>>>
+>>>>>>>> This is normally for the case where the kernel running in non-secure
+>>>>>>>> mode is not allowed to write the L2 aux ctrl register. Does this
+>>>>>>>> permission change with core idle?
+>>>>>>>>
+>>>>>>> Yes, your understanding of previous mail is right. The L2 is enabled on
+>>>>>>> code boot and it is disabled on the resume in our case.
+>>>>>>
+>>>>>> But the kernel either runs in secure mode or the non-secure access to
+>>>>>> this register is allowed.
+>>>>>>
+>>>>>>> So if we don't have such patch, when core idle exit, L2 cache aux ctrl
+>>>>>>> register will be set to 0x0 because l2x0_saved_regs.aux_ctrl is not
+>>>>>>> initialized.
+>>>>>>
+>>>>>> You could still make sure that the mask passed doesn't affect the
+>>>>>> original setting and save it after masking.
+>>>>>>
+>>>>> Do you mean the code is like this:
+>>>>> aux = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
+>>>>> aux&= aux_mask;
+>>>>> l2x0_saved_regs.aux_ctrl = aux;
+>>>>>
+>>>>> Then the saved value is not the same as real setting. So the restored
+>>>>> value after core idle will not the same as before... This is not what we
+>>>>> expected.
+>>>>
+>>>> My point was that on your platform you pass an aux_mask that is meant to
+>>>> change the already set aux_ctlr value. Why do you pass such mask to be
+>>>> anything other than ~0UL in this case?
+>>>>
+>>> Sorry I still can't catch your point...
+>>> In our platform, we actually use ~0UL as aux mask.
+>>>
+>>> Anyway, the two arguments, aux_value and aux_mask, are both for changing
+>>> the original value set before kernel bootup. If L2 cache is enabled in
+>>> cold boot, both two arguments are useless because we can't set the
+>>> register. So we must make sure we can restore the original value after
+>>> core idle.
 >>
->> http://cgit.freedesktop.org/nouveau/linux-2.6/commit/?id=a3a285f17867f0018de798b5ee85731ec1268305
+>> So if your platform passes aux_mask = ~0UL and aux_val = 0, there is no
+>> change to the read aux_ctlr value.
+>>
+>> If for whatever reason (same binary running in different configuration)
+>> you need to pass the aux_mask and aux_val different from the above, then
+>> your argument makes sense. But I just want to be clear.
+>>
+> Actually, our arguments are aux_value = 0x30000000 and aux_mask = ~0UL.
+> I think it is also ok with my patch.
+> What do you think?
 >
-> Yes.  I cherry-picked this patch on top of Linus' master (3.4-rc4+) and
-> this appears to solve the "black screen on VGA" problem described in the
-> original report.  Thanks!
->
-> Unfortunately, that's not the end of my VGA-related regressions. :(
->
-> While tracking down the black screen issue, I've been having the monitor
-> directly connected to the video card the whole time, but now when I'm
-> connected through my KVM switch (an IOGear GCS1804), it appears that
-> something's going wrong with reading the EDID, because the available
-> modes are all screwed up (both console and X decide they want to drive
-> the display at 1024x768).  Here's the output of xrandr on 3.2.15:
->
->  % xrandr
->  Screen 1: minimum 320 x 200, current 1600 x 1200, maximum 4096 x 4096
->  VGA-1 connected 1600x1200+0+0 (normal left inverted right x axis y axis) 352mm x 264mm
->     1600x1200      75.0*+   70.0     65.0     60.0
->     1280x1024      85.0 +   75.0     60.0
->     1920x1440      60.0
->     1856x1392      60.0
->     1792x1344      60.0
->     1920x1200      74.9     59.9
->     1680x1050      84.9     74.9     60.0
->     1400x1050      85.0     74.9     60.0
->     1440x900       84.8     75.0     59.9
->     1280x960       85.0     60.0
->     1360x768       60.0
->     1280x800       84.9     74.9     59.8
->     1152x864       75.0
->     1280x768       84.8     74.9     59.9
->     1024x768       85.0     75.1     75.0     70.1     60.0     43.5     43.5
->     832x624        74.6
->     800x600        85.1     72.2     75.0     60.3     56.2
->     848x480        60.0
->     640x480        85.0     75.0     72.8     72.8     66.7     60.0     59.9
->     720x400        85.0     87.8     70.1
->     640x400        85.1
->     640x350        85.1
->     320x200       165.1
->
-> And on 3.4-rc4+ (with your patch cherry-picked):
->
->  % xrandr
->  Screen 1: minimum 320 x 200, current 1024 x 768, maximum 4096 x 4096
->  VGA-1 connected 1024x768+0+0 (normal left inverted right x axis y axis) 0mm x 0mm
->     1024x768       60.0*
->     800x600        60.3     56.2
->     848x480        60.0
->     640x480        59.9
->     320x200       165.1
->
-> Running xrandr on 3.4-rc4+ also causes the screen to go black for a
-> second when it does not on 3.2.15.  It also causes several messages of
-> the form
->
->  [drm] nouveau 0000:01:00.0: Load detected on output B
->
-> to be logged.  Also, looking at /sys/class/drm/card0-VGA-1/edid I see
-> that it is empty on 3.4-rc4+ and it is correct on 3.2.15.  Things seem
-> to work OK when the KVM is not involved.
+Hi Catalin,
 
-Were you ever able to fetch a EDID with the KVM involved?  KVMs are
-notorious for not connecting the ddc pins.
+Do you agree with this patch to be merged?
 
-Alex
+-- 
+Thanks.
+
+Best Wishes,
+Yilu Mao
