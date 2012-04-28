@@ -1,117 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab2D1M1z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 08:27:55 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:40981 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab2D1M1x (ORCPT
+	id S1753331Ab2D1M7f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 08:59:35 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41840 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab2D1M7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 08:27:53 -0400
-Date: Sat, 28 Apr 2012 08:27:48 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs fixes
-Message-ID: <20120428122748.GJ7340@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	Sat, 28 Apr 2012 08:59:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1334304949-18301-1-git-send-email-linus.walleij@stericsson.com>
+References: <1334304949-18301-1-git-send-email-linus.walleij@stericsson.com>
+Date: Sat, 28 Apr 2012 14:59:33 +0200
+Message-ID: <CACRpkdaM=OecD=M_J9X9shYKQkWO03mhb2BFxCWOeocr8_m=DQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] power/ab8500_charger: harden platform data check
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org,
+        Karl Komierowski <karl.komierowski@stericsson.com>,
+        Arun Murthy <arun.murthy@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Fri, Apr 13, 2012 at 10:15 AM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
 
-The for-linus branch of the btrfs git tree:
+> From: Linus Walleij <linus.walleij@linaro.org>
+>
+> If no platform data at all is supplied the driver crashes,
+> extend the checks to be more careful so we can compile in the
+> driver and boot also without platform data present.
+>
+> Cc: Arun Murthy <arun.murthy@stericsson.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+Anton have you picked these three patches for the -rc:s?
 
-Has our collection of bug fixes.  I missed the last rc because I thought
-our patches were making NFS crash during my xfs test runs.  Turns out it
-was an NFS client bug fixed by someone else while I tried to bisect it.
+It seems Lee Jones is facing the problems so would be nice to
+have this upstream.
 
-All of these fixes are small, but some are fairly high impact.  The
-biggest are fixes for our mount -o remount handling, a deadlock due
-to GFP_KERNEL allocations in readdir, and a RAID10 error handling bug.
-
-This was tested against both 3.3 and Linus' master as of this morning.
-
-Stefan Behrens (4) commits (+7/-19):
-    Btrfs: don't count CRC or header errors twice while scrubbing (+0/-15)
-    Btrfs: fix btrfs_ioctl_dev_info() crash on missing device (+4/-1)
-    Btrfs: fix that check_int_data mount option was ignored (+1/-1)
-    Btrfs: fix block_rsv and space_info lock ordering (+2/-2)
-
-Jan Schmidt (3) commits (+20/-8):
-    Btrfs: don't call free_extent_buffer twice in iterate_irefs (+3/-5)
-    Btrfs: add missing read locks in backref.c (+15/-2)
-    Btrfs: fix repair code for RAID10 (+2/-1)
-
-Arne Jansen (3) commits (+39/-26):
-    btrfs: don't add both copies of DUP to reada extent tree (+13/-0)
-    btrfs: fix race in reada (+23/-20)
-    btrfs: don't return EINTR (+3/-6)
-
-Li Zefan (3) commits (+32/-25):
-    Btrfs: avoid possible use-after-free in clear_extent_bit() (+21/-15)
-    Btrfs: retrurn void from clear_state_bit (+2/-5)
-    Btrfs: avoid setting ->d_op twice (+9/-5)
-
-Daniel J Blueman (2) commits (+3/-1):
-    Btrfs: Fix space checking during fs resize (+1/-1)
-    Btrfs: Prevent root_list corruption (+2/-0)
-
-Chris Mason (2) commits (+8/-31):
-    Btrfs: avoid deadlocks from GFP_KERNEL allocations during btrfs_real_readdir (+1/-29)
-    Btrfs: reduce lock contention during extent insertion (+7/-2)
-
-Josef Bacik (2) commits (+17/-21):
-    Btrfs: always store the mirror we read the eb from (+17/-20)
-    Btrfs: do not start delalloc inodes during sync (+0/-1)
-
-Jesper Juhl (1) commits (+2/-0):
-    Btrfs: Make free_ipath() deal gracefully with NULL pointers
-
-Liu Bo (1) commits (+3/-3):
-    Btrfs: do not mount when we have a sectorsize unequal to PAGE_SIZE
-
-Julia Lawall (1) commits (+3/-1):
-    fs/btrfs/volumes.c: add missing free_fs_devices
-
-Ilya Dryomov (1) commits (+4/-2):
-    Btrfs: fix max chunk size check in chunk allocator
-
-Dan Carpenter (1) commits (+2/-0):
-    Btrfs: double unlock bug in error handling
-
-David Sterba (1) commits (+5/-1):
-    btrfs: add missing unlocks to transaction abort paths
-
-Sergei Trofimovich (1) commits (+4/-2):
-    btrfs: fix early abort in 'remount'
-
-Total: (26) commits
-
- fs/btrfs/backref.c     |   27 +++++++++++++++++------
- fs/btrfs/ctree.h       |    2 +-
- fs/btrfs/disk-io.c     |   22 +++++++++----------
- fs/btrfs/extent-tree.c |   15 ++++++-------
- fs/btrfs/extent_io.c   |   56 ++++++++++++++++++++++++------------------------
- fs/btrfs/extent_io.h   |    4 ++--
- fs/btrfs/file.c        |    9 ++++++--
- fs/btrfs/inode.c       |   54 ++++++++++++++++------------------------------
- fs/btrfs/ioctl.c       |    5 ++++-
- fs/btrfs/reada.c       |   48 +++++++++++++++++++++++++----------------
- fs/btrfs/relocation.c  |    4 +++-
- fs/btrfs/scrub.c       |   15 -------------
- fs/btrfs/super.c       |    7 +++---
- fs/btrfs/transaction.c |    6 +++++-
- fs/btrfs/volumes.c     |   13 +++++++----
- 15 files changed, 148 insertions(+), 139 deletions(-)
+Yours,
+Linus Walleij
