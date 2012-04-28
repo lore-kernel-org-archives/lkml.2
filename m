@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab2D1ADt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 20:03:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41615 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757659Ab2D1ADs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 20:03:48 -0400
-Message-ID: <4F9B33BF.908@zytor.com>
-Date: Fri, 27 Apr 2012 17:03:11 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1758111Ab2D1AGW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 20:06:22 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:63726 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757775Ab2D1AGV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Apr 2012 20:06:21 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: David Miller <davem@davemloft.net>, mjt@tls.msk.ru,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org, raven@themaw.net,
-        thomas@m3y3r.de, stable@kernel.org
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix design
- error.
-References: <20120427.151433.1007849975903946491.davem@davemloft.net> <20120427.151651.2274764174217164454.davem@davemloft.net> <CA+55aFzPbAprx-iT0TYh24uS7+JnL92mbTg_js6Cd_O0q+Dvmw@mail.gmail.com> <20120427.152404.2292425516870981391.davem@davemloft.net> <CA+55aFzGO+PHmjjVgxnYawbB-wFAqHtkh19vTv1AwQNpc9MsWg@mail.gmail.com> <4F9B050C.3000309@zytor.com> <CA+55aFz-1n=REkh9SzA1aEz5J_uGc=B_nKj+cP8J=PR6YSZD1w@mail.gmail.com> <4F9B2420.5030806@zytor.com> <CA+55aFyCpiU5_nG-3Nra5q9x0-71amAQVetZTxxP6waR1ueYNQ@mail.gmail.com>
-In-Reply-To: <CA+55aFyCpiU5_nG-3Nra5q9x0-71amAQVetZTxxP6waR1ueYNQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
+In-Reply-To: <20120427103927.GA3514@somewhere.redhat.com>
+References: <4F9A327A.6050409@jp.fujitsu.com>
+	<4F9A366E.9020307@jp.fujitsu.com>
+	<20120427103927.GA3514@somewhere.redhat.com>
+Date: Sat, 28 Apr 2012 09:06:20 +0900
+Message-ID: <CABEgKgqVJZic-6U0YTv7u7GHe4bNOvChSUqzpb93OXU-ZPPWAQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH 7/9 v2] cgroup: avoid attaching task to a cgroup
+ under rmdir()
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Han Ying <yinghan@google.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2012 04:07 PM, Linus Torvalds wrote:
-> 
-> The important change is actually to make the read return the size requested.
-> 
-> So broken user space does a read() with the wrong size - and then
-> checks that it gets *exactly* that many bytes. Not more, not less.
-> 
-> The way to handle that is to
->  - make sure the kernel always writes the maximally padded data
->  - make the packetization simply drop any data that was in the packet
-> that the reader didn't ask for.
-> 
-> This is very much a semantic change, in that any client that tries to
-> read the packet with multiple reads (one 4-byte read to see the size,
-> followed by one "right-sized" read of the data) would be totally
-> screwed. The first read would indeed read the size, but it also -
-> because of the packetized interface - would simply drop the data, and
-> the next read would read the first bytes of the next packet.
-> 
-> But that's not what the autofs users actually do anyway. They just
-> read the whole packet.  So we can make *them* work. And the new
-> interface will be fairly robust (in fact, you could pass it some big
-> buffer and just know you always get exactly one packet, and never have
-> that whole stupid "sizeof()" at all).
-> 
+On Fri, Apr 27, 2012 at 7:39 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Fri, Apr 27, 2012 at 03:02:22PM +0900, KAMEZAWA Hiroyuki wrote:
+>> attach_task() is done under cgroup_mutex() but ->pre_destroy() callback
+>> in rmdir() isn't called under cgroup_mutex().
+>>
+>> It's better to avoid attaching a task to a cgroup which
+>> is under pre_destroy(). Considering memcg, the attached task may
+>> increase resource usage after memcg's pre_destroy() confirms that
+>> memcg is empty. This is not good.
+>>
+>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> ---
+>>  kernel/cgroup.c |    5 ++++-
+>>  1 files changed, 4 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+>> index ad8eae5..7a3076b 100644
+>> --- a/kernel/cgroup.c
+>> +++ b/kernel/cgroup.c
+>> @@ -1953,6 +1953,9 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+>>       if (cgrp == oldcgrp)
+>>               return 0;
+>>
+>> +     if (test_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags))
+>> +             return -EBUSY;
+>> +
+>
+> You probably need to update cgroup_attach_proc() as well?
+>
+Ahh...I missed that. Thank you for pointing out !
 
-OK, I follow you now.  That would work for autofs; I presume it is not
-something we would export to other users though?  If so I'd worry about
-opening up new security issues.
-
-Still, I have to admit... we have a grand total of three users of this
-interface as far as we know (autofs, systemd, and am-utils if they ever
-revved that one to v5.)  Would it really not be better to do the
-zero-eating user space fix?
-
-	-hpa
-
-
+Thanks,
+-Kame
