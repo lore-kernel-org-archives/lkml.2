@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab2D1Vb6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 17:31:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44600 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab2D1Vb4 (ORCPT
+	id S1755280Ab2D1VdZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 17:33:25 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39001 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823Ab2D1VdX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 17:31:56 -0400
-Date: Sat, 28 Apr 2012 14:31:51 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Han Ying <yinghan@google.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 8/9 v2] cgroup: avoid creating new cgroup under a
- cgroup being destroyed
-Message-ID: <20120428213151.GA4586@mtj.dyndns.org>
-References: <4F9A327A.6050409@jp.fujitsu.com>
- <4F9A36DE.30301@jp.fujitsu.com>
- <20120427204035.GN26595@google.com>
- <CABEgKgrJ68wU-L17zwN4_htX948TNFnLVgts=hFeY7QG3etwCA@mail.gmail.com>
- <20120428020003.GA26573@mtj.dyndns.org>
- <CABEgKgpPXPu3L6oS6+2+dZmcPS=t-ZR7PnCvm0mo8UFeXPHDog@mail.gmail.com>
+	Sat, 28 Apr 2012 17:33:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABEgKgpPXPu3L6oS6+2+dZmcPS=t-ZR7PnCvm0mo8UFeXPHDog@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [79.177.224.247]
+In-Reply-To: <1334561976-13965-1-git-send-email-ido@wizery.com>
+References: <1333715987-26059-2-git-send-email-ido@wizery.com>
+	<1334561976-13965-1-git-send-email-ido@wizery.com>
+Date: Sun, 29 Apr 2012 00:33:22 +0300
+Message-ID: <CANtih+8zidrJoC4t7YgWW4wU5dj_-WE5xDSprGFVFtpqE4PR5w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] vsmp: Fix number of CPUs when vsmp is disabled
+From: Ido Yariv <ido@wizery.com>
+To: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Shai Fultheim <shai@scalemp.com>, Ido Yariv <ido@wizery.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, KAME.
+Hi,
 
-On Sat, Apr 28, 2012 at 06:31:38PM +0900, Hiroyuki Kamezawa wrote:
-> > So, IMHO, just making pre_destroy() clean up its own charges and
-> > always returning 0 is enough.  There's no need to fix up old
-> > non-critical race condition at this point in the patch stream.  cgroup
-> > rmdir simplification will make them disappear anyway.
+On Mon, Apr 16, 2012 at 10:39 AM, Ido Yariv <ido@wizery.com> wrote:
+> From: Shai Fultheim <shai@scalemp.com>
 >
-> So, hmm, ok. I'll drop patch 7 & 8. memcg may return -EBUSY in very very
-> race case but users will not see it in the most case.
-> I'll fix limit, move-charge and use_hierarchy problem first.
+> In case CONFIG_X86_VSMP is not set, limit the number of CPUs to the
+> number of CPUs of the first board.
+>
+> Signed-off-by: Shai Fultheim <shai@scalemp.com>
+> [ido@wizery.com: rebased, fixed minor coding-style issues]
+> Signed-off-by: Ido Yariv <ido@wizery.com>
+> ---
+>  arch/x86/kernel/vsmp_64.c |   48 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 48 insertions(+), 0 deletions(-)
 
-IIUC, memcg can just return 0 when child creation races against
-pre_destroy().  cgroup will retry if child exists after pre_destroy()
-completion.  If child comes and goes before cgroup checks its
-existence, some charges may be lost but that race already exists and
-it will be gone once the retry logic is removed.  Also, returning
--errno will trigger WARN_ON() w/o the legacy behavior flag.
+Any thoughts on this set?
 
-Thank you very much.
-
--- 
-tejun
+Thanks,
+Ido.
