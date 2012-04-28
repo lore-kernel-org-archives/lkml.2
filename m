@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab2D1WHL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 18:07:11 -0400
-Received: from [12.216.194.151] ([12.216.194.151]:39542 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126Ab2D1WHJ (ORCPT
+	id S1753413Ab2D1WRf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 18:17:35 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49938 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab2D1WRd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 18:07:09 -0400
-Message-ID: <4F9C6A0A.5090109@tilera.com>
-Date: Sat, 28 Apr 2012 18:07:06 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Sat, 28 Apr 2012 18:17:33 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH 6/6] tilegx network driver: initial support
-References: <201204062059.q36KxjEO011317@farm-0027.internal.tilera.com> <201204101042.39877.arnd@arndb.de> <4F8763E1.1020605@tilera.com> <201204131034.03544.arnd@arndb.de>
-In-Reply-To: <201204131034.03544.arnd@arndb.de>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120428221003.49fb248d@pyramind.ukuu.org.uk>
+References: <1335645928-30993-1-git-send-email-alexander.tarasikov@gmail.com>
+	<1335645928-30993-2-git-send-email-alexander.tarasikov@gmail.com>
+	<20120428221003.49fb248d@pyramind.ukuu.org.uk>
+Date: Sun, 29 Apr 2012 02:17:32 +0400
+Message-ID: <CAMChaFwhgrQN864=q6-dKD=b8y9=1HJL+qpdSHFn4ts2rW7omA@mail.gmail.com>
+Subject: Re: [PATCH] drivers:gpu:vga_switcheroo: Work around dramatic power
+ drain in laptops
+From: Alexander Tarasikov <alexander.tarasikov@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, airlied@linux.ie
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/13/2012 6:34 AM, Arnd Bergmann wrote:
-> On Thursday 12 April 2012, Chris Metcalf wrote:
->> On 4/10/2012 6:42 AM, Arnd Bergmann wrote:
->>> Ok, but please remove tile_net_devs then.
->>> I think a better abstraction for tile_net_devs_for_channel would be
->>> some interface that lets you add private data to a channel so when
->>> you get data from a channel, you can extract that pointer from the driver
->>> using the channel.
->> I think what would be clearer is to document how and why we are using this
->> additional data structure.  We do access via both arrays where it is
->> efficient to do so, so getting rid of either of them doesn't seem right. 
+2012/4/29 Alan Cox <alan@lxorguk.ukuu.org.uk>:
+> The module parameter is probably the wrong long term option. Do you know
+> if the problem is general or specific to some laptops. If it's the latter
+> then it might also be worth implementing a DMI and/or PCI detection
+> routine to match the laptops you know are afflicted and automatically
+> enabled it.
+> Alan
 
-In the latest round of changes (to be mailed shortly), we eliminated one of
-the arrays entirely.  We now just have an array of net_device pointers
-indexed by channel, which we need since we get packets from the hardware
-and are only given the channel.  To get the device, we have to look it up
-in the array.
+I agree that module parameter is not a good idea, but I have seen a
+lot of reports
+of the problem and no patches were proposed, so I tried to do what I could. It
+could be a good temporary solution until we make sure it does not break
+any configurations. I am unsure how muxless/muxed cards may differ in
+behaviour.
 
-Since this is now the only array of net_device pointers, I eliminated the
-bychannel*() API I discussed in the previous email, since its use didn't
-seem as compelling any more.
+I suspect that the problem is specific to all laptops with
+intel+radeon combination.
+So far I have found these reports of radeon eating battery
 
->> Let's keep the "normal" tile_net_devs[] as is, indexed by devno, and make
->> the tile_net_devs_for_channel[] more abstracted by using the following code:
-> The tile_net_devs still feels dirty. You basically only
-> use it in tile_net_handle_egress_timer(), but there you don't
-> actually take the mutex that protects addition and removal from
-> the array, so it's racy in case of hotplug.
+[2010] Acer TravelMate Timeline 8371
+[2012] Hp Envy 14 https://bugs.launchpad.net/ubuntu/+source/linux/+bug/909337
+[2012] Thinkpad T400 https://bbs.archlinux.org/viewtopic.php?id=133329
+[2012] Sony Vaio SE15 (VPCSE1v9E)
+http://blog.ejbca.org/2012/02/ubuntu-gnulinux-1204-precise-on-sony.html
 
-We don't free the net_device structures themselves, so it's safe to do a
-lookup in the array and then dereference the net_device pointer even if we
-are doing an "ifconfig down" in another thread.  The only way you could
-imagine the net_device getting structures getting freed was via module
-unload, but it turns out that was pretty broken anyway, so I've just
-removed it altogether in the latest version of the patch.  So once you have
-a net_device pointer, it remains valid.
+The current solution involves doing an ON-OFF cycle and radeon hangs
+on echoing ON to switcheroo for a minute. This if, of course, very
+annoying and is not ready for daily usage.
+I and other users get the messages like
+
+[drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 1sec aborting
+[drm:atom_execute_table_locked] *ERROR* atombios stuck executing CAE2
+(len 62, WS 0, PS 0) @ 0xCAFE
+
+A possible solution might be to simply remove the "if
+(vgasr_priv.clients[i].pwr_state == VGA_SWITCHEROO_ON)"
+check. However, that would still mean some userland app will have to echo "OFF"
+on each resume. I find this behaviour unacceptable because I believe power
+management must be done by kernel and things that are likely to cause hardware
+damage (i.e., overheating) must be kept off userland. Overall, the
+drivers only do this enable-disable stuff
+during probe/remove, but when suspending, we're handing the control
+over to the proprietary BIOS/bootloader
+and the hardware is left in the undeterminate state. It might be a
+good idea to force power reinit on suspend/resume.
+
+Therefore I think we should get people having problems (and those not
+having problems) to test the patch
+to see if it fixes power drain and does not break other machines
+(i.e., whether we can enable aggressive
+powersaving for everyone). Maybe it's better to notify downstream
+(ubuntu, fedora) but I guess everyone
+reads LKML.
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Regards, Alexander
