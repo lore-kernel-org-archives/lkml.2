@@ -1,358 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab2D1On5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 10:43:57 -0400
-Received: from gwu.lbox.cz ([62.245.111.132]:60621 "EHLO gwu.lbox.cz"
+	id S1754060Ab2D1Pdh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 11:33:37 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:26815 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753026Ab2D1Onz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 10:43:55 -0400
-Date: Sat, 28 Apr 2012 16:43:43 +0200
-From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-To: minyard@acm.org
-Cc: Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        tcminyard@gmail.com, Nikola Ciprich <nik@nik-comp.lan>
-Subject: Re: [BISECTED] ipmi_si not loading since 2.6.39
-Message-ID: <20120428144343.GA6810@nik-comp.lan>
-References: <20120421072056.GA2033@nik-comp.lan>
- <4F95B6F3.3010303@calxeda.com>
- <4F96AD8C.9010105@acm.org>
- <20120424203745.GB2152@nik-comp.lan>
- <4F97135A.2060801@calxeda.com>
- <20120424213056.GC2152@nik-comp.lan>
- <4F9721C3.7000009@acm.org>
- <20120425042123.GA2067@nik-comp.lan>
- <4F982B0C.7050103@acm.org>
- <20120425175812.GA2037@nik-comp.lan>
+	id S1750882Ab2D1Pdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 11:33:36 -0400
+Subject: [PATCH] NFS: get module in idmap PipeFS notifier callback
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Sat, 28 Apr 2012 19:32:21 +0400
+Message-ID: <20120428153210.3459.12837.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
-Content-Disposition: inline
-In-Reply-To: <20120425175812.GA2037@nik-comp.lan>
-"X-PGP-Key: http://nik.lbox.cz/downloads/nikola.ciprich.asc"
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 7543774 records (last update: 20120428)
-X-Spam-Score: N/A (trusted relay)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is bug fix.
+Notifier callback is called from SUNRPC module. So before dereferencing NFS
+module we have to make sure, that it's alive.
 
---yrj/dFKFPuw6o+aM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/nfs/idmap.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-> nothing on this address (with 3.4 kernel).
->=20
-> on 2.6.32 I see:
-> 0a30-0a3f : pnp 00:07
-> 0b00-0b7f : pnp 00:0c
-> 0ca2-0ca2 : ipmi_si
-> 0ca3-0ca3 : ipmi_si
-> 0cf8-0cff : PCI conf1
-> 1180-119f : 0000:00:1f.3
->   1180-119f : pnp 00:0e
-> d000-dfff : PCI Bus 0000:06
->   d000-d01f : 0000:06:00.0
->=20
-> on 3.4-rc4:
->   0a30-0a3f : pnp 00:07
->   0b00-0b7f : pnp 00:0c
-> 0cf8-0cff : PCI conf1
-> 0d00-ffff : PCI Bus 0000:00
->   1180-119f : 0000:00:1f.3
->     1180-119f : pnp 00:0e
->   c000-cfff : PCI Bus 0000:06
->     c000-c01f : 0000:06:00.0
->=20
-well, I wasn't able to figure out anything special :(
-do You guys have any idea on what more I could check?
-I'd be very grateful for any hints..
-thanks a lot in advance
-nik
+diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+index c9c3e1b..f55b80a 100644
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -557,12 +557,16 @@ static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
+ 	struct nfs_client *clp;
+ 	int error = 0;
+ 
++	if (!try_module_get(THIS_MODULE))
++		return 0;
++
+ 	while ((clp = nfs_get_client_for_event(sb->s_fs_info, event))) {
+ 		error = __rpc_pipefs_event(clp, event, sb);
+ 		nfs_put_client(clp);
+ 		if (error)
+ 			break;
+ 	}
++	module_put(THIS_MODULE);
+ 	return error;
+ }
+ 
 
-
-> I'll try comparing both kernels' dmesg output in more detail to see
-> if there's some difference that might be important..
->=20
-> n.
->=20
->=20
->=20
->=20
-> >
-> > -corey
-> >
-> >> cheers!
-> >> n.
-> >>
-> >>
-> >>> -corey
-> >>>
-> >>>
-> >>>> n.
-> >>>>
-> >>>>
-> >>>> On Tue, Apr 24, 2012 at 03:55:54PM -0500, Rob Herring wrote:
-> >>>>> On 04/24/2012 03:37 PM, Nikola Ciprich wrote:
-> >>>>>> Hi Corey,
-> >>>>>>
-> >>>>>> I have this problem with 3.4-rc4 as well and it already contains
-> >>>>>> b1608d69cb804e414d0887140ba08a9398e4e638, so this doesn't fix this=
- problem..
-> >>>>>>
-> >>>>> Can you send the kernel log for the failing case.
-> >>>>>
-> >>>>> Rob
-> >>>>>
-> >>>>>> BR
-> >>>>>>
-> >>>>>> nik
-> >>>>>>
-> >>>>>>
-> >>>>>> On Tue, Apr 24, 2012 at 08:41:32AM -0500, Corey Minyard wrote:
-> >>>>>>> Looks like you might need change b1608d69cb804e414d0887140ba08a93=
-98e4e638
-> >>>>>>>
-> >>>>>>> -corey
-> >>>>>>>
-> >>>>>>> On 04/23/2012 03:09 PM, Rob Herring wrote:
-> >>>>>>>> On 04/21/2012 02:20 AM, Nikola Ciprich wrote:
-> >>>>>>>>> Hi,
-> >>>>>>>>>
-> >>>>>>>>> here's further information Rob and Corey requested:
-> >>>>>>>>>
-> >>>>>>>>> on working system:
-> >>>>>>>>>
-> >>>>>>>>> [root@vbox4 ~]# cat /proc/ipmi/0/params
-> >>>>>>>>> kcs,i/o,0xca2,rsp=3D1,rsi=3D1,rsh=3D0,irq=3D0,ipmb=3D0
-> >>>>>>>>>
-> >>>>>>>>> dmesg snippet:
-> >>>>>>>>>
-> >>>>>>>>> [   41.759319] ipmi message handler version 39.2
-> >>>>>>>>> [   41.760690] ipmi device interface
-> >>>>>>>>> [   42.765334] IPMI System Interface driver.
-> >>>>>>>>> [   42.765336] ipmi_si: probing via hardcoded address
-> >>>>>>>>> [   42.765337] ipmi_si: Adding hardcoded-specified kcs state ma=
-chine
-> >>>>>>>>> [   42.765340] ipmi_si: Trying hardcoded-specified kcs state ma=
-chine at i/o address 0xca8, slave address 0x0, irq 0
-> >>>>>>>>> [   42.765344] ipmi_si: Interface detection failed
-> >>>>>>>>> [   42.770823] ipmi_si: probing via SMBIOS
-> >>>>>>>>> [   42.770834] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 ir=
-q 0
-> >>>>>>>>> [   42.770836] ipmi_si: Adding SMBIOS-specified kcs state machi=
-ne
-> >>>>>>>>> [   42.770838] ipmi_si: probing via SPMI
-> >>>>>>>>> [   42.770840] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
-> >>>>>>>>> [   42.770841] ipmi_si: Adding SPMI-specified kcs state machine
-> >>>>>>>>> [   42.770843] ipmi_si: Trying SMBIOS-specified kcs state machi=
-ne at i/o address 0xca2, slave address 0x0, irq 0
-> >>>>>>>>> [   42.798137] ipmi_si ipmi_si.0: Error clearing flags: cc
-> >>>>>>>>> [   42.801011] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x002a=
-7c, prod_id: 0x0624, dev_id: 0x20)
-> >>>>>>>>> [   42.801068] ipmi_si ipmi_si.0: IPMI kcs interface initialized
-> >>>>>>>>>
-> >>>>>>>>>
-> >>>>>>>>> dmidecode:
-> >>>>>>>>>
-> >>>>>>>>> IPMI Device Information
-> >>>>>>>>>            Interface Type: KCS (Keyboard Control Style)
-> >>>>>>>>>            Specification Version: 2.0
-> >>>>>>>>>            I2C Slave Address: 0x00
-> >>>>>>>>>            NV Storage Device: Not Present
-> >>>>>>>>>            Base Address: 0x0000000000000CA2 (I/O)
-> >>>>>>>>>            Register Spacing: Successive Byte Boundaries
-> >>>>>>>>>
-> >>>>>>>>> Base Board Information
-> >>>>>>>>>            Manufacturer: Supermicro
-> >>>>>>>>>            Product Name: X9SCL/X9SCM
-> >>>>>>>>>
-> >>>>>>>>> (but we're experiencing this on various supermicro bords, ie X8=
-DTL)
-> >>>>>>>>>
-> >>>>>>>>> Tried setting parameters by hand didn't help:
-> >>>>>>>>>
-> >>>>>>>>> modprobe ipmi_si type=3Dkcs addrs=3D0xca8 regspacings=3D1 regsi=
-zes=3D1 regshifts=3D0 irqs=3D0 slave_addrs=3D0x0
-> >>>>>>>>>
-> >>>>>>>>> (not sure whether I got them correct though, and values mostly =
-seem to me to be defaults anyways..)
-> >>>>>>>>>
-> >>>>>>>> It is working for me on a SuperMicro system with ubuntu oneiric =
-(3.0
-> >>>>>>>> based).
-> >>>>>>>>
-> >>>>>>>> [597160.259728] ipmi_si: probing via SMBIOS
-> >>>>>>>> [597160.259730] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 ir=
-q 0
-> >>>>>>>> [597160.259731] ipmi_si: Adding SMBIOS-specified kcs state machi=
-ne
-> >>>>>>>> [597160.259734] ipmi_si: probing via SPMI
-> >>>>>>>> [597160.259735] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
-> >>>>>>>> [597160.259737] ipmi_si: Adding SPMI-specified kcs state machine
-> >>>>>>>> [597160.259739] ipmi_si: Trying SMBIOS-specified kcs state machi=
-ne at
-> >>>>>>>> i/o address 0xca2, slave address 0x0, irq 0
-> >>>>>>>> [597160.378757] ipmi_si: Invalid return from get global enables =
-command,
-> >>>>>>>> cannot enable the event buffer.
-> >>>>>>>> [597160.382032] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x00b9=
-80,
-> >>>>>>>> prod_id: 0x0624, dev_id: 0x20)
-> >>>>>>>> [597160.382040] ipmi_si ipmi_si.0: IPMI kcs interface initialized
-> >>>>>>>> [597179.973960] ipmi device interface
-> >>>>>>>> localadm@sandy1:~$ ipmitool bmc info
-> >>>>>>>> Could not open device at /dev/ipmi0 or /dev/ipmi/0 or /dev/ipmid=
-ev/0: No
-> >>>>>>>> such file or directory
-> >>>>>>>> Get Device ID command failed
-> >>>>>>>> localadm@sandy1:~$ sudo ipmitool bmc info
-> >>>>>>>> Device ID                 : 32
-> >>>>>>>> Device Revision           : 1
-> >>>>>>>> Firmware Revision         : 1.1
-> >>>>>>>> IPMI Version              : 2.0
-> >>>>>>>> Manufacturer ID           : 47488
-> >>>>>>>> Manufacturer Name         : Unknown (0xB980)
-> >>>>>>>> Product ID                : 1572 (0x0624)
-> >>>>>>>> Product Name              : Unknown (0x624)
-> >>>>>>>> Device Available          : yes
-> >>>>>>>> Provides Device SDRs      : no
-> >>>>>>>> Additional Device Support :
-> >>>>>>>>        Sensor Device
-> >>>>>>>>        SDR Repository Device
-> >>>>>>>>        SEL Device
-> >>>>>>>>        FRU Inventory Device
-> >>>>>>>>        IPMB Event Receiver
-> >>>>>>>>        IPMB Event Generator
-> >>>>>>>>        Chassis Device
-> >>>>>>>> Aux Firmware Rev Info     :
-> >>>>>>>>        0x06
-> >>>>>>>>        0x00
-> >>>>>>>>        0x00
-> >>>>>>>>        0x00
-> >>>>>>>> localadm@sandy1:~$ uname -a
-> >>>>>>>> Linux sandy1 3.0.0-16-generic #28-Ubuntu SMP Fri Jan 27 17:44:39=
- UTC
-> >>>>>>>> 2012 x86_64 x86_64 x86_64 GNU/Linux
-> >>>>>>>>
-> >>>>>>>> Rob
-> >>>>>>>>
-> >>>>>>>>> nik
-> >>>>>>>>>
-> >>>>>>>>>
-> >>>>>>>>> On Sat, Apr 21, 2012 at 12:38:33AM +0200, Nikola Ciprich wrote:
-> >>>>>>>>>> Hello,
-> >>>>>>>>>>
-> >>>>>>>>>> I was trying to find out why IPMI stopped working on new kerne=
-ls. Since 2.6.39
-> >>>>>>>>>> module loading ends with following message:
-> >>>>>>>>>>
-> >>>>>>>>>>     ipmi_si: Interface detection failed
-> >>>>>>>>>>
-> >>>>>>>>>> Then ipmitool is unable to control IPMI device.
-> >>>>>>>>>>
-> >>>>>>>>>> Works for 2.6.38, doesn't work for 2.6.39, 3.0.28, 3.4-rc1.
-> >>>>>>>>>>
-> >>>>>>>>>> I got this bisected to following commit:
-> >>>>>>>>>>
-> >>>>>>>>>> commit a1e9c9dd3383e6a1a762464ad604b1081774dbda
-> >>>>>>>>>> Author: Rob Herring<rob.herring@calxeda.com>
-> >>>>>>>>>> Date:   Wed Feb 23 15:37:59 2011 -0600
-> >>>>>>>>>>
-> >>>>>>>>>>        ipmi: convert OF driver to platform driver
-> >>>>>>>>>>
-> >>>>>>>>>>        of_bus is deprecated in favor of the plain platform bus=
-=2E This patch
-> >>>>>>>>>>        merges the ipmi OF driver with the existing platform dr=
-iver.
-> >>>>>>>>>>
-> >>>>>>>>>>        CONFIG_PPC_OF occurrances are removed or replaced with =
-CONFIG_OF.
-> >>>>>>>>>>
-> >>>>>>>>>>        Compile tested with and without CONFIG_OF. Tested OF pr=
-obe and
-> >>>>>>>>>>        default probe cases.
-> >>>>>>>>>>
-> >>>>>>>>>>        Signed-off-by: Rob Herring<rob.herring@calxeda.com>
-> >>>>>>>>>>        Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
-> >>>>>>>>>>
-> >>>>>>>>>> I wonder whether this is a bug, or I'm doing something wrong?
-> >>>>>>>>>>
-> >>>>>>>>>> Thanks in advance!
-> >>>>>>>>>>
-> >>>>>>>>>> with best regards
-> >>>>>>>>>>
-> >>>>>>>>>> nik
-> >>>>>>>>>>
-> >>>>>>>>>>
-> >>>>>>>>>> --=20
-> >>>>>>>>>> -------------------------------------
-> >>>>>>>>>> Ing. Nikola CIPRICH
-> >>>>>>>>>> LinuxBox.cz, s.r.o.
-> >>>>>>>>>> 28. rijna 168, 709 01 Ostrava
-> >>>>>>>>>>
-> >>>>>>>>>> tel.:   +420 596 603 142
-> >>>>>>>>>> fax:    +420 596 621 273
-> >>>>>>>>>> mobil:  +420 777 093 799
-> >>>>>>>>>>
-> >>>>>>>>>> www.linuxbox.cz
-> >>>>>>>>>>
-> >>>>>>>>>> mobil servis: +420 737 238 656
-> >>>>>>>>>> email servis: servis@linuxbox.cz
-> >>>>>>>>>> -------------------------------------
-> >>>>>>>> --
-> >>>>>>>> To unsubscribe from this list: send the line "unsubscribe linux-=
-kernel" in
-> >>>>>>>> the body of a message to majordomo@vger.kernel.org
-> >>>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.ht=
-ml
-> >>>>>>>> Please read the FAQ at  http://www.tux.org/lkml/
-> >
->=20
-> --=20
-> -------------------------------------
-> Ing. Nikola CIPRICH
-> LinuxBox.cz, s.r.o.
-> 28. rijna 168, 709 01 Ostrava
->=20
-> tel.:   +420 596 603 142
-> fax:    +420 596 621 273
-> mobil:  +420 777 093 799
->=20
-> www.linuxbox.cz
->=20
-> mobil servis: +420 737 238 656
-> email servis: servis@linuxbox.cz
-> -------------------------------------
-
-
-
---=20
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 01 Ostrava
-
-tel.:   +420 596 603 142
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-
-www.linuxbox.cz
-
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
-
---yrj/dFKFPuw6o+aM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+cAh8ACgkQ3xdJJrLygV7f5gCeNMrOTlcUpu+F+0RZsWNkAjfg
-Oy8An0dyJbuV3vaAEDeqs5hiuC0zI+c6
-=/5d0
------END PGP SIGNATURE-----
-
---yrj/dFKFPuw6o+aM--
