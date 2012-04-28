@@ -1,48 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2D1JLL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 05:11:11 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:53426 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752217Ab2D1JLK (ORCPT
+	id S1754306Ab2D1JLT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 05:11:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44439 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab2D1JLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 05:11:10 -0400
-Date: Sat, 28 Apr 2012 11:11:08 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: RFC: How to handle function tracing, frame pointers and
-	-mfentry?
-Message-ID: <20120428091108.GA6847@merkur.ravnborg.org>
-References: <1335552399.28106.228.camel@gandalf.stny.rr.com> <20120428083603.GJ27374@one.firstfloor.org> <20120428085028.GA6507@merkur.ravnborg.org>
+	Sat, 28 Apr 2012 05:11:14 -0400
+Date: Sat, 28 Apr 2012 02:10:53 -0700
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <tip-3b0132ce4fff68b30abdfcb74cffc283af711076@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rusty@rustcorp.com.au, peterz@infradead.org,
+        srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, rkuo@codeaurora.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, peterz@infradead.org,
+        srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, rkuo@codeaurora.org
+In-Reply-To: <20120420124557.581762105@linutronix.de>
+References: <20120420124557.581762105@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:smp/hotplug] hexagon: Use generic idle thread allocation
+Git-Commit-ID: 3b0132ce4fff68b30abdfcb74cffc283af711076
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120428085028.GA6507@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Apr 2012 02:10:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 28, 2012 at 10:50:28AM +0200, Sam Ravnborg wrote:
-> > 
-> > I just measured and a null compile (nothing changes) of a current
-> > tree calls "gcc" 141 times.
-> Something is wrong then which must be fixed.
-> There are 55 uses of cc-option in */x86/*
-> And only 7 uses of cc-option in the top-level Makefile.
-> 
-> So it looks like we evalute the same assignmet twice or more.
+Commit-ID:  3b0132ce4fff68b30abdfcb74cffc283af711076
+Gitweb:     http://git.kernel.org/tip/3b0132ce4fff68b30abdfcb74cffc283af711076
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Fri, 20 Apr 2012 13:05:51 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 26 Apr 2012 12:06:11 +0200
 
-"make defconfig" in my box calls gcc 50 times.
-This looks much closer to the actual usage of cc-option in the
-above mentioned files.
-How did you manage to achieve 144 calls to gcc?
+hexagon: Use generic idle thread allocation
 
-Any specific configuration that triggers this?
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Acked-and-tested-by: Richard Kuo <rkuo@codeaurora.org>
+Link: http://lkml.kernel.org/r/20120420124557.581762105@linutronix.de
+---
+ arch/hexagon/Kconfig      |    1 +
+ arch/hexagon/kernel/smp.c |   11 ++---------
+ 2 files changed, 3 insertions(+), 9 deletions(-)
 
-	Sam
+diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
+index 9059e39..d2e4a33 100644
+--- a/arch/hexagon/Kconfig
++++ b/arch/hexagon/Kconfig
+@@ -27,6 +27,7 @@ config HEXAGON
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select NO_IOPORT
+ 	select GENERIC_IOMAP
++	select GENERIC_SMP_IDLE_THREAD
+ 	# mostly generic routines, with some accelerated ones
+ 	---help---
+ 	  Qualcomm Hexagon is a processor architecture designed for high
+diff --git a/arch/hexagon/kernel/smp.c b/arch/hexagon/kernel/smp.c
+index 93e77e2..f726462 100644
+--- a/arch/hexagon/kernel/smp.c
++++ b/arch/hexagon/kernel/smp.c
+@@ -196,18 +196,11 @@ void __cpuinit start_secondary(void)
+  * maintains control until "cpu_online(cpu)" is set.
+  */
+ 
+-int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
++int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
+ {
+-	struct task_struct *idle;
+-	struct thread_info *thread;
++	struct thread_info *thread = (struct thread_info *)idle->stack;
+ 	void *stack_start;
+ 
+-	/*  Create new init task for the CPU  */
+-	idle = fork_idle(cpu);
+-	if (IS_ERR(idle))
+-		panic(KERN_ERR "fork_idle failed\n");
+-
+-	thread = (struct thread_info *)idle->stack;
+ 	thread->cpu = cpu;
+ 
+ 	/*  Boot to the head.  */
