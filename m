@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424Ab2D1FGc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 01:06:32 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:45191
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750847Ab2D1FG3 (ORCPT
+	id S1751507Ab2D1FK0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 01:10:26 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:47532 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750847Ab2D1FKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 01:06:29 -0400
-X-IronPort-AV: E=Sophos;i="4.75,494,1330902000"; 
-   d="scan'208";a="141926293"
-Date: Sat, 28 Apr 2012 07:06:16 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: dwmw2@infradead.org
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: question about fs/jffs2/readinode.c
-Message-ID: <alpine.DEB.2.02.1204280701210.1917@hadrien>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 28 Apr 2012 01:10:24 -0400
+Message-ID: <4F9B7BBA.7030504@openvz.org>
+Date: Sat, 28 Apr 2012 09:10:18 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 4/4] bug: mark disabled BUG() as unreachable() code
+References: <20120425112623.26927.43229.stgit@zurg> <20120425112636.26927.27124.stgit@zurg>
+In-Reply-To: <20120425112636.26927.27124.stgit@zurg>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function read_direntry in fs/jffs2/readinode.c contains the following 
-code:
+Konstantin Khlebnikov wrote:
+> This patch suppress some compiler warnings (if CONFIG_BUG=n)
+> "warning: control reaches end of non-void function"
 
-         err = jffs2_flash_read(c, (ref_offset(ref)) + read,
-                                rd->nsize - already, &read, &fd->name[already]);
- 	if (unlikely(read != rd->nsize - already) && likely(!err))
-                       return -EIO;
+With this patch gcc throw out loop at the end of do_exit():
 
-         if (unlikely(err)) {
-                 JFFS2_ERROR("read remainder of name: error %d\n", err);
-                 jffs2_free_full_dirent(fd);
-                 return -EIO;
-         }
+	schedule();
+	BUG();
+	/* Avoid "noreturn function does return".  */
+	for (;;)
+		cpu_relax();	/* For when BUG is null */
 
-Is it intentional that the first if doesn't free fd?  At first I thought 
-that that might be the case, because what would be the point of having two 
-conditionals if they are going to do the same thing.  But I can't see why 
-fd should not be freed either, so maybe the two conditionals are just 
-there to give different error messages?
+Is this ok? Probably not, and we need here some BUG_NORETURN() which
+really never returns even if CONFIG_BUG=n.
 
-thanks,
-julia
+>
+> Plus now gcc can throw out some dead code.
+> bloat-o-meter: add/remove: 1/1 grow/shrink: 68/173 up/down: 1569/-5607 (-4038)
+>
+> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> ---
+>   include/asm-generic/bug.h |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+> index aadb6fc..0b08199 100644
+> --- a/include/asm-generic/bug.h
+> +++ b/include/asm-generic/bug.h
+> @@ -108,7 +108,7 @@ extern void warn_slowpath_null(const char *file, const int line);
+>
+>   #else /* !CONFIG_BUG */
+>   #ifndef HAVE_ARCH_BUG
+> -#define BUG() do {} while(0)
+> +#define BUG() unreachable()
+>   #endif
+>
+>   #ifndef HAVE_ARCH_BUG_ON
+>
+
