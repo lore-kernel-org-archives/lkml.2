@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab2D1Nck (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 09:32:40 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35258 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab2D1Ncg convert rfc822-to-8bit (ORCPT
+	id S1753851Ab2D1Ni3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 09:38:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60480 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463Ab2D1Ni2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 09:32:36 -0400
+	Sat, 28 Apr 2012 09:38:28 -0400
+Date: Sat, 28 Apr 2012 10:38:26 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL 0/4] perf/annotate loop detection V2, fixes
+Message-ID: <20120428133826.GL27997@infradead.org>
+References: <1335452777-27326-1-git-send-email-acme@infradead.org>
+ <CA+55aFy7QLXRWQSjUiYNhX5B9p-0AJ4LSWc=km8hJ55ku=ho0A@mail.gmail.com>
+ <20120427164643.GG27997@infradead.org>
+ <CA+55aFyZ+pMRn_Na_o5A3yWeUbXj2J_FVS8jbHgdD-UfPbOD5g@mail.gmail.com>
+ <20120427180351.GH27997@infradead.org>
+ <CA+55aFy2Erkros7qHpNBgbsGyP4azswTzWTFjSb2K4+KcFve2A@mail.gmail.com>
+ <20120427191708.GJ27997@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20120427123901.2132.47969.stgit@zurg>
-References: <4F91BC8A.9020503@parallels.com> <20120427123901.2132.47969.stgit@zurg>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Sat, 28 Apr 2012 09:32:15 -0400
-Message-ID: <CAHGf_=riWBO6-Ax0hfSU3hhxr7oXwLwtzJC55yeEpZDOjbqREg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] proc: report file/anon bit in /proc/pid/pagemap
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120427191708.GJ27997@infradead.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/Documentation/vm/pagemap.txt b/Documentation/vm/pagemap.txt
-> index 4600cbe..7587493 100644
-> --- a/Documentation/vm/pagemap.txt
-> +++ b/Documentation/vm/pagemap.txt
-> @@ -16,7 +16,7 @@ There are three components to pagemap:
->     * Bits 0-4   swap type if swapped
->     * Bits 5-54  swap offset if swapped
->     * Bits 55-60 page shift (page size = 1<<page shift)
-> -    * Bit  61    reserved for future use
-> +    * Bit  61    page is file-page or shared-anon
->     * Bit  62    page swapped
->     * Bit  63    page present
+Em Fri, Apr 27, 2012 at 04:17:09PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Fri, Apr 27, 2012 at 11:23:24AM -0700, Linus Torvalds escreveu:
+> > On Fri, Apr 27, 2012 at 11:03 AM, Arnaldo Carvalho de Melo
+> > > I should have reworded the "loop detection" with "basic jump arrows" in
+> > > the first place.
+> > 
+> > .. and that is fine. But then you need to do it for *forwards* jumps
+> > too. There is no difference between backwards and forwards jumps
+> > *unless* you are looking for loops, and if you are looking for loops
+> > you need to actually find the cycle.
+> 
+> Ok, so I changed things to not try to detect loops at all, for now, and
+> instead just start with 'show jumps' on, hotkey 'j', that will draw
+> arrows from jumps to its targets, backwards or forwards, when the cursor
+> is on a jump instruction, take a look:
 
-hmm..
-Here says, file or shmem.
+I pushed this one plus some more changes to my perf/annotate branch.
 
-
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index 2d60492..bc3df31 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -700,6 +700,7 @@ struct pagemapread {
->
->  #define PM_PRESENT          PM_STATUS(4LL)
->  #define PM_SWAP             PM_STATUS(2LL)
-> +#define PM_FILE             PM_STATUS(1LL)
->  #define PM_NOT_PRESENT      PM_PSHIFT(PAGE_SHIFT)
->  #define PM_END_OF_BUFFER    1
-
-But, this macro says it's file. it seems a bit misleading. ;-)
+- Arnaldo
