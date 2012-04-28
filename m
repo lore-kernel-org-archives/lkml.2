@@ -1,156 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab2D1Xr6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 19:47:58 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:46953 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752892Ab2D1Xr4 (ORCPT
+	id S1755473Ab2D1Xxy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 19:53:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33740 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab2D1Xxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 19:47:56 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/mhxoKEa3mL2YDX/5we44v80LJQzBiiS0Ia1MhA3
-	YPexr62dGrvvsw
-Message-ID: <4F9C819E.4030205@gmx.de>
-Date: Sat, 28 Apr 2012 23:47:42 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
+	Sat, 28 Apr 2012 19:53:52 -0400
+Message-ID: <4F9C830D.8040906@lwfinger.net>
+Date: Sat, 28 Apr 2012 18:53:49 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Julia Lawall <Julia.Lawall@lip6.fr>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Xen-devel] [PATCH] drivers/video/xen-fbfront.c: add missing
- cleanup code
-References: <1335088660-13219-1-git-send-email-Julia.Lawall@lip6.fr> <20120426214222.GA11289@phenom.dumpdata.com>
-In-Reply-To: <20120426214222.GA11289@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Andreas Schwab <schwab@linux-m68k.org>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] tty/serial/pmac_zilog: Fix "nobody cared" IRQ message
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Konrad,
+Following commit a79dd5a titled "tty/serial/pmac_zilog: Fix suspend & resume",
+my Powerbook G4 Titanium showed the following stack dump:
 
-On 04/26/2012 09:42 PM, Konrad Rzeszutek Wilk wrote:
-> On Sun, Apr 22, 2012 at 11:57:40AM +0200, Julia Lawall wrote:
->> From: Julia Lawall <Julia.Lawall@lip6.fr>
->>
->> The operations in the subsequent error-handling code appear to be also
->> useful here.
-> 
-> How about doing it this way?
+[   36.878225] irq 23: nobody cared (try booting with the "irqpoll" option)
+[   36.878251] Call Trace:
+[   36.878291] [dfff3f00] [c000984c] show_stack+0x7c/0x194 (unreliable)
+[   36.878322] [dfff3f40] [c00a6868] __report_bad_irq+0x44/0xf4
+[   36.878339] [dfff3f60] [c00a6b04] note_interrupt+0x1ec/0x2ac
+[   36.878356] [dfff3f80] [c00a48d0] handle_irq_event_percpu+0x250/0x2b8
+[   36.878372] [dfff3fd0] [c00a496c] handle_irq_event+0x34/0x54
+[   36.878389] [dfff3fe0] [c00a753c] handle_fasteoi_irq+0xb4/0x124
+[   36.878412] [dfff3ff0] [c000f5bc] call_handle_irq+0x18/0x28
+[   36.878428] [deef1f10] [c000719c] do_IRQ+0x114/0x1cc
+[   36.878446] [deef1f40] [c0015868] ret_from_except+0x0/0x1c
+[   36.878484] --- Exception: 501 at 0xf497610
+[   36.878489]     LR = 0xfdc3dd0
+[   36.878497] handlers:
+[   36.878510] [<c02b7424>] pmz_interrupt
+[   36.878520] Disabling IRQ #23
 
-Looks good to me.
+ From an E-mail exchange about this problem, Andreas Schwab noticed a typo
+that resulted in the wrong condition being tested.
 
-> Florian, are you OK me carrying this patch in my tree for Linus or would
-> you prefer to do it?
+The patch also corrects 2 typos that incorrectly report why an error branch
+is being taken.
 
-Yes, I'm okay with you carrying this patch. Feel free to add
-Acked-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+---
 
+Ben,
 
-Best regards,
+Any changes you wish to make in the commit message are OK with me.
 
-Florian Tobias Schandinat
+Larry
+---
 
-> 
-> commit a833fb9973b47cb30d1086e73f20b62a425bcd85
-> Author: Julia Lawall <Julia.Lawall@lip6.fr>
-> Date:   Sun Apr 22 11:57:40 2012 +0200
-> 
->     drivers/video/xen-fbfront.c: add missing cleanup code
->     
->     The operations in the subsequent error-handling code appear to be also
->     useful here.
->     
->     Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->     [v1: Collapse some of the error handling functions]
->     Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
-> index cb4529c..aa42160 100644
-> --- a/drivers/video/xen-fbfront.c
-> +++ b/drivers/video/xen-fbfront.c
-> @@ -458,26 +458,31 @@ static int __devinit xenfb_probe(struct xenbus_device *dev,
->  	xenfb_init_shared_page(info, fb_info);
->  
->  	ret = xenfb_connect_backend(dev, info);
-> -	if (ret < 0)
-> -		goto error;
-> +	if (ret < 0) {
-> +		xenbus_dev_fatal(dev, ret, "xenfb_connect_backend");
-> +		goto error_fb;
-> +	}
->  
->  	ret = register_framebuffer(fb_info);
->  	if (ret) {
-> -		fb_deferred_io_cleanup(fb_info);
-> -		fb_dealloc_cmap(&fb_info->cmap);
-> -		framebuffer_release(fb_info);
->  		xenbus_dev_fatal(dev, ret, "register_framebuffer");
-> -		goto error;
-> +		goto error_fb;
->  	}
->  	info->fb_info = fb_info;
->  
->  	xenfb_make_preferred_console();
->  	return 0;
->  
-> - error_nomem:
-> -	ret = -ENOMEM;
-> -	xenbus_dev_fatal(dev, ret, "allocating device memory");
-> - error:
-> +error_fb:
-> +	fb_deferred_io_cleanup(fb_info);
-> +	fb_dealloc_cmap(&fb_info->cmap);
-> +	framebuffer_release(fb_info);
-> +error_nomem:
-> +	if (!ret) {
-> +		ret = -ENOMEM;
-> +		xenbus_dev_fatal(dev, ret, "allocating device memory");
-> +	}
-> +error:
->  	xenfb_remove(dev);
->  	return ret;
->  }
-> 
-> 
-> 
->>
->> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->>
->> ---
->> Not tested.
->>
->>  drivers/video/xen-fbfront.c |    7 ++++++-
->>  1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
->> index cb4529c..b0bd59c 100644
->> --- a/drivers/video/xen-fbfront.c
->> +++ b/drivers/video/xen-fbfront.c
->> @@ -458,8 +458,13 @@ static int __devinit xenfb_probe(struct xenbus_device *dev,
->>  	xenfb_init_shared_page(info, fb_info);
->>  
->>  	ret = xenfb_connect_backend(dev, info);
->> -	if (ret < 0)
->> +	if (ret < 0) {
->> +		fb_deferred_io_cleanup(fb_info);
->> +		fb_dealloc_cmap(&fb_info->cmap);
->> +		framebuffer_release(fb_info);
->> +		xenbus_dev_fatal(dev, ret, "xenfb_connect_backend");
->>  		goto error;
->> +	}
->>  
->>  	ret = register_framebuffer(fb_info);
->>  	if (ret) {
->>
->>
->> _______________________________________________
->> Xen-devel mailing list
->> Xen-devel@lists.xen.org
->> http://lists.xen.org/xen-devel
-> 
-
+Index: wireless-testing/drivers/tty/serial/pmac_zilog.c
+===================================================================
+--- wireless-testing.orig/drivers/tty/serial/pmac_zilog.c	2012-04-28 
+15:51:38.843723074 -0500
++++ wireless-testing/drivers/tty/serial/pmac_zilog.c	2012-04-28 
+18:34:34.053900600 -0500
+@@ -469,7 +469,7 @@
+  	tty = NULL;
+  	if (r3 & (CHAEXT | CHATxIP | CHARxIP)) {
+  		if (!ZS_IS_OPEN(uap_a)) {
+-			pmz_debug("ChanA interrupt while open !\n");
++			pmz_debug("ChanA interrupt while not open !\n");
+  			goto skip_a;
+  		}
+  		write_zsreg(uap_a, R0, RES_H_IUS);
+@@ -493,8 +493,8 @@
+  	spin_lock(&uap_b->port.lock);
+  	tty = NULL;
+  	if (r3 & (CHBEXT | CHBTxIP | CHBRxIP)) {
+-		if (!ZS_IS_OPEN(uap_a)) {
+-			pmz_debug("ChanB interrupt while open !\n");
++		if (!ZS_IS_OPEN(uap_b)) {
++			pmz_debug("ChanB interrupt while not open !\n");
+  			goto skip_b;
+  		}
+  		write_zsreg(uap_b, R0, RES_H_IUS);
