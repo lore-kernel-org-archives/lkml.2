@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab2D1Iv0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 04:51:26 -0400
+	id S1753470Ab2D1Ivc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 04:51:32 -0400
 Received: from mga14.intel.com ([143.182.124.37]:10536 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751039Ab2D1IvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 04:51:24 -0400
+	id S1752231Ab2D1Iv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 04:51:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="136429257"
+   d="scan'208";a="136429264"
 From: Alex Shi <alex.shi@intel.com>
 To: andi.kleen@intel.com, tim.c.chen@linux.intel.com, jeremy@goop.org,
         chrisw@sous-sol.org, akataria@vmware.com, tglx@linutronix.de,
@@ -18,248 +18,461 @@ Cc: riel@redhat.com, luto@mit.edu, alex.shi@intel.com, avi@redhat.com,
         len.brown@intel.com, paul.gortmaker@windriver.com, dhowells@redhat.com,
         fenghua.yu@intel.com, borislav.petkov@amd.com, yinghai@kernel.org,
         cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] x86/tlb_info: get last level TLB entry number of CPU
-Date: Sat, 28 Apr 2012 16:50:04 +0800
-Message-Id: <1335603006-2572-2-git-send-email-alex.shi@intel.com>
+Subject: [PATCH 2/3] x86/flush_tlb: try flush_tlb_single one by one in flush_tlb_range
+Date: Sat, 28 Apr 2012 16:50:05 +0800
+Message-Id: <1335603006-2572-3-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1335603006-2572-2-git-send-email-alex.shi@intel.com>
+References: <1335603006-2572-2-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For 4KB pages, x86 CPU has 2 or 1 level TLB, first level is data TLB and
-instruction TLB, second level is shared TLB for both data and instructions.
+x86 has no flush_tlb_range support in instruction level. Currently the
+flush_tlb_range just implemented by flushing all page table. That is not
+the best solution for all scenarios. In fact, if we just use 'invlpg' to
+flush few lines from TLB, we can get the performance gain from later
+remain TLB lines accessing.
 
-For hupe page TLB, usually there is just one level and seperated by 2MB/4MB
-and 1GB.
+But the 'invlpg' instruction costs much of time. Its execution time can
+compete with cr3 rewriting, and even a bit more on SNB CPU.
 
-Although each levels TLB size is important for performance tuning, but for
-genernal and rude optimizing, just last level TLB entry number is suitable.
-And in fact, last level TLB has the biggest entry number.
+So, on a 512 4KB TLB entries CPU, the balance points is at:
+512 * 100ns(assumed TLB refill cost) =
+x(TLB flush entries) * 140ns(assumed invlpg cost)
 
-This patch will get the biggest TLB entry number and use it in furture TLB
-optimizing.
+Here, x is about 360, that is about 5/8 of 512 entries.
+
+But with the mysterious CPU pre-fetcher and page miss handler Unit, the
+assumed TLB refill cost is far lower then 100ns in sequential access. And
+2 HT siblings in one core makes the memory access more faster if they are
+accessing the same memory. So, in the patch, I just do the change when
+the target entries is less than 1/16 of whole active tlb entries.
+Actually, I have no data support for the percentage '1/16', so any
+suggestions are welcomed.
+
+As to hugetlb, guess due to smaller page table, and smaller active TLB
+entries, I didn't see benefit via my benchmark, so no optimizing now.
+
+My macro benchmark show in ideal scenarios, the performance improves 70
+percent in reading. And in worst scenario, the reading/writing
+performance is similar with unpatched 3.4-rc4 kernel.
+
+Here is the reading data on my 2P * 4cores *HT NHM EP machine, with THP
+always:
+
+multi thread testing, '-t' paramter is thread number:
+	       	        with patch   unpatched 3.4-rc4
+./mprotect -t 1           14ns		24ns
+./mprotect -t 2           13ns		22ns
+./mprotect -t 4           12ns		19ns
+./mprotect -t 8           14ns		16ns
+./mprotect -t 16          28ns		27ns
+./mprotect -t 32          54ns		52ns
+./mprotect -t 128         200ns		199ns
+
+Single process with sequencial flushing and memory accessing:
+
+		       	with patch   unpatched 3.4-rc4
+./mprotect		    7ns			11ns
+./mprotect -p 4096  -l 8 -n 10240
+			    21ns		21ns
+
+I also tried other benchmarks on Intel core2/NHM/SNB EP and NHM EX machine.
+No clear performance change on specjbb2005 with openjdk, and oltp reading.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- arch/x86/include/asm/processor.h |   12 +++
- arch/x86/kernel/cpu/common.c     |  163 ++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/cpu.h        |    1 +
- 3 files changed, 176 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/paravirt.h       |    5 +-
+ arch/x86/include/asm/paravirt_types.h |    3 +-
+ arch/x86/include/asm/tlbflush.h       |   19 +++----
+ arch/x86/include/asm/uv/uv.h          |    5 +-
+ arch/x86/mm/tlb.c                     |   97 +++++++++++++++++++++++++++------
+ arch/x86/platform/uv/tlb_uv.c         |    6 +-
+ arch/x86/xen/mmu.c                    |    9 ++--
+ include/trace/events/xen.h            |   12 +++--
+ 8 files changed, 113 insertions(+), 43 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 4fa7dcc..a91504b 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -61,6 +61,18 @@ static inline void *current_text_addr(void)
- # define ARCH_MIN_MMSTRUCT_ALIGN	0
- #endif
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index aa0f913..03da4ab 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -397,9 +397,10 @@ static inline void __flush_tlb_single(unsigned long addr)
  
-+enum tlb_infos {
-+	ENTRIES,
-+	/* ASS_WAYS, */
-+	NR_INFO
-+};
-+
-+extern u16 __read_mostly tlb_lli_4k[NR_INFO];
-+extern u16 __read_mostly tlb_lli_2m[NR_INFO];
-+extern u16 __read_mostly tlb_lli_4m[NR_INFO];
-+extern u16 __read_mostly tlb_lld_4k[NR_INFO];
-+extern u16 __read_mostly tlb_lld_2m[NR_INFO];
-+extern u16 __read_mostly tlb_lld_4m[NR_INFO];
- /*
-  *  CPU type and hardware bug flags. Kept separately for each CPU.
-  *  Members of this structure are referenced in head.S, so think twice
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index cf79302..5f14a70 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -452,6 +452,167 @@ void __cpuinit cpu_detect_cache_sizes(struct cpuinfo_x86 *c)
- 	c->x86_cache_size = l2size;
- }
- 
-+#define TLB_INST_4K	0x01
-+#define TLB_INST_4M	0x02
-+#define TLB_INST_2M_4M	0x03
-+
-+#define TLB_INST_ALL	0x05
-+#define TLB_INST_1G	0x06
-+
-+#define TLB_DATA_4K	0x11
-+#define TLB_DATA_4M	0x12
-+#define TLB_DATA_2M_4M	0x13
-+#define TLB_DATA_4K_4M	0x14
-+
-+#define TLB_DATA_1G	0x16
-+
-+#define TLB_DATA0_4K	0x21
-+#define TLB_DATA0_4M	0x22
-+#define TLB_DATA0_2M_4M	0x23
-+
-+#define STLB_4K		0x41
-+
-+struct _tlb_table {
-+	unsigned char descriptor;
-+	char tlb_type;
-+	unsigned int entries;
-+	/* unsigned int ways; */
-+	char info[128];
-+};
-+
-+static const struct _tlb_table tlb_table[] = {
-+	{ 0x01, TLB_INST_4K,		32,	" TLB_INST 4 KByte pages, 4-way set associative" },
-+	{ 0x02, TLB_INST_4M,		2,	" TLB_INST 4 MByte pages, full associative" },
-+	{ 0x03, TLB_DATA_4K,		64,	" TLB_DATA 4 KByte pages, 4-way set associative" },
-+	{ 0x04, TLB_DATA_4M,		8,	" TLB_DATA 4 MByte pages, 4-way set associative" },
-+	{ 0x05, TLB_DATA_4M,		32,	" TLB_DATA 4 MByte pages, 4-way set associative" },
-+	{ 0x0b, TLB_INST_4M,		4,	" TLB_INST 4 MByte pages, 4-way set associative" },
-+	{ 0x4f, TLB_INST_4K,		32, 	" TLB_INST 4 KByte pages */" },
-+	{ 0x50, TLB_INST_ALL,		64, 	" TLB_INST 4 KByte and 2-MByte or 4-MByte pages" },
-+	{ 0x51, TLB_INST_ALL,		128,	" TLB_INST 4 KByte and 2-MByte or 4-MByte pages" },
-+	{ 0x52, TLB_INST_ALL,		256,	" TLB_INST 4 KByte and 2-MByte or 4-MByte pages" },
-+	{ 0x55, TLB_INST_2M_4M,		7, 	" TLB_INST 2-MByte or 4-MByte pages, fully associative" },
-+	{ 0x56, TLB_DATA0_4M,		16,	" TLB_DATA0 4 MByte pages, 4-way set associative" },
-+	{ 0x57, TLB_DATA0_4K,		16,	" TLB_DATA0 4 KByte pages, 4-way associative" },
-+	{ 0x59, TLB_DATA0_4K,		16,	" TLB_DATA0 4 KByte pages, fully associative" },
-+	{ 0x5a, TLB_DATA0_2M_4M,	32,	" TLB_DATA0 2-MByte or 4 MByte pages, 4-way set associative" },
-+	{ 0x5b, TLB_DATA_4K_4M,		64,	" TLB_DATA 4 KByte and 4 MByte pages" },
-+	{ 0x5c, TLB_DATA_4K_4M,		128,	" TLB_DATA 4 KByte and 4 MByte pages" },
-+	{ 0x5d, TLB_DATA_4K_4M,		256,	" TLB_DATA 4 KByte and 4 MByte pages" },
-+	{ 0xb0, TLB_INST_4K,		128,	" TLB_INST 4 KByte pages, 4-way set associative" },
-+	{ 0xb1, TLB_INST_2M_4M,		4,	" TLB_INST 2M pages, 4-way, 8 entries or 4M pages, 4-way entries" },
-+	{ 0xb2, TLB_INST_4K,		64,	" TLB_INST 4KByte pages, 4-way set associative" },
-+	{ 0xb3, TLB_DATA_4K,		128,	" TLB_DATA 4 KByte pages, 4-way set associative" },
-+	{ 0xb4, TLB_DATA_4K,		256,	" TLB_DATA 4 KByte pages, 4-way associative" },
-+	{ 0xba, TLB_DATA_4K,		64,	" TLB_DATA 4 KByte pages, 4-way associative" },
-+	{ 0xc0, TLB_DATA_4K_4M,		8,	" TLB_DATA 4 KByte and 4 MByte pages, 4-way associative" },
-+	{ 0xca, STLB_4K,		512,	" STLB 4 KByte pages, 4-way associative" },
-+	{ 0x00, 0, 0 }
-+};
-+
-+u16 __read_mostly tlb_lli_4k[NR_INFO];
-+u16 __read_mostly tlb_lli_2m[NR_INFO];
-+u16 __read_mostly tlb_lli_4m[NR_INFO];
-+u16 __read_mostly tlb_lld_4k[NR_INFO];
-+u16 __read_mostly tlb_lld_2m[NR_INFO];
-+u16 __read_mostly tlb_lld_4m[NR_INFO];
-+
-+void tlb_lookup(const unsigned char desc)
-+{
-+	unsigned char k;
-+	if (desc == 0)
-+		return;
-+
-+	/* look up this descriptor in the table */
-+	for (k = 0; tlb_table[k].descriptor != desc && \
-+			tlb_table[k].descriptor != 0; k++)
-+		;
-+
-+	if (tlb_table[k].tlb_type == 0)
-+		return;
-+
-+	switch (tlb_table[k].tlb_type) {
-+	case STLB_4K:
-+		if (tlb_lli_4k[ENTRIES] < tlb_table[k].entries)
-+			tlb_lli_4k[ENTRIES] = tlb_table[k].entries;
-+		if (tlb_lld_4k[ENTRIES] < tlb_table[k].entries)
-+			tlb_lld_4k[ENTRIES] = tlb_table[k].entries;
-+		break;
-+	case TLB_INST_ALL:
-+		if (tlb_lli_4k[ENTRIES] < tlb_table[k].entries)
-+			tlb_lli_4k[ENTRIES] = tlb_table[k].entries;
-+		if (tlb_lli_2m[ENTRIES] < tlb_table[k].entries)
-+			tlb_lli_2m[ENTRIES] = tlb_table[k].entries;
-+		if (tlb_lli_4m[ENTRIES] < tlb_table[k].entries)
-+			tlb_lli_4m[ENTRIES] = tlb_table[k].entries;
-+		break;
-+	case TLB_INST_4K:
-+		if (tlb_lli_4k[ENTRIES] < tlb_table[k].entries)
-+			tlb_lli_4k[ENTRIES] = tlb_table[k].entries;
-+		break;
-+	case TLB_INST_4M:
-+		if (tlb_lli_4m[ENTRIES] < tlb_table[k].entries)
-+			tlb_lli_4m[ENTRIES] = tlb_table[k].entries;
-+		break;
-+	case TLB_INST_2M_4M:
-+		if (tlb_lli_2m[ENTRIES] < tlb_table[k].entries)
-+			tlb_lli_2m[ENTRIES] = tlb_table[k].entries;
-+		if (tlb_lli_4m[ENTRIES] < tlb_table[k].entries)
-+			tlb_lli_4m[ENTRIES] = tlb_table[k].entries;
-+		break;
-+	case TLB_DATA_4K:
-+	case TLB_DATA0_4K:
-+		if (tlb_lld_4k[ENTRIES] < tlb_table[k].entries)
-+			tlb_lld_4k[ENTRIES] = tlb_table[k].entries;
-+		break;
-+	case TLB_DATA_4M:
-+	case TLB_DATA0_4M:
-+		if (tlb_lld_4m[ENTRIES] < tlb_table[k].entries)
-+			tlb_lld_4m[ENTRIES] = tlb_table[k].entries;
-+		break;
-+	case TLB_DATA_2M_4M:
-+	case TLB_DATA0_2M_4M:
-+		if (tlb_lld_2m[ENTRIES] < tlb_table[k].entries)
-+			tlb_lld_2m[ENTRIES] = tlb_table[k].entries;
-+		if (tlb_lld_4m[ENTRIES] < tlb_table[k].entries)
-+			tlb_lld_4m[ENTRIES] = tlb_table[k].entries;
-+		break;
-+	case TLB_DATA_4K_4M:
-+		if (tlb_lld_4k[ENTRIES] < tlb_table[k].entries)
-+			tlb_lld_4k[ENTRIES] = tlb_table[k].entries;
-+		if (tlb_lld_4m[ENTRIES] < tlb_table[k].entries)
-+			tlb_lld_4m[ENTRIES] = tlb_table[k].entries;
-+		break;
-+	}
-+}
-+void __cpuinit cpu_detect_tlb_sizes()
-+{
-+	int i, j, n;
-+	unsigned int regs[4];
-+	unsigned char *desc = (unsigned char *)regs;
-+
-+	/* Number of times to iterate */
-+	n = cpuid_eax(2) & 0xFF;
-+
-+	for (i = 0 ; i < n ; i++) {
-+		cpuid(2, &regs[0], &regs[1], &regs[2], &regs[3]);
-+
-+		/* If bit 31 is set, this is an unknown format */
-+		for (j = 0 ; j < 3 ; j++)
-+			if (regs[j] & (1 << 31))
-+				regs[j] = 0;
-+
-+		/* Byte 0 is level count, not a descriptor */
-+		for (j = 1 ; j < 16 ; j++)
-+			tlb_lookup(desc[j]);
-+	}
-+	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n" \
-+		"Last level dTLB entires: 4KB %d, 2MB %d, 4MB %d\n",
-+		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
-+		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
-+		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES]);
-+}
-+
- void __cpuinit detect_ht(struct cpuinfo_x86 *c)
+ static inline void flush_tlb_others(const struct cpumask *cpumask,
+ 				    struct mm_struct *mm,
+-				    unsigned long va)
++				    unsigned long start,
++				    unsigned long end)
  {
- #ifdef CONFIG_X86_HT
-@@ -911,6 +1072,8 @@ void __init identify_boot_cpu(void)
- #else
- 	vgetcpu_set_mode();
- #endif
-+	if (boot_cpu_data.cpuid_level >= 2)
-+		cpu_detect_tlb_sizes();
+-	PVOP_VCALL3(pv_mmu_ops.flush_tlb_others, cpumask, mm, va);
++	PVOP_VCALL4(pv_mmu_ops.flush_tlb_others, cpumask, mm, start, end);
  }
  
- void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/cpu/cpu.h b/arch/x86/kernel/cpu/cpu.h
-index 8bacc78..a102ed1 100644
---- a/arch/x86/kernel/cpu/cpu.h
-+++ b/arch/x86/kernel/cpu/cpu.h
-@@ -34,4 +34,5 @@ extern const struct cpu_dev *const __x86_cpu_dev_start[],
+ static inline int paravirt_pgd_alloc(struct mm_struct *mm)
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index 8e8b9a4..600a5fcac9 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -250,7 +250,8 @@ struct pv_mmu_ops {
+ 	void (*flush_tlb_single)(unsigned long addr);
+ 	void (*flush_tlb_others)(const struct cpumask *cpus,
+ 				 struct mm_struct *mm,
+-				 unsigned long va);
++				 unsigned long start,
++				 unsigned long end);
  
- extern void get_cpu_cap(struct cpuinfo_x86 *c);
- extern void cpu_detect_cache_sizes(struct cpuinfo_x86 *c);
-+extern void cpu_detect_tlb_sizes(void);
- #endif /* ARCH_X86_CPU_H */
+ 	/* Hooks for allocating and freeing a pagetable top-level */
+ 	int  (*pgd_alloc)(struct mm_struct *mm);
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index c0e108e..ec30dfb 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -77,7 +77,7 @@ static inline void __flush_tlb_one(unsigned long addr)
+  *  - flush_tlb_page(vma, vmaddr) flushes one page
+  *  - flush_tlb_range(vma, start, end) flushes a range of pages
+  *  - flush_tlb_kernel_range(start, end) flushes a range of kernel pages
+- *  - flush_tlb_others(cpumask, mm, va) flushes TLBs on other cpus
++ *  - flush_tlb_others(cpumask, mm, start, end) flushes TLBs on other cpus
+  *
+  * ..but the i386 has somewhat limited tlb flushing capabilities,
+  * and page-granular flushes are available only on i486 and up.
+@@ -115,7 +115,8 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
+ 
+ static inline void native_flush_tlb_others(const struct cpumask *cpumask,
+ 					   struct mm_struct *mm,
+-					   unsigned long va)
++					   unsigned long start,
++					   unsigned long end)
+ {
+ }
+ 
+@@ -133,17 +134,14 @@ extern void flush_tlb_all(void);
+ extern void flush_tlb_current_task(void);
+ extern void flush_tlb_mm(struct mm_struct *);
+ extern void flush_tlb_page(struct vm_area_struct *, unsigned long);
++extern void flush_tlb_range(struct vm_area_struct *vma,
++				   unsigned long start, unsigned long end);
+ 
+ #define flush_tlb()	flush_tlb_current_task()
+ 
+-static inline void flush_tlb_range(struct vm_area_struct *vma,
+-				   unsigned long start, unsigned long end)
+-{
+-	flush_tlb_mm(vma->vm_mm);
+-}
+-
+ void native_flush_tlb_others(const struct cpumask *cpumask,
+-			     struct mm_struct *mm, unsigned long va);
++				struct mm_struct *mm,
++				unsigned long start, unsigned long end);
+ 
+ #define TLBSTATE_OK	1
+ #define TLBSTATE_LAZY	2
+@@ -163,7 +161,8 @@ static inline void reset_lazy_tlbstate(void)
+ #endif	/* SMP */
+ 
+ #ifndef CONFIG_PARAVIRT
+-#define flush_tlb_others(mask, mm, va)	native_flush_tlb_others(mask, mm, va)
++#define flush_tlb_others(mask, mm, start, end)	\
++	native_flush_tlb_others(mask, mm, start, end)
+ #endif
+ 
+ static inline void flush_tlb_kernel_range(unsigned long start,
+diff --git a/arch/x86/include/asm/uv/uv.h b/arch/x86/include/asm/uv/uv.h
+index 3bb9491..b47c2a8 100644
+--- a/arch/x86/include/asm/uv/uv.h
++++ b/arch/x86/include/asm/uv/uv.h
+@@ -15,7 +15,8 @@ extern void uv_nmi_init(void);
+ extern void uv_system_init(void);
+ extern const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 						 struct mm_struct *mm,
+-						 unsigned long va,
++						 unsigned long start,
++						 unsigned end,
+ 						 unsigned int cpu);
+ 
+ #else	/* X86_UV */
+@@ -26,7 +27,7 @@ static inline void uv_cpu_init(void)	{ }
+ static inline void uv_system_init(void)	{ }
+ static inline const struct cpumask *
+ uv_flush_tlb_others(const struct cpumask *cpumask, struct mm_struct *mm,
+-		    unsigned long va, unsigned int cpu)
++		    unsigned long start, unsigned long end, unsigned int cpu)
+ { return cpumask; }
+ 
+ #endif	/* X86_UV */
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index d6c0418..c4e694d 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -41,7 +41,8 @@ DEFINE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate)
+ union smp_flush_state {
+ 	struct {
+ 		struct mm_struct *flush_mm;
+-		unsigned long flush_va;
++		unsigned long flush_start;
++		unsigned long flush_end;
+ 		raw_spinlock_t tlbstate_lock;
+ 		DECLARE_BITMAP(flush_cpumask, NR_CPUS);
+ 	};
+@@ -154,10 +155,19 @@ void smp_invalidate_interrupt(struct pt_regs *regs)
+ 
+ 	if (f->flush_mm == percpu_read(cpu_tlbstate.active_mm)) {
+ 		if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+-			if (f->flush_va == TLB_FLUSH_ALL)
++			if (f->flush_start == TLB_FLUSH_ALL
++					|| !cpu_has_invlpg)
+ 				local_flush_tlb();
+-			else
+-				__flush_tlb_one(f->flush_va);
++			else if (!f->flush_end)
++				__flush_tlb_single(f->flush_start);
++			else {
++				unsigned long addr;
++				addr = f->flush_start;
++				while (addr <= f->flush_end) {
++					__flush_tlb_single(addr);
++					addr += PAGE_SIZE;
++				}
++			}
+ 		} else
+ 			leave_mm(cpu);
+ 	}
+@@ -170,7 +180,8 @@ out:
+ }
+ 
+ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+-				 struct mm_struct *mm, unsigned long va)
++				 struct mm_struct *mm, unsigned long start,
++				 unsigned long end)
+ {
+ 	unsigned int sender;
+ 	union smp_flush_state *f;
+@@ -183,7 +194,8 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+ 		raw_spin_lock(&f->tlbstate_lock);
+ 
+ 	f->flush_mm = mm;
+-	f->flush_va = va;
++	f->flush_start = start;
++	f->flush_end = end;
+ 	if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
+ 		/*
+ 		 * We have to send the IPI only to
+@@ -197,24 +209,26 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+ 	}
+ 
+ 	f->flush_mm = NULL;
+-	f->flush_va = 0;
++	f->flush_start = 0;
++	f->flush_end = 0;
+ 	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
+ 		raw_spin_unlock(&f->tlbstate_lock);
+ }
+ 
+ void native_flush_tlb_others(const struct cpumask *cpumask,
+-			     struct mm_struct *mm, unsigned long va)
++				 struct mm_struct *mm, unsigned long start,
++				 unsigned long end)
+ {
+ 	if (is_uv_system()) {
+ 		unsigned int cpu;
+ 
+ 		cpu = smp_processor_id();
+-		cpumask = uv_flush_tlb_others(cpumask, mm, va, cpu);
++		cpumask = uv_flush_tlb_others(cpumask, mm, start, end, cpu);
+ 		if (cpumask)
+-			flush_tlb_others_ipi(cpumask, mm, va);
++			flush_tlb_others_ipi(cpumask, mm, start, end);
+ 		return;
+ 	}
+-	flush_tlb_others_ipi(cpumask, mm, va);
++	flush_tlb_others_ipi(cpumask, mm, start, end);
+ }
+ 
+ static void __cpuinit calculate_tlb_offset(void)
+@@ -280,7 +294,7 @@ void flush_tlb_current_task(void)
+ 
+ 	local_flush_tlb();
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+-		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL);
++		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL, 0UL);
+ 	preempt_enable();
+ }
+ 
+@@ -295,12 +309,63 @@ void flush_tlb_mm(struct mm_struct *mm)
+ 			leave_mm(smp_processor_id());
+ 	}
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+-		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL);
++		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL, 0UL);
++
++	preempt_enable();
++}
++
++#define FLUSHALL_BAR	16
++
++void flush_tlb_range(struct vm_area_struct *vma,
++				   unsigned long start, unsigned long end)
++{
++	struct mm_struct *mm;
++
++	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB) {
++		flush_tlb_mm(vma->vm_mm);
++		return;
++	}
++
++	preempt_disable();
++	mm = vma->vm_mm;
++	if (current->active_mm == mm) {
++		if (current->mm) {
++			unsigned long addr, vmflag = vma->vm_flags;
++			unsigned act_entries, tlb_entries = 0;
++
++			if (vmflag & VM_EXEC)
++				tlb_entries = tlb_lli_4k[ENTRIES];
++			else
++				tlb_entries = tlb_lld_4k[ENTRIES];
++
++			act_entries = tlb_entries > mm->total_vm ?
++					mm->total_vm : tlb_entries;
+ 
++			if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
++				local_flush_tlb();
++			else {
++				for (addr = start; addr <= end;
++						addr += PAGE_SIZE)
++					__flush_tlb_single(addr);
++
++				if (cpumask_any_but(mm_cpumask(mm),
++					smp_processor_id()) < nr_cpu_ids)
++					flush_tlb_others(mm_cpumask(mm), mm,
++								start, end);
++				preempt_enable();
++				return;
++			}
++		} else {
++			leave_mm(smp_processor_id());
++		}
++	}
++	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
++		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL, 0UL);
+ 	preempt_enable();
+ }
+ 
+-void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
++
++void flush_tlb_page(struct vm_area_struct *vma, unsigned long start)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 
+@@ -308,13 +373,13 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
+ 
+ 	if (current->active_mm == mm) {
+ 		if (current->mm)
+-			__flush_tlb_one(va);
++			__flush_tlb_one(start);
+ 		else
+ 			leave_mm(smp_processor_id());
+ 	}
+ 
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+-		flush_tlb_others(mm_cpumask(mm), mm, va);
++		flush_tlb_others(mm_cpumask(mm), mm, start, 0UL);
+ 
+ 	preempt_enable();
+ }
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index 3ae0e61..0df5ad2 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1068,8 +1068,8 @@ static int set_distrib_bits(struct cpumask *flush_mask, struct bau_control *bcp,
+  * done.  The returned pointer is valid till preemption is re-enabled.
+  */
+ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+-				struct mm_struct *mm, unsigned long va,
+-				unsigned int cpu)
++				struct mm_struct *mm, unsigned long start,
++				unsigned end, unsigned int cpu)
+ {
+ 	int locals = 0;
+ 	int remotes = 0;
+@@ -1112,7 +1112,7 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 
+ 	record_send_statistics(stat, locals, hubs, remotes, bau_desc);
+ 
+-	bau_desc->payload.address = va;
++	bau_desc->payload.address = start;
+ 	bau_desc->payload.sending_cpu = cpu;
+ 	/*
+ 	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index b8e2794..75bab52 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1239,7 +1239,8 @@ static void xen_flush_tlb_single(unsigned long addr)
+ }
+ 
+ static void xen_flush_tlb_others(const struct cpumask *cpus,
+-				 struct mm_struct *mm, unsigned long va)
++				 struct mm_struct *mm, unsigned long start,
++				 unsigned long end)
+ {
+ 	struct {
+ 		struct mmuext_op op;
+@@ -1251,7 +1252,7 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
+ 	} *args;
+ 	struct multicall_space mcs;
+ 
+-	trace_xen_mmu_flush_tlb_others(cpus, mm, va);
++	trace_xen_mmu_flush_tlb_others(cpus, mm, start, end);
+ 
+ 	if (cpumask_empty(cpus))
+ 		return;		/* nothing to do */
+@@ -1264,11 +1265,11 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
+ 	cpumask_and(to_cpumask(args->mask), cpus, cpu_online_mask);
+ 	cpumask_clear_cpu(smp_processor_id(), to_cpumask(args->mask));
+ 
+-	if (va == TLB_FLUSH_ALL) {
++	if (start == TLB_FLUSH_ALL) {
+ 		args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
+ 	} else {
+ 		args->op.cmd = MMUEXT_INVLPG_MULTI;
+-		args->op.arg1.linear_addr = va;
++		args->op.arg1.linear_addr = start;
+ 	}
+ 
+ 	MULTI_mmuext_op(mcs.mc, &args->op, 1, NULL, DOMID_SELF);
+diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
+index 92f1a79..15ba03b 100644
+--- a/include/trace/events/xen.h
++++ b/include/trace/events/xen.h
+@@ -397,18 +397,20 @@ TRACE_EVENT(xen_mmu_flush_tlb_single,
+ 
+ TRACE_EVENT(xen_mmu_flush_tlb_others,
+ 	    TP_PROTO(const struct cpumask *cpus, struct mm_struct *mm,
+-		     unsigned long addr),
+-	    TP_ARGS(cpus, mm, addr),
++		     unsigned long addr, unsigned long end),
++	    TP_ARGS(cpus, mm, addr, end),
+ 	    TP_STRUCT__entry(
+ 		    __field(unsigned, ncpus)
+ 		    __field(struct mm_struct *, mm)
+ 		    __field(unsigned long, addr)
++		    __field(unsigned long, end)
+ 		    ),
+ 	    TP_fast_assign(__entry->ncpus = cpumask_weight(cpus);
+ 			   __entry->mm = mm;
+-			   __entry->addr = addr),
+-	    TP_printk("ncpus %d mm %p addr %lx",
+-		      __entry->ncpus, __entry->mm, __entry->addr)
++			   __entry->addr = addr,
++			   __entry->end = end),
++	    TP_printk("ncpus %d mm %p addr %lx, end %lx",
++		      __entry->ncpus, __entry->mm, __entry->addr, __entry->end)
+ 	);
+ 
+ TRACE_EVENT(xen_mmu_write_cr3,
 -- 
 1.7.5.4
 
