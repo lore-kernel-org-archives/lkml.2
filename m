@@ -1,210 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab2D1INy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 04:13:54 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55542 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab2D1INs (ORCPT
+	id S1752371Ab2D1IgL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 04:36:11 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53511 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015Ab2D1IgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 04:13:48 -0400
-Date: Sat, 28 Apr 2012 10:13:45 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-cc: Grant Likely <grant.likely@secretlab.ca>,
-        open list <linux-kernel@vger.kernel.org>,
-        alexander.stein@systec-electronic.com, qi.wang@intel.com,
-        yong.y.wang@intel.com, joel.clark@intel.com, kok.howg.ewe@intel.com,
-        tomoya.rohm@gmail.com
-Subject: [PATCH] gpio: pch9: Use proper flow type handlers
-In-Reply-To: <D0A540D9-CFCD-456D-A1DB-C04ED063DF18@gmail.com>
-Message-ID: <alpine.LFD.2.02.1204281012420.6271@ionos>
-References: <1311207599-2553-1-git-send-email-tomoya-linux@dsn.okisemi.com> <1311207599-2553-6-git-send-email-tomoya-linux@dsn.okisemi.com> <3D60A4A2-3538-4B24-B65B-219D6ED7B219@gmail.com> <CA46BB56-61AD-45E9-8D03-906B71C21C71@gmail.com>
- <alpine.LFD.2.02.1204252332070.2542@ionos> <D0A540D9-CFCD-456D-A1DB-C04ED063DF18@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sat, 28 Apr 2012 04:36:08 -0400
+Date: Sat, 28 Apr 2012 10:36:03 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: RFC: How to handle function tracing, frame pointers and -mfentry?
+Message-ID: <20120428083603.GJ27374@one.firstfloor.org>
+References: <1335552399.28106.228.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335552399.28106.228.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean-Francois Dagenais reported:
+> 1) Have kconfig detect if -mfentry is supported with the current
+> compiler. If it is, then enable a "auto" config called
+> CONFIG_CC_HAS_FENTRY, and allow function tracer be able to select
+> FRAME_POINTER if that's not defined.
+> 
+> I actually got this to work, but it only works if the host compiler is
+> the same as the compiler building the kernel. Which in lots of cases is
+> not (my default setup does not have this).
 
- Configuring a gpio pin with the gpio-pch driver with
- "IRQF_TRIGGER_LOW | IRQF_ONESHOT" generates an interrupt storm for
- threaded ISR until the ISR thread actually gets to physically clear
- the interrupt on the triggering chip!! The immediate observable
- symptom is the high CPU usage for my ISR thread task and the
- interrupt count in /proc/interrupts incrementing radically.
+Kconfig just needs to learn how to run the target compiler
 
-The driver is wrong in several ways:
+I think that's the right direction. Right now our main
+Makefiles get polluted more and more with "test compiles", each
+of which makes a "null make" slower and slower. 
 
-1) Using handle_simple_irq() does not provide proper flow control
-   handling. In the case of oneshot threaded handlers for the
-   demultiplexed interrupts this results in an interrupt storm because
-   the simple handler does not deal with masking/unmasking.  Even
-   without threaded oneshot handlers an interrupt storm for level type
-   interrupts can easily be triggered when the interrupt is disabled
-   and the interrupt line is activated from the device.
+I just measured and a null compile (nothing changes) of a current
+tree calls "gcc" 141 times.
 
-2) Acknowlegding the demultiplexed interrupt before calling the
-   handler is wrong for level type interrupts.
+All this stuff should be cached in the Kconfig instead.
 
-3) The set_type function unconditionally enables the interrupt. It's
-   supposed to set the type and nothing else. The unmasking is done by
-   the core code.
+It may break some obscure setups (that can be probably fixed without
+too much effort), but the development turnaround improvement
+for everyone else would be worth it.
 
-Move the acknowledge code into a separate function and add it to the
-demux irqchip callbacks.
-
-Remove the unconditional enabling from the set_type() callback and set
-the proper flow handlers depending on the selected type (level/edge).
-
-Reported-and-tested-by: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: alexander.stein@systec-electronic.com
-Cc: qi.wang@intel.com
-Cc: yong.y.wang@intel.com
-Cc: joel.clark@intel.com
-Cc: kok.howg.ewe@intel.com
-Cc: toshiharu-linux@dsn.okisemi.com
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1204252332070.2542@ionos
----
- drivers/gpio/gpio-pch.c |   57 +++++++++++++++++++++++-------------------------
- 1 file changed, 28 insertions(+), 29 deletions(-)
-
-Index: linux-2.6/drivers/gpio/gpio-pch.c
-===================================================================
---- linux-2.6.orig/drivers/gpio/gpio-pch.c
-+++ linux-2.6/drivers/gpio/gpio-pch.c
-@@ -230,16 +230,12 @@ static void pch_gpio_setup(struct pch_gp
- 
- static int pch_irq_type(struct irq_data *d, unsigned int type)
- {
--	u32 im;
--	u32 __iomem *im_reg;
--	u32 ien;
--	u32 im_pos;
--	int ch;
--	unsigned long flags;
--	u32 val;
--	int irq = d->irq;
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
- 	struct pch_gpio *chip = gc->private;
-+	u32 im, im_pos, val;
-+	u32 __iomem *im_reg;
-+	unsigned long flags;
-+	int ch, irq = d->irq;
- 
- 	ch = irq - chip->irq_base;
- 	if (irq <= chip->irq_base + 7) {
-@@ -270,30 +266,22 @@ static int pch_irq_type(struct irq_data 
- 	case IRQ_TYPE_LEVEL_LOW:
- 		val = PCH_LEVEL_L;
- 		break;
--	case IRQ_TYPE_PROBE:
--		goto end;
- 	default:
--		dev_warn(chip->dev, "%s: unknown type(%dd)",
--			__func__, type);
--		goto end;
-+		goto unlock;
- 	}
- 
- 	/* Set interrupt mode */
- 	im = ioread32(im_reg) & ~(PCH_IM_MASK << (im_pos * 4));
- 	iowrite32(im | (val << (im_pos * 4)), im_reg);
- 
--	/* iclr */
--	iowrite32(BIT(ch), &chip->reg->iclr);
-+	/* And the handler */
-+	if (type & (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_LEVEL_HIGH))
-+		__irq_set_handler_locked(d->irq, handle_level_irq);
-+	else if (type & (IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING))
-+		__irq_set_handler_locked(d->irq, handle_edge_irq);
- 
--	/* IMASKCLR */
--	iowrite32(BIT(ch), &chip->reg->imaskclr);
--
--	/* Enable interrupt */
--	ien = ioread32(&chip->reg->ien);
--	iowrite32(ien | BIT(ch), &chip->reg->ien);
--end:
-+unlock:
- 	spin_unlock_irqrestore(&chip->spinlock, flags);
--
- 	return 0;
- }
- 
-@@ -313,18 +301,24 @@ static void pch_irq_mask(struct irq_data
- 	iowrite32(1 << (d->irq - chip->irq_base), &chip->reg->imask);
- }
- 
-+static void pch_irq_ack(struct irq_data *d)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct pch_gpio *chip = gc->private;
-+
-+	iowrite32(1 << (d->irq - chip->irq_base), &chip->reg->iclr);
-+}
-+
- static irqreturn_t pch_gpio_handler(int irq, void *dev_id)
- {
- 	struct pch_gpio *chip = dev_id;
- 	u32 reg_val = ioread32(&chip->reg->istatus);
--	int i;
--	int ret = IRQ_NONE;
-+	int i, ret = IRQ_NONE;
- 
- 	for (i = 0; i < gpio_pins[chip->ioh]; i++) {
- 		if (reg_val & BIT(i)) {
- 			dev_dbg(chip->dev, "%s:[%d]:irq=%d  status=0x%x\n",
- 				__func__, i, irq, reg_val);
--			iowrite32(BIT(i), &chip->reg->iclr);
- 			generic_handle_irq(chip->irq_base + i);
- 			ret = IRQ_HANDLED;
- 		}
-@@ -343,6 +337,7 @@ static __devinit void pch_gpio_alloc_gen
- 	gc->private = chip;
- 	ct = gc->chip_types;
- 
-+	ct->chip.irq_ack = pch_irq_ack;
- 	ct->chip.irq_mask = pch_irq_mask;
- 	ct->chip.irq_unmask = pch_irq_unmask;
- 	ct->chip.irq_set_type = pch_irq_type;
-@@ -357,6 +352,7 @@ static int __devinit pch_gpio_probe(stru
- 	s32 ret;
- 	struct pch_gpio *chip;
- 	int irq_base;
-+	u32 msk;
- 
- 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
- 	if (chip == NULL)
-@@ -408,8 +404,13 @@ static int __devinit pch_gpio_probe(stru
- 	}
- 	chip->irq_base = irq_base;
- 
-+	/* Mask all interrupts, but enable them */
-+	msk = (1 << gpio_pins[chip->ioh]) - 1;
-+	iowrite32(msk, &chip->reg->imask);
-+	iowrite32(msk, &chip->reg->ien);
-+
- 	ret = request_irq(pdev->irq, pch_gpio_handler,
--			     IRQF_SHARED, KBUILD_MODNAME, chip);
-+			  IRQF_SHARED, KBUILD_MODNAME, chip);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev,
- 			"%s request_irq failed\n", __func__);
-@@ -418,8 +419,6 @@ static int __devinit pch_gpio_probe(stru
- 
- 	pch_gpio_alloc_generic_chip(chip, irq_base, gpio_pins[chip->ioh]);
- 
--	/* Initialize interrupt ien register */
--	iowrite32(0, &chip->reg->ien);
- end:
- 	return 0;
- 
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
