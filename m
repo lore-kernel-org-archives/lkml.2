@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758987Ab2D1B76 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Apr 2012 21:59:58 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:59884 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758878Ab2D1B7z (ORCPT
+	id S932384Ab2D1CAN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Apr 2012 22:00:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57745 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759011Ab2D1CAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Apr 2012 21:59:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6694"; a="183515912"
-X-IronPort-AV: E=Sophos;i="4.75,491,1330934400"; 
-   d="scan'208";a="242469599"
-From: xiong <xiong@qca.qualcomm.com>
-To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
-        xiong <xiong@qca.qualcomm.com>
-Subject: [PATCH 06/10] atl1c: enlarge L1 response waiting timer
-Date: Sat, 28 Apr 2012 09:58:41 +0800
-Message-ID: <1335578325-21326-7-git-send-email-xiong@qca.qualcomm.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1335578325-21326-1-git-send-email-xiong@qca.qualcomm.com>
-References: <1335578325-21326-1-git-send-email-xiong@qca.qualcomm.com>
+	Fri, 27 Apr 2012 22:00:08 -0400
+Date: Fri, 27 Apr 2012 19:00:03 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Han Ying <yinghan@google.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 8/9 v2] cgroup: avoid creating new cgroup under a
+ cgroup being destroyed
+Message-ID: <20120428020003.GA26573@mtj.dyndns.org>
+References: <4F9A327A.6050409@jp.fujitsu.com>
+ <4F9A36DE.30301@jp.fujitsu.com>
+ <20120427204035.GN26595@google.com>
+ <CABEgKgrJ68wU-L17zwN4_htX948TNFnLVgts=hFeY7QG3etwCA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.30.48.1]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABEgKgrJ68wU-L17zwN4_htX948TNFnLVgts=hFeY7QG3etwCA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hardware incorrectly process L0S/L1 entrance if the chipset/root
-response after specific/shorter timer and cause system hang.
-Enlarge the timeout value to avoid this issue.
+Hi, KAME.
 
-Signed-off-by: xiong <xiong@qca.qualcomm.com>
-Tested-by: Liu David <dwliu@qca.qualcomm.com>
----
- drivers/net/ethernet/atheros/atl1c/atl1c_hw.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Sat, Apr 28, 2012 at 09:20:52AM +0900, Hiroyuki Kamezawa wrote:
+> What I thought was...
+> Assume a memory cgoup A, with use_hierarchy==1.
+> 
+> 1.  thread:0   start calling pre->destroy of cgroup A
+> 2.  thread:0   it sometimes calls cond_resched or other sleep functions.
+> 3.  thread:1   create a cgroup B under "A"
+> 4.  thread:1   attach a thread X to cgroup A/B
+> 5.  res_counter of A charged up. but pre_destroy() can't find what happens
+>     because it scans LRU of A.
+> 
+> So, we have -EBUSY now. I considered some options to fix this.
+> 
+> option 1) just return 0 instead of -EBUSY when pre_destroy() finds a
+> task or a child.
+> 
+> There is a race....even if we return 0 here and expects cgroup code
+> can catch it,
+> the thread or a child we found may be moved to other cgroup before we check it
+> in cgroup's final check.
+> In that case, the cgroup will be freed before full-ack of
+> pre_destory() and the charges
+> will be lost.
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
-index 21a5bc1..17d935b 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
-@@ -157,7 +157,7 @@ void atl1c_post_phy_linkchg(struct atl1c_hw *hw, u16 link_speed);
- #define PM_CTRL_PM_REQ_TIMER_MASK	0xFUL
- #define PM_CTRL_PM_REQ_TIMER_SHIFT	20	/* pm_request_l1 time > @
- 						 * ->L0s not L1 */
--#define PM_CTRL_PM_REQ_TO_DEF		0xC
-+#define PM_CTRL_PM_REQ_TO_DEF		0xF
- #define PMCTRL_TXL1_AFTER_L0S		BIT(19)	/* l1dv2.0+ */
- #define L1D_PMCTRL_L1_ENTRY_TM_MASK	7UL	/* l1dv2.0+, 3bits */
- #define L1D_PMCTRL_L1_ENTRY_TM_SHIFT	16
+So, cgroup code won't proceed with rmdir if children are created
+inbetween and note that the race condition of lost charge you
+described above existed before this change - ie. new cgroup could be
+created after pre_destroy() is complete.
+
+The current cgroup rmdir code is transitional.  It has to support both
+retrying and non-retrying pre_destroy()s and that means we can't mark
+the cgroup DEAD before starting invoking pre_destroy(); however, we
+can do that once memcg's pre_destroy() is converted which will also
+remove all the WAIT_ON_RMDIR mechanism and the above described race.
+
+There really isn't much point in trying to make the current cgroup
+rmdir behave perfectly when the next step is removing all the fixed up
+parts.
+
+So, IMHO, just making pre_destroy() clean up its own charges and
+always returning 0 is enough.  There's no need to fix up old
+non-critical race condition at this point in the patch stream.  cgroup
+rmdir simplification will make them disappear anyway.
+
+Thanks.
+
 -- 
-1.7.7
-
+tejun
