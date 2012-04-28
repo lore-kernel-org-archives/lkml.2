@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab2D1QWh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 12:22:37 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44023 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752090Ab2D1QWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 12:22:36 -0400
-Subject: [PATCH bugfix] proc/pagemap: correctly report non-present ptes and
- holes between vmas
-To: Andrew Morton <akpm@linux-foundation.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Pavel Emelyanov <xemul@parallels.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Sat, 28 Apr 2012 20:22:30 +0400
-Message-ID: <20120428162229.15658.56316.stgit@zurg>
-User-Agent: StGit/0.15
+	id S1754379Ab2D1QY3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 12:24:29 -0400
+Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:32911 "EHLO
+	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750945Ab2D1QY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 12:24:28 -0400
+X-Greylist: delayed 1309 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Apr 2012 12:24:27 EDT
+Date: Sat, 28 Apr 2012 12:02:27 -0400
+From: Wakko Warner <wakko@animx.eu.org>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: Burning multiple DVDs at one time
+Message-ID: <20120428160226.GA9811@animx.eu.org>
+Mail-Followup-To: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+References: <20120315225310.GB3152@animx.eu.org>
+ <20120317095644.145d0588@stein>
+ <20120317142255.GB26403@animx.eu.org>
+ <20120317162853.13afa28b@stein>
+ <20120318133059.GB10172@animx.eu.org>
+ <20120318150127.5f8db40c@stein>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120318150127.5f8db40c@stein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch resets current pagemap-entry if current pte isn't present,
-or if current vma is over. Otherwise pagemap reports last entry again and again.
+Stefan Richter wrote:
+> On Mar 18 Wakko Warner wrote:
+> > Stefan Richter wrote:
+> > > On Mar 17 Wakko Warner wrote:
+> > > > Thanks.  I looked at the patch.  I would just like to confirm that I can
+> > > > patch my 3.0.0 vanilla kernel, compile the sr module, unload the current and
+> > > > load the patched one without the need to reboot.
+> > > 
+> > > Yes, this should be possible.
+> > > 
+> > > Oh, I only noticed just know that you also wrote:
+> > > 
+> > > > > > The kernel is a vanilla kernel v3.0.0.  (This also happened with 2.6.35)
+> > > 
+> > > In 2.6.35, the Big Kernel Lock was still in place there.  That lock
+> > > behaved differently from a plain mutex --- notably it was released when a
+> > > thread went to sleep --- so maybe there is more to your problem than just
+> > > sr_mutex blocking unrelated sr accesses.
+> > 
+> > There is a good possibility that I was mistaken on the 2.6.35.
+> > 
+> > I manually applied your patch to 3.0.0, compiled, removed sr-mod module and
+> > inserted the newly compiled one.
+> > 
+> > With the vanilla one, I would see the buf % in wodim drop while the fifo was
+> > full.  With the patch (removing the mutex), buf stayed above 98% and the
+> > burn speed was 16x at the end (10x avg).
+> > 
+> > Seems to have fixed my problem.
+> 
+> Very nice; so there is an almost easy fix.  Now I or somebody else need to
+> work out the required cdrom_device_info protection on which Arnd and James
+> commented.
 
-non-present pte reporting was broken in commit v3.3-3738-g092b50b
-("pagemap: introduce data structure for pagemap entry")
+Has anything come of this as far as the fix going into the kernel?
 
-reporting for holes was broken in commit v3.3-3734-g5aaabe8
-("pagemap: avoid splitting thp when reading /proc/pid/pagemap")
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Reported-by: Pavel Emelyanov <xemul@parallels.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andi Kleen <ak@linux.intel.com>
----
- fs/proc/task_mmu.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index a580c69..9f9c033 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -747,6 +747,8 @@ static void pte_to_pagemap_entry(pagemap_entry_t *pme, pte_t pte)
- 	else if (pte_present(pte))
- 		*pme = make_pme(PM_PFRAME(pte_pfn(pte))
- 				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
-+	else
-+		*pme = make_pme(PM_NOT_PRESENT);
- }
- 
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-@@ -761,6 +763,8 @@ static void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme,
- 	if (pmd_present(pmd))
- 		*pme = make_pme(PM_PFRAME(pmd_pfn(pmd) + offset)
- 				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
-+	else
-+		*pme = make_pme(PM_NOT_PRESENT);
- }
- #else
- static inline void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme,
-@@ -801,8 +805,10 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 
- 		/* check to see if we've left 'vma' behind
- 		 * and need a new, higher one */
--		if (vma && (addr >= vma->vm_end))
-+		if (vma && (addr >= vma->vm_end)) {
- 			vma = find_vma(walk->mm, addr);
-+			pme = make_pme(PM_NOT_PRESENT);
-+		}
- 
- 		/* check that 'vma' actually covers this address,
- 		 * and that it isn't a huge page vma */
-@@ -830,6 +836,8 @@ static void huge_pte_to_pagemap_entry(pagemap_entry_t *pme,
- 	if (pte_present(pte))
- 		*pme = make_pme(PM_PFRAME(pte_pfn(pte) + offset)
- 				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
-+	else
-+		*pme = make_pme(PM_NOT_PRESENT);
- }
- 
- /* This function walks within one hugetlb entry in the single call */
-@@ -839,7 +847,7 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
- {
- 	struct pagemapread *pm = walk->private;
- 	int err = 0;
--	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
-+	pagemap_entry_t pme;
- 
- 	for (; addr != end; addr += PAGE_SIZE) {
- 		int offset = (addr & ~hmask) >> PAGE_SHIFT;
-
+-- 
+ Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
+ million bugs.
