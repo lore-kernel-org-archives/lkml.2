@@ -1,87 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab2D1Iwd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 04:52:33 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:34450 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231Ab2D1Iwb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 04:52:31 -0400
-Date: Sat, 28 Apr 2012 10:52:23 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Joe Perches <joe@perches.com>, Borislav Petkov <bp@amd64.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Tim Small <tim@buttersideup.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Egor Martovetsky <egor@pasemi.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Niklas =?iso-8859-1?Q?S=F6derlund?= 
-	<niklas.soderlund@ericsson.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to work
- with layers
-Message-ID: <20120428085223.GB26065@aftab.osrc.amd.com>
-References: <1335289087-11337-1-git-send-email-mchehab@redhat.com>
- <1335291342-14922-1-git-send-email-mchehab@redhat.com>
- <20120427133304.GE9626@aftab.osrc.amd.com>
- <1335535895.25521.7.camel@joe2Laptop>
- <4F9AC44A.5000509@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9AC44A.5000509@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753568Ab2D1Iw4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 04:52:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29098 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753281Ab2D1Iwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 04:52:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="134675347"
+From: Alex Shi <alex.shi@intel.com>
+To: andi.kleen@intel.com, tim.c.chen@linux.intel.com, jeremy@goop.org,
+        chrisw@sous-sol.org, akataria@vmware.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
+        fweisbec@gmail.com
+Cc: riel@redhat.com, luto@mit.edu, alex.shi@intel.com, avi@redhat.com,
+        len.brown@intel.com, paul.gortmaker@windriver.com, dhowells@redhat.com,
+        fenghua.yu@intel.com, borislav.petkov@amd.com, yinghai@kernel.org,
+        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
+        yongjie.ren@intel.com
+Subject: [PATCH 0/3] TLB flush range optimization
+Date: Sat, 28 Apr 2012 16:51:36 +0800
+Message-Id: <1335603099-2624-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 01:07:38PM -0300, Mauro Carvalho Chehab wrote:
-> Yes. This is a common issue at the EDAC core: on several places, it calls the
-> edac debug macros (DEBUGF0...DEBUGF4) passing a __func__ as an argument, while
-> the debug macros already handles that. I suspect that, in the past, the __func__
-> were not at the macros, but some patch added it there, and forgot to fix the
-> occurrences of its call.
+Sorry. forget cc to lkml just now. Added.
 
-The patch that added it is d357cbb445208 and you reviewed it.
+This patcheset change flush_tlb_range from flushing all to one by one
+'invlpg'. The following macro benchmark measured the performance improvement.
+and the testing result show in the related commit log.
 
-> This is something that needs to be reviewed at the entire EDAC core (and likely
-> at the drivers).
+Any comments are appreciated!
 
-Looks like a job for a newbie to get her/his feet wet with kernel work.
+Thanks for comments from Andi and Tim in developing!
 
-> I opted to not touch on this at the existing debug logic, as I think that the
-> better is to address all those issues on one separate patch, after fixing the
-> EDAC core bugs.
+--------------
+/*
+   mprotect.c
+   This is a macrobenchmark for TLB flush range testing.
 
-No,
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License.
 
-you simply need to remove the __func__ argument in your newly added debug call:
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-                debugf2("%s: %d: dimm%zd (%d:%d:%d): row %d, chan %d\n", __func__,
-                        i, (dimm - mci->dimms),
-                        pos[0], pos[1], pos[2], row, chn);
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-And while you're at it, remove the rest of the __func__ arguments from
-your newly added debugfX calls.
+   Copyright (C) Intel 2012
+   Coypright Alex Shi alex.shi@intel.com 
 
--- 
-Regards/Gruss,
-Boris.
+   gcc -o mprotect mprotect.c -lrt -lpthread -O2
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+    #perf stat -e r881,r882,r884 -e r801,r802,r810,r820,r840,r880,r807 -e rc01 -e r4901,r4902,r4910,r4920,r4940,r4980 -e r5f01  -e rbd01,rdb20  -e r4f02 -e r8004,r8201,r8501,r8502,r8504,r8510,r8520,r8540,r8580  -e rae01,rc820,rc102,rc900 -e r8600  -e rcb10  ./mprotect 
+*/
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/mman.h>
+#include <time.h>
+#include <sys/types.h>
+#include <pthread.h>
+
+#define FILE_SIZE	(1024*1024*1024)
+
+#define PAGE_SIZE 	4096
+
+#ifndef MAP_HUGETLB
+#define MAP_HUGETLB	0x40000
+#endif
+
+
+long getnsec(clockid_t clockid) {
+        struct timespec ts;
+        if (clock_gettime(clockid, &ts) == -1)
+                perror("clock_gettime failed");
+        return (long) ts.tv_sec * 1000000000 + (long) ts.tv_nsec;
+}
+
+//data for threads
+struct data{
+	int *readp;
+	void *startaddr;
+	int rw;
+	int loop;
+};
+volatile int * threadstart;
+//thread for memory accessing
+void *accessmm(void *data){
+	struct data *d = data;
+	long *actimes;
+	char x;
+	int i, k;
+	int randn[PAGE_SIZE];
+	
+	for (i=0;i<PAGE_SIZE; i++)
+		randn[i] = rand();
+
+	actimes = malloc(sizeof(long));
+
+	while (*threadstart == 0 )
+		usleep(1);
+
+	if (d->rw == 0)
+		for (*actimes=0; *threadstart == 1; (*actimes)++)
+			for (k=0; k < *d->readp; k++)
+				x = *(volatile char *)(d->startaddr + randn[k]%FILE_SIZE); 
+	else
+		for (*actimes=0; *threadstart == 1; (*actimes)++)
+			for (k=0; k < *d->readp; k++)
+				*(char *)(d->startaddr + randn[k]%FILE_SIZE) = 1; 
+	return actimes;
+}
+
+int main(int argc, char *argv[])
+{
+        static  char            optstr[] = "n:l:p:w:ht:";
+	int n = 32;	/* default flush entries number */
+	int l = 1024; 	/* default loop times */
+	int p = 512;	/* default accessed page number, after mprotect */
+	int er = 0, rw = 0, h = 0, t = 0; /* d: debug; h: use huge page; t thread number */
+	int pagesize = PAGE_SIZE; /*default for regular page */
+	volatile char x;
+
+	int i, j, k, c;
+	void *m1, *startaddr;
+	volatile void *tempaddr;
+	clockid_t clockid = CLOCK_MONOTONIC;
+	unsigned long start, stop, mptime, actime;
+	int randn[PAGE_SIZE];
+
+	pthread_t	pid[1024];
+	void * res;
+	struct data data;
+
+	for (i=0;i<PAGE_SIZE; i++)
+		randn[i] = rand();
+
+        while ((c = getopt(argc, argv, optstr)) != EOF)
+                switch (c) {
+                case 'n':
+                        n = atoi(optarg);
+                        break;
+                case 'l':
+                        l = atoi(optarg);
+                        break;
+                case 'p':
+                        p = atoi(optarg);
+                        break;
+                case 'h':
+                        h = 1;
+                        break;
+                case 'w':
+                        rw = atoi(optarg);
+                        break;
+                case 't':
+                        t = atoi(optarg);
+                        break;
+                case '?':
+                        er = 1;
+                        break;
+                }
+        if (er) {
+                printf("usage: %s %s\n", argv[0], optstr);
+                exit(1);
+	}
+
+	printf("my pid is %d n=%d l=%d p=%d t=%d\n", getpid(), n, l, p, t);	
+	if (h == 0){
+		startaddr = mmap(0, FILE_SIZE, PROT_READ|PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+	} else {
+		startaddr = mmap(0, FILE_SIZE, PROT_READ|PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED | MAP_HUGETLB, -1, 0);
+		pagesize = 2*1024*1024;
+	}
+	if (startaddr == MAP_FAILED) {
+		perror("mmap");
+		exit(1);
+	}
+
+	start = getnsec(clockid);
+	//access whole memory, will generate many page faults 
+	for (tempaddr = startaddr; tempaddr < startaddr + FILE_SIZE; tempaddr += pagesize)
+		memset((char *)tempaddr, 0, 1);
+        stop = getnsec(clockid);
+       	printf("get 256K pages with one byte writing uses %lums, %luns/time \n", 
+		(stop - start)/1000000, (stop-start)*pagesize/FILE_SIZE);
+
+	//thread created, and goes to sleep
+	threadstart = malloc(sizeof(int));
+	*threadstart = 0;
+	data.readp = &p; data.startaddr = startaddr; data.rw = rw; data.loop = l;
+	for (i=0; i< t; i++)
+		if(pthread_create(&pid[i], NULL, accessmm, &data))
+			perror("pthread create");
+	//wait for randn[] filling.
+	if (t!=0)	sleep(1);
+
+	mptime = actime = 0;
+	if (h == 0) {
+		m1 = mmap(0, n * pagesize, PROT_READ|PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+	} else {
+		m1 = mmap(0, n * pagesize, PROT_READ|PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED | MAP_HUGETLB, -1, 0);
+	}
+	if (m1 == MAP_FAILED) {
+		perror("mmap");
+		exit(1);
+	}
+	if (t != 0)
+		start = getnsec(clockid);
+	//kick threads, let them running.
+	*threadstart = 1;
+	for (j=0; j < l; j++) {
+		for (i=1; i <= n; i++) {
+			unsigned long prot[2]={PROT_READ, PROT_WRITE|PROT_READ};
+
+			if (t == 0)
+				start = getnsec(clockid);
+
+			if(mprotect(m1, i*pagesize, prot[i%2])==-1) {
+				perror("mprotect");
+				goto end;
+			}
+			if (t == 0) {
+				stop = getnsec(clockid);
+				mptime += stop - start;
+			}
+
+			if (t == 0) {
+				// access p number pages 
+				start = stop; 
+				if (rw == 0)
+					for (k=0; k < p; k++)
+						x = *(volatile char *)(startaddr + randn[k]%FILE_SIZE);
+				else
+					for (k=0; k < p; k++)
+						*(char *)(startaddr + randn[k]%FILE_SIZE) = 1;
+				actime += getnsec(clockid) - start;
+			} 
+		}
+	}
+	//to avoid accessmm miss *threadstart == 1
+	usleep(5);
+	*threadstart = 0;
+	if (t != 0) {
+		stop = getnsec(clockid);
+		mptime += stop - start;
+	}
+	munmap(m1, n*pagesize);
+
+	//get threads' result.
+	for (i=0; i< t; i++) {
+		if (pthread_join(pid[i], &res))
+			perror("pthread_join");
+		actime += *(long*)res;
+	}
+end:
+	if ( t == 0 ) 
+	       	printf("mprotect use %lums %luns/time, memory access uses %lums %luns/time \n",
+			 mptime/1000000, mptime/(l*n), actime/1000000, actime/p/l/n);
+	else
+		printf("mprotect use %lums %luns/time, %ld times/thread/ms, cost %ldns/time\n",
+			 mptime/1000000, mptime/(l*n), actime*p*1000000/t/mptime, mptime*t/(actime*p));
+	exit(0);
+}
