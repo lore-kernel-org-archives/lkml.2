@@ -1,168 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab2D1JFX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 05:05:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44320 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab2D1JFS (ORCPT
+	id S1753983Ab2D1JFg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 05:05:36 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:34547 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753891Ab2D1JFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 05:05:18 -0400
-Date: Sat, 28 Apr 2012 02:04:13 -0700
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-38498a67aa2cf8c80754b8d304bfacc10bc582b5@git.kernel.org>
-Cc: mingo@kernel.org, jesper.nilsson@axis.com, rusty@rustcorp.com.au,
-        schwidefsky@de.ibm.com, peterz@infradead.org, cmetcalf@tilera.com,
-        tony.luck@intel.com, ralf@linux-mips.org, linux@arm.linux.org.uk,
-        vapier@gentoo.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, richard@nod.at, lethal@linux-sh.org,
-        srivatsa.bhat@linux.vnet.ibm.com, davem@davemloft.net,
-        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        dhowells@redhat.com, mattst88@gmail.com, jejb@parisc-linux.org,
-        takata@linux-m32r.org, rkuo@codeaurora.org
-Reply-To: mingo@kernel.org, jesper.nilsson@axis.com, rusty@rustcorp.com.au,
-        peterz@infradead.org, schwidefsky@de.ibm.com, cmetcalf@tilera.com,
-        tony.luck@intel.com, linux@arm.linux.org.uk, ralf@linux-mips.org,
-        vapier@gentoo.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, richard@nod.at, lethal@linux-sh.org,
-        srivatsa.bhat@linux.vnet.ibm.com, davem@davemloft.net,
-        paulmck@linux.vnet.ibm.com, dhowells@redhat.com,
-        benh@kernel.crashing.org, jejb@parisc-linux.org, mattst88@gmail.com,
-        takata@linux-m32r.org, rkuo@codeaurora.org
-In-Reply-To: <20120420124557.035417523@linutronix.de>
-References: <20120420124557.035417523@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] smp: Add generic smpboot facility
-Git-Commit-ID: 38498a67aa2cf8c80754b8d304bfacc10bc582b5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 28 Apr 2012 05:05:30 -0400
+Date: Sat, 28 Apr 2012 11:05:23 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
+        Jason Uhlenkott <juhlenko@akamai.com>,
+        Tim Small <tim@buttersideup.com>,
+        Ranganathan Desikan <ravi@jetztechnologies.com>,
+        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Egor Martovetsky <egor@pasemi.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hitoshi Mitake <h.mitake@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Niklas =?iso-8859-1?Q?S=F6derlund?= 
+	<niklas.soderlund@ericsson.com>,
+        Shaohui Xie <Shaohui.Xie@freescale.com>,
+        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to work
+ with layers
+Message-ID: <20120428090523.GD26065@aftab.osrc.amd.com>
+References: <1335289087-11337-1-git-send-email-mchehab@redhat.com>
+ <1335291342-14922-1-git-send-email-mchehab@redhat.com>
+ <20120427133304.GE9626@aftab.osrc.amd.com>
+ <4F9ABCEC.9090807@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Apr 2012 02:04:19 -0700 (PDT)
+In-Reply-To: <4F9ABCEC.9090807@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  38498a67aa2cf8c80754b8d304bfacc10bc582b5
-Gitweb:     http://git.kernel.org/tip/38498a67aa2cf8c80754b8d304bfacc10bc582b5
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 20 Apr 2012 13:05:44 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 26 Apr 2012 12:06:09 +0200
+On Fri, Apr 27, 2012 at 12:36:12PM -0300, Mauro Carvalho Chehab wrote:
+> The fix for it were in another patch[1], as calling them as "rank" is
+> needed also at the sysfs API.
 
-smp: Add generic smpboot facility
+No, this doesn't fix it either:
 
-Start a new file, which will hold SMP and CPU hotplug related generic
-infrastructure.
+[   10.486440] EDAC MC: DCT0 chip selects:
+[   10.486443] EDAC amd64: MC: 0:  2048MB 1:  2048MB
+[   10.486445] EDAC amd64: MC: 2:  2048MB 3:  2048MB
+[   10.486448] EDAC amd64: MC: 4:     0MB 5:     0MB
+[   10.486450] EDAC amd64: MC: 6:     0MB 7:     0MB
+[   10.486453] EDAC DEBUG: amd64_debug_display_dimm_sizes: F2x180 (DRAM Bank Address Mapping): 0x00000088
+[   10.486455] EDAC MC: DCT1 chip selects:
+[   10.486458] EDAC amd64: MC: 0:  2048MB 1:  2048MB
+[   10.486460] EDAC amd64: MC: 2:  2048MB 3:  2048MB
+[   10.486463] EDAC amd64: MC: 4:     0MB 5:     0MB
+[   10.486465] EDAC amd64: MC: 6:     0MB 7:     0MB
+[   10.486467] EDAC amd64: using x8 syndromes.
+[   10.486469] EDAC DEBUG: amd64_dump_dramcfg_low: F2x190 (DRAM Cfg Low): 0x00083100
+[   10.486472] EDAC DEBUG: amd64_dump_dramcfg_low:   DIMM type: buffered; all DIMMs support ECC: yes
+[   10.486475] EDAC DEBUG: amd64_dump_dramcfg_low:   PAR/ERR parity: enabled
+[   10.486478] EDAC DEBUG: amd64_dump_dramcfg_low:   DCT 128bit mode width: 64b
+[   10.486481] EDAC DEBUG: amd64_dump_dramcfg_low:   x4 logical DIMMs present: L0: yes L1: yes L2: no L3: no
+[   10.486485] EDAC DEBUG: f1x_early_channel_count: Data width is not 128 bits - need more decoding
+[   10.486488] EDAC amd64: MCT channel count: 2
+[   10.486493] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc(): allocating 3692 bytes for mci data (16 ranks, 16 csrows/channels)
+[   10.486501] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 0: rank0 (0:0:0): row 0, chan 0
+[   10.486506] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 1: rank1 (0:1:0): row 0, chan 1
+[   10.486510] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 2: rank2 (1:0:0): row 1, chan 0
+[   10.486514] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 3: rank3 (1:1:0): row 1, chan 1
+[   10.486518] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 4: rank4 (2:0:0): row 2, chan 0
+[   10.486522] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 5: rank5 (2:1:0): row 2, chan 1
+[   10.486526] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 6: rank6 (3:0:0): row 3, chan 0
+[   10.486530] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 7: rank7 (3:1:0): row 3, chan 1
+[   10.486534] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 8: rank8 (4:0:0): row 4, chan 0
+[   10.486538] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 9: rank9 (4:1:0): row 4, chan 1
+[   10.486542] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 10: rank10 (5:0:0): row 5, chan 0
+[   10.486546] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 11: rank11 (5:1:0): row 5, chan 1
+[   10.486550] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 12: rank12 (6:0:0): row 6, chan 0
+[   10.486554] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 13: rank13 (6:1:0): row 6, chan 1
+[   10.486558] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 14: rank14 (7:0:0): row 7, chan 0
+[   10.486562] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 15: rank15 (7:1:0): row 7, chan 1
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Richard Kuo <rkuo@codeaurora.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: James E.J. Bottomley <jejb@parisc-linux.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/20120420124557.035417523@linutronix.de
+DCT0 has 4 ranks + DCT1 also 4 ranks = 8 ranks total.
 
----
- kernel/Makefile  |    1 +
- kernel/cpu.c     |    8 ++++++++
- kernel/smpboot.c |   14 ++++++++++++++
- kernel/smpboot.h |    6 ++++++
- 4 files changed, 29 insertions(+), 0 deletions(-)
+Now your change is showing 16 ranks. Still b0rked.
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index cb41b95..6c07f30 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -43,6 +43,7 @@ obj-$(CONFIG_DEBUG_RT_MUTEXES) += rtmutex-debug.o
- obj-$(CONFIG_RT_MUTEX_TESTER) += rtmutex-tester.o
- obj-$(CONFIG_GENERIC_ISA_DMA) += dma.o
- obj-$(CONFIG_SMP) += smp.o
-+obj-$(CONFIG_SMP) += smpboot.o
- ifneq ($(CONFIG_SMP),y)
- obj-y += up.o
- endif
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index e711aef..e58b99a 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -17,6 +17,8 @@
- #include <linux/gfp.h>
- #include <linux/suspend.h>
- 
-+#include "smpboot.h"
-+
- #ifdef CONFIG_SMP
- /* Serializes the updates to cpu_online_mask, cpu_present_mask */
- static DEFINE_MUTEX(cpu_add_remove_lock);
-@@ -300,6 +302,11 @@ static int __cpuinit _cpu_up(unsigned int cpu, int tasks_frozen)
- 		return -EINVAL;
- 
- 	cpu_hotplug_begin();
-+
-+	ret = smpboot_prepare(cpu);
-+	if (ret)
-+		goto out;
-+
- 	ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
- 	if (ret) {
- 		nr_calls--;
-@@ -320,6 +327,7 @@ static int __cpuinit _cpu_up(unsigned int cpu, int tasks_frozen)
- out_notify:
- 	if (ret != 0)
- 		__cpu_notify(CPU_UP_CANCELED | mod, hcpu, nr_calls, NULL);
-+out:
- 	cpu_hotplug_done();
- 
- 	return ret;
-diff --git a/kernel/smpboot.c b/kernel/smpboot.c
-new file mode 100644
-index 0000000..6dae6a3
---- /dev/null
-+++ b/kernel/smpboot.c
-@@ -0,0 +1,14 @@
-+/*
-+ * Common SMP CPU bringup/teardown functions
-+ */
-+#include <linux/init.h>
-+
-+#include "smpboot.h"
-+
-+/**
-+ * smpboot_prepare - generic smpboot preparation
-+ */
-+int __cpuinit smpboot_prepare(unsigned int cpu)
-+{
-+	return 0;
-+}
-diff --git a/kernel/smpboot.h b/kernel/smpboot.h
-new file mode 100644
-index 0000000..d88e771
---- /dev/null
-+++ b/kernel/smpboot.h
-@@ -0,0 +1,6 @@
-+#ifndef SMPBOOT_H
-+#define SMPBOOT_H
-+
-+int smpboot_prepare(unsigned int cpu);
-+
-+#endif
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
