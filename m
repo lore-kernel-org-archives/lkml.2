@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab2D1M7f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 08:59:35 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41840 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab2D1M7d (ORCPT
+	id S1753474Ab2D1NFl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 09:05:41 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47382 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139Ab2D1NFj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 08:59:33 -0400
+	Sat, 28 Apr 2012 09:05:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <1334304949-18301-1-git-send-email-linus.walleij@stericsson.com>
-References: <1334304949-18301-1-git-send-email-linus.walleij@stericsson.com>
-Date: Sat, 28 Apr 2012 14:59:33 +0200
-Message-ID: <CACRpkdaM=OecD=M_J9X9shYKQkWO03mhb2BFxCWOeocr8_m=DQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] power/ab8500_charger: harden platform data check
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        Karl Komierowski <karl.komierowski@stericsson.com>,
-        Arun Murthy <arun.murthy@stericsson.com>
+In-Reply-To: <20120427160919.086dff9d.akpm@linux-foundation.org>
+References: <4F998FDE.5020104@redhat.com> <CAHGf_=qLX7gofwHoSKpHLp7nvD6qJtHbmYzAR0UQ42JbfnYerw@mail.gmail.com>
+ <20120427160919.086dff9d.akpm@linux-foundation.org>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Sat, 28 Apr 2012 09:05:16 -0400
+Message-ID: <CAHGf_=o5+Tk_jdDxSQv4qZpaktV=ukhj=jospW9GDY7qqeVYow@mail.gmail.com>
+Subject: Re: [PATCH -mm V3] do_migrate_pages() calls migrate_to_node() even if
+ task is already on a correct node
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: lwoodman@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Motohiro Kosaki <mkosaki@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 10:15 AM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-
-> From: Linus Walleij <linus.walleij@linaro.org>
+2012/4/27 Andrew Morton <akpm@linux-foundation.org>:
+> On Thu, 26 Apr 2012 21:14:16 -0400
+> KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
 >
-> If no platform data at all is supplied the driver crashes,
-> extend the checks to be more careful so we can compile in the
-> driver and boot also without platform data present.
+>> From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+>> Cc: Motohiro Kosaki <mkosaki@redhat.com>
+>> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 >
-> Cc: Arun Murthy <arun.murthy@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> umm, help.  What is your preferred email address ;)
 
-Anton have you picked these three patches for the -rc:s?
-
-It seems Lee Jones is facing the problems so would be nice to
-have this upstream.
-
-Yours,
-Linus Walleij
+Now I'm using gmail address, but I'm still using fujitsu.com address for
+patch signing. Because of, 1) identification from folks and 2) keep easier
+making statistics. so then, in short,  jp.fujitsu.com please. :)
