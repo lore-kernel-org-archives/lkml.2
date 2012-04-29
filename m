@@ -1,238 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab2D2TAY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 15:00:24 -0400
-Received: from [12.216.194.151] ([12.216.194.151]:53761 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753558Ab2D2S7H (ORCPT
+	id S1754096Ab2D2TJj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 15:09:39 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34008 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752Ab2D2TJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 14:59:07 -0400
-Message-ID: <201204291859.q3TIx67B007271@farm-0027.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 6 Apr 2012 13:52:07 -0400
-Subject: [PATCH v2 2/6] arch/tile: support MMIO-based readb/writeb etc.
-To: Arnd Bergmann <arnd@arndb.de>, <linux-kernel@vger.kernel.org>
-References: <201204062059.q36KxjEO011317@farm-0027.internal.tilera.com> <201204101042.39877.arnd@arndb.de> <4F8763E1.1020605@tilera.com> <201204131034.03544.arnd@arndb.de> <4F9C6A0A.5090109@tilera.com> <201204291856.q3TIusXq007168@farm-0027.internal.tilera.com>
-In-Reply-To: <201204291856.q3TIusXq007168@farm-0027.internal.tilera.com>
+	Sun, 29 Apr 2012 15:09:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CA+55aFzJjk8vvY7au-aUOJqJaRaFT3zqP0_H9JXS2Y93wkXwEg@mail.gmail.com>
+References: <20120427.151433.1007849975903946491.davem@davemloft.net>
+ <20120427.151651.2274764174217164454.davem@davemloft.net> <CA+55aFzPbAprx-iT0TYh24uS7+JnL92mbTg_js6Cd_O0q+Dvmw@mail.gmail.com>
+ <20120427.152404.2292425516870981391.davem@davemloft.net> <CA+55aFzGO+PHmjjVgxnYawbB-wFAqHtkh19vTv1AwQNpc9MsWg@mail.gmail.com>
+ <20120427234215.079a1565@pyramind.ukuu.org.uk> <CA+55aFxq4TunFa8mqJk5MHfvvFSg7Dr54acW7Cnqc5amOPdqrg@mail.gmail.com>
+ <CA+55aFzdEcfXVXXqCumVJo=9+fK+1HvH6L4qY03HfTTvCs1Fwg@mail.gmail.com>
+ <4F9CE18C.2060806@msgid.tls.msk.ru> <CA+55aFyS9VYT50JAXeGrLrtFVWSGr+DMTA1hhrcPYzmjrSV5+A@mail.gmail.com>
+ <4F9CF191.5020607@msgid.tls.msk.ru> <CA+55aFzJjk8vvY7au-aUOJqJaRaFT3zqP0_H9JXS2Y93wkXwEg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 29 Apr 2012 12:09:16 -0700
+X-Google-Sender-Auth: MuSmtzcXmfQmKZN5a2nPmSrwXn0
+Message-ID: <CA+55aFwTUDsefBd9c-wp8jrnp4tOh6jyJkjc_UZut-J6FHSF+w@mail.gmail.com>
+Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
+ design error.
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Meyer <thomas@m3y3r.de>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        autofs@vger.kernel.org, raven@themaw.net, stable@kernel.org
+Content-Type: multipart/mixed; boundary=f46d0438ede71d027c04bed614bc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for MMIO read/write on tilegx to support GXIO IORPC access.
-Similar to the asm-generic version, but we include memory fences on
-the writes to be conservative.
+--f46d0438ede71d027c04bed614bc
+Content-Type: text/plain; charset=ISO-8859-1
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/include/asm/io.h |  144 +++++++++++++++++++++++++++++++++++---------
- 1 files changed, 116 insertions(+), 28 deletions(-)
+On Sun, Apr 29, 2012 at 11:29 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> But I think I have another approach. We can make the *writer* be the
+> only one that cares about the packetized nature, and if it's a packet
+> write, it will set a PIPE_BUF_PACKET flag in the pipe buffer. The
+> reader can react to that. I think that actually has the potential to
+> make the code a bit prettier too..
 
-diff --git a/arch/tile/include/asm/io.h b/arch/tile/include/asm/io.h
-index d2152de..2a9b293 100644
---- a/arch/tile/include/asm/io.h
-+++ b/arch/tile/include/asm/io.h
-@@ -62,6 +62,92 @@ extern void iounmap(volatile void __iomem *addr);
- #define mm_ptov(addr)		((void *)phys_to_virt(addr))
- #define mm_vtop(addr)		((unsigned long)virt_to_phys(addr))
- 
-+#if CHIP_HAS_MMIO()
-+
-+/*
-+ * We use inline assembly to guarantee that the compiler does not
-+ * split an access into multiple byte-sized accesses as it might
-+ * sometimes do if a register data structure is marked "packed".
-+ * Obviously on tile we can't tolerate such an access being
-+ * actually unaligned, but we want to avoid the case where the
-+ * compiler conservatively would generate multiple accesses even
-+ * for an aligned read or write.
-+ */
-+
-+static inline u8 __raw_readb(const volatile void __iomem *addr)
-+{
-+	return *(const volatile u8 __force *)addr;
-+}
-+
-+static inline u16 __raw_readw(const volatile void __iomem *addr)
-+{
-+	u16 ret;
-+	asm volatile("ld2u %0, %1" : "=r" (ret) : "r" (addr));
-+	barrier();
-+	return le16_to_cpu(ret);
-+}
-+
-+static inline u32 __raw_readl(const volatile void __iomem *addr)
-+{
-+	u32 ret;
-+	/* Sign-extend to conform to u32 ABI sign-extension convention. */
-+	asm volatile("ld4s %0, %1" : "=r" (ret) : "r" (addr));
-+	barrier();
-+	return le32_to_cpu(ret);
-+}
-+
-+static inline u64 __raw_readq(const volatile void __iomem *addr)
-+{
-+	u64 ret;
-+	asm volatile("ld %0, %1" : "=r" (ret) : "r" (addr));
-+	barrier();
-+	return le64_to_cpu(ret);
-+}
-+
-+static inline void __raw_writeb(u8 val, volatile void __iomem *addr)
-+{
-+	*(volatile u8 __force *)addr = val;
-+}
-+
-+static inline void __raw_writew(u16 val, volatile void __iomem *addr)
-+{
-+	asm volatile("st2 %0, %1" :: "r" (addr), "r" (cpu_to_le16(val)));
-+}
-+
-+static inline void __raw_writel(u32 val, volatile void __iomem *addr)
-+{
-+	asm volatile("st4 %0, %1" :: "r" (addr), "r" (cpu_to_le32(val)));
-+}
-+
-+static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
-+{
-+	asm volatile("st %0, %1" :: "r" (addr), "r" (cpu_to_le64(val)));
-+}
-+
-+/*
-+ * The on-chip I/O hardware on tilegx is configured with VA=PA for the
-+ * kernel's PA range.  The low-level APIs and field names use "va" and
-+ * "void *" nomenclature, to be consistent with the general notion
-+ * that the addresses in question are virtualizable, but in the kernel
-+ * context we are actually manipulating PA values.  (In other contexts,
-+ * e.g. access from user space, we do in fact use real virtual addresses
-+ * in the va fields.)  To allow readers of the code to understand what's
-+ * happening, we direct their attention to this comment by using the
-+ * following two functions that just duplicate __va() and __pa().
-+ */
-+typedef unsigned long tile_io_addr_t;
-+static inline tile_io_addr_t va_to_tile_io_addr(void *va)
-+{
-+	BUILD_BUG_ON(sizeof(phys_addr_t) != sizeof(tile_io_addr_t));
-+	return __pa(va);
-+}
-+static inline void *tile_io_addr_to_va(tile_io_addr_t tile_io_addr)
-+{
-+	return __va(tile_io_addr);
-+}
-+
-+#else /* CHIP_HAS_MMIO() */
-+
- #ifdef CONFIG_PCI
- 
- extern u8 _tile_readb(unsigned long addr);
-@@ -73,10 +159,19 @@ extern void _tile_writew(u16 val, unsigned long addr);
- extern void _tile_writel(u32 val, unsigned long addr);
- extern void _tile_writeq(u64 val, unsigned long addr);
- 
--#else
-+#define __raw_readb(addr) _tile_readb((unsigned long)addr)
-+#define __raw_readw(addr) _tile_readw((unsigned long)addr)
-+#define __raw_readl(addr) _tile_readl((unsigned long)addr)
-+#define __raw_readq(addr) _tile_readq((unsigned long)addr)
-+#define __raw_writeb(val, addr) _tile_writeb(val, (unsigned long)addr)
-+#define __raw_writew(val, addr) _tile_writew(val, (unsigned long)addr)
-+#define __raw_writel(val, addr) _tile_writel(val, (unsigned long)addr)
-+#define __raw_writeq(val, addr) _tile_writeq(val, (unsigned long)addr)
-+
-+#else /* CONFIG_PCI */
- 
- /*
-- * The Tile architecture does not support IOMEM unless PCI is enabled.
-+ * The tilepro architecture does not support IOMEM unless PCI is enabled.
-  * Unfortunately we can't yet simply not declare these methods,
-  * since some generic code that compiles into the kernel, but
-  * we never run, uses them unconditionally.
-@@ -88,65 +183,58 @@ static inline int iomem_panic(void)
- 	return 0;
- }
- 
--static inline u8 _tile_readb(unsigned long addr)
-+static inline u8 readb(unsigned long addr)
- {
- 	return iomem_panic();
- }
- 
--static inline u16 _tile_readw(unsigned long addr)
-+static inline u16 _readw(unsigned long addr)
- {
- 	return iomem_panic();
- }
- 
--static inline u32 _tile_readl(unsigned long addr)
-+static inline u32 readl(unsigned long addr)
- {
- 	return iomem_panic();
- }
- 
--static inline u64 _tile_readq(unsigned long addr)
-+static inline u64 readq(unsigned long addr)
- {
- 	return iomem_panic();
- }
- 
--static inline void _tile_writeb(u8  val, unsigned long addr)
-+static inline void writeb(u8  val, unsigned long addr)
- {
- 	iomem_panic();
- }
- 
--static inline void _tile_writew(u16 val, unsigned long addr)
-+static inline void writew(u16 val, unsigned long addr)
- {
- 	iomem_panic();
- }
- 
--static inline void _tile_writel(u32 val, unsigned long addr)
-+static inline void writel(u32 val, unsigned long addr)
- {
- 	iomem_panic();
- }
- 
--static inline void _tile_writeq(u64 val, unsigned long addr)
-+static inline void writeq(u64 val, unsigned long addr)
- {
- 	iomem_panic();
- }
- 
--#endif
-+#endif /* CONFIG_PCI */
-+
-+#endif /* CHIP_HAS_MMIO() */
- 
--#define readb(addr) _tile_readb((unsigned long)addr)
--#define readw(addr) _tile_readw((unsigned long)addr)
--#define readl(addr) _tile_readl((unsigned long)addr)
--#define readq(addr) _tile_readq((unsigned long)addr)
--#define writeb(val, addr) _tile_writeb(val, (unsigned long)addr)
--#define writew(val, addr) _tile_writew(val, (unsigned long)addr)
--#define writel(val, addr) _tile_writel(val, (unsigned long)addr)
--#define writeq(val, addr) _tile_writeq(val, (unsigned long)addr)
--
--#define __raw_readb readb
--#define __raw_readw readw
--#define __raw_readl readl
--#define __raw_readq readq
--#define __raw_writeb writeb
--#define __raw_writew writew
--#define __raw_writel writel
--#define __raw_writeq writeq
-+#define readb __raw_readb
-+#define readw __raw_readw
-+#define readl __raw_readl
-+#define readq __raw_readq
-+#define writeb __raw_writeb
-+#define writew __raw_writew
-+#define writel __raw_writel
-+#define writeq __raw_writeq
- 
- #define readb_relaxed readb
- #define readw_relaxed readw
--- 
-1.6.5.2
+Patch attached.
 
+This keeps Alan's idea of using O_DIRECT, but only makes it matter for
+the writer - because now the "packet" thing is a per-pipe-buffer state
+(we already had per-pipe-buffer flags, so this is not anything new).
+So when you *write* using a O_DIRECT pipe, it will create packetized
+buffers, and the reader just sees that directly.
+
+So this should "just work", and doesn't need any extra flags in the
+pipe_inode_info. And the user space interface remains the same: you
+can create these packet pipes with "pipe2(fd, O_DIRECT)" if you want
+to, and my test-program gives exactly the same output.
+
+                      Linus
+
+--f46d0438ede71d027c04bed614bc
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h1mh3lz40
+
+IGZzL2F1dG9mczQvYXV0b2ZzX2kuaCAgICAgfCAgIDExICsrKysrKysrKysrCiBmcy9hdXRvZnM0
+L2Rldi1pb2N0bC5jICAgIHwgICAgMiArLQogZnMvYXV0b2ZzNC9pbm9kZS5jICAgICAgICB8ICAg
+IDIgKy0KIGZzL2F1dG9mczQvd2FpdHEuYyAgICAgICAgfCAgICAyICstCiBmcy9waXBlLmMgICAg
+ICAgICAgICAgICAgIHwgICAzMSArKysrKysrKysrKysrKysrKysrKysrKysrKysrKy0tCiBpbmNs
+dWRlL2xpbnV4L3BpcGVfZnNfaS5oIHwgICAgMSArCiA2IGZpbGVzIGNoYW5nZWQsIDQ0IGluc2Vy
+dGlvbnMoKyksIDUgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZnMvYXV0b2ZzNC9hdXRvZnNf
+aS5oIGIvZnMvYXV0b2ZzNC9hdXRvZnNfaS5oCmluZGV4IGQ4ZDhlN2JhNmExZS4uOTA4ZTE4NDU1
+NDEzIDEwMDY0NAotLS0gYS9mcy9hdXRvZnM0L2F1dG9mc19pLmgKKysrIGIvZnMvYXV0b2ZzNC9h
+dXRvZnNfaS5oCkBAIC0yNjksNiArMjY5LDE3IEBAIGludCBhdXRvZnM0X2ZpbGxfc3VwZXIoc3Ry
+dWN0IHN1cGVyX2Jsb2NrICosIHZvaWQgKiwgaW50KTsKIHN0cnVjdCBhdXRvZnNfaW5mbyAqYXV0
+b2ZzNF9uZXdfaW5vKHN0cnVjdCBhdXRvZnNfc2JfaW5mbyAqKTsKIHZvaWQgYXV0b2ZzNF9jbGVh
+bl9pbm8oc3RydWN0IGF1dG9mc19pbmZvICopOwogCitzdGF0aWMgaW5saW5lIGludCBhdXRvZnNf
+cHJlcGFyZV9waXBlKHN0cnVjdCBmaWxlICpwaXBlKQoreworCWlmICghcGlwZS0+Zl9vcCB8fCAh
+cGlwZS0+Zl9vcC0+d3JpdGUpCisJCXJldHVybiAtRUlOVkFMOworCWlmICghU19JU0ZJRk8ocGlw
+ZS0+Zl9kZW50cnktPmRfaW5vZGUtPmlfbW9kZSkpCisJCXJldHVybiAtRUlOVkFMOworCS8qIFdl
+IHdhbnQgYSBwYWNrZXQgcGlwZSAqLworCXBpcGUtPmZfZmxhZ3MgfD0gT19ESVJFQ1Q7CisJcmV0
+dXJuIDA7Cit9CisKIC8qIFF1ZXVlIG1hbmFnZW1lbnQgZnVuY3Rpb25zICovCiAKIGludCBhdXRv
+ZnM0X3dhaXQoc3RydWN0IGF1dG9mc19zYl9pbmZvICosc3RydWN0IGRlbnRyeSAqLCBlbnVtIGF1
+dG9mc19ub3RpZnkpOwpkaWZmIC0tZ2l0IGEvZnMvYXV0b2ZzNC9kZXYtaW9jdGwuYyBiL2ZzL2F1
+dG9mczQvZGV2LWlvY3RsLmMKaW5kZXggM2RmZDYxNWFmYjZiLi5hYTkxMDNmOGYwMWIgMTAwNjQ0
+Ci0tLSBhL2ZzL2F1dG9mczQvZGV2LWlvY3RsLmMKKysrIGIvZnMvYXV0b2ZzNC9kZXYtaW9jdGwu
+YwpAQCAtMzc2LDcgKzM3Niw3IEBAIHN0YXRpYyBpbnQgYXV0b2ZzX2Rldl9pb2N0bF9zZXRwaXBl
+ZmQoc3RydWN0IGZpbGUgKmZwLAogCQkJZXJyID0gLUVCQURGOwogCQkJZ290byBvdXQ7CiAJCX0K
+LQkJaWYgKCFwaXBlLT5mX29wIHx8ICFwaXBlLT5mX29wLT53cml0ZSkgeworCQlpZiAoYXV0b2Zz
+X3ByZXBhcmVfcGlwZShwaXBlKSA8IDApIHsKIAkJCWVyciA9IC1FUElQRTsKIAkJCWZwdXQocGlw
+ZSk7CiAJCQlnb3RvIG91dDsKZGlmZiAtLWdpdCBhL2ZzL2F1dG9mczQvaW5vZGUuYyBiL2ZzL2F1
+dG9mczQvaW5vZGUuYwppbmRleCAxNGM3YmMwMjM0OWUuLjZlNDg4ZWJlNzc4NCAxMDA2NDQKLS0t
+IGEvZnMvYXV0b2ZzNC9pbm9kZS5jCisrKyBiL2ZzL2F1dG9mczQvaW5vZGUuYwpAQCAtMjkwLDcg
+KzI5MCw3IEBAIGludCBhdXRvZnM0X2ZpbGxfc3VwZXIoc3RydWN0IHN1cGVyX2Jsb2NrICpzLCB2
+b2lkICpkYXRhLCBpbnQgc2lsZW50KQogCQlwcmludGsoImF1dG9mczogY291bGQgbm90IG9wZW4g
+cGlwZSBmaWxlIGRlc2NyaXB0b3JcbiIpOwogCQlnb3RvIGZhaWxfZHB1dDsKIAl9Ci0JaWYgKCFw
+aXBlLT5mX29wIHx8ICFwaXBlLT5mX29wLT53cml0ZSkKKwlpZiAoYXV0b2ZzX3ByZXBhcmVfcGlw
+ZShwaXBlKSA8IDApCiAJCWdvdG8gZmFpbF9mcHV0OwogCXNiaS0+cGlwZSA9IHBpcGU7CiAJc2Jp
+LT5waXBlZmQgPSBwaXBlZmQ7CmRpZmYgLS1naXQgYS9mcy9hdXRvZnM0L3dhaXRxLmMgYi9mcy9h
+dXRvZnM0L3dhaXRxLmMKaW5kZXggZGE4ODc2ZDM4YTdiLi5mNjI0Y2QwZmY4NGQgMTAwNjQ0Ci0t
+LSBhL2ZzL2F1dG9mczQvd2FpdHEuYworKysgYi9mcy9hdXRvZnM0L3dhaXRxLmMKQEAgLTkxLDcg
+KzkxLDcgQEAgc3RhdGljIGludCBhdXRvZnM0X3dyaXRlKHN0cnVjdCBhdXRvZnNfc2JfaW5mbyAq
+c2JpLAogCiAJcmV0dXJuIChieXRlcyA+IDApOwogfQotCQorCiBzdGF0aWMgdm9pZCBhdXRvZnM0
+X25vdGlmeV9kYWVtb24oc3RydWN0IGF1dG9mc19zYl9pbmZvICpzYmksCiAJCQkJIHN0cnVjdCBh
+dXRvZnNfd2FpdF9xdWV1ZSAqd3EsCiAJCQkJIGludCB0eXBlKQpkaWZmIC0tZ2l0IGEvZnMvcGlw
+ZS5jIGIvZnMvcGlwZS5jCmluZGV4IDI1ZmVhYTNmYWFjMC4uZmVjNWU0YWQwNzFhIDEwMDY0NAot
+LS0gYS9mcy9waXBlLmMKKysrIGIvZnMvcGlwZS5jCkBAIC0zNDYsNiArMzQ2LDE2IEBAIHN0YXRp
+YyBjb25zdCBzdHJ1Y3QgcGlwZV9idWZfb3BlcmF0aW9ucyBhbm9uX3BpcGVfYnVmX29wcyA9IHsK
+IAkuZ2V0ID0gZ2VuZXJpY19waXBlX2J1Zl9nZXQsCiB9OwogCitzdGF0aWMgY29uc3Qgc3RydWN0
+IHBpcGVfYnVmX29wZXJhdGlvbnMgcGFja2V0X3BpcGVfYnVmX29wcyA9IHsKKwkuY2FuX21lcmdl
+ID0gMCwKKwkubWFwID0gZ2VuZXJpY19waXBlX2J1Zl9tYXAsCisJLnVubWFwID0gZ2VuZXJpY19w
+aXBlX2J1Zl91bm1hcCwKKwkuY29uZmlybSA9IGdlbmVyaWNfcGlwZV9idWZfY29uZmlybSwKKwku
+cmVsZWFzZSA9IGFub25fcGlwZV9idWZfcmVsZWFzZSwKKwkuc3RlYWwgPSBnZW5lcmljX3BpcGVf
+YnVmX3N0ZWFsLAorCS5nZXQgPSBnZW5lcmljX3BpcGVfYnVmX2dldCwKK307CisKIHN0YXRpYyBz
+c2l6ZV90CiBwaXBlX3JlYWQoc3RydWN0IGtpb2NiICppb2NiLCBjb25zdCBzdHJ1Y3QgaW92ZWMg
+Kl9pb3YsCiAJICAgdW5zaWduZWQgbG9uZyBucl9zZWdzLCBsb2ZmX3QgcG9zKQpAQCAtNDA3LDYg
+KzQxNywxMyBAQCByZWRvOgogCQkJcmV0ICs9IGNoYXJzOwogCQkJYnVmLT5vZmZzZXQgKz0gY2hh
+cnM7CiAJCQlidWYtPmxlbiAtPSBjaGFyczsKKworCQkJLyogV2FzIGl0IGEgcGFja2V0IGJ1ZmZl
+cj8gQ2xlYW4gdXAgYW5kIGV4aXQgKi8KKwkJCWlmIChidWYtPmZsYWdzICYgUElQRV9CVUZfRkxB
+R19QQUNLRVQpIHsKKwkJCQl0b3RhbF9sZW4gPSBjaGFyczsKKwkJCQlidWYtPmxlbiA9IDA7CisJ
+CQl9CisKIAkJCWlmICghYnVmLT5sZW4pIHsKIAkJCQlidWYtPm9wcyA9IE5VTEw7CiAJCQkJb3Bz
+LT5yZWxlYXNlKHBpcGUsIGJ1Zik7CkBAIC00NTksNiArNDc2LDExIEBAIHJlZG86CiAJcmV0dXJu
+IHJldDsKIH0KIAorc3RhdGljIGlubGluZSBpbnQgaXNfcGFja2V0aXplZChzdHJ1Y3QgZmlsZSAq
+ZmlsZSkKK3sKKwlyZXR1cm4gKGZpbGUtPmZfZmxhZ3MgJiBPX0RJUkVDVCkgIT0gMDsKK30KKwog
+c3RhdGljIHNzaXplX3QKIHBpcGVfd3JpdGUoc3RydWN0IGtpb2NiICppb2NiLCBjb25zdCBzdHJ1
+Y3QgaW92ZWMgKl9pb3YsCiAJICAgIHVuc2lnbmVkIGxvbmcgbnJfc2VncywgbG9mZl90IHBwb3Mp
+CkBAIC01OTMsNiArNjE1LDExIEBAIHJlZG8yOgogCQkJYnVmLT5vcHMgPSAmYW5vbl9waXBlX2J1
+Zl9vcHM7CiAJCQlidWYtPm9mZnNldCA9IDA7CiAJCQlidWYtPmxlbiA9IGNoYXJzOworCQkJYnVm
+LT5mbGFncyA9IDA7CisJCQlpZiAoaXNfcGFja2V0aXplZChmaWxwKSkgeworCQkJCWJ1Zi0+b3Bz
+ID0gJnBhY2tldF9waXBlX2J1Zl9vcHM7CisJCQkJYnVmLT5mbGFncyA9IFBJUEVfQlVGX0ZMQUdf
+UEFDS0VUOworCQkJfQogCQkJcGlwZS0+bnJidWZzID0gKytidWZzOwogCQkJcGlwZS0+dG1wX3Bh
+Z2UgPSBOVUxMOwogCkBAIC0xMDEzLDcgKzEwNDAsNyBAQCBzdHJ1Y3QgZmlsZSAqY3JlYXRlX3dy
+aXRlX3BpcGUoaW50IGZsYWdzKQogCQlnb3RvIGVycl9kZW50cnk7CiAJZi0+Zl9tYXBwaW5nID0g
+aW5vZGUtPmlfbWFwcGluZzsKIAotCWYtPmZfZmxhZ3MgPSBPX1dST05MWSB8IChmbGFncyAmIE9f
+Tk9OQkxPQ0spOworCWYtPmZfZmxhZ3MgPSBPX1dST05MWSB8IChmbGFncyAmIChPX05PTkJMT0NL
+IHwgT19ESVJFQ1QpKTsKIAlmLT5mX3ZlcnNpb24gPSAwOwogCiAJcmV0dXJuIGY7CkBAIC0xMDU3
+LDcgKzEwODQsNyBAQCBpbnQgZG9fcGlwZV9mbGFncyhpbnQgKmZkLCBpbnQgZmxhZ3MpCiAJaW50
+IGVycm9yOwogCWludCBmZHcsIGZkcjsKIAotCWlmIChmbGFncyAmIH4oT19DTE9FWEVDIHwgT19O
+T05CTE9DSykpCisJaWYgKGZsYWdzICYgfihPX0NMT0VYRUMgfCBPX05PTkJMT0NLIHwgT19ESVJF
+Q1QpKQogCQlyZXR1cm4gLUVJTlZBTDsKIAogCWZ3ID0gY3JlYXRlX3dyaXRlX3BpcGUoZmxhZ3Mp
+OwpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9waXBlX2ZzX2kuaCBiL2luY2x1ZGUvbGludXgv
+cGlwZV9mc19pLmgKaW5kZXggNmQ2MjZmZjBjZmQwLi5lMWFjMWNlMTZmYjAgMTAwNjQ0Ci0tLSBh
+L2luY2x1ZGUvbGludXgvcGlwZV9mc19pLmgKKysrIGIvaW5jbHVkZS9saW51eC9waXBlX2ZzX2ku
+aApAQCAtNiw2ICs2LDcgQEAKICNkZWZpbmUgUElQRV9CVUZfRkxBR19MUlUJMHgwMQkvKiBwYWdl
+IGlzIG9uIHRoZSBMUlUgKi8KICNkZWZpbmUgUElQRV9CVUZfRkxBR19BVE9NSUMJMHgwMgkvKiB3
+YXMgYXRvbWljYWxseSBtYXBwZWQgKi8KICNkZWZpbmUgUElQRV9CVUZfRkxBR19HSUZUCTB4MDQJ
+LyogcGFnZSBpcyBhIGdpZnQgKi8KKyNkZWZpbmUgUElQRV9CVUZfRkxBR19QQUNLRVQJMHgwOAkv
+KiByZWFkKCkgYXMgYSBwYWNrZXQgKi8KIAogLyoqCiAgKglzdHJ1Y3QgcGlwZV9idWZmZXIgLSBh
+IGxpbnV4IGtlcm5lbCBwaXBlIGJ1ZmZlcgo=
+--f46d0438ede71d027c04bed614bc--
