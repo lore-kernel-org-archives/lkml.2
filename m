@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab2D2Bwa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 21:52:30 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:54567 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298Ab2D2Bvq (ORCPT
+	id S1755682Ab2D2CAE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 22:00:04 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:38881 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753016Ab2D2CAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 21:51:46 -0400
-Date: Sat, 28 Apr 2012 21:49:12 -0400 (EDT)
-Message-Id: <20120428.214912.1328835829329133918.davem@davemloft.net>
-To: nicolas.ferre@atmel.com
-Cc: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, avictor.za@gmail.com,
-        plagnioj@jcrosoft.com
-Subject: Re: [PATCH 1/2] AT91: Remove fixed mapping for AT91RM9200 ethernet
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <3ad9b1273c4f30d42dcc3bdf6d03470111246f14.1335435759.git.nicolas.ferre@atmel.com>
-References: <3ad9b1273c4f30d42dcc3bdf6d03470111246f14.1335435759.git.nicolas.ferre@atmel.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 28 Apr 2012 18:49:25 -0700 (PDT)
+	Sat, 28 Apr 2012 22:00:03 -0400
+Date: Sat, 28 Apr 2012 22:00:01 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Lockdep false positive in sysfs
+In-Reply-To: <878vhg3mrh.fsf@xmission.com>
+Message-ID: <Pine.LNX.4.44L0.1204282153520.6752-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Date: Thu, 26 Apr 2012 12:30:42 +0200
+On Fri, 27 Apr 2012, Eric W. Biederman wrote:
 
-> From: Andrew Victor <avictor.za@gmail.com>
+> However it would be nice if we could sort out the locking so that it
+> isn't so tricky that neither lockdep nor sparse can figure it out.
 > 
-> The AT91RM9200 Ethernet controller still has a fixed IO mapping.
-> So:
-> * Remove the fixed IO mapping and AT91_VA_BASE_EMAC definition.
-> * Pass the physical base-address via platform-resources to the driver.
-> * Convert at91_ether.c driver to perform an ioremap().
-> * Ethernet PHY detection needs to be performed during the driver
-> initialization process, it can no longer be done first.
-> 
-> Signed-off-by: Andrew Victor <linux@maxim.org.za>
-> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> I have the sneaking suspicion that idioms that tangle up our automatic
+> tools are also idioms that are likely to result in maintenance problems
+> at some point.
 
-Applied to net-next.
+That may well be true, but it won't be easy to avoid them.  At the
+least, it would require a careful analysis of the device tree usage.
+
+> Another possibility to to look at the situation and realize that pci has
+> a maxium depth of 256 (bus numbers). And that usb also has a maxium
+> depth of I believe 256 ( If I read it right usb hubs are transparent to
+> usb enumeration so the maximum depth is the maximum number of usb ids
+> and I think the usb id is a 8 bit number).
+
+USB has a maximum depth of 7 or so.  It's limited by the number of hubs 
+allowed on the path between the host and a device.
+
+>  I don't think anything else
+> even nests so deeply.  So it may be reasonable to declare an array of
+> 256 or perhaps 1024 lockdep keys and limit the device tree when lockdep
+> is enabled to 1024 layers deep.
+> 
+> At which point we are at a point where lockdep can actually analyze the
+> behavior.
+
+Unfortunately, we are not.  As I mentioned earlier, the device "tree" 
+is really a forest.  Locks are sometimes acquired in orders that are 
+not strictly downward.
+
+> I don't mind the attitude we are clever careful programmers we can
+> handle the complexity and we can get away without the tool help us, but
+> I would much rather see the attitude that we are clever careful
+> programmers and we can figure out how to make the tool help us instead
+> of just ignoring it.
+
+I'm certainly open to suggestions as to how to improve the situation, 
+but the simple-minded "keep track of the depth in the tree" approach 
+doesn't work.
+
+Alan Stern
+
