@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab2D2AzO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 20:55:14 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55025 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab2D2AzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 20:55:12 -0400
-Date: Sun, 29 Apr 2012 01:55:06 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch/tile: avoid calling do_signal() after fork from a
- kernel thread
-Message-ID: <20120429005505.GX6871@ZenIV.linux.org.uk>
-References: <20120427172444.GA30267@redhat.com>
- <20120427184528.GL6871@ZenIV.linux.org.uk>
- <20120427202002.8ED632C0BF@topped-with-meat.com>
- <20120427211244.GO6871@ZenIV.linux.org.uk>
- <20120427212729.652542C0AF@topped-with-meat.com>
- <20120427231526.GP6871@ZenIV.linux.org.uk>
- <20120427235023.GR6871@ZenIV.linux.org.uk>
- <201204281858.q3SIwC7H014319@farm-0027.internal.tilera.com>
- <20120428205517.GW6871@ZenIV.linux.org.uk>
- <4F9C6525.3050405@tilera.com>
+	id S1755526Ab2D2BKE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 21:10:04 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:43731 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751748Ab2D2BKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Apr 2012 21:10:01 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH 0/3] PM / QoS / Domains: Fixes and optimization, take 2
+Date: Sun, 29 Apr 2012 03:08:52 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        markgross@thegnar.org, Jean Pihet <j-pihet@ti.com>
+References: <201204272346.44145.rjw@sisk.pl>
+In-Reply-To: <201204272346.44145.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9C6525.3050405@tilera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204290308.52416.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 28, 2012 at 05:46:13PM -0400, Chris Metcalf wrote:
+Hi all,
 
-> It's OK, since we will jump to .Lresume_userspace from interrupt_return in
-> the latter case:
+On Friday, April 27, 2012, Rafael J. Wysocki wrote:
 > 
-> STD_ENTRY(interrupt_return)
->         /* If we're resuming to kernel space, don't check thread flags. */
->         {
->          [...]
->          PTREGS_PTR(r29, PTREGS_OFFSET_EX1)
->         }
->         ld      r29, r29
->         andi    r29, r29, SPR_EX_CONTEXT_1_1__PL_MASK  /* mask off ICS */
->         {
->          beqzt  r29, .Lresume_userspace
->          [...]
->         }
+> This series is on top of the PM domains governor functions fixup patches
+> posted recently:
 > 
-> The struct ptregs "ex1" field will reliably tell us whether we came from
-> kernel or userspace context.  Certainly for fork() this will indicate
-> userspace, since it's the return register info for the syscall.   And for
-> kernel_thread() we explicitly set up ex1 to indicate kernel privilege as well.
+> http://marc.info/?l=linux-pm&m=133538218801804&w=4
+> http://marc.info/?l=linux-pm&m=133538220601826&w=4
+> http://marc.info/?l=linux-pm&m=133538218801805&w=4
 > 
-> > For another,
-> > there's kernel_execve() and if it fails (binary doesn't exist/has wrong
-> > format/etc.) you'll get to .Lresume_userspace with EX1_PL(regs->ex1)
-> > unchanged, i.e. the kernel one...
-> 
-> This is a good point.  The current syscall return path goes directly to
-> .Lresume_userspace, which will screw up kernel syscalls.  I think the right
-> answer is still to jump to interrupt_return from those cases, though.  In
-> particular, this gets rid of the existing cruftiness where we have to
-> document that a local label (.Lresume_userspace) can be the target of jumps
-> from outside the containing function.
+> Patch [1/2] is a fix that I think should be applied anyway.  Patch [2/2],
+> though, is an RFC.  It is a bit subtle, although perhaps that's not immediately
+> visible at first sight.  Patch [2/2] hasn't been tested yet, but I have
+> verified that it builds.
 
-Point, but...  Are you sure you want to add extra work to a very hot path?
-Leaving the "we don't have any pending work to do" unburdened by that check
-would reduce the overhead a lot.
+As it has happened to me for a couple of times recently, unfortunately,
+I found a couple of issues with patch [2/2].
+
+Most importantly, I forgot about the adaptive adjustments of device and domain
+latency numbers, which obviously had to be taken into consideration in that
+patch.  Also, it turned out during testig that there was a locking issue
+in pm_genpd_remove_device() that wasn't very easy to address.  In the end,
+I had to use an additional patch to help that, which is the current [2/3].
+
+So, [1/3] is the previous [1/2] (with the Mark's ACK).  [2/3] is a new patch,
+which is a pm_genpd_remove_device() cleanup that may be regarded as a fix too
+and [3/3] is the one that makes the default PM domain governors cache their
+results if possible (that's even more subtle than before, but hopefully
+I didn't break anything this time).
+
+Thanks,
+Rafael
+
