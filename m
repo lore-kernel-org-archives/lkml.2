@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750969Ab2D2EMM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 00:12:12 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35838 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab2D2EML (ORCPT
+	id S1751510Ab2D2ENu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 00:13:50 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:36585 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750744Ab2D2ENt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 00:12:11 -0400
-Date: Sun, 29 Apr 2012 05:12:05 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120429041205.GY6871@ZenIV.linux.org.uk>
-References: <20120424072617.GB6871@ZenIV.linux.org.uk>
- <20120426183742.GA324@redhat.com>
- <20120426231942.GJ6871@ZenIV.linux.org.uk>
- <20120427172444.GA30267@redhat.com>
- <20120427184528.GL6871@ZenIV.linux.org.uk>
- <20120427202002.8ED632C0BF@topped-with-meat.com>
- <20120427211244.GO6871@ZenIV.linux.org.uk>
- <20120427212729.652542C0AF@topped-with-meat.com>
- <20120427231526.GP6871@ZenIV.linux.org.uk>
- <20120427233235.GQ6871@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120427233235.GQ6871@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 29 Apr 2012 00:13:49 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19j5+V1VjhjS44FCSEQwHa0iTkel6jN4NPpN/UMR+
+	fzMwY0+/Dp5vgy
+Message-ID: <1335672824.7366.56.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH] namespaces: fix leak on fork() failure
+From: Mike Galbraith <efault@gmx.de>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Louis Rilling <louis.rilling@kerlabs.com>
+Date: Sun, 29 Apr 2012 06:13:44 +0200
+In-Reply-To: <20120428142605.GA20248@redhat.com>
+References: <1335604790.5995.22.camel@marge.simpson.net>
+	 <20120428142605.GA20248@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 28, 2012 at 12:32:35AM +0100, Al Viro wrote:
-> On Sat, Apr 28, 2012 at 12:15:26AM +0100, Al Viro wrote:
+On Sat, 2012-04-28 at 16:26 +0200, Oleg Nesterov wrote: 
+> On 04/28, Mike Galbraith wrote:
+> >
+> > Greetings,
 > 
-> > I think all such architectures need that check lifted to do_notify_resume()
-> > (and the rest needs it killed, of course).  Including x86, by the look
-> > of it - we _probably_ can't get there with TIF_NOTIFY_RESUME and
-> > !user_mode(regs), but I'm not entirely sure of that.  arm is in about the
-> > same situation; alpha, ppc{32,64}, sparc{32,64} and m68k really can't get
-> > there like that (they all check it in the asm glue).  mips probably might,
-> > unless I'm misreading their ret_from_fork()...  Fun.
+> Hi,
 > 
-> 	Speaking of user_mode() oddities - may I politely inquire what had
-> been smoked to inspire this (in arch/s390/kernel/signal.c):
->         /* This is the legacy signal stack switching. */
->         else if (!user_mode(regs) &&
->                  !(ka->sa.sa_flags & SA_RESTORER) &&
->                  ka->sa.sa_restorer) {
->                 sp = (unsigned long) ka->sa.sa_restorer;
->         }
-> especially when all paths leading to that come through do_signal() that does
->         if (!user_mode(regs))
->                 return;
-> on the same regs.  It had been like that since 2.3.99pre8 when s390 went
-> into the tree...  It looks vaguely similar to i386
->                         /* This is the legacy signal stack switching. */
->                         if ((regs->ss & 0xffff) != __USER_DS &&
->                                 !(ka->sa.sa_flags & SA_RESTORER) &&
->                                         ka->sa.sa_restorer)
->                                 sp = (unsigned long) ka->sa.sa_restorer;
-> but there the code is at least not unreachable...
+> Add CC's. I never understood the proc/namespace interaction in details,
+> and it seems to me I forgot everything.
+> 
+> > SIGCHLD delivery during fork() may cause failure,
+> 
+> Or any other reason to fail after copy_namespaces()
 
-While we are at it, can we *ever* reach do_signal() (nevermind deep in its
-guts) with !user_mode(regs)?
-AFAICS, for 31bit possible paths are:
-do_signal()
-	<- sysc_sigpending
-		<- sysc_work
-			<- sysc_tif, having checked for user_mode(%r11)
-	<- io_sigpending
-		<- io_work_tif
-			<- io_work_user
-				<- io_work, having checked for user_mode(%r11)
+Yeah.
 
-and identical for 64bit.  *All* paths into do_signal() go through
-        tm      __PT_PSW+1(%r11),0x01   # returning to user ?
-and proceed towards do_signal() only if the bit is set.  Which is precisely
-what user_mode(%r11) is...
+> > resulting in the aborted
+> > child being cloned with CLONE_NEWPID leaking namespaces due to proc being
+> > mounted during pid namespace creation, but not unmounted on fork() failure.
+> 
+> Heh. Please look at http://marc.info/?l=linux-kernel&m=127687751003902
+> and the whole thread, there are a lot more problems here.
 
-What the hell is going on in that code?
+Ew, I would have been better off not reading that ;-)
+
+> But this particular one looks simple iirc.
+> 
+> > @@ -216,6 +216,14 @@ void switch_task_namespaces(struct task_struct *p, struct nsproxy *new)
+> >  	rcu_assign_pointer(p->nsproxy, new);
+> >
+> >  	if (ns && atomic_dec_and_test(&ns->count)) {
+> > +		/* Handle fork() failure, unmount proc before proceeding */
+> > +		if (unlikely(!new && !((p->flags & PF_EXITING)))) {
+> > +			struct pid_namespace *pid_ns = ns->pid_ns;
+> > +
+> > +			if (pid_ns && pid_ns != &init_pid_ns)
+> > +				pid_ns_release_proc(pid_ns);
+> > +		}
+> > +
+> >  		/*
+> >  		 * wait for others to get what they want from this nsproxy.
+> >  		 *
+> 
+> At first glance this looks correct. But the PF_EXITING check doesn't
+> look very nice imho. It is needed to detect the case when the caller
+> is copy_process()->bad_fork_cleanup_namespaces and p is not current.
+
+Yeah, that does look a lot like a wart.
+
+This being the first use of pid_ns_release_proc(), I was more concerned
+that perhaps I should be doing something else entirely.
+
+> Perhaps it would be more clean to add the explicit
+> 
+> 	 bad_fork_cleanup_namespaces:
+> 	+	if (unlikely(clone_flags & CLONE_NEWPID))
+> 	+		pid_ns_release_proc(...);
+> 		exit_task_namespaces(p);
+> 		
+> 		
+> code into this error path in copy_process?
+
+Yeah, that's prettier.  Thanks.
+
+-Mike
+
