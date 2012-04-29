@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab2D2CXY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 22:23:24 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:2757 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab2D2CXX (ORCPT
+	id S1755867Ab2D2Cb1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 22:31:27 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:48792 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755023Ab2D2Cb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 22:23:23 -0400
-Date: Sun, 29 Apr 2012 12:21:06 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: NeilBrown <neilb@suse.de>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: 3.1+ kernels unbootable
-Message-ID: <20120429122106.044a1c88@ubuntu>
-In-Reply-To: <20120425144452.32a803fe@notabene.brown>
-References: <20120425124925.267056b5@ubuntu>
-	<20120425132122.11280b66@notabene.brown>
-	<20120425142001.2cb7a79e@ubuntu>
-	<20120425144452.32a803fe@notabene.brown>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-1.965, required 4, AWL 0.54, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+	Sat, 28 Apr 2012 22:31:26 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <Pine.LNX.4.44L0.1204282153520.6752-100000@netrider.rowland.org>
+Date: Sat, 28 Apr 2012 19:35:32 -0700
+In-Reply-To: <Pine.LNX.4.44L0.1204282153520.6752-100000@netrider.rowland.org>
+	(Alan Stern's message of "Sat, 28 Apr 2012 22:00:01 -0400 (EDT)")
+Message-ID: <m1obqb8du3.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18d5Uuy1+eohAS04Tr2mMlyz8W4OtzrNEk=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0469]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Alan Stern <stern@rowland.harvard.edu>
+X-Spam-Relay-Country: 
+Subject: Re: Lockdep false positive in sysfs
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Apr 2012 14:44:52 +1000
-NeilBrown <neilb@suse.de> wrote:
+Alan Stern <stern@rowland.harvard.edu> writes:
 
-> 
-> You have a couple of options here.
-> 
-> One is to use git-bisect to narrow down where the breakage is.  This
-> means building about a dozen or a score of kernels and testing each
-> one and then trying again.  If you are happy building your own
-> kernels and have an afternoon to spare this is probably a good idea.
-> There should be plenty of instruction on the web about how to do this
-> but if you cannot find any feel free to ask.
-> 
-> The other is to try turning features off and debugging on.
-> Many distros have some sort of "fail-safe" boot option which disables
-> things like ACPI and known-problematic drivers... though with it
-> failing so early most drives won't have even tried to run.  I'd guess
-> an ACPI problem, but that is largely because I know almost nothing
-> about ACPI so it is easy to blame it.  So try adding "acpi=off" to
-> the boot args.
-> 
-> Linux has a thing called 'early_printk' which allows messages to be
-> displayed even before the normal drivers are loaded.  I don't know
-> much about enabling that on an x86 system (I use it a lot on ARM
-> though).  You need it enabled when the kernel is compiled, and you
-> need a boot arg to enable it too.  Maybe if you manage to enable
-> that you might get some message printed.
-> 
-> Or maybe there is some other much more useful thing you can try and
-> someone else will chime in soon and tell me I don't know what I'm
-> talking about and explain in detail the right way so solve this
-> problem - that would be awesome.
-> 
-> NeilBrown
+> On Fri, 27 Apr 2012, Eric W. Biederman wrote:
+>
+>> However it would be nice if we could sort out the locking so that it
+>> isn't so tricky that neither lockdep nor sparse can figure it out.
+>> 
+>> I have the sneaking suspicion that idioms that tangle up our automatic
+>> tools are also idioms that are likely to result in maintenance problems
+>> at some point.
+>
+> That may well be true, but it won't be easy to avoid them.  At the
+> least, it would require a careful analysis of the device tree usage.
+>
+>> Another possibility to to look at the situation and realize that pci has
+>> a maxium depth of 256 (bus numbers). And that usb also has a maxium
+>> depth of I believe 256 ( If I read it right usb hubs are transparent to
+>> usb enumeration so the maximum depth is the maximum number of usb ids
+>> and I think the usb id is a 8 bit number).
+>
+> USB has a maximum depth of 7 or so.  It's limited by the number of hubs 
+> allowed on the path between the host and a device.
+>
+>>  I don't think anything else
+>> even nests so deeply.  So it may be reasonable to declare an array of
+>> 256 or perhaps 1024 lockdep keys and limit the device tree when lockdep
+>> is enabled to 1024 layers deep.
+>> 
+>> At which point we are at a point where lockdep can actually analyze the
+>> behavior.
+>
+> Unfortunately, we are not.  As I mentioned earlier, the device "tree" 
+> is really a forest.  Locks are sometimes acquired in orders that are 
+> not strictly downward.
 
-I have tried all ACPI disabled options and also all safe-mode options,
-among many other modes. Nothing has worked.
+Then it sounds like for the device tree in general this is a limitation.
+For sysfs with your problem usb attribute this looks like a real
+solution.
 
-Now that Ubuntu 12.04 has gone gold, I might try the latest kernel in
-that and see if anything has changed.
+>> I don't mind the attitude we are clever careful programmers we can
+>> handle the complexity and we can get away without the tool help us, but
+>> I would much rather see the attitude that we are clever careful
+>> programmers and we can figure out how to make the tool help us instead
+>> of just ignoring it.
+>
+> I'm certainly open to suggestions as to how to improve the situation, 
+> but the simple-minded "keep track of the depth in the tree" approach 
+> doesn't work.
 
-Thanks Neil.
+For the general device tree perhaps.  For the problem of your removal
+of your sysfs attribute the solution should be sufficient.  I don't
+particularly like it because it will take a lot of testing to find any
+bugs that lockdep might reveal but at least you will have a fighting
+chance.
 
+I would like to look at the general problem of the device tree locking.
+Unfortunately I am tilting at enough other windmills right now that I
+can't do that problem justice.
 
-Regards
-
-Chris Jones
+Eric
