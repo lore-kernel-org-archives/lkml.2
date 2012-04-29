@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab2D2PrK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 11:47:10 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63902 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab2D2PrJ (ORCPT
+	id S1753938Ab2D2Pxw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 11:53:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62337 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab2D2Pxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 11:47:09 -0400
-Message-ID: <4F9D6277.9080402@lwfinger.net>
-Date: Sun, 29 Apr 2012 10:47:03 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
+	Sun, 29 Apr 2012 11:53:51 -0400
+Date: Sun, 29 Apr 2012 08:53:46 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jens Gustedt <jens.gustedt@loria.fr>
+Cc: Jens.Gustedt@inria.fr, linux-kernel@vger.kernel.org
+Subject: Re: BUG in 3.3.4
+Message-ID: <20120429155346.GA5399@kroah.com>
+References: <iTWyS-35l-7@gated-at.bofh.it>
+ <4F9D2A2B.9090501@loria.fr>
 MIME-Version: 1.0
-To: Gabriel Paubert <paubert@iram.es>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Andreas Schwab <schwab@linux-m68k.org>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tty/serial/pmac_zilog: Fix "nobody cared" IRQ message
-References: <4F9C830D.8040906@lwfinger.net> <20120429090520.GA26740@visitor2.iram.es>
-In-Reply-To: <20120429090520.GA26740@visitor2.iram.es>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F9D2A2B.9090501@loria.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2012 04:05 AM, Gabriel Paubert wrote:
-> On Sat, Apr 28, 2012 at 06:53:49PM -0500, Larry Finger wrote:
->
-> Hmm, I'm not a native english speaker, but I have the feeling that
-> it would be more grammatically correct to use "opened" instead of "open".
->
-> Of course if the message never triggers, it's less of concern :-)
+On Sun, Apr 29, 2012 at 01:46:51PM +0200, Jens Gustedt wrote:
+> Hi,
+> it looks that there is a regression in 3.3.4 compared to 3.3.3.
+> 
+> After migrating I have the BUG as copied below.
+> 
+> If somebody thinks that this would make sense, I could try to bisect this.
 
-English is my native language, but that might not help. :)
+Yes, please run 'git bisect' to try to find the offending patch.
 
-I would say "the device has not been opened", but "it is not open". More 
-generally, to me "opened" denotes past tense, and "open" is used in the present.
+thanks,
 
-Even with the other bug, the message never triggered as I did not have debugging 
-enabled. Given the relative rarity of PPC-based boxes running Linux, the message 
-may never print.
-
-Thanks for the comment.
-
-Larry
-
+greg k-h
