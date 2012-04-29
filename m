@@ -1,54 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab2D2HUP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 03:20:15 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:34406 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177Ab2D2HUN convert rfc822-to-8bit (ORCPT
+	id S1752673Ab2D2HmR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 03:42:17 -0400
+Received: from hosting.visp.net.lb ([194.146.153.11]:48988 "EHLO
+	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab2D2Hln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 03:20:13 -0400
+	Sun, 29 Apr 2012 03:41:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F9CE18C.2060806@msgid.tls.msk.ru>
-References: <20120427.151433.1007849975903946491.davem@davemloft.net>
- <20120427.151651.2274764174217164454.davem@davemloft.net> <CA+55aFzPbAprx-iT0TYh24uS7+JnL92mbTg_js6Cd_O0q+Dvmw@mail.gmail.com>
- <20120427.152404.2292425516870981391.davem@davemloft.net> <CA+55aFzGO+PHmjjVgxnYawbB-wFAqHtkh19vTv1AwQNpc9MsWg@mail.gmail.com>
- <20120427234215.079a1565@pyramind.ukuu.org.uk> <CA+55aFxq4TunFa8mqJk5MHfvvFSg7Dr54acW7Cnqc5amOPdqrg@mail.gmail.com>
- <CA+55aFzdEcfXVXXqCumVJo=9+fK+1HvH6L4qY03HfTTvCs1Fwg@mail.gmail.com> <4F9CE18C.2060806@msgid.tls.msk.ru>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 29 Apr 2012 00:19:50 -0700
-X-Google-Sender-Auth: AlwEEiMW-QfnQSL27vU2PWiNsXc
-Message-ID: <CA+55aFyS9VYT50JAXeGrLrtFVWSGr+DMTA1hhrcPYzmjrSV5+A@mail.gmail.com>
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
- design error.
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Meyer <thomas@m3y3r.de>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        autofs@vger.kernel.org, raven@themaw.net, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Sun, 29 Apr 2012 10:41:35 +0300
+From: Denys Fedoryshchenko <denys@visp.net.lb>
+To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <jmorris@namei.org>,
+        <yoshfuji@linux-ipv6.org>, <kaber@trash.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: inconsistent lock/deadlock crash, vanilla 3.3.4, 32bit, tcp
+Message-ID: <13fc59c8e3be34ddb3c7bb5c17b1bdf8@visp.net.lb>
+User-Agent: VISP Webmail/0.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 28, 2012 at 11:37 PM, Michael Tokarev <mjt@tls.msk.ru> wrote:
->
-> And no, it does not quite work.  Strace shows that systemd correctly
-> reads first 300 bytes, but next read returns 4 bytes, so it reads
-> these and waits for next 300-4 = 296 bytes of data.
->
-> /proc/1/fdinfo/16  -- the autofs pipe fd# -- shows flags=02004000
-> which is O_CLOEXEC|O_NONBLOCK, but this is the other end of the
-> pipe..  shouldn't the READ side of the pipe have O_DIRECT flag now?
+I apologize for late night post, and a lot of trash left in report.
+I will cleanup it up now, and send with CC to maintainers.
 
-Gaah, it should, but it won't.
+Server job are proxy, with very high rate of new connections.
+Deadlock at peaktime can be easily reproduced in 10-15 minutes.
 
-I bet my original patch worked fine, because the pipe has only one
-inode and pipe structure. But it has *two* 'struct file's associated
-with it, and autofs only ever sees the writing side, and never gets to
-mark the reading side O_DIRECT. So yeah, the reading side won't do the
-proper packetized read.
+Deadlock occured on almost all 3.3-stable versions (tried 3.3.3 - 
+3.3.4). It is not easy to try older kernel,
+but if required i can try.
+Usually also, because SYN rate very high, i can see:
+[   51.612987] TCP: Possible SYN flooding on port 8080. Sending 
+cookies.  Check SNMP counters.
 
-Duh. So we need to put the flag back in the pipe_inode_info. Too bad -
-because the O_DIRECT approach was so nice in other ways.
+  [  762.903868]
+  [  762.903880] =================================
+  [  762.903890] [ INFO: inconsistent lock state ]
+  [  762.903903] 3.3.4-build-0061 #8 Not tainted
+  [  762.904133] ---------------------------------
+  [  762.904344] inconsistent {IN-SOFTIRQ-W} -> {SOFTIRQ-ON-W} usage.
+  [  762.904542] squid/1603 [HC0[0]:SC0[0]:HE1:SE1] takes:
+  [  762.904542]  (key#3){+.?...}, at: [<c0232cc4>] 
+__percpu_counter_sum+0xd/0x58
+  [  762.904542] {IN-SOFTIRQ-W} state was registered at:
+  [  762.904542]   [<c0158b84>] __lock_acquire+0x284/0xc26
+  [  762.904542]   [<c01598e8>] lock_acquire+0x71/0x85
+  [  762.904542]   [<c0349765>] _raw_spin_lock+0x33/0x40
+  [  762.904542]   [<c0232c93>] __percpu_counter_add+0x58/0x7c
+  [  762.904542]   [<c02cfde1>] sk_clone_lock+0x1e5/0x200
+  [  762.904542]   [<c0303ee4>] inet_csk_clone_lock+0xe/0x78
+  [  762.904542]   [<c0315778>] tcp_create_openreq_child+0x1b/0x404
+  [  762.904542]   [<c031339c>] tcp_v4_syn_recv_sock+0x32/0x1c1
+  [  762.904542]   [<c031615a>] tcp_check_req+0x1fd/0x2d7
+  [  762.904542]   [<c0313f77>] tcp_v4_do_rcv+0xab/0x194
+  [  762.904542]   [<c03153bb>] tcp_v4_rcv+0x3b3/0x5cc
+  [  762.904542]   [<c02fc0c4>] ip_local_deliver_finish+0x13a/0x1e9
+  [  762.904542]   [<c02fc539>] NF_HOOK.clone.11+0x46/0x4d
+  [  762.904542]   [<c02fc652>] ip_local_deliver+0x41/0x45
+  [  762.904542]   [<c02fc4d1>] ip_rcv_finish+0x31a/0x33c
+  [  762.904542]   [<c02fc539>] NF_HOOK.clone.11+0x46/0x4d
+  [  762.904542]   [<c02fc857>] ip_rcv+0x201/0x23e
+  [  762.904542]   [<c02daa3a>] __netif_receive_skb+0x319/0x368
+  [  762.904542]   [<c02dac07>] netif_receive_skb+0x4e/0x7d
+  [  762.904542]   [<c02dacf6>] napi_skb_finish+0x1e/0x34
+  [  762.904542]   [<c02db122>] napi_gro_receive+0x20/0x24
+  [  762.904542]   [<f85d1743>] e1000_receive_skb+0x3f/0x45 [e1000e]
+  [  762.904542]   [<f85d3464>] e1000_clean_rx_irq+0x1f9/0x284 [e1000e]
+  [  762.904542]   [<f85d3926>] e1000_clean+0x62/0x1f4 [e1000e]
+  [  762.904542]   [<c02db228>] net_rx_action+0x90/0x160
+  [  762.904542]   [<c012a445>] __do_softirq+0x7b/0x118
+  [  762.904542] irq event stamp: 156915469
+  [  762.904542] hardirqs last  enabled at (156915469): [<c019b4f4>] 
+__slab_alloc.clone.58.clone.63+0xc4/0x2de
+  [  762.904542] hardirqs last disabled at (156915468): [<c019b452>] 
+__slab_alloc.clone.58.clone.63+0x22/0x2de
+  [  762.904542] softirqs last  enabled at (156915466): [<c02ce677>] 
+lock_sock_nested+0x64/0x6c
+  [  762.904542] softirqs last disabled at (156915464): [<c0349914>] 
+_raw_spin_lock_bh+0xe/0x45
+  [  762.904542]
+  [  762.904542] other info that might help us debug this:
+  [  762.904542]  Possible unsafe locking scenario:
+  [  762.904542]
+  [  762.904542]        CPU0
+  [  762.904542]        ----
+  [  762.904542]   lock(key#3);
+  [  762.904542]   <Interrupt>
+  [  762.904542]     lock(key#3);
+  [  762.904542]
+  [  762.904542]  *** DEADLOCK ***
+  [  762.904542]
+  [  762.904542] 1 lock held by squid/1603:
+  [  762.904542]  #0:  (sk_lock-AF_INET){+.+.+.}, at: [<c03055c0>] 
+lock_sock+0xa/0xc
+  [  762.904542]
+  [  762.904542] stack backtrace:
+  [  762.904542] Pid: 1603, comm: squid Not tainted 3.3.4-build-0061 #8
+  [  762.904542] Call Trace:
+  [  762.904542]  [<c0347b73>] ? printk+0x18/0x1d
+  [  762.904542]  [<c015873a>] valid_state+0x1f6/0x201
+  [  762.904542]  [<c0158816>] mark_lock+0xd1/0x1bb
+  [  762.904542]  [<c015876b>] ? mark_lock+0x26/0x1bb
+  [  762.904542]  [<c015805d>] ? check_usage_forwards+0x77/0x77
+  [  762.904542]  [<c0158bf8>] __lock_acquire+0x2f8/0xc26
+  [  762.904542]  [<c0159b8e>] ? mark_held_locks+0x5d/0x7b
+  [  762.904542]  [<c0159cf6>] ? trace_hardirqs_on+0xb/0xd
+  [  762.904542]  [<c0158dd4>] ? __lock_acquire+0x4d4/0xc26
+  [  762.904542]  [<c01598e8>] lock_acquire+0x71/0x85
+  [  762.904542]  [<c0232cc4>] ? __percpu_counter_sum+0xd/0x58
+  [  762.904542]  [<c0349765>] _raw_spin_lock+0x33/0x40
+  [  762.904542]  [<c0232cc4>] ? __percpu_counter_sum+0xd/0x58
+  [  762.904542]  [<c0232cc4>] __percpu_counter_sum+0xd/0x58
+  [  762.904542]  [<c02cebc4>] __sk_mem_schedule+0xdd/0x1c7
+  [  762.904542]  [<c02d178d>] ? __alloc_skb+0x76/0x100
+  [  762.904542]  [<c0305e8e>] sk_wmem_schedule+0x21/0x2d
+  [  762.904542]  [<c0306370>] sk_stream_alloc_skb+0x42/0xaa
+  [  762.904542]  [<c0306567>] tcp_sendmsg+0x18f/0x68b
+  [  762.904542]  [<c031f3dc>] ? ip_fast_csum+0x30/0x30
+  [  762.904542]  [<c0320193>] inet_sendmsg+0x53/0x5a
+  [  762.904542]  [<c02cb633>] sock_aio_write+0xd2/0xda
+  [  762.904542]  [<c015876b>] ? mark_lock+0x26/0x1bb
+  [  762.904542]  [<c01a1017>] do_sync_write+0x9f/0xd9
+  [  762.904542]  [<c01a2111>] ? file_free_rcu+0x2f/0x2f
+  [  762.904542]  [<c01a17a1>] vfs_write+0x8f/0xab
+  [  762.904542]  [<c01a284d>] ? fget_light+0x75/0x7c
+  [  762.904542]  [<c01a1900>] sys_write+0x3d/0x5e
+  [  762.904542]  [<c0349ec9>] syscall_call+0x7/0xb
+  [  762.904542]  [<c0340000>] ? rp_sidt+0x41/0x83
 
-                     Linus
+
+---
+Denys Fedoryshchenko
+
+---
+Network engineer
+Denys Fedoryshchenko
+
+Dora Highway - Center Cebaco - 2nd Floor
+Beirut, Lebanon
+Tel:	+961 1 247373
+E-Mail: denys@visp.net.lb
