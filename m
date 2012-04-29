@@ -1,146 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab2D2U0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 16:26:16 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:42226 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753532Ab2D2U0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 16:26:15 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+mGMRiyDSmPD0d57GnNwCZpipwtLMVVU4xsIDlVR
-	ZJZaZEE203Tb6b
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Thomas Winischhofer <thomas@winischhofer.net>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH v2] video/sis: Use SiS_DRAMType from init.h and annotate it __devinitconst
-Date: Sun, 29 Apr 2012 22:26:07 +0200
-Message-Id: <1335731167-3311-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1334524209-20518-1-git-send-email-peterhuewe@gmx.de>
-References: <1334524209-20518-1-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1754280Ab2D2Ujg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 16:39:36 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:44489 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751674Ab2D2Uje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 16:39:34 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>
+Subject: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
+Date: Sun, 29 Apr 2012 22:44:16 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
+        LKML <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204292244.16467.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the duplicated SiS_DRAMType from sis_main.c since it
-is already defined exactly the same in init.h.
-Since we don't want to include init.h (for size reasons) we move the
-struct to sis_main.h.
-Since SiS_DRAMType is const and only used by sisfb_post_300_rwtest which is
-marked __devinit we can also annotate SiS_DRAMType with __devinitconst.
+From: Oleksij Rempel <bug-track@fisher-privat.net>
 
-And since hardcoded values are bad we use ARRAY_SIZE for determining the
-size of SiS_DRAMType ;)
+This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
+more closely and fixes suspend bug found on ASUS Zenbook UX31E.
 
-v2:
-Move struct to sis_main.h to decrease module size
+Some OEM use _SxD fileds do blacklist brocken Dx states.
+If _SxD/_SxW return values are check before suspend as appropriate,
+some nasty suspend/resume issues may be avoided.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
+Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/video/sis/init.h     |   20 --------------------
- drivers/video/sis/sis_main.c |   21 +--------------------
- drivers/video/sis/sis_main.h |   20 ++++++++++++++++++++
- 3 files changed, 21 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/video/sis/init.h b/drivers/video/sis/init.h
-index a22e892..85d6738 100644
---- a/drivers/video/sis/init.h
-+++ b/drivers/video/sis/init.h
-@@ -105,26 +105,6 @@ static const unsigned short ModeIndex_1920x1440[]    = {0x68, 0x69, 0x00, 0x6b};
- static const unsigned short ModeIndex_300_2048x1536[]= {0x6c, 0x6d, 0x00, 0x00};
- static const unsigned short ModeIndex_310_2048x1536[]= {0x6c, 0x6d, 0x00, 0x6e};
- 
--static const unsigned short SiS_DRAMType[17][5]={
--	{0x0C,0x0A,0x02,0x40,0x39},
--	{0x0D,0x0A,0x01,0x40,0x48},
--	{0x0C,0x09,0x02,0x20,0x35},
--	{0x0D,0x09,0x01,0x20,0x44},
--	{0x0C,0x08,0x02,0x10,0x31},
--	{0x0D,0x08,0x01,0x10,0x40},
--	{0x0C,0x0A,0x01,0x20,0x34},
--	{0x0C,0x09,0x01,0x08,0x32},
--	{0x0B,0x08,0x02,0x08,0x21},
--	{0x0C,0x08,0x01,0x08,0x30},
--	{0x0A,0x08,0x02,0x04,0x11},
--	{0x0B,0x0A,0x01,0x10,0x28},
--	{0x09,0x08,0x02,0x02,0x01},
--	{0x0B,0x09,0x01,0x08,0x24},
--	{0x0B,0x08,0x01,0x04,0x20},
--	{0x0A,0x08,0x01,0x02,0x10},
--	{0x09,0x08,0x01,0x01,0x00}
--};
--
- static const unsigned char SiS_MDA_DAC[] =
- {
- 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
-index 078ca21..8abd42b 100644
---- a/drivers/video/sis/sis_main.c
-+++ b/drivers/video/sis/sis_main.c
-@@ -4231,27 +4231,8 @@ sisfb_post_300_rwtest(struct sis_video_info *ivideo, int iteration, int buswidth
- 	unsigned short sr14;
- 	unsigned int k, RankCapacity, PageCapacity, BankNumHigh, BankNumMid;
- 	unsigned int PhysicalAdrOtherPage, PhysicalAdrHigh, PhysicalAdrHalfPage;
--	static const unsigned short SiS_DRAMType[17][5] = {
--		{0x0C,0x0A,0x02,0x40,0x39},
--		{0x0D,0x0A,0x01,0x40,0x48},
--		{0x0C,0x09,0x02,0x20,0x35},
--		{0x0D,0x09,0x01,0x20,0x44},
--		{0x0C,0x08,0x02,0x10,0x31},
--		{0x0D,0x08,0x01,0x10,0x40},
--		{0x0C,0x0A,0x01,0x20,0x34},
--		{0x0C,0x09,0x01,0x08,0x32},
--		{0x0B,0x08,0x02,0x08,0x21},
--		{0x0C,0x08,0x01,0x08,0x30},
--		{0x0A,0x08,0x02,0x04,0x11},
--		{0x0B,0x0A,0x01,0x10,0x28},
--		{0x09,0x08,0x02,0x02,0x01},
--		{0x0B,0x09,0x01,0x08,0x24},
--		{0x0B,0x08,0x01,0x04,0x20},
--		{0x0A,0x08,0x01,0x02,0x10},
--		{0x09,0x08,0x01,0x01,0x00}
--	};
- 
--	 for(k = 0; k <= 16; k++) {
-+	 for (k = 0; k < ARRAY_SIZE(SiS_DRAMType); k++) {
- 
- 		RankCapacity = buswidth * SiS_DRAMType[k][3];
- 
-diff --git a/drivers/video/sis/sis_main.h b/drivers/video/sis/sis_main.h
-index 9540e97..242c1c3 100644
---- a/drivers/video/sis/sis_main.h
-+++ b/drivers/video/sis/sis_main.h
-@@ -776,6 +776,26 @@ extern void		SiS_Chrontel701xBLOff(struct SiS_Private *SiS_Pr);
- #endif
- extern void		SiS_SiS30xBLOn(struct SiS_Private *SiS_Pr);
- extern void		SiS_SiS30xBLOff(struct SiS_Private *SiS_Pr);
+Bjorn, Len,
+
+This is -stable material and therefore v3.4 as well, IMO.  Please let me
+know if one of you can take it or whether you want me to handle it all the
+way to Linus.
+
+Thanks,
+Rafael
+
+---
+ drivers/acpi/sleep.c |   22 +++++++++++++++++++++-
+ drivers/pci/pci.c    |   12 +++++++++++-
+ 2 files changed, 32 insertions(+), 2 deletions(-)
+
+Index: linux/drivers/acpi/sleep.c
+===================================================================
+--- linux.orig/drivers/acpi/sleep.c
++++ linux/drivers/acpi/sleep.c
+@@ -714,10 +714,30 @@ int acpi_pm_device_sleep_state(struct de
+ 	 *
+ 	 * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
+ 	 * provided -- that's our fault recovery, we ignore retval.
++	 *
++	 * According to ACPI 4.0a (April 5, 2010), page 294,
++	 * Table 7-7 S3 Action / Result Table, we need to evaluate _SxW in
++	 * addition to _SxD if the device is configured for wakeup:
++	 * Desired Action    | _S3D | _PRW | _S3W | Resultant D-state
++	 * Enter S3          |  N/A |  D/C |  N/A | OSPM decides
++	 * Enter S3, No Wake |   2  |  D/C |  D/C | Enter D2 or D3
++	 * Enter S3, Wake    |   2  |   3  |  N/A | Enter D2
++	 * Enter S3, Wake    |   2  |   3  |   3  | Enter D2 or D3
++	 * Enter S3, Wake    |  N/A |   3  |   2  | Enter D0, D1 or D2
+ 	 */
+-	if (acpi_target_sleep_state > ACPI_STATE_S0)
++	if (acpi_target_sleep_state > ACPI_STATE_S0) {
++		acpi_status status;
 +
-+static const unsigned short __devinitconst SiS_DRAMType[17][5] = {
-+	{0x0C,0x0A,0x02,0x40,0x39},
-+	{0x0D,0x0A,0x01,0x40,0x48},
-+	{0x0C,0x09,0x02,0x20,0x35},
-+	{0x0D,0x09,0x01,0x20,0x44},
-+	{0x0C,0x08,0x02,0x10,0x31},
-+	{0x0D,0x08,0x01,0x10,0x40},
-+	{0x0C,0x0A,0x01,0x20,0x34},
-+	{0x0C,0x09,0x01,0x08,0x32},
-+	{0x0B,0x08,0x02,0x08,0x21},
-+	{0x0C,0x08,0x01,0x08,0x30},
-+	{0x0A,0x08,0x02,0x04,0x11},
-+	{0x0B,0x0A,0x01,0x10,0x28},
-+	{0x09,0x08,0x02,0x02,0x01},
-+	{0x0B,0x09,0x01,0x08,0x24},
-+	{0x0B,0x08,0x01,0x04,0x20},
-+	{0x0A,0x08,0x01,0x02,0x10},
-+	{0x09,0x08,0x01,0x01,0x00}
-+};
- #endif
+ 		acpi_evaluate_integer(handle, acpi_method, NULL, &d_min);
  
++		if (device_may_wakeup(dev)) {
++			acpi_method[3] = 'W';
++			status = acpi_evaluate_integer(handle, acpi_method,
++						       NULL, &d_max);
++			if (ACPI_FAILURE(status))
++				d_max = d_min;
++		}
++	}
+ 	/*
+ 	 * If _PRW says we can wake up the system from the target sleep state,
+ 	 * the D-state returned by _SxD is sufficient for that (we assume a
+Index: linux/drivers/pci/pci.c
+===================================================================
+--- linux.orig/drivers/pci/pci.c
++++ linux/drivers/pci/pci.c
+@@ -1691,10 +1691,20 @@ pci_power_t pci_target_state(struct pci_
+ {
+ 	pci_power_t target_state = PCI_D3hot;
  
--- 
-1.7.3.4
-
+-	if (platform_pci_power_manageable(dev)) {
++	/*
++	 * According to ACPI 4.0a,7.2 Device Power Management Objects, device
++	 * with wake capability should have _PRW or _PSW object and can have
++	 * _SxD or _SxW object.
++	 * It looks like some OEMs use this fields to avoid buggy Dx states
++	 * of devices, so we need to check for _PRW or _PSW and see if _SxD or
++	 * _SxW indicate to overwrite Dx.
++	 */
++	if (platform_pci_power_manageable(dev)
++	    || platform_pci_can_wakeup(dev)) {
+ 		/*
+ 		 * Call the platform to choose the target state of the device
+ 		 * and enable wake-up from this state if supported.
++		 * (Check _SxD and _SxW)
+ 		 */
+ 		pci_power_t state = platform_pci_choose_state(dev);
+ 
