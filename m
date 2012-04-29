@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab2D2QTI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 12:19:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8167 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752918Ab2D2QTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 12:19:07 -0400
-Date: Sun, 29 Apr 2012 18:18:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120429161818.GA15792@redhat.com>
-References: <20120424072617.GB6871@ZenIV.linux.org.uk> <20120426183742.GA324@redhat.com> <20120426231942.GJ6871@ZenIV.linux.org.uk> <20120427172444.GA30267@redhat.com> <20120427184528.GL6871@ZenIV.linux.org.uk> <20120427202002.8ED632C0BF@topped-with-meat.com> <20120427211244.GO6871@ZenIV.linux.org.uk> <20120427212729.652542C0AF@topped-with-meat.com> <20120427231526.GP6871@ZenIV.linux.org.uk> <20120428024208.GS6871@ZenIV.linux.org.uk>
+	id S1754140Ab2D2QUU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 12:20:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61601 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab2D2QUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 12:20:17 -0400
+Date: Sun, 29 Apr 2012 09:20:13 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rob Landley <rob@landley.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] docs: update HOWTO for 2.6.x -> 3.x versioning
+Message-ID: <20120429162013.GA6440@kroah.com>
+References: <20120419061645.GA25127@www.outflux.net>
+ <4F9C2B94.7080404@xenotime.net>
+ <4F9C9680.7090205@landley.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120428024208.GS6871@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4F9C9680.7090205@landley.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First of all, let me repeat I am useless when it comes to the low-level
-or asm code. I can be easily wrong, and I am going to ask the questions.
+On Sat, Apr 28, 2012 at 08:16:48PM -0500, Rob Landley wrote:
+> On 04/28/2012 12:40 PM, Randy Dunlap wrote:
+> > On 04/18/2012 11:16 PM, Kees Cook wrote:
+> > 
+> >> The HOWTO document needed updating for the new kernel versioning. The
+> >> git URI for -next was updated as well.
+> >>
+> >> Signed-off-by: Kees Cook <keescook@chromium.org>
+> > 
+> > 
+> > Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> > 
+> > Greg or Rob can merge...
+> > 
+> > Thanks.
+> 
+> Acked-by: Rob Landley <rob@landley.net>
+> 
+> And if Greg's already noticed it, I leave this one to him.  If not, I'll
+> submit it next merge window.
 
-On 04/28, Al Viro wrote:
->
-> It's actually worse than I thought - we can't just lift that check
-> to do_notify_resume() and be done with that.  Suppose do_signal() does
-> get called on e.g. i386 or arm with !user_mode(regs).  What'll happen next?
->
-> We have TIF_SIGPENDING set in thread flags - otherwise we wouldn't get
-> there at all.  OK, do_signal() doesn't do anything and returns.  So does
-> do_notify_resume().  And we are back into the loop in asm glue, rereading
-> the thread flags (still unchanged), checking if anything is to be done
-> (yes, it is - TIF_SIGPENDING is still set), calling do_notify_resume(),
-> ad infinitum.
->
-> Lifting the check into do_notify_resume() will not help at all, obviously.
->
-> AFAICS we can get hit by that.
+It's already in my tree, and in linux-next, and will go to Linus for
+3.5, and is marked to be backported to stable trees as well, so it
+should all be taken care of.
 
-Please look at 29a2e2836ff9ea65a603c89df217f4198973a74f
-x86-32: Fix endless loop when processing signals for kernel tasks
+thanks,
 
-> At least i386, arm and mips have
-> ret_from_fork going straight to "return from syscall" path, no checks for
-> return to user mode done.  And process created by kernel_thread() will
-> go there.
-
-Looks like, the patch above fixes that.
-
-But, we call do_notify_resume() first, it would be nice to avoid this
-and remove the user_mode() check in do_signal() or lift into
-do_notify_resume().
-
-> It's a narrow race, but AFAICS it's not impossible to hit -
-> guess the PID of kernel thread to be launched, send it a signal and hit
-> the moment before it gets to executing the payload.
-
-Yes. But note that the kernel threads run with all signals ignored.
-
-This is still possible, but a kernel thread should do allow_signal()
-and then call kernel_thread() (not kthread_create).
-
-
-
-Question. So far I know that on x86 do_notify_resume() && !user_mode()
-is only possible on 32bit system, and the possible callers are
-ret_from_fork or kernel_execve (if it fails).
-
-Plus, perhaps CONFIG_VM86 makes a difference?
-
-Could you please clarify?
-
-Oleg.
-
+greg k-h
