@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab2D2Ujg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 16:39:36 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:44489 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751674Ab2D2Uje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 16:39:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>
-Subject: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
-Date: Sun, 29 Apr 2012 22:44:16 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
-        LKML <linux-kernel@vger.kernel.org>
+	id S1754475Ab2D2UyU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 16:54:20 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56466 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753532Ab2D2UyT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 16:54:19 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204292244.16467.rjw@sisk.pl>
+In-Reply-To: <4F9D9C4C.7000904@msgid.tls.msk.ru>
+References: <20120427.151433.1007849975903946491.davem@davemloft.net>
+ <20120427.151651.2274764174217164454.davem@davemloft.net> <CA+55aFzPbAprx-iT0TYh24uS7+JnL92mbTg_js6Cd_O0q+Dvmw@mail.gmail.com>
+ <20120427.152404.2292425516870981391.davem@davemloft.net> <CA+55aFzGO+PHmjjVgxnYawbB-wFAqHtkh19vTv1AwQNpc9MsWg@mail.gmail.com>
+ <20120427234215.079a1565@pyramind.ukuu.org.uk> <CA+55aFxq4TunFa8mqJk5MHfvvFSg7Dr54acW7Cnqc5amOPdqrg@mail.gmail.com>
+ <CA+55aFzdEcfXVXXqCumVJo=9+fK+1HvH6L4qY03HfTTvCs1Fwg@mail.gmail.com>
+ <4F9CE18C.2060806@msgid.tls.msk.ru> <CA+55aFyS9VYT50JAXeGrLrtFVWSGr+DMTA1hhrcPYzmjrSV5+A@mail.gmail.com>
+ <4F9CF191.5020607@msgid.tls.msk.ru> <CA+55aFzJjk8vvY7au-aUOJqJaRaFT3zqP0_H9JXS2Y93wkXwEg@mail.gmail.com>
+ <CA+55aFwTUDsefBd9c-wp8jrnp4tOh6jyJkjc_UZut-J6FHSF+w@mail.gmail.com> <4F9D9C4C.7000904@msgid.tls.msk.ru>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 29 Apr 2012 13:53:57 -0700
+X-Google-Sender-Auth: PLoUy6rvSHN3BkNB3oRBSJ1uOWc
+Message-ID: <CA+55aFwvs35n-K5YrDxPAhPNcr2PxqOC7kEWeReQkPVP93y4uw@mail.gmail.com>
+Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
+ design error.
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Meyer <thomas@m3y3r.de>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        autofs@vger.kernel.org, raven@themaw.net, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleksij Rempel <bug-track@fisher-privat.net>
+On Sun, Apr 29, 2012 at 12:53 PM, Michael Tokarev <mjt@tls.msk.ru> wrote:
+>
+> Ok.  I verified this on 3.3 kernel (with the original fix reverted),
+> and now both autofs5 and systemd works.
+>
+> I also verified it on 3.0 kernel (3.0.30), the patch also applies
+> there just fine (with 1..2 lines offsets) and works too -- at least
+> on 32/64 bits.
+>
+> So, the result appears to be an excellent solution to a bad problem...
+>
+> Thank you all for the efforts and support!
 
-This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
-more closely and fixes suspend bug found on ASUS Zenbook UX31E.
+And thank *you* for reporting and testing and staying with this.
 
-Some OEM use _SxD fileds do blacklist brocken Dx states.
-If _SxD/_SxW return values are check before suspend as appropriate,
-some nasty suspend/resume issues may be avoided.
+I've committed the patch (as two separate patches: the first does the
+pipe infrastructure, the second adds the code in autofs to enable the
+use of it), and tried to comment on it extensively in the changelogs.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
-Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
+I also marked the patches for stable, but I would suggest that the
+stable team wait a while before applying it, just to verify that we
+don't have some crazy third autofs pipe user that does the packet as
+many smaller reads. I don't think that's a sane thing to do, and I
+don't think it happens, but by now I'm getting a big paranoid about
+this whole thing.
 
-Bjorn, Len,
+Because I really hope this means that we can close this issue for good.
 
-This is -stable material and therefore v3.4 as well, IMO.  Please let me
-know if one of you can take it or whether you want me to handle it all the
-way to Linus.
-
-Thanks,
-Rafael
-
----
- drivers/acpi/sleep.c |   22 +++++++++++++++++++++-
- drivers/pci/pci.c    |   12 +++++++++++-
- 2 files changed, 32 insertions(+), 2 deletions(-)
-
-Index: linux/drivers/acpi/sleep.c
-===================================================================
---- linux.orig/drivers/acpi/sleep.c
-+++ linux/drivers/acpi/sleep.c
-@@ -714,10 +714,30 @@ int acpi_pm_device_sleep_state(struct de
- 	 *
- 	 * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
- 	 * provided -- that's our fault recovery, we ignore retval.
-+	 *
-+	 * According to ACPI 4.0a (April 5, 2010), page 294,
-+	 * Table 7-7 S3 Action / Result Table, we need to evaluate _SxW in
-+	 * addition to _SxD if the device is configured for wakeup:
-+	 * Desired Action    | _S3D | _PRW | _S3W | Resultant D-state
-+	 * Enter S3          |  N/A |  D/C |  N/A | OSPM decides
-+	 * Enter S3, No Wake |   2  |  D/C |  D/C | Enter D2 or D3
-+	 * Enter S3, Wake    |   2  |   3  |  N/A | Enter D2
-+	 * Enter S3, Wake    |   2  |   3  |   3  | Enter D2 or D3
-+	 * Enter S3, Wake    |  N/A |   3  |   2  | Enter D0, D1 or D2
- 	 */
--	if (acpi_target_sleep_state > ACPI_STATE_S0)
-+	if (acpi_target_sleep_state > ACPI_STATE_S0) {
-+		acpi_status status;
-+
- 		acpi_evaluate_integer(handle, acpi_method, NULL, &d_min);
- 
-+		if (device_may_wakeup(dev)) {
-+			acpi_method[3] = 'W';
-+			status = acpi_evaluate_integer(handle, acpi_method,
-+						       NULL, &d_max);
-+			if (ACPI_FAILURE(status))
-+				d_max = d_min;
-+		}
-+	}
- 	/*
- 	 * If _PRW says we can wake up the system from the target sleep state,
- 	 * the D-state returned by _SxD is sufficient for that (we assume a
-Index: linux/drivers/pci/pci.c
-===================================================================
---- linux.orig/drivers/pci/pci.c
-+++ linux/drivers/pci/pci.c
-@@ -1691,10 +1691,20 @@ pci_power_t pci_target_state(struct pci_
- {
- 	pci_power_t target_state = PCI_D3hot;
- 
--	if (platform_pci_power_manageable(dev)) {
-+	/*
-+	 * According to ACPI 4.0a,7.2 Device Power Management Objects, device
-+	 * with wake capability should have _PRW or _PSW object and can have
-+	 * _SxD or _SxW object.
-+	 * It looks like some OEMs use this fields to avoid buggy Dx states
-+	 * of devices, so we need to check for _PRW or _PSW and see if _SxD or
-+	 * _SxW indicate to overwrite Dx.
-+	 */
-+	if (platform_pci_power_manageable(dev)
-+	    || platform_pci_can_wakeup(dev)) {
- 		/*
- 		 * Call the platform to choose the target state of the device
- 		 * and enable wake-up from this state if supported.
-+		 * (Check _SxD and _SxW)
- 		 */
- 		pci_power_t state = platform_pci_choose_state(dev);
- 
+                      Linus
