@@ -1,240 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab2D2Xfe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 19:35:34 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:48070 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab2D2XeP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 19:34:15 -0400
-From: Kevin Winchester <kjwinchester@gmail.com>
-To: hpa@zytor.com, Ingo Molnar <mingo@elte.hu>
-Cc: Kevin Winchester <kjwinchester@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
+	id S1754715Ab2D2Xhm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 19:37:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55644 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754532Ab2D2Xhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 19:37:41 -0400
+Message-ID: <4F9DD0A2.7010104@zytor.com>
+Date: Sun, 29 Apr 2012 16:37:06 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Kevin Winchester <kjwinchester@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
         Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 2/5] x86: Move per cpu cpu_llc_id to a field in struct cpuinfo_x86
-Date: Sun, 29 Apr 2012 20:33:27 -0300
-Message-Id: <1335742410-11569-3-git-send-email-kjwinchester@gmail.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1335742410-11569-1-git-send-email-kjwinchester@gmail.com>
-References: <1a0aaa16-df06-40bf-88c7-28180455e6b9@email.android.com>
- <1335742410-11569-1-git-send-email-kjwinchester@gmail.com>
+Subject: Re: [PATCH v6 1/5] x86: Move per cpu cpu_llc_shared_map to a field
+ in struct cpuinfo_x86
+References: <1a0aaa16-df06-40bf-88c7-28180455e6b9@email.android.com> <1335742410-11569-1-git-send-email-kjwinchester@gmail.com> <1335742410-11569-2-git-send-email-kjwinchester@gmail.com>
+In-Reply-To: <1335742410-11569-2-git-send-email-kjwinchester@gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simplifies the various code paths using this field as it
-groups the per-cpu data together.
+On 04/29/2012 04:33 PM, Kevin Winchester wrote:
+> Commit 141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
+> 'struct cpuinfo_x86'") caused the compilation error:
+> 
+> mce_amd.c:(.cpuinit.text+0x4723): undefined reference to 'cpu_llc_shared_map'
+> 
+> by removing an #ifdef CONFIG_SMP around a block containing a reference
+> to cpu_llc_shared_map.  Rather than replace the #ifdef, move
+> cpu_llc_shared_map to be a new cpumask_t field llc_shared_map in
+> struct cpuinfo_x86 and adjust all references to cpu_llc_shared_map.
+> 
 
-Acked-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
----
- arch/x86/include/asm/processor.h      |    1 +
- arch/x86/include/asm/smp.h            |    1 -
- arch/x86/kernel/apic/apic_numachip.c  |    3 +--
- arch/x86/kernel/cpu/amd.c             |   14 ++++----------
- arch/x86/kernel/cpu/common.c          |    1 +
- arch/x86/kernel/cpu/intel_cacheinfo.c |   11 ++---------
- arch/x86/kernel/smpboot.c             |   16 +++++++---------
- 7 files changed, 16 insertions(+), 31 deletions(-)
+Okay...  I must not get this.
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index c92ac6e..ba6f6db 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -121,6 +121,7 @@ struct cpuinfo_x86 {
- 	u32			microcode;
- 	/* CPUs sharing the last level cache: */
- 	cpumask_t		llc_shared_map;
-+	u16			llc_id;
- } __attribute__((__aligned__(SMP_CACHE_BYTES)));
- 
- #define X86_VENDOR_INTEL	0
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index b6e034e..aba8895 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -33,7 +33,6 @@ static inline bool cpu_has_ht_siblings(void)
- 
- DECLARE_PER_CPU(cpumask_var_t, cpu_sibling_map);
- DECLARE_PER_CPU(cpumask_var_t, cpu_core_map);
--DECLARE_PER_CPU(u16, cpu_llc_id);
- DECLARE_PER_CPU(int, cpu_number);
- 
- static inline struct cpumask *cpu_sibling_mask(int cpu)
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index 23e7542..30b0f45 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -207,10 +207,9 @@ static void __init map_csrs(void)
- 
- static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
- {
--
- 	if (c->phys_proc_id != node) {
- 		c->phys_proc_id = node;
--		per_cpu(cpu_llc_id, smp_processor_id()) = node;
-+		c->llc_id = node;
- 	}
- }
- 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 1c67ca1..d4c5ff4 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -268,7 +268,6 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
- {
- 	u32 nodes, cores_per_cu = 1;
- 	u8 node_id;
--	int cpu = smp_processor_id();
- 
- 	/* get information required for multi-node processors */
- 	if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
-@@ -301,7 +300,7 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
- 		cus_per_node = cores_per_node / cores_per_cu;
- 
- 		/* store NodeID, use llc_shared_map to store sibling info */
--		per_cpu(cpu_llc_id, cpu) = node_id;
-+		c->llc_id = node_id;
- 
- 		/* core id has to be in the [0 .. cores_per_node - 1] range */
- 		c->cpu_core_id %= cores_per_node;
-@@ -318,7 +317,6 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
- {
- #ifdef CONFIG_X86_HT
- 	unsigned bits;
--	int cpu = smp_processor_id();
- 
- 	bits = c->x86_coreid_bits;
- 	/* Low order bits define the core id (index of core in socket) */
-@@ -326,18 +324,14 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
- 	/* Convert the initial APIC ID into the socket ID */
- 	c->phys_proc_id = c->initial_apicid >> bits;
- 	/* use socket ID also for last level cache */
--	per_cpu(cpu_llc_id, cpu) = c->phys_proc_id;
-+	c->llc_id = c->phys_proc_id;
- 	amd_get_topology(c);
- #endif
- }
- 
- int amd_get_nb_id(int cpu)
- {
--	int id = 0;
--#ifdef CONFIG_SMP
--	id = per_cpu(cpu_llc_id, cpu);
--#endif
--	return id;
-+	return cpu_data(cpu).llc_id;
- }
- EXPORT_SYMBOL_GPL(amd_get_nb_id);
- 
-@@ -350,7 +344,7 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
- 
- 	node = numa_cpu_node(cpu);
- 	if (node == NUMA_NO_NODE)
--		node = per_cpu(cpu_llc_id, cpu);
-+		node = c->llc_id;
- 
- 	/*
- 	 * On multi-fabric platform (e.g. Numascale NumaChip) a
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index cf79302..4448984 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -789,6 +789,7 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
- 	c->x86_model_id[0] = '\0';  /* Unset */
- 	c->x86_max_cores = 1;
- 	c->x86_coreid_bits = 0;
-+	c->llc_id = BAD_APICID;
- #ifdef CONFIG_X86_64
- 	c->x86_clflush_size = 64;
- 	c->x86_phys_bits = 36;
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index b8f3653..8c9a873 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -579,9 +579,6 @@ unsigned int __cpuinit init_intel_cacheinfo(struct cpuinfo_x86 *c)
- 	unsigned int new_l1d = 0, new_l1i = 0; /* Cache sizes from cpuid(4) */
- 	unsigned int new_l2 = 0, new_l3 = 0, i; /* Cache sizes from cpuid(4) */
- 	unsigned int l2_id = 0, l3_id = 0, num_threads_sharing, index_msb;
--#ifdef CONFIG_X86_HT
--	unsigned int cpu = c->cpu_index;
--#endif
- 
- 	if (c->cpuid_level > 3) {
- 		static int is_initialized;
-@@ -700,16 +697,12 @@ unsigned int __cpuinit init_intel_cacheinfo(struct cpuinfo_x86 *c)
- 
- 	if (new_l2) {
- 		l2 = new_l2;
--#ifdef CONFIG_X86_HT
--		per_cpu(cpu_llc_id, cpu) = l2_id;
--#endif
-+		c->llc_id = l2_id;
- 	}
- 
- 	if (new_l3) {
- 		l3 = new_l3;
--#ifdef CONFIG_X86_HT
--		per_cpu(cpu_llc_id, cpu) = l3_id;
--#endif
-+		c->llc_id = l3_id;
- 	}
- 
- 	c->x86_cache_size = l3 ? l3 : (l2 ? l2 : (l1i+l1d));
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 589bf69..472e6a0 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -117,9 +117,6 @@ static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
- int smp_num_siblings = 1;
- EXPORT_SYMBOL(smp_num_siblings);
- 
--/* Last level cache ID of each logical CPU */
--DEFINE_PER_CPU(u16, cpu_llc_id) = BAD_APICID;
--
- /* representing HT siblings of each logical CPU */
- DEFINE_PER_CPU(cpumask_var_t, cpu_sibling_map);
- EXPORT_PER_CPU_SYMBOL(cpu_sibling_map);
-@@ -337,7 +334,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 
- 			if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
- 				if (c->phys_proc_id == o->phys_proc_id &&
--				    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i) &&
-+				    c->llc_id == o->llc_id &&
- 				    c->compute_unit_id == o->compute_unit_id)
- 					link_thread_siblings(cpu, i);
- 			} else if (c->phys_proc_id == o->phys_proc_id &&
-@@ -358,12 +355,13 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 	}
- 
- 	for_each_cpu(i, cpu_sibling_setup_mask) {
--		if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
--		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
-+		struct cpuinfo_x86 *o = &cpu_data(i);
-+
-+		if (c->llc_id != BAD_APICID && c->llc_id == o->llc_id) {
- 			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
- 			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
- 		}
--		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
-+		if (c->phys_proc_id == o->phys_proc_id) {
- 			cpumask_set_cpu(i, cpu_core_mask(cpu));
- 			cpumask_set_cpu(cpu, cpu_core_mask(i));
- 			/*
-@@ -381,9 +379,9 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 				 * the other cpus in this package
- 				 */
- 				if (i != cpu)
--					cpu_data(i).booted_cores++;
-+					o->booted_cores++;
- 			} else if (i != cpu && !c->booted_cores)
--				c->booted_cores = cpu_data(i).booted_cores;
-+				c->booted_cores = o->booted_cores;
- 		}
- 	}
- }
+Why is this better than just moving the DEFINE_PER_CPU to a place which
+isn't dependent on SMP?
+
+	-hpa
+
+
 -- 
-1.7.10
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
