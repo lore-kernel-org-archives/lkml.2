@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab2D2WvL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 18:51:11 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41780 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754479Ab2D2WvI (ORCPT
+	id S1754616Ab2D2WzI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 18:55:08 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34473 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754479Ab2D2WzG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 18:51:08 -0400
-Date: Sun, 29 Apr 2012 23:51:00 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Roland McGrath <roland@hack.frob.com>, Greg Ungerer <gerg@uclinux.org>
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120429225100.GB6871@ZenIV.linux.org.uk>
-References: <CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com>
- <20120420180748.GI6871@ZenIV.linux.org.uk>
- <20120423180150.GA6871@ZenIV.linux.org.uk>
- <20120424072617.GB6871@ZenIV.linux.org.uk>
- <20120426183742.GA324@redhat.com>
- <20120426231942.GJ6871@ZenIV.linux.org.uk>
- <20120427172444.GA30267@redhat.com>
- <20120427184528.GL6871@ZenIV.linux.org.uk>
- <CAMuHMdXTR1ug3sOyJ_PA0Yub2GsO5NCdAd71EX0Y9osq1ei5KQ@mail.gmail.com>
- <20120427193413.GM6871@ZenIV.linux.org.uk>
+	Sun, 29 Apr 2012 18:55:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120427193413.GM6871@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120429124724.GA27784@liondog.tnic>
+References: <20120227115905.GB9943@elte.hu>
+	<1332974587-15452-1-git-send-email-kjwinchester@gmail.com>
+	<4F99A69B.4040004@zytor.com>
+	<CAELBVzAi_yndZbDc0TkXhbqzn2wULpnsFMA_dop=Uvaii8tkqg@mail.gmail.com>
+	<1a0aaa16-df06-40bf-88c7-28180455e6b9@email.android.com>
+	<CAELBVzAN33S4_VATnO7FaNjNaObqHsp+OXPsQYeve1N_qUztcA@mail.gmail.com>
+	<20120429124724.GA27784@liondog.tnic>
+Date: Sun, 29 Apr 2012 19:55:05 -0300
+Message-ID: <CAELBVzDCSFyQ43RZjH2zCayprABakq6y=i5tRtnm-rNsQUWH9w@mail.gmail.com>
+Subject: Re: [PATCH v5 0/5] x86: Cleanup and simplify cpu-specific data
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Kevin Winchester <kjwinchester@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 08:34:13PM +0100, Al Viro wrote:
-> On Fri, Apr 27, 2012 at 09:14:53PM +0200, Geert Uytterhoeven wrote:
-> > On Fri, Apr 27, 2012 at 20:45, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > >> The only comment I have,
-> > >> 38671a3e831ed7327affb24d715f98bb99c80e56 m68k: add TIF_NOTIFY_RESUME and handle it
-> > >> forgets to unexport do_signal().
-> > >
-> > > Meh... ??The thing is, there are _two_ of them. ??signal_mm.c and signal_no.c
-> > > badly need merging, with common stuff moved to signal.c. ??I really hate
-> > 
-> > Greg recently posted a patch to merge them:
-> > http://www.spinics.net/lists/linux-m68k/msg04995.html
-> 
-> Nice...  BTW, could you comment on
->     m68k: don't open-code block_sigmask()
->     m68k: use set_current_blocked in sigreturn/rt_sigreturn
->     m68k-nommu: do_signal() is only called when returning to user mode
->     m68k: add TIF_NOTIFY_RESUME and handle it.
-> in signal.git tree?  The last one is really interesting...
-> 
-> Just pick the current tree - one that was there yesterday had a dumb typo
-> in thread_info.h part, so it wouldn't even compile (TIF_NOTIFE_RESUME
-> defined instead of TIF_NOTIFY_RESUME ;-/)
+On 29 April 2012 09:47, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Apr 27, 2012 at 08:37:36PM -0300, Kevin Winchester wrote:
+>> Alright, my git/make skills must be lacking.  I just checked out
+>> 3.4-rc4 to a new branch, and then git cherry-picked my 5 patches onto
+>> that branch.
+>
+> FWIW,
+>
+> you probably would need to rediff them again because they don't apply
+> cleanly on current linus (v3.4-rc4-308-gf7b006931751):
+>
+> x86: Move per cpu cpu_llc_id to a field in struct cpuinfo_x86
+>
+> This simplifies the various code paths using this field as it
+> groups the per-cpu data together.
+>
+> Acked-by: Borislav Petkov <bp@alien8.de>
+> Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+> --------------------------
+> Apply? [y]es/[n]o/[e]dit/[v]iew patch/[a]ccept all y
+> Applying: x86: Move per cpu cpu_llc_id to a field in struct cpuinfo_x86
+> error: patch failed: arch/x86/kernel/apic/apic_numachip.c:208
+> error: arch/x86/kernel/apic/apic_numachip.c: patch does not apply
+> error: patch failed: arch/x86/kernel/cpu/amd.c:350
+> error: arch/x86/kernel/cpu/amd.c: patch does not apply
+> Patch failed at 0002 x86: Move per cpu cpu_llc_id to a field in struct cpuinfo_x86
+> When you have resolved this problem run "git am --resolved".
+> If you would prefer to skip this patch, instead run "git am --skip".
+> To restore the original branch and stop patching run "git am --abort".
+>
+> Or it could be due to fuzz which git cannot stomach but patch can.
+>
+> Anyway, applying the mbox of your 5 patches on -rc4 got me further but
+> choked on the last patch:
+>
+> Applying: x86: Remove #ifdef CONFIG_SMP sections by moving smp_num_siblings into common.c
+> error: patch failed: arch/x86/kernel/process.c:17
+> error: arch/x86/kernel/process.c: patch does not apply
+> Patch failed at 0005 x86: Remove #ifdef CONFIG_SMP sections by moving smp_num_siblings into common.c
+> When you have resolved this problem run "git am --resolved".
+> If you would prefer to skip this patch, instead run "git am --skip".
+> To restore the original branch and stop patching run "git am --abort".
+>
+> Applying it with patch worked though, probably due to fuzziness.
 
-BTW, Greg's patch put into the queue in the very beginning, everything rebased
-on top of it.
+Perhaps I sent the wrong set of patches in my last mailing, as that
+would explain why everyone else is having trouble that I am not.  I'll
+try to confirm and resend.
+
+>
+>> Then I ran:
+>>
+>> $ make ARCH=i386 allnoconfig
+>> $ make ARCH=i386
+>>
+>> And the build completed without warnings or errors.  Should that be
+>> equivalent to what you did to build i386 allnoconfig?  If so, then I
+>> wonder why I would not see those problems.
+>>
+>> Can anyone offer any advice?
+>
+> Other than that, i386 all{no,yes,mod}config seem to build fine here.
+>
+
+That's good at least, since it seems to concur with my experience here.
+
+Thanks,
+
+-- 
+Kevin
