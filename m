@@ -1,79 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab2D2NU6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 09:20:58 -0400
-Received: from nm29-vm3.bullet.mail.ne1.yahoo.com ([98.138.91.159]:45082 "HELO
-	nm29-vm3.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752386Ab2D2NU4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 09:20:56 -0400
-X-Yahoo-Newman-Id: 688277.58266.bm@smtp106.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: WANPcW0VM1kB_UWu..NZ0_CYtnbpmsXy8tKlyge6X.6fEhc
- H__H0CbrGIHlhX0H1SbjtQW3esoXxvfk8xIK_rLax3jRhLq9V1VFi00L5O_I
- 2Eblm4U.8ia74E.78n9yKfty5hp8U_qyOQffYIWX.twXfS1zV6qMfWQueaeV
- jX20kV9hE0zsdaXhrDY5gNPM.XW3k0LD2V_a2CsdrtNaK3pvAFr0WGM3P9Db
- d0a3OYdWFMYdyTrpLRTqXSE8a0_XAXiFfm4fTkWOAZdfjMKmAbbsKefo2YlB
- ZfjlGkOJophroGZs6X_4S2qDAteRVA39FZV3tqIf328AGgZuPvzi2gPWyO3.
- qild8X6y8nM.KtQlg0kNvZ2NMqegOV8RCrg58Eh_y_tAU1XC6N.zUf4o5ZUa
- 58x.VhtdWZZnCczfU6wLtUTpjxWarwy4-
-X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
-Date: Sun, 29 Apr 2012 18:53:37 +0530
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-To: tiwai@suse.de
-Cc: linux-kernel@vger.kernel.org, ahiliation@yahoo.co.in
-Subject: [PATCH 02/02 ] fixed coding style issue relating to spaces
-Message-ID: <20120429132337.GB3435@debian.Jeff>
+	id S1753948Ab2D2N0M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 09:26:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751617Ab2D2N0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 09:26:10 -0400
+Message-ID: <4F9D415B.7010103@redhat.com>
+Date: Sun, 29 Apr 2012 16:25:47 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        KVM <kvm@vger.kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Xen <xen-devel@lists.xensource.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC V6 1/5] kvm hypervisor : Add a hypercall to KVM hypervisor
+ to support pv-ticketlocks
+References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com> <20120423095947.30893.84029.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20120423095947.30893.84029.sendpatchset@codeblue.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello 
+On 04/23/2012 12:59 PM, Raghavendra K T wrote:
+> From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+>
+> KVM_HC_KICK_CPU allows the calling vcpu to kick another vcpu out of halt state.
+>     
+> The presence of these hypercalls is indicated to guest via
+> KVM_FEATURE_PV_UNHALT/KVM_CAP_PV_UNHALT.
+>
+>  #endif
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index e216ba0..dad475b 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -481,6 +481,10 @@ struct kvm_vcpu_arch {
+>  		u64 length;
+>  		u64 status;
+>  	} osvw;
+> +	/* pv related host specific info */
+> +	struct {
+> +		int pv_unhalted;
+> +	} pv;
+>  };
 
-Fixed coding style issues relating to spaces
-in sound/usb/card.h
+'bool'.  Or maybe push into vcpu->requests.
 
+>  
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 4044ce0..7fc9be6 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2147,6 +2147,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+>  	case KVM_CAP_ASYNC_PF:
+>  	case KVM_CAP_GET_TSC_KHZ:
+>  	case KVM_CAP_PCI_2_3:
+> +	case KVM_CAP_PV_UNHALT:
+>  		r = 1;
+>  		break;
+>  	case KVM_CAP_COALESCED_MMIO:
 
->From a9bda96c7af932f16ff25759a9f993ebf0644803 Mon Sep 17 00:00:00 2001
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-Date: Sun, 29 Apr 2012 18:35:16 +0530
-Subject: [PATCH 10/10] sound:Fixed coding style errors related to spaces.
+Redundant, since we can infer this from KVM_GET_SUPPORTED_CPUID.  But
+please indicate this in the documentation.
 
-Fixed coding style errors relating to spaces in
-sound/usb/card.h
+>  
+> +/*
+> + * kvm_pv_kick_cpu_op:  Kick a vcpu.
+> + *
+> + * @apicid - apicid of vcpu to be kicked.
+> + */
+> +static void kvm_pv_kick_cpu_op(struct kvm *kvm, int apicid)
+> +{
+> +	struct kvm_vcpu *vcpu = NULL;
+> +	int i;
+> +
+> +	kvm_for_each_vcpu(i, vcpu, kvm) {
+> +		if (!kvm_apic_present(vcpu))
+> +			continue;
+> +
+> +		if (kvm_apic_match_dest(vcpu, 0, 0, apicid, 0))
+> +			break;
+> +	}
+> +	if (vcpu) {
+> +		/*
+> +		 * Setting unhalt flag here can result in spurious runnable
+> +		 * state when unhalt reset does not happen in vcpu_block.
+> +		 * But that is harmless since that should soon result in halt.
+> +		 */
+> +		vcpu->arch.pv.pv_unhalted = 1;
+> +		/* We need everybody see unhalt before vcpu unblocks */
+> +		smp_mb();
 
-Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
----
- sound/usb/card.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+smp_wmb().
 
-diff --git a/sound/usb/card.h b/sound/usb/card.h
-index a39edcc..c5976fb 100644
---- a/sound/usb/card.h
-+++ b/sound/usb/card.h
-@@ -70,11 +70,11 @@ struct snd_usb_substream {
- 	unsigned int curpacksize;	/* current packet size in bytes (for capture) */
- 	unsigned int curframesize;	/* current packet size in frames (for capture) */
- 	unsigned int syncmaxsize;	/* sync endpoint packet size */
--	unsigned int fill_max: 1;	/* fill max packet size always */
-+	unsigned int fill_max:1;	/* fill max packet size always */
- 	unsigned int txfr_quirk:1;	/* allow sub-frame alignment */
- 	unsigned int fmt_type;		/* USB audio format type (1-3) */
- 
--	unsigned int running: 1;	/* running status */
-+	unsigned int running:1;	/* running status */
- 
- 	unsigned int hwptr_done;	/* processed byte position in the buffer */
- 	unsigned int transfer_done;		/* processed frames since last period update */
+> +		kvm_vcpu_kick(vcpu);
+> +	}
+> +}
+> +
+>
+>  /*
+>   * hypercalls use architecture specific
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 42b7393..edf56d4 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1500,6 +1500,14 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
+>  		prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
+>  
+>  		if (kvm_arch_vcpu_runnable(vcpu)) {
+> +			/*
+> +			 * This is the only safe place to reset unhalt flag.
+> +			 * otherwise it results in loosing the notification
+> +			 * which eventually can result in vcpu hangs.
+> +			 */
+> +			kvm_arch_vcpu_reset_pv_unhalted(vcpu);
+> +			/* preventing reordering should be enough here */
+> +			barrier();
+>  			kvm_make_request(KVM_REQ_UNHALT, vcpu);
+>  			break;
+>  		}
+>
+
+Hm, what about reusing KVM_REQ_UNHALT?
+
 -- 
-1.7.9
+error compiling committee.c: too many arguments to function
 
--- 
-software engineer
-Bohr Lab
-department of computer science
-Rajagiri school of engineering and technology.
