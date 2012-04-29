@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab2D2MIW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 08:08:22 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35070 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525Ab2D2MIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 08:08:19 -0400
+	id S1753708Ab2D2MXi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 08:23:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42076 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752348Ab2D2MXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 08:23:36 -0400
+Message-ID: <4F9D32B4.8040002@redhat.com>
+Date: Sun, 29 Apr 2012 15:23:16 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <m1haw33q35.fsf@fess.ebiederm.org>
-References: <1335681937-3715-1-git-send-email-levinsasha928@gmail.com> <m1haw33q35.fsf@fess.ebiederm.org>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Sun, 29 Apr 2012 14:07:58 +0200
-Message-ID: <CA+1xoqfX3hc7FP+8_9sn_mt4_WHkVfqTiPnE79Brs_kAfAFPCQ@mail.gmail.com>
-Subject: Re: [PATCH 01/14] sysctl: provide callback for write into ctl_table entry
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org,
-        acme@ghostprotocols.net, james.l.morris@oracle.com,
-        akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+CC: peterz@infradead.org, mingo@elte.hu, jeremy@goop.org, mtosatti@redhat.com,
+        kvm@vger.kernel.org, x86@kernel.org, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
+References: <20120427161727.27082.43096.stgit@abhimanyu> <20120427162401.27082.59387.stgit@abhimanyu>
+In-Reply-To: <20120427162401.27082.59387.stgit@abhimanyu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 29, 2012 at 10:22 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Sasha Levin <levinsasha928@gmail.com> writes:
+On 04/27/2012 07:24 PM, Nikunj A. Dadhania wrote:
+> flush_tlb_others_ipi depends on lot of statics in tlb.c.  Replicated
+> the flush_tlb_others_ipi as kvm_flush_tlb_others to further adapt to
+> paravirtualization.
 >
->> Provide a callback that will be called when writing to a ctl_table
->> entry after the user input has been validated.
->>
->> This will simplify user input checks since now it will be possible to
->> remove them out of the proc_handler.
+> Use the vcpu state information inside the kvm_flush_tlb_others to
+> avoid sending ipi to pre-empted vcpus.
 >
-> Ick No.
+> * Do not send ipi's to offline vcpus and set flush_on_enter flag
+
+get_user_pages_fast() depends on the IPI to hold off page table teardown
+while they are locklessly walked with interrupts disabled.  If a vcpu
+were to be preempted while in this critical section, another vcpu
+tearing down page tables would go ahead and destroy them.  when the
+preempted vcpu resumes it then touches the freed pages.
+
+We could try to teach kvm and get_user_pages_fast() about this, but this
+is intrusive.  Another option is to replace the cpu_relax() loop with
+something that sleeps and is then woken up by the TLB IPI handler if needed.
+
+> * For online vcpus: Wait for them to clear the flag
 >
-> You are simplifying things by taking updates out of locks, and
-> introducing races.
+>
 
-Exactly twp of the patches (out of 14) are taking updates out of
-locks. I'm quite sure that doing that in the ftrace case is perfectly
-fine, and I'll take a second look at the sched-rt one since there
-indeed might be a race caused due to the patch that I've missed.
+-- 
+error compiling committee.c: too many arguments to function
 
-If we figure out that both cases are wrong, the solution would be to
-drop these two patches from the series. I have only simplified that
-I've thought to be simple common cases, if I'm mistaken about these
-two then they're out.
-
-> Your naming of the callback "callback" is much too generic.
-
-I'd name it write_successful_callback() if there was a point for that,
-but seeing as there are no other callback types (and I don't see a
-need at the moment for other callbacks either), I've just named it
-"callback".
-
-Either way, I'm perfectly fine with renaming it to whatever works for
-the rest of the community.
-
-> I think the current function call mechanism of sysctl can be improved
-> but I don't think you have come up with the right combination of things.
-
-I'm not trying to fix the entire function call mechanism, I'm just
-trying to correct a negative pattern that has developed along time.
-
-If it doesn't fit the bigger view of the future of sysctl function
-calls, let me know what's that view is exactly and we'll see if this
-patch series can work there. If there's something specific that's
-bothering you about this series, let me know and I'll fix it. But
-saying that it sucks since it doesn't solve all the issues in sysctl
-function calls doesn't work for me.
