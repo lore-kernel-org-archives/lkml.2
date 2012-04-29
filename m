@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab2D2QPw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 12:15:52 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:56788 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab2D2QPe (ORCPT
+	id S1754096Ab2D2QSg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 12:18:36 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59991 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918Ab2D2QSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 12:15:34 -0400
-Date: Sun, 29 Apr 2012 09:15:30 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] staging driver fixes for 3.4-rc5
-Message-ID: <20120429161530.GA16514@kroah.com>
+	Sun, 29 Apr 2012 12:18:34 -0400
+Message-ID: <4F9C9680.7090205@landley.net>
+Date: Sat, 28 Apr 2012 20:16:48 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH] docs: update HOWTO for 2.6.x -> 3.x versioning
+References: <20120419061645.GA25127@www.outflux.net> <4F9C2B94.7080404@xenotime.net>
+In-Reply-To: <4F9C2B94.7080404@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 66f75a5d028beaf67c931435fdc3e7823125730c:
+On 04/28/2012 12:40 PM, Randy Dunlap wrote:
+> On 04/18/2012 11:16 PM, Kees Cook wrote:
+> 
+>> The HOWTO document needed updating for the new kernel versioning. The
+>> git URI for -next was updated as well.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+> 
+> 
+> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> Greg or Rob can merge...
+> 
+> Thanks.
 
-  Linux 3.4-rc4 (2012-04-21 14:47:52 -0700)
+Acked-by: Rob Landley <rob@landley.net>
 
-are available in the git repository at:
+And if Greg's already noticed it, I leave this one to him.  If not, I'll
+submit it next merge window.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.4-rc4
+Thanks,
 
-for you to fetch changes up to 89f21cc050d5eed8eeffee5b46297fb7a74ef9dd:
-
-  staging: ozwpan: Fix bug where kfree is called twice. (2012-04-26 12:40:53 -0700)
-
-----------------------------------------------------------------
-Staging tree fixes for 3.4-rc4
-
-Here are some tiny drivers/staging/ bugfixes.  Some build fixes that
-were recently reported, as well as one kfree bug that is hitting a
-number of users.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Imre Kaloz (1):
-      staging: octeon-ethernet: fix build errors by including interrupt.h
-
-Omar Ramirez Luna (1):
-      staging: tidspbridge: remove usage of OMAP2_L4_IO_ADDRESS
-
-Rupesh Gujare (1):
-      staging: ozwpan: Fix bug where kfree is called twice.
-
-Seth Jennings (1):
-      staging: zcache: fix Kconfig crypto dependency
-
- drivers/staging/octeon/ethernet-rx.c          |    1 +
- drivers/staging/octeon/ethernet-tx.c          |    1 +
- drivers/staging/octeon/ethernet.c             |    1 +
- drivers/staging/ozwpan/ozpd.c                 |    2 --
- drivers/staging/tidspbridge/core/tiomap3430.c |   20 ++++++++++++--------
- drivers/staging/tidspbridge/core/wdt.c        |    8 +++++++-
- drivers/staging/zcache/Kconfig                |    2 +-
- 7 files changed, 23 insertions(+), 12 deletions(-)
+Rob
+-- 
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
