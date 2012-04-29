@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab2D2KHO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 06:07:14 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:33654 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab2D2KHM (ORCPT
+	id S1753351Ab2D2KHY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 06:07:24 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:60504 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab2D2KHS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 06:07:12 -0400
-From: joseph daniel <josephdanielwalter@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Martyn Welch <martyn.welch@ge.com>,
-        Gerard Snitselaar <dev@snitselaar.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: joseph daniel <josephdanielwalter@gmail.com>
-Subject: [PATCH] staging/vme: Remove version.h include
-Date: Sun, 29 Apr 2012 16:07:02 +0600
-Message-Id: <1335694022-8819-1-git-send-email-josephdanielwalter@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 29 Apr 2012 06:07:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6695"; a="185970058"
+X-IronPort-AV: E=Sophos;i="4.75,498,1330934400"; 
+   d="scan'208";a="158926032"
+From: "Huang, Xiong" <xiong@qca.qualcomm.com>
+To: Florian Fainelli <florian@openwrt.org>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>
+Subject: RE: [PATCH 02/10] atl1c: add PHY link event(up/down) patch
+Thread-Topic: [PATCH 02/10] atl1c: add PHY link event(up/down) patch
+Thread-Index: AQHNJOKGtvutybYD2UOZf50PlMVq85aw8xEAgACdjlA=
+Date: Sun, 29 Apr 2012 10:07:17 +0000
+Message-ID: <157393863283F442885425D2C454285623D5FCD8@nasanexd02a.na.qualcomm.com>
+References: <1335578325-21326-1-git-send-email-xiong@qca.qualcomm.com>
+ <1335578325-21326-3-git-send-email-xiong@qca.qualcomm.com>
+ <201204281924.20714.florian@openwrt.org>
+In-Reply-To: <201204281924.20714.florian@openwrt.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [199.106.114.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are version.h includes that are not needed as make versioncheck reports.
-files:
-1. drivers/staging/vme/devices/vme_pio2_core.c
-2. drivers/staging/vme/devices/vme_pio2_gpio.c
+> > +struct atl1c_platform_patch {
+> > +	u16 pci_vid;
+> > +	u16 pci_did;
+> > +	u8  pci_revid;
+> > +	u16 subsystem_vid;
+> > +	u16 subsystem_did;
+> > +	u32 patch_flag;
+> > +#define ATL1C_LINK_PATCH	0x1
+> > +};
+> > +static struct atl1c_platform_patch plats[] = {
+> 
+> This should be static const.
 
-Signed-off-by: joseph daniel <josephdanielwalter@gmail.com>
----
- drivers/staging/vme/devices/vme_pio2_core.c |    1 -
- drivers/staging/vme/devices/vme_pio2_gpio.c |    1 -
- 2 files changed, 2 deletions(-)
+Thanks. It is.
 
-diff --git a/drivers/staging/vme/devices/vme_pio2_core.c b/drivers/staging/vme/devices/vme_pio2_core.c
-index 573c800..dd8012f 100644
---- a/drivers/staging/vme/devices/vme_pio2_core.c
-+++ b/drivers/staging/vme/devices/vme_pio2_core.c
-@@ -10,7 +10,6 @@
-  * option) any later version.
-  */
- 
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/types.h>
-diff --git a/drivers/staging/vme/devices/vme_pio2_gpio.c b/drivers/staging/vme/devices/vme_pio2_gpio.c
-index 8584849..5313c2e 100644
---- a/drivers/staging/vme/devices/vme_pio2_gpio.c
-+++ b/drivers/staging/vme/devices/vme_pio2_gpio.c
-@@ -10,7 +10,6 @@
-  * option) any later version.
-  */
- 
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/types.h>
--- 
-1.7.9.5
+> 
+> > +{0x1969, 0x2060, 0xC1, 0x1019, 0x8152, 0x1}, {0x1969, 0x2060, 0xC1,
+> > +0x1019, 0x2060, 0x1}, {0x1969, 0x2060, 0xC1, 0x1019, 0xE000, 0x1},
+> > +{0x1969, 0x2062, 0xC0, 0x1019, 0x8152, 0x1}, {0x1969, 0x2062, 0xC0,
+> > +0x1019, 0x2062, 0x1}, {0x1969, 0x2062, 0xC0, 0x1458, 0xE000, 0x1},
+> > +{0x1969, 0x2062, 0xC1, 0x1019, 0x8152, 0x1}, {0x1969, 0x2062, 0xC1,
+> > +0x1019, 0x2062, 0x1}, {0x1969, 0x2062, 0xC1, 0x1458, 0xE000, 0x1},
+> > +{0x1969, 0x2062, 0xC1, 0x1565, 0x2802, 0x1}, {0x1969, 0x2062, 0xC1,
+> > +0x1565, 0x2801, 0x1}, {0x1969, 0x1073, 0xC0, 0x1019, 0x8151, 0x1},
+> > +{0x1969, 0x1073, 0xC0, 0x1019, 0x1073, 0x1}, {0x1969, 0x1073, 0xC0,
+> > +0x1458, 0xE000, 0x1}, {0x1969, 0x1083, 0xC0, 0x1458, 0xE000, 0x1},
+> > +{0x1969, 0x1083, 0xC0, 0x1019, 0x8151, 0x1}, {0x1969, 0x1083, 0xC0,
+> > +0x1019, 0x1083, 0x1}, {0x1969, 0x1083, 0xC0, 0x1462, 0x7680, 0x1},
+> > +{0x1969, 0x1083, 0xC0, 0x1565, 0x2803, 0x1}, {0},
+> 
+> Since patch_flag is always set to 0x1, just remove it, if you find a matching entry,
+> apply the patch. Vendor ID is always the same, remove it as well.
+> 
+Thanks, Florain.
+It's reasonable to remove Vendor ID since this driver only support one dedicated VID.
+But for patch_flag, I'm afraid it could be used for other bug/issue, though we found 
+One link issue (=flag bit 0) till now. Otherwise, I will not use ATL1C_LINK_PATCH in function
+atl1c_patch_assign.
+
+> Looking at the supported PCI devices table, this patching table is applicable to all
+> Atheros PCI device id and none of the Attansic PCI device id, this suggests that
+
+Atl1c driver only supports Atheros PCI device id, Attansic device id is supported by 
+Atl1e & atlx.
+
+> your table should be reversed, and you should only list the devices *not*
+> needing the patch, this should make the lookup code smaller.
+> 
+
+It's almost impossible, there is over 200+ modules sold out, the issue is related to PCB layout,
+The total percentage of issue modules is much lower than the normal.
+
+
+
+B.R.
+Xiong
+
+
 
