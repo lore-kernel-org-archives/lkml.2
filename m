@@ -1,117 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab2D2Xeh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 19:34:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33071 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754732Ab2D2Xee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 19:34:34 -0400
-Date: Mon, 30 Apr 2012 09:34:30 +1000
-From: NeilBrown <neilb@suse.de>
-To: Grazvydas Ignotas <notasas@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 3/6] twl4030_charger: allow charging whenever VBUS is
- present.
-Message-ID: <20120430093430.17efed8a@notabene.brown>
-In-Reply-To: <CANOLnOO2kkyPUrRJiF-EX6NddG746gWvJ_fZrZPr0TC6DkbH9g@mail.gmail.com>
-References: <20120425072931.20124.56635.stgit@notabene.brown>
-	<20120425073310.20124.15112.stgit@notabene.brown>
-	<CANOLnOO2kkyPUrRJiF-EX6NddG746gWvJ_fZrZPr0TC6DkbH9g@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/IgZlEJprE52JgbA66Ex.pb0"; protocol="application/pgp-signature"
+	id S1754871Ab2D2Xez (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 19:34:55 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49912 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab2D2XeV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 19:34:21 -0400
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: hpa@zytor.com, Ingo Molnar <mingo@elte.hu>
+Cc: Kevin Winchester <kjwinchester@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v6 5/5] x86: Remove #ifdef CONFIG_SMP sections by moving smp_num_siblings into common.c
+Date: Sun, 29 Apr 2012 20:33:30 -0300
+Message-Id: <1335742410-11569-6-git-send-email-kjwinchester@gmail.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1335742410-11569-1-git-send-email-kjwinchester@gmail.com>
+References: <1a0aaa16-df06-40bf-88c7-28180455e6b9@email.android.com>
+ <1335742410-11569-1-git-send-email-kjwinchester@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/IgZlEJprE52JgbA66Ex.pb0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+smp_num_siblings was defined in arch/x86/kernel/smpboot.c, making it
+necessary to wrap any UP relevant code referencing it with #ifdef
+CONFIG_SMP.
 
-On Wed, 25 Apr 2012 14:33:25 +0300 Grazvydas Ignotas <notasas@gmail.com>
-wrote:
+Instead, move the definition to arch/x86/kernel/cpu/common.c, thus
+making it available always.
 
-> On Wed, Apr 25, 2012 at 10:33 AM, NeilBrown <neilb@suse.de> wrote:
-> > We currently refuse to charge if the USB ID pin is grounded, even
-> > though VBUS might be present.
-> > However some chargers do pull the ID pin low through a resistor which
-> > might be as low as 47Kohm (openmoko charger).
-> >
-> > The documentation is unclear but some experimental evidence suggests
-> > that when the charge pump provides VBUS that doesn't get reflected in
-> > HW_CONDITIONS, so we should be safe to ignore the ID pin.
->=20
-> On pandora I see the opposite, STS_VBUS is set regardless of who
-> drives it, so this will break pandora..
+Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+---
+ arch/x86/include/asm/perf_event_p4.h |   14 +++-----------
+ arch/x86/include/asm/smp.h           |    6 +-----
+ arch/x86/include/asm/topology.h      |    4 +---
+ arch/x86/kernel/cpu/amd.c            |    5 +----
+ arch/x86/kernel/cpu/common.c         |    4 ++++
+ arch/x86/kernel/cpu/perf_event_p4.c  |    4 ++--
+ arch/x86/kernel/cpu/proc.c           |    5 ++---
+ arch/x86/kernel/process.c            |    5 ++---
+ arch/x86/kernel/smpboot.c            |    4 ----
+ arch/x86/oprofile/nmi_int.c          |    6 ------
+ arch/x86/oprofile/op_model_p4.c      |    6 ------
+ 11 files changed, 16 insertions(+), 47 deletions(-)
 
-OK... I guess this needs more thought.
-I'll withdraw this patch and 6/6 for now.
-The rest should be good to go.  Maybe I'll resend them an include Anton
-Vorontsov..
+diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
+index 29a65c2..cfe41dc 100644
+--- a/arch/x86/include/asm/perf_event_p4.h
++++ b/arch/x86/include/asm/perf_event_p4.h
+@@ -8,6 +8,8 @@
+ #include <linux/cpu.h>
+ #include <linux/bitops.h>
+ 
++#include <asm/smp.h>
++
+ /*
+  * NetBurst has performance MSRs shared between
+  * threads if HT is turned on, ie for both logical
+@@ -177,20 +179,10 @@ static inline u64 p4_clear_ht_bit(u64 config)
+ 	return config & ~P4_CONFIG_HT;
+ }
+ 
+-static inline int p4_ht_active(void)
+-{
+-#ifdef CONFIG_SMP
+-	return smp_num_siblings > 1;
+-#endif
+-	return 0;
+-}
+-
+ static inline int p4_ht_thread(int cpu)
+ {
+-#ifdef CONFIG_SMP
+ 	if (smp_num_siblings == 2)
+-		return cpu != cpumask_first(&cpu_data(cpu).sibling_map));
+-#endif
++		return cpu != cpumask_first(&cpu_data(cpu).sibling_map);
+ 	return 0;
+ }
+ 
+diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
+index 408152e..8202cda 100644
+--- a/arch/x86/include/asm/smp.h
++++ b/arch/x86/include/asm/smp.h
+@@ -24,11 +24,7 @@ extern unsigned int num_processors;
+ 
+ static inline bool cpu_has_ht_siblings(void)
+ {
+-	bool has_siblings = false;
+-#ifdef CONFIG_SMP
+-	has_siblings = cpu_has_ht && smp_num_siblings > 1;
+-#endif
+-	return has_siblings;
++	return cpu_has_ht && smp_num_siblings > 1;
+ }
+ 
+ DECLARE_PER_CPU(int, cpu_number);
+diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+index 5ffa396..1590480 100644
+--- a/arch/x86/include/asm/topology.h
++++ b/arch/x86/include/asm/topology.h
+@@ -174,11 +174,9 @@ static inline void arch_fix_phys_package_id(int num, u32 slot)
+ struct pci_bus;
+ void x86_pci_root_bus_resources(int bus, struct list_head *resources);
+ 
+-#ifdef CONFIG_SMP
+ #define mc_capable()	((boot_cpu_data.x86_max_cores > 1) && \
+ 			(cpumask_weight(cpu_core_mask(0)) != nr_cpu_ids))
+-#define smt_capable()			(smp_num_siblings > 1)
+-#endif
++#define smt_capable()	(smp_num_siblings > 1)
+ 
+ #ifdef CONFIG_NUMA
+ extern int get_mp_bus_to_node(int busnum);
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index d4c5ff4..2c92761 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -9,6 +9,7 @@
+ #include <asm/processor.h>
+ #include <asm/apic.h>
+ #include <asm/cpu.h>
++#include <asm/smp.h>
+ #include <asm/pci-direct.h>
+ 
+ #ifdef CONFIG_X86_64
+@@ -263,7 +264,6 @@ static int __cpuinit nearby_node(int apicid)
+  *     Assumption: Number of cores in each internal node is the same.
+  * (2) AMD processors supporting compute units
+  */
+-#ifdef CONFIG_X86_HT
+ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
+ {
+ 	u32 nodes, cores_per_cu = 1;
+@@ -307,7 +307,6 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
+ 		c->compute_unit_id %= cus_per_node;
+ 	}
+ }
+-#endif
+ 
+ /*
+  * On a AMD dual core setup the lower bits of the APIC id distingush the cores.
+@@ -315,7 +314,6 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
+  */
+ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_X86_HT
+ 	unsigned bits;
+ 
+ 	bits = c->x86_coreid_bits;
+@@ -326,7 +324,6 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
+ 	/* use socket ID also for last level cache */
+ 	c->llc_id = c->phys_proc_id;
+ 	amd_get_topology(c);
+-#endif
+ }
+ 
+ int amd_get_nb_id(int cpu)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 4448984..f7a6589 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -49,6 +49,10 @@ cpumask_var_t cpu_initialized_mask;
+ cpumask_var_t cpu_callout_mask;
+ cpumask_var_t cpu_callin_mask;
+ 
++/* Number of siblings per CPU package */
++int smp_num_siblings = 1;
++EXPORT_SYMBOL(smp_num_siblings);
++
+ /* representing cpus for which sibling maps can be computed */
+ cpumask_var_t cpu_sibling_setup_mask;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index a2dfacf..8bc2be2 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -775,7 +775,7 @@ static int p4_validate_raw_event(struct perf_event *event)
+ 	 * if an event is shared across the logical threads
+ 	 * the user needs special permissions to be able to use it
+ 	 */
+-	if (p4_ht_active() && p4_event_bind_map[v].shared) {
++	if (smt_capable() && p4_event_bind_map[v].shared) {
+ 		if (perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
+ 			return -EACCES;
+ 	}
+@@ -816,7 +816,7 @@ static int p4_hw_config(struct perf_event *event)
+ 	event->hw.config = p4_config_pack_escr(escr) |
+ 			   p4_config_pack_cccr(cccr);
+ 
+-	if (p4_ht_active() && p4_ht_thread(cpu))
++	if (smt_capable() && p4_ht_thread(cpu))
+ 		event->hw.config = p4_set_ht_bit(event->hw.config);
+ 
+ 	if (event->attr.type == PERF_TYPE_RAW) {
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index 8022c66..4fbaacb 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -1,16 +1,16 @@
+-#include <linux/smp.h>
+ #include <linux/timex.h>
+ #include <linux/string.h>
+ #include <linux/seq_file.h>
+ #include <linux/cpufreq.h>
+ 
++#include <asm/smp.h>
++
+ /*
+  *	Get CPU information for use by the procfs.
+  */
+ static void show_cpuinfo_core(struct seq_file *m, struct cpuinfo_x86 *c,
+ 			      unsigned int cpu)
+ {
+-#ifdef CONFIG_SMP
+ 	if (c->x86_max_cores * smp_num_siblings > 1) {
+ 		seq_printf(m, "physical id\t: %d\n", c->phys_proc_id);
+ 		seq_printf(m, "siblings\t: %d\n",
+@@ -20,7 +20,6 @@ static void show_cpuinfo_core(struct seq_file *m, struct cpuinfo_x86 *c,
+ 		seq_printf(m, "apicid\t\t: %d\n", c->apicid);
+ 		seq_printf(m, "initial apicid\t: %d\n", c->initial_apicid);
+ 	}
+-#endif
+ }
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 1d92a5a..267535e 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -1,7 +1,6 @@
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+-#include <linux/smp.h>
+ #include <linux/prctl.h>
+ #include <linux/slab.h>
+ #include <linux/sched.h>
+@@ -19,6 +18,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <asm/cpu.h>
+ #include <asm/apic.h>
++#include <asm/smp.h>
+ #include <asm/syscalls.h>
+ #include <asm/idle.h>
+ #include <asm/uaccess.h>
+@@ -676,12 +676,11 @@ static void amd_e400_idle(void)
+ 
+ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	if (pm_idle == poll_idle && smp_num_siblings > 1) {
+ 		printk_once(KERN_WARNING "WARNING: polling idle and HT enabled,"
+ 			" performance may degrade.\n");
+ 	}
+-#endif
++
+ 	if (pm_idle)
+ 		return;
+ 
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 60729f4..ca85d4f 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -113,10 +113,6 @@ static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
+ #define set_idle_for_cpu(x, p)   (idle_thread_array[(x)] = (p))
+ #endif
+ 
+-/* Number of siblings per CPU package */
+-int smp_num_siblings = 1;
+-EXPORT_SYMBOL(smp_num_siblings);
+-
+ /* Per CPU bogomips and other parameters */
+ DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
+ EXPORT_PER_CPU_SYMBOL(cpu_info);
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 26b8a85..346e7ac 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -572,11 +572,6 @@ static int __init p4_init(char **cpu_type)
+ 	if (cpu_model > 6 || cpu_model == 5)
+ 		return 0;
+ 
+-#ifndef CONFIG_SMP
+-	*cpu_type = "i386/p4";
+-	model = &op_p4_spec;
+-	return 1;
+-#else
+ 	switch (smp_num_siblings) {
+ 	case 1:
+ 		*cpu_type = "i386/p4";
+@@ -588,7 +583,6 @@ static int __init p4_init(char **cpu_type)
+ 		model = &op_p4_ht2_spec;
+ 		return 1;
+ 	}
+-#endif
+ 
+ 	printk(KERN_INFO "oprofile: P4 HyperThreading detected with > 2 threads\n");
+ 	printk(KERN_INFO "oprofile: Reverting to timer mode.\n");
+diff --git a/arch/x86/oprofile/op_model_p4.c b/arch/x86/oprofile/op_model_p4.c
+index ae3503e..c6bcb22 100644
+--- a/arch/x86/oprofile/op_model_p4.c
++++ b/arch/x86/oprofile/op_model_p4.c
+@@ -42,21 +42,15 @@ static unsigned int num_controls = NUM_CONTROLS_NON_HT;
+    kernel boot-time. */
+ static inline void setup_num_counters(void)
+ {
+-#ifdef CONFIG_SMP
+ 	if (smp_num_siblings == 2) {
+ 		num_counters = NUM_COUNTERS_HT2;
+ 		num_controls = NUM_CONTROLS_HT2;
+ 	}
+-#endif
+ }
+ 
+ static inline int addr_increment(void)
+ {
+-#ifdef CONFIG_SMP
+ 	return smp_num_siblings == 2 ? 2 : 1;
+-#else
+-	return 1;
+-#endif
+ }
+ 
+ 
+-- 
+1.7.10
 
-Thanks,
-NeilBrown
-
->=20
-> >
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> > ---
-> >
-> > =C2=A0drivers/power/twl4030_charger.c | =C2=A0 =C2=A06 +-----
-> > =C2=A01 file changed, 1 insertion(+), 5 deletions(-)
-> >
-> > diff --git a/drivers/power/twl4030_charger.c b/drivers/power/twl4030_ch=
-arger.c
-> > index 0511610..684662a 100644
-> > --- a/drivers/power/twl4030_charger.c
-> > +++ b/drivers/power/twl4030_charger.c
-> > @@ -155,11 +155,7 @@ static int twl4030_bci_have_vbus(struct twl4030_bc=
-i *bci)
-> >
-> > =C2=A0 =C2=A0 =C2=A0 =C2=A0dev_dbg(bci->dev, "check_vbus: HW_CONDITIONS=
- %02x\n", hwsts);
-> >
-> > - =C2=A0 =C2=A0 =C2=A0 /* in case we also have STS_USB_ID, VBUS is driv=
-en by TWL itself */
-> > - =C2=A0 =C2=A0 =C2=A0 if ((hwsts & TWL4030_STS_VBUS) && !(hwsts & TWL4=
-030_STS_USB_ID))
-> > - =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 return 1;
-> > -
-> > - =C2=A0 =C2=A0 =C2=A0 return 0;
-> > + =C2=A0 =C2=A0 =C2=A0 return (hwsts & TWL4030_STS_VBUS);
-> > =C2=A0}
-> >
-> > =C2=A0/*
-> >
-> >
->=20
->=20
-
-
---Sig_/IgZlEJprE52JgbA66Ex.pb0
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT53QBjnsnt1WYoG5AQJIMhAAnujJM2yR8TpVVDkyKYA4Q2vkXM7wDVv8
-nR2vuAUxLDQ4URBwylFbvniYnzLEPn/NJ9hI1eBOakVr+sCuoJFpoJsw040ln5+2
-lk+QWEPp05kh9inEp0+/Du15eJ7IUrYmhdqbXHqeSmzz7VgihY2j+JDvhX1tR8W+
-e0zYJHZ+CWauCW1RnLUrBpCNu1JFBeXJTTk7ivxb87CocDjMbiJMdiqJqhwUj7gj
-gt+thlk7NxV4wJ/5WiqFiw7EMV4gCqsxTXqhBZsrWhklbuOjbh9YwvifDLjqWgYY
-gGLZy+ib6SZugb95BaDezLdj/7ThRtvTjeOVlad0YxphGm+0eFiRyxTzHwuAK4s8
-QlVeY1yjxaa+tSGxSmbRo0LKfBDwEl4IAEfCoIoz9oO+NPt6bKftKoZI1Pcty+qt
-0Xj2NxQ52hja0ksu06hGnwza0SdDer/O8ILq84g80hVpWcOAhuV7cDWH01Hgg0EV
-za9tkhwtPn5cXKUyUiVOH1sPsyJ5iVhDV8Lp4uPIhi6d9bEvblAoLQHU4cg5bMSg
-P8G8iitIPtJazSBzrJWVXK7qe4cu8/RKIb+yQpD32QNC8ekXoxtpoYmNxDK6844/
-1Jt70125lKXsQxrxi/3nmo+i6l8uczDMPtO470Tf5ikIDolQkYgNpSbuELrF3KVB
-bkM0GB4LQoA=
-=VsrG
------END PGP SIGNATURE-----
-
---Sig_/IgZlEJprE52JgbA66Ex.pb0--
