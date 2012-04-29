@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab2D2QO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 12:14:57 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:54085 "EHLO
+	id S1754164Ab2D2QPw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 12:15:52 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:56788 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752867Ab2D2QOz (ORCPT
+	with ESMTP id S1754103Ab2D2QPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 12:14:55 -0400
-Date: Sun, 29 Apr 2012 09:14:51 -0700
+	Sun, 29 Apr 2012 12:15:34 -0400
+Date: Sun, 29 Apr 2012 09:15:30 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB bug fixes for 3.4-rc5
-Message-ID: <20120429161451.GA16480@kroah.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] staging driver fixes for 3.4-rc5
+Message-ID: <20120429161530.GA16514@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,64 +28,39 @@ The following changes since commit 66f75a5d028beaf67c931435fdc3e7823125730c:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.4-rc5
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.4-rc4
 
-for you to fetch changes up to 41c8a48aa8de88ff56ed2f657b93d2446dd7882c:
+for you to fetch changes up to 89f21cc050d5eed8eeffee5b46297fb7a74ef9dd:
 
-  Merge tag 'fixes-for-v3.4-rc5' of git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb into usb-linus (2012-04-27 07:50:34 -0700)
+  staging: ozwpan: Fix bug where kfree is called twice. (2012-04-26 12:40:53 -0700)
 
 ----------------------------------------------------------------
+Staging tree fixes for 3.4-rc4
 
-USB fixes for 3.4-rc5
-
-Here are a number of small USB fixes for 3.4-rc5.
-
-Nothing major, as before, some USB gadget fixes.  There's a crash fix
-for a number of ASUS laptops on resume that had been reported by a
-number of different people.  We think the fix might also pertain to
-other machines, as this was a BIOS bug, and they seem to travel to
-different models and manufacturers quite easily.  Other than that, some
-other reported problems fixed as well.
+Here are some tiny drivers/staging/ bugfixes.  Some build fixes that
+were recently reported, as well as one kfree bug that is hitting a
+number of users.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Alan Stern (3):
-      USB: gadget: storage gadgets send wrong error code for unknown commands
-      USB: EHCI: fix crash during suspend on ASUS computers
-      usb: gadget: udc-core: fix incompatibility with dummy-hcd
+Imre Kaloz (1):
+      staging: octeon-ethernet: fix build errors by including interrupt.h
 
-Felipe Balbi (3):
-      usb: musb: drop __deprecated flag
-      usb: gadget: dummy: do not call pullup() on udc_stop()
-      usb: gadget: udc-core: fix wrong call order
+Omar Ramirez Luna (1):
+      staging: tidspbridge: remove usage of OMAP2_L4_IO_ADDRESS
 
-Greg Kroah-Hartman (1):
-      Merge tag 'fixes-for-v3.4-rc5' of git://git.kernel.org/.../balbi/usb into usb-linus
+Rupesh Gujare (1):
+      staging: ozwpan: Fix bug where kfree is called twice.
 
-Heiko Stübner (1):
-      usb: otg: gpio_vbus: Add otg transceiver events and notifiers
+Seth Jennings (1):
+      staging: zcache: fix Kconfig crypto dependency
 
-Julia Lawall (1):
-      usb: musb: davinci.c: add missing unregister
-
-Laurent Pinchart (1):
-      usb gadget: uvc: uvc_request_data::length field must be signed
-
-Oliver Neukum (1):
-      USB: cdc-wdm: fix race leading leading to memory corruption
-
- drivers/usb/class/cdc-wdm.c         |    7 +++++--
- drivers/usb/core/hcd-pci.c          |    9 +++++++++
- drivers/usb/gadget/dummy_hcd.c      |    1 -
- drivers/usb/gadget/f_mass_storage.c |    2 +-
- drivers/usb/gadget/file_storage.c   |    2 +-
- drivers/usb/gadget/udc-core.c       |    4 ++--
- drivers/usb/gadget/uvc.h            |    2 +-
- drivers/usb/gadget/uvc_v4l2.c       |    2 +-
- drivers/usb/host/ehci-pci.c         |    8 ++++++++
- drivers/usb/musb/davinci.c          |    3 ++-
- drivers/usb/musb/musb_core.h        |    2 +-
- drivers/usb/otg/gpio_vbus.c         |   15 ++++++++++++++-
- include/linux/usb/hcd.h             |    2 ++
- 13 files changed, 47 insertions(+), 12 deletions(-)
+ drivers/staging/octeon/ethernet-rx.c          |    1 +
+ drivers/staging/octeon/ethernet-tx.c          |    1 +
+ drivers/staging/octeon/ethernet.c             |    1 +
+ drivers/staging/ozwpan/ozpd.c                 |    2 --
+ drivers/staging/tidspbridge/core/tiomap3430.c |   20 ++++++++++++--------
+ drivers/staging/tidspbridge/core/wdt.c        |    8 +++++++-
+ drivers/staging/zcache/Kconfig                |    2 +-
+ 7 files changed, 23 insertions(+), 12 deletions(-)
