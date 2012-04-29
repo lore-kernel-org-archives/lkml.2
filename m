@@ -1,95 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab2D2QoE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 12:44:04 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:3790 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754122Ab2D2QoC (ORCPT
+	id S1754295Ab2D2Qp2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 12:45:28 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:49540 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab2D2Qp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 12:44:02 -0400
-X-IronPort-AV: E=Sophos;i="4.75,500,1330902000"; 
-   d="vcf'?scan'208";a="156089319"
-Message-ID: <4F9D6FD0.3040904@loria.fr>
-Date: Sun, 29 Apr 2012 18:44:00 +0200
-From: Jens Gustedt <Jens.Gustedt@loria.fr>
-Reply-To: Jens.Gustedt@loria.fr
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Sun, 29 Apr 2012 12:45:26 -0400
+From: Nix <nix@esperi.org.uk>
+To: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Cc: Chris Boot <bootc@bootc.net>, <e1000-devel@lists.sourceforge.net>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <carolyn.wyborny@intel.com>
+Subject: Re: [PATCH RFC 0/2] e1000e: 82574 also needs ASPM L1 completely disabled
+References: <9BBC4E0CF881AA4299206E2E1412B6260E512E0C@ORSMSX102.amr.corp.intel.com>
+	<1335216578-21542-1-git-send-email-bootc@bootc.net>
+	<20120423161119.0000022f@unknown>
+Emacs: the prosecution rests its case.
+Date: Sun, 29 Apr 2012 17:45:10 +0100
+In-Reply-To: <20120423161119.0000022f@unknown> (Jesse Brandeburg's message of
+	"Mon, 23 Apr 2012 16:11:19 -0700")
+Message-ID: <87y5pe1o89.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: BUG in 3.3.4
-References: <iTWyS-35l-7@gated-at.bofh.it> <4F9D2A2B.9090501@loria.fr> <20120429155524.GA29152@ericsson.com> <20120429160400.GA29231@ericsson.com>
-In-Reply-To: <20120429160400.GA29231@ericsson.com>
-X-Enigmail-Version: 1.4
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAACRQTFRF
- ERslNjAsLTE9Ok9wUk9TaUs8iWhSrYZkj42Rz6aD3sGZ/P/7B+vw4wAAAAlwSFlzAAALEwAACxMB
- AJqcGAAAAAd0SU1FB9gGGQk7HLeKUa8AAAIoSURBVDjLhdOxbtswEABQyhmz8BjJ7WjRTVHAk2O3
- S5baUNNm1EB59iAJ6m4R2osgRdfWAv0H0Za6QGPo53onOxYtIOhNgh7IuyOPrH4h2H/hvp5Q/OjC
- djIN5lKKYRcmUxWHACCvOzCNojj0FAh5CpObJM1jpXDRyIZtX+uiREG4sGGcGgydUxpuwdYrCEqd
- KwB23cKfV6aJkoCftzDOzKaqUPL4FN4XL8AnY6oGNGbnZy3c7HBB9YDZk1DwXgtvaKeHpixcsS+r
- gbe4S2UOAGx0hEv8uWlyIPjs3NrqsJfOlzCwwG/K3VD2JW510TbYlgvgOy1c7fsrMYNAGB7hd7ah
- o6KS8A5lrz3d27UKVRpDA34L9S39W6z6OvYQhhasFajsV5TjREhpwU6nOi7WfY15pH9tgdFJataq
- ILBusN6VVNVapQjChtps6HDDiA7rBL5j1wgeTdYJ/DU5TlAISqkOaJUVJQJ0IY+aEwSI4cwqt35a
- RVqv8L+3FGwwsqY9iULsWxHwAd36M3xI869VsQQvBDZgKM/wlOrCJKoBisnxDX7Gh4DpPdgDO77B
- S61x3DzVge3YzbBeFYUHcA4g4V1EE5fgUDscwd1frT8TAWSmLGnae5Ix7u/nCjv7CQucN/xgcoAb
- AcF4Br77zVskCY4bOIHPOCe4ghmI4M5bNOPDe3OB8JHV2xmG/+VOpVgugjsXDnNxxaM7c93g9T0B
- dgHBXPQ4OP8ApiUfmpUgHuIAAAAASUVORK5CYII=
-Content-Type: multipart/mixed;
- boundary="------------070202030805020201070109"
+Content-Type: text/plain
+X-DCC-wuwien-Metrics: spindle 1290; Body=6 Fuz1=6 Fuz2=6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070202030805020201070109
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+On 24 Apr 2012, Jesse Brandeburg outgrape:
 
-Am 04/29/2012 06:04 PM, schrieb Guenter Roeck:
-> On Sun, Apr 29, 2012 at 08:55:24AM -0700, Guenter Roeck wrote:
->> On Sun, Apr 29, 2012 at 01:46:51PM +0200, Jens Gustedt wrote:
->> Introduced by upstream commit 2a748853ca395c48ea75baa250f7cea6f0f23dbf,
+> Please let us know the results of your testing, we will let you know if
+> we see any issues as well.
 
-confirmed through bisect and by reversion
+Alas, it has no effect at all here; L0s and L1 claim to be being
+disabled at boot time, but if you ask with lspci you see that they are
+not. I strongly suspect that they *are* being disabled, but then get
+re-enabled by something else, because even if I force them off with
+setpci in the boot scripts, by the time the scripts have finished
+executing and I've got to a root prompt where I can run setpci, L0s and
+L1 are always back on again.
 
->> fixed upstream with d62d421b071b08249361044d8e56c8b5c3ed6aa7.
+I may try simply running setpci between every line of my boot scripts
+just to see if it's something I'm doing there, but I very much doubt it,
+since I see these symptoms even if I run setpci at a point in the boot
+scripts after all the network interface setup is over.
 
-confirmed
+I suspect it's more to do with the link stabilizing or something. (But
+this is purest guesswork.)
 
-thanks!
+[    1.087592] e1000e 0000:03:00.0: Disabling ASPM L0s L1
+[    1.211748] e1000e 0000:02:00.0: Disabling ASPM L0s L1
 
-Jens
+spindle# setpci -s 02:00.0 CAP_EXP+10.b
+43
+spindle# setpci -s 03:00.0 CAP_EXP+10.b
+43
 
---------------070202030805020201070109
-Content-Type: text/x-vcard; charset=utf-8;
- name="Jens_Gustedt.vcf"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
- filename="Jens_Gustedt.vcf"
+spindle:/etc/rc.d# lspci -vv -s 02:00.0
+02:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+        Subsystem: Intel Corporation Device 0000
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 17
+        Region 0: Memory at fbce0000 (32-bit, non-prefetchable) [size=128K]
+        Region 2: I/O ports at dc00 [size=32]
+        Region 3: Memory at fbcdc000 (32-bit, non-prefetchable) [size=16K]
+        Capabilities: [c8] Power Management version 2
+                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
+        Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [e0] Express (v1) Endpoint, MSI 00
+                DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr+ TransPend-
+                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <128ns, L1 <64us
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM L0s L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+        Capabilities: [a0] MSI-X: Enable+ Count=5 Masked-
+                Vector table: BAR=3 offset=00000000
+                PBA: BAR=3 offset=00002000
+        Capabilities: [100 v1] Advanced Error Reporting
+                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
+                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+                CESta:  RxErr+ BadTLP+ BadDLLP+ Rollover- Timeout+ NonFatalErr+
+                CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+                AERCap: First Error Pointer: 14, GenCap- CGenEn- ChkCap- ChkEn-
+        Kernel driver in use: e1000e
 
-BEGIN:VCARD
-VERSION:3.0
-FN:Jens Gustedt
-N:Gustedt;Jens;;;
-ORG:INRIA Nancy Grand Est
-NICKNAME:Jens
-TITLE:directeur de recherche
-URL:http://www.loria.fr/~gustedt/
-TEL;fax:+33-3-83-27-83-19
-TEL;cell:+33-651400183
-TEL;work:+33-3-83-59-30-90
-ADR;TYPE=3Dwork;CHARSET=3DUTF-8:;INRIA Nancy Grand Est;Bat B - AlGorille;=
-Vand=C5=93uvre-l=C3=A8s-Nancy;;54200;France
-EMAIL;PREF;internet:Jens.Gustedt@loria.fr
-AGENT:BEGIN:VCARD\nVERSION:2.1\nFN:Isabelle Herlich\nN:Herlich\;Isabelle\=
-;\;\;\nORG: INRIA\nTEL\;TYPE=3Dwork:+33-383-59-20-72\nEMAIL:Isabelle.Herl=
-ich@loria.fr\nEND:VCARD
-AGENT:BEGIN:VCARD\nVERSION:2.1\nFN\;CHARSET=3DUTF-8:Sylvie Musilli\nN\;CH=
-ARSET=3DUTF-8:Musilli\;Sylvie\;\;\;\nORG: University\nTEL\;TYPE=3Dwork:+3=
-3-383-95-85-72\nEMAIL:Sylvie.Musilli@loria.fr\nEND:VCARD
-AGENT:BEGIN:VCARD\nVERSION:2.1\nFN:Antoinette Courier\nN:Courier\;Antoine=
-tte\;\;\;\nORG: CNRS\nTEL\;TYPE=3Dwork:+33-383-59-20-09\nEMAIL:Antoinette=
-=2ECourier@loria.fr\nEND:VCARD
-END:VCARD
+spindle:/etc/rc.d# lspci -vv -s 03:00.0
+03:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+        Subsystem: Intel Corporation Device 0000
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 16
+        Region 0: Memory at fbde0000 (32-bit, non-prefetchable) [size=128K]
+        Region 2: I/O ports at ec00 [size=32]
+        Region 3: Memory at fbddc000 (32-bit, non-prefetchable) [size=16K]
+        Capabilities: [c8] Power Management version 2
+                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
+        Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [e0] Express (v1) Endpoint, MSI 00
+                DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr+ TransPend-
+                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <128ns, L1 <64us
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM L0s L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+        Capabilities: [a0] MSI-X: Enable+ Count=5 Masked-
+                Vector table: BAR=3 offset=00000000
+                PBA: BAR=3 offset=00002000
+        Capabilities: [100 v1] Advanced Error Reporting
+                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+                CESta:  RxErr+ BadTLP+ BadDLLP+ Rollover+ Timeout+ NonFatalErr+
+                CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+                AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
+        Kernel driver in use: e1000e
 
---------------070202030805020201070109--
+Note in particular that L0s and L1 are still listed as enabled.
+
+(So I forced them off with setpci again, by hand.)
+
+-- 
+NULL && (void)
