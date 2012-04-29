@@ -1,127 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab2D2Hxv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 03:53:51 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:38924 "EHLO
+	id S1752779Ab2D2ISJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 04:18:09 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:40356 "EHLO
 	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177Ab2D2Hxu (ORCPT
+	with ESMTP id S1751587Ab2D2ISF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 03:53:50 -0400
+	Sun, 29 Apr 2012 04:18:05 -0400
 From: ebiederm@xmission.com (Eric W. Biederman)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>
-References: <1335604790.5995.22.camel@marge.simpson.net>
-	<20120428142605.GA20248@redhat.com>
-Date: Sun, 29 Apr 2012 00:57:57 -0700
-In-Reply-To: <20120428142605.GA20248@redhat.com> (Oleg Nesterov's message of
-	"Sat, 28 Apr 2012 16:26:05 +0200")
-Message-ID: <m14ns355ru.fsf@fess.ebiederm.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org,
+        acme@ghostprotocols.net, james.l.morris@oracle.com,
+        akpm@linux-foundation.org, tglx@linutronix.de,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-security-module@vger.kernel.org
+References: <1335681937-3715-1-git-send-email-levinsasha928@gmail.com>
+Date: Sun, 29 Apr 2012 01:22:06 -0700
+In-Reply-To: <1335681937-3715-1-git-send-email-levinsasha928@gmail.com> (Sasha
+	Levin's message of "Sun, 29 Apr 2012 08:45:24 +0200")
+Message-ID: <m1haw33q35.fsf@fess.ebiederm.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19mBL1zNjhzaN09jod3G1i6+uqnEC9OOrQ=
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19qSWFDHD67b7ktjfrkBqCBucAiIt3k4dI=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: marc.info]
+X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0120]
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*      [sa04 0; Body=1 Fuz1=1 Fuz2=1]
 	*  0.0 T_TooManySym_01 4+ unique symbols in subject
 	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ******;Oleg Nesterov <oleg@redhat.com>
+X-Spam-DCC: ; sa04 0; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Sasha Levin <levinsasha928@gmail.com>
 X-Spam-Relay-Country: **
-Subject: Re: [RFC PATCH] namespaces: fix leak on fork() failure
+Subject: Re: [PATCH 01/14] sysctl: provide callback for write into ctl_table entry
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
+Sasha Levin <levinsasha928@gmail.com> writes:
 
-> On 04/28, Mike Galbraith wrote:
->>
->> Greetings,
+> Provide a callback that will be called when writing to a ctl_table
+> entry after the user input has been validated.
 >
-> Hi,
->
-> Add CC's. I never understood the proc/namespace interaction in details,
-> and it seems to me I forgot everything.
->
->> SIGCHLD delivery during fork() may cause failure,
->
-> Or any other reason to fail after copy_namespaces()
->
->> resulting in the aborted
->> child being cloned with CLONE_NEWPID leaking namespaces due to proc being
->> mounted during pid namespace creation, but not unmounted on fork() failure.
->
-> Heh. Please look at http://marc.info/?l=linux-kernel&m=127687751003902
-> and the whole thread, there are a lot more problems here.
+> This will simplify user input checks since now it will be possible to
+> remove them out of the proc_handler.
 
-I don't remember seeing a leak in that conversation.
+Ick No.
 
-> But this particular one looks simple iirc.
->
->> @@ -216,6 +216,14 @@ void switch_task_namespaces(struct task_struct *p, struct nsproxy *new)
->>  	rcu_assign_pointer(p->nsproxy, new);
->>
->>  	if (ns && atomic_dec_and_test(&ns->count)) {
->> +		/* Handle fork() failure, unmount proc before proceeding */
->> +		if (unlikely(!new && !((p->flags & PF_EXITING)))) {
->> +			struct pid_namespace *pid_ns = ns->pid_ns;
->> +
->> +			if (pid_ns && pid_ns != &init_pid_ns)
->> +				pid_ns_release_proc(pid_ns);
->> +		}
->> +
->>  		/*
->>  		 * wait for others to get what they want from this nsproxy.
->>  		 *
->
-> At first glance this looks correct. But the PF_EXITING check doesn't
-> look very nice imho. It is needed to detect the case when the caller
-> is copy_process()->bad_fork_cleanup_namespaces and p is not current.
+You are simplifying things by taking updates out of locks, and
+introducing races.
 
-Mike's proposed change to switch_task_namespace is most definitely not
-correct.  This will potentially get called on unshare and so we don't
-limit ourselves to just an exit pid_namespace.  The result is that we
-could free the proc mount long before it is safe.
+Your naming of the callback "callback" is much too generic.
 
-At the same time the leak that Mike detected is most definitely real.
-
-> Perhaps it would be more clean to add the explicit
->
-> 	 bad_fork_cleanup_namespaces:
-> 	+	if (unlikely(clone_flags & CLONE_NEWPID))
-> 	+		pid_ns_release_proc(...);
-> 		exit_task_namespaces(p);
-> 		
-> 		
-> code into this error path in copy_process?
-
-For now Oleg your minimal patch looks good. 
-
-Part of me would like to call proc_flush_task instead of
-pid_ns_release_proc but we have no assurance task_pid and task_tgid are
-valid when we get here so proc_flush_task is out.
-
-There are crazy code paths like daemonize() that also call
-swith_task_namespaces and change the pid namespace that are still
-potentially broken.
-
-Breaking the loop between the pid namespace and the proc mount would
-be good, and I will see about making the time to push those patches.
-So we can have something much less magical going on.
+I think the current function call mechanism of sysctl can be improved
+but I don't think you have come up with the right combination of things.
 
 Eric
+
+
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  fs/proc/proc_sysctl.c  |    4 ++++
+>  include/linux/sysctl.h |    1 +
+>  2 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+> index 21d836f..190db28 100644
+> --- a/fs/proc/proc_sysctl.c
+> +++ b/fs/proc/proc_sysctl.c
+> @@ -507,6 +507,10 @@ static ssize_t proc_sys_call_handler(struct file *filp, void __user *buf,
+>  	error = table->proc_handler(table, write, buf, &res, ppos);
+>  	if (!error)
+>  		error = res;
+> +
+> +	if (!error && write && table->callback)
+> +		error = table->callback();
+> +
+>  out:
+>  	sysctl_head_finish(head);
+>  
+> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+> index c34b4c8..27c14cf 100644
+> --- a/include/linux/sysctl.h
+> +++ b/include/linux/sysctl.h
+> @@ -1022,6 +1022,7 @@ struct ctl_table
+>  	struct ctl_table_poll *poll;
+>  	void *extra1;
+>  	void *extra2;
+> +	int (*callback)(void);		/* Called when entry is written to */
+>  };
+>  
+>  struct ctl_node {
