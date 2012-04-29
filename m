@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab2D2O1N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 10:27:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896Ab2D2O1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 10:27:11 -0400
-Message-ID: <4F9D4F6E.4070106@redhat.com>
-Date: Sun, 29 Apr 2012 11:25:50 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1753017Ab2D2OfY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 10:35:24 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45414 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab2D2OfW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 10:35:22 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Joe Perches <joe@perches.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Tim Small <tim@buttersideup.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Egor Martovetsky <egor@pasemi.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?ISO-8859-1?Q?Niklas_S=F6derlund?= <niklas.soderlund@ericsson.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to work
- with layers
-References: <1335289087-11337-1-git-send-email-mchehab@redhat.com> <1335291342-14922-1-git-send-email-mchehab@redhat.com> <20120427133304.GE9626@aftab.osrc.amd.com> <1335535895.25521.7.camel@joe2Laptop> <4F9AC44A.5000509@redhat.com> <20120428085223.GB26065@aftab.osrc.amd.com>
-In-Reply-To: <20120428085223.GB26065@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4
+In-Reply-To: <20381.15336.604590.461744@elektron.ikp.physik.tu-darmstadt.de>
+References: <1335632134-2488-1-git-send-email-preston.fick@silabs.com>
+	<20120428190502.32eaf294@pyramind.ukuu.org.uk>
+	<20380.13347.472373.965813@elektron.ikp.physik.tu-darmstadt.de>
+	<20120428203322.7680594f@pyramind.ukuu.org.uk>
+	<20381.15336.604590.461744@elektron.ikp.physik.tu-darmstadt.de>
+Date: Sun, 29 Apr 2012 22:35:21 +0800
+Message-ID: <CAGjSPUB9s2ZvSUyb+45VfPQGZK_w13HVvnoCxt+Df5bgWAsnbw@mail.gmail.com>
+Subject: Re: [PATCH] usb: cp210x: Added support for GPIO (CP2103/4/5)
+From: Xiaofan Chen <xiaofanc@gmail.com>
+To: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 28-04-2012 05:52, Borislav Petkov escreveu:
-> On Fri, Apr 27, 2012 at 01:07:38PM -0300, Mauro Carvalho Chehab wrote:
->> Yes. This is a common issue at the EDAC core: on several places, it calls the
->> edac debug macros (DEBUGF0...DEBUGF4) passing a __func__ as an argument, while
->> the debug macros already handles that. I suspect that, in the past, the __func__
->> were not at the macros, but some patch added it there, and forgot to fix the
->> occurrences of its call.
-> 
-> The patch that added it is d357cbb445208 and you reviewed it.
+On Sun, Apr 29, 2012 at 9:02 PM, Uwe Bonnes
+<bon@elektron.ikp.physik.tu-darmstadt.de> wrote:
+> most RS232/USB Adapter don't supply and most applications working with these
+> adapters don't need hard realtime. So even writing and reading the serial
+> lines can be handled with libusb, like libftdi does.
+>
+> But as soon as higher level protocols based on the serial line get involved,
+> a kernel driver is needed...
+>
+> So when thinking some termiox, some thoughts for the FTDI special modes,
+> like MPSSE or synchronous FIFO should be spent. It would come handy if I
+> could open /dev/ttyUSBx, set som termiox and could use the kernel driver for
+> sending and receiving MPSSE commands. MPSSE is e.g. used in OpenOCD and
+> xc3sprog to talk e.g. JTAG to external devices.
 
-And you wrote the patch that caused it.
+On the other hand, OpenOCD and your xc3sprog will probably remain
+to be cross-plattform and in that case libusb/libftdi is a good option
+to go. There is a patch under review in OpenOCD where libusb-1.0
+is used for the MPSSE engine instead of libftdi/ftd2xx and the
+performance seems to be better.
 
-> 
->> This is something that needs to be reviewed at the entire EDAC core (and likely
->> at the drivers).
-> 
-> Looks like a job for a newbie to get her/his feet wet with kernel work.
 
-> 
->> I opted to not touch on this at the existing debug logic, as I think that the
->> better is to address all those issues on one separate patch, after fixing the
->> EDAC core bugs.
-> 
-> No,
-> 
-> you simply need to remove the __func__ argument in your newly added debug call:
-> 
->                 debugf2("%s: %d: dimm%zd (%d:%d:%d): row %d, chan %d\n", __func__,
->                         i, (dimm - mci->dimms),
->                         pos[0], pos[1], pos[2], row, chn);
-> 
-> And while you're at it, remove the rest of the __func__ arguments from
-> your newly added debugfX calls.
 
-A single patch fixing this everywhere at drivers/edac is better and clearer than adding 
-an unrelated fix on this patch. This is already complex enough to add more unrelated
-things there.
-
-Also, a simple perl/coccinelle script can replace all such __func__ occurrences 
-on one shot.
-
-Regards,
-Mauro
-
+-- 
+Xiaofan
