@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab2D2IqP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 04:46:15 -0400
-Received: from hosting.visp.net.lb ([194.146.153.11]:52969 "EHLO
-	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab2D2IqO (ORCPT
+	id S1753593Ab2D2IuL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 04:50:11 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:41455 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab2D2IuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 04:46:14 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+	Sun, 29 Apr 2012 04:50:09 -0400
+Date: Sun, 29 Apr 2012 17:50:04 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 06/10] KVM: MMU: fast path of handling guest page
+ fault
+Message-Id: <20120429175004.b54d8c095a60d98c8cdbc942@gmail.com>
+In-Reply-To: <20120427145213.GB28796@amt.cnet>
+References: <4F9776D2.7020506@linux.vnet.ibm.com>
+	<4F9777A4.208@linux.vnet.ibm.com>
+	<20120426234535.GA5057@amt.cnet>
+	<4F9A3445.2060305@linux.vnet.ibm.com>
+	<20120427145213.GB28796@amt.cnet>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Sun, 29 Apr 2012 11:46:05 +0300
-From: Denys Fedoryshchenko <denys@visp.net.lb>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: <netdev@vger.kernel.org>, <davem@davemloft.net>, <jmorris@namei.org>,
-        <yoshfuji@linux-ipv6.org>, <kaber@trash.net>,
-        <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>
-Subject: Re: inconsistent lock/deadlock crash, vanilla 3.3.4, 32bit, tcp
-In-Reply-To: <1335688036.2900.80.camel@edumazet-glaptop>
-References: <13fc59c8e3be34ddb3c7bb5c17b1bdf8@visp.net.lb>
- <1335688036.2900.80.camel@edumazet-glaptop>
-Message-ID: <4ba0969cecac9a8e677d1b1eed1a5742@visp.net.lb>
-User-Agent: VISP Webmail/0.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-29 11:27, Eric Dumazet wrote:
->
->
-> OK, so when we have memory pressure we can call
-> percpu_counter_read_positive() with SOFTIRQ enabled, and lockdep
-> complains...
->
-> This bug was probably added in 2008, in commit 1748376b6626a
-> (net: Use a percpu_counter for sockets_allocated)
->
-> I'll have to backport the following patch, can you test it please ?
->
-> Thanks !
->
->  net/core/sock.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/net/core/sock.c b/net/core/sock.c
-> index b2e14c0..08fc929 100644
-> --- a/net/core/sock.c
-> +++ b/net/core/sock.c
-> @@ -1818,7 +1818,9 @@ int __sk_mem_schedule(struct sock *sk, int
-> size, int kind)
->
->  		if (!sk_under_memory_pressure(sk))
->  			return 1;
-> +		local_bh_disable();
->  		alloc = sk_sockets_allocated_read_positive(sk);
-> +		local_bh_enable();
->  		if (sk_prot_mem_limits(sk, 2) > alloc *
->  		    sk_mem_pages(sk->sk_wmem_queued +
->  				 atomic_read(&sk->sk_rmem_alloc) +
+On Fri, 27 Apr 2012 11:52:13 -0300
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-I will try to deploy it and test as soon as someone will powercycle 
-server on other side.
+> Yes but the objective you are aiming for is to read and write sptes
+> without mmu_lock. That is, i am not talking about this patch. 
+> Please read carefully the two examples i gave (separated by "example)").
 
+The real objective is not still clear.
+
+The ~10% improvement reported before was on macro benchmarks during live
+migration.  At least, that optimization was the initial objective.
+
+But at some point, the objective suddenly changed to "lock-less" without
+understanding what introduced the original improvement.
+
+Was the problem really mmu_lock contention?
+
+If the path being introduced by this patch is really fast, isn't it
+possible to achieve the same improvement still using mmu_lock?
+
+
+Note: During live migration, the fact that the guest gets faulted is
+itself a limitation.  We could easily see noticeable slowdown of a
+program even if it runs only between two GET_DIRTY_LOGs.
+
+
+> The rules for code under mmu_lock should be:
+> 
+> 1) Spte updates under mmu lock must always be atomic and 
+> with locked instructions.
+> 2) Spte values must be read once, and appropriate action
+> must be taken when writing them back in case their value 
+> has changed (remote TLB flush might be required).
+
+Although I am not certain about what will be really needed in the
+final form, if this kind of maybe-needed-overhead is going to be
+added little by little, I worry about possible regression.
+
+Thanks,
+	Takuya
