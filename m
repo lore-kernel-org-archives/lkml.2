@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab2D2Dy3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 23:54:29 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:52518 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755760Ab2D2Dy2 (ORCPT
+	id S1750969Ab2D2EMM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 00:12:12 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35838 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab2D2EML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 23:54:28 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18mLUgweWcmkS0LC8VO95sCOagkLhLePe3QIoj4W1
-	hLT3T2mN2Xi3OG
-Message-ID: <1335671656.7366.40.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC tip/core/rcu 6/6] rcu: Reduce cache-miss
- initialization latencies for large systems
-From: Mike Galbraith <efault@gmx.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Date: Sun, 29 Apr 2012 05:54:16 +0200
-In-Reply-To: <20120428172127.GE2495@linux.vnet.ibm.com>
-References: <20120423164159.GA13819@linux.vnet.ibm.com>
-	 <1335199347-13926-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335199347-13926-6-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1335501371.10374.30.camel@marge.simpson.net>
-	 <20120427151518.GA2419@linux.vnet.ibm.com>
-	 <1335588142.7498.21.camel@marge.simpson.net>
-	 <20120428172127.GE2495@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Sun, 29 Apr 2012 00:12:11 -0400
+Date: Sun, 29 Apr 2012 05:12:05 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
+Message-ID: <20120429041205.GY6871@ZenIV.linux.org.uk>
+References: <20120424072617.GB6871@ZenIV.linux.org.uk>
+ <20120426183742.GA324@redhat.com>
+ <20120426231942.GJ6871@ZenIV.linux.org.uk>
+ <20120427172444.GA30267@redhat.com>
+ <20120427184528.GL6871@ZenIV.linux.org.uk>
+ <20120427202002.8ED632C0BF@topped-with-meat.com>
+ <20120427211244.GO6871@ZenIV.linux.org.uk>
+ <20120427212729.652542C0AF@topped-with-meat.com>
+ <20120427231526.GP6871@ZenIV.linux.org.uk>
+ <20120427233235.GQ6871@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120427233235.GQ6871@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-28 at 10:21 -0700, Paul E. McKenney wrote: 
-> On Sat, Apr 28, 2012 at 06:42:22AM +0200, Mike Galbraith wrote:
-> > On Fri, 2012-04-27 at 08:15 -0700, Paul E. McKenney wrote: 
-> > > On Fri, Apr 27, 2012 at 06:36:11AM +0200, Mike Galbraith wrote:
-> > > > On Mon, 2012-04-23 at 09:42 -0700, Paul E. McKenney wrote: 
-> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > 
-> > > > > Commit #0209f649 (rcu: limit rcu_node leaf-level fanout) set an upper
-> > > > > limit of 16 on the leaf-level fanout for the rcu_node tree.  This was
-> > > > > needed to reduce lock contention that was induced by the synchronization
-> > > > > of scheduling-clock interrupts, which was in turn needed to improve
-> > > > > energy efficiency for moderate-sized lightly loaded servers.
-> > > > > 
-> > > > > However, reducing the leaf-level fanout means that there are more
-> > > > > leaf-level rcu_node structures in the tree, which in turn means that
-> > > > > RCU's grace-period initialization incurs more cache misses.  This is
-> > > > > not a problem on moderate-sized servers with only a few tens of CPUs,
-> > > > 
-> > > > With a distro config (4096 CPUs) interrupt latency is bad even on a
-> > > > quad.  Traversing empty nodes taking locks and cache misses hurts.
-> > > 
-> > > Agreed -- and I will be working on an additional patch that makes RCU
-> > > avoid initializing its data structures for CPUs that don't exist.
-> > 
-> > That's still on my todo list too, your initial patch (and my butchery
-> > thereof to skip taking lock) showed this helps a heap.
+On Sat, Apr 28, 2012 at 12:32:35AM +0100, Al Viro wrote:
+> On Sat, Apr 28, 2012 at 12:15:26AM +0100, Al Viro wrote:
 > 
-> Indeed, I am a bit worried about the safety of skipping the lock in
-> that case.  Either way, if you would rather keep working on this, I
-> have no problem pushing it further down my todo list.
+> > I think all such architectures need that check lifted to do_notify_resume()
+> > (and the rest needs it killed, of course).  Including x86, by the look
+> > of it - we _probably_ can't get there with TIF_NOTIFY_RESUME and
+> > !user_mode(regs), but I'm not entirely sure of that.  arm is in about the
+> > same situation; alpha, ppc{32,64}, sparc{32,64} and m68k really can't get
+> > there like that (they all check it in the asm glue).  mips probably might,
+> > unless I'm misreading their ret_from_fork()...  Fun.
+> 
+> 	Speaking of user_mode() oddities - may I politely inquire what had
+> been smoked to inspire this (in arch/s390/kernel/signal.c):
+>         /* This is the legacy signal stack switching. */
+>         else if (!user_mode(regs) &&
+>                  !(ka->sa.sa_flags & SA_RESTORER) &&
+>                  ka->sa.sa_restorer) {
+>                 sp = (unsigned long) ka->sa.sa_restorer;
+>         }
+> especially when all paths leading to that come through do_signal() that does
+>         if (!user_mode(regs))
+>                 return;
+> on the same regs.  It had been like that since 2.3.99pre8 when s390 went
+> into the tree...  It looks vaguely similar to i386
+>                         /* This is the legacy signal stack switching. */
+>                         if ((regs->ss & 0xffff) != __USER_DS &&
+>                                 !(ka->sa.sa_flags & SA_RESTORER) &&
+>                                         ka->sa.sa_restorer)
+>                                 sp = (unsigned long) ka->sa.sa_restorer;
+> but there the code is at least not unreachable...
 
-It's on my todo because Paul is a busy fellow.  I'd much prefer that RCU
-tweaking is done by somebody who fully understands RCU's gizzard (!me).
-IOW, I'll fiddle with RCU as time permits/gripes require, but waiting to
-test your implementation is the more prudent thing to do.  Heck, as yet,
-I haven't even scraped together the time to test your other patches :-/ 
+While we are at it, can we *ever* reach do_signal() (nevermind deep in its
+guts) with !user_mode(regs)?
+AFAICS, for 31bit possible paths are:
+do_signal()
+	<- sysc_sigpending
+		<- sysc_work
+			<- sysc_tif, having checked for user_mode(%r11)
+	<- io_sigpending
+		<- io_work_tif
+			<- io_work_user
+				<- io_work, having checked for user_mode(%r11)
 
-For the nonce, I've done the safe thing, reverted 0209f649 and enabled
-tick skew.  Per my measurements, the regression is thus dead, so it's
-not as pressing an issue, though some users do still want and need more.
+and identical for 64bit.  *All* paths into do_signal() go through
+        tm      __PT_PSW+1(%r11),0x01   # returning to user ?
+and proceed towards do_signal() only if the bit is set.  Which is precisely
+what user_mode(%r11) is...
 
--Mike
-
+What the hell is going on in that code?
