@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab2D2GqK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 02:46:10 -0400
+	id S1754104Ab2D2GqV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 02:46:21 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:53699 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655Ab2D2GqF (ORCPT
+	with ESMTP id S1753676Ab2D2GqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 02:46:05 -0400
+	Sun, 29 Apr 2012 02:46:17 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
         mingo@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org,
@@ -15,9 +15,9 @@ To: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-security-module@vger.kernel.org,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH 13/14] security,sysctl: remove proc input checks out of sysctl handlers
-Date: Sun, 29 Apr 2012 08:45:36 +0200
-Message-Id: <1335681937-3715-13-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH 14/14] fs,sysctl: remove proc input checks out of sysctl handlers
+Date: Sun, 29 Apr 2012 08:45:37 +0200
+Message-Id: <1335681937-3715-14-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.5
 In-Reply-To: <1335681937-3715-1-git-send-email-levinsasha928@gmail.com>
 References: <1335681937-3715-1-git-send-email-levinsasha928@gmail.com>
@@ -30,66 +30,62 @@ provided by the sysctl table.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- include/linux/security.h |    3 +--
- kernel/sysctl.c          |    3 ++-
- security/min_addr.c      |   11 +++--------
- 3 files changed, 6 insertions(+), 11 deletions(-)
+ fs/pipe.c                 |   11 ++---------
+ include/linux/pipe_fs_i.h |    2 +-
+ kernel/sysctl.c           |    3 ++-
+ 3 files changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index ab0e091..3d3445c 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -147,8 +147,7 @@ struct request_sock;
- #define LSM_UNSAFE_NO_NEW_PRIVS	8
- 
- #ifdef CONFIG_MMU
--extern int mmap_min_addr_handler(struct ctl_table *table, int write,
--				 void __user *buffer, size_t *lenp, loff_t *ppos);
-+extern int mmap_min_addr_handler(void);
- #endif
- 
- /* security_inode_init_security callback function to write xattrs */
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index f9ce79b..2104452 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1317,7 +1317,8 @@ static struct ctl_table vm_table[] = {
- 		.data		= &dac_mmap_min_addr,
- 		.maxlen		= sizeof(unsigned long),
- 		.mode		= 0644,
--		.proc_handler	= mmap_min_addr_handler,
-+		.proc_handler	= proc_doulongvec_minmax,
-+		.callback	= mmap_min_addr_handler,
- 	},
- #endif
- #ifdef CONFIG_NUMA
-diff --git a/security/min_addr.c b/security/min_addr.c
-index f728728..3e5a41c 100644
---- a/security/min_addr.c
-+++ b/security/min_addr.c
-@@ -28,19 +28,14 @@ static void update_mmap_min_addr(void)
-  * sysctl handler which just sets dac_mmap_min_addr = the new value and then
-  * calls update_mmap_min_addr() so non MAP_FIXED hints get rounded properly
+diff --git a/fs/pipe.c b/fs/pipe.c
+index 25feaa3..7bb7395 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -1186,17 +1186,10 @@ static inline unsigned int round_pipe_size(unsigned int size)
+  * This should work even if CONFIG_PROC_FS isn't set, as proc_dointvec_minmax
+  * will return an error.
   */
--int mmap_min_addr_handler(struct ctl_table *table, int write,
--			  void __user *buffer, size_t *lenp, loff_t *ppos)
-+int mmap_min_addr_handler(void)
+-int pipe_proc_fn(struct ctl_table *table, int write, void __user *buf,
+-		 size_t *lenp, loff_t *ppos)
++int pipe_proc_fn(void)
  {
 -	int ret;
 -
--	if (write && !capable(CAP_SYS_RAWIO))
-+	if (!capable(CAP_SYS_RAWIO))
- 		return -EPERM;
- 
--	ret = proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
+-	ret = proc_dointvec_minmax(table, write, buf, lenp, ppos);
+-	if (ret < 0 || !write)
+-		return ret;
 -
- 	update_mmap_min_addr();
- 
+ 	pipe_max_size = round_pipe_size(pipe_max_size);
 -	return ret;
 +	return 0;
  }
  
- static int __init init_mmap_min_addr(void)
+ /*
+diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
+index 6d626ff..08e02d8 100644
+--- a/include/linux/pipe_fs_i.h
++++ b/include/linux/pipe_fs_i.h
+@@ -139,7 +139,7 @@ void pipe_unlock(struct pipe_inode_info *);
+ void pipe_double_lock(struct pipe_inode_info *, struct pipe_inode_info *);
+ 
+ extern unsigned int pipe_max_size, pipe_min_size;
+-int pipe_proc_fn(struct ctl_table *, int, void __user *, size_t *, loff_t *);
++int pipe_proc_fn(void);
+ 
+ 
+ /* Drop the inode semaphore and wait for a pipe event, atomically */
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 2104452..35f225b 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1551,7 +1551,8 @@ static struct ctl_table fs_table[] = {
+ 		.data		= &pipe_max_size,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= &pipe_proc_fn,
++		.proc_handler	= proc_dointvec_minmax,
++		.callback	= &pipe_proc_fn,
+ 		.extra1		= &pipe_min_size,
+ 	},
+ 	{ }
 -- 
 1.7.8.5
 
