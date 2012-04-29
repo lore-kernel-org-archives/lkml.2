@@ -1,2027 +1,824 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab2D2PNY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 11:13:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44353 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752239Ab2D2PNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 11:13:21 -0400
-Message-ID: <4F9D5A2E.2030506@redhat.com>
-Date: Sun, 29 Apr 2012 12:11:42 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1753949Ab2D2Pdb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 11:33:31 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41118 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844Ab2D2Pd3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 11:33:29 -0400
+Message-ID: <4F9D5F43.4000502@gmail.com>
+Date: Sun, 29 Apr 2012 18:33:23 +0300
+From: Nikolai Kondrashov <spbnick@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Joe Perches <joe@perches.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Tim Small <tim@buttersideup.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Egor Martovetsky <egor@pasemi.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?ISO-8859-1?Q?Niklas_S=F6derlund?= <niklas.soderlund@ericsson.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to work
- with layers
-References: <1335289087-11337-1-git-send-email-mchehab@redhat.com> <1335291342-14922-1-git-send-email-mchehab@redhat.com> <20120427133304.GE9626@aftab.osrc.amd.com> <1335535895.25521.7.camel@joe2Laptop> <4F9AC44A.5000509@redhat.com> <20120428085223.GB26065@aftab.osrc.amd.com> <4F9D4F6E.4070106@redhat.com>
-In-Reply-To: <4F9D4F6E.4070106@redhat.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] hid: Enable report fixup on rebind
+References: <1335097300-11881-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1204222325380.1856@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1204222325380.1856@pobox.suse.cz>
+Content-Type: multipart/mixed;
+ boundary="------------060705090208060508010100"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 29-04-2012 11:25, Mauro Carvalho Chehab escreveu:
-> Em 28-04-2012 05:52, Borislav Petkov escreveu:
->> On Fri, Apr 27, 2012 at 01:07:38PM -0300, Mauro Carvalho Chehab wrote:
->>> Yes. This is a common issue at the EDAC core: on several places, it calls the
->>> edac debug macros (DEBUGF0...DEBUGF4) passing a __func__ as an argument, while
->>> the debug macros already handles that. I suspect that, in the past, the __func__
->>> were not at the macros, but some patch added it there, and forgot to fix the
->>> occurrences of its call.
+This is a multi-part message in MIME format.
+--------------060705090208060508010100
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+
+On 04/23/2012 12:27 AM, Jiri Kosina wrote:
+> On Sun, 22 Apr 2012, Henrik Rydberg wrote:
+>
+>> This patchset contains a resolution to the problem with
+>> driver-specific modification of the report descriptor. The core of the
+>> problem lies with the dual semantics of hid_parse_report(), which is
+>> therefore split into two functions. As a consequence, the hid core can
+>> handle the rebind case internally, with no changes to the
+>> drivers. Out-of-tree drivers will work fine as long as they operate in
+>> the same way as the in-kernel drivers.
 >>
->> The patch that added it is d357cbb445208 and you reviewed it.
-> 
-> And you wrote the patch that caused it.
-> 
->>
->>> This is something that needs to be reviewed at the entire EDAC core (and likely
->>> at the drivers).
->>
->> Looks like a job for a newbie to get her/his feet wet with kernel work.
-> 
->>
->>> I opted to not touch on this at the existing debug logic, as I think that the
->>> better is to address all those issues on one separate patch, after fixing the
->>> EDAC core bugs.
->>
->> No,
->>
->> you simply need to remove the __func__ argument in your newly added debug call:
->>
->>                 debugf2("%s: %d: dimm%zd (%d:%d:%d): row %d, chan %d\n", __func__,
->>                         i, (dimm - mci->dimms),
->>                         pos[0], pos[1], pos[2], row, chn);
->>
->> And while you're at it, remove the rest of the __func__ arguments from
->> your newly added debugfX calls.
-> 
-> A single patch fixing this everywhere at drivers/edac is better and clearer than adding 
-> an unrelated fix on this patch. This is already complex enough to add more unrelated
-> things there.
-> 
-> Also, a simple perl/coccinelle script can replace all such __func__ occurrences 
-> on one shot.
+>> The first two patches are bug fixes found in the process. I am hoping
+>> for some test feedback on those. The third patch is the main one.
 
-Most of the issues can be solved with the above script-based patch. 
+I've tested the last patch and it seems to work as required. I did a series
+of generic<->specific driver rebindings both ways in a loop and it works.
 
-There are still 171 places (12 places at the core, the rest are on the drivers)
-that will require a more sophisticated patch or that requires a manual fix.
+So,
+Tested-by: Nikolai Kondrashov <spbnick@gmail.com>
 
--
+Thanks Henrik!
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Date: Sun, 29 Apr 2012 11:59:14 -0300
-Subject: [PATCH] edac: Don't add __func__ or __FILE__ for debugf[0-9] msgs
+I'm not sure, though, if one thing works as it should: the quirks are not
+reset when changing the driver. So, quirks set by one driver may affect
+behavior of another. I don't understand full quirks usage and ownership yet,
+so can't argue if this is right or wrong.
 
-The debug macro already adds that. Made by this small script:
+Regarding the code, could it be the time to fix naming of report
+descriptor-handling functions to improve distinction from report-handling
+ones? I'm attaching a patch applying on top of Henrik's changes which should
+illustrate the proposal.
 
-$f .=$_ while (<>);
+Thanks!
 
-$f =~ s/(debugf[0-9]\s*\(\s*)__FILE__\s*": /\1"/g;
-$f =~ s/(debugf[0-9]\s*\(\s*)__FILE__\s*/\1/g;
-$f =~ s/(debugf[0-9]\s*\(\s*)__FILE__\s*"MC: /\1"/g;
-$f =~ s/(debugf[0-9]\s*\(\")\%s[\:\,\(\)]*\s*(\s*[^\)]+)__func__\s*\,\s*/\1\2/g;
-$f =~ s/(debugf[0-9]\s*\(\")\%s[\:\,\(\)]*\s*(\s*[^\)]+),\s*__func__\s*\)/\1\2)/g;
+Sincerely,
+Nick
 
-$f =~ s/(debugf[0-9]\s*\(\"MC\:\s*)\%s[\:\,\(\)]*\s*(\s*[^\)]+)__func__\s*\,\s*/\1\2/g;
-$f =~ s/(debugf[0-9]\s*\(\"MC\:\s*)\%s[\:\,\(\)]*\s*(\s*[^\)]+),\s*__func__\s*\)/\1\2)/g;
+--------------060705090208060508010100
+Content-Type: text/x-patch;
+ name="0001-hid-Differentiate-report-descriptors-and-reports.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-hid-Differentiate-report-descriptors-and-reports.patch"
 
-print $f;
+>From 2423f42177f13d1b27eac8e4168c39afbd937114 Mon Sep 17 00:00:00 2001
+From: Nikolai Kondrashov <spbnick@gmail.com>
+Date: Sun, 29 Apr 2012 17:51:21 +0300
+Subject: [PATCH 1/1] hid: Differentiate report descriptors and reports
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Improve distinction between report descriptors and reports:
+  * rename hid_(open|parse|close)_report to hid_(open|parse|close)_rdesc,
+  * rename "report_fixup" hid_driver callback to "rdesc_fixup",
+  * refine relevant comments.
 
-diff --git a/drivers/edac/amd76x_edac.c b/drivers/edac/amd76x_edac.c
-index be6c225..25198c8 100644
---- a/drivers/edac/amd76x_edac.c
-+++ b/drivers/edac/amd76x_edac.c
-@@ -180,7 +180,7 @@ static int amd76x_process_error_info(struct mem_ctl_info *mci,
- static void amd76x_check(struct mem_ctl_info *mci)
+Signed-off-by: Nikolai Kondrashov <spbnick@gmail.com>
+---
+ drivers/hid/hid-apple.c       |    4 ++--
+ drivers/hid/hid-cherry.c      |    4 ++--
+ drivers/hid/hid-core.c        |   44 ++++++++++++++++++++---------------------
+ drivers/hid/hid-cypress.c     |    4 ++--
+ drivers/hid/hid-dr.c          |    4 ++--
+ drivers/hid/hid-elecom.c      |    4 ++--
+ drivers/hid/hid-hyperv.c      |    2 +-
+ drivers/hid/hid-keytouch.c    |    4 ++--
+ drivers/hid/hid-kye.c         |    4 ++--
+ drivers/hid/hid-lg.c          |    4 ++--
+ drivers/hid/hid-logitech-dj.c |    2 +-
+ drivers/hid/hid-microsoft.c   |    4 ++--
+ drivers/hid/hid-monterey.c    |    4 ++--
+ drivers/hid/hid-ortek.c       |    4 ++--
+ drivers/hid/hid-petalynx.c    |    4 ++--
+ drivers/hid/hid-prodikeys.c   |    4 ++--
+ drivers/hid/hid-saitek.c      |    4 ++--
+ drivers/hid/hid-samsung.c     |    8 ++++----
+ drivers/hid/hid-sony.c        |    4 ++--
+ drivers/hid/hid-sunplus.c     |    4 ++--
+ drivers/hid/hid-uclogic.c     |    4 ++--
+ drivers/hid/hid-waltop.c      |    4 ++--
+ drivers/hid/hid-zydacron.c    |    4 ++--
+ drivers/hid/usbhid/hid-core.c |    2 +-
+ include/linux/hid.h           |   18 ++++++++---------
+ net/bluetooth/hidp/core.c     |    2 +-
+ 26 files changed, 77 insertions(+), 77 deletions(-)
+
+diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
+index 299d238..c2a1641 100644
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -275,7 +275,7 @@ static int apple_event(struct hid_device *hdev, struct hid_field *field,
+ /*
+  * MacBook JIS keyboard has wrong logical maximum
+  */
+-static __u8 *apple_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *apple_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
- 	struct amd76x_error_info info;
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	amd76x_get_error_info(mci, &info);
- 	amd76x_process_error_info(mci, &info, 1);
+ 	struct apple_sc *asc = hid_get_drvdata(hdev);
+@@ -533,7 +533,7 @@ MODULE_DEVICE_TABLE(hid, apple_devices);
+ static struct hid_driver apple_driver = {
+ 	.name = "apple",
+ 	.id_table = apple_devices,
+-	.report_fixup = apple_report_fixup,
++	.rdesc_fixup = apple_rdesc_fixup,
+ 	.probe = apple_probe,
+ 	.remove = apple_remove,
+ 	.event = apple_event,
+diff --git a/drivers/hid/hid-cherry.c b/drivers/hid/hid-cherry.c
+index 888ece6..3c42b66 100644
+--- a/drivers/hid/hid-cherry.c
++++ b/drivers/hid/hid-cherry.c
+@@ -26,7 +26,7 @@
+  * Cherry Cymotion keyboard have an invalid HID report descriptor,
+  * that needs fixing before we can parse it.
+  */
+-static __u8 *ch_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *ch_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+ 	if (*rsize >= 17 && rdesc[11] == 0x3c && rdesc[12] == 0x02) {
+@@ -67,7 +67,7 @@ MODULE_DEVICE_TABLE(hid, ch_devices);
+ static struct hid_driver ch_driver = {
+ 	.name = "cherry",
+ 	.id_table = ch_devices,
+-	.report_fixup = ch_report_fixup,
++	.rdesc_fixup = ch_rdesc_fixup,
+ 	.input_mapping = ch_input_mapping,
+ };
+ 
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 9ed4ff3..e44d588 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -546,10 +546,10 @@ static void hid_free_report(struct hid_report *report)
  }
-@@ -241,7 +241,7 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 	u32 ems_mode;
- 	struct amd76x_error_info discard;
  
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 	pci_read_config_dword(pdev, AMD76X_ECC_MODE_STATUS, &ems);
- 	ems_mode = (ems >> 10) & 0x3;
+ /*
+- * Close report. This function returns the device
+- * state to the point prior to hid_open_report().
++ * Close report descriptor. This function returns the device
++ * state to the point prior to hid_open_rdesc().
+  */
+-static void hid_close_report(struct hid_device *device)
++static void hid_close_rdesc(struct hid_device *device)
+ {
+ 	unsigned i, j;
  
-@@ -256,7 +256,7 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
+@@ -586,7 +586,7 @@ static void hid_device_release(struct device *dev)
+ {
+ 	struct hid_device *hid = container_of(dev, struct hid_device, dev);
  
--	debugf0("%s(): mci = %p\n", __func__, mci);
-+	debugf0("mci = %p\n", mci);
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_RDDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
-@@ -292,7 +292,7 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
+-	hid_close_report(hid);
++	hid_close_rdesc(hid);
+ 	kfree(hid->dev_rdesc);
+ 	kfree(hid);
+ }
+@@ -659,16 +659,16 @@ static u8 *fetch_item(__u8 *start, __u8 *end, struct hid_item *item)
+ }
  
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
+ /**
+- * hid_parse_report - parse device report
++ * hid_parse_rdesc - parse device report descriptor
+  *
+  * @device: hid device
+- * @start: report start
+- * @size: report size
++ * @start: report descriptor start
++ * @size: report descriptor size
+  *
+- * Allocate the device report as read by the bus driver. This function should
+- * only be called from parse() in ll drivers.
++ * Allocate the device report descriptor as read by the bus driver.
++ * This function should only be called from parse() in ll drivers.
+  */
+-int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size)
++int hid_parse_rdesc(struct hid_device *hid, __u8 *start, unsigned size)
+ {
+ 	hid->dev_rdesc = kmemdup(start, size, GFP_KERNEL);
+ 	if (!hid->dev_rdesc)
+@@ -676,21 +676,21 @@ int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size)
+ 	hid->dev_rsize = size;
  	return 0;
+ }
+-EXPORT_SYMBOL_GPL(hid_parse_report);
++EXPORT_SYMBOL_GPL(hid_parse_rdesc);
  
- fail:
-@@ -304,7 +304,7 @@ fail:
- static int __devinit amd76x_init_one(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
+ /**
+- * hid_open_report - open a driver-specific device report
++ * hid_open_rdesc - open a driver-specific device report descriptor
+  *
+  * @device: hid device
+  *
+- * Parse a report description into a hid_device structure. Reports are
++ * Parse a report descriptor into a hid_device structure. Reports are
+  * enumerated, fields are attached to these reports.
+  * 0 returned on success, otherwise nonzero error value.
+  *
+  * This function (or the equivalent hid_parse() macro) should only be
+  * called from probe() in drivers, before starting the device.
+  */
+-int hid_open_report(struct hid_device *device)
++int hid_open_rdesc(struct hid_device *device)
  {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* don't need to call pci_enable_device() */
- 	return amd76x_probe1(pdev, ent->driver_data);
-@@ -322,7 +322,7 @@ static void __devexit amd76x_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (amd76x_pci)
- 		edac_pci_release_generic_ctl(amd76x_pci);
-diff --git a/drivers/edac/cpc925_edac.c b/drivers/edac/cpc925_edac.c
-index 31b3c91..9ee1194 100644
---- a/drivers/edac/cpc925_edac.c
-+++ b/drivers/edac/cpc925_edac.c
-@@ -316,13 +316,12 @@ static void get_total_mem(struct cpc925_mc_pdata *pdata)
- 		reg += aw;
- 		size = of_read_number(reg, sw);
- 		reg += sw;
--		debugf1("%s: start 0x%lx, size 0x%lx\n", __func__,
--			start, size);
-+		debugf1("start 0x%lx, size 0x%lx\n", start, size);
- 		pdata->total_mem += size;
- 	} while (reg < reg_end);
- 
- 	of_node_put(np);
--	debugf0("%s: total_mem 0x%lx\n", __func__, pdata->total_mem);
-+	debugf0("total_mem 0x%lx\n", pdata->total_mem);
- }
- 
- static void cpc925_init_csrows(struct mem_ctl_info *mci)
-@@ -512,7 +511,7 @@ static void cpc925_mc_get_pfn(struct mem_ctl_info *mci, u32 mear,
- 	*offset = pa & (PAGE_SIZE - 1);
- 	*pfn = pa >> PAGE_SHIFT;
- 
--	debugf0("%s: ECC physical address 0x%lx\n", __func__, pa);
-+	debugf0("ECC physical address 0x%lx\n", pa);
- }
- 
- static int cpc925_mc_find_channel(struct mem_ctl_info *mci, u16 syndrome)
-@@ -852,8 +851,8 @@ static void cpc925_add_edac_devices(void __iomem *vbase)
- 			goto err2;
- 		}
- 
--		debugf0("%s: Successfully added edac device for %s\n",
--			__func__, dev_info->ctl_name);
-+		debugf0("Successfully added edac device for %s\n",
-+			dev_info->ctl_name);
- 
- 		continue;
- 
-@@ -884,8 +883,8 @@ static void cpc925_del_edac_devices(void)
- 		if (dev_info->exit)
- 			dev_info->exit(dev_info);
- 
--		debugf0("%s: Successfully deleted edac device for %s\n",
--			__func__, dev_info->ctl_name);
-+		debugf0("Successfully deleted edac device for %s\n",
-+			dev_info->ctl_name);
- 	}
- }
- 
-@@ -900,7 +899,7 @@ static int cpc925_get_sdram_scrub_rate(struct mem_ctl_info *mci)
- 	mscr = __raw_readl(pdata->vbase + REG_MSCR_OFFSET);
- 	si = (mscr & MSCR_SI_MASK) >> MSCR_SI_SHIFT;
- 
--	debugf0("%s, Mem Scrub Ctrl Register 0x%x\n", __func__, mscr);
-+	debugf0("Mem Scrub Ctrl Register 0x%x\n", mscr);
- 
- 	if (((mscr & MSCR_SCRUB_MOD_MASK) != MSCR_BACKGR_SCRUB) ||
- 	    (si == 0)) {
-@@ -928,8 +927,7 @@ static int cpc925_mc_get_channels(void __iomem *vbase)
- 	    ((mbcr & MBCR_64BITBUS_MASK) == 0))
- 		dual = 1;
- 
--	debugf0("%s: %s channel\n", __func__,
--		(dual > 0) ? "Dual" : "Single");
-+	debugf0("%s channel\n", (dual > 0) ? "Dual" : "Single");
- 
- 	return dual;
- }
-@@ -944,7 +942,7 @@ static int __devinit cpc925_probe(struct platform_device *pdev)
- 	struct resource *r;
- 	int res = 0, nr_channels;
- 
--	debugf0("%s: %s platform device found!\n", __func__, pdev->name);
-+	debugf0("%s platform device found!\n", pdev->name);
- 
- 	if (!devres_open_group(&pdev->dev, cpc925_probe, GFP_KERNEL)) {
- 		res = -ENOMEM;
-@@ -1026,7 +1024,7 @@ static int __devinit cpc925_probe(struct platform_device *pdev)
- 	cpc925_add_edac_devices(vbase);
- 
- 	/* get this far and it's successful */
--	debugf0("%s: success\n", __func__);
-+	debugf0("success\n");
- 
- 	res = 0;
- 	goto out;
-diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
-index 7e601c1..edb6ff3 100644
---- a/drivers/edac/e752x_edac.c
-+++ b/drivers/edac/e752x_edac.c
-@@ -309,7 +309,7 @@ static unsigned long ctl_page_to_phys(struct mem_ctl_info *mci,
- 	u32 remap;
- 	struct e752x_pvt *pvt = (struct e752x_pvt *)mci->pvt_info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	if (page < pvt->tolm)
- 		return page;
-@@ -335,7 +335,7 @@ static void do_process_ce(struct mem_ctl_info *mci, u16 error_one,
- 	int i;
- 	struct e752x_pvt *pvt = (struct e752x_pvt *)mci->pvt_info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	/* convert the addr to 4k page */
- 	page = sec1_add >> (PAGE_SHIFT - 4);
-@@ -394,7 +394,7 @@ static void do_process_ue(struct mem_ctl_info *mci, u16 error_one,
- 	int row;
- 	struct e752x_pvt *pvt = (struct e752x_pvt *)mci->pvt_info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	if (error_one & 0x0202) {
- 		error_2b = ded_add;
-@@ -453,7 +453,7 @@ static inline void process_ue_no_info_wr(struct mem_ctl_info *mci,
- 	if (!handle_error)
- 		return;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0,
- 			     -1, -1, -1,
- 			     "e752x UE log memory write", "", NULL);
-@@ -982,7 +982,7 @@ static void e752x_check(struct mem_ctl_info *mci)
- {
- 	struct e752x_error_info info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	e752x_get_error_info(mci, &info);
- 	e752x_process_error_info(mci, &info, 1);
- }
-@@ -1270,7 +1270,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	int drc_chan;		/* Number of channels 0=1chan,1=2chan */
- 	struct e752x_error_info discard;
- 
--	debugf0("%s(): mci\n", __func__);
-+	debugf0("mci\n");
- 	debugf0("Starting Probe1\n");
- 
- 	/* check to see if device 0 function 1 is enabled; if it isn't, we
-@@ -1302,7 +1302,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->mtype_cap = MEM_FLAG_RDDR;
- 	/* 3100 IMCH supports SECDEC only */
- 	mci->edac_ctl_cap = (dev_idx == I3100) ? EDAC_FLAG_SECDED :
-@@ -1312,7 +1312,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	mci->mod_ver = E752X_REVISION;
- 	mci->pdev = &pdev->dev;
- 
--	debugf3("%s(): init pvt\n", __func__);
-+	debugf3("init pvt\n");
- 	pvt = (struct e752x_pvt *)mci->pvt_info;
- 	pvt->dev_info = &e752x_devs[dev_idx];
- 	pvt->mc_symmetric = ((ddrcsr & 0x10) != 0);
-@@ -1322,7 +1322,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
+ 	struct hid_parser *parser;
+ 	struct hid_item item;
+@@ -714,8 +714,8 @@ int hid_open_report(struct hid_device *device)
  		return -ENODEV;
- 	}
+ 	size = device->dev_rsize;
  
--	debugf3("%s(): more mci init\n", __func__);
-+	debugf3("more mci init\n");
- 	mci->ctl_name = pvt->dev_info->ctl_name;
- 	mci->dev_name = pci_name(pdev);
- 	mci->edac_check = e752x_check;
-@@ -1344,7 +1344,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 		mci->edac_cap = EDAC_FLAG_SECDED; /* the only mode supported */
- 	else
- 		mci->edac_cap |= EDAC_FLAG_NONE;
--	debugf3("%s(): tolm, remapbase, remaplimit\n", __func__);
-+	debugf3("tolm, remapbase, remaplimit\n");
+-	if (device->driver->report_fixup)
+-		start = device->driver->report_fixup(device, start, &size);
++	if (device->driver->rdesc_fixup)
++		start = device->driver->rdesc_fixup(device, start, &size);
  
- 	/* load the top of low memory, remap base, and remap limit vars */
- 	pci_read_config_word(pdev, E752X_TOLM, &pci_data);
-@@ -1379,7 +1379,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	return 0;
- 
- fail:
-@@ -1395,7 +1395,7 @@ fail:
- static int __devinit e752x_init_one(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* wake up and enable device */
- 	if (pci_enable_device(pdev) < 0)
-@@ -1409,7 +1409,7 @@ static void __devexit e752x_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	struct e752x_pvt *pvt;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (e752x_pci)
- 		edac_pci_release_generic_ctl(e752x_pci);
-@@ -1455,7 +1455,7 @@ static int __init e752x_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -1466,7 +1466,7 @@ static int __init e752x_init(void)
- 
- static void __exit e752x_exit(void)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	pci_unregister_driver(&e752x_driver);
+ 	device->rdesc = kmemdup(start, size, GFP_KERNEL);
+ 	if (device->rdesc == NULL)
+@@ -773,10 +773,10 @@ int hid_open_report(struct hid_device *device)
+ 	hid_err(device, "item fetching failed at offset %d\n", (int)(end - start));
+ err:
+ 	vfree(parser);
+-	hid_close_report(device);
++	hid_close_rdesc(device);
+ 	return ret;
  }
- 
-diff --git a/drivers/edac/e7xxx_edac.c b/drivers/edac/e7xxx_edac.c
-index 2defa96..253e878 100644
---- a/drivers/edac/e7xxx_edac.c
-+++ b/drivers/edac/e7xxx_edac.c
-@@ -166,7 +166,7 @@ static const struct e7xxx_dev_info e7xxx_devs[] = {
- /* FIXME - is this valid for both SECDED and S4ECD4ED? */
- static inline int e7xxx_find_channel(u16 syndrome)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	if ((syndrome & 0xff00) == 0)
- 		return 0;
-@@ -186,7 +186,7 @@ static unsigned long ctl_page_to_phys(struct mem_ctl_info *mci,
- 	u32 remap;
- 	struct e7xxx_pvt *pvt = (struct e7xxx_pvt *)mci->pvt_info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	if ((page < pvt->tolm) ||
- 		((page >= 0x100000) && (page < pvt->remapbase)))
-@@ -208,7 +208,7 @@ static void process_ce(struct mem_ctl_info *mci, struct e7xxx_error_info *info)
- 	int row;
- 	int channel;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	/* read the error address */
- 	error_1b = info->dram_celog_add;
- 	/* FIXME - should use PAGE_SHIFT */
-@@ -225,7 +225,7 @@ static void process_ce(struct mem_ctl_info *mci, struct e7xxx_error_info *info)
- 
- static void process_ce_no_info(struct mem_ctl_info *mci)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0, -1, -1, -1,
- 			     "e7xxx CE log register overflow", "", NULL);
- }
-@@ -235,7 +235,7 @@ static void process_ue(struct mem_ctl_info *mci, struct e7xxx_error_info *info)
- 	u32 error_2b, block_page;
- 	int row;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	/* read the error address */
- 	error_2b = info->dram_uelog_add;
- 	/* FIXME - should use PAGE_SHIFT */
-@@ -248,7 +248,7 @@ static void process_ue(struct mem_ctl_info *mci, struct e7xxx_error_info *info)
- 
- static void process_ue_no_info(struct mem_ctl_info *mci)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0, -1, -1, -1,
- 			     "e7xxx UE log register overflow", "", NULL);
-@@ -334,7 +334,7 @@ static void e7xxx_check(struct mem_ctl_info *mci)
- {
- 	struct e7xxx_error_info info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	e7xxx_get_error_info(mci, &info);
- 	e7xxx_process_error_info(mci, &info, 1);
- }
-@@ -430,7 +430,7 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 	int drc_chan;
- 	struct e7xxx_error_info discard;
- 
--	debugf0("%s(): mci\n", __func__);
-+	debugf0("mci\n");
- 
- 	pci_read_config_dword(pdev, E7XXX_DRC, &drc);
- 
-@@ -453,7 +453,7 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->mtype_cap = MEM_FLAG_RDDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED |
- 		EDAC_FLAG_S4ECD4ED;
-@@ -461,7 +461,7 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 	mci->mod_name = EDAC_MOD_STR;
- 	mci->mod_ver = E7XXX_REVISION;
- 	mci->pdev = &pdev->dev;
--	debugf3("%s(): init pvt\n", __func__);
-+	debugf3("init pvt\n");
- 	pvt = (struct e7xxx_pvt *)mci->pvt_info;
- 	pvt->dev_info = &e7xxx_devs[dev_idx];
- 	pvt->bridge_ck = pci_get_device(PCI_VENDOR_ID_INTEL,
-@@ -474,14 +474,14 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 		goto fail0;
- 	}
- 
--	debugf3("%s(): more mci init\n", __func__);
-+	debugf3("more mci init\n");
- 	mci->ctl_name = pvt->dev_info->ctl_name;
- 	mci->dev_name = pci_name(pdev);
- 	mci->edac_check = e7xxx_check;
- 	mci->ctl_page_to_phys = ctl_page_to_phys;
- 	e7xxx_init_csrows(mci, pdev, dev_idx, drc);
- 	mci->edac_cap |= EDAC_FLAG_NONE;
--	debugf3("%s(): tolm, remapbase, remaplimit\n", __func__);
-+	debugf3("tolm, remapbase, remaplimit\n");
- 	/* load the top of low memory, remap base, and remap limit vars */
- 	pci_read_config_word(pdev, E7XXX_TOLM, &pci_data);
- 	pvt->tolm = ((u32) pci_data) << 4;
-@@ -516,7 +516,7 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	return 0;
- 
- fail1:
-@@ -532,7 +532,7 @@ fail0:
- static int __devinit e7xxx_init_one(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* wake up and enable device */
- 	return pci_enable_device(pdev) ?
-@@ -544,7 +544,7 @@ static void __devexit e7xxx_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	struct e7xxx_pvt *pvt;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (e7xxx_pci)
- 		edac_pci_release_generic_ctl(e7xxx_pci);
-diff --git a/drivers/edac/edac_device.c b/drivers/edac/edac_device.c
-index cb397d9..ed46949 100644
---- a/drivers/edac/edac_device.c
-+++ b/drivers/edac/edac_device.c
-@@ -82,8 +82,8 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
- 	void *pvt, *p;
- 	int err;
- 
--	debugf4("%s() instances=%d blocks=%d\n",
--		__func__, nr_instances, nr_blocks);
-+	debugf4("instances=%d blocks=%d\n",
-+		nr_instances, nr_blocks);
- 
- 	/* Calculate the size of memory we need to allocate AND
- 	 * determine the offsets of the various item arrays
-@@ -156,8 +156,8 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
- 	/* Name of this edac device */
- 	snprintf(dev_ctl->name,sizeof(dev_ctl->name),"%s",edac_device_name);
- 
--	debugf4("%s() edac_dev=%p next after end=%p\n",
--		__func__, dev_ctl, pvt + sz_private );
-+	debugf4("edac_dev=%p next after end=%p\n",
-+		dev_ctl, pvt + sz_private );
- 
- 	/* Initialize every Instance */
- 	for (instance = 0; instance < nr_instances; instance++) {
-@@ -178,9 +178,9 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
- 			snprintf(blk->name, sizeof(blk->name),
- 				 "%s%d", edac_block_name, block+offset_value);
- 
--			debugf4("%s() instance=%d inst_p=%p block=#%d "
-+			debugf4("instance=%d inst_p=%p block=#%d "
- 				"block_p=%p name='%s'\n",
--				__func__, instance, inst, block,
-+				instance, inst, block,
- 				blk, blk->name);
- 
- 			/* if there are NO attributes OR no attribute pointer
-@@ -194,8 +194,8 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
- 			attrib_p = &dev_attrib[block*nr_instances*nr_attrib];
- 			blk->block_attributes = attrib_p;
- 
--			debugf4("%s() THIS BLOCK_ATTRIB=%p\n",
--				__func__, blk->block_attributes);
-+			debugf4("THIS BLOCK_ATTRIB=%p\n",
-+				blk->block_attributes);
- 
- 			/* Initialize every user specified attribute in this
- 			 * block with the data the caller passed in
-@@ -214,9 +214,9 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
- 
- 				attrib->block = blk;	/* up link */
- 
--				debugf4("%s() alloc-attrib=%p attrib_name='%s' "
-+				debugf4("alloc-attrib=%p attrib_name='%s' "
- 					"attrib-spec=%p spec-name=%s\n",
--					__func__, attrib, attrib->attr.name,
-+					attrib, attrib->attr.name,
- 					&attrib_spec[attr],
- 					attrib_spec[attr].attr.name
- 					);
-@@ -273,7 +273,7 @@ static struct edac_device_ctl_info *find_edac_device_by_dev(struct device *dev)
- 	struct edac_device_ctl_info *edac_dev;
- 	struct list_head *item;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	list_for_each(item, &edac_device_list) {
- 		edac_dev = list_entry(item, struct edac_device_ctl_info, link);
-@@ -408,7 +408,7 @@ static void edac_device_workq_function(struct work_struct *work_req)
- void edac_device_workq_setup(struct edac_device_ctl_info *edac_dev,
- 				unsigned msec)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* take the arg 'msec' and set it into the control structure
- 	 * to used in the time period calculation
-@@ -496,7 +496,7 @@ EXPORT_SYMBOL_GPL(edac_device_alloc_index);
-  */
- int edac_device_add_device(struct edac_device_ctl_info *edac_dev)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- #ifdef CONFIG_EDAC_DEBUG
- 	if (edac_debug_level >= 3)
-@@ -570,7 +570,7 @@ struct edac_device_ctl_info *edac_device_del_device(struct device *dev)
- {
- 	struct edac_device_ctl_info *edac_dev;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	mutex_lock(&device_ctls_mutex);
- 
-diff --git a/drivers/edac/edac_device_sysfs.c b/drivers/edac/edac_device_sysfs.c
-index b4ea185..3c589c2 100644
---- a/drivers/edac/edac_device_sysfs.c
-+++ b/drivers/edac/edac_device_sysfs.c
-@@ -202,7 +202,7 @@ static void edac_device_ctrl_master_release(struct kobject *kobj)
- {
- 	struct edac_device_ctl_info *edac_dev = to_edacdev(kobj);
- 
--	debugf4("%s() control index=%d\n", __func__, edac_dev->dev_idx);
-+	debugf4("control index=%d\n", edac_dev->dev_idx);
- 
- 	/* decrement the EDAC CORE module ref count */
- 	module_put(edac_dev->owner);
-@@ -233,12 +233,12 @@ int edac_device_register_sysfs_main_kobj(struct edac_device_ctl_info *edac_dev)
- 	struct bus_type *edac_subsys;
- 	int err;
- 
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
- 
- 	/* get the /sys/devices/system/edac reference */
- 	edac_subsys = edac_get_sysfs_subsys();
- 	if (edac_subsys == NULL) {
--		debugf1("%s() no edac_subsys error\n", __func__);
-+		debugf1("no edac_subsys error\n");
- 		err = -ENODEV;
- 		goto err_out;
- 	}
-@@ -264,8 +264,8 @@ int edac_device_register_sysfs_main_kobj(struct edac_device_ctl_info *edac_dev)
- 				   &edac_subsys->dev_root->kobj,
- 				   "%s", edac_dev->name);
- 	if (err) {
--		debugf1("%s()Failed to register '.../edac/%s'\n",
--			__func__, edac_dev->name);
-+		debugf1("Failed to register '.../edac/%s'\n",
-+			edac_dev->name);
- 		goto err_kobj_reg;
- 	}
- 	kobject_uevent(&edac_dev->kobj, KOBJ_ADD);
-@@ -274,8 +274,8 @@ int edac_device_register_sysfs_main_kobj(struct edac_device_ctl_info *edac_dev)
- 	 * edac_device_unregister_sysfs_main_kobj() must be used
- 	 */
- 
--	debugf4("%s() Registered '.../edac/%s' kobject\n",
--		__func__, edac_dev->name);
-+	debugf4("Registered '.../edac/%s' kobject\n",
-+		edac_dev->name);
- 
- 	return 0;
- 
-@@ -296,9 +296,9 @@ err_out:
-  */
- void edac_device_unregister_sysfs_main_kobj(struct edac_device_ctl_info *dev)
- {
--	debugf0("%s()\n", __func__);
--	debugf4("%s() name of kobject is: %s\n",
--		__func__, kobject_name(&dev->kobj));
-+	debugf0("\n");
-+	debugf4("name of kobject is: %s\n",
-+		kobject_name(&dev->kobj));
- 
- 	/*
- 	 * Unregister the edac device's kobject and
-@@ -336,7 +336,7 @@ static void edac_device_ctrl_instance_release(struct kobject *kobj)
- {
- 	struct edac_device_instance *instance;
- 
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
- 
- 	/* map from this kobj to the main control struct
- 	 * and then dec the main kobj count
-@@ -442,7 +442,7 @@ static void edac_device_ctrl_block_release(struct kobject *kobj)
- {
- 	struct edac_device_block *block;
- 
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
- 
- 	/* get the container of the kobj */
- 	block = to_block(kobj);
-@@ -524,10 +524,10 @@ static int edac_device_create_block(struct edac_device_ctl_info *edac_dev,
- 	struct edac_dev_sysfs_block_attribute *sysfs_attrib;
- 	struct kobject *main_kobj;
- 
--	debugf4("%s() Instance '%s' inst_p=%p  block '%s'  block_p=%p\n",
--		__func__, instance->name, instance, block->name, block);
--	debugf4("%s() block kobj=%p  block kobj->parent=%p\n",
--		__func__, &block->kobj, &block->kobj.parent);
-+	debugf4("Instance '%s' inst_p=%p  block '%s'  block_p=%p\n",
-+		instance->name, instance, block->name, block);
-+	debugf4("block kobj=%p  block kobj->parent=%p\n",
-+		&block->kobj, &block->kobj.parent);
- 
- 	/* init this block's kobject */
- 	memset(&block->kobj, 0, sizeof(struct kobject));
-@@ -546,8 +546,8 @@ static int edac_device_create_block(struct edac_device_ctl_info *edac_dev,
- 				   &instance->kobj,
- 				   "%s", block->name);
- 	if (err) {
--		debugf1("%s() Failed to register instance '%s'\n",
--			__func__, block->name);
-+		debugf1("Failed to register instance '%s'\n",
-+			block->name);
- 		kobject_put(main_kobj);
- 		err = -ENODEV;
- 		goto err_out;
-@@ -560,9 +560,8 @@ static int edac_device_create_block(struct edac_device_ctl_info *edac_dev,
- 	if (sysfs_attrib && block->nr_attribs) {
- 		for (i = 0; i < block->nr_attribs; i++, sysfs_attrib++) {
- 
--			debugf4("%s() creating block attrib='%s' "
-+			debugf4("creating block attrib='%s' "
- 				"attrib->%p to kobj=%p\n",
--				__func__,
- 				sysfs_attrib->attr.name,
- 				sysfs_attrib, &block->kobj);
- 
-@@ -647,14 +646,14 @@ static int edac_device_create_instance(struct edac_device_ctl_info *edac_dev,
- 	err = kobject_init_and_add(&instance->kobj, &ktype_instance_ctrl,
- 				   &edac_dev->kobj, "%s", instance->name);
- 	if (err != 0) {
--		debugf2("%s() Failed to register instance '%s'\n",
--			__func__, instance->name);
-+		debugf2("Failed to register instance '%s'\n",
-+			instance->name);
- 		kobject_put(main_kobj);
- 		goto err_out;
- 	}
- 
--	debugf4("%s() now register '%d' blocks for instance %d\n",
--		__func__, instance->nr_blocks, idx);
-+	debugf4("now register '%d' blocks for instance %d\n",
-+		instance->nr_blocks, idx);
- 
- 	/* register all blocks of this instance */
- 	for (i = 0; i < instance->nr_blocks; i++) {
-@@ -670,8 +669,8 @@ static int edac_device_create_instance(struct edac_device_ctl_info *edac_dev,
- 	}
- 	kobject_uevent(&instance->kobj, KOBJ_ADD);
- 
--	debugf4("%s() Registered instance %d '%s' kobject\n",
--		__func__, idx, instance->name);
-+	debugf4("Registered instance %d '%s' kobject\n",
-+		idx, instance->name);
- 
- 	return 0;
- 
-@@ -715,7 +714,7 @@ static int edac_device_create_instances(struct edac_device_ctl_info *edac_dev)
- 	int i, j;
- 	int err;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* iterate over creation of the instances */
- 	for (i = 0; i < edac_dev->nr_instances; i++) {
-@@ -817,12 +816,12 @@ int edac_device_create_sysfs(struct edac_device_ctl_info *edac_dev)
- 	int err;
- 	struct kobject *edac_kobj = &edac_dev->kobj;
- 
--	debugf0("%s() idx=%d\n", __func__, edac_dev->dev_idx);
-+	debugf0("idx=%d\n", edac_dev->dev_idx);
- 
- 	/*  go create any main attributes callers wants */
- 	err = edac_device_add_main_sysfs_attributes(edac_dev);
- 	if (err) {
--		debugf0("%s() failed to add sysfs attribs\n", __func__);
-+		debugf0("failed to add sysfs attribs\n");
- 		goto err_out;
- 	}
- 
-@@ -849,8 +848,8 @@ int edac_device_create_sysfs(struct edac_device_ctl_info *edac_dev)
- 	}
- 
- 
--	debugf4("%s() create-instances done, idx=%d\n",
--		__func__, edac_dev->dev_idx);
-+	debugf4("create-instances done, idx=%d\n",
-+		edac_dev->dev_idx);
- 
- 	return 0;
- 
-@@ -873,7 +872,7 @@ err_out:
-  */
- void edac_device_remove_sysfs(struct edac_device_ctl_info *edac_dev)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* remove any main attributes for this device */
- 	edac_device_remove_main_sysfs_attributes(edac_dev);
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 65568e6..32ed17b 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -259,13 +259,13 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
- 	count = 1;
- 	for (i = 0; i < n_layers; i++) {
- 		count *= layers[i].size;
--		debugf4("%s: errcount layer %d size %d\n", __func__, i, count);
-+		debugf4("errcount layer %d size %d\n", i, count);
- 		ce_per_layer[i] = edac_align_ptr(&ptr, sizeof(u32), count);
- 		ue_per_layer[i] = edac_align_ptr(&ptr, sizeof(u32), count);
- 		tot_errcount += 2 * count;
- 	}
- 
--	debugf4("%s: allocating %d error counters\n", __func__, tot_errcount);
-+	debugf4("allocating %d error counters\n", tot_errcount);
- 	pvt = edac_align_ptr(&ptr, sz_pvt, 1);
- 	size = ((unsigned long)pvt) + sz_pvt;
- 
-@@ -337,7 +337,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
- 	memset(&pos, 0, sizeof(pos));
- 	row = 0;
- 	chn = 0;
--	debugf4("%s: initializing %d %s\n", __func__, tot_dimms,
-+	debugf4("initializing %d %s\n", tot_dimms,
- 		per_rank ? "ranks" : "dimms");
- 	for (i = 0; i < tot_dimms; i++) {
- 		chan = mci->csrows[row]->channels[chn];
-@@ -451,7 +451,7 @@ EXPORT_SYMBOL_GPL(edac_mc_alloc);
-  */
- void edac_mc_free(struct mem_ctl_info *mci)
- {
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
- 
- 	/* the mci instance is freed here, when the sysfs object is dropped */
- 	edac_unregister_sysfs(mci);
-@@ -471,7 +471,7 @@ struct mem_ctl_info *find_mci_by_dev(struct device *dev)
- 	struct mem_ctl_info *mci;
- 	struct list_head *item;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	list_for_each(item, &mc_devices) {
- 		mci = list_entry(item, struct mem_ctl_info, link);
-@@ -539,7 +539,7 @@ static void edac_mc_workq_function(struct work_struct *work_req)
-  */
- static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* if this instance is not in the POLL state, then simply return */
- 	if (mci->op_state != OP_RUNNING_POLL)
-@@ -566,8 +566,7 @@ static void edac_mc_workq_teardown(struct mem_ctl_info *mci)
- 
- 	status = cancel_delayed_work(&mci->work);
- 	if (status == 0) {
--		debugf0("%s() not canceled, flush the queue\n",
--			__func__);
-+		debugf0("not canceled, flush the queue\n");
- 
- 		/* workq instance might be running, wait for it */
- 		flush_workqueue(edac_workqueue);
-@@ -714,7 +713,7 @@ EXPORT_SYMBOL(edac_mc_find);
- /* FIXME - should a warning be printed if no error detection? correction? */
- int edac_mc_add_mc(struct mem_ctl_info *mci)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- #ifdef CONFIG_EDAC_DEBUG
- 	if (edac_debug_level >= 3)
-@@ -785,7 +784,7 @@ struct mem_ctl_info *edac_mc_del_mc(struct device *dev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	mutex_lock(&mem_ctls_mutex);
- 
-@@ -823,7 +822,7 @@ static void edac_mc_scrub_block(unsigned long page, unsigned long offset,
- 	void *virt_addr;
- 	unsigned long flags = 0;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	/* ECC error page was not in our memory. Ignore it. */
- 	if (!pfn_valid(page))
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index 81ca073..c4ce26e 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -623,8 +623,7 @@ static int edac_create_dimm_object(struct mem_ctl_info *mci,
- 
- 	err =  device_add(&dimm->dev);
- 
--	debugf0("%s(): creating rank/dimm device %s\n", __func__,
--		dev_name(&dimm->dev));
-+	debugf0("creating rank/dimm device %s\n", dev_name(&dimm->dev));
- 
- 	return err;
- }
-@@ -981,8 +980,7 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 	dev_set_drvdata(&mci->dev, mci);
- 	pm_runtime_forbid(&mci->dev);
- 
--	debugf0("%s(): creating device %s\n", __func__,
--		dev_name(&mci->dev));
-+	debugf0("creating device %s\n", dev_name(&mci->dev));
- 	err = device_add(&mci->dev);
- 	if (err < 0) {
- 		bus_unregister(&mci->bus);
-@@ -999,8 +997,8 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 		if (dimm->nr_pages == 0)
- 			continue;
- #ifdef CONFIG_EDAC_DEBUG
--		debugf1("%s creating dimm%d, located at ",
--			__func__, i);
-+		debugf1("creating dimm%d, located at ",
-+			i);
- 		if (edac_debug_level >= 1) {
- 			int lay;
- 			for (lay = 0; lay < mci->n_layers; lay++)
-@@ -1012,8 +1010,8 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- #endif
- 		err = edac_create_dimm_object(mci, dimm, i);
- 		if (err) {
--			debugf1("%s() failure: create dimm %d obj\n",
--				__func__, i);
-+			debugf1("failure: create dimm %d obj\n",
-+				i);
- 			goto fail;
+-EXPORT_SYMBOL_GPL(hid_open_report);
++EXPORT_SYMBOL_GPL(hid_open_rdesc);
+ 
+ /*
+  * Convert a signed n-bit integer to signed 32-bit integer. Common
+@@ -1781,12 +1781,12 @@ static int hid_device_probe(struct device *dev)
+ 		if (hdrv->probe) {
+ 			ret = hdrv->probe(hdev, id);
+ 		} else { /* default probe */
+-			ret = hid_open_report(hdev);
++			ret = hid_open_rdesc(hdev);
+ 			if (!ret)
+ 				ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+ 		}
+ 		if (ret) {
+-			hid_close_report(hdev);
++			hid_close_rdesc(hdev);
+ 			hdev->driver = NULL;
  		}
  	}
-@@ -1051,7 +1049,7 @@ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
- {
- 	int i;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- #ifdef CONFIG_EDAC_DEBUG
- 	debugfs_remove(mci->debugfs);
-@@ -1064,8 +1062,7 @@ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
- 		struct dimm_info *dimm = mci->dimms[i];
- 		if (dimm->nr_pages == 0)
- 			continue;
--		debugf0("%s(): removing device %s\n", __func__,
--			dev_name(&dimm->dev));
-+		debugf0("removing device %s\n", dev_name(&dimm->dev));
- 		put_device(&dimm->dev);
- 		device_del(&dimm->dev);
- 	}
-@@ -1105,7 +1102,7 @@ int __init edac_mc_sysfs_init(void)
- 	/* get the /sys/devices/system/edac subsys reference */
- 	edac_subsys = edac_get_sysfs_subsys();
- 	if (edac_subsys == NULL) {
--		debugf1("%s() no edac_subsys\n", __func__);
-+		debugf1("no edac_subsys\n");
- 		return -EINVAL;
+@@ -1809,7 +1809,7 @@ static int hid_device_remove(struct device *dev)
+ 			hdrv->remove(hdev);
+ 		else /* default remove */
+ 			hid_hw_stop(hdev);
+-		hid_close_report(hdev);
++		hid_close_rdesc(hdev);
+ 		hdev->driver = NULL;
  	}
  
-diff --git a/drivers/edac/edac_module.c b/drivers/edac/edac_module.c
-index 8735a0d..9de2484 100644
---- a/drivers/edac/edac_module.c
-+++ b/drivers/edac/edac_module.c
-@@ -113,7 +113,7 @@ error:
+@@ -2189,7 +2189,7 @@ struct hid_device *hid_allocate_device(void)
+ 	hdev->dev.release = hid_device_release;
+ 	hdev->dev.bus = &hid_bus_type;
+ 
+-	hid_close_report(hdev);
++	hid_close_rdesc(hdev);
+ 
+ 	init_waitqueue_head(&hdev->debug_wait);
+ 	INIT_LIST_HEAD(&hdev->debug_list);
+diff --git a/drivers/hid/hid-cypress.c b/drivers/hid/hid-cypress.c
+index 2f0be4c..7af1f12 100644
+--- a/drivers/hid/hid-cypress.c
++++ b/drivers/hid/hid-cypress.c
+@@ -31,7 +31,7 @@
+  * Some USB barcode readers from cypress have usage min and usage max in
+  * the wrong order
   */
- static void __exit edac_exit(void)
+-static __u8 *cp_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *cp_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
+ 	unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+@@ -138,7 +138,7 @@ MODULE_DEVICE_TABLE(hid, cp_devices);
+ static struct hid_driver cp_driver = {
+ 	.name = "cypress",
+ 	.id_table = cp_devices,
+-	.report_fixup = cp_report_fixup,
++	.rdesc_fixup = cp_rdesc_fixup,
+ 	.input_mapped = cp_input_mapped,
+ 	.event = cp_event,
+ 	.probe = cp_probe,
+diff --git a/drivers/hid/hid-dr.c b/drivers/hid/hid-dr.c
+index e832f44..01b9043 100644
+--- a/drivers/hid/hid-dr.c
++++ b/drivers/hid/hid-dr.c
+@@ -236,7 +236,7 @@ static __u8 pid0011_rdesc_fixed[] = {
+ 	0xC0                /*  End Collection                  */
+ };
  
- 	/* tear down the various subsystems */
- 	edac_workqueue_teardown();
-diff --git a/drivers/edac/edac_pci.c b/drivers/edac/edac_pci.c
-index f1ac866..953959e 100644
---- a/drivers/edac/edac_pci.c
-+++ b/drivers/edac/edac_pci.c
-@@ -45,7 +45,7 @@ struct edac_pci_ctl_info *edac_pci_alloc_ctl_info(unsigned int sz_pvt,
- 	void *p = NULL, *pvt;
- 	unsigned int size;
- 
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
- 
- 	pci = edac_align_ptr(&p, sizeof(*pci), 1);
- 	pvt = edac_align_ptr(&p, 1, sz_pvt);
-@@ -80,7 +80,7 @@ EXPORT_SYMBOL_GPL(edac_pci_alloc_ctl_info);
-  */
- void edac_pci_free_ctl_info(struct edac_pci_ctl_info *pci)
+-static __u8 *dr_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *dr_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 				unsigned int *rsize)
  {
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
+ 	switch (hdev->product) {
+@@ -294,7 +294,7 @@ MODULE_DEVICE_TABLE(hid, dr_devices);
+ static struct hid_driver dr_driver = {
+ 	.name = "dragonrise",
+ 	.id_table = dr_devices,
+-	.report_fixup = dr_report_fixup,
++	.rdesc_fixup = dr_rdesc_fixup,
+ 	.probe = dr_probe,
+ };
  
- 	edac_pci_remove_sysfs(pci);
- }
-@@ -97,7 +97,7 @@ static struct edac_pci_ctl_info *find_edac_pci_by_dev(struct device *dev)
- 	struct edac_pci_ctl_info *pci;
- 	struct list_head *item;
+diff --git a/drivers/hid/hid-elecom.c b/drivers/hid/hid-elecom.c
+index 79d0c61..37ac28e 100644
+--- a/drivers/hid/hid-elecom.c
++++ b/drivers/hid/hid-elecom.c
+@@ -20,7 +20,7 @@
  
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
+ #include "hid-ids.h"
  
- 	list_for_each(item, &edac_pci_list) {
- 		pci = list_entry(item, struct edac_pci_ctl_info, link);
-@@ -122,7 +122,7 @@ static int add_edac_pci_to_global_list(struct edac_pci_ctl_info *pci)
- 	struct list_head *item, *insert_before;
- 	struct edac_pci_ctl_info *rover;
- 
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
- 
- 	insert_before = &edac_pci_list;
- 
-@@ -226,7 +226,7 @@ static void edac_pci_workq_function(struct work_struct *work_req)
- 	int msec;
- 	unsigned long delay;
- 
--	debugf3("%s() checking\n", __func__);
-+	debugf3("checking\n");
- 
- 	mutex_lock(&edac_pci_ctls_mutex);
- 
-@@ -261,7 +261,7 @@ static void edac_pci_workq_function(struct work_struct *work_req)
- static void edac_pci_workq_setup(struct edac_pci_ctl_info *pci,
- 				 unsigned int msec)
+-static __u8 *elecom_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *elecom_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
+ 	if (*rsize >= 48 && rdesc[46] == 0x05 && rdesc[47] == 0x0c) {
+@@ -39,7 +39,7 @@ MODULE_DEVICE_TABLE(hid, elecom_devices);
+ static struct hid_driver elecom_driver = {
+ 	.name = "elecom",
+ 	.id_table = elecom_devices,
+-	.report_fixup = elecom_report_fixup
++	.rdesc_fixup = elecom_rdesc_fixup
+ };
  
- 	INIT_DELAYED_WORK(&pci->work, edac_pci_workq_function);
- 	queue_delayed_work(edac_workqueue, &pci->work,
-@@ -276,7 +276,7 @@ static void edac_pci_workq_teardown(struct edac_pci_ctl_info *pci)
- {
- 	int status;
+ static int __init elecom_init(void)
+diff --git a/drivers/hid/hid-hyperv.c b/drivers/hid/hid-hyperv.c
+index 032e6c0..406c02c 100644
+--- a/drivers/hid/hid-hyperv.c
++++ b/drivers/hid/hid-hyperv.c
+@@ -435,7 +435,7 @@ static int mousevsc_hid_parse(struct hid_device *hid)
+ 	struct hv_device *dev = hid_get_drvdata(hid);
+ 	struct mousevsc_dev *input_dev = hv_get_drvdata(dev);
  
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	status = cancel_delayed_work(&pci->work);
- 	if (status == 0)
-@@ -293,7 +293,7 @@ static void edac_pci_workq_teardown(struct edac_pci_ctl_info *pci)
- void edac_pci_reset_delay_period(struct edac_pci_ctl_info *pci,
- 				 unsigned long value)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	edac_pci_workq_teardown(pci);
- 
-@@ -333,7 +333,7 @@ EXPORT_SYMBOL_GPL(edac_pci_alloc_index);
-  */
- int edac_pci_add_device(struct edac_pci_ctl_info *pci, int edac_idx)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	pci->pci_idx = edac_idx;
- 	pci->start_time = jiffies;
-@@ -393,7 +393,7 @@ struct edac_pci_ctl_info *edac_pci_del_device(struct device *dev)
- {
- 	struct edac_pci_ctl_info *pci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	mutex_lock(&edac_pci_ctls_mutex);
- 
-@@ -430,7 +430,7 @@ EXPORT_SYMBOL_GPL(edac_pci_del_device);
-  */
- static void edac_pci_generic_check(struct edac_pci_ctl_info *pci)
- {
--	debugf4("%s()\n", __func__);
-+	debugf4("\n");
- 	edac_pci_do_parity_check();
+-	return hid_parse_report(hid, input_dev->report_desc,
++	return hid_parse_rdesc(hid, input_dev->report_desc,
+ 				input_dev->report_desc_size);
  }
  
-@@ -491,7 +491,7 @@ EXPORT_SYMBOL_GPL(edac_pci_create_generic_ctl);
+diff --git a/drivers/hid/hid-keytouch.c b/drivers/hid/hid-keytouch.c
+index 07cd825..2a2a49c 100644
+--- a/drivers/hid/hid-keytouch.c
++++ b/drivers/hid/hid-keytouch.c
+@@ -27,7 +27,7 @@ static __u8 keytouch_fixed_rdesc[] = {
+ 0x26, 0xff, 0x00, 0x05, 0x07, 0x19, 0x00, 0x2a, 0xff, 0x00, 0x81, 0x00, 0xc0
+ };
+ 
+-static __u8 *keytouch_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *keytouch_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+ 	hid_info(hdev, "fixing up Keytouch IEC report descriptor\n");
+@@ -47,7 +47,7 @@ MODULE_DEVICE_TABLE(hid, keytouch_devices);
+ static struct hid_driver keytouch_driver = {
+ 	.name = "keytouch",
+ 	.id_table = keytouch_devices,
+-	.report_fixup = keytouch_report_fixup,
++	.rdesc_fixup = keytouch_rdesc_fixup,
+ };
+ 
+ static int __init keytouch_init(void)
+diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
+index b4f0d82..1eca937 100644
+--- a/drivers/hid/hid-kye.c
++++ b/drivers/hid/hid-kye.c
+@@ -270,7 +270,7 @@ static __u8 easypen_m610x_rdesc_fixed[] = {
+ 	0xC0                          /*  End Collection                  */
+ };
+ 
+-static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *kye_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+ 	switch (hdev->product) {
+@@ -417,7 +417,7 @@ static struct hid_driver kye_driver = {
+ 	.name = "kye",
+ 	.id_table = kye_devices,
+ 	.probe = kye_probe,
+-	.report_fixup = kye_report_fixup,
++	.rdesc_fixup = kye_rdesc_fixup,
+ };
+ 
+ static int __init kye_init(void)
+diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
+index e7a7bd1..16e3a56 100644
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -106,7 +106,7 @@ static __u8 dfp_rdesc_fixed[] = {
+  * above the logical maximum described in descriptor. This extends
+  * the original value of 0x28c of logical maximum to 0x104d
   */
- void edac_pci_release_generic_ctl(struct edac_pci_ctl_info *pci)
+-static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *lg_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
--	debugf0("%s() pci mod=%s\n", __func__, pci->mod_name);
-+	debugf0("pci mod=%s\n", pci->mod_name);
- 
- 	edac_pci_del_device(pci->dev);
- 	edac_pci_free_ctl_info(pci);
-diff --git a/drivers/edac/edac_pci_sysfs.c b/drivers/edac/edac_pci_sysfs.c
-index 97f5064..330e820 100644
---- a/drivers/edac/edac_pci_sysfs.c
-+++ b/drivers/edac/edac_pci_sysfs.c
-@@ -78,7 +78,7 @@ static void edac_pci_instance_release(struct kobject *kobj)
- {
- 	struct edac_pci_ctl_info *pci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* Form pointer to containing struct, the pci control struct */
- 	pci = to_instance(kobj);
-@@ -161,7 +161,7 @@ static int edac_pci_create_instance_kobj(struct edac_pci_ctl_info *pci, int idx)
- 	struct kobject *main_kobj;
- 	int err;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* First bump the ref count on the top main kobj, which will
- 	 * track the number of PCI instances we have, and thus nest
-@@ -177,14 +177,14 @@ static int edac_pci_create_instance_kobj(struct edac_pci_ctl_info *pci, int idx)
- 	err = kobject_init_and_add(&pci->kobj, &ktype_pci_instance,
- 				   edac_pci_top_main_kobj, "pci%d", idx);
- 	if (err != 0) {
--		debugf2("%s() failed to register instance pci%d\n",
--			__func__, idx);
-+		debugf2("failed to register instance pci%d\n",
-+			idx);
- 		kobject_put(edac_pci_top_main_kobj);
- 		goto error_out;
+ 	unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+@@ -485,7 +485,7 @@ MODULE_DEVICE_TABLE(hid, lg_devices);
+ static struct hid_driver lg_driver = {
+ 	.name = "logitech",
+ 	.id_table = lg_devices,
+-	.report_fixup = lg_report_fixup,
++	.rdesc_fixup = lg_rdesc_fixup,
+ 	.input_mapping = lg_input_mapping,
+ 	.input_mapped = lg_input_mapped,
+ 	.event = lg_event,
+diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+index e1c38bb..523d38a 100644
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -538,7 +538,7 @@ static int logi_dj_ll_parse(struct hid_device *hid)
+ 			__func__, djdev->reports_supported);
  	}
  
- 	kobject_uevent(&pci->kobj, KOBJ_ADD);
--	debugf1("%s() Register instance 'pci%d' kobject\n", __func__, idx);
-+	debugf1("Register instance 'pci%d' kobject\n", idx);
+-	retval = hid_parse_report(hid, rdesc, rsize);
++	retval = hid_parse_rdesc(hid, rdesc, rsize);
+ 	kfree(rdesc);
  
- 	return 0;
- 
-@@ -201,7 +201,7 @@ error_out:
- static void edac_pci_unregister_sysfs_instance_kobj(
- 			struct edac_pci_ctl_info *pci)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* Unregister the instance kobject and allow its release
- 	 * function release the main reference count and then
-@@ -345,7 +345,7 @@ static int edac_pci_main_kobj_setup(void)
- 	int err;
- 	struct bus_type *edac_subsys;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* check and count if we have already created the main kobject */
- 	if (atomic_inc_return(&edac_pci_sysfs_refcount) != 1)
-@@ -356,7 +356,7 @@ static int edac_pci_main_kobj_setup(void)
- 	 */
- 	edac_subsys = edac_get_sysfs_subsys();
- 	if (edac_subsys == NULL) {
--		debugf1("%s() no edac_subsys\n", __func__);
-+		debugf1("no edac_subsys\n");
- 		err = -ENODEV;
- 		goto decrement_count_fail;
- 	}
-@@ -421,15 +421,14 @@ decrement_count_fail:
+ 	return retval;
+diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
+index e5c699b..43b1ad4 100644
+--- a/drivers/hid/hid-microsoft.c
++++ b/drivers/hid/hid-microsoft.c
+@@ -34,7 +34,7 @@
+  * Microsoft Wireless Desktop Receiver (Model 1028) has
+  * 'Usage Min/Max' where it ought to have 'Physical Min/Max'
   */
- static void edac_pci_main_kobj_teardown(void)
+-static __u8 *ms_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *ms_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
+ 	unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+@@ -208,7 +208,7 @@ MODULE_DEVICE_TABLE(hid, ms_devices);
+ static struct hid_driver ms_driver = {
+ 	.name = "microsoft",
+ 	.id_table = ms_devices,
+-	.report_fixup = ms_report_fixup,
++	.rdesc_fixup = ms_rdesc_fixup,
+ 	.input_mapping = ms_input_mapping,
+ 	.input_mapped = ms_input_mapped,
+ 	.event = ms_event,
+diff --git a/drivers/hid/hid-monterey.c b/drivers/hid/hid-monterey.c
+index dedf757..f0b739a 100644
+--- a/drivers/hid/hid-monterey.c
++++ b/drivers/hid/hid-monterey.c
+@@ -22,7 +22,7 @@
  
- 	/* Decrement the count and only if no more controller instances
- 	 * are connected perform the unregisteration of the top level
- 	 * main kobj
- 	 */
- 	if (atomic_dec_return(&edac_pci_sysfs_refcount) == 0) {
--		debugf0("%s() called kobject_put on main kobj\n",
--			__func__);
-+		debugf0("called kobject_put on main kobj\n");
- 		kobject_put(edac_pci_top_main_kobj);
- 	}
- 	edac_put_sysfs_subsys();
-@@ -446,7 +445,7 @@ int edac_pci_create_sysfs(struct edac_pci_ctl_info *pci)
- 	int err;
- 	struct kobject *edac_kobj = &pci->kobj;
+ #include "hid-ids.h"
  
--	debugf0("%s() idx=%d\n", __func__, pci->pci_idx);
-+	debugf0("idx=%d\n", pci->pci_idx);
+-static __u8 *mr_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *mr_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+ 	if (*rsize >= 30 && rdesc[29] == 0x05 && rdesc[30] == 0x09) {
+@@ -61,7 +61,7 @@ MODULE_DEVICE_TABLE(hid, mr_devices);
+ static struct hid_driver mr_driver = {
+ 	.name = "monterey",
+ 	.id_table = mr_devices,
+-	.report_fixup = mr_report_fixup,
++	.rdesc_fixup = mr_rdesc_fixup,
+ 	.input_mapping = mr_input_mapping,
+ };
  
- 	/* create the top main EDAC PCI kobject, IF needed */
- 	err = edac_pci_main_kobj_setup();
-@@ -484,7 +483,7 @@ unregister_cleanup:
+diff --git a/drivers/hid/hid-ortek.c b/drivers/hid/hid-ortek.c
+index 0ffa1d2..697d463 100644
+--- a/drivers/hid/hid-ortek.c
++++ b/drivers/hid/hid-ortek.c
+@@ -24,7 +24,7 @@
+ 
+ #include "hid-ids.h"
+ 
+-static __u8 *ortek_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *ortek_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+ 	if (*rsize >= 56 && rdesc[54] == 0x25 && rdesc[55] == 0x01) {
+@@ -48,7 +48,7 @@ MODULE_DEVICE_TABLE(hid, ortek_devices);
+ static struct hid_driver ortek_driver = {
+ 	.name = "ortek",
+ 	.id_table = ortek_devices,
+-	.report_fixup = ortek_report_fixup
++	.rdesc_fixup = ortek_rdesc_fixup
+ };
+ 
+ static int __init ortek_init(void)
+diff --git a/drivers/hid/hid-petalynx.c b/drivers/hid/hid-petalynx.c
+index f1ea3ff..1ca2821e 100644
+--- a/drivers/hid/hid-petalynx.c
++++ b/drivers/hid/hid-petalynx.c
+@@ -23,7 +23,7 @@
+ #include "hid-ids.h"
+ 
+ /* Petalynx Maxter Remote has maximum for consumer page set too low */
+-static __u8 *pl_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *pl_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+ 	if (*rsize >= 60 && rdesc[39] == 0x2a && rdesc[40] == 0xf5 &&
+@@ -100,7 +100,7 @@ MODULE_DEVICE_TABLE(hid, pl_devices);
+ static struct hid_driver pl_driver = {
+ 	.name = "petalynx",
+ 	.id_table = pl_devices,
+-	.report_fixup = pl_report_fixup,
++	.rdesc_fixup = pl_rdesc_fixup,
+ 	.input_mapping = pl_input_mapping,
+ 	.probe = pl_probe,
+ };
+diff --git a/drivers/hid/hid-prodikeys.c b/drivers/hid/hid-prodikeys.c
+index b71b77a..f9f6d8b 100644
+--- a/drivers/hid/hid-prodikeys.c
++++ b/drivers/hid/hid-prodikeys.c
+@@ -741,7 +741,7 @@ static int pcmidi_snd_terminate(struct pcmidi_snd *pm)
+ /*
+  * PC-MIDI report descriptor for report id is wrong.
   */
- void edac_pci_remove_sysfs(struct edac_pci_ctl_info *pci)
+-static __u8 *pk_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *pk_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
--	debugf0("%s() index=%d\n", __func__, pci->pci_idx);
-+	debugf0("index=%d\n", pci->pci_idx);
+ 	if (*rsize == 178 &&
+@@ -883,7 +883,7 @@ MODULE_DEVICE_TABLE(hid, pk_devices);
+ static struct hid_driver pk_driver = {
+ 	.name = "prodikeys",
+ 	.id_table = pk_devices,
+-	.report_fixup = pk_report_fixup,
++	.rdesc_fixup = pk_rdesc_fixup,
+ 	.input_mapping = pk_input_mapping,
+ 	.raw_event = pk_raw_event,
+ 	.probe = pk_probe,
+diff --git a/drivers/hid/hid-saitek.c b/drivers/hid/hid-saitek.c
+index 45aea77..30efbfe 100644
+--- a/drivers/hid/hid-saitek.c
++++ b/drivers/hid/hid-saitek.c
+@@ -21,7 +21,7 @@
  
- 	/* Remove the symlink */
- 	sysfs_remove_link(&pci->kobj, EDAC_PCI_SYMLINK);
-@@ -671,7 +670,7 @@ void edac_pci_do_parity_check(void)
+ #include "hid-ids.h"
+ 
+-static __u8 *saitek_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *saitek_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
- 	int before_count;
+ 	if (*rsize == 137 && rdesc[20] == 0x09 && rdesc[21] == 0x33
+@@ -52,7 +52,7 @@ MODULE_DEVICE_TABLE(hid, saitek_devices);
+ static struct hid_driver saitek_driver = {
+ 	.name = "saitek",
+ 	.id_table = saitek_devices,
+-	.report_fixup = saitek_report_fixup
++	.rdesc_fixup = saitek_rdesc_fixup
+ };
  
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
+ static int __init saitek_init(void)
+diff --git a/drivers/hid/hid-samsung.c b/drivers/hid/hid-samsung.c
+index 3c1fd8a..1b2ba50 100644
+--- a/drivers/hid/hid-samsung.c
++++ b/drivers/hid/hid-samsung.c
+@@ -61,7 +61,7 @@ static inline void samsung_irda_dev_trace(struct hid_device *hdev,
+ 		 rsize);
+ }
  
- 	/* if policy has PCI check off, leave now */
- 	if (!check_pci_errors)
-diff --git a/drivers/edac/i3000_edac.c b/drivers/edac/i3000_edac.c
-index 55eff02..3609742 100644
---- a/drivers/edac/i3000_edac.c
-+++ b/drivers/edac/i3000_edac.c
-@@ -322,7 +322,7 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
- 	unsigned long mchbar;
- 	void __iomem *window;
- 
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC: \n");
- 
- 	pci_read_config_dword(pdev, I3000_MCHBAR, (u32 *) & mchbar);
- 	mchbar &= I3000_MCHBAR_MASK;
-@@ -366,7 +366,7 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (!mci)
- 		return -ENOMEM;
- 
--	debugf3("MC: %s(): init mci\n", __func__);
-+	debugf3("MC: init mci\n");
- 
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR2;
-@@ -445,7 +445,7 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("MC: %s(): success\n", __func__);
-+	debugf3("MC: success\n");
- 	return 0;
- 
- fail:
-@@ -461,7 +461,7 @@ static int __devinit i3000_init_one(struct pci_dev *pdev,
+-static __u8 *samsung_irda_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *samsung_irda_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
- 	int rc;
+ 	if (*rsize == 184 && rdesc[175] == 0x25 && rdesc[176] == 0x40 &&
+@@ -131,11 +131,11 @@ static int samsung_kbd_mouse_input_mapping(struct hid_device *hdev,
+ 	return 1;
+ }
  
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC: \n");
- 
- 	if (pci_enable_device(pdev) < 0)
- 		return -EIO;
-@@ -477,7 +477,7 @@ static void __devexit i3000_remove_one(struct pci_dev *pdev)
+-static __u8 *samsung_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *samsung_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 	unsigned int *rsize)
  {
- 	struct mem_ctl_info *mci;
+ 	if (USB_DEVICE_ID_SAMSUNG_IR_REMOTE == hdev->product)
+-		rdesc = samsung_irda_report_fixup(hdev, rdesc, rsize);
++		rdesc = samsung_irda_rdesc_fixup(hdev, rdesc, rsize);
+ 	return rdesc;
+ }
  
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
+@@ -193,7 +193,7 @@ MODULE_DEVICE_TABLE(hid, samsung_devices);
+ static struct hid_driver samsung_driver = {
+ 	.name = "samsung",
+ 	.id_table = samsung_devices,
+-	.report_fixup = samsung_report_fixup,
++	.rdesc_fixup = samsung_rdesc_fixup,
+ 	.input_mapping = samsung_input_mapping,
+ 	.probe = samsung_probe,
+ };
+diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+index 5cd25bd..0254b4e 100644
+--- a/drivers/hid/hid-sony.c
++++ b/drivers/hid/hid-sony.c
+@@ -39,7 +39,7 @@ struct sony_sc {
+ };
  
- 	if (i3000_pci)
- 		edac_pci_release_generic_ctl(i3000_pci);
-@@ -511,7 +511,7 @@ static int __init i3000_init(void)
+ /* Sony Vaio VGX has wrongly mouse pointer declared as constant */
+-static __u8 *sony_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *sony_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
- 	int pci_rc;
+ 	struct sony_sc *sc = hid_get_drvdata(hdev);
+@@ -227,7 +227,7 @@ static struct hid_driver sony_driver = {
+ 	.id_table = sony_devices,
+ 	.probe = sony_probe,
+ 	.remove = sony_remove,
+-	.report_fixup = sony_report_fixup,
++	.rdesc_fixup = sony_rdesc_fixup,
+ 	.raw_event = sony_raw_event
+ };
  
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC: \n");
+diff --git a/drivers/hid/hid-sunplus.c b/drivers/hid/hid-sunplus.c
+index d484a00..28bdc26 100644
+--- a/drivers/hid/hid-sunplus.c
++++ b/drivers/hid/hid-sunplus.c
+@@ -22,7 +22,7 @@
  
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -552,7 +552,7 @@ fail0:
+ #include "hid-ids.h"
  
- static void __exit i3000_exit(void)
+-static __u8 *sp_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *sp_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC: \n");
+ 	if (*rsize >= 107 && rdesc[104] == 0x26 && rdesc[105] == 0x80 &&
+@@ -61,7 +61,7 @@ MODULE_DEVICE_TABLE(hid, sp_devices);
+ static struct hid_driver sp_driver = {
+ 	.name = "sunplus",
+ 	.id_table = sp_devices,
+-	.report_fixup = sp_report_fixup,
++	.rdesc_fixup = sp_rdesc_fixup,
+ 	.input_mapping = sp_input_mapping,
+ };
  
- 	pci_unregister_driver(&i3000_driver);
- 	if (!i3000_registered) {
-diff --git a/drivers/edac/i3200_edac.c b/drivers/edac/i3200_edac.c
-index 818ee6f..c5fea07 100644
---- a/drivers/edac/i3200_edac.c
-+++ b/drivers/edac/i3200_edac.c
-@@ -332,7 +332,7 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
- 	void __iomem *window;
- 	struct i3200_priv *priv;
+diff --git a/drivers/hid/hid-uclogic.c b/drivers/hid/hid-uclogic.c
+index 1f11289..fad6076 100644
+--- a/drivers/hid/hid-uclogic.c
++++ b/drivers/hid/hid-uclogic.c
+@@ -352,7 +352,7 @@ static __u8 pf1209_rdesc_fixed[] = {
+ 	0xC0                /*  End Collection                      */
+ };
  
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC: \n");
- 
- 	window = i3200_map_mchbar(pdev);
- 	if (!window)
-@@ -352,7 +352,7 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (!mci)
- 		return -ENOMEM;
- 
--	debugf3("MC: %s(): init mci\n", __func__);
-+	debugf3("MC: init mci\n");
- 
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR2;
-@@ -408,7 +408,7 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("MC: %s(): success\n", __func__);
-+	debugf3("MC: success\n");
- 	return 0;
- 
- fail:
-@@ -424,7 +424,7 @@ static int __devinit i3200_init_one(struct pci_dev *pdev,
+-static __u8 *uclogic_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *uclogic_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 					unsigned int *rsize)
  {
- 	int rc;
+ 	switch (hdev->product) {
+@@ -409,7 +409,7 @@ MODULE_DEVICE_TABLE(hid, uclogic_devices);
+ static struct hid_driver uclogic_driver = {
+ 	.name = "uclogic",
+ 	.id_table = uclogic_devices,
+-	.report_fixup = uclogic_report_fixup,
++	.rdesc_fixup = uclogic_rdesc_fixup,
+ };
  
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC: \n");
+ static int __init uclogic_init(void)
+diff --git a/drivers/hid/hid-waltop.c b/drivers/hid/hid-waltop.c
+index 2cfd95c..3314eae 100644
+--- a/drivers/hid/hid-waltop.c
++++ b/drivers/hid/hid-waltop.c
+@@ -543,7 +543,7 @@ err:
+ 	return ret;
+ }
  
- 	if (pci_enable_device(pdev) < 0)
- 		return -EIO;
-@@ -441,7 +441,7 @@ static void __devexit i3200_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	struct i3200_priv *priv;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	mci = edac_mc_del_mc(&pdev->dev);
- 	if (!mci)
-@@ -475,7 +475,7 @@ static int __init i3200_init(void)
+-static __u8 *waltop_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *waltop_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
- 	int pci_rc;
- 
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC: \n");
- 
- 	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
- 	opstate_init();
-@@ -516,7 +516,7 @@ fail0:
- 
- static void __exit i3200_exit(void)
+ 	switch (hdev->product) {
+@@ -646,7 +646,7 @@ static struct hid_driver waltop_driver = {
+ 	.name = "waltop",
+ 	.id_table = waltop_devices,
+ 	.probe = waltop_probe,
+-	.report_fixup = waltop_report_fixup,
++	.rdesc_fixup = waltop_rdesc_fixup,
+ 	.raw_event = waltop_raw_event,
+ 	.remove = waltop_remove,
+ };
+diff --git a/drivers/hid/hid-zydacron.c b/drivers/hid/hid-zydacron.c
+index 1ad85f2..7e6adc1 100644
+--- a/drivers/hid/hid-zydacron.c
++++ b/drivers/hid/hid-zydacron.c
+@@ -27,7 +27,7 @@ struct zc_device {
+ * Zydacron remote control has an invalid HID report descriptor,
+ * that needs fixing before we can parse it.
+ */
+-static __u8 *zc_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++static __u8 *zc_rdesc_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 	unsigned int *rsize)
  {
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC: \n");
- 
- 	pci_unregister_driver(&i3200_driver);
- 	if (!i3200_registered) {
-diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
-index 2a9f1dc..251544a 100644
---- a/drivers/edac/i5000_edac.c
-+++ b/drivers/edac/i5000_edac.c
-@@ -1388,8 +1388,8 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
- 	i5000_get_dimm_and_channel_counts(pdev, &num_dimms_per_channel,
- 					&num_channels);
- 
--	debugf0("MC: %s(): Number of Branches=2 Channels= %d  DIMMS= %d\n",
--		__func__, num_channels, num_dimms_per_channel);
-+	debugf0("MC: Number of Branches=2 Channels= %d  DIMMS= %d\n",
-+		num_channels, num_dimms_per_channel);
- 
- 	/* allocate a new MC control structure */
- 
-diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
-index 7425f17..2fbe4c5 100644
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -1143,7 +1143,7 @@ static void __devexit i7300_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	char *tmp;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (i7300_pci)
- 		edac_pci_release_generic_ctl(i7300_pci);
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index ef237f4..2f7cc2a 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -824,7 +824,7 @@ static ssize_t i7core_inject_store_##param(			\
- 	long value;						\
- 	int rc;							\
- 								\
--	debugf1("%s()\n", __func__);				\
-+	debugf1("\n");				\
- 	pvt = mci->pvt_info;					\
- 								\
- 	if (pvt->inject.enable)					\
-@@ -852,7 +852,7 @@ static ssize_t i7core_inject_show_##param(			\
- 	struct i7core_pvt *pvt;					\
- 								\
- 	pvt = mci->pvt_info;					\
--	debugf1("%s() pvt=%p\n", __func__, pvt);		\
-+	debugf1("pvt=%p\n", pvt);		\
- 	if (pvt->inject.param < 0)				\
- 		return sprintf(data, "any\n");			\
- 	else							\
-@@ -1059,7 +1059,7 @@ static ssize_t i7core_show_counter_##param(			\
- 	struct mem_ctl_info *mci = to_mci(dev);			\
- 	struct i7core_pvt *pvt = mci->pvt_info;			\
- 								\
--	debugf1("%s()\n", __func__);				\
-+	debugf1("\n");				\
- 	if (!pvt->ce_count_available || (pvt->is_registered))	\
- 		return sprintf(data, "data unavailable\n");	\
- 	return sprintf(data, "%lu\n",				\
-@@ -1190,8 +1190,7 @@ static int i7core_create_sysfs_devices(struct mem_ctl_info *mci)
- 	dev_set_name(pvt->addrmatch_dev, "inject_addrmatch");
- 	dev_set_drvdata(pvt->addrmatch_dev, mci);
- 
--	debugf1("%s(): creating %s\n", __func__,
--		dev_name(pvt->addrmatch_dev));
-+	debugf1("creating %s\n", dev_name(pvt->addrmatch_dev));
- 
- 	rc = device_add(pvt->addrmatch_dev);
- 	if (rc < 0)
-@@ -1213,8 +1212,7 @@ static int i7core_create_sysfs_devices(struct mem_ctl_info *mci)
- 		dev_set_name(pvt->chancounts_dev, "all_channel_counts");
- 		dev_set_drvdata(pvt->chancounts_dev, mci);
- 
--		debugf1("%s(): creating %s\n", __func__,
--			dev_name(pvt->chancounts_dev));
-+		debugf1("creating %s\n", dev_name(pvt->chancounts_dev));
- 
- 		rc = device_add(pvt->chancounts_dev);
- 		if (rc < 0)
-@@ -1254,7 +1252,7 @@ static void i7core_put_devices(struct i7core_dev *i7core_dev)
- {
- 	int i;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("\n");
- 	for (i = 0; i < i7core_dev->n_devs; i++) {
- 		struct pci_dev *pdev = i7core_dev->pdev[i];
- 		if (!pdev)
-@@ -1652,7 +1650,7 @@ static void i7core_udimm_check_mc_ecc_err(struct mem_ctl_info *mci)
- 	int new0, new1, new2;
- 
- 	if (!pvt->pci_mcr[4]) {
--		debugf0("%s MCR registers not found\n", __func__);
-+		debugf0("MCR registers not found\n");
- 		return;
- 	}
- 
-@@ -2402,7 +2400,7 @@ static void __devexit i7core_remove(struct pci_dev *pdev)
- {
- 	struct i7core_dev *i7core_dev;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("\n");
- 
- 	/*
- 	 * we have a trouble here: pdev value for removal will be wrong, since
-diff --git a/drivers/edac/i82443bxgx_edac.c b/drivers/edac/i82443bxgx_edac.c
-index c0249f3..5361f9a 100644
---- a/drivers/edac/i82443bxgx_edac.c
-+++ b/drivers/edac/i82443bxgx_edac.c
-@@ -305,8 +305,8 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
- 		edac_mode = EDAC_SECDED;
- 		break;
- 	default:
--		debugf0("%s(): Unknown/reserved ECC state "
--			"in NBXCFG register!\n", __func__);
-+		debugf0("Unknown/reserved ECC state "
-+			"in NBXCFG register!\n");
- 		edac_mode = EDAC_UNKNOWN;
- 		break;
- 	}
-diff --git a/drivers/edac/i82860_edac.c b/drivers/edac/i82860_edac.c
-index 6ff59b0..c097d7a 100644
---- a/drivers/edac/i82860_edac.c
-+++ b/drivers/edac/i82860_edac.c
-@@ -210,7 +210,7 @@ static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (!mci)
- 		return -ENOMEM;
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
-@@ -245,7 +245,7 @@ static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 
- 	return 0;
- 
-@@ -260,7 +260,7 @@ static int __devinit i82860_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 	i82860_printk(KERN_INFO, "i82860 init one\n");
- 
- 	if (pci_enable_device(pdev) < 0)
-@@ -278,7 +278,7 @@ static void __devexit i82860_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (i82860_pci)
- 		edac_pci_release_generic_ctl(i82860_pci);
-@@ -311,7 +311,7 @@ static int __init i82860_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -352,7 +352,7 @@ fail0:
- 
- static void __exit i82860_exit(void)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	pci_unregister_driver(&i82860_driver);
- 
-diff --git a/drivers/edac/i82875p_edac.c b/drivers/edac/i82875p_edac.c
-index c943904..66e5e98 100644
---- a/drivers/edac/i82875p_edac.c
-+++ b/drivers/edac/i82875p_edac.c
-@@ -405,7 +405,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 	u32 nr_chans;
- 	struct i82875p_error_info discard;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	ovrfl_pdev = pci_get_device(PCI_VEND_DEV(INTEL, 82875_6), NULL);
- 
-@@ -426,7 +426,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 		goto fail0;
- 	}
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
-@@ -437,7 +437,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 	mci->dev_name = pci_name(pdev);
- 	mci->edac_check = i82875p_check;
- 	mci->ctl_page_to_phys = NULL;
--	debugf3("%s(): init pvt\n", __func__);
-+	debugf3("init pvt\n");
- 	pvt = (struct i82875p_pvt *)mci->pvt_info;
- 	pvt->ovrfl_pdev = ovrfl_pdev;
- 	pvt->ovrfl_window = ovrfl_window;
-@@ -464,7 +464,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	return 0;
- 
- fail1:
-@@ -485,7 +485,7 @@ static int __devinit i82875p_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 	i82875p_printk(KERN_INFO, "i82875p init one\n");
- 
- 	if (pci_enable_device(pdev) < 0)
-@@ -504,7 +504,7 @@ static void __devexit i82875p_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	struct i82875p_pvt *pvt = NULL;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (i82875p_pci)
- 		edac_pci_release_generic_ctl(i82875p_pci);
-@@ -550,7 +550,7 @@ static int __init i82875p_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -593,7 +593,7 @@ fail0:
- 
- static void __exit i82875p_exit(void)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	i82875p_remove_one(mci_pdev);
- 	pci_dev_put(mci_pdev);
-diff --git a/drivers/edac/i82975x_edac.c b/drivers/edac/i82975x_edac.c
-index a4a6768..dcb2182 100644
---- a/drivers/edac/i82975x_edac.c
-+++ b/drivers/edac/i82975x_edac.c
-@@ -489,11 +489,11 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
- 	u8 c1drb[4];
- #endif
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	pci_read_config_dword(pdev, I82975X_MCHBAR, &mchbar);
- 	if (!(mchbar & 1)) {
--		debugf3("%s(): failed, MCHBAR disabled!\n", __func__);
-+		debugf3("failed, MCHBAR disabled!\n");
- 		goto fail0;
- 	}
- 	mchbar &= 0xffffc000;	/* bits 31:14 used for 16K window */
-@@ -558,7 +558,7 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
- 		goto fail1;
- 	}
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR2;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
-@@ -569,7 +569,7 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
- 	mci->dev_name = pci_name(pdev);
- 	mci->edac_check = i82975x_check;
- 	mci->ctl_page_to_phys = NULL;
--	debugf3("%s(): init pvt\n", __func__);
-+	debugf3("init pvt\n");
- 	pvt = (struct i82975x_pvt *) mci->pvt_info;
- 	pvt->mch_window = mch_window;
- 	i82975x_init_csrows(mci, pdev, mch_window);
-@@ -583,7 +583,7 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	return 0;
- 
- fail2:
-@@ -601,7 +601,7 @@ static int __devinit i82975x_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (pci_enable_device(pdev) < 0)
- 		return -EIO;
-@@ -619,7 +619,7 @@ static void __devexit i82975x_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	struct i82975x_pvt *pvt;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	mci = edac_mc_del_mc(&pdev->dev);
- 	if (mci  == NULL)
-@@ -655,7 +655,7 @@ static int __init i82975x_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -697,7 +697,7 @@ fail0:
- 
- static void __exit i82975x_exit(void)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	pci_unregister_driver(&i82975x_driver);
- 
-diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-index 1640d54..ecb59b4 100644
---- a/drivers/edac/mpc85xx_edac.c
-+++ b/drivers/edac/mpc85xx_edac.c
-@@ -303,7 +303,7 @@ static int __devinit mpc85xx_pci_err_probe(struct platform_device *op)
- 	}
- 
- 	devres_remove_group(&op->dev, mpc85xx_pci_err_probe);
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	printk(KERN_INFO EDAC_MOD_STR " PCI err registered\n");
- 
- 	return 0;
-@@ -321,7 +321,7 @@ static int mpc85xx_pci_err_remove(struct platform_device *op)
- 	struct edac_pci_ctl_info *pci = dev_get_drvdata(&op->dev);
- 	struct mpc85xx_pci_pdata *pdata = pci->pvt_info;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_CAP_DR,
- 		 orig_pci_err_cap_dr);
-@@ -610,7 +610,7 @@ static int __devinit mpc85xx_l2_err_probe(struct platform_device *op)
- 
- 	devres_remove_group(&op->dev, mpc85xx_l2_err_probe);
- 
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	printk(KERN_INFO EDAC_MOD_STR " L2 err registered\n");
- 
- 	return 0;
-@@ -628,7 +628,7 @@ static int mpc85xx_l2_err_remove(struct platform_device *op)
- 	struct edac_device_ctl_info *edac_dev = dev_get_drvdata(&op->dev);
- 	struct mpc85xx_l2_pdata *pdata = edac_dev->pvt_info;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (edac_op_state == EDAC_OPSTATE_INT) {
- 		out_be32(pdata->l2_vbase + MPC85XX_L2_ERRINTEN, 0);
-@@ -1038,7 +1038,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
+ 	if (*rsize >= 253 &&
+@@ -213,7 +213,7 @@ MODULE_DEVICE_TABLE(hid, zc_devices);
+ static struct hid_driver zc_driver = {
+ 	.name = "zydacron",
+ 	.id_table = zc_devices,
+-	.report_fixup = zc_report_fixup,
++	.rdesc_fixup = zc_rdesc_fixup,
+ 	.input_mapping = zc_input_mapping,
+ 	.raw_event = zc_raw_event,
+ 	.probe = zc_probe,
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index 5bf91db..6f0f556 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -1009,7 +1009,7 @@ static int usbhid_parse(struct hid_device *hid)
  		goto err;
  	}
  
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->mtype_cap = MEM_FLAG_RDDR | MEM_FLAG_RDDR2 |
- 	    MEM_FLAG_DDR | MEM_FLAG_DDR2;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
-@@ -1104,7 +1104,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
- 	}
+-	ret = hid_parse_report(hid, rdesc, rsize);
++	ret = hid_parse_rdesc(hid, rdesc, rsize);
+ 	kfree(rdesc);
+ 	if (ret) {
+ 		dbg_hid("parsing report descriptor failed\n");
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index d8e7cc7..e1c083a 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -466,7 +466,7 @@ enum hid_type {
+ struct hid_driver;
+ struct hid_ll_driver;
  
- 	devres_remove_group(&op->dev, mpc85xx_mc_err_probe);
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	printk(KERN_INFO EDAC_MOD_STR " MC err registered\n");
+-struct hid_device {							/* device report descriptor */
++struct hid_device {
+ 	__u8 *dev_rdesc;
+ 	unsigned dev_rsize;
+ 	__u8 *rdesc;
+@@ -616,7 +616,7 @@ struct hid_usage_id {
+  * @raw_event: if report in report_table, this hook is called (NULL means nop)
+  * @usage_table: on which events to call event (NULL means all)
+  * @event: if usage in usage_table, this hook is called (NULL means nop)
+- * @report_fixup: called before report descriptor parsing (NULL means nop)
++ * @rdesc_fixup: called before report descriptor parsing (NULL means nop)
+  * @input_mapping: invoked on input registering before mapping an usage
+  * @input_mapped: invoked on input registering after mapping an usage
+  * @feature_mapping: invoked on feature registering
+@@ -654,7 +654,7 @@ struct hid_driver {
+ 	int (*event)(struct hid_device *hdev, struct hid_field *field,
+ 			struct hid_usage *usage, __s32 value);
  
- 	return 0;
-@@ -1122,7 +1122,7 @@ static int mpc85xx_mc_err_remove(struct platform_device *op)
- 	struct mem_ctl_info *mci = dev_get_drvdata(&op->dev);
- 	struct mpc85xx_mc_pdata *pdata = mci->pvt_info;
+-	__u8 *(*report_fixup)(struct hid_device *hdev, __u8 *buf,
++	__u8 *(*rdesc_fixup)(struct hid_device *hdev, __u8 *buf,
+ 			unsigned int *size);
  
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
+ 	int (*input_mapping)(struct hid_device *hdev,
+@@ -736,8 +736,8 @@ unsigned int hidinput_count_leds(struct hid_device *hid);
+ void hid_output_report(struct hid_report *report, __u8 *data);
+ struct hid_device *hid_allocate_device(void);
+ struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
+-int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size);
+-int hid_open_report(struct hid_device *device);
++int hid_parse_rdesc(struct hid_device *hid, __u8 *start, unsigned size);
++int hid_open_rdesc(struct hid_device *device);
+ int hid_check_keys_pressed(struct hid_device *hid);
+ int hid_connect(struct hid_device *hid, unsigned int connect_mask);
+ void hid_disconnect(struct hid_device *hid);
+@@ -798,17 +798,17 @@ static inline void hid_map_usage_clear(struct hid_input *hidinput,
+ }
  
- 	if (edac_op_state == EDAC_OPSTATE_INT) {
- 		out_be32(pdata->mc_vbase + MPC85XX_MC_ERR_INT_EN, 0);
-diff --git a/drivers/edac/mv64x60_edac.c b/drivers/edac/mv64x60_edac.c
-index 59c399a..50bab21 100644
---- a/drivers/edac/mv64x60_edac.c
-+++ b/drivers/edac/mv64x60_edac.c
-@@ -194,7 +194,7 @@ static int __devinit mv64x60_pci_err_probe(struct platform_device *pdev)
- 	devres_remove_group(&pdev->dev, mv64x60_pci_err_probe);
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 
- 	return 0;
- 
-@@ -210,7 +210,7 @@ static int mv64x60_pci_err_remove(struct platform_device *pdev)
+ /**
+- * hid_parse - parse HW reports
++ * hid_parse - parse HW report descriptors
+  *
+  * @hdev: hid device
+  *
+  * Call this from probe after you set up the device (if needed). Your
+- * report_fixup will be called (if non-NULL) after reading raw report from
+- * device before passing it to hid layer for real parsing.
++ * rdesc_fixup will be called (if non-NULL) after reading raw report descriptor
++ * from device before passing it to hid layer for real parsing.
+  */
+ static inline int __must_check hid_parse(struct hid_device *hdev)
  {
- 	struct edac_pci_ctl_info *pci = platform_get_drvdata(pdev);
+-	return hid_open_report(hdev);
++	return hid_open_rdesc(hdev);
+ }
  
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	edac_pci_del_device(&pdev->dev);
- 
-@@ -363,7 +363,7 @@ static int __devinit mv64x60_sram_err_probe(struct platform_device *pdev)
- 	devres_remove_group(&pdev->dev, mv64x60_sram_err_probe);
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 
- 	return 0;
- 
-@@ -379,7 +379,7 @@ static int mv64x60_sram_err_remove(struct platform_device *pdev)
+ /**
+diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
+index d478be1..0e6ad45 100644
+--- a/net/bluetooth/hidp/core.c
++++ b/net/bluetooth/hidp/core.c
+@@ -873,7 +873,7 @@ static int hidp_parse(struct hid_device *hid)
  {
- 	struct edac_device_ctl_info *edac_dev = platform_get_drvdata(pdev);
+ 	struct hidp_session *session = hid->driver_data;
  
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
+-	return hid_parse_report(session->hid, session->rd_data,
++	return hid_parse_rdesc(session->hid, session->rd_data,
+ 			session->rd_size);
+ }
  
- 	edac_device_del_device(&pdev->dev);
- 	edac_device_free_ctl_info(edac_dev);
-@@ -558,7 +558,7 @@ static int __devinit mv64x60_cpu_err_probe(struct platform_device *pdev)
- 	devres_remove_group(&pdev->dev, mv64x60_cpu_err_probe);
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 
- 	return 0;
- 
-@@ -574,7 +574,7 @@ static int mv64x60_cpu_err_remove(struct platform_device *pdev)
- {
- 	struct edac_device_ctl_info *edac_dev = platform_get_drvdata(pdev);
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	edac_device_del_device(&pdev->dev);
- 	edac_device_free_ctl_info(edac_dev);
-@@ -766,7 +766,7 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
- 		goto err2;
- 	}
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->mtype_cap = MEM_FLAG_RDDR | MEM_FLAG_DDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
- 	mci->edac_cap = EDAC_FLAG_SECDED;
-@@ -815,7 +815,7 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 
- 	return 0;
- 
-@@ -831,7 +831,7 @@ static int mv64x60_mc_err_remove(struct platform_device *pdev)
- {
- 	struct mem_ctl_info *mci = platform_get_drvdata(pdev);
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	edac_mc_del_mc(&pdev->dev);
- 	edac_mc_free(mci);
-diff --git a/drivers/edac/r82600_edac.c b/drivers/edac/r82600_edac.c
-index 7b7eaf2..cd3ab28 100644
---- a/drivers/edac/r82600_edac.c
-+++ b/drivers/edac/r82600_edac.c
-@@ -236,13 +236,13 @@ static void r82600_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 		/* find the DRAM Chip Select Base address and mask */
- 		pci_read_config_byte(pdev, R82600_DRBA + index, &drbar);
- 
--		debugf1("%s() Row=%d DRBA = %#0x\n", __func__, index, drbar);
-+		debugf1("Row=%d DRBA = %#0x\n", index, drbar);
- 
- 		row_high_limit = ((u32) drbar << 24);
- /*		row_high_limit = ((u32)drbar << 24) | 0xffffffUL; */
- 
--		debugf1("%s() Row=%d, Boundary Address=%#0x, Last = %#0x\n",
--			__func__, index, row_high_limit, row_high_limit_last);
-+		debugf1("Row=%d, Boundary Address=%#0x, Last = %#0x\n",
-+			index, row_high_limit, row_high_limit_last);
- 
- 		/* Empty row [p.57] */
- 		if (row_high_limit == row_high_limit_last)
-@@ -277,14 +277,13 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 	u32 sdram_refresh_rate;
- 	struct r82600_error_info discard;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 	pci_read_config_byte(pdev, R82600_DRAMC, &dramcr);
- 	pci_read_config_dword(pdev, R82600_EAP, &eapr);
- 	scrub_disabled = eapr & BIT(31);
- 	sdram_refresh_rate = dramcr & (BIT(0) | BIT(1));
--	debugf2("%s(): sdram refresh rate = %#0x\n", __func__,
--		sdram_refresh_rate);
--	debugf2("%s(): DRAMC register = %#0x\n", __func__, dramcr);
-+	debugf2("sdram refresh rate = %#0x\n", sdram_refresh_rate);
-+	debugf2("DRAMC register = %#0x\n", dramcr);
- 	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
- 	layers[0].size = R82600_NR_CSROWS;
- 	layers[0].is_virt_csrow = true;
-@@ -295,7 +294,7 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf0("%s(): mci = %p\n", __func__, mci);
-+	debugf0("mci = %p\n", mci);
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_RDDR | MEM_FLAG_DDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
-@@ -311,8 +310,8 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 
- 	if (ecc_enabled(dramcr)) {
- 		if (scrub_disabled)
--			debugf3("%s(): mci = %p - Scrubbing disabled! EAP: "
--				"%#0x\n", __func__, mci, eapr);
-+			debugf3("mci = %p - Scrubbing disabled! EAP: "
-+				"%#0x\n", mci, eapr);
- 	} else
- 		mci->edac_cap = EDAC_FLAG_NONE;
- 
-@@ -352,7 +351,7 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 			__func__);
- 	}
- 
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	return 0;
- 
- fail:
-@@ -364,7 +363,7 @@ fail:
- static int __devinit r82600_init_one(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* don't need to call pci_enable_device() */
- 	return r82600_probe1(pdev, ent->driver_data);
-@@ -374,7 +373,7 @@ static void __devexit r82600_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (r82600_pci)
- 		edac_pci_release_generic_ctl(r82600_pci);
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index bb7e95f..1dd6a98 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -1064,7 +1064,7 @@ static void sbridge_put_devices(struct sbridge_dev *sbridge_dev)
- {
- 	int i;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("\n");
- 	for (i = 0; i < sbridge_dev->n_devs; i++) {
- 		struct pci_dev *pdev = sbridge_dev->pdev[i];
- 		if (!pdev)
-@@ -1760,7 +1760,7 @@ static void __devexit sbridge_remove(struct pci_dev *pdev)
- {
- 	struct sbridge_dev *sbridge_dev;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("\n");
- 
- 	/*
- 	 * we have a trouble here: pdev value for removal will be wrong, since
-diff --git a/drivers/edac/x38_edac.c b/drivers/edac/x38_edac.c
-index 219530b..771f78f 100644
---- a/drivers/edac/x38_edac.c
-+++ b/drivers/edac/x38_edac.c
-@@ -331,7 +331,7 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
- 	bool stacked;
- 	void __iomem *window;
- 
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC: \n");
- 
- 	window = x38_map_mchbar(pdev);
- 	if (!window)
-@@ -352,7 +352,7 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (!mci)
- 		return -ENOMEM;
- 
--	debugf3("MC: %s(): init mci\n", __func__);
-+	debugf3("MC: init mci\n");
- 
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR2;
-@@ -407,7 +407,7 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("MC: %s(): success\n", __func__);
-+	debugf3("MC: success\n");
- 	return 0;
- 
- fail:
-@@ -423,7 +423,7 @@ static int __devinit x38_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC: \n");
- 
- 	if (pci_enable_device(pdev) < 0)
- 		return -EIO;
-@@ -439,7 +439,7 @@ static void __devexit x38_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	mci = edac_mc_del_mc(&pdev->dev);
- 	if (!mci)
-@@ -472,7 +472,7 @@ static int __init x38_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC: \n");
- 
- 	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
- 	opstate_init();
-@@ -513,7 +513,7 @@ fail0:
- 
- static void __exit x38_exit(void)
- {
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC: \n");
- 
- 	pci_unregister_driver(&x38_driver);
- 	if (!x38_registered) {
+-- 
+1.7.10
+
+
+--------------060705090208060508010100--
