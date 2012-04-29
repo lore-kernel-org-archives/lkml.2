@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab2D1Xxy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 19:53:54 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33740 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab2D1Xxw (ORCPT
+	id S1755508Ab2D2ACE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 20:02:04 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17347 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026Ab2D2ACB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 19:53:52 -0400
-Message-ID: <4F9C830D.8040906@lwfinger.net>
-Date: Sat, 28 Apr 2012 18:53:49 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
+	Sat, 28 Apr 2012 20:02:01 -0400
+Date: Sun, 29 Apr 2012 02:01:54 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: trivial@kernel.org, platform-driver-x86@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, Frank Seidel <frank@f-seidel.de>,
+        Robert Love <rml@novell.com>
+Subject: [PATCH][trivial] hdaps: Jesper Juhl: Fix outdated email address
+Message-ID: <alpine.LNX.2.00.1204290157060.30870@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Andreas Schwab <schwab@linux-m68k.org>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] tty/serial/pmac_zilog: Fix "nobody cared" IRQ message
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following commit a79dd5a titled "tty/serial/pmac_zilog: Fix suspend & resume",
-my Powerbook G4 Titanium showed the following stack dump:
+I haven't had a working gmail address for many years - update to my
+actual working address.
 
-[   36.878225] irq 23: nobody cared (try booting with the "irqpoll" option)
-[   36.878251] Call Trace:
-[   36.878291] [dfff3f00] [c000984c] show_stack+0x7c/0x194 (unreliable)
-[   36.878322] [dfff3f40] [c00a6868] __report_bad_irq+0x44/0xf4
-[   36.878339] [dfff3f60] [c00a6b04] note_interrupt+0x1ec/0x2ac
-[   36.878356] [dfff3f80] [c00a48d0] handle_irq_event_percpu+0x250/0x2b8
-[   36.878372] [dfff3fd0] [c00a496c] handle_irq_event+0x34/0x54
-[   36.878389] [dfff3fe0] [c00a753c] handle_fasteoi_irq+0xb4/0x124
-[   36.878412] [dfff3ff0] [c000f5bc] call_handle_irq+0x18/0x28
-[   36.878428] [deef1f10] [c000719c] do_IRQ+0x114/0x1cc
-[   36.878446] [deef1f40] [c0015868] ret_from_except+0x0/0x1c
-[   36.878484] --- Exception: 501 at 0xf497610
-[   36.878489]     LR = 0xfdc3dd0
-[   36.878497] handlers:
-[   36.878510] [<c02b7424>] pmz_interrupt
-[   36.878520] Disabling IRQ #23
-
- From an E-mail exchange about this problem, Andreas Schwab noticed a typo
-that resulted in the wrong condition being tested.
-
-The patch also corrects 2 typos that incorrectly report why an error branch
-is being taken.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
+ drivers/platform/x86/hdaps.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ben,
+diff --git a/drivers/platform/x86/hdaps.c b/drivers/platform/x86/hdaps.c
+index 7387f97..24a3ae0 100644
+--- a/drivers/platform/x86/hdaps.c
++++ b/drivers/platform/x86/hdaps.c
+@@ -2,7 +2,7 @@
+  * hdaps.c - driver for IBM's Hard Drive Active Protection System
+  *
+  * Copyright (C) 2005 Robert Love <rml@novell.com>
+- * Copyright (C) 2005 Jesper Juhl <jesper.juhl@gmail.com>
++ * Copyright (C) 2005 Jesper Juhl <jj@chaosbits.net>
+  *
+  * The HardDisk Active Protection System (hdaps) is present in IBM ThinkPads
+  * starting with the R40, T41, and X40.  It provides a basic two-axis
+-- 
+1.7.10
 
-Any changes you wish to make in the commit message are OK with me.
 
-Larry
----
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Index: wireless-testing/drivers/tty/serial/pmac_zilog.c
-===================================================================
---- wireless-testing.orig/drivers/tty/serial/pmac_zilog.c	2012-04-28 
-15:51:38.843723074 -0500
-+++ wireless-testing/drivers/tty/serial/pmac_zilog.c	2012-04-28 
-18:34:34.053900600 -0500
-@@ -469,7 +469,7 @@
-  	tty = NULL;
-  	if (r3 & (CHAEXT | CHATxIP | CHARxIP)) {
-  		if (!ZS_IS_OPEN(uap_a)) {
--			pmz_debug("ChanA interrupt while open !\n");
-+			pmz_debug("ChanA interrupt while not open !\n");
-  			goto skip_a;
-  		}
-  		write_zsreg(uap_a, R0, RES_H_IUS);
-@@ -493,8 +493,8 @@
-  	spin_lock(&uap_b->port.lock);
-  	tty = NULL;
-  	if (r3 & (CHBEXT | CHBTxIP | CHBRxIP)) {
--		if (!ZS_IS_OPEN(uap_a)) {
--			pmz_debug("ChanB interrupt while open !\n");
-+		if (!ZS_IS_OPEN(uap_b)) {
-+			pmz_debug("ChanB interrupt while not open !\n");
-  			goto skip_b;
-  		}
-  		write_zsreg(uap_b, R0, RES_H_IUS);
