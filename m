@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab2D2NCn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 09:02:43 -0400
-Received: from lnx500.hrz.tu-darmstadt.de ([130.83.156.225]:36090 "EHLO
-	lnx500.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750896Ab2D2NCl (ORCPT
+	id S1753023Ab2D2NRf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 09:17:35 -0400
+Received: from nm29-vm2.bullet.mail.ne1.yahoo.com ([98.138.91.129]:40295 "HELO
+	nm29-vm2.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750810Ab2D2NRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 09:02:41 -0400
-From: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+	Sun, 29 Apr 2012 09:17:34 -0400
+X-Yahoo-Newman-Id: 675440.42710.bm@smtp108.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 3CEkfM4VM1mzvWdraH_9T1hWwpemH24FGoAkIgeykXr87nx
+ Jkr6LK8v8JZ.qUoKf7jhjtzxo_4HE6UqflIIqTb5_GP_4OBVpElxrzbCB.dw
+ 7_CnEkMU1xkKSBQdjcjGpADf6rSf.qkdO4UQV1Mtq3MOLaZejlgKQUB2pf5k
+ dgMm2wxij1V0956VUgVbbb8HyigATsN2GGDN8BkYj69zArcnu9dYlNV2otE0
+ yBYTcHDiT2N1ocQa4g25TRcagkIKFrkrJ5_T8X7KcxHk6hRist8ov1XrsvuE
+ 3FnuNv4djhhVofAEjrMBCvZZ.amgtKkS86Hu5JEY.GE2.HWq36NfTcZizxyV
+ lOCFzL23TQKnghhP0XNPOnISSDI6LN8aSGpXBJFjvQoL2EC5OHlM4QZiYsPD
+ iueWS6L.AMCVP9hcd4gBUs.3HYfcSLbg-
+X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
+Date: Sun, 29 Apr 2012 18:50:14 +0530
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+To: tiwai@suse.de
+Cc: linux-kernel@vger.kernel.org, ahiliation@yahoo.co.in
+Subject: [PATCH 01/02] fixed coding style issue with comments
+Message-ID: <20120429132014.GA3435@debian.Jeff>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20381.15336.604590.461744@elektron.ikp.physik.tu-darmstadt.de>
-Date: Sun, 29 Apr 2012 15:02:32 +0200
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] usb: cp210x: Added support for GPIO (CP2103/4/5)
-In-Reply-To: <20120428203322.7680594f@pyramind.ukuu.org.uk>
-References: <1335632134-2488-1-git-send-email-preston.fick@silabs.com>
-	<20120428190502.32eaf294@pyramind.ukuu.org.uk>
-	<20380.13347.472373.965813@elektron.ikp.physik.tu-darmstadt.de>
-	<20120428203322.7680594f@pyramind.ukuu.org.uk>
-X-Mailer: VM 7.19 under Emacs 21.3.1
-X-PMX-TU: seen v1.2 by 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.4.29.125420
-X-PMX-RELAY: outgoing
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Alan" == Alan Cox <alan@lxorguk.ukuu.org.uk> writes:
+Hello .
 
-    Alan> On Sat, 28 Apr 2012 20:17:07 +0200 Uwe Bonnes
-    Alan> <bon@elektron.ikp.physik.tu-darmstadt.de> wrote:
+Fixed coding style issue relating to comments
+in sound/usb/clock.c
 
-    >> >>>>> "Alan" == Alan Cox <alan@lxorguk.ukuu.org.uk> writes:
-    >> 
-    >> ...
-    Alan> The other question is whether having some custom gpio poking
-    Alan> interface is actually a good idea. I suspect probably not. The
-    Alan> kernel gpio layer can help a bit but doesn't really solve the
-    Alan> problem as there is no way to tie a gpio to a port. Given how many
-    Alan> devices seem to have gpios these days I wonder if we need a gpio
-    Alan> setting interface via termiox.
-    >>  Is this really kernel stuff or better handled in libusb(x)
 
-    Alan> Tricky to do it that way when the kernel driver owns the
-    Alan> interface. Also it's looking increasingly like we'll need to
-    Alan> support a variety of "serial and a couple of extra magic lines"
-    Alan> type interfaces for things like SIM readers.
+>From 3bc5e14b4cf0dceb45314880233fe5a843ae048d Mon Sep 17 00:00:00 2001
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+Date: Sun, 29 Apr 2012 18:05:21 +0530
+Subject: [PATCH 09/10] sound:Fixed a coding style issue of comments.
 
-Well,
+Fixed a coding style issue by replacing C99
+style with C89 in the file sound/usb/clock.c
 
-most RS232/USB Adapter don't supply and most applications working with these
-adapters don't need hard realtime. So even writing and reading the serial
-lines can be handled with libusb, like libftdi does.
+Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+---
+ sound/usb/clock.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-But as soon as higher level protocols based on the serial line get involved,
-a kernel driver is needed...
-
-So when thinking some termiox, some thoughts for the FTDI special modes,
-like MPSSE or synchronous FIFO should be spent. It would come handy if I
-could open /dev/ttyUSBx, set som termiox and could use the kernel driver for
-sending and receiving MPSSE commands. MPSSE is e.g. used in OpenOCD and
-xc3sprog to talk e.g. JTAG to external devices.
-
-Bye 
+diff --git a/sound/usb/clock.c b/sound/usb/clock.c
+index 379baad..a3319af 100644
+--- a/sound/usb/clock.c
++++ b/sound/usb/clock.c
+@@ -240,7 +240,7 @@ static int set_sample_rate_v1(struct snd_usb_audio *chip, int iface,
+ 	crate = data[0] | (data[1] << 8) | (data[2] << 16);
+ 	if (crate != rate) {
+ 		snd_printd(KERN_WARNING "current rate %d is different from the runtime rate %d\n", crate, rate);
+-		// runtime->rate = crate;
++		/* runtime->rate = crate; */
+ 	}
+ 
+ 	return 0;
 -- 
-Uwe Bonnes                bon@elektron.ikp.physik.tu-darmstadt.de
+1.7.9
 
-Institut fuer Kernphysik  Schlossgartenstrasse 9  64289 Darmstadt
---------- Tel. 06151 162516 -------- Fax. 06151 164321 ----------
+
+-- 
+software engineer
+Bohr Lab
+department of computer science
+Rajagiri school of engineering and technology.
