@@ -1,157 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab2D2SFk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 14:05:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55723 "EHLO
+	id S1753656Ab2D2SJa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 14:09:30 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34742 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab2D2SFi (ORCPT
+	with ESMTP id S1752696Ab2D2SJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 14:05:38 -0400
-Date: Sun, 29 Apr 2012 19:05:35 +0100
+	Sun, 29 Apr 2012 14:09:28 -0400
+Date: Sun, 29 Apr 2012 19:09:26 +0100
 From: Al Viro <viro@ZenIV.linux.org.uk>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+        linux-kernel@vger.kernel.org, Roland McGrath <roland@hack.frob.com>
 Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120429180535.GZ6871@ZenIV.linux.org.uk>
-References: <20120426183742.GA324@redhat.com>
+Message-ID: <20120429180926.GA6871@ZenIV.linux.org.uk>
+References: <20120420164239.GH6871@ZenIV.linux.org.uk>
+ <CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com>
+ <20120420180748.GI6871@ZenIV.linux.org.uk>
+ <20120423180150.GA6871@ZenIV.linux.org.uk>
+ <20120424072617.GB6871@ZenIV.linux.org.uk>
+ <20120426183742.GA324@redhat.com>
  <20120426231942.GJ6871@ZenIV.linux.org.uk>
  <20120427172444.GA30267@redhat.com>
  <20120427184528.GL6871@ZenIV.linux.org.uk>
- <20120427202002.8ED632C0BF@topped-with-meat.com>
- <20120427211244.GO6871@ZenIV.linux.org.uk>
- <20120427212729.652542C0AF@topped-with-meat.com>
- <20120427231526.GP6871@ZenIV.linux.org.uk>
- <20120428024208.GS6871@ZenIV.linux.org.uk>
- <20120429161818.GA15792@redhat.com>
+ <20120429164155.GC15792@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120429161818.GA15792@redhat.com>
+In-Reply-To: <20120429164155.GC15792@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 29, 2012 at 06:18:18PM +0200, Oleg Nesterov wrote:
-
-> Please look at 29a2e2836ff9ea65a603c89df217f4198973a74f
-> x86-32: Fix endless loop when processing signals for kernel tasks
+On Sun, Apr 29, 2012 at 06:41:55PM +0200, Oleg Nesterov wrote:
+> On 04/27, Al Viro wrote:
+> >
+> > 	BTW, I'm somewhat tempted to do the following: *ALL* calls of
+> > tracehook_signal_handler() are now immediately preceded by block_signals().
+> > Moreover, tracehook_signal_handler(...., 0) is currently a no-op, so
+> > it could be painlessly added after the remaining block_signals() instances.
+> > How about *folding* block_signals() (along with clear_restore_sigmask())
+> > into tracehook_signal_handler()?
 > 
-> > At least i386, arm and mips have
-> > ret_from_fork going straight to "return from syscall" path, no checks for
-> > return to user mode done.  And process created by kernel_thread() will
-> > go there.
+> Oh, please no. Imho, these two have nothing to do with each other.
 > 
-> Looks like, the patch above fixes that.
+> Besides, at least on x86 tracehook_signal_handler's logic is not exactly
+> right and should be fixed.
 
-Yes, found that shortly after posting.  No such luck for arm, though...
+Details, please...
 
-> But, we call do_notify_resume() first, it would be nice to avoid this
-> and remove the user_mode() check in do_signal() or lift into
-> do_notify_resume().
+> And we are going to kill tracehook.h. While personally I do not think
+> this is the good idea, but the matter of fact is that tracehooks are
+> already destroyed.
 
-See the proposed patch.  Does exactly that - lifts all the way to caller
-of do_notify_resume(), buggers off if test fits.
-
-> Question. So far I know that on x86 do_notify_resume() && !user_mode()
-> is only possible on 32bit system, and the possible callers are
-> ret_from_fork or kernel_execve (if it fails).
-> 
-> Plus, perhaps CONFIG_VM86 makes a difference?
-> 
-> Could you please clarify?
-
-VM86 doesn't make a difference; we form normal pt_regs for it in case
-we have a pending signal, but after that has been done, we don't need
-to care.  Look:
-	* NOTIFY_RESUME handling doesn't need to be done unless we are
-returning to userland.  IOW, the first step is to lift that if (!user_mode(...
-into do_notify_resume().  Agreed?
-	* Now, if do_notify_resume() does nothing in case !user_mode(regs),
-let's lift that check to (32bit) caller.  What we have right now is
-	do_notify_resume(%esp, NULL, %ecx)
-	goto resume_userspace_sig;
-resume_userspace_sig:
-	if (!user_mode_vm(%esp))
-		goto resume_kernel;
-resume_userspace:
-So after lifting the check we get
-	if (user_mode(%esp))
-		do_notify_resume(%esp, NULL, %ecx)
-	goto resume_userspace_sig;
-resume_userspace_sig:
-	if (!user_mode_vm(%esp))
-		goto resume_kernel;
-resume_userspace:
-but user_mode(regs) being true means that user_mode_vm(regs) is also true,
-so this code is equivalent to
-	if (!user_mode(%esp))
-		goto resume_kernel;
-	do_notify_resume(%esp, NULL, %ecx)
-	goto resume_userspace;
-(with stuff around resume_userspace_sig left without changes).
-
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 7b784f4..e858462 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -321,7 +321,6 @@ ret_from_exception:
- 	preempt_stop(CLBR_ANY)
- ret_from_intr:
- 	GET_THREAD_INFO(%ebp)
--resume_userspace_sig:
- #ifdef CONFIG_VM86
- 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
- 	movb PT_CS(%esp), %al
-@@ -628,9 +627,13 @@ work_notifysig:				# deal with pending signals and
- 					# vm86-space
- 	TRACE_IRQS_ON
- 	ENABLE_INTERRUPTS(CLBR_NONE)
-+	movb PT_CS(%esp), %bl
-+	andl $SEGMENT_RPL_MASK, %ebx
-+	cmpl $USER_RPL, %ebx
-+	jb resume_kernel
- 	xorl %edx, %edx
- 	call do_notify_resume
--	jmp resume_userspace_sig
-+	jmp resume_userspace
- 
- 	ALIGN
- work_notifysig_v86:
-@@ -643,9 +646,13 @@ work_notifysig_v86:
- #endif
- 	TRACE_IRQS_ON
- 	ENABLE_INTERRUPTS(CLBR_NONE)
-+	movb PT_CS(%esp), %bl
-+	andl $SEGMENT_RPL_MASK, %ebx
-+	cmpl $USER_RPL, %ebx
-+	jb resume_kernel
- 	xorl %edx, %edx
- 	call do_notify_resume
--	jmp resume_userspace_sig
-+	jmp resume_userspace
- END(work_pending)
- 
- 	# perform syscall exit tracing
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 595969f..c4aa7c5 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -738,16 +738,6 @@ static void do_signal(struct pt_regs *regs)
- 	siginfo_t info;
- 	int signr;
- 
--	/*
--	 * We want the common case to go fast, which is why we may in certain
--	 * cases get here from kernel mode. Just return without doing anything
--	 * if so.
--	 * X86_32: vm86 regs switched out by assembly code before reaching
--	 * here, so testing against kernel CS suffices.
--	 */
--	if (!user_mode(regs))
--		return;
--
- 	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
- 	if (signr > 0) {
- 		/* Whee! Actually deliver the signal.  */
+See signal.git#master.  I ended up with
+	signal_delivered(<tracehook_signal_handler arguments>)
+and that sucker does both things.  The funny thing is, block_sigmask()
+(apologies for typo above) is not used anywhere else...
