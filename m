@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab2D2TgI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 15:36:08 -0400
-Received: from [12.216.194.151] ([12.216.194.151]:58960 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab2D2TgG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 15:36:06 -0400
-Message-ID: <201204291936.q3TJa4Mv008924@farm-0027.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Sun, 29 Apr 2012 15:04:51 -0400
-Subject: [PATCH] hugetlb: avoid gratuitous BUG_ON in hugetlb_fault() -> hugetlb_cow()
-To: Andrew Morton <akpm@linux-foundation.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753699Ab2D2ToN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 15:44:13 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:51742 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752524Ab2D2ToM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 15:44:12 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: James Smart <james.smart@emulex.com>
+Cc: kernel-janitors@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/scsi/lpfc/lpfc_sli.c: add missing jumps to mempool_free
+Date: Sun, 29 Apr 2012 21:44:03 +0200
+Message-Id: <1335728643-19970-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 66aebce747eaf added code to avoid a race condition by
-elevating the page refcount in hugetlb_fault() while calling
-hugetlb_cow().  However, one code path in hugetlb_cow() includes
-an assertion that the page count is 1, whereas it may now also
-have the value 2 in this path.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+It appears that mempool_free should be performed on these failures as on
+the other exits from the containing functions.
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
 ---
-We discovered this while testing the original path; one particular
-application triggered this due to the specific number of huge pages
-it started with.
+ drivers/scsi/lpfc/lpfc_sli.c |   24 ++++++++++++++++--------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
 
- mm/hugetlb.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index cd65cb1..d5b0254 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2498,7 +2498,14 @@ retry_avoidcopy:
- 		if (outside_reserve) {
- 			BUG_ON(huge_pte_none(pte));
- 			if (unmap_ref_private(mm, vma, old_page, address)) {
--				BUG_ON(page_count(old_page) != 1);
-+				/*
-+				 * Page refcount may be 1 in the common case,
-+				 * but since we may do an extra get_page()
-+				 * when called from hugetlb_fault(), we allow
-+				 * a page refcount of 2 as well.
-+				 */
-+				BUG_ON(page_count(old_page) != 1 &&
-+				       page_count(old_page) != 2);
- 				BUG_ON(huge_pte_none(pte));
- 				spin_lock(&mm->page_table_lock);
- 				ptep = huge_pte_offset(mm, address & huge_page_mask(h));
--- 
-1.6.5.2
+diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
+index dbaf5b9..7284e9e 100644
+--- a/drivers/scsi/lpfc/lpfc_sli.c
++++ b/drivers/scsi/lpfc/lpfc_sli.c
+@@ -12046,8 +12046,10 @@ lpfc_cq_create(struct lpfc_hba *phba, struct lpfc_queue *cq,
+ 		lpfc_printf_log(phba, KERN_ERR, LOG_SLI,
+ 				"0361 Unsupported CQ count. (%d)\n",
+ 				cq->entry_count);
+-		if (cq->entry_count < 256)
+-			return -EINVAL;
++		if (cq->entry_count < 256) {
++			status = -EINVAL;
++			goto out;
++		}
+ 		/* otherwise default to smallest count (drop through) */
+ 	case 256:
+ 		bf_set(lpfc_cq_context_count, &cq_create->u.request.context,
+@@ -12238,8 +12240,10 @@ lpfc_mq_create(struct lpfc_hba *phba, struct lpfc_queue *mq,
+ 		lpfc_printf_log(phba, KERN_ERR, LOG_SLI,
+ 				"0362 Unsupported MQ count. (%d)\n",
+ 				mq->entry_count);
+-		if (mq->entry_count < 16)
+-			return -EINVAL;
++		if (mq->entry_count < 16) {
++			status = -EINVAL;
++			goto out;
++		}
+ 		/* otherwise default to smallest count (drop through) */
+ 	case 16:
+ 		bf_set(lpfc_mq_context_ring_size,
+@@ -12528,8 +12532,10 @@ lpfc_rq_create(struct lpfc_hba *phba, struct lpfc_queue *hrq,
+ 			lpfc_printf_log(phba, KERN_ERR, LOG_SLI,
+ 					"2535 Unsupported RQ count. (%d)\n",
+ 					hrq->entry_count);
+-			if (hrq->entry_count < 512)
+-				return -EINVAL;
++			if (hrq->entry_count < 512) {
++				status = -EINVAL;
++				goto out;
++			}
+ 			/* otherwise default to smallest count (drop through) */
+ 		case 512:
+ 			bf_set(lpfc_rq_context_rqe_count,
+@@ -12609,8 +12615,10 @@ lpfc_rq_create(struct lpfc_hba *phba, struct lpfc_queue *hrq,
+ 			lpfc_printf_log(phba, KERN_ERR, LOG_SLI,
+ 					"2536 Unsupported RQ count. (%d)\n",
+ 					drq->entry_count);
+-			if (drq->entry_count < 512)
+-				return -EINVAL;
++			if (drq->entry_count < 512) {
++				status = -EINVAL;
++				goto out;
++			}
+ 			/* otherwise default to smallest count (drop through) */
+ 		case 512:
+ 			bf_set(lpfc_rq_context_rqe_count,
 
