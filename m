@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab2D2Xez (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 19:34:55 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:49912 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741Ab2D2XeV (ORCPT
+	id S1754797Ab2D2Xfe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 19:35:34 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:48070 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691Ab2D2XeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 19:34:21 -0400
+	Sun, 29 Apr 2012 19:34:15 -0400
 From: Kevin Winchester <kjwinchester@gmail.com>
 To: hpa@zytor.com, Ingo Molnar <mingo@elte.hu>
 Cc: Kevin Winchester <kjwinchester@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
         Randy Dunlap <rdunlap@xenotime.net>,
         Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 5/5] x86: Remove #ifdef CONFIG_SMP sections by moving smp_num_siblings into common.c
-Date: Sun, 29 Apr 2012 20:33:30 -0300
-Message-Id: <1335742410-11569-6-git-send-email-kjwinchester@gmail.com>
+Subject: [PATCH v6 2/5] x86: Move per cpu cpu_llc_id to a field in struct cpuinfo_x86
+Date: Sun, 29 Apr 2012 20:33:27 -0300
+Message-Id: <1335742410-11569-3-git-send-email-kjwinchester@gmail.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1335742410-11569-1-git-send-email-kjwinchester@gmail.com>
 References: <1a0aaa16-df06-40bf-88c7-28180455e6b9@email.android.com>
@@ -24,308 +24,217 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-smp_num_siblings was defined in arch/x86/kernel/smpboot.c, making it
-necessary to wrap any UP relevant code referencing it with #ifdef
-CONFIG_SMP.
+This simplifies the various code paths using this field as it
+groups the per-cpu data together.
 
-Instead, move the definition to arch/x86/kernel/cpu/common.c, thus
-making it available always.
-
+Acked-by: Borislav Petkov <bp@alien8.de>
 Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
 ---
- arch/x86/include/asm/perf_event_p4.h |   14 +++-----------
- arch/x86/include/asm/smp.h           |    6 +-----
- arch/x86/include/asm/topology.h      |    4 +---
- arch/x86/kernel/cpu/amd.c            |    5 +----
- arch/x86/kernel/cpu/common.c         |    4 ++++
- arch/x86/kernel/cpu/perf_event_p4.c  |    4 ++--
- arch/x86/kernel/cpu/proc.c           |    5 ++---
- arch/x86/kernel/process.c            |    5 ++---
- arch/x86/kernel/smpboot.c            |    4 ----
- arch/x86/oprofile/nmi_int.c          |    6 ------
- arch/x86/oprofile/op_model_p4.c      |    6 ------
- 11 files changed, 16 insertions(+), 47 deletions(-)
+ arch/x86/include/asm/processor.h      |    1 +
+ arch/x86/include/asm/smp.h            |    1 -
+ arch/x86/kernel/apic/apic_numachip.c  |    3 +--
+ arch/x86/kernel/cpu/amd.c             |   14 ++++----------
+ arch/x86/kernel/cpu/common.c          |    1 +
+ arch/x86/kernel/cpu/intel_cacheinfo.c |   11 ++---------
+ arch/x86/kernel/smpboot.c             |   16 +++++++---------
+ 7 files changed, 16 insertions(+), 31 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
-index 29a65c2..cfe41dc 100644
---- a/arch/x86/include/asm/perf_event_p4.h
-+++ b/arch/x86/include/asm/perf_event_p4.h
-@@ -8,6 +8,8 @@
- #include <linux/cpu.h>
- #include <linux/bitops.h>
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index c92ac6e..ba6f6db 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -121,6 +121,7 @@ struct cpuinfo_x86 {
+ 	u32			microcode;
+ 	/* CPUs sharing the last level cache: */
+ 	cpumask_t		llc_shared_map;
++	u16			llc_id;
+ } __attribute__((__aligned__(SMP_CACHE_BYTES)));
  
-+#include <asm/smp.h>
-+
- /*
-  * NetBurst has performance MSRs shared between
-  * threads if HT is turned on, ie for both logical
-@@ -177,20 +179,10 @@ static inline u64 p4_clear_ht_bit(u64 config)
- 	return config & ~P4_CONFIG_HT;
- }
- 
--static inline int p4_ht_active(void)
--{
--#ifdef CONFIG_SMP
--	return smp_num_siblings > 1;
--#endif
--	return 0;
--}
--
- static inline int p4_ht_thread(int cpu)
- {
--#ifdef CONFIG_SMP
- 	if (smp_num_siblings == 2)
--		return cpu != cpumask_first(&cpu_data(cpu).sibling_map));
--#endif
-+		return cpu != cpumask_first(&cpu_data(cpu).sibling_map);
- 	return 0;
- }
- 
+ #define X86_VENDOR_INTEL	0
 diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 408152e..8202cda 100644
+index b6e034e..aba8895 100644
 --- a/arch/x86/include/asm/smp.h
 +++ b/arch/x86/include/asm/smp.h
-@@ -24,11 +24,7 @@ extern unsigned int num_processors;
+@@ -33,7 +33,6 @@ static inline bool cpu_has_ht_siblings(void)
  
- static inline bool cpu_has_ht_siblings(void)
- {
--	bool has_siblings = false;
--#ifdef CONFIG_SMP
--	has_siblings = cpu_has_ht && smp_num_siblings > 1;
--#endif
--	return has_siblings;
-+	return cpu_has_ht && smp_num_siblings > 1;
- }
- 
+ DECLARE_PER_CPU(cpumask_var_t, cpu_sibling_map);
+ DECLARE_PER_CPU(cpumask_var_t, cpu_core_map);
+-DECLARE_PER_CPU(u16, cpu_llc_id);
  DECLARE_PER_CPU(int, cpu_number);
-diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
-index 5ffa396..1590480 100644
---- a/arch/x86/include/asm/topology.h
-+++ b/arch/x86/include/asm/topology.h
-@@ -174,11 +174,9 @@ static inline void arch_fix_phys_package_id(int num, u32 slot)
- struct pci_bus;
- void x86_pci_root_bus_resources(int bus, struct list_head *resources);
  
--#ifdef CONFIG_SMP
- #define mc_capable()	((boot_cpu_data.x86_max_cores > 1) && \
- 			(cpumask_weight(cpu_core_mask(0)) != nr_cpu_ids))
--#define smt_capable()			(smp_num_siblings > 1)
--#endif
-+#define smt_capable()	(smp_num_siblings > 1)
+ static inline struct cpumask *cpu_sibling_mask(int cpu)
+diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+index 23e7542..30b0f45 100644
+--- a/arch/x86/kernel/apic/apic_numachip.c
++++ b/arch/x86/kernel/apic/apic_numachip.c
+@@ -207,10 +207,9 @@ static void __init map_csrs(void)
  
- #ifdef CONFIG_NUMA
- extern int get_mp_bus_to_node(int busnum);
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index d4c5ff4..2c92761 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -9,6 +9,7 @@
- #include <asm/processor.h>
- #include <asm/apic.h>
- #include <asm/cpu.h>
-+#include <asm/smp.h>
- #include <asm/pci-direct.h>
- 
- #ifdef CONFIG_X86_64
-@@ -263,7 +264,6 @@ static int __cpuinit nearby_node(int apicid)
-  *     Assumption: Number of cores in each internal node is the same.
-  * (2) AMD processors supporting compute units
-  */
--#ifdef CONFIG_X86_HT
- static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
+ static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
  {
- 	u32 nodes, cores_per_cu = 1;
-@@ -307,7 +307,6 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
- 		c->compute_unit_id %= cus_per_node;
+-
+ 	if (c->phys_proc_id != node) {
+ 		c->phys_proc_id = node;
+-		per_cpu(cpu_llc_id, smp_processor_id()) = node;
++		c->llc_id = node;
  	}
  }
--#endif
  
- /*
-  * On a AMD dual core setup the lower bits of the APIC id distingush the cores.
-@@ -315,7 +314,6 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
-  */
- static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 1c67ca1..d4c5ff4 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -268,7 +268,6 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
  {
--#ifdef CONFIG_X86_HT
+ 	u32 nodes, cores_per_cu = 1;
+ 	u8 node_id;
+-	int cpu = smp_processor_id();
+ 
+ 	/* get information required for multi-node processors */
+ 	if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
+@@ -301,7 +300,7 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
+ 		cus_per_node = cores_per_node / cores_per_cu;
+ 
+ 		/* store NodeID, use llc_shared_map to store sibling info */
+-		per_cpu(cpu_llc_id, cpu) = node_id;
++		c->llc_id = node_id;
+ 
+ 		/* core id has to be in the [0 .. cores_per_node - 1] range */
+ 		c->cpu_core_id %= cores_per_node;
+@@ -318,7 +317,6 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
+ {
+ #ifdef CONFIG_X86_HT
  	unsigned bits;
+-	int cpu = smp_processor_id();
  
  	bits = c->x86_coreid_bits;
-@@ -326,7 +324,6 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
+ 	/* Low order bits define the core id (index of core in socket) */
+@@ -326,18 +324,14 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
+ 	/* Convert the initial APIC ID into the socket ID */
+ 	c->phys_proc_id = c->initial_apicid >> bits;
  	/* use socket ID also for last level cache */
- 	c->llc_id = c->phys_proc_id;
+-	per_cpu(cpu_llc_id, cpu) = c->phys_proc_id;
++	c->llc_id = c->phys_proc_id;
  	amd_get_topology(c);
--#endif
+ #endif
  }
  
  int amd_get_nb_id(int cpu)
+ {
+-	int id = 0;
+-#ifdef CONFIG_SMP
+-	id = per_cpu(cpu_llc_id, cpu);
+-#endif
+-	return id;
++	return cpu_data(cpu).llc_id;
+ }
+ EXPORT_SYMBOL_GPL(amd_get_nb_id);
+ 
+@@ -350,7 +344,7 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
+ 
+ 	node = numa_cpu_node(cpu);
+ 	if (node == NUMA_NO_NODE)
+-		node = per_cpu(cpu_llc_id, cpu);
++		node = c->llc_id;
+ 
+ 	/*
+ 	 * On multi-fabric platform (e.g. Numascale NumaChip) a
 diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 4448984..f7a6589 100644
+index cf79302..4448984 100644
 --- a/arch/x86/kernel/cpu/common.c
 +++ b/arch/x86/kernel/cpu/common.c
-@@ -49,6 +49,10 @@ cpumask_var_t cpu_initialized_mask;
- cpumask_var_t cpu_callout_mask;
- cpumask_var_t cpu_callin_mask;
- 
-+/* Number of siblings per CPU package */
-+int smp_num_siblings = 1;
-+EXPORT_SYMBOL(smp_num_siblings);
-+
- /* representing cpus for which sibling maps can be computed */
- cpumask_var_t cpu_sibling_setup_mask;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index a2dfacf..8bc2be2 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -775,7 +775,7 @@ static int p4_validate_raw_event(struct perf_event *event)
- 	 * if an event is shared across the logical threads
- 	 * the user needs special permissions to be able to use it
- 	 */
--	if (p4_ht_active() && p4_event_bind_map[v].shared) {
-+	if (smt_capable() && p4_event_bind_map[v].shared) {
- 		if (perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
- 			return -EACCES;
- 	}
-@@ -816,7 +816,7 @@ static int p4_hw_config(struct perf_event *event)
- 	event->hw.config = p4_config_pack_escr(escr) |
- 			   p4_config_pack_cccr(cccr);
- 
--	if (p4_ht_active() && p4_ht_thread(cpu))
-+	if (smt_capable() && p4_ht_thread(cpu))
- 		event->hw.config = p4_set_ht_bit(event->hw.config);
- 
- 	if (event->attr.type == PERF_TYPE_RAW) {
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index 8022c66..4fbaacb 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -1,16 +1,16 @@
--#include <linux/smp.h>
- #include <linux/timex.h>
- #include <linux/string.h>
- #include <linux/seq_file.h>
- #include <linux/cpufreq.h>
- 
-+#include <asm/smp.h>
-+
- /*
-  *	Get CPU information for use by the procfs.
-  */
- static void show_cpuinfo_core(struct seq_file *m, struct cpuinfo_x86 *c,
- 			      unsigned int cpu)
- {
--#ifdef CONFIG_SMP
- 	if (c->x86_max_cores * smp_num_siblings > 1) {
- 		seq_printf(m, "physical id\t: %d\n", c->phys_proc_id);
- 		seq_printf(m, "siblings\t: %d\n",
-@@ -20,7 +20,6 @@ static void show_cpuinfo_core(struct seq_file *m, struct cpuinfo_x86 *c,
- 		seq_printf(m, "apicid\t\t: %d\n", c->apicid);
- 		seq_printf(m, "initial apicid\t: %d\n", c->initial_apicid);
- 	}
+@@ -789,6 +789,7 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
+ 	c->x86_model_id[0] = '\0';  /* Unset */
+ 	c->x86_max_cores = 1;
+ 	c->x86_coreid_bits = 0;
++	c->llc_id = BAD_APICID;
+ #ifdef CONFIG_X86_64
+ 	c->x86_clflush_size = 64;
+ 	c->x86_phys_bits = 36;
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index b8f3653..8c9a873 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -579,9 +579,6 @@ unsigned int __cpuinit init_intel_cacheinfo(struct cpuinfo_x86 *c)
+ 	unsigned int new_l1d = 0, new_l1i = 0; /* Cache sizes from cpuid(4) */
+ 	unsigned int new_l2 = 0, new_l3 = 0, i; /* Cache sizes from cpuid(4) */
+ 	unsigned int l2_id = 0, l3_id = 0, num_threads_sharing, index_msb;
+-#ifdef CONFIG_X86_HT
+-	unsigned int cpu = c->cpu_index;
 -#endif
- }
  
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 1d92a5a..267535e 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -1,7 +1,6 @@
- #include <linux/errno.h>
- #include <linux/kernel.h>
- #include <linux/mm.h>
--#include <linux/smp.h>
- #include <linux/prctl.h>
- #include <linux/slab.h>
- #include <linux/sched.h>
-@@ -19,6 +18,7 @@
- #include <linux/hw_breakpoint.h>
- #include <asm/cpu.h>
- #include <asm/apic.h>
-+#include <asm/smp.h>
- #include <asm/syscalls.h>
- #include <asm/idle.h>
- #include <asm/uaccess.h>
-@@ -676,12 +676,11 @@ static void amd_e400_idle(void)
+ 	if (c->cpuid_level > 3) {
+ 		static int is_initialized;
+@@ -700,16 +697,12 @@ unsigned int __cpuinit init_intel_cacheinfo(struct cpuinfo_x86 *c)
  
- void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
- {
--#ifdef CONFIG_SMP
- 	if (pm_idle == poll_idle && smp_num_siblings > 1) {
- 		printk_once(KERN_WARNING "WARNING: polling idle and HT enabled,"
- 			" performance may degrade.\n");
- 	}
+ 	if (new_l2) {
+ 		l2 = new_l2;
+-#ifdef CONFIG_X86_HT
+-		per_cpu(cpu_llc_id, cpu) = l2_id;
 -#endif
-+
- 	if (pm_idle)
- 		return;
++		c->llc_id = l2_id;
+ 	}
  
+ 	if (new_l3) {
+ 		l3 = new_l3;
+-#ifdef CONFIG_X86_HT
+-		per_cpu(cpu_llc_id, cpu) = l3_id;
+-#endif
++		c->llc_id = l3_id;
+ 	}
+ 
+ 	c->x86_cache_size = l3 ? l3 : (l2 ? l2 : (l1i+l1d));
 diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 60729f4..ca85d4f 100644
+index 589bf69..472e6a0 100644
 --- a/arch/x86/kernel/smpboot.c
 +++ b/arch/x86/kernel/smpboot.c
-@@ -113,10 +113,6 @@ static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
- #define set_idle_for_cpu(x, p)   (idle_thread_array[(x)] = (p))
- #endif
+@@ -117,9 +117,6 @@ static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
+ int smp_num_siblings = 1;
+ EXPORT_SYMBOL(smp_num_siblings);
  
--/* Number of siblings per CPU package */
--int smp_num_siblings = 1;
--EXPORT_SYMBOL(smp_num_siblings);
+-/* Last level cache ID of each logical CPU */
+-DEFINE_PER_CPU(u16, cpu_llc_id) = BAD_APICID;
 -
- /* Per CPU bogomips and other parameters */
- DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
- EXPORT_PER_CPU_SYMBOL(cpu_info);
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 26b8a85..346e7ac 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -572,11 +572,6 @@ static int __init p4_init(char **cpu_type)
- 	if (cpu_model > 6 || cpu_model == 5)
- 		return 0;
+ /* representing HT siblings of each logical CPU */
+ DEFINE_PER_CPU(cpumask_var_t, cpu_sibling_map);
+ EXPORT_PER_CPU_SYMBOL(cpu_sibling_map);
+@@ -337,7 +334,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
  
--#ifndef CONFIG_SMP
--	*cpu_type = "i386/p4";
--	model = &op_p4_spec;
--	return 1;
--#else
- 	switch (smp_num_siblings) {
- 	case 1:
- 		*cpu_type = "i386/p4";
-@@ -588,7 +583,6 @@ static int __init p4_init(char **cpu_type)
- 		model = &op_p4_ht2_spec;
- 		return 1;
+ 			if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
+ 				if (c->phys_proc_id == o->phys_proc_id &&
+-				    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i) &&
++				    c->llc_id == o->llc_id &&
+ 				    c->compute_unit_id == o->compute_unit_id)
+ 					link_thread_siblings(cpu, i);
+ 			} else if (c->phys_proc_id == o->phys_proc_id &&
+@@ -358,12 +355,13 @@ void __cpuinit set_cpu_sibling_map(int cpu)
  	}
--#endif
  
- 	printk(KERN_INFO "oprofile: P4 HyperThreading detected with > 2 threads\n");
- 	printk(KERN_INFO "oprofile: Reverting to timer mode.\n");
-diff --git a/arch/x86/oprofile/op_model_p4.c b/arch/x86/oprofile/op_model_p4.c
-index ae3503e..c6bcb22 100644
---- a/arch/x86/oprofile/op_model_p4.c
-+++ b/arch/x86/oprofile/op_model_p4.c
-@@ -42,21 +42,15 @@ static unsigned int num_controls = NUM_CONTROLS_NON_HT;
-    kernel boot-time. */
- static inline void setup_num_counters(void)
- {
--#ifdef CONFIG_SMP
- 	if (smp_num_siblings == 2) {
- 		num_counters = NUM_COUNTERS_HT2;
- 		num_controls = NUM_CONTROLS_HT2;
+ 	for_each_cpu(i, cpu_sibling_setup_mask) {
+-		if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
+-		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
++		struct cpuinfo_x86 *o = &cpu_data(i);
++
++		if (c->llc_id != BAD_APICID && c->llc_id == o->llc_id) {
+ 			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
+ 			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
+ 		}
+-		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
++		if (c->phys_proc_id == o->phys_proc_id) {
+ 			cpumask_set_cpu(i, cpu_core_mask(cpu));
+ 			cpumask_set_cpu(cpu, cpu_core_mask(i));
+ 			/*
+@@ -381,9 +379,9 @@ void __cpuinit set_cpu_sibling_map(int cpu)
+ 				 * the other cpus in this package
+ 				 */
+ 				if (i != cpu)
+-					cpu_data(i).booted_cores++;
++					o->booted_cores++;
+ 			} else if (i != cpu && !c->booted_cores)
+-				c->booted_cores = cpu_data(i).booted_cores;
++				c->booted_cores = o->booted_cores;
+ 		}
  	}
--#endif
  }
- 
- static inline int addr_increment(void)
- {
--#ifdef CONFIG_SMP
- 	return smp_num_siblings == 2 ? 2 : 1;
--#else
--	return 1;
--#endif
- }
- 
- 
 -- 
 1.7.10
 
