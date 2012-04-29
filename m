@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab2D2ODb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 10:03:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33795 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751785Ab2D2OD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 10:03:29 -0400
-Message-ID: <4F9D49DC.6090002@redhat.com>
-Date: Sun, 29 Apr 2012 11:02:04 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Joe Perches <joe@perches.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Tim Small <tim@buttersideup.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Egor Martovetsky <egor@pasemi.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?B?TmlrbGFzIFPDtmRlcmx1bmQ=?= 
-	<niklas.soderlund@ericsson.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to work
- with layers
-References: <1335289087-11337-1-git-send-email-mchehab@redhat.com>  <1335291342-14922-1-git-send-email-mchehab@redhat.com>  <20120427133304.GE9626@aftab.osrc.amd.com> <4F9ADCE3.2030506@redhat.com>  <20120428091621.GE26065@aftab.osrc.amd.com> <1335632874.4191.8.camel@joe2Laptop>
-In-Reply-To: <1335632874.4191.8.camel@joe2Laptop>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753576Ab2D2OFi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 10:05:38 -0400
+Received: from 207-126-122-235.ip.openhosting.com ([207.126.122.235]:41954
+	"EHLO drepperk.user.openhosting.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753325Ab2D2OFh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 10:05:37 -0400
+Date: Sun, 29 Apr 2012 10:04:57 -0400
+From: Ulrich Drepper <drepper@akkadia.org>
+Message-Id: <201204291404.q3TE4vfN023826@drepperk.user.openhosting.com>
+To: arnd@arndb.de, davem@davemloft.net, hch@infradead.org, hverkuil@xs4all.nl,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        mchehab@redhat.com
+Subject: [PATCH] [RESEND] Install kernel-page-flags.h
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 28-04-2012 14:07, Joe Perches escreveu:
-> On Sat, 2012-04-28 at 11:16 +0200, Borislav Petkov wrote:
->> On Fri, Apr 27, 2012 at 02:52:35PM -0300, Mauro Carvalho Chehab wrote:
->>>> All those local variables should be sorted in a reverse christmas tree
->>>> order:
->>>>
->>>> 	u32 this_is_the_longest_array_name[LENGTH];
->>>> 	void *shorter_named_variable;
->>>> 	unsigned long size;
->>>> 	int i;
->>>>
->>>> 	...
->>>
->>> Why? There's nothing at the CodingStyle saying about how the vars should
->>> be ordered. If you want to enforce some particular order, please do it
->>> yourself, but apply it consistently among the entire subsystem.
->>
->> First of all, this way it is more readable.
-> 
-> Not in my opinion, and blindly using "reverse christmas tree"
-> can separate variables that should be declared together.
+No one has definitely commented on this patch nor is it applied.  Christoph at first said it shouldn't be done but I think he had to retract his objection.  The interface is already out there.  It's also IMO the right choice to go with a binary interface since there is so much data involved and the format is not tied directly to kernel-internal data structures.
 
-I agree with Joe. The order won't make the code easier or harder to
-read, nor it would improve code performance.
+Could either the patch please be applied or a reason given why not?
 
->> Second of all, maybe we should hold it down in CodingStyle.
 
-Different developers have different opinions about how to order includes, 
-functions, vars, etc. 
+Signed-off-by: Ulrich Drepper <drepper@gmail.com>
 
-So, this is not at CodingStyle because there's no consensus about it, and 
-because this is not relevant for code understanding.
+ include/linux/Kbuild              |    1 +
+ include/linux/kernel-page-flags.h |    4 ++++
+ 2 files changed, 5 insertions(+)
 
-A reviewer should not reject a patch just because he doesn't like the
-order that the developer used.
-
-Regards,
-Mauro
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index 3c9b616..50f55c7 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -227,6 +227,7 @@
+ header-y += kdev_t.h
+ header-y += kernel.h
+ header-y += kernelcapi.h
++header-y += kernel-page-flags.h
+ header-y += keyboard.h
+ header-y += keyctl.h
+ header-y += l2tp.h
+diff --git a/include/linux/kernel-page-flags.h b/include/linux/kernel-page-flags.h
+index 26a6571..a1bdf69 100644
+--- a/include/linux/kernel-page-flags.h
++++ b/include/linux/kernel-page-flags.h
+@@ -32,6 +32,8 @@
+ #define KPF_KSM			21
+ #define KPF_THP			22
+ 
++#ifdef __KERNEL__
++
+ /* kernel hacking assistances
+  * WARNING: subject to change, never rely on them!
+  */
+@@ -44,4 +46,6 @@
+ #define KPF_ARCH		38
+ #define KPF_UNCACHED		39
+ 
++#endif /* __KERNEL__ */
++
+ #endif /* LINUX_KERNEL_PAGE_FLAGS_H */
