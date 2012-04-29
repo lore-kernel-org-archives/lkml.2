@@ -1,96 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab2D2DVt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Apr 2012 23:21:49 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38602 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754642Ab2D2DVr convert rfc822-to-8bit (ORCPT
+	id S1755926Ab2D2DeS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Apr 2012 23:34:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46530 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755572Ab2D2DeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Apr 2012 23:21:47 -0400
+	Sat, 28 Apr 2012 23:34:17 -0400
+Message-ID: <4F9CB6B6.50505@acm.org>
+Date: Sat, 28 Apr 2012 22:34:14 -0500
+From: Corey Minyard <tcminyard@gmail.com>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <87d36rafid.fsf@skywalker.in.ibm.com>
-References: <1334353716-19483-1-git-send-email-levinsasha928@gmail.com>
- <87iph118pd.fsf@skywalker.in.ibm.com> <CA+1xoqfgA6DJL7ztMOdfLZedV6YwzZPUfbovFykdSSZy0Aio6w@mail.gmail.com>
- <87ehrodjt6.fsf@skywalker.in.ibm.com> <CA+1xoqfQ0Cj5pibxN8ZTXbksezH4NqOERaiYav=D7BA+v86m3A@mail.gmail.com>
- <87d36rafid.fsf@skywalker.in.ibm.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Sun, 29 Apr 2012 05:21:27 +0200
-Message-ID: <CA+1xoqekMH0yeGTu=2bsfJ8gcyARtX9MU3Z6A_q51q_dXxNbNw@mail.gmail.com>
-Subject: Re: [PATCH] 9p: disconnect channel when PCI device is removed
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: davem@davemloft.net, ericvh@gmail.com, jvrao@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davej@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+CC: Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        tcminyard@gmail.com, Nikola Ciprich <nik@nik-comp.lan>
+Subject: Re: [BISECTED] ipmi_si not loading since 2.6.39
+References: <20120421072056.GA2033@nik-comp.lan> <4F95B6F3.3010303@calxeda.com> <4F96AD8C.9010105@acm.org> <20120424203745.GB2152@nik-comp.lan> <4F97135A.2060801@calxeda.com> <20120424213056.GC2152@nik-comp.lan> <4F9721C3.7000009@acm.org> <20120425042123.GA2067@nik-comp.lan> <4F982B0C.7050103@acm.org> <20120425175812.GA2037@nik-comp.lan> <20120428144343.GA6810@nik-comp.lan>
+In-Reply-To: <20120428144343.GA6810@nik-comp.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 28, 2012 at 8:16 PM, Aneesh Kumar K.V
-<aneesh.kumar@linux.vnet.ibm.com> wrote:
-> Sasha Levin <levinsasha928@gmail.com> writes:
->
->> On Mon, Apr 16, 2012 at 12:59 PM, Aneesh Kumar K.V
->> <aneesh.kumar@linux.vnet.ibm.com> wrote:
->>> Sasha Levin <levinsasha928@gmail.com> writes:
->>>
->>>> On Sun, Apr 15, 2012 at 2:27 PM, Aneesh Kumar K.V
->>>> <aneesh.kumar@linux.vnet.ibm.com> wrote:
->>>>> Sasha Levin <levinsasha928@gmail.com> writes:
->>>>>
->>>>>> When a virtio_9p pci device is being removed, we should close down any
->>>>>> active channels and free up resources, we're not supposed to BUG() if there's
->>>>>> still an open channel since it's a valid case when removing the PCI device.
->>>>>>
->>>>>> Otherwise, removing the PCI device with an open channel would cause the
->>>>>> following BUG():
->>>>>>
->>>>> ...
->>>>>
->>>>>> diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
->>>>>> index 3d43206..5af18d1 100644
->>>>>> --- a/net/9p/trans_virtio.c
->>>>>> +++ b/net/9p/trans_virtio.c
->>>>>> @@ -615,7 +615,8 @@ static void p9_virtio_remove(struct virtio_device *vdev)
->>>>>>  {
->>>>>>       struct virtio_chan *chan = vdev->priv;
->>>>>>
->>>>>> -     BUG_ON(chan->inuse);
->>>>>> +     if (chan->inuse)
->>>>>> +             p9_virtio_close(chan->client);
->>>>>>       vdev->config->del_vqs(vdev);
->>>>>>
->>>>>>       mutex_lock(&virtio_9p_lock);
->>>>>
->>>>> But an umount should have resulted in p9_virtio_close ? How are you
->>>>> removing the device ? Are you removing the device with file system
->>>>> mounted  ?. In that case may be we should return EBUSY ?
->>>>
->>>> I signal the underlying PCI device to remove (echo 1 >
->>>> /sys/devices/pci0000\:00/[...]/remove), we can't really prevent that
->>>> thing so we must clean up ourselves.
->>>
->>> What does that mean for the mounted file system ? What would happen to
->>> the pending fs operations in that case ?
+On 04/28/2012 09:43 AM, Nikola Ciprich wrote:
+>> nothing on this address (with 3.4 kernel).
 >>
->> I'm guessing that all of them should be canceled.
+>> on 2.6.32 I see:
+>> 0a30-0a3f : pnp 00:07
+>> 0b00-0b7f : pnp 00:0c
+>> 0ca2-0ca2 : ipmi_si
+>> 0ca3-0ca3 : ipmi_si
+>> 0cf8-0cff : PCI conf1
+>> 1180-119f : 0000:00:1f.3
+>>    1180-119f : pnp 00:0e
+>> d000-dfff : PCI Bus 0000:06
+>>    d000-d01f : 0000:06:00.0
+>>
+>> on 3.4-rc4:
+>>    0a30-0a3f : pnp 00:07
+>>    0b00-0b7f : pnp 00:0c
+>> 0cf8-0cff : PCI conf1
+>> 0d00-ffff : PCI Bus 0000:00
+>>    1180-119f : 0000:00:1f.3
+>>      1180-119f : pnp 00:0e
+>>    c000-cfff : PCI Bus 0000:06
+>>      c000-c01f : 0000:06:00.0
+>>
+> well, I wasn't able to figure out anything special :(
+> do You guys have any idea on what more I could check?
+> I'd be very grateful for any hints..
+> thanks a lot in advance
+> nik
+
+I do not know.  I just tried 3.2 and the head of the kernel tree and 
+they both worked fine on my system, which is an old Intel server.
+
+I have a Supermicro system with IPMI, but it will take me a bit to get a 
+working kernel there.
+
+Could you try with the module param "kcs_debug=7"?  That will give me 
+some idea what the state machine is doing.
+
+At this point, if I can't reproduce, I can't do much.  I also don't see 
+how that patch would make any difference if you hand-specify the parameters.
+
+-corey
+
 >
-> Pending operation we can cancel, but what about dirty pages in cached
-> mode ? Also how does virtio-blk handle this ?
-
-virtio-blk does pretty much the same thing:
-
-sh-4.2# echo 1 > 0000\:00\:05.0/remove
-sh-4.2# ls -al
-[hang]
-
->> virtio-pci simulates
->> a PCI device, if the PCI device is unplugged there's not much to do
->> about the filesystem or pending requests.
+>> I'll try comparing both kernels' dmesg output in more detail to see
+>> if there's some difference that might be important..
+>>
+>> n.
+>>
+>>
+>>
+>>
+>>> -corey
+>>>
+>>>> cheers!
+>>>> n.
+>>>>
+>>>>
+>>>>> -corey
+>>>>>
+>>>>>
+>>>>>> n.
+>>>>>>
+>>>>>>
+>>>>>> On Tue, Apr 24, 2012 at 03:55:54PM -0500, Rob Herring wrote:
+>>>>>>> On 04/24/2012 03:37 PM, Nikola Ciprich wrote:
+>>>>>>>> Hi Corey,
+>>>>>>>>
+>>>>>>>> I have this problem with 3.4-rc4 as well and it already contains
+>>>>>>>> b1608d69cb804e414d0887140ba08a9398e4e638, so this doesn't fix this problem..
+>>>>>>>>
+>>>>>>> Can you send the kernel log for the failing case.
+>>>>>>>
+>>>>>>> Rob
+>>>>>>>
+>>>>>>>> BR
+>>>>>>>>
+>>>>>>>> nik
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> On Tue, Apr 24, 2012 at 08:41:32AM -0500, Corey Minyard wrote:
+>>>>>>>>> Looks like you might need change b1608d69cb804e414d0887140ba08a9398e4e638
+>>>>>>>>>
+>>>>>>>>> -corey
+>>>>>>>>>
+>>>>>>>>> On 04/23/2012 03:09 PM, Rob Herring wrote:
+>>>>>>>>>> On 04/21/2012 02:20 AM, Nikola Ciprich wrote:
+>>>>>>>>>>> Hi,
+>>>>>>>>>>>
+>>>>>>>>>>> here's further information Rob and Corey requested:
+>>>>>>>>>>>
+>>>>>>>>>>> on working system:
+>>>>>>>>>>>
+>>>>>>>>>>> [root@vbox4 ~]# cat /proc/ipmi/0/params
+>>>>>>>>>>> kcs,i/o,0xca2,rsp=1,rsi=1,rsh=0,irq=0,ipmb=0
+>>>>>>>>>>>
+>>>>>>>>>>> dmesg snippet:
+>>>>>>>>>>>
+>>>>>>>>>>> [   41.759319] ipmi message handler version 39.2
+>>>>>>>>>>> [   41.760690] ipmi device interface
+>>>>>>>>>>> [   42.765334] IPMI System Interface driver.
+>>>>>>>>>>> [   42.765336] ipmi_si: probing via hardcoded address
+>>>>>>>>>>> [   42.765337] ipmi_si: Adding hardcoded-specified kcs state machine
+>>>>>>>>>>> [   42.765340] ipmi_si: Trying hardcoded-specified kcs state machine at i/o address 0xca8, slave address 0x0, irq 0
+>>>>>>>>>>> [   42.765344] ipmi_si: Interface detection failed
+>>>>>>>>>>> [   42.770823] ipmi_si: probing via SMBIOS
+>>>>>>>>>>> [   42.770834] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 irq 0
+>>>>>>>>>>> [   42.770836] ipmi_si: Adding SMBIOS-specified kcs state machine
+>>>>>>>>>>> [   42.770838] ipmi_si: probing via SPMI
+>>>>>>>>>>> [   42.770840] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
+>>>>>>>>>>> [   42.770841] ipmi_si: Adding SPMI-specified kcs state machine
+>>>>>>>>>>> [   42.770843] ipmi_si: Trying SMBIOS-specified kcs state machine at i/o address 0xca2, slave address 0x0, irq 0
+>>>>>>>>>>> [   42.798137] ipmi_si ipmi_si.0: Error clearing flags: cc
+>>>>>>>>>>> [   42.801011] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x002a7c, prod_id: 0x0624, dev_id: 0x20)
+>>>>>>>>>>> [   42.801068] ipmi_si ipmi_si.0: IPMI kcs interface initialized
+>>>>>>>>>>>
+>>>>>>>>>>>
+>>>>>>>>>>> dmidecode:
+>>>>>>>>>>>
+>>>>>>>>>>> IPMI Device Information
+>>>>>>>>>>>             Interface Type: KCS (Keyboard Control Style)
+>>>>>>>>>>>             Specification Version: 2.0
+>>>>>>>>>>>             I2C Slave Address: 0x00
+>>>>>>>>>>>             NV Storage Device: Not Present
+>>>>>>>>>>>             Base Address: 0x0000000000000CA2 (I/O)
+>>>>>>>>>>>             Register Spacing: Successive Byte Boundaries
+>>>>>>>>>>>
+>>>>>>>>>>> Base Board Information
+>>>>>>>>>>>             Manufacturer: Supermicro
+>>>>>>>>>>>             Product Name: X9SCL/X9SCM
+>>>>>>>>>>>
+>>>>>>>>>>> (but we're experiencing this on various supermicro bords, ie X8DTL)
+>>>>>>>>>>>
+>>>>>>>>>>> Tried setting parameters by hand didn't help:
+>>>>>>>>>>>
+>>>>>>>>>>> modprobe ipmi_si type=kcs addrs=0xca8 regspacings=1 regsizes=1 regshifts=0 irqs=0 slave_addrs=0x0
+>>>>>>>>>>>
+>>>>>>>>>>> (not sure whether I got them correct though, and values mostly seem to me to be defaults anyways..)
+>>>>>>>>>>>
+>>>>>>>>>> It is working for me on a SuperMicro system with ubuntu oneiric (3.0
+>>>>>>>>>> based).
+>>>>>>>>>>
+>>>>>>>>>> [597160.259728] ipmi_si: probing via SMBIOS
+>>>>>>>>>> [597160.259730] ipmi_si: SMBIOS: io 0xca2 regsize 1 spacing 1 irq 0
+>>>>>>>>>> [597160.259731] ipmi_si: Adding SMBIOS-specified kcs state machine
+>>>>>>>>>> [597160.259734] ipmi_si: probing via SPMI
+>>>>>>>>>> [597160.259735] ipmi_si: SPMI: io 0xe4 regsize 1 spacing 1 irq 0
+>>>>>>>>>> [597160.259737] ipmi_si: Adding SPMI-specified kcs state machine
+>>>>>>>>>> [597160.259739] ipmi_si: Trying SMBIOS-specified kcs state machine at
+>>>>>>>>>> i/o address 0xca2, slave address 0x0, irq 0
+>>>>>>>>>> [597160.378757] ipmi_si: Invalid return from get global enables command,
+>>>>>>>>>> cannot enable the event buffer.
+>>>>>>>>>> [597160.382032] ipmi_si ipmi_si.0: Found new BMC (man_id: 0x00b980,
+>>>>>>>>>> prod_id: 0x0624, dev_id: 0x20)
+>>>>>>>>>> [597160.382040] ipmi_si ipmi_si.0: IPMI kcs interface initialized
+>>>>>>>>>> [597179.973960] ipmi device interface
+>>>>>>>>>> localadm@sandy1:~$ ipmitool bmc info
+>>>>>>>>>> Could not open device at /dev/ipmi0 or /dev/ipmi/0 or /dev/ipmidev/0: No
+>>>>>>>>>> such file or directory
+>>>>>>>>>> Get Device ID command failed
+>>>>>>>>>> localadm@sandy1:~$ sudo ipmitool bmc info
+>>>>>>>>>> Device ID                 : 32
+>>>>>>>>>> Device Revision           : 1
+>>>>>>>>>> Firmware Revision         : 1.1
+>>>>>>>>>> IPMI Version              : 2.0
+>>>>>>>>>> Manufacturer ID           : 47488
+>>>>>>>>>> Manufacturer Name         : Unknown (0xB980)
+>>>>>>>>>> Product ID                : 1572 (0x0624)
+>>>>>>>>>> Product Name              : Unknown (0x624)
+>>>>>>>>>> Device Available          : yes
+>>>>>>>>>> Provides Device SDRs      : no
+>>>>>>>>>> Additional Device Support :
+>>>>>>>>>>         Sensor Device
+>>>>>>>>>>         SDR Repository Device
+>>>>>>>>>>         SEL Device
+>>>>>>>>>>         FRU Inventory Device
+>>>>>>>>>>         IPMB Event Receiver
+>>>>>>>>>>         IPMB Event Generator
+>>>>>>>>>>         Chassis Device
+>>>>>>>>>> Aux Firmware Rev Info     :
+>>>>>>>>>>         0x06
+>>>>>>>>>>         0x00
+>>>>>>>>>>         0x00
+>>>>>>>>>>         0x00
+>>>>>>>>>> localadm@sandy1:~$ uname -a
+>>>>>>>>>> Linux sandy1 3.0.0-16-generic #28-Ubuntu SMP Fri Jan 27 17:44:39 UTC
+>>>>>>>>>> 2012 x86_64 x86_64 x86_64 GNU/Linux
+>>>>>>>>>>
+>>>>>>>>>> Rob
+>>>>>>>>>>
+>>>>>>>>>>> nik
+>>>>>>>>>>>
+>>>>>>>>>>>
+>>>>>>>>>>> On Sat, Apr 21, 2012 at 12:38:33AM +0200, Nikola Ciprich wrote:
+>>>>>>>>>>>> Hello,
+>>>>>>>>>>>>
+>>>>>>>>>>>> I was trying to find out why IPMI stopped working on new kernels. Since 2.6.39
+>>>>>>>>>>>> module loading ends with following message:
+>>>>>>>>>>>>
+>>>>>>>>>>>>      ipmi_si: Interface detection failed
+>>>>>>>>>>>>
+>>>>>>>>>>>> Then ipmitool is unable to control IPMI device.
+>>>>>>>>>>>>
+>>>>>>>>>>>> Works for 2.6.38, doesn't work for 2.6.39, 3.0.28, 3.4-rc1.
+>>>>>>>>>>>>
+>>>>>>>>>>>> I got this bisected to following commit:
+>>>>>>>>>>>>
+>>>>>>>>>>>> commit a1e9c9dd3383e6a1a762464ad604b1081774dbda
+>>>>>>>>>>>> Author: Rob Herring<rob.herring@calxeda.com>
+>>>>>>>>>>>> Date:   Wed Feb 23 15:37:59 2011 -0600
+>>>>>>>>>>>>
+>>>>>>>>>>>>         ipmi: convert OF driver to platform driver
+>>>>>>>>>>>>
+>>>>>>>>>>>>         of_bus is deprecated in favor of the plain platform bus. This patch
+>>>>>>>>>>>>         merges the ipmi OF driver with the existing platform driver.
+>>>>>>>>>>>>
+>>>>>>>>>>>>         CONFIG_PPC_OF occurrances are removed or replaced with CONFIG_OF.
+>>>>>>>>>>>>
+>>>>>>>>>>>>         Compile tested with and without CONFIG_OF. Tested OF probe and
+>>>>>>>>>>>>         default probe cases.
+>>>>>>>>>>>>
+>>>>>>>>>>>>         Signed-off-by: Rob Herring<rob.herring@calxeda.com>
+>>>>>>>>>>>>         Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
+>>>>>>>>>>>>
+>>>>>>>>>>>> I wonder whether this is a bug, or I'm doing something wrong?
+>>>>>>>>>>>>
+>>>>>>>>>>>> Thanks in advance!
+>>>>>>>>>>>>
+>>>>>>>>>>>> with best regards
+>>>>>>>>>>>>
+>>>>>>>>>>>> nik
+>>>>>>>>>>>>
+>>>>>>>>>>>>
+>>>>>>>>>>>> -- 
+>>>>>>>>>>>> -------------------------------------
+>>>>>>>>>>>> Ing. Nikola CIPRICH
+>>>>>>>>>>>> LinuxBox.cz, s.r.o.
+>>>>>>>>>>>> 28. rijna 168, 709 01 Ostrava
+>>>>>>>>>>>>
+>>>>>>>>>>>> tel.:   +420 596 603 142
+>>>>>>>>>>>> fax:    +420 596 621 273
+>>>>>>>>>>>> mobil:  +420 777 093 799
+>>>>>>>>>>>>
+>>>>>>>>>>>> www.linuxbox.cz
+>>>>>>>>>>>>
+>>>>>>>>>>>> mobil servis: +420 737 238 656
+>>>>>>>>>>>> email servis: servis@linuxbox.cz
+>>>>>>>>>>>> -------------------------------------
+>>>>>>>>>> --
+>>>>>>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>>>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>>>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>> -- 
+>> -------------------------------------
+>> Ing. Nikola CIPRICH
+>> LinuxBox.cz, s.r.o.
+>> 28. rijna 168, 709 01 Ostrava
+>>
+>> tel.:   +420 596 603 142
+>> fax:    +420 596 621 273
+>> mobil:  +420 777 093 799
+>>
+>> www.linuxbox.cz
+>>
+>> mobil servis: +420 737 238 656
+>> email servis: servis@linuxbox.cz
+>> -------------------------------------
 >
-> Ideal thing to do would be to make remove return -EBUSY; let the user
-> umount. But looking at the code, I guess there is no easy way to return
-> error from remove callback ?
+>
 
-There's no way to return error, the removal callback is just a notifier.
