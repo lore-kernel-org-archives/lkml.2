@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2D2JqG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 05:46:06 -0400
-Received: from rudy.puc.rediris.es ([130.206.18.132]:52751 "EHLO
-	rudy.puc.rediris.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab2D2JqE (ORCPT
+	id S1752238Ab2D2JtM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 05:49:12 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:40456 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750945Ab2D2JtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 05:46:04 -0400
-X-Greylist: delayed 2390 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Apr 2012 05:46:04 EDT
-X-Envelope-From: paubert@iram.es
-Date: Sun, 29 Apr 2012 11:05:20 +0200
-From: Gabriel Paubert <paubert@iram.es>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Andreas Schwab <schwab@linux-m68k.org>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tty/serial/pmac_zilog: Fix "nobody cared" IRQ message
-Message-ID: <20120429090520.GA26740@visitor2.iram.es>
-References: <4F9C830D.8040906@lwfinger.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9C830D.8040906@lwfinger.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SPF-Received: 2
-X-Spamina-Bogosity: Ham
+	Sun, 29 Apr 2012 05:49:10 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18I0o4sgyYIZjQp+XvLyEfgGpMXttULq5zvEe1NiN
+	8JTCtUdAf/qFUY
+Message-ID: <1335692945.7442.7.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH] namespaces: fix leak on fork() failure
+From: Mike Galbraith <efault@gmx.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>
+Date: Sun, 29 Apr 2012 11:49:05 +0200
+In-Reply-To: <m14ns355ru.fsf@fess.ebiederm.org>
+References: <1335604790.5995.22.camel@marge.simpson.net>
+	 <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 28, 2012 at 06:53:49PM -0500, Larry Finger wrote:
-> Following commit a79dd5a titled "tty/serial/pmac_zilog: Fix suspend & resume",
-> my Powerbook G4 Titanium showed the following stack dump:
-> 
-> [   36.878225] irq 23: nobody cared (try booting with the "irqpoll" option)
-> [   36.878251] Call Trace:
-> [   36.878291] [dfff3f00] [c000984c] show_stack+0x7c/0x194 (unreliable)
-> [   36.878322] [dfff3f40] [c00a6868] __report_bad_irq+0x44/0xf4
-> [   36.878339] [dfff3f60] [c00a6b04] note_interrupt+0x1ec/0x2ac
-> [   36.878356] [dfff3f80] [c00a48d0] handle_irq_event_percpu+0x250/0x2b8
-> [   36.878372] [dfff3fd0] [c00a496c] handle_irq_event+0x34/0x54
-> [   36.878389] [dfff3fe0] [c00a753c] handle_fasteoi_irq+0xb4/0x124
-> [   36.878412] [dfff3ff0] [c000f5bc] call_handle_irq+0x18/0x28
-> [   36.878428] [deef1f10] [c000719c] do_IRQ+0x114/0x1cc
-> [   36.878446] [deef1f40] [c0015868] ret_from_except+0x0/0x1c
-> [   36.878484] --- Exception: 501 at 0xf497610
-> [   36.878489]     LR = 0xfdc3dd0
-> [   36.878497] handlers:
-> [   36.878510] [<c02b7424>] pmz_interrupt
-> [   36.878520] Disabling IRQ #23
-> 
-> From an E-mail exchange about this problem, Andreas Schwab noticed a typo
-> that resulted in the wrong condition being tested.
-> 
-> The patch also corrects 2 typos that incorrectly report why an error branch
-> is being taken.
-> 
-> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-> ---
-> 
-> Ben,
-> 
-> Any changes you wish to make in the commit message are OK with me.
-> 
-> Larry
-> ---
-> 
-> Index: wireless-testing/drivers/tty/serial/pmac_zilog.c
-> ===================================================================
-> --- wireless-testing.orig/drivers/tty/serial/pmac_zilog.c	2012-04-28
-> 15:51:38.843723074 -0500
-> +++ wireless-testing/drivers/tty/serial/pmac_zilog.c	2012-04-28
-> 18:34:34.053900600 -0500
-> @@ -469,7 +469,7 @@
->  	tty = NULL;
->  	if (r3 & (CHAEXT | CHATxIP | CHARxIP)) {
->  		if (!ZS_IS_OPEN(uap_a)) {
-> -			pmz_debug("ChanA interrupt while open !\n");
-> +			pmz_debug("ChanA interrupt while not open !\n");
+On Sun, 2012-04-29 at 00:57 -0700, Eric W. Biederman wrote:
 
-Hmm, I'm not a native english speaker, but I have the feeling that
-it would be more grammatically correct to use "opened" instead of "open".
+> Mike's proposed change to switch_task_namespace is most definitely not
+> correct.  This will potentially get called on unshare and so we don't
+> limit ourselves to just an exit pid_namespace.  The result is that we
+> could free the proc mount long before it is safe.
 
-Of course if the message never triggers, it's less of concern :-)
+!new && !(p->flags & PF_EXITING) should prevent that..
 
+> At the same time the leak that Mike detected is most definitely real.
+> 
+> > Perhaps it would be more clean to add the explicit
+> >
+> > 	 bad_fork_cleanup_namespaces:
+> > 	+	if (unlikely(clone_flags & CLONE_NEWPID))
+> > 	+		pid_ns_release_proc(...);
+> > 		exit_task_namespaces(p);
+> > 		
+> > 		
+> > code into this error path in copy_process?
+> 
+> For now Oleg your minimal patch looks good.
 
->  			goto skip_a;
->  		}
->  		write_zsreg(uap_a, R0, RES_H_IUS);
-> @@ -493,8 +493,8 @@
->  	spin_lock(&uap_b->port.lock);
->  	tty = NULL;
->  	if (r3 & (CHBEXT | CHBTxIP | CHBRxIP)) {
-> -		if (!ZS_IS_OPEN(uap_a)) {
-> -			pmz_debug("ChanB interrupt while open !\n");
-> +		if (!ZS_IS_OPEN(uap_b)) {
-> +			pmz_debug("ChanB interrupt while not open !\n");
+..but yeah, that looks much nicer.
 
-Ditto.
+> Part of me would like to call proc_flush_task instead of
+> pid_ns_release_proc but we have no assurance task_pid and task_tgid are
+> valid when we get here so proc_flush_task is out.
 
->  			goto skip_b;
->  		}
->  		write_zsreg(uap_b, R0, RES_H_IUS);
+I only discovered pid_ns_release_proc() exists after didn't work :)
 
-	Regards,
-	Gabriel
+-Mike
+
