@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab2D2MXi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 08:23:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42076 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752348Ab2D2MXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 08:23:36 -0400
-Message-ID: <4F9D32B4.8040002@redhat.com>
-Date: Sun, 29 Apr 2012 15:23:16 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1753788Ab2D2MZy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 08:25:54 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:56406 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab2D2MZx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 08:25:53 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6695"; a="183721608"
+X-IronPort-AV: E=Sophos;i="4.75,498,1330934400"; 
+   d="scan'208";a="206798681"
+From: "Huang, Xiong" <xiong@qca.qualcomm.com>
+To: Florian Fainelli <florian@openwrt.org>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>
+Subject: =?big5?B?tarOYDogW1BBVENIIDAyLzEwXSBhdGwxYzogYWRkIFBIWSBsaW5rIGV2ZW50KHVw?=
+ =?big5?Q?/down)_patch?=
+Thread-Topic: [PATCH 02/10] atl1c: add PHY link event(up/down) patch
+Thread-Index: AQHNJOKGtvutybYD2UOZf50PlMVq85aw8xEAgADIPvg=
+Date: Sun, 29 Apr 2012 12:25:51 +0000
+Message-ID: <157393863283F442885425D2C454285623D5FD3A@nasanexd02a.na.qualcomm.com>
+References: <1335578325-21326-1-git-send-email-xiong@qca.qualcomm.com>
+ <1335578325-21326-3-git-send-email-xiong@qca.qualcomm.com>,<201204281924.20714.florian@openwrt.org>
+In-Reply-To: <201204281924.20714.florian@openwrt.org>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.45.230.6]
+Content-Type: text/plain; charset="big5"
 MIME-Version: 1.0
-To: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-CC: peterz@infradead.org, mingo@elte.hu, jeremy@goop.org, mtosatti@redhat.com,
-        kvm@vger.kernel.org, x86@kernel.org, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
-References: <20120427161727.27082.43096.stgit@abhimanyu> <20120427162401.27082.59387.stgit@abhimanyu>
-In-Reply-To: <20120427162401.27082.59387.stgit@abhimanyu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3TCQ0XX001213
 
-On 04/27/2012 07:24 PM, Nikunj A. Dadhania wrote:
-> flush_tlb_others_ipi depends on lot of statics in tlb.c.  Replicated
-> the flush_tlb_others_ipi as kvm_flush_tlb_others to further adapt to
-> paravirtualization.
->
-> Use the vcpu state information inside the kvm_flush_tlb_others to
-> avoid sending ipi to pre-empted vcpus.
->
-> * Do not send ipi's to offline vcpus and set flush_on_enter flag
 
-get_user_pages_fast() depends on the IPI to hold off page table teardown
-while they are locklessly walked with interrupts disabled.  If a vcpu
-were to be preempted while in this critical section, another vcpu
-tearing down page tables would go ahead and destroy them.  when the
-preempted vcpu resumes it then touches the freed pages.
+> +
+> +struct atl1c_platform_patch {
+> +     u16 pci_vid;
+> +     u16 pci_did;
+> +     u8  pci_revid;
+> +     u16 subsystem_vid;
+> +     u16 subsystem_did;
+> +     u32 patch_flag;
+> +#define ATL1C_LINK_PATCH     0x1
+> +};
+> +static struct atl1c_platform_patch plats[] = {
 
-We could try to teach kvm and get_user_pages_fast() about this, but this
-is intrusive.  Another option is to replace the cpu_relax() loop with
-something that sleeps and is then woken up by the TLB IPI handler if needed.
+This should be static const.
 
-> * For online vcpus: Wait for them to clear the flag
->
->
+> +{0x1969, 0x2060, 0xC1, 0x1019, 0x8152, 0x1},
 
--- 
-error compiling committee.c: too many arguments to function
+-------------------------------------------------------------------------------------------------------
+How about if I revise it as:
 
+static const struct atl1c_platform_patch plats[] __devinitdata = {
+....}
+
+the array is only used by atl1c_probe function. is it appropriate to add '__devinitdata' here ?
+
+
+
+Thanks
+-Xiongÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
