@@ -1,46 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab2D2UOx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 16:14:53 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:51030 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752524Ab2D2UOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 16:14:51 -0400
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/scsi/scsi_debug.c: add missing vfrees
-Date: Sun, 29 Apr 2012 22:14:44 +0200
-Message-Id: <1335730484-21083-1-git-send-email-Julia.Lawall@lip6.fr>
+	id S1754289Ab2D2U0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 16:26:16 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:42226 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753532Ab2D2U0P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 16:26:15 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+mGMRiyDSmPD0d57GnNwCZpipwtLMVVU4xsIDlVR
+	ZJZaZEE203Tb6b
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Thomas Winischhofer <thomas@winischhofer.net>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH v2] video/sis: Use SiS_DRAMType from init.h and annotate it __devinitconst
+Date: Sun, 29 Apr 2012 22:26:07 +0200
+Message-Id: <1335731167-3311-1-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1334524209-20518-1-git-send-email-peterhuewe@gmx.de>
+References: <1334524209-20518-1-git-send-email-peterhuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+This patch removes the duplicated SiS_DRAMType from sis_main.c since it
+is already defined exactly the same in init.h.
+Since we don't want to include init.h (for size reasons) we move the
+struct to sis_main.h.
+Since SiS_DRAMType is const and only used by sisfb_post_300_rwtest which is
+marked __devinit we can also annotate SiS_DRAMType with __devinitconst.
 
-Free dif_storep and fake_storep on failure as done in nearby error-handling
-code.
+And since hardcoded values are bad we use ARRAY_SIZE for determining the
+size of SiS_DRAMType ;)
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+v2:
+Move struct to sis_main.h to decrease module size
 
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/scsi/scsi_debug.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/video/sis/init.h     |   20 --------------------
+ drivers/video/sis/sis_main.c |   21 +--------------------
+ drivers/video/sis/sis_main.h |   20 ++++++++++++++++++++
+ 3 files changed, 21 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-index 182d5a5..16e44f8 100644
---- a/drivers/scsi/scsi_debug.c
-+++ b/drivers/scsi/scsi_debug.c
-@@ -3393,7 +3393,8 @@ static int __init scsi_debug_init(void)
- 			printk(KERN_ERR
- 			       "%s: ERR: unmap_granularity < unmap_alignment\n",
- 			       __func__);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto free_vm;
- 		}
+diff --git a/drivers/video/sis/init.h b/drivers/video/sis/init.h
+index a22e892..85d6738 100644
+--- a/drivers/video/sis/init.h
++++ b/drivers/video/sis/init.h
+@@ -105,26 +105,6 @@ static const unsigned short ModeIndex_1920x1440[]    = {0x68, 0x69, 0x00, 0x6b};
+ static const unsigned short ModeIndex_300_2048x1536[]= {0x6c, 0x6d, 0x00, 0x00};
+ static const unsigned short ModeIndex_310_2048x1536[]= {0x6c, 0x6d, 0x00, 0x6e};
  
- 		map_size = (sdebug_store_sectors / scsi_debug_unmap_granularity);
+-static const unsigned short SiS_DRAMType[17][5]={
+-	{0x0C,0x0A,0x02,0x40,0x39},
+-	{0x0D,0x0A,0x01,0x40,0x48},
+-	{0x0C,0x09,0x02,0x20,0x35},
+-	{0x0D,0x09,0x01,0x20,0x44},
+-	{0x0C,0x08,0x02,0x10,0x31},
+-	{0x0D,0x08,0x01,0x10,0x40},
+-	{0x0C,0x0A,0x01,0x20,0x34},
+-	{0x0C,0x09,0x01,0x08,0x32},
+-	{0x0B,0x08,0x02,0x08,0x21},
+-	{0x0C,0x08,0x01,0x08,0x30},
+-	{0x0A,0x08,0x02,0x04,0x11},
+-	{0x0B,0x0A,0x01,0x10,0x28},
+-	{0x09,0x08,0x02,0x02,0x01},
+-	{0x0B,0x09,0x01,0x08,0x24},
+-	{0x0B,0x08,0x01,0x04,0x20},
+-	{0x0A,0x08,0x01,0x02,0x10},
+-	{0x09,0x08,0x01,0x01,0x00}
+-};
+-
+ static const unsigned char SiS_MDA_DAC[] =
+ {
+ 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
+index 078ca21..8abd42b 100644
+--- a/drivers/video/sis/sis_main.c
++++ b/drivers/video/sis/sis_main.c
+@@ -4231,27 +4231,8 @@ sisfb_post_300_rwtest(struct sis_video_info *ivideo, int iteration, int buswidth
+ 	unsigned short sr14;
+ 	unsigned int k, RankCapacity, PageCapacity, BankNumHigh, BankNumMid;
+ 	unsigned int PhysicalAdrOtherPage, PhysicalAdrHigh, PhysicalAdrHalfPage;
+-	static const unsigned short SiS_DRAMType[17][5] = {
+-		{0x0C,0x0A,0x02,0x40,0x39},
+-		{0x0D,0x0A,0x01,0x40,0x48},
+-		{0x0C,0x09,0x02,0x20,0x35},
+-		{0x0D,0x09,0x01,0x20,0x44},
+-		{0x0C,0x08,0x02,0x10,0x31},
+-		{0x0D,0x08,0x01,0x10,0x40},
+-		{0x0C,0x0A,0x01,0x20,0x34},
+-		{0x0C,0x09,0x01,0x08,0x32},
+-		{0x0B,0x08,0x02,0x08,0x21},
+-		{0x0C,0x08,0x01,0x08,0x30},
+-		{0x0A,0x08,0x02,0x04,0x11},
+-		{0x0B,0x0A,0x01,0x10,0x28},
+-		{0x09,0x08,0x02,0x02,0x01},
+-		{0x0B,0x09,0x01,0x08,0x24},
+-		{0x0B,0x08,0x01,0x04,0x20},
+-		{0x0A,0x08,0x01,0x02,0x10},
+-		{0x09,0x08,0x01,0x01,0x00}
+-	};
+ 
+-	 for(k = 0; k <= 16; k++) {
++	 for (k = 0; k < ARRAY_SIZE(SiS_DRAMType); k++) {
+ 
+ 		RankCapacity = buswidth * SiS_DRAMType[k][3];
+ 
+diff --git a/drivers/video/sis/sis_main.h b/drivers/video/sis/sis_main.h
+index 9540e97..242c1c3 100644
+--- a/drivers/video/sis/sis_main.h
++++ b/drivers/video/sis/sis_main.h
+@@ -776,6 +776,26 @@ extern void		SiS_Chrontel701xBLOff(struct SiS_Private *SiS_Pr);
+ #endif
+ extern void		SiS_SiS30xBLOn(struct SiS_Private *SiS_Pr);
+ extern void		SiS_SiS30xBLOff(struct SiS_Private *SiS_Pr);
++
++static const unsigned short __devinitconst SiS_DRAMType[17][5] = {
++	{0x0C,0x0A,0x02,0x40,0x39},
++	{0x0D,0x0A,0x01,0x40,0x48},
++	{0x0C,0x09,0x02,0x20,0x35},
++	{0x0D,0x09,0x01,0x20,0x44},
++	{0x0C,0x08,0x02,0x10,0x31},
++	{0x0D,0x08,0x01,0x10,0x40},
++	{0x0C,0x0A,0x01,0x20,0x34},
++	{0x0C,0x09,0x01,0x08,0x32},
++	{0x0B,0x08,0x02,0x08,0x21},
++	{0x0C,0x08,0x01,0x08,0x30},
++	{0x0A,0x08,0x02,0x04,0x11},
++	{0x0B,0x0A,0x01,0x10,0x28},
++	{0x09,0x08,0x02,0x02,0x01},
++	{0x0B,0x09,0x01,0x08,0x24},
++	{0x0B,0x08,0x01,0x04,0x20},
++	{0x0A,0x08,0x01,0x02,0x10},
++	{0x09,0x08,0x01,0x01,0x00}
++};
+ #endif
+ 
+ 
+-- 
+1.7.3.4
 
