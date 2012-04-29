@@ -1,151 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab2D2TJj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 15:09:39 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34008 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752Ab2D2TJi (ORCPT
+	id S1754158Ab2D2T2j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 15:28:39 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:32674 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753752Ab2D2T2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 15:09:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFzJjk8vvY7au-aUOJqJaRaFT3zqP0_H9JXS2Y93wkXwEg@mail.gmail.com>
-References: <20120427.151433.1007849975903946491.davem@davemloft.net>
- <20120427.151651.2274764174217164454.davem@davemloft.net> <CA+55aFzPbAprx-iT0TYh24uS7+JnL92mbTg_js6Cd_O0q+Dvmw@mail.gmail.com>
- <20120427.152404.2292425516870981391.davem@davemloft.net> <CA+55aFzGO+PHmjjVgxnYawbB-wFAqHtkh19vTv1AwQNpc9MsWg@mail.gmail.com>
- <20120427234215.079a1565@pyramind.ukuu.org.uk> <CA+55aFxq4TunFa8mqJk5MHfvvFSg7Dr54acW7Cnqc5amOPdqrg@mail.gmail.com>
- <CA+55aFzdEcfXVXXqCumVJo=9+fK+1HvH6L4qY03HfTTvCs1Fwg@mail.gmail.com>
- <4F9CE18C.2060806@msgid.tls.msk.ru> <CA+55aFyS9VYT50JAXeGrLrtFVWSGr+DMTA1hhrcPYzmjrSV5+A@mail.gmail.com>
- <4F9CF191.5020607@msgid.tls.msk.ru> <CA+55aFzJjk8vvY7au-aUOJqJaRaFT3zqP0_H9JXS2Y93wkXwEg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 29 Apr 2012 12:09:16 -0700
-X-Google-Sender-Auth: MuSmtzcXmfQmKZN5a2nPmSrwXn0
-Message-ID: <CA+55aFwTUDsefBd9c-wp8jrnp4tOh6jyJkjc_UZut-J6FHSF+w@mail.gmail.com>
-Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
- design error.
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Meyer <thomas@m3y3r.de>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        autofs@vger.kernel.org, raven@themaw.net, stable@kernel.org
-Content-Type: multipart/mixed; boundary=f46d0438ede71d027c04bed614bc
+	Sun, 29 Apr 2012 15:28:38 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: dmitry.torokhov@gmail.com, axel.lin@gmail.com, riyer@nvidia.com,
+        michael.hennerich@analog.com, grant.likely@secretlab.ca,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, devicetree-discuss@lists.ozlabs.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v3 2/2] ARM: LPC32xx: Make platform use key driver
+Date: Sun, 29 Apr 2012 21:28:01 +0200
+Message-Id: <1335727681-17656-2-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1335727681-17656-1-git-send-email-stigge@antcom.de>
+References: <1335727681-17656-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d0438ede71d027c04bed614bc
-Content-Type: text/plain; charset=ISO-8859-1
+This patch connects the lpc32xx-key driver to the LPC32xx platform (via
+lpc32xx.dtsi), and more specifically to the reference board via its dts file.
+The clock.c file needs to be changed to match the automatic device name to its
+clock.
 
-On Sun, Apr 29, 2012 at 11:29 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> But I think I have another approach. We can make the *writer* be the
-> only one that cares about the packetized nature, and if it's a packet
-> write, it will set a PIPE_BUF_PACKET flag in the pipe buffer. The
-> reader can react to that. I think that actually has the potential to
-> make the code a bit prettier too..
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Patch attached.
+---
+Applies to v3.4-rc4 + LPC32xx DT patches
 
-This keeps Alan's idea of using O_DIRECT, but only makes it matter for
-the writer - because now the "packet" thing is a per-pipe-buffer state
-(we already had per-pipe-buffer flags, so this is not anything new).
-So when you *write* using a O_DIRECT pipe, it will create packetized
-buffers, and the reader just sees that directly.
+Please pick this patch for the arm-soc subsystem.
 
-So this should "just work", and doesn't need any extra flags in the
-pipe_inode_info. And the user space interface remains the same: you
-can create these packet pipes with "pipe2(fd, O_DIRECT)" if you want
-to, and my test-program gives exactly the same output.
+Changes since v2:
+* DT: Use "keypad,num-rows", "keypad,num-columns" and "linux,keymap" properties
 
-                      Linus
+ arch/arm/boot/dts/lpc32xx.dtsi |    2 ++
+ arch/arm/boot/dts/phy3250.dts  |    9 +++++++++
+ arch/arm/mach-lpc32xx/clock.c  |    2 +-
+ 3 files changed, 12 insertions(+), 1 deletion(-)
 
---f46d0438ede71d027c04bed614bc
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h1mh3lz40
-
-IGZzL2F1dG9mczQvYXV0b2ZzX2kuaCAgICAgfCAgIDExICsrKysrKysrKysrCiBmcy9hdXRvZnM0
-L2Rldi1pb2N0bC5jICAgIHwgICAgMiArLQogZnMvYXV0b2ZzNC9pbm9kZS5jICAgICAgICB8ICAg
-IDIgKy0KIGZzL2F1dG9mczQvd2FpdHEuYyAgICAgICAgfCAgICAyICstCiBmcy9waXBlLmMgICAg
-ICAgICAgICAgICAgIHwgICAzMSArKysrKysrKysrKysrKysrKysrKysrKysrKysrKy0tCiBpbmNs
-dWRlL2xpbnV4L3BpcGVfZnNfaS5oIHwgICAgMSArCiA2IGZpbGVzIGNoYW5nZWQsIDQ0IGluc2Vy
-dGlvbnMoKyksIDUgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZnMvYXV0b2ZzNC9hdXRvZnNf
-aS5oIGIvZnMvYXV0b2ZzNC9hdXRvZnNfaS5oCmluZGV4IGQ4ZDhlN2JhNmExZS4uOTA4ZTE4NDU1
-NDEzIDEwMDY0NAotLS0gYS9mcy9hdXRvZnM0L2F1dG9mc19pLmgKKysrIGIvZnMvYXV0b2ZzNC9h
-dXRvZnNfaS5oCkBAIC0yNjksNiArMjY5LDE3IEBAIGludCBhdXRvZnM0X2ZpbGxfc3VwZXIoc3Ry
-dWN0IHN1cGVyX2Jsb2NrICosIHZvaWQgKiwgaW50KTsKIHN0cnVjdCBhdXRvZnNfaW5mbyAqYXV0
-b2ZzNF9uZXdfaW5vKHN0cnVjdCBhdXRvZnNfc2JfaW5mbyAqKTsKIHZvaWQgYXV0b2ZzNF9jbGVh
-bl9pbm8oc3RydWN0IGF1dG9mc19pbmZvICopOwogCitzdGF0aWMgaW5saW5lIGludCBhdXRvZnNf
-cHJlcGFyZV9waXBlKHN0cnVjdCBmaWxlICpwaXBlKQoreworCWlmICghcGlwZS0+Zl9vcCB8fCAh
-cGlwZS0+Zl9vcC0+d3JpdGUpCisJCXJldHVybiAtRUlOVkFMOworCWlmICghU19JU0ZJRk8ocGlw
-ZS0+Zl9kZW50cnktPmRfaW5vZGUtPmlfbW9kZSkpCisJCXJldHVybiAtRUlOVkFMOworCS8qIFdl
-IHdhbnQgYSBwYWNrZXQgcGlwZSAqLworCXBpcGUtPmZfZmxhZ3MgfD0gT19ESVJFQ1Q7CisJcmV0
-dXJuIDA7Cit9CisKIC8qIFF1ZXVlIG1hbmFnZW1lbnQgZnVuY3Rpb25zICovCiAKIGludCBhdXRv
-ZnM0X3dhaXQoc3RydWN0IGF1dG9mc19zYl9pbmZvICosc3RydWN0IGRlbnRyeSAqLCBlbnVtIGF1
-dG9mc19ub3RpZnkpOwpkaWZmIC0tZ2l0IGEvZnMvYXV0b2ZzNC9kZXYtaW9jdGwuYyBiL2ZzL2F1
-dG9mczQvZGV2LWlvY3RsLmMKaW5kZXggM2RmZDYxNWFmYjZiLi5hYTkxMDNmOGYwMWIgMTAwNjQ0
-Ci0tLSBhL2ZzL2F1dG9mczQvZGV2LWlvY3RsLmMKKysrIGIvZnMvYXV0b2ZzNC9kZXYtaW9jdGwu
-YwpAQCAtMzc2LDcgKzM3Niw3IEBAIHN0YXRpYyBpbnQgYXV0b2ZzX2Rldl9pb2N0bF9zZXRwaXBl
-ZmQoc3RydWN0IGZpbGUgKmZwLAogCQkJZXJyID0gLUVCQURGOwogCQkJZ290byBvdXQ7CiAJCX0K
-LQkJaWYgKCFwaXBlLT5mX29wIHx8ICFwaXBlLT5mX29wLT53cml0ZSkgeworCQlpZiAoYXV0b2Zz
-X3ByZXBhcmVfcGlwZShwaXBlKSA8IDApIHsKIAkJCWVyciA9IC1FUElQRTsKIAkJCWZwdXQocGlw
-ZSk7CiAJCQlnb3RvIG91dDsKZGlmZiAtLWdpdCBhL2ZzL2F1dG9mczQvaW5vZGUuYyBiL2ZzL2F1
-dG9mczQvaW5vZGUuYwppbmRleCAxNGM3YmMwMjM0OWUuLjZlNDg4ZWJlNzc4NCAxMDA2NDQKLS0t
-IGEvZnMvYXV0b2ZzNC9pbm9kZS5jCisrKyBiL2ZzL2F1dG9mczQvaW5vZGUuYwpAQCAtMjkwLDcg
-KzI5MCw3IEBAIGludCBhdXRvZnM0X2ZpbGxfc3VwZXIoc3RydWN0IHN1cGVyX2Jsb2NrICpzLCB2
-b2lkICpkYXRhLCBpbnQgc2lsZW50KQogCQlwcmludGsoImF1dG9mczogY291bGQgbm90IG9wZW4g
-cGlwZSBmaWxlIGRlc2NyaXB0b3JcbiIpOwogCQlnb3RvIGZhaWxfZHB1dDsKIAl9Ci0JaWYgKCFw
-aXBlLT5mX29wIHx8ICFwaXBlLT5mX29wLT53cml0ZSkKKwlpZiAoYXV0b2ZzX3ByZXBhcmVfcGlw
-ZShwaXBlKSA8IDApCiAJCWdvdG8gZmFpbF9mcHV0OwogCXNiaS0+cGlwZSA9IHBpcGU7CiAJc2Jp
-LT5waXBlZmQgPSBwaXBlZmQ7CmRpZmYgLS1naXQgYS9mcy9hdXRvZnM0L3dhaXRxLmMgYi9mcy9h
-dXRvZnM0L3dhaXRxLmMKaW5kZXggZGE4ODc2ZDM4YTdiLi5mNjI0Y2QwZmY4NGQgMTAwNjQ0Ci0t
-LSBhL2ZzL2F1dG9mczQvd2FpdHEuYworKysgYi9mcy9hdXRvZnM0L3dhaXRxLmMKQEAgLTkxLDcg
-KzkxLDcgQEAgc3RhdGljIGludCBhdXRvZnM0X3dyaXRlKHN0cnVjdCBhdXRvZnNfc2JfaW5mbyAq
-c2JpLAogCiAJcmV0dXJuIChieXRlcyA+IDApOwogfQotCQorCiBzdGF0aWMgdm9pZCBhdXRvZnM0
-X25vdGlmeV9kYWVtb24oc3RydWN0IGF1dG9mc19zYl9pbmZvICpzYmksCiAJCQkJIHN0cnVjdCBh
-dXRvZnNfd2FpdF9xdWV1ZSAqd3EsCiAJCQkJIGludCB0eXBlKQpkaWZmIC0tZ2l0IGEvZnMvcGlw
-ZS5jIGIvZnMvcGlwZS5jCmluZGV4IDI1ZmVhYTNmYWFjMC4uZmVjNWU0YWQwNzFhIDEwMDY0NAot
-LS0gYS9mcy9waXBlLmMKKysrIGIvZnMvcGlwZS5jCkBAIC0zNDYsNiArMzQ2LDE2IEBAIHN0YXRp
-YyBjb25zdCBzdHJ1Y3QgcGlwZV9idWZfb3BlcmF0aW9ucyBhbm9uX3BpcGVfYnVmX29wcyA9IHsK
-IAkuZ2V0ID0gZ2VuZXJpY19waXBlX2J1Zl9nZXQsCiB9OwogCitzdGF0aWMgY29uc3Qgc3RydWN0
-IHBpcGVfYnVmX29wZXJhdGlvbnMgcGFja2V0X3BpcGVfYnVmX29wcyA9IHsKKwkuY2FuX21lcmdl
-ID0gMCwKKwkubWFwID0gZ2VuZXJpY19waXBlX2J1Zl9tYXAsCisJLnVubWFwID0gZ2VuZXJpY19w
-aXBlX2J1Zl91bm1hcCwKKwkuY29uZmlybSA9IGdlbmVyaWNfcGlwZV9idWZfY29uZmlybSwKKwku
-cmVsZWFzZSA9IGFub25fcGlwZV9idWZfcmVsZWFzZSwKKwkuc3RlYWwgPSBnZW5lcmljX3BpcGVf
-YnVmX3N0ZWFsLAorCS5nZXQgPSBnZW5lcmljX3BpcGVfYnVmX2dldCwKK307CisKIHN0YXRpYyBz
-c2l6ZV90CiBwaXBlX3JlYWQoc3RydWN0IGtpb2NiICppb2NiLCBjb25zdCBzdHJ1Y3QgaW92ZWMg
-Kl9pb3YsCiAJICAgdW5zaWduZWQgbG9uZyBucl9zZWdzLCBsb2ZmX3QgcG9zKQpAQCAtNDA3LDYg
-KzQxNywxMyBAQCByZWRvOgogCQkJcmV0ICs9IGNoYXJzOwogCQkJYnVmLT5vZmZzZXQgKz0gY2hh
-cnM7CiAJCQlidWYtPmxlbiAtPSBjaGFyczsKKworCQkJLyogV2FzIGl0IGEgcGFja2V0IGJ1ZmZl
-cj8gQ2xlYW4gdXAgYW5kIGV4aXQgKi8KKwkJCWlmIChidWYtPmZsYWdzICYgUElQRV9CVUZfRkxB
-R19QQUNLRVQpIHsKKwkJCQl0b3RhbF9sZW4gPSBjaGFyczsKKwkJCQlidWYtPmxlbiA9IDA7CisJ
-CQl9CisKIAkJCWlmICghYnVmLT5sZW4pIHsKIAkJCQlidWYtPm9wcyA9IE5VTEw7CiAJCQkJb3Bz
-LT5yZWxlYXNlKHBpcGUsIGJ1Zik7CkBAIC00NTksNiArNDc2LDExIEBAIHJlZG86CiAJcmV0dXJu
-IHJldDsKIH0KIAorc3RhdGljIGlubGluZSBpbnQgaXNfcGFja2V0aXplZChzdHJ1Y3QgZmlsZSAq
-ZmlsZSkKK3sKKwlyZXR1cm4gKGZpbGUtPmZfZmxhZ3MgJiBPX0RJUkVDVCkgIT0gMDsKK30KKwog
-c3RhdGljIHNzaXplX3QKIHBpcGVfd3JpdGUoc3RydWN0IGtpb2NiICppb2NiLCBjb25zdCBzdHJ1
-Y3QgaW92ZWMgKl9pb3YsCiAJICAgIHVuc2lnbmVkIGxvbmcgbnJfc2VncywgbG9mZl90IHBwb3Mp
-CkBAIC01OTMsNiArNjE1LDExIEBAIHJlZG8yOgogCQkJYnVmLT5vcHMgPSAmYW5vbl9waXBlX2J1
-Zl9vcHM7CiAJCQlidWYtPm9mZnNldCA9IDA7CiAJCQlidWYtPmxlbiA9IGNoYXJzOworCQkJYnVm
-LT5mbGFncyA9IDA7CisJCQlpZiAoaXNfcGFja2V0aXplZChmaWxwKSkgeworCQkJCWJ1Zi0+b3Bz
-ID0gJnBhY2tldF9waXBlX2J1Zl9vcHM7CisJCQkJYnVmLT5mbGFncyA9IFBJUEVfQlVGX0ZMQUdf
-UEFDS0VUOworCQkJfQogCQkJcGlwZS0+bnJidWZzID0gKytidWZzOwogCQkJcGlwZS0+dG1wX3Bh
-Z2UgPSBOVUxMOwogCkBAIC0xMDEzLDcgKzEwNDAsNyBAQCBzdHJ1Y3QgZmlsZSAqY3JlYXRlX3dy
-aXRlX3BpcGUoaW50IGZsYWdzKQogCQlnb3RvIGVycl9kZW50cnk7CiAJZi0+Zl9tYXBwaW5nID0g
-aW5vZGUtPmlfbWFwcGluZzsKIAotCWYtPmZfZmxhZ3MgPSBPX1dST05MWSB8IChmbGFncyAmIE9f
-Tk9OQkxPQ0spOworCWYtPmZfZmxhZ3MgPSBPX1dST05MWSB8IChmbGFncyAmIChPX05PTkJMT0NL
-IHwgT19ESVJFQ1QpKTsKIAlmLT5mX3ZlcnNpb24gPSAwOwogCiAJcmV0dXJuIGY7CkBAIC0xMDU3
-LDcgKzEwODQsNyBAQCBpbnQgZG9fcGlwZV9mbGFncyhpbnQgKmZkLCBpbnQgZmxhZ3MpCiAJaW50
-IGVycm9yOwogCWludCBmZHcsIGZkcjsKIAotCWlmIChmbGFncyAmIH4oT19DTE9FWEVDIHwgT19O
-T05CTE9DSykpCisJaWYgKGZsYWdzICYgfihPX0NMT0VYRUMgfCBPX05PTkJMT0NLIHwgT19ESVJF
-Q1QpKQogCQlyZXR1cm4gLUVJTlZBTDsKIAogCWZ3ID0gY3JlYXRlX3dyaXRlX3BpcGUoZmxhZ3Mp
-OwpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9waXBlX2ZzX2kuaCBiL2luY2x1ZGUvbGludXgv
-cGlwZV9mc19pLmgKaW5kZXggNmQ2MjZmZjBjZmQwLi5lMWFjMWNlMTZmYjAgMTAwNjQ0Ci0tLSBh
-L2luY2x1ZGUvbGludXgvcGlwZV9mc19pLmgKKysrIGIvaW5jbHVkZS9saW51eC9waXBlX2ZzX2ku
-aApAQCAtNiw2ICs2LDcgQEAKICNkZWZpbmUgUElQRV9CVUZfRkxBR19MUlUJMHgwMQkvKiBwYWdl
-IGlzIG9uIHRoZSBMUlUgKi8KICNkZWZpbmUgUElQRV9CVUZfRkxBR19BVE9NSUMJMHgwMgkvKiB3
-YXMgYXRvbWljYWxseSBtYXBwZWQgKi8KICNkZWZpbmUgUElQRV9CVUZfRkxBR19HSUZUCTB4MDQJ
-LyogcGFnZSBpcyBhIGdpZnQgKi8KKyNkZWZpbmUgUElQRV9CVUZfRkxBR19QQUNLRVQJMHgwOAkv
-KiByZWFkKCkgYXMgYSBwYWNrZXQgKi8KIAogLyoqCiAgKglzdHJ1Y3QgcGlwZV9idWZmZXIgLSBh
-IGxpbnV4IGtlcm5lbCBwaXBlIGJ1ZmZlcgo=
---f46d0438ede71d027c04bed614bc--
+--- linux-2.6.orig/arch/arm/boot/dts/lpc32xx.dtsi
++++ linux-2.6/arch/arm/boot/dts/lpc32xx.dtsi
+@@ -285,6 +285,8 @@
+ 			key@40050000 {
+ 				compatible = "nxp,lpc3220-key";
+ 				reg = <0x40050000 0x1000>;
++				interrupts = <54 0>;
++				status = "disable";
+ 			};
+ 
+ 		};
+--- linux-2.6.orig/arch/arm/boot/dts/phy3250.dts
++++ linux-2.6/arch/arm/boot/dts/phy3250.dts
+@@ -124,6 +124,15 @@
+ 			tsc@40048000 {
+ 				status = "okay";
+ 			};
++
++			key@40050000 {
++				status = "okay";
++				keypad,num-rows = <1>;
++				keypad,num-columns = <1>;
++				nxp,debounce-delay-ms = <3>;
++				nxp,scan-delay-ms = <34>;
++				linux,keymap = <0x00000002>;
++			};
+ 		};
+ 	};
+ 
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/clock.c
++++ linux-2.6/arch/arm/mach-lpc32xx/clock.c
+@@ -1131,7 +1131,7 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_INIT("31020300.i2c", NULL, &clk_i2c2),
+ 	CLKDEV_INIT("dev:ssp0", NULL, &clk_ssp0),
+ 	CLKDEV_INIT("dev:ssp1", NULL, &clk_ssp1),
+-	CLKDEV_INIT("lpc32xx_keys.0", NULL, &clk_kscan),
++	CLKDEV_INIT("40050000.key", NULL, &clk_kscan),
+ 	CLKDEV_INIT("lpc32xx-nand.0", "nand_ck", &clk_nand),
+ 	CLKDEV_INIT("200b0000.flash", "nand_ck_mlc", &clk_nand_mlc),
+ 	CLKDEV_INIT("40048000.adc", NULL, &clk_adc),
