@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab2D3TZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 15:25:13 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:58220 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756583Ab2D3TZK (ORCPT
+	id S1756607Ab2D3T0b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 15:26:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50630 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756363Ab2D3T0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 15:25:10 -0400
-Message-ID: <4F9EE72B.1020401@xenotime.net>
-Date: Mon, 30 Apr 2012 12:25:31 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH resend] nfsd: fix nfs4recover.c printk format warning
-References: <20120419164643.d9f918d44c890722b7707508@canb.auug.org.au> <4F909C78.7000008@xenotime.net>
-In-Reply-To: <4F909C78.7000008@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 30 Apr 2012 15:26:30 -0400
+From: joseph daniel <josephdanielwalter@gmail.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: joseph daniel <josephdanielwalter@gmail.com>
+Subject: [PATCH] staging/iio/meter: fix the coding style problem
+Date: Tue,  1 May 2012 01:26:17 +0600
+Message-Id: <1335813977-8096-1-git-send-email-josephdanielwalter@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
 
-Fix printk format warnings -- both items are size_t,
-so use %zu to print them.
-
-fs/nfsd/nfs4recover.c:580:3: warning: format '%lu' expects type 'long unsigned int', but argument 3 has type 'size_t'
-fs/nfsd/nfs4recover.c:580:3: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'unsigned int'
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc:	"J. Bruce Fields" <bfields@fieldses.org>
-Cc:	linux-nfs@vger.kernel.org
+Signed-off-by: joseph daniel <josephdanielwalter@gmail.com>
 ---
- fs/nfsd/nfs4recover.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi Lars,
+	Thanks for review. how about the below change?
+ drivers/staging/iio/meter/ade7854-i2c.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-This patch was originally sent on Apr.19/2012 for linux-next.
-It is still needed in linux-next and in mainline.
-
-
---- linux-next-20120419.orig/fs/nfsd/nfs4recover.c
-+++ linux-next-20120419/fs/nfsd/nfs4recover.c
-@@ -577,7 +577,7 @@ cld_pipe_downcall(struct file *filp, con
- 	struct cld_net *cn = nn->cld_net;
+diff --git a/drivers/staging/iio/meter/ade7854-i2c.c b/drivers/staging/iio/meter/ade7854-i2c.c
+index 1e1faa0..52bdb05 100644
+--- a/drivers/staging/iio/meter/ade7854-i2c.c
++++ b/drivers/staging/iio/meter/ade7854-i2c.c
+@@ -181,6 +181,7 @@ static int ade7854_i2c_read_reg_32(struct device *dev,
+ {
+ 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+ 	struct ade7854_state *st = iio_priv(indio_dev);
++	uint32_t value;
+ 	int ret;
  
- 	if (mlen != sizeof(*cmsg)) {
--		dprintk("%s: got %lu bytes, expected %lu\n", __func__, mlen,
-+		dprintk("%s: got %zu bytes, expected %zu\n", __func__, mlen,
- 			sizeof(*cmsg));
- 		return -EINVAL;
- 	}
+ 	mutex_lock(&st->buf_lock);
+@@ -195,7 +196,10 @@ static int ade7854_i2c_read_reg_32(struct device *dev,
+ 	if (ret)
+ 		goto out;
+ 
+-	*val = (st->rx[0] << 24) | (st->rx[1] << 16) | (st->rx[2] << 8) | st->rx[3];
++	memcpy(&value, st->rx, sizeof(uint32_t));
++
++	*val = be32_to_cpu(value);
++
+ out:
+ 	mutex_unlock(&st->buf_lock);
+ 	return ret;
+-- 
+1.7.9.5
+
