@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab2D3J0y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 05:26:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:1031 "EHLO mga11.intel.com"
+	id S1755977Ab2D3JaL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 05:30:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57267 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752426Ab2D3J0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 05:26:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="159855727"
-Date: Mon, 30 Apr 2012 11:26:50 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, lauro.venancio@openbossa.org,
-        aloisio.almeida@openbossa.org, davem@davemloft.net
-Subject: Re: [PATCH] NFC: nci/data.c: quiet sparse noise about plain integer
- as NULL pointer
-Message-ID: <20120430092650.GC31528@sortiz-mobl>
-References: <201204261031.16737.hartleys@visionengravers.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201204261031.16737.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755076Ab2D3JaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 05:30:09 -0400
+From: Jan Kara <jack@suse.cz>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-man@vger.kernel.org,
+        linux-mm@kvack.org, Jan Kara <jack@suse.cz>, mgorman@suse.de,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH] Describe race of direct read and fork for unaligned buffers
+Date: Mon, 30 Apr 2012 11:30:07 +0200
+Message-Id: <1335778207-6511-1-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is a long standing problem (or a surprising feature) in our implementation
+of get_user_pages() (used by direct IO). Since several attempts to fix it
+failed (e.g.
+http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-04/msg06542.html, or
+http://lkml.indiana.edu/hypermail/linux/kernel/0903.1/01498.html refused in
+http://comments.gmane.org/gmane.linux.kernel.mm/31569) and it's not completely
+clear whether we really want to fix it given the costs, let's at least document
+it.
 
-On Thu, Apr 26, 2012 at 10:31:16AM -0700, H Hartley Sweeten wrote:
-> Pointers should be cleared with NULL, not 0.
-> 
-> Quiets a couple sparse warnings of the type:
-> 
-> warning: Using plain integer as NULL pointer
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
-> Cc: Aloisio Almeida Jr <aloisio.almeida@openbossa.org>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-This one and the 4 other NFC patches applied to my nfc-next tree, thanks.
+CC: mgorman@suse.de
+CC: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+--- a/man2/open.2	2012-04-27 00:07:51.736883092 +0200
++++ b/man2/open.2	2012-04-27 00:29:59.489892980 +0200
+@@ -769,7 +769,12 @@
+ and the file offset must all be multiples of the logical block size
+ of the file system.
+ Under Linux 2.6, alignment to 512-byte boundaries
+-suffices.
++suffices. However, if the user buffer is not page aligned and direct read
++runs in parallel with a
++.BR fork (2)
++of the reader process, it may happen that the read data is split between
++pages owned by the original process and its child. Thus effectively read
++data is corrupted.
+ .LP
+ The
+ .B O_DIRECT
