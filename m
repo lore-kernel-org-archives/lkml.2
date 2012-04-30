@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756967Ab2D3Uj2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:39:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35975 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756716Ab2D3Uj0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:39:26 -0400
-Date: Mon, 30 Apr 2012 22:39:24 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sam Ravnborg <sam@ravnborg.org>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [patch 23/29] sparc: Use generic init_task
-In-Reply-To: <20120430203538.GA8876@merkur.ravnborg.org>
-Message-ID: <alpine.LFD.2.02.1204302239000.6271@ionos>
-References: <20120430194725.763322463@linutronix.de> <20120430194846.989528598@linutronix.de> <20120430203538.GA8876@merkur.ravnborg.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1757029Ab2D3Ukx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:40:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60582 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756820Ab2D3Ukv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 16:40:51 -0400
+Message-ID: <4F9EF8C2.7030103@zytor.com>
+Date: Mon, 30 Apr 2012 13:40:34 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davej@redhat.com
+Subject: Re: [PATCH] kvm: fix cpuid eax
+References: <20120430143902.GA10181@redhat.com> <4F9EF7FA.3060007@codemonkey.ws>
+In-Reply-To: <4F9EF7FA.3060007@codemonkey.ws>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Apr 2012, Sam Ravnborg wrote:
-> On Mon, Apr 30, 2012 at 08:16:03PM -0000, Thomas Gleixner wrote:
-> > Same code. Use the generic version.
-> > 
-> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: "David S. Miller" <davem@davemloft.net>
-> > ---
-> >  arch/sparc/Kconfig            |    1 +
-> >  arch/sparc/kernel/init_task.c |   22 ----------------------
-> >  2 files changed, 1 insertion(+), 22 deletions(-)
-> > 
-> > Index: tip/arch/sparc/Kconfig
-> > ===================================================================
-> > --- tip.orig/arch/sparc/Kconfig
-> > +++ tip/arch/sparc/Kconfig
-> > @@ -31,6 +31,7 @@ config SPARC
-> >  	select GENERIC_PCI_IOMAP
-> >  	select HAVE_NMI_WATCHDOG if SPARC64
-> >  	select GENERIC_SMP_IDLE_THREAD
-> > +	select HAVE_GENERIC_INIT_TASK
-> >  
-> >  config SPARC32
-> >  	def_bool !64BIT
-> > Index: tip/arch/sparc/kernel/init_task.c
-> > ===================================================================
-> > --- tip.orig/arch/sparc/kernel/init_task.c
-> > +++ /dev/null
+On 04/30/2012 01:37 PM, Anthony Liguori wrote:
+> On 04/30/2012 09:39 AM, Michael S. Tsirkin wrote:
+>> cpuid eax should return the max leaf so that
+>> guests can find out the valid range.
+>> This matches Xen et al.
 > 
-> This breaks sparc build as it has the following in arch/sparc/Makefile:
+> What KVM does here predates Xen and Hyper-V.
 > 
->     head-y                 += arch/sparc/kernel/init_task.o
+> This is an ABI breaker.
+> 
 
-Hrmm, I thought I had catched all of this nonsense.
+What Intel and AMD have done here predates KVM...
+
+What exactly relies on a zero here?
+
+	-hpa
+
