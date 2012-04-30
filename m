@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab2D3JaL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 05:30:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57267 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755076Ab2D3JaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 05:30:09 -0400
-From: Jan Kara <jack@suse.cz>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-man@vger.kernel.org,
-        linux-mm@kvack.org, Jan Kara <jack@suse.cz>, mgorman@suse.de,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH] Describe race of direct read and fork for unaligned buffers
-Date: Mon, 30 Apr 2012 11:30:07 +0200
-Message-Id: <1335778207-6511-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
+	id S1755950Ab2D3Jd6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 05:33:58 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:56152 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755133Ab2D3Jd5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 05:33:57 -0400
+Message-ID: <1335778393.5970.9.camel@aeonflux>
+Subject: Re: [PATCH 1/1] bluetooth: Add support for Foxconn/Hon Hai AR5BBU22
+ 0489:E03C
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Michael =?ISO-8859-1?Q?Gr=FCtzner?= <mgruetzn@gmx.de>
+Cc: gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 30 Apr 2012 11:33:13 +0200
+In-Reply-To: <1844233.LmPXZadnGE@dagobah>
+References: <1844233.LmPXZadnGE@dagobah>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a long standing problem (or a surprising feature) in our implementation
-of get_user_pages() (used by direct IO). Since several attempts to fix it
-failed (e.g.
-http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-04/msg06542.html, or
-http://lkml.indiana.edu/hypermail/linux/kernel/0903.1/01498.html refused in
-http://comments.gmane.org/gmane.linux.kernel.mm/31569) and it's not completely
-clear whether we really want to fix it given the costs, let's at least document
-it.
+Hi Michael,
 
-CC: mgorman@suse.de
-CC: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
+> Add Foxconn/Hon Hai AR5BBU22 Bluetooth Module( 0x489:0xE03C) to 
+> the blacklist of btusb module and add it to the ath3k module to properly load 
+> the firmware in Kernel 3.3.4
+> The device is integrated in  e.g. some  Acer Aspire 7750G.
 
---- a/man2/open.2	2012-04-27 00:07:51.736883092 +0200
-+++ b/man2/open.2	2012-04-27 00:29:59.489892980 +0200
-@@ -769,7 +769,12 @@
- and the file offset must all be multiples of the logical block size
- of the file system.
- Under Linux 2.6, alignment to 512-byte boundaries
--suffices.
-+suffices. However, if the user buffer is not page aligned and direct read
-+runs in parallel with a
-+.BR fork (2)
-+of the reader process, it may happen that the read data is split between
-+pages owned by the original process and its child. Thus effectively read
-+data is corrupted.
- .LP
- The
- .B O_DIRECT
+please include the details from /sys/kernel/debug/usb/devices for the
+different modes of this device in the commit message. We need to keep a
+record of these.
+
+Regards
+
+Marcel
+
+
