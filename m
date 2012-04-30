@@ -1,71 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab2D3RBk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 13:01:40 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:36143 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754795Ab2D3RBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 13:01:39 -0400
-Message-ID: <1335805164.2351.116.camel@groeck-laptop>
-Subject: Re: [PATCH] hwmon: coretemp: fix oops on cpu unplug
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Apr 2012 09:59:24 -0700
-In-Reply-To: <20120430161941.GA3167@otc-wbsnb-06>
-References: <1335791881-1560-1-git-send-email-kirill.shutemov@linux.intel.com>
-	 <1335799690.2351.100.camel@groeck-laptop>
-	 <20120430161941.GA3167@otc-wbsnb-06>
-Organization: Ericsson
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1756399Ab2D3RC6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 13:02:58 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45007 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755228Ab2D3RC4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 13:02:56 -0400
 MIME-Version: 1.0
+In-Reply-To: <CABEgKgrXqbF8XBc6vHa2b5KQe9E7_+WODvq3hE0vaT0Eyxo5=w@mail.gmail.com>
+References: <4F9A327A.6050409@jp.fujitsu.com>
+	<4F9A375D.7@jp.fujitsu.com>
+	<CALWz4iyiM-CFgVaHiE1Lgd1ZwJzHwY3tx9XX6HeDPUV_wVPAtQ@mail.gmail.com>
+	<CABEgKgrXqbF8XBc6vHa2b5KQe9E7_+WODvq3hE0vaT0Eyxo5=w@mail.gmail.com>
+Date: Mon, 30 Apr 2012 10:02:54 -0700
+Message-ID: <CALWz4ix_rVpgzDme06f2U44EaqWcZKCEb0ueByh1-dSmbaO1jA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 9/9 v2] memcg: never return error at pre_destroy()
+From: Ying Han <yinghan@google.com>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-30 at 12:19 -0400, Kirill A. Shutemov wrote:
-> On Mon, Apr 30, 2012 at 08:28:10AM -0700, Guenter Roeck wrote:
-> > Hi,
-> > 
-> > good catch. Couple of problems, though.
-> > 
-> > First, what number of cores are we talking about ? We should probably
-> > increase NUM_REAL_CORES as well. Long term, we should get rid of the
-> > dependency to prevent that problem from happening again, but that is a
-> > different issue.
-> 
-> It triggered by another bug. Cores on my 10-core processor have ids 0, 1,
-> 2, 8, 9, 16, 17, 18, 24, 25. :-/
-> No need to change NUM_REAL_CORES at the moment.
-> 
-The problem, though, is that core_data[] is indexed by the core ID. So,
-NUM_REAL_CORES is a bit misleading. It should probably be named
-NUM_CORE_ID or something similar.
+On Fri, Apr 27, 2012 at 5:25 PM, Hiroyuki Kamezawa
+<kamezawa.hiroyuki@gmail.com> wrote:
+> On Sat, Apr 28, 2012 at 6:28 AM, Ying Han <yinghan@google.com> wrote:
+>> On Thu, Apr 26, 2012 at 11:06 PM, KAMEZAWA Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>>> When force_empty() called by ->pre_destroy(), no memory reclaim happens
+>>> and it doesn't take very long time which requires signal_pending() check.
+>>> And if we return -EINTR from pre_destroy(), cgroup.c show warning.
+>>>
+>>> This patch removes signal check in force_empty(). By this, ->pre_destroy()
+>>> returns success always.
+>>>
+>>> Note: check for 'cgroup is empty' remains for force_empty interface.
+>>>
+>>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>> ---
+>>>  mm/hugetlb.c    |   10 +---------
+>>>  mm/memcontrol.c |   14 +++++---------
+>>>  2 files changed, 6 insertions(+), 18 deletions(-)
+>>>
+>>> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+>>> index 4dd6b39..770f1642 100644
+>>> --- a/mm/hugetlb.c
+>>> +++ b/mm/hugetlb.c
+>>> @@ -1922,20 +1922,12 @@ int hugetlb_force_memcg_empty(struct cgroup *cgroup)
+>>>        int ret = 0, idx = 0;
+>>>
+>>>        do {
+>>> +               /* see memcontrol.c::mem_cgroup_force_empty() */
+>>>                if (cgroup_task_count(cgroup)
+>>>                        || !list_empty(&cgroup->children)) {
+>>>                        ret = -EBUSY;
+>>>                        goto out;
+>>>                }
+>>> -               /*
+>>> -                * If the task doing the cgroup_rmdir got a signal
+>>> -                * we don't really need to loop till the hugetlb resource
+>>> -                * usage become zero.
+>>> -                */
+>>> -               if (signal_pending(current)) {
+>>> -                       ret = -EINTR;
+>>> -                       goto out;
+>>> -               }
+>>>                for_each_hstate(h) {
+>>>                        spin_lock(&hugetlb_lock);
+>>>                        list_for_each_entry(page, &h->hugepage_activelist, lru) {
+>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>>> index 2715223..ee350c5 100644
+>>> --- a/mm/memcontrol.c
+>>> +++ b/mm/memcontrol.c
+>>> @@ -3852,8 +3852,6 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+>>>                pc = lookup_page_cgroup(page);
+>>>
+>>>                ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
+>>> -               if (ret == -ENOMEM || ret == -EINTR)
+>>> -                       break;
+>>>
+>>>                if (ret == -EBUSY || ret == -EINVAL) {
+>>>                        /* found lock contention or "pc" is obsolete. */
+>>> @@ -3863,7 +3861,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+>>>                        busy = NULL;
+>>>        }
+>>>
+>>> -       if (!ret && !list_empty(list))
+>>> +       if (!loop)
+>>
+>> This looks a bit strange to me... why we make the change ?
+>>
+> Ah, I should this move to an independet patch.
+> Because we don't have -ENOMEM path to exit loop, the return value of
+> this function
+> is
+>  0 (if loop !=0 this means lru is empty under the lru lock )
+>  -EBUSY (if loop== 0)
 
-> > Second, we'll need the same code in get_core_online(). Otherwise the
-> > platform device can be created for the new core (if the core is
-> > re-enabled) but will never be deleted.
-> 
-> It has already handled in create_core_data().
-> 
-... which is called from coretemp_add_core(), which does not return an
-error. Besides, it is called after the call to coretemp_device_add().
+>
+> I'll move this part out as an independent clean up patch
 
-As a result, the platform device for the unsupported core(s) will be
-created, even if the core is not supported. I just don't think that is a
-good idea.
+Thanks ~
 
-Besides, if you'd have the check in get_core_online(), you would not
-even hit the problem in put_core_offline(), since the platform device
-would not exist and the function would bail out because of that.
+--Ying
 
-Thanks,
-Guenter
-
-
+> thanks,
+> -kame
