@@ -1,93 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab2D3P0H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 11:26:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24089 "EHLO mx1.redhat.com"
+	id S1754357Ab2D3Pad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 11:30:33 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:43562 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752881Ab2D3P0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 11:26:05 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: khlebnikov@openvz.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, ak@linux.intel.com,
-        xemul@parallels.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH bugfix] proc/pagemap: correctly report non-present ptes and holes between vmas
-Date: Mon, 30 Apr 2012 11:25:42 -0400
-Message-Id: <1335799542-8159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20120428162229.15658.56316.stgit@zurg>
+	id S1751541Ab2D3Pab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 11:30:31 -0400
+Message-ID: <1335799690.2351.100.camel@groeck-laptop>
+Subject: Re: [PATCH] hwmon: coretemp: fix oops on cpu unplug
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 30 Apr 2012 08:28:10 -0700
+In-Reply-To: <1335791881-1560-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1335791881-1560-1-git-send-email-kirill.shutemov@linux.intel.com>
+Organization: Ericsson
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-04-30 at 09:18 -0400, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> coretemp tries to access core_data array beyond bounds on cpu unplug if
+> core id of the cpu if more than NUM_REAL_CORES-1.
+> 
+> BUG: unable to handle kernel NULL pointer dereference at 000000000000013c
+> IP: [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
+> PGD 673e5a067 PUD 66e9b3067 PMD 0
+> Oops: 0000 [#1] SMP
+> CPU 79
+> Modules linked in: sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter nf_conntrack_ipv4 nf_defrag_ipv4 ip6_tables xt_state nf_conntrack coretemp crc32c_intel asix tpm_tis pcspkr usbnet iTCO_wdt i2c_i801 microcode mii joydev tpm i2c_core iTCO_vendor_support tpm_bios i7core_edac igb ioatdma edac_core dca megaraid_sas [last unloaded: oprofile]
+> 
+> Pid: 3315, comm: set-cpus Tainted: G        W    3.4.0-rc5+ #2 QCI QSSC-S4R/QSSC-S4R
+> RIP: 0010:[<ffffffffa00159af>]  [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
+> RSP: 0018:ffff880472fb3d48  EFLAGS: 00010246
+> RAX: 0000000000000124 RBX: 0000000000000034 RCX: 00000000ffffffff
+> RDX: 0000000000000000 RSI: 0000000000000046 RDI: 0000000000000246
+> RBP: ffff880472fb3d88 R08: ffff88077fcd36c0 R09: 0000000000000001
+> R10: ffffffff8184bc48 R11: 0000000000000000 R12: ffff880273095800
+> R13: 0000000000000013 R14: ffff8802730a1810 R15: 0000000000000000
+> FS:  00007f694a20f720(0000) GS:ffff88077fcc0000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 000000000000013c CR3: 000000067209b000 CR4: 00000000000007e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process set-cpus (pid: 3315, threadinfo ffff880472fb2000, task ffff880471fa0000)
+> Stack:
+>  ffff880277b4c308 0000000000000003 ffff880472fb3d88 0000000000000005
+>  0000000000000034 00000000ffffffd1 ffffffff81cadc70 ffff880472fb3e14
+>  ffff880472fb3dc8 ffffffff8161f48d ffff880471fa0000 0000000000000034
+> Call Trace:
+>  [<ffffffff8161f48d>] notifier_call_chain+0x4d/0x70
+>  [<ffffffff8107f1be>] __raw_notifier_call_chain+0xe/0x10
+>  [<ffffffff81059d30>] __cpu_notify+0x20/0x40
+>  [<ffffffff815fa251>] _cpu_down+0x81/0x270
+>  [<ffffffff815fa477>] cpu_down+0x37/0x50
+>  [<ffffffff815fd6a3>] store_online+0x63/0xc0
+>  [<ffffffff813c7078>] dev_attr_store+0x18/0x30
+>  [<ffffffff811f02cf>] sysfs_write_file+0xef/0x170
+>  [<ffffffff81180443>] vfs_write+0xb3/0x180
+>  [<ffffffff8118076a>] sys_write+0x4a/0x90
+>  [<ffffffff816236a9>] system_call_fastpath+0x16/0x1b
+> Code: 48 c7 c7 94 60 01 a0 44 0f b7 ac 10 ac 00 00 00 31 c0 e8 41 b7 5f e1 41 83 c5 02 49 63 c5 49 8b 44 c4 10 48 85 c0 74 56 45 31 ff <39> 58 18 75 4e eb 1f 49 63 d7 4c 89 f7 48 89 45 c8 48 6b d2 28
+> RIP  [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
+>  RSP <ffff880472fb3d48>
+> CR2: 000000000000013c
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  drivers/hwmon/coretemp.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+> index 0d3141f..54a70fe 100644
+> --- a/drivers/hwmon/coretemp.c
+> +++ b/drivers/hwmon/coretemp.c
+> @@ -709,6 +709,10 @@ static void __cpuinit put_core_offline(unsigned int cpu)
+>  
+>  	indx = TO_ATTR_NO(cpu);
+>  
+> +	/* The core id is too big, just return */
+> +	if (indx > MAX_CORE_DATA - 1)
+> +		return;
+> +
+>  	if (pdata->core_data[indx] && pdata->core_data[indx]->cpu == cpu)
+>  		coretemp_remove_core(pdata, &pdev->dev, indx);
+>  
 Hi,
 
-On Sat, Apr 28, 2012 at 08:22:30PM +0400, Konstantin Khlebnikov wrote:
-> This patch resets current pagemap-entry if current pte isn't present,
-> or if current vma is over. Otherwise pagemap reports last entry again and again.
-> 
-> non-present pte reporting was broken in commit v3.3-3738-g092b50b
-> ("pagemap: introduce data structure for pagemap entry")
-> 
-> reporting for holes was broken in commit v3.3-3734-g5aaabe8
-> ("pagemap: avoid splitting thp when reading /proc/pid/pagemap")
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Reported-by: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Andi Kleen <ak@linux.intel.com>
+good catch. Couple of problems, though.
 
-Thanks for your efforts.
-I confirmed that this patch fixes the problem on v3.4-rc4.
-But originally (before the commits you pointed to above) initializing
-pagemap entries (originally labelled with confusing 'pfn') were done
-in for-loop in pagemap_pte_range(), so I think it's better to get it
-back to things like that.
+First, what number of cores are we talking about ? We should probably
+increase NUM_REAL_CORES as well. Long term, we should get rid of the
+dependency to prevent that problem from happening again, but that is a
+different issue.
 
-How about the following?
----
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 2b9a760..538f8d8 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -779,13 +779,14 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	struct pagemapread *pm = walk->private;
- 	pte_t *pte;
- 	int err = 0;
--	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
-+	pagemap_entry_t pme;
- 
- 	/* find the first VMA at or above 'addr' */
- 	vma = find_vma(walk->mm, addr);
- 	if (pmd_trans_huge_lock(pmd, vma) == 1) {
- 		for (; addr != end; addr += PAGE_SIZE) {
- 			unsigned long offset;
-+			pme = make_pme(PM_NOT_PRESENT);
- 
- 			offset = (addr & ~PAGEMAP_WALK_MASK) >>
- 					PAGE_SHIFT;
-@@ -801,6 +802,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	if (pmd_trans_unstable(pmd))
- 		return 0;
- 	for (; addr != end; addr += PAGE_SIZE) {
-+		pme = make_pme(PM_NOT_PRESENT);
- 
- 		/* check to see if we've left 'vma' behind
- 		 * and need a new, higher one */
-@@ -842,10 +844,10 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
- {
- 	struct pagemapread *pm = walk->private;
- 	int err = 0;
--	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
- 
- 	for (; addr != end; addr += PAGE_SIZE) {
- 		int offset = (addr & ~hmask) >> PAGE_SHIFT;
-+		pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
- 		huge_pte_to_pagemap_entry(&pme, *pte, offset);
- 		err = add_to_pagemap(addr, &pme, pm);
- 		if (err)
+Second, we'll need the same code in get_core_online(). Otherwise the
+platform device can be created for the new core (if the core is
+re-enabled) but will never be deleted.
 
----
 Thanks,
-Naoya
+Guenter
+
+
