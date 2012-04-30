@@ -1,150 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab2D3Bwg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 21:52:36 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46707 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754395Ab2D3Bwf (ORCPT
+	id S1755023Ab2D3B4t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 21:56:49 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44717 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754314Ab2D3B4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 21:52:35 -0400
-X-AuditID: 9c93016f-b7cfcae00000449e-fa-4f9df060e91e
-Message-ID: <4F9DF05E.7080707@kernel.org>
-Date: Mon, 30 Apr 2012 10:52:30 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Sun, 29 Apr 2012 21:56:48 -0400
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, npiggin@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, kosaki.motohiro@gmail.com,
-        rientjes@google.com, Neil Brown <neilb@suse.de>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Sage Weil <sage@newdream.net>
-Subject: Re: [RFC] vmalloc: add warning in __vmalloc
-References: <1335516144-3486-1-git-send-email-minchan@kernel.org> <20120427150030.6183a286.akpm@linux-foundation.org>
-In-Reply-To: <20120427150030.6183a286.akpm@linux-foundation.org>
+In-Reply-To: <1335749398.2281.0.camel@perseus.themaw.net>
+References: <20120429205429.63CCD7C0064@ra.kernel.org> <4F9DD994.70202@zytor.com>
+ <CA+55aFy72rPMq3M2_PU0ue45Fb38_Effrfhu2uOpdVXt9H1XOg@mail.gmail.com>
+ <4F9DDCB6.1070908@zytor.com> <CA+55aFwGZm4+rdJ+xArhsVJ8P5gH3xxCfuoHibotr0Sik484=w@mail.gmail.com>
+ <4F9DDE47.5060008@zytor.com> <CA+55aFzDhkVzaUYQwKbkUqoRNb223+w0-k=pOxTZHja75JOMvQ@mail.gmail.com>
+ <1335749398.2281.0.camel@perseus.themaw.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 29 Apr 2012 18:56:26 -0700
+X-Google-Sender-Auth: B9ZHUYR1mOVW9HWiogzd-Z428_Q
+Message-ID: <CA+55aFzEefQWk+0EB2+dcL8DZcn+B7=1HZ1MV0HVMX7prhrmVA@mail.gmail.com>
+Subject: Re: autofs: make the autofsv5 packet file descriptor use a packetized pipe
+To: Ian Kent <raven@themaw.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Tokarev <mjt@tls.msk.ru>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Thomas Meyer <thomas@m3y3r.de>, autofs@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2012 07:00 AM, Andrew Morton wrote:
+On Sun, Apr 29, 2012 at 6:29 PM, Ian Kent <raven@themaw.net> wrote:
+>
+> autodir looks ok as well.
+>
+> http://sourceforge.net/projects/intraperson/files/latest/download
 
-> On Fri, 27 Apr 2012 17:42:24 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
-> 
->> Now there are several places to use __vmalloc with GFP_ATOMIC,
->> GFP_NOIO, GFP_NOFS but unfortunately __vmalloc calls map_vm_area
->> which calls alloc_pages with GFP_KERNEL to allocate page tables.
->> It means it's possible to happen deadlock.
->> I don't know why it doesn't have reported until now.
->>
->> Firstly, I tried passing gfp_t to lower functions to support __vmalloc
->> with such flags but other mm guys don't want and decided that
->> all of caller should be fixed.
->>
->> http://marc.info/?l=linux-kernel&m=133517143616544&w=2
->>
->> To begin with, let's listen other's opinion whether they can fix it
->> by other approach without calling __vmalloc with such flags.
->>
->> So this patch adds warning to detect and to be fixed hopely.
->> I Cced related maintainers.
->> If I miss someone, please Cced them.
->>
->> side-note:
->>   I added WARN_ON instead of WARN_ONCE to detect all of callers
->>   and each WARN_ON for each flag to detect to use any flag easily.
->>   After we fix all of caller or reduce such caller, we can merge
->>   a warning with WARN_ONCE.
-> 
-> Just WARN_ONCE, please.  If that exposes some sort of calamity then we
-> can reconsider.
+That looks odd, but safe.
 
+Why does the code make the pipe file descriptor non-blocking, when it
+then always reads it using that odd "poll_read()" function that does a
+loop with poll() and read(). I guess there is some 1-second timeout
+thing.
 
-NP.
+It's a bit odd in other ways too. The "handle_events()" function is
+passed the fd, but then it never actually uses it, and uses
+'autodir.k_pipe' instead.
 
-> 
->>
->> ...
->>
->> --- a/mm/vmalloc.c
->> +++ b/mm/vmalloc.c
->> @@ -1700,6 +1700,15 @@ static void *__vmalloc_node(unsigned long size, unsigned long align,
->>  			    gfp_t gfp_mask, pgprot_t prot,
->>  			    int node, void *caller)
->>  {
->> +	/*
->> +	 * This function calls map_vm_area so that it allocates
->> +	 * page table with GFP_KERNEL so caller should avoid using
->> +	 * GFP_NOIO, GFP_NOFS and !__GFP_WAIT.
->> +	 */
->> +	WARN_ON(!(gfp_mask & __GFP_WAIT));
->> +	WARN_ON(!(gfp_mask & __GFP_IO));
->> +	WARN_ON(!(gfp_mask & __GFP_FS));
->> +
->>  	return __vmalloc_node_range(size, align, VMALLOC_START, VMALLOC_END,
->>  				gfp_mask, prot, node, caller);
->>  }
-> 
-> This seems strange.  There are many entry points to this code and the
-> patch appears to go into a randomly-chosen middle point in the various
-> call chains and sticks a check in there.  Why was __vmalloc_node()
-> chosen?  Does this provide full coverage or all entry points?
+So I'm having a bit of trouble following the *logic* to any of that,
+but the only reads I found did seem to match the "read whole packet"
+model, so it does look ok too.
 
-
-I think it covers all of caller with calls __vmalloc with gfp_flags.
-Only exception is __vmalloc_node_range which is called by module_alloc
-but it surely calls __vmalloc_node_range with GFP_KERNEL so it's no problem now.
-If you want to catch potential use of __vmalloc_node_range in future, I can move it
-to it. 
-
-> 
-> 
-> 
-> Also, the patch won't warn in the most problematic cases such as
-> vmalloc() being called from a __GFP_NOFS context.  Presumably there are
-
-
-I agree but this patch's goal is just to prevent calling __vmalloc with GFP_ATOMIC, GFP_NOFS and
-GFP_NOIO. We should consider vmalloc on __GFP_NOFS context as another problem and maybe
-reclaimfs lockdep would be a good start point.
-
-> might_sleep() warnings somewhere on the allocation path which will
-
-> catch vmalloc() being called from atomic contexts.
-
-
-Yes.
-
-> 
-> I'm not sure what to do about that - we don't have machinery in place
-> to be able to detect when a GFP_KERNEL allocation is deadlockable. 
-> Perhaps a lot of hacking on lockdep might get us this - we'd need to
-> teach lockdep about which locks prohibit FS entry, which locks prevent
-> IO entry, etc.  And there are secret locks such as ext3/4
-> journal_start(), and bitlocks and lock_page().  eek.
-
-> 
-
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
-
--- 
-Kind regards,
-Minchan Kim
+                     Linus
