@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab2D3Tma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 15:42:30 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:50365 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454Ab2D3Tm3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 15:42:29 -0400
+	id S1756658Ab2D3Tt0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 15:49:26 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52232 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756454Ab2D3TtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 15:49:24 -0400
+Message-ID: <4F9EEC86.8010201@linaro.org>
+Date: Mon, 30 Apr 2012 12:48:22 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <1334959051-18203-11-git-send-email-glommer@parallels.com>
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
-	<1334959051-18203-11-git-send-email-glommer@parallels.com>
-Date: Mon, 30 Apr 2012 12:42:28 -0700
-Message-ID: <CABCjUKDKwJMZioQPBwdiN-SUOW7VQkkBajwbKHUCSz1sdM6dQQ@mail.gmail.com>
-Subject: Re: [PATCH 10/23] slab/slub: struct memcg_params
-From: Suleiman Souhlal <suleiman@google.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Thelen <gthelen@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Richard Cochran <richardcochran@gmail.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/1] ntp: advertise correct TAI offset during leap second
+References: <cover.1335442155.git.richardcochran@gmail.com> <7af92d6eabef55ddce07007ea515eda2e1474c52.1335442155.git.richardcochran@gmail.com> <4F9B1C55.50004@linaro.org> <20120428061718.GA2258@netboy.at.omicron.at>
+In-Reply-To: <20120428061718.GA2258@netboy.at.omicron.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12043019-7182-0000-0000-000001643D43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 2:57 PM, Glauber Costa <glommer@parallels.com> wrote:
-> For the kmem slab controller, we need to record some extra
-> information in the kmem_cache structure.
+On 04/27/2012 11:17 PM, Richard Cochran wrote:
+> On Fri, Apr 27, 2012 at 03:23:17PM -0700, John Stultz wrote:
+>> On 04/26/2012 05:11 AM, Richard Cochran wrote:
+>>> When repeating a UTC time value during a leap second (when the UTC
+>>> time should be 23:59:60), the TAI timescale should not stop. The kernel
+>>> NTP code increments the TAI offset one second too late. This patch fixes
+>>> the issue by incrementing the offset during the leap second itself.
+>>>
+>>> Signed-off-by: Richard Cochran<richardcochran@gmail.com>
+>> This looks good to me. Although, have you actually tested against an
+>> ntp client that sets the tai offset to make sure you're not
+>> duplicating any ADJ_TAI adjustment it might make?
+> No, I cooked up my own test program that uses the adjtimex interface
+> directly. I really am not very familiar with the ntp.org software.
 >
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
-> ---
->  include/linux/slab.h     |   15 +++++++++++++++
->  include/linux/slab_def.h |    4 ++++
->  include/linux/slub_def.h |    3 +++
->  3 files changed, 22 insertions(+), 0 deletions(-)
+> Wait a minute. If user space manages this variable, then shouldn't the
+> kernel leave it alone?
+
+Right. That's why I'm asking. I actually haven't spent much time looking 
+at how the tai value provided via adjtimex is handled, and I want to 
+make sure its ok if we modify it from the kernel.
+
+
+> This David Mills paper [1] gives a leap second example that does it
+> the "other" way from Linux (see Figure 4), repeating the new epoch
+> rather than the leap second. It may well be that ntp.org servers do
+> behave that way. However, the NIST file claims that this way is
+> unusual.
 >
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index a595dce..a5127e1 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -153,6 +153,21 @@ unsigned int kmem_cache_size(struct kmem_cache *);
->  #define ARCH_SLAB_MINALIGN __alignof__(unsigned long long)
->  #endif
+> So, you have a good question. But, if ntp.org uses the NIST second
+> method, shouldn't Linux do the same?
 >
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> +struct mem_cgroup_cache_params {
-> +       struct mem_cgroup *memcg;
-> +       int id;
-> +
-> +#ifdef CONFIG_SLAB
-> +       /* Original cache parameters, used when creating a memcg cache */
-> +       size_t orig_align;
-> +       atomic_t refcnt;
-> +
-> +#endif
-> +       struct list_head destroyed_list; /* Used when deleting cpuset cache */
+Not sure I'm following here.  In Linux 23:59:60 is represented as 
+23:59:59 + TIME_OOP.  Could you expand on what in particular is 
+inconsistent here?
 
-s,cpuset,memcg,
+thanks
+-john
 
-Sorry about that.
-
--- Suleiman
