@@ -1,50 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559Ab2D3S4M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 14:56:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42985 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab2D3S4J (ORCPT
+	id S1756585Ab2D3TTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 15:19:42 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63402 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756515Ab2D3TTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 14:56:09 -0400
-Date: Mon, 30 Apr 2012 19:56:05 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH v3] [media] rc: Postpone ISR registration
-Message-ID: <20120430185605.GA11906@zeus>
-References: <20120420205002.GD17452@redhat.com>
- <1335025521-7979-1-git-send-email-luis.henriques@canonical.com>
- <20120423183811.GC31244@redhat.com>
+	Mon, 30 Apr 2012 15:19:40 -0400
+Message-ID: <4F9EE5BF.9070005@openvz.org>
+Date: Mon, 30 Apr 2012 23:19:27 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120423183811.GC31244@redhat.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH bugfix] proc/pagemap: correctly report non-present ptes
+ and holes between vmas
+References: <1335799542-8159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1335799542-8159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 02:38:11PM -0400, Jarod Wilson wrote:
-> On Sat, Apr 21, 2012 at 05:25:21PM +0100, Luis Henriques wrote:
-> > An early registration of an ISR was causing a crash to several users (for
-> > example, with the ite-cir driver: http://bugs.launchpad.net/bugs/972723).
-> > The reason was that IRQs were being triggered before a driver
-> > initialisation was completed.
-> > 
-> > This patch fixes this by moving the invocation to request_irq() and to
-> > request_region() to a later stage on the driver probe function.
-> 
-> From what I can tell, it looks like v3 should do the job for all affected
-> drivers.
-> 
-> Acked-by: Jarod Wilson <jarod@redhat.com>
+Naoya Horiguchi wrote:
+> Hi,
+>
+> On Sat, Apr 28, 2012 at 08:22:30PM +0400, Konstantin Khlebnikov wrote:
+>> This patch resets current pagemap-entry if current pte isn't present,
+>> or if current vma is over. Otherwise pagemap reports last entry again and again.
+>>
+>> non-present pte reporting was broken in commit v3.3-3738-g092b50b
+>> ("pagemap: introduce data structure for pagemap entry")
+>>
+>> reporting for holes was broken in commit v3.3-3734-g5aaabe8
+>> ("pagemap: avoid splitting thp when reading /proc/pid/pagemap")
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>> Reported-by: Pavel Emelyanov<xemul@parallels.com>
+>> Cc: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
+>> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>> Cc: Andi Kleen<ak@linux.intel.com>
+>
+> Thanks for your efforts.
+> I confirmed that this patch fixes the problem on v3.4-rc4.
+> But originally (before the commits you pointed to above) initializing
+> pagemap entries (originally labelled with confusing 'pfn') were done
+> in for-loop in pagemap_pte_range(), so I think it's better to get it
+> back to things like that.
+>
+> How about the following?
 
-Hi Jarod,
+I don't like this. Functions which returns void should always initialize its "output"
+argument, it much more clear than relying on preinitialized value.
 
-I was wondering whether there are any news about this patch.  I've checked
-linux-media tree, and it looks like it hasn't been applied.
+> ---
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index 2b9a760..538f8d8 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -779,13 +779,14 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>   	struct pagemapread *pm = walk->private;
+>   	pte_t *pte;
+>   	int err = 0;
+> -	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
+> +	pagemap_entry_t pme;
+>
+>   	/* find the first VMA at or above 'addr' */
+>   	vma = find_vma(walk->mm, addr);
+>   	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+>   		for (; addr != end; addr += PAGE_SIZE) {
+>   			unsigned long offset;
+> +			pme = make_pme(PM_NOT_PRESENT);
+>
+>   			offset = (addr&  ~PAGEMAP_WALK_MASK)>>
+>   					PAGE_SHIFT;
+> @@ -801,6 +802,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>   	if (pmd_trans_unstable(pmd))
+>   		return 0;
+>   	for (; addr != end; addr += PAGE_SIZE) {
+> +		pme = make_pme(PM_NOT_PRESENT);
+>
+>   		/* check to see if we've left 'vma' behind
+>   		 * and need a new, higher one */
+> @@ -842,10 +844,10 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+>   {
+>   	struct pagemapread *pm = walk->private;
+>   	int err = 0;
+> -	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
+>
+>   	for (; addr != end; addr += PAGE_SIZE) {
+>   		int offset = (addr&  ~hmask)>>  PAGE_SHIFT;
+> +		pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
+>   		huge_pte_to_pagemap_entry(&pme, *pte, offset);
+>   		err = add_to_pagemap(addr,&pme, pm);
+>   		if (err)
+>
+> ---
+> Thanks,
+> Naoya
 
-Cheers,
---
-Luis
