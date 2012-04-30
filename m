@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab2D3V1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 17:27:11 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56938 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756418Ab2D3V1J (ORCPT
+	id S1756764Ab2D3V14 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 17:27:56 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:46247 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756418Ab2D3V1y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 17:27:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: 21cnbao@gmail.com
-Subject: Re: [PATCH] MAINTAINER: add some drivers upstreamed in CSR SIRFPRIMA2
-Date: Mon, 30 Apr 2012 21:27:06 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: olof@lixom.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
-        Barry Song <Baohua.Song@csr.com>
-References: <1335756203-3285-1-git-send-email-21cnbao@gmail.com>
-In-Reply-To: <1335756203-3285-1-git-send-email-21cnbao@gmail.com>
+	Mon, 30 Apr 2012 17:27:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
+Date: Mon, 30 Apr 2012 23:32:37 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
+        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrey Rahmatullin <wrar@wrar.name>,
+        Steven Rostedt <rostedt@goodmis.org>
+References: <Pine.LNX.4.44L0.1204301348180.1558-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1204301348180.1558-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204302127.06190.arnd@arndb.de>
-X-Provags-ID: V02:K0:8UIgXFZje/2ad07dw7f9XvFoIEoVIZ5MyirHIXlOAB0
- qyTGVG3Tq9Cj7s/5NcQwdu6f/4+XwEsojCeo3QsKX4NoLi4acR
- YipZD0wrIsKDqo/9BMPWFfGZ+kZ/RnboFffKoEYZa5qnDl9Veu
- 9aTTO3KUd5Cjx94VU3GT+4CDIfQrC/Mhg8v3WvWR8+raY1Y+gN
- lOxtH4KMDwJb82po/0pSyeMqbempRErim8bBPljlj/zjvrzejT
- T8iN5ARhyNqyCdI8GgVlEFClmpynfcWR0K8wRIAj2n1ILM6PQN
- 6DXZ2Nkyz3EUtLiGpHod9v5XFvAk6J6r7xCbI7Oy0+dXYHJ+GZ
- XZWU3w7V4UT5rR1wzSbU=
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201204302332.38009.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 April 2012, 21cnbao@gmail.com wrote:
-> From: Barry Song <Baohua.Song@csr.com>
+On Monday, April 30, 2012, Alan Stern wrote:
+> On Mon, 30 Apr 2012, Bjorn Helgaas wrote:
 > 
-> Signed-off-by: Barry Song <Baohua.Song@csr.com>
+> > On Sun, Apr 29, 2012 at 2:44 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > From: Oleksij Rempel <bug-track@fisher-privat.net>
+> > >
+> > > This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
+> > > more closely and fixes suspend bug found on ASUS Zenbook UX31E.
+> > >
+> > > Some OEM use _SxD fileds do blacklist brocken Dx states.
+> > > If _SxD/_SxW return values are check before suspend as appropriate,
+> > > some nasty suspend/resume issues may be avoided.
+> > >
+> > > References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
+> > > Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
+> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > > ---
+> > >
+> > > Bjorn, Len,
+> > >
+> > > This is -stable material and therefore v3.4 as well, IMO. �Please let me
+> > > know if one of you can take it or whether you want me to handle it all the
+> > > way to Linus.
+> > 
+> > I'm OK with this from a PCI perspective.  Most of the change is in
+> > ACPI, so I propose that either you or Len take care of it.
+> > 
+> > The second paragraph of the changelog has several typos
+> > (fileds/fields, do/to, brocken/broken, etc).
+> 
+> It also turns out that the normal wakeup mechanism doesn't work for the
+> devices in question.  Can this be detected by ACPI?  We don't want to 
+> tell userspace that wakeup works when in fact it doesn't.
 
-Applied to the next/maintainer branch of the arm-soc tree.
+No, we don't, but if there's _PRW and/or _DSW/_PSW for the device, we really
+have to assume that the device is able to wake up the system.  Moreover, if
+those methods don't return error codes, we have no way to say there's anything
+wrong.
 
 Thanks,
-
-	Arnd
+Rafael
