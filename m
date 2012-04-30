@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab2D3TYS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 15:24:18 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:44268 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756363Ab2D3TYQ (ORCPT
+	id S1756616Ab2D3TZN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 15:25:13 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:58220 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756583Ab2D3TZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 15:24:16 -0400
-From: joseph daniel <josephdanielwalter@gmail.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: joseph daniel <josephdanielwalter@gmail.com>
-Subject: [PATCH] scsi/mvsas: Remove an unused variable
-Date: Tue,  1 May 2012 01:24:05 +0600
-Message-Id: <1335813846-8042-1-git-send-email-josephdanielwalter@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 30 Apr 2012 15:25:10 -0400
+Message-ID: <4F9EE72B.1020401@xenotime.net>
+Date: Mon, 30 Apr 2012 12:25:31 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH resend] nfsd: fix nfs4recover.c printk format warning
+References: <20120419164643.d9f918d44c890722b7707508@canb.auug.org.au> <4F909C78.7000008@xenotime.net>
+In-Reply-To: <4F909C78.7000008@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the pointer of type struct domain_device is not used anywhere in the code.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Signed-off-by: joseph daniel <josephdanielwalter@gmail.com>
+Fix printk format warnings -- both items are size_t,
+so use %zu to print them.
+
+fs/nfsd/nfs4recover.c:580:3: warning: format '%lu' expects type 'long unsigned int', but argument 3 has type 'size_t'
+fs/nfsd/nfs4recover.c:580:3: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'unsigned int'
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	"J. Bruce Fields" <bfields@fieldses.org>
+Cc:	linux-nfs@vger.kernel.org
 ---
- drivers/scsi/mvsas/mv_sas.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/nfsd/nfs4recover.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
-index fd3b283..3006ec9 100644
---- a/drivers/scsi/mvsas/mv_sas.c
-+++ b/drivers/scsi/mvsas/mv_sas.c
-@@ -885,7 +885,6 @@ static int mvs_task_exec(struct sas_task *task, const int num, gfp_t gfp_flags,
- 				struct completion *completion, int is_tmf,
- 				struct mvs_tmf_task *tmf)
- {
--	struct domain_device *dev = task->dev;
- 	struct mvs_info *mvi = NULL;
- 	u32 rc = 0;
- 	u32 pass = 0;
--- 
-1.7.9.5
+This patch was originally sent on Apr.19/2012 for linux-next.
+It is still needed in linux-next and in mainline.
 
+
+--- linux-next-20120419.orig/fs/nfsd/nfs4recover.c
++++ linux-next-20120419/fs/nfsd/nfs4recover.c
+@@ -577,7 +577,7 @@ cld_pipe_downcall(struct file *filp, con
+ 	struct cld_net *cn = nn->cld_net;
+ 
+ 	if (mlen != sizeof(*cmsg)) {
+-		dprintk("%s: got %lu bytes, expected %lu\n", __func__, mlen,
++		dprintk("%s: got %zu bytes, expected %zu\n", __func__, mlen,
+ 			sizeof(*cmsg));
+ 		return -EINVAL;
+ 	}
