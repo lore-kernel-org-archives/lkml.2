@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab2D3PUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 11:20:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4014 "EHLO mx1.redhat.com"
+	id S1753775Ab2D3P0H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 11:26:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24089 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752968Ab2D3PUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 11:20:44 -0400
-Date: Mon, 30 Apr 2012 17:39:03 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: davej@redhat.com
-Subject: [PATCH] kvm: fix cpuid eax
-Message-ID: <20120430143902.GA10181@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1752881Ab2D3P0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 11:26:05 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: khlebnikov@openvz.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, ak@linux.intel.com,
+        xemul@parallels.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH bugfix] proc/pagemap: correctly report non-present ptes and holes between vmas
+Date: Mon, 30 Apr 2012 11:25:42 -0400
+Message-Id: <1335799542-8159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20120428162229.15658.56316.stgit@zurg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpuid eax should return the max leaf so that
-guests can find out the valid range.
-This matches Xen et al.
+Hi,
 
-Tested using -cpu host.
+On Sat, Apr 28, 2012 at 08:22:30PM +0400, Konstantin Khlebnikov wrote:
+> This patch resets current pagemap-entry if current pte isn't present,
+> or if current vma is over. Otherwise pagemap reports last entry again and again.
+> 
+> non-present pte reporting was broken in commit v3.3-3738-g092b50b
+> ("pagemap: introduce data structure for pagemap entry")
+> 
+> reporting for holes was broken in commit v3.3-3734-g5aaabe8
+> ("pagemap: avoid splitting thp when reading /proc/pid/pagemap")
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Reported-by: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Thanks for your efforts.
+I confirmed that this patch fixes the problem on v3.4-rc4.
+But originally (before the commits you pointed to above) initializing
+pagemap entries (originally labelled with confusing 'pfn') were done
+in for-loop in pagemap_pte_range(), so I think it's better to get it
+back to things like that.
+
+How about the following?
 ---
- arch/x86/kvm/cpuid.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 2b9a760..538f8d8 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -779,13 +779,14 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 	struct pagemapread *pm = walk->private;
+ 	pte_t *pte;
+ 	int err = 0;
+-	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
++	pagemap_entry_t pme;
+ 
+ 	/* find the first VMA at or above 'addr' */
+ 	vma = find_vma(walk->mm, addr);
+ 	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		for (; addr != end; addr += PAGE_SIZE) {
+ 			unsigned long offset;
++			pme = make_pme(PM_NOT_PRESENT);
+ 
+ 			offset = (addr & ~PAGEMAP_WALK_MASK) >>
+ 					PAGE_SHIFT;
+@@ -801,6 +802,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 	if (pmd_trans_unstable(pmd))
+ 		return 0;
+ 	for (; addr != end; addr += PAGE_SIZE) {
++		pme = make_pme(PM_NOT_PRESENT);
+ 
+ 		/* check to see if we've left 'vma' behind
+ 		 * and need a new, higher one */
+@@ -842,10 +844,10 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+ {
+ 	struct pagemapread *pm = walk->private;
+ 	int err = 0;
+-	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
+ 
+ 	for (; addr != end; addr += PAGE_SIZE) {
+ 		int offset = (addr & ~hmask) >> PAGE_SHIFT;
++		pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
+ 		huge_pte_to_pagemap_entry(&pme, *pte, offset);
+ 		err = add_to_pagemap(addr, &pme, pm);
+ 		if (err)
 
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index 7d00d2d..bda4877 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -397,7 +397,7 @@ static int do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 	case KVM_CPUID_SIGNATURE: {
- 		char signature[12] = "KVMKVMKVM\0\0";
- 		u32 *sigptr = (u32 *)signature;
--		entry->eax = 0;
-+		entry->eax = KVM_CPUID_FEATURES;
- 		entry->ebx = sigptr[0];
- 		entry->ecx = sigptr[1];
- 		entry->edx = sigptr[2];
--- 
-MST
+---
+Thanks,
+Naoya
