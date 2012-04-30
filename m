@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab2D2Xhm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 19:37:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55644 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754532Ab2D2Xhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 19:37:41 -0400
-Message-ID: <4F9DD0A2.7010104@zytor.com>
-Date: Sun, 29 Apr 2012 16:37:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754696Ab2D3AOz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 20:14:55 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:41653 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132Ab2D3AOy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 20:14:54 -0400
+Date: Mon, 30 Apr 2012 01:14:52 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: "Bryan O'Donoghue" <bryan.odonoghue@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: APIC logic bug in kernel
+In-Reply-To: <4F7B3D93.4030405@linux.intel.com>
+Message-ID: <alpine.LFD.2.00.1204300106540.19691@eddie.linux-mips.org>
+References: <4F7B3D93.4030405@linux.intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Kevin Winchester <kjwinchester@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 1/5] x86: Move per cpu cpu_llc_shared_map to a field
- in struct cpuinfo_x86
-References: <1a0aaa16-df06-40bf-88c7-28180455e6b9@email.android.com> <1335742410-11569-1-git-send-email-kjwinchester@gmail.com> <1335742410-11569-2-git-send-email-kjwinchester@gmail.com>
-In-Reply-To: <1335742410-11569-2-git-send-email-kjwinchester@gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2012 04:33 PM, Kevin Winchester wrote:
-> Commit 141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
-> 'struct cpuinfo_x86'") caused the compilation error:
+Hi Bryan,
+
+ Apologies for a late reply, I don't check mailing list traffic regularly.
+
+On Tue, 3 Apr 2012, Bryan O'Donoghue wrote:
+
+> I'm looking at the code in arch/x86/kernel/apic/apic.c specifically the code
+> path that checks for x86_vendor == X86_VENDOR_INTEL with boot_cpu_data.x86 =
+> 5.
 > 
-> mce_amd.c:(.cpuinit.text+0x4723): undefined reference to 'cpu_llc_shared_map'
+> As I understand the code, BIOS will have informed kernel that it has an APIC
+> based on mps tables. If the CPU family == 5, the function apic_verify() will
+> be called.
 > 
-> by removing an #ifdef CONFIG_SMP around a block containing a reference
-> to cpu_llc_shared_map.  Rather than replace the #ifdef, move
-> cpu_llc_shared_map to be a new cpumask_t field llc_shared_map in
-> struct cpuinfo_x86 and adjust all references to cpu_llc_shared_map.
+> Problem is apic_verify() does an rdmsr for an MSR that was not included in IA
+> until P6.
 > 
+> Specifically rdmsr/wrmsr instructions in apic.c are not P5 compatible - since
+> the MSR IA32_APIC_BASE was not introduced until P6_01 - as listed in the
+> system programming guide volume 3.
+> 
+> Are all of these rdmsr/wrmsr calls made with an awareness of P5 ?
+> 
+> Example:
+> 
+> We check in apic_verify() if cpuid(1).edx has bit 9 (local APIC) set.
+> If so we set CPU capability FEATURE_APIC and rdmsr/wrmsr to 0x1B
+> 
+> arch/x86/include/asm/msr-index.h:#define MSR_IA32_APICBASE
+> 0x0000001b
+> 
+> As I read this code it is perfectly valid for a P5, to have an APIC, report it
+> has APIC capability via BIOS and CPUID and then subsequently to go ahead and
+> touch the IA32_APIC_BASE MSR.
+> 
+> Basically this code doesn't seem to match the spec, am I missing a trick ?
 
-Okay...  I must not get this.
+ You mean this piece:
 
-Why is this better than just moving the DEFINE_PER_CPU to a place which
-isn't dependent on SMP?
+	if (!cpu_has_apic) {
+[...]
+	} else {
+		if (apic_verify())
+			return -1;
+        }
 
-	-hpa
+in detect_init_APIC(), I presume?  Looks like a regression to me, and will 
+trigger a #GP on RDMSR on Pentium-class processors.  Additionally the 
+messages produced by apic_verify() look bogus to me in this context.
 
+ Ingo, can you please look at it or find someone to?  Thanks.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+  Maciej
