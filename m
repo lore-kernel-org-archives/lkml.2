@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab2D3UDz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:03:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60347 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756454Ab2D3UDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:03:53 -0400
-Message-ID: <4F9EEFF5.4000703@zytor.com>
-Date: Mon, 30 Apr 2012 13:03:01 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1756716Ab2D3UI7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:08:59 -0400
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:34853 "HELO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755439Ab2D3UI6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 16:08:58 -0400
+From: Ge Gao <ggao@invensense.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Tokarev <mjt@tls.msk.ru>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Ian Kent <raven@themaw.net>, Thomas Meyer <thomas@m3y3r.de>,
-        autofs@vger.kernel.org
-Subject: Re: autofs: make the autofsv5 packet file descriptor use a packetized
- pipe
-References: <20120429205429.63CCD7C0064@ra.kernel.org> <4F9DD994.70202@zytor.com> <CA+55aFy72rPMq3M2_PU0ue45Fb38_Effrfhu2uOpdVXt9H1XOg@mail.gmail.com> <4F9DDD3E.6010801@zytor.com>
-In-Reply-To: <4F9DDD3E.6010801@zytor.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac0nDQI0TkWkBUyAT3uTpNK9biVmog==
+Date: Mon, 30 Apr 2012 13:08:54 -0700
+Message-ID: <4f675c805256ce92bcc9d694ab89e411@mail.gmail.com>
+Subject: different data rate in IIO ?
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2012 05:30 PM, H. Peter Anvin wrote:
-> Incidentally, I think there is a good reason to add a v6 packet type
-> regardless, for efficiency: with packetized pipes there really is no
-> point in sending a packet which is mostly padding for no good reason.
+Dear all,
+I am currently developing a driver for a chip that has gyro, accelerometer
+and compass sensor together and these sensor data could come at different
+rate. There could be more data coming from this chip because this chip has
+on-chip CPU to do some data processing. The IIO subsystem is in some sense
+"fixed" once "enable" is 1. "Fixed" means the element and sequence inside
+ring buffer is fixed. For example, if MPU9150, which is a 9-axis chip,
+containing gyro, accelerometer and compass, is developed, the ring buffer
+would have byte_per_datum of 32 bytes(6 + 6 + 6  = 18; 18 rounding up to
+24; and 24 plus timestamp) if all sensors and all axis are enabled . So
+every data packet should contain this amount of data no matter what. If I
+have gyro running at 200 HZ, accelerometer running at 100Hz and compass
+running at 50 Hz, this will have problems. Because I can't provide
+accelerometer data and compass data for each packet. Some packets could
+miss data. I have to fake data for these packets, either by repeating or
+other non-standard ways.  Is this supposed to be? Because we could have
+other data item which is even slower(10HZ quaternion data, for example).
+This way, it will be more trouble. Because each data element has different
+rate, while IIO needs them at the same rate.
+                The best way is to have a header for each packet to
+indicate what packet it is. But this way seems to violate the design goal
+of IIO.  That would be more like input subsystem because input subsystem
+uses different code type to distinguish different type of data thus
+allowing different data type mixed together. If such driver is written,
+all files under "scan_element" would be meaningless and useless.
+	I got some suggestions about using multiple IIO devices in one
+driver because one IIO device can only has one ring buffer. It could be OK
+to handle this. However, since IIO device allocation is to allocate the
+private data directly along with IIO device, it seems one IIO driver can
+only have one IIO device. Could IIO kernel accept such practice that one
+IIO driver has more than one IIO device? Or could there be some changes in
+the IIO code such that such scenario is taken care of in the future?
+Thanks.
 
-Thinking about it some more: for v6, I wouldn't use a packetized pipe at
-all (due to the unnecessary extra buffer consumption.)  Instead just put
-the message size in the header and read a large chunk, which may end up
-being more than one packet and may end up with a partial packet at the
-end.  *This is okay*, because there is only one reader, and any
-additional data needed will be gotten the next time around the loop.
-
-	-hpa
-
+Ge
