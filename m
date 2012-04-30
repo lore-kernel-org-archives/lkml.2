@@ -1,156 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab2D3LBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 07:01:32 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:50381 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab2D3LBb convert rfc822-to-8bit (ORCPT
+	id S1756212Ab2D3LFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 07:05:38 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57884 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755574Ab2D3LFh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 07:01:31 -0400
+	Mon, 30 Apr 2012 07:05:37 -0400
+From: Steffen =?ISO-8859-1?Q?M=FCller?= <steffen.mueller@radio-frei.de>
+To: opensuse-factory@opensuse.org
+Cc: Oliver Neukum <oliver@neukum.org>, Alan Stern <stern@rowland.harvard.edu>,
+        Jiri Slaby <jslaby@suse.cz>, stable@kernel.org,
+        Greg KH <greg@kroah.com>, USB list <linux-usb@vger.kernel.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] usb: add USB_QUIRK_RESET_RESUME for M-Audio 88es
+Date: Mon, 30 Apr 2012 13:05:34 +0200
+Message-ID: <1979769.SGKEhdJuNi@thinkpadsm.rf-studio>
+User-Agent: KMail/4.8.2 (Linux/3.3.3-21-desktop-steffen; KDE/4.8.2; x86_64; ; )
+In-Reply-To: <201204301048.21852.oliver@neukum.org>
+References: <Pine.LNX.4.44L0.1204271122550.1690-100000@iolanthe.rowland.org> <5861865.YnqskICckP@thinkpadsm.rf-studio> <201204301048.21852.oliver@neukum.org>
 MIME-Version: 1.0
-In-Reply-To: <CAGZ4FETGyatywWqx3vLo-=jSJsrSat2+r35Njg5NNJ4NnyUy=w@mail.gmail.com>
-References: <20120422164023.GA32342@elliptictech.com>
-	<20120423000554.GA893@elliptictech.com>
-	<20120423024558.GD13840@phenom.dumpdata.com>
-	<20120424010345.GA30674@elliptictech.com>
-	<20120425013537.GA11959@elliptictech.com>
-	<1335322574.1821.8.camel@nisroch>
-	<1335504021.5311.0.camel@nisroch>
-	<20120428003928.GA16805@elliptictech.com>
-	<CADnq5_N8Cf4ONL5TNA-Wmif7cty070TRrTOnUpqdiGhWbVbj=w@mail.gmail.com>
-	<20120428153350.GA19561@elliptictech.com>
-	<20120429223744.GA19382@core.coreip.homeip.net>
-	<CAGZ4FETGyatywWqx3vLo-=jSJsrSat2+r35Njg5NNJ4NnyUy=w@mail.gmail.com>
-Date: Mon, 30 Apr 2012 13:01:30 +0200
-Message-ID: <CAKPcRGpxb6b-z3t8Lv6YU9+ttgeXTRtGyvCFb=RSDQOJMTqEjQ@mail.gmail.com>
-Subject: Re: Linux 3.4-rc4
-From: Luca Tettamanti <kronos.it@gmail.com>
-To: Maarten Maathuis <madman2003@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Martin Peres <martin.peres@labri.fr>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Jean Delvare <jdelvare@suse.de>
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V02:K0:J/+XCuVR/UqlFkHwAWwJIhTt97jvtbf64FB6NBMa2ab
+ XHUhpUNVsPvtZg8+cuaf2SJFYRmww/Iqrhx2dihMg0/8c5Uj7J
+ ydrX2XFEnOMMkCwBWzXV62t6clHcanKBYCe+3dw+E/sjCiGxP4
+ Cg9itwYWCWi1IwtVkyzLKOwRpKHEYmU3IoeTaX8fEImWs3PUXy
+ 6mQSAe6jculs3TA2MvlOXIP+7evmbrufGjevd5rm+C4fN6o4SY
+ cVS1QZ/Z68tIO1vkM5QuHY59EXkencjIEFS8NE9G6vJJvpBRzq
+ P/ErkqQuuggWF8ZyGPOS1t7KVm3kjRzEiuymq9pe418vkaF+jN
+ ttH1d7OUESB6Tt3SDoycghi5pKw7M04HMAmlPwg6HWRy311PQk
+ /sbEsYegGThpA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 11:07 AM, Maarten Maathuis <madman2003@gmail.com> wrote:
-> On Mon, Apr 30, 2012 at 12:37 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
->> On Sat, Apr 28, 2012 at 11:33:50AM -0400, Nick Bowler wrote:
->>> On 2012-04-28 02:19 -0400, Alex Deucher wrote:
->>> > On Fri, Apr 27, 2012 at 8:39 PM, Nick Bowler <nbowler@elliptictech.com> wrote:
->>> > > Hi Ben,
->>> > >
->>> > > On 2012-04-27 15:20 +1000, Ben Skeggs wrote:
->>> > >> Does this patch help you at all?
->>> > >>
->>> > >> http://cgit.freedesktop.org/nouveau/linux-2.6/commit/?id=a3a285f17867f0018de798b5ee85731ec1268305
->>> > >
->>> > > Yes.  I cherry-picked this patch on top of Linus' master (3.4-rc4+) and
->>> > > this appears to solve the "black screen on VGA" problem described in the
->>> > > original report.  Thanks!
->>> > >
->>> > > Unfortunately, that's not the end of my VGA-related regressions. :(
->>> > >
->>> > > While tracking down the black screen issue, I've been having the monitor
->>> > > directly connected to the video card the whole time, but now when I'm
->>> > > connected through my KVM switch (an IOGear GCS1804), it appears that
->>> > > something's going wrong with reading the EDID, because the available
->>> > > modes are all screwed up (both console and X decide they want to drive
->>> > > the display at 1024x768).  Here's the output of xrandr on 3.2.15:
->>> > >
->>> > >  % xrandr
->>> > >  Screen 1: minimum 320 x 200, current 1600 x 1200, maximum 4096 x 4096
->>> > >  VGA-1 connected 1600x1200+0+0 (normal left inverted right x axis y axis) 352mm x 264mm
->>> > >     1600x1200      75.0*+   70.0     65.0     60.0
->>> > >     1280x1024      85.0 +   75.0     60.0
->>> > >     1920x1440      60.0
->>> > >     1856x1392      60.0
->>> > >     1792x1344      60.0
->>> > >     1920x1200      74.9     59.9
->>> > >     1680x1050      84.9     74.9     60.0
->>> > >     1400x1050      85.0     74.9     60.0
->>> > >     1440x900       84.8     75.0     59.9
->>> > >     1280x960       85.0     60.0
->>> > >     1360x768       60.0
->>> > >     1280x800       84.9     74.9     59.8
->>> > >     1152x864       75.0
->>> > >     1280x768       84.8     74.9     59.9
->>> > >     1024x768       85.0     75.1     75.0     70.1     60.0     43.5     43.5
->>> > >     832x624        74.6
->>> > >     800x600        85.1     72.2     75.0     60.3     56.2
->>> > >     848x480        60.0
->>> > >     640x480        85.0     75.0     72.8     72.8     66.7     60.0     59.9
->>> > >     720x400        85.0     87.8     70.1
->>> > >     640x400        85.1
->>> > >     640x350        85.1
->>> > >     320x200       165.1
->>> > >
->>> > > And on 3.4-rc4+ (with your patch cherry-picked):
->>> > >
->>> > >  % xrandr
->>> > >  Screen 1: minimum 320 x 200, current 1024 x 768, maximum 4096 x 4096
->>> > >  VGA-1 connected 1024x768+0+0 (normal left inverted right x axis y axis) 0mm x 0mm
->>> > >     1024x768       60.0*
->>> > >     800x600        60.3     56.2
->>> > >     848x480        60.0
->>> > >     640x480        59.9
->>> > >     320x200       165.1
->>> > >
->>> > > Running xrandr on 3.4-rc4+ also causes the screen to go black for a
->>> > > second when it does not on 3.2.15.  It also causes several messages of
->>> > > the form
->>> > >
->>> > >  [drm] nouveau 0000:01:00.0: Load detected on output B
->>> > >
->>> > > to be logged.  Also, looking at /sys/class/drm/card0-VGA-1/edid I see
->>> > > that it is empty on 3.4-rc4+ and it is correct on 3.2.15.  Things seem
->>> > > to work OK when the KVM is not involved.
->>> >
->>> > Were you ever able to fetch a EDID with the KVM involved?  KVMs are
->>> > notorious for not connecting the ddc pins.
->>>
->>> Yes, it works on 3.2.15 as described above.
->>
->> I have the same (or similar) KVM (not in the office at the moment) and I
->> can confirm that with newer kernels EDID fecthing in flaky. It's 50/50
->> if EDED retrieval succeeds or if it fails with:
->>
->> Apr 26 13:06:57 dtor-d630 kernel: [13464.936336] [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder is 208
->> Apr 26 13:06:57 dtor-d630 kernel: [13464.955317] [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder is 208
->> Apr 26 13:06:57 dtor-d630 kernel: [13464.973879] [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder is 208
->> Apr 27 09:13:03 dtor-d630 kernel: [44602.087659] [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder is 208
->> Apr 27 09:13:03 dtor-d630 kernel: [44602.107147] [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder is 208
->> Apr 27 09:13:03 dtor-d630 kernel: [44602.126908] [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder is 208
->> Apr 27 09:13:03 dtor-d630 kernel: [44602.146277] [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder is 208
->> Apr 27 09:13:03 dtor-d630 kernel: [44602.297659] [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder is 208
->> Apr 27 09:13:03 dtor-d630 kernel: [44602.317063] [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder is 208
->>
->> Earlier kernels were able to retrieve EDEDs reliably.
->>
->> This is with:
->>
->> [    1.678392] [drm] nouveau 0000:01:00.0: Detected an NV50 generation card (0x086b00a2)
->
-> Just a crazy thought, but didn't we change some timings related to
-> EDID retrieval? To make it faster.
+Tested-by:     Steffen M�ller <steffen.mueller@radio-frei.de>
+Signed-off-by: Steffen M�ller <steffen.mueller@radio-frei.de>
+Signed-off-by: Stefan Seyfried <seife+kernel@b1-systems.com>
+---
+ drivers/usb/core/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Hum, this commit:
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index 4c65eb6..32d3adc 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -123,6 +123,9 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* Guillemot Webcam Hercules Dualpix Exchange*/
+ 	{ USB_DEVICE(0x06f8, 0x3005), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
++	/* Midiman M-Audio Keystation 88es */
++	{ USB_DEVICE(0x0763, 0x0192), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* M-Systems Flash Disk Pioneers */
+ 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+-- 
 
-commit 1849ecb22fb3b5d57b65e7369a3957adf9f26f39
-Author: Jean Delvare <jdelvare@suse.de>
-Date:   Sat Jan 28 11:07:09 2012 +0100
-
-    drm/kms: Make i2c buses faster
-
-doubled the data rate but only for radeon and intel drivers. nouveau
-doesn't use the standard i2c-algo-bit helpers (BTW: the cond_resched()
-has been removed), and AFAICS it's using 1us delay; the other drivers
-are using 10us, 1us seems a bit too low...
-
-Luca
