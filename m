@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab2D3J5f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 05:57:35 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35353 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752297Ab2D3J5e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 05:57:34 -0400
-X-Sasl-enc: M/bMvkdXmXq8Mq+M5YD0nBg8FStj96t1BTboqIvGG9Py 1335779852
-Message-ID: <4F9E61FC.8070409@ladisch.de>
-Date: Mon, 30 Apr 2012 11:57:16 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1756036Ab2D3J7M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 05:59:12 -0400
+Received: from segfault.kiev.ua ([193.193.193.4]:43726 "EHLO segfault.kiev.ua"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753690Ab2D3J7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 05:59:11 -0400
+Date: Mon, 30 Apr 2012 12:58:35 +0300
+From: Valentin Nechayev <netch@netch.kiev.ua>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        drepper@gmail.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] nextfd(2)
+Message-ID: <20120430095835.GF51635@netch.kiev.ua>
 MIME-Version: 1.0
-To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
-CC: Josh Boyer <jwboyer@gmail.com>, Borislav Petkov <borislav.petkov@amd.com>,
-        andymatei@gmail.com, "Huang, Shane" <Shane.Huang@amd.com>,
-        Borislav Petkov <bp@amd64.org>, linux-kernel@vger.kernel.org
-Subject: Re: Unhandled IRQs on AMD E-450
-References: <fa.CZQqvHf3CBfYWzhSDPNOWxTTD9w@ifi.uio.no>	<fa.Vmg5vDod2/oKvwyy9BcalhoT+Lo@ifi.uio.no>	<14969994.2790.1335342903511.JavaMail.geo-discussion-forums@vbbfr18>	<4F97BA60.4080505@ladisch.de>	<20120427082203.GB9233@aftab.osrc.amd.com>	<CAPRPZsCHAOvemogn7mWnWfykhANeEx5K=OG9Xt+veDjEWOiDYA@mail.gmail.com>	<CA+5PVA6e-JaS809t9=4=SoxX4cFEYfxxb9-KAXk68ENGg6Kw8w@mail.gmail.com>	<CAPRPZsDDEYUf2a+=ZbwvFw+qJku0UvMLf0+eNDvw+FbinCbysA@mail.gmail.com>	<CA+5PVA4NJ4fB-qEVB45sz48E7kCdwZ+O5D9jvk16z4hrXSgCwQ@mail.gmail.com> <CAPRPZsB=axM88+fGkghbh3qxDv=vRQtfrKqT0e59EZPrrS0V+A@mail.gmail.com>
-In-Reply-To: <CAPRPZsB=axM88+fGkghbh3qxDv=vRQtfrKqT0e59EZPrrS0V+A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F78D30B.4070205@zytor.com>
+ <20120402010819.76d31790@pyramind.ukuu.org.uk>
+X-42: On
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeroen Van den Keybus wrote:
-> - Detect stuck interrupts after a number (5) of consecutive unhandled
-> IRQs within a specified time frame (100ms).
+ Sun, Apr 01, 2012 at 15:13:31, hpa wrote about "Re: [PATCH] nextfd(2)": 
 
-Why 5?  This threshold is likely to be too low; fast consecutive interrupts
-can easily happen more often with a very busy device, while an actual stuck
-interrupt will call the handler in an endless loop and very quickly result
-in many thousands of calls.
+> - There is a huge backwards compatibility problem with this for a
+> substantial transition period; using /proc/self/fd has worked for a very
+> long time already.
+> 
+> - Your nextfd() system call will require more system calls that the
+> typical case for reading /proc/self/fd, because each getdents() system
+> call handles multiple readdir() invocations.
 
-> --- linux-3.2.16.orig/include/linux/irqdesc.h	2012-04-23
-> 00:31:32.000000000 +0200
+First, your forecast is very doubtfully correct in typical case when a
+process checks extra descriptors to close; seeing tools like sendmail
+shows that typically the all this long cycle does no work. So, it will
+reduce to one nextfd() which returns final error, instead of
+open()+getdents()+close().
 
-Your mailer wraps lines; see Documentation/email-clients.txt.
+Second, the principal advantage of nextfd() approach that it doesn't
+consumer additional resources for its work, compared with open() which
+allocates yet another descriptor. So, it could fail unpredictably.
+
+Typical Unix-like system has at least four kinds of critical resources;
+"critical" means here that they could be requested even in case of
+lack of such resource, to provide a kind of graceful shutdown. They
+are virtual memory, file descriptors, threads and disk space, all
+possibly limited per-system, per-user or per-process. The current lack
+of a measure to provide work when a resource is exhausted gives only
+one possible reaction - to die immediately; this is now typical
+reaction to memory allocation failure. I'm already sick of seeing
+a language runtime which crash with messages like "cannot allocate
+500M" when doing GC; this isn't single example but common approach of
+such a devil-may-care attitude to application stability.
+
+It isn't hard to expand the current approach in two ways: 1) allowing
+to allocate reserve pool which will be then used by compating or
+shutdown actions; 2) making actions which are typical on such
+compacting using minimum of resources, even with some loss of
+uniformity, API orthogonality and simplicity. Yep, this way is long
+and can spend decades - more long than /proc existence - but it is
+good to achieve.
+
+Seems all this was in mind of Alexey Dobriyan when he proposed
+nextfd(); maybe not with the same level of details, but in general.
+
+ Mon, Apr 02, 2012 at 01:08:19, alan wrote about "Re: [PATCH] nextfd(2)": 
+
+> If I've rlimited you to no file handles then you already lost whichever
+> approach you use. Just abort.
+
+Well, this is the good illustration to my words. In real work I don't
+want to use the world when abort() is not simply the only case for
+complicated state, but the suggestion. My software isn't
+samurai-inspired kamikaze.
 
 
-Regards,
-Clemens
+-netch-
