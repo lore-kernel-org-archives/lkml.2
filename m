@@ -1,108 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab2D3TTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 15:19:42 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63402 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756515Ab2D3TTk (ORCPT
+	id S1756571Ab2D3TWZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 15:22:25 -0400
+Received: from citesht3.cites.illinois.edu ([192.17.212.153]:16986 "EHLO
+	citesht3.cites.illinois.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755999Ab2D3TWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 15:19:40 -0400
-Message-ID: <4F9EE5BF.9070005@openvz.org>
-Date: Mon, 30 Apr 2012 23:19:27 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Mon, 30 Apr 2012 15:22:24 -0400
+Message-ID: <4F9EE66E.1090009@illinois.edu>
+Date: Mon, 30 Apr 2012 14:22:22 -0500
+From: Matt Johnson <johnso87@illinois.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH bugfix] proc/pagemap: correctly report non-present ptes
- and holes between vmas
-References: <1335799542-8159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1335799542-8159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: <jgarzik@pobox.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH 1/1] ahci: Detect Marvell 88SE9172 SATA controller
+References: <4F9A3FD6.7060206@illinois.edu>
+In-Reply-To: <4F9A3FD6.7060206@illinois.edu>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naoya Horiguchi wrote:
-> Hi,
->
-> On Sat, Apr 28, 2012 at 08:22:30PM +0400, Konstantin Khlebnikov wrote:
->> This patch resets current pagemap-entry if current pte isn't present,
->> or if current vma is over. Otherwise pagemap reports last entry again and again.
->>
->> non-present pte reporting was broken in commit v3.3-3738-g092b50b
->> ("pagemap: introduce data structure for pagemap entry")
->>
->> reporting for holes was broken in commit v3.3-3734-g5aaabe8
->> ("pagemap: avoid splitting thp when reading /proc/pid/pagemap")
->>
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> Reported-by: Pavel Emelyanov<xemul@parallels.com>
->> Cc: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
->> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->> Cc: Andi Kleen<ak@linux.intel.com>
->
-> Thanks for your efforts.
-> I confirmed that this patch fixes the problem on v3.4-rc4.
-> But originally (before the commits you pointed to above) initializing
-> pagemap entries (originally labelled with confusing 'pfn') were done
-> in for-loop in pagemap_pte_range(), so I think it's better to get it
-> back to things like that.
->
-> How about the following?
+For a bit more context, the Z68X-UD3H-B3 has the SATA controllers provided
+by the Z68 chipset plus an extra 2 SATA3 ports from a Marvell 88SE9172-NNX2.
+The 4 lines on the chip on my board read:
+88SE9172-NNX2
+PAY4850.3
+1116 A1P
+TW
 
-I don't like this. Functions which returns void should always initialize its "output"
-argument, it much more clear than relying on preinitialized value.
+It seems that this chip is used on other boards as well
+(see http://www.techpowerup.com/reviews/Gigabyte/G1_Sniper2/5.html).
+I'm not sure whether 88SE9172-NNX2 is a distinct part from the 88SE9172, or
+whether the 'NNX2' is manufacturing metadata.
+In any case, drives connected to these 2 ports are not recognized at 
+boot time
+in the latest kernel.  I put /boot and the bootloader on a drive attached to
+one of the Marvell ports.  Grub worked fine, but I couldn't boot the kernel;
+it just dumped me to busybox.  Once in busybox, I could mount the drive with
+'echo 1b4b 917a > /sys/bus/pci/drivers/ahci/new_id', and Ctrl+d would exit
+busybox and boot the kernel successfully.
 
+Others have run into similar issues (see
+http://theangryangel.co.uk/blog/marvell-88se9172-sata3-under-linux-as-of-320 
+,
+which has been copy-pasted onto the Marvell chipset Wikipedia page
+http://en.wikipedia.org/wiki/List_of_Marvell_Technology_Group_chipsets ).
+The PCI ID suggested in the linked page (1b4b 9192) didn't work for me,
+which suggests that either the poster's chip was not a 88se9172, there
+are multiple revs of 88se9172 with different PCI IDs, or the -NNX2 is a
+distinct model with its own PCI ID.
+
+In any case, I think accepting this patch will make boards like mine work in
+the near term, and we can add additional PCI IDs and clarify the comments
+for similar chips as people report them or as we get clarification from
+Marvell.
+
+With this patch, the vanilla and Ubuntu kernels both boot flawlessly with
+the boot partition hanging off the Marvell controller.
+
+Thanks,
+Matt
+
+On 04/27/2012 01:42 AM, Matt Johnson wrote:
+> The Marvell 88SE9172 SATA controller (PCI ID 1b4b 917a) already worked
+> once it was detected, but was missing an ahci_pci_tbl entry.
+>
+> Boot tested on a Gigabyte Z68X-UD3H-B3 motherboard.
+>
+> Signed-off-by: Matt Johnson <johnso87@illinois.edu>
 > ---
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index 2b9a760..538f8d8 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -779,13 +779,14 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
->   	struct pagemapread *pm = walk->private;
->   	pte_t *pte;
->   	int err = 0;
-> -	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
-> +	pagemap_entry_t pme;
+>  drivers/ata/ahci.c |    2 ++
+>  1 file changed, 2 insertions(+)
 >
->   	/* find the first VMA at or above 'addr' */
->   	vma = find_vma(walk->mm, addr);
->   	if (pmd_trans_huge_lock(pmd, vma) == 1) {
->   		for (; addr != end; addr += PAGE_SIZE) {
->   			unsigned long offset;
-> +			pme = make_pme(PM_NOT_PRESENT);
+> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+> index 79a1e9d..ebaf67e 100644
+> --- a/drivers/ata/ahci.c
+> +++ b/drivers/ata/ahci.c
+> @@ -394,6 +394,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+>           .driver_data = board_ahci_yes_fbs },                  /* 
+> 88se9128 */
+>         { PCI_DEVICE(0x1b4b, 0x9125),
+>           .driver_data = board_ahci_yes_fbs },                  /* 
+> 88se9125 */
+> +       { PCI_DEVICE(0x1b4b, 0x917a),
+> +         .driver_data = board_ahci_yes_fbs },                  /* 
+> 88se9172 */
+>         { PCI_DEVICE(0x1b4b, 0x91a3),
+>           .driver_data = board_ahci_yes_fbs },
 >
->   			offset = (addr&  ~PAGEMAP_WALK_MASK)>>
->   					PAGE_SHIFT;
-> @@ -801,6 +802,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
->   	if (pmd_trans_unstable(pmd))
->   		return 0;
->   	for (; addr != end; addr += PAGE_SIZE) {
-> +		pme = make_pme(PM_NOT_PRESENT);
->
->   		/* check to see if we've left 'vma' behind
->   		 * and need a new, higher one */
-> @@ -842,10 +844,10 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
->   {
->   	struct pagemapread *pm = walk->private;
->   	int err = 0;
-> -	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
->
->   	for (; addr != end; addr += PAGE_SIZE) {
->   		int offset = (addr&  ~hmask)>>  PAGE_SHIFT;
-> +		pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
->   		huge_pte_to_pagemap_entry(&pme, *pte, offset);
->   		err = add_to_pagemap(addr,&pme, pm);
->   		if (err)
->
-> ---
-> Thanks,
-> Naoya
 
