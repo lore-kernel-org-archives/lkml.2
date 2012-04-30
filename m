@@ -1,92 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab2D3E5u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 00:57:50 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61445 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab2D3E4P (ORCPT
+	id S1755363Ab2D3FCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 01:02:30 -0400
+Received: from uhura.skim.hs-owl.de ([193.174.118.81]:38436 "EHLO
+	uhura.skim.hs-owl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078Ab2D3FC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 00:56:15 -0400
-X-AuditID: 9c930197-b7ca1ae0000069e6-6f-4f9e1b6c6d8e
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 2/7] perf ui: Drop arg[cv] arguments from perf_gtk_setup_browser()
-Date: Mon, 30 Apr 2012 13:55:06 +0900
-Message-Id: <1335761711-31403-3-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1335761711-31403-1-git-send-email-namhyung.kim@lge.com>
-References: <1335761711-31403-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 30 Apr 2012 01:02:29 -0400
+Message-ID: <4F9E1CDB.9020104@googlemail.com>
+Date: Mon, 30 Apr 2012 07:02:19 +0200
+From: Jan Seiffert <kaffeemonster@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Firefox/11.0 SeaMonkey/2.8
+MIME-Version: 1.0
+To: <netdev@vger.kernel.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>, <eric.dumazet@gmail.com>,
+        <matt@ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: [REGRESSION][PATCH V5 3/3] bpf jit: Let the powerpc jit handle negative
+ offsets
+References: <4F75CA89.4010709@googlemail.com>  <4F75D2A5.7060407@googlemail.com>  <20120403.180302.342779808900865443.davem@davemloft.net>  <1333491102.3040.12.camel@pasglop> <1335753820.20866.27.camel@pasglop> <1335759088.20866.32.camel@pasglop>
+In-Reply-To: <1335759088.20866.32.camel@pasglop>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Skim-SendBy: exchange.hs-owl.de on Mon, 30 Apr 2012 07:02:26 +0200
+X-SA-Exim-Connect-IP: 193.174.118.178
+X-SA-Exim-Mail-From: kaffeemonster@googlemail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As perf doesn't allow to specify gtk command-line option,
-drop the arguments and pass NULL to gtk_init(). This makes
-the function easier to be called from setup_browser().
+Now the helper function from filter.c for negative offsets is exported,
+it can be used it in the jit to handle negative offsets.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+First modify the asm load helper functions to handle:
+- know positive offsets
+- know negative offsets
+- any offset
+
+then the compiler can be modified to explicitly use these helper
+when appropriate.
+
+This fixes the case of a negative X register and allows to lift
+the restriction that bpf programs with negative offsets can't
+be jited.
+
+Tested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Jan Seiffert <kaffeemonster@googlemail.com>
 ---
- tools/perf/builtin-report.c |    2 +-
- tools/perf/ui/gtk/browser.c |    5 ++---
- tools/perf/util/cache.h     |    4 ++--
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ arch/powerpc/net/bpf_jit.h      |    8 +++-
+ arch/powerpc/net/bpf_jit_64.S   |  108 ++++++++++++++++++++++++++++++++++-----
+ arch/powerpc/net/bpf_jit_comp.c |   26 +++------
+ 3 files changed, 111 insertions(+), 31 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index cec2b8cee80c..2b20001848f5 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -678,7 +678,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+diff --git a/arch/powerpc/net/bpf_jit.h b/arch/powerpc/net/bpf_jit.h
+index af1ab5e..5c3cf2d 100644
+--- a/arch/powerpc/net/bpf_jit.h
++++ b/arch/powerpc/net/bpf_jit.h
+@@ -48,7 +48,13 @@
+ /*
+  * Assembly helpers from arch/powerpc/net/bpf_jit.S:
+  */
+-extern u8 sk_load_word[], sk_load_half[], sk_load_byte[], sk_load_byte_msh[];
++#define DECLARE_LOAD_FUNC(func)	\
++	extern u8 func[], func##_negative_offset[], func##_positive_offset[]
++
++DECLARE_LOAD_FUNC(sk_load_word);
++DECLARE_LOAD_FUNC(sk_load_half);
++DECLARE_LOAD_FUNC(sk_load_byte);
++DECLARE_LOAD_FUNC(sk_load_byte_msh);
  
- 	if (strcmp(report.input_name, "-") != 0) {
- 		if (report.use_gtk)
--			perf_gtk_setup_browser(argc, argv, true);
-+			perf_gtk_setup_browser(true);
- 		else
- 			setup_browser(true);
- 	} else {
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index 258352a2356c..a1a83de3f459 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -9,10 +9,9 @@
+ #define FUNCTION_DESCR_SIZE	24
  
- #define MAX_COLUMNS			32
+diff --git a/arch/powerpc/net/bpf_jit_64.S b/arch/powerpc/net/bpf_jit_64.S
+index ff4506e..55ba385 100644
+--- a/arch/powerpc/net/bpf_jit_64.S
++++ b/arch/powerpc/net/bpf_jit_64.S
+@@ -31,14 +31,13 @@
+  * then branch directly to slow_path_XXX if required.  (In fact, could
+  * load a spare GPR with the address of slow_path_generic and pass size
+  * as an argument, making the call site a mtlr, li and bllr.)
+- *
+- * Technically, the "is addr < 0" check is unnecessary & slowing down
+- * the ABS path, as it's statically checked on generation.
+  */
+ 	.globl	sk_load_word
+ sk_load_word:
+ 	cmpdi	r_addr, 0
+-	blt	bpf_error
++	blt	bpf_slow_path_word_neg
++	.globl	sk_load_word_positive_offset
++sk_load_word_positive_offset:
+ 	/* Are we accessing past headlen? */
+ 	subi	r_scratch1, r_HL, 4
+ 	cmpd	r_scratch1, r_addr
+@@ -51,7 +50,9 @@ sk_load_word:
+ 	.globl	sk_load_half
+ sk_load_half:
+ 	cmpdi	r_addr, 0
+-	blt	bpf_error
++	blt	bpf_slow_path_half_neg
++	.globl	sk_load_half_positive_offset
++sk_load_half_positive_offset:
+ 	subi	r_scratch1, r_HL, 2
+ 	cmpd	r_scratch1, r_addr
+ 	blt	bpf_slow_path_half
+@@ -61,7 +62,9 @@ sk_load_half:
+ 	.globl	sk_load_byte
+ sk_load_byte:
+ 	cmpdi	r_addr, 0
+-	blt	bpf_error
++	blt	bpf_slow_path_byte_neg
++	.globl	sk_load_byte_positive_offset
++sk_load_byte_positive_offset:
+ 	cmpd	r_HL, r_addr
+ 	ble	bpf_slow_path_byte
+ 	lbzx	r_A, r_D, r_addr
+@@ -69,22 +72,20 @@ sk_load_byte:
  
--void perf_gtk_setup_browser(int argc, const char *argv[],
--			    bool fallback_to_pager __used)
-+void perf_gtk_setup_browser(bool fallback_to_pager __used)
- {
--	gtk_init(&argc, (char ***)&argv);
-+	gtk_init(NULL, NULL);
+ /*
+  * BPF_S_LDX_B_MSH: ldxb  4*([offset]&0xf)
+- * r_addr is the offset value, already known positive
++ * r_addr is the offset value
+  */
+ 	.globl sk_load_byte_msh
+ sk_load_byte_msh:
++	cmpdi	r_addr, 0
++	blt	bpf_slow_path_byte_msh_neg
++	.globl sk_load_byte_msh_positive_offset
++sk_load_byte_msh_positive_offset:
+ 	cmpd	r_HL, r_addr
+ 	ble	bpf_slow_path_byte_msh
+ 	lbzx	r_X, r_D, r_addr
+ 	rlwinm	r_X, r_X, 2, 32-4-2, 31-2
+ 	blr
+ 
+-bpf_error:
+-	/* Entered with cr0 = lt */
+-	li	r3, 0
+-	/* Generated code will 'blt epilogue', returning 0. */
+-	blr
+-
+ /* Call out to skb_copy_bits:
+  * We'll need to back up our volatile regs first; we have
+  * local variable space at r1+(BPF_PPC_STACK_BASIC).
+@@ -136,3 +137,84 @@ bpf_slow_path_byte_msh:
+ 	lbz	r_X, BPF_PPC_STACK_BASIC+(2*8)(r1)
+ 	rlwinm	r_X, r_X, 2, 32-4-2, 31-2
+ 	blr
++
++/* Call out to bpf_internal_load_pointer_neg_helper:
++ * We'll need to back up our volatile regs first; we have
++ * local variable space at r1+(BPF_PPC_STACK_BASIC).
++ * Allocate a new stack frame here to remain ABI-compliant in
++ * stashing LR.
++ */
++#define sk_negative_common(SIZE)				\
++	mflr	r0;						\
++	std	r0, 16(r1);					\
++	/* R3 goes in parameter space of caller's frame */	\
++	std	r_skb, (BPF_PPC_STACKFRAME+48)(r1);		\
++	std	r_A, (BPF_PPC_STACK_BASIC+(0*8))(r1);		\
++	std	r_X, (BPF_PPC_STACK_BASIC+(1*8))(r1);		\
++	stdu	r1, -BPF_PPC_SLOWPATH_FRAME(r1);		\
++	/* R3 = r_skb, as passed */				\
++	mr	r4, r_addr;					\
++	li	r5, SIZE;					\
++	bl	bpf_internal_load_pointer_neg_helper;		\
++	/* R3 != 0 on success */				\
++	addi	r1, r1, BPF_PPC_SLOWPATH_FRAME;			\
++	ld	r0, 16(r1);					\
++	ld	r_A, (BPF_PPC_STACK_BASIC+(0*8))(r1);		\
++	ld	r_X, (BPF_PPC_STACK_BASIC+(1*8))(r1);		\
++	mtlr	r0;						\
++	cmpldi	r3, 0;						\
++	beq	bpf_error_slow;	/* cr0 = EQ */			\
++	mr	r_addr, r3;					\
++	ld	r_skb, (BPF_PPC_STACKFRAME+48)(r1);		\
++	/* Great success! */
++
++bpf_slow_path_word_neg:
++	lis     r_scratch1,-32	/* SKF_LL_OFF */
++	cmpd	r_addr, r_scratch1	/* addr < SKF_* */
++	blt	bpf_error	/* cr0 = LT */
++	.globl	sk_load_word_negative_offset
++sk_load_word_negative_offset:
++	sk_negative_common(4)
++	lwz	r_A, 0(r_addr)
++	blr
++
++bpf_slow_path_half_neg:
++	lis     r_scratch1,-32	/* SKF_LL_OFF */
++	cmpd	r_addr, r_scratch1	/* addr < SKF_* */
++	blt	bpf_error	/* cr0 = LT */
++	.globl	sk_load_half_negative_offset
++sk_load_half_negative_offset:
++	sk_negative_common(2)
++	lhz	r_A, 0(r_addr)
++	blr
++
++bpf_slow_path_byte_neg:
++	lis     r_scratch1,-32	/* SKF_LL_OFF */
++	cmpd	r_addr, r_scratch1	/* addr < SKF_* */
++	blt	bpf_error	/* cr0 = LT */
++	.globl	sk_load_byte_negative_offset
++sk_load_byte_negative_offset:
++	sk_negative_common(1)
++	lbz	r_A, 0(r_addr)
++	blr
++
++bpf_slow_path_byte_msh_neg:
++	lis     r_scratch1,-32	/* SKF_LL_OFF */
++	cmpd	r_addr, r_scratch1	/* addr < SKF_* */
++	blt	bpf_error	/* cr0 = LT */
++	.globl	sk_load_byte_msh_negative_offset
++sk_load_byte_msh_negative_offset:
++	sk_negative_common(1)
++	lbz	r_X, 0(r_addr)
++	rlwinm	r_X, r_X, 2, 32-4-2, 31-2
++	blr
++
++bpf_error_slow:
++	/* fabricate a cr0 = lt */
++	li	r_scratch1, -1
++	cmpdi	r_scratch1, 0
++bpf_error:
++	/* Entered with cr0 = lt */
++	li	r3, 0
++	/* Generated code will 'blt epilogue', returning 0. */
++	blr
+diff --git a/arch/powerpc/net/bpf_jit_comp.c b/arch/powerpc/net/bpf_jit_comp.c
+index 73619d3..2dc8b14 100644
+--- a/arch/powerpc/net/bpf_jit_comp.c
++++ b/arch/powerpc/net/bpf_jit_comp.c
+@@ -127,6 +127,9 @@ static void bpf_jit_build_epilogue(u32 *image, struct codegen_context *ctx)
+ 	PPC_BLR();
  }
  
- void perf_gtk_exit_browser(bool wait_for_ok __used)
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 8dd224df3e54..d22ca689fb15 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -46,14 +46,14 @@ void exit_browser(bool wait_for_ok);
- #endif
++#define CHOOSE_LOAD_FUNC(K, func) \
++	((int)K < 0 ? ((int)K >= SKF_LL_OFF ? func##_negative_offset : func) : func##_positive_offset)
++
+ /* Assemble the body code between the prologue & epilogue. */
+ static int bpf_jit_build_body(struct sk_filter *fp, u32 *image,
+ 			      struct codegen_context *ctx,
+@@ -391,21 +394,16 @@ static int bpf_jit_build_body(struct sk_filter *fp, u32 *image,
  
- #ifdef NO_GTK2_SUPPORT
--static inline void perf_gtk_setup_browser(int argc __used, const char *argv[] __used, bool fallback_to_pager)
-+static inline void perf_gtk_setup_browser(bool fallback_to_pager)
- {
- 	if (fallback_to_pager)
- 		setup_pager();
- }
- static inline void perf_gtk_exit_browser(bool wait_for_ok __used) {}
- #else
--void perf_gtk_setup_browser(int argc, const char *argv[], bool fallback_to_pager);
-+void perf_gtk_setup_browser(bool fallback_to_pager);
- void perf_gtk_exit_browser(bool wait_for_ok);
- #endif
+ 			/*** Absolute loads from packet header/data ***/
+ 		case BPF_S_LD_W_ABS:
+-			func = sk_load_word;
++			func = CHOOSE_LOAD_FUNC(K, sk_load_word);
+ 			goto common_load;
+ 		case BPF_S_LD_H_ABS:
+-			func = sk_load_half;
++			func = CHOOSE_LOAD_FUNC(K, sk_load_half);
+ 			goto common_load;
+ 		case BPF_S_LD_B_ABS:
+-			func = sk_load_byte;
++			func = CHOOSE_LOAD_FUNC(K, sk_load_byte);
+ 		common_load:
+-			/*
+-			 * Load from [K].  Reference with the (negative)
+-			 * SKF_NET_OFF/SKF_LL_OFF offsets is unsupported.
+-			 */
++			/* Load from [K]. */
+ 			ctx->seen |= SEEN_DATAREF;
+-			if ((int)K < 0)
+-				return -ENOTSUPP;
+ 			PPC_LI64(r_scratch1, func);
+ 			PPC_MTLR(r_scratch1);
+ 			PPC_LI32(r_addr, K);
+@@ -429,7 +427,7 @@ static int bpf_jit_build_body(struct sk_filter *fp, u32 *image,
+ 		common_load_ind:
+ 			/*
+ 			 * Load from [X + K].  Negative offsets are tested for
+-			 * in the helper functions, and result in a 'ret 0'.
++			 * in the helper functions.
+ 			 */
+ 			ctx->seen |= SEEN_DATAREF | SEEN_XREG;
+ 			PPC_LI64(r_scratch1, func);
+@@ -443,13 +441,7 @@ static int bpf_jit_build_body(struct sk_filter *fp, u32 *image,
+ 			break;
  
--- 
-1.7.10
+ 		case BPF_S_LDX_B_MSH:
+-			/*
+-			 * x86 version drops packet (RET 0) when K<0, whereas
+-			 * interpreter does allow K<0 (__load_pointer, special
+-			 * ancillary data).  common_load returns ENOTSUPP if K<0,
+-			 * so we fall back to interpreter & filter works.
+-			 */
+-			func = sk_load_byte_msh;
++			func = CHOOSE_LOAD_FUNC(K, sk_load_byte_msh);
+ 			goto common_load;
+ 			break;
+ 
+
 
