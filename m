@@ -1,473 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab2D3U4v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:56:51 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:59932 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385Ab2D3U4s convert rfc822-to-8bit (ORCPT
+	id S1757057Ab2D3U5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:57:10 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:54365 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756582Ab2D3U5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:56:48 -0400
+	Mon, 30 Apr 2012 16:57:07 -0400
+Message-ID: <4F9EFC70.50405@linaro.org>
+Date: Mon, 30 Apr 2012 13:56:16 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <1335138820-26590-6-git-send-email-glommer@parallels.com>
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
-	<1335138820-26590-6-git-send-email-glommer@parallels.com>
-Date: Mon, 30 Apr 2012 13:56:46 -0700
-Message-ID: <CABCjUKBk=RTCoH34XOQHxRsSp0G5iwtgeBKtdNEUeTE5kx07Vg@mail.gmail.com>
-Subject: Re: [PATCH 17/23] kmem controller charge/uncharge infrastructure
-From: Suleiman Souhlal <suleiman@google.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        fweisbec@gmail.com, Greg Thelen <gthelen@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Richard Cochran <richardcochran@gmail.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V1 0/5] Rationalize time keeping
+References: <cover.1335510125.git.richardcochran@gmail.com> <4F9B228F.90903@linaro.org> <20120428080443.GA2241@netboy.at.omicron.at>
+In-Reply-To: <20120428080443.GA2241@netboy.at.omicron.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12043020-7408-0000-0000-0000049E97FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 22, 2012 at 4:53 PM, Glauber Costa <glommer@parallels.com> wrote:
-> With all the dependencies already in place, this patch introduces
-> the charge/uncharge functions for the slab cache accounting in memcg.
+On 04/28/2012 01:04 AM, Richard Cochran wrote:
+> On Fri, Apr 27, 2012 at 03:49:51PM -0700, John Stultz wrote:
+>> On 04/27/2012 01:12 AM, Richard Cochran wrote:
+>>> * Benefits
+>>>    - Fixes the buggy, inconsistent time reporting surrounding a leap
+>>>      second event.
+>> Just to clarify this, so we've got the right scope on the problem,
+>> you're trying to address the fact that the leap second is not
+>> actually applied until the tick after the leap second, correct?
+> That is one problem, yes.
 >
-> Before we can charge a cache, we need to select the right cache.
-> This is done by using the function __mem_cgroup_get_kmem_cache().
+>> Where basically you can see small offsets like:
+> I can synchronize over the network to under 100 nanoseconds, so to me,
+> one second is a large offset.
+
+Well, the leap-offset is a second, but when it arrives is only 
+tick-accurate. :)
+
+
+>> My only concern is how we
+>> manage it along with possible smeared-leap-seconds ala:
+>> http://googleblog.blogspot.com/2011/09/time-technology-and-leaping-seconds.html
+>>
+>> ( I shudder at the idea of managing two separate frequency
+>> corrections for different time domains).
+> Are you planning to implement that? This approach is by no means
+> universally accepted.
+
+No no.  I have no plans there.
+
+> In my view, what Google is doing is hack (albeit a sensible for
+> business applications). For test and measurement or scientific
+> applications, it does not make sense to introduce artifical frequency
+> errors in this way.
+
+True, although even if it is a hack, google *is* using it.  My concern 
+is that if CLOCK_REALTIME  is smeared to avoid a leap second jump, in 
+that environment we cannot also accurate provide a correct CLOCK_TAI.  
+So far that's not been a problem, because CLOCK_TAI isn't a clockid we 
+yet support.  But the expectations bar always rises, so I suspect once 
+we have a CLOCK_TAI, someone will want us to handle smeared-leap seconds 
+without affecting CLOCK_TAI's correctness.
+
+
+> Another variant of this idea: http://www.cl.cam.ac.uk/~mgk25/time/utc-sls/
 >
-> If we should use the root kmem cache, this function tries to detect
-> that and return as early as possible.
+> Here is a nice quote from that page:
 >
-> The charge and uncharge functions comes in two flavours:
->  * __mem_cgroup_(un)charge_slab(), that assumes the allocation is
->   a slab page, and
->  * __mem_cgroup_(un)charge_kmem(), that does not. This later exists
->   because the slub allocator draws the larger kmalloc allocations
->   from the page allocator.
+>     All other objections to UTC-SLS that I heard were not directed
+>     against its specific design choices, but against the (very well
+>     established) practice of using UTC at all in the applications that
+>     this proposal targets:
 >
-> In memcontrol.h those functions are wrapped in inline acessors.
-> The idea is to later on, patch those with jump labels, so we don't
-> incur any overhead when no mem cgroups are being used.
+>     * Some people argue that operating system interfaces, such as the
+>       POSIX "seconds since the epoch" scale used in time_t APIs, should
+>       be changed from being an encoding of UTC to being an encoding of
+>       the leap-second free TAI timescale.
 >
-> Because the slub allocator tends to inline the allocations whenever
-> it can, those functions need to be exported so modules can make use
-> of it properly.
+>     * Some people want to go even further and abandon UTC and leap
+>       seconds entirely, detach all civilian time zones from the
+>       rotation of Earth, and redefine them purely based on atomic time.
 >
-> I apologize in advance to the reviewers. This patch is quite big, but
-> I was not able to split it any further due to all the dependencies
-> between the code.
+>     While these people are usually happy to agree that UTC-SLS is a
+>     sensible engineering solution as long as UTC remains the main time
+>     basis of distributed computing, they argue that this is just a
+>     workaround that will be obsolete once their grand vision of giving
+>     up UTC entirely has become true, and that it is therefore just an
+>     unwelcome distraction from their ultimate goal.
+I think this last point is very telling. Neither of the above options 
+are really viable in my mind, as I don't see any real consensus to 
+giving up UTC.  What is in-practice is actually way more important then 
+where folks wish things would go.
+
+> Until the whole world agrees to this "work around" I think we should
+> stick to current standards. If and when this practice becomes
+> standardized (I'm not holding my breath), then we could simply drop
+> the internal difference between the kernel time scale and UTC, and
+> steer out the leap second synchronously with the rest of the world.
+Well, I think that Google shows some folks are starting to use 
+workarounds like smeared-leap-seconds/UTC-SLS. So its something we 
+should watch carefully and expect more folks to follow.  Its true that 
+you don't want to mix UTC-SLS and standard UTC time domains, but its 
+likely this will be a site-specific configuration.
+
+So its a concern when a correct CLOCK_TAI would be incompatible on 
+systems using these hacks/workarounds.
+
+
+>>> * Performance Impacts
+>>> ** con
+>>>     - Small extra cost when reading the time (one integer addition plus
+>>>       one integer test).
+>> This may not be so small when it comes to folks who are very
+>> concerned about the clock_gettime hotpath.
+> If you would support the option to only insert leap seconds, then the
+> cost is one integer addition and one integer test.
+
+*Any* extra work is a big deal to folks who are sensitive to 
+clock_gettime performance.
+That said, I don't see why its more complicated to also handle leap removal?
+
+> Also, once we have a rational time interface (like CLOCK_TAI), then
+> time sensitive will want to use that instead anyhow.
+Well, performance sensitive and correctness sensitive are two different 
+things. :) I think CLOCK_TAI is much cleaner for things, but at the same 
+time, the world "thinks" in UTC, and converting between them isn't 
+always trivial (very similar to the timezone presentation layer, which 
+isn't fun). So I'd temper any hopes of mass conversion. :)
+
+>> Further, the correction will be needed to be made in the vsyscall
+>> paths, which isn't done with your current patchset (causing userland
+>> to see different time values then what kernel space calculates).
+> Do you mean __current_kernel_time? What did I miss?
+No. So, on architectures that support vsyscalls/vdso (x86_64, powerpc, 
+ia64, and maybe a few others) getnstimeofday() is really only an 
+internal interface for in-kernel access. Userland uses the vsyscall/vdso 
+interface to be able to read the time completely from userland context 
+(with no syscall overhead). Since this is done in different ways for 
+each architecture, you need to export the proper information out via 
+update_vsyscall() and also update the arch-specific vsyscall 
+gettimeofday paths (which is non-trivial, as some arches are implemented 
+in asm, etc - my sympathies here, its a pain).
+
+
+>> One possible thing to consider? Since the TIME_OOP flag is only
+>> visible via the adjtimex() interface, maybe it alone should have the
+>> extra overhead of the conditional?
+> This would mean that you would have to do the conditional somehow
+> backwards in order to provide TAI time values. To me, the logical way
+> is to keep a continuous time scale, and then compute UTC from it.
+
+? Not sure I'm following you here.
+
+What I'm recommending, is even if you rework the kernel so that it 
+constructs time as follows:
+
+CLOCK_TAI = CLOCK_MONOTONIC + monotonic_to_tai
+CLOCK_REALTIME = CLOCK_TAI + tai_to_utc
+
+The  adjustment made to tai_to_utc by the leap second would still be 
+changed at tick time, but the logic to avoid the sub-tick inconsistency 
+at the second edge would be only made to the adjtimex() interface. Thus 
+for folks who really care about leap seconds, who already need to use 
+adjtimex in order to detect the TIME_OOP flag would get the very correct 
+time value, but the performance sensitive users of clock_gettime 
+wouldn't be affected.
+
+>> I'm not excited about the
+>> gettimeofday field returned by adjtimex not matching what
+>> gettimeofday actually provides for that single-tick interval, but
+>> maybe its a reasonable middle ground?
+> Not sure what you mean, but to me it is not acceptable to deliver
+> inconsistent time values to userspace!
+For users of clock_gettime/gettimeofday, a leapsecond is an 
+inconsistency. Neither interfaces provide a way to detect that the 
+TIME_OOP flag is set and its not 23:59:59 again, but 23:59:60 (which 
+can't be represented by a time_t).  Thus even if the behavior was 
+perfect, and the leapsecond landed at exactly the second edge, it is 
+still a time hiccup to most applications anyway.
+
+Thus, most of userland doesn't really care if the hiccup happens up to a 
+tick after the second's edge. They don't expect it anyway.  So they 
+really don't want a constant performance drop in order for the hiccup to 
+be more "correct" when it happens.  :)
+
+That's why I'm suggesting that you consider starting by modifying the 
+adjtimex() interface. Any application that actually cares about 
+leapseconds should be using adjtimex() since its the only interface that 
+allows you to realize that's whats happening. Its not a performance 
+optimized path, and so its a fine candidate for being slow-but-correct.
+
+My only concern there is that it would cause problems when mixing 
+adjtimex() calls with clock_gettime() calls, because you could have a 
+tick-length of time when they report different time values. But this may 
+be acceptable.
+
+
+>>> ** pro
+>>>     - Removes repetitive, periodic division (secs % 86400 == 0) the whole
+>>>       day long preceding a leap second.
+>>>     - Cost of maintaining leap second status goes to the user of the
+>>>       NTP adjtimex() interface, if any.
+>> Not sure I follow this last point. How are we pushing this
+>> maintenance to adjtimex() users?
+> Only adjtimex calls timekeeper_gettod_status, where the leap second is
+> calculated, outside of timekeeper.lock, on the NTP user space's kernel
+> time.
+So its not really a cost-of-maintaining, but a cost-of-calculation.  We 
+only calculate the next leap second when its provided via adjtimex 
+rather then doing the check periodically in the kernel.
+
+> In current Linux, the modulus is done in update_wall_time and
+> logarithmic_accumulation, on kernel time.
 >
-> This code is inspired by the code written by Suleiman Souhlal,
-> but heavily changed.
->
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
-> ---
->  include/linux/memcontrol.h |   68 ++++++++
->  init/Kconfig               |    2 +-
->  mm/memcontrol.c            |  373 +++++++++++++++++++++++++++++++++++++++++++-
->  3 files changed, 441 insertions(+), 2 deletions(-)
->
+>>> * Todo
+>>>    - The function __current_kernel_time accesses the time variables
+>>>      without taking the lock. I can't figure that out.
+>>>
+>> There's a few cases where we want the current second value when we
+>> already hold the xtime_lock, or we might possibly hold the
+>> xtime_lock. Its an special internal interface for special users
+>> (update_vsyscall, for example).
+> What about kdb_summary?
+I don't know the kdb patch especially well, but I suspect kdb_summary 
+might be triggered at unexpected times if you're trying to debug a 
+remote kernel. Thus we want to be able to get the time_t value (which 
+can be read safely without a lock on most systems)  without trying to 
+grab a lock that might be held. This avoids deadlock  should kdb be 
+blocking the lock-holder from running.
 
-> +
-> +static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-> +                                                 struct kmem_cache *cachep)
-> +{
-> +       struct kmem_cache *new_cachep;
-> +       int idx;
-> +
-> +       BUG_ON(!mem_cgroup_kmem_enabled(memcg));
-> +
-> +       idx = cachep->memcg_params.id;
-> +
-> +       mutex_lock(&memcg_cache_mutex);
-> +       new_cachep = memcg->slabs[idx];
-> +       if (new_cachep)
-> +               goto out;
-> +
-> +       new_cachep = kmem_cache_dup(memcg, cachep);
-> +
-> +       if (new_cachep == NULL) {
-> +               new_cachep = cachep;
-> +               goto out;
-> +       }
-> +
-> +       mem_cgroup_get(memcg);
-> +       memcg->slabs[idx] = new_cachep;
-> +       new_cachep->memcg_params.memcg = memcg;
-> +out:
-> +       mutex_unlock(&memcg_cache_mutex);
-> +       return new_cachep;
-> +}
-> +
-> +struct create_work {
-> +       struct mem_cgroup *memcg;
-> +       struct kmem_cache *cachep;
-> +       struct list_head list;
-> +};
-> +
-> +/* Use a single spinlock for destruction and creation, not a frequent op */
-> +static DEFINE_SPINLOCK(cache_queue_lock);
-> +static LIST_HEAD(create_queue);
-> +static LIST_HEAD(destroyed_caches);
-> +
-> +static void kmem_cache_destroy_work_func(struct work_struct *w)
-> +{
-> +       struct kmem_cache *cachep;
-> +       char *name;
-> +
-> +       spin_lock_irq(&cache_queue_lock);
-> +       while (!list_empty(&destroyed_caches)) {
-> +               cachep = container_of(list_first_entry(&destroyed_caches,
-> +                   struct mem_cgroup_cache_params, destroyed_list), struct
-> +                   kmem_cache, memcg_params);
-> +               name = (char *)cachep->name;
-> +               list_del(&cachep->memcg_params.destroyed_list);
-> +               spin_unlock_irq(&cache_queue_lock);
-> +               synchronize_rcu();
+thanks
+-john
 
-Is this synchronize_rcu() still needed, now that we don't use RCU to
-protect memcgs from disappearing during allocation anymore?
-
-Also, should we drop the memcg reference we got in
-memcg_create_kmem_cache() here?
-
-> +               kmem_cache_destroy(cachep);
-> +               kfree(name);
-> +               spin_lock_irq(&cache_queue_lock);
-> +       }
-> +       spin_unlock_irq(&cache_queue_lock);
-> +}
-> +static DECLARE_WORK(kmem_cache_destroy_work, kmem_cache_destroy_work_func);
-> +
-> +void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
-> +{
-> +       unsigned long flags;
-> +
-> +       BUG_ON(cachep->memcg_params.id != -1);
-> +
-> +       /*
-> +        * We have to defer the actual destroying to a workqueue, because
-> +        * we might currently be in a context that cannot sleep.
-> +        */
-> +       spin_lock_irqsave(&cache_queue_lock, flags);
-> +       list_add(&cachep->memcg_params.destroyed_list, &destroyed_caches);
-> +       spin_unlock_irqrestore(&cache_queue_lock, flags);
-> +
-> +       schedule_work(&kmem_cache_destroy_work);
-> +}
-> +
-> +
-> +/*
-> + * Flush the queue of kmem_caches to create, because we're creating a cgroup.
-> + *
-> + * We might end up flushing other cgroups' creation requests as well, but
-> + * they will just get queued again next time someone tries to make a slab
-> + * allocation for them.
-> + */
-> +void mem_cgroup_flush_cache_create_queue(void)
-> +{
-> +       struct create_work *cw, *tmp;
-> +       unsigned long flags;
-> +
-> +       spin_lock_irqsave(&cache_queue_lock, flags);
-> +       list_for_each_entry_safe(cw, tmp, &create_queue, list) {
-> +               list_del(&cw->list);
-> +               kfree(cw);
-> +       }
-> +       spin_unlock_irqrestore(&cache_queue_lock, flags);
-> +}
-> +
-> +static void memcg_create_cache_work_func(struct work_struct *w)
-> +{
-> +       struct kmem_cache *cachep;
-> +       struct create_work *cw;
-> +
-> +       spin_lock_irq(&cache_queue_lock);
-> +       while (!list_empty(&create_queue)) {
-> +               cw = list_first_entry(&create_queue, struct create_work, list);
-> +               list_del(&cw->list);
-> +               spin_unlock_irq(&cache_queue_lock);
-> +               cachep = memcg_create_kmem_cache(cw->memcg, cw->cachep);
-> +               if (cachep == NULL)
-> +                       printk(KERN_ALERT
-> +                       "%s: Couldn't create memcg-cache for %s memcg %s\n",
-> +                       __func__, cw->cachep->name,
-> +                       cw->memcg->css.cgroup->dentry->d_name.name);
-
-We might need rcu_dereference() here (and hold rcu_read_lock()).
-Or we could just remove this message.
-
-> +               /* Drop the reference gotten when we enqueued. */
-> +               css_put(&cw->memcg->css);
-> +               kfree(cw);
-> +               spin_lock_irq(&cache_queue_lock);
-> +       }
-> +       spin_unlock_irq(&cache_queue_lock);
-> +}
-> +
-> +static DECLARE_WORK(memcg_create_cache_work, memcg_create_cache_work_func);
-> +
-> +/*
-> + * Enqueue the creation of a per-memcg kmem_cache.
-> + * Called with rcu_read_lock.
-> + */
-> +static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
-> +                                      struct kmem_cache *cachep)
-> +{
-> +       struct create_work *cw;
-> +       unsigned long flags;
-> +
-> +       spin_lock_irqsave(&cache_queue_lock, flags);
-> +       list_for_each_entry(cw, &create_queue, list) {
-> +               if (cw->memcg == memcg && cw->cachep == cachep) {
-> +                       spin_unlock_irqrestore(&cache_queue_lock, flags);
-> +                       return;
-> +               }
-> +       }
-> +       spin_unlock_irqrestore(&cache_queue_lock, flags);
-> +
-> +       /* The corresponding put will be done in the workqueue. */
-> +       if (!css_tryget(&memcg->css))
-> +               return;
-> +
-> +       cw = kmalloc_no_account(sizeof(struct create_work), GFP_NOWAIT);
-> +       if (cw == NULL) {
-> +               css_put(&memcg->css);
-> +               return;
-> +       }
-> +
-> +       cw->memcg = memcg;
-> +       cw->cachep = cachep;
-> +       spin_lock_irqsave(&cache_queue_lock, flags);
-> +       list_add_tail(&cw->list, &create_queue);
-> +       spin_unlock_irqrestore(&cache_queue_lock, flags);
-> +
-> +       schedule_work(&memcg_create_cache_work);
-> +}
-> +
-> +/*
-> + * Return the kmem_cache we're supposed to use for a slab allocation.
-> + * If we are in interrupt context or otherwise have an allocation that
-> + * can't fail, we return the original cache.
-> + * Otherwise, we will try to use the current memcg's version of the cache.
-> + *
-> + * If the cache does not exist yet, if we are the first user of it,
-> + * we either create it immediately, if possible, or create it asynchronously
-> + * in a workqueue.
-> + * In the latter case, we will let the current allocation go through with
-> + * the original cache.
-> + *
-> + * This function returns with rcu_read_lock() held.
-> + */
-> +struct kmem_cache *__mem_cgroup_get_kmem_cache(struct kmem_cache *cachep,
-> +                                            gfp_t gfp)
-> +{
-> +       struct mem_cgroup *memcg;
-> +       int idx;
-> +
-> +       gfp |=  cachep->allocflags;
-> +
-> +       if ((current->mm == NULL))
-> +               return cachep;
-> +
-> +       if (cachep->memcg_params.memcg)
-> +               return cachep;
-> +
-> +       idx = cachep->memcg_params.id;
-> +       VM_BUG_ON(idx == -1);
-> +
-> +       memcg = mem_cgroup_from_task(current);
-> +       if (!mem_cgroup_kmem_enabled(memcg))
-> +               return cachep;
-> +
-> +       if (rcu_access_pointer(memcg->slabs[idx]) == NULL) {
-> +               memcg_create_cache_enqueue(memcg, cachep);
-> +               return cachep;
-> +       }
-> +
-> +       return rcu_dereference(memcg->slabs[idx]);
-
-Is it ok to call rcu_access_pointer() and rcu_dereference() without
-holding rcu_read_lock()?
-
-> +}
-> +EXPORT_SYMBOL(__mem_cgroup_get_kmem_cache);
-> +
-> +void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id)
-> +{
-> +       rcu_assign_pointer(cachep->memcg_params.memcg->slabs[id], NULL);
-> +}
-> +
-> +bool __mem_cgroup_charge_kmem(gfp_t gfp, size_t size)
-> +{
-> +       struct mem_cgroup *memcg;
-> +       bool ret = true;
-> +
-> +       rcu_read_lock();
-> +       memcg = mem_cgroup_from_task(current);
-> +
-> +       if (!mem_cgroup_kmem_enabled(memcg))
-> +               goto out;
-> +
-> +       mem_cgroup_get(memcg);
-
-Why do we need to get a reference to the memcg for every charge?
-How will this work when deleting a memcg?
-
-> +       ret = memcg_charge_kmem(memcg, gfp, size) == 0;
-> +       if (ret)
-> +               mem_cgroup_put(memcg);
-> +out:
-> +       rcu_read_unlock();
-> +       return ret;
-> +}
-> +EXPORT_SYMBOL(__mem_cgroup_charge_kmem);
-> +
-> +void __mem_cgroup_uncharge_kmem(size_t size)
-> +{
-> +       struct mem_cgroup *memcg;
-> +
-> +       rcu_read_lock();
-> +       memcg = mem_cgroup_from_task(current);
-> +
-> +       if (!mem_cgroup_kmem_enabled(memcg))
-> +               goto out;
-> +
-> +       mem_cgroup_put(memcg);
-> +       memcg_uncharge_kmem(memcg, size);
-> +out:
-> +       rcu_read_unlock();
-> +}
-> +EXPORT_SYMBOL(__mem_cgroup_uncharge_kmem);
-> +
-> +bool __mem_cgroup_charge_slab(struct kmem_cache *cachep, gfp_t gfp, size_t size)
-> +{
-> +       struct mem_cgroup *memcg;
-> +       bool ret = true;
-> +
-> +       rcu_read_lock();
-> +       memcg = cachep->memcg_params.memcg;
-> +       if (!mem_cgroup_kmem_enabled(memcg))
-> +               goto out;
-> +
-> +       ret = memcg_charge_kmem(memcg, gfp, size) == 0;
-> +out:
-> +       rcu_read_unlock();
-> +       return ret;
-> +}
-> +EXPORT_SYMBOL(__mem_cgroup_charge_slab);
-> +
-> +void __mem_cgroup_uncharge_slab(struct kmem_cache *cachep, size_t size)
-> +{
-> +       struct mem_cgroup *memcg;
-> +
-> +       rcu_read_lock();
-> +       memcg = cachep->memcg_params.memcg;
-> +
-> +       if (!mem_cgroup_kmem_enabled(memcg)) {
-> +               rcu_read_unlock();
-> +               return;
-> +       }
-> +       rcu_read_unlock();
-> +
-> +       memcg_uncharge_kmem(memcg, size);
-> +}
-> +EXPORT_SYMBOL(__mem_cgroup_uncharge_slab);
-> +
-> +static void memcg_slab_init(struct mem_cgroup *memcg)
-> +{
-> +       int i;
-> +
-> +       for (i = 0; i < MAX_KMEM_CACHE_TYPES; i++)
-> +               rcu_assign_pointer(memcg->slabs[i], NULL);
-> +}
->  #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
->
->  static void drain_all_stock_async(struct mem_cgroup *memcg);
-> @@ -4790,7 +5103,11 @@ static struct cftype kmem_cgroup_files[] = {
->
->  static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->  {
-> -       return mem_cgroup_sockets_init(memcg, ss);
-> +       int ret = mem_cgroup_sockets_init(memcg, ss);
-> +
-> +       if (!ret)
-> +               memcg_slab_init(memcg);
-> +       return ret;
->  };
->
->  static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
-> @@ -5805,3 +6122,57 @@ static int __init enable_swap_account(char *s)
->  __setup("swapaccount=", enable_swap_account);
->
->  #endif
-> +
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> +int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta)
-> +{
-> +       struct res_counter *fail_res;
-> +       struct mem_cgroup *_memcg;
-> +       int may_oom, ret;
-> +       bool nofail = false;
-> +
-> +       may_oom = (gfp & __GFP_WAIT) && (gfp & __GFP_FS) &&
-> +           !(gfp & __GFP_NORETRY);
-> +
-> +       ret = 0;
-> +
-> +       if (!memcg)
-> +               return ret;
-> +
-> +       _memcg = memcg;
-> +       ret = __mem_cgroup_try_charge(NULL, gfp, delta / PAGE_SIZE,
-> +           &_memcg, may_oom);
-> +       if (ret == -ENOMEM)
-> +               return ret;
-> +       else if ((ret == -EINTR) || (ret && (gfp & __GFP_NOFAIL)))  {
-> +               nofail = true;
-> +               /*
-> +                * __mem_cgroup_try_charge() chose to bypass to root due
-> +                * to OOM kill or fatal signal.
-> +                * Since our only options are to either fail the
-> +                * allocation or charge it to this cgroup, force the
-> +                * change, going above the limit if needed.
-> +                */
-> +               res_counter_charge_nofail(&memcg->res, delta, &fail_res);
-
-We might need to charge memsw here too.
-
-> +       }
-> +
-> +       if (nofail)
-> +               res_counter_charge_nofail(&memcg->kmem, delta, &fail_res);
-> +       else
-> +               ret = res_counter_charge(&memcg->kmem, delta, &fail_res);
-> +
-> +       if (ret)
-> +               res_counter_uncharge(&memcg->res, delta);
-> +
-> +       return ret;
-> +}
-> +
-> +void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta)
-> +{
-> +       if (!memcg)
-> +               return;
-> +
-> +       res_counter_uncharge(&memcg->kmem, delta);
-> +       res_counter_uncharge(&memcg->res, delta);
-
-Might need to uncharge memsw.
-
-> +}
-> +#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-> --
-> 1.7.7.6
->
