@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab2EAAEy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 20:04:54 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:41691 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab2EAAEw (ORCPT
+	id S932222Ab2EAAF3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 20:05:29 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:52058 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757514Ab2EAAFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 20:04:52 -0400
+	Mon, 30 Apr 2012 20:05:25 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -24,9 +24,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 21/41] nohz/cpuset: Flush cputime on threads in nohz cpusets when waiting leader
-Date: Tue,  1 May 2012 01:54:55 +0200
-Message-Id: <1335830115-14335-22-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 31/41] sched: Update rq clock on nohz CPU before setting fair group shares
+Date: Tue,  1 May 2012 01:55:05 +0200
+Message-Id: <1335830115-14335-32-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
 References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
@@ -34,16 +34,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we wait for a zombie task, flush the cputimes on nohz cpusets
-in case we are waiting for a group leader that has threads running
-in nohz CPUs. This way thread_group_times() doesn't report stale
-values.
-
-<doubts>
-If I understood well the code, by the time we call that thread_group_times(),
-we may have childs that are still running, so this is necessary.
-But I need to check deeper.
-</doubts>
+Because we may update the execution time (sched_group_set_shares()->
+	update_cfs_shares()->reweight_entity()->update_curr()) before
+reweighting the entity after updating the group shares and this requires
+an uptodate version of the runqueue clock. Let's update it on the target
+CPU if it runs tickless because scheduler_tick() is not there to maintain
+it.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -65,35 +61,25 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/exit.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ kernel/sched/fair.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 4b4042f..c194662 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -52,6 +52,7 @@
- #include <linux/hw_breakpoint.h>
- #include <linux/oom.h>
- #include <linux/writeback.h>
-+#include <linux/cpuset.h>
- 
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
-@@ -1712,6 +1713,13 @@ repeat:
- 	   (!wo->wo_pid || hlist_empty(&wo->wo_pid->tasks[wo->wo_type])))
- 		goto notask;
- 
-+	/*
-+	 * For cputime in sub-threads before adding them.
-+	 * Must be called outside tasklist_lock lock because write lock
-+	 * can be acquired under irqs disabled.
-+	 */
-+	cpuset_nohz_flush_cputimes();
-+
- 	set_current_state(TASK_INTERRUPTIBLE);
- 	read_lock(&tasklist_lock);
- 	tsk = current;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index aca16b8..3312abe 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5519,6 +5519,11 @@ int sched_group_set_shares(struct task_group *tg, unsigned long shares)
+ 		se = tg->se[i];
+ 		/* Propagate contribution to hierarchy */
+ 		raw_spin_lock_irqsave(&rq->lock, flags);
++		/*
++		 * We may call update_curr() which needs an up-to-date
++		 * version of rq clock if the CPU runs tickless.
++		 */
++		update_nohz_rq_clock(rq);
+ 		for_each_sched_entity(se)
+ 			update_cfs_shares(group_cfs_rq(se));
+ 		raw_spin_unlock_irqrestore(&rq->lock, flags);
 -- 
 1.7.5.4
 
