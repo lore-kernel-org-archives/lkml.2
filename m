@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab2D3I4L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 04:56:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48419 "EHLO mx1.redhat.com"
+	id S1755626Ab2D3I4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 04:56:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55819 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752419Ab2D3I4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 04:56:09 -0400
+	id S1752891Ab2D3I4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 04:56:20 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20120419155136.GA22307@redhat.com>
-References: <20120419155136.GA22307@redhat.com> <20120419155111.GA22299@redhat.com>
+In-Reply-To: <20120419155211.GC22307@redhat.com>
+References: <20120419155211.GC22307@redhat.com> <20120419155111.GA22299@redhat.com>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
@@ -24,68 +24,32 @@ Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
         Larry Woodman <lwoodman@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/3] task_work_add: generic process-context callbacks
-Date: Mon, 30 Apr 2012 09:55:45 +0100
-Message-ID: <20902.1335776145@redhat.com>
+Subject: Re: [PATCH v5 3/3] cred: change keyctl_session_to_parent() to use task_work_add()
+Date: Mon, 30 Apr 2012 09:56:05 +0100
+Message-ID: <20914.1335776165@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Oleg Nesterov <oleg@redhat.com> wrote:
 
-> Provide a simple mechanism that allows running code in the
-> (nonatomic) context of the arbitrary task.
+> Change keyctl_session_to_parent() to use task_work_add() and
+> move key_replace_session_keyring() logic into task_work->func().
 > 
-> The caller does task_work_add(task, task_work) and this task
-> executes task_work->func() either from do_notify_resume() or
-> from do_exit(). The callback can rely on PF_EXITING to detect
-> the latter case.
+> Note that we do task_work_cancel() before task_work_add() to
+> ensure that only one work can be pending at any time. This is
+> important, we must not allow user-space to abuse the parent's
+> ->task_works list.
 > 
-> "struct task_work" can be embedded in another struct, still it
-> has "void *data" to handle the most common/simple case.
+> The callback, replace_session_keyring(), checks PF_EXITING.
+> I guess this is not really needed but looks better.
 > 
-> This allows us to kill the ->replacement_session_keyring hack,
-> and potentially this can have more users.
+> As a side effect, this fixes the (unlikely) race. The callers
+> of key_replace_session_keyring() and keyctl_session_to_parent()
+> lack the necessary barriers, the parent can miss the request.
 > 
-> Performance-wise, this adds 2 "unlikely(!hlist_empty())" checks
-> into tracehook_notify_resume() and do_exit(). But at the same
-> time we can remove the "replacement_session_keyring != NULL"
-> checks from arch/*/signal.c and exit_creds().
-> 
-> Note: task_work_add/task_work_run abuses ->pi_lock. This is
-> only because this lock is already used by lookup_pi_state() to
-> synchronize with do_exit() setting PF_EXITING. Fortunately the
-> scope of this lock in task_work.c is really tiny, and the code
-> is unlikely anyway.
-> 
-> v2:
-> 	- implement task_work_cancel(func), it removes the first
-> 	  task_work with the same callback.
-> v3:
-> 	- task_work_add() gets the new arg, "bool notify" to
-> 	  conditionalize set_notify_resume(), this makes it useable
-> 	  for kthreads and task_work_add(notify => false) can
-> 	  work without TIF_NOTIFY_RESUME.
-> 
-> 	- don't add the dummy "ifndef TIF_NOTIFY_RESUME" inlines,
-> 	  just add the simple check in task_work_add().
-> v4:
-> 	- s/task_work_queue/task_work_add/
-> v5:
-> 	- task_work_run() uses current explicitely
-> 
-> Todo:
-> 	- move clear_thread_flag(TIF_NOTIFY_RESUME) from arch/
-> 	  to tracehook_notify_resume()
-> 
-> 	- rename tracehook_notify_resume() and move it into
-> 	  linux/task_work.h
-> 
-> 	- m68k and xtensa don't have TIF_NOTIFY_RESUME and thus
-> 	  task_work_add(notify => true) fails with -ENOTSUPP.
-> 
-> 	  However, ->replacement_session_keyring equally needs
-> 	  this flag, task_work_add() is not worse.
+> Now we can remove task_struct->replacement_session_keyring and
+> related code.
 > 
 > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
