@@ -1,73 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533Ab2D3SVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 14:21:43 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63251 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab2D3SVm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 14:21:42 -0400
-Message-ID: <4F9ED82D.1050204@lwfinger.net>
-Date: Mon, 30 Apr 2012 13:21:33 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
+	id S1756522Ab2D3SX2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 14:23:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59952 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756362Ab2D3SX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 14:23:27 -0400
+Message-ID: <4F9ED890.5060601@zytor.com>
+Date: Mon, 30 Apr 2012 11:23:12 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH NEXT]staging: rtl8192u Fix typos.
-References: <4F9ED6D3.6060405@lwfinger.net>
-In-Reply-To: <4F9ED6D3.6060405@lwfinger.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davej@redhat.com
+Subject: Re: [PATCH] kvm: fix cpuid eax
+References: <20120430143902.GA10181@redhat.com>
+In-Reply-To: <20120430143902.GA10181@redhat.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2012 01:15 PM, Larry Finger wrote:
-> From: "Justin P. Mattock" <justinmattock@xxxxxxxxx>
->
-> Signed-off-by: Justin P. Mattock <justinmattock@xxxxxxxxx>
->
-> ---
->
-> The below patch fixes some typos that I found while going through staging/rtl8192u
->
-> drivers/staging/rtl8192u/r8180_93cx6.c | 2 +-
-> drivers/staging/rtl8192u/r8180_93cx6.h | 2 +-
-> drivers/staging/rtl8192u/r8192U.h | 6 +-
-> drivers/staging/rtl8192u/r8192U_core.c | 56 ++++++++++++++--------------
-> drivers/staging/rtl8192u/r8192U_dm.c | 50 ++++++++++++------------
-> drivers/staging/rtl8192u/r8192U_hw.h | 2 +-
-> drivers/staging/rtl8192u/r8192U_wx.c | 8 ++--
-> drivers/staging/rtl8192u/r8192U_wx.h | 2 +-
-> drivers/staging/rtl8192u/r819xU_HTType.h | 2 +-
-> drivers/staging/rtl8192u/r819xU_cmdpkt.c | 8 ++--
-> drivers/staging/rtl8192u/r819xU_firmware.c | 4 +-
-> drivers/staging/rtl8192u/r819xU_phy.c | 16 ++++----
-> drivers/staging/rtl8192u/r819xU_phyreg.h | 2 +-
-> 13 files changed, 80 insertions(+), 80 deletions(-)
->
-> diff --git a/drivers/staging/rtl8192u/r8180_93cx6.c
-> b/drivers/staging/rtl8192u/r8180_93cx6.c
-> index 8878cfe..0e8ff75 100644
-> --- a/drivers/staging/rtl8192u/r8180_93cx6.c
-> +++ b/drivers/staging/rtl8192u/r8180_93cx6.c
-> @@ -14,7 +14,7 @@
->
-> Parts of this driver are based on the Intel Pro Wireless 2100 GPL driver.
->
-> - We want to tanks the Authors of those projects and the Ndiswrapper
-> + We want to thanks the Authors of those projects and the Ndiswrapper
-                ======
-> project Authors.
-> */
->
+On 04/30/2012 07:39 AM, Michael S. Tsirkin wrote:
+> cpuid eax should return the max leaf so that
+> guests can find out the valid range.
+> This matches Xen et al.
 
-Please do not introduce a new typo while "fixing" the old one. s/thanks/thank/ 
-in several places.
+Not to mention it's what all the "real" CPU leaf chunks do.
 
-Note: I do not subscribe to LKML, thus I had to dummy in a reply and this 
-message will likely not be threaded correctly.
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 
-Larry
