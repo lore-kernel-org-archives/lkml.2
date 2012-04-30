@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab2D3Lzx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 07:55:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38418 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755557Ab2D3Lzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 07:55:52 -0400
-Date: Mon, 30 Apr 2012 13:55:49 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
-In-Reply-To: <20120430115302.GA2847@polaris.bitmath.org>
-Message-ID: <alpine.LNX.2.00.1204301350540.1856@pobox.suse.cz>
-References: <1335175627-2270-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1204301032410.1856@pobox.suse.cz> <alpine.LNX.2.00.1204301043340.1856@pobox.suse.cz> <20120430115302.GA2847@polaris.bitmath.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756026Ab2D3MCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 08:02:24 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:52260 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab2D3MCW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 08:02:22 -0400
+X-SENDER-IP: [85.230.169.225]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AleFABF/nk9V5qnhPGdsb2JhbABEiiqmSASBGhkBAQEBHhkNJ4IJAQEEAScTHCMFCwgDDjgUDRgKGhOHfwMGCa9LDYlTE4l5gSiFC2MElX2GBoU6h20
+X-IronPort-AV: E=Sophos;i="4.75,505,1330902000"; 
+   d="scan'208";a="102726691"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 30 Apr 2012 14:06:41 +0200
+To: Nikolai Kondrashov <spbnick@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] hid: Enable report fixup on rebind
+Message-ID: <20120430120641.GA3111@polaris.bitmath.org>
+References: <1335097300-11881-1-git-send-email-rydberg@euromail.se>
+ <alpine.LNX.2.00.1204222325380.1856@pobox.suse.cz>
+ <4F9D5F43.4000502@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F9D5F43.4000502@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Apr 2012, Henrik Rydberg wrote:
+Hi Nikolai,
 
-> > > Just got the stacktrace on [1] though when running kernel with this 
-> > > patchset. The trace popped during shutdown, and the machine froze 
-> > > completely; I didn't have any kind of external console connected, so 
-> > > unfortunately I don't have the beginning of the whole thing.
-> > > 
-> > > I haven't been able to reproduce it so far. This was after several 
-> > > "parallel" plug/remove cycles of multiple HID devices driven by multiple 
-> > > different drivers.
-> > > 
-> > > I haven't performed any analysis what this might be yet.
-> > > 
-> > > [1] http://www.jikos.cz/jikos/junk/autoloading-trace.jpg
-> > 
-> > It actually seems to be spinlock lockup (due to the NMI trigger being 
-> > apparent at the very first line) on kbd_event_lock ...
+> >>The first two patches are bug fixes found in the process. I am hoping
+> >>for some test feedback on those. The third patch is the main one.
 > 
-> Ah, yes. I take it you are talking about tty/vt/keyboard.c. So some
-> random keypress during shutdown triggers the event, which eventually
-> reaches input_pass_event(). From there on, the trace stays in the
-> mentioned driver. First kbd_event() gets called, which takes the lock
-> and goes on to, in turn, call kbd_keycode(), k_handler[2]() ==
-> k_spec(), fn_handler[9]() == fn_hold(), which goes on to call
-> stop_tty(). This function comes back to the driver, via con_stop(), as
-> vt_kbd_con_stop(), which in turn takes the same lock. So unless the
-> teardown of something in hid affects the choices made in the tty
-> driver, it appears this is a different problem. Or?
+> I've tested the last patch and it seems to work as required. I did a series
+> of generic<->specific driver rebindings both ways in a loop and it works.
+> 
+> So,
+> Tested-by: Nikolai Kondrashov <spbnick@gmail.com>
 
-I just came to the same conclusion a few minutes ago ... i.e. this is 
-likely unrelated to the patchset and I just triggered it by pure 
-coincidence on the patched kernel.
+Great, thanks!
 
-I will keep looking into it a little bit more. Dmitry, any immediate ideas 
-by any chance?
+> I'm not sure, though, if one thing works as it should: the quirks are not
+> reset when changing the driver. So, quirks set by one driver may affect
+> behavior of another. I don't understand full quirks usage and ownership yet,
+> so can't argue if this is right or wrong.
 
-Otherwise the series seems indeed fine and if I don't come across anything 
-substantial once I am done with the review, I am considering pushing it 
-for -next (I still have to look at quirks propagation Nikolai pointed 
-out).
+The common quirks are a device property, so this is fine. There are
+some drivers with quirks too, but they handle those themselves.
+
+> Regarding the code, could it be the time to fix naming of report
+> descriptor-handling functions to improve distinction from report-handling
+> ones? I'm attaching a patch applying on top of Henrik's changes which should
+> illustrate the proposal.
+
+The changes you propose force changes to out-of-tree-drivers, without
+any obvious benefit. Also, there is already a large set of patches on
+review based on this one. So although I agree that some renames and
+movements could clarify things, the content and timing will need some
+more thought.
 
 Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Henrik
