@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab2D3X5r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 19:57:47 -0400
+	id S1757592Ab2D3X6B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 19:58:01 -0400
 Received: from mail-qa0-f46.google.com ([209.85.216.46]:33065 "EHLO
 	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757542Ab2D3X5q (ORCPT
+	with ESMTP id S1756584Ab2D3X6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 19:57:46 -0400
+	Mon, 30 Apr 2012 19:58:00 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -24,15 +24,23 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 29/41] sched: Comment on rq->clock correctness in ttwu_do_wakeup() in nohz
-Date: Tue,  1 May 2012 01:55:03 +0200
-Message-Id: <1335830115-14335-30-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 32/41] sched: Update rq clock on tickless CPUs before calling check_preempt_curr()
+Date: Tue,  1 May 2012 01:55:06 +0200
+Message-Id: <1335830115-14335-33-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
 References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+check_preempt_wakeup() of fair class needs an uptodate sched clock
+value to update runtime stats of the current task.
+
+When a task is woken up, activate_task() is usually called right before
+ttwu_do_wakeup() unless the task is already in the runqueue. In this
+case we need to update the rq clock manually in case the CPU runs
+tickless because ttwu_do_wakeup() calls check_preempt_wakeup().
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -54,26 +62,45 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sched/core.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ kernel/sched/core.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5debfd7..d24da6b 100644
+index a7e611a..949158a 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1430,6 +1430,12 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
- 	if (p->sched_class->task_woken)
- 		p->sched_class->task_woken(rq, p);
+@@ -1474,6 +1474,12 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
  
-+	/*
-+	 * For adaptive nohz case: We called ttwu_activate()
-+	 * which just updated the rq clock. There is an
-+	 * exception with p->on_rq != 0 but in this case
-+	 * we are not idle and rq->idle_stamp == 0
-+	 */
- 	if (rq->idle_stamp) {
- 		u64 delta = rq->clock - rq->idle_stamp;
- 		u64 max = 2*sysctl_sched_migration_cost;
+ 	rq = __task_rq_lock(p);
+ 	if (p->on_rq) {
++		/*
++		 * Ensure check_preempt_curr() won't deal with a stale value
++		 * of rq clock if the CPU is tickless. BTW do we actually need
++		 * check_preempt_curr() to be called here?
++		 */
++		update_nohz_rq_clock(rq);
+ 		ttwu_do_wakeup(rq, p, wake_flags);
+ 		ret = 1;
+ 	}
+@@ -1683,8 +1689,17 @@ static void try_to_wake_up_local(struct task_struct *p)
+ 	if (!(p->state & TASK_NORMAL))
+ 		goto out;
+ 
+-	if (!p->on_rq)
++	if (!p->on_rq) {
+ 		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
++	} else {
++		/*
++		 * Even if the task is on the runqueue we still
++		 * need to ensure check_preempt_curr() won't
++		 * deal with a stale rq clock value on a tickless
++		 * CPU
++		 */
++		update_nohz_rq_clock(rq);
++	}
+ 
+ 	ttwu_do_wakeup(rq, p, 0);
+ 	ttwu_stat(p, smp_processor_id(), 0);
 -- 
 1.7.5.4
 
