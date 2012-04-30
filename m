@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab2D3UXB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:23:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35708 "EHLO
+	id S1757108Ab2D3UW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:22:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35712 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756791Ab2D3UPy (ORCPT
+	with ESMTP id S1756793Ab2D3UPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:15:54 -0400
-Message-Id: <20120430194845.737060696@linutronix.de>
+	Mon, 30 Apr 2012 16:15:55 -0400
+Message-Id: <20120430194845.793312898@linutronix.de>
 User-Agent: quilt/0.48-1
 Date: Mon, 30 Apr 2012 20:15:53 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-arch@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
-Subject: [patch 03/29] arm: Use generic init_task
+Cc: linux-arch@vger.kernel.org, Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: [patch 04/29] avr32: Use generic init_task
 References: <20120430194725.763322463@linutronix.de>
-Content-Disposition: inline; filename=arm-use-generic-init-task.patch
+Content-Disposition: inline; filename=avr32-use-generic-init-task.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -23,84 +23,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Same code. Use the generic version. The special Makefile treatment is
-pointless anyway as init_task.o contains only data which is handled by
-the linker script. So no point on being treated like head text.
+Same code. Use the generic version.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
 ---
- arch/arm/Kconfig            |    1 +
- arch/arm/Makefile           |    2 +-
- arch/arm/kernel/Makefile    |    2 +-
- arch/arm/kernel/init_task.c |   37 -------------------------------------
- 4 files changed, 3 insertions(+), 39 deletions(-)
+ arch/avr32/Kconfig            |    1 +
+ arch/avr32/kernel/Makefile    |    2 +-
+ arch/avr32/kernel/init_task.c |   31 -------------------------------
+ 3 files changed, 2 insertions(+), 32 deletions(-)
 
-Index: tip/arch/arm/Kconfig
+Index: tip/arch/avr32/Kconfig
 ===================================================================
---- tip.orig/arch/arm/Kconfig
-+++ tip/arch/arm/Kconfig
-@@ -35,6 +35,7 @@ config ARM
- 	select GENERIC_PCI_IOMAP
- 	select HAVE_BPF_JIT if NET
- 	select GENERIC_SMP_IDLE_THREAD
+--- tip.orig/arch/avr32/Kconfig
++++ tip/arch/avr32/Kconfig
+@@ -12,6 +12,7 @@ config AVR32
+ 	select HARDIRQS_SW_RESEND
+ 	select GENERIC_IRQ_SHOW
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
 +	select HAVE_GENERIC_INIT_TASK
  	help
- 	  The ARM series is a line of low-power-consumption RISC chip designs
- 	  licensed by ARM Ltd and targeted at embedded applications and
-Index: tip/arch/arm/Makefile
+ 	  AVR32 is a high-performance 32-bit RISC microprocessor core,
+ 	  designed for cost-sensitive embedded applications, with particular
+Index: tip/arch/avr32/kernel/Makefile
 ===================================================================
---- tip.orig/arch/arm/Makefile
-+++ tip/arch/arm/Makefile
-@@ -119,7 +119,7 @@ KBUILD_AFLAGS	+=$(CFLAGS_ABI) $(AFLAGS_T
- CHECKFLAGS	+= -D__arm__
- 
- #Default value
--head-y		:= arch/arm/kernel/head$(MMUEXT).o arch/arm/kernel/init_task.o
-+head-y		:= arch/arm/kernel/head$(MMUEXT).o
- textofs-y	:= 0x00008000
- textofs-$(CONFIG_ARCH_CLPS711X) := 0x00028000
- # We don't want the htc bootloader to corrupt kernel during resume
-Index: tip/arch/arm/kernel/Makefile
+--- tip.orig/arch/avr32/kernel/Makefile
++++ tip/arch/avr32/kernel/Makefile
+@@ -8,7 +8,7 @@ obj-$(CONFIG_SUBARCH_AVR32B)	+= entry-av
+ obj-y				+= syscall_table.o syscall-stubs.o irq.o
+ obj-y				+= setup.o traps.o ocd.o ptrace.o
+ obj-y				+= signal.o sys_avr32.o process.o time.o
+-obj-y				+= init_task.o switch_to.o cpu.o
++obj-y				+= switch_to.o cpu.o
+ obj-$(CONFIG_MODULES)		+= module.o avr32_ksyms.o
+ obj-$(CONFIG_KPROBES)		+= kprobes.o
+ obj-$(CONFIG_STACKTRACE)	+= stacktrace.o
+Index: tip/arch/avr32/kernel/init_task.c
 ===================================================================
---- tip.orig/arch/arm/kernel/Makefile
-+++ tip/arch/arm/kernel/Makefile
-@@ -81,4 +81,4 @@ head-y			:= head$(MMUEXT).o
- obj-$(CONFIG_DEBUG_LL)	+= debug.o
- obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
- 
--extra-y := $(head-y) init_task.o vmlinux.lds
-+extra-y := $(head-y) vmlinux.lds
-Index: tip/arch/arm/kernel/init_task.c
-===================================================================
---- tip.orig/arch/arm/kernel/init_task.c
+--- tip.orig/arch/avr32/kernel/init_task.c
 +++ /dev/null
-@@ -1,37 +0,0 @@
+@@ -1,31 +0,0 @@
 -/*
-- *  linux/arch/arm/kernel/init_task.c
+- * Copyright (C) 2004-2006 Atmel Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
 - */
--#include <linux/mm.h>
 -#include <linux/module.h>
 -#include <linux/fs.h>
 -#include <linux/sched.h>
--#include <linux/init.h>
 -#include <linux/init_task.h>
 -#include <linux/mqueue.h>
--#include <linux/uaccess.h>
 -
 -#include <asm/pgtable.h>
 -
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
 -/*
-- * Initial thread structure.
-- *
-- * We need to make sure that this is 8192-byte aligned due to the
-- * way process stacks are handled. This is done by making sure
-- * the linker maps this in the .text segment right after head.S,
-- * and making head.S ensure the proper alignment.
-- *
-- * The things we do for performance..
+- * Initial thread structure. Must be aligned on an 8192-byte boundary.
 - */
 -union thread_union init_thread_union __init_task_data =
 -	{ INIT_THREAD_INFO(init_task) };
