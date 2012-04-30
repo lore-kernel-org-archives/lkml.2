@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab2D3QGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 12:06:35 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:61154 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756186Ab2D3QGc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 12:06:32 -0400
-Date: Mon, 30 Apr 2012 11:51:49 -0400
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: udev races with 'arch_register_cpu' to write 1 to
- /sys/devices/system/cpu/cpu1/online (which is not yet created).
-Message-ID: <20120430155149.GB16794@kroah.com>
-References: <20120430153623.GA23485@phenom.dumpdata.com>
- <20120430155018.GA16794@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120430155018.GA16794@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756218Ab2D3QQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 12:16:04 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:46281 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755011Ab2D3QQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 12:16:03 -0400
+Message-ID: <1335802560.22209.2.camel@joe2Laptop>
+Subject: Re: [PATCH v2] edac_mc: Cleanup per-dimm_info debug messages
+From: Joe Perches <joe@perches.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>
+Date: Mon, 30 Apr 2012 09:16:00 -0700
+In-Reply-To: <1335798160-9879-1-git-send-email-mchehab@redhat.com>
+References: <4F9E9958.6010606@redhat.com>
+	 <1335798160-9879-1-git-send-email-mchehab@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 11:50:18AM -0400, Greg KH wrote:
-> On Mon, Apr 30, 2012 at 11:36:23AM -0400, Konrad Rzeszutek Wilk wrote:
-> > Hey Greg,
-> > 
-> > Hoping you can help with some guidance on how to fix this.
-> > 
-> > The issue is with CPU hotplug is that when a CPU goes up
-> > it calls 'arch_register_cpu' which eventually calls
-> > register_cpu. That function does these two things:
-> > 
-> > 251         error = device_register(&cpu->dev);
-> > 252         if (!error && cpu->hotpluggable)
-> > 253                 register_cpu_control(cpu);
-> > 
-> > and the device_register creates a nice little SysFS directory:
-> > 
-> > /sys/devices/system/cpu/cpu2/ which at line 251 has the 'add' attribute
-> > but no 'online' attribute. udev then tries to echo 1 to the 'online'
-> > and it we get:
-> > udevd-work[2421]: error opening ATTR{/sys/devices/system/cpu/cpu2/online} for writing: No such file or directory
-> > 
-> > Line 253 creates said 'online' and at that time udev [or the system admin]
-> > can write 1 to 'online' and the CPU goes up.
-> > 
-> > So .. any thoughts? Is there some way to inhibit from uevent being sent
-> > until line 253 has run?
-> 
-> Yes.
+On Mon, 2012-04-30 at 12:02 -0300, Mauro Carvalho Chehab wrote:
+> The edac_mc_alloc() routine allocates one dimm_info device for all
+> possible memories, including the non-filled ones. The debug messages
+> there are somewhat confusing. So, cleans them, by moving the code
+> that prints the memory location to edac_mc, and using it on both
+> edac_mc_sysfs and edac_mc.
+[]
+> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+[]
+> @@ -40,6 +40,25 @@
+>  static DEFINE_MUTEX(mem_ctls_mutex);
+>  static LIST_HEAD(mc_devices);
+>  
+> +unsigned edac_dimm_info_location(struct dimm_info *dimm, char *buf,
+> +			         int len)
+> +{
+> +	struct mem_ctl_info *mci = dimm->mci;
+> +	int i, n, count = 0;
+> +	char *p = buf;
+> +
+> +	for (i = 0; i < mci->n_layers; i++) {
+> +		n = snprintf(p, len, "%s %d ",
+> +			      edac_layer_name[mci->layers[i].type],
+> +			      dimm->location[i]);
+> +		p += n;
+> +		len -= n;
+> +		count += n;
+> +	}
 
-Oh, I imagine you want to know _how_ to do it too, right?  (sorry, I
-couldn't resist...)
+I believe this snprintf can be unsafe
+when the buffer length len is exceeded.
 
-Make this a default attribute of the cpu device, and then it will be
-created by the driver core before the uevent is sent to userspace.
-That's what you are supposed to do in the first place, adding files "by
-hand" is wrong, for this very reason.
+if len is negative, it's promoted to size_t
+and continues to write into p.
 
-thanks,
 
-greg k-h
