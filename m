@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab2D3IeB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 04:34:01 -0400
-Received: from mail.inp.gob.ec ([190.110.215.78]:37395 "EHLO mail.inp.gob.ec"
+	id S1755381Ab2D3IeP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 04:34:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33932 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696Ab2D3IeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 04:34:00 -0400
-X-Greylist: delayed 1841 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Apr 2012 04:34:00 EDT
-Message-ID: <20120430025321.12956b6hlwpa2bk0@mail.inp.gob.ec>
-Date: Mon, 30 Apr 2012 02:53:21 -0500
-From: Webmaster Office <info@webmaster.no>
-Reply-to: customercaredpt2012@w.cn
-To: undisclosed-recipients:;
-Subject: Final Warning
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
-X-INP-MailScanner-Information: Please contact the ISP for more information
-X-INP-MailScanner-ID: 34CBF3CD0269.A5004
-X-INP-MailScanner: Found to be clean
-X-INP-MailScanner-From: info@webmaster.no
+	id S1751696Ab2D3IeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 04:34:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="135087860"
+Message-ID: <1335775045.2584.3.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v2 1/4] ext4: Remove useless marking of superblock dirty
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ted Tso <tytso@mit.edu>
+Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>
+Date: Mon, 30 Apr 2012 11:37:25 +0300
+In-Reply-To: <1334215249.13842.36.camel@sauron.fi.intel.com>
+References: <1333367140-28370-1-git-send-email-artem.bityutskiy@linux.intel.com>
+	 <1333367140-28370-2-git-send-email-artem.bityutskiy@linux.intel.com>
+	 <1334215249.13842.36.camel@sauron.fi.intel.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-XX/qQRnw927UyK8DsHrt"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear subscribers email accounts,
 
-              This message is from webmail messaging center to all our  
-Adim webmail accounts owners.As first quarter of 2012 we are currently  
-undertaking to improve service for our data base and e-mail account  
-center. We are deleting all unused webmail account to create more  
-space for new accounts.
+--=-XX/qQRnw927UyK8DsHrt
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-To prevent your account to be deleted and to continue to use our  
-services are required to update and verify your webmail account.
+On Thu, 2012-04-12 at 10:20 +0300, Artem Bityutskiy wrote:
+> On Mon, 2012-04-02 at 14:45 +0300, Artem Bityutskiy wrote:
+> > From: Jan Kara <jack@suse.cz>
+> >=20
+> > Commit a0375156 properly notes that superblock doesn't need to be marke=
+d
+> > as dirty when only number of free inodes / blocks / number of directori=
+es
+> > changes since that is recomputed on each mount anyway. However that com=
+ment
+> > leaves some unnecessary markings as dirty in place. Remove these.
+> >=20
+> > Artem: tested using xfstests for both journalled and non-journalled ext=
+4.
+>=20
+> Hi Ted, what would be the fate of this patch-set?
 
+Hi Ted, I am sorry for being annoying, but what do you think about these
+patches?
 
-To complete your account confirmation for the first quarter of 2012,  
-six to reply to this email immediately and enter your account details  
-as requested below.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Confirm your account information
+--=-XX/qQRnw927UyK8DsHrt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Username: .................
-E-mail username: ...........
-Password: ....................
-Confirm Password: ...........
-Date of Birth: .............
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAABAgAGBQJPnk9FAAoJECmIfjd9wqK0B+EP/1B0aQpqUNtewM3b9uQhWpIY
+pS2F7SJBkF2lXyldBEuxTbFe4Q/lucIJlSZ503vdwF+y/dlmMtxNLWhLuBf8Wsk/
+jJFYY5V9iFu8qFPjJVTCFu2PZoWbncrYrW9QRMRol36TDhFKGdAHXj1Iz4FSSXVy
+t69wRiV7u4TzD26+76RpO5HFyXAhEXnv0A/54ReK6S3D3PpOsuijt49GYG41q/HU
+DSsG2kWgqV/rtQc7ZkjUU+6ZMB40gnDMP3771V+nqJhPoPwVyX04ybPAF6bivT3t
+ZE4reQpfPGrIES4KmHt3pMGVR3penwkKyVYynD1JLmFsfOcavyOHmeQhzDz+pX0h
+C+xjYn3J7NsIjZhMte+4XSvBTbubdUDeOnMBfeyKXvXEyLL3iUovDxzP8gF63Qyq
+bPRzyFXdwrYopuKSMYo4hRmSOmtUMWFlZTC+Qb/FwkfTxkz9nr+EL1h4uoS1exr7
+H+Mmku6S1Wrf7FY2Au3YJh6T0AJBVYbR4rHsNRwLMbNAknlkX3qeTh2tpYZNI3Ad
+wldOgI3xAFh+n9Dap49G80RqSYweIcGGTcT7fKnCj+tpobV8b0jj8mjGk+V6zoRH
+mboqGU20pWyMChiuVMbhXFTlDLZ/hf3XMYwIqFCR/ZkbUBYjNQzhGFVQOpz3vKdO
+UT+bJYE52+bGJyaD+lMU
+=PoBH
+-----END PGP SIGNATURE-----
 
-Important * Please provide all these information completely and  
-correctly otherwise for security reasons we can close your webmail  
-account temporarily.We thank you for your prompt attention to this  
-matter.Please understand that this is a security measure to protect  
-you and your webmail account. We apologize for any inconvenience.
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
-
-
--- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
+--=-XX/qQRnw927UyK8DsHrt--
 
