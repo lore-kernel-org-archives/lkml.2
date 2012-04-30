@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab2D3F6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 01:58:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56462 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751510Ab2D3F6D (ORCPT
+	id S1753001Ab2D3F6x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 01:58:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41347 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927Ab2D3F6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 01:58:03 -0400
-X-Sasl-enc: L0q4Q1621lF9AKie7JvQHqP1JvAgEPbMDhcIm7waRaszeQQySJFNZqv1aw 1335765482
-Message-ID: <1335765478.2281.13.camel@perseus.themaw.net>
-Subject: Re: autofs: make the autofsv5 packet file descriptor use a
- packetized pipe
-From: Ian Kent <raven@themaw.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Tokarev <mjt@tls.msk.ru>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Thomas Meyer <thomas@m3y3r.de>, autofs@vger.kernel.org
-Date: Mon, 30 Apr 2012 13:57:58 +0800
-In-Reply-To: <CA+55aFzEefQWk+0EB2+dcL8DZcn+B7=1HZ1MV0HVMX7prhrmVA@mail.gmail.com>
-References: <20120429205429.63CCD7C0064@ra.kernel.org>
-	 <4F9DD994.70202@zytor.com>
-	 <CA+55aFy72rPMq3M2_PU0ue45Fb38_Effrfhu2uOpdVXt9H1XOg@mail.gmail.com>
-	 <4F9DDCB6.1070908@zytor.com>
-	 <CA+55aFwGZm4+rdJ+xArhsVJ8P5gH3xxCfuoHibotr0Sik484=w@mail.gmail.com>
-	 <4F9DDE47.5060008@zytor.com>
-	 <CA+55aFzDhkVzaUYQwKbkUqoRNb223+w0-k=pOxTZHja75JOMvQ@mail.gmail.com>
-	 <1335749398.2281.0.camel@perseus.themaw.net>
-	 <CA+55aFzEefQWk+0EB2+dcL8DZcn+B7=1HZ1MV0HVMX7prhrmVA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Apr 2012 01:58:51 -0400
+Date: Mon, 30 Apr 2012 15:58:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+Message-Id: <20120430155836.44bcf3846c80cf686bb9cb77@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__30_Apr_2012_15_58_36_+1000_0DNPLrMHO_FxEYW8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-29 at 18:56 -0700, Linus Torvalds wrote:
-> On Sun, Apr 29, 2012 at 6:29 PM, Ian Kent <raven@themaw.net> wrote:
-> >
-> > autodir looks ok as well.
-> >
-> > http://sourceforge.net/projects/intraperson/files/latest/download
-> 
-> That looks odd, but safe.
-> 
-> Why does the code make the pipe file descriptor non-blocking, when it
-> then always reads it using that odd "poll_read()" function that does a
-> loop with poll() and read(). I guess there is some 1-second timeout
-> thing.
-> 
-> It's a bit odd in other ways too. The "handle_events()" function is
-> passed the fd, but then it never actually uses it, and uses
-> 'autodir.k_pipe' instead.
-> 
-> So I'm having a bit of trouble following the *logic* to any of that,
-> but the only reads I found did seem to match the "read whole packet"
-> model, so it does look ok too.
+--Signature=_Mon__30_Apr_2012_15_58_36_+1000_0DNPLrMHO_FxEYW8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm only aware that autodir uses the module and wasn't involved in the
-development.
+Hi all,
 
-I didn't look closely at it at all, just enough to check for reads to
-the kernel pipe, so I don't know either.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-I'm not sure that autodir is still maintained so the only thing I'll do
-is include a cc to the autodir mailing list in a any follow up mail to
-the autofs list explaining the outcome of this work.
+net/l2tp/l2tp_core.c: In function 'l2tp_verify_udp_checksum':
+net/l2tp/l2tp_core.c:464:7: error: implicit declaration of function 'csum_i=
+pv6_magic' [-Werror=3Dimplicit-function-declaration]
 
-Ian
+Caused by commit d2cf3361677e ("net/l2tp: add support for L2TP over IPv6
+UDP").  Include file missing.
 
+I have reverted that commit for today.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__30_Apr_2012_15_58_36_+1000_0DNPLrMHO_FxEYW8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPnioMAAoJEECxmPOUX5FEtLgP/iJ+VneztJSwWoM4+YLUIcxG
+qG8QhVHbkb35aO2nH1fdIExCIV0MXxKJvQiNe9+0OLVnScfAofrSW2+3yscR8dzC
+0YgHLddOJL7Njgg6JzTUDtQXH9d0ibK2Wppz27K5EITsCrfF8L2M75q961mM1xUy
+J+IxLJk9743y/dXhovjD4Or2zJKYZGptT3E3VdSyvFTMA0Ug2PDS1wPMi3BNFWid
+dyavUJD1HA9OZnIoeMG0azT3YuJElhNmmwvfCZF/Al0Jhp4S6lkY9Fvqu50K2gFA
+rHlusDjPJ/Sl/bhem4TjOFp5I+DTC1rNmgQ6/HJq2DxdPwfYCiB4I/aHqIkEp9OL
+x5wfXIuOjQmRAOB/fl0hXL9VkhyiTSk76hYWmlfgVL0XdUz722fV1xJ+SslLUJRC
+kWRZspn/BdRjHC8Pwsh3ViHlPoOhNzlbCl0MOEPAxL1fO+xenQQDfXzZutTDtPMV
+cWonDFn/9SiFh3DOAtE2qQduEyQtkY947fWOKgnP6j0iM+Elw/4277Fzf98+5mGZ
+fSSjOP7QUfofMFo2FK/YtQCjSHy+h/L2SxuxIcHZMioQ1ACKyRw8X2h9HBEv7OSm
+lZ+n+3ppsVRl2PP2Ok5yRi++X0xC6IfCky8OWx+HjIkfewJPg24UKKKDWfY9LoqW
+uHEOYAdvtZHuRsNSndvw
+=tMh/
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__30_Apr_2012_15_58_36_+1000_0DNPLrMHO_FxEYW8--
