@@ -1,248 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab2D3UMC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:12:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41019 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756632Ab2D3ULu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:11:50 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        stable@vger.kernel.org
-Subject: [PATCH 2/2] efi: Validate UEFI boot variables
-Date: Mon, 30 Apr 2012 16:11:30 -0400
-Message-Id: <1335816690-26019-2-git-send-email-mjg@redhat.com>
-In-Reply-To: <1335816690-26019-1-git-send-email-mjg@redhat.com>
-References: <1335816690-26019-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.206
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1756795Ab2D3UMM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:12:12 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55422 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756632Ab2D3UMJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 16:12:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F9EEFF5.4000703@zytor.com>
+References: <20120429205429.63CCD7C0064@ra.kernel.org> <4F9DD994.70202@zytor.com>
+ <CA+55aFy72rPMq3M2_PU0ue45Fb38_Effrfhu2uOpdVXt9H1XOg@mail.gmail.com>
+ <4F9DDD3E.6010801@zytor.com> <4F9EEFF5.4000703@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 30 Apr 2012 13:11:46 -0700
+X-Google-Sender-Auth: XDJSjH4OwaAgmRs8pRQ0II5C0sI
+Message-ID: <CA+55aFxXMXmdeHAu3xOBSJEsJ97P_-6qn595FM6s7WXeK0DkjQ@mail.gmail.com>
+Subject: Re: autofs: make the autofsv5 packet file descriptor use a packetized pipe
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Tokarev <mjt@tls.msk.ru>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Ian Kent <raven@themaw.net>, Thomas Meyer <thomas@m3y3r.de>,
+        autofs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A common flaw in UEFI systems is a refusal to POST triggered by a malformed
-boot variable. Once in this state, machines may only be restored by
-reflashing their firmware with an external hardware device. While this is
-obviously a firmware bug, the serious nature of the outcome suggests that
-operating systems should filter their variable writes in order to prevent
-a malicious user from rendering the machine unusable.
+On Mon, Apr 30, 2012 at 1:03 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> Thinking about it some more: for v6, I wouldn't use a packetized pipe at
+> all (due to the unnecessary extra buffer consumption.)  Instead just put
+> the message size in the header and read a large chunk, which may end up
+> being more than one packet and may end up with a partial packet at the
+> end.  *This is okay*, because there is only one reader, and any
+> additional data needed will be gotten the next time around the loop.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: stable@vger.kernel.org
----
- drivers/firmware/efivars.c |  182 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 182 insertions(+)
+Yes, doing multiple streaming packets is good, but then you really do
+need to design the protocol for streaming, which very much includes
+having that size early in the header. And then you'd better make the
+packets really have different sizes, so that you cannot possibly get
+it wrong in an app that "knows" that there's one size.
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index d25599f..891e467 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -191,6 +191,176 @@ utf16_strncmp(const efi_char16_t *a, const efi_char16_t *b, size_t len)
- 	}
- }
- 
-+static bool
-+validate_device_path(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	struct efi_generic_dev_path *node;
-+	int offset = 0;
-+
-+	node = (struct efi_generic_dev_path *)buffer;
-+
-+	while (offset < len) {
-+		offset += node->length;
-+
-+		if (offset > len)
-+			return false;
-+
-+		if ((node->type == EFI_DEV_END_PATH ||
-+		     node->type == EFI_DEV_END_PATH2) &&
-+		    node->sub_type == EFI_DEV_END_ENTIRE)
-+			return true;
-+
-+		node = (struct efi_generic_dev_path *)(buffer + offset);
-+	}
-+
-+	/*
-+	 * If we're here then either node->length pointed past the end
-+	 * of the buffer or we reached the end of the buffer without
-+	 * finding a device path end node.
-+	 */
-+	return false;
-+}
-+
-+static bool
-+validate_boot_order(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	/* An array of 16-bit integers */
-+	if ((len % 2) != 0)
-+		return false;
-+
-+	return true;
-+}
-+
-+static bool
-+validate_load_option(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	u16 filepathlength;
-+	int i, desclength = 0;
-+
-+	/* Either "Boot" or "Driver" followed by four digits of hex */
-+	for (i = match; i < match+4; i++) {
-+		if (hex_to_bin(var->VariableName[i] & 0xff) < 0)
-+			return true;
-+	}
-+
-+	/* A valid entry must be at least 6 bytes */
-+	if (len < 6)
-+		return false;
-+
-+	filepathlength = buffer[4] | buffer[5] << 8;
-+
-+	/*
-+	 * There's no stored length for the description, so it has to be
-+	 * found by hand
-+	 */
-+	desclength = utf16_strsize((efi_char16_t *)(buffer + 6), len) + 2;
-+
-+	/* Each boot entry must have a descriptor */
-+	if (!desclength)
-+		return false;
-+
-+	/*
-+	 * If the sum of the length of the description, the claimed filepath
-+	 * length and the original header are greater than the length of the
-+	 * variable, it's malformed
-+	 */
-+	if ((desclength + filepathlength + 6) > len)
-+		return false;
-+
-+	/*
-+	 * And, finally, check the filepath
-+	 */
-+	return validate_device_path(var, match, buffer + desclength + 6,
-+				    filepathlength);
-+}
-+
-+static bool
-+validate_uint16(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	/* A single 16-bit integer */
-+	if (len != 2)
-+		return false;
-+
-+	return true;
-+}
-+
-+static bool
-+validate_ascii_string(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	int i;
-+
-+	for (i = 0; i < len; i++) {
-+		if (buffer[i] > 127)
-+			return false;
-+
-+		if (buffer[i] == 0)
-+			return true;
-+	}
-+
-+	return false;
-+}
-+
-+struct variable_validate {
-+	char *name;
-+	bool (*validate)(struct efi_variable *var, int match, u8 *data,
-+			 int len);
-+};
-+
-+static const struct variable_validate variable_validate[] = {
-+	{ "BootNext", validate_uint16 },
-+	{ "BootOrder", validate_boot_order },
-+	{ "DriverOrder", validate_boot_order },
-+	{ "Boot*", validate_load_option },
-+	{ "Driver*", validate_load_option },
-+	{ "ConIn", validate_device_path },
-+	{ "ConInDev", validate_device_path },
-+	{ "ConOut", validate_device_path },
-+	{ "ConOutDev", validate_device_path },
-+	{ "ErrOut", validate_device_path },
-+	{ "ErrOutDev", validate_device_path },
-+	{ "Timeout", validate_uint16 },
-+	{ "Lang", validate_ascii_string },
-+	{ "PlatformLang", validate_ascii_string },
-+	{ "", NULL },
-+};
-+
-+static bool
-+validate_var(struct efi_variable *var, u8 *data, int len)
-+{
-+	int i;
-+	u16 *unicode_name = var->VariableName;
-+
-+	for (i = 0; variable_validate[i].validate != NULL; i++) {
-+		const char *name = variable_validate[i].name;
-+		int match;
-+
-+		for (match = 0; ; match++) {
-+			char c = name[match];
-+			u16 u = unicode_name[match];
-+
-+			/* All special variables are plain ascii */
-+			if (u > 127)
-+				return true;
-+
-+			/* Wildcard in the matching name means we've matched */
-+			if (c == '*')
-+				return variable_validate[i].validate(var,
-+							     match, data, len);
-+
-+			/* Case sensitive match */
-+			if (c != u)
-+				break;
-+
-+			/* Reached the end of the string while matching */
-+			if (!c)
-+				return variable_validate[i].validate(var,
-+							     match, data, len);
-+		}
-+	}
-+
-+	return true;
-+}
-+
- static efi_status_t
- get_var_data_locked(struct efivars *efivars, struct efi_variable *var)
- {
-@@ -324,6 +494,12 @@ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
- 		return -EINVAL;
- 	}
- 
-+	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
-+	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
-+		printk(KERN_ERR "efivars: Malformed variable content\n");
-+		return -EINVAL;
-+	}
-+
- 	spin_lock(&efivars->lock);
- 	status = efivars->ops->set_variable(new_var->VariableName,
- 					    &new_var->VendorGuid,
-@@ -626,6 +802,12 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
- 
-+	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
-+	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
-+		printk(KERN_ERR "efivars: Malformed variable content\n");
-+		return -EINVAL;
-+	}
-+
- 	spin_lock(&efivars->lock);
- 
- 	/*
--- 
-1.7.10
+However, in the case of autofs, I don't actually see multiple packets
+being that common. Sure, they can happen, but it really looks like the
+normal case will always be the trivial ping-pong scenario ("read one
+packet, react to it, rinse and repeat").
 
+But using a big buffer and trying to read lots at one time is valid even then.
+
+The thing I *really* hate about the current autofs situation is how it
+really does everything you can possibly do wrong. Not at all the
+"let's just read as much as we can, and look at the return value to
+determine number of bytes/packets", but literally "I know a-priori how
+big the packet is, and I will read exactly that many bytes". That
+coupled with the psueod-fixed-size packets just made it a very very
+fragile thing.
+
+                  Linus
