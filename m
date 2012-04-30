@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab2D3V4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 17:56:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54359 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757165Ab2D3V4I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 17:56:08 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: Cache single values read from the chip
-Date: Mon, 30 Apr 2012 22:55:57 +0100
-Message-Id: <1335822957-5492-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	id S1757162Ab2D3V5n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 17:57:43 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58281 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756383Ab2D3V5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 17:57:42 -0400
+Message-ID: <1335823049.20866.48.camel@pasglop>
+Subject: Re: [REGRESSION][PATCH V4 3/3] bpf jit: Let the powerpc jit handle
+ negative offsets
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Miller <davem@davemloft.net>
+Cc: kaffeemonster@googlemail.com, eric.dumazet@gmail.com, matt@ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Tue, 01 May 2012 07:57:29 +1000
+In-Reply-To: <1335822926.20866.47.camel@pasglop>
+References: <1335760199.20866.33.camel@pasglop>
+	 <4F9E188E.80503@googlemail.com> <1335763568.20866.37.camel@pasglop>
+	 <20120430.134140.1738751315208907289.davem@davemloft.net>
+	 <1335822926.20866.47.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we don't have a cached value for a register and we can cache it then
-when we do a read a value we should add it to the cache to save rereading
-it later on. Do this for single register reads, for block reads the code
-would be a little more complex and this covers most practical usage.
+On Tue, 2012-05-01 at 07:55 +1000, Benjamin Herrenschmidt wrote:
+> On Mon, 2012-04-30 at 13:41 -0400, David Miller wrote:
+> > From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > Date: Mon, 30 Apr 2012 15:26:08 +1000
+> > 
+> > > David, what's the right way to fix that ?
+> > 
+> > There is no doubt that sock_fprog is the correct datastructure to use.
+> 
+> Ok, so the right fix is to email anybody who posted code using struct
+> bpf_program to fix their code ? :-)
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap.c |    3 +++
- 1 file changed, 3 insertions(+)
+Actually, the right fix is for anybody using pcap-bpf.h to not
+use SO_ATTACH_FILTER directly but to use pcap_setfilter() which
+handles the compatibility.
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 178989a..b57bb86 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -698,6 +698,9 @@ static int _regmap_read(struct regmap *map, unsigned int reg,
- 		trace_regmap_reg_read(map->dev, reg, *val);
- 	}
- 
-+	if (!map->cache_bypass)
-+		regcache_write(map, reg, *val);
-+
- 	return ret;
- }
- 
--- 
-1.7.10
+I'll start spamming web sites who tell people to do the wrong thing.
+
+Cheers,
+Ben.
+
 
