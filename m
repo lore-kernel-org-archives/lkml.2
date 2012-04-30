@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189Ab2D3Ula (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:41:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26365 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757132Ab2D3Ul2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:41:28 -0400
-Date: Mon, 30 Apr 2012 23:41:27 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davej@redhat.com
-Subject: Re: [PATCH] kvm: fix cpuid eax
-Message-ID: <20120430204126.GA14876@redhat.com>
-References: <20120430143902.GA10181@redhat.com>
- <4F9EF7FA.3060007@codemonkey.ws>
+	id S1757023Ab2D3UnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:43:17 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35996 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756585Ab2D3UnQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 16:43:16 -0400
+Date: Mon, 30 Apr 2012 22:43:14 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sam Ravnborg <sam@ravnborg.org>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org
+Subject: Re: [patch 00/29] init_task: Use a generic init_task variant
+In-Reply-To: <20120430203743.GA8934@merkur.ravnborg.org>
+Message-ID: <alpine.LFD.2.02.1204302240190.6271@ionos>
+References: <20120430194725.763322463@linutronix.de> <20120430203743.GA8934@merkur.ravnborg.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9EF7FA.3060007@codemonkey.ws>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 03:37:14PM -0500, Anthony Liguori wrote:
-> On 04/30/2012 09:39 AM, Michael S. Tsirkin wrote:
-> >cpuid eax should return the max leaf so that
-> >guests can find out the valid range.
-> >This matches Xen et al.
-> 
-> What KVM does here predates Xen and Hyper-V.
-> 
-> This is an ABI breaker.
+On Mon, 30 Apr 2012, Sam Ravnborg wrote:
 
-It is? I tested an old guest and qemu and both work fine.
-What breaks?
+> On Mon, Apr 30, 2012 at 08:15:50PM -0000, Thomas Gleixner wrote:
+> > All architectures do roughly the same to initialize init_task. The
+> > only architecture which deviates is ia64, but I could not figure out
+> > why it couldn't use the same setup as all other architectures.
+> > 
+> > The following series converts all archs to a generic version.
+> > 
+> > Thanks,
+> > 
+> > 	tglx
+> > ---
+> >  arch/um/kernel/init_task.c          |   38 -------------------
+> >  arch/unicore32/kernel/init_task.c   |   44 ----------------------
+> >  arch/x86/kernel/init_task.c         |   42 ---------------------
+> >  arch/xtensa/kernel/init_task.c      |   31 ---------------
+> >  tip/arch/um/kernel/um_arch.c        |    5 ++
+> >  tip/arch/unicore32/Makefile         |    1 
+> >  tip/arch/unicore32/kernel/Makefile  |    2 -
+> >  tip/arch/x86/Makefile               |    1 
+> >  tip/arch/x86/kernel/Makefile        |    2 -
+> >  tip/arch/x86/kernel/process.c       |    9 ++++
+> >  tip/arch/xtensa/kernel/Makefile     |    2 -
+> >  tip/kernel/sched/Makefile           |    4 --
+> >  tip/kernel/sched/init_task.c        |   24 ++++++++++++
+> 
+> Diffstat looks funny. Some tip stuff sneaked in.
 
-> Regards,
-> 
-> Anthony Liguori
-> 
-> >
-> >Tested using -cpu host.
-> >
-> >Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
-> >---
-> >  arch/x86/kvm/cpuid.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> >diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-> >index 7d00d2d..bda4877 100644
-> >--- a/arch/x86/kvm/cpuid.c
-> >+++ b/arch/x86/kvm/cpuid.c
-> >@@ -397,7 +397,7 @@ static int do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
-> >  	case KVM_CPUID_SIGNATURE: {
-> >  		char signature[12] = "KVMKVMKVM\0\0";
-> >  		u32 *sigptr = (u32 *)signature;
-> >-		entry->eax = 0;
-> >+		entry->eax = KVM_CPUID_FEATURES;
-> >  		entry->ebx = sigptr[0];
-> >  		entry->ecx = sigptr[1];
-> >  		entry->edx = sigptr[2];
+Nah. That's diffstat madness. It does not add the prefix to the
+deleted files, but for the modified ones it keeps it.
+
+> Also I am missing patch 1..
+
+I've got all of them sent back by vger ...
+
+Thanks,
+
+	tglx
+
