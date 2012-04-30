@@ -1,67 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757023Ab2D3UnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:43:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35996 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756585Ab2D3UnQ (ORCPT
+	id S1757081Ab2D3Upy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:45:54 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61742 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756754Ab2D3Upx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:43:16 -0400
-Date: Mon, 30 Apr 2012 22:43:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sam Ravnborg <sam@ravnborg.org>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org
-Subject: Re: [patch 00/29] init_task: Use a generic init_task variant
-In-Reply-To: <20120430203743.GA8934@merkur.ravnborg.org>
-Message-ID: <alpine.LFD.2.02.1204302240190.6271@ionos>
-References: <20120430194725.763322463@linutronix.de> <20120430203743.GA8934@merkur.ravnborg.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 30 Apr 2012 16:45:53 -0400
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: jj@chaosbits.net, dan.carpenter@oracle.com, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Larry.Finger@lwfinger.net,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH NEXT]staging: rtl8192u Fix a typo.
+Date: Mon, 30 Apr 2012 13:45:41 -0700
+Message-Id: <1335818741-10706-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Apr 2012, Sam Ravnborg wrote:
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-> On Mon, Apr 30, 2012 at 08:15:50PM -0000, Thomas Gleixner wrote:
-> > All architectures do roughly the same to initialize init_task. The
-> > only architecture which deviates is ia64, but I could not figure out
-> > why it couldn't use the same setup as all other architectures.
-> > 
-> > The following series converts all archs to a generic version.
-> > 
-> > Thanks,
-> > 
-> > 	tglx
-> > ---
-> >  arch/um/kernel/init_task.c          |   38 -------------------
-> >  arch/unicore32/kernel/init_task.c   |   44 ----------------------
-> >  arch/x86/kernel/init_task.c         |   42 ---------------------
-> >  arch/xtensa/kernel/init_task.c      |   31 ---------------
-> >  tip/arch/um/kernel/um_arch.c        |    5 ++
-> >  tip/arch/unicore32/Makefile         |    1 
-> >  tip/arch/unicore32/kernel/Makefile  |    2 -
-> >  tip/arch/x86/Makefile               |    1 
-> >  tip/arch/x86/kernel/Makefile        |    2 -
-> >  tip/arch/x86/kernel/process.c       |    9 ++++
-> >  tip/arch/xtensa/kernel/Makefile     |    2 -
-> >  tip/kernel/sched/Makefile           |    4 --
-> >  tip/kernel/sched/init_task.c        |   24 ++++++++++++
-> 
-> Diffstat looks funny. Some tip stuff sneaked in.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+---
 
-Nah. That's diffstat madness. It does not add the prefix to the
-deleted files, but for the modified ones it keeps it.
+NOTE:
+I had not realized that my previous applied patch had created a typo. Thanks to Larry Finger
+for pointing this out to me. So either you take this one on top of the original and/or I send you
+the original with the updated fix.
 
-> Also I am missing patch 1..
+The below patch removes an "s" from "thanks" to make it proper.
 
-I've got all of them sent back by vger ...
+ drivers/staging/rtl8192u/r8180_93cx6.c |    2 +-
+ drivers/staging/rtl8192u/r8180_93cx6.h |    2 +-
+ drivers/staging/rtl8192u/r8192U.h      |    2 +-
+ drivers/staging/rtl8192u/r8192U_hw.h   |    2 +-
+ drivers/staging/rtl8192u/r8192U_wx.c   |    2 +-
+ drivers/staging/rtl8192u/r8192U_wx.h   |    2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
 
-Thanks,
-
-	tglx
+diff --git a/drivers/staging/rtl8192u/r8180_93cx6.c b/drivers/staging/rtl8192u/r8180_93cx6.c
+index 0e8ff75..3c515b7 100644
+--- a/drivers/staging/rtl8192u/r8180_93cx6.c
++++ b/drivers/staging/rtl8192u/r8180_93cx6.c
+@@ -14,7 +14,7 @@
+ 
+    Parts of this driver are based on the Intel Pro Wireless 2100 GPL driver.
+ 
+-   We want to thanks the Authors of those projects and the Ndiswrapper
++   We want to thank the Authors of those projects and the Ndiswrapper
+    project Authors.
+ */
+ 
+diff --git a/drivers/staging/rtl8192u/r8180_93cx6.h b/drivers/staging/rtl8192u/r8180_93cx6.h
+index 3527d32..5cea51e 100644
+--- a/drivers/staging/rtl8192u/r8180_93cx6.h
++++ b/drivers/staging/rtl8192u/r8180_93cx6.h
+@@ -7,7 +7,7 @@
+ 	Parts of this driver are based on the rtl8180 driver skeleton from Patric Schenke & Andres Salomon
+ 	Parts of this driver are based on the Intel Pro Wireless 2100 GPL driver
+ 
+-	We want to thanks the Authors of such projects and the Ndiswrapper project Authors.
++	We want to thank the Authors of such projects and the Ndiswrapper project Authors.
+ */
+ 
+ /*This files contains card eeprom (93c46 or 93c56) programming routines*/
+diff --git a/drivers/staging/rtl8192u/r8192U.h b/drivers/staging/rtl8192u/r8192U.h
+index adeb724..ebcb5b0 100644
+--- a/drivers/staging/rtl8192u/r8192U.h
++++ b/drivers/staging/rtl8192u/r8192U.h
+@@ -11,7 +11,7 @@
+ 
+    Parts of this driver are based on the Intel Pro Wireless 2100 GPL driver
+ 
+-   We want to thanks the Authors of those projects and the Ndiswrapper
++   We want to thank the Authors of those projects and the Ndiswrapper
+    project Authors.
+ */
+ 
+diff --git a/drivers/staging/rtl8192u/r8192U_hw.h b/drivers/staging/rtl8192u/r8192U_hw.h
+index b0ee4dd..1bfe871 100644
+--- a/drivers/staging/rtl8192u/r8192U_hw.h
++++ b/drivers/staging/rtl8192u/r8192U_hw.h
+@@ -10,7 +10,7 @@
+ 	Parts of this driver are based on the Intel Pro Wireless
+ 	2100 GPL driver.
+ 
+-	We want to thanks the Authors of those projects
++	We want to thank the Authors of those projects
+ 	and the Ndiswrapper project Authors.
+ */
+ 
+diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
+index 2ce0fc8..71f2d23 100644
+--- a/drivers/staging/rtl8192u/r8192U_wx.c
++++ b/drivers/staging/rtl8192u/r8192U_wx.c
+@@ -13,7 +13,7 @@
+ 
+    Parts of this driver are based on the Intel Pro Wireless 2100 GPL driver.
+ 
+-   We want to thanks the Authors of those projects and the Ndiswrapper
++   We want to thank the Authors of those projects and the Ndiswrapper
+    project Authors.
+ */
+ 
+diff --git a/drivers/staging/rtl8192u/r8192U_wx.h b/drivers/staging/rtl8192u/r8192U_wx.h
+index 1388664..9f6b105 100644
+--- a/drivers/staging/rtl8192u/r8192U_wx.h
++++ b/drivers/staging/rtl8192u/r8192U_wx.h
+@@ -7,7 +7,7 @@
+ 	Parts of this driver are based on the rtl8180 driver skeleton from Patric Schenke & Andres Salomon
+ 	Parts of this driver are based on the Intel Pro Wireless 2100 GPL driver
+ 
+-	We want to thanks the Authors of such projects and the Ndiswrapper project Authors.
++	We want to thank the Authors of such projects and the Ndiswrapper project Authors.
+ */
+ 
+ /* this file (will) contains wireless extension handlers*/
+-- 
+1.7.5.4
 
