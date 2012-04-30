@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab2D3QZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 12:25:13 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45673 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753249Ab2D3QZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 12:25:11 -0400
-Message-ID: <4F9EBCC3.9040509@linux.vnet.ibm.com>
-Date: Mon, 30 Apr 2012 11:24:35 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1756303Ab2D3QfN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 12:35:13 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:41272 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754109Ab2D3QfL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 12:35:11 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6697"; a="186223648"
+Message-ID: <4F9EBF3E.8060401@codeaurora.org>
+Date: Mon, 30 Apr 2012 09:35:10 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: undisclosed-recipients:";
-	Dan Magenheimer" <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	undisclosed-recipients:;Dan Magenheimer <dan.magenheimer@oracle.com>
-						^-missing end of address
-Subject: Re: [PATCH 6/6] zsmalloc: make zsmalloc portable
-References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-7-git-send-email-minchan@kernel.org> <4F980AFE.60901@vflare.org> <fcde09be-ae34-4f09-a324-825fb2d4fac2@default> <4F98ACF3.7060908@kernel.org> <4F98D814.9060808@kernel.org>
-In-Reply-To: <4F98D814.9060808@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH] Move most arches to asm-generic/current.h
+References: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org> <201204301415.56690.arnd@arndb.de>
+In-Reply-To: <201204301415.56690.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12043016-5806-0000-0000-000014BD7417
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2012 12:07 AM, Minchan Kim wrote:
+On 04/30/12 07:15, Arnd Bergmann wrote:
+> On Tuesday 24 April 2012, Stephen Boyd wrote:
+>> diff --git a/include/asm-generic/current.h b/include/asm-generic/current.h
+>> index 5e86f6a..bbfb795 100644
+>> --- a/include/asm-generic/current.h
+>> +++ b/include/asm-generic/current.h
+>> @@ -1,9 +1,16 @@
+>>  #ifndef __ASM_GENERIC_CURRENT_H
+>>  #define __ASM_GENERIC_CURRENT_H
+>>  
+>> +#include <linux/compiler.h>
+>>  #include <linux/thread_info.h>
+>>  
+>> -#define get_current() (current_thread_info()->task)
+>> +struct task_struct;
+>> +
+>> +static __always_inline struct task_struct *get_current(void)
+>> +{
+>> +       return current_thread_info()->task;
+>> +}
+>> +
+>>  #define current get_current()
+>>  
+>>  #endif /* __ASM_GENERIC_CURRENT_H */
+> Does this need to be an inline function rather than a macro? I think I
+> remember having trouble with header file dependencies when I tried making
+> it an inline function initially and I don't know if those have been
+> resolved.
+>
+> I realize that the macro is ugly, but if you don't mind keeping it,
+> that would be the safer option in terms of breaking some architecture
+> in the process. If course if you can prove that all architectures using
+> the generic implementation can use the inline function, I'm all for
+> the change.
+>
 
-> 
-> Quick patch - totally untested.
-> 
-> We can implement new TLB flush function 
-> "local_flush_tlb_kernel_range" If architecture is very smart, it 
-> could flush only tlb entries related to vaddr. If architecture is 
-> smart, it could flush only tlb entries related to a CPU. If 
-> architecture is _NOT_ smart, it could flush all entries of all CPUs.
-> 
-> Now there are few architectures have "local_flush_tlb_kernel_range". 
-> MIPS, sh, unicore32, arm, score and x86 by this patch. So I think 
-> it's good candidate other arch should implement. Until that, we can 
-> add stub for other architectures which calls only [global/local] TLB
->  flush. We can expect maintainer could respond then they can 
-> implement best efficient method. If the maintainer doesn't have any 
-> interest, zsmalloc could be very slow in that arch and users will 
-> blame that architecture.
-> 
-> Any thoughts?
+I admit I haven't compile tested this on all the affected architectures.
+Looking at the architectures that are migrated here I don't see any that
+are defining get_current() as a macro except for alpha. Should I drop
+alpha from the patch? Or would it be easier if someone threw this into
+linux-next and see if it blows up?
 
+In the meantime I can scrounge around for those kernel.org
+cross-compilers and see if I can compile alpha.
 
-I had this same idea a while back.
-
-It is encouraging to know that someone else independently thought of
-this solution too :)  Makes me think it is a good solution.
-
-Let me build and test on x86, make sure there are no unforseen consequences.
-
-Thanks again for your work here!
-
-Seth
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
