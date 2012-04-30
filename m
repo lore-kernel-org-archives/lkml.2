@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab2D3ELo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 00:11:44 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56183 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751205Ab2D3ELn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 00:11:43 -0400
-Message-ID: <1335759088.20866.32.camel@pasglop>
-Subject: Re: [REGRESSION][PATCH V4 3/3] bpf jit: Let the powerpc jit handle
- negative offsets
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: David Miller <davem@davemloft.net>
-Cc: kaffeemonster@googlemail.com, eric.dumazet@gmail.com, matt@ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Mon, 30 Apr 2012 14:11:28 +1000
-In-Reply-To: <1335753820.20866.27.camel@pasglop>
-References: <4F75CA89.4010709@googlemail.com>
-	 <4F75D2A5.7060407@googlemail.com>
-	 <20120403.180302.342779808900865443.davem@davemloft.net>
-	 <1333491102.3040.12.camel@pasglop> <1335753820.20866.27.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751962Ab2D3EPH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 00:15:07 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:47791 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab2D3EPE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 00:15:04 -0400
+From: Shawn Landden <shawnlandden@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shawn Landden <shawnlandden@gmail.com>
+Subject: [PATCH 1/2] input: usbtouchscreen: only expose e2i configure option in expert mode
+Date: Sun, 29 Apr 2012 21:14:57 -0700
+Message-Id: <1335759297-451-1-git-send-email-shawnlandden@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-30 at 12:43 +1000, Benjamin Herrenschmidt wrote:
+as is the case of all other devices supported by usbtouchscreen.c
 
-> > Matt's having a look at powerpc
-> 
-> Ok, he hasn't so I'll dig a bit.
-> 
-> No obvious wrongness (but I'm not very familiar with bpf), though I do
-> have a comment: sk_negative_common() and bpf_slow_path_common() should
-> be made one and single macro which takes the fallback function as an
-> argument.
+Also list e2i under the composite configure option (TOUCHSCREEN_USB_COMPOSITE)
 
-Ok, with the compile fix below it seems to work for me:
+Signed-off-by: Shawn Landden <shawnlandden@gmail.com>
+---
+ drivers/input/touchscreen/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-(Feel free to fold that into the original patch)
-
-diff --git a/arch/powerpc/net/bpf_jit.h b/arch/powerpc/net/bpf_jit.h
-index af1ab5e..5c3cf2d 100644
---- a/arch/powerpc/net/bpf_jit.h
-+++ b/arch/powerpc/net/bpf_jit.h
-@@ -48,7 +48,13 @@
- /*
-  * Assembly helpers from arch/powerpc/net/bpf_jit.S:
-  */
--extern u8 sk_load_word[], sk_load_half[], sk_load_byte[], sk_load_byte_msh[];
-+#define DECLARE_LOAD_FUNC(func)	\
-+	extern u8 func[], func##_negative_offset[], func##_positive_offset[]
-+
-+DECLARE_LOAD_FUNC(sk_load_word);
-+DECLARE_LOAD_FUNC(sk_load_half);
-+DECLARE_LOAD_FUNC(sk_load_byte);
-+DECLARE_LOAD_FUNC(sk_load_byte_msh);
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 2a21419..a31b05f 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -635,6 +635,7 @@ config TOUCHSCREEN_USB_COMPOSITE
+ 	  - Zytronic controllers
+ 	  - Elo TouchSystems 2700 IntelliTouch
+ 	  - EasyTouch USB Touch Controller from Data Modul
++	  - e2i (Mimo monitors)
  
- #define FUNCTION_DESCR_SIZE	24
+ 	  Have a look at <http://linux.chapter7.ch/touchkit/> for
+ 	  a usage description and the required user-space stuff.
+@@ -721,7 +722,7 @@ config TOUCHSCREEN_USB_ELO
  
-Cheers,
-Ben.
-
+ config TOUCHSCREEN_USB_E2I
+ 	default y
+-	bool "e2i Touchscreen controller (e.g. from Mimo 740)"
++	bool "e2i Touchscreen controller (e.g. from Mimo 740)" if EXPERT
+ 	depends on TOUCHSCREEN_USB_COMPOSITE
+ 
+ config TOUCHSCREEN_USB_ZYTRONIC
+-- 
+1.7.9.5
 
