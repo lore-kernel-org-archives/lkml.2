@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab2D3RYQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 13:24:16 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:40807 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756355Ab2D3RYM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 13:24:12 -0400
-Date: Mon, 30 Apr 2012 13:22:03 -0400 (EDT)
-Message-Id: <20120430.132203.912342595853741106.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bcrl@kvack.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (net-next tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120430155836.44bcf3846c80cf686bb9cb77@canb.auug.org.au>
-References: <20120430155836.44bcf3846c80cf686bb9cb77@canb.auug.org.au>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 30 Apr 2012 10:22:05 -0700 (PDT)
+	id S1756473Ab2D3R1Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 13:27:24 -0400
+Received: from d1.icnet.pl ([212.160.220.21]:43765 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756372Ab2D3R1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 13:27:22 -0400
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Subject: [PATCH 3.4-rc4] ARM: OMAP1: Amstrad Delta: Fix wrong IRQ base in FIQ handler
+Date: Mon, 30 Apr 2012 19:26:09 +0200
+Message-Id: <1335806769-23711-1-git-send-email-jkrzyszt@tis.icnet.pl>
+X-Mailer: git-send-email 1.7.3.4
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 30 Apr 2012 15:58:36 +1000
+Commit 384ebe1c2849160d040df3e68634ec506f13d9ff, "gpio/omap: Add DT
+support to GPIO driver", introduced dynamic IRQ numbering of OMAP GPIO
+interrupts, breaking all IH_GPIO_BASE based IRQ number calculations.
+This issue was corrected in the OMAP GPIO driver and the related header
+file with commit 25db711df3258d125dc1209800317e5c0ef3c870, "gpio/omap:
+Fix IRQ handling for SPARSE_IRQ".
 
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> net/l2tp/l2tp_core.c: In function 'l2tp_verify_udp_checksum':
-> net/l2tp/l2tp_core.c:464:7: error: implicit declaration of function 'csum_ipv6_magic' [-Werror=implicit-function-declaration]
-> 
-> Caused by commit d2cf3361677e ("net/l2tp: add support for L2TP over IPv6
-> UDP").  Include file missing.
-> 
-> I have reverted that commit for today.
+However, the Amstrad Delta FIQ handler, which replaces the gpio-omap
+driver in serving GPIO interrupts on this board, still uses that
+outdated method. Fix it.
 
-The fix is less work than the revert on this one isn't it? :-)
+Created and tested against linux-3.4-rc4.
 
-Pushed to net-next, thanks Stephen:
-
---------------------
-l2tp: Add missing net/net/ip6_checksum.h include.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
 ---
- net/l2tp/l2tp_core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/arm/mach-omap1/ams-delta-fiq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/l2tp/l2tp_core.c b/net/l2tp/l2tp_core.c
-index e91d559..0ca9bc3 100644
---- a/net/l2tp/l2tp_core.c
-+++ b/net/l2tp/l2tp_core.c
-@@ -56,6 +56,7 @@
- #include <net/inet6_connection_sock.h>
- #include <net/inet_ecn.h>
- #include <net/ip6_route.h>
-+#include <net/ip6_checksum.h>
+diff --git a/arch/arm/mach-omap1/ams-delta-fiq.c b/arch/arm/mach-omap1/ams-delta-fiq.c
+index fcce7ff..cfd98b1 100644
+--- a/arch/arm/mach-omap1/ams-delta-fiq.c
++++ b/arch/arm/mach-omap1/ams-delta-fiq.c
+@@ -48,7 +48,7 @@ static irqreturn_t deferred_fiq(int irq, void *dev_id)
+ 	struct irq_chip *irq_chip = NULL;
+ 	int gpio, irq_num, fiq_count;
  
- #include <asm/byteorder.h>
- #include <linux/atomic.h>
+-	irq_desc = irq_to_desc(IH_GPIO_BASE);
++	irq_desc = irq_to_desc(gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK));
+ 	if (irq_desc)
+ 		irq_chip = irq_desc->irq_data.chip;
+ 
 -- 
-1.7.7.6
+1.7.3.4
 
