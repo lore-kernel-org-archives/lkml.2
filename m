@@ -1,195 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab2EAADs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 20:03:48 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:49498 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab2EAADp (ORCPT
+	id S932164Ab2EAADx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 20:03:53 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:51303 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932077Ab2EAADt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 20:03:45 -0400
-Date: Mon, 30 Apr 2012 17:02:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pascal Chapperon <pascal.chapperon@wanadoo.fr>
-Cc: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org
-Subject: Re: RCU related performance regression in 3.3
-Message-ID: <20120501000245.GA4329@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20177034.34764.1335528920975.JavaMail.www@wwinf1f04>
- <20120428034257.GA2495@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120428034257.GA2495@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050100-6148-0000-0000-00000572DF4F
+	Mon, 30 Apr 2012 20:03:49 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
+Cc: Hakan Akkan <hakanakkan@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 27/41] nohz/cpuset: enable addition&removal of cpus while in adaptive nohz mode
+Date: Tue,  1 May 2012 01:55:01 +0200
+Message-Id: <1335830115-14335-28-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 08:42:58PM -0700, Paul E. McKenney wrote:
-> On Fri, Apr 27, 2012 at 02:15:20PM +0200, Pascal Chapperon wrote:
-> > Le 18/04/2012 17:23, Paul E. McKenney a écrit :
-> > > On Wed, Apr 18, 2012 at 05:00:14PM +0200, Pascal Chapperon wrote:
-> > >> Le 18/04/2012 16:01, Paul E. McKenney a écrit :
-> > >>> On Wed, Apr 18, 2012 at 11:37:28AM +0200, Pascal Chapperon wrote:
-> > >>>> Mount and umount operations are not slower with RCU_FAST_NO_HZ during
-> > >>>> runtime; systemctl start and stop operations are also not slower. In
-> > >>>> fact, i couldn't find a single operation slower during runtime with
-> > >>>> RCU_FAST_NO_HZ.
-> > >>>
-> > >>> Your boot-time setup is such that all CPUs are online before the
-> > >>> boot-time mount operations take place, right?
-> > >> Yes :
-> > >> [ 0.242697] Brought up 8 CPUs
-> > >> [ 0.242699] Total of 8 processors activated (35118.33 BogoMIPS).
-> > >>
-> > >>> Struggling to understand
-> > >>> how RCU can tell the difference between post-CPU-bringup boot time
-> > >>> and run time...
-> > >>>
-> > >> systemd is controlling the whole boot process including mount
-> > >> operation (apart root filesystem) and as I can see, uses heavily
-> > >> sockets to do it (not to mention cpu-affinity). It controls also the
-> > >> major part of umount operations. Is it possible that your patch hits
-> > >> a systemd bug ?
-> > > 
-> > > Is it possible that systemd is using network operations that include
-> > > synchronize_rcu()? Then if you did the same operation from the
-> > > command line at runtime, you might not see the slowdown.
-> > > 
-> > > Is it possible for you to convince systemd to collect RCU event tracing
-> > > during the slow operation? RCU event tracing is available under
-> > > /sys/kernel/debug/tracing/rcu.
-> > >
-> > .
-> > I have collected the RCU event tracing during a slow boot with
-> > FAST_NO_HZ (and the same without FAST_NO_HZ, same kernel config).
-> > The full logs and associated "systemd-analyze plot" can be found
-> > (in comment 32) at :
-> > 
-> > https://bugzilla.redhat.com/show_bug.cgi?id=806548
-> > 
-> > With FAST_NO_HZ, almost each rcu_prep_idle is followed by ksoftirqd
-> > (75000 ksoftirqd lines with FAST_NO_HZ, 4000 without).
-> > 
-> > Sorry, the logs are very huge, but I can't figure where are the 
-> > plots of some interest. 
-> 
-> Thank you for collecting them!  I clearly will need to do some scripting.  ;-)
+From: Hakan Akkan <hakanakkan@gmail.com>
 
-And it appears that your system is migrating timers without waking up
-the CPU on which the timer was posted.  This explains the slowdowns:
-RCU assumes that the timer will either fire on the CPU that it was posted
-on or that that CPU will be awakened when it goes offline.  If the timer
-does not fire on that CPU and that CPU is not otherwise awakened, then
-that CPU's RCU callbacks can be indefinitely postponed, which could account
-for the slowdowns that you were seeing.
+Currently modifying cpuset.cpus mask of a cgroup does not
+update the reference counters for adaptive nohz mode if the
+cpuset already had cpuset.adaptive_nohz == 1. Fix it so that
+cpus can be added or removed from a adaptive_nohz cpuset.
 
-Please see below for a lightly tested patch that should address this
-problem, and thank you again for your patient testing efforts!
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Make RCU_FAST_NO_HZ handle timer migration
-
-The current RCU_FAST_NO_HZ assumes that timers do not migrate unless a
-CPU goes offline, in which case it assumes that the CPU will have to come
-out of dyntick-idle mode (cancelling the timer) in order to go offline.
-This is important because when RCU_FAST_NO_HZ permits a CPU to enter
-dyntick-idle mode despite having RCU callbacks pending, it posts a timer
-on that CPU to force a wakeup on that CPU.  This wakeup ensures that the
-CPU will eventually handle the end of the grace period, including invoking
-its RCU callbacks.
-
-However, Pascal Chapperon's test setup shows that the timer handler
-rcu_idle_gp_timer_func() really does get invoked in some cases.  This is
-problematic because this can cause the CPU that entered dyntick-idle
-mode despite still having RCU callbacks pending to remain in
-dyntick-idle mode indefinitely, which means that its RCU callbacks might
-never be invoked.  This situation can result in grace-period delays or
-even system hangs, which matches Pascal's observations of slow boot-up
-and shutdown (https://lkml.org/lkml/2012/4/5/142).  See also the bugzilla:
-
-https://bugzilla.redhat.com/show_bug.cgi?id=806548
-
-This commit therefore causes the "should never be invoked" timer handler
-rcu_idle_gp_timer_func() to use smp_call_function_single() to wake up
-the CPU for which the timer was intended, allowing that CPU to invoke
-its RCU callbacks in a timely manner.
-
-Reported-by: Pascal Chapperon <pascal.chapperon@wanadoo.fr>
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Hakan Akkan <hakanakkan@gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Max Krasnyansky <maxk@qualcomm.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
+ kernel/cpuset.c |  106 +++++++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 69 insertions(+), 37 deletions(-)
 
- include/trace/events/rcu.h |    1 +
- kernel/rcutree_plugin.h    |   23 ++++++++++++++++++++---
- 2 files changed, 21 insertions(+), 3 deletions(-)
-
-diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
-index aaa55e1..1480900 100644
---- a/include/trace/events/rcu.h
-+++ b/include/trace/events/rcu.h
-@@ -292,6 +292,7 @@ TRACE_EVENT(rcu_dyntick,
-  *	"More callbacks": Still more callbacks, try again to clear them out.
-  *	"Callbacks drained": All callbacks processed, off to dyntick idle!
-  *	"Timer": Timer fired to cause CPU to continue processing callbacks.
-+ *	"Demigrate": Timer fired on wrong CPU, woke up correct CPU.
-  *	"Cleanup after idle": Idle exited, timer canceled.
-  */
- TRACE_EVENT(rcu_prep_idle,
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index dc12efc..bbd064a 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1994,16 +1994,33 @@ static bool rcu_cpu_has_nonlazy_callbacks(int cpu)
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index aa8304d..148d138 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -862,6 +862,8 @@ static void update_tasks_cpumask(struct cpuset *cs, struct ptr_heap *heap)
+ 	cgroup_scan_tasks(&scan);
  }
  
- /*
-+ *
-+ */
-+void rcu_idle_demigrate(void *unused)
++static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs);
++
+ /**
+  * update_cpumask - update the cpus_allowed mask of a cpuset and all tasks in it
+  * @cs: the cpuset to consider
+@@ -902,6 +904,11 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
+ 	if (cpumask_equal(cs->cpus_allowed, trialcs->cpus_allowed))
+ 		return 0;
+ 
++	/*
++	 * Update adaptive nohz bits.
++	 */
++	update_nohz_cpus(cs, trialcs);
++
+ 	retval = heap_init(&heap, PAGE_SIZE, GFP_KERNEL, NULL);
+ 	if (retval)
+ 		return retval;
+@@ -1247,51 +1254,73 @@ static void cpu_exit_nohz(int cpu)
+ 	preempt_enable();
+ }
+ 
+-static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
++static void update_cpu_nohz_flag(int cpu, int adjust)
 +{
-+	trace_rcu_prep_idle("Demigrate");
++	int ref = (per_cpu(cpu_adaptive_nohz_ref, cpu) += adjust);
++
++	if (ref == 1 && adjust > 0) {
++		cpumask_set_cpu(cpu, &nohz_cpuset_mask);
++		/*
++		 * The mask update needs to be visible right away
++		 * so that this CPU is part of the cputime IPI
++		 * update right now.
++		 */
++		 smp_mb();
++	} else if (!ref) {
++		/*
++		 * The update to cpu_adaptive_nohz_ref must be
++		 * visible right away. So that once we restart the tick
++		 * from the IPI, it won't be stopped again due to cache
++		 * update lag.
++		 * FIXME: We probably need more to ensure this value is really
++		 * visible right away.
++		 */
++		smp_mb();
++		cpu_exit_nohz(cpu);
++		/*
++		 * Now that the tick has been restarted and cputimes
++		 * flushed, we don't need anymore to be part of the
++		 * cputime flush IPI.
++		 */
++		cpumask_clear_cpu(cpu, &nohz_cpuset_mask);
++	}
 +}
 +
-+/*
-  * Timer handler used to force CPU to start pushing its remaining RCU
-  * callbacks in the case where it entered dyntick-idle mode with callbacks
-  * pending.  The hander doesn't really need to do anything because the
-  * real work is done upon re-entry to idle, or by the next scheduling-clock
-  * interrupt should idle not be re-entered.
-+ *
-+ * One special case: the timer gets migrated without awakening the CPU
-+ * on which the timer was scheduled on.  In this case, we must wake up
-+ * that CPU.  We do so with smp_call_function_single().
-  */
--static void rcu_idle_gp_timer_func(unsigned long unused)
-+static void rcu_idle_gp_timer_func(unsigned long cpu_in)
++static void update_nohz_flag(struct cpuset *old_cs, struct cpuset *cs)
  {
--	WARN_ON_ONCE(1); /* Getting here can hang the system... */
-+	int cpu = (int)cpu_in;
+ 	int cpu;
+-	int val;
++	int adjust;
+ 
+ 	if (is_adaptive_nohz(old_cs) == is_adaptive_nohz(cs))
+ 		return;
+ 
++	adjust = is_adaptive_nohz(cs) ? 1 : -1;
+ 	for_each_cpu(cpu, cs->cpus_allowed) {
+-		if (is_adaptive_nohz(cs))
+-			per_cpu(cpu_adaptive_nohz_ref, cpu) += 1;
+-		else
+-			per_cpu(cpu_adaptive_nohz_ref, cpu) -= 1;
+-
+-		val = per_cpu(cpu_adaptive_nohz_ref, cpu);
+-
+-		if (val == 1) {
+-			cpumask_set_cpu(cpu, &nohz_cpuset_mask);
+-			/*
+-			 * The mask update needs to be visible right away
+-			 * so that this CPU is part of the cputime IPI
+-			 * update right now.
+-			 */
+-			 smp_mb();
+-		} else if (!val) {
+-			/*
+-			 * The update to cpu_adaptive_nohz_ref must be
+-			 * visible right away. So that once we restart the tick
+-			 * from the IPI, it won't be stopped again due to cache
+-			 * update lag.
+-			 * FIXME: We probably need more to ensure this value is really
+-			 * visible right away.
+-			 */
+-			smp_mb();
+-			cpu_exit_nohz(cpu);
+-			/*
+-			 * Now that the tick has been restarted and cputimes
+-			 * flushed, we don't need anymore to be part of the
+-			 * cputime flush IPI.
+-			 */
+-			cpumask_clear_cpu(cpu, &nohz_cpuset_mask);
+-		}
++		update_cpu_nohz_flag(cpu, adjust);
+ 	}
+ }
 +
- 	trace_rcu_prep_idle("Timer");
-+	if (cpu != smp_processor_id())
-+		smp_call_function_single(cpu, rcu_idle_demigrate, NULL, 0);
-+	else
-+		WARN_ON_ONCE(1); /* Getting here can hang the system... */
- }
- 
- /*
-@@ -2012,7 +2029,7 @@ static void rcu_idle_gp_timer_func(unsigned long unused)
- static void rcu_prepare_for_idle_init(int cpu)
++static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
++{
++	int cpu;
++	cpumask_t cpus;
++
++	/*
++	 * Only bother if the cpuset has adaptive nohz
++	 */
++	if (!is_adaptive_nohz(cs))
++		return;
++
++	cpumask_xor(&cpus, old_cs->cpus_allowed, cs->cpus_allowed);
++
++	for_each_cpu(cpu, &cpus)
++		update_cpu_nohz_flag(cpu,
++			cpumask_test_cpu(cpu, cs->cpus_allowed) ? 1 : -1);
++}
+ #else
++static inline void update_nohz_flag(struct cpuset *old_cs, struct cpuset *cs)
++{
++}
+ static inline void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
  {
- 	setup_timer(&per_cpu(rcu_idle_gp_timer, cpu),
--		    rcu_idle_gp_timer_func, 0);
-+		    rcu_idle_gp_timer_func, cpu);
  }
+@@ -1362,7 +1391,7 @@ static int update_flag(cpuset_flagbits_t bit, struct cpuset *cs,
+ 	spread_flag_changed = ((is_spread_slab(cs) != is_spread_slab(trialcs))
+ 			|| (is_spread_page(cs) != is_spread_page(trialcs)));
  
+-	update_nohz_cpus(cs, trialcs);
++	update_nohz_flag(cs, trialcs);
+ 
+ 	mutex_lock(&callback_mutex);
+ 	cs->flags = trialcs->flags;
+@@ -2006,7 +2035,8 @@ static struct cgroup_subsys_state *cpuset_create(
  /*
+  * If the cpuset being removed has its flag 'sched_load_balance'
+  * enabled, then simulate turning sched_load_balance off, which
+- * will call async_rebuild_sched_domains().
++ * will call async_rebuild_sched_domains(). Also update adaptive
++ * nohz flag.
+  */
+ 
+ static void cpuset_destroy(struct cgroup_subsys *ss, struct cgroup *cont)
+@@ -2016,6 +2046,8 @@ static void cpuset_destroy(struct cgroup_subsys *ss, struct cgroup *cont)
+ 	if (is_sched_load_balance(cs))
+ 		update_flag(CS_SCHED_LOAD_BALANCE, cs, 0);
+ 
++	update_flag(CS_ADAPTIVE_NOHZ, cs, 0);
++
+ 	number_of_cpusets--;
+ 	free_cpumask_var(cs->cpus_allowed);
+ 	kfree(cs);
+-- 
+1.7.5.4
 
