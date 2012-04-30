@@ -1,169 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab2D3Mdg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 08:33:36 -0400
-Received: from websrv.saout.de ([78.46.99.52]:35677 "EHLO websrv.saout.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755044Ab2D3Mde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 08:33:34 -0400
-X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Apr 2012 08:33:34 EDT
-Message-ID: <1335788867.29087.19.camel@localhost>
-Subject: Oops with DCACHE_WORD_ACCESS and ocfs2, autofs4
-From: Jana Saout <jana@saout.de>
-To: linux-kernel@vger.kernel.org
-Date: Mon, 30 Apr 2012 14:27:47 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756018Ab2D3Mia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 08:38:30 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40035 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab2D3Mi2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 08:38:28 -0400
+Date: Mon, 30 Apr 2012 14:38:19 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
+        Jason Uhlenkott <juhlenko@akamai.com>,
+        Tim Small <tim@buttersideup.com>,
+        Ranganathan Desikan <ravi@jetztechnologies.com>,
+        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Egor Martovetsky <egor@pasemi.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hitoshi Mitake <h.mitake@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Niklas =?iso-8859-1?Q?S=F6derlund?= 
+	<niklas.soderlund@ericsson.com>,
+        Shaohui Xie <Shaohui.Xie@freescale.com>,
+        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to work
+ with layers
+Message-ID: <20120430123819.GF9303@aftab.osrc.amd.com>
+References: <1335289087-11337-1-git-send-email-mchehab@redhat.com>
+ <1335291342-14922-1-git-send-email-mchehab@redhat.com>
+ <20120427133304.GE9626@aftab.osrc.amd.com>
+ <4F9ABCEC.9090807@redhat.com>
+ <20120428090523.GD26065@aftab.osrc.amd.com>
+ <4F9D46F8.1020104@redhat.com>
+ <20120430081513.GD8182@aftab.osrc.amd.com>
+ <4F9E7059.5070804@redhat.com>
+ <20120430111126.GD9303@aftab.osrc.amd.com>
+ <4F9E7B45.8010908@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F9E7B45.8010908@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Apr 30, 2012 at 08:45:09AM -0300, Mauro Carvalho Chehab wrote:
+> Em 30-04-2012 08:11, Borislav Petkov escreveu:
+> > On Mon, Apr 30, 2012 at 07:58:33AM -0300, Mauro Carvalho Chehab wrote:
+> 
+> >> For example, this is the mapping used by the second memory controller of the SB machine
+> >> I'm using on my tests:
+> >>
+> >> [52803.640043] EDAC DEBUG: sbridge_probe: Registering MC#1 (2 of 2)
+> >> ...
+> >> [52803.640062] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc(): allocating 7196 bytes for mci data (12 dimms, 12 csrows/channels)
+> >> [52803.640070] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: initializing 12 dimms
+> >> [52803.640072] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 0: dimm0 (0:0:0): row 0, chan 0
+> >> [52803.640074] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 1: dimm1 (0:1:0): row 0, chan 1
+> >> [52803.640077] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 2: dimm2 (0:2:0): row 0, chan 2
+> >> [52803.640080] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 3: dimm3 (1:0:0): row 0, chan 3
+> >> [52803.640083] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 4: dimm4 (1:1:0): row 1, chan 0
+> >> [52803.640086] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 5: dimm5 (1:2:0): row 1, chan 1
+> >> [52803.640089] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 6: dimm6 (2:0:0): row 1, chan 2
+> >> [52803.640092] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 7: dimm7 (2:1:0): row 1, chan 3
+> >> [52803.640095] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 8: dimm8 (2:2:0): row 2, chan 0
+> >> [52803.640098] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 9: dimm9 (3:0:0): row 2, chan 1
+> >> [52803.640101] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 10: dimm10 (3:1:0): row 2, chan 2
+> >> [52803.640104] EDAC DEBUG: edac_mc_alloc: edac_mc_alloc: 11: dimm11 (3:2:0): row 2, chan 3
+> >>
+> >> With the above info, it is clear that the DIMM located at mc#1, channel#3 slot#2 is
+> >> called "dimm11" at the new API, and corresponds to "csrow 2, channel 3" for a legacy
+> >> EDAC API call.
+> > 
+> > Are all those DIMM slots above populated? What happens if they're not,
+> > are you issuing the same dimm0-dimm11 lines for slots which aren't even
+> > populated?
+> > 
+> > I have a much better idea: Generally, this debug info should come from
+> > the specific driver that allocates the dimm descriptors, not from the
+> > EDAC core. This way, you know in the driver which slots are populated
+> > and those which are not should be omitted.
+> 
+> The drivers don't allocate the dimm descriptors. They're allocated by the
+> core.
 
-I've been trying out the latest kernel and ran into an occasional oops
-on a machine with OCFS2 and another machine with autofs. (on x86_64)
+I know that. The drivers call into EDAC core using edac_mc_alloc, this
+is what I meant above.
 
-I've attached one of those as full log excerpt at the end of the mail
-for completeness.
+> > This way it says "initializing 12 dimms" and the user thinks there are
+> > 12 DIMMs on his system where this might not be true.
+> 
+> 
+> I'm OK to remove the "initializing 12 dimms" message. It doesn't add anything
+> new.
+> 
+> With regards do the other messages, if the debug messages are not clear, 
+> then let's fix them, instead of removing. What if we print, instead,
+> on a message like:
+> 
+> 	"row 1, chan 1 will represent dimm5 (1:2:0) if not empty"
 
-What the crashes have in common is that they always occur in fs/namei.c
-hash_name (inlined into link_path_walk):
+How about the following instead: the specific driver calls
+edac_mc_alloc(), it gets the allocated dimm array in mci->dimms
+_without_ dumping each dimm%d line. Then, each driver figures out which
+subset of that dimms array actually has populated slots and prints only
+the populated rank/slot/...
 
-       [...]
+This information is much more valuable than saying how many _possible_
+slots the edac core has allocated.
 
-                hash = (hash + a) * 9;
-                len += sizeof(unsigned long);
- here --->      a = *(unsigned long *)(name+len);
-                /* Do we have any NUL or '/' bytes in this word? */
-                mask = has_zero(a) | has_zero(a ^ REPEAT_BYTE('/'));
-       [...]
+Then, each driver can decide whether it makes sense to dump that info or
+not.
 
-The line got compiled into "mov 0(%rbp,%rcx,1),%rax" with rbp being
-"name" and "rcx" being len.
+-- 
+Regards/Gruss,
+Boris.
 
-Now, it seems ocfs2 and autofs both manage to call into link_path_walk
-with "name" not being word-aligned.
-
-In the first example oops rbp ends with 0x...ff9, which is not
-word-aligned, and in this particular case, the read goes one byte over
-the end of the page, hence the rare, but occasional oops. (similar issue
-for the autofs oops)
-
-Force-disabling CONFIG_DCACHE_WORD_ACCESS make the oopses go away on
-those machines.
-
-Now, I guess, since the check is for dcache, and the name being passed
-in is from filesystem code and not dcache, that there is something weird
-going on here, or a case that has been missed, or something is happening
-that is not supposed to happen in OCFS2 or autofs.
-
-For the OCFS2 case I have a couple of oopses, always with almost
-identical backtraces with "ocfs2_fast_follow_link" in them.  The autofs
-oops is the only one I ran into so far.
-
-Cheers,
-	Jana
-
-OCFS2 oops:
-
-Apr 30 14:02:46 web5 kernel: PGD 180c067 PUD bf5f5067 PMD bf635067 PTE 0
-Apr 30 14:02:46 web5 kernel: Oops: 0000 [#8] PREEMPT SMP 
-Apr 30 14:02:46 web5 kernel: CPU 0 
-Apr 30 14:02:46 web5 kernel: Modules linked in: nfs lockd auth_rpcgss nfs_acl sunrpc autofs4 ocfs2 jbd2 ocfs2_dlmfs ocfs2_stack_o2cb ocfs2_dlm ocfs2_nodemanager ocfs2_stackglue configfs
-Apr 30 14:02:46 web5 kernel: 
-Apr 30 14:02:46 web5 kernel: Pid: 18880, comm: apache2 Tainted: G      D      3.4.0-js1 #1  
-Apr 30 14:02:46 web5 kernel: RIP: e030:[<ffffffff8113c29b>]  [<ffffffff8113c29b>] link_path_walk+0xab/0x890
-Apr 30 14:02:46 web5 kernel: RSP: e02b:ffff88001e7a3bc8  EFLAGS: 00010257
-Apr 30 14:02:46 web5 kernel: RAX: 0000000000000000 RBX: ffff88001e7a3e08 RCX: 0000000000000000
-Apr 30 14:02:46 web5 kernel: RDX: 0000000000000000 RSI: 0000000000003230 RDI: 8080808080808080
-Apr 30 14:02:46 web5 kernel: RBP: ffff880147e6dff9 R08: fefefefefefefeff R09: 2f2f2f2f2f2f2f2f
-Apr 30 14:02:46 web5 kernel: R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800646c7878
-Apr 30 14:02:46 web5 kernel: R13: ffff880012103c00 R14: 0000000000000000 R15: ffff880012103c00
-Apr 30 14:02:46 web5 kernel: FS:  00007f9940f51750(0000) GS:ffff8800bff0c000(0000) knlGS:0000000000000000
-Apr 30 14:02:46 web5 kernel: CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-Apr 30 14:02:46 web5 kernel: CR2: ffff880147e6e000 CR3: 00000000051a8000 CR4: 0000000000000660
-Apr 30 14:02:46 web5 kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-Apr 30 14:02:46 web5 kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Apr 30 14:02:46 web5 kernel: Process apache2 (pid: 18880, threadinfo ffff88001e7a2000, task ffff880012103c00)
-Apr 30 14:02:46 web5 kernel: Stack:
-Apr 30 14:02:46 web5 kernel:  ffff880012103c00 ffffffff8112538c 0000000000000020 ffffffffa014f7d5
-Apr 30 14:02:46 web5 kernel:  ffff88001e7a3c40 ffff880012103c00 ffff88001e7a3e08 ffff8800a115ed20
-Apr 30 14:02:46 web5 kernel:  ffff8800646f33c0 000000094e96972a ffff880147e6dfef ffffffffa014f808
-Apr 30 14:02:46 web5 kernel: Call Trace:
-Apr 30 14:02:46 web5 kernel:  [<ffffffff8112538c>] ? __kmalloc+0x17c/0x1e0
-Apr 30 14:02:46 web5 kernel:  [<ffffffffa014f7d5>] ? ocfs2_fast_follow_link+0x95/0x320 [ocfs2]
-Apr 30 14:02:46 web5 kernel:  [<ffffffffa014f808>] ? ocfs2_fast_follow_link+0xc8/0x320 [ocfs2]
-Apr 30 14:02:46 web5 kernel:  [<ffffffff8113c670>] ? link_path_walk+0x480/0x890
-Apr 30 14:02:46 web5 kernel:  [<ffffffff8113cbe2>] ? path_lookupat+0x52/0x740
-Apr 30 14:02:46 web5 kernel:  [<ffffffffa00fe05f>] ? ocfs2_wait_for_recovery+0x2f/0xc0 [ocfs2]
-Apr 30 14:02:46 web5 kernel:  [<ffffffff810056c9>] ? __raw_callee_save_xen_pmd_val+0x11/0x1e
-Apr 30 14:02:46 web5 kernel:  [<ffffffff8113d2fc>] ? do_path_lookup+0x2c/0xc0
-Apr 30 14:02:46 web5 kernel:  [<ffffffff8113a94d>] ? getname_flags+0xed/0x260
-Apr 30 14:02:46 web5 kernel:  [<ffffffff8113ed0e>] ? user_path_at_empty+0x5e/0xb0
-Apr 30 14:02:46 web5 kernel:  [<ffffffff8141d251>] ? _raw_spin_lock_irqsave+0x11/0x60
-Apr 30 14:02:46 web5 kernel:  [<ffffffffa00e2c7d>] ? __ocfs2_cluster_unlock.isra.28+0x2d/0xe0 [ocfs2]
-Apr 30 14:02:46 web5 kernel:  [<ffffffff81420a30>] ? do_page_fault+0x2d0/0x540
-Apr 30 14:02:46 web5 kernel:  [<ffffffff811342f0>] ? cp_new_stat+0xe0/0x100
-Apr 30 14:02:46 web5 kernel:  [<ffffffff81134482>] ? vfs_fstatat+0x32/0x60
-Apr 30 14:02:46 web5 kernel:  [<ffffffff81134622>] ? sys_newlstat+0x12/0x30
-Apr 30 14:02:46 web5 kernel:  [<ffffffff814242f9>] ? system_call_fastpath+0x16/0x1b
-Apr 30 14:02:46 web5 kernel: Code: 49 b9 2f 2f 2f 2f 2f 2f 2f 2f 49 b8 ff fe fe fe fe fe fe fe 48 bf 80 80 80 80 80 80 80 80 66 90 4c 01 d0 48 83 c1 08 4c 8d 14 c0 <48> 8b 44 0d 00 48 89 c6 4e 8d 24 00 4c 31 ce 4a 8d 14 06 48 f7 
-Apr 30 14:02:46 web5 kernel:  RSP <ffff88001e7a3bc8>
-Apr 30 14:02:46 web5 kernel: CR2: ffff880147e6e000
-Apr 30 14:02:46 web5 kernel: ---[ end trace d2be4a7423d225ba ]---
-
-
-autofs oops:
-
-Apr 30 01:46:52 www2 kernel: PGD 180c067 PUD 1810067 PMD 8d5067 PTE 0
-Apr 30 01:46:52 www2 kernel: Oops: 0000 [#1] PREEMPT SMP 
-Apr 30 01:46:52 www2 kernel: CPU 4 
-Apr 30 01:46:52 www2 kernel: Modules linked in: autofs4 nfsd exportfs nfs lockd auth_rpcgss nfs_acl sunrpc ext4 jbd2 crc16
-Apr 30 01:46:52 www2 kernel:
-Apr 30 01:46:52 www2 kernel: Pid: 30128, comm: automount Not tainted 3.4.0-js1 #1  
-Apr 30 01:46:52 www2 kernel: RIP: e030:[<ffffffff8113c38b>]  [<ffffffff8113c38b>] link_path_walk+0xab/0x890
-Apr 30 01:46:52 www2 kernel: RSP: e02b:ffff8800023abbb8  EFLAGS: 00010206
-Apr 30 01:46:52 www2 kernel: RAX: 234f31435a3c3650 RBX: ffff8800023abd38 RCX: 0000000000000018
-Apr 30 01:46:52 www2 kernel: RDX: 0107010303010000 RSI: 9a989e8c8c9e8f91 RDI: 8080808080808080
-Apr 30 01:46:52 www2 kernel: RBP: ffff88001e1effe7 R08: fefefefefefefeff R09: 2f2f2f2f2f2f2f2f
-Apr 30 01:46:52 www2 kernel: R10: 3dc8bb5e2c1de8d0 R11: ffff8800023abb74 R12: 0000000000000000
-Apr 30 01:46:52 www2 kernel: R13: ffff8800751ff200 R14: 0000000000000000 R15: ffff8800751ff200
-Apr 30 01:46:52 www2 kernel: FS:  00007f241eb55750(0063) GS:ffff88007ff42000(0000) knlGS:0000000000000000
-Apr 30 01:46:52 www2 kernel: CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-Apr 30 01:46:52 www2 kernel: CR2: ffff88001e1f0000 CR3: 0000000065c76000 CR4: 0000000000000660
-Apr 30 01:46:52 www2 kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-Apr 30 01:46:52 www2 kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Apr 30 01:46:52 www2 kernel: Process automount (pid: 30128, threadinfo ffff8800023aa000, task ffff8800751ff200)
-Apr 30 01:46:52 www2 kernel: Stack:
-Apr 30 01:46:52 www2 kernel: ffff8800023abcb0 ffff8800023abcb0 ffff8800023abce0 ffff8800023abe08
-Apr 30 01:46:52 www2 kernel: ffff8800751ff200 ffff8800751ff200 ffff8800751ff200 ffff880075024720
-Apr 30 01:46:52 www2 kernel: ffff880056423000 0000000300777777 ffff88001e1effe3 ffffffff8113b42a
-Apr 30 01:46:52 www2 kernel: Call Trace:
-Apr 30 01:46:52 www2 kernel: [<ffffffff8113b42a>] ? path_init+0x2fa/0x3c0
-Apr 30 01:46:52 www2 kernel: [<ffffffffa01a9580>] ? find_autofs_mount+0xb0/0xb0 [autofs4]
-Apr 30 01:46:52 www2 kernel: [<ffffffff8113ccd2>] ? path_lookupat+0x52/0x740
-Apr 30 01:46:52 www2 kernel: [<ffffffff811461cf>] ? __d_alloc+0x11f/0x180
-Apr 30 01:46:52 www2 kernel: [<ffffffffa01a9580>] ? find_autofs_mount+0xb0/0xb0 [autofs4]
-Apr 30 01:46:52 www2 kernel: [<ffffffff8113d3ec>] ? do_path_lookup+0x2c/0xc0
-Apr 30 01:46:52 www2 kernel: [<ffffffff81152a34>] ? dcache_dir_open+0x14/0x30
-Apr 30 01:46:52 www2 kernel: [<ffffffff8113d61d>] ? kern_path+0x1d/0x40
-Apr 30 01:46:52 www2 kernel: [<ffffffff811455ce>] ? dput+0x1e/0x190
-Apr 30 01:46:52 www2 kernel: [<ffffffff8114c40e>] ? mntput_no_expire+0x1e/0x140
-Apr 30 01:46:52 www2 kernel: [<ffffffff811270ce>] ? __kmalloc_track_caller+0x3e/0x1d0
-Apr 30 01:46:52 www2 kernel: [<ffffffffa01a9b7b>] ? _autofs_dev_ioctl+0xab/0x360 [autofs4]
-Apr 30 01:46:52 www2 kernel: [<ffffffffa01a96a0>] ? autofs_dev_ioctl_ismountpoint+0x120/0x190 [autofs4]
-Apr 30 01:46:52 www2 kernel: [<ffffffffa01a9cca>] ? _autofs_dev_ioctl+0x1fa/0x360 [autofs4]
-Apr 30 01:46:52 www2 kernel: [<ffffffffa01a9e3e>] ? autofs_dev_ioctl+0xe/0x20 [autofs4]
-Apr 30 01:46:52 www2 kernel: [<ffffffff81140b5e>] ? do_vfs_ioctl+0x8e/0x4f0
-Apr 30 01:46:52 www2 kernel: [<ffffffff811455ce>] ? dput+0x1e/0x190
-Apr 30 01:46:52 www2 kernel: [<ffffffff81131708>] ? fput+0x198/0x260
-Apr 30 01:46:52 www2 kernel: [<ffffffff81141009>] ? sys_ioctl+0x49/0x90
-Apr 30 01:46:52 www2 kernel: [<ffffffff814241b9>] ? system_call_fastpath+0x16/0x1b
-Apr 30 01:46:52 www2 kernel: Code: 49 b9 2f 2f 2f 2f 2f 2f 2f 2f 49 b8 ff fe fe fe fe fe fe fe 48 bf 80 80 80 80 80 80 80 80 66 90 4c 01 d0 48 83 c1 08 4c 8d 14 c0 <48> 8b 44 0d 00 48 89 c6 4e 8d 24 00 4c 31 ce 4a 8d 14 06 48 f7 
-Apr 30 01:46:52 www2 kernel: RSP <ffff8800023abbb8>
-Apr 30 01:46:52 www2 kernel: CR2: ffff88001e1f0000
-Apr 30 01:46:52 www2 kernel: ---[ end trace b65a19b637bb67fb ]---
-
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
