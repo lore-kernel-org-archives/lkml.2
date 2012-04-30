@@ -1,69 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab2D3Bo5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 21:44:57 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56753 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754432Ab2D3Bo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 21:44:56 -0400
-Message-ID: <1335750286.20866.25.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Apr 2012 11:44:46 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1754999Ab2D3Bwg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 21:52:36 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46707 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754395Ab2D3Bwf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 21:52:35 -0400
+X-AuditID: 9c93016f-b7cfcae00000449e-fa-4f9df060e91e
+Message-ID: <4F9DF05E.7080707@kernel.org>
+Date: Mon, 30 Apr 2012 10:52:30 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, npiggin@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, kosaki.motohiro@gmail.com,
+        rientjes@google.com, Neil Brown <neilb@suse.de>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Sage Weil <sage@newdream.net>
+Subject: Re: [RFC] vmalloc: add warning in __vmalloc
+References: <1335516144-3486-1-git-send-email-minchan@kernel.org> <20120427150030.6183a286.akpm@linux-foundation.org>
+In-Reply-To: <20120427150030.6183a286.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On 04/28/2012 07:00 AM, Andrew Morton wrote:
 
-Here are a handful more fixes for powerpc. The irq stuff are all
-regression fixes, and Gavin's patch is a simple compile fix.
-
-Cheers,
-Ben.
-
-The following changes since commit 69964ea4c7b68c9399f7977aa5b9aa6539a6a98a:
-
-  Linux 3.4-rc5 (2012-04-29 15:19:10 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to 810b4de25e53459323ff48957b0162b48d6cbd57:
-
-  tty/serial/pmac_zilog: Fix "nobody cared" IRQ message (2012-04-30 10:59:58 +1000)
-
-----------------------------------------------------------------
-Gavin Shan (1):
-      powerpc/pseries: Rivet CONFIG_EEH for pSeries platform
-
-Grant Likely (2):
-      powerpc/8xx: Fix NR_IRQ bugs and refactor 8xx interrupt controller
-      powerpc/irqdomain: Fix broken NR_IRQ references
-
-Larry Finger (1):
-      tty/serial/pmac_zilog: Fix "nobody cared" IRQ message
-
- arch/powerpc/include/asm/irq.h               |    4 --
- arch/powerpc/kernel/irq.c                    |    6 +--
- arch/powerpc/kernel/machine_kexec.c          |    7 +--
- arch/powerpc/platforms/cell/axon_msi.c       |    8 ++--
- arch/powerpc/platforms/cell/beat_interrupt.c |    2 +-
- arch/powerpc/platforms/powermac/pic.c        |    6 +--
- arch/powerpc/platforms/pseries/Kconfig       |    4 +-
- arch/powerpc/sysdev/cpm2_pic.c               |    3 +-
- arch/powerpc/sysdev/mpc8xx_pic.c             |   61 +++++++++-----------------
- arch/powerpc/sysdev/xics/xics-common.c       |    7 ++-
- drivers/tty/serial/pmac_zilog.c              |    6 +--
- 11 files changed, 39 insertions(+), 75 deletions(-)
+> On Fri, 27 Apr 2012 17:42:24 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
+> 
+>> Now there are several places to use __vmalloc with GFP_ATOMIC,
+>> GFP_NOIO, GFP_NOFS but unfortunately __vmalloc calls map_vm_area
+>> which calls alloc_pages with GFP_KERNEL to allocate page tables.
+>> It means it's possible to happen deadlock.
+>> I don't know why it doesn't have reported until now.
+>>
+>> Firstly, I tried passing gfp_t to lower functions to support __vmalloc
+>> with such flags but other mm guys don't want and decided that
+>> all of caller should be fixed.
+>>
+>> http://marc.info/?l=linux-kernel&m=133517143616544&w=2
+>>
+>> To begin with, let's listen other's opinion whether they can fix it
+>> by other approach without calling __vmalloc with such flags.
+>>
+>> So this patch adds warning to detect and to be fixed hopely.
+>> I Cced related maintainers.
+>> If I miss someone, please Cced them.
+>>
+>> side-note:
+>>   I added WARN_ON instead of WARN_ONCE to detect all of callers
+>>   and each WARN_ON for each flag to detect to use any flag easily.
+>>   After we fix all of caller or reduce such caller, we can merge
+>>   a warning with WARN_ONCE.
+> 
+> Just WARN_ONCE, please.  If that exposes some sort of calamity then we
+> can reconsider.
 
 
+NP.
+
+> 
+>>
+>> ...
+>>
+>> --- a/mm/vmalloc.c
+>> +++ b/mm/vmalloc.c
+>> @@ -1700,6 +1700,15 @@ static void *__vmalloc_node(unsigned long size, unsigned long align,
+>>  			    gfp_t gfp_mask, pgprot_t prot,
+>>  			    int node, void *caller)
+>>  {
+>> +	/*
+>> +	 * This function calls map_vm_area so that it allocates
+>> +	 * page table with GFP_KERNEL so caller should avoid using
+>> +	 * GFP_NOIO, GFP_NOFS and !__GFP_WAIT.
+>> +	 */
+>> +	WARN_ON(!(gfp_mask & __GFP_WAIT));
+>> +	WARN_ON(!(gfp_mask & __GFP_IO));
+>> +	WARN_ON(!(gfp_mask & __GFP_FS));
+>> +
+>>  	return __vmalloc_node_range(size, align, VMALLOC_START, VMALLOC_END,
+>>  				gfp_mask, prot, node, caller);
+>>  }
+> 
+> This seems strange.  There are many entry points to this code and the
+> patch appears to go into a randomly-chosen middle point in the various
+> call chains and sticks a check in there.  Why was __vmalloc_node()
+> chosen?  Does this provide full coverage or all entry points?
+
+
+I think it covers all of caller with calls __vmalloc with gfp_flags.
+Only exception is __vmalloc_node_range which is called by module_alloc
+but it surely calls __vmalloc_node_range with GFP_KERNEL so it's no problem now.
+If you want to catch potential use of __vmalloc_node_range in future, I can move it
+to it. 
+
+> 
+> 
+> 
+> Also, the patch won't warn in the most problematic cases such as
+> vmalloc() being called from a __GFP_NOFS context.  Presumably there are
+
+
+I agree but this patch's goal is just to prevent calling __vmalloc with GFP_ATOMIC, GFP_NOFS and
+GFP_NOIO. We should consider vmalloc on __GFP_NOFS context as another problem and maybe
+reclaimfs lockdep would be a good start point.
+
+> might_sleep() warnings somewhere on the allocation path which will
+
+> catch vmalloc() being called from atomic contexts.
+
+
+Yes.
+
+> 
+> I'm not sure what to do about that - we don't have machinery in place
+> to be able to detect when a GFP_KERNEL allocation is deadlockable. 
+> Perhaps a lot of hacking on lockdep might get us this - we'd need to
+> teach lockdep about which locks prohibit FS entry, which locks prevent
+> IO entry, etc.  And there are secret locks such as ext3/4
+> journal_start(), and bitlocks and lock_page().  eek.
+
+> 
+
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
+
+
+-- 
+Kind regards,
+Minchan Kim
