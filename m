@@ -1,37 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab2D3JJH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 05:09:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57416 "EHLO mx1.redhat.com"
+	id S1755941Ab2D3JNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 05:13:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10423 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754684Ab2D3JJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 05:09:05 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org>
-References: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: dhowells@redhat.com, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH] Move most arches to asm-generic/current.h
-Date: Mon, 30 Apr 2012 10:08:57 +0100
-Message-ID: <21326.1335776937@redhat.com>
+	id S1752853Ab2D3JNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 05:13:14 -0400
+Date: Mon, 30 Apr 2012 12:12:47 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rick Jones <rick.jones2@hp.com>
+Cc: Shirley Ma <mashirle@us.ibm.com>, David Miller <davem@davemloft.net>,
+        eric.dumazet@gmail.com, avi@redhat.com, arnd@arndb.de,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: getting host CPU utilization (was Re: [PATCH V7 2/4 net-next]
+ skbuff: Add userspace zero-copy buffers in skb)
+Message-ID: <20120430091246.GB5414@redhat.com>
+References: <1306610588.5180.87.camel@localhost.localdomain>
+ <1309189510.21764.1.camel@localhost.localdomain>
+ <20110627.155426.51839633424542723.davem@davemloft.net>
+ <1309279892.3559.6.camel@localhost.localdomain>
+ <4E0A0D34.2070507@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E0A0D34.2070507@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Boyd <sboyd@codeaurora.org> wrote:
+On Tue, Jun 28, 2011 at 10:19:48AM -0700, Rick Jones wrote:
+> one of these days I'll have to find a good way to get accurate
+> overall CPU utilization from within a guest and teach netperf about
+> it.
 
-> Make get_current() into a static inline function in the
-> generic version of current.h so we match what almost every
-> architecture is doing. This allows us to move most of the arches
-> over to this generic header instead of redefining the same thing
-> over and over in each asm directory.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: linux-arch@vger.kernel.org
+I think the cleanest way would be to run another netperf server on the
+host.  netperf would get a flag with host address and get cpu
+utilization info.
 
-Acked-by: David Howells <dhowells@redhat.com> [MN10300]
+This is what we currently do manually: run mpstat on the host.
+
+Thoughts?
+
+By the way, could you point me to code used by netperf
+to measure CPU utilization on Linux? I'd like to figure
+out why isn't the result always consistent with e.g. mpstat.
+
+Thanks!
+
+-- 
+MST
