@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab2D3NRh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 09:17:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14418 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755308Ab2D3NRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 09:17:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="136973311"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH] hwmon: coretemp: fix oops on cpu unplug
-Date: Mon, 30 Apr 2012 16:18:01 +0300
-Message-Id: <1335791881-1560-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.1
+	id S1755426Ab2D3NXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 09:23:09 -0400
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:35012 "EHLO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752290Ab2D3NXH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 09:23:07 -0400
+Message-ID: <4F9E9229.4020904@marvell.com>
+Date: Mon, 30 Apr 2012 21:22:49 +0800
+From: Yilu Mao <ylmao@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Lu Mao <ylmao@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ning Jiang <njiang1@marvell.com>
+Subject: Re: [PATCH] ARM: cache-l2x0.c: save aux ctrl for resume in case that
+ l2x0 is enabled before init
+References: <4F99148B.4020900@marvell.com> <20120426094400.GD18136@arm.com> <4F991ED6.8060109@marvell.com> <20120426102815.GE18136@arm.com> <4F9924FB.7070308@marvell.com> <20120426103840.GA6294@arm.com> <4F9927F2.5060408@marvell.com> <20120426105651.GB6294@arm.com> <4F992B80.6040207@marvell.com> <4F9B8D1C.6090400@marvell.com> <20120430121125.GN10632@arm.com>
+In-Reply-To: <20120430121125.GN10632@arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On 04/30/2012 08:11 PM, Catalin Marinas wrote:
+> On Sat, Apr 28, 2012 at 07:24:28AM +0100, Yilu Mao wrote:
+>> Do you agree with this patch to be merged?
+>
+> I would rather re-read the aux_ctrl register again after it was set (if
+> L2 is disabled) and store this value. It makes sense if some of the bits
+> are reserved, at least we have the real value.
+>
+Ok, I have provided a V4 patch including this.
+Please help to review.
 
-coretemp tries to access core_data array beyond bounds on cpu unplug if
-core id of the cpu if more than NUM_REAL_CORES-1.
-
-BUG: unable to handle kernel NULL pointer dereference at 000000000000013c
-IP: [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
-PGD 673e5a067 PUD 66e9b3067 PMD 0
-Oops: 0000 [#1] SMP
-CPU 79
-Modules linked in: sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter nf_conntrack_ipv4 nf_defrag_ipv4 ip6_tables xt_state nf_conntrack coretemp crc32c_intel asix tpm_tis pcspkr usbnet iTCO_wdt i2c_i801 microcode mii joydev tpm i2c_core iTCO_vendor_support tpm_bios i7core_edac igb ioatdma edac_core dca megaraid_sas [last unloaded: oprofile]
-
-Pid: 3315, comm: set-cpus Tainted: G        W    3.4.0-rc5+ #2 QCI QSSC-S4R/QSSC-S4R
-RIP: 0010:[<ffffffffa00159af>]  [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
-RSP: 0018:ffff880472fb3d48  EFLAGS: 00010246
-RAX: 0000000000000124 RBX: 0000000000000034 RCX: 00000000ffffffff
-RDX: 0000000000000000 RSI: 0000000000000046 RDI: 0000000000000246
-RBP: ffff880472fb3d88 R08: ffff88077fcd36c0 R09: 0000000000000001
-R10: ffffffff8184bc48 R11: 0000000000000000 R12: ffff880273095800
-R13: 0000000000000013 R14: ffff8802730a1810 R15: 0000000000000000
-FS:  00007f694a20f720(0000) GS:ffff88077fcc0000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 000000000000013c CR3: 000000067209b000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process set-cpus (pid: 3315, threadinfo ffff880472fb2000, task ffff880471fa0000)
-Stack:
- ffff880277b4c308 0000000000000003 ffff880472fb3d88 0000000000000005
- 0000000000000034 00000000ffffffd1 ffffffff81cadc70 ffff880472fb3e14
- ffff880472fb3dc8 ffffffff8161f48d ffff880471fa0000 0000000000000034
-Call Trace:
- [<ffffffff8161f48d>] notifier_call_chain+0x4d/0x70
- [<ffffffff8107f1be>] __raw_notifier_call_chain+0xe/0x10
- [<ffffffff81059d30>] __cpu_notify+0x20/0x40
- [<ffffffff815fa251>] _cpu_down+0x81/0x270
- [<ffffffff815fa477>] cpu_down+0x37/0x50
- [<ffffffff815fd6a3>] store_online+0x63/0xc0
- [<ffffffff813c7078>] dev_attr_store+0x18/0x30
- [<ffffffff811f02cf>] sysfs_write_file+0xef/0x170
- [<ffffffff81180443>] vfs_write+0xb3/0x180
- [<ffffffff8118076a>] sys_write+0x4a/0x90
- [<ffffffff816236a9>] system_call_fastpath+0x16/0x1b
-Code: 48 c7 c7 94 60 01 a0 44 0f b7 ac 10 ac 00 00 00 31 c0 e8 41 b7 5f e1 41 83 c5 02 49 63 c5 49 8b 44 c4 10 48 85 c0 74 56 45 31 ff <39> 58 18 75 4e eb 1f 49 63 d7 4c 89 f7 48 89 45 c8 48 6b d2 28
-RIP  [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
- RSP <ffff880472fb3d48>
-CR2: 000000000000013c
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- drivers/hwmon/coretemp.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 0d3141f..54a70fe 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -709,6 +709,10 @@ static void __cpuinit put_core_offline(unsigned int cpu)
- 
- 	indx = TO_ATTR_NO(cpu);
- 
-+	/* The core id is too big, just return */
-+	if (indx > MAX_CORE_DATA - 1)
-+		return;
-+
- 	if (pdata->core_data[indx] && pdata->core_data[indx]->cpu == cpu)
- 		coretemp_remove_core(pdata, &pdev->dev, indx);
- 
 -- 
-1.7.9.1
+Thanks.
 
+Best Wishes,
+Yilu Mao
