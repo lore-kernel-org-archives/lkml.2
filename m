@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757286Ab2D3W7b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 18:59:31 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:43816 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757164Ab2D3W73 convert rfc822-to-8bit (ORCPT
+	id S1757447Ab2D3XFX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 19:05:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51598 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756283Ab2D3XFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 18:59:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <1332135624-13528-1-git-send-email-yinghai@kernel.org>
-References: <1332135624-13528-1-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 30 Apr 2012 16:59:07 -0600
-Message-ID: <CAErSpo4sYW9juTsJbuow7OzQH3Q-7tuQT1OdnVvGD-b5Gtfb1Q@mail.gmail.com>
-Subject: Re: [PATCH -v3 00/11] PCI: pci_host_bridge related cleanup
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 30 Apr 2012 19:05:22 -0400
+Date: Mon, 30 Apr 2012 16:05:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: aarcange@redhat.com, riel@redhat.com, mgorman@suse.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] THP: need is_vma_temporary_stack() when reference
+ transparent_hugepage_enabled
+Message-Id: <20120430160520.4c1cc05c.akpm@linux-foundation.org>
+In-Reply-To: <1335594795-30876-1-git-send-email-alex.shi@intel.com>
+References: <1335594795-30876-1-git-send-email-alex.shi@intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 18, 2012 at 11:40 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> will add struct device dev into host_bridge struct.
-> also will add release support to make sure allocated resource get
-> freed during root bus removal including hostbridge and pci_sysdata.
->
-> The patches need to apply to linus v3.3 plus pci/linux-next
->
-> could get from
->        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-hostbridge-cleanup
+On Sat, 28 Apr 2012 14:33:15 +0800
+Alex Shi <alex.shi@intel.com> wrote:
 
-I applied the patches from this branch to my "next" branch, with the
-exception of the following.  Please take a look and make sure my
-"next" branch has what you expect.
+> When the transparent_hugepage_enabled() used out of mm/,
+> is_vma_temporary_stack() need be referenced. Otherwise, it has compile
+> error.
 
->  x86, PCI: Merge root info printing for not using _CRS path
+This is a poor changelog - it doesn't tell us how this compilation
+error comes about.  Is there some known build error in the mainline
+kernel, or did you discover this when altering the kernel, or what?
 
-This changes from printing info for all HT links to just one (probably
-unintentional).  It should also use the "[bus %02x-%02x]" format as we
-do elsewhere.
+One of the several reasons for this information is to permit others to
+work out which kernel version(s) should be fixed.
 
-> x86, PCI: Add print all root info for not using _CRS path
 
-This fixes the unintentional "only print one HT link info" change from above.
+> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> index c8af7a2..10254ac 100644
+> --- a/include/linux/huge_mm.h
+> +++ b/include/linux/huge_mm.h
+> @@ -59,6 +59,7 @@ extern pmd_t *page_check_address_pmd(struct page *page,
+>  #define HPAGE_PMD_MASK HPAGE_MASK
+>  #define HPAGE_PMD_SIZE HPAGE_SIZE
+>  
+> +extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
+>  #define transparent_hugepage_enabled(__vma)				\
+>  	((transparent_hugepage_flags &					\
+>  	  (1<<TRANSPARENT_HUGEPAGE_FLAG) ||				\
 
-> x86, PCI: Allocate temp range array in amd_bus pci_root_info probing
+is_vma_temporary_stack() is already declared in rmap.h.  We should not
+declare it in two places.
 
-This had no changelog, so I don't know why we want this.
+include/linux/huge_mm.h doesn't include any headers at all.  It
+is one of those files which require its user to set up the
+preconditions.
 
-Bjorn
+So, lacking any additional infomation I'd say that your mystery build
+breakage was caused by a failure to include rmap.h.
