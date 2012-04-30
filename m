@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab2D3BZj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 21:25:39 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48613 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921Ab2D3BZi (ORCPT
+	id S1754636Ab2D3BaH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 21:30:07 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51557 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753911Ab2D3BaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 21:25:38 -0400
-X-AuditID: 9c93016f-b7cfcae00000449e-ef-4f9dea0f5640
-Message-ID: <4F9DEA0C.8040203@kernel.org>
-Date: Mon, 30 Apr 2012 10:25:32 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: David Rientjes <rientjes@google.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC] propagate gfp_t to page table alloc functions
-References: <1335171318-4838-1-git-send-email-minchan@kernel.org> <4F963742.2030607@jp.fujitsu.com> <4F963B8E.9030105@kernel.org> <CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com> <4F965413.9010305@kernel.org> <CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com> <20120424143015.99fd8d4a.akpm@linux-foundation.org> <4F973BF2.4080406@jp.fujitsu.com> <CAHGf_=r09BCxXeuE8dSti4_SrT5yahrQCwJh=NrrA3rsUhhu_w@mail.gmail.com> <4F973FB8.6050103@jp.fujitsu.com> <20120424172554.c9c330dd.akpm@linux-foundation.org> <4F98914C.2060505@jp.fujitsu.com> <alpine.DEB.2.00.1204251715420.19452@chino.kir.corp.google.com> <4F9A0360.3030900@kernel.org> <alpine.DEB.2.00.1204270340450.11866@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1204270340450.11866@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 29 Apr 2012 21:30:04 -0400
+X-Sasl-enc: 3ya6Gfya1aFOeNV4yvKxz1ElzW5l8rUI69Ud87iCwlD2Czb99pXMhFi2Rg 1335749402
+Message-ID: <1335749398.2281.0.camel@perseus.themaw.net>
+Subject: Re: autofs: make the autofsv5 packet file descriptor use a
+ packetized pipe
+From: Ian Kent <raven@themaw.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Tokarev <mjt@tls.msk.ru>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Thomas Meyer <thomas@m3y3r.de>, autofs@vger.kernel.org
+Date: Mon, 30 Apr 2012 09:29:58 +0800
+In-Reply-To: <CA+55aFzDhkVzaUYQwKbkUqoRNb223+w0-k=pOxTZHja75JOMvQ@mail.gmail.com>
+References: <20120429205429.63CCD7C0064@ra.kernel.org>
+	 <4F9DD994.70202@zytor.com>
+	 <CA+55aFy72rPMq3M2_PU0ue45Fb38_Effrfhu2uOpdVXt9H1XOg@mail.gmail.com>
+	 <4F9DDCB6.1070908@zytor.com>
+	 <CA+55aFwGZm4+rdJ+xArhsVJ8P5gH3xxCfuoHibotr0Sik484=w@mail.gmail.com>
+	 <4F9DDE47.5060008@zytor.com>
+	 <CA+55aFzDhkVzaUYQwKbkUqoRNb223+w0-k=pOxTZHja75JOMvQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2012 07:43 PM, David Rientjes wrote:
+On Sun, 2012-04-29 at 17:43 -0700, Linus Torvalds wrote:
+> On Sun, Apr 29, 2012 at 5:35 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> >
+> > Which is funny/sad, because that's actually the intended way the
+> > interface is meant to work.
+> 
+> Well, the autofs packet model is actually horribly badly misdesigned
+> even for that: the header doesn't contain the size of the packet. It
+> contains the packet *type*, and from that you can then determine the
+> size (of course, every other program would determine it *wrongly* for
+> this whole x86-64 alignment reason), but that is actually a horrible
+> model because it assumes you know all the packet types.
+> 
+> (There's a "len" field in the v5 packet, but that's not the packet
+> length, that's the length of the name component)
+> 
+> And the reason nobody does that is that in practice there is only ever
+> one single type of packet that is possible anyway, so there's no point
+> in even reading the header to find the type.
+> 
+> So a much nicer model is one where the actual *size* of the packet is
+> in the header. That would have allowed for not having that fixed
+> maximum size of a name etc, and would have avoided the whole problem
+> to begin with.
+> 
+> Of course, the nicest model of all is to just use a packetized
+> interface to begin with, so that none of these issues exist. Which is
+> what we're now effectively moving to, unless we can find some horrible
+> program that makes that impossible due to it playing games and knowing
+> it's a "stream".
+> 
+> Looking at am-utils, I think we're ok so far. But maybe you know of
+> yet another crazy user of the autofs interfaces.
 
-> On Fri, 27 Apr 2012, Minchan Kim wrote:
+autodir looks ok as well.
+
+http://sourceforge.net/projects/intraperson/files/latest/download
+
 > 
->>> Maybe a per-thread_info variant of gfp_allowed_mask?  So Andrew's 
->>> set_current_gfp() becomes set_current_gfp_allowed() that does
->>>
->>> 	void set_current_gfp_allowed(gfp_t gfp_mask)
->>> 	{
->>> 		current->gfp_allowed = gfp_mask & gfp_allowed_mask;
->>> 	}
->>>
->>> and then the page allocator does
->>>
->>> 	gfp_mask &= current->gfp_allowed;
->>>
->>> rather than how it currently does
->>>
->>> 	gfp_mask &= gfp_allowed_mask;
->>>
->>> and then the caller of set_current_gfp_allowed() cleans up with 
->>> set_current_gfp_allowed(__GFP_BITS_MASK).
->>
-> 
-> [trimmed the newsgroups from the reply, not sure what the point is?]
-> 
->> Caller should restore old gfp_mask instead of __GFP_BITS_MASK in case of
->> nesting.And how do we care of atomic context?
->>
-> 
-> Eek, I'm hoping these aren't going to be nested but sure that seems 
-> appropraite if they are.  (I'm also hoping these will only be either 
-> __GFP_HIGH or __GFP_BITS_MASK and no other combinations.)
-> 
-> Forcing atomic context would just be set_current_gfp_allowed(__GFP_HIGH).
+>                       Linus
 
 
-I mean it's not legal to access _current_ in atomic context so that
-(gfp_mask &= current->gfp_allowed in page allocator) shouldn't.
-
--- 
-Kind regards,
-Minchan Kim
