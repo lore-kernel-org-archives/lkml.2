@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab2D3Dib (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 23:38:31 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45465 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089Ab2D3Dia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 23:38:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1333462221-3987-1-git-send-email-m.szyprowski@samsung.com>
-References: <1333462221-3987-1-git-send-email-m.szyprowski@samsung.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 30 Apr 2012 11:38:09 +0800
-Message-ID: <CAGsJ_4yAwh32u3tdWFA3BC76NpMws5RT_JnxnzNdHx6eoHHxMw@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCHv24 00/16] Contiguous Memory Allocator
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Ohad Ben-Cohen <ohad@wizery.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rob Clark <rob.clark@linaro.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755270Ab2D3DlE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 23:41:04 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57698 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755089Ab2D3DlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 23:41:02 -0400
+Message-ID: <1335757246.20866.31.camel@pasglop>
+Subject: Re: [REGRESSION][PATCH V4 3/3] bpf jit: Let the powerpc jit handle
+ negative offsets
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Miller <davem@davemloft.net>
+Cc: kaffeemonster@googlemail.com, eric.dumazet@gmail.com, matt@ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Mon, 30 Apr 2012 13:40:46 +1000
+In-Reply-To: <1335753820.20866.27.camel@pasglop>
+References: <4F75CA89.4010709@googlemail.com>
+	 <4F75D2A5.7060407@googlemail.com>
+	 <20120403.180302.342779808900865443.davem@davemloft.net>
+	 <1333491102.3040.12.camel@pasglop> <1335753820.20866.27.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/4/3 Marek Szyprowski <m.szyprowski@samsung.com>:
-> Hi,
->
-> This is (yet another) update of CMA patches. I've rebased them onto
-> recent v3.4-rc1 kernel tree and integrated some minor bugfixes. The
-> first issue has been pointed by Sandeep Patil - alloc_contig_range
-> reclaimed two times too many pages, second issue (possible mismatch
-> between pageblock size and MAX_ORDER pages) has been recently spotted
-> by Michal Nazarewicz.
->
-> These patches are also available on my git repository:
-> git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git 3.4-rc1-cma-v24
->
-> Best regards
-> Marek Szyprowski
-> Samsung Poland R&D Center
->
->
->
-> Patches in this patchset:
+On Mon, 2012-04-30 at 12:43 +1000, Benjamin Herrenschmidt wrote:
 
-Marek,
+> Ok, he hasn't so I'll dig a bit.
+> 
+> No obvious wrongness (but I'm not very familiar with bpf), though I do
+> have a comment: sk_negative_common() and bpf_slow_path_common() should
+> be made one and single macro which takes the fallback function as an
+> argument.
+> 
+> I'll mess around & try to test using Jan test case & will come back
+> with an updated patch.
 
-how about the patch "mm: cma: add a simple kernel module as the helper
-to test CMA", did you forget merging this?
-http://lists.infradead.org/pipermail/linux-arm-kernel/2012-March/088412.html
+Wow, hit that nasty along the way: The test program will not work
+on big endian machines because of a nasty difference between
+the kernel struct sock_fprog and libpcap struct bpf_program:
 
->
-> Marek Szyprowski (6):
->  mm: extract reclaim code from __alloc_pages_direct_reclaim()
->  mm: trigger page reclaim in alloc_contig_range() to stabilise
->    watermarks
->  drivers: add Contiguous Memory Allocator
->  X86: integrate CMA with DMA-mapping subsystem
->  ARM: integrate CMA with DMA-mapping subsystem
->  ARM: Samsung: use CMA for 2 memory banks for s5p-mfc device
->
-> Mel Gorman (1):
->  mm: Serialize access to min_free_kbytes
->
-> Michal Nazarewicz (9):
->  mm: page_alloc: remove trailing whitespace
->  mm: compaction: introduce isolate_migratepages_range()
->  mm: compaction: introduce map_pages()
->  mm: compaction: introduce isolate_freepages_range()
->  mm: compaction: export some of the functions
->  mm: page_alloc: introduce alloc_contig_range()
->  mm: page_alloc: change fallbacks array handling
->  mm: mmzone: MIGRATE_CMA migration type added
->  mm: page_isolation: MIGRATE_CMA isolation functions added
->
+Kernel expects:
 
--barry
+struct sock_fprog {     /* Required for SO_ATTACH_FILTER. */
+        unsigned short          len;    /* Number of filter blocks */
+        struct sock_filter __user *filter;
+};
+
+libpcap provides:
+
+struct bpf_program {
+        u_int bf_len;
+        struct bpf_insn *bf_insns;
+};
+
+Note the unsigned short vs. unsigned int there ? This totally
+breaks it here.
+
+Is it expected that one can pass a struct bpf_program directly
+to the kernel or should it be "converted" by the library in which
+case it's just a bug in Jan's test program ?
+
+Cheers,
+Ben.
+
+
