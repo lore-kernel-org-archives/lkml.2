@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399Ab2D3RC6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 13:02:58 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45007 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755228Ab2D3RC4 convert rfc822-to-8bit (ORCPT
+	id S1756447Ab2D3RH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 13:07:57 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:33834 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755797Ab2D3RHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 13:02:56 -0400
+	Mon, 30 Apr 2012 13:07:54 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6697"; a="186238388"
+Message-ID: <4F9EC6E9.9000102@codeaurora.org>
+Date: Mon, 30 Apr 2012 10:07:53 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <CABEgKgrXqbF8XBc6vHa2b5KQe9E7_+WODvq3hE0vaT0Eyxo5=w@mail.gmail.com>
-References: <4F9A327A.6050409@jp.fujitsu.com>
-	<4F9A375D.7@jp.fujitsu.com>
-	<CALWz4iyiM-CFgVaHiE1Lgd1ZwJzHwY3tx9XX6HeDPUV_wVPAtQ@mail.gmail.com>
-	<CABEgKgrXqbF8XBc6vHa2b5KQe9E7_+WODvq3hE0vaT0Eyxo5=w@mail.gmail.com>
-Date: Mon, 30 Apr 2012 10:02:54 -0700
-Message-ID: <CALWz4ix_rVpgzDme06f2U44EaqWcZKCEb0ueByh1-dSmbaO1jA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 9/9 v2] memcg: never return error at pre_destroy()
-From: Ying Han <yinghan@google.com>
-To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: linux-alpha@vger.kernel.org
+CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>
+Subject: Re: [PATCH] Move most arches to asm-generic/current.h
+References: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org> <201204301415.56690.arnd@arndb.de> <4F9EBF3E.8060401@codeaurora.org> <201204301638.29398.arnd@arndb.de>
+In-Reply-To: <201204301638.29398.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 5:25 PM, Hiroyuki Kamezawa
-<kamezawa.hiroyuki@gmail.com> wrote:
-> On Sat, Apr 28, 2012 at 6:28 AM, Ying Han <yinghan@google.com> wrote:
->> On Thu, Apr 26, 2012 at 11:06 PM, KAMEZAWA Hiroyuki
->> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->>> When force_empty() called by ->pre_destroy(), no memory reclaim happens
->>> and it doesn't take very long time which requires signal_pending() check.
->>> And if we return -EINTR from pre_destroy(), cgroup.c show warning.
->>>
->>> This patch removes signal check in force_empty(). By this, ->pre_destroy()
->>> returns success always.
->>>
->>> Note: check for 'cgroup is empty' remains for force_empty interface.
->>>
->>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>> ---
->>>  mm/hugetlb.c    |   10 +---------
->>>  mm/memcontrol.c |   14 +++++---------
->>>  2 files changed, 6 insertions(+), 18 deletions(-)
->>>
->>> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
->>> index 4dd6b39..770f1642 100644
->>> --- a/mm/hugetlb.c
->>> +++ b/mm/hugetlb.c
->>> @@ -1922,20 +1922,12 @@ int hugetlb_force_memcg_empty(struct cgroup *cgroup)
->>>        int ret = 0, idx = 0;
->>>
->>>        do {
->>> +               /* see memcontrol.c::mem_cgroup_force_empty() */
->>>                if (cgroup_task_count(cgroup)
->>>                        || !list_empty(&cgroup->children)) {
->>>                        ret = -EBUSY;
->>>                        goto out;
->>>                }
->>> -               /*
->>> -                * If the task doing the cgroup_rmdir got a signal
->>> -                * we don't really need to loop till the hugetlb resource
->>> -                * usage become zero.
->>> -                */
->>> -               if (signal_pending(current)) {
->>> -                       ret = -EINTR;
->>> -                       goto out;
->>> -               }
->>>                for_each_hstate(h) {
->>>                        spin_lock(&hugetlb_lock);
->>>                        list_for_each_entry(page, &h->hugepage_activelist, lru) {
->>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>> index 2715223..ee350c5 100644
->>> --- a/mm/memcontrol.c
->>> +++ b/mm/memcontrol.c
->>> @@ -3852,8 +3852,6 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->>>                pc = lookup_page_cgroup(page);
->>>
->>>                ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
->>> -               if (ret == -ENOMEM || ret == -EINTR)
->>> -                       break;
->>>
->>>                if (ret == -EBUSY || ret == -EINVAL) {
->>>                        /* found lock contention or "pc" is obsolete. */
->>> @@ -3863,7 +3861,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->>>                        busy = NULL;
->>>        }
->>>
->>> -       if (!ret && !list_empty(list))
->>> +       if (!loop)
->>
->> This looks a bit strange to me... why we make the change ?
->>
-> Ah, I should this move to an independet patch.
-> Because we don't have -ENOMEM path to exit loop, the return value of
-> this function
-> is
->  0 (if loop !=0 this means lru is empty under the lru lock )
->  -EBUSY (if loop== 0)
+On 04/30/12 09:38, Arnd Bergmann wrote:
 
+> On Monday 30 April 2012, Stephen Boyd wrote:
+>> I admit I haven't compile tested this on all the affected architectures.
+>> Looking at the architectures that are migrated here I don't see any that
+>> are defining get_current() as a macro except for alpha. Should I drop
+>> alpha from the patch? Or would it be easier if someone threw this into
+>> linux-next and see if it blows up?
+>>
+>> In the meantime I can scrounge around for those kernel.org
+>> cross-compilers and see if I can compile alpha.
+> I'd say either get an Ack from the Alpha maintainers or drop that
+> hunk from your patch.
 >
-> I'll move this part out as an independent clean up patch
 
-Thanks ~
+Ok. Alpha maintainers, do you see any problem with a static inline
+function for get_current() instead of the current macro? My compile of
+alpha with the kernel.org 4.6.3 compilers doesn't show any new build
+failures than what is already there:
 
---Ying
+  LD      .tmp_vmlinux1
+drivers/built-in.o: In function `ide_set_disk_chs':
+drivers/ide/ide.c:269:(.text+0x732a8): relocation truncated to fit: GPREL16 against `.sbss'
+drivers/ide/ide.c:269:(.text+0x732b0): relocation truncated to fit: GPREL16 against `.sbss'
+drivers/ide/ide.c:267:(.text+0x73310): relocation truncated to fit: GPREL16 against `.sbss'
+drivers/ide/ide.c:267:(.text+0x73318): relocation truncated to fit: GPREL16 against `.sbss'
+drivers/built-in.o: In function `ide_dev_apply_params':
+drivers/ide/ide.c:299:(.text+0x73714): relocation truncated to fit: GPREL16 against `.sbss'
+drivers/ide/ide.c:303:(.text+0x73724): relocation truncated to fit: GPREL16 against `.sbss'
+drivers/ide/ide.c:308:(.text+0x73734): relocation truncated to fit: GPREL16 against `.sbss'
+drivers/ide/ide.c:315:(.text+0x73744): relocation truncated to fit: GPREL16 against `.sbss'
+drivers/built-in.o: In function `unexpected_intr':
+drivers/ide/ide-io.c:734:(.text+0x74dfc): relocation truncated to fit: GPREL16 against `.sbss'
+drivers/ide/ide-io.c:736:(.text+0x74e00): relocation truncated to fit: GPREL16 against `.sbss'
+drivers/ide/ide-io.c:734:(.text+0x74e10): additional relocation overflows omitted from the output
+make[1]: *** [.tmp_vmlinux1] Error 1
+make: *** [sub-make] Error 2
 
-> thanks,
-> -kame
+
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
