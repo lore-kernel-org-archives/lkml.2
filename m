@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab2D3V14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 17:27:56 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:46247 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756418Ab2D3V1y convert rfc822-to-8bit (ORCPT
+	id S1756778Ab2D3V3O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 17:29:14 -0400
+Received: from 2481.rev.megiteam.pl ([91.227.36.129]:57939 "EHLO
+	vk1001.megiteam.com.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756418Ab2D3V3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 17:27:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
-Date: Mon, 30 Apr 2012 23:32:37 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
-        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrey Rahmatullin <wrar@wrar.name>,
-        Steven Rostedt <rostedt@goodmis.org>
-References: <Pine.LNX.4.44L0.1204301348180.1558-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1204301348180.1558-100000@iolanthe.rowland.org>
+	Mon, 30 Apr 2012 17:29:13 -0400
+Message-ID: <4F9F0426.6040603@localdomain.pl>
+Date: Mon, 30 Apr 2012 23:29:10 +0200
+From: Grzegorz Nosek <root@localdomain.pl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201204302332.38009.rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        support@supermicro.com
+Subject: Re: EHCI software retries break Supermicro IPKVM
+References: <Pine.LNX.4.44L0.1204301707060.1558-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1204301707060.1558-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 30, 2012, Alan Stern wrote:
-> On Mon, 30 Apr 2012, Bjorn Helgaas wrote:
-> 
-> > On Sun, Apr 29, 2012 at 2:44 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > From: Oleksij Rempel <bug-track@fisher-privat.net>
-> > >
-> > > This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
-> > > more closely and fixes suspend bug found on ASUS Zenbook UX31E.
-> > >
-> > > Some OEM use _SxD fileds do blacklist brocken Dx states.
-> > > If _SxD/_SxW return values are check before suspend as appropriate,
-> > > some nasty suspend/resume issues may be avoided.
-> > >
-> > > References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
-> > > Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
-> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > ---
-> > >
-> > > Bjorn, Len,
-> > >
-> > > This is -stable material and therefore v3.4 as well, IMO. �Please let me
-> > > know if one of you can take it or whether you want me to handle it all the
-> > > way to Linus.
-> > 
-> > I'm OK with this from a PCI perspective.  Most of the change is in
-> > ACPI, so I propose that either you or Len take care of it.
-> > 
-> > The second paragraph of the changelog has several typos
-> > (fileds/fields, do/to, brocken/broken, etc).
-> 
-> It also turns out that the normal wakeup mechanism doesn't work for the
-> devices in question.  Can this be detected by ACPI?  We don't want to 
-> tell userspace that wakeup works when in fact it doesn't.
+W dniu 30.04.2012 23:12, Alan Stern pisze:
+> It isn't a software issue.  You've got a hardware problem; either the
+> IPKVM itself, or the connecting cable, or your computer's EHCI
+> controller is bad.  The only reason the device worked without the retry
+> logic is because it failed so completely that the kernel was forced to
+> run it at full speed (12 Mb/s) instead of high speed (480 Mb/s).  With
+> the retry logic present, the device was barely workable at high speed
+> (but it probably didn't work well enough to be very useful).
 
-No, we don't, but if there's _PRW and/or _DSW/_PSW for the device, we really
-have to assume that the device is able to wake up the system.  Moreover, if
-those methods don't return error codes, we have no way to say there's anything
-wrong.
+Oh. Thanks for the info. Is there a way to force the device into 12Mb/s 
+mode? I don't care about performance as the bottleneck is my Internet 
+link on the client, anyway. The retry logic rendered the console 
+unusable (not just slow, completely no keyboard or redirected media).
 
-Thanks,
-Rafael
+> Have you tried plugging the IPKVM into a different computer to see if
+> it behaves any better?
+
+Nope. The IPKVM is a proprietary addon card without any cables (plugs 
+into a dedicated slot on the motherboard). Another identical machine is 
+misbehaving the exact same way (retry messages in dmesg), so either I'm 
+just unlucky, or it's a wider issue. Still, a few others are working 
+fine (no retry messages; though I did not check the KVM recently). All 
+the machines are in a rather remote DC, so I'm unlikely to muck with the 
+hardware any time soon.
+
+Are there any diagnostics possible to determine what is broken (i.e. the 
+KVM card or the controller)? IIRC plugging a physical USB-based KVM 
+worked fine, although that might have been an older kernel, without the 
+retry logic.
+
+Best regards,
+  Grzegorz Nosek
