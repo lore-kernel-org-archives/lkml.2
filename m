@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab2D3NfD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 09:35:03 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:44970 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266Ab2D3NfB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 09:35:01 -0400
+	id S1755667Ab2D3NmT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 09:42:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752432Ab2D3NmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 09:42:18 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-man@vger.kernel.org,
+        linux-mm@kvack.org, mgorman@suse.de
+Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
+References: <1335778207-6511-1-git-send-email-jack@suse.cz>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 30 Apr 2012 09:41:50 -0400
+In-Reply-To: <1335778207-6511-1-git-send-email-jack@suse.cz> (Jan Kara's
+	message of "Mon, 30 Apr 2012 11:30:07 +0200")
+Message-ID: <x49haw1jq01.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1335791786-32377-1-git-send-email-ylmao@marvell.com>
-References: <1335791786-32377-1-git-send-email-ylmao@marvell.com>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Mon, 30 Apr 2012 14:34:38 +0100
-X-Google-Sender-Auth: EjjRqauc8fGR5Dzy5jiVUNwG134
-Message-ID: <CAHkRjk51pATYdhKhmBb9sWywN+0BgeQLpW9bMfTkRgf_09wydg@mail.gmail.com>
-Subject: Re: [PATCH v4] ARM: cache-l2x0.c: save aux ctrl for resume in case
- l2x0 is enabled before init
-To: Yilu Mao <ylmao@marvell.com>
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, Baohua.Song@csr.com,
-        santosh.shilimkar@ti.com, robherring2@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 April 2012 14:16, Yilu Mao <ylmao@marvell.com> wrote:
-> If l2x0 controller has been enabled when calling l2x0_init, the aux ctrl
-> register will not be saved in l2x0_saved_regs. Therefore we can not use
-> l2x0_saved_regs.aux_ctrl for resume later. This patch fixed the problem
-> by saving aux ctrl in l2x0_saved_regs just after it's being read from
-> the register.
-> And in case some bits of aux ctrl register are reserved, re-read and
-> save it properly after set it if l2x0 is disabled before init.
+Jan Kara <jack@suse.cz> writes:
+
+> This is a long standing problem (or a surprising feature) in our implementation
+> of get_user_pages() (used by direct IO). Since several attempts to fix it
+> failed (e.g.
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-04/msg06542.html, or
+> http://lkml.indiana.edu/hypermail/linux/kernel/0903.1/01498.html refused in
+> http://comments.gmane.org/gmane.linux.kernel.mm/31569) and it's not completely
+> clear whether we really want to fix it given the costs, let's at least document
+> it.
 >
-> Change-Id: I54f3002274ffe9cdc667dba81e36e08f2e121467
-> Signed-off-by: Yilu Mao <ylmao@marvell.com>
+> CC: mgorman@suse.de
+> CC: Jeff Moyer <jmoyer@redhat.com>
+> Signed-off-by: Jan Kara <jack@suse.cz>
 > ---
->  arch/arm/mm/cache-l2x0.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
 >
-> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-> index a53fd2a..9893e58 100644
-> --- a/arch/arm/mm/cache-l2x0.c
-> +++ b/arch/arm/mm/cache-l2x0.c
-> @@ -320,6 +320,13 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
->        cache_id = readl_relaxed(l2x0_base + L2X0_CACHE_ID);
->        aux = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
->
-> +       /*
-> +        * In case l2x controller is enabled, the aux ctrl register
-> +        * can't be set. So the original value should be stored in
-> +        * the l2x0_saved_regs for restoring when resume.
-> +        */
-> +       l2x0_saved_regs.aux_ctrl = aux;
+> --- a/man2/open.2	2012-04-27 00:07:51.736883092 +0200
+> +++ b/man2/open.2	2012-04-27 00:29:59.489892980 +0200
+> @@ -769,7 +769,12 @@
+>  and the file offset must all be multiples of the logical block size
+>  of the file system.
+>  Under Linux 2.6, alignment to 512-byte boundaries
+> -suffices.
+> +suffices. However, if the user buffer is not page aligned and direct read
+> +runs in parallel with a
+> +.BR fork (2)
+> +of the reader process, it may happen that the read data is split between
+> +pages owned by the original process and its child. Thus effectively read
+> +data is corrupted.
+>  .LP
+>  The
+>  .B O_DIRECT
 
-Why not move this
+I think this sufficiently distills the problem.  Thanks, Jan.
 
-> +
->        aux &= aux_mask;
->        aux |= aux_val;
->
-> @@ -364,6 +371,8 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
->                /* l2x0 controller is disabled */
->                writel_relaxed(aux, l2x0_base + L2X0_AUX_CTRL);
->
-> +               /* Re-read it in case some bits are reserved. */
-> +               aux = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
-
-and this
-
->                l2x0_saved_regs.aux_ctrl = aux;
->
->                l2x0_inv_all();
-
-somewhere after the if block and we only read the aux once. The
-comment may no longer make sense though.
-
--- 
-Catalin
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
