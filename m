@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab2D3MMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 08:12:10 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59429 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755384Ab2D3MMI (ORCPT
+	id S1755860Ab2D3MZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 08:25:28 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:39468 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755149Ab2D3MZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 08:12:08 -0400
-Date: Mon, 30 Apr 2012 13:11:26 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Yilu Mao <ylmao@marvell.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ning Jiang <njiang1@marvell.com>
-Subject: Re: [PATCH] ARM: cache-l2x0.c: save aux ctrl for resume in case
- that l2x0 is enabled before init
-Message-ID: <20120430121125.GN10632@arm.com>
-References: <4F99148B.4020900@marvell.com>
- <20120426094400.GD18136@arm.com>
- <4F991ED6.8060109@marvell.com>
- <20120426102815.GE18136@arm.com>
- <4F9924FB.7070308@marvell.com>
- <20120426103840.GA6294@arm.com>
- <4F9927F2.5060408@marvell.com>
- <20120426105651.GB6294@arm.com>
- <4F992B80.6040207@marvell.com>
- <4F9B8D1C.6090400@marvell.com>
+	Mon, 30 Apr 2012 08:25:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9B8D1C.6090400@marvell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120430120641.GA3111@polaris.bitmath.org>
+References: <1335097300-11881-1-git-send-email-rydberg@euromail.se>
+	<alpine.LNX.2.00.1204222325380.1856@pobox.suse.cz>
+	<4F9D5F43.4000502@gmail.com>
+	<20120430120641.GA3111@polaris.bitmath.org>
+Date: Mon, 30 Apr 2012 15:25:25 +0300
+Message-ID: <CALu8Fe8oaNM+77OAYbpS_4q2CTsyz6Xkgfbz248bxEap4=PQpA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] hid: Enable report fixup on rebind
+From: Nikolai Kondrashov <spbnick@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 28, 2012 at 07:24:28AM +0100, Yilu Mao wrote:
-> Do you agree with this patch to be merged?
+Hi Henrik,
 
-I would rather re-read the aux_ctrl register again after it was set (if
-L2 is disabled) and store this value. It makes sense if some of the bits
-are reserved, at least we have the real value.
+On Mon, Apr 30, 2012 at 3:06 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> The changes you propose force changes to out-of-tree-drivers, without
+> any obvious benefit. Also, there is already a large set of patches on
+> review based on this one. So although I agree that some renames and
+> movements could clarify things, the content and timing will need some
+> more thought.
 
--- 
-Catalin
+OK, taking into account Jiri's comment also, I'll retry this change
+after things settle down a bit.
+
+Thanks!
+
+Sincerely,
+Nick
