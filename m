@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757841Ab2EAACz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 20:02:55 -0400
+	id S1757825Ab2EAADE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 20:03:04 -0400
 Received: from mail-qc0-f180.google.com ([209.85.216.180]:51303 "EHLO
 	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757738Ab2EAACx (ORCPT
+	with ESMTP id S1757706Ab2EAADB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 20:02:53 -0400
+	Mon, 30 Apr 2012 20:03:01 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -24,9 +24,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 24/41] x86: Syscall hooks for nohz cpusets
-Date: Tue,  1 May 2012 01:54:58 +0200
-Message-Id: <1335830115-14335-25-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 08/41] nohz: Try not to give the timekeeping duty to an adaptive tickless cpu
+Date: Tue,  1 May 2012 01:54:42 +0200
+Message-Id: <1335830115-14335-9-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
 References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
@@ -34,8 +34,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add syscall hooks to notify syscall entry and exit on
-CPUs running in adative nohz mode.
+Try to give the timekeeing duty to a CPU that doesn't belong
+to any nohz cpuset when possible, so that we increase the chance
+for these nohz cpusets to run their CPUs out of periodic tick
+mode.
+
+[TODO: We need to find a way to ensure there is always one non-nohz
+running CPU maintaining the timekeeping duty if every non-idle CPUs are
+adaptive tickless]
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -57,89 +63,86 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/thread_info.h |   10 +++++++---
- arch/x86/kernel/ptrace.c           |   10 ++++++++++
- 2 files changed, 17 insertions(+), 3 deletions(-)
+ kernel/time/tick-sched.c |   52 ++++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 41 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index cfd8144..0c1724e 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -88,6 +88,7 @@ struct thread_info {
- #define TIF_NOTSC		16	/* TSC is not accessible in userland */
- #define TIF_IA32		17	/* 32bit process */
- #define TIF_FORK		18	/* ret_from_fork */
-+#define TIF_NOHZ		19	/* in nohz userspace mode */
- #define TIF_MEMDIE		20	/* is terminating due to OOM killer */
- #define TIF_DEBUG		21	/* uses debug registers */
- #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
-@@ -110,6 +111,7 @@ struct thread_info {
- #define _TIF_NOTSC		(1 << TIF_NOTSC)
- #define _TIF_IA32		(1 << TIF_IA32)
- #define _TIF_FORK		(1 << TIF_FORK)
-+#define _TIF_NOHZ		(1 << TIF_NOHZ)
- #define _TIF_DEBUG		(1 << TIF_DEBUG)
- #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
- #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
-@@ -120,12 +122,13 @@ struct thread_info {
- /* work to do in syscall_trace_enter() */
- #define _TIF_WORK_SYSCALL_ENTRY	\
- 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_EMU | _TIF_SYSCALL_AUDIT |	\
--	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT)
-+	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT |	\
-+	 _TIF_NOHZ)
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 0695e9d..f1142d5 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -20,6 +20,7 @@
+ #include <linux/profile.h>
+ #include <linux/sched.h>
+ #include <linux/module.h>
++#include <linux/cpuset.h>
  
- /* work to do in syscall_trace_leave() */
- #define _TIF_WORK_SYSCALL_EXIT	\
- 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SINGLESTEP |	\
--	 _TIF_SYSCALL_TRACEPOINT)
-+	 _TIF_SYSCALL_TRACEPOINT | _TIF_NOHZ)
+ #include <asm/irq_regs.h>
  
- /* work to do on interrupt/exception return */
- #define _TIF_WORK_MASK							\
-@@ -135,7 +138,8 @@ struct thread_info {
- 
- /* work to do on any return to user space */
- #define _TIF_ALLWORK_MASK						\
--	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT)
-+	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT |	\
-+	_TIF_NOHZ)
- 
- /* Only used for 64 bit */
- #define _TIF_DO_NOTIFY_MASK						\
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 5026738..2966791 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -21,6 +21,7 @@
- #include <linux/signal.h>
- #include <linux/perf_event.h>
- #include <linux/hw_breakpoint.h>
-+#include <linux/tick.h>
- 
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
-@@ -1369,6 +1370,9 @@ long syscall_trace_enter(struct pt_regs *regs)
- {
- 	long ret = 0;
- 
-+	/* Notify nohz task syscall early so the rest can use rcu */
-+	tick_nohz_enter_kernel();
-+
- 	/*
- 	 * If we stepped into a sysenter/syscall insn, it trapped in
- 	 * kernel mode; do_debug() cleared TF and set TIF_SINGLESTEP.
-@@ -1427,4 +1431,10 @@ void syscall_trace_leave(struct pt_regs *regs)
- 			!test_thread_flag(TIF_SYSCALL_EMU);
- 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall_exit(regs, step);
-+
-+	/*
-+	 * Notify nohz task exit syscall at last so the rest can
-+	 * use rcu.
-+	 */
-+	tick_nohz_exit_kernel();
+@@ -782,6 +783,45 @@ void tick_check_idle(int cpu)
+ 	tick_check_nohz(cpu);
  }
+ 
++#ifdef CONFIG_CPUSETS_NO_HZ
++
++/*
++ * Take the timer duty if nobody is taking care of it.
++ * If a CPU already does and and it's in a nohz cpuset,
++ * then take the charge so that it can switch to nohz mode.
++ */
++static void tick_do_timer_check_handler(int cpu)
++{
++	int handler = tick_do_timer_cpu;
++
++	if (unlikely(handler == TICK_DO_TIMER_NONE)) {
++		tick_do_timer_cpu = cpu;
++	} else {
++		if (!cpuset_adaptive_nohz() &&
++		    cpuset_cpu_adaptive_nohz(handler))
++			tick_do_timer_cpu = cpu;
++	}
++}
++
++#else
++
++static void tick_do_timer_check_handler(int cpu)
++{
++#ifdef CONFIG_NO_HZ
++	/*
++	 * Check if the do_timer duty was dropped. We don't care about
++	 * concurrency: This happens only when the cpu in charge went
++	 * into a long sleep. If two cpus happen to assign themself to
++	 * this duty, then the jiffies update is still serialized by
++	 * xtime_lock.
++	 */
++	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE))
++		tick_do_timer_cpu = cpu;
++#endif
++}
++
++#endif /* CONFIG_CPUSETS_NO_HZ */
++
+ /*
+  * High resolution timer specific code
+  */
+@@ -798,17 +838,7 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
+ 	ktime_t now = ktime_get();
+ 	int cpu = smp_processor_id();
+ 
+-#ifdef CONFIG_NO_HZ
+-	/*
+-	 * Check if the do_timer duty was dropped. We don't care about
+-	 * concurrency: This happens only when the cpu in charge went
+-	 * into a long sleep. If two cpus happen to assign themself to
+-	 * this duty, then the jiffies update is still serialized by
+-	 * xtime_lock.
+-	 */
+-	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE))
+-		tick_do_timer_cpu = cpu;
+-#endif
++	tick_do_timer_check_handler(cpu);
+ 
+ 	/* Check, if the jiffies need an update */
+ 	if (tick_do_timer_cpu == cpu)
 -- 
 1.7.5.4
 
