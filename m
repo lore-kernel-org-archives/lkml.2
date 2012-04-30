@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab2D3DZn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 23:25:43 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:51644 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755082Ab2D3DZm (ORCPT
+	id S1755242Ab2D3Dib (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 23:38:31 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45465 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755089Ab2D3Dia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 23:25:42 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+wPUFGo7qwBXB845418d/XeRrqi/8Ox4+RfEEecg
-	bQzaR6P3Ix9FDp
-Message-ID: <1335756337.17899.9.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH] namespaces: fix leak on fork() failure
-From: Mike Galbraith <efault@gmx.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>
-Date: Mon, 30 Apr 2012 05:25:37 +0200
-In-Reply-To: <m11un5zzzb.fsf@fess.ebiederm.org>
-References: <1335604790.5995.22.camel@marge.simpson.net>
-	 <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
-	 <20120429165846.GA19054@redhat.com> <m11un5zzzb.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Sun, 29 Apr 2012 23:38:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1333462221-3987-1-git-send-email-m.szyprowski@samsung.com>
+References: <1333462221-3987-1-git-send-email-m.szyprowski@samsung.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Mon, 30 Apr 2012 11:38:09 +0800
+Message-ID: <CAGsJ_4yAwh32u3tdWFA3BC76NpMws5RT_JnxnzNdHx6eoHHxMw@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [PATCHv24 00/16] Contiguous Memory Allocator
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Ohad Ben-Cohen <ohad@wizery.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rob Clark <rob.clark@linaro.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-29 at 19:59 -0700, Eric W. Biederman wrote: 
-> Oleg Nesterov <oleg@redhat.com> writes:
+2012/4/3 Marek Szyprowski <m.szyprowski@samsung.com>:
+> Hi,
+>
+> This is (yet another) update of CMA patches. I've rebased them onto
+> recent v3.4-rc1 kernel tree and integrated some minor bugfixes. The
+> first issue has been pointed by Sandeep Patil - alloc_contig_range
+> reclaimed two times too many pages, second issue (possible mismatch
+> between pageblock size and MAX_ORDER pages) has been recently spotted
+> by Michal Nazarewicz.
+>
+> These patches are also available on my git repository:
+> git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git 3.4-rc1-cma-v24
+>
+> Best regards
+> Marek Szyprowski
+> Samsung Poland R&D Center
+>
+>
+>
+> Patches in this patchset:
 
-> > Yes, but please note that this change also checks "new == NULL", so I
-> > still think the patch is correct.
-> 
-> Sort of.  It is correct in the sense that it performs magic checks on
-> it's arguments to see that it's caller is exit_task_namespaces called
-> from the fork failure path.
+Marek,
 
-Yeah, did that to keep namespace fix in namespace source.  Bad idea even
-with circles and arrows "hey, I'm an unborn red-headed stepchild".
+how about the patch "mm: cma: add a simple kernel module as the helper
+to test CMA", did you forget merging this?
+http://lists.infradead.org/pipermail/linux-arm-kernel/2012-March/088412.html
 
--Mike
+>
+> Marek Szyprowski (6):
+>  mm: extract reclaim code from __alloc_pages_direct_reclaim()
+>  mm: trigger page reclaim in alloc_contig_range() to stabilise
+>    watermarks
+>  drivers: add Contiguous Memory Allocator
+>  X86: integrate CMA with DMA-mapping subsystem
+>  ARM: integrate CMA with DMA-mapping subsystem
+>  ARM: Samsung: use CMA for 2 memory banks for s5p-mfc device
+>
+> Mel Gorman (1):
+>  mm: Serialize access to min_free_kbytes
+>
+> Michal Nazarewicz (9):
+>  mm: page_alloc: remove trailing whitespace
+>  mm: compaction: introduce isolate_migratepages_range()
+>  mm: compaction: introduce map_pages()
+>  mm: compaction: introduce isolate_freepages_range()
+>  mm: compaction: export some of the functions
+>  mm: page_alloc: introduce alloc_contig_range()
+>  mm: page_alloc: change fallbacks array handling
+>  mm: mmzone: MIGRATE_CMA migration type added
+>  mm: page_isolation: MIGRATE_CMA isolation functions added
+>
 
-
-
+-barry
