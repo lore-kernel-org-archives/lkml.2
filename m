@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397Ab2D3Whe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 18:37:34 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59247 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757278Ab2D3Wh3 (ORCPT
+	id S1757281Ab2D3Wku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 18:40:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58037 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756603Ab2D3Wks convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 18:37:29 -0400
-Date: Mon, 30 Apr 2012 15:37:10 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: "Paul E. McKenney" <paul.mckenney@linaro.org>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: linux-next ppc64: RCU mods cause __might_sleep BUGs
-Message-ID: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 30 Apr 2012 18:40:48 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4F9F0AF3.8060409@fold.natur.cuni.cz>
+References: <4F9F02A0.9020207@fold.natur.cuni.cz>
+	<4F9F0AF3.8060409@fold.natur.cuni.cz>
+Date: Mon, 30 Apr 2012 15:40:48 -0700
+X-Google-Sender-Auth: TIOxcTcbxWvsEl1Vl1CO_yrPVvM
+Message-ID: <CAE9FiQXuR7QJnvZxS7amXW=Z2e49tgrY6-5dHmq2LR1a+yiVdA@mail.gmail.com>
+Subject: Re: linux-3.4-rc5: Oops in klist_del()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: linux-pci@vger.kernel.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Mon, Apr 30, 2012 at 2:58 PM, Martin Mokrejs
+<mmokrejs@fold.natur.cuni.cz> wrote:
+> Martin Mokrejs wrote:
+>> Hi,
+>>   I was removing an ExpressCard with a NEC chipset used by xhci_hcd and the kernel crashed
+>> on my Dell Vostro 3550 laptop. Its express slot chipset somehow does not report properly
+>> that a card was unplugged, as discussed earlier here on linux-pci under Subject
+>> "Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe".
+>>
+>>   Maybe this helps somebody to find the cause? Here is a bit of the attached Oops snapshot
+>> stacktrace:
+>>
+>> klist_del
+>> fdevice_del
+>> device_unregister
+>> pci_stop_bus_device
+>> pci_stop_and_remove_bus_device
+>> devehp_unconfigure_device
+>> pciehp_disable_slot
+>> ? pciehp_disable_slot
+>> pciehp_power_thread
+>> process_one_work
+>> worker_thriad
+>> ? manage_workers.clone
+>> ? manage_workers.clone
+>> kthrerd
+>> ...
+>
+> This is 100% reproducible. It happens with 3.4-rc5 and 3.3.4 kernels while not with 3.2.14.
+> I did not have the external enclosure earlier but repeated unplugs/re-plugs of the NEC-based
+> expresscard were/are just not enough to trigger the Oops. One needs the ASMedia2105 in addition.
+>
+> To hit the Ooops, the disk has to be *RE-detected* and unplugged (so not its very first plugin).
+> Express card removal after the very first plugin says usually something about the surprise
+> removal. When I re-plug the disk, it gets detected, and it removal hits the Ooops. I am attaching
+> dmesg from 3.2.14 kernel which does not have the problem. You can see how many times I did remove
+> and re-plug the card. If I waited long ebough for xhci_hcd to timeout waiting for the unplugged
+> device, it says
+>
+> xhci_hcd 0000:11:00.0: Timeout while waiting for configure endpoint command
+> xHCI xhci_drop_endpoint called for root hub
+> xHCI xhci_check_bandwidth called for root hub
+> xhci_hcd 0000:11:00.0: USB bus 5 deregistered
+> xhci_hcd 0000:11:00.0: PCI INT A disabled
+>
+> and then, subsequent re-plug of the card with the disk attached results in detected SCSI device.
+> In contrast, if I re-plug the express card earlier express card slot change is reported but the
+> disc is not detected (something is blocked in xhci_hcd I think).
+>
+> The above stacktrace (of actually the camera snapshot is not the first stacktrace, unfortunately).
+> I see there are 2-3 screen scrolled away. Hmm, but I do not have anything what could be used as
+> a remote console ...
 
-On 3.4.0-rc4-next-20120427 and preceding linux-nexts (I've not tried
-rc5-next-20120430 but expect it's the same), on PowerPC G5 quad with
-CONFIG_PREEMPT=y and CONFIG_DEBUG_ATOMIC_SLEEP=y, I'm getting spurious
-"BUG: sleeping function called from invalid context" messages from
-__might_sleep().
+So if you use "echo 1 > /sys/.../0000:11.00.0/remove" before surprise
+remove the card,
 
-Just once I saw such a message during startup.  Once I saw such a
-message when rebuilding the machine's kernel.  Usually I see them
-when I'm running a swapping load of kernel builds under memory
-pressure (but that's what I'm habitually running there): perhaps
-after a few minutes a flurry comes, then goes away, comes back
-again later, and after perhaps a couple of hours of that I see
-"INFO: rcu_preempt detected stalls" messages too, and soon it
-freezes (or perhaps it's still running, but I'm so flooded by
-messages that I reboot anyway).
+the oops would not happen?
 
-Rather like from before you fixed schedule_tail() for your per-cpu
-RCU mods, but not so easy to reproduce.  I did a bisection and indeed
-it converged as expected on the RCU changes.  No such problem seen on
-x86: it looks as if there's some further tweak required on PowerPC.
-
-Here are my RCU config options (I don't usually have the TORTURE_TEST
-in, but tried that for half an hour this morning, in the hope that it
-would generate the issue: but it did not).
-
-# RCU Subsystem
-CONFIG_TREE_PREEMPT_RCU=y
-CONFIG_PREEMPT_RCU=y
-CONFIG_RCU_FANOUT=64
-# CONFIG_RCU_FANOUT_EXACT is not set
-CONFIG_TREE_RCU_TRACE=y
-# CONFIG_RCU_BOOST is not set
-CONFIG_HAVE_RCU_TABLE_FREE=y
-# CONFIG_SPARSE_RCU_POINTER is not set
-CONFIG_RCU_TORTURE_TEST=m
-CONFIG_RCU_CPU_STALL_TIMEOUT=60
-# CONFIG_RCU_CPU_STALL_VERBOSE is not set
-# CONFIG_RCU_CPU_STALL_INFO is not set
-CONFIG_RCU_TRACE=y
-
-Here's the message when I was rebuilding the G5's kernel:
-
-BUG: sleeping function called from invalid context at include/linux/pagemap.h:354
-in_atomic(): 0, irqs_disabled(): 0, pid: 6886, name: cc1
-Call Trace:
-[c0000001a99f78e0] [c00000000000f34c] .show_stack+0x6c/0x16c (unreliable)
-[c0000001a99f7990] [c000000000077b40] .__might_sleep+0x11c/0x134
-[c0000001a99f7a10] [c0000000000c6228] .filemap_fault+0x1fc/0x494
-[c0000001a99f7af0] [c0000000000e7c9c] .__do_fault+0x120/0x684
-[c0000001a99f7c00] [c000000000025790] .do_page_fault+0x458/0x664
-[c0000001a99f7e30] [c000000000005868] handle_page_fault+0x10/0x30
-
-I've plenty more examples, most of them from page faults or from kswapd;
-but I don't think there's any more useful information in them.
-
-Anything I can try later on?
-
-Thanks!
-Hugh
+Yinghai
