@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336Ab2D3E5A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 00:57:00 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61445 "EHLO
+	id S1755320Ab2D3E47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 00:56:59 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53029 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab2D3E4Q (ORCPT
+	with ESMTP id S1750926Ab2D3E4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Apr 2012 00:56:16 -0400
-X-AuditID: 9c930197-b7ca1ae0000069e6-72-4f9e1b6cf69c
+X-AuditID: 9c930197-b7ca1ae0000069e6-74-4f9e1b6ca4ff
 From: Namhyung Kim <namhyung.kim@lge.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 4/7] perf ui: Add gtk2 support into setup_browser()
-Date: Mon, 30 Apr 2012 13:55:08 +0900
-Message-Id: <1335761711-31403-5-git-send-email-namhyung.kim@lge.com>
+Subject: [PATCH 5/7] perf ui: Change fallback policy of setup_browser()
+Date: Mon, 30 Apr 2012 13:55:09 +0900
+Message-Id: <1335761711-31403-6-git-send-email-namhyung.kim@lge.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1335761711-31403-1-git-send-email-namhyung.kim@lge.com>
 References: <1335761711-31403-1-git-send-email-namhyung.kim@lge.com>
@@ -24,498 +24,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now setup_browser can handle gtk2 front-end so split the
-TUI code to ui/tui/setup.c in order to remove dependency.
-To this end, make ui__init/exit global symbols and take
-an argument. Also split gtk code to ui/gtk/setup.c.
+If gtk2 support is not enabled (or failed for some reason) try TUI
+again instead of falling directly back to the stdio interface.
 
 Acked-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 ---
- tools/perf/Makefile         |    6 ++
- tools/perf/builtin-report.c |   10 +--
- tools/perf/ui/gtk/browser.c |   10 ---
- tools/perf/ui/gtk/setup.c   |   12 +++
- tools/perf/ui/setup.c       |  169 +++++++------------------------------------
- tools/perf/ui/tui/setup.c   |  140 +++++++++++++++++++++++++++++++++++
- tools/perf/util/cache.h     |   23 ++++--
- 7 files changed, 205 insertions(+), 165 deletions(-)
- create mode 100644 tools/perf/ui/gtk/setup.c
- create mode 100644 tools/perf/ui/tui/setup.c
+ tools/perf/ui/gtk/setup.c |    4 ++--
+ tools/perf/ui/setup.c     |   13 +++++++------
+ tools/perf/ui/tui/setup.c |    2 +-
+ tools/perf/util/cache.h   |   15 ++++++---------
+ 4 files changed, 16 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index e98e14c88532..5fd1d60ed8a5 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -481,6 +481,7 @@ else
- 		LIB_OBJS += $(OUTPUT)ui/helpline.o
- 		LIB_OBJS += $(OUTPUT)ui/progress.o
- 		LIB_OBJS += $(OUTPUT)ui/util.o
-+		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
- 		LIB_H += ui/browser.h
- 		LIB_H += ui/browsers/map.h
- 		LIB_H += ui/helpline.h
-@@ -503,6 +504,11 @@ else
- 		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0)
- 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0)
- 		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
-+		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
-+		# Make sure that it'd be included only once.
-+		ifneq ($(findstring -DNO_NEWT_SUPPORT,$(BASIC_CFLAGS)),)
-+			LIB_OBJS += $(OUTPUT)ui/setup.o
-+		endif
- 	endif
- endif
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 06115ffaa0b4..5df829f5bbf4 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -676,14 +676,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 
- 	}
- 
--	if (strcmp(report.input_name, "-") != 0) {
--		if (report.use_gtk)
--			perf_gtk__setup_browser(true);
--		else
--			setup_browser(true);
--	} else {
-+	if (strcmp(report.input_name, "-") != 0)
-+		setup_browser(true);
-+	else
- 		use_browser = 0;
--	}
- 
- 	/*
- 	 * Only in the newt browser we are doing integrated annotation,
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index 5eafd9b3b783..0656c381a89c 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -9,16 +9,6 @@
- 
- #define MAX_COLUMNS			32
- 
--void perf_gtk__setup_browser(bool fallback_to_pager __used)
--{
--	gtk_init(NULL, NULL);
--}
--
--void perf_gtk__exit_browser(bool wait_for_ok __used)
--{
--	gtk_main_quit();
--}
--
- static void perf_gtk__signal(int sig)
- {
- 	psignal(sig, "perf");
 diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
-new file mode 100644
-index 000000000000..8c3b573e863d
---- /dev/null
+index 8c3b573e863d..829529957766 100644
+--- a/tools/perf/ui/gtk/setup.c
 +++ b/tools/perf/ui/gtk/setup.c
-@@ -0,0 +1,12 @@
-+#include "gtk.h"
-+#include "../../util/cache.h"
-+
-+void perf_gtk__init(bool fallback_to_pager __used)
-+{
-+	gtk_init(NULL, NULL);
-+}
-+
-+void perf_gtk__exit(bool wait_for_ok __used)
-+{
-+	gtk_main_quit();
-+}
+@@ -1,9 +1,9 @@
+ #include "gtk.h"
+ #include "../../util/cache.h"
+ 
+-void perf_gtk__init(bool fallback_to_pager __used)
++int perf_gtk__init(void)
+ {
+-	gtk_init(NULL, NULL);
++	return gtk_init_check(NULL, NULL) ? 0 : -1;
+ }
+ 
+ void perf_gtk__exit(bool wait_for_ok __used)
 diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index becdcd0d9ce7..98130e099a0d 100644
+index 98130e099a0d..9f5f888f73e3 100644
 --- a/tools/perf/ui/setup.c
 +++ b/tools/perf/ui/setup.c
-@@ -1,161 +1,44 @@
--#include <newt.h>
--#include <signal.h>
--#include <stdbool.h>
--
- #include "../cache.h"
- #include "../debug.h"
--#include "browser.h"
--#include "helpline.h"
--#include "ui.h"
--#include "util.h"
--#include "libslang.h"
--#include "keysyms.h"
--
--pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
--
--static volatile int ui__need_resize;
--
--void ui__refresh_dimensions(bool force)
--{
--	if (force || ui__need_resize) {
--		ui__need_resize = 0;
--		pthread_mutex_lock(&ui__lock);
--		SLtt_get_screen_size();
--		SLsmg_reinit_smg();
--		pthread_mutex_unlock(&ui__lock);
--	}
--}
--
--static void ui__sigwinch(int sig __used)
--{
--	ui__need_resize = 1;
--}
--
--static void ui__setup_sigwinch(void)
--{
--	static bool done;
--
--	if (done)
--		return;
--
--	done = true;
--	pthread__unblock_sigwinch();
--	signal(SIGWINCH, ui__sigwinch);
--}
--
--int ui__getch(int delay_secs)
--{
--	struct timeval timeout, *ptimeout = delay_secs ? &timeout : NULL;
--	fd_set read_set;
--	int err, key;
--
--	ui__setup_sigwinch();
--
--	FD_ZERO(&read_set);
--	FD_SET(0, &read_set);
--
--	if (delay_secs) {
--		timeout.tv_sec = delay_secs;
--		timeout.tv_usec = 0;
--	}
--
--        err = select(1, &read_set, NULL, NULL, ptimeout);
--
--	if (err == 0)
--		return K_TIMER;
--
--	if (err == -1) {
--		if (errno == EINTR)
--			return K_RESIZE;
--		return K_ERROR;
--	}
+@@ -13,13 +13,14 @@ void setup_browser(bool fallback_to_pager)
  
--	key = SLang_getkey();
--	if (key != K_ESC)
--		return key;
- 
--	FD_ZERO(&read_set);
--	FD_SET(0, &read_set);
--	timeout.tv_sec = 0;
--	timeout.tv_usec = 20;
--        err = select(1, &read_set, NULL, NULL, &timeout);
--	if (err == 0)
--		return K_ESC;
+ 	switch (use_browser) {
+ 	case 2:
+-		perf_gtk__init(fallback_to_pager);
+-		break;
 -
--	SLang_ungetkey(key);
--	return SLkp_getkey();
--}
++		if (perf_gtk__init() == 0)
++			break;
++		/* fall through */
+ 	case 1:
+-		ui__init(fallback_to_pager);
+-		break;
 -
--static void newt_suspend(void *d __used)
--{
--	newtSuspend();
--	raise(SIGTSTP);
--	newtResume();
--}
--
--static void ui__exit(void);
--
--static void ui__signal(int sig)
--{
--	ui__exit();
--	psignal(sig, "perf");
--	exit(0);
--}
--
--static int ui__init(void)
-+void setup_browser(bool fallback_to_pager)
- {
--	int err;
--
--	newtInit();
--	err = SLkp_init();
--	if (err < 0) {
--		pr_err("TUI initialization failed.\n");
--		goto out;
--	}
--
--	SLkp_define_keysym((char *)"^(kB)", SL_KEY_UNTAB);
-+	if (!isatty(1) || dump_trace)
-+		use_browser = 0;
- 
--	newtSetSuspendCallback(newt_suspend, NULL);
--	ui_helpline__init();
--	ui_browser__init();
-+	/* default to TUI */
-+	if (use_browser < 0)
 +		use_browser = 1;
- 
--	signal(SIGSEGV, ui__signal);
--	signal(SIGFPE, ui__signal);
--	signal(SIGINT, ui__signal);
--	signal(SIGQUIT, ui__signal);
--	signal(SIGTERM, ui__signal);
--out:
--	return err;
--}
-+	switch (use_browser) {
-+	case 2:
-+		perf_gtk__init(fallback_to_pager);
-+		break;
- 
--static void ui__exit(void)
--{
--	SLtt_set_cursor_visibility(1);
--	SLsmg_refresh();
--	SLsmg_reset_smg();
--	SLang_reset_tty();
--}
-+	case 1:
-+		ui__init(fallback_to_pager);
-+		break;
- 
--void setup_browser(bool fallback_to_pager)
--{
--	if (!isatty(1) || !use_browser || dump_trace) {
--		use_browser = 0;
-+	default:
++		if (ui__init() == 0)
++			break;
++		/* fall through */
+ 	default:
  		if (fallback_to_pager)
  			setup_pager();
--		return;
-+		break;
- 	}
--
--	use_browser = 1;
--	ui__init();
+diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
+index 0194cea2ea0e..d33e943ac434 100644
+--- a/tools/perf/ui/tui/setup.c
++++ b/tools/perf/ui/tui/setup.c
+@@ -100,7 +100,7 @@ static void ui__signal(int sig)
+ 	exit(0);
  }
  
- void exit_browser(bool wait_for_ok)
+-int ui__init(bool fallback_to_pager __used)
++int ui__init(void)
  {
--	if (use_browser > 0) {
--		if (wait_for_ok)
--			ui__question_window("Fatal Error",
--					    ui_helpline__last_msg,
--					    "Press any key...", 0);
--		ui__exit();
-+	switch (use_browser) {
-+	case 2:
-+		perf_gtk__exit(wait_for_ok);
-+		break;
-+
-+	case 1:
-+		ui__exit(wait_for_ok);
-+		break;
-+
-+	default:
-+		break;
- 	}
- }
-diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
-new file mode 100644
-index 000000000000..0194cea2ea0e
---- /dev/null
-+++ b/tools/perf/ui/tui/setup.c
-@@ -0,0 +1,140 @@
-+#include <newt.h>
-+#include <signal.h>
-+#include <stdbool.h>
-+
-+#include "../../util/cache.h"
-+#include "../../util/debug.h"
-+#include "../browser.h"
-+#include "../helpline.h"
-+#include "../ui.h"
-+#include "../util.h"
-+#include "../libslang.h"
-+#include "../keysyms.h"
-+
-+pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
-+
-+static volatile int ui__need_resize;
-+
-+void ui__refresh_dimensions(bool force)
-+{
-+	if (force || ui__need_resize) {
-+		ui__need_resize = 0;
-+		pthread_mutex_lock(&ui__lock);
-+		SLtt_get_screen_size();
-+		SLsmg_reinit_smg();
-+		pthread_mutex_unlock(&ui__lock);
-+	}
-+}
-+
-+static void ui__sigwinch(int sig __used)
-+{
-+	ui__need_resize = 1;
-+}
-+
-+static void ui__setup_sigwinch(void)
-+{
-+	static bool done;
-+
-+	if (done)
-+		return;
-+
-+	done = true;
-+	pthread__unblock_sigwinch();
-+	signal(SIGWINCH, ui__sigwinch);
-+}
-+
-+int ui__getch(int delay_secs)
-+{
-+	struct timeval timeout, *ptimeout = delay_secs ? &timeout : NULL;
-+	fd_set read_set;
-+	int err, key;
-+
-+	ui__setup_sigwinch();
-+
-+	FD_ZERO(&read_set);
-+	FD_SET(0, &read_set);
-+
-+	if (delay_secs) {
-+		timeout.tv_sec = delay_secs;
-+		timeout.tv_usec = 0;
-+	}
-+
-+        err = select(1, &read_set, NULL, NULL, ptimeout);
-+
-+	if (err == 0)
-+		return K_TIMER;
-+
-+	if (err == -1) {
-+		if (errno == EINTR)
-+			return K_RESIZE;
-+		return K_ERROR;
-+	}
-+
-+	key = SLang_getkey();
-+	if (key != K_ESC)
-+		return key;
-+
-+	FD_ZERO(&read_set);
-+	FD_SET(0, &read_set);
-+	timeout.tv_sec = 0;
-+	timeout.tv_usec = 20;
-+        err = select(1, &read_set, NULL, NULL, &timeout);
-+	if (err == 0)
-+		return K_ESC;
-+
-+	SLang_ungetkey(key);
-+	return SLkp_getkey();
-+}
-+
-+static void newt_suspend(void *d __used)
-+{
-+	newtSuspend();
-+	raise(SIGTSTP);
-+	newtResume();
-+}
-+
-+static void ui__signal(int sig)
-+{
-+	ui__exit(false);
-+	psignal(sig, "perf");
-+	exit(0);
-+}
-+
-+int ui__init(bool fallback_to_pager __used)
-+{
-+	int err;
-+
-+	newtInit();
-+	err = SLkp_init();
-+	if (err < 0) {
-+		pr_err("TUI initialization failed.\n");
-+		goto out;
-+	}
-+
-+	SLkp_define_keysym((char *)"^(kB)", SL_KEY_UNTAB);
-+
-+	newtSetSuspendCallback(newt_suspend, NULL);
-+	ui_helpline__init();
-+	ui_browser__init();
-+
-+	signal(SIGSEGV, ui__signal);
-+	signal(SIGFPE, ui__signal);
-+	signal(SIGINT, ui__signal);
-+	signal(SIGQUIT, ui__signal);
-+	signal(SIGTERM, ui__signal);
-+out:
-+	return err;
-+}
-+
-+void ui__exit(bool wait_for_ok)
-+{
-+	if (wait_for_ok)
-+		ui__question_window("Fatal Error",
-+				    ui_helpline__last_msg,
-+				    "Press any key...", 0);
-+
-+	SLtt_set_cursor_visibility(1);
-+	SLsmg_refresh();
-+	SLsmg_reset_smg();
-+	SLang_reset_tty();
-+}
+ 	int err;
+ 
 diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 3428b777396d..761d4e998101 100644
+index 761d4e998101..cff18c617d13 100644
 --- a/tools/perf/util/cache.h
 +++ b/tools/perf/util/cache.h
-@@ -33,7 +33,7 @@ extern int pager_use_color;
- 
- extern int use_browser;
- 
--#ifdef NO_NEWT_SUPPORT
-+#if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
- static inline void setup_browser(bool fallback_to_pager)
- {
- 	if (fallback_to_pager)
-@@ -43,19 +43,32 @@ static inline void exit_browser(bool wait_for_ok __used) {}
- #else
- void setup_browser(bool fallback_to_pager);
+@@ -45,27 +45,24 @@ void setup_browser(bool fallback_to_pager);
  void exit_browser(bool wait_for_ok);
-+
-+#ifdef NO_NEWT_SUPPORT
-+static inline int ui__init(bool fallback_to_pager)
-+{
-+	if (fallback_to_pager)
-+		setup_pager();
-+	return 0;
-+}
-+static inline void ui__exit(bool wait_for_ok __used) {}
-+#else
-+int ui__init(bool fallback_to_pager);
-+void ui__exit(bool wait_for_ok);
+ 
+ #ifdef NO_NEWT_SUPPORT
+-static inline int ui__init(bool fallback_to_pager)
++static inline int ui__init(void)
+ {
+-	if (fallback_to_pager)
+-		setup_pager();
+-	return 0;
++	return -1;
+ }
+ static inline void ui__exit(bool wait_for_ok __used) {}
+ #else
+-int ui__init(bool fallback_to_pager);
++int ui__init(void);
+ void ui__exit(bool wait_for_ok);
  #endif
  
  #ifdef NO_GTK2_SUPPORT
--static inline void perf_gtk__setup_browser(bool fallback_to_pager)
-+static inline void perf_gtk__init(bool fallback_to_pager)
+-static inline void perf_gtk__init(bool fallback_to_pager)
++static inline int perf_gtk__init(void)
  {
- 	if (fallback_to_pager)
- 		setup_pager();
+-	if (fallback_to_pager)
+-		setup_pager();
++	return -1;
  }
--static inline void perf_gtk__exit_browser(bool wait_for_ok __used) {}
-+static inline void perf_gtk__exit(bool wait_for_ok __used) {}
+ static inline void perf_gtk__exit(bool wait_for_ok __used) {}
  #else
--void perf_gtk__setup_browser(bool fallback_to_pager);
--void perf_gtk__exit_browser(bool wait_for_ok);
-+void perf_gtk__init(bool fallback_to_pager);
-+void perf_gtk__exit(bool wait_for_ok);
+-void perf_gtk__init(bool fallback_to_pager);
++int perf_gtk__init(void);
+ void perf_gtk__exit(bool wait_for_ok);
  #endif
-+#endif /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
- 
- char *alias_lookup(const char *alias);
- int split_cmdline(char *cmdline, const char ***argv);
+ #endif /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
 -- 
 1.7.10
 
