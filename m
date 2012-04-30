@@ -1,62 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab2D3QBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 12:01:07 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37637 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044Ab2D3QBF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 12:01:05 -0400
-Message-ID: <4F9EB72A.10403@wwwdotorg.org>
-Date: Mon, 30 Apr 2012 10:00:42 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1756139Ab2D3QDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 12:03:40 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:47359 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754558Ab2D3QDg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 12:03:36 -0400
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, Viresh Kumar <viresh.kumar@st.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Rakesh Iyer <riyer@nvidia.com>
-Subject: Re: [PATCH 2/2] Input: matrix_keymap - wire up device tree support
-References: <20120426081909.GA2726@core.coreip.homeip.net> <4F99642E.1010305@wwwdotorg.org> <20120430041955.GC1055@core.coreip.homeip.net>
-In-Reply-To: <20120430041955.GC1055@core.coreip.homeip.net>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <201204292244.16467.rjw@sisk.pl>
+References: <201204292244.16467.rjw@sisk.pl>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 30 Apr 2012 10:03:14 -0600
+Message-ID: <CAErSpo7oGWNVeT6OCgaFdb_+uPAumggE-Z+OdnH=9aW+_N3B6g@mail.gmail.com>
+Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <lenb@kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2012 10:19 PM, Dmitry Torokhov wrote:
-> On Thu, Apr 26, 2012 at 09:05:18AM -0600, Stephen Warren wrote:
->> On 04/26/2012 02:19 AM, Dmitry Torokhov wrote:
->>> When platform keymap is not supplied to matrix_keypad_build_keymap()
->>> and device tree support is enabled, try locating specified property
->>> and load keymap from it. If property name is not defined, try using
->>> "linux,keymap".
->>>
->>> Based on earlier patch by Viresh Kumar <viresh.kumar@st.com>
->>
->> I think this series looks mostly OK. A few comments below.
->>
->> We don't actually have the KBC driver hooked up on any boards yet, so I
->> can't actually test this yet.
->>
->> How will the linux,fn-keymap handling work? It looks like this code is
->> allocating a keymap data structure with one additional row to represent
->> fn-not-pressed vs. fn-pressed.
-> 
-> No, it loads 2x rows (therefore giving you twice original keymap size).
+On Sun, Apr 29, 2012 at 2:44 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Oleksij Rempel <bug-track@fisher-privat.net>
+>
+> This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
+> more closely and fixes suspend bug found on ASUS Zenbook UX31E.
+>
+> Some OEM use _SxD fileds do blacklist brocken Dx states.
+> If _SxD/_SxW return values are check before suspend as appropriate,
+> some nasty suspend/resume issues may be avoided.
+>
+> References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
+> Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>
+> Bjorn, Len,
+>
+> This is -stable material and therefore v3.4 as well, IMO.  Please let me
+> know if one of you can take it or whether you want me to handle it all the
+> way to Linus.
 
-Yes, I mean an extra row signal, so therefore twice as many rows.
+I'm OK with this from a PCI perspective.  Most of the change is in
+ACPI, so I propose that either you or Len take care of it.
 
->> I assume this will work without issue
->> even though the second half is not filled in. Won't this allow the
->> linux,keymap property entries to pass validation "if (row >= rows)" for
->> one more row than it should?
-> 
-> Maybe... I think we should revisit this when you actually have
-> linux,fn-keymap. Probably will need to export matrix_keypad_parse_
+The second paragraph of the changelog has several typos
+(fileds/fields, do/to, brocken/broken, etc).
 
-Would it be better to just drop the support for the linux,fn-keymap
-property, until the full support is there? That wouldn't lose any
-functionality, but would avoid this potential error-checking issue.
+> ---
+>  drivers/acpi/sleep.c |   22 +++++++++++++++++++++-
+>  drivers/pci/pci.c    |   12 +++++++++++-
+>  2 files changed, 32 insertions(+), 2 deletions(-)
+>
+> Index: linux/drivers/acpi/sleep.c
+> ===================================================================
+> --- linux.orig/drivers/acpi/sleep.c
+> +++ linux/drivers/acpi/sleep.c
+> @@ -714,10 +714,30 @@ int acpi_pm_device_sleep_state(struct de
+>         *
+>         * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
+>         * provided -- that's our fault recovery, we ignore retval.
+> +        *
+> +        * According to ACPI 4.0a (April 5, 2010), page 294,
+> +        * Table 7-7 S3 Action / Result Table, we need to evaluate _SxW in
+> +        * addition to _SxD if the device is configured for wakeup:
+> +        * Desired Action    | _S3D | _PRW | _S3W | Resultant D-state
+> +        * Enter S3          |  N/A |  D/C |  N/A | OSPM decides
+> +        * Enter S3, No Wake |   2  |  D/C |  D/C | Enter D2 or D3
+> +        * Enter S3, Wake    |   2  |   3  |  N/A | Enter D2
+> +        * Enter S3, Wake    |   2  |   3  |   3  | Enter D2 or D3
+> +        * Enter S3, Wake    |  N/A |   3  |   2  | Enter D0, D1 or D2
+>         */
+> -       if (acpi_target_sleep_state > ACPI_STATE_S0)
+> +       if (acpi_target_sleep_state > ACPI_STATE_S0) {
+> +               acpi_status status;
+> +
+>                acpi_evaluate_integer(handle, acpi_method, NULL, &d_min);
+>
+> +               if (device_may_wakeup(dev)) {
+> +                       acpi_method[3] = 'W';
+> +                       status = acpi_evaluate_integer(handle, acpi_method,
+> +                                                      NULL, &d_max);
+> +                       if (ACPI_FAILURE(status))
+> +                               d_max = d_min;
+> +               }
+> +       }
+>        /*
+>         * If _PRW says we can wake up the system from the target sleep state,
+>         * the D-state returned by _SxD is sufficient for that (we assume a
+> Index: linux/drivers/pci/pci.c
+> ===================================================================
+> --- linux.orig/drivers/pci/pci.c
+> +++ linux/drivers/pci/pci.c
+> @@ -1691,10 +1691,20 @@ pci_power_t pci_target_state(struct pci_
+>  {
+>        pci_power_t target_state = PCI_D3hot;
+>
+> -       if (platform_pci_power_manageable(dev)) {
+> +       /*
+> +        * According to ACPI 4.0a,7.2 Device Power Management Objects, device
+> +        * with wake capability should have _PRW or _PSW object and can have
+> +        * _SxD or _SxW object.
+> +        * It looks like some OEMs use this fields to avoid buggy Dx states
+> +        * of devices, so we need to check for _PRW or _PSW and see if _SxD or
+> +        * _SxW indicate to overwrite Dx.
+> +        */
+> +       if (platform_pci_power_manageable(dev)
+> +           || platform_pci_can_wakeup(dev)) {
+>                /*
+>                 * Call the platform to choose the target state of the device
+>                 * and enable wake-up from this state if supported.
+> +                * (Check _SxD and _SxW)
+>                 */
+>                pci_power_t state = platform_pci_choose_state(dev);
+>
