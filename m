@@ -1,231 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab2D3TvW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 15:51:22 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:48264 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454Ab2D3TvU convert rfc822-to-8bit (ORCPT
+	id S1756684Ab2D3Tw1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 15:52:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62465 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454Ab2D3TwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 15:51:20 -0400
+	Mon, 30 Apr 2012 15:52:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] Move most arches to asm-generic/current.h
+Date: Mon, 30 Apr 2012 19:52:17 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>
+References: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org> <201204301638.29398.arnd@arndb.de> <4F9EC6E9.9000102@codeaurora.org>
+In-Reply-To: <4F9EC6E9.9000102@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <1334959051-18203-12-git-send-email-glommer@parallels.com>
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
-	<1334959051-18203-12-git-send-email-glommer@parallels.com>
-Date: Mon, 30 Apr 2012 12:51:18 -0700
-Message-ID: <CABCjUKCW+SS8R1pUarkE4D3fvy8AchOBtkDnqLzrkqervWe-Kg@mail.gmail.com>
-Subject: Re: [PATCH 11/23] slub: consider a memcg parameter in kmem_create_cache
-From: Suleiman Souhlal <suleiman@google.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Thelen <gthelen@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204301952.17755.arnd@arndb.de>
+X-Provags-ID: V02:K0:Q2a4jVf84aIpZM+VNcZajlCB2KKpPtm6XiazKcndxLi
+ TYNB4H8YizQwKBd4ubIXMJp7ZOEfoXiFUFm0WiaR/xuEzMmLc7
+ aLOYfUZpRVSoy7dWCVHfYM4lack98C5I2plaIjFDvt340tv5rO
+ 6UvzBmrHByH27SkyRPp6ztOjRsEBE7wkjSizFYtbikTENLjCN0
+ sluSOAZjTbjLAggxu5fevl+qs7+nRwmkIbNV7paelJBH898w7w
+ xhnhhsyoCgocpLCDOmKvcQ2Bh3q/XKshPSb786PqUz8QLr3irl
+ JhdmL4OVs6TRnfP3H29tbDd/2AoEm0x4RuLlFXsWoj3Zb5IMI1
+ S+/BPG/t6/aXyeFpNwfk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 2:57 PM, Glauber Costa <glommer@parallels.com> wrote:
-> Allow a memcg parameter to be passed during cache creation.
-> The slub allocator will only merge caches that belong to
-> the same memcg.
->
-> Default function is created as a wrapper, passing NULL
-> to the memcg version. We only merge caches that belong
-> to the same memcg.
->
-> From the memcontrol.c side, 3 helper functions are created:
->
->  1) memcg_css_id: because slub needs a unique cache name
->    for sysfs. Since this is visible, but not the canonical
->    location for slab data, the cache name is not used, the
->    css_id should suffice.
->
->  2) mem_cgroup_register_cache: is responsible for assigning
->    a unique index to each cache, and other general purpose
->    setup. The index is only assigned for the root caches. All
->    others are assigned index == -1.
->
->  3) mem_cgroup_release_cache: can be called from the root cache
->    destruction, and will release the index for other caches.
->
-> This index mechanism was developed by Suleiman Souhlal.
->
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
-> ---
->  include/linux/memcontrol.h |   14 ++++++++++++++
->  include/linux/slab.h       |    6 ++++++
->  mm/memcontrol.c            |   29 +++++++++++++++++++++++++++++
->  mm/slub.c                  |   31 +++++++++++++++++++++++++++----
->  4 files changed, 76 insertions(+), 4 deletions(-)
->
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index f94efd2..99e14b9 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -26,6 +26,7 @@ struct mem_cgroup;
->  struct page_cgroup;
->  struct page;
->  struct mm_struct;
-> +struct kmem_cache;
->
->  /* Stats that can be updated by kernel. */
->  enum mem_cgroup_page_stat_item {
-> @@ -440,7 +441,20 @@ struct sock;
->  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->  void sock_update_memcg(struct sock *sk);
->  void sock_release_memcg(struct sock *sk);
-> +int memcg_css_id(struct mem_cgroup *memcg);
-> +void mem_cgroup_register_cache(struct mem_cgroup *memcg,
-> +                                     struct kmem_cache *s);
-> +void mem_cgroup_release_cache(struct kmem_cache *cachep);
->  #else
-> +static inline void mem_cgroup_register_cache(struct mem_cgroup *memcg,
-> +                                            struct kmem_cache *s)
-> +{
-> +}
-> +
-> +static inline void mem_cgroup_release_cache(struct kmem_cache *cachep)
-> +{
-> +}
-> +
->  static inline void sock_update_memcg(struct sock *sk)
->  {
->  }
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index a5127e1..c7a7e05 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -321,6 +321,12 @@ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
->        __kmalloc(size, flags)
->  #endif /* DEBUG_SLAB */
->
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> +#define MAX_KMEM_CACHE_TYPES 400
-> +#else
-> +#define MAX_KMEM_CACHE_TYPES 0
-> +#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-> +
->  #ifdef CONFIG_NUMA
->  /*
->  * kmalloc_node_track_caller is a special version of kmalloc_node that
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 36f1e6b..0015ed0 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -323,6 +323,11 @@ struct mem_cgroup {
->  #endif
->  };
->
-> +int memcg_css_id(struct mem_cgroup *memcg)
-> +{
-> +       return css_id(&memcg->css);
-> +}
-> +
->  /* Stuffs for move charges at task migration. */
->  /*
->  * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
-> @@ -461,6 +466,30 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
->  }
->  EXPORT_SYMBOL(tcp_proto_cgroup);
->  #endif /* CONFIG_INET */
-> +
-> +/* Bitmap used for allocating the cache id numbers. */
-> +static DECLARE_BITMAP(cache_types, MAX_KMEM_CACHE_TYPES);
-> +
-> +void mem_cgroup_register_cache(struct mem_cgroup *memcg,
-> +                              struct kmem_cache *cachep)
-> +{
-> +       int id = -1;
-> +
-> +       cachep->memcg_params.memcg = memcg;
-> +
-> +       if (!memcg) {
-> +               id = find_first_zero_bit(cache_types, MAX_KMEM_CACHE_TYPES);
-> +               BUG_ON(id < 0 || id >= MAX_KMEM_CACHE_TYPES);
-> +               __set_bit(id, cache_types);
-> +       } else
-> +               INIT_LIST_HEAD(&cachep->memcg_params.destroyed_list);
-> +       cachep->memcg_params.id = id;
-> +}
-> +
-> +void mem_cgroup_release_cache(struct kmem_cache *cachep)
-> +{
-> +       __clear_bit(cachep->memcg_params.id, cache_types);
-> +}
->  #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
->
->  static void drain_all_stock_async(struct mem_cgroup *memcg);
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 2652e7c..86e40cc 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -32,6 +32,7 @@
->  #include <linux/prefetch.h>
->
->  #include <trace/events/kmem.h>
-> +#include <linux/memcontrol.h>
->
->  /*
->  * Lock order:
-> @@ -3880,7 +3881,7 @@ static int slab_unmergeable(struct kmem_cache *s)
->        return 0;
->  }
->
-> -static struct kmem_cache *find_mergeable(size_t size,
-> +static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
->                size_t align, unsigned long flags, const char *name,
->                void (*ctor)(void *))
->  {
-> @@ -3916,21 +3917,29 @@ static struct kmem_cache *find_mergeable(size_t size,
->                if (s->size - size >= sizeof(void *))
->                        continue;
->
-> +               if (memcg && s->memcg_params.memcg != memcg)
-> +                       continue;
-> +
->                return s;
->        }
->        return NULL;
->  }
->
-> -struct kmem_cache *kmem_cache_create(const char *name, size_t size,
-> -               size_t align, unsigned long flags, void (*ctor)(void *))
-> +struct kmem_cache *
-> +kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
-> +                       size_t align, unsigned long flags, void (*ctor)(void *))
->  {
->        struct kmem_cache *s;
->
->        if (WARN_ON(!name))
->                return NULL;
->
-> +#ifndef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> +       WARN_ON(memcg != NULL);
-> +#endif
-> +
->        down_write(&slub_lock);
-> -       s = find_mergeable(size, align, flags, name, ctor);
-> +       s = find_mergeable(memcg, size, align, flags, name, ctor);
->        if (s) {
->                s->refcount++;
->                /*
-> @@ -3954,12 +3963,15 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
->                                size, align, flags, ctor)) {
->                        list_add(&s->list, &slab_caches);
->                        up_write(&slub_lock);
-> +                       mem_cgroup_register_cache(memcg, s);
+On Monday 30 April 2012, Stephen Boyd wrote:
+> My compile of
+> alpha with the kernel.org 4.6.3 compilers doesn't show any new build
+> failures than what is already there:
+> 
+>   LD      .tmp_vmlinux1
+> drivers/built-in.o: In function `ide_set_disk_chs':
+> drivers/ide/ide.c:269:(.text+0x732a8): relocation truncated to fit: GPREL16 against `.sbss'
+> drivers/ide/ide.c:269:(.text+0x732b0): relocation truncated to fit: GPREL16 against `.sbss'
+> drivers/ide/ide.c:267:(.text+0x73310): relocation truncated to fit: GPREL16 against `.sbss'
+> drivers/ide/ide.c:267:(.text+0x73318): relocation truncated to fit: GPREL16 against `.sbss'
+> drivers/built-in.o: In function `ide_dev_apply_params':
+> drivers/ide/ide.c:299:(.text+0x73714): relocation truncated to fit: GPREL16 against `.sbss'
+> drivers/ide/ide.c:303:(.text+0x73724): relocation truncated to fit: GPREL16 against `.sbss'
+> drivers/ide/ide.c:308:(.text+0x73734): relocation truncated to fit: GPREL16 against `.sbss'
+> drivers/ide/ide.c:315:(.text+0x73744): relocation truncated to fit: GPREL16 against `.sbss'
+> drivers/built-in.o: In function `unexpected_intr':
+> drivers/ide/ide-io.c:734:(.text+0x74dfc): relocation truncated to fit: GPREL16 against `.sbss'
+> drivers/ide/ide-io.c:736:(.text+0x74e00): relocation truncated to fit: GPREL16 against `.sbss'
+> drivers/ide/ide-io.c:734:(.text+0x74e10): additional relocation overflows omitted from the output
+> make[1]: *** [.tmp_vmlinux1] Error 1
+> make: *** [sub-make] Error 2
+> 
 
-Do the kmalloc caches get their id registered correctly?
+Ok, if you were hitting the problem that I remember, you would not get
+anything to build at all.
 
--- Suleiman
+	Arnd
