@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab2D3IoZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 04:44:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53213 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753828Ab2D3IoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 04:44:23 -0400
-Date: Mon, 30 Apr 2012 10:44:21 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
-In-Reply-To: <alpine.LNX.2.00.1204301032410.1856@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1204301043340.1856@pobox.suse.cz>
-References: <1335175627-2270-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1204301032410.1856@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755494Ab2D3Irh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 04:47:37 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:54210 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab2D3Irf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 04:47:35 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "cgroups\@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Han Ying <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyuki@gmail.com
+Subject: Re: [RFC][PATCH 1/7 v2] temporal compile-fix in linux-next
+In-Reply-To: <4F9A3364.4090009@jp.fujitsu.com>
+References: <4F9A327A.6050409@jp.fujitsu.com> <4F9A3364.4090009@jp.fujitsu.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 30 Apr 2012 14:17:15 +0530
+Message-ID: <871un5a9nw.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12042922-0260-0000-0000-000000F5E374
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Apr 2012, Jiri Kosina wrote:
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-> > Here is the third version of the extension to the device-driver
-> > matching mechanism. AFAICT, there are no outstanding issues. I think
-> > we are getting close. :-)
-> 
-> I think so, and overall I like the aproach and the implementation. Thanks!
-> 
-> Just got the stacktrace on [1] though when running kernel with this 
-> patchset. The trace popped during shutdown, and the machine froze 
-> completely; I didn't have any kind of external console connected, so 
-> unfortunately I don't have the beginning of the whole thing.
-> 
-> I haven't been able to reproduce it so far. This was after several 
-> "parallel" plug/remove cycles of multiple HID devices driven by multiple 
-> different drivers.
-> 
-> I haven't performed any analysis what this might be yet.
-> 
-> [1] http://www.jikos.cz/jikos/junk/autoloading-trace.jpg
+> Maybe Aneesh will post his own version. This is just for my work.
+>
 
-It actually seems to be spinlock lockup (due to the NMI trigger being 
-apparent at the very first line) on kbd_event_lock ...
+-next should have fixes for these errors now.
 
--- 
-Jiri Kosina
-SUSE Labs
+-aneesh
+
