@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab2D3Jd6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 05:33:58 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:56152 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755133Ab2D3Jd5 (ORCPT
+	id S1755989Ab2D3Jou (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 05:44:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51805 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab2D3Jot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 05:33:57 -0400
-Message-ID: <1335778393.5970.9.camel@aeonflux>
-Subject: Re: [PATCH 1/1] bluetooth: Add support for Foxconn/Hon Hai AR5BBU22
- 0489:E03C
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Michael =?ISO-8859-1?Q?Gr=FCtzner?= <mgruetzn@gmx.de>
-Cc: gustavo@padovan.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 30 Apr 2012 11:33:13 +0200
-In-Reply-To: <1844233.LmPXZadnGE@dagobah>
-References: <1844233.LmPXZadnGE@dagobah>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 30 Apr 2012 05:44:49 -0400
+From: Sasikantha babu <sasikanth.v19@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Sasikantha babu <sasikanth.v19@gmail.com>
+Subject: [PATCH v2] sysfs: Removed dup_name entirely in sysfs_rename
+Date: Mon, 30 Apr 2012 15:16:56 +0530
+Message-Id: <1335779216-32068-1-git-send-email-sasikanth.v19@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+Since no one using "dup_name", removed it completely in sysfs_rename, 
 
-> Add Foxconn/Hon Hai AR5BBU22 Bluetooth Module( 0x489:0xE03C) to 
-> the blacklist of btusb module and add it to the ath3k module to properly load 
-> the firmware in Kernel 3.3.4
-> The device is integrated in  e.g. some  Acer Aspire 7750G.
+Signed-off-by: Sasikantha babu <sasikanth.v19@gmail.com>
+---
+ fs/sysfs/dir.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-please include the details from /sys/kernel/debug/usb/devices for the
-different modes of this device in the commit message. We need to keep a
-record of these.
-
-Regards
-
-Marcel
-
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index 35a36d3..24fa995 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -858,7 +858,6 @@ int sysfs_rename(struct sysfs_dirent *sd,
+ 	struct sysfs_dirent *new_parent_sd, const void *new_ns,
+ 	const char *new_name)
+ {
+-	const char *dup_name = NULL;
+ 	int error;
+ 
+ 	mutex_lock(&sysfs_mutex);
+@@ -875,11 +874,11 @@ int sysfs_rename(struct sysfs_dirent *sd,
+ 	/* rename sysfs_dirent */
+ 	if (strcmp(sd->s_name, new_name) != 0) {
+ 		error = -ENOMEM;
+-		new_name = dup_name = kstrdup(new_name, GFP_KERNEL);
++		new_name = kstrdup(new_name, GFP_KERNEL);
+ 		if (!new_name)
+ 			goto out;
+ 
+-		dup_name = sd->s_name;
++		kfree(sd->s_name);
+ 		sd->s_name = new_name;
+ 	}
+ 
+@@ -895,7 +894,6 @@ int sysfs_rename(struct sysfs_dirent *sd,
+ 	error = 0;
+  out:
+ 	mutex_unlock(&sysfs_mutex);
+-	kfree(dup_name);
+ 	return error;
+ }
+ 
+-- 
+1.7.3.4
 
