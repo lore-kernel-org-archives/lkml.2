@@ -1,235 +1,473 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab2D3UyH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:54:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42453 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756383Ab2D3UyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:54:06 -0400
-Date: Mon, 30 Apr 2012 16:53:54 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>, ebiederm@xmission.com
-Cc: "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        kexec-list <kexec@lists.infradead.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] x86, kdump: No need to disable ioapic in crash path
-Message-ID: <20120430205354.GA32472@redhat.com>
-References: <1330546129-4812-1-git-send-email-dzickus@redhat.com>
- <20120315202652.GA13930@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2E31C6F859@USINDEVS01.corp.hds.com>
+	id S1756859Ab2D3U4v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:56:51 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:59932 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756385Ab2D3U4s convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 16:56:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2E31C6F859@USINDEVS01.corp.hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1335138820-26590-6-git-send-email-glommer@parallels.com>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+	<1335138820-26590-6-git-send-email-glommer@parallels.com>
+Date: Mon, 30 Apr 2012 13:56:46 -0700
+Message-ID: <CABCjUKBk=RTCoH34XOQHxRsSp0G5iwtgeBKtdNEUeTE5kx07Vg@mail.gmail.com>
+Subject: Re: [PATCH 17/23] kmem controller charge/uncharge infrastructure
+From: Suleiman Souhlal <suleiman@google.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        fweisbec@gmail.com, Greg Thelen <gthelen@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 05:16:50PM -0400, Seiji Aguchi wrote:
-> Don,
-> 
-> What do you think about following scenario?
-> Disabling I/O APIC seems to be needed before booting kdump kernel.
+On Sun, Apr 22, 2012 at 4:53 PM, Glauber Costa <glommer@parallels.com> wrote:
+> With all the dependencies already in place, this patch introduces
+> the charge/uncharge functions for the slab cache accounting in memcg.
+>
+> Before we can charge a cache, we need to select the right cache.
+> This is done by using the function __mem_cgroup_get_kmem_cache().
+>
+> If we should use the root kmem cache, this function tries to detect
+> that and return as early as possible.
+>
+> The charge and uncharge functions comes in two flavours:
+>  * __mem_cgroup_(un)charge_slab(), that assumes the allocation is
+>   a slab page, and
+>  * __mem_cgroup_(un)charge_kmem(), that does not. This later exists
+>   because the slub allocator draws the larger kmalloc allocations
+>   from the page allocator.
+>
+> In memcontrol.h those functions are wrapped in inline acessors.
+> The idea is to later on, patch those with jump labels, so we don't
+> incur any overhead when no mem cgroups are being used.
+>
+> Because the slub allocator tends to inline the allocations whenever
+> it can, those functions need to be exported so modules can make use
+> of it properly.
+>
+> I apologize in advance to the reviewers. This patch is quite big, but
+> I was not able to split it any further due to all the dependencies
+> between the code.
+>
+> This code is inspired by the code written by Suleiman Souhlal,
+> but heavily changed.
+>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
+> ---
+>  include/linux/memcontrol.h |   68 ++++++++
+>  init/Kconfig               |    2 +-
+>  mm/memcontrol.c            |  373 +++++++++++++++++++++++++++++++++++++++++++-
+>  3 files changed, 441 insertions(+), 2 deletions(-)
+>
 
-For some reason I actually believed this was cleared before interrupts
-were enabled on bootup.  Apparently not.  On a virt guest I can easily
-create a scenario in which scp'ing a file then kdumping, leaves the ethernet
-interrupt in a triggered state.
+> +
+> +static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+> +                                                 struct kmem_cache *cachep)
+> +{
+> +       struct kmem_cache *new_cachep;
+> +       int idx;
+> +
+> +       BUG_ON(!mem_cgroup_kmem_enabled(memcg));
+> +
+> +       idx = cachep->memcg_params.id;
+> +
+> +       mutex_lock(&memcg_cache_mutex);
+> +       new_cachep = memcg->slabs[idx];
+> +       if (new_cachep)
+> +               goto out;
+> +
+> +       new_cachep = kmem_cache_dup(memcg, cachep);
+> +
+> +       if (new_cachep == NULL) {
+> +               new_cachep = cachep;
+> +               goto out;
+> +       }
+> +
+> +       mem_cgroup_get(memcg);
+> +       memcg->slabs[idx] = new_cachep;
+> +       new_cachep->memcg_params.memcg = memcg;
+> +out:
+> +       mutex_unlock(&memcg_cache_mutex);
+> +       return new_cachep;
+> +}
+> +
+> +struct create_work {
+> +       struct mem_cgroup *memcg;
+> +       struct kmem_cache *cachep;
+> +       struct list_head list;
+> +};
+> +
+> +/* Use a single spinlock for destruction and creation, not a frequent op */
+> +static DEFINE_SPINLOCK(cache_queue_lock);
+> +static LIST_HEAD(create_queue);
+> +static LIST_HEAD(destroyed_caches);
+> +
+> +static void kmem_cache_destroy_work_func(struct work_struct *w)
+> +{
+> +       struct kmem_cache *cachep;
+> +       char *name;
+> +
+> +       spin_lock_irq(&cache_queue_lock);
+> +       while (!list_empty(&destroyed_caches)) {
+> +               cachep = container_of(list_first_entry(&destroyed_caches,
+> +                   struct mem_cgroup_cache_params, destroyed_list), struct
+> +                   kmem_cache, memcg_params);
+> +               name = (char *)cachep->name;
+> +               list_del(&cachep->memcg_params.destroyed_list);
+> +               spin_unlock_irq(&cache_queue_lock);
+> +               synchronize_rcu();
 
-Before this patch, it would be masked by disable_IO_APIC.  With my patch
-the irq nevers gets masked and during setup_local_APIC the kernel falls
-over once the local APIC is enabled (as setup_IO_APIC is called later).
-Perhaps calling setup_IO_APIC before setup_local_APIC would be a better
-fix?
+Is this synchronize_rcu() still needed, now that we don't use RCU to
+protect memcgs from disappearing during allocation anymore?
 
-Just like NMIs prohibit the abilty to remove the disable local apic code,
-an actively triggered interrupt seems to prevent us from removing the
-disable io apic.
+Also, should we drop the memcg reference we got in
+memcg_create_kmem_cache() here?
 
-This leaves me with my original problem of deadlocking in the
-disable_IO_APIC path.
+> +               kmem_cache_destroy(cachep);
+> +               kfree(name);
+> +               spin_lock_irq(&cache_queue_lock);
+> +       }
+> +       spin_unlock_irq(&cache_queue_lock);
+> +}
+> +static DECLARE_WORK(kmem_cache_destroy_work, kmem_cache_destroy_work_func);
+> +
+> +void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
+> +{
+> +       unsigned long flags;
+> +
+> +       BUG_ON(cachep->memcg_params.id != -1);
+> +
+> +       /*
+> +        * We have to defer the actual destroying to a workqueue, because
+> +        * we might currently be in a context that cannot sleep.
+> +        */
+> +       spin_lock_irqsave(&cache_queue_lock, flags);
+> +       list_add(&cachep->memcg_params.destroyed_list, &destroyed_caches);
+> +       spin_unlock_irqrestore(&cache_queue_lock, flags);
+> +
+> +       schedule_work(&kmem_cache_destroy_work);
+> +}
+> +
+> +
+> +/*
+> + * Flush the queue of kmem_caches to create, because we're creating a cgroup.
+> + *
+> + * We might end up flushing other cgroups' creation requests as well, but
+> + * they will just get queued again next time someone tries to make a slab
+> + * allocation for them.
+> + */
+> +void mem_cgroup_flush_cache_create_queue(void)
+> +{
+> +       struct create_work *cw, *tmp;
+> +       unsigned long flags;
+> +
+> +       spin_lock_irqsave(&cache_queue_lock, flags);
+> +       list_for_each_entry_safe(cw, tmp, &create_queue, list) {
+> +               list_del(&cw->list);
+> +               kfree(cw);
+> +       }
+> +       spin_unlock_irqrestore(&cache_queue_lock, flags);
+> +}
+> +
+> +static void memcg_create_cache_work_func(struct work_struct *w)
+> +{
+> +       struct kmem_cache *cachep;
+> +       struct create_work *cw;
+> +
+> +       spin_lock_irq(&cache_queue_lock);
+> +       while (!list_empty(&create_queue)) {
+> +               cw = list_first_entry(&create_queue, struct create_work, list);
+> +               list_del(&cw->list);
+> +               spin_unlock_irq(&cache_queue_lock);
+> +               cachep = memcg_create_kmem_cache(cw->memcg, cw->cachep);
+> +               if (cachep == NULL)
+> +                       printk(KERN_ALERT
+> +                       "%s: Couldn't create memcg-cache for %s memcg %s\n",
+> +                       __func__, cw->cachep->name,
+> +                       cw->memcg->css.cgroup->dentry->d_name.name);
 
-Thoughts?
+We might need rcu_dereference() here (and hold rcu_read_lock()).
+Or we could just remove this message.
 
-Cheers,
-Don
+> +               /* Drop the reference gotten when we enqueued. */
+> +               css_put(&cw->memcg->css);
+> +               kfree(cw);
+> +               spin_lock_irq(&cache_queue_lock);
+> +       }
+> +       spin_unlock_irq(&cache_queue_lock);
+> +}
+> +
+> +static DECLARE_WORK(memcg_create_cache_work, memcg_create_cache_work_func);
+> +
+> +/*
+> + * Enqueue the creation of a per-memcg kmem_cache.
+> + * Called with rcu_read_lock.
+> + */
+> +static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+> +                                      struct kmem_cache *cachep)
+> +{
+> +       struct create_work *cw;
+> +       unsigned long flags;
+> +
+> +       spin_lock_irqsave(&cache_queue_lock, flags);
+> +       list_for_each_entry(cw, &create_queue, list) {
+> +               if (cw->memcg == memcg && cw->cachep == cachep) {
+> +                       spin_unlock_irqrestore(&cache_queue_lock, flags);
+> +                       return;
+> +               }
+> +       }
+> +       spin_unlock_irqrestore(&cache_queue_lock, flags);
+> +
+> +       /* The corresponding put will be done in the workqueue. */
+> +       if (!css_tryget(&memcg->css))
+> +               return;
+> +
+> +       cw = kmalloc_no_account(sizeof(struct create_work), GFP_NOWAIT);
+> +       if (cw == NULL) {
+> +               css_put(&memcg->css);
+> +               return;
+> +       }
+> +
+> +       cw->memcg = memcg;
+> +       cw->cachep = cachep;
+> +       spin_lock_irqsave(&cache_queue_lock, flags);
+> +       list_add_tail(&cw->list, &create_queue);
+> +       spin_unlock_irqrestore(&cache_queue_lock, flags);
+> +
+> +       schedule_work(&memcg_create_cache_work);
+> +}
+> +
+> +/*
+> + * Return the kmem_cache we're supposed to use for a slab allocation.
+> + * If we are in interrupt context or otherwise have an allocation that
+> + * can't fail, we return the original cache.
+> + * Otherwise, we will try to use the current memcg's version of the cache.
+> + *
+> + * If the cache does not exist yet, if we are the first user of it,
+> + * we either create it immediately, if possible, or create it asynchronously
+> + * in a workqueue.
+> + * In the latter case, we will let the current allocation go through with
+> + * the original cache.
+> + *
+> + * This function returns with rcu_read_lock() held.
+> + */
+> +struct kmem_cache *__mem_cgroup_get_kmem_cache(struct kmem_cache *cachep,
+> +                                            gfp_t gfp)
+> +{
+> +       struct mem_cgroup *memcg;
+> +       int idx;
+> +
+> +       gfp |=  cachep->allocflags;
+> +
+> +       if ((current->mm == NULL))
+> +               return cachep;
+> +
+> +       if (cachep->memcg_params.memcg)
+> +               return cachep;
+> +
+> +       idx = cachep->memcg_params.id;
+> +       VM_BUG_ON(idx == -1);
+> +
+> +       memcg = mem_cgroup_from_task(current);
+> +       if (!mem_cgroup_kmem_enabled(memcg))
+> +               return cachep;
+> +
+> +       if (rcu_access_pointer(memcg->slabs[idx]) == NULL) {
+> +               memcg_create_cache_enqueue(memcg, cachep);
+> +               return cachep;
+> +       }
+> +
+> +       return rcu_dereference(memcg->slabs[idx]);
 
-> 
-> Seiji
-> 
-> 
-> commit 1e75b31d638d5242ca8e9771dfdcbd28a5f041df
-> Author: Suresh Siddha <suresh.b.siddha@intel.com>
-> Date:   Thu Aug 25 12:01:11 2011 -0700
-> 
->     x86, kdump, ioapic: Reset remote-IRR in clear_IO_APIC
->     
->     In the kdump scenario mentioned below, we can have a case where
->     the device using level triggered interrupt will not generate any
->     interrupts in the kdump kernel.
->     
->     1. IO-APIC sends a level triggered interrupt to the CPU's local APIC.
->     
->     2. Kernel crashed before the CPU services this interrupt, leaving
->        the remote-IRR in the IO-APIC set.
->     
->     3. kdump kernel boot sequence does clear_IO_APIC() as part of IO-APIC
->        initialization. But this fails to reset remote-IRR bit of the
->        IO-APIC RTE as the remote-IRR bit is read-only.
->     
->     4. Device using that level triggered entry can't generate any
->        more interrupts because of the remote-IRR bit.
->     
->     In clear_IO_APIC_pin(), check if the remote-IRR bit is set and if
->     so do an explicit attempt to clear it (by doing EOI write on
->     modern io-apic's and changing trigger mode to edge/level on
->     older io-apic's). Also before doing the explicit EOI to the
->     io-apic, ensure that the trigger mode is indeed set to level.
->     This will enable the explicit EOI to the io-apic to reset the
->     remote-IRR bit.
->     
->     Tested-by: Leonardo Chiquitto <lchiquitto@novell.com>
->     Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
->     Fixes: https://bugzilla.novell.com/show_bug.cgi?id=701686
->     Cc: Rafael Wysocki <rjw@novell.com>
->     Cc: Maciej W. Rozycki <macro@linux-mips.org>
->     Cc: Thomas Renninger <trenn@suse.de>
->     Cc: jbeulich@novell.com
->     Cc: yinghai@kernel.org
->     Link: http://lkml.kernel.org/r/20110825190657.157502602@sbsiddha-desk.sc.intel.com
->     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> 
-> > -----Original Message-----
-> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Don Zickus
-> > Sent: Thursday, March 15, 2012 4:27 PM
-> > To: x86@kernel.org
-> > Cc: LKML; kexec-list; Eric W. Biederman; Vivek Goyal
-> > Subject: Re: [PATCH] x86, kdump: No need to disable ioapic in crash path
-> > 
-> > On Wed, Feb 29, 2012 at 03:08:49PM -0500, Don Zickus wrote:
-> > > A customer of ours noticed when their machine crashed, kdump did not
-> > > work but hung instead.  Using their firmware dumping solution they
-> > > grabbed a vmcore and decoded the stacks on the cpus.  What they
-> > > noticed seemed to be a rare deadlock with the ioapic_lock.
-> > 
-> > While we are discussing the NMI stuff in another thread, does anyone have any objection to committing this patch.  It fixes a real
-> > problem today.
-> > 
-> > Cheers,
-> > Don
-> > 
-> > >
-> > >  CPU4:
-> > >  machine_crash_shutdown
-> > >  -> machine_ops.crash_shutdown
-> > >     -> native_machine_crash_shutdown
-> > >        -> kdump_nmi_shootdown_cpus ------> Send NMI to other CPUs
-> > >        -> disable_IO_APIC
-> > >           -> clear_IO_APIC
-> > >              -> clear_IO_APIC_pin
-> > >                 -> ioapic_read_entry
-> > >                    -> spin_lock_irqsave(&ioapic_lock, flags)
-> > >                    ---Infinite loop here---
-> > >
-> > >  CPU0:
-> > >  do_IRQ
-> > >  -> handle_irq
-> > >     -> handle_edge_irq
-> > >         -> ack_apic_edge
-> > >            -> move_native_irq
-> > >                -> mask_IO_APIC_irq
-> > >                   -> mask_IO_APIC_irq_desc
-> > >                      -> spin_lock_irqsave(&ioapic_lock, flags)
-> > >                      ---Receive NMI here after getting spinlock---
-> > >                         -> nmi
-> > >                            -> do_nmi
-> > >                               -> crash_nmi_callback
-> > >                               ---Infinite loop here---
-> > >
-> > > The problem is that although kdump tries to shutdown minimal hardware,
-> > > it still needs to disable the IO APIC.  This requires spinlocks which
-> > > may be held by another cpu.  This other cpu is being held infinitely
-> > > in an NMI context by kdump in order to serialize the crashing path.
-> > > Instant deadlock.
-> > >
-> > > Eric, brought up a point that because the boot code was restructured
-> > > we may not need to disable the io apic any more in the crash path.
-> > > The original concern that led to the development of disable_IO_APIC,
-> > > was that the jiffies calibration on boot up relied on the PIT timer
-> > > for reference.  Access to the PIT required 8259 interrupts to be
-> > > working.  This wouldn't work if the ioapic needed to be configured.
-> > > So on panic path, the ioapic was reconfigured to use virtual wire mode to allow the 8259 to passthrough.
-> > >
-> > > Those concerns don't hold true now, thanks to the jiffies calibration
-> > > code not needing the PIT.  As a result, we can remove this call and
-> > > simplify the locking needed in the panic path.
-> > >
-> > > I tested kdump on an Ivy Bridge platform, a Pentium4 and an old athlon
-> > > that did not have an ioapic.  All three were successful.
-> > >
-> > > I also tested using lkdtm that would use jprobes to panic the system
-> > > when entering do_IRQ.  The idea was to see how the system reacted with
-> > > an interrupt pending in the second kernel.  My core2 quad successfully
-> > > kdump'd
-> > > 3 times in a row with no issues.
-> > >
-> > > v2: removed the disable lapic code too
-> > > v3: re-add disabling of lapic code
-> > >
-> > > Cc: Eric W. Biederman <ebiederm@xmission.com>
-> > > Cc: Vivek Goyal <vgoyal@redhat.com>
-> > > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > > ---
-> > >
-> > > There are really two problems here.  One is the deadlock of the
-> > > ioapic_lock that I describe above.  Removing the code to disable the
-> > > ioapic seems to resolve that.
-> > >
-> > > The second issue is handling non-IRQ exceptions like NMIs.  Eric asked
-> > > me to include removing the disable lapic code too.  However, because
-> > > the nmi watchdog is stil active and kexec zeros out the idt before it
-> > > jumps to purgatory, an NMI that comes in during the transition between
-> > > the first kernel and second kernel will see an empty idt and reset the cpu.
-> > >
-> > > Leaving the code to disable the lapic in, turns off perf and blocks
-> > > those NMIs from happening (though an external NMI would still be an
-> > > issue but that is no different than right now).
-> > >
-> > > I tried playing with a stub idt and leaving it in place through the
-> > > transition to the second kernel, but I can't quite get it to work
-> > > correctly.  Spinning in the first kernel before the purgatory jump
-> > > catches the idt properly.  Spinning in purgatory before the second
-> > > kernel jump doesn't.  I even disabled the zero'ing out of the idt in the purgatory code.
-> > >
-> > > I would like to get resolution on the ioapic deadlock to fix a
-> > > customer issue while working the idt and NMI thing on the side, hence
-> > > the split of this patchset.
-> > >
-> > > Hopefully, people recognize there are two issues here and that this
-> > > patch resolves the first one and the second one needs more debugging and time.
-> > > ---
-> > >  arch/x86/kernel/crash.c |    3 ---
-> > >  1 files changed, 0 insertions(+), 3 deletions(-)
-> > >
-> > > diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c index
-> > > 13ad899..b053cf9 100644
-> > > --- a/arch/x86/kernel/crash.c
-> > > +++ b/arch/x86/kernel/crash.c
-> > > @@ -96,9 +96,6 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
-> > >  	cpu_emergency_svm_disable();
-> > >
-> > >  	lapic_shutdown();
-> > > -#if defined(CONFIG_X86_IO_APIC)
-> > > -	disable_IO_APIC();
-> > > -#endif
-> > >  #ifdef CONFIG_HPET_TIMER
-> > >  	hpet_disable();
-> > >  #endif
-> > > --
-> > > 1.7.7.6
-> > >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More
-> > majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+Is it ok to call rcu_access_pointer() and rcu_dereference() without
+holding rcu_read_lock()?
+
+> +}
+> +EXPORT_SYMBOL(__mem_cgroup_get_kmem_cache);
+> +
+> +void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id)
+> +{
+> +       rcu_assign_pointer(cachep->memcg_params.memcg->slabs[id], NULL);
+> +}
+> +
+> +bool __mem_cgroup_charge_kmem(gfp_t gfp, size_t size)
+> +{
+> +       struct mem_cgroup *memcg;
+> +       bool ret = true;
+> +
+> +       rcu_read_lock();
+> +       memcg = mem_cgroup_from_task(current);
+> +
+> +       if (!mem_cgroup_kmem_enabled(memcg))
+> +               goto out;
+> +
+> +       mem_cgroup_get(memcg);
+
+Why do we need to get a reference to the memcg for every charge?
+How will this work when deleting a memcg?
+
+> +       ret = memcg_charge_kmem(memcg, gfp, size) == 0;
+> +       if (ret)
+> +               mem_cgroup_put(memcg);
+> +out:
+> +       rcu_read_unlock();
+> +       return ret;
+> +}
+> +EXPORT_SYMBOL(__mem_cgroup_charge_kmem);
+> +
+> +void __mem_cgroup_uncharge_kmem(size_t size)
+> +{
+> +       struct mem_cgroup *memcg;
+> +
+> +       rcu_read_lock();
+> +       memcg = mem_cgroup_from_task(current);
+> +
+> +       if (!mem_cgroup_kmem_enabled(memcg))
+> +               goto out;
+> +
+> +       mem_cgroup_put(memcg);
+> +       memcg_uncharge_kmem(memcg, size);
+> +out:
+> +       rcu_read_unlock();
+> +}
+> +EXPORT_SYMBOL(__mem_cgroup_uncharge_kmem);
+> +
+> +bool __mem_cgroup_charge_slab(struct kmem_cache *cachep, gfp_t gfp, size_t size)
+> +{
+> +       struct mem_cgroup *memcg;
+> +       bool ret = true;
+> +
+> +       rcu_read_lock();
+> +       memcg = cachep->memcg_params.memcg;
+> +       if (!mem_cgroup_kmem_enabled(memcg))
+> +               goto out;
+> +
+> +       ret = memcg_charge_kmem(memcg, gfp, size) == 0;
+> +out:
+> +       rcu_read_unlock();
+> +       return ret;
+> +}
+> +EXPORT_SYMBOL(__mem_cgroup_charge_slab);
+> +
+> +void __mem_cgroup_uncharge_slab(struct kmem_cache *cachep, size_t size)
+> +{
+> +       struct mem_cgroup *memcg;
+> +
+> +       rcu_read_lock();
+> +       memcg = cachep->memcg_params.memcg;
+> +
+> +       if (!mem_cgroup_kmem_enabled(memcg)) {
+> +               rcu_read_unlock();
+> +               return;
+> +       }
+> +       rcu_read_unlock();
+> +
+> +       memcg_uncharge_kmem(memcg, size);
+> +}
+> +EXPORT_SYMBOL(__mem_cgroup_uncharge_slab);
+> +
+> +static void memcg_slab_init(struct mem_cgroup *memcg)
+> +{
+> +       int i;
+> +
+> +       for (i = 0; i < MAX_KMEM_CACHE_TYPES; i++)
+> +               rcu_assign_pointer(memcg->slabs[i], NULL);
+> +}
+>  #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+>
+>  static void drain_all_stock_async(struct mem_cgroup *memcg);
+> @@ -4790,7 +5103,11 @@ static struct cftype kmem_cgroup_files[] = {
+>
+>  static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+>  {
+> -       return mem_cgroup_sockets_init(memcg, ss);
+> +       int ret = mem_cgroup_sockets_init(memcg, ss);
+> +
+> +       if (!ret)
+> +               memcg_slab_init(memcg);
+> +       return ret;
+>  };
+>
+>  static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
+> @@ -5805,3 +6122,57 @@ static int __init enable_swap_account(char *s)
+>  __setup("swapaccount=", enable_swap_account);
+>
+>  #endif
+> +
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta)
+> +{
+> +       struct res_counter *fail_res;
+> +       struct mem_cgroup *_memcg;
+> +       int may_oom, ret;
+> +       bool nofail = false;
+> +
+> +       may_oom = (gfp & __GFP_WAIT) && (gfp & __GFP_FS) &&
+> +           !(gfp & __GFP_NORETRY);
+> +
+> +       ret = 0;
+> +
+> +       if (!memcg)
+> +               return ret;
+> +
+> +       _memcg = memcg;
+> +       ret = __mem_cgroup_try_charge(NULL, gfp, delta / PAGE_SIZE,
+> +           &_memcg, may_oom);
+> +       if (ret == -ENOMEM)
+> +               return ret;
+> +       else if ((ret == -EINTR) || (ret && (gfp & __GFP_NOFAIL)))  {
+> +               nofail = true;
+> +               /*
+> +                * __mem_cgroup_try_charge() chose to bypass to root due
+> +                * to OOM kill or fatal signal.
+> +                * Since our only options are to either fail the
+> +                * allocation or charge it to this cgroup, force the
+> +                * change, going above the limit if needed.
+> +                */
+> +               res_counter_charge_nofail(&memcg->res, delta, &fail_res);
+
+We might need to charge memsw here too.
+
+> +       }
+> +
+> +       if (nofail)
+> +               res_counter_charge_nofail(&memcg->kmem, delta, &fail_res);
+> +       else
+> +               ret = res_counter_charge(&memcg->kmem, delta, &fail_res);
+> +
+> +       if (ret)
+> +               res_counter_uncharge(&memcg->res, delta);
+> +
+> +       return ret;
+> +}
+> +
+> +void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta)
+> +{
+> +       if (!memcg)
+> +               return;
+> +
+> +       res_counter_uncharge(&memcg->kmem, delta);
+> +       res_counter_uncharge(&memcg->res, delta);
+
+Might need to uncharge memsw.
+
+> +}
+> +#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+> --
+> 1.7.7.6
+>
