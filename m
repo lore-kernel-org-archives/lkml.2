@@ -1,124 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab2D3QDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 12:03:40 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:47359 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754558Ab2D3QDg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 12:03:36 -0400
+	id S1756170Ab2D3QG3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 12:06:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47100 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752968Ab2D3QG2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 12:06:28 -0400
+Date: Mon, 30 Apr 2012 11:50:18 -0400
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: udev races with 'arch_register_cpu' to write 1 to
+ /sys/devices/system/cpu/cpu1/online (which is not yet created).
+Message-ID: <20120430155018.GA16794@kroah.com>
+References: <20120430153623.GA23485@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <201204292244.16467.rjw@sisk.pl>
-References: <201204292244.16467.rjw@sisk.pl>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 30 Apr 2012 10:03:14 -0600
-Message-ID: <CAErSpo7oGWNVeT6OCgaFdb_+uPAumggE-Z+OdnH=9aW+_N3B6g@mail.gmail.com>
-Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120430153623.GA23485@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 29, 2012 at 2:44 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Oleksij Rempel <bug-track@fisher-privat.net>
->
-> This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
-> more closely and fixes suspend bug found on ASUS Zenbook UX31E.
->
-> Some OEM use _SxD fileds do blacklist brocken Dx states.
-> If _SxD/_SxW return values are check before suspend as appropriate,
-> some nasty suspend/resume issues may be avoided.
->
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
-> Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->
-> Bjorn, Len,
->
-> This is -stable material and therefore v3.4 as well, IMO.  Please let me
-> know if one of you can take it or whether you want me to handle it all the
-> way to Linus.
+On Mon, Apr 30, 2012 at 11:36:23AM -0400, Konrad Rzeszutek Wilk wrote:
+> Hey Greg,
+> 
+> Hoping you can help with some guidance on how to fix this.
+> 
+> The issue is with CPU hotplug is that when a CPU goes up
+> it calls 'arch_register_cpu' which eventually calls
+> register_cpu. That function does these two things:
+> 
+> 251         error = device_register(&cpu->dev);
+> 252         if (!error && cpu->hotpluggable)
+> 253                 register_cpu_control(cpu);
+> 
+> and the device_register creates a nice little SysFS directory:
+> 
+> /sys/devices/system/cpu/cpu2/ which at line 251 has the 'add' attribute
+> but no 'online' attribute. udev then tries to echo 1 to the 'online'
+> and it we get:
+> udevd-work[2421]: error opening ATTR{/sys/devices/system/cpu/cpu2/online} for writing: No such file or directory
+> 
+> Line 253 creates said 'online' and at that time udev [or the system admin]
+> can write 1 to 'online' and the CPU goes up.
+> 
+> So .. any thoughts? Is there some way to inhibit from uevent being sent
+> until line 253 has run?
 
-I'm OK with this from a PCI perspective.  Most of the change is in
-ACPI, so I propose that either you or Len take care of it.
-
-The second paragraph of the changelog has several typos
-(fileds/fields, do/to, brocken/broken, etc).
-
-> ---
->  drivers/acpi/sleep.c |   22 +++++++++++++++++++++-
->  drivers/pci/pci.c    |   12 +++++++++++-
->  2 files changed, 32 insertions(+), 2 deletions(-)
->
-> Index: linux/drivers/acpi/sleep.c
-> ===================================================================
-> --- linux.orig/drivers/acpi/sleep.c
-> +++ linux/drivers/acpi/sleep.c
-> @@ -714,10 +714,30 @@ int acpi_pm_device_sleep_state(struct de
->         *
->         * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
->         * provided -- that's our fault recovery, we ignore retval.
-> +        *
-> +        * According to ACPI 4.0a (April 5, 2010), page 294,
-> +        * Table 7-7 S3 Action / Result Table, we need to evaluate _SxW in
-> +        * addition to _SxD if the device is configured for wakeup:
-> +        * Desired Action    | _S3D | _PRW | _S3W | Resultant D-state
-> +        * Enter S3          |  N/A |  D/C |  N/A | OSPM decides
-> +        * Enter S3, No Wake |   2  |  D/C |  D/C | Enter D2 or D3
-> +        * Enter S3, Wake    |   2  |   3  |  N/A | Enter D2
-> +        * Enter S3, Wake    |   2  |   3  |   3  | Enter D2 or D3
-> +        * Enter S3, Wake    |  N/A |   3  |   2  | Enter D0, D1 or D2
->         */
-> -       if (acpi_target_sleep_state > ACPI_STATE_S0)
-> +       if (acpi_target_sleep_state > ACPI_STATE_S0) {
-> +               acpi_status status;
-> +
->                acpi_evaluate_integer(handle, acpi_method, NULL, &d_min);
->
-> +               if (device_may_wakeup(dev)) {
-> +                       acpi_method[3] = 'W';
-> +                       status = acpi_evaluate_integer(handle, acpi_method,
-> +                                                      NULL, &d_max);
-> +                       if (ACPI_FAILURE(status))
-> +                               d_max = d_min;
-> +               }
-> +       }
->        /*
->         * If _PRW says we can wake up the system from the target sleep state,
->         * the D-state returned by _SxD is sufficient for that (we assume a
-> Index: linux/drivers/pci/pci.c
-> ===================================================================
-> --- linux.orig/drivers/pci/pci.c
-> +++ linux/drivers/pci/pci.c
-> @@ -1691,10 +1691,20 @@ pci_power_t pci_target_state(struct pci_
->  {
->        pci_power_t target_state = PCI_D3hot;
->
-> -       if (platform_pci_power_manageable(dev)) {
-> +       /*
-> +        * According to ACPI 4.0a,7.2 Device Power Management Objects, device
-> +        * with wake capability should have _PRW or _PSW object and can have
-> +        * _SxD or _SxW object.
-> +        * It looks like some OEMs use this fields to avoid buggy Dx states
-> +        * of devices, so we need to check for _PRW or _PSW and see if _SxD or
-> +        * _SxW indicate to overwrite Dx.
-> +        */
-> +       if (platform_pci_power_manageable(dev)
-> +           || platform_pci_can_wakeup(dev)) {
->                /*
->                 * Call the platform to choose the target state of the device
->                 * and enable wake-up from this state if supported.
-> +                * (Check _SxD and _SxW)
->                 */
->                pci_power_t state = platform_pci_choose_state(dev);
->
+Yes.
