@@ -1,517 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab2D3Udv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:33:51 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:48186 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756581Ab2D3Udt (ORCPT
+	id S1756842Ab2D3Ufm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:35:42 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:31333 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756581Ab2D3Ufl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:33:49 -0400
-Message-ID: <1335818025.2897.6.camel@lorien2>
-Subject: [PATCH  v3] leds: add new transient trigger for one shot timer
- activation
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: shuahkhan@gmail.com, Jonas Bonn <jonas@southpole.se>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>,
-        NeilBrown <neilb@suse.de>
-Date: Mon, 30 Apr 2012 14:33:45 -0600
-In-Reply-To: <20120426160029.0c2da1fc.akpm@linux-foundation.org>
-References: <1333310039.2879.4.camel@lorien2> <1334064283.10826.6.camel@ted>
-	 <1334507752.2723.3.camel@lorien2> <1334894674.3051.18.camel@lorien2>
-	 <1334983269.2435.90.camel@jerome.southpole.se>
-	 <1335138687.2882.20.camel@lorien2> <20120423115610.2da4d4d7@notabene.brown>
-	 <1335158999.5139.47.camel@jerome.southpole.se>
-	 <20120423154546.415bd6c0@notabene.brown> <1335219745.2850.7.camel@lorien2>
-	 <1335375758.5313.22.camel@lorien2>
-	 <20120426160029.0c2da1fc.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 30 Apr 2012 16:35:41 -0400
+Date: Mon, 30 Apr 2012 22:35:39 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [patch 23/29] sparc: Use generic init_task
+Message-ID: <20120430203538.GA8876@merkur.ravnborg.org>
+References: <20120430194725.763322463@linutronix.de> <20120430194846.989528598@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120430194846.989528598@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The leds timer trigger does not currently have an interface to activate
-a one shot timer. The current support allows for setting two timers, one for
-specifying how long a state to be on, and the second for how long the state
-to be off. The delay_on value specifies the time period an LED should stay
-in on state, followed by a delay_off value that specifies how long the LED
-should stay in off state. The on and off cycle repeats until the trigger
-gets deactivated. There is no provision for one time activation to implement
-features that require an on or off state to be held just once and then stay in
-the original state forever.
+On Mon, Apr 30, 2012 at 08:16:03PM -0000, Thomas Gleixner wrote:
+> Same code. Use the generic version.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> ---
+>  arch/sparc/Kconfig            |    1 +
+>  arch/sparc/kernel/init_task.c |   22 ----------------------
+>  2 files changed, 1 insertion(+), 22 deletions(-)
+> 
+> Index: tip/arch/sparc/Kconfig
+> ===================================================================
+> --- tip.orig/arch/sparc/Kconfig
+> +++ tip/arch/sparc/Kconfig
+> @@ -31,6 +31,7 @@ config SPARC
+>  	select GENERIC_PCI_IOMAP
+>  	select HAVE_NMI_WATCHDOG if SPARC64
+>  	select GENERIC_SMP_IDLE_THREAD
+> +	select HAVE_GENERIC_INIT_TASK
+>  
+>  config SPARC32
+>  	def_bool !64BIT
+> Index: tip/arch/sparc/kernel/init_task.c
+> ===================================================================
+> --- tip.orig/arch/sparc/kernel/init_task.c
+> +++ /dev/null
 
-Without one shot timer interface, user space can still use timer trigger to
-set a timer to hold a state, however when user space application crashes or
-goes away without deactivating the timer, the hardware will be left in that
-state permanently.
+This breaks sparc build as it has the following in arch/sparc/Makefile:
 
-As a specific example of this use-case, let's look at vibrate feature on
-phones. Vibrate function on phones is implemented using PWM pins on SoC or
-PMIC. There is a need to activate one shot timer to control the vibrate
-feature, to prevent user space crashes leaving the phone in vibrate mode
-permanently causing the battery to drain.
+    head-y                 += arch/sparc/kernel/init_task.o
 
-This trigger exports three properties, activate, state, and duration When
-transient trigger is activated these properties are set to default values.
+And this patch deletes that file.
+So at least you need to delete said line in this patch too.
 
-- duration allows setting timer value in msecs. The initial value is 0.
-- activate allows activating and deactivating the timer specified by
-  duration as needed. The initial and default value is 0.  This will allow
-  duration to be set after trigger activation.
-- state allows user to specify a transient state to be held for the specified
-  duration.
-
->From a8249a6738020823277ef02d7787e8078c17844b Mon Sep 17 00:00:00 2001
-From: Shuah Khan <shuahkhan@gmail.com>
-Date: Mon, 30 Apr 2012 14:18:16 -0600
-Subject: [PATCH v3] leds: add new transient trigger for one shot timer
- activation
-
-
-Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
----
- Documentation/leds/ledtrig-transient.txt |  152 +++++++++++++++++++
- drivers/leds/Kconfig                     |    8 +
- drivers/leds/Makefile                    |    1 +
- drivers/leds/ledtrig-transient.c         |  237 ++++++++++++++++++++++++++++++
- 4 files changed, 398 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/leds/ledtrig-transient.txt
- create mode 100644 drivers/leds/ledtrig-transient.c
-
-diff --git a/Documentation/leds/ledtrig-transient.txt b/Documentation/leds/ledtrig-transient.txt
-new file mode 100644
-index 0000000..3bd38b4
---- /dev/null
-+++ b/Documentation/leds/ledtrig-transient.txt
-@@ -0,0 +1,152 @@
-+LED Transient Trigger
-+=====================
-+
-+The leds timer trigger does not currently have an interface to activate
-+a one shot timer. The current support allows for setting two timers, one for
-+specifying how long a state to be on, and the second for how long the state
-+to be off. The delay_on value specifies the time period an LED should stay
-+in on state, followed by a delay_off value that specifies how long the LED
-+should stay in off state. The on and off cycle repeats until the trigger
-+gets deactivated. There is no provision for one time activation to implement
-+features that require an on or off state to be held just once and then stay in
-+the original state forever.
-+
-+Without one shot timer interface, user space can still use timer trigger to
-+set a timer to hold a state, however when user space application crashes or
-+goes away without deactivating the timer, the hardware will be left in that
-+state permanently.
-+
-+As a specific example of this use-case, let's look at vibrate feature on
-+phones. Vibrate function on phones is implemented using PWM pins on SoC or
-+PMIC. There is a need to activate one shot timer to control the vibrate
-+feature, to prevent user space crashes leaving the phone in vibrate mode
-+permanently causing the battery to drain.
-+
-+Transient trigger addresses the need for one shot timer activation. The
-+transient trigger can be enabled and disabled just like the other leds
-+triggers.
-+
-+When an led class device driver registers itself, it can specify all leds
-+triggers it supports and a default trigger. During registration, activation
-+routine for the default trigger gets called. During registration of an led
-+class device, the LED state does not change.
-+
-+When the driver unregisters, deactivation routine for the currently active
-+trigger will be called, and LED state is changed to LED_OFF.
-+
-+Driver suspend changes the LED state to LED_OFF and resume doesn't change
-+the state. Please note that there is no explicit interaction between the
-+suspend and resume actions and the currently enabled trigger. LED state
-+changes are suspended while the driver is in suspend state. Any timers
-+that are active at the time driver gets suspended, continue to run, without
-+being able to actually change the LED state. Once driver is resumed, triggers
-+start functioning again.
-+
-+LED state changes are controlled using brightness which is a common led
-+class device property. When brightness is set to 0 from user space via
-+echo 0 > brightness, it will result in deactivating the current trigger.
-+
-+Transient trigger uses standard register and unregister interfaces. During
-+trigger registration, for each led class device that specifies this trigger
-+as its default trigger, trigger activation routine will get called. During
-+registration, the LED state does not change, unless there is another trigger
-+active, in which case LED state changes to LED_OFF.
-+
-+During trigger unregistration, LED state gets changed to LED_OFF.
-+
-+Transient trigger activation routine doesn't change the LED state. It
-+creates its properties and does its initialization. Transient trigger
-+deactivation routine, will cancel any timer that is active before it cleans
-+up and removes the properties it created. It will restore the LED state to
-+non-transient state. When driver gets suspended, irrespective of the transient
-+state, the LED state changes to LED_OFF.
-+
-+Transient trigger can be enabled and disabled from user space on led class
-+devices, that support this trigger as shown below:
-+
-+echo transient > trigger
-+echo none > trigger
-+
-+NOTE: Add a new property trigger state to control the state.
-+
-+This trigger exports three properties, activate, state, and duration. When
-+transient trigger is activated these properties are set to default values.
-+
-+- duration allows setting timer value in msecs. The initial value is 0.
-+- activate allows activating and deactivating the timer specified by
-+  duration as needed. The initial and default value is 0.  This will allow
-+  duration to be set after trigger activation.
-+- state allows user to specify a transient state to be held for the specified
-+  duration.
-+
-+	activate - one shot timer activate mechanism.
-+		1 when activated, 0 when deactivated.
-+		default value is zero when transient trigger is enabled,
-+		to allow duration to be set.
-+
-+		activate state indicates a timer with a value of specified
-+		duration running.
-+		deactivated state indicates that there is no active timer
-+		running.
-+
-+	duration - one shot timer value. When activate is set, duration value
-+		is used to start a timer that runs once. This value doesn't
-+		get changed by the trigger unless user does a set via
-+		echo new_value > duration
-+
-+	state - transient state to be held. It has two values 0 or 1. 0 maps
-+		to LED_OFF and 1 maps to LED_FULL. The specified state is
-+		held for the duration of the one shot timer and then the
-+		state gets changed to the non-transient state which is the
-+		inverse of transient state.
-+		If state = LED_FULL, when the timer runs out the state will
-+		go back to LED_OFF.
-+		If state = LED_OFF, when the timer runs out the state will
-+		go back to LED_FULL.
-+		Please note that current LED state is not checked prior to
-+		changing the state to the specified state.
-+		Driver could map these values to inverted depending on the
-+		default states it defines for the LED in its brightness_set()
-+		interface which is called from the led brightness_set()
-+		interfaces to control the LED state.
-+
-+When timer expires activate goes back to deactivated state, duration is left
-+at the set value to be used when activate is set at a future time. This will
-+allow user app to set the time once and activate it to run it once for the
-+specified value as needed. When timer expires, state is restored to the
-+non-transient state which is the inverse of the transient state.
-+
-+	echo 1 > activate - starts timer = duration when duration is not 0.
-+	echo 0 > activate - cancels currently running timer.
-+	echo n > duration - stores timer value to be used upon next
-+                            activate. Currently active timer if
-+                            any, continues to run for the specified time.
-+	echo 0 > duration - stores timer value to be used upon next
-+                            activate. Currently active timer if any,
-+                            continues to run for the specified time.
-+	echo 1 > state    - stores desired transient state LED_FULL to be
-+			    held for the specified duration.
-+	echo 0 > state    - stores desired transient state LED_OFF to be
-+			    held for the specified duration.
-+
-+What is not supported:
-+======================
-+- Timer activation is one shot and extending and/or shortening the timer
-+  is not supported.
-+
-+Example use-case 1:
-+	echo transient > trigger
-+	echo n > duration
-+	echo 1 > state
-+repeat the following step as needed:
-+	echo 1 > activate - start timer = duration to run once
-+	echo 1 > activate - start timer = duration to run once
-+	echo none > trigger
-+
-+This trigger is intended to be used for for the following example use cases:
-+ - Control of vibrate (phones, tablets etc.) hardware by user space app.
-+ - Use of LED by user space app as activity indicator.
-+ - Use of LED by user space app as a kind of watchdog indicator -- as
-+       long as the app is alive, it can keep the LED illuminated, if it dies
-+       the LED will be extinguished automatically.
-+ - Use by any user space app that needs a transient GPIO output.
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 5f12659..638219b 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -488,4 +488,12 @@ config LEDS_TRIGGER_DEFAULT_ON
- comment "iptables trigger is under Netfilter config (LED target)"
- 	depends on LEDS_TRIGGERS
- 
-+config LEDS_TRIGGER_TRANSIENT
-+	tristate "LED Transient Trigger"
-+	depends on LEDS_TRIGGERS
-+	help
-+	  This allows one time activation of a transient state on
-+	  GPIO/PWM based hadrware.
-+	  If unsure, say Y.
-+
- endif # NEW_LEDS
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index 9475bbb..202b187 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -57,3 +57,4 @@ obj-$(CONFIG_LEDS_TRIGGER_HEARTBEAT)	+= ledtrig-heartbeat.o
- obj-$(CONFIG_LEDS_TRIGGER_BACKLIGHT)	+= ledtrig-backlight.o
- obj-$(CONFIG_LEDS_TRIGGER_GPIO)		+= ledtrig-gpio.o
- obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)	+= ledtrig-default-on.o
-+obj-$(CONFIG_LEDS_TRIGGER_TRANSIENT)	+= ledtrig-transient.o
-diff --git a/drivers/leds/ledtrig-transient.c b/drivers/leds/ledtrig-transient.c
-new file mode 100644
-index 0000000..83179f4
---- /dev/null
-+++ b/drivers/leds/ledtrig-transient.c
-@@ -0,0 +1,237 @@
-+/*
-+ * LED Kernel Transient Trigger
-+ *
-+ * Copyright (C) 2012 Shuah Khan <shuahkhan@gmail.com>
-+ *
-+ * Based on Richard Purdie's ledtrig-timer.c and Atsushi Nemoto's
-+ * ledtrig-heartbeat.c
-+ * Design and use-case input from Jonas Bonn <jonas@southpole.se> and
-+ * Neil Brown <neilb@suse.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+/*
-+ * Transient trigger allows one shot timer activation. Please refer to
-+ * Documentation/leds/ledtrig-transient.txt for details
-+*/
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/slab.h>
-+#include <linux/timer.h>
-+#include <linux/leds.h>
-+#include "leds.h"
-+
-+struct transient_trig_data {
-+	int activate;
-+	int state;
-+	int restore_state;
-+	unsigned long duration;
-+	struct timer_list timer;
-+};
-+
-+static void transient_timer_function(unsigned long data)
-+{
-+	struct led_classdev *led_cdev = (struct led_classdev *) data;
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+
-+	transient_data->activate = 0;
-+	led_set_brightness(led_cdev, transient_data->restore_state);
-+}
-+
-+static ssize_t transient_activate_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+
-+	return sprintf(buf, "%d\n", transient_data->activate);
-+}
-+
-+static ssize_t transient_activate_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+	unsigned long state;
-+	ssize_t ret;
-+
-+	ret = kstrtoul(buf, 10, &state);
-+	if (ret)
-+		return ret;
-+
-+	if (state != 1 && state != 0)
-+		return -EINVAL;
-+
-+	/* cancel the running timer */
-+	if (state == 0 && transient_data->activate == 1) {
-+		del_timer(&transient_data->timer);
-+		transient_data->activate = state;
-+		led_set_brightness(led_cdev, transient_data->restore_state);
-+		return size;
-+	}
-+
-+	/* start timer if there is no active timer */
-+	if (state == 1 && transient_data->activate == 0 &&
-+	    transient_data->duration != 0) {
-+		transient_data->activate = state;
-+		led_set_brightness(led_cdev, transient_data->state);
-+		transient_data->restore_state =
-+		    (transient_data->state == LED_FULL) ? LED_OFF : LED_FULL;
-+		mod_timer(&transient_data->timer,
-+			  jiffies + transient_data->duration);
-+	}
-+
-+	/* state == 0 && transient_data->activate == 0
-+		timer is not active - just return */
-+	/* state == 1 && transient_data->activate == 1
-+		timer is already active - just return */
-+
-+	return size;
-+}
-+
-+static ssize_t transient_duration_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+
-+	return sprintf(buf, "%lu\n", transient_data->duration);
-+}
-+
-+static ssize_t transient_duration_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+	unsigned long state;
-+	ssize_t ret;
-+
-+	ret = kstrtoul(buf, 10, &state);
-+	if (ret)
-+		return ret;
-+
-+	transient_data->duration = state;
-+	return size;
-+}
-+
-+static ssize_t transient_state_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+	int state;
-+
-+	state = (transient_data->state == LED_FULL) ? 1 : 0;
-+	return sprintf(buf, "%d\n", state);
-+}
-+
-+static ssize_t transient_state_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+	unsigned long state;
-+	ssize_t ret;
-+
-+	ret = kstrtoul(buf, 10, &state);
-+	if (ret)
-+		return ret;
-+
-+	if (state != 1 && state != 0)
-+		return -EINVAL;
-+
-+	transient_data->state = (state == 1) ? LED_FULL : LED_OFF;
-+	return size;
-+}
-+
-+static DEVICE_ATTR(activate, 0644, transient_activate_show,
-+		   transient_activate_store);
-+static DEVICE_ATTR(duration, 0644, transient_duration_show,
-+		   transient_duration_store);
-+static DEVICE_ATTR(state, 0644, transient_state_show, transient_state_store);
-+
-+static void transient_trig_activate(struct led_classdev *led_cdev)
-+{
-+	int rc;
-+	struct transient_trig_data *tdata;
-+
-+	tdata = kzalloc(sizeof(struct transient_trig_data), GFP_KERNEL);
-+	if (!tdata) {
-+		dev_err(led_cdev->dev,
-+			"unable to allocate transient trigger\n");
-+		return;
-+	}
-+	led_cdev->trigger_data = tdata;
-+
-+	rc = device_create_file(led_cdev->dev, &dev_attr_activate);
-+	if (rc)
-+		goto err_out;
-+
-+	rc = device_create_file(led_cdev->dev, &dev_attr_duration);
-+	if (rc)
-+		goto err_out_duration;
-+
-+	rc = device_create_file(led_cdev->dev, &dev_attr_state);
-+	if (rc)
-+		goto err_out_state;
-+
-+	setup_timer(&tdata->timer, transient_timer_function,
-+		    (unsigned long) led_cdev);
-+	led_cdev->activated = true;
-+
-+	return;
-+
-+err_out_state:
-+	device_remove_file(led_cdev->dev, &dev_attr_duration);
-+err_out_duration:
-+	device_remove_file(led_cdev->dev, &dev_attr_activate);
-+err_out:
-+	dev_err(led_cdev->dev, "unable to register transient trigger\n");
-+	led_cdev->trigger_data = NULL;
-+	kfree(tdata);
-+}
-+
-+static void transient_trig_deactivate(struct led_classdev *led_cdev)
-+{
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+
-+	if (led_cdev->activated) {
-+		del_timer_sync(&transient_data->timer);
-+		led_set_brightness(led_cdev, transient_data->restore_state);
-+		device_remove_file(led_cdev->dev, &dev_attr_activate);
-+		device_remove_file(led_cdev->dev, &dev_attr_duration);
-+		device_remove_file(led_cdev->dev, &dev_attr_state);
-+		led_cdev->trigger_data = NULL;
-+		led_cdev->activated = false;
-+		kfree(transient_data);
-+	}
-+}
-+
-+static struct led_trigger transient_trigger = {
-+	.name     = "transient",
-+	.activate = transient_trig_activate,
-+	.deactivate = transient_trig_deactivate,
-+};
-+
-+static int __init transient_trig_init(void)
-+{
-+	return led_trigger_register(&transient_trigger);
-+}
-+
-+static void __exit transient_trig_exit(void)
-+{
-+	led_trigger_unregister(&transient_trigger);
-+}
-+
-+module_init(transient_trig_init);
-+module_exit(transient_trig_exit);
-+
-+MODULE_AUTHOR("Shuah Khan <shuahkhan@gmail.com>");
-+MODULE_DESCRIPTION("Transient LED trigger");
-+MODULE_LICENSE("GPL");
--- 
-1.7.5.4
-
-
-
+	Sam
