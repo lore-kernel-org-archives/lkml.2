@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755738Ab2D3RLt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 13:11:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53725 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab2D3RLq convert rfc822-to-8bit (ORCPT
+	id S1756410Ab2D3RYQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 13:24:16 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40807 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756355Ab2D3RYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 13:11:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F9EC6E9.9000102@codeaurora.org>
-References: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org>
- <201204301415.56690.arnd@arndb.de> <4F9EBF3E.8060401@codeaurora.org>
- <201204301638.29398.arnd@arndb.de> <4F9EC6E9.9000102@codeaurora.org>
-From: Matt Turner <mattst88@gmail.com>
-Date: Mon, 30 Apr 2012 13:11:25 -0400
-Message-ID: <CAEdQ38GUKdAxEhAUWCUGv_4znmYANEgd0TY2vYOaO6Y2=p2vog@mail.gmail.com>
-Subject: Re: [PATCH] Move most arches to asm-generic/current.h
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-alpha@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Apr 2012 13:24:12 -0400
+Date: Mon, 30 Apr 2012 13:22:03 -0400 (EDT)
+Message-Id: <20120430.132203.912342595853741106.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bcrl@kvack.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (net-next tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120430155836.44bcf3846c80cf686bb9cb77@canb.auug.org.au>
+References: <20120430155836.44bcf3846c80cf686bb9cb77@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 30 Apr 2012 10:22:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 1:07 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 04/30/12 09:38, Arnd Bergmann wrote:
->
->> On Monday 30 April 2012, Stephen Boyd wrote:
->>> I admit I haven't compile tested this on all the affected architectures.
->>> Looking at the architectures that are migrated here I don't see any that
->>> are defining get_current() as a macro except for alpha. Should I drop
->>> alpha from the patch? Or would it be easier if someone threw this into
->>> linux-next and see if it blows up?
->>>
->>> In the meantime I can scrounge around for those kernel.org
->>> cross-compilers and see if I can compile alpha.
->> I'd say either get an Ack from the Alpha maintainers or drop that
->> hunk from your patch.
->>
->
-> Ok. Alpha maintainers, do you see any problem with a static inline
-> function for get_current() instead of the current macro? My compile of
-> alpha with the kernel.org 4.6.3 compilers doesn't show any new build
-> failures than what is already there:
->
->  LD      .tmp_vmlinux1
-> drivers/built-in.o: In function `ide_set_disk_chs':
-> drivers/ide/ide.c:269:(.text+0x732a8): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:269:(.text+0x732b0): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:267:(.text+0x73310): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:267:(.text+0x73318): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/built-in.o: In function `ide_dev_apply_params':
-> drivers/ide/ide.c:299:(.text+0x73714): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:303:(.text+0x73724): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:308:(.text+0x73734): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:315:(.text+0x73744): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/built-in.o: In function `unexpected_intr':
-> drivers/ide/ide-io.c:734:(.text+0x74dfc): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide-io.c:736:(.text+0x74e00): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide-io.c:734:(.text+0x74e10): additional relocation overflows omitted from the output
-> make[1]: *** [.tmp_vmlinux1] Error 1
-> make: *** [sub-make] Error 2
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 30 Apr 2012 15:58:36 +1000
 
-I'll take a look later this week.
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> net/l2tp/l2tp_core.c: In function 'l2tp_verify_udp_checksum':
+> net/l2tp/l2tp_core.c:464:7: error: implicit declaration of function 'csum_ipv6_magic' [-Werror=implicit-function-declaration]
+> 
+> Caused by commit d2cf3361677e ("net/l2tp: add support for L2TP over IPv6
+> UDP").  Include file missing.
+> 
+> I have reverted that commit for today.
 
-The relocation truncated to fit: GPREL16 against ... error is caused
-by the kernel being too large and compiling with -msmall-data. We've
-really got to do something about this -- this happens way too often to
-way too many people.
+The fix is less work than the revert on this one isn't it? :-)
 
-Matt
+Pushed to net-next, thanks Stephen:
+
+--------------------
+l2tp: Add missing net/net/ip6_checksum.h include.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/l2tp/l2tp_core.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/net/l2tp/l2tp_core.c b/net/l2tp/l2tp_core.c
+index e91d559..0ca9bc3 100644
+--- a/net/l2tp/l2tp_core.c
++++ b/net/l2tp/l2tp_core.c
+@@ -56,6 +56,7 @@
+ #include <net/inet6_connection_sock.h>
+ #include <net/inet_ecn.h>
+ #include <net/ip6_route.h>
++#include <net/ip6_checksum.h>
+ 
+ #include <asm/byteorder.h>
+ #include <linux/atomic.h>
+-- 
+1.7.7.6
+
