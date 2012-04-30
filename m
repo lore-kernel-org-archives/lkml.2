@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab2D3OD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 10:03:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44852 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752882Ab2D3ODz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 10:03:55 -0400
-Date: Mon, 30 Apr 2012 15:54:34 +0200
-From: Jan Kara <jack@suse.cz>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        swhiteho@redhat.com
-Subject: Re: [PATCH 0/6] Get rid of I_MUTEX_QUOTA use
-Message-ID: <20120430135434.GB5239@quack.suse.cz>
-References: <1335387467-4928-1-git-send-email-jack@suse.cz>
- <20120425212532.GB3251@fieldses.org>
- <20120426132608.GA10368@quack.suse.cz>
- <20120427134752.GD14973@fieldses.org>
+	id S1754956Ab2D3OQB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 10:16:01 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63762 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab2D3OP7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 10:15:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] Move most arches to asm-generic/current.h
+Date: Mon, 30 Apr 2012 14:15:56 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120427134752.GD14973@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204301415.56690.arnd@arndb.de>
+X-Provags-ID: V02:K0:t9Qq+NhQyh3i2us9spLB//KbE/oJVjG+3laQaWMGtcS
+ b/NqNiTeYKFl2dpQ+9ndaKDs/H+DFHFuGeIrNUeOBZhVE1tlni
+ hXByvi0PmXZfYyal6e7wFv9OGy7gbC1KUPIG5GoRntj9waVNuK
+ Nejh4Ej74M4rkU/sH+1LnO++0YrORiS1J1egvLYpHJ1Mzb34bI
+ zyPTb7tHWMpsFTkcXu1JOt5pM54CuAmQPQ3ejqoNV6K+DX0QXs
+ ZUnOpWfGHYPsUK85hSwcl3IC3MnF9dH6n2598JdwMYPKgbE8sz
+ zyfZHRRf0ikLVNj91AAL9ao/6pya73/lbUeOcg2gktd0+GBLmW
+ /4ogefEKtGO6x3u+2QDk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 27-04-12 09:47:52, J. Bruce Fields wrote:
-> On Thu, Apr 26, 2012 at 03:26:08PM +0200, Jan Kara wrote:
-> > On Wed 25-04-12 17:25:32, J. Bruce Fields wrote:
-> > > On Wed, Apr 25, 2012 at 10:57:41PM +0200, Jan Kara wrote:
-> > > > 
-> > > >   Hello,
-> > > > 
-> > > >   this patch set changes generic quota code (and filesystems relying on it)
-> > > > so that they don't use special locking class I_MUTEX_QUOTA. The only remaining
-> > > > user of I_MUTEX_QUOTA is GFS2. If noone has objections, I can merge these
-> > > > patches through my tree or Bruce, you can take them as your work depends
-> > > > on these changes.
-> > > 
-> > > My changes will likely need to go through Al, and depend on GFS2 being
-> > > fixed as well.
-> > > 
-> > > So it's up to Al.  Best might be to just merge it through your tree and
-> > > let us sort it out in the next merge window?
-> >   OK, I've added patches to my tree for now. I also sent a patch for GFS2
-> > but after some investigation that's mostly a cleanup grade and Steven can
-> > merge it independently. Quota inode in GFS2 is hidden system file so there
-> > should be no locking problems with it wrt your patches.
-> 
-> OK.  In that case I suppose I'd like Al to take patches 1-4 of the 5 I
-> posted most recently (followups to
-> http://mid.gmane.org/20120425152041.GA751@fieldses.org), probably after
-> your fixes go in.  I'll resend if necessary after they go in.
-  Yeah. But also please rename I_MUTEX_QUOTA to something better describing
-what's going on...
+On Tuesday 24 April 2012, Stephen Boyd wrote:
+> diff --git a/include/asm-generic/current.h b/include/asm-generic/current.h
+> index 5e86f6a..bbfb795 100644
+> --- a/include/asm-generic/current.h
+> +++ b/include/asm-generic/current.h
+> @@ -1,9 +1,16 @@
+>  #ifndef __ASM_GENERIC_CURRENT_H
+>  #define __ASM_GENERIC_CURRENT_H
+>  
+> +#include <linux/compiler.h>
+>  #include <linux/thread_info.h>
+>  
+> -#define get_current() (current_thread_info()->task)
+> +struct task_struct;
+> +
+> +static __always_inline struct task_struct *get_current(void)
+> +{
+> +       return current_thread_info()->task;
+> +}
+> +
+>  #define current get_current()
+>  
+>  #endif /* __ASM_GENERIC_CURRENT_H */
 
-> (I'm also going ahead and pushing out the rest of my delegation patches,
-> to be merged for 3.5; that solves most of my delegation problem, leaving
-> just a race in rename to be closed by those 4 patches.)
+Does this need to be an inline function rather than a macro? I think I
+remember having trouble with header file dependencies when I tried making
+it an inline function initially and I don't know if those have been
+resolved.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+I realize that the macro is ugly, but if you don't mind keeping it,
+that would be the safer option in terms of breaking some architecture
+in the process. If course if you can prove that all architectures using
+the generic implementation can use the inline function, I'm all for
+the change.
+
+Aside from this, I very much like your patch.
+
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+	Arnd
