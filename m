@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab2D3AXY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 20:23:24 -0400
-Received: from gate.crashing.org ([63.228.1.57]:41102 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754581Ab2D3AXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 20:23:23 -0400
-Message-ID: <1335745382.20866.18.camel@pasglop>
-Subject: Re: [PATCH] tty/serial/pmac_zilog: Fix "nobody cared" IRQ message
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Apr 2012 10:23:02 +1000
-In-Reply-To: <4F9C830D.8040906@lwfinger.net>
-References: <4F9C830D.8040906@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754766Ab2D3AZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 20:25:58 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:38012 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581Ab2D3AZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Apr 2012 20:25:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F9DD994.70202@zytor.com>
+References: <20120429205429.63CCD7C0064@ra.kernel.org> <4F9DD994.70202@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 29 Apr 2012 17:25:35 -0700
+X-Google-Sender-Auth: SSeGqLeL5_osW_njBZU_9PRcPyg
+Message-ID: <CA+55aFy72rPMq3M2_PU0ue45Fb38_Effrfhu2uOpdVXt9H1XOg@mail.gmail.com>
+Subject: Re: autofs: make the autofsv5 packet file descriptor use a packetized pipe
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Tokarev <mjt@tls.msk.ru>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Ian Kent <raven@themaw.net>, Thomas Meyer <thomas@m3y3r.de>,
+        autofs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-28 at 18:53 -0500, Larry Finger wrote:
+On Sun, Apr 29, 2012 at 5:15 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> I just looked at am-utils; am-utils *does* use autofs v5, and *will*
+> loop back and read more data on a short read.
 
-> 
-> Index: wireless-testing/drivers/tty/serial/pmac_zilog.c
-> ===================================================================
-> --- wireless-testing.orig/drivers/tty/serial/pmac_zilog.c	2012-04-28 
-> 15:51:38.843723074 -0500
-> +++ wireless-testing/drivers/tty/serial/pmac_zilog.c	2012-04-28 
-> 18:34:34.053900600 -0500
+Can you point to the sources?
 
-Patch seems to be wrapped... I'll apply manually this time around but
-check your mailer settings :-)
+If it's "short read" as in "I didn't get as much as I expected", that's fine.
 
-Cheers,
-Ben.
+If it is "short read" as in "I don't even try to read 300 bytes, I
+read it in 8-byte chunks", we're screwed.
 
-> @@ -469,7 +469,7 @@
->   	tty = NULL;
->   	if (r3 & (CHAEXT | CHATxIP | CHARxIP)) {
->   		if (!ZS_IS_OPEN(uap_a)) {
-> -			pmz_debug("ChanA interrupt while open !\n");
-> +			pmz_debug("ChanA interrupt while not open !\n");
->   			goto skip_a;
->   		}
->   		write_zsreg(uap_a, R0, RES_H_IUS);
-> @@ -493,8 +493,8 @@
->   	spin_lock(&uap_b->port.lock);
->   	tty = NULL;
->   	if (r3 & (CHBEXT | CHBTxIP | CHBRxIP)) {
-> -		if (!ZS_IS_OPEN(uap_a)) {
-> -			pmz_debug("ChanB interrupt while open !\n");
-> +		if (!ZS_IS_OPEN(uap_b)) {
-> +			pmz_debug("ChanB interrupt while not open !\n");
->   			goto skip_b;
->   		}
->   		write_zsreg(uap_b, R0, RES_H_IUS);
-
-
+                     Linus
