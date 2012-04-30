@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab2D3UQH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:16:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35792 "EHLO
+	id S1756978Ab2D3UQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:16:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35815 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756906Ab2D3UQE (ORCPT
+	with ESMTP id S1756922Ab2D3UQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:16:04 -0400
-Message-Id: <20120430194846.989528598@linutronix.de>
+	Mon, 30 Apr 2012 16:16:07 -0400
+Message-Id: <20120430194847.291193314@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Mon, 30 Apr 2012 20:16:03 -0000
+Date: Mon, 30 Apr 2012 20:16:05 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-arch@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: [patch 23/29] sparc: Use generic init_task
+Cc: linux-arch@vger.kernel.org, Chris Zankel <chris@zankel.net>
+Subject: [patch 28/29] xtensa: Use generic init_task
 References: <20120430194725.763322463@linutronix.de>
-Content-Disposition: inline; filename=sparc-use-generic-init-task.patch
+Content-Disposition: inline; filename=xtensa-use-generic-init-task.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,50 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Same code. Use the generic version.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Chris Zankel <chris@zankel.net>
 ---
- arch/sparc/Kconfig            |    1 +
- arch/sparc/kernel/init_task.c |   22 ----------------------
- 2 files changed, 1 insertion(+), 22 deletions(-)
+ arch/xtensa/Kconfig            |    1 +
+ arch/xtensa/kernel/Makefile    |    2 +-
+ arch/xtensa/kernel/init_task.c |   31 -------------------------------
+ 3 files changed, 2 insertions(+), 32 deletions(-)
 
-Index: tip/arch/sparc/Kconfig
+Index: tip/arch/xtensa/Kconfig
 ===================================================================
---- tip.orig/arch/sparc/Kconfig
-+++ tip/arch/sparc/Kconfig
-@@ -31,6 +31,7 @@ config SPARC
- 	select GENERIC_PCI_IOMAP
- 	select HAVE_NMI_WATCHDOG if SPARC64
- 	select GENERIC_SMP_IDLE_THREAD
+--- tip.orig/arch/xtensa/Kconfig
++++ tip/arch/xtensa/Kconfig
+@@ -10,6 +10,7 @@ config XTENSA
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_IRQ_SHOW
+ 	select GENERIC_CPU_DEVICES
 +	select HAVE_GENERIC_INIT_TASK
- 
- config SPARC32
- 	def_bool !64BIT
-Index: tip/arch/sparc/kernel/init_task.c
+ 	help
+ 	  Xtensa processors are 32-bit RISC machines designed by Tensilica
+ 	  primarily for embedded systems.  These processors are both
+Index: tip/arch/xtensa/kernel/Makefile
 ===================================================================
---- tip.orig/arch/sparc/kernel/init_task.c
+--- tip.orig/arch/xtensa/kernel/Makefile
++++ tip/arch/xtensa/kernel/Makefile
+@@ -6,7 +6,7 @@ extra-y := head.o vmlinux.lds
+ 
+ obj-y := align.o entry.o irq.o coprocessor.o process.o ptrace.o \
+ 	 setup.o signal.o syscall.o time.o traps.o vectors.o platform.o  \
+-	 pci-dma.o init_task.o io.o
++	 pci-dma.o io.o
+ 
+ obj-$(CONFIG_KGDB) += xtensa-stub.o
+ obj-$(CONFIG_PCI) += pci.o
+Index: tip/arch/xtensa/kernel/init_task.c
+===================================================================
+--- tip.orig/arch/xtensa/kernel/init_task.c
 +++ /dev/null
-@@ -1,22 +0,0 @@
+@@ -1,31 +0,0 @@
+-/*
+- * arch/xtensa/kernel/init_task.c
+- *
+- * Xtensa Processor version.
+- *
+- * This file is subject to the terms and conditions of the GNU General Public
+- * License.  See the file "COPYING" in the main directory of this archive
+- * for more details.
+- *
+- * Copyright (C) 2007 Tensilica Inc.
+- *
+- * Chris Zankel <chris@zankel.net>
+- */
+-
 -#include <linux/mm.h>
 -#include <linux/fs.h>
--#include <linux/module.h>
--#include <linux/sched.h>
+-#include <linux/init.h>
 -#include <linux/init_task.h>
+-#include <linux/module.h>
 -#include <linux/mqueue.h>
 -
--#include <asm/pgtable.h>
 -#include <asm/uaccess.h>
 -
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
--struct task_struct init_task = INIT_TASK(init_task);
--EXPORT_SYMBOL(init_task);
--
--/* .text section in head.S is aligned at 8k boundary and this gets linked
-- * right after that so that the init_thread_union is aligned properly as well.
-- * If this is not aligned on a 8k boundary, then you should change code
-- * in etrap.S which assumes it.
-- */
 -union thread_union init_thread_union __init_task_data =
 -	{ INIT_THREAD_INFO(init_task) };
+-
+-struct task_struct init_task = INIT_TASK(init_task);
+-
+-EXPORT_SYMBOL(init_task);
 
 
