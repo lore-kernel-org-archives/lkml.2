@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab2D3JNQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 05:13:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10423 "EHLO mx1.redhat.com"
+	id S1755933Ab2D3JPk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 05:15:40 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29968 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752853Ab2D3JNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 05:13:14 -0400
-Date: Mon, 30 Apr 2012 12:12:47 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rick Jones <rick.jones2@hp.com>
-Cc: Shirley Ma <mashirle@us.ibm.com>, David Miller <davem@davemloft.net>,
-        eric.dumazet@gmail.com, avi@redhat.com, arnd@arndb.de,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
+	id S1755336Ab2D3JPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 05:15:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="159853021"
+Date: Mon, 30 Apr 2012 11:15:36 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: joseph daniel <josephdanielwalter@gmail.com>
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: getting host CPU utilization (was Re: [PATCH V7 2/4 net-next]
- skbuff: Add userspace zero-copy buffers in skb)
-Message-ID: <20120430091246.GB5414@redhat.com>
-References: <1306610588.5180.87.camel@localhost.localdomain>
- <1309189510.21764.1.camel@localhost.localdomain>
- <20110627.155426.51839633424542723.davem@davemloft.net>
- <1309279892.3559.6.camel@localhost.localdomain>
- <4E0A0D34.2070507@hp.com>
+Subject: Re: [PATCH] net/nfc: Fix the compilation warning
+Message-ID: <20120430091536.GB31528@sortiz-mobl>
+References: <1335771795-18961-1-git-send-email-josephdanielwalter@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4E0A0D34.2070507@hp.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1335771795-18961-1-git-send-email-josephdanielwalter@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 10:19:48AM -0700, Rick Jones wrote:
-> one of these days I'll have to find a good way to get accurate
-> overall CPU utilization from within a guest and teach netperf about
-> it.
+Hi Joseph,
 
-I think the cleanest way would be to run another netperf server on the
-host.  netperf would get a flag with host address and get cpu
-utilization info.
+On Mon, Apr 30, 2012 at 01:43:15PM +0600, joseph daniel wrote:
+> the nfc_llcp_general_bytes is defined in nfc/core.c as
+>     static inline u8 *nfc_llcp_general_bytes(struct nfc_dev *dev, size_t *gb_len).
+> 
+> as in nfc/nfc.h:
+>     static inline u8 *nfc_llcp_general_bytes(struct nfc_dev *dev, u8 *gb_len), as
+>     CONFIG_NFC_LLCP is not defined.
+> 
+> so we got some warnings,
+> net/nfc/core.c:207:2: warning: passing argument 2 of ‘nfc_llcp_general_bytes’ from incompatible pointer type [enabled by default]
+> net/nfc/nfc.h:87:19: note: expected ‘u8 *’ but argument is of type ‘size_t *’
+> 
+> Signed-off-by: joseph daniel <josephdanielwalter@gmail.com>
+Thanks, patch applied to my nfc-next branch.
 
-This is what we currently do manually: run mpstat on the host.
-
-Thoughts?
-
-By the way, could you point me to code used by netperf
-to measure CPU utilization on Linux? I'd like to figure
-out why isn't the result always consistent with e.g. mpstat.
-
-Thanks!
+Cheers,
+Samuel.
 
 -- 
-MST
+Intel Open Source Technology Centre
+http://oss.intel.com/
