@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab2D3IeP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 04:34:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33932 "EHLO mga02.intel.com"
+	id S1755312Ab2D3Ifs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 04:35:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52773 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696Ab2D3IeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 04:34:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="135087860"
-Message-ID: <1335775045.2584.3.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v2 1/4] ext4: Remove useless marking of superblock dirty
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Ted Tso <tytso@mit.edu>
-Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>
-Date: Mon, 30 Apr 2012 11:37:25 +0300
-In-Reply-To: <1334215249.13842.36.camel@sauron.fi.intel.com>
-References: <1333367140-28370-1-git-send-email-artem.bityutskiy@linux.intel.com>
-	 <1333367140-28370-2-git-send-email-artem.bityutskiy@linux.intel.com>
-	 <1334215249.13842.36.camel@sauron.fi.intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-XX/qQRnw927UyK8DsHrt"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Mime-Version: 1.0
+	id S1751696Ab2D3Ifq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 04:35:46 -0400
+Date: Mon, 30 Apr 2012 10:35:44 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
+In-Reply-To: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+Message-ID: <alpine.LNX.2.00.1204301032410.1856@pobox.suse.cz>
+References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 23 Apr 2012, Henrik Rydberg wrote:
 
---=-XX/qQRnw927UyK8DsHrt
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Hi Jiri,
+> 
+> Here is the third version of the extension to the device-driver
+> matching mechanism. AFAICT, there are no outstanding issues. I think
+> we are getting close. :-)
 
-On Thu, 2012-04-12 at 10:20 +0300, Artem Bityutskiy wrote:
-> On Mon, 2012-04-02 at 14:45 +0300, Artem Bityutskiy wrote:
-> > From: Jan Kara <jack@suse.cz>
-> >=20
-> > Commit a0375156 properly notes that superblock doesn't need to be marke=
-d
-> > as dirty when only number of free inodes / blocks / number of directori=
-es
-> > changes since that is recomputed on each mount anyway. However that com=
-ment
-> > leaves some unnecessary markings as dirty in place. Remove these.
-> >=20
-> > Artem: tested using xfstests for both journalled and non-journalled ext=
-4.
->=20
-> Hi Ted, what would be the fate of this patch-set?
+I think so, and overall I like the aproach and the implementation. Thanks!
 
-Hi Ted, I am sorry for being annoying, but what do you think about these
-patches?
+Just got the stacktrace on [1] though when running kernel with this 
+patchset. The trace popped during shutdown, and the machine froze 
+completely; I didn't have any kind of external console connected, so 
+unfortunately I don't have the beginning of the whole thing.
 
---=20
-Best Regards,
-Artem Bityutskiy
+I haven't been able to reproduce it so far. This was after several 
+"parallel" plug/remove cycles of multiple HID devices driven by multiple 
+different drivers.
 
---=-XX/qQRnw927UyK8DsHrt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+I haven't performed any analysis what this might be yet.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+[1] http://www.jikos.cz/jikos/junk/autoloading-trace.jpg
 
-iQIcBAABAgAGBQJPnk9FAAoJECmIfjd9wqK0B+EP/1B0aQpqUNtewM3b9uQhWpIY
-pS2F7SJBkF2lXyldBEuxTbFe4Q/lucIJlSZ503vdwF+y/dlmMtxNLWhLuBf8Wsk/
-jJFYY5V9iFu8qFPjJVTCFu2PZoWbncrYrW9QRMRol36TDhFKGdAHXj1Iz4FSSXVy
-t69wRiV7u4TzD26+76RpO5HFyXAhEXnv0A/54ReK6S3D3PpOsuijt49GYG41q/HU
-DSsG2kWgqV/rtQc7ZkjUU+6ZMB40gnDMP3771V+nqJhPoPwVyX04ybPAF6bivT3t
-ZE4reQpfPGrIES4KmHt3pMGVR3penwkKyVYynD1JLmFsfOcavyOHmeQhzDz+pX0h
-C+xjYn3J7NsIjZhMte+4XSvBTbubdUDeOnMBfeyKXvXEyLL3iUovDxzP8gF63Qyq
-bPRzyFXdwrYopuKSMYo4hRmSOmtUMWFlZTC+Qb/FwkfTxkz9nr+EL1h4uoS1exr7
-H+Mmku6S1Wrf7FY2Au3YJh6T0AJBVYbR4rHsNRwLMbNAknlkX3qeTh2tpYZNI3Ad
-wldOgI3xAFh+n9Dap49G80RqSYweIcGGTcT7fKnCj+tpobV8b0jj8mjGk+V6zoRH
-mboqGU20pWyMChiuVMbhXFTlDLZ/hf3XMYwIqFCR/ZkbUBYjNQzhGFVQOpz3vKdO
-UT+bJYE52+bGJyaD+lMU
-=PoBH
------END PGP SIGNATURE-----
 
---=-XX/qQRnw927UyK8DsHrt--
-
+-- 
+Jiri Kosina
+SUSE Labs
