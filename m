@@ -1,50 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab2EAAAe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 20:00:34 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:36309 "EHLO
-	homiemail-a56.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756679Ab2EAAAd (ORCPT
+	id S1757624Ab2EAABM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 20:01:12 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:55516 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757248Ab2EAABL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 20:00:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
-	 b=Nwus4DEqDVWCp4qZSnXYZ58/bq1aKhv9xQXbIVHTAtK4GSJXkCkh6+TLt++wZ
-	IOvn9IQEsM5dv6gkfwV9rn67CgNg1Rmv3aulQkdcVV9IwqxK9CBCGHZg9Dirj2LM
-	t4VdLCuWw7Gz+zgWWEWEq7su7rld7dmImRlzr76iuKglDw=
-Message-ID: <4F9F279E.606@shealevy.com>
-Date: Mon, 30 Apr 2012 20:00:30 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120404 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>
-CC: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] efi: Validate UEFI boot variables
-References: <1335816690-26019-1-git-send-email-mjg@redhat.com> <1335816690-26019-2-git-send-email-mjg@redhat.com>
-In-Reply-To: <1335816690-26019-2-git-send-email-mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Apr 2012 20:01:11 -0400
+X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Apr 2012 20:01:11 EDT
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 06/41] nohz: Move next idle expiry time record into idle logic area
+Date: Tue,  1 May 2012 01:54:40 +0200
+Message-Id: <1335830115-14335-7-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The next idle expiry time record and idle sleeps tracking are
+statistics that only concern idle.
 
-On 04/30/2012 04:11 PM, Matthew Garrett wrote:
-> A common flaw in UEFI systems is a refusal to POST triggered by a malformed
-> boot variable. Once in this state, machines may only be restored by
-> reflashing their firmware with an external hardware device. While this is
-> obviously a firmware bug, the serious nature of the outcome suggests that
-> operating systems should filter their variable writes in order to prevent
-> a malicious user from rendering the machine unusable.
+Since we want the nohz APIs to become usable further idle
+context, let's pull up the handling of these statistics to the
+callers in idle.
 
-Any chance this will make it safe to use efibootmgr on Apple EFI 
-firmware? I've been afraid to use it because I've read it can silently 
-brick the device due to a mistake in efibootmgr. Obviously this won't 
-correct that mistake, but with this applied should a successful variable 
-set imply that the firmware wasn't bricked?
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Max Krasnyansky <maxk@qualcomm.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/tick-sched.c |   24 ++++++++++++++----------
+ 1 files changed, 14 insertions(+), 10 deletions(-)
 
-Cheers,
-Shea Levy
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 12ba932..0695e9d 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -271,11 +271,11 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
+ 
+-static void tick_nohz_stop_sched_tick(struct tick_sched *ts,
+-				      ktime_t now, int cpu)
++static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
++					 ktime_t now, int cpu)
+ {
+ 	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies;
+-	ktime_t last_update, expires;
++	ktime_t last_update, expires, ret = { .tv64 = 0 };
+ 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
+ 	u64 time_delta;
+ 
+@@ -358,6 +358,8 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 		if (ts->tick_stopped && ktime_equal(expires, dev->next_event))
+ 			goto out;
+ 
++		ret = expires;
++
+ 		/*
+ 		 * nohz_stop_sched_tick can be called several times before
+ 		 * the nohz_restart_sched_tick is called. This happens when
+@@ -370,11 +372,6 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 			ts->tick_stopped = 1;
+ 		}
+ 
+-		ts->idle_sleeps++;
+-
+-		/* Mark expires */
+-		ts->idle_expires = expires;
+-
+ 		/*
+ 		 * If the expiration time == KTIME_MAX, then
+ 		 * in this case we simply stop the tick timer.
+@@ -405,6 +402,8 @@ out:
+ 	ts->next_jiffies = next_jiffies;
+ 	ts->last_jiffies = last_jiffies;
+ 	ts->sleep_length = ktime_sub(dev->next_event, now);
++
++	return ret;
+ }
+ 
+ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+@@ -443,7 +442,7 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+ 
+ static void __tick_nohz_idle_enter(struct tick_sched *ts)
+ {
+-	ktime_t now;
++	ktime_t now, expires;
+ 	int cpu = smp_processor_id();
+ 
+ 	now = tick_nohz_start_idle(cpu, ts);
+@@ -452,7 +451,12 @@ static void __tick_nohz_idle_enter(struct tick_sched *ts)
+ 		int was_stopped = ts->tick_stopped;
+ 
+ 		ts->idle_calls++;
+-		tick_nohz_stop_sched_tick(ts, now, cpu);
++
++		expires = tick_nohz_stop_sched_tick(ts, now, cpu);
++		if (expires.tv64 > 0LL) {
++			ts->idle_sleeps++;
++			ts->idle_expires = expires;
++		}
+ 
+ 		if (!was_stopped && ts->tick_stopped) {
+ 			ts->idle_jiffies = ts->last_jiffies;
+-- 
+1.7.5.4
+
