@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693Ab2EAABz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 20:01:55 -0400
+	id S1757717Ab2EAAB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 20:01:59 -0400
 Received: from mail-qa0-f46.google.com ([209.85.216.46]:45056 "EHLO
 	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757377Ab2EAABx (ORCPT
+	with ESMTP id S1757604Ab2EAABy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 20:01:53 -0400
+	Mon, 30 Apr 2012 20:01:54 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -24,9 +24,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 11/41] nohz/cpuset: Don't turn off the tick if rcu needs it
-Date: Tue,  1 May 2012 01:54:45 +0200
-Message-Id: <1335830115-14335-12-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 10/41] nohz: Adaptive tick stop and restart on nohz cpuset
+Date: Tue,  1 May 2012 01:54:44 +0200
+Message-Id: <1335830115-14335-11-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
 References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
@@ -34,13 +34,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If RCU is waiting for the current CPU to complete a grace
-period, don't turn off the tick. Unlike dynctik-idle, we
-are not necessarily going to enter into rcu extended quiescent
-state, so we may need to keep the tick to note current CPU's
-quiescent states.
+When a CPU is included in a nohz cpuset, try to switch
+it to nohz mode from the interrupt exit path if it is running
+a single non-idle task.
 
-[added build fix from Zen Lin]
+Then restart the tick if necessary if we are enqueuing a
+second task while the timer is stopped, so that the scheduler
+tick is rearmed.
+
+[TODO: Handle the many things done from scheduler_tick()]
+
+[ Included build fix from Geoff Levand ]
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -62,97 +66,360 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/rcupdate.h |    1 +
- kernel/rcutree.c         |    3 +--
- kernel/time/tick-sched.c |   22 ++++++++++++++++++----
- 3 files changed, 20 insertions(+), 6 deletions(-)
+ arch/x86/kernel/smp.c    |    2 +
+ include/linux/sched.h    |    6 +++
+ include/linux/tick.h     |   11 +++++-
+ init/Kconfig             |    2 +-
+ kernel/sched/core.c      |   22 ++++++++++++
+ kernel/sched/sched.h     |   23 ++++++++++++
+ kernel/softirq.c         |    6 ++-
+ kernel/time/tick-sched.c |   84 +++++++++++++++++++++++++++++++++++++++++----
+ 8 files changed, 144 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 81c04f4..e06639e 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -184,6 +184,7 @@ static inline int rcu_preempt_depth(void)
- extern void rcu_sched_qs(int cpu);
- extern void rcu_bh_qs(int cpu);
- extern void rcu_check_callbacks(int cpu, int user);
-+extern int rcu_pending(int cpu);
- struct notifier_block;
- extern void rcu_idle_enter(void);
- extern void rcu_idle_exit(void);
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 6c4a672..e141c7e 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -212,7 +212,6 @@ int rcu_cpu_stall_suppress __read_mostly;
- module_param(rcu_cpu_stall_suppress, int, 0644);
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 94615a3..df83671 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -23,6 +23,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/cpu.h>
+ #include <linux/gfp.h>
++#include <linux/tick.h>
  
- static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
--static int rcu_pending(int cpu);
- 
- /*
-  * Return the number of RCU-sched batches processed thus far for debug & stats.
-@@ -1915,7 +1914,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
-  * by the current CPU, returning 1 if so.  This function is part of the
-  * RCU implementation; it is -not- an exported member of the RCU API.
-  */
--static int rcu_pending(int cpu)
-+int rcu_pending(int cpu)
+ #include <asm/mtrr.h>
+ #include <asm/tlbflush.h>
+@@ -283,6 +284,7 @@ void smp_cpuset_update_nohz_interrupt(struct pt_regs *regs)
  {
- 	return __rcu_pending(&rcu_sched_state, &per_cpu(rcu_sched_data, cpu)) ||
- 	       __rcu_pending(&rcu_bh_state, &per_cpu(rcu_bh_data, cpu)) ||
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 43fa7ac..4f99766 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -506,9 +506,21 @@ void tick_nohz_idle_enter(void)
- 	local_irq_enable();
+ 	ack_APIC_irq();
+ 	irq_enter();
++	tick_nohz_check_adaptive();
+ 	inc_irq_stat(irq_call_count);
+ 	irq_exit();
  }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0657368..dd5df2a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2746,6 +2746,12 @@ static inline void inc_syscw(struct task_struct *tsk)
+ #define TASK_SIZE_OF(tsk)	TASK_SIZE
+ #endif
  
 +#ifdef CONFIG_CPUSETS_NO_HZ
-+static bool can_stop_adaptive_tick(void)
-+{
-+	if (!sched_can_stop_tick())
-+		return false;
++extern bool sched_can_stop_tick(void);
++#else
++static inline bool sched_can_stop_tick(void) { return false; }
++#endif
 +
-+	/* Is there a grace period to complete ? */
-+	if (rcu_pending(smp_processor_id()))
+ #ifdef CONFIG_MM_OWNER
+ extern void mm_update_next_owner(struct mm_struct *mm);
+ extern void mm_init_owner(struct mm_struct *mm, struct task_struct *p);
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index f37fceb..9b66fd3 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -124,11 +124,12 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
+ # ifdef CONFIG_NO_HZ
+ extern void tick_nohz_idle_enter(void);
+ extern void tick_nohz_idle_exit(void);
++extern void tick_nohz_restart_sched_tick(void);
+ extern void tick_nohz_irq_exit(void);
+ extern ktime_t tick_nohz_get_sleep_length(void);
+ extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+ extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+-# else
++# else /* !NO_HZ */
+ static inline void tick_nohz_idle_enter(void) { }
+ static inline void tick_nohz_idle_exit(void) { }
+ 
+@@ -142,4 +143,12 @@ static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
+ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
+ # endif /* !NO_HZ */
+ 
++#ifdef CONFIG_CPUSETS_NO_HZ
++extern void tick_nohz_check_adaptive(void);
++extern void tick_nohz_post_schedule(void);
++#else /* !CPUSETS_NO_HZ */
++static inline void tick_nohz_check_adaptive(void) { }
++static inline void tick_nohz_post_schedule(void) { }
++#endif /* CPUSETS_NO_HZ */
++
+ #endif
+diff --git a/init/Kconfig b/init/Kconfig
+index 43f7687..7cdb8be 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -640,7 +640,7 @@ config PROC_PID_CPUSET
+ 
+ config CPUSETS_NO_HZ
+        bool "Tickless cpusets"
+-       depends on CPUSETS && HAVE_CPUSETS_NO_HZ
++       depends on CPUSETS && HAVE_CPUSETS_NO_HZ && NO_HZ && HIGH_RES_TIMERS
+        help
+          This options let you apply a nohz property to a cpuset such
+ 	 that the periodic timer tick tries to be avoided when possible on
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b342f57..4f80a81 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1323,6 +1323,27 @@ static void update_avg(u64 *avg, u64 sample)
+ }
+ #endif
+ 
++#ifdef CONFIG_CPUSETS_NO_HZ
++bool sched_can_stop_tick(void)
++{
++	struct rq *rq;
++
++	rq = this_rq();
++
++	/*
++	 * Ensure nr_running updates are visible
++	 * FIXME: the barrier is probably not enough to ensure
++	 * the updates are visible right away.
++	 */
++	smp_rmb();
++	/* More than one running task need preemption */
++	if (rq->nr_running > 1)
 +		return false;
 +
 +	return true;
 +}
++#endif
 +
- static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts)
+ static void
+ ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
  {
--#ifdef CONFIG_CPUSETS_NO_HZ
+@@ -2059,6 +2080,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
+ 	 * frame will be invalid.
+ 	 */
+ 	finish_task_switch(this_rq(), prev);
++	tick_nohz_post_schedule();
+ }
+ 
+ /*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 98c0c26..b89f254 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1,6 +1,7 @@
+ 
+ #include <linux/sched.h>
+ #include <linux/mutex.h>
++#include <linux/cpuset.h>
+ #include <linux/spinlock.h>
+ #include <linux/stop_machine.h>
+ 
+@@ -925,6 +926,28 @@ static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime) {}
+ static inline void inc_nr_running(struct rq *rq)
+ {
+ 	rq->nr_running++;
++
++	if (rq->nr_running == 2) {
++		/*
++		 * Make rq->nr_running update visible right away so that
++		 * remote CPU knows that it must restart the tick.
++		 * FIXME: This is probably not enough to ensure the update is visible
++		 */
++		smp_wmb();
++		/*
++		 * Make updates to cpu_adaptive_nohz_ref visible right now.
++		 * If the CPU is not yet in a nohz cpuset then it will see
++		 * the value on rq->nr_running later on the first time it
++		 * tries to shutdown the tick. Otherwise we must send it
++		 * it an IPI. But the ordering must be strict to ensure
++		 * the first case.
++		 * FIXME: That too is probably not enough to ensure the
++		 * update is visible.
++		 */
++		smp_rmb();
++		if (cpuset_cpu_adaptive_nohz(rq->cpu))
++			smp_cpuset_update_nohz(rq->cpu);
++	}
+ }
+ 
+ static inline void dec_nr_running(struct rq *rq)
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 5ace266..1bacb20 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -24,6 +24,7 @@
+ #include <linux/ftrace.h>
+ #include <linux/smp.h>
+ #include <linux/tick.h>
++#include <linux/cpuset.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/irq.h>
+@@ -297,7 +298,8 @@ void irq_enter(void)
  	int cpu = smp_processor_id();
  
- 	if (!cpuset_adaptive_nohz() || is_idle_task(current))
-@@ -517,12 +529,14 @@ static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts)
- 	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
- 		return;
+ 	rcu_irq_enter();
+-	if (is_idle_task(current) && !in_interrupt()) {
++
++	if ((is_idle_task(current) || cpuset_adaptive_nohz()) && !in_interrupt()) {
+ 		/*
+ 		 * Prevent raise_softirq from needlessly waking up ksoftirqd
+ 		 * here, as softirq will be serviced on return from interrupt.
+@@ -349,7 +351,7 @@ void irq_exit(void)
  
--	if (!sched_can_stop_tick())
-+	if (!can_stop_adaptive_tick())
- 		return;
- 
- 	tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
--#endif
+ #ifdef CONFIG_NO_HZ
+ 	/* Make sure that timer wheel updates are propagated */
+-	if (idle_cpu(smp_processor_id()) && !in_interrupt() && !need_resched())
++	if (!in_interrupt())
+ 		tick_nohz_irq_exit();
+ #endif
+ 	rcu_irq_exit();
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index f1142d5..43fa7ac 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -506,6 +506,24 @@ void tick_nohz_idle_enter(void)
+ 	local_irq_enable();
  }
-+#else
-+static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts) { }
-+#endif
  
++static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts)
++{
++#ifdef CONFIG_CPUSETS_NO_HZ
++	int cpu = smp_processor_id();
++
++	if (!cpuset_adaptive_nohz() || is_idle_task(current))
++		return;
++
++	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
++		return;
++
++	if (!sched_can_stop_tick())
++		return;
++
++	tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
++#endif
++}
++
  /**
   * tick_nohz_irq_exit - update next tick event from interrupt exit
-@@ -852,7 +866,7 @@ void tick_nohz_check_adaptive(void)
+  *
+@@ -518,10 +536,12 @@ void tick_nohz_irq_exit(void)
+ {
  	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
  
- 	if (ts->tick_stopped && !is_idle_task(current)) {
--		if (!sched_can_stop_tick())
-+		if (!can_stop_adaptive_tick())
- 			tick_nohz_restart_sched_tick();
+-	if (!ts->inidle)
+-		return;
+-
+-	__tick_nohz_idle_enter(ts);
++	if (ts->inidle) {
++		if (!need_resched())
++			__tick_nohz_idle_enter(ts);
++	} else {
++		tick_nohz_cpuset_stop_tick(ts);
++	}
+ }
+ 
+ /**
+@@ -562,7 +582,7 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
  	}
  }
+ 
+-static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
++static void __tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
+ {
+ 	/* Update jiffies first */
+ 	tick_do_update_jiffies64(now);
+@@ -577,6 +597,31 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
+ 	tick_nohz_restart(ts, now);
+ }
+ 
++/**
++ * tick_nohz_restart_sched_tick - restart the tick for a tickless CPU
++ *
++ * Restart the tick when the CPU is in adaptive tickless mode.
++ */
++void tick_nohz_restart_sched_tick(void)
++{
++	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++	unsigned long flags;
++	ktime_t now;
++
++	local_irq_save(flags);
++
++	if (!ts->tick_stopped) {
++		local_irq_restore(flags);
++		return;
++	}
++
++	now = ktime_get();
++	__tick_nohz_restart_sched_tick(ts, now);
++
++	local_irq_restore(flags);
++}
++
++
+ static void tick_nohz_account_idle_ticks(struct tick_sched *ts)
+ {
+ #ifndef CONFIG_VIRT_CPU_ACCOUNTING
+@@ -623,7 +668,7 @@ void tick_nohz_idle_exit(void)
+ 
+ 	if (ts->tick_stopped) {
+ 		select_nohz_load_balancer(0);
+-		tick_nohz_restart_sched_tick(ts, now);
++		__tick_nohz_restart_sched_tick(ts, now);
+ 		tick_nohz_account_idle_ticks(ts);
+ 	}
+ 
+@@ -784,7 +829,6 @@ void tick_check_idle(int cpu)
+ }
+ 
+ #ifdef CONFIG_CPUSETS_NO_HZ
+-
+ /*
+  * Take the timer duty if nobody is taking care of it.
+  * If a CPU already does and and it's in a nohz cpuset,
+@@ -803,6 +847,29 @@ static void tick_do_timer_check_handler(int cpu)
+ 	}
+ }
+ 
++void tick_nohz_check_adaptive(void)
++{
++	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++
++	if (ts->tick_stopped && !is_idle_task(current)) {
++		if (!sched_can_stop_tick())
++			tick_nohz_restart_sched_tick();
++	}
++}
++
++void tick_nohz_post_schedule(void)
++{
++	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++
++	/*
++	 * No need to disable irqs here. The worst that can happen
++	 * is an irq that comes and restart the tick before us.
++	 * tick_nohz_restart_sched_tick() is irq safe.
++	 */
++	if (ts->tick_stopped)
++		tick_nohz_restart_sched_tick();
++}
++
+ #else
+ 
+ static void tick_do_timer_check_handler(int cpu)
+@@ -849,6 +916,7 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
+ 	 * no valid regs pointer
+ 	 */
+ 	if (regs) {
++		int user = user_mode(regs);
+ 		/*
+ 		 * When we are idle and the tick is stopped, we have to touch
+ 		 * the watchdog as we might not schedule for a really long
+@@ -862,7 +930,7 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
+ 			if (idle_cpu(cpu))
+ 				ts->idle_jiffies++;
+ 		}
+-		update_process_times(user_mode(regs));
++		update_process_times(user);
+ 		profile_tick(CPU_PROFILING);
+ 	}
+ 
 -- 
 1.7.5.4
 
