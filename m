@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426Ab2D3Iim (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 04:38:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361Ab2D3Iil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 04:38:41 -0400
-Date: Mon, 30 Apr 2012 11:38:25 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Alexander Graf <agraf@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        KVM <kvm@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        X86 <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Xen <xen-devel@lists.xensource.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC V6 1/5] kvm hypervisor : Add a hypercall to KVM
- hypervisor to support pv-ticketlocks
-Message-ID: <20120430083825.GD15413@redhat.com>
-References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com>
- <20120423095947.30893.84029.sendpatchset@codeblue.in.ibm.com>
- <20120424095923.GS15413@redhat.com>
- <4F9D3F8B.9010805@redhat.com>
- <20120429132030.GB15413@redhat.com>
- <4F9D417D.1050105@redhat.com>
- <20120429135227.GC15413@redhat.com>
- <4F9E4BCA.5030604@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9E4BCA.5030604@redhat.com>
+	id S1755411Ab2D3Il0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 04:41:26 -0400
+Received: from www17.your-server.de ([213.133.104.17]:32910 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753828Ab2D3IlY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 04:41:24 -0400
+Message-ID: <1335775271.1363.4.camel@localhost.localdomain>
+Subject: Re: [PATCH v2] Introduce a version6 of autofs interface, to fix
+ design error.
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        autofs@vger.kernel.org, raven@themaw.net, stable@kernel.org
+Date: Mon, 30 Apr 2012 10:41:11 +0200
+In-Reply-To: <4F9D9C4C.7000904@msgid.tls.msk.ru>
+References: <20120427.151433.1007849975903946491.davem@davemloft.net>
+	 <20120427.151651.2274764174217164454.davem@davemloft.net>
+	 <CA+55aFzPbAprx-iT0TYh24uS7+JnL92mbTg_js6Cd_O0q+Dvmw@mail.gmail.com>
+	 <20120427.152404.2292425516870981391.davem@davemloft.net>
+	 <CA+55aFzGO+PHmjjVgxnYawbB-wFAqHtkh19vTv1AwQNpc9MsWg@mail.gmail.com>
+	 <20120427234215.079a1565@pyramind.ukuu.org.uk>
+	 <CA+55aFxq4TunFa8mqJk5MHfvvFSg7Dr54acW7Cnqc5amOPdqrg@mail.gmail.com>
+	 <CA+55aFzdEcfXVXXqCumVJo=9+fK+1HvH6L4qY03HfTTvCs1Fwg@mail.gmail.com>
+	 <4F9CE18C.2060806@msgid.tls.msk.ru>
+	 <CA+55aFyS9VYT50JAXeGrLrtFVWSGr+DMTA1hhrcPYzmjrSV5+A@mail.gmail.com>
+	 <4F9CF191.5020607@msgid.tls.msk.ru>
+	 <CA+55aFzJjk8vvY7au-aUOJqJaRaFT3zqP0_H9JXS2Y93wkXwEg@mail.gmail.com>
+	 <CA+55aFwTUDsefBd9c-wp8jrnp4tOh6jyJkjc_UZut-J6FHSF+w@mail.gmail.com>
+	 <4F9D9C4C.7000904@msgid.tls.msk.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 11:22:34AM +0300, Avi Kivity wrote:
-> On 04/29/2012 04:52 PM, Gleb Natapov wrote:
-> > On Sun, Apr 29, 2012 at 04:26:21PM +0300, Avi Kivity wrote:
-> > > On 04/29/2012 04:20 PM, Gleb Natapov wrote:
-> > > > > > This is too similar to kvm_irq_delivery_to_apic(). Why not reuse it. We
-> > > > > > can use one of reserved delivery modes as PV delivery mode. We will
-> > > > > > disallow guest to trigger it through apic interface, so this will not be
-> > > > > > part of ABI and can be changed at will.
-> > > > > >
-> > > > > 
-> > > > > I'm not thrilled about this.  Those delivery modes will eventually
-> > > > > become unreserved.  We can have a kvm_lookup_apic_id() that is shared
-> > > > > among implementations.
-> > > > > 
-> > > > This is only internal implementation. If they become unreserved we will
-> > > > use something else.
-> > > >
-> > > 
-> > > Yeah, I'm thinking of that time.  Why do something temporary and fragile?
-> > > 
-> > Why is it fragile? Just by unreserving the value Intel will not break
-> > KVM. Only when KVM will implement apic feature that unreserves the value
-> > we will have to change internal implementation and use another value,
-> > but this will be done by the same patch that does unreserving. The
-> > unreserving may even never happen. 
+Am Sonntag, den 29.04.2012, 23:53 +0400 schrieb Michael Tokarev:
+> On 29.04.2012 23:09, Linus Torvalds wrote:
+> > 
+> > This keeps Alan's idea of using O_DIRECT, but only makes it matter for
+> > the writer - because now the "packet" thing is a per-pipe-buffer state
+> > (we already had per-pipe-buffer flags, so this is not anything new).
+> > So when you *write* using a O_DIRECT pipe, it will create packetized
+> > buffers, and the reader just sees that directly.
+> > 
+> > So this should "just work", and doesn't need any extra flags in the
+> > pipe_inode_info. And the user space interface remains the same: you
+> > can create these packet pipes with "pipe2(fd, O_DIRECT)" if you want
+> > to, and my test-program gives exactly the same output.
 > 
-> Some remains of that may leak somewhere.
-I do not see where. APIC code should #GP if a guest attempts to set
-reserved values through APIC interface, or at least ignore them.
+> Ok.  I verified this on 3.3 kernel (with the original fix reverted),
+> and now both autofs5 and systemd works.
 
->                                           Why not add an extra
-> parameter?
-Yes, we can add extra parameter to "struct kvm_lapic_irq" and propagate it to
-__apic_accept_irq(). We can do that now, or when Intel unreserve all
-reserved values. I prefer the later since I do not believe it will
-happen in observable feature.
+hi,
 
->              Or do something like
-> 
-> kvm_for_each_apic_dest(vcpu, apic_destination) {
->       ...
-> }
-> 
-> That can be reused in both the apic code and pv kick.
-> 
-That's exactly what kvm_irq_delivery_to_apic() is.
+I can also confirm that "autofs: make the autofsv5 packet file
+descriptor use a packetized pipe" and "pipes: add a "packetized pipe"
+mode for writing" on top of 3.3.4 works correctly at least with the
+autofs feature of systemd.
 
-> > Meanwhile kvm_irq_delivery_to_apic()
-> > will likely be optimized to use hash for unicast delivery and unhalt
-> > hypercall will benefit from it immediately.
-> 
-> Overloading delivery mode is not the only way to achieve sharing.
-> 
-It is simplest and most straightforward with no demonstratable drawbacks :)
-Adding parameter to "struct kvm_lapic_irq" is next best thing.
+And sorry for the delayed answer, but I've been away from the internet
+for a few days.
 
---
-			Gleb.
+and a big sorry for all the trouble...
+
+with kind regards
+thomas
+
