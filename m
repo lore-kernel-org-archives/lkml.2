@@ -1,148 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab2D3Vge (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 17:36:34 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:46269 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756454Ab2D3Vgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 17:36:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
-Date: Mon, 30 Apr 2012 23:41:12 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201204292244.16467.rjw@sisk.pl> <CAErSpo7oGWNVeT6OCgaFdb_+uPAumggE-Z+OdnH=9aW+_N3B6g@mail.gmail.com>
-In-Reply-To: <CAErSpo7oGWNVeT6OCgaFdb_+uPAumggE-Z+OdnH=9aW+_N3B6g@mail.gmail.com>
+	id S1756873Ab2D3Vhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 17:37:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40236 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454Ab2D3Vhb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 17:37:31 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204302341.12528.rjw@sisk.pl>
+In-Reply-To: <201204302325.09505.rjw@sisk.pl>
+References: <1335816551-27756-1-git-send-email-ccross@android.com>
+	<201204302325.09505.rjw@sisk.pl>
+Date: Mon, 30 Apr 2012 14:37:30 -0700
+X-Google-Sender-Auth: jKhEt0-VjptSrfjjbw7xapaUTmQ
+Message-ID: <CAMbhsRRReyiv2LgUNgp6XiW07V8Eb0gd4fb7W6nBjMZ1FpmOBQ@mail.gmail.com>
+Subject: Re: [PATCHv3 0/5] coupled cpuidle state support
+From: Colin Cross <ccross@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
+        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 30, 2012, Bjorn Helgaas wrote:
-> On Sun, Apr 29, 2012 at 2:44 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Oleksij Rempel <bug-track@fisher-privat.net>
-> >
-> > This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
-> > more closely and fixes suspend bug found on ASUS Zenbook UX31E.
-> >
-> > Some OEM use _SxD fileds do blacklist brocken Dx states.
-> > If _SxD/_SxW return values are check before suspend as appropriate,
-> > some nasty suspend/resume issues may be avoided.
-> >
-> > References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
-> > Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> >
-> > Bjorn, Len,
-> >
-> > This is -stable material and therefore v3.4 as well, IMO.  Please let me
-> > know if one of you can take it or whether you want me to handle it all the
-> > way to Linus.
-> 
-> I'm OK with this from a PCI perspective.  Most of the change is in
-> ACPI, so I propose that either you or Len take care of it.
-> 
-> The second paragraph of the changelog has several typos
-> (fileds/fields, do/to, brocken/broken, etc).
+On Mon, Apr 30, 2012 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Hi,
+>
+> I have a comment, which isn't about the series itself, but something
+> thay may be worth thinking about.
+>
+> On Monday, April 30, 2012, Colin Cross wrote:
+>> On some ARM SMP SoCs (OMAP4460, Tegra 2, and probably more), the
+>> cpus cannot be independently powered down, either due to
+>> sequencing restrictions (on Tegra 2, cpu 0 must be the last to
+>> power down), or due to HW bugs (on OMAP4460, a cpu powering up
+>> will corrupt the gic state unless the other cpu runs a work
+>> around).  Each cpu has a power state that it can enter without
+>> coordinating with the other cpu (usually Wait For Interrupt, or
+>> WFI), and one or more "coupled" power states that affect blocks
+>> shared between the cpus (L2 cache, interrupt controller, and
+>> sometimes the whole SoC).  Entering a coupled power state must
+>> be tightly controlled on both cpus.
+>
+> That seems to be a special case of a more general situation where
+> a number of CPU cores belong into a single power domain, possibly along
+> some I/O devices.
+>
+> We'll need to handle the general case at one point anyway, so I wonder if
+> the approach shown here may get us in the way?
 
-Thanks for spotting that, the version below should be better.
+I can't parse what you're saying here.
 
-I'll wait for Len to respond till Friday and will take care of the patch myself
-if he doesn't say anything.
+>> The easiest solution to implementing coupled cpu power states is
+>> to hotplug all but one cpu whenever possible, usually using a
+>> cpufreq governor that looks at cpu load to determine when to
+>> enable the secondary cpus.  This causes problems, as hotplug is an
+>> expensive operation, so the number of hotplug transitions must be
+>> minimized, leading to very slow response to loads, often on the
+>> order of seconds.
+>
+> This isn't a solution at all, rather a workaround and a poor one for that
+> matter.
 
-May I assume an ACK from you?
+Yes, which is what started me on this series.
 
-Rafael
+>> This patch series implements an alternative solution, where each
+>> cpu will wait in the WFI state until all cpus are ready to enter
+>> a coupled state, at which point the coupled state function will
+>> be called on all cpus at approximately the same time.
+>>
+>> Once all cpus are ready to enter idle, they are woken by an smp
+>> cross call.
+>
+> Is it really necessary to wake up all of the CPUs in WFI before
+> going to deeper idle?  We should be able to figure out when they
+> are going to be needed next time without waking them up and we should
+> know the latency to wake up from the deeper multi-CPU "C-state",
+> so it should be possible to decide whether or not to go to deeper
+> idle without the SMP cross call.  Is there anything I'm missing here?
 
----
-From: Oleksij Rempel <bug-track@fisher-privat.net>
-Subject: ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
+The decision to go to the lower state has already been made when the
+cross call occurs.  On the platforms I have worked directly with so
+far (Tegra2 and OMAP4460), the secondary cpu needs to execute code
+before the primary cpu turns off the power.  For example, on OMAP4460,
+the secondary cpu needs to go from WFI (clock gated) to OFF (power
+gated), because OFF is not supported as an individual cpu state due to
+a ROM code bug.  To do that transition, it needs to come out of WFI,
+set up it's power domain registers, save a bunch of state, and
+transition to OFF.
 
-This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
-more closely and fixes suspend bug found on ASUS Zenbook UX31E.
+On Tegra3, the deepest individual cpu state for cpus 1-3 is OFF, the
+same state the cpu would go into as the first step of a transition to
+a deeper power state (cpus 0-3 OFF).  It would be more optimal in that
+case to bypass the SMP cross call, and leave the cpu in OFF, but that
+would require some way of disabling all wakeups for the secondary cpus
+and then verifying that they didn't start waking up just before the
+wakeups were disabled.  I have just started considering this
+optimization, but I don't see anything in the existing code that would
+prevent adding it later.
 
-Some OEM use _SxD fields to blacklist broken device Dx states, so
-if _SxD/_SxW return values are checked before suspend as appropriate,
-some nasty suspend/resume issues may be avoided.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
-Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/acpi/sleep.c |   22 +++++++++++++++++++++-
- drivers/pci/pci.c    |   12 +++++++++++-
- 2 files changed, 32 insertions(+), 2 deletions(-)
-
-Index: linux/drivers/acpi/sleep.c
-===================================================================
---- linux.orig/drivers/acpi/sleep.c
-+++ linux/drivers/acpi/sleep.c
-@@ -720,10 +720,30 @@ int acpi_pm_device_sleep_state(struct de
- 	 *
- 	 * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
- 	 * provided -- that's our fault recovery, we ignore retval.
-+	 *
-+	 * According to ACPI 4.0a (April 5, 2010), page 294,
-+	 * Table 7-7 S3 Action / Result Table, we need to evaluate _SxW in
-+	 * addition to _SxD if the device is configured for wakeup:
-+	 * Desired Action    | _S3D | _PRW | _S3W | Resultant D-state
-+	 * Enter S3          |  N/A |  D/C |  N/A | OSPM decides
-+	 * Enter S3, No Wake |   2  |  D/C |  D/C | Enter D2 or D3
-+	 * Enter S3, Wake    |   2  |   3  |  N/A | Enter D2
-+	 * Enter S3, Wake    |   2  |   3  |   3  | Enter D2 or D3
-+	 * Enter S3, Wake    |  N/A |   3  |   2  | Enter D0, D1 or D2
- 	 */
--	if (acpi_target_sleep_state > ACPI_STATE_S0)
-+	if (acpi_target_sleep_state > ACPI_STATE_S0) {
-+		acpi_status status;
-+
- 		acpi_evaluate_integer(handle, acpi_method, NULL, &d_min);
- 
-+		if (device_may_wakeup(dev)) {
-+			acpi_method[3] = 'W';
-+			status = acpi_evaluate_integer(handle, acpi_method,
-+						       NULL, &d_max);
-+			if (ACPI_FAILURE(status))
-+				d_max = d_min;
-+		}
-+	}
- 	/*
- 	 * If _PRW says we can wake up the system from the target sleep state,
- 	 * the D-state returned by _SxD is sufficient for that (we assume a
-Index: linux/drivers/pci/pci.c
-===================================================================
---- linux.orig/drivers/pci/pci.c
-+++ linux/drivers/pci/pci.c
-@@ -1691,10 +1691,20 @@ pci_power_t pci_target_state(struct pci_
- {
- 	pci_power_t target_state = PCI_D3hot;
- 
--	if (platform_pci_power_manageable(dev)) {
-+	/*
-+	 * According to ACPI 4.0a,7.2 Device Power Management Objects, device
-+	 * with wake capability should have _PRW or _PSW object and can have
-+	 * _SxD or _SxW object.
-+	 * It looks like some OEMs use this fields to avoid buggy Dx states
-+	 * of devices, so we need to check for _PRW or _PSW and see if _SxD or
-+	 * _SxW indicate to overwrite Dx.
-+	 */
-+	if (platform_pci_power_manageable(dev)
-+	    || platform_pci_can_wakeup(dev)) {
- 		/*
- 		 * Call the platform to choose the target state of the device
- 		 * and enable wake-up from this state if supported.
-+		 * (Check _SxD and _SxW)
- 		 */
- 		pci_power_t state = platform_pci_choose_state(dev);
- 
+A simple measurement using the tracing may show that it is
+unnecessary.  If the wakeup time for CPU1 to go from OFF to active is
+small there might be no need to optimize out the extra wakeup.
