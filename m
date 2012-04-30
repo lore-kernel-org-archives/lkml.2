@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756972Ab2D3Uhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:37:47 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:37362 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756803Ab2D3Uho (ORCPT
+	id S1756905Ab2D3Uiz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:38:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35968 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756716Ab2D3Uix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:37:44 -0400
-Date: Mon, 30 Apr 2012 22:37:43 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org
-Subject: Re: [patch 00/29] init_task: Use a generic init_task variant
-Message-ID: <20120430203743.GA8934@merkur.ravnborg.org>
-References: <20120430194725.763322463@linutronix.de>
+	Mon, 30 Apr 2012 16:38:53 -0400
+Date: Mon, 30 Apr 2012 22:38:50 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Chen Liqin <liqin.chen@sunplusct.com>
+Subject: Re: [patch 21/29] score: Use generic init_task
+In-Reply-To: <4F9EF43C.3090608@gmail.com>
+Message-ID: <alpine.LFD.2.02.1204302238120.6271@ionos>
+References: <20120430194725.763322463@linutronix.de> <20120430194846.862605948@linutronix.de> <4F9EF43C.3090608@gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120430194725.763322463@linutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 08:15:50PM -0000, Thomas Gleixner wrote:
-> All architectures do roughly the same to initialize init_task. The
-> only architecture which deviates is ia64, but I could not figure out
-> why it couldn't use the same setup as all other architectures.
-> 
-> The following series converts all archs to a generic version.
-> 
-> Thanks,
-> 
-> 	tglx
-> ---
->  arch/um/kernel/init_task.c          |   38 -------------------
->  arch/unicore32/kernel/init_task.c   |   44 ----------------------
->  arch/x86/kernel/init_task.c         |   42 ---------------------
->  arch/xtensa/kernel/init_task.c      |   31 ---------------
->  tip/arch/um/kernel/um_arch.c        |    5 ++
->  tip/arch/unicore32/Makefile         |    1 
->  tip/arch/unicore32/kernel/Makefile  |    2 -
->  tip/arch/x86/Makefile               |    1 
->  tip/arch/x86/kernel/Makefile        |    2 -
->  tip/arch/x86/kernel/process.c       |    9 ++++
->  tip/arch/xtensa/kernel/Makefile     |    2 -
->  tip/kernel/sched/Makefile           |    4 --
->  tip/kernel/sched/init_task.c        |   24 ++++++++++++
+On Mon, 30 Apr 2012, KOSAKI Motohiro wrote:
 
-Diffstat looks funny. Some tip stuff sneaked in.
-Also I am missing patch 1..
+> (4/30/12 4:16 PM), Thomas Gleixner wrote:
+> > Same code. Use the generic version.
+> > 
+> > Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
+> > Cc: Chen Liqin<liqin.chen@sunplusct.com>
+> > ---
+> >   arch/score/Kconfig         |    1 +
+> >   arch/score/kernel/Makefile |    2 +-
+> >   2 files changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > Index: tip/arch/score/Kconfig
+> > ===================================================================
+> > --- tip.orig/arch/score/Kconfig
+> > +++ tip/arch/score/Kconfig
+> > @@ -9,6 +9,7 @@ config SCORE
+> >          select HAVE_MEMBLOCK_NODE_MAP
+> >          select ARCH_DISCARD_MEMBLOCK
+> >          select GENERIC_CPU_DEVICES
+> > +       select HAVE_GENERIC_INIT_TASK
+> > 
+> >   choice
+> >   	prompt "System type"
+> > Index: tip/arch/score/kernel/Makefile
+> > ===================================================================
+> > --- tip.orig/arch/score/kernel/Makefile
+> > +++ tip/arch/score/kernel/Makefile
+> > @@ -4,7 +4,7 @@
+> > 
+> >   extra-y	:= head.o vmlinux.lds
+> > 
+> > -obj-y += entry.o init_task.o irq.o process.o ptrace.o \
+> > +obj-y += entry.o irq.o process.o ptrace.o \
+> >   	setup.o signal.o sys_score.o time.o traps.o \
+> >   	sys_call_table.o
+> 
+> Almost patches delete arch specific init-task. But this patch doesn't.
+> Is this really intentional?
 
-	Sam
+Not really. I missed it :( Will fix.
+
+Thanks,
+
+	tglx
+
