@@ -1,107 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819Ab2D3IHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 04:07:06 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:52839 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367Ab2D3IHC (ORCPT
+	id S1753255Ab2D3IPY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 04:15:24 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39056 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab2D3IPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 04:07:02 -0400
-Date: Mon, 30 Apr 2012 10:06:37 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Message-ID: <20120430100637.299b67b3@de.ibm.com>
-In-Reply-To: <20120429041205.GY6871@ZenIV.linux.org.uk>
-References: <20120424072617.GB6871@ZenIV.linux.org.uk>
-	<20120426183742.GA324@redhat.com>
-	<20120426231942.GJ6871@ZenIV.linux.org.uk>
-	<20120427172444.GA30267@redhat.com>
-	<20120427184528.GL6871@ZenIV.linux.org.uk>
-	<20120427202002.8ED632C0BF@topped-with-meat.com>
-	<20120427211244.GO6871@ZenIV.linux.org.uk>
-	<20120427212729.652542C0AF@topped-with-meat.com>
-	<20120427231526.GP6871@ZenIV.linux.org.uk>
-	<20120427233235.GQ6871@ZenIV.linux.org.uk>
-	<20120429041205.GY6871@ZenIV.linux.org.uk>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12043008-8372-0000-0000-000002686E2B
+	Mon, 30 Apr 2012 04:15:22 -0400
+Date: Mon, 30 Apr 2012 10:15:13 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
+        Jason Uhlenkott <juhlenko@akamai.com>,
+        Tim Small <tim@buttersideup.com>,
+        Ranganathan Desikan <ravi@jetztechnologies.com>,
+        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Egor Martovetsky <egor@pasemi.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hitoshi Mitake <h.mitake@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Niklas =?iso-8859-1?Q?S=F6derlund?= 
+	<niklas.soderlund@ericsson.com>,
+        Shaohui Xie <Shaohui.Xie@freescale.com>,
+        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to work
+ with layers
+Message-ID: <20120430081513.GD8182@aftab.osrc.amd.com>
+References: <1335289087-11337-1-git-send-email-mchehab@redhat.com>
+ <1335291342-14922-1-git-send-email-mchehab@redhat.com>
+ <20120427133304.GE9626@aftab.osrc.amd.com>
+ <4F9ABCEC.9090807@redhat.com>
+ <20120428090523.GD26065@aftab.osrc.amd.com>
+ <4F9D46F8.1020104@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F9D46F8.1020104@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 29 Apr 2012 05:12:05 +0100
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
-
-> On Sat, Apr 28, 2012 at 12:32:35AM +0100, Al Viro wrote:
-> > On Sat, Apr 28, 2012 at 12:15:26AM +0100, Al Viro wrote:
+On Sun, Apr 29, 2012 at 10:49:44AM -0300, Mauro Carvalho Chehab wrote:
+> > [   10.486440] EDAC MC: DCT0 chip selects:
+> > [   10.486443] EDAC amd64: MC: 0:  2048MB 1:  2048MB
+> > [   10.486445] EDAC amd64: MC: 2:  2048MB 3:  2048MB
+> > [   10.486448] EDAC amd64: MC: 4:     0MB 5:     0MB
+> > [   10.486450] EDAC amd64: MC: 6:     0MB 7:     0MB
+> > [   10.486453] EDAC DEBUG: amd64_debug_display_dimm_sizes: F2x180 (DRAM Bank Address Mapping): 0x00000088
+> > [   10.486455] EDAC MC: DCT1 chip selects:
+> > [   10.486458] EDAC amd64: MC: 0:  2048MB 1:  2048MB
+> > [   10.486460] EDAC amd64: MC: 2:  2048MB 3:  2048MB
+> > [   10.486463] EDAC amd64: MC: 4:     0MB 5:     0MB
+> > [   10.486465] EDAC amd64: MC: 6:     0MB 7:     0MB
+> > [   10.486467] EDAC amd64: using x8 syndromes.
+> > [   10.486469] EDAC DEBUG: amd64_dump_dramcfg_low: F2x190 (DRAM Cfg Low): 0x00083100
+> > [   10.486472] EDAC DEBUG: amd64_dump_dramcfg_low:   DIMM type: buffered; all DIMMs support ECC: yes
+> > [   10.486475] EDAC DEBUG: amd64_dump_dramcfg_low:   PAR/ERR parity: enabled
+> > [   10.486478] EDAC DEBUG: amd64_dump_dramcfg_low:   DCT 128bit mode width: 64b
+> > [   10.486481] EDAC DEBUG: amd64_dump_dramcfg_low:   x4 logical DIMMs present: L0: yes L1: yes L2: no L3: no
+> > [   10.486485] EDAC DEBUG: f1x_early_channel_count: Data width is not 128 bits - need more decoding
+> > [   10.486488] EDAC amd64: MCT channel count: 2
+> > [   10.486493] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc(): allocating 3692 bytes for mci data (16 ranks, 16 csrows/channels)
+> > [   10.486501] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 0: rank0 (0:0:0): row 0, chan 0
+> > [   10.486506] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 1: rank1 (0:1:0): row 0, chan 1
+> > [   10.486510] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 2: rank2 (1:0:0): row 1, chan 0
+> > [   10.486514] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 3: rank3 (1:1:0): row 1, chan 1
+> > [   10.486518] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 4: rank4 (2:0:0): row 2, chan 0
+> > [   10.486522] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 5: rank5 (2:1:0): row 2, chan 1
+> > [   10.486526] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 6: rank6 (3:0:0): row 3, chan 0
+> > [   10.486530] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 7: rank7 (3:1:0): row 3, chan 1
+> > [   10.486534] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 8: rank8 (4:0:0): row 4, chan 0
+> > [   10.486538] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 9: rank9 (4:1:0): row 4, chan 1
+> > [   10.486542] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 10: rank10 (5:0:0): row 5, chan 0
+> > [   10.486546] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 11: rank11 (5:1:0): row 5, chan 1
+> > [   10.486550] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 12: rank12 (6:0:0): row 6, chan 0
+> > [   10.486554] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 13: rank13 (6:1:0): row 6, chan 1
+> > [   10.486558] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 14: rank14 (7:0:0): row 7, chan 0
+> > [   10.486562] EDAC DEBUG: new_edac_mc_alloc: new_edac_mc_alloc: 15: rank15 (7:1:0): row 7, chan 1
 > > 
-> > > I think all such architectures need that check lifted to do_notify_resume()
-> > > (and the rest needs it killed, of course).  Including x86, by the look
-> > > of it - we _probably_ can't get there with TIF_NOTIFY_RESUME and
-> > > !user_mode(regs), but I'm not entirely sure of that.  arm is in about the
-> > > same situation; alpha, ppc{32,64}, sparc{32,64} and m68k really can't get
-> > > there like that (they all check it in the asm glue).  mips probably might,
-> > > unless I'm misreading their ret_from_fork()...  Fun.
+> > DCT0 has 4 ranks + DCT1 also 4 ranks = 8 ranks total.
 > > 
-> > 	Speaking of user_mode() oddities - may I politely inquire what had
-> > been smoked to inspire this (in arch/s390/kernel/signal.c):
-> >         /* This is the legacy signal stack switching. */
-> >         else if (!user_mode(regs) &&
-> >                  !(ka->sa.sa_flags & SA_RESTORER) &&
-> >                  ka->sa.sa_restorer) {
-> >                 sp = (unsigned long) ka->sa.sa_restorer;
-> >         }
-> > especially when all paths leading to that come through do_signal() that does
-> >         if (!user_mode(regs))
-> >                 return;
-> > on the same regs.  It had been like that since 2.3.99pre8 when s390 went
-> > into the tree...  It looks vaguely similar to i386
-> >                         /* This is the legacy signal stack switching. */
-> >                         if ((regs->ss & 0xffff) != __USER_DS &&
-> >                                 !(ka->sa.sa_flags & SA_RESTORER) &&
-> >                                         ka->sa.sa_restorer)
-> >                                 sp = (unsigned long) ka->sa.sa_restorer;
-> > but there the code is at least not unreachable...
+> > Now your change is showing 16 ranks. Still b0rked.
+> > 
+> No, DCT0+DCT1 have 16 ranks, 8 filled and 8 empty. So, it is OK.
 > 
-> While we are at it, can we *ever* reach do_signal() (nevermind deep in its
-> guts) with !user_mode(regs)?
-> AFAICS, for 31bit possible paths are:
-> do_signal()
-> 	<- sysc_sigpending
-> 		<- sysc_work
-> 			<- sysc_tif, having checked for user_mode(%r11)
-> 	<- io_sigpending
-> 		<- io_work_tif
-> 			<- io_work_user
-> 				<- io_work, having checked for user_mode(%r11)
-> 
-> and identical for 64bit.  *All* paths into do_signal() go through
->         tm      __PT_PSW+1(%r11),0x01   # returning to user ?
-> and proceed towards do_signal() only if the bit is set.  Which is precisely
-> what user_mode(%r11) is...
-> 
-> What the hell is going on in that code?
+> As I said before when you've pointed this bug (likel at v3 review), edac_mc_alloc
+> doesn't know how many ranks are filled, as the driver logic first calls it to 
+> allocate for the max amount of ranks, and then fills the rank with their info 
+> (or let them untouched with 0 pages, if they're empty).
 
-Cut-copy-paste from x86. You are correct that do_signal is only ever called
-with user_mode(regs) == 1. This allows us to remove the !user_mode() check
-in do_signal and the SA_RESTORER thingy in get_sigframe. I once contemplated
-to remove the SA_RESTORER option altogether, because a user space restorer
-does not make much sense for s390. The user space restorer needs to 
-1) restore all registers, and 2) branch back to the interrupted code.
-For 2) we need a register which makes 1) impossible to do.
-I still have that patch lying around on my hard drive.
+Basically you're saying you're generating dimm_info structs for all
+_possible_ dimms and the loop where this debug message comes from goes
+and marrily initializes them all although some of them are empty:
+
++       for (i = 0; i < tot_dimms; i++) {
++               chan = &csi[row].channels[chn];
++               dimm = EDAC_DIMM_PTR(lay, mci->dimms, n_layers,
++                              pos[0], pos[1], pos[2]);
++               dimm->mci = mci;
++
++               debugf2("%s: %d: dimm%zd (%d:%d:%d): row %d, chan %d\n", __func__,
++                       i, (dimm - mci->dimms),
++                       pos[0], pos[1], pos[2], row, chn);
++
++               /* Copy DIMM location */
++               for (j = 0; j < n_layers; j++)
++                       dimm->location[j] = pos[j];
+...
+
+definitely superfluous.
+
+Oh well, looking at edac_mc_alloc, it used to allocate structs for all
+csrows on the controller even though some of them were empty...
+
+Ok, then please remove this debug call because it is misleading. Having
+
+[   10.486493] EDAC DEBUG: new_edac_mc_alloc: allocating 3692 bytes for mci data (16 ranks, 16 csrows/channels)
+
+is enough.
+
+You probably want to say how many channels/csrows there are, though:
+
+[   10.486493] EDAC DEBUG: new_edac_mc_alloc: allocating 3692 bytes for mci data (16 ranks, 8 csrows, 2 channels)
+
+or something similar. Simply dump tot_dimms, tot_channels and tot_csrows
+and that's it.
 
 -- 
-blue skies,
-   Martin.
+Regards/Gruss,
+Boris.
 
-"Reality continues to ruin my life." - Calvin.
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
