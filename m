@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab2D3QRR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 12:17:17 -0400
-Received: from [124.207.24.138] ([124.207.24.138]:46680 "EHLO
-	mail.ss.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506Ab2D3QRQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 12:17:16 -0400
-Subject: [PATCH v2] xen/apic: implement io apic read with hypercall
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 01 May 2012 00:16:27 +0800
-Message-ID: <1335802587.4746.2.camel@chief-river-32>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756203Ab2D3QTH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 12:19:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21868 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752115Ab2D3QTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 12:19:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="135223443"
+Date: Mon, 30 Apr 2012 19:19:41 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: coretemp: fix oops on cpu unplug
+Message-ID: <20120430161941.GA3167@otc-wbsnb-06>
+References: <1335791881-1560-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1335799690.2351.100.camel@groeck-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335799690.2351.100.camel@groeck-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implements xen_io_apic_read with hypercall, so it returns proper
-IO-APIC information instead of fabricated one.
+On Mon, Apr 30, 2012 at 08:28:10AM -0700, Guenter Roeck wrote:
+> Hi,
+> 
+> good catch. Couple of problems, though.
+> 
+> First, what number of cores are we talking about ? We should probably
+> increase NUM_REAL_CORES as well. Long term, we should get rid of the
+> dependency to prevent that problem from happening again, but that is a
+> different issue.
 
-Fallback to return an emulated IO_APIC values if hypercall fails.
+It triggered by another bug. Cores on my 10-core processor have ids 0, 1,
+2, 8, 9, 16, 17, 18, 24, 25. :-/
+No need to change NUM_REAL_CORES at the moment.
 
-Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
----
+> Second, we'll need the same code in get_core_online(). Otherwise the
+> platform device can be created for the new core (if the core is
+> re-enabled) but will never be deleted.
 
-v2: fallback to return an emulated IO_APIC values if hypercall fails
+It has already handled in create_core_data().
 
- arch/x86/xen/apic.c |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/xen/apic.c b/arch/x86/xen/apic.c
-index aee16ab..1913bf2 100644
---- a/arch/x86/xen/apic.c
-+++ b/arch/x86/xen/apic.c
-@@ -1,14 +1,27 @@
- #include <linux/init.h>
- #include <asm/x86_init.h>
-+#include <asm/apic.h>
-+#include <xen/interface/physdev.h>
-+#include <asm/xen/hypercall.h>
- 
- unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
- {
-+	struct physdev_apic apic_op;
-+	int ret;
-+
-+	apic_op.apic_physbase = mpc_ioapic_addr(apic);
-+	apic_op.reg = reg;
-+	ret = HYPERVISOR_physdev_op(PHYSDEVOP_apic_read, &apic_op);
-+	if (!ret)
-+		return apic_op.value;
-+
-+	/* fallback to return an emulated IO_APIC values */
- 	if (reg == 0x1)
- 		return 0x00170020;
- 	else if (reg == 0x0)
- 		return apic << 24;
- 
--	return 0xff;
-+	return 0xfd;
- }
- 
- void __init xen_init_apic(void)
 -- 
-1.7.9
-
-
-
+ Kirill A. Shutemov
