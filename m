@@ -1,65 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab2D3Tw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 15:52:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62465 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454Ab2D3TwZ (ORCPT
+	id S1756585Ab2D3Tyj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 15:54:39 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:51897 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756418Ab2D3Tyh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 15:52:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] Move most arches to asm-generic/current.h
-Date: Mon, 30 Apr 2012 19:52:17 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-References: <1335237509-17113-1-git-send-email-sboyd@codeaurora.org> <201204301638.29398.arnd@arndb.de> <4F9EC6E9.9000102@codeaurora.org>
-In-Reply-To: <4F9EC6E9.9000102@codeaurora.org>
+	Mon, 30 Apr 2012 15:54:37 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204301952.17755.arnd@arndb.de>
-X-Provags-ID: V02:K0:Q2a4jVf84aIpZM+VNcZajlCB2KKpPtm6XiazKcndxLi
- TYNB4H8YizQwKBd4ubIXMJp7ZOEfoXiFUFm0WiaR/xuEzMmLc7
- aLOYfUZpRVSoy7dWCVHfYM4lack98C5I2plaIjFDvt340tv5rO
- 6UvzBmrHByH27SkyRPp6ztOjRsEBE7wkjSizFYtbikTENLjCN0
- sluSOAZjTbjLAggxu5fevl+qs7+nRwmkIbNV7paelJBH898w7w
- xhnhhsyoCgocpLCDOmKvcQ2Bh3q/XKshPSb786PqUz8QLr3irl
- JhdmL4OVs6TRnfP3H29tbDd/2AoEm0x4RuLlFXsWoj3Zb5IMI1
- S+/BPG/t6/aXyeFpNwfk=
+In-Reply-To: <1335138820-26590-1-git-send-email-glommer@parallels.com>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+	<1335138820-26590-1-git-send-email-glommer@parallels.com>
+Date: Mon, 30 Apr 2012 12:54:36 -0700
+Message-ID: <CABCjUKC9aY2DYcRJH3ZANxHdJFs_rTviKMt_P6ePJKuERWzpUQ@mail.gmail.com>
+Subject: Re: [PATCH 12/23] slab: pass memcg parameter to kmem_cache_create
+From: Suleiman Souhlal <suleiman@google.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        fweisbec@gmail.com, Greg Thelen <gthelen@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 April 2012, Stephen Boyd wrote:
-> My compile of
-> alpha with the kernel.org 4.6.3 compilers doesn't show any new build
-> failures than what is already there:
-> 
->   LD      .tmp_vmlinux1
-> drivers/built-in.o: In function `ide_set_disk_chs':
-> drivers/ide/ide.c:269:(.text+0x732a8): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:269:(.text+0x732b0): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:267:(.text+0x73310): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:267:(.text+0x73318): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/built-in.o: In function `ide_dev_apply_params':
-> drivers/ide/ide.c:299:(.text+0x73714): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:303:(.text+0x73724): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:308:(.text+0x73734): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide.c:315:(.text+0x73744): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/built-in.o: In function `unexpected_intr':
-> drivers/ide/ide-io.c:734:(.text+0x74dfc): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide-io.c:736:(.text+0x74e00): relocation truncated to fit: GPREL16 against `.sbss'
-> drivers/ide/ide-io.c:734:(.text+0x74e10): additional relocation overflows omitted from the output
-> make[1]: *** [.tmp_vmlinux1] Error 1
-> make: *** [sub-make] Error 2
-> 
+On Sun, Apr 22, 2012 at 4:53 PM, Glauber Costa <glommer@parallels.com> wrote:
+> Allow a memcg parameter to be passed during cache creation.
+>
+> Default function is created as a wrapper, passing NULL
+> to the memcg version. We only merge caches that belong
+> to the same memcg.
+>
+> This code was mostly written by Suleiman Souhlal and
+> only adapted to my patchset, plus a couple of simplifications
+>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
+> ---
+>  mm/slab.c |   38 +++++++++++++++++++++++++++++---------
+>  1 files changed, 29 insertions(+), 9 deletions(-)
+>
+> diff --git a/mm/slab.c b/mm/slab.c
+> index a0d51dd..362bb6e 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -2287,14 +2287,15 @@ static int __init_refok setup_cpu_cache(struct kmem_cache *cachep, gfp_t gfp)
+>  * cacheline.  This can be beneficial if you're counting cycles as closely
+>  * as davem.
+>  */
+> -struct kmem_cache *
+> -kmem_cache_create (const char *name, size_t size, size_t align,
+> -       unsigned long flags, void (*ctor)(void *))
+> +static struct kmem_cache *
+> +__kmem_cache_create(struct mem_cgroup *memcg, const char *name, size_t size,
+> +                   size_t align, unsigned long flags, void (*ctor)(void *))
+>  {
+> -       size_t left_over, slab_size, ralign;
+> +       size_t left_over, orig_align, ralign, slab_size;
+>        struct kmem_cache *cachep = NULL, *pc;
+>        gfp_t gfp;
+>
+> +       orig_align = align;
+>        /*
+>         * Sanity checks... these are all serious usage bugs.
+>         */
+> @@ -2311,7 +2312,6 @@ kmem_cache_create (const char *name, size_t size, size_t align,
+>         */
+>        if (slab_is_available()) {
+>                get_online_cpus();
+> -               mutex_lock(&cache_chain_mutex);
+>        }
+>
+>        list_for_each_entry(pc, &cache_chain, next) {
+> @@ -2331,9 +2331,9 @@ kmem_cache_create (const char *name, size_t size, size_t align,
+>                        continue;
+>                }
+>
+> -               if (!strcmp(pc->name, name)) {
+> +               if (!strcmp(pc->name, name) && !memcg) {
+>                        printk(KERN_ERR
+> -                              "kmem_cache_create: duplicate cache %s\n", name);
+> +                       "kmem_cache_create: duplicate cache %s\n", name);
+>                        dump_stack();
+>                        goto oops;
+>                }
+> @@ -2434,6 +2434,9 @@ kmem_cache_create (const char *name, size_t size, size_t align,
+>        cachep->nodelists = (struct kmem_list3 **)&cachep->array[nr_cpu_ids];
+>
+>        set_obj_size(cachep, size);
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +       cachep->memcg_params.orig_align = orig_align;
+> +#endif
+>  #if DEBUG
+>
+>        /*
+> @@ -2541,7 +2544,12 @@ kmem_cache_create (const char *name, size_t size, size_t align,
+>                BUG_ON(ZERO_OR_NULL_PTR(cachep->slabp_cache));
+>        }
+>        cachep->ctor = ctor;
+> -       cachep->name = name;
+> +       cachep->name = (char *)name;
+> +
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +       mem_cgroup_register_cache(memcg, cachep);
+> +       atomic_set(&cachep->memcg_params.refcnt, 1);
+> +#endif
 
-Ok, if you were hitting the problem that I remember, you would not get
-anything to build at all.
+cache_cache probably doesn't get its id registered correctly. :-(
+We might need to add a mem_cgroup_register_cache() call to kmem_cache_init().
 
-	Arnd
+-- Suleiman
