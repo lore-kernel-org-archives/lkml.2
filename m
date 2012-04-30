@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757057Ab2D3UQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:16:56 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:26331
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757044Ab2D3UQx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:16:53 -0400
-X-SpamScore: -10
-X-BigFish: VS-10(zz9371I542M1432N98dKzz1202hzz8275bhz2fh2a8h683h839h944hd25he82m)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] hid-hyperv: Do not use hid_parse_report() directly
-Thread-Topic: [PATCH 1/3] hid-hyperv: Do not use hid_parse_report() directly
-Thread-Index: AQHNIIISoGIXwPSreEylDeUG4WKTVpauZU4AgAV02sA=
-Date: Mon, 30 Apr 2012 20:15:45 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF92E072B@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1335097300-11881-1-git-send-email-rydberg@euromail.se>
- <1335097300-11881-2-git-send-email-rydberg@euromail.se>
- <alpine.LNX.2.00.1204271052330.1856@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1204271052330.1856@pobox.suse.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.53.133]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT005.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%EUROMAIL.SE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC105.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC105.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+	id S1757075Ab2D3URW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:17:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35806 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756916Ab2D3UQG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 16:16:06 -0400
+Message-Id: <20120430194847.171921818@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Mon, 30 Apr 2012 20:16:04 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-arch@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: [patch 26/29] unicore32: Use generic init_task
+References: <20120430194725.763322463@linutronix.de>
+Content-Disposition: inline; filename=unicore-use-generic-init-task.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Same code. Use the generic version. The special Makefile treatment is
+pointless anyway as init_task.o contains only data which is handled by
+the linker script. So no point on being treated like head text.
 
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+---
+ arch/unicore32/Kconfig            |    1 
+ arch/unicore32/Makefile           |    1 
+ arch/unicore32/kernel/Makefile    |    2 -
+ arch/unicore32/kernel/init_task.c |   44 --------------------------------------
+ 4 files changed, 2 insertions(+), 46 deletions(-)
 
-> -----Original Message-----
-> From: Jiri Kosina [mailto:jkosina@suse.cz]
-> Sent: Friday, April 27, 2012 4:53 AM
-> To: Henrik Rydberg
-> Cc: Dmitry Torokhov; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org;
-> KY Srinivasan
-> Subject: Re: [PATCH 1/3] hid-hyperv: Do not use hid_parse_report() directly
-> 
-> On Sun, 22 Apr 2012, Henrik Rydberg wrote:
-> 
-> > Upcoming changes will split the semantics of hid_parse_report()
-> > and hid_parse(), so make sure drivers use hid_parse() in probe().
-> >
-> > Compiled, not tested.
-> >
-> > Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> 
-> KY, could I please get your Ack/Tested-by for this patch?
-
-Done.
-
-Tested-and-acked-by:  K. Y. Srinivasan <kys@microsoft.com>
-
-K. Y
+Index: tip/arch/unicore32/Kconfig
+===================================================================
+--- tip.orig/arch/unicore32/Kconfig
++++ tip/arch/unicore32/Kconfig
+@@ -13,6 +13,7 @@ config UNICORE32
+ 	select GENERIC_IRQ_SHOW
+ 	select ARCH_WANT_FRAME_POINTERS
+ 	select GENERIC_IOMAP
++	select HAVE_GENERIC_INIT_TASK
+ 	help
+ 	  UniCore-32 is 32-bit Instruction Set Architecture,
+ 	  including a series of low-power-consumption RISC chip
+Index: tip/arch/unicore32/Makefile
+===================================================================
+--- tip.orig/arch/unicore32/Makefile
++++ tip/arch/unicore32/Makefile
+@@ -33,7 +33,6 @@ endif
+ CHECKFLAGS		+= -D__unicore32__
  
-
+ head-y			:= arch/unicore32/kernel/head.o
+-head-y			+= arch/unicore32/kernel/init_task.o
+ 
+ core-y			+= arch/unicore32/kernel/
+ core-y			+= arch/unicore32/mm/
+Index: tip/arch/unicore32/kernel/Makefile
+===================================================================
+--- tip.orig/arch/unicore32/kernel/Makefile
++++ tip/arch/unicore32/kernel/Makefile
+@@ -29,4 +29,4 @@ obj-$(CONFIG_PUV3_NB0916)	+= puv3-nb0916
+ head-y				:= head.o
+ obj-$(CONFIG_DEBUG_LL)		+= debug.o
+ 
+-extra-y				:= $(head-y) init_task.o vmlinux.lds
++extra-y				:= $(head-y) vmlinux.lds
+Index: tip/arch/unicore32/kernel/init_task.c
+===================================================================
+--- tip.orig/arch/unicore32/kernel/init_task.c
++++ /dev/null
+@@ -1,44 +0,0 @@
+-/*
+- * linux/arch/unicore32/kernel/init_task.c
+- *
+- * Code specific to PKUnity SoC and UniCore ISA
+- *
+- * Copyright (C) 2001-2010 GUAN Xue-tao
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/fs.h>
+-#include <linux/sched.h>
+-#include <linux/init.h>
+-#include <linux/init_task.h>
+-#include <linux/mqueue.h>
+-#include <linux/uaccess.h>
+-
+-#include <asm/pgtable.h>
+-
+-static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
+-static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
+-/*
+- * Initial thread structure.
+- *
+- * We need to make sure that this is 8192-byte aligned due to the
+- * way process stacks are handled. This is done by making sure
+- * the linker maps this in the .text segment right after head.S,
+- * and making head.S ensure the proper alignment.
+- *
+- * The things we do for performance..
+- */
+-union thread_union init_thread_union __init_task_data = {
+-	INIT_THREAD_INFO(init_task) };
+-
+-/*
+- * Initial task structure.
+- *
+- * All other task structs will be allocated on slabs in fork.c
+- */
+-struct task_struct init_task = INIT_TASK(init_task);
+-EXPORT_SYMBOL(init_task);
 
 
