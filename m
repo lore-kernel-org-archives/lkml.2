@@ -1,59 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab2D3UI7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:08:59 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:34853 "HELO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755439Ab2D3UI6 (ORCPT
+	id S1756803Ab2D3UJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:09:27 -0400
+Received: from mail-gy0-f202.google.com ([209.85.160.202]:52098 "EHLO
+	mail-gy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756723Ab2D3UJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:08:58 -0400
-From: Ge Gao <ggao@invensense.com>
-MIME-Version: 1.0
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac0nDQI0TkWkBUyAT3uTpNK9biVmog==
-Date: Mon, 30 Apr 2012 13:08:54 -0700
-Message-ID: <4f675c805256ce92bcc9d694ab89e411@mail.gmail.com>
-Subject: different data rate in IIO ?
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 30 Apr 2012 16:09:20 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-pm@lists.linux-foundation.org,
+        Kevin Hilman <khilman@ti.com>, Len Brown <len.brown@intel.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>
+Subject: [PATCHv3 0/5] coupled cpuidle state support
+Date: Mon, 30 Apr 2012 13:09:06 -0700
+Message-Id: <1335816551-27756-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
-I am currently developing a driver for a chip that has gyro, accelerometer
-and compass sensor together and these sensor data could come at different
-rate. There could be more data coming from this chip because this chip has
-on-chip CPU to do some data processing. The IIO subsystem is in some sense
-"fixed" once "enable" is 1. "Fixed" means the element and sequence inside
-ring buffer is fixed. For example, if MPU9150, which is a 9-axis chip,
-containing gyro, accelerometer and compass, is developed, the ring buffer
-would have byte_per_datum of 32 bytes(6 + 6 + 6  = 18; 18 rounding up to
-24; and 24 plus timestamp) if all sensors and all axis are enabled . So
-every data packet should contain this amount of data no matter what. If I
-have gyro running at 200 HZ, accelerometer running at 100Hz and compass
-running at 50 Hz, this will have problems. Because I can't provide
-accelerometer data and compass data for each packet. Some packets could
-miss data. I have to fake data for these packets, either by repeating or
-other non-standard ways.  Is this supposed to be? Because we could have
-other data item which is even slower(10HZ quaternion data, for example).
-This way, it will be more trouble. Because each data element has different
-rate, while IIO needs them at the same rate.
-                The best way is to have a header for each packet to
-indicate what packet it is. But this way seems to violate the design goal
-of IIO.  That would be more like input subsystem because input subsystem
-uses different code type to distinguish different type of data thus
-allowing different data type mixed together. If such driver is written,
-all files under "scan_element" would be meaningless and useless.
-	I got some suggestions about using multiple IIO devices in one
-driver because one IIO device can only has one ring buffer. It could be OK
-to handle this. However, since IIO device allocation is to allocate the
-private data directly along with IIO device, it seems one IIO driver can
-only have one IIO device. Could IIO kernel accept such practice that one
-IIO driver has more than one IIO device? Or could there be some changes in
-the IIO code such that such scenario is taken care of in the future?
-Thanks.
+On some ARM SMP SoCs (OMAP4460, Tegra 2, and probably more), the
+cpus cannot be independently powered down, either due to
+sequencing restrictions (on Tegra 2, cpu 0 must be the last to
+power down), or due to HW bugs (on OMAP4460, a cpu powering up
+will corrupt the gic state unless the other cpu runs a work
+around).  Each cpu has a power state that it can enter without
+coordinating with the other cpu (usually Wait For Interrupt, or
+WFI), and one or more "coupled" power states that affect blocks
+shared between the cpus (L2 cache, interrupt controller, and
+sometimes the whole SoC).  Entering a coupled power state must
+be tightly controlled on both cpus.
 
-Ge
+The easiest solution to implementing coupled cpu power states is
+to hotplug all but one cpu whenever possible, usually using a
+cpufreq governor that looks at cpu load to determine when to
+enable the secondary cpus.  This causes problems, as hotplug is an
+expensive operation, so the number of hotplug transitions must be
+minimized, leading to very slow response to loads, often on the
+order of seconds.
+
+This patch series implements an alternative solution, where each
+cpu will wait in the WFI state until all cpus are ready to enter
+a coupled state, at which point the coupled state function will
+be called on all cpus at approximately the same time.
+
+Once all cpus are ready to enter idle, they are woken by an smp
+cross call.  At this point, there is a chance that one of the
+cpus will find work to do, and choose not to enter suspend.  A
+final pass is needed to guarantee that all cpus will call the
+power state enter function at the same time.  During this pass,
+each cpu will increment the ready counter, and continue once the
+ready counter matches the number of online coupled cpus.  If any
+cpu exits idle, the other cpus will decrement their counter and
+retry.
+
+To use coupled cpuidle states, a cpuidle driver must:
+
+   Set struct cpuidle_device.coupled_cpus to the mask of all
+   coupled cpus, usually the same as cpu_possible_mask if all cpus
+   are part of the same cluster.  The coupled_cpus mask must be
+   set in the struct cpuidle_device for each cpu.
+
+   Set struct cpuidle_device.safe_state to a state that is not a
+   coupled state.  This is usually WFI.
+
+   Set CPUIDLE_FLAG_COUPLED in struct cpuidle_state.flags for each
+   state that affects multiple cpus.
+
+   Provide a struct cpuidle_state.enter function for each state
+   that affects multiple cpus.  This function is guaranteed to be
+   called on all cpus at approximately the same time.  The driver
+   should ensure that the cpus all abort together if any cpu tries
+   to abort once the function is called.
+
+This series has been tested by implementing a test cpuidle state
+that uses the parallel barrier helper function to verify that
+all cpus call the function at the same time.
+
+This patch set has a few disadvantages over the hotplug governor,
+but I think they are all fairly minor:
+   * Worst-case interrupt latency can be increased.  If one cpu
+     receives an interrupt while the other is spinning in the
+     ready_count loop, the second cpu will be stuck with
+     interrupts off until the first cpu finished processing
+     its interrupt and exits idle.  This will increase the worst
+     case interrupt latency by the worst-case interrupt processing
+     time, but should be very rare.
+   * Interrupts are processed while still inside pm_idle.
+     Normally, interrupts are only processed at the very end of
+     pm_idle, just before it returns to the idle loop.  Coupled
+     states requires processing interrupts inside
+     cpuidle_enter_state_coupled in order to distinguish between
+     the smp_cross_call from another cpu that is now idle and an
+     interrupt that should cause idle to exit.
+     I don't see a way to fix this without either being able to
+     read the next pending irq from the interrupt chip, or
+     querying the irq core for which interrupts were processed.
+   * Since interrupts are processed inside cpuidle, the next
+     timer event could change.  The new timer event will be
+     handled correctly, but the idle state decision made by
+     the governor will be out of date, and will not be revisited.
+     The governor select function could be called again every time,
+     but this could lead to a lot of work being done by an idle
+     cpu if the other cpu was mostly busy.
+
+v2:
+   * removed the coupled lock, replacing it with atomic counters
+   * added a check for outstanding pokes before beginning the
+     final transition to avoid extra wakeups
+   * made the cpuidle_coupled struct completely private
+   * fixed kerneldoc comment formatting
+   * added a patch with a helper function for resynchronizing
+     cpus after aborting idle
+   * added a patch (not for merging) to add trace events for
+     verification and performance testing
+
+v3:
+   * rebased on v3.4-rc4 by Santosh
+   * fixed decrement in cpuidle_coupled_cpu_set_alive
+   * updated tracing patch to remove unnecessary debugging so
+     it can be merged
+   * made tracing _rcuidle
+
+This series has been tested and reviewed by Santosh and Kevin
+for OMAP4, which has a cpuidle series ready for 3.5, and Tegra
+and Exynos5 patches are in progress.  I think this is ready to
+go in.  Lean, are you maintaining a cpuidle tree for linux-next?
+If not, I can publish a tree for linux-next, or this could go in
+through Arnd's tree.
