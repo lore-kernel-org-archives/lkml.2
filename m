@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281Ab2D3Wku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 18:40:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58037 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756603Ab2D3Wks convert rfc822-to-8bit (ORCPT
+	id S1757349Ab2D3Wqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 18:46:51 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:52225 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756846Ab2D3Wqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 18:40:48 -0400
+	Mon, 30 Apr 2012 18:46:50 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6697"; a="184106963"
+Message-ID: <4F9F1659.1010804@codeaurora.org>
+Date: Mon, 30 Apr 2012 15:46:49 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120420 Thunderbird/12.0
 MIME-Version: 1.0
-In-Reply-To: <4F9F0AF3.8060409@fold.natur.cuni.cz>
-References: <4F9F02A0.9020207@fold.natur.cuni.cz>
-	<4F9F0AF3.8060409@fold.natur.cuni.cz>
-Date: Mon, 30 Apr 2012 15:40:48 -0700
-X-Google-Sender-Auth: TIOxcTcbxWvsEl1Vl1CO_yrPVvM
-Message-ID: <CAE9FiQXuR7QJnvZxS7amXW=Z2e49tgrY6-5dHmq2LR1a+yiVdA@mail.gmail.com>
-Subject: Re: linux-3.4-rc5: Oops in klist_del()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: linux-pci@vger.kernel.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Turquette, Mike" <mturquette@ti.com>
+CC: Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>, h@pengutronix.de,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
+References: <1335419936-10881-1-git-send-email-skannan@codeaurora.org> <4F98EB10.2000505@codeaurora.org> <20120426084201.GF17184@pengutronix.de> <4d67387a86d99cbb4e2acf68d3588b1c.squirrel@www.codeaurora.org> <20120426095135.GG17184@pengutronix.de> <4F9EE84C.90106@codeaurora.org> <CAJOA=zNCagT6GaeHi_jq7-LU9P-SfJZ8PA9bo-oeswjC0tHyYA@mail.gmail.com>
+In-Reply-To: <CAJOA=zNCagT6GaeHi_jq7-LU9P-SfJZ8PA9bo-oeswjC0tHyYA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 2:58 PM, Martin Mokrejs
-<mmokrejs@fold.natur.cuni.cz> wrote:
-> Martin Mokrejs wrote:
->> Hi,
->>   I was removing an ExpressCard with a NEC chipset used by xhci_hcd and the kernel crashed
->> on my Dell Vostro 3550 laptop. Its express slot chipset somehow does not report properly
->> that a card was unplugged, as discussed earlier here on linux-pci under Subject
->> "Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe".
+On 04/30/2012 03:19 PM, Turquette, Mike wrote:
+> On Mon, Apr 30, 2012 at 12:30 PM, Saravana Kannan
+> <skannan@codeaurora.org>  wrote:
+>> Mike, Shawn, Paul, Rob,
 >>
->>   Maybe this helps somebody to find the cause? Here is a bit of the attached Oops snapshot
->> stacktrace:
->>
->> klist_del
->> fdevice_del
->> device_unregister
->> pci_stop_bus_device
->> pci_stop_and_remove_bus_device
->> devehp_unconfigure_device
->> pciehp_disable_slot
->> ? pciehp_disable_slot
->> pciehp_power_thread
->> process_one_work
->> worker_thriad
->> ? manage_workers.clone
->> ? manage_workers.clone
->> kthrerd
->> ...
+>> Comments? Can we pull this in?
 >
-> This is 100% reproducible. It happens with 3.4-rc5 and 3.3.4 kernels while not with 3.2.14.
-> I did not have the external enclosure earlier but repeated unplugs/re-plugs of the NEC-based
-> expresscard were/are just not enough to trigger the Oops. One needs the ASMedia2105 in addition.
+> Saravana,
 >
-> To hit the Ooops, the disk has to be *RE-detected* and unplugged (so not its very first plugin).
-> Express card removal after the very first plugin says usually something about the surprise
-> removal. When I re-plug the disk, it gets detected, and it removal hits the Ooops. I am attaching
-> dmesg from 3.2.14 kernel which does not have the problem. You can see how many times I did remove
-> and re-plug the card. If I waited long ebough for xhci_hcd to timeout waiting for the unplugged
-> device, it says
+> I will test this a bit more thoroughly tomorrow and get back to you.
 >
-> xhci_hcd 0000:11:00.0: Timeout while waiting for configure endpoint command
-> xHCI xhci_drop_endpoint called for root hub
-> xHCI xhci_check_bandwidth called for root hub
-> xhci_hcd 0000:11:00.0: USB bus 5 deregistered
-> xhci_hcd 0000:11:00.0: PCI INT A disabled
->
-> and then, subsequent re-plug of the card with the disk attached results in detected SCSI device.
-> In contrast, if I re-plug the express card earlier express card slot change is reported but the
-> disc is not detected (something is blocked in xhci_hcd I think).
->
-> The above stacktrace (of actually the camera snapshot is not the first stacktrace, unfortunately).
-> I see there are 2-3 screen scrolled away. Hmm, but I do not have anything what could be used as
-> a remote console ...
+> Thanks,
+> Mike
 
-So if you use "echo 1 > /sys/.../0000:11.00.0/remove" before surprise
-remove the card,
+Thanks Mike!
 
-the oops would not happen?
+I'm still hoping a Ack/Nack for the general idea from the others.
 
-Yinghai
+-Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
