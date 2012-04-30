@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab2D3UVs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:21:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35733 "EHLO
+	id S1757055Ab2D3UWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:22:05 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35729 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756680Ab2D3UP5 (ORCPT
+	with ESMTP id S1756836Ab2D3UP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Apr 2012 16:15:57 -0400
-Message-Id: <20120430194846.102079052@linutronix.de>
+Message-Id: <20120430194846.041305423@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Mon, 30 Apr 2012 20:15:56 -0000
+Date: Mon, 30 Apr 2012 20:15:55 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-arch@vger.kernel.org, Yoshinori Sato <ysato@users.sourceforge.jp>
-Subject: [patch 09/29] h8300: Use generic init_task
+Cc: linux-arch@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: [patch 08/29] frv: Use generic init_task
 References: <20120430194725.763322463@linutronix.de>
-Content-Disposition: inline; filename=h8300-use-generic-idle-task.patch
+Content-Disposition: inline; filename=frv-use-generic-idle-task.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -23,49 +23,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Same code. Use the generic version.
+Same code. Use the generic version. The special Makefile treatment is
+pointless anyway as init_task.o contains only data which is handled by
+the linker script. So no point on being treated like head text.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: David Howells <dhowells@redhat.com>
 ---
- arch/h8300/Kconfig            |    1 +
- arch/h8300/kernel/Makefile    |    2 +-
- arch/h8300/kernel/init_task.c |   36 ------------------------------------
- 3 files changed, 2 insertions(+), 37 deletions(-)
+ arch/frv/Kconfig            |    1 +
+ arch/frv/Makefile           |    2 +-
+ arch/frv/kernel/Makefile    |    2 +-
+ arch/frv/kernel/init_task.c |   32 --------------------------------
+ 4 files changed, 3 insertions(+), 34 deletions(-)
 
-Index: tip/arch/h8300/Kconfig
+Index: tip/arch/frv/Kconfig
 ===================================================================
---- tip.orig/arch/h8300/Kconfig
-+++ tip/arch/h8300/Kconfig
-@@ -5,6 +5,7 @@ config H8300
- 	select HAVE_GENERIC_HARDIRQS
+--- tip.orig/arch/frv/Kconfig
++++ tip/arch/frv/Kconfig
+@@ -9,6 +9,7 @@ config FRV
  	select GENERIC_IRQ_SHOW
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
  	select GENERIC_CPU_DEVICES
 +	select HAVE_GENERIC_INIT_TASK
  
- config SYMBOL_PREFIX
- 	string
-Index: tip/arch/h8300/kernel/Makefile
+ config ZONE_DMA
+ 	bool
+Index: tip/arch/frv/Makefile
 ===================================================================
---- tip.orig/arch/h8300/kernel/Makefile
-+++ tip/arch/h8300/kernel/Makefile
-@@ -6,7 +6,7 @@ extra-y := vmlinux.lds
+--- tip.orig/arch/frv/Makefile
++++ tip/arch/frv/Makefile
+@@ -81,7 +81,7 @@ ifdef CONFIG_DEBUG_INFO
+ KBUILD_AFLAGS	+= -Wa,--gdwarf2
+ endif
  
- obj-y := process.o traps.o ptrace.o irq.o \
- 	 sys_h8300.o time.o signal.o \
--         setup.o gpio.o init_task.o syscalls.o \
-+         setup.o gpio.o syscalls.o \
- 	 entry.o timer/
+-head-y		:= arch/frv/kernel/head.o arch/frv/kernel/init_task.o
++head-y		:= arch/frv/kernel/head.o
  
- obj-$(CONFIG_MODULES) += module.o h8300_ksyms.o 
-Index: tip/arch/h8300/kernel/init_task.c
+ core-y		+= arch/frv/kernel/ arch/frv/mm/
+ libs-y		+= arch/frv/lib/
+Index: tip/arch/frv/kernel/Makefile
 ===================================================================
---- tip.orig/arch/h8300/kernel/init_task.c
+--- tip.orig/arch/frv/kernel/Makefile
++++ tip/arch/frv/kernel/Makefile
+@@ -5,7 +5,7 @@
+ heads-y				:= head-uc-fr401.o head-uc-fr451.o head-uc-fr555.o
+ heads-$(CONFIG_MMU)		:= head-mmu-fr451.o
+ 
+-extra-y:= head.o init_task.o vmlinux.lds
++extra-y:= head.o vmlinux.lds
+ 
+ obj-y := $(heads-y) entry.o entry-table.o break.o switch_to.o kernel_thread.o \
+ 	 kernel_execve.o process.o traps.o ptrace.o signal.o dma.o \
+Index: tip/arch/frv/kernel/init_task.c
+===================================================================
+--- tip.orig/arch/frv/kernel/init_task.c
 +++ /dev/null
-@@ -1,36 +0,0 @@
--/*
-- *  linux/arch/h8300/kernel/init_task.c
-- */
+@@ -1,32 +0,0 @@
 -#include <linux/mm.h>
 -#include <linux/module.h>
 -#include <linux/sched.h>
@@ -77,27 +90,26 @@ Index: tip/arch/h8300/kernel/init_task.c
 -#include <asm/uaccess.h>
 -#include <asm/pgtable.h>
 -
+-
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
 -/*
-- * Initial task structure.
-- *
-- * All other task structs will be allocated on slabs in fork.c
-- */
--__asm__(".align 4");
--struct task_struct init_task = INIT_TASK(init_task);
--
--EXPORT_SYMBOL(init_task);
--
--/*
 - * Initial thread structure.
 - *
-- * We need to make sure that this is 8192-byte aligned due to the
+- * We need to make sure that this is THREAD_SIZE aligned due to the
 - * way process stacks are handled. This is done by having a special
 - * "init_task" linker map entry..
 - */
 -union thread_union init_thread_union __init_task_data =
 -	{ INIT_THREAD_INFO(init_task) };
 -
+-/*
+- * Initial task structure.
+- *
+- * All other task structs will be allocated on slabs in fork.c
+- */
+-struct task_struct init_task = INIT_TASK(init_task);
+-
+-EXPORT_SYMBOL(init_task);
 
 
