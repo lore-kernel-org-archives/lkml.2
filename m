@@ -1,100 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab2D3FOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 01:14:48 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35923 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab2D3FOr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 01:14:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <1334704072.616.152.camel@ted>
-References: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
- <1334660025-20442-2-git-send-email-bryan.wu@canonical.com>
- <20120417155241.0f619a9a.akpm@linux-foundation.org> <1334704072.616.152.camel@ted>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Mon, 30 Apr 2012 13:14:26 +0800
-X-Google-Sender-Auth: mgSJaFctOMFb5uVgo6LNHKD79_0
-Message-ID: <CAK5ve-L_o8tr1CGkv4doNQdSXyoqnWkk8jZmkE585Z++CZDAmQ@mail.gmail.com>
-Subject: Re: [PATCH 01/18] led-triggers: create a trigger for CPU activity
-To: Richard Purdie <richard.purdie@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, arnd.bergmann@linaro.org,
-        nicolas.pitre@linaro.org, tim.gardner@canonical.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752412Ab2D3F0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 01:26:24 -0400
+Received: from gate.crashing.org ([63.228.1.57]:45860 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751012Ab2D3F0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 01:26:23 -0400
+Message-ID: <1335763568.20866.37.camel@pasglop>
+Subject: Re: [REGRESSION][PATCH V4 3/3] bpf jit: Let the powerpc jit handle
+ negative offsets
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: kaffeemonster@googlemail.com
+Cc: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
+        matt@ozlabs.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Mon, 30 Apr 2012 15:26:08 +1000
+In-Reply-To: <4F9E188E.80503@googlemail.com>
+References: <4F75CA89.4010709@googlemail.com>
+	 <4F75D2A5.7060407@googlemail.com>
+	 <20120403.180302.342779808900865443.davem@davemloft.net>
+	 <1333491102.3040.12.camel@pasglop> <1335753820.20866.27.camel@pasglop>
+	 <1335759088.20866.32.camel@pasglop> <4F9E1496.9060603@googlemail.com>
+	 <1335760199.20866.33.camel@pasglop> <4F9E188E.80503@googlemail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 7:07 AM, Richard Purdie
-<richard.purdie@linuxfoundation.org> wrote:
-> On Tue, 2012-04-17 at 15:52 -0700, Andrew Morton wrote:
->> On Tue, 17 Apr 2012 18:53:28 +0800
->> Bryan Wu <bryan.wu@canonical.com> wrote:
->> > +    * ignores CPU hotplug, but after this CPU hotplug works
->> > +    * fine with this trigger.
->> > +    */
->> > +   for_each_possible_cpu(cpu) {
->> > +           struct led_trigger *trig;
->> > +           char *name = per_cpu(trig_name, cpu);
->> > +           struct rw_semaphore *lock = &per_cpu(trig_lock, cpu);
->> > +
->> > +           init_rwsem(lock);
->> > +
->> > +           snprintf(name, MAX_NAME_LEN, "cpu%d", cpu);
->> > +
->> > +           down_write(lock);
->> > +           led_trigger_register_simple(name, &trig);
->>
->> OK, problem.
->>
->> led_trigger_register_simple() calls kzalloc() and
->> led_trigger_register(), both of which can fail.
->> led_trigger_register_simple() just returns void, failing to propagate
->> the error back.  This is bad, and we (ie you ;)) should fix
->> led_trigger_register_simple() before proceeding to use it.  If at all
->> possible.  Please.  Let us not propagate the badness further.  Sorry.
->
-> FWIW, this was really the way led_trigger_register_simple() was designed
-> to work. It's original use was adding a trigger into other subsystems
-> which didn't want a ton of LED code so it had the simple form:
->
-> xxx = led_trigger_register_simple(name, &trig);
->
 
-Richard, currently the led_trigger_register_simple() just return void,
-so xxx here is wrong.
+> No idea, i was going by the old saying:
+> "Thou shall not include kernel header, or you will feel the wrath of angry
+> kernel gurus."
 
-> where xxx could then be unregistered later equally simply and safely in
-> one line. It didn't seem to make sense to pass the error around as it
-> didn't really matter to the code it was being used in.
->
-> I guess we could return an error pointer and check for that at
-> unregister time in led_trigger_unregister_simple().
->
+Heh :-)
 
-I also agree we don't need take care of failure in the caller as
-led_trigger_register_simple() will take care of that.
+Well, googling around, it looks like there's a mix of both type of
+programs out there. Those using a struct bpf_program and those using a
+struct soft_fprog.
 
->>
->> > +           char *name = per_cpu(trig_name, cpu);
->> > +
->> > +           led_trigger_unregister_simple(trig);
->>
->> And what happens if led_trigger_register_simple() had silently failed
->> to register this trigger?  afacit, nothing: your code handles the
->> trig==NULL case OK.  Still, we should be checking for those failures!
->
-> FWIW, led_trigger_unregister_simple() will deal with NULL safely.
->
+Only the latter will work on BE machines as far as I can tell.
 
-I will update my patches according to Andrew's comments shortly.
+David, what's the right way to fix that ?
 
-Thanks,
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Cheers,
+Ben.
+
+
