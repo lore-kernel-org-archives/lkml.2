@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189Ab2D3UTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 16:19:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35769 "EHLO
+	id S1757209Ab2D3UTO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 16:19:14 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35765 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756858Ab2D3UQC (ORCPT
+	with ESMTP id S1756878Ab2D3UQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 16:16:02 -0400
-Message-Id: <20120430194846.659416196@linutronix.de>
+	Mon, 30 Apr 2012 16:16:01 -0400
+Message-Id: <20120430194846.596835207@linutronix.de>
 User-Agent: quilt/0.48-1
 Date: Mon, 30 Apr 2012 20:16:00 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-arch@vger.kernel.org, "James E.J. Bottomley" <jejb@parisc-linux.org>
-Subject: [patch 18/29] parisc: Use generic init_task
+Cc: linux-arch@vger.kernel.org, Jonas Bonn <jonas@southpole.se>
+Subject: [patch 17/29] openrisc: Use generic init_task
 References: <20120430194725.763322463@linutronix.de>
-Content-Disposition: inline; filename=parisc-use-generic-init-task.patch
+Content-Disposition: inline; filename=openrisc-use-generic-init-task.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -23,133 +23,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Same code, except: The alignment of init_thread_union is handled via
-the linker script, so no point to have it with the data structure. The
-extra asm(".data") looks like a leftover from an asm to C conversion
-and is pointless.
-
-Use the generic version.
-
-Move the page table data to parisc/mm/init.c and get rid of
-parisc/../init_task.c
+Same code. Use the generic version. The special Makefile treatment is
+pointless anyway as init_task.o contains only data which is handled by
+the linker script. So no point on being treated like head text.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Jonas Bonn <jonas@southpole.se>
 ---
- arch/parisc/Kconfig            |    1 
- arch/parisc/kernel/init_task.c |   70 -----------------------------------------
- arch/parisc/mm/init.c          |   12 +++++++
- 3 files changed, 13 insertions(+), 70 deletions(-)
+ arch/openrisc/Kconfig            |    1 
+ arch/openrisc/Makefile           |    2 -
+ arch/openrisc/kernel/Makefile    |    2 -
+ arch/openrisc/kernel/init_task.c |   42 ---------------------------------------
+ 4 files changed, 3 insertions(+), 44 deletions(-)
 
-Index: tip/arch/parisc/Kconfig
+Index: tip/arch/openrisc/Kconfig
 ===================================================================
---- tip.orig/arch/parisc/Kconfig
-+++ tip/arch/parisc/Kconfig
-@@ -18,6 +18,7 @@ config PARISC
- 	select IRQ_PER_CPU
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_SMP_IDLE_THREAD
+--- tip.orig/arch/openrisc/Kconfig
++++ tip/arch/openrisc/Kconfig
+@@ -17,6 +17,7 @@ config OPENRISC
+ 	select GENERIC_IOMAP
+ 	select GENERIC_CPU_DEVICES
+ 	select GENERIC_ATOMIC64
 +	select HAVE_GENERIC_INIT_TASK
  
- 	help
- 	  The PA-RISC microprocessor is designed by Hewlett-Packard and used
-Index: tip/arch/parisc/kernel/init_task.c
+ config MMU
+ 	def_bool y
+Index: tip/arch/openrisc/Makefile
 ===================================================================
---- tip.orig/arch/parisc/kernel/init_task.c
+--- tip.orig/arch/openrisc/Makefile
++++ tip/arch/openrisc/Makefile
+@@ -38,7 +38,7 @@ else
+ 	KBUILD_CFLAGS += $(call cc-option,-msoft-div)
+ endif
+ 
+-head-y 		:= arch/openrisc/kernel/head.o arch/openrisc/kernel/init_task.o
++head-y 		:= arch/openrisc/kernel/head.o
+ 
+ core-y		+= arch/openrisc/lib/ \
+ 		   arch/openrisc/kernel/ \
+Index: tip/arch/openrisc/kernel/Makefile
+===================================================================
+--- tip.orig/arch/openrisc/kernel/Makefile
++++ tip/arch/openrisc/kernel/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the linux kernel.
+ #
+ 
+-extra-y	:= head.o vmlinux.lds init_task.o
++extra-y	:= head.o vmlinux.lds
+ 
+ obj-y	:= setup.o idle.o or32_ksyms.o process.o dma.o \
+ 	   traps.o time.o irq.o entry.o ptrace.o signal.o sys_or32.o \
+Index: tip/arch/openrisc/kernel/init_task.c
+===================================================================
+--- tip.orig/arch/openrisc/kernel/init_task.c
 +++ /dev/null
-@@ -1,70 +0,0 @@
--/* 
-- *    Static declaration of "init" task data structure.
+@@ -1,42 +0,0 @@
+-/*
+- * OpenRISC init_task.c
 - *
-- *    Copyright (C) 2000 Paul Bame <bame at parisc-linux.org>
-- *    Copyright (C) 2000-2001 John Marvin <jsm at parisc-linux.org>
-- *    Copyright (C) 2001 Helge Deller <deller @ parisc-linux.org>
-- *    Copyright (C) 2002 Matthew Wilcox <willy with parisc-linux.org>
+- * Linux architectural port borrowing liberally from similar works of
+- * others.  All original copyrights apply as per the original source
+- * declaration.
 - *
+- * Modifications for the OpenRISC architecture:
+- * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
+- * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
 - *
-- *    This program is free software; you can redistribute it and/or modify
-- *    it under the terms of the GNU General Public License as published by
-- *    the Free Software Foundation; either version 2 of the License, or
-- *    (at your option) any later version.
-- *
-- *    This program is distributed in the hope that it will be useful,
-- *    but WITHOUT ANY WARRANTY; without even the implied warranty of
-- *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- *    GNU General Public License for more details.
-- *
-- *    You should have received a copy of the GNU General Public License
-- *    along with this program; if not, write to the Free Software
-- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- *      This program is free software; you can redistribute it and/or
+- *      modify it under the terms of the GNU General Public License
+- *      as published by the Free Software Foundation; either version
+- *      2 of the License, or (at your option) any later version.
 - */
 -
--#include <linux/mm.h>
--#include <linux/fs.h>
--#include <linux/module.h>
--#include <linux/sched.h>
--#include <linux/init.h>
 -#include <linux/init_task.h>
 -#include <linux/mqueue.h>
--
--#include <asm/uaccess.h>
--#include <asm/pgtable.h>
--#include <asm/pgalloc.h>
+-#include <linux/export.h>
 -
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
+-
 -/*
-- * Initial task structure.
+- * Initial thread structure.
 - *
-- * We need to make sure that this is 16384-byte aligned due to the
+- * We need to make sure that this is THREAD_SIZE aligned due to the
 - * way process stacks are handled. This is done by having a special
 - * "init_task" linker map entry..
 - */
--union thread_union init_thread_union __init_task_data
--	__attribute__((aligned(128))) =
--		{ INIT_THREAD_INFO(init_task) };
--
--#if PT_NLEVELS == 3
--/* NOTE: This layout exactly conforms to the hybrid L2/L3 page table layout
-- * with the first pmd adjacent to the pgd and below it. gcc doesn't actually
-- * guarantee that global objects will be laid out in memory in the same order 
-- * as the order of declaration, so put these in different sections and use
-- * the linker script to order them. */
--pmd_t pmd0[PTRS_PER_PMD] __attribute__ ((__section__ (".data..vm0.pmd"), aligned(PAGE_SIZE)));
--#endif
--
--pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__ ((__section__ (".data..vm0.pgd"), aligned(PAGE_SIZE)));
--pte_t pg0[PT_INITIAL * PTRS_PER_PTE] __attribute__ ((__section__ (".data..vm0.pte"), aligned(PAGE_SIZE)));
+-union thread_union init_thread_union __init_task_data = {
+-	INIT_THREAD_INFO(init_task)
+-};
 -
 -/*
 - * Initial task structure.
 - *
 - * All other task structs will be allocated on slabs in fork.c
 - */
--EXPORT_SYMBOL(init_task);
--
--__asm__(".data");
 -struct task_struct init_task = INIT_TASK(init_task);
-Index: tip/arch/parisc/mm/init.c
-===================================================================
---- tip.orig/arch/parisc/mm/init.c
-+++ tip/arch/parisc/mm/init.c
-@@ -33,6 +33,18 @@
- 
- extern int  data_start;
- 
-+#if PT_NLEVELS == 3
-+/* NOTE: This layout exactly conforms to the hybrid L2/L3 page table layout
-+ * with the first pmd adjacent to the pgd and below it. gcc doesn't actually
-+ * guarantee that global objects will be laid out in memory in the same order
-+ * as the order of declaration, so put these in different sections and use
-+ * the linker script to order them. */
-+pmd_t pmd0[PTRS_PER_PMD] __attribute__ ((__section__ (".data..vm0.pmd"), aligned(PAGE_SIZE)));
-+#endif
-+
-+pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__ ((__section__ (".data..vm0.pgd"), aligned(PAGE_SIZE)));
-+pte_t pg0[PT_INITIAL * PTRS_PER_PTE] __attribute__ ((__section__ (".data..vm0.pte"), aligned(PAGE_SIZE)));
-+
- #ifdef CONFIG_DISCONTIGMEM
- struct node_map_data node_data[MAX_NUMNODES] __read_mostly;
- unsigned char pfnnid_map[PFNNID_MAP_MAX] __read_mostly;
+-EXPORT_SYMBOL(init_task);
 
 
