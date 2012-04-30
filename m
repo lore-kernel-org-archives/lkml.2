@@ -1,128 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab2D3Tl2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 15:41:28 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:43808 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756571Ab2D3TlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 15:41:25 -0400
-Message-ID: <4F9EEA9D.8020909@linaro.org>
-Date: Mon, 30 Apr 2012 12:40:13 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1756638Ab2D3TmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 15:42:15 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50365 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454Ab2D3TmO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 15:42:14 -0400
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/3] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE
- flags
-References: <1335289787-11089-1-git-send-email-john.stultz@linaro.org> <1335289787-11089-3-git-send-email-john.stultz@linaro.org> <20120427003953.GC9541@dastard> <4F9AF00A.5040604@linaro.org> <20120428020444.GK9541@dastard>
-In-Reply-To: <20120428020444.GK9541@dastard>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12043019-1976-0000-0000-00000CC86D91
+In-Reply-To: <1334959051-18203-10-git-send-email-glommer@parallels.com>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+	<1334959051-18203-10-git-send-email-glommer@parallels.com>
+Date: Mon, 30 Apr 2012 12:33:53 -0700
+Message-ID: <CABCjUKBCqBWXuyzx73y3sekNqAKpYqAhRjQDtSWF5o7qUbC-RA@mail.gmail.com>
+Subject: Re: [PATCH 09/23] kmem slab accounting basic infrastructure
+From: Suleiman Souhlal <suleiman@google.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2012 07:04 PM, Dave Chinner wrote:
-> On Fri, Apr 27, 2012 at 12:14:18PM -0700, John Stultz wrote:
->> On 04/26/2012 05:39 PM, Dave Chinner wrote:
->>> On Tue, Apr 24, 2012 at 10:49:46AM -0700, John Stultz wrote:
->>>> @@ -128,6 +129,19 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
->>>>   			invalidate_mapping_pages(mapping, start_index,
->>>>   						end_index);
->>>>   		break;
->>>> +	case POSIX_FADV_VOLATILE:
->>>> +		/* First and last PARTIAL page! */
->>>> +		start_index = offset>>   PAGE_CACHE_SHIFT;
->>>> +		end_index = endbyte>>   PAGE_CACHE_SHIFT;
->>>> +		ret = mapping_range_volatile(mapping, start_index, end_index);
->>>> +		break;
->>>> +	case POSIX_FADV_NONVOLATILE:
->>>> +		/* First and last PARTIAL page! */
->>>> +		start_index = offset>>   PAGE_CACHE_SHIFT;
->>>> +		end_index = endbyte>>   PAGE_CACHE_SHIFT;
->>>> +		ret = mapping_range_nonvolatile(mapping, start_index,
->>>> +								end_index);
->>> As it is, I'm still not sold on these being an fadvise() interface
->>> because all it really is a delayed hole punching interface whose
->>> functionailty is currently specific to tmpfs. The behaviour cannot
->>> be implemented sanely by anything else at this point.
->> Yea. So I spent some time looking at the various hole punching
->> mechanisms and they aren't all together consistent across
->> filesystems. For instance, on some filesystems (ext4 and mostly disk
->> backed fs) you have to use fallocate(fd,
->> |FALLOC_FL_PUNCH_HOLE,...)|, while on tmpfs, its
->> madvise(...,MADV_REMOVE).   So in a way, currently, the
->> FADVISE_VOLATILE is closer to a delayed MADVISE_REMOVE.
-> The MADVISE_REMOVE functionality for hole punching works *only* for
-> tmpfs - no other filesystem implements the .truncate_range() method.
-> In fact, several filesystems *can't* implement .truncate_range()
-> because there is no callout from the page cache truncation code to
-> allow filesystems to punch out the underlying blocks. The
-> vmtruncate() code is deprecated for this reason (and various others
-> like a lack of error handling), and .truncate_range() is just as
-> nasty. .truncate_range() needs to die, IMO.
+On Fri, Apr 20, 2012 at 2:57 PM, Glauber Costa <glommer@parallels.com> wrote:
+> This patch adds the basic infrastructure for the accounting of the slab
+> caches. To control that, the following files are created:
 >
-> So, rather than building more infrastructure on a nasty, filesystem
-> specific mmap() hack, implement .fallocate() on tmpfs and use the
-> same interface that every other filesystem uses for punching holes.
-
-Ah. Ok.  I wasn't aware that vmtruncate was deprecated.  Thanks for 
-cluing me in here!
-
->>> This probably won't perform wonderfully, which is where the range
->>> tracking and delayed punching (and the implied memory freeing)
->>> optimiation comes into play. Sure, for tmpfs this can be implemented
->>> as a shrinker, but for real filesystems that have to punch blocks a
->>> shrinker is really the wrong context to be running such
->>> transactions. However, using the fallocate() interface allows each
->>> filesytsem to optimise the delayed hole punching as they see best,
->>> something that cannot be done with this fadvise() interface.
->> So if a shrinker isn't the right context, what would be a good
->> context for delayed hole punching?
-> Like we in XFs for inode reclaim. We have a background workqueue
-> that frees aged inodes periodically in the fastest manner possible
-> (i.e. all async, no blocking on locks, etc), and the shrinker, when
-> run kicks that background thread first, and then enters into
-> synchronous reclaim. By the time a single sync reclaim cycle is run
-> and throttled reclaim sufficiently, the background thread has done a
-> great deal more work.
+>  * memory.kmem.usage_in_bytes
+>  * memory.kmem.limit_in_bytes
+>  * memory.kmem.failcnt
+>  * memory.kmem.max_usage_in_bytes
 >
-> A similar mechanism can be used for this functionality within XFS.
-> Indeed, we could efficiently track which inodes have volatile ranges
-> on them via a bit in the radix trees than index the inode cache,
-> just like we do for reclaimable inodes. If we then used a bit in the
-> page cache radix tree index to indicate volatile pages, we could
-> then easily find the ranges we need to punch out without requiring
-> some new tree and more per-inode memory.
+> They have the same meaning of their user memory counterparts. They reflect
+> the state of the "kmem" res_counter.
 >
-> That's a very filesystem specific implementation - it's vastly
-> different to you tmpfs implementation - but this is exactly what I
-> mean about using fallocate to allow filesystems to optimise the
-> implementation in the most suitable manner for them....
+> The code is not enabled until a limit is set. This can be tested by the flag
+> "kmem_accounted". This means that after the patch is applied, no behavioral
+> changes exists for whoever is still using memcg to control their memory usage.
 >
+> We always account to both user and kernel resource_counters. This effectively
+> means that an independent kernel limit is in place when the limit is set
+> to a lower value than the user memory. A equal or higher value means that the
+> user limit will always hit first, meaning that kmem is effectively unlimited.
+>
+> People who want to track kernel memory but not limit it, can set this limit
+> to a very high number (like RESOURCE_MAX - 1page - that no one will ever hit,
+> or equal to the user memory)
+>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/memcontrol.c |   80 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 79 insertions(+), 1 deletions(-)
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 2810228..36f1e6b 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -252,6 +252,10 @@ struct mem_cgroup {
+>        };
+>
+>        /*
+> +        * the counter to account for kernel memory usage.
+> +        */
+> +       struct res_counter kmem;
+> +       /*
+>         * Per cgroup active and inactive list, similar to the
+>         * per zone LRU lists.
+>         */
+> @@ -266,6 +270,7 @@ struct mem_cgroup {
+>         * Should the accounting and control be hierarchical, per subtree?
+>         */
+>        bool use_hierarchy;
+> +       bool kmem_accounted;
+>
+>        bool            oom_lock;
+>        atomic_t        under_oom;
+> @@ -378,6 +383,7 @@ enum res_type {
+>        _MEM,
+>        _MEMSWAP,
+>        _OOM_TYPE,
+> +       _KMEM,
+>  };
+>
+>  #define MEMFILE_PRIVATE(x, val)        (((x) << 16) | (val))
+> @@ -1470,6 +1476,10 @@ done:
+>                res_counter_read_u64(&memcg->memsw, RES_USAGE) >> 10,
+>                res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> 10,
+>                res_counter_read_u64(&memcg->memsw, RES_FAILCNT));
+> +       printk(KERN_INFO "kmem: usage %llukB, limit %llukB, failcnt %llu\n",
+> +               res_counter_read_u64(&memcg->kmem, RES_USAGE) >> 10,
+> +               res_counter_read_u64(&memcg->kmem, RES_LIMIT) >> 10,
+> +               res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
+>  }
+>
+>  /*
+> @@ -3914,6 +3924,11 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
+>                else
+>                        val = res_counter_read_u64(&memcg->memsw, name);
+>                break;
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +       case _KMEM:
+> +               val = res_counter_read_u64(&memcg->kmem, name);
+> +               break;
+> +#endif
+>        default:
+>                BUG();
+>        }
+> @@ -3951,8 +3966,26 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+>                        break;
+>                if (type == _MEM)
+>                        ret = mem_cgroup_resize_limit(memcg, val);
+> -               else
+> +               else if (type == _MEMSWAP)
+>                        ret = mem_cgroup_resize_memsw_limit(memcg, val);
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +               else if (type == _KMEM) {
+> +                       ret = res_counter_set_limit(&memcg->kmem, val);
+> +                       if (ret)
+> +                               break;
+> +                       /*
+> +                        * Once enabled, can't be disabled. We could in theory
+> +                        * disable it if we haven't yet created any caches, or
+> +                        * if we can shrink them all to death.
+> +                        *
+> +                        * But it is not worth the trouble
+> +                        */
+> +                       if (!memcg->kmem_accounted && val != RESOURCE_MAX)
+> +                               memcg->kmem_accounted = true;
+> +               }
+> +#endif
+> +               else
+> +                       return -EINVAL;
+>                break;
+>        case RES_SOFT_LIMIT:
+>                ret = res_counter_memparse_write_strategy(buffer, &val);
 
-So, just to make sure I'm folloiwng you, you're suggesting that there 
-would be a filesystem specific implementation at the top level. 
-Something like a  mark_volatile(struct inode *, bool, loff_t, loff_t) 
-inode operation? And the filesystem would then be responsible for 
-managing the ranges and appropriately purging them?
+Why is RESOURCE_MAX special?
 
-Thanks again for the feedback, I'll continue looking into this.
-
-thanks
--john
-
-
-
-
+-- Suleiman
