@@ -1,33 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab2D3JEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 05:04:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12577 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041Ab2D3JEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 05:04:53 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20120422212220.GA6537@merkur.ravnborg.org>
-References: <20120422212220.GA6537@merkur.ravnborg.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: dhowells@redhat.com, linux arch <linux-arch@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
-Subject: Re: [RFC] move link of vmlinux to a script
-Date: Mon, 30 Apr 2012 10:04:19 +0100
-Message-ID: <21193.1335776659@redhat.com>
+	id S1755849Ab2D3JHa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 05:07:30 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:50496 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754684Ab2D3JH3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 05:07:29 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "cgroups\@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Han Ying <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyuki@gmail.com
+Subject: Re: [RFC][PATCH 5/9 v2] move charges to root at rmdir if use_hierarchy is unset
+In-Reply-To: <4F9A359C.10107@jp.fujitsu.com>
+References: <4F9A327A.6050409@jp.fujitsu.com> <4F9A359C.10107@jp.fujitsu.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 30 Apr 2012 14:37:13 +0530
+Message-ID: <87sjfl8u66.fsf@skywalker.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12043009-9574-0000-0000-0000026B05EB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sam Ravnborg <sam@ravnborg.org> wrote:
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-> +#   C = Comon symbol
+> Now, at removal of cgroup, ->pre_destroy() is called and move charges
+> to the parent cgroup. A major reason of -EBUSY returned by ->pre_destroy()
+> is that the 'moving' hits parent's resource limitation. It happens only
+> when use_hierarchy=0. This was a mistake of original design.(it's me...)
+>
+> Considering use_hierarchy=0, all cgroups are treated as flat. So, no one
+> cannot justify moving charges to parent...parent and children are in
+> flat configuration, not hierarchical.
+>
+> This patch modifes to move charges to root cgroup at rmdir/force_empty
+> if use_hierarchy==0. This will much simplify rmdir() and reduce error
+> in ->pre_destroy.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Should be "Common" I presume.  Could you fix it whilst you're at it?
+Reviewed-by: Anees Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-David
+
+> ---
+>  Documentation/cgroups/memory.txt |   12 ++++++----
+>  mm/memcontrol.c                  |   39 +++++++++++++------------------------
+>  2 files changed, 21 insertions(+), 30 deletions(-)
+>
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index 54c338d..82ce1ef 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -393,14 +393,14 @@ cgroup might have some charge associated with it, even though all
+>  tasks have migrated away from it. (because we charge against pages, not
+>  against tasks.)
+>
+> -Such charges are freed or moved to their parent. At moving, both of RSS
+> -and CACHES are moved to parent.
+> -rmdir() may return -EBUSY if freeing/moving fails. See 5.1 also.
+> +Such charges are freed or moved to their parent if use_hierarchy=1.
+> +if use_hierarchy=0, the charges will be moved to root cgroup.
+>
+>  Charges recorded in swap information is not updated at removal of cgroup.
+>  Recorded information is discarded and a cgroup which uses swap (swapcache)
+>  will be charged as a new owner of it.
+>
+> +About use_hierarchy, see Section 6.
+>
+>  5. Misc. interfaces.
+>
+> @@ -413,13 +413,15 @@ will be charged as a new owner of it.
+>
+>    Almost all pages tracked by this memory cgroup will be unmapped and freed.
+>    Some pages cannot be freed because they are locked or in-use. Such pages are
+> -  moved to parent and this cgroup will be empty. This may return -EBUSY if
+> -  VM is too busy to free/move all pages immediately.
+> +  moved to parent(if use_hierarchy==1) or root (if use_hierarchy==0) and this
+> +  cgroup will be empty.
+>
+>    Typical use case of this interface is that calling this before rmdir().
+>    Because rmdir() moves all pages to parent, some out-of-use page caches can be
+>    moved to the parent. If you want to avoid that, force_empty will be useful.
+>
+> +  About use_hierarchy, see Section 6.
+> +
+>  5.2 stat file
+>
+>  memory.stat file includes following statistics
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index ed53d64..62200f1 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2695,32 +2695,23 @@ static int mem_cgroup_move_parent(struct page *page,
+>  	nr_pages = hpage_nr_pages(page);
+>
+>  	parent = mem_cgroup_from_cont(pcg);
+> -	if (!parent->use_hierarchy) {
+> -		ret = __mem_cgroup_try_charge(NULL,
+> -					gfp_mask, nr_pages, &parent, false);
+> -		if (ret)
+> -			goto put_back;
+> -	}
+> +	/*
+> +	 * if use_hierarchy==0, move charges to root cgroup.
+> +	 * in root cgroup, we don't touch res_counter
+> +	 */
+> +	if (!parent->use_hierarchy)
+> +		parent = root_mem_cgroup;
+>
+>  	if (nr_pages > 1)
+>  		flags = compound_lock_irqsave(page);
+>
+> -	if (parent->use_hierarchy) {
+> -		ret = mem_cgroup_move_account(page, nr_pages,
+> -					pc, child, parent, false);
+> -		if (!ret)
+> -			__mem_cgroup_cancel_local_charge(child, nr_pages);
+> -	} else {
+> -		ret = mem_cgroup_move_account(page, nr_pages,
+> -					pc, child, parent, true);
+> -
+> -		if (ret)
+> -			__mem_cgroup_cancel_charge(parent, nr_pages);
+> -	}
+> +	ret = mem_cgroup_move_account(page, nr_pages,
+> +				pc, child, parent, false);
+> +	if (!ret)
+> +		__mem_cgroup_cancel_local_charge(child, nr_pages);
+>
+>  	if (nr_pages > 1)
+>  		compound_unlock_irqrestore(page, flags);
+> -put_back:
+>  	putback_lru_page(page);
+>  put:
+>  	put_page(page);
+> @@ -3338,12 +3329,10 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
+>  	csize = PAGE_SIZE << compound_order(page);
+>  	/* If parent->use_hierarchy == 0, we need to charge parent */
+>  	if (!parent->use_hierarchy) {
+> -		ret = res_counter_charge(&parent->hugepage[idx],
+> -					 csize, &fail_res);
+> -		if (ret) {
+> -			ret = -EBUSY;
+> -			goto err_out;
+> -		}
+> +		parent = root_mem_cgroup;
+> +		/* root has no limit */
+> +		res_counter_charge_nofail(&parent->hugepage[idx],
+> +				 csize, &fail_res);
+>  	}
+>  	counter = &memcg->hugepage[idx];
+>  	res_counter_uncharge_until(counter, counter->parent, csize);
+> -- 
+
+-aneesh
+
