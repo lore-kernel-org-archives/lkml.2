@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab2D3JzQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 05:55:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38015 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752297Ab2D3JzP (ORCPT
+	id S1756018Ab2D3J5f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 05:57:35 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35353 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752297Ab2D3J5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 05:55:15 -0400
-Date: Mon, 30 Apr 2012 10:55:12 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        herbert@gondor.hengli.com.au, arnd@arndb.de, olof@lixom.net
-Subject: Re: [PATCH] hwrng: Kconfig: modify default state for atmel-rng driver
-Message-ID: <20120430095511.GC3170@opensource.wolfsonmicro.com>
-References: <20120427173504.GK18260@opensource.wolfsonmicro.com>
- <1335779353-9515-1-git-send-email-nicolas.ferre@atmel.com>
+	Mon, 30 Apr 2012 05:57:34 -0400
+X-Sasl-enc: M/bMvkdXmXq8Mq+M5YD0nBg8FStj96t1BTboqIvGG9Py 1335779852
+Message-ID: <4F9E61FC.8070409@ladisch.de>
+Date: Mon, 30 Apr 2012 11:57:16 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UPT3ojh+0CqEDtpF"
-Content-Disposition: inline
-In-Reply-To: <1335779353-9515-1-git-send-email-nicolas.ferre@atmel.com>
-X-Cookie: You will get what you deserve.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
+CC: Josh Boyer <jwboyer@gmail.com>, Borislav Petkov <borislav.petkov@amd.com>,
+        andymatei@gmail.com, "Huang, Shane" <Shane.Huang@amd.com>,
+        Borislav Petkov <bp@amd64.org>, linux-kernel@vger.kernel.org
+Subject: Re: Unhandled IRQs on AMD E-450
+References: <fa.CZQqvHf3CBfYWzhSDPNOWxTTD9w@ifi.uio.no>	<fa.Vmg5vDod2/oKvwyy9BcalhoT+Lo@ifi.uio.no>	<14969994.2790.1335342903511.JavaMail.geo-discussion-forums@vbbfr18>	<4F97BA60.4080505@ladisch.de>	<20120427082203.GB9233@aftab.osrc.amd.com>	<CAPRPZsCHAOvemogn7mWnWfykhANeEx5K=OG9Xt+veDjEWOiDYA@mail.gmail.com>	<CA+5PVA6e-JaS809t9=4=SoxX4cFEYfxxb9-KAXk68ENGg6Kw8w@mail.gmail.com>	<CAPRPZsDDEYUf2a+=ZbwvFw+qJku0UvMLf0+eNDvw+FbinCbysA@mail.gmail.com>	<CA+5PVA4NJ4fB-qEVB45sz48E7kCdwZ+O5D9jvk16z4hrXSgCwQ@mail.gmail.com> <CAPRPZsB=axM88+fGkghbh3qxDv=vRQtfrKqT0e59EZPrrS0V+A@mail.gmail.com>
+In-Reply-To: <CAPRPZsB=axM88+fGkghbh3qxDv=vRQtfrKqT0e59EZPrrS0V+A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jeroen Van den Keybus wrote:
+> - Detect stuck interrupts after a number (5) of consecutive unhandled
+> IRQs within a specified time frame (100ms).
 
---UPT3ojh+0CqEDtpF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Why 5?  This threshold is likely to be too low; fast consecutive interrupts
+can easily happen more often with a very busy device, while an actual stuck
+interrupt will call the handler in an endless loop and very quickly result
+in many thousands of calls.
 
-On Mon, Apr 30, 2012 at 11:49:13AM +0200, Nicolas Ferre wrote:
-> In order to prevent building the Atmel hw_random driver for each and every
-> configuration, add a "default" Kconfig state in relation with
-> CONFIG_ARCH_AT91.
->=20
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> --- linux-3.2.16.orig/include/linux/irqdesc.h	2012-04-23
+> 00:31:32.000000000 +0200
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Your mailer wraps lines; see Documentation/email-clients.txt.
 
---UPT3ojh+0CqEDtpF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPnmFrAAoJEBus8iNuMP3dvcIQAJopG/5gHT+xEHp39e9oH3k1
-UMN3kIU6i9hxLhiFjCeUtsD9iGXUJNddVLHGMzbwTarsvzGGvhSqYBXrpqLid0WB
-hXql38qRjS3Zuq7V4T58eS6PsXWGRa/cry5GiWmswoe+mrbn2r++dCNruGjRdwr3
-ycMBBU7rVjp5SGFj9zhHoLU5k0gHWEvoOXzJF3MgxPIsNAFahBEYog0hADdjEBng
-EJjeRHgP6O8E2Kd7LItIwu6Ojy1lQV/A3tBMfFSLMrqKEzAVqQ4dQyVvjg5ly6tJ
-qxwmxtPK5yspiE6gRj95ftx6rg2guol+4ov2C3sRsdzD29z+4d3/RiMl8vbY0+6g
-s88bSL8pD6QZYd9MsQ8Nj2/SmcOB4P9TaKJsWQ3E9tBnSHNZyNIAu5ImgSfuqYan
-ihA0BzRMPNrWND74rwKm4YRf/7u+0BZqDQNYCvAiiyDbt4wrklErbd/2YMH7P5xH
-urm45DpKaaI8Lt2Y05XVLSAph0xqrn6goOboqIf0wKrM7KvPa83k3YMJgcaGg+fI
-oAgFtQJSfN6LHLVsZiqw0g93TGKQWGn0I9FWr6gFW5IFL7OJYHzTYUWUytPJXLCo
-Kl5b3xTFG8Xs8AJcjzbZ3QEcpLtiHOlbKu1zQ1XiJ27DOXtZ2oL5IK0/PmMEIiek
-oHBjjrJfHRCMuNShz7cf
-=Xc2h
------END PGP SIGNATURE-----
-
---UPT3ojh+0CqEDtpF--
+Regards,
+Clemens
