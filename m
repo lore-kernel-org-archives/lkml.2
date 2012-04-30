@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471Ab2D3Sao (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 14:30:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59423 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755999Ab2D3San (ORCPT
+	id S1756545Ab2D3Sbn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 14:31:43 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:45251 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756186Ab2D3Sbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 14:30:43 -0400
-From: joseph daniel <josephdanielwalter@gmail.com>
-To: Mark Einon <mark.einon@gmail.com>,
+	Mon, 30 Apr 2012 14:31:42 -0400
+Message-ID: <4F9EDAAD.50703@metafoo.de>
+Date: Mon, 30 Apr 2012 20:32:13 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+MIME-Version: 1.0
+To: joseph daniel <josephdanielwalter@gmail.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Francois Romieu <romieu@fr.zoreil.com>, devel@driverdev.osuosl.org,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Cc: joseph daniel <josephdanielwalter@gmail.com>
-Subject: [PATCH] staging/et131x: Fix coding style issues
-Date: Tue,  1 May 2012 00:30:34 +0600
-Message-Id: <1335810634-31151-1-git-send-email-josephdanielwalter@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+Subject: Re: [PATCH] staging/iio/meter: fix the coding style problem
+References: <1335810080-30717-1-git-send-email-josephdanielwalter@gmail.com>
+In-Reply-To: <1335810080-30717-1-git-send-email-josephdanielwalter@gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/30/2012 08:21 PM, joseph daniel wrote:
+> Signed-off-by: joseph daniel <josephdanielwalter@gmail.com>
+> ---
+>  Please consider this patch, previous one is wrong because my
+>  tabspace in vim was 4, instead 8. sorry..
+> 
+>  drivers/staging/iio/meter/ade7854-i2c.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/iio/meter/ade7854-i2c.c b/drivers/staging/iio/meter/ade7854-i2c.c
+> index 1e1faa0..ba97d6e 100644
+> --- a/drivers/staging/iio/meter/ade7854-i2c.c
+> +++ b/drivers/staging/iio/meter/ade7854-i2c.c
+> @@ -195,7 +195,10 @@ static int ade7854_i2c_read_reg_32(struct device *dev,
+>  	if (ret)
+>  		goto out;
+>  
+> -	*val = (st->rx[0] << 24) | (st->rx[1] << 16) | (st->rx[2] << 8) | st->rx[3];
+> +	*val =  (st->rx[0] << 24) |
+> +		(st->rx[1] << 16) |
+> +		(st->rx[2] << 8)  |
+> +		 st->rx[3];
 
-Signed-off-by: joseph daniel <josephdanielwalter@gmail.com>
----
- drivers/staging/et131x/et131x.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+Nack. In my opinion this doesn't make the code more readable. 80 chars per line
+should be though of as a softlimit.
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 886f565..5b11c5e 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -1710,7 +1710,8 @@ static int et131x_mdio_read(struct mii_bus *bus, int phy_addr, int reg)
- 		return value;
- }
- 
--static int et131x_mdio_write(struct mii_bus *bus, int phy_addr, int reg, u16 value)
-+static int et131x_mdio_write(struct mii_bus *bus, int phy_addr,
-+			     int reg, u16 value)
- {
- 	struct net_device *netdev = bus->priv;
- 	struct et131x_adapter *adapter = netdev_priv(netdev);
-@@ -4013,7 +4014,7 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
- 		dev_err(&pdev->dev, "Missing PCIe capabilities\n");
- 		goto err_out;
- 	}
--		
-+
- 	/* Let's set up the PORT LOGIC Register.  First we need to know what
- 	 * the max_payload_size is
- 	 */
-@@ -4060,7 +4061,7 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
- 		goto err_out;
- 	}
- 
--	ctl = (ctl & ~PCI_EXP_DEVCTL_READRQ) | ( 0x04 << 12);
-+	ctl = (ctl & ~PCI_EXP_DEVCTL_READRQ) | (0x04 << 12);
- 
- 	if (pci_write_config_word(pdev, cap + PCI_EXP_DEVCTL, ctl)) {
- 		dev_err(&pdev->dev,
-@@ -4824,7 +4825,8 @@ static int et131x_open(struct net_device *netdev)
- 	adapter->error_timer.data = (unsigned long)adapter;
- 	add_timer(&adapter->error_timer);
- 
--	result = request_irq(irq, et131x_isr, IRQF_SHARED, netdev->name, netdev);
-+	result = request_irq(irq, et131x_isr,
-+			     IRQF_SHARED, netdev->name, netdev);
- 	if (result) {
- 		dev_err(&pdev->dev, "could not register IRQ %d\n", irq);
- 		return result;
--- 
-1.7.9.5
+But this looks like something that could use be32_to_cpu though.
+
+>  out:
+>  	mutex_unlock(&st->buf_lock);
+>  	return ret;
 
