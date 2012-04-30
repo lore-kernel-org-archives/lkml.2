@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab2D3Xzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 19:55:36 -0400
+	id S1757545Ab2D3Xzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 19:55:46 -0400
 Received: from mail-qa0-f46.google.com ([209.85.216.46]:62757 "EHLO
 	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756673Ab2D3Xze (ORCPT
+	with ESMTP id S1757500Ab2D3Xzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 19:55:34 -0400
+	Mon, 30 Apr 2012 19:55:44 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -24,9 +24,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 02/41] nohz: Make nohz API agnostic against idle ticks cputime accounting
-Date: Tue,  1 May 2012 01:54:36 +0200
-Message-Id: <1335830115-14335-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 04/41] nohz: Move nohz load balancer selection into idle logic
+Date: Tue,  1 May 2012 01:54:38 +0200
+Message-Id: <1335830115-14335-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
 References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
@@ -34,26 +34,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the timer tick fires, it accounts the new jiffy as either part
-of system, user or idle time. This is how we record the cputime
-statistics.
+[ ** BUGGY PATCH: I need to put more thinking into this ** ]
 
-But when the tick is stopped from the idle task, we still need
-to record the number of jiffies spent tickless until we restart
-the tick and fall back to traditional tick-based cputime accounting.
-
-To do this, we take a snapshot of jiffies when the tick is stopped
-and compute the difference against the new value of jiffies when
-the tick is restarted. Then we account this whole difference to
-the idle cputime.
-
-However we are preparing to be able to stop the tick from other places
-than idle. So this idle time accounting needs to be performed from
-the callers of nohz APIs, not from the nohz APIs because we now want
-them to be agnostic against where we stop/restart tick.
-
-Therefore, we pull the tickless idle time accounting out of generic
-nohz helpers up to idle entry/exit callers.
+We want the nohz load balancer to be an idle CPU, thus
+move that selection to strict dyntick idle logic.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -75,101 +59,50 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/time/tick-sched.c |   37 ++++++++++++++++++++++---------------
- 1 files changed, 22 insertions(+), 15 deletions(-)
+ kernel/time/tick-sched.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index a1ca479..9373f61 100644
+index fc9f687..b79dea2 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -402,7 +402,6 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts, ktime_t now)
- 
- 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+@@ -398,8 +398,6 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts, ktime_t now)
+ 		 * the scheduler tick in nohz_restart_sched_tick.
+ 		 */
+ 		if (!ts->tick_stopped) {
+-			select_nohz_load_balancer(1);
+-
+ 			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
  			ts->tick_stopped = 1;
--			ts->idle_jiffies = last_jiffies;
  		}
- 
- 		ts->idle_sleeps++;
-@@ -445,9 +444,13 @@ out:
- static void __tick_nohz_idle_enter(struct tick_sched *ts)
- {
- 	ktime_t now;
-+	int was_stopped = ts->tick_stopped;
- 
+@@ -449,8 +447,10 @@ static void __tick_nohz_idle_enter(struct tick_sched *ts)
  	now = tick_nohz_start_idle(smp_processor_id(), ts);
  	tick_nohz_stop_sched_tick(ts, now);
-+
-+	if (!was_stopped && ts->tick_stopped)
-+		ts->idle_jiffies = ts->last_jiffies;
+ 
+-	if (!was_stopped && ts->tick_stopped)
++	if (!was_stopped && ts->tick_stopped) {
+ 		ts->idle_jiffies = ts->last_jiffies;
++		select_nohz_load_balancer(1);
++	}
  }
  
  /**
-@@ -548,14 +551,24 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
- 
+@@ -552,7 +552,6 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
  static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
  {
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
--	unsigned long ticks;
--#endif
  	/* Update jiffies first */
- 	select_nohz_load_balancer(0);
+-	select_nohz_load_balancer(0);
  	tick_do_update_jiffies64(now);
  
-+	touch_softlockup_watchdog();
-+	/*
-+	 * Cancel the scheduled timer and restore the tick
-+	 */
-+	ts->tick_stopped  = 0;
-+	ts->idle_exittime = now;
-+
-+	tick_nohz_restart(ts, now);
-+}
-+
-+static void tick_nohz_account_idle_ticks(struct tick_sched *ts)
-+{
- #ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+	unsigned long ticks;
- 	/*
- 	 * We stopped the tick in idle. Update process times would miss the
- 	 * time we slept as update_process_times does only a 1 tick
-@@ -568,15 +581,6 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
- 	if (ticks && ticks < LONG_MAX)
- 		account_idle_ticks(ticks);
- #endif
--
--	touch_softlockup_watchdog();
--	/*
--	 * Cancel the scheduled timer and restore the tick
--	 */
--	ts->tick_stopped  = 0;
--	ts->idle_exittime = now;
--
--	tick_nohz_restart(ts, now);
- }
- 
- /**
-@@ -605,8 +609,10 @@ void tick_nohz_idle_exit(void)
- 	if (ts->idle_active)
+ 	touch_softlockup_watchdog();
+@@ -610,6 +609,7 @@ void tick_nohz_idle_exit(void)
  		tick_nohz_stop_idle(cpu, now);
  
--	if (ts->tick_stopped)
-+	if (ts->tick_stopped) {
+ 	if (ts->tick_stopped) {
++		select_nohz_load_balancer(0);
  		tick_nohz_restart_sched_tick(ts, now);
-+		tick_nohz_account_idle_ticks(ts);
-+	}
- 
- 	local_irq_enable();
- }
-@@ -811,7 +817,8 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
- 		 */
- 		if (ts->tick_stopped) {
- 			touch_softlockup_watchdog();
--			ts->idle_jiffies++;
-+			if (idle_cpu(cpu))
-+				ts->idle_jiffies++;
- 		}
- 		update_process_times(user_mode(regs));
- 		profile_tick(CPU_PROFILING);
+ 		tick_nohz_account_idle_ticks(ts);
+ 	}
 -- 
 1.7.5.4
 
