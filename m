@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab2D3AwL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Apr 2012 20:52:11 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42932 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab2D3AwK (ORCPT
+	id S1754974Ab2D3BZj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Apr 2012 21:25:39 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48613 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754921Ab2D3BZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Apr 2012 20:52:10 -0400
-Message-ID: <4F9DE236.60002@lwfinger.net>
-Date: Sun, 29 Apr 2012 19:52:06 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
+	Sun, 29 Apr 2012 21:25:38 -0400
+X-AuditID: 9c93016f-b7cfcae00000449e-ef-4f9dea0f5640
+Message-ID: <4F9DEA0C.8040203@kernel.org>
+Date: Mon, 30 Apr 2012 10:25:32 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Andreas Schwab <schwab@linux-m68k.org>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tty/serial/pmac_zilog: Fix "nobody cared" IRQ message
-References: <4F9C830D.8040906@lwfinger.net> <1335745382.20866.18.camel@pasglop>
-In-Reply-To: <1335745382.20866.18.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: David Rientjes <rientjes@google.com>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC] propagate gfp_t to page table alloc functions
+References: <1335171318-4838-1-git-send-email-minchan@kernel.org> <4F963742.2030607@jp.fujitsu.com> <4F963B8E.9030105@kernel.org> <CAPa8GCA8q=S9sYx-0rDmecPxYkFs=gATGL-Dz0OYXDkwEECJkg@mail.gmail.com> <4F965413.9010305@kernel.org> <CAPa8GCCwfCFO6yxwUP5Qp9O1HGUqEU2BZrrf50w8TL9FH9vbrA@mail.gmail.com> <20120424143015.99fd8d4a.akpm@linux-foundation.org> <4F973BF2.4080406@jp.fujitsu.com> <CAHGf_=r09BCxXeuE8dSti4_SrT5yahrQCwJh=NrrA3rsUhhu_w@mail.gmail.com> <4F973FB8.6050103@jp.fujitsu.com> <20120424172554.c9c330dd.akpm@linux-foundation.org> <4F98914C.2060505@jp.fujitsu.com> <alpine.DEB.2.00.1204251715420.19452@chino.kir.corp.google.com> <4F9A0360.3030900@kernel.org> <alpine.DEB.2.00.1204270340450.11866@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1204270340450.11866@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2012 07:23 PM, Benjamin Herrenschmidt wrote:
-> On Sat, 2012-04-28 at 18:53 -0500, Larry Finger wrote:
->
+On 04/27/2012 07:43 PM, David Rientjes wrote:
+
+> On Fri, 27 Apr 2012, Minchan Kim wrote:
+> 
+>>> Maybe a per-thread_info variant of gfp_allowed_mask?  So Andrew's 
+>>> set_current_gfp() becomes set_current_gfp_allowed() that does
+>>>
+>>> 	void set_current_gfp_allowed(gfp_t gfp_mask)
+>>> 	{
+>>> 		current->gfp_allowed = gfp_mask & gfp_allowed_mask;
+>>> 	}
+>>>
+>>> and then the page allocator does
+>>>
+>>> 	gfp_mask &= current->gfp_allowed;
+>>>
+>>> rather than how it currently does
+>>>
+>>> 	gfp_mask &= gfp_allowed_mask;
+>>>
+>>> and then the caller of set_current_gfp_allowed() cleans up with 
+>>> set_current_gfp_allowed(__GFP_BITS_MASK).
 >>
->> Index: wireless-testing/drivers/tty/serial/pmac_zilog.c
->> ===================================================================
->> --- wireless-testing.orig/drivers/tty/serial/pmac_zilog.c	2012-04-28
->> 15:51:38.843723074 -0500
->> +++ wireless-testing/drivers/tty/serial/pmac_zilog.c	2012-04-28
->> 18:34:34.053900600 -0500
->
-> Patch seems to be wrapped... I'll apply manually this time around but
-> check your mailer settings :-)
-
-Sorry about that. I don't usually send patches that way, and forgot to check for 
-wrapping.
-
-Larry
+> 
+> [trimmed the newsgroups from the reply, not sure what the point is?]
+> 
+>> Caller should restore old gfp_mask instead of __GFP_BITS_MASK in case of
+>> nesting.And how do we care of atomic context?
+>>
+> 
+> Eek, I'm hoping these aren't going to be nested but sure that seems 
+> appropraite if they are.  (I'm also hoping these will only be either 
+> __GFP_HIGH or __GFP_BITS_MASK and no other combinations.)
+> 
+> Forcing atomic context would just be set_current_gfp_allowed(__GFP_HIGH).
 
 
+I mean it's not legal to access _current_ in atomic context so that
+(gfp_mask &= current->gfp_allowed in page allocator) shouldn't.
+
+-- 
+Kind regards,
+Minchan Kim
