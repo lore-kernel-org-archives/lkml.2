@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257Ab2EAAGC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 20:06:02 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:52058 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932099Ab2EAAF7 (ORCPT
+	id S1757870Ab2EAAGT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 20:06:19 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:40371 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932118Ab2EAAGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 20:05:59 -0400
+	Mon, 30 Apr 2012 20:06:00 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -24,9 +24,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 36/41] sched: Update nohz rq clock before searching busiest group on load balancing
-Date: Tue,  1 May 2012 01:55:10 +0200
-Message-Id: <1335830115-14335-37-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 28/41] nohz: Don't restart the tick before scheduling to idle
+Date: Tue,  1 May 2012 01:55:02 +0200
+Message-Id: <1335830115-14335-29-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
 References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
@@ -34,13 +34,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While load balancing an rq target, we look for the busiest group.
-This operation may require an uptodate rq clock if we end up calling
-scale_rt_power(). To this end, update it manually if the target is
-running tickless.
+If we were running adaptive tickless but then we schedule out and
+enter the idle task, we don't need to restart the tick because
+tick_nohz_idle_enter() is going to be called right away.
 
-DOUBT: don't we actually also need this in vanilla kernel, in case
-this_cpu is in dyntick-idle mode?
+The only thing we need to do is to save the jiffies such that
+when we later restart the tick we can account the CPU time spent
+while idle was tickless.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -62,33 +62,39 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sched/fair.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+ kernel/time/tick-sched.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index cd871e7..af8377f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4466,6 +4466,19 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 5933506..8217409 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -1029,14 +1029,18 @@ void tick_nohz_pre_schedule(void)
+ void tick_nohz_post_schedule(void)
+ {
+ 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++	unsigned long flags;
  
- 	schedstat_inc(sd, lb_count[idle]);
- 
-+	/*
-+	 * find_busiest_group() may need an uptodate cpu clock
-+	 * for find_busiest_group() (see scale_rt_power()). If
-+	 * the CPU is nohz, it's clock may be stale.
-+	 */
-+	if (cpuset_cpu_adaptive_nohz(this_cpu)) {
-+		local_irq_save(flags);
-+		raw_spin_lock(&this_rq->lock);
-+		update_rq_clock(this_rq);
-+		raw_spin_unlock(&this_rq->lock);
-+		local_irq_restore(flags);
+-	/*
+-	 * No need to disable irqs here. The worst that can happen
+-	 * is an irq that comes and restart the tick before us.
+-	 * tick_nohz_restart_sched_tick() is irq safe.
+-	 */
+-	if (ts->tick_stopped)
+-		tick_nohz_restart_sched_tick();
++	local_irq_save(flags);
++	if (ts->tick_stopped) {
++		if (is_idle_task(current)) {
++			ts->saved_jiffies = jiffies;
++			ts->saved_jiffies_whence = JIFFIES_SAVED_IDLE;
++		} else {
++			tick_nohz_restart_sched_tick();
++		}
 +	}
-+
- redo:
- 	group = find_busiest_group(sd, this_cpu, &imbalance, idle,
- 				   cpus, balance);
++	local_irq_restore(flags);
+ }
+ 
+ void tick_nohz_flush_current_times(bool restart_tick)
 -- 
 1.7.5.4
 
