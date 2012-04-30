@@ -1,290 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab2D3SuW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 14:50:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:40645 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab2D3SuV (ORCPT
+	id S1756470Ab2D3Sva (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 14:51:30 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53462 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636Ab2D3Sv2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 14:50:21 -0400
+	Mon, 30 Apr 2012 14:51:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAAcYxUdtdVqsGqaZzoiPxP46AX+zcxuSfYgm_D+ShdoB12cs6w@mail.gmail.com>
-References: <CAAcYxUdUBgwuxNKpiXp8r9-aw7+pi7U2E35dnsoL2RD9tf47oQ@mail.gmail.com>
-	<20120427031013.GA9131@zhy>
-	<CAAcYxUdtdVqsGqaZzoiPxP46AX+zcxuSfYgm_D+ShdoB12cs6w@mail.gmail.com>
-Date: Mon, 30 Apr 2012 11:50:20 -0700
-Message-ID: <CAAcYxUfaWFRuV_u_t+4E07t8+JuoxJ5w_STSEk1GEy+cYoA4_Q@mail.gmail.com>
-Subject: Re: High CPU usage of scheduler?
-From: Dave Johansen <davejohansen@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=e89a8fb2007a13a9f204bee9eda1
+In-Reply-To: <20120430183023.GA5585@polaris.bitmath.org>
+References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+	<1335175627-2270-6-git-send-email-rydberg@euromail.se>
+	<CAN+gG=EWHi18kb1q2xQg8mfS9o6BHVLVdU+KYUcWdM4L3gJybA@mail.gmail.com>
+	<20120430183023.GA5585@polaris.bitmath.org>
+Date: Mon, 30 Apr 2012 20:51:28 +0200
+Message-ID: <CAN+gG=Ekz8HMBP0ZOSts5ek9x38FW7v177K-p-kVBvCCkh6kOA@mail.gmail.com>
+Subject: Re: [PATCH v3 5/6] hid-multitouch: Switch to device groups
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <Benjamin_Tissoires@logitech.com>,
+        Stephane Chatty <chatty@enac.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8fb2007a13a9f204bee9eda1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, Apr 27, 2012 at 8:23 AM, Dave Johansen <davejohansen@gmail.com> wro=
-te:
-> On Thu, Apr 26, 2012 at 8:10 PM, Yong Zhang <yong.zhang0@gmail.com> wrote=
-:
->>
->> On Thu, Apr 26, 2012 at 03:08:51PM -0700, Dave Johansen wrote:
->> > I am looking into moving an application from RHEL 5 to RHEL 6 and I
->> > noticed an unexpected increase in CPU usage. A little digging has led
->> > me to believe that the scheduler may be the culprit.
->> >
->> > I created the attached test_select_work.c file to test this out. I
->> > compiled it with the following command on RHEL 5:
->> >
->> > cc test_select_work.c -O2 -DSLEEP_TYPE=3D0 -Wall -Wextra -lm -lpthread
->> > -o test_select_work
->>
->> Hmm...Do both RHEL 5 and RHEL 6 have high resolution timer enabled?
->>
->> If not, could you please try to boot the one which enable high resolutio=
-n
->> timer with 'highres=3Doff' to see if things change?
+On Mon, Apr 30, 2012 at 20:30, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> I remarked a small regression in this patch: the detection of the
+>> serial protocol is not handled anymore. I was indeed relying on the
+>> fact that the parameter "id" in mt_probe was null to know that the
+>> device was not already in the list of known devices.
 >
-> Yes, RHEL 6 has CONFIG_HIGH_RES_TIMERS=3Dy. I rebooted and used the
-> 'highres=3Doff' in grub and got the following results:
+> I see. Will this suffice?
+
+Yes, but I'd rather do the test against either id->product or
+id->driver_data as we may use HID_ANY_ID for vendors specific
+handling. For instance, I had the confirmation from EETI (eGalax) that
+they will always use the same protocol for their usb products, thus
+the same quirks could be handled by HID_DEVICE(BUS_USB,
+HID_GROUP_MULTITOUCH, USB_VENDOR_ID_DWAV, HID_ANY_ID).
+
+Thanks,
+Benjamin
+
 >
-> =A0 ./test_select_work 1000 10000 300 4
-> =A0 time_per_iteration: min: 3130.1 us avg: 3152.2 us max: 3162.2 us
-> stddev: 15.0 us
-> =A0 ./test_select_work 1000 10000 300 8
-> =A0 time_per_iteration: min: 4314.6 us avg: 4407.9 us max: 4496.3 us
-> stddev: 60.6 us
-> =A0 ./test_select_work 1000 10000 300 40
-> =A0 time_per_iteration: min: 8901.7 us avg: 9056.5 us max: 9121.3 us
-> stddev: 57.5 us
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 125c1e7..507981e 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -673,8 +673,8 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>        if (ret)
+>                goto fail;
 >
-> Any other info that might be helpful?
+> -       if (!id && td->touches_by_report == 1) {
+> -               /* the device has been sent by hid-generic */
+> +       /* unknown serial devices need special quirks */
+> +       if ((!id || id->product == HID_ANY_ID) && td->touches_by_report == 1) {
+>                mtclass = &td->mtclass;
+>                mtclass->quirks |= MT_QUIRK_ALWAYS_VALID;
+>                mtclass->quirks &= ~MT_QUIRK_NOT_SEEN_MEANS_UP;
 >
-> Thanks,
-> Dave
-
-I made some improvements to the program to make comparisons a bit
-easier and the standard deviation a bit more meaningful. I have
-attached the updated program and script I used to run it. I also made
-a git repo to track the code and it's available at:
-git://github.com/daveisfera/test_sleep.git
-
-I also ran the tests on a Dell Vostro 200 (dual core CPU) with several
-different OS versions. I realize that several of these will have
-different patches applied and won't be "pure kernel code", but this
-was the simplest way that I could run the tests on different versions
-of the kernel and get comparisons. The plots are available in the
-bugzilla I opened on this issue:
-https://bugzilla.redhat.com/show_bug.cgi?id=3D812148
-
-All of these tests were run with the following command with the
-executable that was built on Ubuntu 11.10 (except for CentOS 6.2 which
-had gcc available on it so I re-compiled it):
-./run_test 1000 10 1000 250 8 4
-
-The first interesting results is with Ubuntu 7.10. usleep seems to
-behave as expected, but select and poll took significantly longer than
-expected. Then with CentOS 5.6, the opposite is true, so I'm not sure
-what result can be drawn from those conclusions.
-
-I tried running the Ubuntu 8.04-4 LiveCD (because that's when the CFS
-was introduced), but it wouldn't boot on the Dell Vostro 200.
-
-CentOS 6.2 is where things start to get interesting, because a 10-15%
-increase in the execution time is seen with select and poll. With
-usleep, that penalty doesn't seem to be present for low numbers of
-threads but seems to reach similar levels once the number of threads
-is 2x the number of cores.
-
-Ubuntu 11.10, Ubuntu 12.04, and Fedora 16 all show results basically
-in line with CentOS 6.2 but with usleep always being a comparable
-penalty the other sleep methods. The one exception to this is that on
-Fedora 16, poll is lower than the other sleep methods with 3 threads.
-
-One final test that I did was to install the PPA on Ubuntu 11.10 that
-has BFS instead of CFS. Info about it can be found at:
-https://launchpad.net/~chogydan/+archive/ppa
-It doesn't seem to be suffering from this sleep issue (or at least in
-a different way) because the results for 1-3 threads are at 2 ms as
-expected (basically no penalty), but then at 4 threads it's about 20%
-higher than the no sleep methods and it seems to maintain more of a
-penalty at higher numbers of threads. I also didn't see the system CPU
-usage when running the previous test with BFS (but this might just be
-an accounting thing since CFS and BFS account for CPU usage
-differently).
-
-I know that these results aren't 100% conclusive, but they seem to
-indicate to me that something about the sleeping mechanism in the
-kernel is using more CPU than I expect it to and that this is the
-cause of the increased CPU usage. It doesn't appear to be the
-scheduler itself because then a similar sort of penalty would have
-been seen with sched_yield. It appears to me that it is something to
-do with the sleep mechanism's interaction with the scheduler
-(particularly the CFS more than the BFS).
-
-Is there any more data I can gather or tests that I can run that can
-help diagnose this problem?
-
-Thanks in advance for any help,
-Dave
-
---e89a8fb2007a13a9f204bee9eda1
-Content-Type: application/octet-stream; name=run_test
-Content-Disposition: attachment; filename=run_test
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h1nvtst90
-
-IyEvYmluL2Jhc2gKCmlmIFsgJCMgLW5lIDYgXTsgdGhlbgoJZWNobyAiVXNhZ2U6IGBiYXNlbmFt
-ZSAkMGAgPHNsZWVwX3RpbWU+IDxvdXRlcl9pdGVyYXRpb25zPiA8aW5uZXJfaXRlcmF0aW9ucz4g
-PHdvcmtfc2l6ZT4gPG1heF9udW1fdGhyZWFkcz4gPG1heF9zbGVlcF90eXBlPiIKCWVjaG8gIiAg
-bWF4X251bV90aHJlYWRzOiBUaGUgaGlnaGVzdCB2YWx1ZSB1c2VkIGZvciBudW1fdGhyZWFkcyBp
-biB0aGUgcmVzdWx0cyIKCWVjaG8gIiAgbWF4X3NsZWVwX3R5cGU6IFRoZSBoaWdoZXN0IHZhbHVl
-IHVzZWQgZm9yIHNsZWVwX3R5cGUgaW4gdGhlIHJlc3VsdHMiCglleGl0IC0xCmZpCgojIFJ1biB0
-aHJvdWdoIHRoZSByZXF1ZXN0ZWQgbnVtYmVyIG9mIFNMRUVQX1RZUEUgdmFsdWVzCmZvciBpIGlu
-ICQoc2VxIDAgJDYpCmRvCgkjIFJlbW92ZSBhbnkgZXhpc3RpbmcgcmVzdWx0cyBmaWxlCglybSAt
-ZiAicmVzdWx0c18kaS50eHQiCgkjIFJ1biB0aHJvdWdoIHRoZSByZXF1ZXN0ZWQgbnVtYmVyIG9m
-IHRocmVhZHMKCWZvciBqIGluICQoc2VxIDEgJDUpCglkbwoJCSMgUHJpbnQgd2hpY2ggc2V0dGlu
-Z3MgYXJlIGFib3V0IHRvIGJlIHJ1bgoJCWVjaG8gInNsZWVwX3R5cGU6ICRpIG51bV90aHJlYWRz
-OiAkaiIKCQkjIFJ1biB0aGUgdGVzdCBhbmQgc2F2ZSBpdCB0byB0aGUgcmVzdWx0cyBmaWxlCgkJ
-Li90ZXN0X3NsZWVwICQxICQyICQzICQ0ICRqICRpID4+ICJyZXN1bHRzXyRpLnR4dCIKCWRvbmUK
-ZG9uZQo=
---e89a8fb2007a13a9f204bee9eda1
-Content-Type: text/x-csrc; charset=US-ASCII; name="test_sleep.c"
-Content-Disposition: attachment; filename="test_sleep.c"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h1nvtstd1
-
-I2luY2x1ZGUgPGZsb2F0Lmg+CiNpbmNsdWRlIDxtYXRoLmg+CiNpbmNsdWRlIDxwb2xsLmg+CiNp
-bmNsdWRlIDxwdGhyZWFkLmg+CiNpbmNsdWRlIDxzdGRpby5oPgojaW5jbHVkZSA8c3RkbGliLmg+
-CiNpbmNsdWRlIDx1bmlzdGQuaD4KI2luY2x1ZGUgPHN5cy9zZWxlY3QuaD4KI2luY2x1ZGUgPHN5
-cy90aW1lLmg+CgoKCi8vIFRoZSBkaWZmZXJlbnQgdHlwZSBvZiBzbGVlcCB0aGF0IGFyZSBzdXBw
-b3J0ZWQKZW51bSBzbGVlcF90eXBlIHsKICBTTEVFUF9UWVBFX05PTkUsCiAgU0xFRVBfVFlQRV9T
-RUxFQ1QsCiAgU0xFRVBfVFlQRV9QT0xMLAogIFNMRUVQX1RZUEVfVVNMRUVQLAogIFNMRUVQX1RZ
-UEVfWUlFTEQsCn07CgovLyBGdW5jdGlvbiB0eXBlIGZvciBkb2luZyB3b3JrIHdpdGggYSBzbGVl
-cAp0eXBlZGVmIGxvbmcgbG9uZyAqKCp3b3JrX2Z1bmMpKGNvbnN0IGludCBzbGVlcF90aW1lLCBj
-b25zdCBpbnQgbnVtX2l0ZXJhdGlvbnMsIGNvbnN0IGludCB3b3JrX3NpemUpOwoKLy8gSW5mb3Jt
-YXRpb24gcGFzc2VkIHRvIHRoZSB0aHJlYWQKc3RydWN0IHRocmVhZF9pbmZvIHsKICBpbnQgc2xl
-ZXBfdGltZTsKICBpbnQgbnVtX2l0ZXJhdGlvbnM7CiAgaW50IHdvcmtfc2l6ZTsKICB3b3JrX2Z1
-bmMgZnVuYzsKfTsKCi8vIEluIG9yZGVyIHRvIG1ha2UgU0xFRVBfVFlQRSBhIHJ1bi10aW1lIHBh
-cmFtZXRlciBmdW5jdGlvbiBwb2ludGVycyBhcmUgdXNlZC4KLy8gVGhlIGZ1bmN0aW9uIHBvaW50
-ZXIgY291bGQgaGF2ZSBiZWVuIHRvIHRoZSBzbGVlcCBmdW5jdGlvbiBiZWluZyB1c2VkLCBidXQK
-Ly8gdGhlbiB0aGF0IHdvdWxkIG1lYW4gYW4gZXh0cmEgZnVuY3Rpb24gY2FsbCBpbnNpZGUgb2Yg
-dGhlICJ3b3JrIGxvb3AiIGFuZCBJCi8vIHdhbnRlZCB0byBrZWVwIHRoZSBtZWFzdXJlbWVudHMg
-YXMgdGlnaHQgYXMgcG9zc2libGUgYW5kIHRoZSBleHRyYSB3b3JrIGJlaW5nCi8vIGRvbmUgdG8g
-YmUgYXMgc21hbGwvY29udHJvbGxlZCBhcyBwb3NzaWJsZSBzbyBpbnN0ZWFkIHRoZSB3b3JrIGlz
-IGRlY2xhcmVkIGFzCi8vIGEgc2VyaWVlcyBvZiBtYWNyb3MgdGhhdCBhcmUgY2FsbGVkIGluIGFs
-bCBvZiB0aGUgc2xlZXAgZnVuY3Rpb25zLiBUaGUgY29kZQovLyBpcyBhIGJpdCB1Z2xpZXIgdGhp
-cyB3YXksIGJ1dCBJIGJlbGlldmUgaXQgcmVzdWx0cyBpbiBhIG1vcmUgYWNjdXJhdGUgdGVzdC4K
-Ci8vIEZpbGwgaW4gYSBidWZmZXIgd2l0aCByYW5kb20gbnVtYmVycyAodGFrZW4gZnJvbSBsYXR0
-LmMgYnkgSmVucyBBeGJvZSA8amVucy5heGJvZUBvcmFjbGUuY29tPikKI2RlZmluZSBERUNMQVJF
-X1dPUksoKSBcCiAgaW50ICpidWY7IFwKICBpbnQgcHNlZWQ7IFwKICBpbnQgaW51bSwgYm51bTsg
-XAogIHN0cnVjdCB0aW1ldmFsIGJlZm9yZSwgYWZ0ZXI7IFwKICBsb25nIGxvbmcgKmRpZmY7IFwK
-ICBidWYgPSBjYWxsb2Mod29ya19zaXplLCBzaXplb2YoaW50KSk7IFwKICBkaWZmID0gbWFsbG9j
-KHNpemVvZihsb25nIGxvbmcpKTsgXAogIGdldHRpbWVvZmRheSgmYmVmb3JlLCBOVUxMKQogIAoj
-ZGVmaW5lIERPX1dPUksoU0xFRVBfRlVOQykgXAogIGZvciAoaW51bT0wOyBpbnVtPG51bV9pdGVy
-YXRpb25zOyArK2ludW0pIHsgXAogICAgU0xFRVBfRlVOQyBcCiAgICAgXAogICAgcHNlZWQgPSAx
-OyBcCiAgICBmb3IgKGJudW09MDsgYm51bTx3b3JrX3NpemU7ICsrYm51bSkgeyBcCiAgICAgIHBz
-ZWVkID0gcHNlZWQgKiAxMTAzNTE1MjQ1ICsgMTIzNDU7IFwKICAgICAgYnVmW2JudW1dID0gKHBz
-ZWVkIC8gNjU1MzYpICUgMzI3Njg7IFwKICAgIH0gXAogIH0gXAoKI2RlZmluZSBGSU5JU0hfV09S
-SygpIFwKICBnZXR0aW1lb2ZkYXkoJmFmdGVyLCBOVUxMKTsgXAogICpkaWZmID0gMTAwMDAwMExM
-ICogKGFmdGVyLnR2X3NlYyAtIGJlZm9yZS50dl9zZWMpOyBcCiAgKmRpZmYgKz0gYWZ0ZXIudHZf
-dXNlYyAtIGJlZm9yZS50dl91c2VjOyBcCiAgZnJlZShidWYpOyBcCiAgcmV0dXJuIGRpZmYKCmxv
-bmcgbG9uZyAqZG9fd29ya19ub3NsZWVwKGNvbnN0IGludCBzbGVlcF90aW1lLCBjb25zdCBpbnQg
-bnVtX2l0ZXJhdGlvbnMsIGNvbnN0IGludCB3b3JrX3NpemUpCnsKICBERUNMQVJFX1dPUksoKTsK
-CiAgLy8gTGV0IHRoZSBjb21waWxlciBrbm93IHRoYXQgc2xlZXBfdGltZSBpc24ndCB1c2VkIGlu
-IHRoaXMgZnVuY3Rpb24KICAodm9pZClzbGVlcF90aW1lOwoKICBET19XT1JLKCk7CgogIEZJTklT
-SF9XT1JLKCk7Cn0KCmxvbmcgbG9uZyAqZG9fd29ya19zZWxlY3QoY29uc3QgaW50IHNsZWVwX3Rp
-bWUsIGNvbnN0IGludCBudW1faXRlcmF0aW9ucywgY29uc3QgaW50IHdvcmtfc2l6ZSkKewogIHN0
-cnVjdCB0aW1ldmFsIHRzOwogIERFQ0xBUkVfV09SSygpOwoKICBET19XT1JLKAogICAgdHMudHZf
-c2VjID0gMDsKICAgIHRzLnR2X3VzZWMgPSBzbGVlcF90aW1lOwogICAgc2VsZWN0KDAsIDAsIDAs
-IDAsICZ0cyk7CiAgICApOwoKICBGSU5JU0hfV09SSygpOwp9Cgpsb25nIGxvbmcgKmRvX3dvcmtf
-cG9sbChjb25zdCBpbnQgc2xlZXBfdGltZSwgY29uc3QgaW50IG51bV9pdGVyYXRpb25zLCBjb25z
-dCBpbnQgd29ya19zaXplKQp7CiAgc3RydWN0IHBvbGxmZCBwZmQ7CiAgY29uc3QgaW50IHNsZWVw
-X3RpbWVfbXMgPSBzbGVlcF90aW1lIC8gMTAwMDsKICBERUNMQVJFX1dPUksoKTsKCiAgcGZkLmZk
-ID0gMDsKICBwZmQuZXZlbnRzID0gMDsKCiAgRE9fV09SSygKICAgIHBvbGwoJnBmZCwgMSwgc2xl
-ZXBfdGltZV9tcyk7CiAgICApOwoKICBGSU5JU0hfV09SSygpOwp9Cgpsb25nIGxvbmcgKmRvX3dv
-cmtfdXNsZWVwKGNvbnN0IGludCBzbGVlcF90aW1lLCBjb25zdCBpbnQgbnVtX2l0ZXJhdGlvbnMs
-IGNvbnN0IGludCB3b3JrX3NpemUpCnsKICBERUNMQVJFX1dPUksoKTsKCiAgRE9fV09SSygKICAg
-IHVzbGVlcChzbGVlcF90aW1lKTsKICAgICk7CgogIEZJTklTSF9XT1JLKCk7Cn0KCmxvbmcgbG9u
-ZyAqZG9fd29ya195aWVsZChjb25zdCBpbnQgc2xlZXBfdGltZSwgY29uc3QgaW50IG51bV9pdGVy
-YXRpb25zLCBjb25zdCBpbnQgd29ya19zaXplKQp7CiAgREVDTEFSRV9XT1JLKCk7CgogIC8vIExl
-dCB0aGUgY29tcGlsZXIga25vdyB0aGF0IHNsZWVwX3RpbWUgaXNuJ3QgdXNlZCBpbiB0aGlzIGZ1
-bmN0aW9uCiAgKHZvaWQpc2xlZXBfdGltZTsKCiAgRE9fV09SSygKICAgIHNjaGVkX3lpZWxkKCk7
-CiAgICApOwoKICBGSU5JU0hfV09SSygpOwp9Cgp2b2lkICpkb190ZXN0KHZvaWQgKmFyZykKewog
-IGNvbnN0IHN0cnVjdCB0aHJlYWRfaW5mbyAqdGluZm8gPSAoc3RydWN0IHRocmVhZF9pbmZvICop
-YXJnOwoKICAvLyBDYWxsIHRoZSBmdW5jdGlvbiB0byBkbyB0aGUgd29yawogIHJldHVybiAoKnRp
-bmZvLT5mdW5jKSh0aW5mby0+c2xlZXBfdGltZSwgdGluZm8tPm51bV9pdGVyYXRpb25zLCB0aW5m
-by0+d29ya19zaXplKTsKfQoKaW50IG1haW4oaW50IGFyZ2MsIGNoYXIgKiphcmd2KQp7CiAgaWYg
-KGFyZ2MgPD0gNikgewogICAgcHJpbnRmKCJVc2FnZTogJXMgPHNsZWVwX3RpbWU+IDxvdXRlcl9p
-dGVyYXRpb25zPiA8aW5uZXJfaXRlcmF0aW9ucz4gPHdvcmtfc2l6ZT4gPG51bV90aHJlYWRzPiA8
-c2xlZXBfdHlwZT5cbiIsIGFyZ3ZbMF0pOwogICAgcHJpbnRmKCIgIG91dGVyX2l0ZXJhdGlvbnM6
-IE51bWJlciBvZiBpdGVyYXRpb25zIGZvciBlYWNoIHRocmVhZCAodXNlZCB0byBjYWxjdWxhdGUg
-c3RhdGlzdGljcylcbiIpOwogICAgcHJpbnRmKCIgIGlubmVyX2l0ZXJhdGlvbnM6IE51bWJlciBv
-ZiB3b3JrL3NsZWVwIGN5Y2xlcyBwZXJmb3JtZWQgaW4gZWFjaCB0aHJlYWQgKHVzZWQgdG8gaW1w
-cm92ZSBjb25zaXN0ZW5jeS9vYnNlcnZhYmlsaXR5KSlcbiIpOwogICAgcHJpbnRmKCIgIHdvcmtf
-c2l6ZTogTnVtYmVyIG9mIGFycmF5IGVsZW1lbnRzIChpbiBrYikgdGhhdCBhcmUgZmlsbGVkIHdp
-dGggcHN1ZWRvLXJhbmRvbSBudW1iZXJzXG4iKTsKICAgIHByaW50ZigiICBudW1fdGhyZWFkczog
-TnVtYmVyIG9mIHRocmVhZHMgdG8gc3Bhd24gYW5kIHBlcmZvcm0gd29yay9zbGVlcCBjeWNsZXMg
-aW5cbiIpOwogICAgcHJpbnRmKCIgIHNsZWVwX3R5cGU6IDA9bm9uZSAxPXNlbGVjdCAyPXBvbGwg
-Mz11c2xlZXAgND15aWVsZFxuIik7CiAgICByZXR1cm4gLTE7CiAgfQoKICBzdHJ1Y3QgdGhyZWFk
-X2luZm8gdGluZm87CiAgaW50IG91dGVyX2l0ZXJhdGlvbnM7CiAgaW50IHNsZWVwX3R5cGU7CiAg
-aW50IHMsIGludW0sIHRudW0sIG51bV90aHJlYWRzOwogIHB0aHJlYWRfYXR0cl90IGF0dHI7CiAg
-cHRocmVhZF90ICp0aHJlYWRzOwogIGxvbmcgbG9uZyAqcmVzOwogIGxvbmcgbG9uZyAqdGltZXM7
-CgogIC8vIEdldCB0aGUgcGFyYW1ldGVycwogIHRpbmZvLnNsZWVwX3RpbWUgPSBhdG9pKGFyZ3Zb
-MV0pOwogIG91dGVyX2l0ZXJhdGlvbnMgPSBhdG9pKGFyZ3ZbMl0pOwogIHRpbmZvLm51bV9pdGVy
-YXRpb25zID0gYXRvaShhcmd2WzNdKTsKICB0aW5mby53b3JrX3NpemUgPSBhdG9pKGFyZ3ZbNF0p
-ICogMTAyNDsKICBudW1fdGhyZWFkcyA9IGF0b2koYXJndls1XSk7CiAgc2xlZXBfdHlwZSA9IGF0
-b2koYXJndls2XSk7CiAgc3dpdGNoIChzbGVlcF90eXBlKSB7CiAgICBjYXNlIFNMRUVQX1RZUEVf
-Tk9ORTogICB0aW5mby5mdW5jID0gJmRvX3dvcmtfbm9zbGVlcDsgYnJlYWs7CiAgICBjYXNlIFNM
-RUVQX1RZUEVfU0VMRUNUOiB0aW5mby5mdW5jID0gJmRvX3dvcmtfc2VsZWN0OyAgYnJlYWs7CiAg
-ICBjYXNlIFNMRUVQX1RZUEVfUE9MTDogICB0aW5mby5mdW5jID0gJmRvX3dvcmtfcG9sbDsgICAg
-YnJlYWs7CiAgICBjYXNlIFNMRUVQX1RZUEVfVVNMRUVQOiB0aW5mby5mdW5jID0gJmRvX3dvcmtf
-dXNsZWVwOyAgYnJlYWs7CiAgICBjYXNlIFNMRUVQX1RZUEVfWUlFTEQ6ICB0aW5mby5mdW5jID0g
-JmRvX3dvcmtfeWllbGQ7ICAgYnJlYWs7CiAgICBkZWZhdWx0OgogICAgICBwcmludGYoIkludmFs
-aWQgc2xlZXAgdHlwZTogJWRcbiIsIHNsZWVwX3R5cGUpOwogICAgICByZXR1cm4gLTc7CiAgfQoK
-ICAvLyBJbml0aWFsaXplIHRoZSB0aHJlYWQgY3JlYXRpb24gYXR0cmlidXRlcwogIHMgPSBwdGhy
-ZWFkX2F0dHJfaW5pdCgmYXR0cik7CiAgaWYgKHMgIT0gMCkgewogICAgcHJpbnRmKCJFcnJvciBp
-bml0aWFsaXppbmcgdGhyZWFkIGF0dHJpYnV0ZXNcbiIpOwogICAgcmV0dXJuIC0yOwogIH0KCiAg
-Ly8gQWxsb2NhdGUgdGhlIG1lbW9yeSB0byB0cmFjayB0aGUgdGhyZWFkcwogIHRocmVhZHMgPSBj
-YWxsb2MobnVtX3RocmVhZHMsIHNpemVvZihwdGhyZWFkX3QpKTsKICB0aW1lcyA9IGNhbGxvYyhu
-dW1fdGhyZWFkcywgc2l6ZW9mKHVuc2lnbmVkIGxvbmcgbG9uZykpOwogIGlmICh0aHJlYWRzID09
-IE5VTEwpIHsKICAgIHByaW50ZigiRXJyb3IgYWxsb2NhdGluZyBtZW1vcnkgdG8gdHJhY2sgdGhy
-ZWFkc1xuIik7CiAgICByZXR1cm4gLTM7CiAgfQoKICAvLyBDYWxjdWxhdGUgdGhlIHN0YXRpc3Rp
-Y3Mgb2YgdGhlIHByb2Nlc3NpbmcKICBmbG9hdCBtaW5fdGltZSA9IEZMVF9NQVg7CiAgZmxvYXQg
-bWF4X3RpbWUgPSAtRkxUX01BWDsKICBmbG9hdCBhdmdfdGltZSA9IDA7CiAgZmxvYXQgcHJldl9h
-dmdfdGltZSA9IDA7CiAgZmxvYXQgc3RkZGV2X3RpbWUgPSAwOwoKICAvLyBQZXJmb3JtIHRoZSBy
-ZXF1ZXN0ZWQgbnVtYmVyIG9mIG91dGVyIGl0ZXJhdGlvbnMKICBmb3IgKGludW09MDsgaW51bTxv
-dXRlcl9pdGVyYXRpb25zOyArK2ludW0pIHsKICAgIC8vIFN0YXJ0IGFsbCBvZiB0aGUgdGhyZWFk
-cwogICAgZm9yICh0bnVtPTA7IHRudW08bnVtX3RocmVhZHM7ICsrdG51bSkgewogICAgICBzID0g
-cHRocmVhZF9jcmVhdGUoJnRocmVhZHNbdG51bV0sICZhdHRyLCAmZG9fdGVzdCwgJnRpbmZvKTsK
-CiAgICAgIGlmIChzICE9IDApIHsKICAgICAgICBwcmludGYoIkVycm9yIHN0YXJ0aW5nIHRocmVh
-ZFxuIik7CiAgICAgICAgcmV0dXJuIC00OwogICAgICB9CiAgICB9CgogICAgLy8gQ2xlYW4gdXAg
-dGhlIHRocmVhZCBjcmVhdGlvbiBhdHRyaWJ1dGVzCiAgICBzID0gcHRocmVhZF9hdHRyX2Rlc3Ry
-b3koJmF0dHIpOwogICAgaWYgKHMgIT0gMCkgewogICAgICBwcmludGYoIkVycm9yIGNsZWFuaW5n
-IHVwIHRocmVhZCBhdHRyaWJ1dGVzXG4iKTsKICAgICAgcmV0dXJuIC01OwogICAgfQoKICAgIC8v
-IFdhaXQgZm9yIGFsbCB0aGUgdGhyZWFkcyB0byBmaW5pc2gKICAgIGZvciAodG51bT0wOyB0bnVt
-PG51bV90aHJlYWRzOyArK3RudW0pIHsKICAgICAgcyA9IHB0aHJlYWRfam9pbih0aHJlYWRzW3Ru
-dW1dLCAodm9pZCAqKikoJnJlcykpOwoKICAgICAgaWYgKHMgIT0gMCkgewogICAgICAgIHByaW50
-ZigiRXJyb3Igd2FpdGluZyBmb3IgdGhyZWFkXG4iKTsKICAgICAgICByZXR1cm4gLTY7CiAgICAg
-IH0KCiAgICAgIC8vIFNhdmUgdGhlIHRpbWUKICAgICAgdGltZXNbdG51bV0gPSAqcmVzOwoKICAg
-ICAgLy8gQW5kIGNsZWFuIGl0IHVwCiAgICAgIGZyZWUocmVzKTsKICAgIH0KCiAgICAvLyBVcGRh
-dGUgdGhlIHN0YXRpc3RpY3MKICAgIGZvciAodG51bT0wOyB0bnVtPG51bV90aHJlYWRzOyArK3Ru
-dW0pIHsKICAgICAgaWYgKHRpbWVzW3RudW1dIDwgbWluX3RpbWUpCiAgICAgICAgbWluX3RpbWUg
-PSB0aW1lc1t0bnVtXTsKICAgICAgaWYgKHRpbWVzW3RudW1dID4gbWF4X3RpbWUpCiAgICAgICAg
-bWF4X3RpbWUgPSB0aW1lc1t0bnVtXTsKICAgICAgYXZnX3RpbWUgKz0gKHRpbWVzW3RudW1dIC0g
-YXZnX3RpbWUpIC8gKGZsb2F0KSh0bnVtICsgMSk7CiAgICAgIHN0ZGRldl90aW1lICs9ICh0aW1l
-c1t0bnVtXSAtIHByZXZfYXZnX3RpbWUpICogKHRpbWVzW3RudW1dIC0gYXZnX3RpbWUpOwogICAg
-ICBwcmV2X2F2Z190aW1lID0gYXZnX3RpbWU7CiAgICB9CiAgfQoKICAvLyBGaW5pc2ggdGhlIGNh
-bGN1bGF0aW9uIG9mIHRoZSBzdGFuZGFyZCBkZXZpYXRpb24KICBzdGRkZXZfdGltZSA9IHNxcnRm
-KHN0ZGRldl90aW1lIC8gKChvdXRlcl9pdGVyYXRpb25zICogbnVtX3RocmVhZHMpIC0gMSkpOwoK
-ICAvLyBQcmludCBvdXQgdGhlIHN0YXRpc3RpY3Mgb2YgdGhlIHRpbWVzCiAgcHJpbnRmKCJ0aW1l
-X3Blcl9pdGVyYXRpb246IG1pbjogJS4xZiB1cyBhdmc6ICUuMWYgdXMgbWF4OiAlLjFmIHVzIHN0
-ZGRldjogJS4xZiB1c1xuIiwKICAgICAgbWluX3RpbWUgLyB0aW5mby5udW1faXRlcmF0aW9ucywK
-ICAgICAgYXZnX3RpbWUgLyB0aW5mby5udW1faXRlcmF0aW9ucywKICAgICAgbWF4X3RpbWUgLyB0
-aW5mby5udW1faXRlcmF0aW9ucywKICAgICAgc3RkZGV2X3RpbWUgLyB0aW5mby5udW1faXRlcmF0
-aW9ucyk7CgogIC8vIENsZWFuIHVwIHRoZSBhbGxvY2F0ZWQgdGhyZWFkcwogIGZyZWUodGhyZWFk
-cyk7CgogIHJldHVybiAwOwp9Cg==
---e89a8fb2007a13a9f204bee9eda1--
+> Cheers,
+> Henrik
