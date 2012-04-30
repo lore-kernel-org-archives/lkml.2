@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab2D3QXE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 12:23:04 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:33209 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669Ab2D3QXC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 12:23:02 -0400
-Date: Mon, 30 Apr 2012 12:17:16 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: udev races with 'arch_register_cpu' to write 1 to
- /sys/devices/system/cpu/cpu1/online (which is not yet created).
-Message-ID: <20120430161716.GA991@phenom.dumpdata.com>
-References: <20120430153623.GA23485@phenom.dumpdata.com>
- <20120430155018.GA16794@kroah.com>
- <20120430155149.GB16794@kroah.com>
+	id S1756245Ab2D3QZN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 12:25:13 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45673 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753249Ab2D3QZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 12:25:11 -0400
+Message-ID: <4F9EBCC3.9040509@linux.vnet.ibm.com>
+Date: Mon, 30 Apr 2012 11:24:35 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120430155149.GB16794@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Minchan Kim <minchan@kernel.org>
+CC: undisclosed-recipients:";
+	Dan Magenheimer" <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
+	CC:	undisclosed-recipients:;Dan Magenheimer <dan.magenheimer@oracle.com>
+						^-missing end of address
+Subject: Re: [PATCH 6/6] zsmalloc: make zsmalloc portable
+References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-7-git-send-email-minchan@kernel.org> <4F980AFE.60901@vflare.org> <fcde09be-ae34-4f09-a324-825fb2d4fac2@default> <4F98ACF3.7060908@kernel.org> <4F98D814.9060808@kernel.org>
+In-Reply-To: <4F98D814.9060808@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12043016-5806-0000-0000-000014BD7417
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 11:51:49AM -0400, Greg KH wrote:
-> On Mon, Apr 30, 2012 at 11:50:18AM -0400, Greg KH wrote:
-> > On Mon, Apr 30, 2012 at 11:36:23AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > Hey Greg,
-> > > 
-> > > Hoping you can help with some guidance on how to fix this.
-> > > 
-> > > The issue is with CPU hotplug is that when a CPU goes up
-> > > it calls 'arch_register_cpu' which eventually calls
-> > > register_cpu. That function does these two things:
-> > > 
-> > > 251         error = device_register(&cpu->dev);
-> > > 252         if (!error && cpu->hotpluggable)
-> > > 253                 register_cpu_control(cpu);
-> > > 
-> > > and the device_register creates a nice little SysFS directory:
-> > > 
-> > > /sys/devices/system/cpu/cpu2/ which at line 251 has the 'add' attribute
-> > > but no 'online' attribute. udev then tries to echo 1 to the 'online'
-> > > and it we get:
-> > > udevd-work[2421]: error opening ATTR{/sys/devices/system/cpu/cpu2/online} for writing: No such file or directory
-> > > 
-> > > Line 253 creates said 'online' and at that time udev [or the system admin]
-> > > can write 1 to 'online' and the CPU goes up.
-> > > 
-> > > So .. any thoughts? Is there some way to inhibit from uevent being sent
-> > > until line 253 has run?
-> > 
-> > Yes.
-> 
-> Oh, I imagine you want to know _how_ to do it too, right?  (sorry, I
-> couldn't resist...)
+On 04/26/2012 12:07 AM, Minchan Kim wrote:
 
-Heh.
 > 
-> Make this a default attribute of the cpu device, and then it will be
-> created by the driver core before the uevent is sent to userspace.
-> That's what you are supposed to do in the first place, adding files "by
-> hand" is wrong, for this very reason.
+> Quick patch - totally untested.
+> 
+> We can implement new TLB flush function 
+> "local_flush_tlb_kernel_range" If architecture is very smart, it 
+> could flush only tlb entries related to vaddr. If architecture is 
+> smart, it could flush only tlb entries related to a CPU. If 
+> architecture is _NOT_ smart, it could flush all entries of all CPUs.
+> 
+> Now there are few architectures have "local_flush_tlb_kernel_range". 
+> MIPS, sh, unicore32, arm, score and x86 by this patch. So I think 
+> it's good candidate other arch should implement. Until that, we can 
+> add stub for other architectures which calls only [global/local] TLB
+>  flush. We can expect maintainer could respond then they can 
+> implement best efficient method. If the maintainer doesn't have any 
+> interest, zsmalloc could be very slow in that arch and users will 
+> blame that architecture.
+> 
+> Any thoughts?
 
-OK, will prep up a patch shortly.
+
+I had this same idea a while back.
+
+It is encouraging to know that someone else independently thought of
+this solution too :)  Makes me think it is a good solution.
+
+Let me build and test on x86, make sure there are no unforseen consequences.
+
+Thanks again for your work here!
+
+Seth
+
