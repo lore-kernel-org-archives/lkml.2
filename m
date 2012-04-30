@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab2D3ISm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 04:18:42 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38258 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab2D3ISl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 04:18:41 -0400
-Date: Mon, 30 Apr 2012 09:18:34 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] Fix blkdev.h build errors when BLOCK=n
-Message-ID: <20120430081834.GS24211@n2100.arm.linux.org.uk>
+	id S1754967Ab2D3IT6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 04:19:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36768 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751688Ab2D3ITz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 04:19:55 -0400
+Message-ID: <4F9E4B17.7060909@redhat.com>
+Date: Mon, 30 Apr 2012 11:19:35 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        KVM <kvm@vger.kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Xen <xen-devel@lists.xensource.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC V6 1/5] kvm hypervisor : Add a hypercall to KVM hypervisor
+ to support pv-ticketlocks
+References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com> <20120423095947.30893.84029.sendpatchset@codeblue.in.ibm.com> <4F9D415B.7010103@redhat.com> <4F9E42F6.8050108@linux.vnet.ibm.com>
+In-Reply-To: <4F9E42F6.8050108@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I see builds failing with:
+On 04/30/2012 10:44 AM, Raghavendra K T wrote:
+>> Hm, what about reusing KVM_REQ_UNHALT?
+>>
+>
+>
+> Yes, I had experimented this for some time without success.
+> For e.g. having
+> make_request(KVM_REQ_UNHALT, vcpu) directly from kick hypercall.
+>
+> It would still need a flag. (did not get any alternative so far except
+> the  workaround posted in V4) :(
+>
 
-  CC [M]  drivers/mmc/host/dw_mmc.o
-In file included from drivers/mmc/host/dw_mmc.c:15:
-include/linux/blkdev.h:1404: warning: 'struct task_struct' declared inside parameter list
-include/linux/blkdev.h:1404: warning: its scope is only this definition or declaration, which is probably not what you want
-include/linux/blkdev.h:1408: warning: 'struct task_struct' declared inside parameter list
-include/linux/blkdev.h:1413: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'blk_needs_flush_plug'
-make[4]: *** [drivers/mmc/host/dw_mmc.o] Error 1
+Okay.
 
-This is because dw_mmc.c includes linux/blkdev.h as the very first file,
-and when CONFIG_BLOCK=n, blkdev.h omits all includes.
-
-As it requires linux/sched.h even when CONFIG_BLOCK=n, move this out of
-the #ifdef.
-
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
----
- include/linux/blkdev.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 2aa2466..4d4ac24 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1,9 +1,10 @@
- #ifndef _LINUX_BLKDEV_H
- #define _LINUX_BLKDEV_H
- 
-+#include <linux/sched.h>
-+
- #ifdef CONFIG_BLOCK
- 
--#include <linux/sched.h>
- #include <linux/major.h>
- #include <linux/genhd.h>
- #include <linux/list.h>
+-- 
+error compiling committee.c: too many arguments to function
 
