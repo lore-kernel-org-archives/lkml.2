@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab2D3Xbf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 19:31:35 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54151 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757408Ab2D3Xbe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 19:31:34 -0400
-Date: Tue, 1 May 2012 00:34:20 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: NeilBrown <neilb@suse.de>, linux-serial@vger.kernel.org,
-        linux-pm@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+	id S1757500Ab2D3XgF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 19:36:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40788 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756638Ab2D3XgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 19:36:03 -0400
+Date: Tue, 1 May 2012 09:35:59 +1000
+From: NeilBrown <neilb@suse.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-serial@vger.kernel.org, linux-pm@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
 Subject: Re: Question:  How to power-manage UART-attached devices.
-Message-ID: <20120501003420.028b57ec@pyramind.ukuu.org.uk>
-In-Reply-To: <4F9F178F.3030408@zytor.com>
+Message-ID: <20120501093559.5c14087d@notabene.brown>
+In-Reply-To: <20120430223322.GA3951@sirena.org.uk>
 References: <20120501082209.0b560708@notabene.brown>
-	<4F9F178F.3030408@zytor.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	<20120430223322.GA3951@sirena.org.uk>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/rSH_kM2jiGHyad894vRlAGW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Apr 2012 15:51:59 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+--Sig_/rSH_kM2jiGHyad894vRlAGW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> On 04/30/2012 03:22 PM, NeilBrown wrote:
-> > 
-> > What I would really like is to integrate it closely with the state
-> > of the UART.  i.e. if the /dev/ttyO1 device is open, then the GPS
-> > is "on".  If not then it is "off".  Similarly if /dev/tty/O0 is
-> > open, bluetooth is "on", else "off". However I cannot find any way
-> > to "plug in" to the tty or serial drivers to perform an arbitrary
-> > action on first-open or last-close.  Is something like that
-> > possible? If not, is it a reasonable thing to ask? Any suggests
-> > about where to put such a hook?
-> > 
-> 
-> I don't think that's the right interface.  Just because the port is
-> currently open doesn't mean the device is active, nor vice versa.  ALL
-> it means is that someone currently has an access handle to it.
-> 
-> Since a serial port models, well, a *port*, it is logical to think of
-> a (hypothetical) socket containing an RS-232 connector as well as a
-> power outlet.  Given that, it would be logical to drive the "power
-> connector" using the same type of interface used for the other parts
-> of an RS-232 control, meaning either with termios flags or via a
-> dedicated control ioctl (TIOCPOWER?).
+On Mon, 30 Apr 2012 23:33:22 +0100 Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-Actually several of our virtual tty interfaces treat open as meaning
-powered up. It's a fairly logical power management model. A lot of our
-real tty ports do the same as well and kill power on the last close.
+> On Tue, May 01, 2012 at 08:22:09AM +1000, NeilBrown wrote:
+>=20
+> >  The question is how can user-space tell the kernel that these devices =
+are
+> >  'inactive'?
+>=20
+> >  I would like to integrate this into Linux in the most  "natural" way t=
+hat I
+> >  can but am having trouble.  My current approach involves using "rfkill=
+" but
+> >  that doesn't work very well for reasons that are probably not very rel=
+evant
+> >  here.  It probably does make sense for powering the GPS antenna, but n=
+ot
+> >  much else.
+>=20
+> The userspace consumer was added for users like this that live entirely
+> in userspace.
 
-At the tty layer the tty_port helper callbacks port->activate() and
-port->shutdown() provide the needed functionality.
+Hi Mark,
+ thanks for the reply.
 
-You don't however want to be "hooking" this - your platform needs to
-provide its own versions of the relevant operations in the OMAP serial
-driver.
+ I assume you mean REGULATOR_VIRTUAL_CONSUMER (drivers/regulator/virtual.c)?
 
-Alan
+ The one where the Kconfig entry says:
+    This is mainly useful for test purposes.
+
+ That certainly was useful for test purposes but I want to move beyond
+ testing.
+
+ One of the purposes of an operating system is to provide useful abstractio=
+ns
+ and hide irrelevant details, so I don't want user-space to have to
+ explicitly enable a regulator.
+ I could cope with an 'on/off switch' abstraction.  It might then enable a
+ regulator. In the case of the GPS device it would need to both enable a
+ regulator and toggle a GPIO line.  I really don't want user-space to "know"
+ that it has to turn on a regulator and toggle a gpio line...
+
+ So I'm still hoping for something more abstract.
+
+Thanks,
+NeilBrown
+
+--Sig_/rSH_kM2jiGHyad894vRlAGW
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBT58h3znsnt1WYoG5AQKdAg/+Mscg7Q/N/P7TadHWa+zcGUAkWelQ1xZG
+PPMNxgW8PPw8kPwmB/uzpC6dG3sL0zoRZEEULdi8U8ItIJCl3y9P3B0cFjpL0vgm
+U87MVeCRyQIY5OGFe/FI7MZPGxBCCiKlvPutWVUIBHrDgNCz0F4ycLtV7yMZj/Fq
+sRxa5TZJuACW8kBEj5892zW0ShXHe7ie0J2UIOpaW2UdtLPJImd1uAebhvxi05jD
+2Om0yTl/qkBeevfTs2nHxNSOg4R4KhDLQqWbiuuZA+pDyPRiTN2x3y1lQYPKChR5
+E9P342fse7w6R1X7StOyhx1XfqOvHy/iworv15mJHGvYaUZuIQyE1EM0f6HKHxpo
+0/nRKHP//rvbyZ1Q6B66FYfJ3B/PjUcyDgyM2ORApNa8TndmUWP0AvPSQYkt99oW
+35rW7bGoohZsptwFs1lMzdNoCuQx3MVvHzukQAkqaeDVJQP58v9/WEGWs1CGVYDk
+MEo6lKwu8SCjMlgjHnzjMa3gedEemrFRUKUo/l8KsPjWZnQ6DpfJtEnRNmxbS5ar
+gISMNJMjXPSBZuNNrLrz4vHniYFOr2Va2alD204QabdcQoEMuzD2acwe1frUbtRd
+ptbPdjej7buP3ApSwIZGabYj2OU5B/kzHBLz0MV6AiDxDAvtOUhlfUtU5UlyonkE
+ntoUxhChEw0=
+=P9jY
+-----END PGP SIGNATURE-----
+
+--Sig_/rSH_kM2jiGHyad894vRlAGW--
