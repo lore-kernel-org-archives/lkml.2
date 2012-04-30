@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab2D3Gj0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 02:39:26 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:65070 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab2D3GjY (ORCPT
+	id S1753228Ab2D3Glu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 02:41:50 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:12148 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515Ab2D3Glt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 02:39:24 -0400
-Date: Sun, 29 Apr 2012 23:39:19 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.4-rc5
-Message-ID: <20120430063919.GA22582@core.coreip.homeip.net>
+	Mon, 30 Apr 2012 02:41:49 -0400
+Message-ID: <4F9E3393.2020805@snapgear.com>
+Date: Mon, 30 Apr 2012 16:39:15 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Roland McGrath <roland@hack.frob.com>, Greg Ungerer <gerg@uclinux.org>
+Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
+References: <CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com> <20120420180748.GI6871@ZenIV.linux.org.uk> <20120423180150.GA6871@ZenIV.linux.org.uk> <20120424072617.GB6871@ZenIV.linux.org.uk> <20120426183742.GA324@redhat.com> <20120426231942.GJ6871@ZenIV.linux.org.uk> <20120427172444.GA30267@redhat.com> <20120427184528.GL6871@ZenIV.linux.org.uk> <CAMuHMdXTR1ug3sOyJ_PA0Yub2GsO5NCdAd71EX0Y9osq1ei5KQ@mail.gmail.com> <20120427193413.GM6871@ZenIV.linux.org.uk> <20120429225100.GB6871@ZenIV.linux.org.uk>
+In-Reply-To: <20120429225100.GB6871@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 30/04/12 08:51, Al Viro wrote:
+> On Fri, Apr 27, 2012 at 08:34:13PM +0100, Al Viro wrote:
+>> On Fri, Apr 27, 2012 at 09:14:53PM +0200, Geert Uytterhoeven wrote:
+>>> On Fri, Apr 27, 2012 at 20:45, Al Viro<viro@zeniv.linux.org.uk>  wrote:
+>>>>> The only comment I have,
+>>>>> 38671a3e831ed7327affb24d715f98bb99c80e56 m68k: add TIF_NOTIFY_RESUME and handle it
+>>>>> forgets to unexport do_signal().
+>>>>
+>>>> Meh... ??The thing is, there are _two_ of them. ??signal_mm.c and signal_no.c
+>>>> badly need merging, with common stuff moved to signal.c. ??I really hate
+>>>
+>>> Greg recently posted a patch to merge them:
+>>> http://www.spinics.net/lists/linux-m68k/msg04995.html
+>>
+>> Nice...  BTW, could you comment on
+>>      m68k: don't open-code block_sigmask()
+>>      m68k: use set_current_blocked in sigreturn/rt_sigreturn
+>>      m68k-nommu: do_signal() is only called when returning to user mode
+>>      m68k: add TIF_NOTIFY_RESUME and handle it.
+>> in signal.git tree?  The last one is really interesting...
+>>
+>> Just pick the current tree - one that was there yesterday had a dumb typo
+>> in thread_info.h part, so it wouldn't even compile (TIF_NOTIFE_RESUME
+>> defined instead of TIF_NOTIFY_RESUME ;-/)
+>
+> BTW, Greg's patch put into the queue in the very beginning, everything rebased
+> on top of it.
 
---NzB8fVQJ5HfG6fxh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Those changes currently sitting in your signal tree look ok to me.
 
-Hi Linus,
+Acked-by: Greg Ungerer <gerg@uclinux.org>
 
-Please pull from:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive a simple fix for a recent regression in Synaptics driver.
-
-Changelog:
----------
-
-Benjamin Herrenschmidt (1):
-      Input: synaptics - fix regression with "image sensor" trackpads
+Regards
+Greg
 
 
-Diffstat:
---------
-
- drivers/input/mouse/synaptics.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
---=20
-Dmitry
-
-
---NzB8fVQJ5HfG6fxh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPnjOXAAoJEH70+W8r6ZYqaOcQAIgzTaIghQoVTAMAyOexLb8y
-oOtcDoAsDHtUtnl1nbQr/5VQlBSzvb/WooAiGhATKnJTNWwkHVvVxKhf9xvOebEJ
-D7bSpcTqzedbFXBluemu5PSHvY/1880PGZjz1PvHTGXZJ6an1oHFNaLgjysJtUtN
-kDyoVYHh1zs6KSlVOfIL7AAyWoz+hqXoQdfzQM7lQ9MY8cV7eDbPHapjywIdScDr
-Z7lYyvG5/WlV3RJkhNr3rud9n28Qo9TCgkVMjqvUo6rfCGommwP/sXC6KBxC+vGQ
-YCeBuwU+z4jIN3PhKkdwPmMZg2ADksLT3diDSmB/d4vEmaL3PIQ3z+rs13crujH5
-Sw1SMaVrzy2qs3uDAb63X8LALxHOs2WqO/SGWPy0RlmT7V/m67zTwUFrYqOCRQvJ
-ofn4QahFdZPoX6Zc2NLi2h1F13vh6LZhqSV9Nt2ZT5VgWgTlVhRf+NctTAW3M847
-60+tiRAzh5nx7M/PounXTO38S39MCk5sBSbBScRO4oFLbl+eAn7EKu4aYdYj9QsT
-PdoBHHSTWOnsA1/z5O3zLwIYr25DqwftMx9L6KknT7Gkz70jRmHuQjXjbFnumiRH
-6k1zWP0e1ZYsfnFZazBYqG6DYRmITuN/yBrnDD18lxRXOOVg2wNc7crb6r9MQwHp
-deQJqfLHREhNYQqDnqwd
-=3nhY
------END PGP SIGNATURE-----
-
---NzB8fVQJ5HfG6fxh--
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
