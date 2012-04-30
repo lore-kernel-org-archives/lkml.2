@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991Ab2D3Vlo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 17:41:44 -0400
-Received: from fieldses.org ([174.143.236.118]:38318 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756559Ab2D3Vlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 17:41:42 -0400
-Date: Mon, 30 Apr 2012 17:41:37 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-nfs@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH resend] nfsd: fix nfs4recover.c printk format warning
-Message-ID: <20120430214137.GC22323@fieldses.org>
-References: <20120419164643.d9f918d44c890722b7707508@canb.auug.org.au>
- <4F909C78.7000008@xenotime.net>
- <4F9EE72B.1020401@xenotime.net>
+	id S1757041Ab2D3Vna (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 17:43:30 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41300 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756794Ab2D3Vn3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 17:43:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9EE72B.1020401@xenotime.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1334958560-18076-1-git-send-email-glommer@parallels.com>
+References: <1334958560-18076-1-git-send-email-glommer@parallels.com>
+Date: Mon, 30 Apr 2012 14:43:28 -0700
+Message-ID: <CABCjUKDGw20nojLqvZZbn0orO1aR9dhTZ65X_7ZSZto0eMk1GQ@mail.gmail.com>
+Subject: Re: [PATCH 00/23] slab+slub accounting for memcg
+From: Suleiman Souhlal <suleiman@google.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 12:25:31PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> Fix printk format warnings -- both items are size_t,
-> so use %zu to print them.
-> 
-> fs/nfsd/nfs4recover.c:580:3: warning: format '%lu' expects type 'long unsigned int', but argument 3 has type 'size_t'
-> fs/nfsd/nfs4recover.c:580:3: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'unsigned int'
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> Cc:	"J. Bruce Fields" <bfields@fieldses.org>
-> Cc:	linux-nfs@vger.kernel.org
+On Fri, Apr 20, 2012 at 2:48 PM, Glauber Costa <glommer@parallels.com> wrote:
+> Hi,
+>
+> This is my current attempt at getting the kmem controller
+> into a mergeable state. IMHO, all the important bits are there, and it should't
+> change *that* much from now on. I am, however, expecting at least a couple more
+> interactions before we sort all the edges out.
 
-Looks like Linus just took this.  (Thanks!)
+Thanks a lot for doing this.
 
---b.
+> This series works for both the slub and the slab. One of my main goals was to
+> make sure that the interfaces we are creating actually makes sense for both
+> allocators.
+>
+> I did some adaptations to the slab-specific patches, but the bulk of it
+> comes from Suleiman's patches. I did the best to use his patches
+> as-is where possible so to keep authorship information. When not possible,
+> I tried to be fair and quote it in the commit message.
+>
+> In this series, all existing caches are created per-memcg after its first hit.
+> The main reason is, during discussions in the memory summit we came into
+> agreement that the fragmentation problems that could arise from creating all
+> of them are mitigated by the typically small quantity of caches in the system
+> (order of a few megabytes total for sparsely used caches).
+> The lazy creation from Suleiman is kept, although a bit modified. For instance,
+> I now use a locked scheme instead of cmpxcgh to make sure cache creation won't
+> fail due to duplicates, which simplifies things by quite a bit.
 
-> ---
->  fs/nfsd/nfs4recover.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> This patch was originally sent on Apr.19/2012 for linux-next.
-> It is still needed in linux-next and in mainline.
-> 
-> 
-> --- linux-next-20120419.orig/fs/nfsd/nfs4recover.c
-> +++ linux-next-20120419/fs/nfsd/nfs4recover.c
-> @@ -577,7 +577,7 @@ cld_pipe_downcall(struct file *filp, con
->  	struct cld_net *cn = nn->cld_net;
->  
->  	if (mlen != sizeof(*cmsg)) {
-> -		dprintk("%s: got %lu bytes, expected %lu\n", __func__, mlen,
-> +		dprintk("%s: got %zu bytes, expected %zu\n", __func__, mlen,
->  			sizeof(*cmsg));
->  		return -EINVAL;
->  	}
+I actually noticed that, at least for slab, the cmpxchg could never
+fail due to kmem_cache_create() already making sure that duplicate
+caches could not be created at the same time, while holding
+cache_mutex_mutex.
+
+I do like your simplification though.
+
+>
+> The slub is a bit more complex than what I came up with in my slub-only
+> series. The reason is we did not need to use the cache-selection logic
+> in the allocator itself - it was done by the cache users. But since now
+> we are lazy creating all caches, this is simply no longer doable.
+>
+> I am leaving destruction of caches out of the series, although most
+> of the infrastructure for that is here, since we did it in earlier
+> series. This is basically because right now Kame is reworking it for
+> user memcg, and I like the new proposed behavior a lot more. We all seemed
+> to have agreed that reclaim is an interesting problem by itself, and
+> is not included in this already too complicated series. Please note
+> that this is still marked as experimental, so we have so room. A proper
+> shrinker implementation is a hard requirement to take the kmem controller
+> out of the experimental state.
+
+We will have to be careful for cache destruction.
+I found several races between allocation and destruction, in my patchset.
+
+I think we should consider doing the uncharging of kmem when
+destroying a memcg in mem_cgroup_destroy() instead of in
+pre_destroy(), because it's still possible that there are threads in
+the cgroup while pre_destroy() is being called (or for threads to be
+moved into the cgroup).
+
+-- Suleiman
