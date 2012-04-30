@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab2D3GzN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 02:55:13 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53753 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750705Ab2D3GzL (ORCPT
+	id S1754796Ab2D3G5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 02:57:42 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:51838 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515Ab2D3G5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 02:55:11 -0400
-X-Sasl-enc: TVtUTYitdAkCCdk+cvFAqnG98o5/rHnqAgI9JsLHhtAtA1cNNTn43Z5Eqg 1335768910
-Message-ID: <1335768906.2281.16.camel@perseus.themaw.net>
-Subject: Re: autofs: make the autofsv5 packet file descriptor use a
- packetized pipe
-From: Ian Kent <raven@themaw.net>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Meyer <thomas@m3y3r.de>,
-        autofs@vger.kernel.org
-Date: Mon, 30 Apr 2012 14:55:06 +0800
-In-Reply-To: <4F9E3474.2050405@msgid.tls.msk.ru>
-References: <20120429205429.63CCD7C0064@ra.kernel.org>
-	 <4F9DD994.70202@zytor.com> <4F9E30BF.4030704@msgid.tls.msk.ru>
-	 <4F9E3474.2050405@msgid.tls.msk.ru>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+	Mon, 30 Apr 2012 02:57:40 -0400
+Message-ID: <4F9E37B8.30001@linux.vnet.ibm.com>
+Date: Mon, 30 Apr 2012 12:26:56 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: lenb@kernel.org, "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: venki@google.com, suresh.b.siddha@intel.com,
+        Borislav Petkov <bp@amd64.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v2][RESEND] x86: Make mwait_usable() heed to "idle=" kernel
+ parameters properly
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+x-cbid: 12042920-6102-0000-0000-000001581CA0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-30 at 10:43 +0400, Michael Tokarev wrote:
-> On 30.04.2012 10:27, Michael Tokarev wrote:
-> >> On 04/29/2012 01:54 PM, Linux Kernel Mailing List wrote:
-> >>>     However, a prettier solution exists now thanks to the packetized pipe
-> >>>     mode.  By marking the communication pipe as being packetized (by simply
-> >>>     setting the O_DIRECT flag), we can always just write the bigger packet
-> >>>     size, and if user-space does a smaller read, it will just get that
-> >>>     partial end result and the extra alignment padding will simply be thrown
-> >>>     away.
-> > 
-> >> +static inline int autofs_prepare_pipe(struct file *pipe)
-> >> +{
-> >> +	if (!pipe->f_op || !pipe->f_op->write)
-> >> +		return -EINVAL;
-> >> +	if (!S_ISFIFO(pipe->f_dentry->d_inode->i_mode))
-> >> +		return -EINVAL;
-> >> +	/* We want a packet pipe */
-> >> +	pipe->f_flags |= O_DIRECT;
-> >> +	return 0;
-> >> +}
-> >> +
-> > 
-> > @@ -376,7 +376,7 @@ static int autofs_dev_ioctl_setpipefd(st
-> >  			err = -EBADF;
-> >  			goto out;
-> >  		}
-> > -		if (!pipe->f_op || !pipe->f_op->write) {
-> > +		if (autofs_prepare_pipe(pipe) < 0) {
-> >  			err = -EPIPE;
-> >  			fput(pipe);
-> >  			goto out;
-> > 
-> > I've one more concern.  I'm not sure but I think there's some
-> > risk still.  This packetizing gets applied to all VERSIONS of
-> > the autofs PROTOCOL.  Which means it will be applied to the
-> > lowest supported version (3) TOO, but did that version read
-> > whole packets too?
-> 
-> I think this is a false alarm.  I checked autofs v3 and v4
-> userspace code (found on  http://www.kernel.org/pub/linux/daemons/autofs )
-> and they both read whole packet at once, not piece-wise.
-> 
-> I didn't test if any of these actually work with any current
-> kernel, however ;)
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Yep, all the autofs releases use a sizeof() the relevant structure when
-reading the kernel pipe, so that should be ok.
+The checks that exist in mwait_usable() for "idle=" kernel parameters
+are insufficient. As a result, mwait_usable() can return 1 even if
+"idle=nomwait" or "idle=poll" or "idle=halt" parameters are passed.
 
-Ian
+Of these cases, incorrect handling of idle=nomwait is a universal problem
+since mwait can get used for usual CPU idling. However the rest of the
+cases are problematic only during CPU Hotplug (offline) because, in the
+CPU offline path, the function mwait_play_dead() is called, which might
+result in mwait being used in the offline CPUs, if mwait_usable() happens
+to return 1.
 
+Fix these issues by checking for the boot time "idle=" kernel parameter
+properly in mwait_usable().
+
+The first issue (usual cpu idling) is demonstrated below:
+
+Before applying the patch (dmesg snippet):
+[    0.000000] Command line: [...] idle=nomwait
+[    0.000000] Kernel command line: [...] idle=nomwait
+[    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+[    0.140606] using mwait in idle threads.         <======= mwait being used
+[    4.303986] cpuidle: using governor ladder
+[    4.308232] cpuidle: using governor menu
+
+After applying the patch:
+[    0.000000] Command line: [...] idle=nomwait
+[    0.000000] Kernel command line: [...] idle=nomwait
+[    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+[    4.264100] cpuidle: using governor ladder
+[    4.268342] cpuidle: using governor menu
+
+Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ arch/x86/kernel/process.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index a33afaa..b526c4e 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -618,9 +618,17 @@ int mwait_usable(const struct cpuinfo_x86 *c)
+ {
+ 	u32 eax, ebx, ecx, edx;
+
++	/* Use mwait if idle=mwait boot option is given */
+ 	if (boot_option_idle_override == IDLE_FORCE_MWAIT)
+ 		return 1;
+
++	/*
++	 * Any idle= boot option other than idle=mwait means that we must not
++	 * use mwait. Eg: idle=halt or idle=poll or idle=nomwait
++	 */
++	if (boot_option_idle_override != IDLE_NO_OVERRIDE)
++		return 0;
++
+ 	if (c->cpuid_level < MWAIT_INFO)
+ 		return 0;
 
