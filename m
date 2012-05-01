@@ -1,108 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab2EAIUf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 04:20:35 -0400
-Received: from relay.parallels.com ([195.214.232.42]:41245 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab2EAIUc convert rfc822-to-8bit (ORCPT
+	id S1753645Ab2EAIft (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 04:35:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58407 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752424Ab2EAIfo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 04:20:32 -0400
-Message-ID: <4F9F9CCD.6060008@parallels.com>
-Date: Tue, 1 May 2012 12:20:29 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 2/3] SUNRPC: check rpcbind clients usage counter before
- decrement
-References: <20120425132314.13800.6813.stgit@localhost6.localdomain6> <20120425133749.13800.24003.stgit@localhost6.localdomain6> <20120427135507.GE14973@fieldses.org> <4F9AA84D.8090604@parallels.com> <20120430214504.GD22323@fieldses.org>
-In-Reply-To: <20120430214504.GD22323@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Tue, 1 May 2012 04:35:44 -0400
+References: <20120501135549.5c865717b33650002f083d4a@canb.auug.org.au> <1335848120.3621.13.camel@pasglop>
+In-Reply-To: <1335848120.3621.13.camel@pasglop>
+Mime-Version: 1.0 (1.0)
 Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <580A368D-C0EA-4DC3-9F89-131AF961309E@suse.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Mailer: iPhone Mail (9A406)
+From: Alexander Graf <agraf@suse.de>
+Subject: Re: linux-next: build failure after merge of the kvm-ppc tree
+Date: Tue, 1 May 2012 10:37:22 +0200
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-01.05.2012 01:45, J. Bruce Fields написал:
-> On Fri, Apr 27, 2012 at 06:08:13PM +0400, Stanislav Kinsbursky wrote:
->> On 27.04.2012 17:55, J. Bruce Fields wrote:
->>> On Wed, Apr 25, 2012 at 05:37:49PM +0400, Stanislav Kinsbursky wrote:
->>>> Registering service with svc_bind() can fail. In this case service will be
->>>> destroyed and during destruction it will try to unregister itself from rpcbind.
->>>> In this case unregister have to be skipped.
->>> Isn't this a preexisting bug, in which case perhaps Trond should at it
->>> to his list of bugs to submit now?
->>>
->> Not it's not.
->>
->> Previously, in case of bind operations failure, rpcb_put_local()
->> wasn't called, but service data was destroyed instead:
->>
->> -	if (svc_uses_rpcbind(serv)) {
->> -		if (svc_rpcb_setup(serv, current->nsproxy->net_ns)<  0) {
->> -			kfree(serv->sv_pools);
->> -			kfree(serv);
->> -			return NULL;
->> -		}
->> -		if (!serv->sv_shutdown)
->> -			serv->sv_shutdown = svc_rpcb_cleanup;
->> -	}
->>
->> Now (with svc_bind() introduction) service can be created, but
->> svc_bind() could fail. And thus svc_destroy() have to be called.
->> Which will call rpcb_put_local().
->>
->> And the problem here that svc_bind() can fail before incrementing of
->> rpcb usage counter.
-> OK, but then you're fixing a bug that you just introduced with the
-> previous patch.
->
-> So this should be combined with the previous patch.
->
-> --b.
 
-You, probably, right. I'll do this.
-Thanks.
 
->>>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>>>
->>>> ---
->>>>   net/sunrpc/rpcb_clnt.c |   12 +++++++-----
->>>>   1 files changed, 7 insertions(+), 5 deletions(-)
->>>>
->>>> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
->>>> index 78ac39f..4c38b33 100644
->>>> --- a/net/sunrpc/rpcb_clnt.c
->>>> +++ b/net/sunrpc/rpcb_clnt.c
->>>> @@ -180,14 +180,16 @@ void rpcb_put_local(struct net *net)
->>>>   	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
->>>>   	struct rpc_clnt *clnt = sn->rpcb_local_clnt;
->>>>   	struct rpc_clnt *clnt4 = sn->rpcb_local_clnt4;
->>>> -	int shutdown;
->>>> +	int shutdown = 0;
->>>>
->>>>   	spin_lock(&sn->rpcb_clnt_lock);
->>>> -	if (--sn->rpcb_users == 0) {
->>>> -		sn->rpcb_local_clnt = NULL;
->>>> -		sn->rpcb_local_clnt4 = NULL;
->>>> +	if (sn->rpcb_users) {
->>>> +		if (--sn->rpcb_users == 0) {
->>>> +			sn->rpcb_local_clnt = NULL;
->>>> +			sn->rpcb_local_clnt4 = NULL;
->>>> +		}
->>>> +		shutdown = !sn->rpcb_users;
->>>>   	}
->>>> -	shutdown = !sn->rpcb_users;
->>>>   	spin_unlock(&sn->rpcb_clnt_lock);
->>>>
->>>>   	if (shutdown) {
->>>>
->>
->> -- 
->> Best regards,
->> Stanislav Kinsbursky
+On 01.05.2012, at 06:55, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+
+> On Tue, 2012-05-01 at 13:55 +1000, Stephen Rothwell wrote:
+>> After merging the kvm-ppc tree, today's linux-next build
+>> (powerpc_ppc64_defconfig) failed like this:
+>> 
+>> arch/powerpc/kvm/built-in.o: In function `.kvm_spapr_tce_release':
+>> book3s_64_vio.c:(.text+0x374c): undefined reference to `.kvm_put_kvm'
+>> arch/powerpc/kvm/built-in.o: In function
+>> `.kvm_vm_ioctl_create_spapr_tce':
+>> (.text+0x3ae8): undefined reference to `.kvm_get_kvm'
+>> 
+>> Presumably caused by commit 969f70395d6d ("kvm/book3s: Make kernel
+>> emulated H_PUT_TCE available for "PR" KVM").
+>> 
+>> I have used the kvm-ppc tree from next-20120430 for today. 
+> 
+> Hrm, I wrote that patch :-) It used to work... Alex, probably just a
+> missing #include no ?
+
+Well, in fact it even compiled just fine for me with my config.
+
+Ben, I'm out today (labor day). Could you please try make defconfog and check why it fails?
+
+Alex
 
