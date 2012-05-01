@@ -1,170 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758031Ab2EAMrr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 08:47:47 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1956 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757561Ab2EAMrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 08:47:45 -0400
-Message-ID: <4F9FDB32.9020105@canonical.com>
-Date: Tue, 01 May 2012 06:46:42 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Bryan Wu <bryan.wu@canonical.com>
-CC: Tim Gardner <tim.gardner@canonical.com>, linux@arm.linux.org.uk,
-        rpurdie@rpsys.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
-        akpm@linux-foundation.org, arnd.bergmann@linaro.org,
-        nicolas.pitre@linaro.org
-Subject: Re: [PATCH 02/19] led-triggers: create a trigger for CPU activity
-References: <1335771444-26361-1-git-send-email-bryan.wu@canonical.com> <1335771444-26361-3-git-send-email-bryan.wu@canonical.com> <4F9E8D8C.9090704@canonical.com> <CAK5ve-KEBY2kcMjcGAeFxWykxY7DnudJtK8WrpfwJYjOX+zSJw@mail.gmail.com>
-In-Reply-To: <CAK5ve-KEBY2kcMjcGAeFxWykxY7DnudJtK8WrpfwJYjOX+zSJw@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757852Ab2EAMuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 08:50:51 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:14748 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755968Ab2EAMut (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 08:50:49 -0400
+X-IronPort-AV: E=Sophos;i="4.75,510,1330905600"; 
+   d="scan'208";a="12222346"
+Message-ID: <1335876646.6038.101.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH RFC V7 0/12] Paravirtualized ticketlocks
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        "Andrew Jones" <drjones@redhat.com>,
+        Xen Devel <xen-devel@lists.xensource.com>, KVM <kvm@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Jeremy Fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
+        Attilio Rao <attilio.rao@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Avi Kivity <avi@redhat.com>
+Date: Tue, 1 May 2012 13:50:46 +0100
+In-Reply-To: <20120419201209.5411.43877.sendpatchset@codeblue>
+References: <20120419201209.5411.43877.sendpatchset@codeblue>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2012 05:45 AM, Bryan Wu wrote:
-> On Mon, Apr 30, 2012 at 9:03 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
->> On 04/30/2012 01:37 AM, Bryan Wu wrote:
->>> Attempting to consolidate the ARM LED code, this removes the
->>> custom RealView LED trigger code to turn LEDs on and off in
->>> response to CPU activity and replace it with a standard trigger.
->>>
->>> (bryan.wu@canonical.com:
->>> It introduces several syscore stubs into this trigger.
->>> It also provides ledtrig_cpu trigger event stub in <linux/leds.h>.
->>> Although it was inspired by ARM work, it can be used in other arch.)
->>>
->>> Cc: Richard Purdie <rpurdie@rpsys.net>
->>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->>> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
->>> Reviewed-by: Jamie Iles <jamie@jamieiles.com>
->>> Tested-by: Jochen Friedrich <jochen@scram.de>
->>> ---
->>>  drivers/leds/Kconfig       |   10 +++
->>>  drivers/leds/Makefile      |    1 +
->>>  drivers/leds/ledtrig-cpu.c |  150 ++++++++++++++++++++++++++++++++++++++++++++
->>>  include/linux/leds.h       |   16 +++++
->>>  4 files changed, 177 insertions(+)
->>>  create mode 100644 drivers/leds/ledtrig-cpu.c
->>>
->>> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
->>> index 5f12659..dbf8a4c 100644
->>> --- a/drivers/leds/Kconfig
->>> +++ b/drivers/leds/Kconfig
->>> @@ -465,6 +465,16 @@ config LEDS_TRIGGER_BACKLIGHT
->>>
->>>         If unsure, say N.
->>>
->>> +config LEDS_TRIGGER_CPU
->>> +     tristate "LED CPU Trigger"
->>> +     depends on LEDS_TRIGGERS
->>> +     help
->>> +       This allows LEDs to be controlled by active CPUs. This shows
->>> +       the active CPUs across an array of LEDs so you can see which
->>> +       CPUs are active on the system at any given moment.
->>> +
->>> +       If unsure, say N.
->>> +
->>>  config LEDS_TRIGGER_GPIO
->>>       tristate "LED GPIO Trigger"
->>>       depends on LEDS_TRIGGERS
->>> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
->>> index 9475bbb..ea1efb2 100644
->>> --- a/drivers/leds/Makefile
->>> +++ b/drivers/leds/Makefile
->>> @@ -56,4 +56,5 @@ obj-$(CONFIG_LEDS_TRIGGER_IDE_DISK) += ledtrig-ide-disk.o
->>>  obj-$(CONFIG_LEDS_TRIGGER_HEARTBEAT) += ledtrig-heartbeat.o
->>>  obj-$(CONFIG_LEDS_TRIGGER_BACKLIGHT) += ledtrig-backlight.o
->>>  obj-$(CONFIG_LEDS_TRIGGER_GPIO)              += ledtrig-gpio.o
->>> +obj-$(CONFIG_LEDS_TRIGGER_CPU)               += ledtrig-cpu.o
->>>  obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)        += ledtrig-default-on.o
->>> diff --git a/drivers/leds/ledtrig-cpu.c b/drivers/leds/ledtrig-cpu.c
->>> new file mode 100644
->>> index 0000000..1f752e1
->>> --- /dev/null
->>> +++ b/drivers/leds/ledtrig-cpu.c
->>> @@ -0,0 +1,150 @@
->>> +/*
->>> + * ledtrig-cpu.c - LED trigger based on CPU activity
->>> + *
->>> + * This LED trigger will be registered for each possible CPU and named as
->>> + * cpu0, cpu1, cpu2, cpu3, etc.
->>> + *
->>> + * It can be bound to any LED just like other triggers using either a
->>> + * board file or via sysfs interface.
->>> + *
->>> + * An API named ledtrig_cpu is exported for any user, who want to add CPU
->>> + * activity indication in their code
->>> + *
->>> + * Copyright 2011 Linus Walleij <linus.walleij@linaro.org>
->>> + * Copyright 2011 - 2012 Bryan Wu <bryan.wu@canonical.com>
->>> + *
->>> + * This program is free software; you can redistribute it and/or modify
->>> + * it under the terms of the GNU General Public License version 2 as
->>> + * published by the Free Software Foundation.
->>> + *
->>> + */
->>> +
->>> +#include <linux/module.h>
->>> +#include <linux/kernel.h>
->>> +#include <linux/init.h>
->>> +#include <linux/slab.h>
->>> +#include <linux/percpu.h>
->>> +#include <linux/syscore_ops.h>
->>> +#include <linux/rwsem.h>
->>> +#include "leds.h"
->>> +
->>> +#define MAX_NAME_LEN 8
->>> +
->>> +static DEFINE_PER_CPU(struct led_trigger *, cpu_trig);
->>> +static DEFINE_PER_CPU(char [MAX_NAME_LEN], trig_name);
->>> +static DEFINE_PER_CPU(struct rw_semaphore, trig_lock);
->>
->> Semaphores are overkill for this. I think a simple 'struct mutex' is
->> sufficient. Especially since there is unlikely to be much contention on
->> any one of the locks. mutext_init(), mutext_lock(), mutex_unlock(), etc.
->>
+On Thu, 2012-04-19 at 21:12 +0100, Raghavendra K T wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 > 
-> Indeed, I will change to mutex.
+> This series replaces the existing paravirtualized spinlock mechanism
+> with a paravirtualized ticketlock mechanism. (targeted for 3.5 window)
+
+Which tree is this series going through, tip.git I guess?
+
+I don't see it there.
+
+Ian.
+
 > 
->>> +
->>> +/**
->>> + * ledtrig_cpu - emit a CPU event as a trigger
->>> + * @evt: CPU event to be emitted
->>> + *
->>> + * Emit a CPU event on a CPU core, which will trigger a
->>> + * binded LED to turn on or turn off.
->>> + */
->>> +void ledtrig_cpu(enum cpu_led_event ledevt)
->>> +{
->>
->> I think you still need to acquire trig_lock _before_ reading
->> __get_cpu_var(cpu_trig). Otherwise, acquiring the lock in
->> ledtrig_cpu_init() is useless.
->>
+> Changes in V7:
+>  - Reabsed patches to 3.4-rc3
+>  - Added jumplabel split patch (originally from Andrew Jones rebased to
+>     3.4-rc3
+>  - jumplabel changes from Ingo and Jason taken and now using static_key_*
+>     instead of static_branch.
+>  - using UNINLINE_SPIN_UNLOCK (which was splitted as per suggestion from Linus)
+>  - This patch series is rebased on debugfs patch (that sould be already in
+>     Xen/linux-next https://lkml.org/lkml/2012/3/23/51)
 > 
-> I agree you are right, but call mutex_lock() here will prohibit
-> system booting, because mutex_lock() should be called after
-> mutex_init().
-> mutex_init() is called in module_init function, which is behind some
-> core functions calling ledtrig_cpu() API.
+> Ticket locks have an inherent problem in a virtualized case, because
+> the vCPUs are scheduled rather than running concurrently (ignoring
+> gang scheduled vCPUs).  This can result in catastrophic performance
+> collapses when the vCPU scheduler doesn't schedule the correct "next"
+> vCPU, and ends up scheduling a vCPU which burns its entire timeslice
+> spinning.  (Note that this is not the same problem as lock-holder
+> preemption, which this series also addresses; that's also a problem,
+> but not catastrophic).
 > 
+> (See Thomas Friebel's talk "Prevent Guests from Spinning Around"
+> http://www.xen.org/files/xensummitboston08/LHP.pdf for more details.)
+> 
+> Currently we deal with this by having PV spinlocks, which adds a layer
+> of indirection in front of all the spinlock functions, and defining a
+> completely new implementation for Xen (and for other pvops users, but
+> there are none at present).
+> 
+> PV ticketlocks keeps the existing ticketlock implemenentation
+> (fastpath) as-is, but adds a couple of pvops for the slow paths:
+> 
+> - If a CPU has been waiting for a spinlock for SPIN_THRESHOLD
+>   iterations, then call out to the __ticket_lock_spinning() pvop,
+>   which allows a backend to block the vCPU rather than spinning.  This
+>   pvop can set the lock into "slowpath state".
+> 
+> - When releasing a lock, if it is in "slowpath state", the call
+>   __ticket_unlock_kick() to kick the next vCPU in line awake.  If the
+>   lock is no longer in contention, it also clears the slowpath flag.
+> 
+> The "slowpath state" is stored in the LSB of the within the lock tail
+> ticket.  This has the effect of reducing the max number of CPUs by
+> half (so, a "small ticket" can deal with 128 CPUs, and "large ticket"
+> 32768).
+> 
+> This series provides a Xen implementation, KVM implementation will be
+> posted in next 2-3 days.
+> 
+> Overall, it results in a large reduction in code, it makes the native
+> and virtualized cases closer, and it removes a layer of indirection
+> around all the spinlock functions.
+> 
+> The fast path (taking an uncontended lock which isn't in "slowpath"
+> state) is optimal, identical to the non-paravirtualized case.
+> 
+> The inner part of ticket lock code becomes:
+>         inc = xadd(&lock->tickets, inc);
+>         inc.tail &= ~TICKET_SLOWPATH_FLAG;
+> 
+>         if (likely(inc.head == inc.tail))
+>                 goto out;
+>         for (;;) {
+>                 unsigned count = SPIN_THRESHOLD;
+>                 do {
+>                         if (ACCESS_ONCE(lock->tickets.head) == inc.tail)
+>                                 goto out;
+>                         cpu_relax();
+>                 } while (--count);
+>                 __ticket_lock_spinning(lock, inc.tail);
+>         }
+> out:    barrier();
+> which results in:
+>         push   %rbp
+>         mov    %rsp,%rbp
+> 
+>         mov    $0x200,%eax
+>         lock xadd %ax,(%rdi)
+>         movzbl %ah,%edx
+>         cmp    %al,%dl
+>         jne    1f       # Slowpath if lock in contention
+> 
+>         pop    %rbp
+>         retq
+> 
+>         ### SLOWPATH START
+> 1:      and    $-2,%edx
+>         movzbl %dl,%esi
+> 
+> 2:      mov    $0x800,%eax
+>         jmp    4f
+> 
+> 3:      pause
+>         sub    $0x1,%eax
+>         je     5f
+> 
+> 4:      movzbl (%rdi),%ecx
+>         cmp    %cl,%dl
+>         jne    3b
+> 
+>         pop    %rbp
+>         retq
+> 
+> 5:      callq  *__ticket_lock_spinning
+>         jmp    2b
+>         ### SLOWPATH END
+> 
+> with CONFIG_PARAVIRT_SPINLOCKS=n, the code has changed slightly, where
+> the fastpath case is straight through (taking the lock without
+> contention), and the spin loop is out of line:
+> 
+>         push   %rbp
+>         mov    %rsp,%rbp
+> 
+>         mov    $0x100,%eax
+>         lock xadd %ax,(%rdi)
+>         movzbl %ah,%edx
+>         cmp    %al,%dl
+>         jne    1f
+> 
+>         pop    %rbp
+>         retq
+> 
+>         ### SLOWPATH START
+> 1:      pause
+>         movzbl (%rdi),%eax
+>         cmp    %dl,%al
+>         jne    1b
+> 
+>         pop    %rbp
+>         retq
+>         ### SLOWPATH END
+> 
+> The unlock code is complicated by the need to both add to the lock's
+> "head" and fetch the slowpath flag from "tail".  This version of the
+> patch uses a locked add to do this, followed by a test to see if the
+> slowflag is set.  The lock prefix acts as a full memory barrier, so we
+> can be sure that other CPUs will have seen the unlock before we read
+> the flag (without the barrier the read could be fetched from the
+> store queue before it hits memory, which could result in a deadlock).
+> 
+> This is is all unnecessary complication if you're not using PV ticket
+> locks, it also uses the jump-label machinery to use the standard
+> "add"-based unlock in the non-PV case.
+> 
+>         if (TICKET_SLOWPATH_FLAG &&
+>              static_key_false(&paravirt_ticketlocks_enabled))) {
+>                 arch_spinlock_t prev;
+>                 prev = *lock;
+>                 add_smp(&lock->tickets.head, TICKET_LOCK_INC);
+> 
+>                 /* add_smp() is a full mb() */
+>                 if (unlikely(lock->tickets.tail & TICKET_SLOWPATH_FLAG))
+>                         __ticket_unlock_slowpath(lock, prev);
+>         } else
+>                 __add(&lock->tickets.head, TICKET_LOCK_INC, UNLOCK_LOCK_PREFIX);
+> which generates:
+>         push   %rbp
+>         mov    %rsp,%rbp
+> 
+>         nop5    # replaced by 5-byte jmp 2f when PV enabled
+> 
+>         # non-PV unlock
+>         addb   $0x2,(%rdi)
+> 
+> 1:      pop    %rbp
+>         retq
+> 
+> ### PV unlock ###
+> 2:      movzwl (%rdi),%esi      # Fetch prev
+> 
+>         lock addb $0x2,(%rdi)   # Do unlock
+> 
+>         testb  $0x1,0x1(%rdi)   # Test flag
+>         je     1b               # Finished if not set
+> 
+> ### Slow path ###
+>         add    $2,%sil          # Add "head" in old lock state
+>         mov    %esi,%edx
+>         and    $0xfe,%dh        # clear slowflag for comparison
+>         movzbl %dh,%eax
+>         cmp    %dl,%al          # If head == tail (uncontended)
+>         je     4f               # clear slowpath flag
+> 
+>         # Kick next CPU waiting for lock
+> 3:      movzbl %sil,%esi
+>         callq  *pv_lock_ops.kick
+> 
+>         pop    %rbp
+>         retq
+> 
+>         # Lock no longer contended - clear slowflag
+> 4:      mov    %esi,%eax
+>         lock cmpxchg %dx,(%rdi) # cmpxchg to clear flag
+>         cmp    %si,%ax
+>         jne    3b               # If clear failed, then kick
+> 
+>         pop    %rbp
+>         retq
+> 
+> So when not using PV ticketlocks, the unlock sequence just has a
+> 5-byte nop added to it, and the PV case is reasonable straightforward
+> aside from requiring a "lock add".
+> 
+> TODO: 1) remove CONFIG_PARAVIRT_SPINLOCK ?
+>       2) experiments on further optimization possibilities. (discussed in V6)
+> 
+> Results:
+> =======
+> various form of results based on V6 of the patch series are posted in following links
+>  https://lkml.org/lkml/2012/3/21/161
+>  https://lkml.org/lkml/2012/3/21/198
+> 
+>  kvm results:
+>  https://lkml.org/lkml/2012/3/23/50
+>  https://lkml.org/lkml/2012/4/5/73
+> 
+> Thoughts? Comments? Suggestions?
+> 
+> Jeremy Fitzhardinge (9):
+>   x86/spinlock: replace pv spinlocks with pv ticketlocks
+>   x86/ticketlock: collapse a layer of functions
+>   xen: defer spinlock setup until boot CPU setup
+>   xen/pvticketlock: Xen implementation for PV ticket locks
+>   xen/pvticketlocks: add xen_nopvspin parameter to disable xen pv
+>     ticketlocks
+>   x86/pvticketlock: use callee-save for lock_spinning
+>   x86/pvticketlock: when paravirtualizing ticket locks, increment by 2
+>   x86/ticketlock: add slowpath logic
+>   xen/pvticketlock: allow interrupts to be enabled while blocking
+> 
+> Raghavendra K T (1):
+>   x86/ticketlock: don't inline _spin_unlock when using paravirt
+>     spinlocks
+> 
+> Andrew Jones (1):
+>   split out rate limiting from jump_label.h
+> 
+> Stefano Stabellini (1):
+>  xen: enable PV ticketlocks on HVM Xen
+> ---
+> 
+> V6 : https://lkml.org/lkml/2012/3/21/161
+> 
+> Changes in V6 posting: (Raghavendra K T)
+>  - Rebased to linux-3.3-rc6.
+>  - used function+enum in place of macro (better type checking)
+>  - use cmpxchg while resetting zero status for possible race
+>         [suggested by Dave Hansen for KVM patches ]
+> 
+>  arch/x86/Kconfig                      |    1 +
+>  arch/x86/include/asm/paravirt.h       |   32 +---
+>  arch/x86/include/asm/paravirt_types.h |   10 +-
+>  arch/x86/include/asm/spinlock.h       |  128 ++++++++----
+>  arch/x86/include/asm/spinlock_types.h |   16 +-
+>  arch/x86/kernel/paravirt-spinlocks.c  |   18 +--
+>  arch/x86/xen/smp.c                    |    3 +-
+>  arch/x86/xen/spinlock.c               |  383 +++++++++++----------------------
+>  include/linux/jump_label.h            |   26 +---
+>  include/linux/jump_label_ratelimit.h  |   34 +++
+>  include/linux/perf_event.h            |    1 +
+>  kernel/jump_label.c                   |    1 +
+>  12 files changed, 279 insertions(+), 374 deletions(-)
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
 
-I think the mutex_lock is OK. If you follow the logic in
-kernel/module.c:init_module(), the module init function must complete
-_before_ consumers of external symbols (such as ledtrig_cpu) can
-proceed. Really, that only makes sense. Otherwise module startup would
-be impossibly racy.
 
-Therefore, ledtrig_cpu() cannot be called before ledtrig_cpu_init()
-completes.
-
-rtg
-
--- 
-Tim Gardner tim.gardner@canonical.com
