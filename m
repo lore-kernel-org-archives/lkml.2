@@ -1,49 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756415Ab2EAWty (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 18:49:54 -0400
-Received: from claw.goop.org ([74.207.240.146]:40954 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753936Ab2EAWtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 18:49:52 -0400
-Message-ID: <4FA0688E.8030200@goop.org>
-Date: Tue, 01 May 2012 15:49:50 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Avi Kivity <avi@redhat.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>, mingo@elte.hu,
-        mtosatti@redhat.com, kvm@vger.kernel.org, x86@kernel.org,
-        vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
-References: <20120427161727.27082.43096.stgit@abhimanyu>  <20120427162401.27082.59387.stgit@abhimanyu> <4F9D32B4.8040002@redhat.com>  <1335865176.13683.120.camel@twins> <4F9FBF38.2060903@redhat.com>  <1335869827.13683.133.camel@twins> <1335869998.13683.135.camel@twins>
-In-Reply-To: <1335869998.13683.135.camel@twins>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756399Ab2EAWxW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 18:53:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60768 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab2EAWxU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 18:53:20 -0400
+Date: Tue, 1 May 2012 15:53:08 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 04/11] mm: Add support for a filesystem to activate swap
+ files and use direct_IO for writing swap pages
+Message-Id: <20120501155308.5679a09b.akpm@linux-foundation.org>
+In-Reply-To: <1334578675-23445-5-git-send-email-mgorman@suse.de>
+References: <1334578675-23445-1-git-send-email-mgorman@suse.de>
+	<1334578675-23445-5-git-send-email-mgorman@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2012 03:59 AM, Peter Zijlstra wrote:
-> On Tue, 2012-05-01 at 12:57 +0200, Peter Zijlstra wrote:
->> Anyway, I don't have any idea about the costs involved with
->> HAVE_RCU_TABLE_FREE, but I don't think its much.. otherwise these other
->> platforms (PPC,SPARC) wouldn't have used it, gup_fast() is a very
->> specific case, whereas mmu-gather is something affecting pretty much all
->> tasks. 
-> Which reminds me, I thought Xen needed this too, but a git grep on
-> HAVE_RCU_TABLE_FREE shows its still only ppc and sparc.
+On Mon, 16 Apr 2012 13:17:48 +0100
+Mel Gorman <mgorman@suse.de> wrote:
+
+> Currently swapfiles are managed entirely by the core VM by using ->bmap
+> to allocate space and write to the blocks directly. This effectively
+> ensures that the underlying blocks are allocated and avoids the need
+> for the swap subsystem to locate what physical blocks store offsets
+> within a file.
+> 
+> If the swap subsystem is to use the filesystem information to locate
+> the blocks, it is critical that information such as block groups,
+> block bitmaps and the block descriptor table that map the swap file
+> were resident in memory. This patch adds address_space_operations that
+> the VM can call when activating or deactivating swap backed by a file.
+> 
+>   int swap_activate(struct file *);
+>   int swap_deactivate(struct file *);
+> 
+> The ->swap_activate() method is used to communicate to the
+> file that the VM relies on it, and the address_space should take
+> adequate measures such as reserving space in the underlying device,
+> reserving memory for mempools and pinning information such as the
+> block descriptor table in memory. The ->swap_deactivate() method is
+> called on sys_swapoff() if ->swap_activate() returned success.
+> 
+> After a successful swapfile ->swap_activate, the swapfile
+> is marked SWP_FILE and swapper_space.a_ops will proxy to
+> sis->swap_file->f_mappings->a_ops using ->direct_io to write swapcache
+> pages and ->readpage to read.
+> 
+> It is perfectly possible that direct_IO be used to read the swap
+> pages but it is an unnecessary complication. Similarly, it is possible
+> that ->writepage be used instead of direct_io to write the pages but
+> filesystem developers have stated that calling writepage from the VM
+> is undesirable for a variety of reasons and using direct_IO opens up
+> the possibility of writing back batches of swap pages in the future.
+
+This all seems a bit odd.  And abusive.
+
+Yes, it would be more pleasing if direct-io was used for reading as
+well.  How much more complication would it add?
+
+If I understand correctly, on the read path we're taking a fresh page
+which is destined for swapcache and then pretending that it is a
+pagecache page for the purpose of the I/O?  If there already existed a
+pagecache page for that file offset then we let it just sit there and
+bypass it?
+
+I'm surprised that this works at all - I guess nothing under
+->readpage() goes poking around in the address_space.  For NFS, at
+least!
+
 >
-> Jeremy?
+> ...
+>
+> @@ -93,11 +94,38 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+>  {
+>  	struct bio *bio;
+>  	int ret = 0, rw = WRITE;
+> +	struct swap_info_struct *sis = page_swap_info(page);
+>  
+>  	if (try_to_free_swap(page)) {
+>  		unlock_page(page);
+>  		goto out;
+>  	}
+> +
+> +	if (sis->flags & SWP_FILE) {
+> +		struct kiocb kiocb;
+> +		struct file *swap_file = sis->swap_file;
+> +		struct address_space *mapping = swap_file->f_mapping;
+> +		struct iovec iov = {
+> +			.iov_base = page_address(page),
 
-Yeah, I was thinking that too, but I can't remember what we did to
-resolve it.  For pure PV guests, gupf simply isn't used, so the problem
-is moot.  But for dom0 or PCI-passthrough it could be.
+Didn't we need to kmap the page?
 
-Konrad, Stefano?
+> +			.iov_len  = PAGE_SIZE,
+> +		};
+> +
+> +		init_sync_kiocb(&kiocb, swap_file);
+> +		kiocb.ki_pos = page_file_offset(page);
+> +		kiocb.ki_left = PAGE_SIZE;
+> +		kiocb.ki_nbytes = PAGE_SIZE;
+> +
+> +		unlock_page(page);
+> +		ret = mapping->a_ops->direct_IO(KERNEL_WRITE,
+> +						&kiocb, &iov,
+> +						kiocb.ki_pos, 1);
 
-    J
+I wonder if there's any point in setting PG_writeback around the IO.  I
+can't think of a reason.
+
+> +		if (ret == PAGE_SIZE) {
+> +			count_vm_event(PSWPOUT);
+> +			ret = 0;
+> +		}
+> +		return ret;
+> +	}
+> +
+>  	bio = get_swap_bio(GFP_NOIO, page, end_swap_bio_write);
+>  	if (bio == NULL) {
+>  		set_page_dirty(page);
+> @@ -119,9 +147,21 @@ int swap_readpage(struct page *page)
+>  {
+>  	struct bio *bio;
+>  	int ret = 0;
+> +	struct swap_info_struct *sis = page_swap_info(page);
+>  
+>  	VM_BUG_ON(!PageLocked(page));
+>  	VM_BUG_ON(PageUptodate(page));
+> +
+> +	if (sis->flags & SWP_FILE) {
+> +		struct file *swap_file = sis->swap_file;
+> +		struct address_space *mapping = swap_file->f_mapping;
+> +
+> +		ret = mapping->a_ops->readpage(swap_file, page);
+> +		if (!ret)
+> +			count_vm_event(PSWPIN);
+> +		return ret;
+> +	}
+
+Confused.  Where did we set up page->index with the file offset?
+
+>  	bio = get_swap_bio(GFP_KERNEL, page, end_swap_bio_read);
+>  	if (bio == NULL) {
+>  		unlock_page(page);
+> @@ -133,3 +173,15 @@ int swap_readpage(struct page *page)
+>  out:
+>  	return ret;
+>  }
+> +
+> +int swap_set_page_dirty(struct page *page)
+> +{
+> +	struct swap_info_struct *sis = page_swap_info(page);
+> +
+> +	if (sis->flags & SWP_FILE) {
+> +		struct address_space *mapping = sis->swap_file->f_mapping;
+> +		return mapping->a_ops->set_page_dirty(page);
+> +	} else {
+> +		return __set_page_dirty_nobuffers(page);
+> +	}
+> +}
+
+More confused.  This is a swapcache page, not a pagecache page?  Why
+are we running set_page_dirty() against it?
+
+And what are we doing on the !SWP_FILE path?  Newly setting PG_dirty
+against block-device-backed swapcache pages?  Why?  Where does it get
+cleared again?
+
+> diff --git a/mm/swap_state.c b/mm/swap_state.c
+> index 9d3dd37..c25b9cf 100644
+> --- a/mm/swap_state.c
+> +++ b/mm/swap_state.c
+> @@ -26,7 +26,7 @@
+>   */
+>  static const struct address_space_operations swap_aops = {
+>  	.writepage	= swap_writepage,
+> -	.set_page_dirty	= __set_page_dirty_nobuffers,
+> +	.set_page_dirty	= swap_set_page_dirty,
+>  	.migratepage	= migrate_page,
+>  };
+>
+> ...
+>
