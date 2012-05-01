@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab2EAN2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 09:28:24 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:33546 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755715Ab2EAN2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 09:28:23 -0400
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: linux-parisc@vger.kernel.org
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Subject: Re: [PATCH 0/6] PA-RISC: fix compile
-Date: Tue, 01 May 2012 15:28:01 +0200
-Message-ID: <2980093.pP6IpthNCP@donald.sf-tec.de>
-User-Agent: KMail/4.8.2 (Linux/3.2.9-13-desktop; KDE/4.8.2; i686; ; )
-In-Reply-To: <3154414.psmJh6J2U2@donald.sf-tec.de>
-References: <3154414.psmJh6J2U2@donald.sf-tec.de>
+	id S932116Ab2EANfY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 09:35:24 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55348 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753209Ab2EANfX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 09:35:23 -0400
+Date: Tue, 1 May 2012 14:34:29 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>
+Subject: Re: [PATCH 1/2] asm-generic: io: remove {read,write} string functions
+Message-ID: <20120501133429.GB23919@mudshark.cambridge.arm.com>
+References: <1335523376-14695-1-git-send-email-will.deacon@arm.com>
+ <4F9ADD22.70003@zytor.com>
+ <201204272052.34489.arnd@arndb.de>
+ <201204271926.14872.vapier@gentoo.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart3929007.imp2FqxQY5"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201204271926.14872.vapier@gentoo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---nextPart3929007.imp2FqxQY5
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
-
-Rolf Eike Beer wrote:
-> Since d66acc39c7cee323733c8503b9de1821a56dff7e (bitops: Optimise
-> get_order()) getorder.h includes log2.h which leads to an include loop on
-> PA-RISC, bringing a bunch of other breakage to light. This patchset fixes
-> the compilation of the current state of 3.4 on HPPA.
+On Sat, Apr 28, 2012 at 12:26:11AM +0100, Mike Frysinger wrote:
+> On Friday 27 April 2012 16:52:34 Arnd Bergmann wrote:
+> > The main reasons I can see for not making it a general purpose API are:
+> > 
+> > * It's a very confusing interface, because the endianess rules are
+> > different from the non-string variants and counterintuitive.
+> > 
+> > * Almost all the users are ancient ARM specific drivers, the others are
+> >   either new ARM specific drivers or drivers that started out as ARM-only
+> >   and were ported later to other architectures (sh, avr32, mips, mn10300
+> >   and blackfin)
+> > 
+> > * On all these architectures, the PCI I/O space is memory mapped (or
+> >   non-existent), so the ioread* functions are trivial wrappers without
+> >   additional overhead.
+> > 
+> > * Most architectures don't implement them today, but all architectures
+> >   that support MMIO also implement the ioread string operations.
 > 
-> Rolf Eike Beer (6):
->   use linux/bitops.h instead of linux/log2.h to get fls()
->   parisc: add missing includes in asm/spinlock.h
->   parisc: add missing forward declarations in asm/hardware.h
->   parisc: drop include of asm/pdc.h from asm/hardware.h
->   parisc: add missing include of asm/page.h to asm/pgtable.h
->   parisc: move definition of PAGE0 to asm/page.h
+> i'm ambivalent with keeping or tossing these funcs.  Blackfin (afaik) picked 
+> them up really only for the reasons Arnd cited -- drivers using memory mapped 
+> registers originally for ARM (or m68k/coldfire i think) used this API, and it 
+> was easier for us to implement these defines in our asm/io.h and get the 
+> drivers "for free".
 
-Ping? #4 meanwhile got an ACK from Grant, I have not received any other 
-comments. James, could you please take the latter 5 if you don't feel 
-comfortable with the first one? That one is just a cleanup and makes no 
-difference (yet) if things work or not.
+Makes sense and there's no compelling reason to convert drivers if they're
+not being used by architectures without these functions.
 
-Eike
---nextPart3929007.imp2FqxQY5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
+> i am strongly in favor though of agreeing on & documenting the baseline API 
+> first before attempting to clean anything up.  sorry to keep harping on this.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+It would be nice if we could just use asm-generic/io.h as the documention,
+i.e. if you want to write a portable driver, just stick to the functions
+implemented there. Apart from the string accessors, I think it's already
+fairly accurate. The __raw_* functions seem to be missing on s390 but I
+don't think driver portability is a huge concern for that architecture.
 
-iEYEABECAAYFAk+f5OwACgkQXKSJPmm5/E71gQCcCW2UrJYz50VnSYiMKXRclbkU
-/9wAoJLZwd15UxvUOn62rq572Q1DSYNh
-=ne+6
------END PGP SIGNATURE-----
-
---nextPart3929007.imp2FqxQY5--
-
+Will
