@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757549Ab2EAR2e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 13:28:34 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38472 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755921Ab2EAR2d convert rfc822-to-8bit (ORCPT
+	id S1757997Ab2EARat (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 13:30:49 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:24802 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700Ab2EARar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 13:28:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAcYxUe7RmWm9AhFpjPAiaW9zirYJbzm1wtAMJ=LUpX-kskp9w@mail.gmail.com>
-References: <CAAcYxUdUBgwuxNKpiXp8r9-aw7+pi7U2E35dnsoL2RD9tf47oQ@mail.gmail.com>
-	<20120427031013.GA9131@zhy>
-	<CAAcYxUdtdVqsGqaZzoiPxP46AX+zcxuSfYgm_D+ShdoB12cs6w@mail.gmail.com>
-	<CAAcYxUe7RmWm9AhFpjPAiaW9zirYJbzm1wtAMJ=LUpX-kskp9w@mail.gmail.com>
-Date: Tue, 1 May 2012 10:28:32 -0700
-Message-ID: <CAAcYxUfLp=5Vg3RCNzNs2Q8pa0tQciUTO6WUt11-Nw5SVovf4Q@mail.gmail.com>
-Subject: Re: High CPU usage of scheduler?
-From: Dave Johansen <davejohansen@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 May 2012 13:30:47 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/2] xen/acpi: Execute _PDC on CPUs past the ones seen to the guest.
+Date: Tue,  1 May 2012 13:24:54 -0400
+Message-Id: <1335893094-6904-2-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+In-Reply-To: <1335893094-6904-1-git-send-email-konrad.wilk@oracle.com>
+References: <1335893094-6904-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 10:11 PM, Dave Johansen <davejohansen@gmail.com> wrote:
-> On Fri, Apr 27, 2012 at 8:23 AM, Dave Johansen <davejohansen@gmail.com> wrote:
->> On Thu, Apr 26, 2012 at 8:10 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
->>>
->>> On Thu, Apr 26, 2012 at 03:08:51PM -0700, Dave Johansen wrote:
->>> > I am looking into moving an application from RHEL 5 to RHEL 6 and I
->>> > noticed an unexpected increase in CPU usage. A little digging has led
->>> > me to believe that the scheduler may be the culprit.
->>> >
->>> > I created the attached test_select_work.c file to test this out. I
->>> > compiled it with the following command on RHEL 5:
->>> >
->>> > cc test_select_work.c -O2 -DSLEEP_TYPE=0 -Wall -Wextra -lm -lpthread
->>> > -o test_select_work
->>>
->>> Hmm...Do both RHEL 5 and RHEL 6 have high resolution timer enabled?
->>>
->>> If not, could you please try to boot the one which enable high resolution
->>> timer with 'highres=off' to see if things change?
->>
->> Yes, RHEL 6 has CONFIG_HIGH_RES_TIMERS=y. I rebooted and used the
->> 'highres=off' in grub and got the following results:
->>
->>   ./test_select_work 1000 10000 300 4
->>   time_per_iteration: min: 3130.1 us avg: 3152.2 us max: 3162.2 us
->> stddev: 15.0 us
->>   ./test_select_work 1000 10000 300 8
->>   time_per_iteration: min: 4314.6 us avg: 4407.9 us max: 4496.3 us
->> stddev: 60.6 us
->>   ./test_select_work 1000 10000 300 40
->>   time_per_iteration: min: 8901.7 us avg: 9056.5 us max: 9121.3 us
->> stddev: 57.5 us
->>
->> Any other info that might be helpful?
->>
->> Thanks,
->> Dave
->
-> I made some improvements to the program to make comparisons a bit
-> easier and the standard deviation a bit more meaningful. It is
-> available in a git repo at git://github.com/daveisfera/test_sleep.git
->
-> I tried sending results from running this updated program on several
-> OS versions, but it must have been rejected by the filters. The info
-> can be found in the bugzilla:
-> https://bugzilla.redhat.com/show_bug.cgi?id=812148
->
-> Is there any more data I can gather or tests that I can run that can
-> help diagnose this problem?
->
-> Thanks in advance for any help,
-> Dave
+acpi_early_processor_set_pdc does this (executes _PDC), but it
+cannot do it for vCPUS that are past the currently available vCPUS
+(so dom0_max_vcpus=X is used). We can easily find if that is
+the case by seeing if we get the same failure as the generic code
+and if so run _PDC ourselves. We also (by doing some other hypercalls)
+know how many physical CPUs there are - which the acpi_get_cpuid
+can't - as it bands the amount of CPUs up to 'cpu_possible()'
+which has been influenced by 'dom0_max_vcpus=X' flag.
 
-I also added the images and descriptions to the stackexchange
-question, so they can be more easily viewed there:
-http://unix.stackexchange.com/questions/37391/high-cpu-usage-with-cfs
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/xen-acpi-processor.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
+index 0b48579..bb9f711 100644
+--- a/drivers/xen/xen-acpi-processor.c
++++ b/drivers/xen/xen-acpi-processor.c
+@@ -323,7 +323,7 @@ static unsigned int __init get_max_acpi_id(void)
+ /*
+  * The read_acpi_id and check_acpi_ids are there to support the Xen
+  * oddity of virtual CPUs != physical CPUs in the initial domain.
+- * The user can supply 'xen_max_vcpus=X' on the Xen hypervisor line
++ * The user can supply 'dom0_max_vcps=X' on the Xen hypervisor line
+  * which will band the amount of CPUs the initial domain can see.
+  * In general that is OK, except it plays havoc with any of the
+  * for_each_[present|online]_cpu macros which are banded to the virtual
+@@ -374,6 +374,14 @@ read_acpi_id(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	pr_debug(DRV_NAME "ACPI CPU%u w/ PBLK:0x%lx\n", acpi_id,
+ 		 (unsigned long)pblk);
+ 
++	/* acpi_early_processor_set_pdc does this, but it cannot do it for vCPUS
++	 * that are past the currently available vCPUS (so dom0_max_vcpus=X is
++	 * used). We can easily find if that is the case by seeing if we get the
++	 * same failure as the generic code and if so run _PDC ourselves.
++	 */
++	if (acpi_get_cpuid(handle, (acpi_type == ACPI_TYPE_DEVICE) ? 1 : 0, acpi_id) == -1)
++		acpi_processor_set_pdc(handle);
++
+ 	status = acpi_evaluate_object(handle, "_CST", NULL, &buffer);
+ 	if (ACPI_FAILURE(status)) {
+ 		if (!pblk)
+-- 
+1.7.7.5
+
