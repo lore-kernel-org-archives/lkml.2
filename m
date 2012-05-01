@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab2EAPgr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 11:36:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35004 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756669Ab2EAPgq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 11:36:46 -0400
-Message-ID: <1335886587.13683.153.camel@twins>
-Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
-From: Peter Zijlstra <peterz@infradead.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>, mingo@elte.hu,
-        jeremy@goop.org, mtosatti@redhat.com, kvm@vger.kernel.org,
-        x86@kernel.org, vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com
-Date: Tue, 01 May 2012 17:36:27 +0200
-In-Reply-To: <4FA001D8.6080801@redhat.com>
-References: <20120427161727.27082.43096.stgit@abhimanyu>
-	    <20120427162401.27082.59387.stgit@abhimanyu>
-	  <4F9D32B4.8040002@redhat.com>  <1335865176.13683.120.camel@twins>
-	  <4F9FBF38.2060903@redhat.com> <1335869827.13683.133.camel@twins>
-	  <4F9FD337.5010908@redhat.com> <1335884353.13683.144.camel@twins>
-	 <4FA001D8.6080801@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1758234Ab2EAPio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 11:38:44 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:44346 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757241Ab2EAPin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 11:38:43 -0400
+Date: Tue, 1 May 2012 17:38:25 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 5/5] mm: refault distance-based file cache sizing
+Message-ID: <20120501153825.GA4837@cmpxchg.org>
+References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
+ <1335861713-4573-6-git-send-email-hannes@cmpxchg.org>
+ <20120501141330.GA2207@barrios>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120501141330.GA2207@barrios>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-01 at 18:31 +0300, Avi Kivity wrote:
-> On 05/01/2012 05:59 PM, Peter Zijlstra wrote:
-> > On Tue, 2012-05-01 at 15:12 +0300, Avi Kivity wrote:
-> > > local_irq_save() is a stronger version or rcu_read_lock()
-> >
-> > Not so, local_irq_save() doesn't at all stop regular RCU grace periods,
-> > things like preemptible rcu can be driven from rcu_read_unlock().
-> >
-> > Note that this is the reason call_rcu_sched() exists and is used in this
-> > case.
+On Tue, May 01, 2012 at 11:13:30PM +0900, Minchan Kim wrote:
+> Hi Hannes,
 > 
-> Ah, thanks for the correction.  I'll read some more about the _sched
-> variants.
+> On Tue, May 01, 2012 at 10:41:53AM +0200, Johannes Weiner wrote:
+> > To protect frequently used page cache (workingset) from bursts of less
+> > frequently used or one-shot cache, page cache pages are managed on two
+> > linked lists.  The inactive list is where all cache starts out on
+> > fault and ends on reclaim.  Pages that get accessed another time while
+> > on the inactive list get promoted to the active list to protect them
+> > from reclaim.
+> > 
+> > Right now we have two main problems.
+> > 
+> > One stems from numa allocation decisions and how the page allocator
+> > and kswapd interact.  The both of them can enter into a perfect loop
+> > where kswapd reclaims from the preferred zone of a task, allowing the
+> > task to continuously allocate from that zone.  Or, the node distance
+> > can lead to the allocator to do direct zone reclaim to stay in the
+> > preferred zone.  This may be good for locality, but the task has only
+> 
+> Understood.
+> 
+> > the inactive space of that one zone to get its memory activated.
+> > Forcing the allocator to spread out to lower zones in the right
+> > situation makes the difference between continuous IO to serve the
+> > workingset, or taking the numa cost but serving fully from memory.
+> 
+> It's hard to parse your word due to my dumb brain.
+> Could you elaborate on it?
+> It would be a good if you say with example.
 
-Basically:
+Say your Normal zone is 4G (DMA32 also 4G) and you have 2G of active
+file pages in Normal and DMA32 is full of other stuff.  Now you access
+a new 6G file repeatedly.  First it allocates from Normal (preferred),
+then tries DMA32 (full), wakes up kswapd and retries all zones.  If
+kswapd then frees pages at roughly the same pace as the allocator
+allocates from Normal, kswapd never goes to sleep and evicts pages
+from the 6G file before they can get accessed a second time.  Even
+though the 6G file could fit in memory (4G Normal + 4G DMA32), the
+allocator only uses the 4G Normal zone.
 
- rcu_read_{,un}lock_sched() -- aka preempt_{en,dis}able()
- call_rcu_sched()
- synchronize_rcu_sched() -- aka synchronize_sched();
+Same applies if you have a load that would fit in the memory of two
+nodes but the node distance leads the allocator to do zone_reclaim()
+and forcing the pages to stay in one node, again preventing the load
+from being fully cached in memory, which is much more expensive than
+the foreign node cost.
 
-Define an RCU variant where each cpu has to have scheduled at least once
-to complete a grace period.
+> > up to half of memory, and don't recognize workingset changes that are
+> > bigger than half of memory.
+> 
+> Workingset change?
+> You mean if new workingset is bigger than half of memory and it's like
+> stream before retouch, we could cache only part of working set because 
+> head pages on working set would be discared by tail pages of working set
+> in inactive list?
 
+Spot-on.  I called that 'tail-chasing' in my notes :-) When you are in
+a perpetual loop of evicting pages you will need in a couple hundred
+page faults.  Those couple hundred page faults are the refault
+distance and my code is able to detect these loops and increases the
+space available to the inactive list to end them, if possible.
 
+This is the whole principle of the series.
+
+If such a loop is recognized in a single zone, the allocator goes for
+lower zones to increase the inactive space.  If such a loop is
+recognized over all allowed zones in the zonelist, the active lists
+are shrunk to increase the inactive space.
