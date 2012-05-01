@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab2EAUmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:42:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60218 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab2EAUmQ (ORCPT
+	id S1754524Ab2EAUoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 16:44:14 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:53683 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829Ab2EAUoN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:42:16 -0400
-Date: Tue, 1 May 2012 13:42:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH]  Re: [RFC PATCH] namespaces: fix leak on fork() failure
-Message-Id: <20120501134214.f6b44f4a.akpm@linux-foundation.org>
-In-Reply-To: <m1zk9rmyh4.fsf@fess.ebiederm.org>
-References: <1335604790.5995.22.camel@marge.simpson.net>
-	<20120428142605.GA20248@redhat.com>
-	<m14ns355ru.fsf@fess.ebiederm.org>
-	<20120429165846.GA19054@redhat.com>
-	<1335754867.17899.4.camel@marge.simpson.net>
-	<m1zk9rmyh4.fsf@fess.ebiederm.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 1 May 2012 16:44:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120501202640.GB16209@phenom.dumpdata.com>
+References: <20120501194240.GA15237@phenom.dumpdata.com>
+	<CA+5PVA4OorzAkkBe+PayPPHa1k7=X6Y0ALg=jRWLyKxabAPpiw@mail.gmail.com>
+	<20120501202640.GB16209@phenom.dumpdata.com>
+Date: Tue, 1 May 2012 16:44:13 -0400
+Message-ID: <CA+5PVA49wJjDFW7_3kDhG=uVavZrhys8N9-XMq14BGORX65yuA@mail.gmail.com>
+Subject: Re: [GIT PULL] stable/for-ingo-v3.5 of IOAPIC abstraction (and then
+ some users) for v3.5
+From: Josh Boyer <jwboyer@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        mingo@kernel.org, suresh.b.siddha@intel.com, mlin@ss.pku.edu.cn
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 May 2012 13:35:03 -0700
-ebiederm@xmission.com (Eric W. Biederman) wrote:
+On Tue, May 1, 2012 at 4:26 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Tue, May 01, 2012 at 04:08:19PM -0400, Josh Boyer wrote:
+>> On Tue, May 1, 2012 at 3:42 PM, Konrad Rzeszutek Wilk
+>> <konrad.wilk@oracle.com> wrote:
+>> > +
+>> > +struct x86_io_apic_ops x86_io_apic_ops = {
+>> > +       .init   = native_io_apic_init_mappings,
+>> > +       .read   = native_io_apic_read,
+>> > +       .write  = native_io_apic_write,
+>> > +       .modify = native_io_apic_modify,
+>> > +};
+>>
+>> You'll get a section mismatch warning on this struct.  It's not a huge
+>> deal, but native_io_apic_init_mappings is annotated as __init whereas
+>> this struct isn't.  In practice it doesn't seem to matter as
+>> x86_io_apic_ops.init is only called in setup_arch, but it's still a
+>> valid warning.
+>
+> I think that the mismatch disappears if the structure has the word
+> _ops in it. At least that is what I saw (when I ran with the MODULE_SECTION=y
+> with the initial implementation of this and then fixed it up).
+>
+> However, let me double check - I might have seen that with something
+> else and misremebered it.
 
-> 
-> Andrew can you please pick up this patch?
+Oh, you might very well be correct.  The bug has an older version of
+this patch that just calls it 'x86_ioapic'.  Guess I'll need to poke
+around and update whatever we're carrying to the latest version.
 
-Sure.  I assume it's fixing a post-3.4 regression?  No -stable backport
-needed?
+If it's gone, sorry for the noise.
 
-> This doesn't explain all of the vsftp weirdness people have been seeing
-> but it does fix a real leak on fork failure that vsftp could most
-> definitely have triggered.
-> 
-> Mike Galbraith <efault@gmx.de> writes:
-
-hm, Mike had some test code.  If that was put in
-tools/testing/selftests/nsproxy, this leak wouldn't happen again!
+josh
