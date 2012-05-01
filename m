@@ -1,106 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab2EAT1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 15:27:41 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:37749 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab2EAT1j (ORCPT
+	id S1758438Ab2EAT2c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 15:28:32 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34232 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757641Ab2EAT21 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 15:27:39 -0400
-Date: Tue, 1 May 2012 20:27:36 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-bluetooth@vger.kernel.org
-Subject: Re: [now bisected] Weird bluetooth keyboard regression - just me?
-Message-ID: <20120501192736.GA29770@srcf.ucam.org>
-References: <20120501073711.028d31d6@lwn.net>
- <20120501110156.2b6e0561@lwn.net>
- <20120501171901.GA26006@srcf.ucam.org>
- <20120501120145.21f65ae2@lwn.net>
- <20120501183149.GA28536@srcf.ucam.org>
- <20120501123923.01ac1138@lwn.net>
- <20120501185455.GA29060@srcf.ucam.org>
+	Tue, 1 May 2012 15:28:27 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="gKMricLos+KVdGMg"
-Content-Disposition: inline
-In-Reply-To: <20120501185455.GA29060@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CAErSpo5EdBY-8M5FnQaGHOAvhaGO7qLHdDkmYGyDRN9de4umNw@mail.gmail.com>
+References: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
+	<1332135781-13695-5-git-send-email-yinghai@kernel.org>
+	<CAErSpo6Wbjh_pzDOkGRoog2WeJQET9UT0fiaanV0r15pq7hT6Q@mail.gmail.com>
+	<CAE9FiQV0XTd_1Ujz=tb6BSuwJvJ9nbT_GbE2PREtgMGv=yG0+g@mail.gmail.com>
+	<CAErSpo57pH81KtUbYZ3j6y4kC+ka33Lzr4rfcywVWf8OTmH_5Q@mail.gmail.com>
+	<CAE9FiQUOsMOQgZXCuPHpc6ZSEGnY3nv+uy1o0xvrW8-LKwNZrg@mail.gmail.com>
+	<CAErSpo5EdBY-8M5FnQaGHOAvhaGO7qLHdDkmYGyDRN9de4umNw@mail.gmail.com>
+Date: Tue, 1 May 2012 12:28:26 -0700
+X-Google-Sender-Auth: uJIJpIoLfa-jHettzSRm2qoLRns
+Message-ID: <CAE9FiQVgDQO0ZUbYr_KC2byM6J+Y_RUT=Xpcf-Atay7_tgOFTg@mail.gmail.com>
+Subject: Re: [PATCH -v11 04/30] PCI: Add busn_res into struct pci_bus.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 1, 2012 at 8:40 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> bridge's Subordinate Bus Number in config space == bus->subordinate ==
+>>> bus->busn_res.end (correct me if I'm wrong).  I don't like the
+>>> redundancy in this case.
+>>
+>> there are about 70 bus->subordinate reference and 40 bus->secondary reference.
+>>
+>> could try to update them in following patch set.
+>
+> If you're proposing this:
+>  1. add bus->busn_res
+>  2. remove bus->subordinate and bus->secondary
+> I fully support that, and I'd like to merge both pieces at the same
+> time (different patches is fine; I just want to make sure both pieces
+> actually happen).
 
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+yes. Can you consider applying  "removing bus->subordinate" patch set
+to be applied after:
+for-pci-busn-alloc
+for-pci-root-bus-hotplug
+for-pci-for-each-res-addon
+for-pci-res-alloc
 
-What does removable in the parent device say? In either case, does the 
-attached file help if dropped into /lib/udev/rules.d ?
+otherwise there would be some extra rebase work for last three patch set.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
-
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="42-usb-hid-pm.rules"
-
-#
-# Enable autosuspend for qemu emulated usb hid devices.
-#
-# Note that there are buggy qemu versions which advertise remote
-# wakeup support but don't actually implement it correctly.  This
-# is the reason why we need a match for the serial number here.
-# The serial number "42" is used to tag the implementations where
-# remote wakeup is working.
-#
-
-ACTION=="add", SUBSYSTEM=="usb", ATTR{product}=="QEMU USB Mouse", ATTR{serial}=="42", TEST=="power/control", ATTR{power/control}="auto"
-ACTION=="add", SUBSYSTEM=="usb", ATTR{product}=="QEMU USB Tablet", ATTR{serial}=="42", TEST=="power/control", ATTR{power/control}="auto"
-ACTION=="add", SUBSYSTEM=="usb", ATTR{product}=="QEMU USB Keyboard", ATTR{serial}=="42", TEST=="power/control", ATTR{power/control}="auto"
-
-#
-# Enable autosuspend for KVM and iLO usb hid devices. These are
-# effectively self-powered (despite what some claim in their USB
-# profiles) and so it's safe to do so.
-#
-
-# AMI 046b:ff10
-ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046b", ATTR{idProduct}=="ff10", TEST=="power/control", ATTR{power/control}="auto"
-
-#
-# Catch-all for Avocent HID devices. Keyed off interface in order to only
-# trigger on HID class devices.
-#
-ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0624", ATTR{bInterfaceClass}=="03", TEST=="../power/control", ATTR{../power/control}="auto"
-
-# Dell DRAC 4
-ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="413c", ATTR{idProduct}=="2500", TEST=="power/control", ATTR{power/control}="auto"
-
-# Dell DRAC 5
-ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="413c", ATTR{idProduct}=="0000", TEST=="power/control", ATTR{power/control}="auto"
-
-# Hewlett Packard iLO
-ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="03f0", ATTR{idProduct}=="7029", TEST=="power/control", ATTR{power/control}="auto"
-ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="03f0", ATTR{idProduct}=="1027", TEST=="power/control", ATTR{power/control}="auto"
-
-# IBM remote access
-ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="04b3", ATTR{idProduct}=="4001", TEST=="power/control", ATTR{power/control}="auto"
-ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="04b3", ATTR{idProduct}=="4002", TEST=="power/control", ATTR{power/control}="auto"
-ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="04b3", ATTR{idProduct}=="4012", TEST=="power/control", ATTR{power/control}="auto"
-
-# Raritan Computer, Inc KVM.
-ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="14dd", ATTR{idProduct}="0002", TEST=="power/control", ATTR{power/control}="auto"
-
-# USB HID devices that are internal to the machine should also be safe to autosuspend
-
-ACTION=="add", SUBSYSTEM=="usb", SUBSYSTEMS=="usb", ATTRS{removable}=="removable", GOTO "usb_hid_pm_end"
-ACTION=="add", SUBSYSTEM=="usb", SUBSYSTEMS=="usb", ATTRS{removable}=="unknown", GOTO "usb_hid_pm_end"
-
-ACTION=="add", SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="03", ATTRS{removable}=="fixed", TEST=="../power/control", ATTR{../power/control}="auto"
-
-LABEL="usb_hid_pm_end"
-
---gKMricLos+KVdGMg--
+Yinghai
