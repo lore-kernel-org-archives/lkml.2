@@ -1,113 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab2EAOWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 10:22:40 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47537 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751928Ab2EAOWi convert rfc822-to-8bit (ORCPT
+	id S1758111Ab2EAOYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 10:24:07 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34211 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756569Ab2EAOYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 10:22:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>
-Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
-Date: Tue, 1 May 2012 16:04:16 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrey Rahmatullin <wrar@wrar.name>,
-        Steven Rostedt <rostedt@goodmis.org>
-References: <Pine.LNX.4.44L0.1204301348180.1558-100000@iolanthe.rowland.org> <201204302343.35215.rjw@sisk.pl> <4F9F84F6.7000509@fisher-privat.net>
-In-Reply-To: <4F9F84F6.7000509@fisher-privat.net>
+	Tue, 1 May 2012 10:24:04 -0400
+Date: Tue, 1 May 2012 10:24:03 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Grzegorz Nosek <root@localdomain.pl>
+cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
+        <support@supermicro.com>
+Subject: Re: EHCI software retries break Supermicro IPKVM
+In-Reply-To: <4F9F0426.6040603@localdomain.pl>
+Message-ID: <Pine.LNX.4.44L0.1205011016130.1499-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201205011604.16556.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 01, 2012, Oleksij Rempel (fishor) wrote:
-> On 30.04.2012 23:43, Rafael J. Wysocki wrote:
-> > On Monday, April 30, 2012, Oleksij Rempel wrote:
-> >> On 30.04.2012 19:53, Alan Stern wrote:
-> >>> On Mon, 30 Apr 2012, Bjorn Helgaas wrote:
-> >>>
-> >>>> On Sun, Apr 29, 2012 at 2:44 PM, Rafael J. Wysocki<rjw@sisk.pl>  wrote:
-> >>>>> From: Oleksij Rempel<bug-track@fisher-privat.net>
-> >>>>>
-> >>>>> This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
-> >>>>> more closely and fixes suspend bug found on ASUS Zenbook UX31E.
-> >>>>>
-> >>>>> Some OEM use _SxD fileds do blacklist brocken Dx states.
-> >>>>> If _SxD/_SxW return values are check before suspend as appropriate,
-> >>>>> some nasty suspend/resume issues may be avoided.
-> >>>>>
-> >>>>> References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
-> >>>>> Signed-off-by: Oleksij Rempel<bug-track@fisher-privat.net>
-> >>>>> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
-> >>>>> ---
-> >>>>>
-> >>>>> Bjorn, Len,
-> >>>>>
-> >>>>> This is -stable material and therefore v3.4 as well, IMO. �Please let me
-> >>>>> know if one of you can take it or whether you want me to handle it all the
-> >>>>> way to Linus.
-> >>>>
-> >>>> I'm OK with this from a PCI perspective.  Most of the change is in
-> >>>> ACPI, so I propose that either you or Len take care of it.
-> >>>>
-> >>>> The second paragraph of the changelog has several typos
-> >>>> (fileds/fields, do/to, brocken/broken, etc).
-> >>>
-> >>> It also turns out that the normal wakeup mechanism doesn't work for the
-> >>> devices in question.  Can this be detected by ACPI?  We don't want to
-> >>> tell userspace that wakeup works when in fact it doesn't.
-> >>
-> >> hm... how about using pci config and acpi together. PCI config provides
-> >> map of Dx states and wakeup support of them. If pci says wakeup works
-> >> only on D0 and D3 and acpi say - we can use only D2 in S3, then there is
-> >> no wakeup.
-> >
-> > Not really.  ACPI trumps PCI here, so if ACPI says we can use D2 in S3,
-> > then we can.
-> >
-> > ACPI device states are not the same as PCI device states.  They usually map
-> > to each other directly, but they don't have to.
+On Mon, 30 Apr 2012, Grzegorz Nosek wrote:
+
+> W dniu 30.04.2012 23:12, Alan Stern pisze:
+> > It isn't a software issue.  You've got a hardware problem; either the
+> > IPKVM itself, or the connecting cable, or your computer's EHCI
+> > controller is bad.  The only reason the device worked without the retry
+> > logic is because it failed so completely that the kernel was forced to
+> > run it at full speed (12 Mb/s) instead of high speed (480 Mb/s).  With
+> > the retry logic present, the device was barely workable at high speed
+> > (but it probably didn't work well enough to be very useful).
 > 
-> I mean not just the mapping.
-> I mean PCI:PME_SUP field.  If it PME(D0+,D1-,D2-,D3hot+,D3cold+), and 
-> acpi trying to avoid D3 states for this device. then is is same like 
-> PME(D0+,D1-,D2-)? Or not?
+> Oh. Thanks for the info. Is there a way to force the device into 12Mb/s 
+> mode? I don't care about performance as the bottleneck is my Internet 
+> link on the client, anyway. The retry logic rendered the console 
+> unusable (not just slow, completely no keyboard or redirected media).
 
-Yes, if _S3D or _S3W are present.  If they are not present and _PRW is,
-that means "don't care".
+In fact there _is_ a way to do it:
 
-> According to spec.:
-> 7.2 Device Power Management Objects (page 287)
-> _S3D - Highest D-state supported by the device in the S3 state
-> _S3W - Lowest D-state supported by the device in the S3 state which can 
-> wake the system.
-> by definition if _S3W is specified then we can assume, the device can 
-> wake? But _SxW is not defined.
+	echo 7 >/sys/bus/pci/devices/0000:00:1d.7/companion
 
-The device can wake up the system if _PRW is present for it (and for
-PCIe devices even that is not formally necessary).
+Here 7 is the number of the port which you want to force to full speed
+and 0000:00:1d.7 is the PCI address of the EHCI controller.
 
-> Are there any other method to forbid the system use broken state, after 
-> device was actually produced? Usual BIOS flash utility will probably no 
-> rewrite the PCIs EEPROM. Only hope is ACPI, what is correct method to do 
-> define it by ACPI?
+> > Have you tried plugging the IPKVM into a different computer to see if
+> > it behaves any better?
+> 
+> Nope. The IPKVM is a proprietary addon card without any cables (plugs 
+> into a dedicated slot on the motherboard). Another identical machine is 
+> misbehaving the exact same way (retry messages in dmesg), so either I'm 
+> just unlucky, or it's a wider issue. Still, a few others are working 
+> fine (no retry messages; though I did not check the KVM recently). All 
+> the machines are in a rather remote DC, so I'm unlikely to muck with the 
+> hardware any time soon.
+> 
+> Are there any diagnostics possible to determine what is broken (i.e. the 
+> KVM card or the controller)? IIRC plugging a physical USB-based KVM 
+> worked fine, although that might have been an older kernel, without the 
+> retry logic.
 
-Define _S3D that will return 2 (for example) and _PRW returning 3 as the
-deepest sleep state the system may be woken up from.  Then, we'll use
-D2 (after the @subject patch).
+Well, you could move the card into a different computer and see how it 
+behaves there.  Or you could replace the card with a different one, to 
+see if there's any difference in behavior.
 
-The drawback is that the kernel will then think the device can wake up
-the system.
+It may be that neither part is directly at fault, but instead there's a 
+slight incompatibilty between them.
 
-Thanks,
-Rafael
+For example, at one point I had a USB disk drive that didn't work on my
+home computer.  The same drive and USB cable did work on my office
+computer.  The same drive with a different cable worked on my home
+computer.  And a flash storage device worked when attached via the same
+cable to my home computer.  In a situation like that, it's very
+difficult to point a finger at any specific part.
+
+Alan Stern
+
