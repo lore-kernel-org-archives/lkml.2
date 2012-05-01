@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758507Ab2EASCq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 14:02:46 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:43339 "EHLO mx2.fusionio.com"
+	id S1758481Ab2EASCh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 14:02:37 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:35635 "EHLO londo.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758489Ab2EASCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 14:02:44 -0400
-X-ASG-Debug-ID: 1335895362-0421b5401d180a0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4FA0253F.4000302@fusionio.com>
-Date: Tue, 1 May 2012 20:02:39 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1757952Ab2EASCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 14:02:35 -0400
+Date: Tue, 1 May 2012 20:04:25 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Saravana Kannan <skannan@codeaurora.org>,
+        "Turquette, Mike" <mturquette@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>, h@pengutronix.de,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
+Message-ID: <20120501180425.GV25584@lunn.ch>
+Mail-Followup-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+	Shawn Guo <shawn.guo@linaro.org>,
+	Saravana Kannan <skannan@codeaurora.org>,
+	"Turquette, Mike" <mturquette@ti.com>,
+	Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+	Grant Likely <grant.likely@secretlab.ca>, h@pengutronix.de,
+	Jamie Iles <jamie@jamieiles.com>,
+	Jeremy Kerr <jeremy.kerr@canonical.com>,
+	Magnus Damm <magnus.damm@gmail.com>,
+	Deepak Saxena <dsaxena@linaro.org>,
+	linux-arm-kernel@lists.infradead.org,
+	Arnd Bergman <arnd.bergmann@linaro.org>,
+	linux-arm-msm@vger.kernel.org,
+	Rob Herring <rob.herring@calxeda.com>,
+	Russell King <linux@arm.linux.org.uk>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Richard Zhao <richard.zhao@linaro.org>,
+	Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+	Linus Walleij <linus.walleij@stericsson.com>,
+	Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+	Amit Kucheria <amit.kucheria@linaro.org>
+References: <4F98EB10.2000505@codeaurora.org>
+ <20120426084201.GF17184@pengutronix.de>
+ <4d67387a86d99cbb4e2acf68d3588b1c.squirrel@www.codeaurora.org>
+ <20120426095135.GG17184@pengutronix.de>
+ <4F9EE84C.90106@codeaurora.org>
+ <CAJOA=zNCagT6GaeHi_jq7-LU9P-SfJZ8PA9bo-oeswjC0tHyYA@mail.gmail.com>
+ <4F9F1659.1010804@codeaurora.org>
+ <20120501081103.GC2194@S2101-09.ap.freescale.net>
+ <20120501091334.GG15541@lunn.ch>
+ <20120501170001.GB4089@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized
- to one
-References: <1335873936.16988.148.camel@lappy> <20120501161729.GV26595@google.com>
-X-ASG-Orig-Subj: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized
- to one
-In-Reply-To: <20120501161729.GV26595@google.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1335895362
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.95708
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120501170001.GB4089@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-01 18:17, Tejun Heo wrote:
-> create_task_io_context() left ioc->nr_tasks at zero; however, a newly
-> created ioc should have its nr_tasks initialized to one as it begins
-> attached to the task creating it.
-> 
-> This affects only CLONE_IO which currently doesn't seem to have any
-> actual user.  Sasha triggered WARN_ON_ONCE() in ioc_task_link() using
-> syscall fuzzer.  Even when it happens, the failure mode isn't critical
-> (blk-cgroup may allow attaching a CLONE_IO'd task to a cgroup when it
-> shouldn't and blkcg limits may behave weirdly).
+> Or merge the platforms then do framework changes incrementally, updating
+> the platforms as we go (which is the normal pattern for maintaining a
+> framework...).  I see we've already got SPEAr merged.
 
-CLONE_IO is an exported interface, it can be set from clone(2).
-Otherwise Sasha would not have hit this :-)
+I'm not too sure SPEAr has been really merged. As far as i understand,
+its dependencies have not been fulfilled, so it does not compile. This
+to me is another indication of the problems we have at the moment...
 
-Thanks, applied.
-
--- 
-Jens Axboe
+   Andrew
 
