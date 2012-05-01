@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab2EAGZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 02:25:51 -0400
+	id S1756244Ab2EAG0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 02:26:03 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:53700 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880Ab2EAGZs (ORCPT
+	with ESMTP id S1755727Ab2EAGZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 02:25:48 -0400
+	Tue, 1 May 2012 02:25:58 -0400
 From: Ravishankar Karkala Mallikarjunayya <ravishankarkm32@gmail.com>
 To: gregkh@linuxfoundation.org, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 4/5] Staging: comedi: Checkpatch cleanups.
-Date: Tue,  1 May 2012 11:55:09 +0530
-Message-Id: <1335853510-29545-5-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 5/5] Staging: comedi: fix line over 80 character issue in rtd520.c
+Date: Tue,  1 May 2012 11:55:10 +0530
+Message-Id: <1335853510-29545-6-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1335853510-29545-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1335853510-29545-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -22,80 +22,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/staging/comedi/drivers/dt9812.c:369: ERROR: "foo * bar" should be "foo *bar"
-drivers/staging/comedi/drivers/dt9812.c:369: ERROR: "foo * bar" should be "foo *bar"
-drivers/staging/comedi/drivers/dt9812.c:395: ERROR: "foo * bar" should be "foo *bar"
-drivers/staging/comedi/drivers/dt9812.c:396: ERROR: "foo * bar" should be "foo *bar"
-drivers/staging/comedi/drivers/dt9812.c:434: ERROR: "foo * bar" should be "foo *bar"
-drivers/staging/comedi/drivers/dt9812.c:480: ERROR: "foo * bar" should be "foo *bar"
-drivers/staging/comedi/drivers/dt9812.c:556: ERROR: "foo * bar" should be "foo *bar"
-drivers/staging/comedi/drivers/dt9812.c:623: ERROR: "foo * bar" should be "foo *bar"
+This is a patch to the rtd520.c file that fixes up a line
+over 80 character warning found by the checkpatch.pl tool.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/dt9812.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/staging/comedi/drivers/rtd520.c |   62 +++++++++++++++++++++----------
+ 1 files changed, 42 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/dt9812.c b/drivers/staging/comedi/drivers/dt9812.c
-index 21d94ed..8113cfb 100644
---- a/drivers/staging/comedi/drivers/dt9812.c
-+++ b/drivers/staging/comedi/drivers/dt9812.c
-@@ -366,7 +366,7 @@ static int dt9812_read_info(struct usb_dt9812 *dev, int offset, void *buf,
- }
+diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
+index 1384419..0134ecf 100644
+--- a/drivers/staging/comedi/drivers/rtd520.c
++++ b/drivers/staging/comedi/drivers/rtd520.c
+@@ -377,8 +377,11 @@ struct rtdPrivate {
+ 	u8 utcCtrl[4];		/* crtl mode for 3 utc + read back */
+ 	u8 dioStatus;		/* could be read back (dio0Ctrl) */
+ #ifdef USE_DMA
+-	/* Always DMA 1/2 FIFO.  Buffer (dmaBuff?) is (at least) twice that size.
+-	   After transferring, interrupt processes 1/2 FIFO and passes to comedi */
++	/*
++	 * Always DMA 1/2 FIFO.  Buffer (dmaBuff?) is (at least) twice that
++	 * size.  After transferring, interrupt processes 1/2 FIFO and
++	 * passes to comedi
++	 */
+ 	s16 dma0Offset;		/* current processing offset (0, 1/2) */
+ 	uint16_t *dma0Buff[DMA_CHAIN_COUNT];	/* DMA buffers (for ADC) */
+ 	dma_addr_t dma0BuffPhysAddr[DMA_CHAIN_COUNT];	/* physical addresses */
+@@ -581,7 +584,8 @@ struct rtdPrivate {
  
- static int dt9812_read_multiple_registers(struct usb_dt9812 *dev, int reg_count,
--					  u8 * address, u8 * value)
-+					  u8 *address, u8 *value)
- {
- 	struct dt9812_usb_cmd cmd;
- 	int i, count, retval;
-@@ -392,8 +392,8 @@ static int dt9812_read_multiple_registers(struct usb_dt9812 *dev, int reg_count,
- }
+ /* User output N source select (write only) */
+ #define RtdUsrOutSource(dev, n, v) \
+-	writel(v, devpriv->las0+((n <= 0) ? LAS0_UOUT0_SELECT : LAS0_UOUT1_SELECT))
++	writel(v, devpriv->las0+((n <= 0) ? LAS0_UOUT0_SELECT : \
++				LAS0_UOUT1_SELECT))
  
- static int dt9812_write_multiple_registers(struct usb_dt9812 *dev,
--					   int reg_count, u8 * address,
--					   u8 * value)
-+					   int reg_count, u8 *address,
-+					   u8 *value)
- {
- 	struct dt9812_usb_cmd cmd;
- 	int i, count, retval;
-@@ -431,7 +431,7 @@ static int dt9812_rmw_multiple_registers(struct usb_dt9812 *dev, int reg_count,
- 	return retval;
- }
+ /* Digital IO */
+ #define RtdDio0Read(dev) \
+@@ -608,7 +612,8 @@ struct rtdPrivate {
+ /* Write one data value (sign + 12bit + marker bits) */
+ /* Note: matches what DMA would put.  Actual value << 3 */
+ #define RtdDacFifoPut(dev, n, v) \
+-	writew((v), devpriv->las1 + (((n) == 0) ? LAS1_DAC1_FIFO : LAS1_DAC2_FIFO))
++	writew((v), devpriv->las1 + (((n) == 0) ? LAS1_DAC1_FIFO : \
++				LAS1_DAC2_FIFO))
  
--static int dt9812_digital_in(struct slot_dt9812 *slot, u8 * bits)
-+static int dt9812_digital_in(struct slot_dt9812 *slot, u8 *bits)
- {
- 	int result = -ENODEV;
+ /* Start single DAC conversion */
+ #define RtdDacUpdate(dev, n) \
+@@ -625,7 +630,8 @@ struct rtdPrivate {
  
-@@ -477,7 +477,7 @@ static int dt9812_digital_out(struct slot_dt9812 *slot, u8 bits)
- 	return result;
- }
+ /* Reset DAC FIFO */
+ #define RtdDacClearFifo(dev, n) \
+-	writel(0, devpriv->las0+(((n) == 0) ? LAS0_DAC1_RESET : LAS0_DAC2_RESET))
++	writel(0, devpriv->las0+(((n) == 0) ? LAS0_DAC1_RESET : \
++				LAS0_DAC2_RESET))
  
--static int dt9812_digital_out_shadow(struct slot_dt9812 *slot, u8 * bits)
-+static int dt9812_digital_out_shadow(struct slot_dt9812 *slot, u8 *bits)
- {
- 	int result = -ENODEV;
+ /* Set source for DMA 0 (write only, shadow?) */
+ #define RtdDma0Source(dev, n) \
+@@ -737,7 +743,10 @@ static int rtd_ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
+ 			  struct comedi_cmd *cmd);
+ static int rtd_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s);
+ static int rtd_ai_cancel(struct comedi_device *dev, struct comedi_subdevice *s);
+-/* static int rtd_ai_poll (struct comedi_device *dev,struct comedi_subdevice *s); */
++/*
++ * static int rtd_ai_poll(struct comedi_device *dev,
++ *			  struct comedi_subdevice *s);
++ */
+ static int rtd_ns_to_timer(unsigned int *ns, int roundMode);
+ static irqreturn_t rtd_interrupt(int irq, void *d);
+ static int rtd520_probe_fifo_depth(struct comedi_device *dev);
+@@ -857,7 +866,9 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 			DPRINTK("rtd520: PCI latency = %d\n", pci_latency);
+ 		}
  
-@@ -553,7 +553,7 @@ static void dt9812_configure_gain(struct usb_dt9812 *dev,
+-		/* Undocumented EPLD version (doesn't match RTD driver results) */
++		/*
++		 * Undocumented EPLD version (doesn't match RTD driver results)
++		 */
+ 		/*DPRINTK ("rtd520: Reading epld from %p\n",
+ 		   devpriv->las0+0);
+ 		   epld_version = readl (devpriv->las0+0);
+@@ -970,9 +981,11 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ #ifdef USE_DMA
+ 	if (dev->irq > 0) {
+ 		printk("( DMA buff=%d )\n", DMA_CHAIN_COUNT);
+-		/* The PLX9080 has 2 DMA controllers, but there could be 4 sources:
+-		   ADC, digital, DAC1, and DAC2.  Since only the ADC supports cmd mode
+-		   right now, this isn't an issue (yet) */
++		/*
++		 * The PLX9080 has 2 DMA controllers, but there could be
++		 * 4 sources: ADC, digital, DAC1, and DAC2.  Since only the
++		 * ADC supports cmd mode right now, this isn't an issue (yet)
++		 */
+ 		devpriv->dma0Offset = 0;
+ 
+ 		for (index = 0; index < DMA_CHAIN_COUNT; index++) {
+@@ -988,10 +1001,14 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 			}
+ 			/*DPRINTK ("buff[%d] @ %p virtual, %x PCI\n",
+ 			   index,
+-			   devpriv->dma0Buff[index], devpriv->dma0BuffPhysAddr[index]); */
++			   devpriv->dma0Buff[index],
++			   devpriv->dma0BuffPhysAddr[index]); */
+ 		}
+ 
+-		/* setup DMA descriptor ring (use cpu_to_le32 for byte ordering?) */
++		/*
++		 * setup DMA descriptor ring (use cpu_to_le32 for byte
++		 * ordering?)
++		 */
+ 		devpriv->dma0Chain =
+ 		    pci_alloc_consistent(devpriv->pci_dev,
+ 					 sizeof(struct plx_dma_desc) *
+@@ -1278,7 +1295,8 @@ static int rtd520_probe_fifo_depth(struct comedi_device *dev)
+ 		}
  	}
- }
+ 	if (i == limit) {
+-		printk(KERN_INFO "\ncomedi: %s: failed to probe fifo size.\n", DRV_NAME);
++		printk(KERN_INFO "\ncomedi: %s: failed to probe fifo size.\n",
++		       DRV_NAME);
+ 		return -EIO;
+ 	}
+ 	RtdAdcClearFifo(dev);
+@@ -1378,9 +1396,10 @@ static int ai_read_n(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		d = RtdAdcFifoGet(dev);	/* get 2s comp value */
  
--static int dt9812_analog_in(struct slot_dt9812 *slot, int channel, u16 * value,
-+static int dt9812_analog_in(struct slot_dt9812 *slot, int channel, u16 *value,
- 			    enum dt9812_gain gain)
- {
- 	struct dt9812_rmw_byte rmw[3];
-@@ -620,7 +620,7 @@ exit:
- }
+ 		d = d >> 3;	/* low 3 bits are marker lines */
+-		if (CHAN_ARRAY_TEST(devpriv->chanBipolar, s->async->cur_chan))
+-			sample = d + 2048;	/* convert to comedi unsigned data */
+-		else
++		if (CHAN_ARRAY_TEST(devpriv->chanBipolar, s->async->cur_chan)) {
++			/* convert to comedi unsigned data */
++			sample = d + 2048;
++		} else
+ 			sample = d;
  
- static int dt9812_analog_out_shadow(struct slot_dt9812 *slot, int channel,
--				    u16 * value)
-+				    u16 *value)
- {
- 	int result = -ENODEV;
+ 		if (!comedi_buf_put(s->async, sample))
+@@ -1406,9 +1425,10 @@ static int ai_read_dregs(struct comedi_device *dev, struct comedi_subdevice *s)
+ 		}
  
+ 		d = d >> 3;	/* low 3 bits are marker lines */
+-		if (CHAN_ARRAY_TEST(devpriv->chanBipolar, s->async->cur_chan))
+-			sample = d + 2048;	/* convert to comedi unsigned data */
+-		else
++		if (CHAN_ARRAY_TEST(devpriv->chanBipolar, s->async->cur_chan)) {
++			/* convert to comedi unsigned data */
++			sample = d + 2048;
++		} else
+ 			sample = d;
+ 
+ 		if (!comedi_buf_put(s->async, sample))
+@@ -1525,7 +1545,9 @@ static int ai_process_dma(struct comedi_device *dev, struct comedi_subdevice *s)
+ 	comedi_buf_memcpy_to(s->async, 0, dp, n);
+ 	comedi_buf_write_free(s->async, n);
+ 
+-	/* always at least 1 scan -- 1/2 FIFO is larger than our max scan list */
++	/*
++	 * always at least 1 scan -- 1/2 FIFO is larger than our max scan list
++	 */
+ 	s->async->events |= COMEDI_CB_BLOCK | COMEDI_CB_EOS;
+ 
+ 	if (++devpriv->dma0Offset >= DMA_CHAIN_COUNT) {	/* next buffer */
 -- 
 1.7.0.4
 
