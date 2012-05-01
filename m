@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758471Ab2EASBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 14:01:48 -0400
-Received: from tex.lwn.net ([70.33.254.29]:34510 "EHLO vena.lwn.net"
+	id S1758507Ab2EASCq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 14:02:46 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:43339 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758418Ab2EASBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 14:01:47 -0400
-Date: Tue, 1 May 2012 12:01:45 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-bluetooth@vger.kernel.org
-Subject: Re: [now bisected] Weird bluetooth keyboard regression - just me?
-Message-ID: <20120501120145.21f65ae2@lwn.net>
-In-Reply-To: <20120501171901.GA26006@srcf.ucam.org>
-References: <20120501073711.028d31d6@lwn.net>
-	<20120501110156.2b6e0561@lwn.net>
-	<20120501171901.GA26006@srcf.ucam.org>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1758489Ab2EASCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 14:02:44 -0400
+X-ASG-Debug-ID: 1335895362-0421b5401d180a0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4FA0253F.4000302@fusionio.com>
+Date: Tue, 1 May 2012 20:02:39 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized
+ to one
+References: <1335873936.16988.148.camel@lappy> <20120501161729.GV26595@google.com>
+X-ASG-Orig-Subj: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized
+ to one
+In-Reply-To: <20120501161729.GV26595@google.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1335895362
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.95708
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 May 2012 18:19:01 +0100
-Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+On 2012-05-01 18:17, Tejun Heo wrote:
+> create_task_io_context() left ioc->nr_tasks at zero; however, a newly
+> created ioc should have its nr_tasks initialized to one as it begins
+> attached to the task creating it.
+> 
+> This affects only CLONE_IO which currently doesn't seem to have any
+> actual user.  Sasha triggered WARN_ON_ONCE() in ioc_task_link() using
+> syscall fuzzer.  Even when it happens, the failure mode isn't critical
+> (blk-cgroup may allow attaching a CLONE_IO'd task to a cgroup when it
+> shouldn't and blkcg limits may behave weirdly).
 
-> On its own, this should do precisely nothing.
+CLONE_IO is an exported interface, it can be set from clone(2).
+Otherwise Sasha would not have hit this :-)
 
-Nonetheless, at the previous patch
-(0846e7e9856c0928223447d9349a877202a63f24, usb: Add support for indicating
-whether a port is removable) things work.  With this one, they don't.  
+Thanks, applied.
 
-> What userspace are you 
-> running, and what does the removable node in the sysfs entry for the 
-> dongle's USB device say?
+-- 
+Jens Axboe
 
-It's Rawhide, updated yesterday.  "Removable" says "fixed".
-
-FWIW, power/runtime_status reads "suspended" most of the time.  By banging
-on the keyboard I can get it to "active", but it goes back to "suspended"
-even with continuous activity.  Weirdly, the keyboard continues to work if
-I keep hitting keys.
-
-Thanks,
-
-jon
