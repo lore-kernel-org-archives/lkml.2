@@ -1,172 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984Ab2EAN1n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 09:27:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45872 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab2EAN1m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 09:27:42 -0400
-Date: Tue, 1 May 2012 06:26:21 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 3/3] vmevent: Implement special low-memory attribute
-Message-ID: <20120501132620.GC24226@lizard>
-References: <20120501132409.GA22894@lizard>
+	id S932121Ab2EAN2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 09:28:24 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:33546 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755715Ab2EAN2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 09:28:23 -0400
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: linux-parisc@vger.kernel.org
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: [PATCH 0/6] PA-RISC: fix compile
+Date: Tue, 01 May 2012 15:28:01 +0200
+Message-ID: <2980093.pP6IpthNCP@donald.sf-tec.de>
+User-Agent: KMail/4.8.2 (Linux/3.2.9-13-desktop; KDE/4.8.2; i686; ; )
+In-Reply-To: <3154414.psmJh6J2U2@donald.sf-tec.de>
+References: <3154414.psmJh6J2U2@donald.sf-tec.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120501132409.GA22894@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="nextPart3929007.imp2FqxQY5"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is specially "blended" attribute, the event triggers when kernel
-decides that we're close to the low memory threshold. Userspace should
-not expect very precise meaning of low memory situation, mostly, it's
-just a guess on the kernel's side.
 
-Well, this is the same as userland should not know or care how exactly
-kernel manages the memory, or assume that memory management behaviour
-is a part of the "ABI". So, all the 'low memory' is just guessing, but
-we're trying to do our best. It might be that we will end up with two
-or three variations of 'low memory' thresholds, and all of them would
-be useful for different use cases.
+--nextPart3929007.imp2FqxQY5
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
 
-For this implementation, we assume that there's a low memory situation
-for the N pages threshold when we have neither N pages of completely
-free pages, nor we have N reclaimable pages in the cache. This
-effectively means, that if userland expects to allocate N pages, it
-would consume all the free pages, and any further allocations (above
-N) would start draining caches.
+Rolf Eike Beer wrote:
+> Since d66acc39c7cee323733c8503b9de1821a56dff7e (bitops: Optimise
+> get_order()) getorder.h includes log2.h which leads to an include loop on
+> PA-RISC, bringing a bunch of other breakage to light. This patchset fixes
+> the compilation of the current state of 3.4 on HPPA.
+> 
+> Rolf Eike Beer (6):
+>   use linux/bitops.h instead of linux/log2.h to get fls()
+>   parisc: add missing includes in asm/spinlock.h
+>   parisc: add missing forward declarations in asm/hardware.h
+>   parisc: drop include of asm/pdc.h from asm/hardware.h
+>   parisc: add missing include of asm/page.h to asm/pgtable.h
+>   parisc: move definition of PAGE0 to asm/page.h
 
-In the worst case, prior to hitting the threshold, we might have only
-N pages in cache, and nearly no memory as free pages.
+Ping? #4 meanwhile got an ACK from Grant, I have not received any other 
+comments. James, could you please take the latter 5 if you don't feel 
+comfortable with the first one? That one is just a cleanup and makes no 
+difference (yet) if things work or not.
 
-The same 'low memory' meaning is used in the current Android Low
-Memory Killer driver.
+Eike
+--nextPart3929007.imp2FqxQY5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- include/linux/vmevent.h              |    7 ++++++
- mm/vmevent.c                         |   40 ++++++++++++++++++++++++++++++++++
- tools/testing/vmevent/vmevent-test.c |   12 +++++++++-
- 3 files changed, 58 insertions(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-diff --git a/include/linux/vmevent.h b/include/linux/vmevent.h
-index aae0d24..9bfa244 100644
---- a/include/linux/vmevent.h
-+++ b/include/linux/vmevent.h
-@@ -10,6 +10,13 @@ enum {
- 	VMEVENT_ATTR_NR_AVAIL_PAGES	= 1UL,
- 	VMEVENT_ATTR_NR_FREE_PAGES	= 2UL,
- 	VMEVENT_ATTR_NR_SWAP_PAGES	= 3UL,
-+	/*
-+	 * This is specially blended attribute, the event triggers
-+	 * when kernel decides that we're close to the low memory threshold.
-+	 * Don't expect very precise meaning of low memory situation, mostly,
-+	 * it's just a guess on the kernel's side.
-+	 */
-+	VMEVENT_ATTR_LOWMEM_PAGES	= 4UL,
- 
- 	VMEVENT_ATTR_MAX		/* non-ABI */
- };
-diff --git a/mm/vmevent.c b/mm/vmevent.c
-index b312236..d278a25 100644
---- a/mm/vmevent.c
-+++ b/mm/vmevent.c
-@@ -68,10 +68,50 @@ static u64 vmevent_attr_avail_pages(struct vmevent_watch *watch,
- 	return totalram_pages;
- }
- 
-+/*
-+ * Here's some implementation details for the "low memory" meaning.
-+ *
-+ * (The explanation is not in the header file as userland should not
-+ * know these details, nor it should assume that the meaning will
-+ * always be the same. As well as it should not know how exactly kernel
-+ * manages the memory, or assume that memory management behaviour is a
-+ * part of the "ABI". So, all the 'low memory' is just guessing, but
-+ * we're trying to do our best.)
-+ *
-+ * For this implementation, we assume that there's a low memory situation
-+ * for the N pages threshold when we have neither N pages of completely
-+ * free pages, nor we have N reclaimable pages in the cache. This
-+ * effectively means, that if userland expects to allocate N pages, it
-+ * would consume all the free pages, and any further allocations (above
-+ * N) would start draining caches.
-+ *
-+ * In the worst case, prior hitting the threshold, we might have only
-+ * N pages in cache, and nearly no memory as free pages.
-+ */
-+static u64 vmevent_attr_lowmem_pages(struct vmevent_watch *watch,
-+				     struct vmevent_attr *attr)
-+{
-+	int free = global_page_state(NR_FREE_PAGES);
-+	int file = global_page_state(NR_FILE_PAGES) -
-+		   global_page_state(NR_SHMEM); /* TODO: account locked pages */
-+	int val = attr->value;
-+
-+	/*
-+	 * For convenience we return 0 or attr value (instead of 0/1), it
-+	 * makes it easier for vmevent_match() to cope with blended
-+	 * attributes, plus userland might use the value to find out which
-+	 * threshold triggered.
-+	 */
-+	if (free < val && file < val)
-+		return val;
-+	return 0;
-+}
-+
- static vmevent_attr_sample_fn attr_samplers[] = {
- 	[VMEVENT_ATTR_NR_AVAIL_PAGES]   = vmevent_attr_avail_pages,
- 	[VMEVENT_ATTR_NR_FREE_PAGES]    = vmevent_attr_free_pages,
- 	[VMEVENT_ATTR_NR_SWAP_PAGES]    = vmevent_attr_swap_pages,
-+	[VMEVENT_ATTR_LOWMEM_PAGES]     = vmevent_attr_lowmem_pages,
- };
- 
- static u64 vmevent_sample_attr(struct vmevent_watch *watch, struct vmevent_attr *attr)
-diff --git a/tools/testing/vmevent/vmevent-test.c b/tools/testing/vmevent/vmevent-test.c
-index fd9a174..c61aed7 100644
---- a/tools/testing/vmevent/vmevent-test.c
-+++ b/tools/testing/vmevent/vmevent-test.c
-@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
- 
- 	config = (struct vmevent_config) {
- 		.sample_period_ns	= 1000000000L,
--		.counter		= 6,
-+		.counter		= 7,
- 		.attrs			= {
- 			{
- 				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
-@@ -59,6 +59,13 @@ int main(int argc, char *argv[])
- 				.type	= VMEVENT_ATTR_NR_SWAP_PAGES,
- 			},
- 			{
-+				.type	= VMEVENT_ATTR_LOWMEM_PAGES,
-+				.state	= VMEVENT_ATTR_STATE_VALUE_LT |
-+					  VMEVENT_ATTR_STATE_VALUE_EQ |
-+					  VMEVENT_ATTR_STATE_ONE_SHOT,
-+				.value	= phys_pages / 2,
-+			},
-+			{
- 				.type	= 0xffff, /* invalid */
- 			},
- 		},
-@@ -108,6 +115,9 @@ int main(int argc, char *argv[])
- 			case VMEVENT_ATTR_NR_SWAP_PAGES:
- 				printf("  VMEVENT_ATTR_NR_SWAP_PAGES: %Lu\n", attr->value);
- 				break;
-+			case VMEVENT_ATTR_LOWMEM_PAGES:
-+				printf("  VMEVENT_ATTR_LOWMEM_PAGES: %Lu\n", attr->value);
-+				break;
- 			default:
- 				printf("  Unknown attribute: %Lu\n", attr->value);
- 			}
--- 
-1.7.9.2
+iEYEABECAAYFAk+f5OwACgkQXKSJPmm5/E71gQCcCW2UrJYz50VnSYiMKXRclbkU
+/9wAoJLZwd15UxvUOn62rq572Q1DSYNh
+=ne+6
+-----END PGP SIGNATURE-----
+
+--nextPart3929007.imp2FqxQY5--
+
