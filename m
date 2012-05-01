@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab2EAUXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:23:48 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:31308 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752100Ab2EAUXr (ORCPT
+	id S1754603Ab2EAUYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 16:24:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60101 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039Ab2EAUYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:23:47 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: .QAG3o8VM1kWCJHgauDq0Gc7VKmW2Lp_9dF9SmEZecpQTLy
- 4MzRNWv4hh6vZ7uVFsgWAK12px9GgnzulU0WzOLikqjAtbb3jXt5riBvXy0g
- vH3B2LwAvmdvp1TQP5Io0tpsTpWYrDzSUXsAMsFv3P79wGKTdGgeEnt3Z.tg
- EGX926u1p8T0TRah_BOwDxLtbEEqFWLgYNeSFNDFph8Jbq1mqCvReYxnV5Eh
- SPpK7W.C3OvCLu0ycds0pOeAT9iusJRYyeVk9DvEcWFteQl6HhuU3bfAHeOk
- oYp_NT5kYa_RnO__kNYwZ2qjMjCn5oNPEfBhTGqCxq7g67HIX2mWnuMJwl5w
- yM2.HSTSLvTlv6BtDdePtjf6XIzEEv3en5lWuBDPt76TZ6Qv9IsBRCb0ILwI
- B5ee1YXgdi8ZfUWzlj_SYTGXxcoqKsS0YVBQa
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 1 May 2012 15:23:43 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: Waiman Long <waiman.long@hp.com>, "mpm@selenic.com" <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Morris, Donald George \(HP-UX Cupertino\)" <don.morris@hp.com>,
-        David Rientjes <rientjes@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] slub: prevent validate_slab() error due to race
- condition
-In-Reply-To: <CAOJsxLGXZsq22LuNa5ef5iv7Jy0A0w_S2MbDQeBW=dFvUwFRjA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1205011522340.2091@router.home>
-References: <1335466658-29063-1-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.00.1204270911080.29198@router.home> <4F9AFD28.2030801@hp.com> <CAOJsxLGXZsq22LuNa5ef5iv7Jy0A0w_S2MbDQeBW=dFvUwFRjA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 1 May 2012 16:24:52 -0400
+Date: Tue, 1 May 2012 13:24:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/5] mm + fs: prepare for non-page entries in page cache
+Message-Id: <20120501132449.30485966.akpm@linux-foundation.org>
+In-Reply-To: <20120501201504.GB2112@cmpxchg.org>
+References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
+	<1335861713-4573-3-git-send-email-hannes@cmpxchg.org>
+	<20120501120246.83d2ce28.akpm@linux-foundation.org>
+	<20120501201504.GB2112@cmpxchg.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Apr 2012, Pekka Enberg wrote:
+On Tue, 1 May 2012 22:15:04 +0200
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-> On Fri, Apr 27, 2012 at 11:10 PM, Waiman Long <waiman.long@hp.com> wrote:
-> > Thank for the quick response. I have no problem for moving the node-lock
-> > taking into free_debug_processing. Of the 2 problems that are reported, this
-> > is a more serious one and so need to be fixed sooner rather than later. For
-> > the other one, we can take more time to find a better solution.
-> >
-> > So are you going to integrate your change to the mainline?
->
-> Christoph, can you send the patch with an improved changelog that also
-> explains what the problem is?
+> On Tue, May 01, 2012 at 12:02:46PM -0700, Andrew Morton wrote:
+> > On Tue,  1 May 2012 10:41:50 +0200
+> > Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > 
+> > > --- a/fs/inode.c
+> > > +++ b/fs/inode.c
+> > > @@ -544,8 +544,7 @@ static void evict(struct inode *inode)
+> > >  	if (op->evict_inode) {
+> > >  		op->evict_inode(inode);
+> > >  	} else {
+> > > -		if (inode->i_data.nrpages)
+> > > -			truncate_inode_pages(&inode->i_data, 0);
+> > > +		truncate_inode_pages(&inode->i_data, 0);
+> > 
+> > Why did we lose this optimisation?
+> 
+> For inodes with only shadow pages remaining in the tree, because there
+> is no separate counter for them.  Otherwise, we'd leak the tree nodes.
+> 
+> I had mapping->nrshadows at first to keep truncation conditional, but
+> thought that using an extra word per cached inode would be worse than
+> removing this optimization.  There is not too much being done when the
+> tree is empty.
+> 
+> Another solution would be to include the shadows count in ->nrpages,
+> but filesystems use this counter for various other purposes.
+> 
+> Do you think it's worth reconsidering?
 
+It doesn't sound like it's worth adding ->nrshadows for only that
+reason.
 
-Will do so once I get back from the conference I am at.
+That's a pretty significant alteration in the meaning of ->nrpages. 
+Did this not have any other effects?
 
-> How far back in the stable series do we want to backport this?
+What does truncate do?  I assume it invalidates shadow page entries in
+the radix tree?  And frees the radix-tree nodes?
 
-This only affects slab validation when running with deubgging so I would
-suggest to merge in the next cycle.
+The patchset will make lookups slower in some (probably obscure)
+circumstances, due to the additional radix-tree nodes.
+
+I assume that if a pagecache lookup encounters a radix-tree node which
+contains no real pages, the search will terminate at that point?  We
+don't pointlessly go all the way down to the leaf nodes?
 
