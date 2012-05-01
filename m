@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab2EAFew (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 01:34:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40152 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652Ab2EAFev (ORCPT
+	id S1753200Ab2EAFvH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 01:51:07 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42993 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2EAFvG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 01:34:51 -0400
-Date: Tue, 1 May 2012 15:34:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: linux-next: manual merge of the arm-soc tree with the mfd tree
-Message-Id: <20120501153441.5e101139fb096ef262ff1d2b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__1_May_2012_15_34_41_+1000_cQY+nc9pdSogI7su"
+	Tue, 1 May 2012 01:51:06 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <1335778207-6511-1-git-send-email-jack@suse.cz>
+References: <1335778207-6511-1-git-send-email-jack@suse.cz>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Tue, 1 May 2012 17:50:44 +1200
+Message-ID: <CAKgNAkixtqfppFdJAC9mnD5xCEFK1JZEHno1GhwmMHfoz6mGOQ@mail.gmail.com>
+Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-man@vger.kernel.org,
+        linux-mm@kvack.org, mgorman@suse.de, Jeff Moyer <jmoyer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_May_2012_15_34_41_+1000_cQY+nc9pdSogI7su
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Jan,
 
-Hi all,
+On Mon, Apr 30, 2012 at 9:30 PM, Jan Kara <jack@suse.cz> wrote:
+> This is a long standing problem (or a surprising feature) in our implementation
+> of get_user_pages() (used by direct IO). Since several attempts to fix it
+> failed (e.g.
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-04/msg06542.html, or
+> http://lkml.indiana.edu/hypermail/linux/kernel/0903.1/01498.html refused in
+> http://comments.gmane.org/gmane.linux.kernel.mm/31569) and it's not completely
+> clear whether we really want to fix it given the costs, let's at least document
+> it.
+>
+> CC: mgorman@suse.de
+> CC: Jeff Moyer <jmoyer@redhat.com>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>
+> --- a/man2/open.2       2012-04-27 00:07:51.736883092 +0200
+> +++ b/man2/open.2       2012-04-27 00:29:59.489892980 +0200
+> @@ -769,7 +769,12 @@
+>  and the file offset must all be multiples of the logical block size
+>  of the file system.
+>  Under Linux 2.6, alignment to 512-byte boundaries
+> -suffices.
+> +suffices. However, if the user buffer is not page aligned and direct read
+> +runs in parallel with a
+> +.BR fork (2)
+> +of the reader process, it may happen that the read data is split between
+> +pages owned by the original process and its child. Thus effectively read
+> +data is corrupted.
+>  .LP
+>  The
+>  .B O_DIRECT
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/mfd/ab5500-core.c between commit 9ea969f0d79d ("mfd: Mark const
-init data with __initconst instead of __initdata for ab5500") from the
-mfd tree and commit f76facc2354b ("mfd/ab5500: delete AB5500 support")
-from the arm-soc tree.
+Thanks. I tweaked the patch slightly, and applied as below.
 
-The latter removes the file, so I did that.
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Tue__1_May_2012_15_34_41_+1000_cQY+nc9pdSogI7su
-Content-Type: application/pgp-signature
+Michael
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+--- a/man2/open.2
++++ b/man2/open.2
+@@ -49,7 +49,7 @@
+ .\" FIXME Linux 2.6.33 has O_DSYNC, and a hidden __O_SYNC.
+ .\" FIXME: Linux 2.6.39 added O_PATH
+ .\"
+-.TH OPEN 2 2012-02-27 "Linux" "Linux Programmer's Manual"
++.TH OPEN 2 2012-05-01 "Linux" "Linux Programmer's Manual"
+ .SH NAME
+ open, creat \- open and possibly create a file or device
+ .SH SYNOPSIS
+@@ -768,8 +768,13 @@ operation in
+ Under Linux 2.4, transfer sizes, and the alignment of the user buffer
+ and the file offset must all be multiples of the logical block size
+ of the file system.
+-Under Linux 2.6, alignment to 512-byte boundaries
+-suffices.
++Under Linux 2.6, alignment to 512-byte boundaries suffices.
++However, if the user buffer is not page-aligned and the direct read
++runs in parallel with a
++.BR fork (2)
++of the reader process, it may happen that the read data is split between
++pages owned by the original process and its child.
++Thus the read data is effectively corrupted.
+ .LP
+ The
+ .B O_DIRECT
 
-iQIcBAEBCAAGBQJPn3XxAAoJEECxmPOUX5FEXigQAIDw3LyRP9znN1tV+a8Mv+5m
-Ft95qTgcvcPNDgVdzo+fzDgWJ27gYzfe23jVzBMEjExKYD8nEqFc8vKl9KdNxRRM
-HkgpFwOAo1znSsf6gtZXiWrFbg+S7yVAQHQBhHmGdezCn/sbgSNdMX/l5I9+P2rU
-XIios0rrp9xoA+icWmd6QSEr/m0kVsLJjDmJNwqP2qGJHzI1Ej3sy1uQHsTpmmwh
-s1t02pJtL278FoMD/qfEvooVXcSHut7Ud++OGryfsr4MfxtBpqH0FcBPu2CqKy4p
-a0pVxABbrFfhWUMa32A+mBdE2x2bJBkgjLox8mcnwwhV+vuDHmK4VUeDbm3nplyT
-pmd0WknfkfQh9aDfZe/VbafLv25R7n4VLa44d9OlIQM1mux2UWJDt+kAr6W8QUkm
-Ctty+8+pN3LHU1M5HFuXXHFB98FlU+Fhkx117WagrGZEfDM2O4oWLrvHEyP5J6xK
-q2e0bMORaEtnM5+z4Dop9nyzULUoL0sxcykNwSY6FBk0iu6UI7Rv8ggI9fqSOmVJ
-qH0WDWVv+7WnM9Y15K9PrOZ5dwFEv1yHrszdFynk2dIrY1o3zGq+ZnJwzlL98eU/
-amHjgJHHj6uBXX95L/k6FMKu5FbF3xrF06A//y0uOlyGqEIsXYy+zsd2t+8S9z8x
-HckNEWdYdvbTgSAiIMam
-=WzXM
------END PGP SIGNATURE-----
 
---Signature=_Tue__1_May_2012_15_34_41_+1000_cQY+nc9pdSogI7su--
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
