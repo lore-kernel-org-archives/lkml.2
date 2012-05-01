@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab2EAIL0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 04:11:26 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:33101 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752296Ab2EAILW (ORCPT
+	id S1752826Ab2EAIUf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 04:20:35 -0400
+Received: from relay.parallels.com ([195.214.232.42]:41245 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab2EAIUc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 04:11:22 -0400
-Date: Tue, 1 May 2012 16:11:05 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: "Turquette, Mike" <mturquette@ti.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
-        Grant Likely <grant.likely@secretlab.ca>, h@pengutronix.de,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
-Message-ID: <20120501081103.GC2194@S2101-09.ap.freescale.net>
-References: <1335419936-10881-1-git-send-email-skannan@codeaurora.org>
- <4F98EB10.2000505@codeaurora.org>
- <20120426084201.GF17184@pengutronix.de>
- <4d67387a86d99cbb4e2acf68d3588b1c.squirrel@www.codeaurora.org>
- <20120426095135.GG17184@pengutronix.de>
- <4F9EE84C.90106@codeaurora.org>
- <CAJOA=zNCagT6GaeHi_jq7-LU9P-SfJZ8PA9bo-oeswjC0tHyYA@mail.gmail.com>
- <4F9F1659.1010804@codeaurora.org>
+	Tue, 1 May 2012 04:20:32 -0400
+Message-ID: <4F9F9CCD.6060008@parallels.com>
+Date: Tue, 1 May 2012 12:20:29 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9F1659.1010804@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 2/3] SUNRPC: check rpcbind clients usage counter before
+ decrement
+References: <20120425132314.13800.6813.stgit@localhost6.localdomain6> <20120425133749.13800.24003.stgit@localhost6.localdomain6> <20120427135507.GE14973@fieldses.org> <4F9AA84D.8090604@parallels.com> <20120430214504.GD22323@fieldses.org>
+In-Reply-To: <20120430214504.GD22323@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 03:46:49PM -0700, Saravana Kannan wrote:
-> I'm still hoping a Ack/Nack for the general idea from the others.
-> 
-I believe that I have Acked the idea when you proposed it at the first
-time.  What I really hoped is you can post the patch at least 1 week
-earlier.  Basically I share the same frustration that Sascha has, the
-platform porting have been delayed by flowing changes on the core code.
-It's been -rc5, but we have not got a stable core base to have platform
-porting expose on linux-next.
+01.05.2012 01:45, J. Bruce Fields написал:
+> On Fri, Apr 27, 2012 at 06:08:13PM +0400, Stanislav Kinsbursky wrote:
+>> On 27.04.2012 17:55, J. Bruce Fields wrote:
+>>> On Wed, Apr 25, 2012 at 05:37:49PM +0400, Stanislav Kinsbursky wrote:
+>>>> Registering service with svc_bind() can fail. In this case service will be
+>>>> destroyed and during destruction it will try to unregister itself from rpcbind.
+>>>> In this case unregister have to be skipped.
+>>> Isn't this a preexisting bug, in which case perhaps Trond should at it
+>>> to his list of bugs to submit now?
+>>>
+>> Not it's not.
+>>
+>> Previously, in case of bind operations failure, rpcb_put_local()
+>> wasn't called, but service data was destroyed instead:
+>>
+>> -	if (svc_uses_rpcbind(serv)) {
+>> -		if (svc_rpcb_setup(serv, current->nsproxy->net_ns)<  0) {
+>> -			kfree(serv->sv_pools);
+>> -			kfree(serv);
+>> -			return NULL;
+>> -		}
+>> -		if (!serv->sv_shutdown)
+>> -			serv->sv_shutdown = svc_rpcb_cleanup;
+>> -	}
+>>
+>> Now (with svc_bind() introduction) service can be created, but
+>> svc_bind() could fail. And thus svc_destroy() have to be called.
+>> Which will call rpcb_put_local().
+>>
+>> And the problem here that svc_bind() can fail before incrementing of
+>> rpcb usage counter.
+> OK, but then you're fixing a bug that you just introduced with the
+> previous patch.
+>
+> So this should be combined with the previous patch.
+>
+> --b.
 
-Anyway, since I agree this is the right direction for the long run, I
-will revisit my platform porting one more time once Mike applies the
-patch.
+You, probably, right. I'll do this.
+Thanks.
 
--- 
-Regards,
-Shawn
+>>>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>>>>
+>>>> ---
+>>>>   net/sunrpc/rpcb_clnt.c |   12 +++++++-----
+>>>>   1 files changed, 7 insertions(+), 5 deletions(-)
+>>>>
+>>>> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+>>>> index 78ac39f..4c38b33 100644
+>>>> --- a/net/sunrpc/rpcb_clnt.c
+>>>> +++ b/net/sunrpc/rpcb_clnt.c
+>>>> @@ -180,14 +180,16 @@ void rpcb_put_local(struct net *net)
+>>>>   	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+>>>>   	struct rpc_clnt *clnt = sn->rpcb_local_clnt;
+>>>>   	struct rpc_clnt *clnt4 = sn->rpcb_local_clnt4;
+>>>> -	int shutdown;
+>>>> +	int shutdown = 0;
+>>>>
+>>>>   	spin_lock(&sn->rpcb_clnt_lock);
+>>>> -	if (--sn->rpcb_users == 0) {
+>>>> -		sn->rpcb_local_clnt = NULL;
+>>>> -		sn->rpcb_local_clnt4 = NULL;
+>>>> +	if (sn->rpcb_users) {
+>>>> +		if (--sn->rpcb_users == 0) {
+>>>> +			sn->rpcb_local_clnt = NULL;
+>>>> +			sn->rpcb_local_clnt4 = NULL;
+>>>> +		}
+>>>> +		shutdown = !sn->rpcb_users;
+>>>>   	}
+>>>> -	shutdown = !sn->rpcb_users;
+>>>>   	spin_unlock(&sn->rpcb_clnt_lock);
+>>>>
+>>>>   	if (shutdown) {
+>>>>
+>>
+>> -- 
+>> Best regards,
+>> Stanislav Kinsbursky
+
