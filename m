@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab2EAQ7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 12:59:38 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34279 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756169Ab2EAQ7f (ORCPT
+	id S1757428Ab2EARAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 13:00:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42463 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755602Ab2EARAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 12:59:35 -0400
-Date: Tue, 1 May 2012 12:59:34 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrey Rahmatullin <wrar@wrar.name>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
-In-Reply-To: <4FA00EE5.2060403@fisher-privat.net>
-Message-ID: <Pine.LNX.4.44L0.1205011258180.1499-100000@iolanthe.rowland.org>
+	Tue, 1 May 2012 13:00:07 -0400
+Date: Tue, 1 May 2012 18:00:01 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Shawn Guo <shawn.guo@linaro.org>, Saravana Kannan <skannan@codeaurora.org>,
+        "Turquette, Mike" <mturquette@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>, h@pengutronix.de,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
+Message-ID: <20120501170001.GB4089@opensource.wolfsonmicro.com>
+References: <1335419936-10881-1-git-send-email-skannan@codeaurora.org>
+ <4F98EB10.2000505@codeaurora.org>
+ <20120426084201.GF17184@pengutronix.de>
+ <4d67387a86d99cbb4e2acf68d3588b1c.squirrel@www.codeaurora.org>
+ <20120426095135.GG17184@pengutronix.de>
+ <4F9EE84C.90106@codeaurora.org>
+ <CAJOA=zNCagT6GaeHi_jq7-LU9P-SfJZ8PA9bo-oeswjC0tHyYA@mail.gmail.com>
+ <4F9F1659.1010804@codeaurora.org>
+ <20120501081103.GC2194@S2101-09.ap.freescale.net>
+ <20120501091334.GG15541@lunn.ch>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gj572EiMnwbLXET9"
+Content-Disposition: inline
+In-Reply-To: <20120501091334.GG15541@lunn.ch>
+X-Cookie: You will inherit millions of dollars.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 May 2012, Oleksij Rempel (fishor) wrote:
 
-> > There also remains a question about runtime power states and resume.
-> >
-> > Oleksij, with your patch, which state does the controller get put into
-> > during runtime suspend, D2 or D3?  (You may need to enable runtime
-> > suspend by doing
-> >
-> > 	echo auto>/sys/bus/pci/devices/0000:00:1d.0/power/control
-> >
-> > in order to test this.)  And if the controller is in runtime suspend,
-> > does it resume correctly when you plug in a new USB device?
-> >
-> > I'm pretty sure that without the patch, the controller gets put into D3
-> > and resume does work.
-> 
-> I do not know if device really suspended, but every thing works like 
-> before. New usb devices are recognized and working.
+--gj572EiMnwbLXET9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-You ought to be able to tell the controller's state by looking at the
-dmesg log (after doing the "echo" command above) or the output from
-lspci -v.
+On Tue, May 01, 2012 at 11:13:34AM +0200, Andrew Lunn wrote:
 
-Alan Stern
+> I agree with you as well, it is frustrating. Could we agree, that once
+> this patch is in, we freeze the core until the start of the next
+> cycle. We use the remainder of this cycle for porting platforms to the
+> generic clock framework.
 
+Or merge the platforms then do framework changes incrementally, updating
+the platforms as we go (which is the normal pattern for maintaining a
+framework...).  I see we've already got SPEAr merged.
+
+--gj572EiMnwbLXET9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPoBSNAAoJEBus8iNuMP3dDMwP/i1COcnT68R4PZViR8H8XBh5
+gwnuO8Z1FrDp9IFh1UBygRiw28wDTqfJethts/Zk0xkyFLsEh3xQwUEiqnMKDhl7
+Uk/Tt9g0ms2hbZzoPA3rA/sN1pheJsXT70krkeHfIS9cbSGCgiA9P7OWKPInbsgv
++s9rVP6LDMBORFo2y+pr/pv2ArxDrrgXPkQu1EbjlaavdSziDb0dyUHNQUfS1R+0
+KGQnwuvCodsmGS3Zov5XPuIzRRP0S9c7zFNlfT56y23KcRH5KixiRSK0+fEGDrAg
+R+oijBxubdy9CCPonrchCkApoM7s/R0te73zTFuALc1/EfCz0/Q2MPpuK59p1o8l
+22K+i7FsysppdzRuh0obMCyHECCyXBrUMh+9fOEW6+liMrIzgr9OqwZc2OTFU7Rp
+32iTM4ZrJ6lUcOhJKFCxIOkRIbsFuDiMqTwEUvi7eI/aNw5fdH69vZfpEH9o1bN+
+bPvGNP/VTxNFpHmeCIpIm0G0lAxgkcK1WSuTU4Im+wI8F7KfLH3cQLxU3Rc0pi46
+uo5cjd9gTb81SIp41WaVAyZpmwDu05f+J5gYlGGpOfq1BpLsDHZnlkgOnGaMj+2Y
+JgtpiysOPGsmwj2DLnaeflpHhlfY3gGL3/fmf8YD2ZQYgAF2pj2UHjC+tQgbstTK
+huJHZnY4qS+NhimY7OVp
+=ylpZ
+-----END PGP SIGNATURE-----
+
+--gj572EiMnwbLXET9--
