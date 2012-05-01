@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab2EAQmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 12:42:19 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:45688 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab2EAQmO (ORCPT
+	id S1758242Ab2EAQrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 12:47:09 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:24948 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756152Ab2EAQmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 12:42:14 -0400
-Subject: [PATCH 01/17] hpsa: call pci_disable_device on driver unload
+	Tue, 1 May 2012 12:42:16 -0400
+Subject: [PATCH 02/17] hpsa: do not skip disabled devices
 To: james.bottomley@hansenpartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         stephenmcameron@gmail.com, thenzl@redhat.com,
         akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Date: Tue, 01 May 2012 11:42:09 -0500
-Message-ID: <20120501164209.11705.3671.stgit@beardog.cce.hp.com>
+Date: Tue, 01 May 2012 11:42:14 -0500
+Message-ID: <20120501164214.11705.11863.stgit@beardog.cce.hp.com>
 In-Reply-To: <20120501163819.11705.10299.stgit@beardog.cce.hp.com>
 References: <20120501163819.11705.10299.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -27,49 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-As Jenx Axboe explained to me: "In earlier times (2.6.18 and pre, iirc), Linux
-disabled IO and mem bars on pci_disable_device(). Now in newer kernel it does
-not. And in the newer kernels you run into problems if you DON'T disable the
-device on exit, since when it later loads the device is already in the enabled
-state - and pci_enable_device() then does nothing. This typically screws
-MSI/MSI-X." This is what the big scary comment that says pci_disable_device
-does "something nasty" to smart arrays was evidently referring to.
-
-If pci_disable_device is not called on driver rmmod, subsequently insmod'ing
-the driver may in result in some cases fail to be able to receive interrupts,
-esp.  if other drivers are loaded between unloading and loading hpsa.
+There was code to skip "disabled" devices which was intended to
+skip devices disabled in the BIOS, but it really just checks to
+see if the device can write to host memory, which this is disabled
+by pci_disable_device on driver unload, so this check has the effect
+of preventing subsequent load of the driver.  And devices disabled in
+the BIOS don't show up at all anyway, so this check never made any
+sense to begin with, and should be removed.
 
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/scsi/hpsa.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
+ drivers/scsi/hpsa.c |   13 -------------
+ 1 files changed, 0 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 500e20d..1a6c319 100644
+index 1a6c319..5119ce6 100644
 --- a/drivers/scsi/hpsa.c
 +++ b/drivers/scsi/hpsa.c
-@@ -3987,10 +3987,7 @@ err_out_free_res:
- 		iounmap(h->cfgtable);
- 	if (h->vaddr)
- 		iounmap(h->vaddr);
--	/*
--	 * Deliberately omit pci_disable_device(): it does something nasty to
--	 * Smart Array controllers that pci_enable_device does not undo
--	 */
-+	pci_disable_device(h->pdev);
- 	pci_release_regions(h->pdev);
- 	return err;
+@@ -3705,14 +3705,6 @@ static int __devinit hpsa_lookup_board_id(struct pci_dev *pdev, u32 *board_id)
+ 	return ARRAY_SIZE(products) - 1; /* generic unknown smart array */
  }
-@@ -4529,10 +4526,7 @@ static void __devexit hpsa_remove_one(struct pci_dev *pdev)
- 	kfree(h->cmd_pool_bits);
- 	kfree(h->blockFetchTable);
- 	kfree(h->hba_inquiry_data);
--	/*
--	 * Deliberately omit pci_disable_device(): it does something nasty to
--	 * Smart Array controllers that pci_enable_device does not undo
--	 */
-+	pci_disable_device(pdev);
- 	pci_release_regions(pdev);
- 	pci_set_drvdata(pdev, NULL);
- 	kfree(h);
+ 
+-static inline bool hpsa_board_disabled(struct pci_dev *pdev)
+-{
+-	u16 command;
+-
+-	(void) pci_read_config_word(pdev, PCI_COMMAND, &command);
+-	return ((command & PCI_COMMAND_MEMORY) == 0);
+-}
+-
+ static int __devinit hpsa_pci_find_memory_BAR(struct pci_dev *pdev,
+ 	unsigned long *memory_bar)
+ {
+@@ -3932,11 +3924,6 @@ static int __devinit hpsa_pci_init(struct ctlr_info *h)
+ 	h->product_name = products[prod_index].product_name;
+ 	h->access = *(products[prod_index].access);
+ 
+-	if (hpsa_board_disabled(h->pdev)) {
+-		dev_warn(&h->pdev->dev, "controller appears to be disabled\n");
+-		return -ENODEV;
+-	}
+-
+ 	pci_disable_link_state(h->pdev, PCIE_LINK_STATE_L0S |
+ 			       PCIE_LINK_STATE_L1 | PCIE_LINK_STATE_CLKPM);
+ 
 
