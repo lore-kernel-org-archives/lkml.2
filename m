@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758295Ab2EASuH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 14:50:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60558 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757947Ab2EASuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 14:50:05 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized to one
-References: <1335873936.16988.148.camel@lappy>
-	<20120501161729.GV26595@google.com> <4FA0253F.4000302@fusionio.com>
-	<20120501180906.GX26595@google.com> <4FA028EE.7020208@fusionio.com>
-	<x49wr4vlpn8.fsf@segfault.boston.devel.redhat.com>
-	<4FA02D71.3060001@fusionio.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 01 May 2012 14:50:00 -0400
-In-Reply-To: <4FA02D71.3060001@fusionio.com> (Jens Axboe's message of "Tue, 1
-	May 2012 20:37:37 +0200")
-Message-ID: <x49obq7lorr.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1758057Ab2EASy7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 14:54:59 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:58578 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753962Ab2EASy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 14:54:57 -0400
+Date: Tue, 1 May 2012 19:54:55 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-bluetooth@vger.kernel.org
+Subject: Re: [now bisected] Weird bluetooth keyboard regression - just me?
+Message-ID: <20120501185455.GA29060@srcf.ucam.org>
+References: <20120501073711.028d31d6@lwn.net>
+ <20120501110156.2b6e0561@lwn.net>
+ <20120501171901.GA26006@srcf.ucam.org>
+ <20120501120145.21f65ae2@lwn.net>
+ <20120501183149.GA28536@srcf.ucam.org>
+ <20120501123923.01ac1138@lwn.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120501123923.01ac1138@lwn.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <jaxboe@fusionio.com> writes:
+On Tue, May 01, 2012 at 12:39:23PM -0600, Jonathan Corbet wrote:
+> On Tue, 1 May 2012 19:31:49 +0100
+> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> 
+> > > It's Rawhide, updated yesterday.  "Removable" says "fixed".  
+> > 
+> > Ok, well that's the problem. udev is seeing "fixed" and enabling 
+> > autosuspend. Is this really bluetooth, or does it appear as a USB HID 
+> > device? Can you send lsusb -v?
+> 
+> Whether it's really bluetooth has been an issue in the past... parts of
+> the system have fought over it.
 
-> On 2012-05-01 20:31, Jeff Moyer wrote:
->> Jens Axboe <jaxboe@fusionio.com> writes:
->> I know of one project: the venerable dump/restore utility uses CLONE_IO.
->
-> Thanks Jeff, now I remember the specifics of what we tested. IIRC, we
-> also did numbers back then comparing the coop merging vs specifically
-> using CLONE_IO.
+Ok, so what I'm assuming is happening here is that the device is plugged 
+into a port that's flagged "removable", but contains a built-in hub and 
+the receiver is attached to *that*. So this code really needs to look 
+back up the chain and see whether the parent port was removable or not. 
+I think the kernel is arguably ok here, and the udev rule needs fixing. 
+Let me talk to Kay.
 
-Maybe?  I picked through some old emails but couldn't find that exact
-comparison.  It would have been a smart thing to do, though!
-
--Jeff
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
