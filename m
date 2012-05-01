@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492Ab2EAS7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 14:59:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45908 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756160Ab2EAS7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 14:59:10 -0400
-Date: Tue, 1 May 2012 14:59:06 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be
- initialized to one
-Message-ID: <20120501185906.GE18239@redhat.com>
-References: <1335873936.16988.148.camel@lappy>
- <20120501161729.GV26595@google.com>
- <4FA0253F.4000302@fusionio.com>
- <20120501180906.GX26595@google.com>
- <4FA028EE.7020208@fusionio.com>
- <x49wr4vlpn8.fsf@segfault.boston.devel.redhat.com>
- <20120501183610.GD18239@redhat.com>
- <x49sjfjloty.fsf@segfault.boston.devel.redhat.com>
+	id S1757767Ab2EATBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 15:01:04 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53450 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab2EATBC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 15:01:02 -0400
+Message-ID: <4FA032EA.1090608@gmail.com>
+Date: Tue, 01 May 2012 22:00:58 +0300
+From: Adrian Fita <adrian.fita@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49sjfjloty.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jonathan Nieder <jrnieder@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Ralf Jung <ralfjung-e@gmx.de>, Paolo Scarabelli <paolo@msw.it>
+Subject: Re: [bug?] Battery notifications produce flashing battery icon, syslog
+ spam (Re: [PATCH 11/11] ACPI / Battery: Update information on info notification
+ and resume)
+References: <201101062331.17079.rjw@sisk.pl> <201101062342.28168.rjw@sisk.pl> <20120501184534.GA31731@burratino>
+In-Reply-To: <20120501184534.GA31731@burratino>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 02:48:41PM -0400, Jeff Moyer wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
-> 
-> > On Tue, May 01, 2012 at 02:31:07PM -0400, Jeff Moyer wrote:
-> >
-> > [..]
-> >> > But as to actual users, I really don't know. I agree it's probably not
-> >> > that widely used. If google still had that code search, we could get a
-> >> > better idea :-)
-> >> 
-> >> I know of one project: the venerable dump/restore utility uses CLONE_IO.
-> >
-> > I thought you wrote cooperating queue logic to fix dump as it was not
-> > using CLONE_IO and IO from multiple threads was going in separate 
-> > queues.
-> 
-> That's correct.  I believe I sent the patch for dump before the kernel
-> patch was accepted.  Plus, it can't hurt, right?
+On 01/05/12 21:47, Jonathan Nieder wrote:
+ >
+> [...]
+ >
+> [...]  More background
+> at [2].
+>
+> [2] http://bugs.debian.org/670958
 
-Ok, so now you have fixed dump to use CLONE_IO.
+Also, searching on Google after "upowerd device 
+removed:/org/freedesktop/UPower/devices/battery_BAT0", reveals much more 
+bug reports with the exact issue.
 
-So only other user of coop thing remaining potentially is qemu. I was
-doing some qemu testing where threads were doing IO to nearby area
-but no coop merging was taking place. So not sure in practice how well
-does it work. Thought, that's irrlevant for this discussion. Thought of
-mentioning this observation.
-
-Thanks
-Vivek
+Thanks,
+-- 
+Fita Adrian
