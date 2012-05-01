@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab2EAEiE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 00:38:04 -0400
-Received: from gate.crashing.org ([63.228.1.57]:58017 "EHLO gate.crashing.org"
+	id S1753722Ab2EAEzk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 00:55:40 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46715 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751664Ab2EAEiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 00:38:01 -0400
-Message-ID: <1335845444.3621.11.camel@pasglop>
-Subject: Re: [PATCH v3 03/17] powerpc: Add PFO support to the VIO bus
+	id S1753288Ab2EAEzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 00:55:39 -0400
+Message-ID: <1335848120.3621.13.camel@pasglop>
+Subject: Re: linux-next: build failure after merge of the kvm-ppc tree
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        rcj@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
-In-Reply-To: <1335841603.3621.8.camel@pasglop>
-References: <1334242825.18090.4.camel@key-ThinkPad-W510>
-	 <1334243302.18090.10.camel@key-ThinkPad-W510>
-	 <1335841603.3621.8.camel@pasglop>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Alexander Graf <agraf@suse.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 01 May 2012 14:55:20 +1000
+In-Reply-To: <20120501135549.5c865717b33650002f083d4a@canb.auug.org.au>
+References: <20120501135549.5c865717b33650002f083d4a@canb.auug.org.au>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 May 2012 14:10:44 +1000
-Mime-Version: 1.0
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Else, what about ceding the processor ? Or at the very least reducing
-> the thread priority for a bit ?
+On Tue, 2012-05-01 at 13:55 +1000, Stephen Rothwell wrote:
+> After merging the kvm-ppc tree, today's linux-next build
+> (powerpc_ppc64_defconfig) failed like this:
 > 
-> Shouldn't we also enforce to always have a timeout ? IE. Something like
-> 30s or so if nothing specified to avoid having the kernel just hard
-> lock...
+> arch/powerpc/kvm/built-in.o: In function `.kvm_spapr_tce_release':
+> book3s_64_vio.c:(.text+0x374c): undefined reference to `.kvm_put_kvm'
+> arch/powerpc/kvm/built-in.o: In function
+> `.kvm_vm_ioctl_create_spapr_tce':
+> (.text+0x3ae8): undefined reference to `.kvm_get_kvm'
 > 
-> In general I don't like that sort of synchronous code, I'd rather return
-> the busy status up the chain which gives a chance to the caller to take
-> more appropriate measures depending on what it's doing, but that really
-> depends what you use that synchronous call for. I suppose if it's for
-> configuration type operations, it's ok...
+> Presumably caused by commit 969f70395d6d ("kvm/book3s: Make kernel
+> emulated H_PUT_TCE available for "PR" KVM").
+> 
+> I have used the kvm-ppc tree from next-20120430 for today. 
 
-In any case, don't resend the whole series, just that one patch.
+Hrm, I wrote that patch :-) It used to work... Alex, probably just a
+missing #include no ?
 
 Cheers,
 Ben.
-
 
 
