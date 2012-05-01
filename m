@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab2EAO05 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 10:26:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64781 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756569Ab2EAO04 (ORCPT
+	id S1758140Ab2EAO1u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 10:27:50 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54729 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756669Ab2EAO1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 10:26:56 -0400
+	Tue, 1 May 2012 10:27:49 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [RFC PATCH] vt: Fix deadlock on scroll-lock
+To: linux-kernel@vger.kernel.org, greg@kroah.com
+Date: Tue, 01 May 2012 15:42:58 +0100
+Message-ID: <20120501144245.12381.49800.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <x49lilcm1tb.fsf@segfault.boston.devel.redhat.com>
-References: <x49pqaom2u4.fsf@segfault.boston.devel.redhat.com>
-	<CAPa8GCAgDU8FYdMuWsn2PuUW0GQxdKWJV6K0SmQEzb3s1GHxwA@mail.gmail.com>
-	<x49lilcm1tb.fsf@segfault.boston.devel.redhat.com>
-Date: Wed, 2 May 2012 00:26:55 +1000
-Message-ID: <CAPa8GCChTmXTmjY5GvsFsvXpP_WSuiiWMRDu7Lvb71G9tW1PTw@mail.gmail.com>
-Subject: Re: [patch|rfc] block: don't mark buffers beyond end of disk as mapped
-From: Nick Piggin <npiggin@gmail.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jaxboe@fusionio.com, Kyle McMartin <kmcmarti@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 May 2012 00:08, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Nick Piggin <npiggin@gmail.com> writes:
->
->> Not a bad fix. But it's kind of sad to have i_size checking logic also in
->> block_read_full_page, that does not cope with this.
->>
->> I have found there are parts of the kernel (readahead) that try to read
->> beyond EOF and seem to get angry if we return an error (by not
->> marking uptodate in readpage) in that case though :(
->>
->> But, either way, I think it's very reasonable to not mark buffers beyond
->> end of device as mapped. So I think your patch is fine.
->>
->> I guess for ext[234], it does not read metadata close to the end of the
->> device or you were using 4K sized blocks?
->
-> Well, the test case just reads directly from the loop device, bypassing
-> the file system, and I did use 1KB blocks when making the file system, so
-> it is quite puzzling.
+From: Alan Cox <alan@linux.intel.com>
 
-It's because buffer_head creation does not go through the same paths
-for bdev file access versus getblk APIs.
+Fixing the locking accidentally replaced a race in the scroll
+lock handling with a deadlock. Turn it back into a race for
+now.
 
-blkdev_get_block does the right thing there
+The basic problem is that there are two paths into the tty
+stop/start helpers. One via the tty layer ^S/^Q handling
+where we need to take the kbd_event_lock and one via the
+special keyboard handler for fn_hold where we already hold
+it. Probably we need to split out into a separate LED lock
+but for now just go back to the race as it's a bit close
+to release.
 
-In fact, it's probably good to unify the checks here, i.e., use max_blocks()
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-Thanks,
-Nick
+ drivers/tty/vt/keyboard.c |   22 +++++++++++++++++-----
+ 1 files changed, 17 insertions(+), 5 deletions(-)
+
+
+diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+index 86dd1e3..6d54a6a 100644
+--- a/drivers/tty/vt/keyboard.c
++++ b/drivers/tty/vt/keyboard.c
+@@ -1085,15 +1085,21 @@ void vt_set_led_state(int console, int leds)
+  *
+  *	Handle console start. This is a wrapper for the VT layer
+  *	so that we can keep kbd knowledge internal
++ *
++ *	FIXME: We eventually need to hold the kbd lock here to protect
++ *	the LED updating. We can't do it yet because fn_hold calls stop_tty
++ *	and start_tty under the kbd_event_lock, while normal tty paths
++ *	don't hold the lock. We probably need to split out an LED lock
++ *	but not during an -rc release!
+  */
+ void vt_kbd_con_start(int console)
+ {
+ 	struct kbd_struct * kbd = kbd_table + console;
+ 	unsigned long flags;
+-	spin_lock_irqsave(&kbd_event_lock, flags);
++/*	spin_lock_irqsave(&kbd_event_lock, flags); */
+ 	clr_vc_kbd_led(kbd, VC_SCROLLOCK);
+ 	set_leds();
+-	spin_unlock_irqrestore(&kbd_event_lock, flags);
++/*	spin_unlock_irqrestore(&kbd_event_lock, flags); */
+ }
+ 
+ /**
+@@ -1102,22 +1108,28 @@ void vt_kbd_con_start(int console)
+  *
+  *	Handle console stop. This is a wrapper for the VT layer
+  *	so that we can keep kbd knowledge internal
++ *
++ *	FIXME: We eventually need to hold the kbd lock here to protect
++ *	the LED updating. We can't do it yet because fn_hold calls stop_tty
++ *	and start_tty under the kbd_event_lock, while normal tty paths
++ *	don't hold the lock. We probably need to split out an LED lock
++ *	but not during an -rc release!
+  */
+ void vt_kbd_con_stop(int console)
+ {
+ 	struct kbd_struct * kbd = kbd_table + console;
+ 	unsigned long flags;
+-	spin_lock_irqsave(&kbd_event_lock, flags);
++/*	spin_lock_irqsave(&kbd_event_lock, flags); */
+ 	set_vc_kbd_led(kbd, VC_SCROLLOCK);
+ 	set_leds();
+-	spin_unlock_irqrestore(&kbd_event_lock, flags);
++/*	spin_unlock_irqrestore(&kbd_event_lock, flags); */
+ }
+ 
+ /*
+  * This is the tasklet that updates LED state on all keyboards
+  * attached to the box. The reason we use tasklet is that we
+  * need to handle the scenario when keyboard handler is not
+- * registered yet but we already getting updates form VT to
++ * registered yet but we already getting updates from the VT to
+  * update led state.
+  */
+ static void kbd_bh(unsigned long dummy)
+
