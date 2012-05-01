@@ -1,106 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab2EAUqM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:46:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39804 "EHLO mx2.suse.de"
+	id S1754756Ab2EAUzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 16:55:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42561 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327Ab2EAUqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:46:10 -0400
-From: NeilBrown <neilb@suse.de>
-To: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 02 May 2012 06:44:50 +1000
-Subject: [PATCH 2/2] twl-regulator: make TWL4030_ALLOW_UNSUPPORTED more
- configurable.
-Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>
-Message-ID: <20120501204450.27026.40239.stgit@notabene.brown>
-In-Reply-To: <20120501204259.27026.40156.stgit@notabene.brown>
-References: <20120501204259.27026.40156.stgit@notabene.brown>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1752837Ab2EAUy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 16:54:59 -0400
+Subject: Re: x86: runtime waring in pcibios_fwaddrmap_lookup
+From: Myron Stowe <mstowe@redhat.com>
+To: Meelis Roos <mroos@linux.ee>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+In-Reply-To: <alpine.SOC.1.00.1204280819270.14507@math.ut.ee>
+References: <alpine.SOC.1.00.1204122238400.16365@math.ut.ee>
+	 <CAErSpo6YnzywdjTTVdVEHj_E-B0ARBpZ+fiy29Rv==fO6m9-FA@mail.gmail.com>
+	 <1335557685.2386.62.camel@zim.stowe>
+	 <alpine.SOC.1.00.1204280819270.14507@math.ut.ee>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 May 2012 14:54:54 -0600
+Message-ID: <1335905694.2386.138.camel@zim.stowe>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulators in the twl4030 can provide some voltage settings
-that are not offically supported.
-These settings are disabled by default, but can be enabled with
-  CONFIG_TWL4030_ALLOW_UNSUPPORTED=y
-However
- - that config variable is not mentioned in any Kconfig so cannot
-   be used, and
- - a global setting is clumsy - a per regulator setting would be
-   better.
+On Sat, 2012-04-28 at 08:36 +0300, Meelis Roos wrote:
+> > So, somehow, your system hit the assertion (WARN_ON) in
+> > pcibios_fwaddrmap_lookup().  From the dmesg log you provided I can see
+> > why pcibios_save_fw_addr() was called - there is a resource collision
+> > with the video device's GART - but what I don't understand is how the
+> > assertion is being triggered.
+> > 
+> > There are only two callers of pcibios_fwaddrmap_lookup()
+> > (see ./arch/x86/pci/i386.c:: pcibios_save_fw_addr(), and
+> > pcibios_retrieve_fw_addr()) and both of those are acquiring the lock
+> > before making the call - so triggering the assertion just doesn't seem
+> > possible but obviously it is getting triggered.
+> > 
+> > I don't have any ideas currently but do have some questions that
+> > hopefully will start to enlighten us.
+> > 
+> >         Does your system encounter this consistently upon every boot or
+> >         is it hit intermittently?
+> 
+> Every time.
+> 
+> >         Do you know of any kernel versions that do not encounter it?
+> 
+> Checked my logs, no kernel up to 3.3.0 included gave it, next tested 
+> kernel was 3.4.0-rc2 and that had the warning and every kernel since has 
+> had it.
+> 
+> >         Are you running a para-virtualized kernel?
+> 
+> No.
 
-So define a new 'feature' flag that a board file can set to enable
-these unsupported volatages for boards which need them.
+Thanks for the quick response Meelis (unlike myself; I've been consumed
+with a hard deadline task recently - sorry).
 
-This flag cannot (yet) be set using device-tree.
+I got together with Bjorn and after showing him the paths, and locking,
+he also did not see how we could be hitting the WARN_ON.  I would like
+to take advantage of your system since it encounters this consistently
+but really have no idea how to progress currently.  I'll query a couple
+of my colleagues for suggestions.  In the meantime, if anyone else -
+Jesse - has any ideas, please speak up.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
----
+As for you noticing this after 3.3.0 that makes sense as the WARN_ON was
+added with 3.3.0.
 
- drivers/regulator/twl-regulator.c |   12 +++++-------
- include/linux/i2c/twl.h           |    5 +++++
- 2 files changed, 10 insertions(+), 7 deletions(-)
+Myron
 
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-index 9cdfc38..03a316d 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -388,14 +388,12 @@ static int twl6030reg_set_mode(struct regulator_dev *rdev, unsigned mode)
-  * VAUX3 at 3V is incorrectly listed in some TI manuals as unsupported.
-  * TI are revising the twl5030/tps659x0 specs to support that 3.0V setting.
-  */
--#ifdef CONFIG_TWL4030_ALLOW_UNSUPPORTED
--#define UNSUP_MASK	0x0000
--#else
- #define UNSUP_MASK	0x8000
--#endif
- 
- #define UNSUP(x)	(UNSUP_MASK | (x))
--#define IS_UNSUP(x)	(UNSUP_MASK & (x))
-+#define IS_UNSUP(info, x)			\
-+	((UNSUP_MASK & (x)) &&			\
-+	 !((info)->features & TWL4030_ALLOW_UNSUPPORTED))
- #define LDO_MV(x)	(~UNSUP_MASK & (x))
- 
- 
-@@ -469,7 +467,7 @@ static int twl4030ldo_list_voltage(struct regulator_dev *rdev, unsigned index)
- 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
- 	int			mV = info->table[index];
- 
--	return IS_UNSUP(mV) ? 0 : (LDO_MV(mV) * 1000);
-+	return IS_UNSUP(info, mV) ? 0 : (LDO_MV(mV) * 1000);
- }
- 
- static int
-@@ -483,7 +481,7 @@ twl4030ldo_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
- 		int mV = info->table[vsel];
- 		int uV;
- 
--		if (IS_UNSUP(mV))
-+		if (IS_UNSUP(info, mV))
- 			continue;
- 		uV = LDO_MV(mV) * 1000;
- 
-diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index 88e8cd8..8eec440 100644
---- a/include/linux/i2c/twl.h
-+++ b/include/linux/i2c/twl.h
-@@ -752,6 +752,11 @@ struct twl_regulator_driver_data {
- #define TWL5031			BIT(2)  /* twl5031 has different registers */
- #define TWL6030_CLASS		BIT(3)	/* TWL6030 class */
- #define TWL6025_SUBCLASS	BIT(4)  /* TWL6025 has changed registers */
-+#define TWL4030_ALLOW_UNSUPPORTED BIT(5) /* Some voltages are possible
-+					  * but not officially supported.
-+					  * This flag is necessary to
-+					  * enable them.
-+					  */
- 
- /*----------------------------------------------------------------------*/
- 
+
 
 
