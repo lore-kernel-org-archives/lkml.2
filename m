@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab2EAUzB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:55:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42561 "EHLO mx1.redhat.com"
+	id S1754882Ab2EAU7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 16:59:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:17742 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752837Ab2EAUy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:54:59 -0400
-Subject: Re: x86: runtime waring in pcibios_fwaddrmap_lookup
-From: Myron Stowe <mstowe@redhat.com>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-In-Reply-To: <alpine.SOC.1.00.1204280819270.14507@math.ut.ee>
-References: <alpine.SOC.1.00.1204122238400.16365@math.ut.ee>
-	 <CAErSpo6YnzywdjTTVdVEHj_E-B0ARBpZ+fiy29Rv==fO6m9-FA@mail.gmail.com>
-	 <1335557685.2386.62.camel@zim.stowe>
-	 <alpine.SOC.1.00.1204280819270.14507@math.ut.ee>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 May 2012 14:54:54 -0600
-Message-ID: <1335905694.2386.138.camel@zim.stowe>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751868Ab2EAU7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 16:59:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="148199595"
+Date: Wed, 2 May 2012 00:00:41 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: coretemp: fix oops on cpu unplug
+Message-ID: <20120501210041.GA10629@otc-wbsnb-06>
+References: <1335791881-1560-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120501152014.GA2629@ericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120501152014.GA2629@ericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-28 at 08:36 +0300, Meelis Roos wrote:
-> > So, somehow, your system hit the assertion (WARN_ON) in
-> > pcibios_fwaddrmap_lookup().  From the dmesg log you provided I can see
-> > why pcibios_save_fw_addr() was called - there is a resource collision
-> > with the video device's GART - but what I don't understand is how the
-> > assertion is being triggered.
+On Tue, May 01, 2012 at 08:20:14AM -0700, Guenter Roeck wrote:
+> On Mon, Apr 30, 2012 at 09:18:01AM -0400, Kirill A. Shutemov wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 > > 
-> > There are only two callers of pcibios_fwaddrmap_lookup()
-> > (see ./arch/x86/pci/i386.c:: pcibios_save_fw_addr(), and
-> > pcibios_retrieve_fw_addr()) and both of those are acquiring the lock
-> > before making the call - so triggering the assertion just doesn't seem
-> > possible but obviously it is getting triggered.
+> > coretemp tries to access core_data array beyond bounds on cpu unplug if
+> > core id of the cpu if more than NUM_REAL_CORES-1.
 > > 
-> > I don't have any ideas currently but do have some questions that
-> > hopefully will start to enlighten us.
+> [ ... ]
 > > 
-> >         Does your system encounter this consistently upon every boot or
-> >         is it hit intermittently?
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 > 
-> Every time.
+> Looking at it again, you were right. Adding the check to get_core_online()
+> doesn't really help as the platform device is per CPU, not per core.
 > 
-> >         Do you know of any kernel versions that do not encounter it?
-> 
-> Checked my logs, no kernel up to 3.3.0 included gave it, next tested 
-> kernel was 3.4.0-rc2 and that had the warning and every kernel since has 
-> had it.
-> 
-> >         Are you running a para-virtualized kernel?
-> 
-> No.
+> Applied. I'll submit a separate patch to increase NUM_REAL_CORES.
 
-Thanks for the quick response Meelis (unlike myself; I've been consumed
-with a hard deadline task recently - sorry).
+Actually, the problem is bigger.
 
-I got together with Bjorn and after showing him the paths, and locking,
-he also did not see how we could be hitting the WARN_ON.  I would like
-to take advantage of your system since it encounters this consistently
-but really have no idea how to progress currently.  I'll query a couple
-of my colleagues for suggestions.  In the meantime, if anyone else -
-Jesse - has any ideas, please speak up.
+Documentation/cputopology.txt:
+====
+2) /sys/devices/system/cpu/cpuX/topology/core_id:
 
-As for you noticing this after 3.3.0 that makes sense as the WARN_ON was
-added with 3.3.0.
+        the CPU core ID of cpuX. Typically it is the hardware platform's
+        identifier (rather than the kernel's).  The actual value is
+        architecture and platform dependent.
+====
 
-Myron
+We should not use core id as an index in an array since it's an arbitrary
+number (from kernel POV).
 
-
-
-
+-- 
+ Kirill A. Shutemov
