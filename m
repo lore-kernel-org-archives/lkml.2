@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757747Ab2EACEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 22:04:10 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:52038 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757410Ab2EACEJ (ORCPT
+	id S1757869Ab2EACRZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 22:17:25 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:8342 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757099Ab2EACRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 22:04:09 -0400
-From: Marek Vasut <marex@denx.de>
-To: linux-mtd@lists.infradead.org
-Cc: Marek Vasut <marex@denx.de>, David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] M25: Add support for Everspin MR25H256 MRAM chip
-Date: Tue,  1 May 2012 04:04:00 +0200
-Message-Id: <1335837840-15511-1-git-send-email-marex@denx.de>
-X-Mailer: git-send-email 1.7.10
+	Mon, 30 Apr 2012 22:17:23 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6697"; a="186398803"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: [PATCH] ARM: msm: fix compilation flags for MSM_SCM (part 2)
+Date: Mon, 30 Apr 2012 19:17:20 -0700
+Message-Id: <1335838640-11176-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.10.334.gf9d99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This chip isn't JEDEC-compatible.
+eca55f4 (ARM: msm: fix compilation flags for MSM_SCM, 2011-11-08)
+added the correct assembler directive for the first smc instance
+but missed the second instance in scm_get_version(). Add it so we
+can compile this file with newer binutils.
 
-Signed-off-by: Marek Vasut <marex@denx.de>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
+Cc: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/mtd/devices/m25p80.c |    3 +++
+ arch/arm/mach-msm/scm.c |    3 +++
  1 file changed, 3 insertions(+)
 
-diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-index 1924d24..85ce6fd 100644
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
-@@ -639,6 +639,9 @@ static const struct spi_device_id m25p_ids[] = {
- 	{ "en25q32b", INFO(0x1c3016, 0, 64 * 1024,  64, 0) },
- 	{ "en25p64", INFO(0x1c2017, 0, 64 * 1024, 128, 0) },
- 
-+	/* Everspin */
-+	{ "mr25h256", CAT25_INFO(  32 * 1024, 1, 256, 2) },
-+
- 	/* Intel/Numonyx -- xxxs33b */
- 	{ "160s33b",  INFO(0x898911, 0, 64 * 1024,  32, 0) },
- 	{ "320s33b",  INFO(0x898912, 0, 64 * 1024,  64, 0) },
+diff --git a/arch/arm/mach-msm/scm.c b/arch/arm/mach-msm/scm.c
+index bafabb5..c536fd6 100644
+--- a/arch/arm/mach-msm/scm.c
++++ b/arch/arm/mach-msm/scm.c
+@@ -282,6 +282,9 @@ u32 scm_get_version(void)
+ 			__asmeq("%1", "r1")
+ 			__asmeq("%2", "r0")
+ 			__asmeq("%3", "r1")
++#ifdef REQUIRES_SEC
++			".arch_extension sec\n"
++#endif
+ 			"smc	#0	@ switch to secure world\n"
+ 			: "=r" (r0), "=r" (r1)
+ 			: "r" (r0), "r" (r1)
 -- 
-1.7.10
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
