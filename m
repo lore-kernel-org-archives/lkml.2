@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758499Ab2EATIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 15:08:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50202 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758380Ab2EATI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758187Ab2EATI3 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 1 May 2012 15:08:29 -0400
-Date: Tue, 1 May 2012 15:08:26 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be
- initialized to one
-Message-ID: <20120501190826.GF18239@redhat.com>
-References: <1335873936.16988.148.camel@lappy>
- <20120501161729.GV26595@google.com>
- <4FA0253F.4000302@fusionio.com>
- <20120501180906.GX26595@google.com>
- <4FA028EE.7020208@fusionio.com>
- <x49wr4vlpn8.fsf@segfault.boston.devel.redhat.com>
- <20120501183610.GD18239@redhat.com>
- <x49sjfjloty.fsf@segfault.boston.devel.redhat.com>
- <20120501185906.GE18239@redhat.com>
- <x49k40vlo32.fsf@segfault.boston.devel.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49k40vlo32.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Received: from mx1.redhat.com ([209.132.183.28]:3795 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758057Ab2EATI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 15:08:26 -0400
+From: Doug Ledford <dledford@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, sfr@canb.auug.org.au,
+        Doug Ledford <dledford@redhat.com>
+Subject: [Patch 3/4] ipc/mqueue: strengthen checks on mqueue creation
+Date: Tue,  1 May 2012 13:50:54 -0400
+Message-Id: <d280fa846e9093a3cc82d9e75da4bb8074c7d4c7.1335894230.git.dledford@redhat.com>
+In-Reply-To: <1335894655-11398-1-git-send-email-dledford@redhat.com>
+References: <1335894655-11398-1-git-send-email-dledford@redhat.com>
+In-Reply-To: <5b62749cb9227016ed5965fa57b96c0dccce37a8.1335894230.git.dledford@redhat.com>
+References: <5b62749cb9227016ed5965fa57b96c0dccce37a8.1335894230.git.dledford@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 03:04:49PM -0400, Jeff Moyer wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
-> 
-> > On Tue, May 01, 2012 at 02:48:41PM -0400, Jeff Moyer wrote:
-> >> Vivek Goyal <vgoyal@redhat.com> writes:
-> >> 
-> >> > On Tue, May 01, 2012 at 02:31:07PM -0400, Jeff Moyer wrote:
-> >> >
-> >> > [..]
-> >> >> > But as to actual users, I really don't know. I agree it's probably not
-> >> >> > that widely used. If google still had that code search, we could get a
-> >> >> > better idea :-)
-> >> >> 
-> >> >> I know of one project: the venerable dump/restore utility uses CLONE_IO.
-> >> >
-> >> > I thought you wrote cooperating queue logic to fix dump as it was not
-> >> > using CLONE_IO and IO from multiple threads was going in separate 
-> >> > queues.
-> >> 
-> >> That's correct.  I believe I sent the patch for dump before the kernel
-> >> patch was accepted.  Plus, it can't hurt, right?
-> >
-> > Ok, so now you have fixed dump to use CLONE_IO.
-> >
-> > So only other user of coop thing remaining potentially is qemu. I was
-> 
-> No, that's not the *only* other potential user.  ;-)  I wouldn't be
-> surprised if nfsd benefitted from the merging.  I also wouldn't be
-> surprised if other 3rd party apps did.  Are you trying to make a case to
-> get rid of the queue merging logic?
+We already check the mq attr struct if it's passed in, but now that the
+admin can set system wide defaults separate from maximums, it's actually
+possible to set the defaults to something that would overflow.  So,
+if there is no attr struct passed in to the open call, check the default
+values.
 
-No, just counting who benefits from coop logic.
+While we are at it, simplify mq_attr_ok() by making it return 0 or an
+error condition, so that way if we add more tests to it later, we have
+the option of what error should be returned instead of the calling
+location having to pick a possibly inaccurate error code.
 
-> 
-> > doing some qemu testing where threads were doing IO to nearby area
-> > but no coop merging was taking place. So not sure in practice how well
-> > does it work.
-> 
-> Well, that sounds like it warrants further investigation.
-> 
-> > Thought, that's irrlevant for this discussion. Thought of mentioning
-> > this observation.
-> 
-> If you can provide a reproducer, I'll be happy to take a look.
+Signed-off-by: Doug Ledford <dledford@redhat.com>
+---
+ ipc/mqueue.c |   27 ++++++++++++++++++---------
+ 1 files changed, 18 insertions(+), 9 deletions(-)
 
-I will dig. This was in the context of trying to solve qemu related
-IO slowdown with CFQ. Will let you know if I find a concrete reproducer.
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index 4b2892e..6089f73 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -673,27 +673,27 @@ static int mq_attr_ok(struct ipc_namespace *ipc_ns, struct mq_attr *attr)
+ 	int mq_treesize;
+ 
+ 	if (attr->mq_maxmsg <= 0 || attr->mq_msgsize <= 0)
+-		return 0;
++		return -EINVAL;
+ 	if (capable(CAP_SYS_RESOURCE)) {
+ 		if (attr->mq_maxmsg > HARD_MSGMAX ||
+ 		    attr->mq_msgsize > HARD_MSGSIZEMAX)
+-			return 0;
++			return -EINVAL;
+ 	} else {
+ 		if (attr->mq_maxmsg > ipc_ns->mq_msg_max ||
+ 				attr->mq_msgsize > ipc_ns->mq_msgsize_max)
+-			return 0;
++			return -EINVAL;
+ 	}
+ 	/* check for overflow */
+ 	if (attr->mq_msgsize > ULONG_MAX/attr->mq_maxmsg)
+-		return 0;
++		return -ENOMEM;
+ 	mq_treesize = attr->mq_maxmsg * sizeof(struct msg_msg) +
+ 		min_t(unsigned int, attr->mq_maxmsg, MQ_PRIO_MAX) *
+ 		sizeof(struct posix_msg_tree_node);
+ 	if ((unsigned long)(attr->mq_maxmsg * attr->mq_msgsize +
+ 			    mq_treesize) <
+ 	    (unsigned long)(attr->mq_maxmsg * attr->mq_msgsize))
+-		return 0;
+-	return 1;
++		return -ENOMEM;
++	return 0;
+ }
+ 
+ /*
+@@ -708,12 +708,21 @@ static struct file *do_create(struct ipc_namespace *ipc_ns, struct dentry *dir,
+ 	int ret;
+ 
+ 	if (attr) {
+-		if (!mq_attr_ok(ipc_ns, attr)) {
+-			ret = -EINVAL;
++		ret = mq_attr_ok(ipc_ns, attr);
++		if (ret)
+ 			goto out;
+-		}
+ 		/* store for use during create */
+ 		dentry->d_fsdata = attr;
++	} else {
++		struct mq_attr def_attr;
++
++		def_attr.mq_maxmsg = min(ipc_ns->mq_msg_max,
++					 ipc_ns->mq_msg_default);
++		def_attr.mq_msgsize = min(ipc_ns->mq_msgsize_max,
++					  ipc_ns->mq_msgsize_default);
++		ret = mq_attr_ok(ipc_ns, &def_attr);
++		if (ret)
++			goto out;
+ 	}
+ 
+ 	mode &= ~current_umask();
+-- 
+1.7.7.6
 
-Thanks
-Vivek
