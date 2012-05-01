@@ -1,106 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab2EAO5N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 10:57:13 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54753 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab2EAO5M (ORCPT
+	id S1757111Ab2EAPAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 11:00:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54965 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756039Ab2EAPAK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 10:57:12 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCHv2] vt: Fix deadlock on scroll-lock
-To: linux-kernel@vger.kernel.org, greg@kroah.com
-Date: Tue, 01 May 2012 16:12:19 +0100
-Message-ID: <20120501151213.14233.81060.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 1 May 2012 11:00:10 -0400
+Message-ID: <1335884353.13683.144.camel@twins>
+Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
+From: Peter Zijlstra <peterz@infradead.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>, mingo@elte.hu,
+        jeremy@goop.org, mtosatti@redhat.com, kvm@vger.kernel.org,
+        x86@kernel.org, vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com
+Date: Tue, 01 May 2012 16:59:13 +0200
+In-Reply-To: <4F9FD337.5010908@redhat.com>
+References: <20120427161727.27082.43096.stgit@abhimanyu>
+	   <20120427162401.27082.59387.stgit@abhimanyu>
+	 <4F9D32B4.8040002@redhat.com>  <1335865176.13683.120.camel@twins>
+	 <4F9FBF38.2060903@redhat.com> <1335869827.13683.133.camel@twins>
+	 <4F9FD337.5010908@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Tue, 2012-05-01 at 15:12 +0300, Avi Kivity wrote:
+> local_irq_save() is a stronger version or rcu_read_lock()
 
-Fixing the locking accidentally replaced a race in the scroll
-lock handling with a deadlock. Turn it back into a race for
-now.
+Not so, local_irq_save() doesn't at all stop regular RCU grace periods,
+things like preemptible rcu can be driven from rcu_read_unlock().
 
-The basic problem is that there are two paths into the tty
-stop/start helpers. One via the tty layer ^S/^Q handling
-where we need to take the kbd_event_lock and one via the
-special keyboard handler for fn_hold where we already hold
-it. Probably we need to split out into a separate LED lock
-but for now just go back to the race as it's a bit close
-to release.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- drivers/tty/vt/keyboard.c |   26 +++++++++++++++++++-------
- 1 files changed, 19 insertions(+), 7 deletions(-)
-
-
-diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-index 86dd1e3..29ca20d 100644
---- a/drivers/tty/vt/keyboard.c
-+++ b/drivers/tty/vt/keyboard.c
-@@ -1085,15 +1085,21 @@ void vt_set_led_state(int console, int leds)
-  *
-  *	Handle console start. This is a wrapper for the VT layer
-  *	so that we can keep kbd knowledge internal
-+ *
-+ *	FIXME: We eventually need to hold the kbd lock here to protect
-+ *	the LED updating. We can't do it yet because fn_hold calls stop_tty
-+ *	and start_tty under the kbd_event_lock, while normal tty paths
-+ *	don't hold the lock. We probably need to split out an LED lock
-+ *	but not during an -rc release!
-  */
- void vt_kbd_con_start(int console)
- {
- 	struct kbd_struct * kbd = kbd_table + console;
--	unsigned long flags;
--	spin_lock_irqsave(&kbd_event_lock, flags);
-+/*	unsigned long flags; */
-+/*	spin_lock_irqsave(&kbd_event_lock, flags); */
- 	clr_vc_kbd_led(kbd, VC_SCROLLOCK);
- 	set_leds();
--	spin_unlock_irqrestore(&kbd_event_lock, flags);
-+/*	spin_unlock_irqrestore(&kbd_event_lock, flags); */
- }
- 
- /**
-@@ -1102,22 +1108,28 @@ void vt_kbd_con_start(int console)
-  *
-  *	Handle console stop. This is a wrapper for the VT layer
-  *	so that we can keep kbd knowledge internal
-+ *
-+ *	FIXME: We eventually need to hold the kbd lock here to protect
-+ *	the LED updating. We can't do it yet because fn_hold calls stop_tty
-+ *	and start_tty under the kbd_event_lock, while normal tty paths
-+ *	don't hold the lock. We probably need to split out an LED lock
-+ *	but not during an -rc release!
-  */
- void vt_kbd_con_stop(int console)
- {
- 	struct kbd_struct * kbd = kbd_table + console;
--	unsigned long flags;
--	spin_lock_irqsave(&kbd_event_lock, flags);
-+/*	unsigned long flags; */
-+/*	spin_lock_irqsave(&kbd_event_lock, flags); */
- 	set_vc_kbd_led(kbd, VC_SCROLLOCK);
- 	set_leds();
--	spin_unlock_irqrestore(&kbd_event_lock, flags);
-+/*	spin_unlock_irqrestore(&kbd_event_lock, flags); */
- }
- 
- /*
-  * This is the tasklet that updates LED state on all keyboards
-  * attached to the box. The reason we use tasklet is that we
-  * need to handle the scenario when keyboard handler is not
-- * registered yet but we already getting updates form VT to
-+ * registered yet but we already getting updates from the VT to
-  * update led state.
-  */
- static void kbd_bh(unsigned long dummy)
-
+Note that this is the reason call_rcu_sched() exists and is used in this
+case.
