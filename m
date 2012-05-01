@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab2EAMvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 08:51:07 -0400
-Received: from fw.wantstofly.org ([80.101.37.227]:61347 "EHLO
-	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069Ab2EAMvE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 08:51:04 -0400
-Date: Tue, 1 May 2012 14:51:02 +0200
-From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: sedat.dilek@gmail.com
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lautriv <admin@coldplug.net>,
-        Jim Cromie <jim.cromie@gmail.com>
-Subject: Re: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
-Message-ID: <20120501125102.GN3157@wantstofly.org>
-References: <20120427094637.GV3157@wantstofly.org>
- <CA+icZUXNZ=exTnR=OgD_9bpt_0s-KnR+v-K6u+XzQr4HBoTQHQ@mail.gmail.com>
- <20120427095842.GW3157@wantstofly.org>
- <CA+icZUWuynSaPE4pdxzoP783pw7r=5x27ewXN_pkR5VS=0kKUg@mail.gmail.com>
- <20120427101732.GX3157@wantstofly.org>
- <CA+icZUUnJPeDmL9xXfvj62an40bXwwaOnrJmxmLN_cBt9PyCZA@mail.gmail.com>
- <CA+icZUV76wSBj88EpzmWbO=u2dP23yi5P98nN2KZehBUni9mEg@mail.gmail.com>
- <20120427185809.GZ3157@wantstofly.org>
- <CA+icZUWQmCRdjucb4+Nf24_zbJ4fzzp7zjqhKjXE6U01rppDfA@mail.gmail.com>
- <CA+icZUXSaEMA=KbQP9UQcU6ZMBh8QD2sv-O=6r_Ly8is==gvSA@mail.gmail.com>
+	id S932097Ab2EAMxo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 08:53:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12835 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754764Ab2EAMxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 08:53:42 -0400
+Message-ID: <4F9FDCC4.3030302@redhat.com>
+Date: Tue, 01 May 2012 15:53:24 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+icZUXSaEMA=KbQP9UQcU6ZMBh8QD2sv-O=6r_Ly8is==gvSA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davej@redhat.com
+Subject: Re: [PATCH] kvm: fix cpuid eax
+References: <20120430143902.GA10181@redhat.com> <4F9EF7FA.3060007@codemonkey.ws>
+In-Reply-To: <4F9EF7FA.3060007@codemonkey.ws>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 29, 2012 at 12:25:21AM +0200, Sedat Dilek wrote:
+On 04/30/2012 11:37 PM, Anthony Liguori wrote:
+> On 04/30/2012 09:39 AM, Michael S. Tsirkin wrote:
+>> cpuid eax should return the max leaf so that
+>> guests can find out the valid range.
+>> This matches Xen et al.
+>
+> What KVM does here predates Xen and Hyper-V.
+>
+> This is an ABI breaker.
 
-> > On 1st sight, logs look fine:
-> >
-> > [21:52:52] <lautriv> [    6.050967] ieee80211 phy0: 88w8361p v4,
-> > 00173f3bdde3, STA firmware 2.1.4.25
-> >
-> > But WLAN connection is not that fast and stable as lautriv reports
-> > (several abnormalities were observed).
-> >
-> > I requested a tarball which includes:
-> > * dmesg (Linux-3.3.3)
-> > * e_n_a (/etc/network/interfaces)
-> > * ifconfig output
-> > * iwconfig output
-> > * iw_phy output
-> > * ps_axu (WPA) output
-> >
-> > lautriv will be so kind to be around on #linux-wireless/Freenode the
-> > next days (UTC+2: German/Swiss local-time).
-> > Just ping him.
-> >
-> > Hope you have fun, together!
-> >
-> > - Sedat -
-> 
-> A new tarball from lautriv with same outputs as before, but now tested
-> with Linux-3.4-rc4.
+First, I don't think we ever documented eax, so nothing can rely on it.
+Second, this isn't guest visible, it's just part of
+KVM_GET_SUPPORTED_CPUID (used by qemu's -cpu host, but doesn't affect
+qemu stable cpus).
 
-The output looks good enough for me to ACK adding the PCI ID.
+-- 
+error compiling committee.c: too many arguments to function
 
-Can the firmware being used here be submitted to the linux-firmware
-git tree?
