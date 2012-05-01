@@ -1,37 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322Ab2EAVmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 17:42:33 -0400
-Received: from intermatrixgroup.ru ([195.178.208.66]:33881 "EHLO
-	tservice.net.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755417Ab2EAVma (ORCPT
+	id S1754373Ab2EAV77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 17:59:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56553 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab2EAV76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 17:42:30 -0400
-Date: Wed, 2 May 2012 01:42:19 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: omap_hdq: use wait_event_timeout to wait for
- read to complete.
-Message-ID: <20120501214219.GB15560@ioremap.net>
-References: <20120425124153.2afa318b@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120425124153.2afa318b@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 1 May 2012 17:59:58 -0400
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, cjb@laptop.org, kgene.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        will.newton@gmail.com, jh80.chung@samsung.com, tgih.jun@samsung.com,
+        dianders@google.com
+Subject: [PATCH] mmc: dw_mmc: make multiple instances of dw_mci_card_workqueue
+Date: Tue,  1 May 2012 14:57:36 -0700
+Message-Id: <1335909456-14020-1-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 12:41:53PM +1000, NeilBrown (neilb@suse.de) wrote:
-> There is no gain in having a loop - there is no risk of missing the
-> interrupt with wait_event_timeout.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
+The variable 'dw_mci_card_workqueue' is a global variable shared between
+multiple instances of the dw_mmc host controller. Due to this, data
+corruption has been noticed when multiple instances of dw_mmc controllers
+are actively reading/writing the media. Fix this by adding a instance
+of 'struct workqueue_struct' for each host instance and removing the
+global 'dw_mci_card_workqueue' instance.
 
-Both patches look good, thank you
-Feel free to add my ack if needed
+Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+---
+ drivers/mmc/host/dw_mmc.c  |   14 ++++++--------
+ include/linux/mmc/dw_mmc.h |    1 +
+ 2 files changed, 7 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index ab3fc46..1532357 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -100,8 +100,6 @@ struct dw_mci_slot {
+ 	int			last_detect_state;
+ };
+ 
+-static struct workqueue_struct *dw_mci_card_workqueue;
+-
+ #if defined(CONFIG_DEBUG_FS)
+ static int dw_mci_req_show(struct seq_file *s, void *v)
+ {
+@@ -1605,7 +1603,7 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+ 
+ 		if (pending & SDMMC_INT_CD) {
+ 			mci_writel(host, RINTSTS, SDMMC_INT_CD);
+-			queue_work(dw_mci_card_workqueue, &host->card_work);
++			queue_work(host->card_workqueue, &host->card_work);
+ 		}
+ 
+ 		/* Handle SDIO Interrupts */
+@@ -1844,7 +1842,7 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+ 	 * Card may have been plugged in prior to boot so we
+ 	 * need to run the detect tasklet
+ 	 */
+-	queue_work(dw_mci_card_workqueue, &host->card_work);
++	queue_work(host->card_workqueue, &host->card_work);
+ 
+ 	return 0;
+ }
+@@ -2021,9 +2019,9 @@ int dw_mci_probe(struct dw_mci *host)
+ 	mci_writel(host, CLKSRC, 0);
+ 
+ 	tasklet_init(&host->tasklet, dw_mci_tasklet_func, (unsigned long)host);
+-	dw_mci_card_workqueue = alloc_workqueue("dw-mci-card",
++	host->card_workqueue = alloc_workqueue("dw-mci-card",
+ 			WQ_MEM_RECLAIM | WQ_NON_REENTRANT, 1);
+-	if (!dw_mci_card_workqueue)
++	if (!host->card_workqueue)
+ 		goto err_dmaunmap;
+ 	INIT_WORK(&host->card_work, dw_mci_work_routine_card);
+ 	ret = request_irq(host->irq, dw_mci_interrupt, host->irq_flags, "dw-mci", host);
+@@ -2085,7 +2083,7 @@ err_init_slot:
+ 	free_irq(host->irq, host);
+ 
+ err_workqueue:
+-	destroy_workqueue(dw_mci_card_workqueue);
++	destroy_workqueue(host->card_workqueue);
+ 
+ err_dmaunmap:
+ 	if (host->use_dma && host->dma_ops->exit)
+@@ -2119,7 +2117,7 @@ void dw_mci_remove(struct dw_mci *host)
+ 	mci_writel(host, CLKSRC, 0);
+ 
+ 	free_irq(host->irq, host);
+-	destroy_workqueue(dw_mci_card_workqueue);
++	destroy_workqueue(host->card_workqueue);
+ 	dma_free_coherent(&host->dev, PAGE_SIZE, host->sg_cpu, host->sg_dma);
+ 
+ 	if (host->use_dma && host->dma_ops->exit)
+diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+index 8f66e28..7a7ebd3 100644
+--- a/include/linux/mmc/dw_mmc.h
++++ b/include/linux/mmc/dw_mmc.h
+@@ -125,6 +125,7 @@ struct dw_mci {
+ 	struct mmc_request	*mrq;
+ 	struct mmc_command	*cmd;
+ 	struct mmc_data		*data;
++	struct workqueue_struct	*card_workqueue;
+ 
+ 	/* DMA interface members*/
+ 	int			use_dma;
 -- 
-	Evgeniy Polyakov
+1.7.5.4
+
