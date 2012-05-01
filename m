@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab2EAUcf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:32:35 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:29964 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab2EAUce convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:32:34 -0400
-Date: Tue, 1 May 2012 16:26:40 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        mingo@kernel.org, suresh.b.siddha@intel.com, mlin@ss.pku.edu.cn
-Subject: Re: [GIT PULL] stable/for-ingo-v3.5 of IOAPIC abstraction (and then
- some users) for v3.5
-Message-ID: <20120501202640.GB16209@phenom.dumpdata.com>
-References: <20120501194240.GA15237@phenom.dumpdata.com>
- <CA+5PVA4OorzAkkBe+PayPPHa1k7=X6Y0ALg=jRWLyKxabAPpiw@mail.gmail.com>
+	id S1753089Ab2EAUhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 16:37:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28193 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751007Ab2EAUhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 16:37:14 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jaxboe@fusionio.com, Kyle McMartin <kmcmarti@redhat.com>
+Subject: Re: [patch|rfc] block: don't mark buffers beyond end of disk as mapped
+References: <x49pqaom2u4.fsf@segfault.boston.devel.redhat.com>
+	<CAPa8GCAgDU8FYdMuWsn2PuUW0GQxdKWJV6K0SmQEzb3s1GHxwA@mail.gmail.com>
+	<x49lilcm1tb.fsf@segfault.boston.devel.redhat.com>
+	<CAPa8GCChTmXTmjY5GvsFsvXpP_WSuiiWMRDu7Lvb71G9tW1PTw@mail.gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 01 May 2012 16:37:10 -0400
+In-Reply-To: <CAPa8GCChTmXTmjY5GvsFsvXpP_WSuiiWMRDu7Lvb71G9tW1PTw@mail.gmail.com>
+	(Nick Piggin's message of "Wed, 2 May 2012 00:26:55 +1000")
+Message-ID: <x49bom7ljt5.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA4OorzAkkBe+PayPPHa1k7=X6Y0ALg=jRWLyKxabAPpiw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 04:08:19PM -0400, Josh Boyer wrote:
-> On Tue, May 1, 2012 at 3:42 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> > -static void __init __ioapic_init_mappings(void)
-> > +void __init native_io_apic_init_mappings(void)
-> >  {
-> >        unsigned long ioapic_phys, idx = FIX_IO_APIC_BASE_0;
-> >        struct resource *ioapic_res;
-> > diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> > index 1a29015..8526317 100644
-> > --- a/arch/x86/kernel/setup.c
-> > +++ b/arch/x86/kernel/setup.c
-> > @@ -1012,7 +1012,7 @@ void __init setup_arch(char **cmdline_p)
-> >        init_cpu_to_node();
-> >
-> >        init_apic_mappings();
-> > -       ioapic_and_gsi_init();
-> > +       x86_io_apic_ops.init();
-> >
-> >        kvm_guest_init();
-> >
-> > diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-> > index 9cf71d0..35c5e54 100644
-> > --- a/arch/x86/kernel/x86_init.c
-> > +++ b/arch/x86/kernel/x86_init.c
-> > @@ -18,6 +18,7 @@
-> >  #include <asm/e820.h>
-> >  #include <asm/time.h>
-> >  #include <asm/irq.h>
-> > +#include <asm/io_apic.h>
-> >  #include <asm/pat.h>
-> >  #include <asm/tsc.h>
-> >  #include <asm/iommu.h>
-> > @@ -119,3 +120,10 @@ struct x86_msi_ops x86_msi = {
-> >        .teardown_msi_irqs = default_teardown_msi_irqs,
-> >        .restore_msi_irqs = default_restore_msi_irqs,
-> >  };
-> > +
-> > +struct x86_io_apic_ops x86_io_apic_ops = {
-> > +       .init   = native_io_apic_init_mappings,
-> > +       .read   = native_io_apic_read,
-> > +       .write  = native_io_apic_write,
-> > +       .modify = native_io_apic_modify,
-> > +};
-> 
-> You'll get a section mismatch warning on this struct.  It's not a huge
-> deal, but native_io_apic_init_mappings is annotated as __init whereas
-> this struct isn't.  In practice it doesn't seem to matter as
-> x86_io_apic_ops.init is only called in setup_arch, but it's still a
-> valid warning.
+Nick Piggin <npiggin@gmail.com> writes:
 
-I think that the mismatch disappears if the structure has the word
-_ops in it. At least that is what I saw (when I ran with the MODULE_SECTION=y
-with the initial implementation of this and then fixed it up).
+> On 2 May 2012 00:08, Jeff Moyer <jmoyer@redhat.com> wrote:
+>> Nick Piggin <npiggin@gmail.com> writes:
+>>
+>>> Not a bad fix. But it's kind of sad to have i_size checking logic also in
+>>> block_read_full_page, that does not cope with this.
+>>>
+>>> I have found there are parts of the kernel (readahead) that try to read
+>>> beyond EOF and seem to get angry if we return an error (by not
+>>> marking uptodate in readpage) in that case though :(
+>>>
+>>> But, either way, I think it's very reasonable to not mark buffers beyond
+>>> end of device as mapped. So I think your patch is fine.
+>>>
+>>> I guess for ext[234], it does not read metadata close to the end of the
+>>> device or you were using 4K sized blocks?
+>>
+>> Well, the test case just reads directly from the loop device, bypassing
+>> the file system, and I did use 1KB blocks when making the file system, so
+>> it is quite puzzling.
+>
+> It's because buffer_head creation does not go through the same paths
+> for bdev file access versus getblk APIs.
+>
+> blkdev_get_block does the right thing there
+>
+> In fact, it's probably good to unify the checks here, i.e., use max_blocks()
 
-However, let me double check - I might have seen that with something
-else and misremebered it.
+You really think it's worth it?  I mean, it's just an i_size_read and a
+shift, and there is precedent for it inside fs/buffer.c.  I'd prefer to
+keep the patch as-is, but will change it if you feel that strongly about
+it.
 
-> 
-> (First noticed in https://bugzilla.redhat.com/show_bug.cgi?id=817645 )
-> 
-> josh
+Cheers,
+Jeff
