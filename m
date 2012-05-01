@@ -1,47 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab2EAVkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 17:40:13 -0400
-Received: from cet.com.ru ([195.178.208.66]:33879 "EHLO tservice.net.ru"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753456Ab2EAVkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 17:40:11 -0400
-Date: Wed, 2 May 2012 01:39:58 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] w1: Introduce a slave mutex for serializing IO.
-Message-ID: <20120501213958.GA15560@ioremap.net>
-References: <20120425124914.3187a794@notabene.brown>
+	id S1756069Ab2EAVkk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 17:40:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753089Ab2EAVki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 17:40:38 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jaxboe@fusionio.com, Kyle McMartin <kmcmarti@redhat.com>
+Subject: Re: [patch|rfc] block: don't mark buffers beyond end of disk as mapped
+References: <x49pqaom2u4.fsf@segfault.boston.devel.redhat.com>
+	<CAPa8GCAgDU8FYdMuWsn2PuUW0GQxdKWJV6K0SmQEzb3s1GHxwA@mail.gmail.com>
+	<x49lilcm1tb.fsf@segfault.boston.devel.redhat.com>
+	<CAPa8GCChTmXTmjY5GvsFsvXpP_WSuiiWMRDu7Lvb71G9tW1PTw@mail.gmail.com>
+	<x49bom7ljt5.fsf@segfault.boston.devel.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 01 May 2012 17:40:35 -0400
+In-Reply-To: <x49bom7ljt5.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
+	message of "Tue, 01 May 2012 16:37:10 -0400")
+Message-ID: <x497gwvlgvg.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120425124914.3187a794@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 12:49:14PM +1000, NeilBrown (neilb@suse.de) wrote:
-> w1 devices need a mutex to serial IO.
-> Most use master->mutex.
-> 
-> However that is used for other purposes and they can conflict.
-> 
-> In particular master->mutex is held while w1_attach_slave_device is
-> called.
-> 
-> For bq27000, this registers a 'powersupply' device which tries to
-> read the current status.  The attempt to read will cause a deadlock on
-> master->mutex.
-> 
-> So create a new per-slave mutex and use that for serializing IO for
-> bq27000.
+Jeff Moyer <jmoyer@redhat.com> writes:
 
-How will this protect against master doing search for example?
-It performs a number of read/write operations which are not allowed to
-be interrupted by outside read.
+> Nick Piggin <npiggin@gmail.com> writes:
+>
+>> On 2 May 2012 00:08, Jeff Moyer <jmoyer@redhat.com> wrote:
+>>> Nick Piggin <npiggin@gmail.com> writes:
+>>>
+>>>> Not a bad fix. But it's kind of sad to have i_size checking logic also in
+>>>> block_read_full_page, that does not cope with this.
+>>>>
+>>>> I have found there are parts of the kernel (readahead) that try to read
+>>>> beyond EOF and seem to get angry if we return an error (by not
+>>>> marking uptodate in readpage) in that case though :(
+>>>>
+>>>> But, either way, I think it's very reasonable to not mark buffers beyond
+>>>> end of device as mapped. So I think your patch is fine.
+>>>>
+>>>> I guess for ext[234], it does not read metadata close to the end of the
+>>>> device or you were using 4K sized blocks?
+>>>
+>>> Well, the test case just reads directly from the loop device, bypassing
+>>> the file system, and I did use 1KB blocks when making the file system, so
+>>> it is quite puzzling.
+>>
+>> It's because buffer_head creation does not go through the same paths
+>> for bdev file access versus getblk APIs.
+>>
+>> blkdev_get_block does the right thing there
+>>
+>> In fact, it's probably good to unify the checks here, i.e., use max_blocks()
+>
+> You really think it's worth it?  I mean, it's just an i_size_read and a
+> shift, and there is precedent for it inside fs/buffer.c.  I'd prefer to
+> keep the patch as-is, but will change it if you feel that strongly about
+> it.
 
--- 
-	Evgeniy Polyakov
+Anyway, here is the other version of the patch, using max_block as you
+suggested.
+
+Cheers,
+Jeff
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index e08f6a2..ba11c30 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -70,7 +70,7 @@ static void bdev_inode_switch_bdi(struct inode *inode,
+ 	spin_unlock(&dst->wb.list_lock);
+ }
+ 
+-static sector_t max_block(struct block_device *bdev)
++sector_t blkdev_max_block(struct block_device *bdev)
+ {
+ 	sector_t retval = ~((sector_t)0);
+ 	loff_t sz = i_size_read(bdev->bd_inode);
+@@ -163,7 +163,7 @@ static int
+ blkdev_get_block(struct inode *inode, sector_t iblock,
+ 		struct buffer_head *bh, int create)
+ {
+-	if (iblock >= max_block(I_BDEV(inode))) {
++	if (iblock >= blkdev_max_block(I_BDEV(inode))) {
+ 		if (create)
+ 			return -EIO;
+ 
+@@ -185,7 +185,7 @@ static int
+ blkdev_get_blocks(struct inode *inode, sector_t iblock,
+ 		struct buffer_head *bh, int create)
+ {
+-	sector_t end_block = max_block(I_BDEV(inode));
++	sector_t end_block = blkdev_max_block(I_BDEV(inode));
+ 	unsigned long max_blocks = bh->b_size >> inode->i_blkbits;
+ 
+ 	if ((iblock + max_blocks) > end_block) {
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 351e18e..ad5938c 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -921,6 +921,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
+ 	struct buffer_head *head = page_buffers(page);
+ 	struct buffer_head *bh = head;
+ 	int uptodate = PageUptodate(page);
++	sector_t end_block = blkdev_max_block(I_BDEV(bdev->bd_inode));
+ 
+ 	do {
+ 		if (!buffer_mapped(bh)) {
+@@ -929,7 +930,8 @@ init_page_buffers(struct page *page, struct block_device *bdev,
+ 			bh->b_blocknr = block;
+ 			if (uptodate)
+ 				set_buffer_uptodate(bh);
+-			set_buffer_mapped(bh);
++			if (block < end_block)
++				set_buffer_mapped(bh);
+ 		}
+ 		block++;
+ 		bh = bh->b_this_page;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8de6755..25c40b9 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2051,6 +2051,7 @@ extern void unregister_blkdev(unsigned int, const char *);
+ extern struct block_device *bdget(dev_t);
+ extern struct block_device *bdgrab(struct block_device *bdev);
+ extern void bd_set_size(struct block_device *, loff_t size);
++extern sector_t blkdev_max_block(struct block_device *bdev);
+ extern void bd_forget(struct inode *inode);
+ extern void bdput(struct block_device *);
+ extern void invalidate_bdev(struct block_device *);
