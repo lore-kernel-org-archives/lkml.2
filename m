@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab2EAOIZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 10:08:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54599 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755991Ab2EAOIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 10:08:19 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jaxboe@fusionio.com, Kyle McMartin <kmcmarti@redhat.com>
-Subject: Re: [patch|rfc] block: don't mark buffers beyond end of disk as mapped
-References: <x49pqaom2u4.fsf@segfault.boston.devel.redhat.com>
-	<CAPa8GCAgDU8FYdMuWsn2PuUW0GQxdKWJV6K0SmQEzb3s1GHxwA@mail.gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 01 May 2012 10:08:16 -0400
-In-Reply-To: <CAPa8GCAgDU8FYdMuWsn2PuUW0GQxdKWJV6K0SmQEzb3s1GHxwA@mail.gmail.com>
-	(Nick Piggin's message of "Wed, 2 May 2012 00:01:36 +1000")
-Message-ID: <x49lilcm1tb.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1758071Ab2EAOLp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 10:11:45 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34196 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756760Ab2EAOLn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 10:11:43 -0400
+Date: Tue, 1 May 2012 10:11:41 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrey Rahmatullin <wrar@wrar.name>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
+In-Reply-To: <201205011604.16556.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1205011004030.1499-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick Piggin <npiggin@gmail.com> writes:
+On Tue, 1 May 2012, Rafael J. Wysocki wrote:
 
-> Not a bad fix. But it's kind of sad to have i_size checking logic also in
-> block_read_full_page, that does not cope with this.
->
-> I have found there are parts of the kernel (readahead) that try to read
-> beyond EOF and seem to get angry if we return an error (by not
-> marking uptodate in readpage) in that case though :(
->
-> But, either way, I think it's very reasonable to not mark buffers beyond
-> end of device as mapped. So I think your patch is fine.
->
-> I guess for ext[234], it does not read metadata close to the end of the
-> device or you were using 4K sized blocks?
+> > I mean not just the mapping.
+> > I mean PCI:PME_SUP field.  If it PME(D0+,D1-,D2-,D3hot+,D3cold+), and 
+> > acpi trying to avoid D3 states for this device. then is is same like 
+> > PME(D0+,D1-,D2-)? Or not?
+> 
+> Yes, if _S3D or _S3W are present.  If they are not present and _PRW is,
+> that means "don't care".
+> 
+> > According to spec.:
+> > 7.2 Device Power Management Objects (page 287)
+> > _S3D - Highest D-state supported by the device in the S3 state
+> > _S3W - Lowest D-state supported by the device in the S3 state which can 
+> > wake the system.
+> > by definition if _S3W is specified then we can assume, the device can 
+> > wake? But _SxW is not defined.
+> 
+> The device can wake up the system if _PRW is present for it (and for
+> PCIe devices even that is not formally necessary).
+> 
+> > Are there any other method to forbid the system use broken state, after 
+> > device was actually produced? Usual BIOS flash utility will probably no 
+> > rewrite the PCIs EEPROM. Only hope is ACPI, what is correct method to do 
+> > define it by ACPI?
+> 
+> Define _S3D that will return 2 (for example) and _PRW returning 3 as the
+> deepest sleep state the system may be woken up from.  Then, we'll use
+> D2 (after the @subject patch).
+> 
+> The drawback is that the kernel will then think the device can wake up
+> the system.
 
-Well, the test case just reads directly from the loop device, bypassing
-the file system, and I did use 1KB blocks when making the file system, so
-it is quite puzzling.
+There also remains a question about runtime power states and resume.
 
-Thanks for taking a look, Nick.
+Oleksij, with your patch, which state does the controller get put into
+during runtime suspend, D2 or D3?  (You may need to enable runtime
+suspend by doing
 
-Cheers,
-Jeff
+	echo auto >/sys/bus/pci/devices/0000:00:1d.0/power/control
+
+in order to test this.)  And if the controller is in runtime suspend,
+does it resume correctly when you plug in a new USB device?
+
+I'm pretty sure that without the patch, the controller gets put into D3 
+and resume does work.
+
+Alan Stern
+
