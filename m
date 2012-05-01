@@ -1,46 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab2EAVfI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 17:35:08 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:48497 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab2EAVfF (ORCPT
+	id S1754970Ab2EAVjy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 17:39:54 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54406 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab2EAVjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 17:35:05 -0400
-Message-ID: <4FA056A1.1040209@us.ibm.com>
-Date: Tue, 01 May 2012 14:33:21 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Tue, 1 May 2012 17:39:52 -0400
+Date: Tue, 1 May 2012 23:39:34 +0200
+From: Andi Shyti <andi.shyti@gmail.com>
+To: scameron@beardog.cce.hp.com
+Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Subject: Re: [PATCH 07/17] hpsa: do not give up retry of driver cmds after
+ only 3 retries
+Message-ID: <20120501213934.GD11302@andi>
+Mail-Followup-To: scameron@beardog.cce.hp.com,
+	james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+	linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+	thenzl@redhat.com, akpm@linux-foundation.org,
+	mikem@beardog.cce.hp.com
+References: <20120501163819.11705.10299.stgit@beardog.cce.hp.com>
+ <20120501164240.11705.10308.stgit@beardog.cce.hp.com>
+ <20120501172634.GA11302@andi>
+ <20120501182011.GS11802@beardog.cce.hp.com>
 MIME-Version: 1.0
-To: Keshava Munegowda <keshava_mgowda@ti.com>
-CC: Felipe Balbi <balbi@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, "Bergmann, Arnd" <arnd@arndb.de>
-Subject: omap-usb-host.c compile error
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050121-5518-0000-0000-000004103FF9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120501182011.GS11802@beardog.cce.hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Steve,
 
-I've been seeing the following compile issue for a few -rcs now:
-drivers/mfd/omap-usb-host.c: In function 'omap_usbhs_init':
-drivers/mfd/omap-usb-host.c:524: error: implicit declaration of function 
-'cpu_is_omap3430'
-drivers/mfd/omap-usb-host.c:524: error: implicit declaration of function 
-'omap_rev'
-drivers/mfd/omap-usb-host.c:524: error: 'OMAP3430_REV_ES2_1' undeclared 
-(first use in this function)
-drivers/mfd/omap-usb-host.c:524: error: (Each undeclared identifier is 
-reported only once
-drivers/mfd/omap-usb-host.c:524: error: for each function it appears in.)
+Thanks for the walk-through, but still some doubts...
 
-Reverting 1fcb57d0f6e1150003d222051aaaf4bc4a9ccc94 seems to resolve it.
+On Tue, May 01, 2012 at 01:20:11PM -0500, scameron@beardog.cce.hp.com wrote:
+> On Tue, May 01, 2012 at 07:26:34PM +0200, Andi Shyti wrote:
+> > >  
+> > >  	do {
+> > >  		memset(c->err_info, 0, sizeof(*c->err_info));
+> > >  		hpsa_scsi_do_simple_cmd_core(h, c);
+> > >  		retry_count++;
+> > > +		if (retry_count > 3) {
+> > > +			msleep(backoff_time);
+> > 
+> > for 10ms isn't it better to avoid using msleep?
+> 
+> [...] 
+> > > +			if (backoff_time < 1000)
+> > > +				backoff_time *= 2;
+> 
+> Eh, maybe.  from Documentation/timers-howto.txt
+> 
+>                         msleep(1~20) may not do what the caller intends, and
+>                         will often sleep longer (~20 ms actual sleep for any
+>                         value given in the 1~20ms range). In many cases this
+>                         is not the desired behavior.
+> 
+> Sleeping longer (~20ms instead of 10ms) in this instance is fine, as I don't
+> really care too much exactly how long it sleeps, and it backs off to up to
+> 1280ms eventually anyway.  The idea is, "wait a bit, and retry, and then if
+> that doesn't work, wait twice as long, and retry, etc."  *exactly* how long
+> "a bit" is is not super important.  I could change the initial back_off time
+> to 20 or 30 to satisfy the letter of the advice in Documentation/timers-howto.txt,
+> if doing so is important.
 
-This still isn't fixed in Linus' HEAD. Any plans here?
+No, you're right, it should not really matter, but here in the
+worst case you put the driver on sleep for almost 22 seconds,
+that is a huge difference compared to the original
+implementation.
+ 
+> This is kind of a corner case of a corner case, I don't expect
+> things will ordinarily end up waiting that long, because normally
+> one of the 1st 3 retries will succeed.  I just wanted to make it 
+> a little more robust and not just give up immediately if the 3
+> initial retries don't succeed, the specific number of retries,
+> wait times, etc, I just made up.
 
-thanks
--john
+Premising that I don't know the device, therefore I could be
+totally wrong, if you don't expect things to wait so long, why not
+to decrease the MAX_DRIVER_CMD_RETRIES and sleep increasingly (as
+you did) but for shorter period?
 
+Andi
+
+> It still does eventually give up
+> though, and then probably doesn't do anything good after that
+> (same as current behavior, just somewhat less likely to get to
+> that point.)  I'm not actually aware of any complaints of the 
+> retries failing though (apart from the complaint that prompted
+> the patch prior to this one, that we didn't retry on getting
+> SAM_STAT_BUSY.)
+> 
+> -- steve
+> 
