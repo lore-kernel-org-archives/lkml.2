@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab2EAVPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 17:15:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36709 "EHLO mx1.redhat.com"
+	id S1756324Ab2EAVTg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 17:19:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32087 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007Ab2EAVPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 17:15:13 -0400
-Message-ID: <4FA05251.5060105@redhat.com>
-Date: Tue, 01 May 2012 17:14:57 -0400
+	id S1752829Ab2EAVTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 17:19:35 -0400
+Message-ID: <4FA05354.8000304@redhat.com>
+Date: Tue, 01 May 2012 17:19:16 -0400
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
@@ -18,31 +18,40 @@ CC: Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
         Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/5] mm + fs: prepare for non-page entries in page cache
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org> <1335861713-4573-3-git-send-email-hannes@cmpxchg.org> <20120501120246.83d2ce28.akpm@linux-foundation.org> <20120501201504.GB2112@cmpxchg.org> <20120501132449.30485966.akpm@linux-foundation.org>
-In-Reply-To: <20120501132449.30485966.akpm@linux-foundation.org>
+Subject: Re: [patch 0/5] refault distance-based file cache sizing
+References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org> <20120501120819.0af1e54b.akpm@linux-foundation.org>
+In-Reply-To: <20120501120819.0af1e54b.akpm@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2012 04:24 PM, Andrew Morton wrote:
+On 05/01/2012 03:08 PM, Andrew Morton wrote:
+> On Tue,  1 May 2012 10:41:48 +0200
+> Johannes Weiner<hannes@cmpxchg.org>  wrote:
+>
+>> This series stores file cache eviction information in the vacated page
+>> cache radix tree slots and uses it on refault to see if the pages
+>> currently on the active list need to have their status challenged.
+>
+> So we no longer free the radix-tree node when everything under it has
+> been reclaimed?  One could create workloads which would result in a
+> tremendous amount of memory used by radix_tree_node_cachep objects.
+>
+> So I assume these things get thrown away at some point.  Some
+> discussion about the life-cycle here would be useful.
 
-> That's a pretty significant alteration in the meaning of ->nrpages.
-> Did this not have any other effects?
+I assume that in the current codebase Johannes has, we would
+have to rely on the inode cache shrinker to reclaim the inode
+and throw out the radix tree nodes.
 
- From what I see (though it's been a long day), ->nrpages
-stays the same it is now.
+Having a better way to deal with radix tree nodes that contain
+stale entries (where the evicted pages would no longer receive
+special treatment on re-fault, because it has been so long) get
+reclaimed would be nice for a future version.
 
-The non-page entries are simply not counted in ->nrpages.
-
-> What does truncate do?  I assume it invalidates shadow page entries in
-> the radix tree?  And frees the radix-tree nodes?
-
-Indeed, truncate will get rid of the non-page entries
-in the radix tree.  That is why it needs to be called
-even if ->nrpages==0.
+Probably not too urgent, though...
 
 -- 
 All rights reversed
