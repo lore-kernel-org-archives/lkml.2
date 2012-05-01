@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751007Ab2EAV1B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 17:27:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60382 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab2EAV07 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 17:26:59 -0400
-Date: Tue, 1 May 2012 14:26:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/5] refault distance-based file cache sizing
-Message-Id: <20120501142656.c9160d96.akpm@linux-foundation.org>
-In-Reply-To: <4FA05354.8000304@redhat.com>
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
-	<20120501120819.0af1e54b.akpm@linux-foundation.org>
-	<4FA05354.8000304@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754449Ab2EAV1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 17:27:34 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:38505 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753825Ab2EAV1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 17:27:33 -0400
+Date: Tue, 1 May 2012 14:25:12 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: coretemp: fix oops on cpu unplug
+Message-ID: <20120501212512.GA4340@ericsson.com>
+References: <1335791881-1560-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120501152014.GA2629@ericsson.com>
+ <20120501210041.GA10629@otc-wbsnb-06>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120501210041.GA10629@otc-wbsnb-06>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 May 2012 17:19:16 -0400
-Rik van Riel <riel@redhat.com> wrote:
-
-> On 05/01/2012 03:08 PM, Andrew Morton wrote:
-> > On Tue,  1 May 2012 10:41:48 +0200
-> > Johannes Weiner<hannes@cmpxchg.org>  wrote:
-> >
-> >> This series stores file cache eviction information in the vacated page
-> >> cache radix tree slots and uses it on refault to see if the pages
-> >> currently on the active list need to have their status challenged.
-> >
-> > So we no longer free the radix-tree node when everything under it has
-> > been reclaimed?  One could create workloads which would result in a
-> > tremendous amount of memory used by radix_tree_node_cachep objects.
-> >
-> > So I assume these things get thrown away at some point.  Some
-> > discussion about the life-cycle here would be useful.
+On Tue, May 01, 2012 at 05:00:41PM -0400, Kirill A. Shutemov wrote:
+> On Tue, May 01, 2012 at 08:20:14AM -0700, Guenter Roeck wrote:
+> > On Mon, Apr 30, 2012 at 09:18:01AM -0400, Kirill A. Shutemov wrote:
+> > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > > 
+> > > coretemp tries to access core_data array beyond bounds on cpu unplug if
+> > > core id of the cpu if more than NUM_REAL_CORES-1.
+> > > 
+> > [ ... ]
+> > > 
+> > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > 
+> > Looking at it again, you were right. Adding the check to get_core_online()
+> > doesn't really help as the platform device is per CPU, not per core.
+> > 
+> > Applied. I'll submit a separate patch to increase NUM_REAL_CORES.
 > 
-> I assume that in the current codebase Johannes has, we would
-> have to rely on the inode cache shrinker to reclaim the inode
-> and throw out the radix tree nodes.
+> Actually, the problem is bigger.
 > 
-> Having a better way to deal with radix tree nodes that contain
-> stale entries (where the evicted pages would no longer receive
-> special treatment on re-fault, because it has been so long) get
-> reclaimed would be nice for a future version.
+> Documentation/cputopology.txt:
+> ====
+> 2) /sys/devices/system/cpu/cpuX/topology/core_id:
 > 
+>         the CPU core ID of cpuX. Typically it is the hardware platform's
+>         identifier (rather than the kernel's).  The actual value is
+>         architecture and platform dependent.
+> ====
+> 
+> We should not use core id as an index in an array since it's an arbitrary
+> number (from kernel POV).
+> 
+Yes, we know we'll need a better fix going forward. Using a fixed size array is bad,
+no matter what context.
 
-Well, think of a stupid workload which creates a large number of very
-large but sparse files (populated with one page in each 64, for
-example).  Get them all in cache, then sit there touching the inodes to
-keep then fresh.  What's the worst case here?
-
-
+Thanks,
+Guenter
