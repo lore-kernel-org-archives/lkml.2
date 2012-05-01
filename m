@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758175Ab2EAPCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 11:02:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46200 "EHLO
+	id S1758226Ab2EAPC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 11:02:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46217 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756851Ab2EAPCi (ORCPT
+	with ESMTP id S1756851Ab2EAPCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 11:02:38 -0400
+	Tue, 1 May 2012 11:02:54 -0400
 From: Bryan Wu <bryan.wu@canonical.com>
 To: linux@arm.linux.org.uk, rpurdie@rpsys.net,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linus.walleij@linaro.org, akpm@linux-foundation.org,
         arnd.bergmann@linaro.org, nicolas.pitre@linaro.org,
         tim.gardner@canonical.com
-Subject: [PATCH 05/19] ARM: mach-ks8695: remove leds driver, since nobody use it
-Date: Tue,  1 May 2012 23:01:32 +0800
-Message-Id: <1335884506-15370-6-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 07/19] ARM: mach-orion5x: convert custom LED code to gpio_led and LED CPU trigger
+Date: Tue,  1 May 2012 23:01:34 +0800
+Message-Id: <1335884506-15370-8-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
 References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
@@ -24,175 +24,161 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-Acked-by: Andrew Victor <linux@maxim.org.za>
+Acked-by: Nicolas Pitre <nico@fluxnic.net>
 ---
- arch/arm/mach-ks8695/Makefile               |    3 -
- arch/arm/mach-ks8695/devices.c              |   21 ------
- arch/arm/mach-ks8695/include/mach/devices.h |    5 --
- arch/arm/mach-ks8695/leds.c                 |   92 ---------------------------
- 4 files changed, 121 deletions(-)
- delete mode 100644 arch/arm/mach-ks8695/leds.c
+ arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c |    1 -
+ arch/arm/mach-orion5x/rd88f5181l-ge-setup.c  |    1 -
+ arch/arm/mach-orion5x/rd88f5182-setup.c      |   72 ++++++++------------------
+ arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c |    1 -
+ 4 files changed, 22 insertions(+), 53 deletions(-)
 
-diff --git a/arch/arm/mach-ks8695/Makefile b/arch/arm/mach-ks8695/Makefile
-index 853efd9..9324ef9 100644
---- a/arch/arm/mach-ks8695/Makefile
-+++ b/arch/arm/mach-ks8695/Makefile
-@@ -11,9 +11,6 @@ obj-				:=
- # PCI support is optional
- obj-$(CONFIG_PCI)		+= pci.o
- 
--# LEDs
--obj-$(CONFIG_LEDS)		+= leds.o
--
- # Board-specific support
- obj-$(CONFIG_MACH_KS8695)	+= board-micrel.o
- obj-$(CONFIG_MACH_DSM320)	+= board-dsm320.o
-diff --git a/arch/arm/mach-ks8695/devices.c b/arch/arm/mach-ks8695/devices.c
-index 73bd638..47399bc 100644
---- a/arch/arm/mach-ks8695/devices.c
-+++ b/arch/arm/mach-ks8695/devices.c
-@@ -182,27 +182,6 @@ static void __init ks8695_add_device_watchdog(void)
- }
- 
- 
--/* --------------------------------------------------------------------
-- *  LEDs
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_LEDS)
--short ks8695_leds_cpu = -1;
--short ks8695_leds_timer = -1;
--
--void __init ks8695_init_leds(u8 cpu_led, u8 timer_led)
--{
--	/* Enable GPIO to access the LEDs */
--	gpio_direction_output(cpu_led, 1);
--	gpio_direction_output(timer_led, 1);
--
--	ks8695_leds_cpu	  = cpu_led;
--	ks8695_leds_timer = timer_led;
--}
--#else
--void __init ks8695_init_leds(u8 cpu_led, u8 timer_led) {}
--#endif
--
- /* -------------------------------------------------------------------- */
- 
- /*
-diff --git a/arch/arm/mach-ks8695/include/mach/devices.h b/arch/arm/mach-ks8695/include/mach/devices.h
-index 85a3c9a..1e6594a 100644
---- a/arch/arm/mach-ks8695/include/mach/devices.h
-+++ b/arch/arm/mach-ks8695/include/mach/devices.h
-@@ -18,11 +18,6 @@ extern void __init ks8695_add_device_wan(void);
- extern void __init ks8695_add_device_lan(void);
- extern void __init ks8695_add_device_hpna(void);
- 
-- /* LEDs */
--extern short ks8695_leds_cpu;
--extern short ks8695_leds_timer;
--extern void __init ks8695_init_leds(u8 cpu_led, u8 timer_led);
--
-  /* PCI */
- #define KS8695_MODE_PCI		0
- #define KS8695_MODE_MINIPCI	1
-diff --git a/arch/arm/mach-ks8695/leds.c b/arch/arm/mach-ks8695/leds.c
-deleted file mode 100644
-index 4bd7075..0000000
---- a/arch/arm/mach-ks8695/leds.c
-+++ /dev/null
-@@ -1,92 +0,0 @@
--/*
-- * LED driver for KS8695-based boards.
-- *
-- * Copyright (C) Andrew Victor
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#include <linux/gpio.h>
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/init.h>
--
+diff --git a/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c b/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c
+index 292038f..698ad13 100644
+--- a/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c
++++ b/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c
+@@ -18,7 +18,6 @@
+ #include <linux/ethtool.h>
+ #include <net/dsa.h>
+ #include <asm/mach-types.h>
 -#include <asm/leds.h>
--#include <mach/devices.h>
--
--
--static inline void ks8695_led_on(unsigned int led)
--{
--	gpio_set_value(led, 0);
--}
--
--static inline void ks8695_led_off(unsigned int led)
--{
--	gpio_set_value(led, 1);
--}
--
--static inline void ks8695_led_toggle(unsigned int led)
--{
--	unsigned long is_off = gpio_get_value(led);
--	if (is_off)
--		ks8695_led_on(led);
--	else
--		ks8695_led_off(led);
--}
--
--
+ #include <asm/mach/arch.h>
+ #include <asm/mach/pci.h>
+ #include <mach/orion5x.h>
+diff --git a/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c b/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c
+index c44eaba..0379f5b 100644
+--- a/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c
++++ b/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c
+@@ -19,7 +19,6 @@
+ #include <linux/i2c.h>
+ #include <net/dsa.h>
+ #include <asm/mach-types.h>
+-#include <asm/leds.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/pci.h>
+ #include <mach/orion5x.h>
+diff --git a/arch/arm/mach-orion5x/rd88f5182-setup.c b/arch/arm/mach-orion5x/rd88f5182-setup.c
+index e3ce617..8bc8962 100644
+--- a/arch/arm/mach-orion5x/rd88f5182-setup.c
++++ b/arch/arm/mach-orion5x/rd88f5182-setup.c
+@@ -19,8 +19,8 @@
+ #include <linux/mv643xx_eth.h>
+ #include <linux/ata_platform.h>
+ #include <linux/i2c.h>
++#include <linux/leds.h>
+ #include <asm/mach-types.h>
+-#include <asm/leds.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/pci.h>
+ #include <mach/orion5x.h>
+@@ -53,12 +53,6 @@
+ #define RD88F5182_PCI_SLOT0_IRQ_A_PIN	7
+ #define RD88F5182_PCI_SLOT0_IRQ_B_PIN	6
+ 
 -/*
-- * Handle LED events.
+- * GPIO Debug LED
 - */
--static void ks8695_leds_event(led_event_t evt)
+-
+-#define RD88F5182_GPIO_DBG_LED		0
+-
+ /*****************************************************************************
+  * 16M NOR Flash on Device bus CS1
+  ****************************************************************************/
+@@ -83,55 +77,32 @@ static struct platform_device rd88f5182_nor_flash = {
+ 	.resource		= &rd88f5182_nor_flash_resource,
+ };
+ 
+-#ifdef CONFIG_LEDS
+-
+ /*****************************************************************************
+- * Use GPIO debug led as CPU active indication
++ * Use GPIO LED as CPU active indication
+  ****************************************************************************/
+ 
+-static void rd88f5182_dbgled_event(led_event_t evt)
 -{
--	unsigned long flags;
+-	int val;
 -
--	local_irq_save(flags);
+-	if (evt == led_idle_end)
+-		val = 1;
+-	else if (evt == led_idle_start)
+-		val = 0;
+-	else
+-		return;
 -
--	switch(evt) {
--	case led_start:		/* System startup */
--		ks8695_led_on(ks8695_leds_cpu);
--		break;
+-	gpio_set_value(RD88F5182_GPIO_DBG_LED, val);
+-}
 -
--	case led_stop:		/* System stop / suspend */
--		ks8695_led_off(ks8695_leds_cpu);
--		break;
+-static int __init rd88f5182_dbgled_init(void)
+-{
+-	int pin;
 -
--#ifdef CONFIG_LEDS_TIMER
--	case led_timer:		/* Every 50 timer ticks */
--		ks8695_led_toggle(ks8695_leds_timer);
--		break;
--#endif
+-	if (machine_is_rd88f5182()) {
+-		pin = RD88F5182_GPIO_DBG_LED;
++#define RD88F5182_GPIO_LED		0
+ 
+-		if (gpio_request(pin, "DBGLED") == 0) {
+-			if (gpio_direction_output(pin, 0) != 0) {
+-				printk(KERN_ERR "rd88f5182_dbgled_init failed "
+-						"to set output pin %d\n", pin);
+-				gpio_free(pin);
+-				return 0;
+-			}
+-		} else {
+-			printk(KERN_ERR "rd88f5182_dbgled_init failed "
+-					"to request gpio %d\n", pin);
+-			return 0;
+-		}
 -
--#ifdef CONFIG_LEDS_CPU
--	case led_idle_start:	/* Entering idle state */
--		ks8695_led_off(ks8695_leds_cpu);
--		break;
--
--	case led_idle_end:	/* Exit idle state */
--		ks8695_led_on(ks8695_leds_cpu);
--		break;
--#endif
--
--	default:
--		break;
+-		leds_event = rd88f5182_dbgled_event;
 -	}
 -
--	local_irq_restore(flags);
--}
--
--
--static int __init leds_init(void)
--{
--	if ((ks8695_leds_timer == -1) || (ks8695_leds_cpu == -1))
--		return -ENODEV;
--
--	leds_event = ks8695_leds_event;
--
--	leds_event(led_start);
 -	return 0;
 -}
--
--__initcall(leds_init);
++static struct gpio_led rd88f5182_gpio_led_pins[] = {
++	{
++		.name		= "rd88f5182:cpu",
++		.default_trigger = "cpu0",
++		.gpio		= RD88F5182_GPIO_LED,
++	},
++};
+ 
+-__initcall(rd88f5182_dbgled_init);
++static struct gpio_led_platform_data rd88f5182_gpio_led_data = {
++	.leds		= rd88f5182_gpio_led_pins,
++	.num_leds	= ARRAY_SIZE(rd88f5182_gpio_led_pins),
++};
+ 
+-#endif
++static struct platform_device rd88f5182_gpio_leds = {
++	.name	= "leds-gpio",
++	.id	= -1,
++	.dev	= {
++		.platform_data = &rd88f5182_gpio_led_data,
++	},
++};
+ 
+ /*****************************************************************************
+  * PCI
+@@ -299,6 +270,7 @@ static void __init rd88f5182_init(void)
+ 
+ 	orion5x_setup_dev1_win(RD88F5182_NOR_BASE, RD88F5182_NOR_SIZE);
+ 	platform_device_register(&rd88f5182_nor_flash);
++	platform_device_register(&rd88f5182_gpio_leds);
+ 
+ 	i2c_register_board_info(0, &rd88f5182_i2c_rtc, 1);
+ }
+diff --git a/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c b/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c
+index 2c5fab0..e2fd500 100644
+--- a/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c
++++ b/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c
+@@ -21,7 +21,6 @@
+ #include <linux/ethtool.h>
+ #include <net/dsa.h>
+ #include <asm/mach-types.h>
+-#include <asm/leds.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/pci.h>
+ #include <mach/orion5x.h>
 -- 
 1.7.9.5
 
