@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab2EAFK2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 01:10:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47916 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab2EAFKZ (ORCPT
+	id S1753926Ab2EAFLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 01:11:47 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54677 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab2EAFLq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 01:10:25 -0400
-Date: Mon, 30 Apr 2012 22:10:06 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next ppc64: RCU mods cause __might_sleep BUGs
-In-Reply-To: <1335832418.20866.95.camel@pasglop>
-Message-ID: <alpine.LSU.2.00.1204302142310.27208@eggly.anvils>
-References: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils> <1335832418.20866.95.camel@pasglop>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 1 May 2012 01:11:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAAcYxUdtdVqsGqaZzoiPxP46AX+zcxuSfYgm_D+ShdoB12cs6w@mail.gmail.com>
+References: <CAAcYxUdUBgwuxNKpiXp8r9-aw7+pi7U2E35dnsoL2RD9tf47oQ@mail.gmail.com>
+	<20120427031013.GA9131@zhy>
+	<CAAcYxUdtdVqsGqaZzoiPxP46AX+zcxuSfYgm_D+ShdoB12cs6w@mail.gmail.com>
+Date: Mon, 30 Apr 2012 22:11:45 -0700
+Message-ID: <CAAcYxUe7RmWm9AhFpjPAiaW9zirYJbzm1wtAMJ=LUpX-kskp9w@mail.gmail.com>
+Subject: Re: High CPU usage of scheduler?
+From: Dave Johansen <davejohansen@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 May 2012, Benjamin Herrenschmidt wrote:
-> On Mon, 2012-04-30 at 15:37 -0700, Hugh Dickins wrote:
-> > 
-> > BUG: sleeping function called from invalid context at include/linux/pagemap.h:354
-> > in_atomic(): 0, irqs_disabled(): 0, pid: 6886, name: cc1
-> 
-> Hrm ... in_atomic and irqs_disabled are both 0 ... so yeah it smells
-> like a preempt count problem... odd.
-> 
-> Did you get a specific bisect target yet ?
+On Fri, Apr 27, 2012 at 8:23 AM, Dave Johansen <davejohansen@gmail.com> wrote:
+> On Thu, Apr 26, 2012 at 8:10 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+>>
+>> On Thu, Apr 26, 2012 at 03:08:51PM -0700, Dave Johansen wrote:
+>> > I am looking into moving an application from RHEL 5 to RHEL 6 and I
+>> > noticed an unexpected increase in CPU usage. A little digging has led
+>> > me to believe that the scheduler may be the culprit.
+>> >
+>> > I created the attached test_select_work.c file to test this out. I
+>> > compiled it with the following command on RHEL 5:
+>> >
+>> > cc test_select_work.c -O2 -DSLEEP_TYPE=0 -Wall -Wextra -lm -lpthread
+>> > -o test_select_work
+>>
+>> Hmm...Do both RHEL 5 and RHEL 6 have high resolution timer enabled?
+>>
+>> If not, could you please try to boot the one which enable high resolution
+>> timer with 'highres=off' to see if things change?
+>
+> Yes, RHEL 6 has CONFIG_HIGH_RES_TIMERS=y. I rebooted and used the
+> 'highres=off' in grub and got the following results:
+>
+>   ./test_select_work 1000 10000 300 4
+>   time_per_iteration: min: 3130.1 us avg: 3152.2 us max: 3162.2 us
+> stddev: 15.0 us
+>   ./test_select_work 1000 10000 300 8
+>   time_per_iteration: min: 4314.6 us avg: 4407.9 us max: 4496.3 us
+> stddev: 60.6 us
+>   ./test_select_work 1000 10000 300 40
+>   time_per_iteration: min: 8901.7 us avg: 9056.5 us max: 9121.3 us
+> stddev: 57.5 us
+>
+> Any other info that might be helpful?
+>
+> Thanks,
+> Dave
 
-Oh, I went as far as we need, I think, but I didn't bother quite to
-complete it because, once in that area, we know the schedule_tail()
-omission would muddy the waters: the tail of my bisect log was
+I made some improvements to the program to make comparisons a bit
+easier and the standard deviation a bit more meaningful. It is
+available in a git repo at git://github.com/daveisfera/test_sleep.git
 
-# bad: [e798cf3385d3aa7c84afa65677eb92e0c0876dfd] rcu: Add exports for per-CPU variables used for inlining
-git bisect bad e798cf3385d3aa7c84afa65677eb92e0c0876dfd
-# good: [90aec3b06194393c909e3e5a47b6ed99bb8caba5] rcu: Make exit_rcu() more precise and consolidate
-git bisect good 90aec3b06194393c909e3e5a47b6ed99bb8caba5
+I tried sending results from running this updated program on several
+OS versions, but it must have been rejected by the filters. The info
+can be found in the bugzilla:
+https://bugzilla.redhat.com/show_bug.cgi?id=812148
 
-from which I concluded that the patch responsible is
+Is there any more data I can gather or tests that I can run that can
+help diagnose this problem?
 
-commit ab8fc41a8545d40a4b58d745876c125af72a8a5c
-Author: Paul E. McKenney <paul.mckenney@linaro.org>
-Date:   Fri Apr 13 14:32:01 2012 -0700
-
-    rcu: Move __rcu_read_lock() and __rcu_read_unlock() to per-CPU variables
-    
-    This commit is another step towards inlinable __rcu_read_lock() and
-    __rcu_read_unlock() functions for preemptible RCU.  This keeps these two
-    functions out of line, but switches them to use the per-CPU variables
-    that are required to export their definitions without requiring that
-    all RCU users include sched.h.  These per-CPU variables are saved and
-    restored at context-switch time.
-
-> 
-> Cheers,
-> Ben.
-> 
-> > Call Trace:
-> > [c0000001a99f78e0] [c00000000000f34c] .show_stack+0x6c/0x16c (unreliable)
-> > [c0000001a99f7990] [c000000000077b40] .__might_sleep+0x11c/0x134
-> > [c0000001a99f7a10] [c0000000000c6228] .filemap_fault+0x1fc/0x494
-> > [c0000001a99f7af0] [c0000000000e7c9c] .__do_fault+0x120/0x684
-> > [c0000001a99f7c00] [c000000000025790] .do_page_fault+0x458/0x664
-> > [c0000001a99f7e30] [c000000000005868] handle_page_fault+0x10/0x30
-> > 
-> > I've plenty more examples, most of them from page faults or from kswapd;
-> > but I don't think there's any more useful information in them.
-> > 
-> > Anything I can try later on? 
-
-I'd forgotten about CONFIG_PROVE_RCU (and hadn't been using PROVE_LOCKING
-on that machine), but following Paul's suggestion have now turned them on.
-
-But not much light shed, I'm afraid.  Within minutes it showed a trace
-exactly like the one above, but the only thing PROVE_LOCKING and PROVE_RCU
-had to say was that we're holding mmap_sem at that point, which is no
-surprise and not a problem, just something lockdep is right to note.
-
-That was an isolated occurrence, it continued quietly for maybe 20 minutes,
-then output lots to the console screen - but garbled in a way I've not
-seen before - the 0s came out just right (or perhaps all the hex digits
-were being shown as 0s), but most everything else was grayly unreadable.
-Then after a few minutes, spontaneously rebooted.
-
-Perhaps I should remind myself of netdump; but getting the trace above
-without complaint from PROVE_RCU tells me that it is not helping.
-
-Hugh
+Thanks in advance for any help,
+Dave
