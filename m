@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab2EAPdb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 11:33:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757111Ab2EAPd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 11:33:29 -0400
-Message-ID: <4FA00234.1020006@redhat.com>
-Date: Tue, 01 May 2012 18:33:08 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1757536Ab2EAPe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 11:34:26 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46868 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab2EAPeZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 11:34:25 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>, mingo@elte.hu,
-        jeremy@goop.org, mtosatti@redhat.com, kvm@vger.kernel.org,
-        x86@kernel.org, vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com
-Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
-References: <20120427161727.27082.43096.stgit@abhimanyu>    <20120427162401.27082.59387.stgit@abhimanyu>  <4F9D32B4.8040002@redhat.com>  <1335865176.13683.120.camel@twins>  <4F9FBF38.2060903@redhat.com> <1335869827.13683.133.camel@twins>  <4F9FD337.5010908@redhat.com> <1335885103.13683.147.camel@twins>
-In-Reply-To: <1335885103.13683.147.camel@twins>
+In-Reply-To: <x49ehr4lyw1.fsf@segfault.boston.devel.redhat.com>
+References: <1335778207-6511-1-git-send-email-jack@suse.cz>
+ <CAHGf_=qdE3yNw=htuRssfav2pECO1Q0+gWMRTuNROd_3tVrd6Q@mail.gmail.com>
+ <CAHGf_=ojhwPUWJR0r+jVgjNd5h_sRrppzJntSpHzxyv+OuBueg@mail.gmail.com> <x49ehr4lyw1.fsf@segfault.boston.devel.redhat.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 1 May 2012 11:34:04 -0400
+Message-ID: <CAHGf_=rzcfo3OnwT-YsW2iZLchHs3eBKncobvbhTm7B5PE=L-w@mail.gmail.com>
+Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Michael Kerrisk <mtk.manpages@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-man@vger.kernel.org,
+        linux-mm@kvack.org, mgorman@suse.de, npiggin@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2012 06:11 PM, Peter Zijlstra wrote:
-> On Tue, 2012-05-01 at 15:12 +0300, Avi Kivity wrote:
-> > We're now moving the freeing of kvm shadow page tables from using rcu to
-> > using an irq-protected scheme like gup_fast(), because of the
-> > performance differences.  We didn't track it down but I expect the cause
-> > is less reuse of cache-hot pages. 
+On Tue, May 1, 2012 at 11:11 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> KOSAKI Motohiro <kosaki.motohiro@gmail.com> writes:
 >
-> It would be good to understand these things.. just doing things because
-> tends to come back and bite you :-)
+>>> Hello,
+>>>
+>>> Thank you revisit this. But as far as my remember is correct, this issue is NOT
+>>> unaligned access issue. It's just get_user_pages(_fast) vs fork race issue. i.e.
+>>> DIRECT_IO w/ multi thread process should not use fork().
+>>
+>> The problem is, fork (and its COW logic) assume new access makes cow break,
+>> But page table protection can't detect a DMA write. Therefore DIO may override
+>> shared page data.
+>
+> Hm, I've only seen this with misaligned or multiple sub-page-sized reads
+> in the same page.  AFAIR, aligned, page-sized I/O does not get split.
+> But, I could be wrong...
 
-Agree.  Anyway that was only part of the motivation, the other part was
-establishing a bound on the number of pages under deferred freeing.
+If my remember is correct, the reproducer of past thread is misleading.
 
-> If its cache behaviour you should be able to clearly see that using perf
-> stat.
+dma_thread.c in
+http://lkml.indiana.edu/hypermail/linux/kernel/0903.1/01498.html has
+align parameter. But it doesn't only change align. Because of, every
+worker thread read 4K (pagesize), then
+ - when offset is page aligned
+    -> every page is accessed from only one worker
+ - when offset is not page aligned
+    -> every page is accessed from two workers
 
-It's hard to see it clearly because the changes are in the order of 1-2%
-in a very noisy benchmark.
-
--- 
-error compiling committee.c: too many arguments to function
-
+But I don't remember why two threads are important things. hmm.. I'm
+looking into the code a while.
+Please don't 100% trust me.
