@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab2EASbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 14:31:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3221 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751928Ab2EASbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 14:31:12 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized to one
-References: <1335873936.16988.148.camel@lappy>
-	<20120501161729.GV26595@google.com> <4FA0253F.4000302@fusionio.com>
-	<20120501180906.GX26595@google.com> <4FA028EE.7020208@fusionio.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 01 May 2012 14:31:07 -0400
-In-Reply-To: <4FA028EE.7020208@fusionio.com> (Jens Axboe's message of "Tue, 1
-	May 2012 20:18:22 +0200")
-Message-ID: <x49wr4vlpn8.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1757820Ab2EASby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 14:31:54 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:48331 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634Ab2EASbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 14:31:53 -0400
+Date: Tue, 1 May 2012 19:31:49 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-bluetooth@vger.kernel.org
+Subject: Re: [now bisected] Weird bluetooth keyboard regression - just me?
+Message-ID: <20120501183149.GA28536@srcf.ucam.org>
+References: <20120501073711.028d31d6@lwn.net>
+ <20120501110156.2b6e0561@lwn.net>
+ <20120501171901.GA26006@srcf.ucam.org>
+ <20120501120145.21f65ae2@lwn.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120501120145.21f65ae2@lwn.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <jaxboe@fusionio.com> writes:
+On Tue, May 01, 2012 at 12:01:45PM -0600, Jonathan Corbet wrote:
+> On Tue, 1 May 2012 18:19:01 +0100
+> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> 
+> > On its own, this should do precisely nothing.
+> 
+> Nonetheless, at the previous patch
+> (0846e7e9856c0928223447d9349a877202a63f24, usb: Add support for indicating
+> whether a port is removable) things work.  With this one, they don't.  
 
-> On 2012-05-01 20:09, Tejun Heo wrote:
->> On Tue, May 01, 2012 at 08:02:39PM +0200, Jens Axboe wrote:
->>> On 2012-05-01 18:17, Tejun Heo wrote:
->>>> create_task_io_context() left ioc->nr_tasks at zero; however, a newly
->>>> created ioc should have its nr_tasks initialized to one as it begins
->>>> attached to the task creating it.
->>>>
->>>> This affects only CLONE_IO which currently doesn't seem to have any
->>>> actual user.  Sasha triggered WARN_ON_ONCE() in ioc_task_link() using
->>>> syscall fuzzer.  Even when it happens, the failure mode isn't critical
->>>> (blk-cgroup may allow attaching a CLONE_IO'd task to a cgroup when it
->>>> shouldn't and blkcg limits may behave weirdly).
->>>
->>> CLONE_IO is an exported interface, it can be set from clone(2).
->>> Otherwise Sasha would not have hit this :-)
->> 
->> Yeah, but with pthread not exposing it, I'm very skeptical how much,
->> if any, use it's getting.  With its incompatibility with blk-cgroup
->> and cfq being able to merge coop request streams, I'm not sure how
->> much we need it.  Maybe we can just make it noop?
->
-> It's a lot more robust and specific than hoping to get coop merging. For
-> cfq, it also implies that multiple threads sharing an io context should
-> be accounted as one.
->
-> But as to actual users, I really don't know. I agree it's probably not
-> that widely used. If google still had that code search, we could get a
-> better idea :-)
+The patch just exports an attribute, so it's something then acting on 
+that attribute...
 
-I know of one project: the venerable dump/restore utility uses CLONE_IO.
+> > What userspace are you 
+> > running, and what does the removable node in the sysfs entry for the 
+> > dongle's USB device say?
+> 
+> It's Rawhide, updated yesterday.  "Removable" says "fixed".
 
-Cheers,
-Jeff
+Ok, well that's the problem. udev is seeing "fixed" and enabling 
+autosuspend. Is this really bluetooth, or does it appear as a USB HID 
+device? Can you send lsusb -v?
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
