@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966Ab2EANhO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 09:37:14 -0400
-Received: from tex.lwn.net ([70.33.254.29]:33193 "EHLO vena.lwn.net"
+	id S1757952Ab2EANjY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 09:39:24 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52403 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755661Ab2EANhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 09:37:12 -0400
-Date: Tue, 1 May 2012 07:37:11 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-bluetooth@vger.kernel.org
-Subject: Weird bluetooth keyboard regression - just me?
-Message-ID: <20120501073711.028d31d6@lwn.net>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1751869Ab2EANjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 09:39:23 -0400
+Date: Tue, 1 May 2012 06:39:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: linux-next ppc64: RCU mods cause __might_sleep BUGs
+Message-ID: <20120501133900.GA4462@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils>
+ <1335832418.20866.95.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335832418.20866.95.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12050113-5806-0000-0000-000014C3E8BD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Life has not been conducive to frivolities like trying new kernels, but I
-finally gave 3.4-rc5 a go yesterday.  I'm seeing some decidedly weird
-keyboard behavior; it seems surprising that nobody else has complained.
+On Tue, May 01, 2012 at 10:33:38AM +1000, Benjamin Herrenschmidt wrote:
+> On Mon, 2012-04-30 at 15:37 -0700, Hugh Dickins wrote:
+> > 
+> > BUG: sleeping function called from invalid context at include/linux/pagemap.h:354
+> > in_atomic(): 0, irqs_disabled(): 0, pid: 6886, name: cc1
+> 
+> Hrm ... in_atomic and irqs_disabled are both 0 ... so yeah it smells
+> like a preempt count problem... odd.
 
-I have a logitech Dinovo Edge bluetooth keyboard that I've used for
-years.  With 3.4 kernels, the keyboard generates no input until I've
-banged on it for a couple of seconds.  If I continually hit characters,
-they make it through; as soon as I stop for even a brief period (even
-somebody as verbose as me has to come up for air occasionally), it goes
-back to sleep.
+All of the preempt-count patches are now in mainline.  :-(
 
-It's almost as if some sort of aggressive power management were knocking
-things out at every chance.  Wired USB keyboards do not show this
-behavior.  Neither does my bluetooth mouse (which is on a different
-adapter).
+The CONFIG_PROVE_RCU checks verify that either the task is new or it
+is the same task that was last context-switched to on this CPU.  So
+the most likely suspect is a newly created task that starts running
+without schedule_tail() being invoked on the path from parent task
+to child task.  If so, the fix would be to invoke rcu_switch_from()
+and rcu_switch_to() on that code path.
 
-3.3 works, 3.4-rc1 appears not to.  This should be a straightforward
-bisection and I'm happy to begin that process, but I thought I'd ask if
-anybody had any ideas first...?
+So, does Power have a way of switching to a new task without involving
+schedule_tail()?  I convinced myself that my old bugbear, usermode helpers,
+aren't causing this problem, but I could easily be missing something.
 
-Thanks,
+> Did you get a specific bisect target yet ?
 
-jon
+On this one, Hugh is close enough.  ;-)
+
+							Thanx, Paul
+
+> Cheers,
+> Ben.
+> 
+> > Call Trace:
+> > [c0000001a99f78e0] [c00000000000f34c] .show_stack+0x6c/0x16c (unreliable)
+> > [c0000001a99f7990] [c000000000077b40] .__might_sleep+0x11c/0x134
+> > [c0000001a99f7a10] [c0000000000c6228] .filemap_fault+0x1fc/0x494
+> > [c0000001a99f7af0] [c0000000000e7c9c] .__do_fault+0x120/0x684
+> > [c0000001a99f7c00] [c000000000025790] .do_page_fault+0x458/0x664
+> > [c0000001a99f7e30] [c000000000005868] handle_page_fault+0x10/0x30
+> > 
+> > I've plenty more examples, most of them from page faults or from kswapd;
+> > but I don't think there's any more useful information in them.
+> > 
+> > Anything I can try later on? 
+> 
+
