@@ -1,115 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758306Ab2EAQpk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 12:45:40 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:45666 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757562Ab2EAQm6 (ORCPT
+	id S1756342Ab2EAQmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 12:42:19 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:45688 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754863Ab2EAQmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 12:42:58 -0400
-Date: Tue, 1 May 2012 12:37:07 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, david.vrabel@citrix.com, JBeulich@suse.com
-Cc: xen-devel@lists.xensource.com
-Subject: Re: [PATCH] auto balloon initial domain and fix dom0_mem=X
- inconsistencies (v5).
-Message-ID: <20120501163707.GA8741@phenom.dumpdata.com>
-References: <1334596539-18172-1-git-send-email-konrad.wilk@oracle.com>
+	Tue, 1 May 2012 12:42:14 -0400
+Subject: [PATCH 01/17] hpsa: call pci_disable_device on driver unload
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Date: Tue, 01 May 2012 11:42:09 -0500
+Message-ID: <20120501164209.11705.3671.stgit@beardog.cce.hp.com>
+In-Reply-To: <20120501163819.11705.10299.stgit@beardog.cce.hp.com>
+References: <20120501163819.11705.10299.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334596539-18172-1-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 01:15:31PM -0400, Konrad Rzeszutek Wilk wrote:
-> Changelog v5 [since v4]:
->  - used populate_physmap, fixed bugs.
-> [v2-v4: not posted]
->  - reworked the code in setup.c to work properly.
-> [v1: https://lkml.org/lkml/2012/3/30/492]
->  - initial patchset
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-One bug I found was that with 'dom0_mem=max:1G' (with and without these
-patches) I would get a bunch of
+As Jenx Axboe explained to me: "In earlier times (2.6.18 and pre, iirc), Linux
+disabled IO and mem bars on pci_disable_device(). Now in newer kernel it does
+not. And in the newer kernels you run into problems if you DON'T disable the
+device on exit, since when it later loads the device is already in the enabled
+state - and pci_enable_device() then does nothing. This typically screws
+MSI/MSI-X." This is what the big scary comment that says pci_disable_device
+does "something nasty" to smart arrays was evidently referring to.
 
-(XEN) page_alloc.c:1148:d0 Over-allocation for domain 0: 2097153 > 2097152
-(XEN) memory.c:133:d0 Could not allocate order=0 extent: id=0 memflags=0 (0 of 17)
+If pci_disable_device is not called on driver rmmod, subsequently insmod'ing
+the driver may in result in some cases fail to be able to receive interrupts,
+esp.  if other drivers are loaded between unloading and loading hpsa.
 
-where the (0 of X), sometimes was 1, 2,3,4 or 17 -depending on the machine
-I ran on it. I figured it out that the difference was in the ACPI tables
-that are allocated - and that those regions - even though are returned
-back to the hypervisor, cannot be repopulated. I can't find the actual
-exact piece of code in the hypervisor to pin-point and say "Aha".
-
-What I did was use the same metrix that the hypervisor uses to figure
-out whether to deny the guest ballooning up - checking the d->tot_pages
-against t->max_pages. For that the XENMEM_current_reservation is used.
-
-
->From e4568b678455f68d374277319fb5cc41f11b6c4f Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Thu, 26 Apr 2012 22:11:08 -0400
-Subject: [PATCH] xen/setup: Cap amount to populate based on current tot_pages
- count.
-
-Previous to this patch we would try to populate exactly up to
-xen_released_pages number (so the ones that we released), but
-that is incorrect as there are some pages that we thought were
-released but in actuality were shared. Depending on the platform
-it could be small amounts - 2 pages, but some had much higher - 17.
-
-As such, lets use the XENMEM_current_reservation to get the exact
-count of pages we are using, subtract it from nr_pages and use the
-lesser of this and xen_released_pages to populate back.
-
-This fixes errors such as:
-
-(XEN) page_alloc.c:1148:d0 Over-allocation for domain 0: 2097153 > 2097152
-(XEN) memory.c:133:d0 Could not allocate order=0 extent: id=0 memflags=0 (0 of 17)
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- arch/x86/xen/setup.c |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
+ drivers/scsi/hpsa.c |   10 ++--------
+ 1 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 506a3e6..8e7dcfd 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -287,7 +287,15 @@ static unsigned long __init xen_get_max_pages(void)
- 
- 	return min(max_pages, MAX_DOMAIN_PAGES);
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 500e20d..1a6c319 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3987,10 +3987,7 @@ err_out_free_res:
+ 		iounmap(h->cfgtable);
+ 	if (h->vaddr)
+ 		iounmap(h->vaddr);
+-	/*
+-	 * Deliberately omit pci_disable_device(): it does something nasty to
+-	 * Smart Array controllers that pci_enable_device does not undo
+-	 */
++	pci_disable_device(h->pdev);
+ 	pci_release_regions(h->pdev);
+ 	return err;
  }
--
-+static unsigned long xen_get_current_pages(void)
-+{
-+	domid_t domid = DOMID_SELF;
-+	int ret;
-+	ret = HYPERVISOR_memory_op(XENMEM_current_reservation, &domid);
-+	if (ret > 0)
-+		return ret;
-+	return 0;
-+}
- static void xen_align_and_add_e820_region(u64 start, u64 size, int type)
- {
- 	u64 end = start + size;
-@@ -358,7 +366,11 @@ char * __init xen_memory_setup(void)
- 
- 	/*
- 	 * Populate back the non-RAM pages and E820 gaps that had been
--	 * released. */
-+	 * released. But cap it as certain regions cannot be repopulated.
-+	 */
-+	if (xen_get_current_pages())
-+		xen_released_pages = min(max_pfn - xen_get_current_pages(),
-+				xen_released_pages);
- 	populated = xen_populate_chunk(map, memmap.nr_entries,
- 			max_pfn, &last_pfn, xen_released_pages);
- 
--- 
-1.7.7.5
+@@ -4529,10 +4526,7 @@ static void __devexit hpsa_remove_one(struct pci_dev *pdev)
+ 	kfree(h->cmd_pool_bits);
+ 	kfree(h->blockFetchTable);
+ 	kfree(h->hba_inquiry_data);
+-	/*
+-	 * Deliberately omit pci_disable_device(): it does something nasty to
+-	 * Smart Array controllers that pci_enable_device does not undo
+-	 */
++	pci_disable_device(pdev);
+ 	pci_release_regions(pdev);
+ 	pci_set_drvdata(pdev, NULL);
+ 	kfree(h);
 
