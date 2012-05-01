@@ -1,54 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758354Ab2EATUi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 15:20:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65276 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757235Ab2EATUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 15:20:37 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized to one
-References: <1335873936.16988.148.camel@lappy>
-	<20120501161729.GV26595@google.com> <4FA0253F.4000302@fusionio.com>
-	<20120501180906.GX26595@google.com> <4FA028EE.7020208@fusionio.com>
-	<x49wr4vlpn8.fsf@segfault.boston.devel.redhat.com>
-	<20120501183610.GD18239@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 01 May 2012 14:48:41 -0400
-In-Reply-To: <20120501183610.GD18239@redhat.com> (Vivek Goyal's message of
-	"Tue, 1 May 2012 14:36:11 -0400")
-Message-ID: <x49sjfjloty.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1757942Ab2EAT1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 15:27:41 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:37749 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab2EAT1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 15:27:39 -0400
+Date: Tue, 1 May 2012 20:27:36 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-bluetooth@vger.kernel.org
+Subject: Re: [now bisected] Weird bluetooth keyboard regression - just me?
+Message-ID: <20120501192736.GA29770@srcf.ucam.org>
+References: <20120501073711.028d31d6@lwn.net>
+ <20120501110156.2b6e0561@lwn.net>
+ <20120501171901.GA26006@srcf.ucam.org>
+ <20120501120145.21f65ae2@lwn.net>
+ <20120501183149.GA28536@srcf.ucam.org>
+ <20120501123923.01ac1138@lwn.net>
+ <20120501185455.GA29060@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="gKMricLos+KVdGMg"
+Content-Disposition: inline
+In-Reply-To: <20120501185455.GA29060@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
 
-> On Tue, May 01, 2012 at 02:31:07PM -0400, Jeff Moyer wrote:
->
-> [..]
->> > But as to actual users, I really don't know. I agree it's probably not
->> > that widely used. If google still had that code search, we could get a
->> > better idea :-)
->> 
->> I know of one project: the venerable dump/restore utility uses CLONE_IO.
->
-> I thought you wrote cooperating queue logic to fix dump as it was not
-> using CLONE_IO and IO from multiple threads was going in separate 
-> queues.
+--gKMricLos+KVdGMg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That's correct.  I believe I sent the patch for dump before the kernel
-patch was accepted.  Plus, it can't hurt, right?
+What does removable in the parent device say? In either case, does the 
+attached file help if dropped into /lib/udev/rules.d ?
 
-Cheers,
-Jeff
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+
+--gKMricLos+KVdGMg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="42-usb-hid-pm.rules"
+
+#
+# Enable autosuspend for qemu emulated usb hid devices.
+#
+# Note that there are buggy qemu versions which advertise remote
+# wakeup support but don't actually implement it correctly.  This
+# is the reason why we need a match for the serial number here.
+# The serial number "42" is used to tag the implementations where
+# remote wakeup is working.
+#
+
+ACTION=="add", SUBSYSTEM=="usb", ATTR{product}=="QEMU USB Mouse", ATTR{serial}=="42", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="add", SUBSYSTEM=="usb", ATTR{product}=="QEMU USB Tablet", ATTR{serial}=="42", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="add", SUBSYSTEM=="usb", ATTR{product}=="QEMU USB Keyboard", ATTR{serial}=="42", TEST=="power/control", ATTR{power/control}="auto"
+
+#
+# Enable autosuspend for KVM and iLO usb hid devices. These are
+# effectively self-powered (despite what some claim in their USB
+# profiles) and so it's safe to do so.
+#
+
+# AMI 046b:ff10
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046b", ATTR{idProduct}=="ff10", TEST=="power/control", ATTR{power/control}="auto"
+
+#
+# Catch-all for Avocent HID devices. Keyed off interface in order to only
+# trigger on HID class devices.
+#
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0624", ATTR{bInterfaceClass}=="03", TEST=="../power/control", ATTR{../power/control}="auto"
+
+# Dell DRAC 4
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="413c", ATTR{idProduct}=="2500", TEST=="power/control", ATTR{power/control}="auto"
+
+# Dell DRAC 5
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="413c", ATTR{idProduct}=="0000", TEST=="power/control", ATTR{power/control}="auto"
+
+# Hewlett Packard iLO
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="03f0", ATTR{idProduct}=="7029", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="03f0", ATTR{idProduct}=="1027", TEST=="power/control", ATTR{power/control}="auto"
+
+# IBM remote access
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="04b3", ATTR{idProduct}=="4001", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="04b3", ATTR{idProduct}=="4002", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="04b3", ATTR{idProduct}=="4012", TEST=="power/control", ATTR{power/control}="auto"
+
+# Raritan Computer, Inc KVM.
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="14dd", ATTR{idProduct}="0002", TEST=="power/control", ATTR{power/control}="auto"
+
+# USB HID devices that are internal to the machine should also be safe to autosuspend
+
+ACTION=="add", SUBSYSTEM=="usb", SUBSYSTEMS=="usb", ATTRS{removable}=="removable", GOTO "usb_hid_pm_end"
+ACTION=="add", SUBSYSTEM=="usb", SUBSYSTEMS=="usb", ATTRS{removable}=="unknown", GOTO "usb_hid_pm_end"
+
+ACTION=="add", SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="03", ATTRS{removable}=="fixed", TEST=="../power/control", ATTR{../power/control}="auto"
+
+LABEL="usb_hid_pm_end"
+
+--gKMricLos+KVdGMg--
