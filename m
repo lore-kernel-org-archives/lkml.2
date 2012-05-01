@@ -1,35 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758277Ab2EARgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 13:36:07 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40721 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab2EARgE (ORCPT
+	id S1758300Ab2EARhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 13:37:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757704Ab2EARhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 13:36:04 -0400
+	Tue, 1 May 2012 13:37:21 -0400
+Date: Tue, 1 May 2012 13:37:11 -0400
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com, stern@rowland.harvard.edu,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v8 0/5] USB: LPC32xx device tree related OHCI and UDC
+ patch series
+Message-ID: <20120501173711.GA11231@kroah.com>
+References: <1335710826-6684-1-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-In-Reply-To: <20120430112910.14137.28935.stgit@zurg>
-References: <20120430112903.14137.81692.stgit@zurg> <20120430112910.14137.28935.stgit@zurg>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 1 May 2012 13:35:43 -0400
-Message-ID: <CAHGf_=rWDMMv2dKz3paV2MnjsCNWBa2BaUTi+RnDo8DZ4zEr=g@mail.gmail.com>
-Subject: Re: [PATCH RFC 3/3] proc/smaps: show amount of hwpoison pages
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335710826-6684-1-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 7:29 AM, Konstantin Khlebnikov
-<khlebnikov@openvz.org> wrote:
-> This patch adds line "HWPoinson: <size> kB" into /proc/pid/smaps if
-> CONFIG_MEMORY_FAILURE=y and some HWPoison pages were found.
-> This may be useful for searching applications which use a broken memory.
+On Sun, Apr 29, 2012 at 04:47:01PM +0200, Roland Stigge wrote:
+> This series collects the pending LPC32xx patches in one series and forward
+> ports it onto
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git usb-next
+> 
+> There are no other changes since last post.
 
-I dislike "maybe useful" claim. If we don't know exact motivation of a feature,
-we can't maintain them especially when a bugfix can't avoid ABI change.
+All applied, thanks for your persistance.
 
-Please write down exact use case.
+greg k-h
