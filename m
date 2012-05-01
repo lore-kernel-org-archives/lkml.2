@@ -1,232 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798Ab2EANTb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 09:19:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65109 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755866Ab2EANT3 (ORCPT
+	id S1757929Ab2EANX6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 09:23:58 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:17248 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755866Ab2EANX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 09:19:29 -0400
-Date: Tue, 1 May 2012 06:18:06 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH v4] vmevent: Implement greater-than attribute state and
- one-shot mode
-Message-ID: <20120501131806.GA22249@lizard>
-References: <20120418083208.GA24904@lizard>
- <20120418083523.GB31556@lizard>
- <alpine.LFD.2.02.1204182259580.11868@tux.localdomain>
- <20120418224629.GA22150@lizard>
- <alpine.LFD.2.02.1204190841290.1704@tux.localdomain>
- <20120419162923.GA26630@lizard>
+	Tue, 1 May 2012 09:23:57 -0400
+Date: Tue, 1 May 2012 09:23:52 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Maarten Maathuis <madman2003@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Martin Peres <martin.peres@labri.fr>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Linux 3.4-rc4
+Message-ID: <20120501132352.GA28696@elliptictech.com>
+References: <20120423024558.GD13840@phenom.dumpdata.com>
+ <20120424010345.GA30674@elliptictech.com>
+ <20120425013537.GA11959@elliptictech.com>
+ <1335322574.1821.8.camel@nisroch>
+ <1335504021.5311.0.camel@nisroch>
+ <20120428003928.GA16805@elliptictech.com>
+ <CADnq5_N8Cf4ONL5TNA-Wmif7cty070TRrTOnUpqdiGhWbVbj=w@mail.gmail.com>
+ <20120428153350.GA19561@elliptictech.com>
+ <20120429223744.GA19382@core.coreip.homeip.net>
+ <CAGZ4FETGyatywWqx3vLo-=jSJsrSat2+r35Njg5NNJ4NnyUy=w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120419162923.GA26630@lizard>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGZ4FETGyatywWqx3vLo-=jSJsrSat2+r35Njg5NNJ4NnyUy=w@mail.gmail.com>
+Organization: Elliptic Technologies Inc.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a new event type, it will trigger whenever a
-value becomes greater than user-specified threshold, it complements
-the 'less-then' trigger type.
-
-Also, let's implement the one-shot mode for the events, when set,
-userspace will only receive one notification per crossing the
-boundaries.
-
-Now when both LT and GT are set on the same level, the event type
-works as a cross event type: it triggers whenever a value crosses
-the threshold from a lesser values side to a greater values side,
-and vice versa.
-
-We use the event types in an userspace low-memory killer: we get a
-notification when memory becomes low, so we start freeing memory by
-killing unneeded processes, and we get notification when memory hits
-the threshold from another side, so we know that we freed enough of
-memory.
-
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
-
-On Thu, Apr 19, 2012 at 09:29:23AM -0700, Anton Vorontsov wrote:
-> > > Yep, with CONFIG_SWAP=n, and I had to a modify the test
-> > > since I saw the same thing, I believe. I'll try w/ the swap enabled,
-> > > and see how it goes. I think the vmevent-test.c needs some improvemnts
-> > > in general, but meanwhile...
-> > > 
-> > > > Physical pages: 109858
-> > > > read failed: Invalid argument
-> > > 
-> > > Can you send me the .config file that you used? Might be that
-> > > you have CONFIG_SWAP=n too?
-> > 
-> > No, I have CONFIG_SWAP=y. Here's the config I use.
-> 
-> Thanks! It appears that there was just another hard-coded value for
-> the counter in vmevent-test.c, I changed it to config.counter and
-> now everything should be fine.
+On 2012-04-30 11:07 +0200, Maarten Maathuis wrote:
+> On Mon, Apr 30, 2012 at 12:37 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> > On Sat, Apr 28, 2012 at 11:33:50AM -0400, Nick Bowler wrote:
+> >> On 2012-04-28 02:19 -0400, Alex Deucher wrote:
+> >> > On Fri, Apr 27, 2012 at 8:39 PM, Nick Bowler <nbowler@elliptictech.com> wrote:
+> >> > > While tracking down the black screen issue, I've been having the monitor
+> >> > > directly connected to the video card the whole time, but now when I'm
+> >> > > connected through my KVM switch (an IOGear GCS1804), it appears that
+> >> > > something's going wrong with reading the EDID, because the available
+> >> > > modes are all screwed up (both console and X decide they want to drive
+> >> > > the display at 1024x768).
 [...]
-> +			if ((lt || gt) && !one_shot)
->  				return true;
+> >> > > Also, looking at /sys/class/drm/card0-VGA-1/edid I see that it
+> >> > > is empty on 3.4-rc4+ and it is correct on 3.2.15.  Things seem
+> >> > > to work OK when the KVM is not involved.
+> >> >
+> >> > Were you ever able to fetch a EDID with the KVM involved?  KVMs are
+> >> > notorious for not connecting the ddc pins.
+> >>
+> >> Yes, it works on 3.2.15 as described above.
+> >
+> > I have the same (or similar) KVM (not in the office at the moment) and I
+> > can confirm that with newer kernels EDID fecthing in flaky. It's 50/50
+> > if EDED retrieval succeeds or if it fails with:
+> >
+> > Apr 26 13:06:57 dtor-d630 kernel: [13464.936336] [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder is 208
+[...]
+> > Earlier kernels were able to retrieve EDEDs reliably.
 
-Noticed one small issue: the code doesn't check whether we actually
-asked to track lt or gt states, so it shoudl be (attr_lt && lt) ||
-(attr_gt && gt).
+FWIW, for me EDID failure on new kernels is 100% reproducible, and there
+are no such checksum errors in the log.  It's just missing.
 
-This is fixed now.
+> Just a crazy thought, but didn't we change some timings related to
+> EDID retrieval? To make it faster.
 
- include/linux/vmevent.h              |   13 ++++++++++
- mm/vmevent.c                         |   45 +++++++++++++++++++++++++++++-----
- tools/testing/vmevent/vmevent-test.c |   24 +++++++++++++-----
- 3 files changed, 70 insertions(+), 12 deletions(-)
+OK, this time bisecting started off relatively smoothly (doing the same
+"backwards" bisect on the branch-o-reverts as last time), but then my
+disk died halfway through...  So I'll post the partial bisection results
+now (11 commits left to test), but I clearly have other things to fix
+before I can get back to this issue.
 
-diff --git a/include/linux/vmevent.h b/include/linux/vmevent.h
-index 64357e4..ca97cf0 100644
---- a/include/linux/vmevent.h
-+++ b/include/linux/vmevent.h
-@@ -22,6 +22,19 @@ enum {
- 	 * Sample value is less than user-specified value
- 	 */
- 	VMEVENT_ATTR_STATE_VALUE_LT	= (1UL << 0),
-+	/*
-+	 * Sample value is greater than user-specified value
-+	 */
-+	VMEVENT_ATTR_STATE_VALUE_GT	= (1UL << 1),
-+	/*
-+	 * One-shot mode.
-+	 */
-+	VMEVENT_ATTR_STATE_ONE_SHOT	= (1UL << 2),
-+
-+	/* Saved state, used internally by the kernel for one-shot mode. */
-+	__VMEVENT_ATTR_STATE_VALUE_WAS_LT	= (1UL << 30),
-+	/* Saved state, used internally by the kernel for one-shot mode. */
-+	__VMEVENT_ATTR_STATE_VALUE_WAS_GT	= (1UL << 31),
- };
- 
- struct vmevent_attr {
-diff --git a/mm/vmevent.c b/mm/vmevent.c
-index 9ed6aca..47ed448 100644
---- a/mm/vmevent.c
-+++ b/mm/vmevent.c
-@@ -1,5 +1,6 @@
- #include <linux/anon_inodes.h>
- #include <linux/atomic.h>
-+#include <linux/compiler.h>
- #include <linux/vmevent.h>
- #include <linux/syscalls.h>
- #include <linux/timer.h>
-@@ -83,16 +84,48 @@ static bool vmevent_match(struct vmevent_watch *watch)
- 
- 	for (i = 0; i < config->counter; i++) {
- 		struct vmevent_attr *attr = &config->attrs[i];
--		u64 value;
-+		u32 state = attr->state;
-+		bool attr_lt = state & VMEVENT_ATTR_STATE_VALUE_LT;
-+		bool attr_gt = state & VMEVENT_ATTR_STATE_VALUE_GT;
- 
--		if (!attr->state)
-+		if (!state)
- 			continue;
- 
--		value = vmevent_sample_attr(watch, attr);
--
--		if (attr->state & VMEVENT_ATTR_STATE_VALUE_LT) {
--			if (value < attr->value)
-+		if (attr_lt || attr_gt) {
-+			bool one_shot = state & VMEVENT_ATTR_STATE_ONE_SHOT;
-+			u32 was_lt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_LT;
-+			u32 was_gt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_GT;
-+			u64 value = vmevent_sample_attr(watch, attr);
-+			bool lt = value < attr->value;
-+			bool gt = value > attr->value;
-+			bool was_lt = state & was_lt_mask;
-+			bool was_gt = state & was_gt_mask;
-+			bool ret = false;
-+
-+			if (((attr_lt && lt) || (attr_gt && gt)) && !one_shot)
- 				return true;
-+
-+			if (attr_lt && lt && was_lt) {
-+				return false;
-+			} else if (attr_gt && gt && was_gt) {
-+				return false;
-+			} else if (lt) {
-+				state |= was_lt_mask;
-+				state &= ~was_gt_mask;
-+				if (attr_lt)
-+					ret = true;
-+			} else if (gt) {
-+				state |= was_gt_mask;
-+				state &= ~was_lt_mask;
-+				if (attr_gt)
-+					ret = true;
-+			} else {
-+				state &= ~was_lt_mask;
-+				state &= ~was_gt_mask;
-+			}
-+
-+			attr->state = state;
-+			return ret;
- 		}
- 	}
- 
-diff --git a/tools/testing/vmevent/vmevent-test.c b/tools/testing/vmevent/vmevent-test.c
-index 534f827..fd9a174 100644
---- a/tools/testing/vmevent/vmevent-test.c
-+++ b/tools/testing/vmevent/vmevent-test.c
-@@ -33,20 +33,32 @@ int main(int argc, char *argv[])
- 
- 	config = (struct vmevent_config) {
- 		.sample_period_ns	= 1000000000L,
--		.counter		= 4,
-+		.counter		= 6,
- 		.attrs			= {
--			[0]			= {
-+			{
- 				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
- 				.state	= VMEVENT_ATTR_STATE_VALUE_LT,
- 				.value	= phys_pages,
- 			},
--			[1]			= {
-+			{
-+				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
-+				.state	= VMEVENT_ATTR_STATE_VALUE_GT,
-+				.value	= phys_pages,
-+			},
-+			{
-+				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
-+				.state	= VMEVENT_ATTR_STATE_VALUE_LT |
-+					  VMEVENT_ATTR_STATE_VALUE_GT |
-+					  VMEVENT_ATTR_STATE_ONE_SHOT,
-+				.value	= phys_pages / 2,
-+			},
-+			{
- 				.type	= VMEVENT_ATTR_NR_AVAIL_PAGES,
- 			},
--			[2]			= {
-+			{
- 				.type	= VMEVENT_ATTR_NR_SWAP_PAGES,
- 			},
--			[3]			= {
-+			{
- 				.type	= 0xffff, /* invalid */
- 			},
- 		},
-@@ -59,7 +71,7 @@ int main(int argc, char *argv[])
- 	}
- 
- 	for (i = 0; i < 10; i++) {
--		char buffer[sizeof(struct vmevent_event) + 4 * sizeof(struct vmevent_attr)];
-+		char buffer[sizeof(struct vmevent_event) + config.counter * sizeof(struct vmevent_attr)];
- 		struct vmevent_event *event;
- 		int n = 0;
- 		int idx;
+  git bisect start 'drivers/gpu/drm'
+  # good: [9232969e19ae7251a93ab72e405cf71e5109ec05] drm/nv40/pm: implement first type of pwm fanspeed funcs
+  git bisect good 9232969e19ae7251a93ab72e405cf71e5109ec05
+  # bad: [dea7e0ac45fd28f90bbc38ff226d36a9f788efbf] ttm: fix agp since ttm tt rework
+  git bisect bad dea7e0ac45fd28f90bbc38ff226d36a9f788efbf
+  # good: [d2491567cdbcb87b2682e0948a69d73c4dd8987e] drm/nv50/pm: only touch 0x611200 on nv92-
+  git bisect good d2491567cdbcb87b2682e0948a69d73c4dd8987e
+  # good: [f9f9f536312d4c3ca39502ccf6a3af60cfe38ff4] drm/nouveau/bios: pass drm_device to ROMPTR, rather than nvbios
+  git bisect good f9f9f536312d4c3ca39502ccf6a3af60cfe38ff4
+  # bad: [d4c2c99bdc8385a0e51ce4ef2df124d14b6b9c9d] drm/nouveau/dp: remove broken display depth function, use the improved one
+  git bisect bad d4c2c99bdc8385a0e51ce4ef2df124d14b6b9c9d
+
+Cheers,
 -- 
-1.7.9.2
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
