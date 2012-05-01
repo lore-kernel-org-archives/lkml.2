@@ -1,61 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757881Ab2EABrO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 21:47:14 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:44895 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757717Ab2EABrM (ORCPT
+	id S1757804Ab2EABvm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 21:51:42 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:61765 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752019Ab2EABvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 21:47:12 -0400
-Date: Mon, 30 Apr 2012 21:46:01 -0400 (EDT)
-Message-Id: <20120430.214601.539803492818231876.davem@davemloft.net>
-To: sam@ravnborg.org
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [patch 23/29] sparc: Use generic init_task
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120430211054.GA8986@merkur.ravnborg.org>
-References: <alpine.LFD.2.02.1204302239000.6271@ionos>
-	<alpine.LFD.2.02.1204302303390.6271@ionos>
-	<20120430211054.GA8986@merkur.ravnborg.org>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 30 Apr 2012 18:46:04 -0700 (PDT)
+	Mon, 30 Apr 2012 21:51:41 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhQFAENBn095LbQl/2dsb2JhbABEr2aCf4EIggkBAQQBOhwjBQsIAxguFCUDIRMbh20EujQTin+FfQSVfYlbhmiCeoFD
+Date: Tue, 1 May 2012 11:51:37 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/3] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE
+ flags
+Message-ID: <20120501015137.GT7015@dastard>
+References: <1335289787-11089-1-git-send-email-john.stultz@linaro.org>
+ <1335289787-11089-3-git-send-email-john.stultz@linaro.org>
+ <20120427003953.GC9541@dastard>
+ <4F9AF00A.5040604@linaro.org>
+ <20120428020444.GK9541@dastard>
+ <4F9EEA9D.8020909@linaro.org>
+ <20120501002842.GR7015@dastard>
+ <4F9F3940.9000509@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F9F3940.9000509@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Mon, 30 Apr 2012 23:10:54 +0200
+On Mon, Apr 30, 2012 at 06:15:44PM -0700, John Stultz wrote:
+> On 04/30/2012 05:28 PM, Dave Chinner wrote:
+> >On Mon, Apr 30, 2012 at 12:40:13PM -0700, John Stultz wrote:
+> >>On 04/27/2012 07:04 PM, Dave Chinner wrote:
+> >>>On Fri, Apr 27, 2012 at 12:14:18PM -0700, John Stultz wrote:
+> >>>>On 04/26/2012 05:39 PM, Dave Chinner wrote:
+> >>>>>This probably won't perform wonderfully, which is where the range
+> >>>>>tracking and delayed punching (and the implied memory freeing)
+> >>>>>optimiation comes into play. Sure, for tmpfs this can be implemented
+> >>>>>as a shrinker, but for real filesystems that have to punch blocks a
+> >>>>>shrinker is really the wrong context to be running such
+> >>>>>transactions. However, using the fallocate() interface allows each
+> >>>>>filesytsem to optimise the delayed hole punching as they see best,
+> >>>>>something that cannot be done with this fadvise() interface.
+> >>>>So if a shrinker isn't the right context, what would be a good
+> >>>>context for delayed hole punching?
+> >>>Like we in XFs for inode reclaim. We have a background workqueue
+> >>>that frees aged inodes periodically in the fastest manner possible
+> >>>(i.e. all async, no blocking on locks, etc), and the shrinker, when
+> >>>run kicks that background thread first, and then enters into
+> >>>synchronous reclaim. By the time a single sync reclaim cycle is run
+> >>>and throttled reclaim sufficiently, the background thread has done a
+> >>>great deal more work.
+> >>>
+> >>>A similar mechanism can be used for this functionality within XFS.
+> >>>Indeed, we could efficiently track which inodes have volatile ranges
+> >>>on them via a bit in the radix trees than index the inode cache,
+> >>>just like we do for reclaimable inodes. If we then used a bit in the
+> >>>page cache radix tree index to indicate volatile pages, we could
+> >>>then easily find the ranges we need to punch out without requiring
+> >>>some new tree and more per-inode memory.
+> >>>
+> >>>That's a very filesystem specific implementation - it's vastly
+> >>>different to you tmpfs implementation - but this is exactly what I
+> >>>mean about using fallocate to allow filesystems to optimise the
+> >>>implementation in the most suitable manner for them....
+> >>>
+> >>So, just to make sure I'm folloiwng you, you're suggesting that
+> >>there would be a filesystem specific implementation at the top
+> >>level. Something like a  mark_volatile(struct inode *, bool, loff_t,
+> >>loff_t) inode operation? And the filesystem would then be
+> >>responsible for managing the ranges and appropriately purging them?
+> >Not quite. I'm suggesting that you use the .fallocate() file
+> >operation to call into the filesystem specific code, and from there
+> >the filesystem code either calls a generic helper function to mark
+> >ranges as volatile and provides a callback for implementing the
+> >shrinker functionailty, or it implements it all itself.
+> >
+> >i.e. userspace would do:
+> >
+> >	err = fallocate(fd, FALLOC_FL_MARK_VOLATILE, off, len);
+> >	err = fallocate(fd, FALLOC_FL_CLEAR_VOLATILE, off, len);
+> >
+> >and that will get passed to the filesystem implementation of
+> >.fallocate (from do_fallocate()). The filesystem callout for this:
+> >
+> >0 btrfs/file.c   1898 .fallocate = btrfs_fallocate,
+> >1 ext4/file.c     247 .fallocate = ext4_fallocate,
+> >2 gfs2/file.c    1015 .fallocate = gfs2_fallocate,
+> >3 gfs2/file.c    1045 .fallocate = gfs2_fallocate,
+> >4 ocfs2/file.c   2727 .fallocate = ocfs2_fallocate,
+> >5 ocfs2/file.c   2774 .fallocate = ocfs2_fallocate,
+> >6 xfs/xfs_file.c 1026 .fallocate = xfs_file_fallocate,
+> Ok.
+> 
+> Although noting that tmpfs doesn't implement fallocate, this isn't
+> just a ruse to get me to implement fallocate for tmpfs, right? ;)
 
-> On Mon, Apr 30, 2012 at 11:04:39PM +0200, Thomas Gleixner wrote:
->> On Mon, 30 Apr 2012, Thomas Gleixner wrote:
->> > On Mon, 30 Apr 2012, Sam Ravnborg wrote:
->> > > This breaks sparc build as it has the following in arch/sparc/Makefile:
->> > > 
->> > >     head-y                 += arch/sparc/kernel/init_task.o
->> > 
->> > Hrmm, I thought I had catched all of this nonsense.
->> 
->> Updated version below.
->> 
->> Thanks,
->> 
->> 	tglx
->> 
->> -------------------->
->> Subject: sparc: Use generic init_task
->> From: Thomas Gleixner <tglx@linutronix.de>
->> Date: Mon, 30 Apr 2012 16:48:55 +0200
->> 
->> Same code. Use the generic version. The special Makefile treatment is
->> pointless anyway as init_task.o contains only data which is handled by
->> the linker script. So no point on being treated like head text.
->> 
->> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->> Cc: "David S. Miller" <davem@davemloft.net>
-> Acked-by: Sam Ravnborg <sam@ravnborg.org>
+No, I don't care about what tmpfs supports in most cases, and in
+reality fallocate has not been implemented because tmpfs is generall
+hacked on by MM people, not filesystem people. That's why it has all
+the special interfaces that filesystems can't actually use...
 
-Acked-by: David S. Miller <davem@davemloft.net>
+> Out of curiosity: While for my uses, a tmpfs exclusive
+> implementation isn't a problem for me,  I *really* appreciate your
+> feedback and help focusing this into a more generic fs solution. But
+> to get more context for your insights, I'm curious if you have any
+> use cases in your mind that is directing this work to be more
+> generic?
+
+Managing large scale disk caches have exactly the same problems of
+determining what to evict and/or move to secondary storage when
+space is low. Being able to mark ranges of files as "remove this
+first" woulxp dbe very advantageous for pro-active mangement of ENOSPC
+conditions in the cache...
+
+And being able to do space-demand hole-punching for stuff like
+managing VM images would be really cool. For example, the loopback
+device uses hole punching to implement TRIM commands, so turning
+those into VOLATILE ranges for background dispatch will speed those
+operations up immensely and avoid silly same block "TRIM - write -
+TRIM - write" cyclic hole-punch/allocation in the backing file.  KVM
+could do the same for implementing TRIM on image based block
+devices...
+
+There's lots of things that can be done with a generic advisory,
+asynchornous hole-punching interface.
+
+> Again, you've been helpfully skeptical of the work, and also at the
+> same time pushing it in a certain direction, and I want to make sure
+> I better understand where you're coming from.  You've clarified the
+> file security concern well enough, but is that all?  I just want to
+> make sure that going the generic fallocate route is really worth it,
+> as opposed to moving to madvise() and just failing file-data backed
+> memory.
+> 
+> >can then call a generic helper like, say:
+> >
+> >	filemap_mark_volatile_range(inode, off, len);
+> >	filemap_clear_volatile_range(inode, off, len);
+> >
+> >to be able to use the range tree tracking you have written for this
+> >purpose. The filesystem is also free to track ranges however it
+> >pleases.
+> >
+> >The filesystem will need to be able to store a tree/list root for
+> >tracking all it's inodes that have volatile ranges, and register a
+> >shrinker to walk that list and do the work necessary when memory
+> >becomes low, but that is simple to do for a basic implementation.
+> >
+> Hrmm..  Currently I'm using a per-mapping range-tree along with a
+> global LRU list that ties all the ranges together.
+
+/me smells another candidate for his in-progress generic
+LRU-with-integrated-shrinker work.
+
+Cheers,
+
+Dave.
+
+-- 
+Dave Chinner
+david@fromorbit.com
