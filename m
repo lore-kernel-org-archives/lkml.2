@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab2EAV1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 17:27:34 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:38505 "EHLO imr3.ericy.com"
+	id S1754374Ab2EAVaQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 17:30:16 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:44699 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753825Ab2EAV1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 17:27:33 -0400
-Date: Tue, 1 May 2012 14:25:12 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwmon: coretemp: fix oops on cpu unplug
-Message-ID: <20120501212512.GA4340@ericsson.com>
-References: <1335791881-1560-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120501152014.GA2629@ericsson.com>
- <20120501210041.GA10629@otc-wbsnb-06>
+	id S1751831Ab2EAVaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 17:30:14 -0400
+Date: Tue, 1 May 2012 23:29:58 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/5] mm + fs: prepare for non-page entries in page cache
+Message-ID: <20120501212958.GC2112@cmpxchg.org>
+References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
+ <1335861713-4573-3-git-send-email-hannes@cmpxchg.org>
+ <20120501120246.83d2ce28.akpm@linux-foundation.org>
+ <20120501201504.GB2112@cmpxchg.org>
+ <20120501132449.30485966.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120501210041.GA10629@otc-wbsnb-06>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120501132449.30485966.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 05:00:41PM -0400, Kirill A. Shutemov wrote:
-> On Tue, May 01, 2012 at 08:20:14AM -0700, Guenter Roeck wrote:
-> > On Mon, Apr 30, 2012 at 09:18:01AM -0400, Kirill A. Shutemov wrote:
-> > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Tue, May 01, 2012 at 01:24:49PM -0700, Andrew Morton wrote:
+> On Tue, 1 May 2012 22:15:04 +0200
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > On Tue, May 01, 2012 at 12:02:46PM -0700, Andrew Morton wrote:
+> > > On Tue,  1 May 2012 10:41:50 +0200
+> > > Johannes Weiner <hannes@cmpxchg.org> wrote:
 > > > 
-> > > coretemp tries to access core_data array beyond bounds on cpu unplug if
-> > > core id of the cpu if more than NUM_REAL_CORES-1.
+> > > > --- a/fs/inode.c
+> > > > +++ b/fs/inode.c
+> > > > @@ -544,8 +544,7 @@ static void evict(struct inode *inode)
+> > > >  	if (op->evict_inode) {
+> > > >  		op->evict_inode(inode);
+> > > >  	} else {
+> > > > -		if (inode->i_data.nrpages)
+> > > > -			truncate_inode_pages(&inode->i_data, 0);
+> > > > +		truncate_inode_pages(&inode->i_data, 0);
 > > > 
-> > [ ... ]
-> > > 
-> > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > > Why did we lose this optimisation?
 > > 
-> > Looking at it again, you were right. Adding the check to get_core_online()
-> > doesn't really help as the platform device is per CPU, not per core.
+> > For inodes with only shadow pages remaining in the tree, because there
+> > is no separate counter for them.  Otherwise, we'd leak the tree nodes.
 > > 
-> > Applied. I'll submit a separate patch to increase NUM_REAL_CORES.
+> > I had mapping->nrshadows at first to keep truncation conditional, but
+> > thought that using an extra word per cached inode would be worse than
+> > removing this optimization.  There is not too much being done when the
+> > tree is empty.
+> > 
+> > Another solution would be to include the shadows count in ->nrpages,
+> > but filesystems use this counter for various other purposes.
+> > 
+> > Do you think it's worth reconsidering?
 > 
-> Actually, the problem is bigger.
+> It doesn't sound like it's worth adding ->nrshadows for only that
+> reason.
 > 
-> Documentation/cputopology.txt:
-> ====
-> 2) /sys/devices/system/cpu/cpuX/topology/core_id:
-> 
->         the CPU core ID of cpuX. Typically it is the hardware platform's
->         identifier (rather than the kernel's).  The actual value is
->         architecture and platform dependent.
-> ====
-> 
-> We should not use core id as an index in an array since it's an arbitrary
-> number (from kernel POV).
-> 
-Yes, we know we'll need a better fix going forward. Using a fixed size array is bad,
-no matter what context.
+> That's a pretty significant alteration in the meaning of ->nrpages. 
+> Did this not have any other effects?
 
-Thanks,
-Guenter
+It still means "number of page entries in radix tree", just that the
+radix tree can be non-empty when this count drops to zero.  AFAICS,
+it's used when writing/syncing the inode or when gathering statistics,
+like nr_blockdev_pages().  They only care about actual pages.  It's
+just the final truncate that has to make sure to remove the non-pages
+as well.
+
+> What does truncate do?  I assume it invalidates shadow page entries in
+> the radix tree?  And frees the radix-tree nodes?
+
+Yes, it just does a radix_tree_delete() on these shadow page entries,
+see clear_exceptional_entry() in mm/truncate.c.  This garbage-collects
+empty nodes.
+
+> The patchset will make lookups slower in some (probably obscure)
+> circumstances, due to the additional radix-tree nodes.
+> 
+> I assume that if a pagecache lookup encounters a radix-tree node which
+> contains no real pages, the search will terminate at that point?  We
+> don't pointlessly go all the way down to the leaf nodes?
+
+When reading/instantiating it's not pointless.  Empty slots or shadow
+slots are faults and we have to retrieve the shadow entries to
+calculate the refault distance.
+
+When writing: dirtied pages are tagged, and tags are propagated
+upwards in the tree, so we don't check any more nodes than before.
+For leaf nodes (64 slots) where shadow entries and dirty pages mix,
+the cost of skipping shadow entries is a bit bigger than that of empty
+slots (see the radix_tree_exception branch in find_get_pages(), which
+Hugh added to handle shmem's swap entries).
+
+Then there are filesystems that do page cache lookups for population
+analysis/heuristics, they could indeed pointlessly descend to leaf
+nodes that only contain non-page entries.  I haven't investigated yet
+how hot these paths actuallly are.  If this turns out to be a problem,
+we could add another tag and trade tree size for performance.
