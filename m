@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab2EAU7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:59:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:17742 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868Ab2EAU7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:59:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="148199595"
-Date: Wed, 2 May 2012 00:00:41 +0300
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwmon: coretemp: fix oops on cpu unplug
-Message-ID: <20120501210041.GA10629@otc-wbsnb-06>
-References: <1335791881-1560-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120501152014.GA2629@ericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120501152014.GA2629@ericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755790Ab2EAVDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 17:03:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60330 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab2EAVDR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 17:03:17 -0400
+Date: Tue, 1 May 2012 14:03:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH RESEND] memcg: Free spare array to avoid memory leak
+Message-Id: <20120501140314.1d7312fb.akpm@linux-foundation.org>
+In-Reply-To: <1334825690-9065-1-git-send-email-handai.szj@taobao.com>
+References: <1334825690-9065-1-git-send-email-handai.szj@taobao.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 08:20:14AM -0700, Guenter Roeck wrote:
-> On Mon, Apr 30, 2012 at 09:18:01AM -0400, Kirill A. Shutemov wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > 
-> > coretemp tries to access core_data array beyond bounds on cpu unplug if
-> > core id of the cpu if more than NUM_REAL_CORES-1.
-> > 
-> [ ... ]
-> > 
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+On Thu, 19 Apr 2012 16:54:50 +0800
+Sha Zhengju <handai.szj@gmail.com> wrote:
+
+> From: Sha Zhengju <handai.szj@taobao.com>
 > 
-> Looking at it again, you were right. Adding the check to get_core_online()
-> doesn't really help as the platform device is per CPU, not per core.
-> 
-> Applied. I'll submit a separate patch to increase NUM_REAL_CORES.
+> When the last event is unregistered, there is no need to keep the spare
+> array anymore. So free it to avoid memory leak.
 
-Actually, the problem is bigger.
+How serious is this leak?  Is there any way in which it can be used to
+consume unbounded amounts of memory?
 
-Documentation/cputopology.txt:
-====
-2) /sys/devices/system/cpu/cpuX/topology/core_id:
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4412,6 +4412,12 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
+>  swap_buffers:
+>  	/* Swap primary and spare array */
+>  	thresholds->spare = thresholds->primary;
+> +	/* If all events are unregistered, free the spare array */
+> +	if (!new) {
+> +		kfree(thresholds->spare);
+> +		thresholds->spare = NULL;
+> +	}
+> +
+>  	rcu_assign_pointer(thresholds->primary, new);
+>  
 
-        the CPU core ID of cpuX. Typically it is the hardware platform's
-        identifier (rather than the kernel's).  The actual value is
-        architecture and platform dependent.
-====
+The resulting code is really quite convoluted.  Try to read through it
+and follow the handling of ->primary and ->spare.  Head spins.
 
-We should not use core id as an index in an array since it's an arbitrary
-number (from kernel POV).
+What is the protocol here?  If ->primary is NULL then ->spare must also
+be NULL?
 
--- 
- Kirill A. Shutemov
+
+I'll apply the patch, although I don't (yet) have sufficient info to
+know which kernels it should be applied to.  Perhaps someone could
+revisit this code and see if it can be made more straightforward.
+
