@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab2EALHR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 07:07:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46726 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840Ab2EALHP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 07:07:15 -0400
+	id S1755123Ab2EALQf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 07:16:35 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26884 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754574Ab2EALQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 07:16:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="138670781"
+Date: Tue, 1 May 2012 13:16:29 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 4/6] mfd/ab8500: print switch off cause
+Message-ID: <20120501111629.GD20224@sortiz-mobl>
+References: <1334647840-1736-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-In-Reply-To: <20120430135123.GA14330@kroah.com>
-References: <1335779216-32068-1-git-send-email-sasikanth.v19@gmail.com>
-	<20120430135123.GA14330@kroah.com>
-Date: Tue, 1 May 2012 16:37:15 +0530
-Message-ID: <CAOJFanVKqbiVQ6dUPSbpc8A43_7-vYqGCDdsFXFWMnwxcHPWbQ@mail.gmail.com>
-Subject: Re: [PATCH v2] sysfs: Removed dup_name entirely in sysfs_rename
-From: Sasikanth babu <sasikanth.v19@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334647840-1736-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 7:21 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, Apr 30, 2012 at 03:16:56PM +0530, Sasikantha babu wrote:
->> Since no one using "dup_name", removed it completely in sysfs_rename,
->>
->> Signed-off-by: Sasikantha babu <sasikanth.v19@gmail.com>
->> ---
->>  fs/sysfs/dir.c |    6 ++----
->>  1 files changed, 2 insertions(+), 4 deletions(-)
->
-> Have you tested this patch and renamed some sysfs files with it with
-> SLAB_DEBUGGING enabled?  There was some "odd" things with regards to
-> names that I would like to ensure that is all still working properly
-> with this patch.
->
-> thanks,
->
-> greg k-h
+Hi Linus,
 
-I had enabled SLAB debugging and  tested this patch by modifying few
-existing sysfs entries and
-newly created entries.
+On Tue, Apr 17, 2012 at 09:30:40AM +0200, Linus Walleij wrote:
+> @@ -1139,7 +1149,20 @@ int __devinit ab8500_init(struct ab8500 *ab8500, enum ab8500_version version)
+>  		AB8500_SWITCH_OFF_STATUS, &value);
+>  	if (ret < 0)
+>  		return ret;
+> -	dev_info(ab8500->dev, "switch off status: %#x", value);
+> +	dev_info(ab8500->dev, "switch off cause(s) (%#x): ", value);
+> +
+> +	if (value) {
+> +		for (i = 0; i < ARRAY_SIZE(switch_off_status); i++) {
+> +			if (value & 1)
+> +				printk("\"%s\" ", switch_off_status[i]);
+> +			value = value >> 1;
+> +
+> +		}
+> +		printk("\n");
+> +	} else {
+> +		printk("None\n");
+> +	}
+So if your default loglevel is not KERN_INFO, you may miss the dev_info
+output while getting the printk one. Why not using dev_info() only with e.g.
+tabs for the causes ?
 
-[sasikantha@localhost linux-2.6]$ cat .config | grep SLAB
-CONFIG_SLAB=y
-CONFIG_SLABINFO=y
-CONFIG_DEBUG_SLAB=y
-CONFIG_DEBUG_SLAB_LEAK=y
-[sasikantha@localhost linux-2.6]$
+Cheers,
+Samuel.
 
-Did not face any issues while renaming.
-
-Please let me know if there is any specific scenario that needs to be tested.
-
-Thanks
-Sasi
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
