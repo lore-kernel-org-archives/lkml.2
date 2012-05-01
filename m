@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab2EANn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 09:43:29 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:35524 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757716Ab2EANn2 (ORCPT
+	id S1758026Ab2EANon (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 09:44:43 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62975 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab2EANom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 09:43:28 -0400
+	Tue, 1 May 2012 09:44:42 -0400
+Date: Tue, 1 May 2012 09:44:36 -0400
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Roland Dreier <roland@purestorage.com>,
+        Jason Baron <jbaron@redhat.com>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] dynamic_debug: use printk(KERN_WARNING..) in stub
+ function
+Message-ID: <20120501134436.GA31954@kroah.com>
+References: <1335871392-2222-1-git-send-email-jim.cromie@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <201204302200.q3UM0eb9008011@deneb.dwf.com>
-References: <201204302200.q3UM0eb9008011@deneb.dwf.com>
-Date: Tue, 1 May 2012 09:43:28 -0400
-Message-ID: <CA+5PVA6e5qmAbQJS3ZCYD+EseD-Ha=aKjrF7cpbNGqsAwGyR2Q@mail.gmail.com>
-Subject: Re: Who Maintains X11 for Fedora? what is mailing list?
-From: Josh Boyer <jwboyer@gmail.com>
-To: reg@dwf.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335871392-2222-1-git-send-email-jim.cromie@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 6:00 PM,  <reg@dwf.com> wrote:
->
-> The subject line says it all.
->
-> Who maintains the version of X11 used in Fedora
-> (at least in previous times there was more than one X11)
+On Tue, May 01, 2012 at 05:23:12AM -0600, Jim Cromie wrote:
+> drivers/infiniband/ulp/srp/ib_srp.c #defines pr_fmt() PFX fmt, but PFX
+> is not #defined until after <linux/*> headers are included.
+> 
+> This results in a bad expansion of the pr_warn() in the stub function.
+> 
+> 2084c2084
+> <   printk("<4>" PFX "dyndbg supported only in " "CONFIG_DYNAMIC_DEBUG builds\n")
+> ---
+> >   printk("<4>" "guano" "dyndbg supported only in " "CONFIG_DYNAMIC_DEBUG builds\n")
+> (END)
+> 
+> While that use-case is less than ideal, it will probably happen again,
+> and its easy to avoid by using raw printk().
 
-There are a number of maintainers for various portions of the X11 stack.
+Thanks, now applied.
 
-> What (where?) is the mailing list?
-
-You can email the fedora development list I guess.  Emailing here is
-pretty off topic.
-
-josh
+greg k-h
