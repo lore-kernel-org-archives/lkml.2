@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096Ab2EAONn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 10:13:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38604 "EHLO
+	id S1758088Ab2EAOTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 10:19:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42802 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753637Ab2EAONl (ORCPT
+	with ESMTP id S1756209Ab2EAOTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 10:13:41 -0400
-Date: Tue, 1 May 2012 23:13:30 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 5/5] mm: refault distance-based file cache sizing
-Message-ID: <20120501141330.GA2207@barrios>
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
- <1335861713-4573-6-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335861713-4573-6-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 1 May 2012 10:19:43 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf build-id: Fix filename size calculation
+Date: Tue,  1 May 2012 23:19:36 +0900
+Message-Id: <1335881976-3282-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hannes,
+The filename is a pointer variable so the sizeof(filename) will return
+length of a pointer. Fix it by using 'size'.
 
-On Tue, May 01, 2012 at 10:41:53AM +0200, Johannes Weiner wrote:
-> To protect frequently used page cache (workingset) from bursts of less
-> frequently used or one-shot cache, page cache pages are managed on two
-> linked lists.  The inactive list is where all cache starts out on
-> fault and ends on reclaim.  Pages that get accessed another time while
-> on the inactive list get promoted to the active list to protect them
-> from reclaim.
-> 
-> Right now we have two main problems.
-> 
-> One stems from numa allocation decisions and how the page allocator
-> and kswapd interact.  The both of them can enter into a perfect loop
-> where kswapd reclaims from the preferred zone of a task, allowing the
-> task to continuously allocate from that zone.  Or, the node distance
-> can lead to the allocator to do direct zone reclaim to stay in the
-> preferred zone.  This may be good for locality, but the task has only
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ tools/perf/util/header.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Understood.
-
-> the inactive space of that one zone to get its memory activated.
-> Forcing the allocator to spread out to lower zones in the right
-> situation makes the difference between continuous IO to serve the
-> workingset, or taking the numa cost but serving fully from memory.
-
-It's hard to parse your word due to my dumb brain.
-Could you elaborate on it?
-It would be a good if you say with example.
-
-> 
-> The other issue is that with the two lists alone, we can never detect
-> when a new set of data with equal access frequency should be cached if
-> the size of it is bigger than total/allowed memory minus the active
-> set.  Currently we have the perfect compromise given those
-> constraints: the active list is not allowed to grow bigger than the
-> inactive list.  This means that we can protect cache from reclaim only
-
-Okay.
-
-> up to half of memory, and don't recognize workingset changes that are
-> bigger than half of memory.
-
-Workingset change?
-You mean if new workingset is bigger than half of memory and it's like
-stream before retouch, we could cache only part of working set because 
-head pages on working set would be discared by tail pages of working set
-in inactive list?
-
-I'm sure I totally coudln't parse your point.
-Could you explain in detail? Before reading your approach and diving into code,
-I would like to see the problem clearly.
-
-Thanks.
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 4c7c2d73251f..c0b70c697a36 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -296,7 +296,7 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+ 	if (mkdir_p(filename, 0755))
+ 		goto out_free;
  
+-	snprintf(filename + len, sizeof(filename) - len, "/%s", sbuild_id);
++	snprintf(filename + len, size - len, "/%s", sbuild_id);
+ 
+ 	if (access(filename, F_OK)) {
+ 		if (is_kallsyms) {
+-- 
+1.7.9.2
+
