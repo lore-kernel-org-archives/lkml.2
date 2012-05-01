@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab2EAGkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 02:40:31 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:44626 "EHLO
+	id S1753645Ab2EAGt5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 02:49:57 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64185 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab2EAGka convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751857Ab2EAGt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 02:40:30 -0400
+	Tue, 1 May 2012 02:49:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANkdjvZinRvHYPKLCFsd6z3FXgM4ScS1Ar9OjO3s1SLDFnridw@mail.gmail.com>
-References: <CANkdjvZinRvHYPKLCFsd6z3FXgM4ScS1Ar9OjO3s1SLDFnridw@mail.gmail.com>
-Date: Tue, 1 May 2012 16:40:29 +1000
-Message-ID: <CAPa8GCBdVXx+iF9QAoURWchAY0avesYNwbQs_Do1Kn6Pyx+8+Q@mail.gmail.com>
-Subject: Re: read() syscall slowing down due to other threads?
+In-Reply-To: <1335778207-6511-1-git-send-email-jack@suse.cz>
+References: <1335778207-6511-1-git-send-email-jack@suse.cz>
+Date: Tue, 1 May 2012 16:49:55 +1000
+Message-ID: <CAPa8GCC_w3h8KS5rmQDt=rx1bw10rHVD5Pz_eqLhG3xw5uPUwg@mail.gmail.com>
+Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
 From: Nick Piggin <npiggin@gmail.com>
-To: George Porter <gmporter@cs.ucsd.edu>
-Cc: linux-kernel@vger.kernel.org
+To: Jan Kara <jack@suse.cz>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-man@vger.kernel.org,
+        linux-mm@kvack.org, mgorman@suse.de, Jeff Moyer <jmoyer@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 May 2012 16:03, George Porter <gmporter@cs.ucsd.edu> wrote:
-> Hi all,
->
-> I've run into a weird phenomenon I was hoping someone could help me pin down.
->
-> I've got a multithreaded program which reads data off of 8 input
-> disks, and does some processing on it.  I have 8 Reader threads, each
-> of which reads data off of one of the eight input disks.  That data
-> gets passed to other threads, which do some processing (this is an 8
-> core machine).  If I do no or minimal processing in those other
-> threads, the read() calls go at the speed of the disks (~100 MBps).  I
-> measure that speed by taking a timestamp before the read syscall, then
-> afterwards, and dividing that into the read size (5MB).  All seems
-> good.
->
-> However, if I start doing more computation on those other threads, the
-> read() syscalls take longer to read the same amount of data,
-> eventually slowing down to 50 MBps (50% slower).  I've used
-> setaffinity() to isolate the Reader threads to one set of cores, and
-> the compute threads to a different set of cores, and so I don't think
-> it is CPU/scheduling interference.
->
-> Thoughts?  Has anyone run into this before?
+On 30 April 2012 19:30, Jan Kara <jack@suse.cz> wrote:
+> This is a long standing problem (or a surprising feature) in our implementation
+> of get_user_pages() (used by direct IO). Since several attempts to fix it
+> failed (e.g.
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-04/msg06542.html, or
+> http://lkml.indiana.edu/hypermail/linux/kernel/0903.1/01498.html refused in
+> http://comments.gmane.org/gmane.linux.kernel.mm/31569) and it's not completely
+> clear whether we really want to fix it given the costs, let's at least document
+> it.
 
-It could be memory or coherency traffic that's causing a slowdown across
-the system?
-
-Could a dynamic core frequency / thermal throttling explain any of the
-slowdown?
+In any case, it should be documented even if it is ever fixed in newer
+kernels. Thanks!
