@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab2EALXr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 07:23:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43981 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840Ab2EALXq (ORCPT
+	id S1755476Ab2EAL0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 07:26:50 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:58769 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755097Ab2EAL0t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 07:23:46 -0400
-From: Jim Cromie <jim.cromie@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jim Cromie <jim.cromie@gmail.com>, Greg KH <greg@kroah.com>,
-        linux-next@vger.kernel.org, Roland Dreier <roland@purestorage.com>,
-        Jason Baron <jbaron@redhat.com>, Joe Perches <joe@perches.com>
-Subject: [PATCH] dynamic_debug: use printk(KERN_WARNING..) in stub function
-Date: Tue,  1 May 2012 05:23:12 -0600
-Message-Id: <1335871392-2222-1-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Tue, 1 May 2012 07:26:49 -0400
+MIME-Version: 1.0
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <20120501001238.GA15497@bloggs.ozlabs.ibm.com>
+References: <20120501001238.GA15497@bloggs.ozlabs.ibm.com>
+Date: Tue, 1 May 2012 14:26:48 +0300
+Message-ID: <CAOtvUMfgAGBXx-nvFbMHywYGLmKfmbpcQajddoGYA+B22vLOiw@mail.gmail.com>
+Subject: Re: get/put_online_cpus documentation wrong?
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Paul Mackerras <paulus@samba.org>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/infiniband/ulp/srp/ib_srp.c #defines pr_fmt() PFX fmt, but PFX
-is not #defined until after <linux/*> headers are included.
+On Tue, May 1, 2012 at 3:12 AM, Paul Mackerras <paulus@samba.org> wrote:
+>
+> In Documentation/cpu-hotplug.txt it says:
+>
+> "       #include <linux/cpu.h>
+>        get_online_cpus() and put_online_cpus():
+>
+> The above calls are used to inhibit cpu hotplug operations. While the
+> cpu_hotplug.refcount is non zero, the cpu_online_mask will not change.
+> If you merely need to avoid cpus going away, you could also use
+> preempt_disable() and preempt_enable() for those sections.
+> Just remember the critical section cannot call any
+> function that can sleep or schedule this process away."
 
-This results in a bad expansion of the pr_warn() in the stub function.
 
-2084c2084
-<   printk("<4>" PFX "dyndbg supported only in " "CONFIG_DYNAMIC_DEBUG builds\n")
----
->   printk("<4>" "guano" "dyndbg supported only in " "CONFIG_DYNAMIC_DEBUG builds\n")
-(END)
+I *think* the critical section remark here is referring to using
+preempt_disable/enable(),
+rather  then the use of get/put_online_cpus().
 
-While that use-case is less than ideal, it will probably happen again,
-and its easy to avoid by using raw printk().
+Gilad
 
-To: Bart Van Assche bvanassche@acm.org
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Greg KH <greg@kroah.com>
-CC: linux-next@vger.kernel.org
-CC: Roland Dreier <roland@purestorage.com>
-CC: Jason Baron <jbaron@redhat.com>
-CC: Joe Perches <joe@perches.com>
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
----
- include/linux/dynamic_debug.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index 4697e4b..c18257b 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -109,7 +109,8 @@ static inline int ddebug_dyndbg_module_param_cb(char *param, char *val,
- 						const char *modname)
- {
- 	if (strstr(param, "dyndbg")) {
--		pr_warn("dyndbg supported only in "
-+		/* avoid pr_warn(), which wants pr_fmt() fully defined */
-+		printk(KERN_WARNING "dyndbg param is supported only in "
- 			"CONFIG_DYNAMIC_DEBUG builds\n");
- 		return 0; /* allow and ignore */
- 	}
--- 
-1.7.7.6
+--
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
 
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
