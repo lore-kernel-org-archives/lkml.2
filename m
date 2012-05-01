@@ -1,73 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab2EAWYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 18:24:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59829 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab2EAWYU (ORCPT
+	id S1756441Ab2EAWYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 18:24:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60621 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab2EAWYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 18:24:20 -0400
-From: mathieu.poirier@linaro.org
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, andrew@lunn.ch,
-        rpurdie@rpsys.net, mathieu.poirier@linaro.org
-Subject: [PATCH] drivers: correct __devexit annotations
-Date: Tue,  1 May 2012 16:24:13 -0600
-Message-Id: <1335911053-32506-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 1 May 2012 18:24:40 -0400
+Date: Tue, 1 May 2012 15:24:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 15/16] mm: Throttle direct reclaimers if PF_MEMALLOC
+ reserves are low and swap is backed by network storage
+Message-Id: <20120501152437.194f0fc2.akpm@linux-foundation.org>
+In-Reply-To: <1334578624-23257-16-git-send-email-mgorman@suse.de>
+References: <1334578624-23257-1-git-send-email-mgorman@suse.de>
+	<1334578624-23257-16-git-send-email-mgorman@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+On Mon, 16 Apr 2012 13:17:02 +0100
+Mel Gorman <mgorman@suse.de> wrote:
 
-__devexit functions are discarded without CONFIG_HOTPLUG,
-so they need to be referenced carefully.  A __devexit
-function may also not be called from a __devinit
-function.
+> If swap is backed by network storage such as NBD, there is a risk
+> that a large number of reclaimers can hang the system by consuming
+> all PF_MEMALLOC reserves. To avoid these hangs, the administrator
+> must tune min_free_kbytes in advance which is a bit fragile.
+> 
+> This patch throttles direct reclaimers if half the PF_MEMALLOC reserves
+> are in use. If the system is routinely getting throttled the system
+> administrator can increase min_free_kbytes so degradation is smoother
+> but the system will keep running.
+> 
+>
+> ...
+>
+> +static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+> +{
+> +	struct zone *zone;
+> +	unsigned long pfmemalloc_reserve = 0;
+> +	unsigned long free_pages = 0;
+> +	int i;
+> +	bool wmark_ok;
+> +
+> +	for (i = 0; i <= ZONE_NORMAL; i++) {
+> +		zone = &pgdat->node_zones[i];
+> +		pfmemalloc_reserve += min_wmark_pages(zone);
+> +		free_pages += zone_page_state(zone, NR_FREE_PAGES);
+> +	}
+> +
+> +	wmark_ok = (free_pages > pfmemalloc_reserve / 2) ? true : false;
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- drivers/leds/leds-netxbig.c |    4 ++--
- drivers/leds/leds-ns2.c     |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+	wmark_ok = free_pages > pfmemalloc_reserve / 2;
 
-diff --git a/drivers/leds/leds-netxbig.c b/drivers/leds/leds-netxbig.c
-index d8433f2..73973fd 100644
---- a/drivers/leds/leds-netxbig.c
-+++ b/drivers/leds/leds-netxbig.c
-@@ -112,7 +112,7 @@ err_free_addr:
- 	return err;
- }
- 
--static void __devexit gpio_ext_free(struct netxbig_gpio_ext *gpio_ext)
-+static void gpio_ext_free(struct netxbig_gpio_ext *gpio_ext)
- {
- 	int i;
- 
-@@ -294,7 +294,7 @@ static ssize_t netxbig_led_sata_show(struct device *dev,
- 
- static DEVICE_ATTR(sata, 0644, netxbig_led_sata_show, netxbig_led_sata_store);
- 
--static void __devexit delete_netxbig_led(struct netxbig_led_data *led_dat)
-+static void delete_netxbig_led(struct netxbig_led_data *led_dat)
- {
- 	if (led_dat->mode_val[NETXBIG_LED_SATA] != NETXBIG_LED_INVALID_MODE)
- 		device_remove_file(led_dat->cdev.dev, &dev_attr_sata);
-diff --git a/drivers/leds/leds-ns2.c b/drivers/leds/leds-ns2.c
-index 2f0a144..01cf89e 100644
---- a/drivers/leds/leds-ns2.c
-+++ b/drivers/leds/leds-ns2.c
-@@ -255,7 +255,7 @@ err_free_cmd:
- 	return ret;
- }
- 
--static void __devexit delete_ns2_led(struct ns2_led_data *led_dat)
-+static void delete_ns2_led(struct ns2_led_data *led_dat)
- {
- 	device_remove_file(led_dat->cdev.dev, &dev_attr_sata);
- 	led_classdev_unregister(&led_dat->cdev);
--- 
-1.7.5.4
+> +
+> +	/* kswapd must be awake if processes are being throttled */
+> +	if (!wmark_ok && waitqueue_active(&pgdat->kswapd_wait)) {
+> +		pgdat->classzone_idx = min(pgdat->classzone_idx,
+> +						(enum zone_type)ZONE_NORMAL);
+> +		wake_up_interruptible(&pgdat->kswapd_wait);
+> +	}
+> +
+> +	return wmark_ok;
+> +}
+> +
+> +/*
+> + * Throttle direct reclaimers if backing storage is backed by the network
+> + * and the PFMEMALLOC reserve for the preferred node is getting dangerously
+> + * depleted. kswapd will continue to make progress and wake the processes
+> + * when the low watermark is reached
+> + */
+> +static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+> +					nodemask_t *nodemask)
+> +{
+> +	struct zone *zone;
+> +	int high_zoneidx = gfp_zone(gfp_mask);
+> +	pg_data_t *pgdat;
+> +
+> +	/* Kernel threads such as kjournald should not be throttled */
 
+The comment should explain "why", not "what".  Particularly when the
+"what" was bleedin obvious ;)
+
+Also...   why?
+
+> +	if (current->flags & PF_KTHREAD)
+> +		return;
+> +
+> +	/* Check if the pfmemalloc reserves are ok */
+> +	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+> +	pgdat = zone->zone_pgdat;
+> +	if (pfmemalloc_watermark_ok(pgdat))
+> +		return;
+> +
+> +	/*
+> +	 * If the caller cannot enter the filesystem, it's possible that it
+> +	 * is processing a journal transaction. In this case, it is not safe
+> +	 * to block on pfmemalloc_wait as kswapd could also be blocked waiting
+> +	 * to start a transaction. Instead, throttle for up to a second before
+> +	 * the reclaim must continue.
+> +	 */
+
+I suppose this applies to fs locks in general, not just to
+journal_start()?
+
+> +	if (!(gfp_mask & __GFP_FS)) {
+> +		wait_event_interruptible_timeout(pgdat->pfmemalloc_wait,
+> +			pfmemalloc_watermark_ok(pgdat), HZ);
+> +		return;
+> +	}
+> +
+> +	/* Throttle until kswapd wakes the process */
+> +	wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
+> +		pfmemalloc_watermark_ok(pgdat));
+> +}
+> +
+>  unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+>  				gfp_t gfp_mask, nodemask_t *nodemask)
+>  {
+>
+> ...
+>
+> @@ -2610,6 +2686,20 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+>  	if (remaining)
+>  		return true;
+>  
+> +	/*
+> +	 * There is a potential race between when kswapd checks it watermarks
+
+"its"
+
+> +	 * and a process gets throttled. There is also a potential race if
+> +	 * processes get throttled, kswapd wakes, a large process exits therby
+> +	 * balancing the zones that causes kswapd to miss a wakeup. If kswapd
+> +	 * is going to sleep, no process should be sleeping on pfmemalloc_wait
+> +	 * so wake them now if necessary. If necessary, processes will wake
+> +	 * kswapd and get throttled again
+> +	 */
+
+Yes, the possibility for missed wakeups here worried me.  There's no
+synchronization and it would be easy to leave holes.
+
+It's good that there is no timeout on the throttling - a timeout would
+cover up rare races most nastily.
+
+> +	if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
+> +		wake_up(&pgdat->pfmemalloc_wait);
+> +		return true;
+> +	}
+
+A bool-returning function called "sleeping_prematurely" should have no
+side-effects.  But it now performs wakeups.  Wanna see if there is a
+way of making this nicer?
+
+>  	/* Check the watermark levels */
+>  	for (i = 0; i <= classzone_idx; i++) {
+>  		struct zone *zone = pgdat->node_zones + i;
+> @@ -2871,6 +2961,12 @@ loop_again:
+>  			}
+>  
+>  		}
+> +
+> +		/* Wake throttled direct reclaimers if low watermark is met */
+
+s/"what"/"why"/ !
+
+> +		if (waitqueue_active(&pgdat->pfmemalloc_wait) &&
+> +				pfmemalloc_watermark_ok(pgdat))
+> +			wake_up(&pgdat->pfmemalloc_wait);
+> +
+>  		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
+>  			break;		/* kswapd: all done */
+>  		/*
+>
+> ...
+>
