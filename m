@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab2EAHfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 03:35:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35119 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab2EAHfq (ORCPT
+	id S1752826Ab2EAH4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 03:56:16 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:58857 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab2EAH4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 03:35:46 -0400
+	Tue, 1 May 2012 03:56:15 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4F9F9711.1010904@cam.ac.uk>
+Date: Tue, 01 May 2012 08:56:01 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120501160838.0bc75873705d84625d1fb98b@canb.auug.org.au>
-References: <20120501160838.0bc75873705d84625d1fb98b@canb.auug.org.au>
-Date: Tue, 1 May 2012 00:35:45 -0700
-X-Google-Sender-Auth: WJqlOxo3PVRzLZ4mh0UxtF1c7io
-Message-ID: <CAE9FiQXrohEJKx_4OAh-AXo9t9cySViDBG+kP-uTWhTKinaA6Q@mail.gmail.com>
-Subject: Re: linux-next: build warning after merge of the pci tree
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-next@vger.kernel.org,
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: joseph daniel <josephdanielwalter@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=047d7b33da4c69104404bef49e95
+Subject: Re: [PATCH] staging/iio/meter: fix the coding style problem
+References: <1335813977-8096-1-git-send-email-josephdanielwalter@gmail.com> <4F9EEFB2.8030201@metafoo.de>
+In-Reply-To: <4F9EEFB2.8030201@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b33da4c69104404bef49e95
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Mon, Apr 30, 2012 at 11:08 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Bjorn,
+On 4/30/2012 9:01 PM, Lars-Peter Clausen wrote:
+> On 04/30/2012 09:26 PM, joseph daniel wrote:
+>> Signed-off-by: joseph daniel<josephdanielwalter@gmail.com>
+>> ---
+>> Hi Lars,
+>> 	Thanks for review. how about the below change?
+>>   drivers/staging/iio/meter/ade7854-i2c.c |    6 +++++-
+>>   1 file changed, 5 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/staging/iio/meter/ade7854-i2c.c b/drivers/staging/iio/meter/ade7854-i2c.c
+>> index 1e1faa0..52bdb05 100644
+>> --- a/drivers/staging/iio/meter/ade7854-i2c.c
+>> +++ b/drivers/staging/iio/meter/ade7854-i2c.c
+>> @@ -181,6 +181,7 @@ static int ade7854_i2c_read_reg_32(struct device *dev,
+>>   {
+>>   	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+>>   	struct ade7854_state *st = iio_priv(indio_dev);
+>> +	uint32_t value;
+>>   	int ret;
+>>
+>>   	mutex_lock(&st->buf_lock);
+>> @@ -195,7 +196,10 @@ static int ade7854_i2c_read_reg_32(struct device *dev,
+>>   	if (ret)
+>>   		goto out;
+>>
+>> -	*val = (st->rx[0]<<  24) | (st->rx[1]<<  16) | (st->rx[2]<<  8) | st->rx[3];
+>> +	memcpy(&value, st->rx, sizeof(uint32_t));
+>> +
+> Uhm, yes, you are right st->rx is unaligned. The memcpy is not necessary though
+> if you use get_unaligned_be32. Sorry for the pointer to the wrong function.
+Or we could just force the alignment of st->rx? Might not be worth 
+bothering.
 >
-> After merging the pci tree, today's linux-next build (i386 defconfig)
-> produced this warning:
+> Btw. there are a few other locations in this driver which could use the
+> put_unaligned_be* and get_unaligned_be* functions. Would be great if you could
+> convert these as well.
 >
-> arch/x86/pci/amd_bus.c: In function 'early_fill_mp_bus_info':
-> arch/x86/pci/amd_bus.c:56:6: warning: unused variable 'j' [-Wunused-variable]
->
-> Introduced by commit d28e5ac2a07e ("x86/PCI: dynamically allocate
-> pci_root_info for native host bridge drivers").
->
+>> +	*val = be32_to_cpu(value);
+>> +
+>>   out:
+>>   	mutex_unlock(&st->buf_lock);
+>>   	return ret;
 
-please check attached patch.
-
-Thanks
-
-Yinghai
-
---047d7b33da4c69104404bef49e95
-Content-Type: application/octet-stream; name="amd_bus_warning.patch"
-Content-Disposition: attachment; filename="amd_bus_warning.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h1on75nl1
-
-U3ViamVjdDogW1BBVENIXSBQQ0kveDg2OiBGaXggdW51c2VkIHdhcm5pbmcgd2l0aCBhbWRfYnVz
-CgpIYXZlIHNlcGFyYXRlZCBmdW5jdGlvbiBmb3IgdGhhdC4KClJlcG9ydGVkLWJ5OiBTdGVwaGVu
-IFJvdGh3ZWxsIDxzZnJAY2FuYi5hdXVnLm9yZy5hdT4KU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBM
-dSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKZGlmZiAtLWdpdCBhL2FyY2gveDg2L3BjaS9hbWRfYnVz
-LmMgYi9hcmNoL3g4Ni9wY2kvYW1kX2J1cy5jCmluZGV4IDQ1OWE3MzEuLjVhZWQ0OWIgMTAwNjQ0
-Ci0tLSBhL2FyY2gveDg2L3BjaS9hbWRfYnVzLmMKKysrIGIvYXJjaC94ODYvcGNpL2FtZF9idXMu
-YwpAQCAtNDQsNiArNDQsMTUgQEAgc3RhdGljIHN0cnVjdCBwY2lfcm9vdF9pbmZvIF9faW5pdCAq
-ZmluZF9wY2lfcm9vdF9pbmZvKGludCBub2RlLCBpbnQgbGluaykKIAlyZXR1cm4gTlVMTDsKIH0K
-IAorc3RhdGljIHZvaWQgX19pbml0IHNldF9tcF9idXNfcmFuZ2VfdG9fbm9kZShpbnQgbWluX2J1
-cywgaW50IG1heF9idXMsIGludCBub2RlKQoreworI2lmZGVmIENPTkZJR19OVU1BCisJaW50IGo7
-CisKKwlmb3IgKGogPSBtaW5fYnVzOyBqIDw9IG1heF9idXM7IGorKykKKwkJc2V0X21wX2J1c190
-b19ub2RlKGosIG5vZGUpOworI2VuZGlmCit9CiAvKioKICAqIGVhcmx5X2ZpbGxfbXBfYnVzX3Rv
-X25vZGUoKQogICogY2FsbGVkIGJlZm9yZSBwY2liaW9zX3NjYW5fcm9vdCBhbmQgcGNpX3NjYW5f
-YnVzCkBAIC01Myw3ICs2Miw2IEBAIHN0YXRpYyBzdHJ1Y3QgcGNpX3Jvb3RfaW5mbyBfX2luaXQg
-KmZpbmRfcGNpX3Jvb3RfaW5mbyhpbnQgbm9kZSwgaW50IGxpbmspCiBzdGF0aWMgaW50IF9faW5p
-dCBlYXJseV9maWxsX21wX2J1c19pbmZvKHZvaWQpCiB7CiAJaW50IGk7Ci0JaW50IGo7CiAJdW5z
-aWduZWQgYnVzOwogCXVuc2lnbmVkIHNsb3Q7CiAJaW50IG5vZGU7CkBAIC0xMDksMTAgKzExNyw3
-IEBAIHN0YXRpYyBpbnQgX19pbml0IGVhcmx5X2ZpbGxfbXBfYnVzX2luZm8odm9pZCkKIAkJbWlu
-X2J1cyA9IChyZWcgPj4gMTYpICYgMHhmZjsKIAkJbWF4X2J1cyA9IChyZWcgPj4gMjQpICYgMHhm
-ZjsKIAkJbm9kZSA9IChyZWcgPj4gNCkgJiAweDA3OwotI2lmZGVmIENPTkZJR19OVU1BCi0JCWZv
-ciAoaiA9IG1pbl9idXM7IGogPD0gbWF4X2J1czsgaisrKQotCQkJc2V0X21wX2J1c190b19ub2Rl
-KGosIG5vZGUpOwotI2VuZGlmCisJCXNldF9tcF9idXNfcmFuZ2VfdG9fbm9kZShtaW5fYnVzLCBt
-YXhfYnVzLCBub2RlKTsKIAkJbGluayA9IChyZWcgPj4gOCkgJiAweDAzOwogCiAJCWluZm8gPSBh
-bGxvY19wY2lfcm9vdF9pbmZvKG1pbl9idXMsIG1heF9idXMsIG5vZGUsIGxpbmspOwo=
---047d7b33da4c69104404bef49e95--
