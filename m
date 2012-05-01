@@ -1,141 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069Ab2EAVkk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 17:40:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3356 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753089Ab2EAVki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 17:40:38 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jaxboe@fusionio.com, Kyle McMartin <kmcmarti@redhat.com>
-Subject: Re: [patch|rfc] block: don't mark buffers beyond end of disk as mapped
-References: <x49pqaom2u4.fsf@segfault.boston.devel.redhat.com>
-	<CAPa8GCAgDU8FYdMuWsn2PuUW0GQxdKWJV6K0SmQEzb3s1GHxwA@mail.gmail.com>
-	<x49lilcm1tb.fsf@segfault.boston.devel.redhat.com>
-	<CAPa8GCChTmXTmjY5GvsFsvXpP_WSuiiWMRDu7Lvb71G9tW1PTw@mail.gmail.com>
-	<x49bom7ljt5.fsf@segfault.boston.devel.redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 01 May 2012 17:40:35 -0400
-In-Reply-To: <x49bom7ljt5.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
-	message of "Tue, 01 May 2012 16:37:10 -0400")
-Message-ID: <x497gwvlgvg.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1755347Ab2EAVmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 17:42:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39997 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab2EAVmV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 17:42:21 -0400
+Date: Tue, 1 May 2012 14:42:02 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: linux-next ppc64: RCU mods cause __might_sleep BUGs
+In-Reply-To: <20120501142208.GA2441@linux.vnet.ibm.com>
+Message-ID: <alpine.LSU.2.00.1205011410360.28232@eggly.anvils>
+References: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils> <1335832418.20866.95.camel@pasglop> <alpine.LSU.2.00.1204302142310.27208@eggly.anvils> <20120501142208.GA2441@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Moyer <jmoyer@redhat.com> writes:
+On Tue, 1 May 2012, Paul E. McKenney wrote:
+> On Mon, Apr 30, 2012 at 10:10:06PM -0700, Hugh Dickins wrote:
+> > On Tue, 1 May 2012, Benjamin Herrenschmidt wrote:
+> > > On Mon, 2012-04-30 at 15:37 -0700, Hugh Dickins wrote:
+> > > > 
+> > > > BUG: sleeping function called from invalid context at include/linux/pagemap.h:354
+> > > > in_atomic(): 0, irqs_disabled(): 0, pid: 6886, name: cc1
+> > > > Call Trace:
+> > > > [c0000001a99f78e0] [c00000000000f34c] .show_stack+0x6c/0x16c (unreliable)
+> > > > [c0000001a99f7990] [c000000000077b40] .__might_sleep+0x11c/0x134
+> > > > [c0000001a99f7a10] [c0000000000c6228] .filemap_fault+0x1fc/0x494
+> > > > [c0000001a99f7af0] [c0000000000e7c9c] .__do_fault+0x120/0x684
+> > > > [c0000001a99f7c00] [c000000000025790] .do_page_fault+0x458/0x664
+> > > > [c0000001a99f7e30] [c000000000005868] handle_page_fault+0x10/0x30
+> > > > 
 
-> Nick Piggin <npiggin@gmail.com> writes:
->
->> On 2 May 2012 00:08, Jeff Moyer <jmoyer@redhat.com> wrote:
->>> Nick Piggin <npiggin@gmail.com> writes:
->>>
->>>> Not a bad fix. But it's kind of sad to have i_size checking logic also in
->>>> block_read_full_page, that does not cope with this.
->>>>
->>>> I have found there are parts of the kernel (readahead) that try to read
->>>> beyond EOF and seem to get angry if we return an error (by not
->>>> marking uptodate in readpage) in that case though :(
->>>>
->>>> But, either way, I think it's very reasonable to not mark buffers beyond
->>>> end of device as mapped. So I think your patch is fine.
->>>>
->>>> I guess for ext[234], it does not read metadata close to the end of the
->>>> device or you were using 4K sized blocks?
->>>
->>> Well, the test case just reads directly from the loop device, bypassing
->>> the file system, and I did use 1KB blocks when making the file system, so
->>> it is quite puzzling.
->>
->> It's because buffer_head creation does not go through the same paths
->> for bdev file access versus getblk APIs.
->>
->> blkdev_get_block does the right thing there
->>
->> In fact, it's probably good to unify the checks here, i.e., use max_blocks()
->
-> You really think it's worth it?  I mean, it's just an i_size_read and a
-> shift, and there is precedent for it inside fs/buffer.c.  I'd prefer to
-> keep the patch as-is, but will change it if you feel that strongly about
-> it.
+> My guess is that the following happened:
+> 
+> 1.	Task A is running, with its state in RCU's per-CPU variables.
+> 
+> 2.	Task A creates Task B and switches to it, but without invoking
+> 	schedule_tail() or schedule().  Task B is now running, with
+> 	Task A's state in RCU's per-CPU variables.
+> 
+> 3.	Task B switches context, saving Task A's per-CPU RCU variables
+> 	(with modifications by Task B, just for fun).
+> 
+> 4.	Task A starts running again, and loads obsolete versions of its
+> 	per-CPU RCU variables.  This can cause rcu_read_unlock_do_special()
+> 	to be invoked at inappropriate times, which could cause
+> 	pretty arbitrary misbehavior.
+> 
+> 5.	Mismatched values for the RCU read-side nesting could cause
+> 	the read-side critical section to complete prematurely, which
+> 	could cause all manner of mischief.  However, I would expect
+> 	this to trigger the WARN_ON_ONCE() in __rcu_read_unlock().
+> 
+> Hmmm...
 
-Anyway, here is the other version of the patch, using max_block as you
-suggested.
+I didn't find anything corresponding to that under arch/powerpc.
 
-Cheers,
-Jeff
+There is something I found, that I had high hopes for, but sadly no,
+it does not fix it.  I may be wrong, it's a long time since I thought
+about what happens in fork().  But I believe the rcu_switch_from(prev)
+you added to schedule_tail() is bogus: doesn't schedule_tail() more or
+less amount to a jump into schedule(), for the child to be as if it's
+emerging from the switch_to() in schedule()?
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+So I think the rcu_switch_from(prev) has already been done by the prev
+task on the cpu, as it goes into switch_to() in schedule().  So at best
+you're duplicating that in schedule_tail(), and at worst (I don't know
+if the prev task can get far enough away for this to matter) you're
+messing with its state.  Probably difficult to do any harm (those fields
+don't matter while it's on another cpu, and it has to get on another cpu
+for them to change), but it does look wrong to me.
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index e08f6a2..ba11c30 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -70,7 +70,7 @@ static void bdev_inode_switch_bdi(struct inode *inode,
- 	spin_unlock(&dst->wb.list_lock);
- }
- 
--static sector_t max_block(struct block_device *bdev)
-+sector_t blkdev_max_block(struct block_device *bdev)
- {
- 	sector_t retval = ~((sector_t)0);
- 	loff_t sz = i_size_read(bdev->bd_inode);
-@@ -163,7 +163,7 @@ static int
- blkdev_get_block(struct inode *inode, sector_t iblock,
- 		struct buffer_head *bh, int create)
- {
--	if (iblock >= max_block(I_BDEV(inode))) {
-+	if (iblock >= blkdev_max_block(I_BDEV(inode))) {
- 		if (create)
- 			return -EIO;
- 
-@@ -185,7 +185,7 @@ static int
- blkdev_get_blocks(struct inode *inode, sector_t iblock,
- 		struct buffer_head *bh, int create)
- {
--	sector_t end_block = max_block(I_BDEV(inode));
-+	sector_t end_block = blkdev_max_block(I_BDEV(inode));
- 	unsigned long max_blocks = bh->b_size >> inode->i_blkbits;
- 
- 	if ((iblock + max_blocks) > end_block) {
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 351e18e..ad5938c 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -921,6 +921,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
- 	struct buffer_head *head = page_buffers(page);
- 	struct buffer_head *bh = head;
- 	int uptodate = PageUptodate(page);
-+	sector_t end_block = blkdev_max_block(I_BDEV(bdev->bd_inode));
- 
- 	do {
- 		if (!buffer_mapped(bh)) {
-@@ -929,7 +930,8 @@ init_page_buffers(struct page *page, struct block_device *bdev,
- 			bh->b_blocknr = block;
- 			if (uptodate)
- 				set_buffer_uptodate(bh);
--			set_buffer_mapped(bh);
-+			if (block < end_block)
-+				set_buffer_mapped(bh);
- 		}
- 		block++;
- 		bh = bh->b_this_page;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 8de6755..25c40b9 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2051,6 +2051,7 @@ extern void unregister_blkdev(unsigned int, const char *);
- extern struct block_device *bdget(dev_t);
- extern struct block_device *bdgrab(struct block_device *bdev);
- extern void bd_set_size(struct block_device *, loff_t size);
-+extern sector_t blkdev_max_block(struct block_device *bdev);
- extern void bd_forget(struct inode *inode);
- extern void bdput(struct block_device *);
- extern void invalidate_bdev(struct block_device *);
+But commenting out that line did not fix my issues.  And if you agree,
+you'll probably prefer, not to comment out the line, but revert back to
+rcu_switch_from(void) and just add the rcu_switch_to() to schedule_tail().
+
+Something else that I noticed in comments on rcu_switch_from() in
+sched.h (er, is sched.h really the right place for this code?): it says
+"if rcu_read_unlock_special is zero, then rcu_read_lock_nesting must
+also be zero" - shouldn't that say "non-zero" in each case?
+
+I must turn away from this right now, and come back to it later.
+
+Hugh
