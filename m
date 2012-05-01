@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757806Ab2EADgg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 23:36:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57305 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751755Ab2EADgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 23:36:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="137282453"
-Message-ID: <4F9F5A3B.3090905@intel.com>
-Date: Tue, 01 May 2012 11:36:27 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
-CC: "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] scsi/mpt2sas: remove unnecesscary preempt requirement
- for MSIX
-References: <1335594453-30679-1-git-send-email-alex.shi@intel.com> <A6888A6805518E4EA4AF7072A28264A6067E92EA43@inbmail02.lsi.com>
-In-Reply-To: <A6888A6805518E4EA4AF7072A28264A6067E92EA43@inbmail02.lsi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757679Ab2EAD4J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 23:56:09 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57872 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757437Ab2EAD4I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 23:56:08 -0400
+Date: Tue, 1 May 2012 13:55:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alexander Graf <agraf@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: linux-next: build failure after merge of the kvm-ppc tree
+Message-Id: <20120501135549.5c865717b33650002f083d4a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_May_2012_13_55_49_+1000_9YZ=ToKnZSbujoml"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2012 01:29 PM, Nandigama, Nagalakshmi wrote:
+--Signature=_Tue__1_May_2012_13_55_49_+1000_9YZ=ToKnZSbujoml
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Alex, 
-> I submitted this patch already. 
+Hi Alex,
 
+After merging the kvm-ppc tree, today's linux-next build
+(powerpc_ppc64_defconfig) failed like this:
 
-Ok. that's fine.
+arch/powerpc/kvm/built-in.o: In function `.kvm_spapr_tce_release':
+book3s_64_vio.c:(.text+0x374c): undefined reference to `.kvm_put_kvm'
+arch/powerpc/kvm/built-in.o: In function `.kvm_vm_ioctl_create_spapr_tce':
+(.text+0x3ae8): undefined reference to `.kvm_get_kvm'
 
-> 
-> James, request you to pick up the patch that I previously submitted for fixing this issue. Attaching the patch that I submitted previously.
-> 
-> 
-> Regards,
-> Nagalakshmi
-> 
-> 
-> -----Original Message-----
-> From: Alex Shi [mailto:alex.shi@intel.com] 
-> Sent: Saturday, April 28, 2012 11:58 AM
-> To: JBottomley@parallels.com; Nandigama, Nagalakshmi
-> Cc: linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org; alex.shi@intel.com
-> Subject: [PATCH] scsi/mpt2sas: remove unnecesscary preempt requirement for MSIX
-> 
-> smp_processor_id() need used in preempt safe ENV. Otherwise, the
-> cpu may be preempted and run on other cpus. But here, we don't care much
-> the specific CPU which handler the MSI, so just replace it by
-> raw_smp_processor_id() to avoid preempt debug warning.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  drivers/scsi/mpt2sas/mpt2sas_base.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-> index 8a59a77..3f518ba 100644
-> --- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-> +++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-> @@ -1785,7 +1785,7 @@ static inline void _base_writeq(__u64 b, volatile void __iomem *addr,
->  static inline u8
->  _base_get_msix_index(struct MPT2SAS_ADAPTER *ioc)
->  {
-> -	return ioc->cpu_msix_table[smp_processor_id()];
-> +	return ioc->cpu_msix_table[raw_smp_processor_id()];
->  }
->  
->  /**
+Presumably caused by commit 969f70395d6d ("kvm/book3s: Make kernel
+emulated H_PUT_TCE available for "PR" KVM").
 
+I have used the kvm-ppc tree from next-20120430 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Tue__1_May_2012_13_55_49_+1000_9YZ=ToKnZSbujoml
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPn17FAAoJEECxmPOUX5FEMyEP/j3QNxzJ3flki5J0DOOf3zE1
+gtbyGnFe8YK7v/vE1blNr0Wtx/DjP11FKUtrsuhvRIc4IrXpiiSdrPCspnJef4Y8
+32OEAZkkBBldTXR/CQqcqP0ktuo5/OAvX2IMGU9iPPT/gB2teJdTkaiO8CdFu39S
+tdpfqFuZcPXWZNxR+lDzWEfoAY99anN1AQ7nisYKNONJAm5OxrVO2zgIWYcLJl0T
+u/np+Lv1fnCSxE+z2wLeQYA2kOkTw7Yf2ua8azPwE8NRFGfM8aK+EZEsopqXwG4h
++Dy1jjetug1CSrIf+1HJh6abEo3ErNACPIDrrhtfl69DDhXX049RxpVYl9Js0zNL
+bs+7yoI0QNv5AXJbqsI671eT9pB+HO/xPajmoNVtc0Xf3r7JR2iBSW0Dl1FXfPOD
+yUOvCG+FlEC+a5mzQOMwHZes2iVijv1kWmg9hB5Pft121IAnyFPctCRuy/7EIXR+
+fSnbKmzlZI/tfaJ7NdG2hfVTsog6m8mkYyHZbuacfWCj3EopvX76Xh3++gTVgnZ6
+6tk2duR2+Hoaali+80qb2RJA8x/6Rhp9xi5FxebcUCBuiU9TBlu8dsLj+QngCWNr
+Cz+iFNvVubfORf/87n6565ahb/OtY+hbuvjX8fEJsLfWfcaev+czoL6dG9BG69eY
+6abRku7nLqZw2yAP6UgZ
+=xeLY
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__1_May_2012_13_55_49_+1000_9YZ=ToKnZSbujoml--
