@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab2EAPCV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 11:02:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46175 "EHLO
+	id S1758107Ab2EAPC2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 11:02:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46184 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757918Ab2EAPCR (ORCPT
+	with ESMTP id S1757918Ab2EAPCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 11:02:17 -0400
+	Tue, 1 May 2012 11:02:25 -0400
 From: Bryan Wu <bryan.wu@canonical.com>
 To: linux@arm.linux.org.uk, rpurdie@rpsys.net,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linus.walleij@linaro.org, akpm@linux-foundation.org,
         arnd.bergmann@linaro.org, nicolas.pitre@linaro.org,
         tim.gardner@canonical.com
-Subject: [PATCH 02/19] led-triggers: create a trigger for CPU activity
-Date: Tue,  1 May 2012 23:01:29 +0800
-Message-Id: <1335884506-15370-3-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 03/19] ARM: at91: convert old leds drivers to gpio_led and led_trigger drivers
+Date: Tue,  1 May 2012 23:01:30 +0800
+Message-Id: <1335884506-15370-4-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
 References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
@@ -23,253 +23,437 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attempting to consolidate the ARM LED code, this removes the
-custom RealView LED trigger code to turn LEDs on and off in
-response to CPU activity and replace it with a standard trigger.
+Build with at91 defconfigs successfully
 
-(bryan.wu@canonical.com:
-It introduces several syscore stubs into this trigger.
-It also provides ledtrig_cpu trigger event stub in <linux/leds.h>.
-Although it was inspired by ARM work, it can be used in other arch.)
-
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-Reviewed-by: Jamie Iles <jamie@jamieiles.com>
-Tested-by: Jochen Friedrich <jochen@scram.de>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/leds/Kconfig       |   10 +++
- drivers/leds/Makefile      |    1 +
- drivers/leds/ledtrig-cpu.c |  163 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/leds.h       |   16 +++++
- 4 files changed, 190 insertions(+)
- create mode 100644 drivers/leds/ledtrig-cpu.c
+ arch/arm/mach-at91/board-csb337.c       |    2 -
+ arch/arm/mach-at91/board-ecbat91.c      |   18 +++++-
+ arch/arm/mach-at91/board-eco920.c       |   22 ++++++-
+ arch/arm/mach-at91/board-kafa.c         |   17 ++++-
+ arch/arm/mach-at91/board-kb9202.c       |   23 ++++++-
+ arch/arm/mach-at91/board-rm9200dk.c     |    3 -
+ arch/arm/mach-at91/board-rm9200ek.c     |    3 -
+ arch/arm/mach-at91/board-rsi-ews.c      |    3 -
+ arch/arm/mach-at91/board-sam9-l9260.c   |   23 ++++++-
+ arch/arm/mach-at91/board-sam9261ek.c    |    3 -
+ arch/arm/mach-at91/board-yl-9200.c      |    3 -
+ arch/arm/mach-at91/include/mach/board.h |    1 -
+ arch/arm/mach-at91/leds.c               |  105 -------------------------------
+ 13 files changed, 89 insertions(+), 137 deletions(-)
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 5f12659..dbf8a4c 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -465,6 +465,16 @@ config LEDS_TRIGGER_BACKLIGHT
+diff --git a/arch/arm/mach-at91/board-csb337.c b/arch/arm/mach-at91/board-csb337.c
+index cd81336..4993f1b 100644
+--- a/arch/arm/mach-at91/board-csb337.c
++++ b/arch/arm/mach-at91/board-csb337.c
+@@ -219,8 +219,6 @@ static struct gpio_led csb_leds[] = {
  
- 	  If unsure, say N.
+ static void __init csb337_board_init(void)
+ {
+-	/* Setup the LEDs */
+-	at91_init_leds(AT91_PIN_PB0, AT91_PIN_PB1);
+ 	/* Serial */
+ 	/* DBGU on ttyS0 */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-ecbat91.c b/arch/arm/mach-at91/board-ecbat91.c
+index 89cc372..f9a4ab9 100644
+--- a/arch/arm/mach-at91/board-ecbat91.c
++++ b/arch/arm/mach-at91/board-ecbat91.c
+@@ -137,11 +137,20 @@ static struct spi_board_info __initdata ecb_at91spi_devices[] = {
+ 	},
+ };
  
-+config LEDS_TRIGGER_CPU
-+	tristate "LED CPU Trigger"
-+	depends on LEDS_TRIGGERS
-+	help
-+	  This allows LEDs to be controlled by active CPUs. This shows
-+	  the active CPUs across an array of LEDs so you can see which
-+	  CPUs are active on the system at any given moment.
-+
-+	  If unsure, say N.
-+
- config LEDS_TRIGGER_GPIO
- 	tristate "LED GPIO Trigger"
- 	depends on LEDS_TRIGGERS
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index 9475bbb..ea1efb2 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -56,4 +56,5 @@ obj-$(CONFIG_LEDS_TRIGGER_IDE_DISK)	+= ledtrig-ide-disk.o
- obj-$(CONFIG_LEDS_TRIGGER_HEARTBEAT)	+= ledtrig-heartbeat.o
- obj-$(CONFIG_LEDS_TRIGGER_BACKLIGHT)	+= ledtrig-backlight.o
- obj-$(CONFIG_LEDS_TRIGGER_GPIO)		+= ledtrig-gpio.o
-+obj-$(CONFIG_LEDS_TRIGGER_CPU)		+= ledtrig-cpu.o
- obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)	+= ledtrig-default-on.o
-diff --git a/drivers/leds/ledtrig-cpu.c b/drivers/leds/ledtrig-cpu.c
-new file mode 100644
-index 0000000..b312056
---- /dev/null
-+++ b/drivers/leds/ledtrig-cpu.c
-@@ -0,0 +1,163 @@
 +/*
-+ * ledtrig-cpu.c - LED trigger based on CPU activity
-+ *
-+ * This LED trigger will be registered for each possible CPU and named as
-+ * cpu0, cpu1, cpu2, cpu3, etc.
-+ *
-+ * It can be bound to any LED just like other triggers using either a
-+ * board file or via sysfs interface.
-+ *
-+ * An API named ledtrig_cpu is exported for any user, who want to add CPU
-+ * activity indication in their code
-+ *
-+ * Copyright 2011 Linus Walleij <linus.walleij@linaro.org>
-+ * Copyright 2011 - 2012 Bryan Wu <bryan.wu@canonical.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
++ * LEDs
 + */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/percpu.h>
-+#include <linux/syscore_ops.h>
-+#include <linux/rwsem.h>
-+#include "leds.h"
-+
-+#define MAX_NAME_LEN	8
-+
-+struct led_trigger_cpu {
-+	char name[MAX_NAME_LEN];
-+	struct led_trigger *_trig;
-+	struct mutex lock;
-+	int lock_is_inited;
++static struct gpio_led ecb_leds[] = {
++	{	/* D1 */
++		.name			= "led1",
++		.gpio			= AT91_PIN_PC7,
++		.active_low		= 1,
++		.default_trigger	= "heartbeat",
++	}
 +};
 +
-+static DEFINE_PER_CPU(struct led_trigger_cpu, cpu_trig);
-+
-+/**
-+ * ledtrig_cpu - emit a CPU event as a trigger
-+ * @evt: CPU event to be emitted
-+ *
-+ * Emit a CPU event on a CPU core, which will trigger a
-+ * binded LED to turn on or turn off.
-+ */
-+void ledtrig_cpu(enum cpu_led_event ledevt)
-+{
-+	struct led_trigger_cpu *trig = &__get_cpu_var(cpu_trig);
-+
-+	/* mutex lock should be initialized before calling mutex_call() */
-+	if (!trig->lock_is_inited)
-+		return;
-+
-+	mutex_lock(&trig->lock);
-+
-+	/* Locate the correct CPU LED */
-+	switch (ledevt) {
-+	case CPU_LED_IDLE_END:
-+	case CPU_LED_START:
-+		/* Will turn the LED on, max brightness */
-+		led_trigger_event(trig->_trig, LED_FULL);
-+		break;
-+
-+	case CPU_LED_IDLE_START:
-+	case CPU_LED_STOP:
-+	case CPU_LED_HALTED:
-+		/* Will turn the LED off */
-+		led_trigger_event(trig->_trig, LED_OFF);
-+		break;
-+
-+	default:
-+		/* Will leave the LED as it is */
-+		break;
-+	}
-+
-+	mutex_unlock(&trig->lock);
-+}
-+EXPORT_SYMBOL(ledtrig_cpu);
-+
-+static int ledtrig_cpu_syscore_suspend(void)
-+{
-+	ledtrig_cpu(CPU_LED_STOP);
-+	return 0;
-+}
-+
-+static void ledtrig_cpu_syscore_resume(void)
-+{
-+	ledtrig_cpu(CPU_LED_START);
-+}
-+
-+static void ledtrig_cpu_syscore_shutdown(void)
-+{
-+	ledtrig_cpu(CPU_LED_HALTED);
-+}
-+
-+static struct syscore_ops ledtrig_cpu_syscore_ops = {
-+	.shutdown	= ledtrig_cpu_syscore_shutdown,
-+	.suspend	= ledtrig_cpu_syscore_suspend,
-+	.resume		= ledtrig_cpu_syscore_resume,
-+};
-+
-+static int __init ledtrig_cpu_init(void)
-+{
-+	int cpu;
-+
-+	/* Supports up to 9999 cpu cores */
-+	BUILD_BUG_ON(CONFIG_NR_CPUS > 9999);
-+
-+	/*
-+	 * Registering CPU led trigger for each CPU core here
-+	 * ignores CPU hotplug, but after this CPU hotplug works
-+	 * fine with this trigger.
-+	 */
-+	for_each_possible_cpu(cpu) {
-+		struct led_trigger_cpu *trig = &per_cpu(cpu_trig, cpu);
-+
-+		mutex_init(&trig->lock);
-+
-+		snprintf(trig->name, MAX_NAME_LEN, "cpu%d", cpu);
-+
-+		mutex_lock(&trig->lock);
-+		led_trigger_register_simple(trig->name, &trig->_trig);
-+		trig->lock_is_inited = 1;
-+		mutex_unlock(&trig->lock);
-+	}
-+
-+	register_syscore_ops(&ledtrig_cpu_syscore_ops);
-+
-+	pr_info("ledtrig-cpu: registered to indicate activity on CPUs\n");
-+
-+	return 0;
-+}
-+module_init(ledtrig_cpu_init);
-+
-+static void __exit ledtrig_cpu_exit(void)
-+{
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu) {
-+		struct led_trigger_cpu *trig = &per_cpu(cpu_trig, cpu);
-+
-+		mutex_lock(&trig->lock);
-+
-+		led_trigger_unregister_simple(trig->_trig);
-+		trig->_trig = NULL;
-+		memset(trig->name, 0, MAX_NAME_LEN);
-+		trig->lock_is_inited = 0;
-+
-+		mutex_unlock(&trig->lock);
-+		mutex_destroy(&trig->lock);
-+	}
-+
-+	unregister_syscore_ops(&ledtrig_cpu_syscore_ops);
-+}
-+module_exit(ledtrig_cpu_exit);
-+
-+MODULE_AUTHOR("Linus Walleij <linus.walleij@linaro.org>");
-+MODULE_AUTHOR("Bryan Wu <bryan.wu@canonical.com>");
-+MODULE_DESCRIPTION("CPU LED trigger");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index 39eee41..aaf88b0 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -212,4 +212,20 @@ struct gpio_led_platform_data {
- struct platform_device *gpio_led_register_device(
- 		int id, const struct gpio_led_platform_data *pdata);
+ static void __init ecb_at91board_init(void)
+ {
+-	/* Setup the LEDs */
+-	at91_init_leds(AT91_PIN_PC7, AT91_PIN_PC7);
+-
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+@@ -164,6 +173,9 @@ static void __init ecb_at91board_init(void)
  
-+enum cpu_led_event {
-+	CPU_LED_IDLE_START,	/* CPU enters idle */
-+	CPU_LED_IDLE_END,	/* CPU idle ends */
-+	CPU_LED_START,		/* Machine starts, especially resume */
-+	CPU_LED_STOP,		/* Machine stops, especially suspend */
-+	CPU_LED_HALTED,		/* Machine shutdown */
-+};
-+#if defined(CONFIG_LEDS_TRIGGER_CPU) || defined(CONFIG_LEDS_TRIGGER_CPU_MODULE)
-+extern void ledtrig_cpu(enum cpu_led_event evt);
-+#else
-+static inline void ledtrig_cpu(enum cpu_led_event evt)
-+{
-+	return;
-+}
-+#endif
+ 	/* SPI */
+ 	at91_add_device_spi(ecb_at91spi_devices, ARRAY_SIZE(ecb_at91spi_devices));
 +
- #endif		/* __LINUX_LEDS_H_INCLUDED */
++	/* LEDs */
++	at91_gpio_leds(ecb_leds, ARRAY_SIZE(ecb_leds));
+ }
+ 
+ MACHINE_START(ECBAT91, "emQbit's ECB_AT91")
+diff --git a/arch/arm/mach-at91/board-eco920.c b/arch/arm/mach-at91/board-eco920.c
+index 558546c..f9a9d28 100644
+--- a/arch/arm/mach-at91/board-eco920.c
++++ b/arch/arm/mach-at91/board-eco920.c
+@@ -92,10 +92,26 @@ static struct spi_board_info eco920_spi_devices[] = {
+ 	},
+ };
+ 
++/*
++ * LEDs
++ */
++static struct gpio_led eco920_leds[] = {
++	{	/* D1 */
++		.name			= "led1",
++		.gpio			= AT91_PIN_PB0,
++		.active_low		= 1,
++		.default_trigger	= "heartbeat",
++	},
++	{	/* D2 */
++		.name			= "led2",
++		.gpio			= AT91_PIN_PB1,
++		.active_low		= 1,
++		.default_trigger	= "timer",
++	}
++};
++
+ static void __init eco920_board_init(void)
+ {
+-	/* Setup the LEDs */
+-	at91_init_leds(AT91_PIN_PB0, AT91_PIN_PB1);
+ 	/* DBGU on ttyS0. (Rx & Tx only */
+ 	at91_register_uart(0, 0, 0);
+ 	at91_add_device_serial();
+@@ -126,6 +142,8 @@ static void __init eco920_board_init(void)
+ 	);
+ 
+ 	at91_add_device_spi(eco920_spi_devices, ARRAY_SIZE(eco920_spi_devices));
++	/* LEDs */
++	at91_gpio_leds(eco920_leds, ARRAY_SIZE(eco920_leds));
+ }
+ 
+ MACHINE_START(ECO920, "eco920")
+diff --git a/arch/arm/mach-at91/board-kafa.c b/arch/arm/mach-at91/board-kafa.c
+index f260657..8db11f4 100644
+--- a/arch/arm/mach-at91/board-kafa.c
++++ b/arch/arm/mach-at91/board-kafa.c
+@@ -65,11 +65,20 @@ static struct at91_udc_data __initdata kafa_udc_data = {
+ 	.pullup_pin	= AT91_PIN_PB7,
+ };
+ 
++/*
++ * LEDs
++ */
++static struct gpio_led kafa_leds[] = {
++	{	/* D1 */
++		.name			= "led1",
++		.gpio			= AT91_PIN_PB4,
++		.active_low		= 1,
++		.default_trigger	= "heartbeat",
++	},
++};
++
+ static void __init kafa_board_init(void)
+ {
+-	/* Set up the LEDs */
+-	at91_init_leds(AT91_PIN_PB4, AT91_PIN_PB4);
+-
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+@@ -87,6 +96,8 @@ static void __init kafa_board_init(void)
+ 	at91_add_device_i2c(NULL, 0);
+ 	/* SPI */
+ 	at91_add_device_spi(NULL, 0);
++	/* LEDs */
++	at91_gpio_leds(kafa_leds, ARRAY_SIZE(kafa_leds));
+ }
+ 
+ MACHINE_START(KAFA, "Sperry-Sun KAFA")
+diff --git a/arch/arm/mach-at91/board-kb9202.c b/arch/arm/mach-at91/board-kb9202.c
+index ba39db5..4e362b8 100644
+--- a/arch/arm/mach-at91/board-kb9202.c
++++ b/arch/arm/mach-at91/board-kb9202.c
+@@ -95,11 +95,26 @@ static struct atmel_nand_data __initdata kb9202_nand_data = {
+ 	.num_parts	= ARRAY_SIZE(kb9202_nand_partition),
+ };
+ 
++/*
++ * LEDs
++ */
++static struct gpio_led kb9202_leds[] = {
++	{	/* D1 */
++		.name			= "led1",
++		.gpio			= AT91_PIN_PC19,
++		.active_low		= 1,
++		.default_trigger	= "heartbeat",
++	},
++	{	/* D2 */
++		.name			= "led2",
++		.gpio			= AT91_PIN_PC18,
++		.active_low		= 1,
++		.default_trigger	= "timer",
++	}
++};
++
+ static void __init kb9202_board_init(void)
+ {
+-	/* Set up the LEDs */
+-	at91_init_leds(AT91_PIN_PC19, AT91_PIN_PC18);
+-
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+@@ -127,6 +142,8 @@ static void __init kb9202_board_init(void)
+ 	at91_add_device_spi(NULL, 0);
+ 	/* NAND */
+ 	at91_add_device_nand(&kb9202_nand_data);
++	/* LEDs */
++	at91_gpio_leds(kb9202_leds, ARRAY_SIZE(kb9202_leds));
+ }
+ 
+ MACHINE_START(KB9200, "KB920x")
+diff --git a/arch/arm/mach-at91/board-rm9200dk.c b/arch/arm/mach-at91/board-rm9200dk.c
+index afd7a47..7417b7c 100644
+--- a/arch/arm/mach-at91/board-rm9200dk.c
++++ b/arch/arm/mach-at91/board-rm9200dk.c
+@@ -176,9 +176,6 @@ static struct gpio_led dk_leds[] = {
+ 
+ static void __init dk_board_init(void)
+ {
+-	/* Setup the LEDs */
+-	at91_init_leds(AT91_PIN_PB2, AT91_PIN_PB2);
+-
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-rm9200ek.c b/arch/arm/mach-at91/board-rm9200ek.c
+index 2b15b8a..18b2ec0 100644
+--- a/arch/arm/mach-at91/board-rm9200ek.c
++++ b/arch/arm/mach-at91/board-rm9200ek.c
+@@ -147,9 +147,6 @@ static struct gpio_led ek_leds[] = {
+ 
+ static void __init ek_board_init(void)
+ {
+-	/* Setup the LEDs */
+-	at91_init_leds(AT91_PIN_PB1, AT91_PIN_PB2);
+-
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-rsi-ews.c b/arch/arm/mach-at91/board-rsi-ews.c
+index 24ab9be..32342b8 100644
+--- a/arch/arm/mach-at91/board-rsi-ews.c
++++ b/arch/arm/mach-at91/board-rsi-ews.c
+@@ -184,9 +184,6 @@ static struct platform_device rsiews_nor_flash = {
+  */
+ static void __init rsi_ews_board_init(void)
+ {
+-	/* Setup the LEDs */
+-	at91_init_leds(AT91_PIN_PB6, AT91_PIN_PB9);
+-
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	/* This one is for debugging */
+diff --git a/arch/arm/mach-at91/board-sam9-l9260.c b/arch/arm/mach-at91/board-sam9-l9260.c
+index cdd21f2..ef982f8 100644
+--- a/arch/arm/mach-at91/board-sam9-l9260.c
++++ b/arch/arm/mach-at91/board-sam9-l9260.c
+@@ -165,11 +165,26 @@ static struct at91_mmc_data __initdata ek_mmc_data = {
+ 	.vcc_pin	= -EINVAL,
+ };
+ 
++/*
++ * LEDs
++ */
++static struct gpio_led ek_leds[] = {
++	{	/* D1 */
++		.name			= "led1",
++		.gpio			= AT91_PIN_PA9,
++		.active_low		= 1,
++		.default_trigger	= "heartbeat",
++	},
++	{	/* D2 */
++		.name			= "led2",
++		.gpio			= AT91_PIN_PA6,
++		.active_low		= 1,
++		.default_trigger	= "timer",
++	}
++};
++
+ static void __init ek_board_init(void)
+ {
+-	/* Setup the LEDs */
+-	at91_init_leds(AT91_PIN_PA9, AT91_PIN_PA6);
+-
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+@@ -196,6 +211,8 @@ static void __init ek_board_init(void)
+ 	at91_add_device_mmc(0, &ek_mmc_data);
+ 	/* I2C */
+ 	at91_add_device_i2c(NULL, 0);
++	/* LEDs */
++	at91_gpio_leds(ek_leds, ARRAY_SIZE(ek_leds));
+ }
+ 
+ MACHINE_START(SAM9_L9260, "Olimex SAM9-L9260")
+diff --git a/arch/arm/mach-at91/board-sam9261ek.c b/arch/arm/mach-at91/board-sam9261ek.c
+index 2736453..0b4501c 100644
+--- a/arch/arm/mach-at91/board-sam9261ek.c
++++ b/arch/arm/mach-at91/board-sam9261ek.c
+@@ -568,9 +568,6 @@ static struct gpio_led ek_leds[] = {
+ 
+ static void __init ek_board_init(void)
+ {
+-	/* Setup the LEDs */
+-	at91_init_leds(AT91_PIN_PA13, AT91_PIN_PA14);
+-
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-yl-9200.c b/arch/arm/mach-at91/board-yl-9200.c
+index d56665e..cc05dd1 100644
+--- a/arch/arm/mach-at91/board-yl-9200.c
++++ b/arch/arm/mach-at91/board-yl-9200.c
+@@ -540,9 +540,6 @@ void __init yl9200_add_device_video(void) {}
+ 
+ static void __init yl9200_board_init(void)
+ {
+-	/* Setup the LEDs D2=PB17 (timer), D3=PB16 (cpu) */
+-	at91_init_leds(AT91_PIN_PB16, AT91_PIN_PB17);
+-
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/include/mach/board.h b/arch/arm/mach-at91/include/mach/board.h
+index 369afc2..c55a436 100644
+--- a/arch/arm/mach-at91/include/mach/board.h
++++ b/arch/arm/mach-at91/include/mach/board.h
+@@ -187,7 +187,6 @@ struct at91_can_data {
+ extern void __init at91_add_device_can(struct at91_can_data *data);
+ 
+  /* LEDs */
+-extern void __init at91_init_leds(u8 cpu_led, u8 timer_led);
+ extern void __init at91_gpio_leds(struct gpio_led *leds, int nr);
+ extern void __init at91_pwm_leds(struct gpio_led *leds, int nr);
+ 
+diff --git a/arch/arm/mach-at91/leds.c b/arch/arm/mach-at91/leds.c
+index 8dfafe7..1b1e62b 100644
+--- a/arch/arm/mach-at91/leds.c
++++ b/arch/arm/mach-at91/leds.c
+@@ -90,108 +90,3 @@ void __init at91_pwm_leds(struct gpio_led *leds, int nr)
+ #else
+ void __init at91_pwm_leds(struct gpio_led *leds, int nr){}
+ #endif
+-
+-
+-/* ------------------------------------------------------------------------- */
+-
+-#if defined(CONFIG_LEDS)
+-
+-#include <asm/leds.h>
+-
+-/*
+- * Old ARM-specific LED framework; not fully functional when generic time is
+- * in use.
+- */
+-
+-static u8 at91_leds_cpu;
+-static u8 at91_leds_timer;
+-
+-static inline void at91_led_on(unsigned int led)
+-{
+-	at91_set_gpio_value(led, 0);
+-}
+-
+-static inline void at91_led_off(unsigned int led)
+-{
+-	at91_set_gpio_value(led, 1);
+-}
+-
+-static inline void at91_led_toggle(unsigned int led)
+-{
+-	unsigned long is_off = at91_get_gpio_value(led);
+-	if (is_off)
+-		at91_led_on(led);
+-	else
+-		at91_led_off(led);
+-}
+-
+-
+-/*
+- * Handle LED events.
+- */
+-static void at91_leds_event(led_event_t evt)
+-{
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-
+-	switch(evt) {
+-	case led_start:		/* System startup */
+-		at91_led_on(at91_leds_cpu);
+-		break;
+-
+-	case led_stop:		/* System stop / suspend */
+-		at91_led_off(at91_leds_cpu);
+-		break;
+-
+-#ifdef CONFIG_LEDS_TIMER
+-	case led_timer:		/* Every 50 timer ticks */
+-		at91_led_toggle(at91_leds_timer);
+-		break;
+-#endif
+-
+-#ifdef CONFIG_LEDS_CPU
+-	case led_idle_start:	/* Entering idle state */
+-		at91_led_off(at91_leds_cpu);
+-		break;
+-
+-	case led_idle_end:	/* Exit idle state */
+-		at91_led_on(at91_leds_cpu);
+-		break;
+-#endif
+-
+-	default:
+-		break;
+-	}
+-
+-	local_irq_restore(flags);
+-}
+-
+-
+-static int __init leds_init(void)
+-{
+-	if (!at91_leds_timer || !at91_leds_cpu)
+-		return -ENODEV;
+-
+-	leds_event = at91_leds_event;
+-
+-	leds_event(led_start);
+-	return 0;
+-}
+-
+-__initcall(leds_init);
+-
+-
+-void __init at91_init_leds(u8 cpu_led, u8 timer_led)
+-{
+-	/* Enable GPIO to access the LEDs */
+-	at91_set_gpio_output(cpu_led, 1);
+-	at91_set_gpio_output(timer_led, 1);
+-
+-	at91_leds_cpu	= cpu_led;
+-	at91_leds_timer	= timer_led;
+-}
+-
+-#else
+-void __init at91_init_leds(u8 cpu_led, u8 timer_led) {}
+-#endif
 -- 
 1.7.9.5
 
