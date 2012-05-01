@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab2EAWSr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 18:18:47 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61572 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab2EAWSq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 18:18:46 -0400
+	id S1756176Ab2EAWTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 18:19:08 -0400
+Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:50467 "EHLO
+	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755738Ab2EAWTG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 18:19:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120501113130.GE20224@sortiz-mobl>
-References: <1334647849-1773-1-git-send-email-linus.walleij@stericsson.com>
-	<20120501113130.GE20224@sortiz-mobl>
-Date: Wed, 2 May 2012 00:18:45 +0200
-Message-ID: <CACRpkdYec+g8CDrkK1kn6ThQ4a=K9Qye_zbZPgXAei0pDA9Wbw@mail.gmail.com>
-Subject: Re: [PATCH 5/6] mfd/ab8500: support of hierachical interrupt
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Michel JAOUEN <michel.jaouen@stericsson.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        Maxime Coquelin <maxime.coquelin@stericsson.com>
+In-Reply-To: <20120427181833.GA24587@arwen.pp.htv.fi>
+References: <1335529693-14280-1-git-send-email-rnayak@ti.com>
+ <CAJOA=zNzkOvzdFSuSzC015ELZWE+Jtj=H5P9fbQSHW3HZdsZow@mail.gmail.com> <20120427181833.GA24587@arwen.pp.htv.fi>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Tue, 1 May 2012 15:18:43 -0700
+Message-ID: <CAJOA=zM0pwHrMM5j7c_v4Vy=r5=ChTigHDsFxTr8H_v1jNippw@mail.gmail.com>
+Subject: Re: [PATCH] clk: constify parent name arrays in macros
+To: balbi@ti.com
+Cc: Rajendra Nayak <rnayak@ti.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 1, 2012 at 1:31 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-
-> On Tue, Apr 17, 2012 at 09:30:49AM +0200, Linus Walleij wrote:
->> +static irqreturn_t ab8500_hierarchical_irq(int irq, void *dev)
->> +{
-
->> +     /*  Hierarchical interrupt version */
->> +     for (i = 0; i < AB8500_IT_LATCHHIER_NUM; i++) {
->> +             do {
->> +                     int latch_bit = __ffs(hier_val);
->> +                     do {
->> +                             int int_bit = __ffs(latch_val);
->> +                     } while (latch_val);
->> +             } while (hier_val);
->> +     }
->> +     return IRQ_HANDLED;
->> +}
+On Fri, Apr 27, 2012 at 11:18 AM, Felipe Balbi <balbi@ti.com> wrote:
+> On Fri, Apr 27, 2012 at 10:55:50AM -0700, Turquette, Mike wrote:
+>> On Fri, Apr 27, 2012 at 5:28 AM, Rajendra Nayak <rnayak@ti.com> wrote:
+>> > parent name array is now expected to be const char *, make
+>> > the relevent changes in the clk macros which define
+>> > default clock types.
+>> >
+>> > Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+>>
+>> Good catch Rajendra.  I'll pull it into clk-next.
+>>
+>> Regards,
+>> Mike
+>>
+>> > ---
+>> >  include/linux/clk-private.h |    6 +++---
+>> >  1 files changed, 3 insertions(+), 3 deletions(-)
+>> >
+>> > diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+>> > index eeae7a3..6ebec83 100644
+>> > --- a/include/linux/clk-private.h
+>> > +++ b/include/linux/clk-private.h
+>> > @@ -70,7 +70,7 @@ struct clk {
+>> >  #define DEFINE_CLK_FIXED_RATE(_name, _flags, _rate,            \
+>> >                                _fixed_rate_flags)              \
+>> >        static struct clk _name;                                \
+>> > -       static char *_name##_parent_names[] = {};               \
+>> > +       static const char *_name##_parent_names[] = {};         \
 >
-> With 4 nested loops, this one is getting difficult to read. Have you
-> considered splitting the loops into separate routines ?
+> does it make sense to have this as:
+>
+> static const char * const _name##_parent_names[] = { }; ??
 
-I get the point :-D
+Hi Felipe,
 
-Michel do you think this can be done?
+I don't think so.  We're never going to reference the member of the
+array anyways, so I think the current approach is fine for just
+satisfying type qualifier-sameness.
 
-Yours,
-Linus Walleij
+Thanks,
+Mike
