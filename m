@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab2EATOV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 15:14:21 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35723 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab2EATOU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 15:14:20 -0400
-Date: Tue, 1 May 2012 14:14:08 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Adrian Fita <adrian.fita@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        Ralf Jung <ralfjung-e@gmx.de>, Paolo Scarabelli <paolo@msw.it>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: Re: [bug?] Battery notifications produce flashing battery icon,
- syslog spam (Re: [PATCH 11/11] ACPI / Battery: Update information on info
- notification and resume)
-Message-ID: <20120501191408.GD19143@burratino>
-References: <201101062331.17079.rjw@sisk.pl>
- <201101062342.28168.rjw@sisk.pl>
- <20120501184534.GA31731@burratino>
- <4FA032EA.1090608@gmail.com>
+	id S1758354Ab2EATUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 15:20:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65276 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757235Ab2EATUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 15:20:37 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized to one
+References: <1335873936.16988.148.camel@lappy>
+	<20120501161729.GV26595@google.com> <4FA0253F.4000302@fusionio.com>
+	<20120501180906.GX26595@google.com> <4FA028EE.7020208@fusionio.com>
+	<x49wr4vlpn8.fsf@segfault.boston.devel.redhat.com>
+	<20120501183610.GD18239@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 01 May 2012 14:48:41 -0400
+In-Reply-To: <20120501183610.GD18239@redhat.com> (Vivek Goyal's message of
+	"Tue, 1 May 2012 14:36:11 -0400")
+Message-ID: <x49sjfjloty.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA032EA.1090608@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc-ing Andy)
-Adrian Fita wrote:
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-> Also, searching on Google after "upowerd device
-> removed:/org/freedesktop/UPower/devices/battery_BAT0", reveals much
-> more bug reports with the exact issue.
+> On Tue, May 01, 2012 at 02:31:07PM -0400, Jeff Moyer wrote:
+>
+> [..]
+>> > But as to actual users, I really don't know. I agree it's probably not
+>> > that widely used. If google still had that code search, we could get a
+>> > better idea :-)
+>> 
+>> I know of one project: the venerable dump/restore utility uses CLONE_IO.
+>
+> I thought you wrote cooperating queue logic to fix dump as it was not
+> using CLONE_IO and IO from multiple threads was going in separate 
+> queues.
 
-Thanks.  That confirms the high CPU consumption in upowerd ---
-see [1], for example.
+That's correct.  I believe I sent the patch for dump before the kernel
+patch was accepted.  Plus, it can't hurt, right?
 
-[1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/987807
+Cheers,
+Jeff
