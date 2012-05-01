@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab2EAJ7O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 05:59:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54416 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab2EAJ7N convert rfc822-to-8bit (ORCPT
+	id S1754737Ab2EAKfL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 06:35:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58491 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119Ab2EAKfJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 05:59:13 -0400
-Message-ID: <1335866334.13683.121.camel@twins>
-Subject: Re: [patch 4/5] mm + fs: provide refault distance to page cache
- instantiations
+	Tue, 1 May 2012 06:35:09 -0400
+Message-ID: <1335868497.13683.123.camel@twins>
+Subject: Re: [PATCH RFC v2] lib: Proportions with flexible period
 From: Peter Zijlstra <peterz@infradead.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 01 May 2012 11:58:54 +0200
-In-Reply-To: <20120501095543.GA2112@cmpxchg.org>
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
-	 <1335861713-4573-5-git-send-email-hannes@cmpxchg.org>
-	 <1335864640.13683.116.camel@twins> <20120501095543.GA2112@cmpxchg.org>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Wu Fengguang <fengguang.wu@intel.com>
+Date: Tue, 01 May 2012 12:34:57 +0200
+In-Reply-To: <1335285033-7347-2-git-send-email-jack@suse.cz>
+References: <1335285033-7347-1-git-send-email-jack@suse.cz>
+	 <1335285033-7347-2-git-send-email-jack@suse.cz>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -31,18 +25,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-01 at 11:55 +0200, Johannes Weiner wrote:
-> On Tue, May 01, 2012 at 11:30:40AM +0200, Peter Zijlstra wrote:
-> > On Tue, 2012-05-01 at 10:41 +0200, Johannes Weiner wrote:
-> > > Every site that does a find_or_create()-style allocation is converted
-> > > to pass this refault information to the page_cache_alloc() family of
-> > > functions, which in turn passes it down to the page allocator via
-> > > current->refault_distance. 
-> > 
-> > That is rather icky..
-> 
-> Fair enough, I just went with the easier solution to get things off
-> the ground instead of dealing with adding an extra parameter to layers
-> of config-dependent gfp API.  I'll revisit this for v2.
+On Tue, 2012-04-24 at 18:30 +0200, Jan Kara wrote:
+> Implement code computing proportions of events of different type (like code in
+> lib/proportions.c) but allowing periods to have different lengths. This allows
+> us to have aging periods of fixed wallclock time which gives better proportion
+> estimates given the hugely varying throughput of different devices - previous
+> measuring of aging period by number of events has the problem that a reasonable
+> period length for a system with low-end USB stick is not a reasonable period
+> length for a system with high-end storage array resulting either in too slow
+> proportion updates or too fluctuating proportion updates.
 
-OK, thanks!
+
+OK, seems sound. Thanks!
