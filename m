@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758496Ab2EASJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 14:09:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52019 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757970Ab2EASJL (ORCPT
+	id S1758565Ab2EASJX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 14:09:23 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:48289 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758524Ab2EASJU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 14:09:11 -0400
-Date: Tue, 1 May 2012 11:09:06 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be
- initialized to one
-Message-ID: <20120501180906.GX26595@google.com>
-References: <1335873936.16988.148.camel@lappy>
- <20120501161729.GV26595@google.com>
- <4FA0253F.4000302@fusionio.com>
+	Tue, 1 May 2012 14:09:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA0253F.4000302@fusionio.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4FA023E4.7000602@openvz.org>
+References: <20120430112903.14137.81692.stgit@zurg> <20120430112907.14137.18910.stgit@zurg>
+ <CAHGf_=pfiFJ4N3bN_c29UpffqkzDY_priBYBuEOCyPJ13JVecw@mail.gmail.com> <4FA023E4.7000602@openvz.org>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 1 May 2012 14:08:59 -0400
+Message-ID: <CAHGf_=qh1eogM2cywMrJnhHtcbW9gav4Ktb8inYJmar2wG4j=Q@mail.gmail.com>
+Subject: Re: [PATCH RFC 2/3] proc/smaps: show amount of nonlinear ptes in vma
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 08:02:39PM +0200, Jens Axboe wrote:
-> On 2012-05-01 18:17, Tejun Heo wrote:
-> > create_task_io_context() left ioc->nr_tasks at zero; however, a newly
-> > created ioc should have its nr_tasks initialized to one as it begins
-> > attached to the task creating it.
-> > 
-> > This affects only CLONE_IO which currently doesn't seem to have any
-> > actual user.  Sasha triggered WARN_ON_ONCE() in ioc_task_link() using
-> > syscall fuzzer.  Even when it happens, the failure mode isn't critical
-> > (blk-cgroup may allow attaching a CLONE_IO'd task to a cgroup when it
-> > shouldn't and blkcg limits may behave weirdly).
-> 
-> CLONE_IO is an exported interface, it can be set from clone(2).
-> Otherwise Sasha would not have hit this :-)
+On Tue, May 1, 2012 at 1:56 PM, Konstantin Khlebnikov
+<khlebnikov@openvz.org> wrote:
+> KOSAKI Motohiro wrote:
+>>
+>> On Mon, Apr 30, 2012 at 7:29 AM, Konstantin Khlebnikov
+>> <khlebnikov@openvz.org>  wrote:
+>>>
+>>> Currently, nonlinear mappings can not be distinguished from ordinary
+>>> mappings.
+>>> This patch adds into /proc/pid/smaps line "Nonlinear:<size>  kB", where
+>>> size is
+>>> amount of nonlinear ptes in vma, this line appears only if VM_NONLINEAR
+>>> is set.
+>>> This information may be useful not only for checkpoint/restore project.
+>>>
+>>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>>> Requested-by: Pavel Emelyanov<xemul@parallels.com>
+>>> ---
+>>>  fs/proc/task_mmu.c |   12 ++++++++++++
+>>>  1 file changed, 12 insertions(+)
+>>>
+>>> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+>>> index acee5fd..b1d9729 100644
+>>> --- a/fs/proc/task_mmu.c
+>>> +++ b/fs/proc/task_mmu.c
+>>> @@ -393,6 +393,7 @@ struct mem_size_stats {
+>>>        unsigned long anonymous;
+>>>        unsigned long anonymous_thp;
+>>>        unsigned long swap;
+>>> +       unsigned long nonlinear;
+>>>        u64 pss;
+>>>  };
+>>>
+>>> @@ -402,6 +403,7 @@ static void smaps_pte_entry(pte_t ptent, unsigned
+>>> long addr,
+>>>  {
+>>>        struct mem_size_stats *mss = walk->private;
+>>>        struct vm_area_struct *vma = mss->vma;
+>>> +       pgoff_t pgoff = linear_page_index(vma, addr);
+>>>        struct page *page = NULL;
+>>>        int mapcount;
+>>>
+>>> @@ -414,6 +416,9 @@ static void smaps_pte_entry(pte_t ptent, unsigned
+>>> long addr,
+>>>                        mss->swap += ptent_size;
+>>>                else if (is_migration_entry(swpent))
+>>>                        page = migration_entry_to_page(swpent);
+>>> +       } else if (pte_file(ptent)) {
+>>> +               if (pte_to_pgoff(ptent) != pgoff)
+>>> +                       mss->nonlinear += ptent_size;
+>>
+>>
+>> I think this is not equal to our non linear mapping definition. Even if
+>> pgoff is equal to linear mapping case, it is non linear. I.e. nonlinear is
+>> vma attribute. Why do you want to introduce different definition?
+>
+> VMA attribute can be determined via presence of this field,
+> without VM_NONLINEAR it does not appears.
 
-Yeah, but with pthread not exposing it, I'm very skeptical how much,
-if any, use it's getting.  With its incompatibility with blk-cgroup
-and cfq being able to merge coop request streams, I'm not sure how
-much we need it.  Maybe we can just make it noop?
-
-Thanks.
-
--- 
-tejun
+I meant, is there any worth?
