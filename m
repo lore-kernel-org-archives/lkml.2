@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab2EAInc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 04:43:32 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:43923 "EHLO zene.cmpxchg.org"
+	id S1754619Ab2EAIoE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 04:44:04 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:43931 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754089Ab2EAIn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 04:43:26 -0400
+	id S1754094Ab2EAIn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 04:43:29 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: linux-mm@kvack.org
 Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
@@ -14,9 +14,9 @@ Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 2/5] mm + fs: prepare for non-page entries in page cache
-Date: Tue,  1 May 2012 10:41:50 +0200
-Message-Id: <1335861713-4573-3-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 5/5] mm: refault distance-based file cache sizing
+Date: Tue,  1 May 2012 10:41:53 +0200
+Message-Id: <1335861713-4573-6-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
 References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
@@ -24,832 +24,547 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-shmem mappings already contain exceptional entries where swap slot
-information is remembered.
+To protect frequently used page cache (workingset) from bursts of less
+frequently used or one-shot cache, page cache pages are managed on two
+linked lists.  The inactive list is where all cache starts out on
+fault and ends on reclaim.  Pages that get accessed another time while
+on the inactive list get promoted to the active list to protect them
+from reclaim.
 
-To be able to store eviction information for regular page cache,
-prepare every site dealing with the radix trees directly to handle
-non-page entries.
+Right now we have two main problems.
 
-The common lookup functions will filter out non-page entries and
-return NULL for page cache holes, just as before.  But provide a raw
-version of the API which returns non-page entries as well, and switch
-shmem over to use it.
+One stems from numa allocation decisions and how the page allocator
+and kswapd interact.  The both of them can enter into a perfect loop
+where kswapd reclaims from the preferred zone of a task, allowing the
+task to continuously allocate from that zone.  Or, the node distance
+can lead to the allocator to do direct zone reclaim to stay in the
+preferred zone.  This may be good for locality, but the task has only
+the inactive space of that one zone to get its memory activated.
+Forcing the allocator to spread out to lower zones in the right
+situation makes the difference between continuous IO to serve the
+workingset, or taking the numa cost but serving fully from memory.
+
+The other issue is that with the two lists alone, we can never detect
+when a new set of data with equal access frequency should be cached if
+the size of it is bigger than total/allowed memory minus the active
+set.  Currently we have the perfect compromise given those
+constraints: the active list is not allowed to grow bigger than the
+inactive list.  This means that we can protect cache from reclaim only
+up to half of memory, and don't recognize workingset changes that are
+bigger than half of memory.
+
+This patch tries to solve both problems by adding and making use of a
+new metric, the refault distance.
+
+Whenever a file page leaves the inactive list, be it through reclaim
+or activation, a global counter is increased, called the "workingset
+time".  When a page is evicted from memory, a snapshot of the current
+workingset time is remembered, so that when the page is refaulted
+later, it can be figured out for how long the page has been out of
+memory.  This is called the refault distance.
+
+The observation then is this: if a page is refaulted after N ticks of
+working set time, the eviction could have been avoided if the active
+list had been N pages smaller and this space available to the inactive
+list instead.
+
+We don't have recent usage information for pages on the active list,
+so we can not explicitely compare the refaulting page to the least
+frequently used active page.  Instead, for each refault with a
+distance smaller than the size of the active list, we deactivate an
+active page.  This way, both the refaulted page and the freshly
+deactivated page get placed next to each other on the head of the
+inactive list and both have equal chance to get activated.  Whichever
+wins is probably the more frequently used page.
+
+To ensure the spreading of pages across available/allowed zones when
+necessary, a per-zone floating proportion of evictions in the system
+is maintained, which allows translating the global refault distance of
+a page into a distance proportional to the zone's own eviction speed.
+When a refaulting page is allocated, for each zone considered in the
+first zonelist walk of the allocator, the per-zone distance is
+compared to the zone's number of active and free pages.  If the
+distance is bigger, the allocator moves to the next zone, to see if
+its less utilized (less evictions -> smaller distance, potentially
+stale active pages, or even free pages) and thus, unlike the preferred
+zone, has the potential to hold the page in memory.  This way,
+non-refault allocations and those that would fit into the preferred
+zone stay local, but if we see a chance to keep these pages in memory
+long-term by spreading them out, we try to use all the space we can
+get and sacrifice locality to save disk IO.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- fs/btrfs/compression.c   |    2 +-
- fs/btrfs/extent_io.c     |    3 +-
- fs/inode.c               |    3 +-
- fs/nilfs2/inode.c        |    6 +--
- include/linux/mm.h       |    8 +++
- include/linux/pagemap.h  |   13 +++--
- include/linux/pagevec.h  |    3 +
- include/linux/shmem_fs.h |    1 +
- mm/filemap.c             |  124 +++++++++++++++++++++++++++++++++++++++-------
- mm/mincore.c             |   20 +++++--
- mm/readahead.c           |   12 +++-
- mm/shmem.c               |   89 +++++----------------------------
- mm/swap.c                |   21 ++++++++
- mm/truncate.c            |   71 +++++++++++++++++++++------
- 14 files changed, 244 insertions(+), 132 deletions(-)
+ include/linux/mmzone.h |    7 ++
+ include/linux/swap.h   |    9 ++-
+ mm/Makefile            |    1 +
+ mm/memcontrol.c        |    3 +
+ mm/page_alloc.c        |    7 ++
+ mm/swap.c              |    2 +
+ mm/vmscan.c            |   80 +++++++++++++---------
+ mm/vmstat.c            |    4 +
+ mm/workingset.c        |  174 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 249 insertions(+), 38 deletions(-)
+ create mode 100644 mm/workingset.c
 
-diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
-index d02c27c..a0594c9 100644
---- a/fs/btrfs/compression.c
-+++ b/fs/btrfs/compression.c
-@@ -472,7 +472,7 @@ static noinline int add_ra_bio_pages(struct inode *inode,
- 		rcu_read_lock();
- 		page = radix_tree_lookup(&mapping->page_tree, pg_index);
- 		rcu_read_unlock();
--		if (page) {
-+		if (page && !radix_tree_exceptional_entry(page)) {
- 			misses++;
- 			if (misses > 4)
- 				break;
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index a55fbe6..f78352d 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -3566,7 +3566,8 @@ inline struct page *extent_buffer_page(struct extent_buffer *eb,
- 	rcu_read_lock();
- 	p = radix_tree_lookup(&mapping->page_tree, i);
- 	rcu_read_unlock();
--
-+	if (radix_tree_exceptional_entry(p))
-+		p = NULL;
- 	return p;
- }
- 
-diff --git a/fs/inode.c b/fs/inode.c
-index 83ab215..645731f 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -544,8 +544,7 @@ static void evict(struct inode *inode)
- 	if (op->evict_inode) {
- 		op->evict_inode(inode);
- 	} else {
--		if (inode->i_data.nrpages)
--			truncate_inode_pages(&inode->i_data, 0);
-+		truncate_inode_pages(&inode->i_data, 0);
- 		end_writeback(inode);
- 	}
- 	if (S_ISBLK(inode->i_mode) && inode->i_bdev)
-diff --git a/fs/nilfs2/inode.c b/fs/nilfs2/inode.c
-index 8f7b95a..35b7e18 100644
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -732,16 +732,14 @@ void nilfs_evict_inode(struct inode *inode)
- 	int ret;
- 
- 	if (inode->i_nlink || !ii->i_root || unlikely(is_bad_inode(inode))) {
--		if (inode->i_data.nrpages)
--			truncate_inode_pages(&inode->i_data, 0);
-+		truncate_inode_pages(&inode->i_data, 0);
- 		end_writeback(inode);
- 		nilfs_clear_inode(inode);
- 		return;
- 	}
- 	nilfs_transaction_begin(sb, &ti, 0); /* never fails */
- 
--	if (inode->i_data.nrpages)
--		truncate_inode_pages(&inode->i_data, 0);
-+	truncate_inode_pages(&inode->i_data, 0);
- 
- 	/* TODO: some of the following operations may fail.  */
- 	nilfs_truncate_bmap(ii, 0);
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 17b27cd..0d5948b 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -873,6 +873,14 @@ extern bool skip_free_areas_node(unsigned int flags, int nid);
- int shmem_lock(struct file *file, int lock, struct user_struct *user);
- struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags);
- int shmem_zero_setup(struct vm_area_struct *);
-+#ifdef CONFIG_SHMEM
-+bool shmem_mapping(struct address_space *);
-+#else
-+static inline bool shmem_mapping(struct address_space *mapping)
-+{
-+	return false;
-+}
-+#endif
- 
- extern int can_do_mlock(void);
- extern int user_shm_lock(size_t, struct user_struct *);
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index cfaaa69..aba5b91 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -227,12 +227,13 @@ static inline struct page *page_cache_alloc_readahead(struct address_space *x)
- 
- typedef int filler_t(void *, struct page *);
- 
--extern struct page * find_get_page(struct address_space *mapping,
--				pgoff_t index);
--extern struct page * find_lock_page(struct address_space *mapping,
--				pgoff_t index);
--extern struct page * find_or_create_page(struct address_space *mapping,
--				pgoff_t index, gfp_t gfp_mask);
-+struct page *__find_get_page(struct address_space *, pgoff_t);
-+struct page *find_get_page(struct address_space *, pgoff_t);
-+struct page *__find_lock_page(struct address_space *, pgoff_t);
-+struct page *find_lock_page(struct address_space *, pgoff_t);
-+struct page *find_or_create_page(struct address_space *, pgoff_t, gfp_t);
-+unsigned __find_get_pages(struct address_space *, pgoff_t,  unsigned int,
-+			  struct page **, pgoff_t *);
- unsigned find_get_pages(struct address_space *mapping, pgoff_t start,
- 			unsigned int nr_pages, struct page **pages);
- unsigned find_get_pages_contig(struct address_space *mapping, pgoff_t start,
-diff --git a/include/linux/pagevec.h b/include/linux/pagevec.h
-index 2aa12b8..7520532 100644
---- a/include/linux/pagevec.h
-+++ b/include/linux/pagevec.h
-@@ -22,6 +22,9 @@ struct pagevec {
- 
- void __pagevec_release(struct pagevec *pvec);
- void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru);
-+unsigned __pagevec_lookup(struct pagevec *, struct address_space *,
-+			  pgoff_t, unsigned, pgoff_t *);
-+void pagevec_remove_exceptionals(struct pagevec *pvec);
- unsigned pagevec_lookup(struct pagevec *pvec, struct address_space *mapping,
- 		pgoff_t start, unsigned nr_pages);
- unsigned pagevec_lookup_tag(struct pagevec *pvec,
-diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
-index 79ab255..69444f1 100644
---- a/include/linux/shmem_fs.h
-+++ b/include/linux/shmem_fs.h
-@@ -48,6 +48,7 @@ extern struct file *shmem_file_setup(const char *name,
- 					loff_t size, unsigned long flags);
- extern int shmem_zero_setup(struct vm_area_struct *);
- extern int shmem_lock(struct file *file, int lock, struct user_struct *user);
-+extern bool shmem_mapping(struct address_space *);
- extern void shmem_unlock_mapping(struct address_space *mapping);
- extern struct page *shmem_read_mapping_page_gfp(struct address_space *mapping,
- 					pgoff_t index, gfp_t gfp_mask);
-diff --git a/mm/filemap.c b/mm/filemap.c
-index b662757..b8af34a 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -431,6 +431,24 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- }
- EXPORT_SYMBOL_GPL(replace_page_cache_page);
- 
-+static int page_cache_insert(struct address_space *mapping, pgoff_t offset,
-+			     struct page *page)
-+{
-+	void **slot;
-+
-+	slot = radix_tree_lookup_slot(&mapping->page_tree, offset);
-+	if (slot) {
-+		void *p;
-+
-+		p = radix_tree_deref_slot_protected(slot, &mapping->tree_lock);
-+		if (!radix_tree_exceptional_entry(p))
-+			return -EEXIST;
-+		radix_tree_replace_slot(slot, page);
-+		return 0;
-+	}
-+	return radix_tree_insert(&mapping->page_tree, offset, page);
-+}
-+
- /**
-  * add_to_page_cache_locked - add a locked page to the pagecache
-  * @page:	page to add
-@@ -461,7 +479,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 		page->index = offset;
- 
- 		spin_lock_irq(&mapping->tree_lock);
--		error = radix_tree_insert(&mapping->page_tree, offset, page);
-+		error = page_cache_insert(mapping, offset, page);
- 		if (likely(!error)) {
- 			mapping->nrpages++;
- 			__inc_zone_page_state(page, NR_FILE_PAGES);
-@@ -664,15 +682,7 @@ int __lock_page_or_retry(struct page *page, struct mm_struct *mm,
- 	}
- }
- 
--/**
-- * find_get_page - find and get a page reference
-- * @mapping: the address_space to search
-- * @offset: the page index
-- *
-- * Is there a pagecache struct page at the given (mapping, offset) tuple?
-- * If yes, increment its refcount and return it; if no, return NULL.
-- */
--struct page *find_get_page(struct address_space *mapping, pgoff_t offset)
-+struct page *__find_get_page(struct address_space *mapping, pgoff_t offset)
- {
- 	void **pagep;
- 	struct page *page;
-@@ -713,22 +723,29 @@ out:
- 
- 	return page;
- }
--EXPORT_SYMBOL(find_get_page);
-+EXPORT_SYMBOL(__find_get_page);
- 
- /**
-- * find_lock_page - locate, pin and lock a pagecache page
-+ * find_get_page - find and get a page reference
-  * @mapping: the address_space to search
-  * @offset: the page index
-  *
-- * Locates the desired pagecache page, locks it, increments its reference
-- * count and returns its address.
-- *
-- * Returns zero if the page was not present. find_lock_page() may sleep.
-+ * Is there a pagecache struct page at the given (mapping, offset) tuple?
-+ * If yes, increment its refcount and return it; if no, return NULL.
-  */
--struct page *find_lock_page(struct address_space *mapping, pgoff_t offset)
-+struct page *find_get_page(struct address_space *mapping, pgoff_t offset)
- {
--	struct page *page;
-+	struct page *page = __find_get_page(mapping, offset);
-+
-+	if (radix_tree_exceptional_entry(page))
-+		page = NULL;
-+	return page;
-+}
-+EXPORT_SYMBOL(find_get_page);
- 
-+struct page *__find_lock_page(struct address_space *mapping, pgoff_t offset)
-+{
-+	struct page *page;
- repeat:
- 	page = find_get_page(mapping, offset);
- 	if (page && !radix_tree_exception(page)) {
-@@ -743,6 +760,25 @@ repeat:
- 	}
- 	return page;
- }
-+
-+/**
-+ * find_lock_page - locate, pin and lock a pagecache page
-+ * @mapping: the address_space to search
-+ * @offset: the page index
-+ *
-+ * Locates the desired pagecache page, locks it, increments its reference
-+ * count and returns its address.
-+ *
-+ * Returns zero if the page was not present. find_lock_page() may sleep.
-+ */
-+struct page *find_lock_page(struct address_space *mapping, pgoff_t offset)
-+{
-+	struct page *page = __find_lock_page(mapping, offset);
-+
-+	if (radix_tree_exceptional_entry(page))
-+		page = NULL;
-+	return page;
-+}
- EXPORT_SYMBOL(find_lock_page);
- 
- /**
-@@ -792,6 +828,54 @@ repeat:
- }
- EXPORT_SYMBOL(find_or_create_page);
- 
-+unsigned __find_get_pages(struct address_space *mapping,
-+			  pgoff_t start, unsigned int nr_pages,
-+			  struct page **pages, pgoff_t *indices)
-+{
-+	unsigned int i;
-+	unsigned int ret;
-+	unsigned int nr_found;
-+
-+	rcu_read_lock();
-+restart:
-+	nr_found = radix_tree_gang_lookup_slot(&mapping->page_tree,
-+				(void ***)pages, indices, start, nr_pages);
-+	ret = 0;
-+	for (i = 0; i < nr_found; i++) {
-+		struct page *page;
-+repeat:
-+		page = radix_tree_deref_slot((void **)pages[i]);
-+		if (unlikely(!page))
-+			continue;
-+		if (radix_tree_exception(page)) {
-+			if (radix_tree_deref_retry(page))
-+				goto restart;
-+			/*
-+			 * Otherwise, we must be storing a swap entry
-+			 * here as an exceptional entry: so return it
-+			 * without attempting to raise page count.
-+			 */
-+			goto export;
-+		}
-+		if (!page_cache_get_speculative(page))
-+			goto repeat;
-+
-+		/* Has the page moved? */
-+		if (unlikely(page != *((void **)pages[i]))) {
-+			page_cache_release(page);
-+			goto repeat;
-+		}
-+export:
-+		indices[ret] = indices[i];
-+		pages[ret] = page;
-+		ret++;
-+	}
-+	if (unlikely(!ret && nr_found))
-+		goto restart;
-+	rcu_read_unlock();
-+	return ret;
-+}
-+
- /**
-  * find_get_pages - gang pagecache lookup
-  * @mapping:	The address_space to search
-@@ -864,8 +948,10 @@ repeat:
- 	 * If all entries were removed before we could secure them,
- 	 * try again, because callers stop trying once 0 is returned.
- 	 */
--	if (unlikely(!ret && nr_found > nr_skip))
-+	if (unlikely(!ret && nr_found)) {
-+		start += nr_skip;
- 		goto restart;
-+	}
- 	rcu_read_unlock();
- 	return ret;
- }
-diff --git a/mm/mincore.c b/mm/mincore.c
-index 636a868..0c7f093 100644
---- a/mm/mincore.c
-+++ b/mm/mincore.c
-@@ -70,13 +70,21 @@ static unsigned char mincore_page(struct address_space *mapping, pgoff_t pgoff)
- 	 * any other file mapping (ie. marked !present and faulted in with
- 	 * tmpfs's .fault). So swapped out tmpfs mappings are tested here.
- 	 */
--	page = find_get_page(mapping, pgoff);
- #ifdef CONFIG_SWAP
--	/* shmem/tmpfs may return swap: account for swapcache page too. */
--	if (radix_tree_exceptional_entry(page)) {
--		swp_entry_t swap = radix_to_swp_entry(page);
--		page = find_get_page(&swapper_space, swap.val);
--	}
-+	if (shmem_mapping(mapping)) {
-+		page = __find_get_page(mapping, pgoff);
-+		/*
-+		 * shmem/tmpfs may return swap: account for swapcache
-+		 * page too.
-+		 */
-+		if (radix_tree_exceptional_entry(page)) {
-+			swp_entry_t swap = radix_to_swp_entry(page);
-+			page = find_get_page(&swapper_space, swap.val);
-+		}
-+	} else
-+		page = find_get_page(mapping, pgoff);
-+#else
-+	page = find_get_page(mapping, pgoff);
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 650ba2f..a4da472 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -15,6 +15,7 @@
+ #include <linux/seqlock.h>
+ #include <linux/nodemask.h>
+ #include <linux/pageblock-flags.h>
++#include <linux/proportions.h>
+ #include <generated/bounds.h>
+ #include <linux/atomic.h>
+ #include <asm/page.h>
+@@ -115,6 +116,10 @@ enum zone_stat_item {
+ 	NUMA_LOCAL,		/* allocation from local node */
+ 	NUMA_OTHER,		/* allocation from other node */
  #endif
- 	if (page) {
- 		present = PageUptodate(page);
-diff --git a/mm/readahead.c b/mm/readahead.c
-index 0d1f1aa..43f9dd2 100644
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -177,7 +177,7 @@ __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
- 		rcu_read_lock();
- 		page = radix_tree_lookup(&mapping->page_tree, page_offset);
- 		rcu_read_unlock();
--		if (page)
-+		if (page && !radix_tree_exceptional_entry(page))
- 			continue;
++	WORKINGSET_SKIP,
++	WORKINGSET_ALLOC,
++	WORKINGSET_STALE,
++	WORKINGSET_STALE_FORCE,
+ 	NR_ANON_TRANSPARENT_HUGEPAGES,
+ 	NR_VM_ZONE_STAT_ITEMS };
  
- 		page = page_cache_alloc_readahead(mapping);
-@@ -342,7 +342,10 @@ static unsigned long page_cache_next_hole(struct address_space *mapping,
- 	unsigned long i;
+@@ -161,6 +166,7 @@ static inline int is_unevictable_lru(enum lru_list lru)
  
- 	for (i = 0; i < max_scan; i++) {
--		if (!radix_tree_lookup(&mapping->page_tree, index))
-+		struct page *page;
-+
-+		page = radix_tree_lookup(&mapping->page_tree, index);
-+		if (!page || radix_tree_exceptional_entry(page))
- 			break;
- 		index++;
- 		if (index == 0)
-@@ -358,7 +361,10 @@ static unsigned long page_cache_prev_hole(struct address_space *mapping,
- 	unsigned long i;
+ struct lruvec {
+ 	struct list_head lists[NR_LRU_LISTS];
++	long shrink_active;
+ };
  
- 	for (i = 0; i < max_scan; i++) {
--		if (!radix_tree_lookup(&mapping->page_tree, index))
-+		struct page *page;
-+
-+		page = radix_tree_lookup(&mapping->page_tree, index);
-+		if (!page || radix_tree_exceptional_entry(page))
- 			break;
- 		index--;
- 		if (index == ULONG_MAX)
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 269d049..6d063eb 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -310,57 +310,6 @@ static void shmem_delete_from_page_cache(struct page *page, void *radswap)
- }
+ /* Mask used at gathering information at once (see memcontrol.c) */
+@@ -372,6 +378,7 @@ struct zone {
+ 	/* Fields commonly accessed by the page reclaim scanner */
+ 	spinlock_t		lru_lock;
+ 	struct lruvec		lruvec;
++	struct prop_local_percpu evictions;
  
- /*
-- * Like find_get_pages, but collecting swap entries as well as pages.
-- */
--static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
--					pgoff_t start, unsigned int nr_pages,
--					struct page **pages, pgoff_t *indices)
+ 	struct zone_reclaim_stat reclaim_stat;
+ 
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 03d327f..cf304ed 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -205,10 +205,11 @@ struct swap_list_t {
+ #define vm_swap_full() (nr_swap_pages*2 < total_swap_pages)
+ 
+ /* linux/mm/workingset.c */
+-static inline unsigned long workingset_refault_distance(struct page *page)
 -{
--	unsigned int i;
--	unsigned int ret;
--	unsigned int nr_found;
--
--	rcu_read_lock();
--restart:
--	nr_found = radix_tree_gang_lookup_slot(&mapping->page_tree,
--				(void ***)pages, indices, start, nr_pages);
--	ret = 0;
--	for (i = 0; i < nr_found; i++) {
--		struct page *page;
--repeat:
--		page = radix_tree_deref_slot((void **)pages[i]);
--		if (unlikely(!page))
--			continue;
--		if (radix_tree_exception(page)) {
--			if (radix_tree_deref_retry(page))
--				goto restart;
--			/*
--			 * Otherwise, we must be storing a swap entry
--			 * here as an exceptional entry: so return it
--			 * without attempting to raise page count.
--			 */
--			goto export;
--		}
--		if (!page_cache_get_speculative(page))
--			goto repeat;
--
--		/* Has the page moved? */
--		if (unlikely(page != *((void **)pages[i]))) {
--			page_cache_release(page);
--			goto repeat;
--		}
--export:
--		indices[ret] = indices[i];
--		pages[ret] = page;
--		ret++;
--	}
--	if (unlikely(!ret && nr_found))
--		goto restart;
--	rcu_read_unlock();
--	return ret;
+-	return 0;
 -}
--
--/*
-  * Remove swap entry from radix tree, free the swap and its page cache.
-  */
- static int shmem_free_swap(struct address_space *mapping,
-@@ -377,21 +326,6 @@ static int shmem_free_swap(struct address_space *mapping,
- }
++void *workingset_eviction(struct page *);
++void workingset_activation(struct page *);
++unsigned long workingset_refault_distance(struct page *);
++bool workingset_zone_alloc(struct zone *, unsigned long,
++			   unsigned long *, unsigned long *);
  
- /*
-- * Pagevec may contain swap entries, so shuffle up pages before releasing.
-- */
--static void shmem_deswap_pagevec(struct pagevec *pvec)
--{
--	int i, j;
--
--	for (i = 0, j = 0; i < pagevec_count(pvec); i++) {
--		struct page *page = pvec->pages[i];
--		if (!radix_tree_exceptional_entry(page))
--			pvec->pages[j++] = page;
--	}
--	pvec->nr = j;
--}
--
--/*
-  * SysV IPC SHM_UNLOCK restore Unevictable pages to their evictable lists.
-  */
- void shmem_unlock_mapping(struct address_space *mapping)
-@@ -409,12 +343,12 @@ void shmem_unlock_mapping(struct address_space *mapping)
- 		 * Avoid pagevec_lookup(): find_get_pages() returns 0 as if it
- 		 * has finished, if it hits a row of PAGEVEC_SIZE swap entries.
- 		 */
--		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
-+		pvec.nr = __find_get_pages(mapping, index,
- 					PAGEVEC_SIZE, pvec.pages, indices);
- 		if (!pvec.nr)
- 			break;
- 		index = indices[pvec.nr - 1] + 1;
--		shmem_deswap_pagevec(&pvec);
-+		pagevec_remove_exceptionals(&pvec);
- 		check_move_unevictable_pages(pvec.pages, pvec.nr);
- 		pagevec_release(&pvec);
- 		cond_resched();
-@@ -442,7 +376,7 @@ void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
- 	pagevec_init(&pvec, 0);
- 	index = start;
- 	while (index <= end) {
--		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
-+		pvec.nr = __find_get_pages(mapping, index,
- 			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
- 							pvec.pages, indices);
- 		if (!pvec.nr)
-@@ -469,7 +403,7 @@ void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
- 			}
- 			unlock_page(page);
- 		}
--		shmem_deswap_pagevec(&pvec);
-+		pagevec_remove_exceptionals(&pvec);
- 		pagevec_release(&pvec);
- 		mem_cgroup_uncharge_end();
- 		cond_resched();
-@@ -490,7 +424,7 @@ void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
- 	index = start;
- 	for ( ; ; ) {
- 		cond_resched();
--		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
-+		pvec.nr = __find_get_pages(mapping, index,
- 			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
- 							pvec.pages, indices);
- 		if (!pvec.nr) {
-@@ -500,7 +434,7 @@ void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
- 			continue;
- 		}
- 		if (index == start && indices[0] > end) {
--			shmem_deswap_pagevec(&pvec);
-+			pagevec_remove_exceptionals(&pvec);
- 			pagevec_release(&pvec);
- 			break;
- 		}
-@@ -525,7 +459,7 @@ void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
- 			}
- 			unlock_page(page);
- 		}
--		shmem_deswap_pagevec(&pvec);
-+		pagevec_remove_exceptionals(&pvec);
- 		pagevec_release(&pvec);
- 		mem_cgroup_uncharge_end();
- 		index++;
-@@ -877,7 +811,7 @@ static int shmem_getpage_gfp(struct inode *inode, pgoff_t index,
- 		return -EFBIG;
- repeat:
- 	swap.val = 0;
--	page = find_lock_page(mapping, index);
-+	page = __find_lock_page(mapping, index);
- 	if (radix_tree_exceptional_entry(page)) {
- 		swap = radix_to_swp_entry(page);
- 		page = NULL;
-@@ -1025,7 +959,7 @@ unacct:
- 	shmem_unacct_blocks(info->flags, 1);
- failed:
- 	if (swap.val && error != -EINVAL) {
--		struct page *test = find_get_page(mapping, index);
-+		struct page *test = __find_get_page(mapping, index);
- 		if (test && !radix_tree_exceptional_entry(test))
- 			page_cache_release(test);
- 		/* Have another try if the entry has changed */
-@@ -1174,6 +1108,11 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
- 	return inode;
- }
+ /* linux/mm/page_alloc.c */
+ extern unsigned long totalram_pages;
+diff --git a/mm/Makefile b/mm/Makefile
+index 50ec00e..bd09137 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -13,6 +13,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
+ 			   readahead.o swap.o truncate.o vmscan.o shmem.o \
+ 			   prio_tree.o util.o mmzone.o vmstat.o backing-dev.o \
+ 			   page_isolation.o mm_init.o mmu_context.o percpu.o \
++			   workingset.o \
+ 			   $(mmu-y)
+ obj-y += init-mm.o
  
-+bool shmem_mapping(struct address_space *mapping)
-+{
-+	return mapping->backing_dev_info == &shmem_backing_dev_info;
-+}
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 58a08fc..10dc07c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1020,6 +1020,9 @@ struct lruvec *mem_cgroup_zone_lruvec(struct zone *zone,
+ 	if (mem_cgroup_disabled())
+ 		return &zone->lruvec;
+ 
++	if (!memcg)
++		memcg = root_mem_cgroup;
 +
- #ifdef CONFIG_TMPFS
- static const struct inode_operations shmem_symlink_inode_operations;
- static const struct inode_operations shmem_short_symlink_operations;
+ 	mz = mem_cgroup_zoneinfo(memcg, zone_to_nid(zone), zone_idx(zone));
+ 	return &mz->lruvec;
+ }
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a13ded1..a6544c9 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1711,9 +1711,11 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+ 	nodemask_t *allowednodes = NULL;/* zonelist_cache approximation */
+ 	int zlc_active = 0;		/* set if using zonelist_cache */
+ 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
++	unsigned long distance, active;
+ 
+ 	classzone_idx = zone_idx(preferred_zone);
+ zonelist_scan:
++	distance = active = 0;
+ 	/*
+ 	 * Scan zonelist, looking for a zone with enough free.
+ 	 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
+@@ -1726,6 +1728,11 @@ zonelist_scan:
+ 		if ((alloc_flags & ALLOC_CPUSET) &&
+ 			!cpuset_zone_allowed_softwall(zone, gfp_mask))
+ 				continue;
++		if ((alloc_flags & ALLOC_WMARK_LOW) &&
++		    current->refault_distance &&
++		    !workingset_zone_alloc(zone, current->refault_distance,
++					   &distance, &active))
++			continue;
+ 		/*
+ 		 * When allocating a page cache page for writing, we
+ 		 * want to get it from a zone that is within its dirty
 diff --git a/mm/swap.c b/mm/swap.c
-index 14380e9..cc5ce81 100644
+index cc5ce81..3029b40 100644
 --- a/mm/swap.c
 +++ b/mm/swap.c
-@@ -728,6 +728,27 @@ void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru)
+@@ -365,6 +365,8 @@ void mark_page_accessed(struct page *page)
+ 			PageReferenced(page) && PageLRU(page)) {
+ 		activate_page(page);
+ 		ClearPageReferenced(page);
++		if (page_is_file_cache(page))
++			workingset_activation(page);
+ 	} else if (!PageReferenced(page)) {
+ 		SetPageReferenced(page);
+ 	}
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 44d81f5..a01d123 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -536,7 +536,8 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
+  * Same as remove_mapping, but if the page is removed from the mapping, it
+  * gets returned with a refcount of 0.
+  */
+-static int __remove_mapping(struct address_space *mapping, struct page *page)
++static int __remove_mapping(struct address_space *mapping, struct page *page,
++			    bool reclaimed)
+ {
+ 	BUG_ON(!PageLocked(page));
+ 	BUG_ON(mapping != page_mapping(page));
+@@ -582,10 +583,13 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
+ 		swapcache_free(swap, page);
+ 	} else {
+ 		void (*freepage)(struct page *);
++		void *shadow = NULL;
+ 
+ 		freepage = mapping->a_ops->freepage;
+-
+-		__delete_from_page_cache(page, NULL);
++		
++		if (reclaimed && page_is_file_cache(page))
++			shadow = workingset_eviction(page);
++		__delete_from_page_cache(page, shadow);
+ 		spin_unlock_irq(&mapping->tree_lock);
+ 		mem_cgroup_uncharge_cache_page(page);
+ 
+@@ -608,7 +612,7 @@ cannot_free:
+  */
+ int remove_mapping(struct address_space *mapping, struct page *page)
+ {
+-	if (__remove_mapping(mapping, page)) {
++	if (__remove_mapping(mapping, page, false)) {
+ 		/*
+ 		 * Unfreezing the refcount with 1 rather than 2 effectively
+ 		 * drops the pagecache ref for us without requiring another
+@@ -968,7 +972,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			}
+ 		}
+ 
+-		if (!mapping || !__remove_mapping(mapping, page))
++		if (!mapping || !__remove_mapping(mapping, page, true))
+ 			goto keep_locked;
+ 
+ 		/*
+@@ -1824,43 +1828,51 @@ static inline int inactive_anon_is_low(struct mem_cgroup_zone *mz)
  }
- EXPORT_SYMBOL(__pagevec_lru_add);
+ #endif
  
-+unsigned __pagevec_lookup(struct pagevec *pvec, struct address_space *mapping,
-+			  pgoff_t start, unsigned int nr_pages,
-+			  pgoff_t *indices)
-+{
-+	pvec->nr = __find_get_pages(mapping, start, nr_pages,
-+				    pvec->pages, indices);
-+	return pagevec_count(pvec);
-+}
-+
-+void pagevec_remove_exceptionals(struct pagevec *pvec)
-+{
-+	int i, j;
-+
-+	for (i = 0, j = 0; i < pagevec_count(pvec); i++) {
-+		struct page *page = pvec->pages[i];
-+		if (!radix_tree_exceptional_entry(page))
-+			pvec->pages[j++] = page;
+-static int inactive_file_is_low_global(struct zone *zone)
++static int inactive_file_is_low(unsigned long nr_to_scan,
++				struct mem_cgroup_zone *mz,
++				struct scan_control *sc)
+ {
+-	unsigned long active, inactive;
+-
+-	active = zone_page_state(zone, NR_ACTIVE_FILE);
+-	inactive = zone_page_state(zone, NR_INACTIVE_FILE);
+-
+-	return (active > inactive);
+-}
++	unsigned long inactive_ratio;
++	unsigned long inactive;
++	struct lruvec *lruvec;
++	unsigned long active;
++	unsigned long gb;
+ 
+-/**
+- * inactive_file_is_low - check if file pages need to be deactivated
+- * @mz: memory cgroup and zone to check
+- *
+- * When the system is doing streaming IO, memory pressure here
+- * ensures that active file pages get deactivated, until more
+- * than half of the file pages are on the inactive list.
+- *
+- * Once we get to that situation, protect the system's working
+- * set from being evicted by disabling active file page aging.
+- *
+- * This uses a different ratio than the anonymous pages, because
+- * the page cache uses a use-once replacement algorithm.
+- */
+-static int inactive_file_is_low(struct mem_cgroup_zone *mz)
+-{
+-	if (!scanning_global_lru(mz))
++	if (!global_reclaim(sc)) /* XXX: integrate hard limit reclaim */
+ 		return mem_cgroup_inactive_file_is_low(mz->mem_cgroup,
+ 						       mz->zone);
+ 
+-	return inactive_file_is_low_global(mz->zone);
++	lruvec = mem_cgroup_zone_lruvec(mz->zone, sc->target_mem_cgroup);
++	if (lruvec->shrink_active > 0) {
++		inc_zone_state(mz->zone, WORKINGSET_STALE);
++		lruvec->shrink_active -= nr_to_scan;
++		return true;
 +	}
-+	pvec->nr = j;
-+}
-+
- /**
-  * pagevec_lookup - gang pagecache lookup
-  * @pvec:	Where the resulting pages are placed
-diff --git a/mm/truncate.c b/mm/truncate.c
-index 632b15e..d8c8964 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -22,6 +22,18 @@
- #include <linux/cleancache.h>
- #include "internal.h"
++	/*
++	 * Make sure there is always a reasonable amount of inactive
++	 * file pages around to keep the zone reclaimable.
++	 */
++	inactive = zone_nr_lru_pages(mz, LRU_INACTIVE_FILE);
++	active = zone_nr_lru_pages(mz, LRU_ACTIVE_FILE);
++	gb = (inactive + active) >> (30 - PAGE_SHIFT);
++	if (gb)
++		inactive_ratio = int_sqrt(10 * gb);
++	else
++		inactive_ratio = 1;
++	if (inactive * inactive_ratio < active) {
++		inc_zone_state(mz->zone, WORKINGSET_STALE_FORCE);
++		return true;
++	}
++	return false;
+ }
  
-+static void clear_exceptional_entry(struct address_space *mapping,
-+				    pgoff_t index, struct page *page)
+-static int inactive_list_is_low(struct mem_cgroup_zone *mz, int file)
++static int inactive_list_is_low(unsigned long nr_to_scan,
++				struct mem_cgroup_zone *mz,
++				struct scan_control *sc,
++				int file)
+ {
+ 	if (file)
+-		return inactive_file_is_low(mz);
++		return inactive_file_is_low(nr_to_scan, mz, sc);
+ 	else
+ 		return inactive_anon_is_low(mz);
+ }
+@@ -1872,7 +1884,7 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+ 	int file = is_file_lru(lru);
+ 
+ 	if (is_active_lru(lru)) {
+-		if (inactive_list_is_low(mz, file))
++		if (inactive_list_is_low(nr_to_scan, mz, sc, file))
+ 			shrink_active_list(nr_to_scan, mz, sc, priority, file);
+ 		return 0;
+ 	}
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index f600557..28f4b90 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -718,6 +718,10 @@ const char * const vmstat_text[] = {
+ 	"numa_local",
+ 	"numa_other",
+ #endif
++	"workingset_skip",
++	"workingset_alloc",
++	"workingset_stale",
++	"workingset_stale_force",
+ 	"nr_anon_transparent_hugepages",
+ 	"nr_dirty_threshold",
+ 	"nr_dirty_background_threshold",
+diff --git a/mm/workingset.c b/mm/workingset.c
+new file mode 100644
+index 0000000..2fc9ac6
+--- /dev/null
++++ b/mm/workingset.c
+@@ -0,0 +1,174 @@
++/*
++ * Workingset detection
++ *
++ * Copyright (C) 2012 Red Hat, Inc., Johannes Weiner
++ */
++
++#include <linux/memcontrol.h>
++#include <linux/pagemap.h>
++#include <linux/atomic.h>
++#include <linux/module.h>
++#include <linux/swap.h>
++#include <linux/fs.h>
++#include <linux/mm.h>
++
++/*
++ * Monotonic workingset clock for non-resident pages.  Each page
++ * leaving the inactive list (eviction or activation) is one tick.
++ *
++ * The refault distance of a page that is the number of ticks that
++ * occurred between eviction and refault.
++ *
++ * If the inactive list had been bigger by the refault distance in
++ * pages, the refault would not have happened.  Or put differently, if
++ * the distance is smaller than the number of active file pages, an
++ * active page needs to be deactivated so that both pages get an equal
++ * chance for activation when there is not enough memory for both.
++ */
++static atomic_t workingset_time;
++
++/*
++ * Per-zone proportional eviction counter to keep track of recent zone
++ * eviction speed and be able to calculate per-zone refault distances.
++ */
++static struct prop_descriptor global_evictions;
++
++/*
++ * Workingset time snapshots are stored in the page cache radix tree
++ * as exceptional entries.
++ */
++#define EV_SHIFT	RADIX_TREE_EXCEPTIONAL_SHIFT
++#define EV_MASK		(~0UL >> EV_SHIFT)
++
++void *workingset_eviction(struct page *page)
 +{
-+	/* Handled by shmem itself */
-+	if (shmem_mapping(mapping))
-+		return;
++	unsigned long time;
 +
-+	spin_lock_irq(&mapping->tree_lock);
-+	if (radix_tree_lookup(&mapping->page_tree, index) == page)
-+		radix_tree_delete(&mapping->page_tree, index);
-+	spin_unlock_irq(&mapping->tree_lock);
++	prop_inc_percpu(&global_evictions, &page_zone(page)->evictions);
++	time = (unsigned int)atomic_inc_return(&workingset_time);
++
++	return (void *)((time << EV_SHIFT) | RADIX_TREE_EXCEPTIONAL_ENTRY);
 +}
- 
- /**
-  * do_invalidatepage - invalidate part or all of a page
-@@ -208,31 +220,36 @@ void truncate_inode_pages_range(struct address_space *mapping,
- {
- 	const pgoff_t start = (lstart + PAGE_CACHE_SIZE-1) >> PAGE_CACHE_SHIFT;
- 	const unsigned partial = lstart & (PAGE_CACHE_SIZE - 1);
-+	pgoff_t indices[PAGEVEC_SIZE];
- 	struct pagevec pvec;
- 	pgoff_t index;
- 	pgoff_t end;
- 	int i;
- 
- 	cleancache_flush_inode(mapping);
--	if (mapping->nrpages == 0)
--		return;
- 
- 	BUG_ON((lend & (PAGE_CACHE_SIZE - 1)) != (PAGE_CACHE_SIZE - 1));
- 	end = (lend >> PAGE_CACHE_SHIFT);
- 
- 	pagevec_init(&pvec, 0);
- 	index = start;
--	while (index <= end && pagevec_lookup(&pvec, mapping, index,
--			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1)) {
-+	while (index <= end && __pagevec_lookup(&pvec, mapping, index,
-+			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
-+			indices)) {
- 		mem_cgroup_uncharge_start();
- 		for (i = 0; i < pagevec_count(&pvec); i++) {
- 			struct page *page = pvec.pages[i];
- 
- 			/* We rely upon deletion not changing page->index */
--			index = page->index;
-+			index = indices[i];
- 			if (index > end)
- 				break;
- 
-+			if (radix_tree_exceptional_entry(page)) {
-+				clear_exceptional_entry(mapping, index, page);
-+				continue;
-+			}
 +
- 			if (!trylock_page(page))
- 				continue;
- 			WARN_ON(page->index != index);
-@@ -243,6 +260,7 @@ void truncate_inode_pages_range(struct address_space *mapping,
- 			truncate_inode_page(mapping, page);
- 			unlock_page(page);
- 		}
-+		pagevec_remove_exceptionals(&pvec);
- 		pagevec_release(&pvec);
- 		mem_cgroup_uncharge_end();
- 		cond_resched();
-@@ -262,14 +280,15 @@ void truncate_inode_pages_range(struct address_space *mapping,
- 	index = start;
- 	for ( ; ; ) {
- 		cond_resched();
--		if (!pagevec_lookup(&pvec, mapping, index,
--			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1)) {
-+		if (!__pagevec_lookup(&pvec, mapping, index,
-+			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
-+			indices)) {
- 			if (index == start)
- 				break;
- 			index = start;
- 			continue;
- 		}
--		if (index == start && pvec.pages[0]->index > end) {
-+		if (index == start && indices[0] > end) {
- 			pagevec_release(&pvec);
- 			break;
- 		}
-@@ -278,16 +297,22 @@ void truncate_inode_pages_range(struct address_space *mapping,
- 			struct page *page = pvec.pages[i];
- 
- 			/* We rely upon deletion not changing page->index */
--			index = page->index;
-+			index = indices[i];
- 			if (index > end)
- 				break;
- 
-+			if (radix_tree_exceptional_entry(page)) {
-+				clear_exceptional_entry(mapping, index, page);
-+				continue;
-+			}
++void workingset_activation(struct page *page)
++{
++	struct lruvec *lruvec;
++	/*
++	 * Refault distance is compared to the number of active pages,
++	 * but pages activated after the eviction were hardly the
++	 * reason for memory shortness back then.  Advancing the clock
++	 * on activation compensates for them, so that we compare to
++	 * the number of active pages at time of eviction.
++	 */
++	atomic_inc(&workingset_time);
++	/*
++	 * Furthermore, activations mean that the inactive list is big
++	 * enough and that a new workingset is being adapted already.
++	 * Deactivation is no longer necessary; even harmful.
++	 */
++	lruvec = mem_cgroup_zone_lruvec(page_zone(page), NULL);
++	if (lruvec->shrink_active > 0)
++		lruvec->shrink_active--;
++}
 +
- 			lock_page(page);
- 			WARN_ON(page->index != index);
- 			wait_on_page_writeback(page);
- 			truncate_inode_page(mapping, page);
- 			unlock_page(page);
- 		}
-+		pagevec_remove_exceptionals(&pvec);
- 		pagevec_release(&pvec);
- 		mem_cgroup_uncharge_end();
- 		index++;
-@@ -330,6 +355,7 @@ EXPORT_SYMBOL(truncate_inode_pages);
- unsigned long invalidate_mapping_pages(struct address_space *mapping,
- 		pgoff_t start, pgoff_t end)
- {
-+	pgoff_t indices[PAGEVEC_SIZE];
- 	struct pagevec pvec;
- 	pgoff_t index = start;
- 	unsigned long ret;
-@@ -345,17 +371,23 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
- 	 */
- 
- 	pagevec_init(&pvec, 0);
--	while (index <= end && pagevec_lookup(&pvec, mapping, index,
--			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1)) {
-+	while (index <= end && __pagevec_lookup(&pvec, mapping, index,
-+			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
-+			indices)) {
- 		mem_cgroup_uncharge_start();
- 		for (i = 0; i < pagevec_count(&pvec); i++) {
- 			struct page *page = pvec.pages[i];
- 
- 			/* We rely upon deletion not changing page->index */
--			index = page->index;
-+			index = indices[i];
- 			if (index > end)
- 				break;
- 
-+			if (radix_tree_exceptional_entry(page)) {
-+				clear_exceptional_entry(mapping, index, page);
-+				continue;
-+			}
++unsigned long workingset_refault_distance(struct page *page)
++{
++	unsigned long time_of_eviction;
++	unsigned long now;
 +
- 			if (!trylock_page(page))
- 				continue;
- 			WARN_ON(page->index != index);
-@@ -369,6 +401,7 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
- 				deactivate_page(page);
- 			count += ret;
- 		}
-+		pagevec_remove_exceptionals(&pvec);
- 		pagevec_release(&pvec);
- 		mem_cgroup_uncharge_end();
- 		cond_resched();
-@@ -437,6 +470,7 @@ static int do_launder_page(struct address_space *mapping, struct page *page)
- int invalidate_inode_pages2_range(struct address_space *mapping,
- 				  pgoff_t start, pgoff_t end)
- {
-+	pgoff_t indices[PAGEVEC_SIZE];
- 	struct pagevec pvec;
- 	pgoff_t index;
- 	int i;
-@@ -447,17 +481,23 @@ int invalidate_inode_pages2_range(struct address_space *mapping,
- 	cleancache_flush_inode(mapping);
- 	pagevec_init(&pvec, 0);
- 	index = start;
--	while (index <= end && pagevec_lookup(&pvec, mapping, index,
--			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1)) {
-+	while (index <= end && __pagevec_lookup(&pvec, mapping, index,
-+			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
-+			indices)) {
- 		mem_cgroup_uncharge_start();
- 		for (i = 0; i < pagevec_count(&pvec); i++) {
- 			struct page *page = pvec.pages[i];
- 
- 			/* We rely upon deletion not changing page->index */
--			index = page->index;
-+			index = indices[i];
- 			if (index > end)
- 				break;
- 
-+			if (radix_tree_exceptional_entry(page)) {
-+				clear_exceptional_entry(mapping, index, page);
-+				continue;
-+			}
++	if (!page)
++		return 0;
 +
- 			lock_page(page);
- 			WARN_ON(page->index != index);
- 			if (page->mapping != mapping) {
-@@ -495,6 +535,7 @@ int invalidate_inode_pages2_range(struct address_space *mapping,
- 				ret = ret2;
- 			unlock_page(page);
- 		}
-+		pagevec_remove_exceptionals(&pvec);
- 		pagevec_release(&pvec);
- 		mem_cgroup_uncharge_end();
- 		cond_resched();
++	BUG_ON(!radix_tree_exceptional_entry(page));
++
++	time_of_eviction = (unsigned long)page >> EV_SHIFT;
++	now = (unsigned int)atomic_read(&workingset_time) & EV_MASK;
++
++	return (now - time_of_eviction) & EV_MASK;
++}
++EXPORT_SYMBOL(workingset_refault_distance);
++
++bool workingset_zone_alloc(struct zone *zone, unsigned long refault_distance,
++			   unsigned long *pdistance, unsigned long *pactive)
++{
++	unsigned long zone_active;
++	unsigned long zone_free;
++	unsigned long missing;
++	long denominator;
++	long numerator;
++
++	/*
++	 * Don't put refaulting pages into zones that are already
++	 * heavily reclaimed and don't have the potential to hold all
++	 * the workingset.  Instead go for zones where the zone-local
++	 * distance is smaller than the potential inactive list space.
++	 * This can be either because there has not been much reclaim
++	 * recently (small distance), because the zone is not actually
++	 * full (free pages), or because there are just genuinely a
++	 * lot of active pages that may be used less frequently than
++	 * the refaulting page.  Either way, use this potential to
++	 * hold the refaulting page long-term instead of beating on
++	 * already thrashing higher zones.
++	 */
++	prop_fraction_percpu(&global_evictions, &zone->evictions,
++			     &numerator, &denominator);
++	missing = refault_distance * numerator;
++	do_div(missing, denominator);
++	*pdistance += missing;
++
++	zone_active = zone_page_state(zone, NR_ACTIVE_FILE);
++	*pactive += zone_active;
++
++	/*
++	 * Lower zones may not even be full, and free pages are
++	 * potential inactive space, too.  But the dirty reserve is
++	 * not available to page cache due to lowmem reserves and the
++	 * kswapd watermark.  Don't include it.
++	 */
++	zone_free = zone_page_state(zone, NR_FREE_PAGES);
++	if (zone_free > zone->dirty_balance_reserve)
++		zone_free -= zone->dirty_balance_reserve;
++	else
++		zone_free = 0;
++
++	if (missing >= zone_active + zone_free) {
++		inc_zone_state(zone, WORKINGSET_SKIP);
++		return false;
++	}
++
++	inc_zone_state(zone, WORKINGSET_ALLOC);
++
++	/*
++	 * Okay, placement in this zone makes sense, but don't start
++	 * actually deactivating pages until all allowed zones are
++	 * under equalized pressure, or risk throwing out active pages
++	 * from a barely used zone even when the refaulting data set
++	 * is bigger than the available memory.  To prevent that, look
++	 * at the cumulative distance and active pages of all zones
++	 * already visited, which normalizes the distance for the case
++	 * when higher zones are thrashing and we just started putting
++	 * pages in the lower ones.
++	 */
++	if (*pdistance < *pactive) {
++		struct lruvec *lruvec;
++
++		lruvec = mem_cgroup_zone_lruvec(zone, NULL);
++		lruvec->shrink_active++;
++	}
++	return true;
++}
++
++static int __init workingset_init(void)
++{
++	extern unsigned long global_dirtyable_memory(void);
++	struct zone *zone;
++	int shift;
++
++	shift = ilog2(global_dirtyable_memory() - 1);
++	prop_descriptor_init(&global_evictions, shift);
++	for_each_zone(zone)
++		prop_local_init_percpu(&zone->evictions);
++	return 0;
++}
++
++module_init(workingset_init);
 -- 
 1.7.7.6
 
