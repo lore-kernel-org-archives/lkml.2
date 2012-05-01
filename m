@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758103Ab2EANqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 09:46:33 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:56590 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756657Ab2EANqb (ORCPT
+	id S1758130Ab2EANqm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 09:46:42 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46563 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758107Ab2EANqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 09:46:31 -0400
-X-Sasl-enc: ilCD/mlaxA8cGy5EMuKUjjxZY4F7hGegRtwGN6QkM7vW 1335879990
-Date: Tue, 1 May 2012 09:46:30 -0400
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: linux-next: manual merge of the driver-core tree with Linus' tree
-Message-ID: <20120501134630.GC31954@kroah.com>
-References: <20120501150109.753d67c17e5beead1600c7ac@canb.auug.org.au>
+	Tue, 1 May 2012 09:46:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120501150109.753d67c17e5beead1600c7ac@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1204302248310.6271@ionos>
+References: <20120430194725.763322463@linutronix.de> <20120430194846.862605948@linutronix.de>
+ <4F9EF43C.3090608@gmail.com> <alpine.LFD.2.02.1204302238120.6271@ionos> <alpine.LFD.2.02.1204302248310.6271@ionos>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 1 May 2012 09:46:17 -0400
+Message-ID: <CAHGf_=p4+fBgZZh4v7-rou1h3kx12b6=uwtjdnh0PvA+R5WVaA@mail.gmail.com>
+Subject: Re: [patch 21/29] score: Use generic init_task
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Chen Liqin <liqin.chen@sunplusct.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 03:01:09PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the driver-core tree got a conflict in
-> init/main.c between commit a99cd1125189 ("init: fix bug where environment
-> vars can't be passed via boot args") from Linus' tree and commit
-> 9fb48c744ba6 ("params: add 3rd arg to option handler callback signature")
-> from the driver-core tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
+On Mon, Apr 30, 2012 at 4:49 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 30 Apr 2012, Thomas Gleixner wrote:
+>> On Mon, 30 Apr 2012, KOSAKI Motohiro wrote:
+>> > Almost patches delete arch specific init-task. But this patch doesn't.
+>> > Is this really intentional?
+>>
+>> Not really. I missed it :( Will fix.
+>
+> Here is the updated one.
+>
+> Thanks,
 
-Thanks, I was warned about this from Jim, but hadn't had the chance to
-do the merge myself.  I'll work on this later today so you don't have to
-carry the fix yourself.
+Seems good. (but obviously I'm not score expert, don't believe me).
 
-greg k-h
+Thanks.
