@@ -1,49 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758261Ab2EAQA6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 12:00:58 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:56109 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757058Ab2EAQAV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 12:00:21 -0400
-Date: Tue, 1 May 2012 13:00:14 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-bluetooth@vger.kernel.org
-Subject: Re: Weird bluetooth keyboard regression - just me?
-Message-ID: <20120501160014.GB1419@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Jonathan Corbet <corbet@lwn.net>,
-	LKML <linux-kernel@vger.kernel.org>,
-	linux-bluetooth@vger.kernel.org
-References: <20120501073711.028d31d6@lwn.net>
+	id S1758127Ab2EAQEi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 12:04:38 -0400
+Received: from hoabinh.gov.vn ([123.27.62.13]:1742 "EHLO mail.hoabinh.gov.vn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757058Ab2EAQEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 12:04:37 -0400
+X-Greylist: delayed 3543 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 May 2012 12:04:37 EDT
+Date: Tue, 1 May 2012 21:43:54 +0700 (ICT)
+From: Capt James Hans <nhinhntt.bhxh@hoabinh.gov.vn>
+Reply-To: Capt James Hans <captjm.hans@gmail.com>
+Message-ID: <787221585.1141335883434500.JavaMail.root@mail.hoabinh.gov.vn>
+Subject: Greeting from Kabul...
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120501073711.028d31d6@lwn.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [210.187.205.239]
+X-Mailer: Zimbra 5.0.18_GA_3011.RHEL5_64 (zclient/5.0.18_GA_3011.RHEL5_64)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon,
+Hello,
 
-* Jonathan Corbet <corbet@lwn.net> [2012-05-01 07:37:11 -0600]:
+I am Cpt. James Hans an officer of the U.S Army, serving with the 82nd Airborne Division Peace keeping force in Kabul,Afghanistan.
 
-> Life has not been conducive to frivolities like trying new kernels, but I
-> finally gave 3.4-rc5 a go yesterday.  I'm seeing some decidedly weird
-> keyboard behavior; it seems surprising that nobody else has complained.
-> 
-> I have a logitech Dinovo Edge bluetooth keyboard that I've used for
-> years.  With 3.4 kernels, the keyboard generates no input until I've
-> banged on it for a couple of seconds.  If I continually hit characters,
-> they make it through; as soon as I stop for even a brief period (even
-> somebody as verbose as me has to come up for air occasionally), it goes
-> back to sleep.
+We are currently in Afghanistan and I have some important items that i need to ship to you.I need you to reply only if you are interested.I will explain further when i get a response from you. Please reply to my email captjm.hans@gmail.com.
 
-This looks weird, I suspect of something. Could you try running
-'bluetoothd -nd -P mgmtops' and check if the problem still happens too
-you?
-
-	Gustavo
+Cpt. James Hans.
