@@ -1,167 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab2EAHSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 03:18:07 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48952 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab2EAHSF (ORCPT
+	id S1752901Ab2EAHTf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 03:19:35 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:44218 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab2EAHTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 03:18:05 -0400
-Date: Tue, 1 May 2012 09:17:51 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V1 0/5] Rationalize time keeping
-Message-ID: <20120501071749.GD2243@netboy.at.omicron.at>
-References: <cover.1335510125.git.richardcochran@gmail.com>
- <4F9B228F.90903@linaro.org>
- <20120428080443.GA2241@netboy.at.omicron.at>
- <4F9EFC70.50405@linaro.org>
+	Tue, 1 May 2012 03:19:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9EFC70.50405@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAE9FiQUH1SiToMBanL7brzem920rCoq70hh3KKxH-ps190=51w@mail.gmail.com>
+References: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
+	<1332135781-13695-6-git-send-email-yinghai@kernel.org>
+	<CAErSpo5AnsmfQs4oa3P7AQyPTJ+YqCVVh5p2L=bmDY=A+BO9PQ@mail.gmail.com>
+	<CAE9FiQUH1SiToMBanL7brzem920rCoq70hh3KKxH-ps190=51w@mail.gmail.com>
+Date: Tue, 1 May 2012 00:19:33 -0700
+X-Google-Sender-Auth: ixda_Rap15pTKtqhR5o59Q5UerA
+Message-ID: <CAE9FiQW=BLxjHGKzKQvm15PSyESh+H_rrPkTEZGE-8uWboJWVg@mail.gmail.com>
+Subject: Re: [PATCH -v11 05/30] PCI: Add busn_res operation functions
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: multipart/mixed; boundary=047d7b2ee18b72388704bef4647d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 01:56:16PM -0700, John Stultz wrote:
-> On 04/28/2012 01:04 AM, Richard Cochran wrote:
-> >I can synchronize over the network to under 100 nanoseconds, so to me,
-> >one second is a large offset.
-> 
-> Well, the leap-offset is a second, but when it arrives is only
-> tick-accurate. :)
+--047d7b2ee18b72388704bef4647d
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-It would be fine to change the leap second status on the tick, but
-then you must also change the time then, and only then, as well. I
-know Linux moved away from this long ago, and the new way is better,
-but still what the kernel does today is just plain wrong.
+On Mon, Apr 30, 2012 at 5:34 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Apr 30, 2012 at 4:29 PM, Bjorn Helgaas <bhelgaas@google.com> wrot=
+e:
+>> On Sun, Mar 18, 2012 at 11:42 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> +void pci_bus_update_busn_res_end(struct pci_bus *b, int bus_max)
+>>> +{
+>>> + =A0 =A0 =A0 struct resource *res =3D &b->busn_res;
+>>> + =A0 =A0 =A0 struct resource old_res =3D *res;
+>>> +
+>>> + =A0 =A0 =A0 res->end =3D bus_max;
+>>
+>> I've mentioned before that I'm not comfortable with updating the
+>> struct resource after it's been inserted into the tree. =A0If you want
+>> to do an in-place update, I think you need to add a new interface in
+>> kernel/resource.c so it can make sure the resource tree remains
+>> consistent.
+>
+> ok, will add one function in kernel/resource.c to make sure that end
+> could be updated safely
+> by checking parent and children.
 
-But there is a fix. I just offered it.
+Rebased busn_alloc branch and added attached patch into that.
 
-> True, although even if it is a hack, google *is* using it.  My
-> concern is that if CLOCK_REALTIME  is smeared to avoid a leap second
-> jump, in that environment we cannot also accurate provide a correct
-> CLOCK_TAI.  So far that's not been a problem, because CLOCK_TAI
-> isn't a clockid we yet support.  But the expectations bar always
-> rises, so I suspect once we have a CLOCK_TAI, someone will want us
-> to handle smeared-leap seconds without affecting CLOCK_TAI's
-> correctness.
+as for removing bus->subordinate and bus->secondary, like to do that later.
 
-It is either/or, but not both simultaneously.
+Thanks
 
-My proposal does not prevent the smear method in any way. People who
-want the smear just never schedule a leap second. People who want the
-frequency constant just use the TAI clock interface for the important
-work.
+Yinghai
 
-We really don't have to support both ways at once.
+--047d7b2ee18b72388704bef4647d
+Content-Type: application/octet-stream; name="resource_update.patch"
+Content-Disposition: attachment; filename="resource_update.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h1omimxk0
 
-> >    While these people are usually happy to agree that UTC-SLS is a
-> >    sensible engineering solution as long as UTC remains the main time
-> >    basis of distributed computing, they argue that this is just a
-> >    workaround that will be obsolete once their grand vision of giving
-> >    up UTC entirely has become true, and that it is therefore just an
-> >    unwelcome distraction from their ultimate goal.
-> I think this last point is very telling. Neither of the above
-> options are really viable in my mind, as I don't see any real
-> consensus to giving up UTC.  What is in-practice is actually way
-> more important then where folks wish things would go.
-
-We don't need to give up UTC. We can offer correct UTC and a new,
-rational TAI clock and get the leap seconds right, all at the same
-time, wow.
-
-> Well, I think that Google shows some folks are starting to use
-> workarounds like smeared-leap-seconds/UTC-SLS. So its something we
-> should watch carefully and expect more folks to follow.
-
-... but don't hold your breath ...
-
-> Its true
-> that you don't want to mix UTC-SLS and standard UTC time domains,
-> but its likely this will be a site-specific configuration.
-> 
-> So its a concern when a correct CLOCK_TAI would be incompatible on
-> systems using these hacks/workarounds.
-
-I don't see any problem here.
-
-[ If you do the smear, you can simply just ignore the TAI clock at let
-  it be wrong (just like how we handle leap seconds today BTW) or jump
-  it at the new epoch. ]
-
-> *Any* extra work is a big deal to folks who are sensitive to
-> clock_gettime performance.
-> That said, I don't see why its more complicated to also handle leap removal?
-
-It makes your kernel image larger with no added benefit.
-
-> Well, performance sensitive and correctness sensitive are two
-> different things. :) I think CLOCK_TAI is much cleaner for things,
-> but at the same time, the world "thinks" in UTC, and converting
-> between them isn't always trivial (very similar to the timezone
-> presentation layer, which isn't fun). So I'd temper any hopes of
-> mass conversion. :)
-
-I know, it is a highly politial issue. Converting to UTC is best
-handled via timezones. Leap seconds are really just the same as
-daylight savings times. Ideally, the kernel would provide only
-continuous time, and libc would do the rest.
-
-But I don't expect to change the world, only to fix the kernel.
-
-> Since this is done in
-> different ways for each architecture, you need to export the proper
-> information out via update_vsyscall() and also update the
-> arch-specific vsyscall gettimeofday paths (which is non-trivial, as
-> some arches are implemented in asm, etc - my sympathies here, its a
-> pain).
-
-Okay, I'll get more familar with that.
-
-> For users of clock_gettime/gettimeofday, a leapsecond is an
-> inconsistency. Neither interfaces provide a way to detect that the
-> TIME_OOP flag is set and its not 23:59:59 again, but 23:59:60 (which
-> can't be represented by a time_t).  Thus even if the behavior was
-> perfect, and the leapsecond landed at exactly the second edge, it is
-> still a time hiccup to most applications anyway.
-> 
-> Thus, most of userland doesn't really care if the hiccup happens up
-> to a tick after the second's edge. They don't expect it anyway.  So
-> they really don't want a constant performance drop in order for the
-> hiccup to be more "correct" when it happens.  :)
-
-I don't buy that argument. Repeating a time_t value leads to ambiguous
-UTC times, put it is posixly correct. The values are usable together
-with difftime(3). Having the time_t go forward and then back again is
-certainly worse.
-
-If we leave everything as is, then the user is left with two choices
-for data collection applications.
-
-1. Turn off your data system on the night of a leap second.
-
-2. Record data even during a leap second, but post process the files
-   to fix up all the uglies.
-
-Either way, the kernel has failed us.
-
-> That's why I'm suggesting that you consider starting by modifying
-> the adjtimex() interface. Any application that actually cares about
-> leapseconds should be using adjtimex() since its the only interface
-> that allows you to realize that's whats happening. Its not a
-> performance optimized path, and so its a fine candidate for being
-> slow-but-correct.
-> 
-> My only concern there is that it would cause problems when mixing
-> adjtimex() calls with clock_gettime() calls, because you could have
-> a tick-length of time when they report different time values. But
-> this may be acceptable.
-
-(Introduce yet another kernel bug? No, thanks ;)
-
-Thanks,
-Richard
+U3ViamVjdDogW1BBVENIXSByZXNvdXJjZXM6IFVwZGF0ZSByZWdpc3RlcmVkIHJlc291cmNlIHN0
+YXJ0L2VuZCBpbiB0cmVlLgoKTmVlZCB0byBjaGVjayBpZiB0aGUgbmV3IHJhbmdlIGlzCjEuIGZ1
+bGx5IGNvdmVyZWQgYnkgcGFyZW50IHJlc291cmNlIGlmIGl0IGV4aXN0cwoyLiBub3Qgb3Zlcmxh
+cHBlZCB3aXRoIHNpYmxpbmcgcmVzb3VyY2VzIGlmIHRoZXkgZXhpc3QuCjMuIGZ1bGx5IGNvdmVy
+aW5nIGNoaWxyZW4gcmVzb3VyY2VzIGlmIHRoZXkgZXhpc3QuCgpTaWduZWQtb2ZmLWJ5OiBZaW5n
+aGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CkNjOiBBbmRyZXcgTW9ydG9uIDxha3BtQGxpbnV4
+LWZvdW5kYXRpb24ub3JnPgoKLS0tCiBpbmNsdWRlL2xpbnV4L2lvcG9ydC5oIHwgICAgMiArKwog
+a2VybmVsL3Jlc291cmNlLmMgICAgICB8ICAgNDkgKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKwogMiBmaWxlcyBjaGFuZ2VkLCA1MSBpbnNlcnRpb25zKCsp
+CgpJbmRleDogbGludXgtMi42L2luY2x1ZGUvbGludXgvaW9wb3J0LmgKPT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0g
+bGludXgtMi42Lm9yaWcvaW5jbHVkZS9saW51eC9pb3BvcnQuaAorKysgbGludXgtMi42L2luY2x1
+ZGUvbGludXgvaW9wb3J0LmgKQEAgLTE0MSw2ICsxNDEsOCBAQCBleHRlcm4gc3RydWN0IHJlc291
+cmNlICpyZXF1ZXN0X3Jlc291cmNlCiBleHRlcm4gaW50IHJlcXVlc3RfcmVzb3VyY2Uoc3RydWN0
+IHJlc291cmNlICpyb290LCBzdHJ1Y3QgcmVzb3VyY2UgKm5ldyk7CiBleHRlcm4gaW50IHJlbGVh
+c2VfcmVzb3VyY2Uoc3RydWN0IHJlc291cmNlICpuZXcpOwogdm9pZCByZWxlYXNlX2NoaWxkX3Jl
+c291cmNlcyhzdHJ1Y3QgcmVzb3VyY2UgKm5ldyk7CitpbnQgdXBkYXRlX3Jlc291cmNlKHN0cnVj
+dCByZXNvdXJjZSAqciwgcmVzb3VyY2Vfc2l6ZV90IHN0YXJ0LAorCQkJIHJlc291cmNlX3NpemVf
+dCBlbmQpOwogZXh0ZXJuIHZvaWQgcmVzZXJ2ZV9yZWdpb25fd2l0aF9zcGxpdChzdHJ1Y3QgcmVz
+b3VyY2UgKnJvb3QsCiAJCQkgICAgIHJlc291cmNlX3NpemVfdCBzdGFydCwgcmVzb3VyY2Vfc2l6
+ZV90IGVuZCwKIAkJCSAgICAgY29uc3QgY2hhciAqbmFtZSk7CkluZGV4OiBsaW51eC0yLjYva2Vy
+bmVsL3Jlc291cmNlLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcva2VybmVsL3Jlc291
+cmNlLmMKKysrIGxpbnV4LTIuNi9rZXJuZWwvcmVzb3VyY2UuYwpAQCAtMjI3LDYgKzIyNyw1NSBA
+QCB2b2lkIHJlbGVhc2VfY2hpbGRfcmVzb3VyY2VzKHN0cnVjdCByZXNvCiAJd3JpdGVfdW5sb2Nr
+KCZyZXNvdXJjZV9sb2NrKTsKIH0KIAoraW50IHVwZGF0ZV9yZXNvdXJjZShzdHJ1Y3QgcmVzb3Vy
+Y2UgKnIsIHJlc291cmNlX3NpemVfdCBzdGFydCwKKwkJCXJlc291cmNlX3NpemVfdCBlbmQpCit7
+CisJaW50IHJldCA9IDA7CisJc3RydWN0IHJlc291cmNlICpwYXJlbnQ7CisJc3RydWN0IHJlc291
+cmNlICpwOworCisJaWYgKHN0YXJ0ID4gZW5kKQorCQlyZXR1cm4gLUVJTlZBTDsKKworCXdyaXRl
+X2xvY2soJnJlc291cmNlX2xvY2spOworCXBhcmVudCA9IHItPnBhcmVudDsKKwlpZiAocGFyZW50
+KSB7CisJCWlmIChzdGFydCA8IHBhcmVudC0+c3RhcnQgfHwKKwkJICAgIGVuZCA+IHBhcmVudC0+
+ZW5kKSB7CisJCQlyZXQgPSAtRUlOVkFMOworCQkJZ290byBvdXQ7CisJCX0KKworCQlwID0gcGFy
+ZW50LT5jaGlsZDsKKwkJd2hpbGUgKHApIHsKKwkJCWlmIChwICE9IHIgJiYKKwkJCSAgICBtYXhf
+dChyZXNvdXJjZV9zaXplX3QsIHAtPnN0YXJ0LCBzdGFydCkgPD0KKwkJCSAgICBtaW5fdChyZXNv
+dXJjZV9zaXplX3QsIHAtPmVuZCwgZW5kKSkgeworCQkJCXJldCA9IC1FSU5WQUw7CisJCQkJZ290
+byBvdXQ7CisJCQl9CisJCQlwID0gcC0+c2libGluZzsKKwkJfQorCX0KKworCXAgPSByLT5jaGls
+ZDsKKwl3aGlsZSAocCkgeworCQlpZiAocC0+c3RhcnQgPCBzdGFydCB8fCBwLT5lbmQgPiBlbmQp
+IHsKKwkJCXJldCA9IC1FSU5WQUw7CisJCQlnb3RvIG91dDsKKwkJfQorCQlwID0gcC0+c2libGlu
+ZzsKKwl9CisKKwlyLT5zdGFydCA9IHN0YXJ0OworCXItPmVuZCA9IGVuZDsKKworb3V0OgorCXdy
+aXRlX3VubG9jaygmcmVzb3VyY2VfbG9jayk7CisKKwlyZXR1cm4gcmV0OworfQorCiAvKioKICAq
+IHJlcXVlc3RfcmVzb3VyY2VfY29uZmxpY3QgLSByZXF1ZXN0IGFuZCByZXNlcnZlIGFuIEkvTyBv
+ciBtZW1vcnkgcmVzb3VyY2UKICAqIEByb290OiByb290IHJlc291cmNlIGRlc2NyaXB0b3IK
+--047d7b2ee18b72388704bef4647d--
