@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab2EAQmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 12:42:08 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:17672 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab2EAQmG (ORCPT
+	id S1756770Ab2EAQmY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 12:42:24 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:45725 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754863Ab2EAQmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 12:42:06 -0400
-Subject: [PATCH 00/17] hpsa: resend updates for April, 2012 
+	Tue, 1 May 2012 12:42:20 -0400
+Subject: [PATCH 03/17] hpsa: enable bus master bit after pci_enable_device
 To: james.bottomley@hansenpartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         stephenmcameron@gmail.com, thenzl@redhat.com,
         akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Date: Tue, 01 May 2012 11:42:03 -0500
-Message-ID: <20120501163819.11705.10299.stgit@beardog.cce.hp.com>
+Date: Tue, 01 May 2012 11:42:20 -0500
+Message-ID: <20120501164220.11705.95002.stgit@beardog.cce.hp.com>
+In-Reply-To: <20120501163819.11705.10299.stgit@beardog.cce.hp.com>
+References: <20120501163819.11705.10299.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,51 +25,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The two big changes here are adding an abort handler, and using multiple
-reply queues for command completions.  Updated the patch set since last
-time to address comments:
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-	* Use pci_set_master(h->pdev) to enable bus mastering instead of 
-	  doing it manually.
+pci_disable_device() disables the bus master bit and pci_enable_device does
+not re-enable it.  It needs to be enabled.
 
-	* Retry driver initiated commands on SAM_STAT_TASK_SET_FULL
-	  as well as SAM_STAT_BUSY and retry more than just 3 times,
-	  backing off the retry rate.
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ drivers/scsi/hpsa.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-	* Dropped the changes that used the new IS_ENABLED macro.
-
-Matt Bondurant (1):
-      hpsa: retry driver initiated commands on busy status
-
-Matt Gates (2):
-      hpsa: use multiple reply queues
-      hpsa: refine interrupt handler locking for greater concurrency
-
-Mike Miller (1):
-      hpsa: add new RAID level "1(ADM)"
-
-Stephen M. Cameron (13):
-      hpsa: call pci_disable_device on driver unload
-      hpsa: do not skip disabled devices
-      hpsa: enable bus master bit after pci_enable_device
-      hpsa: suppress excessively chatty error messages
-      hpsa: do not read from controller unnecessarily in completion code
-      hpsa: do not give up retry of driver cmds after only 3 retries
-      hpsa: remove unused parameter from finish_cmd
-      hpsa: add abort error handler function
-      hpsa: do aborts two ways
-      hpsa: factor out tail calls to next_command() in process_(non)indexed_cmd()
-      hpsa: factor out hpsa_free_irqs_and_disable_msix
-      hpsa: removed unused member maxQsinceinit
-      hpsa: dial down lockup detection during firmware flash
-
-
- drivers/block/cciss.c   |    2 
- drivers/scsi/hpsa.c     |  682 ++++++++++++++++++++++++++++++++++++++---------
- drivers/scsi/hpsa.h     |   85 ++++--
- drivers/scsi/hpsa_cmd.h |   37 ++-
- 4 files changed, 642 insertions(+), 164 deletions(-)
-
--- 
--- steve
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 5119ce6..de9c8f3 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3933,6 +3933,9 @@ static int __devinit hpsa_pci_init(struct ctlr_info *h)
+ 		return err;
+ 	}
+ 
++	/* Enable bus mastering (pci_disable_device may disable this) */
++	pci_set_master(h->pdev);
++
+ 	err = pci_request_regions(h->pdev, HPSA);
+ 	if (err) {
+ 		dev_err(&h->pdev->dev,
 
