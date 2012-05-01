@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab2EATtF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 15:49:05 -0400
-Received: from ralfj.de ([85.214.220.216]:41335 "EHLO ralfj.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757261Ab2EATtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 15:49:03 -0400
-X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 May 2012 15:49:03 EDT
-From: Ralf Jung <post@ralfj.de>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Subject: Re: [bug?] Battery notifications produce flashing battery icon, syslog spam (Re: [PATCH 11/11] ACPI / Battery: Update information on info notification and resume)
-Date: Tue, 1 May 2012 21:42:55 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39; KDE/4.7.4; x86_64; ; )
-Cc: Adrian Fita <adrian.fita@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Paolo Scarabelli <paolo@msw.it>, Andy Whitcroft <apw@canonical.com>
-References: <201101062331.17079.rjw@sisk.pl> <4FA032EA.1090608@gmail.com> <20120501191408.GD19143@burratino>
-In-Reply-To: <20120501191408.GD19143@burratino>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1758394Ab2EATxs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 15:53:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59585 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756169Ab2EATxr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 15:53:47 -0400
+Date: Tue, 1 May 2012 12:53:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Doug Ledford <dledford@redhat.com>
+Cc: linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [Patch 4/4] tools/selftests: add mq_perf_tests
+Message-Id: <20120501125345.a3ac48c9.akpm@linux-foundation.org>
+In-Reply-To: <674e3954fdc921d2ef34be5686092da4d5302e54.1335894230.git.dledford@redhat.com>
+References: <1335894655-11398-1-git-send-email-dledford@redhat.com>
+	<674e3954fdc921d2ef34be5686092da4d5302e54.1335894230.git.dledford@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205012142.55664.post@ralfj.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue,  1 May 2012 13:50:55 -0400
+Doug Ledford <dledford@redhat.com> wrote:
 
-in addition to the constant flickering when running on AC, there is a more 
-"high frequency" flickering immediately after plugging in the AC: For some 5 
-to 10 seconds, the battery appears and disappears (according to upower) around 
-once per second. There's also a short moment without battery after plugging 
-out the AC.
-All this is gone after going to a kernel version without this patch applied.
-
-I did not notice unusual high CPU usage of upower on my system, however I 
-noticed disc activity - according to iotop, upower is writing several MiB of 
-data per minute to /var/lib/upower/ where it keeps some battery statistics. I 
-do not know whether this is out of the ordinary.
-
-Kind regards,
-Ralf
-
-
-On Tuesday 01 May 2012 21:14:08 Jonathan Nieder wrote:
-> (cc-ing Andy)
+> Add the mq_perf_tests tool I used when creating my mq performance patch.
+> Also add a local .gitignore to keep the binaries from showing up in
+> git status output.
 > 
-> Adrian Fita wrote:
-> > Also, searching on Google after "upowerd device
-> > removed:/org/freedesktop/UPower/devices/battery_BAT0", reveals much
-> > more bug reports with the exact issue.
-> 
-> Thanks.  That confirms the high CPU consumption in upowerd ---
-> see [1], for example.
-> 
-> [1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/987807
+
+hm, this code sends checkpatch berzerk.  I do think that selftests code
+should match regular kernel coding - after all, kernel developers are
+the ones who will be reading and modifying the code.
+
+> diff --git a/tools/testing/selftests/mqueue/mq_perf_tests.c b/tools/testing/selftests/mqueue/mq_perf_tests.c
+
+hm, I didn't have <popt.h>.  On RH that's the popt-devel RPM.  On this
+Ubuntu(ish) machine it's libpopt-dev.
+
+On an x86_64 build I get these:
+
+mq_open_tests.c: In function 'main':
+mq_open_tests.c:295: warning: format '%d' expects type 'int', but argument 2 has type 'rlim_t'
+mq_open_tests.c:296: warning: format '%d' expects type 'int', but argument 2 has type 'rlim_t'
+mq_open_tests.c:311: warning: format '%d' expects type 'int', but argument 2 has type 'rlim_t'
+mq_open_tests.c:312: warning: format '%d' expects type 'int', but argument 2 has type 'rlim_t'
+gcc -O2 -lrt -lpthread -lpopt -o mq_perf_tests mq_perf_tests.c
+mq_perf_tests.c: In function 'open_queue':
+mq_perf_tests.c:299: warning: format '%d' expects type 'int', but argument 2 has type 'long int'
+mq_perf_tests.c:300: warning: format '%d' expects type 'int', but argument 2 has type 'long int'
+mq_perf_tests.c:301: warning: format '%d' expects type 'int', but argument 2 has type 'long int'
+mq_perf_tests.c: In function 'perf_test_thread':
+mq_perf_tests.c:441: warning: format '%d' expects type 'int', but argument 2 has type 'long int'
+mq_perf_tests.c:456: warning: format '%d' expects type 'int', but argument 2 has type '__time_t'
+mq_perf_tests.c:456: warning: format '%d' expects type 'int', but argument 3 has type 'long int'
+mq_perf_tests.c:459: warning: format '%d' expects type 'int', but argument 2 has type 'long long unsigned int'
+mq_perf_tests.c:461: warning: format '%d' expects type 'int', but argument 2 has type '__time_t'
+mq_perf_tests.c:461: warning: format '%d' expects type 'int', but argument 3 has type 'long int'
+mq_perf_tests.c:464: warning: format '%d' expects type 'int', but argument 2 has type 'long long unsigned int'
+mq_perf_tests.c:468: warning: format not a string literal and no format arguments
+mq_perf_tests.c:495: warning: format '%d' expects type 'int', but argument 2 has type '__time_t'
+mq_perf_tests.c:495: warning: format '%d' expects type 'int', but argument 3 has type 'long int'
+mq_perf_tests.c:498: warning: format '%d' expects type 'int', but argument 2 has type 'long long unsigned int'
+mq_perf_tests.c:500: warning: format '%d' expects type 'int', but argument 2 has type '__time_t'
+mq_perf_tests.c:500: warning: format '%d' expects type 'int', but argument 3 has type 'long int'
+mq_perf_tests.c:503: warning: format '%d' expects type 'int', but argument 2 has type 'long long unsigned int'
+mq_perf_tests.c: In function 'main':
+mq_perf_tests.c:651: warning: format '%d' expects type 'int', but argument 2 has type 'rlim_t'
+mq_perf_tests.c:652: warning: format '%d' expects type 'int', but argument 2 has type 'rlim_t'
+mq_perf_tests.c:666: warning: format '%d' expects type 'int', but argument 2 has type 'rlim_t'
+mq_perf_tests.c:668: warning: format '%d' expects type 'int', but argument 2 has type 'rlim_t'
+
+I assume part of it is this:
+
+/usr/include/bits/resource.h:typedef __rlim64_t rlim_t;
+
+But I didn't look into the others.  I can do so?
