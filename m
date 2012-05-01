@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab2EAUTP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:19:15 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63319 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab2EAUTO convert rfc822-to-8bit (ORCPT
+	id S1753589Ab2EAUUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 16:20:39 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:48256 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939Ab2EAUUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:19:14 -0400
+	Tue, 1 May 2012 16:20:37 -0400
+Message-ID: <4FA04576.6030405@linux.vnet.ibm.com>
+Date: Wed, 02 May 2012 01:50:06 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FA04373.6090100@redhat.com>
-References: <1335894655-11398-1-git-send-email-dledford@redhat.com>
- <d280fa846e9093a3cc82d9e75da4bb8074c7d4c7.1335894230.git.dledford@redhat.com>
- <4FA04131.2040004@gmail.com> <4FA04373.6090100@redhat.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 1 May 2012 16:18:52 -0400
-Message-ID: <CAHGf_=p34t2jrqr1V_TP0UiXLE8g1p6UXOV25SwWC8C9h2BVBQ@mail.gmail.com>
-Subject: Re: [Patch 3/4] ipc/mqueue: strengthen checks on mqueue creation
-To: Doug Ledford <dledford@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        sfr@canb.auug.org.au
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Avi Kivity <avi@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        KVM <kvm@vger.kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Xen <xen-devel@lists.xensource.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC V6 1/5] kvm hypervisor : Add a hypercall to KVM hypervisor
+ to support pv-ticketlocks
+References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com> <20120423095947.30893.84029.sendpatchset@codeblue.in.ibm.com> <4F9D415B.7010103@redhat.com> <4F9E42F6.8050108@linux.vnet.ibm.com>
+In-Reply-To: <4F9E42F6.8050108@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12050110-7014-0000-0000-00000103196F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> But ENOMEM is more inaccurate. It almostly is used for kmalloc failure.
->
-> I chose ENOMEM for that particular error because above there we have
-> checked the passed in arguments to make sure that they don't violate our
-> allowances for max message or max message size.  If we violate either of
-> those items, we return EINVAL.  In this case, neither of the values is
-> invalid, it's just that together they make an overly large allocation.
-> I would see that as more helpful to a programmer than EINVAL when the
-> values are within the maximums allowed.  At least with ENOMEM the
-> programmer knows they have to reduce their combined message size and
-> message count in order to get things working.
+On 04/30/2012 01:14 PM, Raghavendra K T wrote:
 
-Incorrect. When ENOMEM is returned, programmers can't know
-which problem was happen 1) kernel has real memory starvation
-or 2) queue limitation exceed was happen. The problem is, you
-introduced new overloaded error code for avoiding overload error code.
-It doesn't make sense. My question was, why can't you choose no
-overload error code if you want accurate one?
+>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>>> index 4044ce0..7fc9be6 100644
+>>> --- a/arch/x86/kvm/x86.c
+>>> +++ b/arch/x86/kvm/x86.c
+>>> @@ -2147,6 +2147,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+>>> case KVM_CAP_ASYNC_PF:
+>>> case KVM_CAP_GET_TSC_KHZ:
+>>> case KVM_CAP_PCI_2_3:
+>>> + case KVM_CAP_PV_UNHALT:
+>>> r = 1;
+>>> break;
+>>> case KVM_CAP_COALESCED_MMIO:
+>>
+>> Redundant, since we can infer this from KVM_GET_SUPPORTED_CPUID. But
+>> please indicate this in the documentation.
+>>
+>
+> Ok. will mention that in documentation added for KVM_CAP_PV_UNHALT.
+>
+
+I think it is better to remove  KVM_CAP_PV_UNHALT itself and avoid
+spamming CAP.. will do that in coming version.
+
