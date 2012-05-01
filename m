@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758071Ab2EAOLp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 10:11:45 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34196 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756760Ab2EAOLn (ORCPT
+	id S1758096Ab2EAONn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 10:13:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38604 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753637Ab2EAONl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 10:11:43 -0400
-Date: Tue, 1 May 2012 10:11:41 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrey Rahmatullin <wrar@wrar.name>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
-In-Reply-To: <201205011604.16556.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1205011004030.1499-100000@iolanthe.rowland.org>
+	Tue, 1 May 2012 10:13:41 -0400
+Date: Tue, 1 May 2012 23:13:30 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 5/5] mm: refault distance-based file cache sizing
+Message-ID: <20120501141330.GA2207@barrios>
+References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
+ <1335861713-4573-6-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335861713-4573-6-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 May 2012, Rafael J. Wysocki wrote:
+Hi Hannes,
 
-> > I mean not just the mapping.
-> > I mean PCI:PME_SUP field.  If it PME(D0+,D1-,D2-,D3hot+,D3cold+), and 
-> > acpi trying to avoid D3 states for this device. then is is same like 
-> > PME(D0+,D1-,D2-)? Or not?
+On Tue, May 01, 2012 at 10:41:53AM +0200, Johannes Weiner wrote:
+> To protect frequently used page cache (workingset) from bursts of less
+> frequently used or one-shot cache, page cache pages are managed on two
+> linked lists.  The inactive list is where all cache starts out on
+> fault and ends on reclaim.  Pages that get accessed another time while
+> on the inactive list get promoted to the active list to protect them
+> from reclaim.
 > 
-> Yes, if _S3D or _S3W are present.  If they are not present and _PRW is,
-> that means "don't care".
+> Right now we have two main problems.
 > 
-> > According to spec.:
-> > 7.2 Device Power Management Objects (page 287)
-> > _S3D - Highest D-state supported by the device in the S3 state
-> > _S3W - Lowest D-state supported by the device in the S3 state which can 
-> > wake the system.
-> > by definition if _S3W is specified then we can assume, the device can 
-> > wake? But _SxW is not defined.
+> One stems from numa allocation decisions and how the page allocator
+> and kswapd interact.  The both of them can enter into a perfect loop
+> where kswapd reclaims from the preferred zone of a task, allowing the
+> task to continuously allocate from that zone.  Or, the node distance
+> can lead to the allocator to do direct zone reclaim to stay in the
+> preferred zone.  This may be good for locality, but the task has only
+
+Understood.
+
+> the inactive space of that one zone to get its memory activated.
+> Forcing the allocator to spread out to lower zones in the right
+> situation makes the difference between continuous IO to serve the
+> workingset, or taking the numa cost but serving fully from memory.
+
+It's hard to parse your word due to my dumb brain.
+Could you elaborate on it?
+It would be a good if you say with example.
+
 > 
-> The device can wake up the system if _PRW is present for it (and for
-> PCIe devices even that is not formally necessary).
-> 
-> > Are there any other method to forbid the system use broken state, after 
-> > device was actually produced? Usual BIOS flash utility will probably no 
-> > rewrite the PCIs EEPROM. Only hope is ACPI, what is correct method to do 
-> > define it by ACPI?
-> 
-> Define _S3D that will return 2 (for example) and _PRW returning 3 as the
-> deepest sleep state the system may be woken up from.  Then, we'll use
-> D2 (after the @subject patch).
-> 
-> The drawback is that the kernel will then think the device can wake up
-> the system.
+> The other issue is that with the two lists alone, we can never detect
+> when a new set of data with equal access frequency should be cached if
+> the size of it is bigger than total/allowed memory minus the active
+> set.  Currently we have the perfect compromise given those
+> constraints: the active list is not allowed to grow bigger than the
+> inactive list.  This means that we can protect cache from reclaim only
 
-There also remains a question about runtime power states and resume.
+Okay.
 
-Oleksij, with your patch, which state does the controller get put into
-during runtime suspend, D2 or D3?  (You may need to enable runtime
-suspend by doing
+> up to half of memory, and don't recognize workingset changes that are
+> bigger than half of memory.
 
-	echo auto >/sys/bus/pci/devices/0000:00:1d.0/power/control
+Workingset change?
+You mean if new workingset is bigger than half of memory and it's like
+stream before retouch, we could cache only part of working set because 
+head pages on working set would be discared by tail pages of working set
+in inactive list?
 
-in order to test this.)  And if the controller is in runtime suspend,
-does it resume correctly when you plug in a new USB device?
+I'm sure I totally coudln't parse your point.
+Could you explain in detail? Before reading your approach and diving into code,
+I would like to see the problem clearly.
 
-I'm pretty sure that without the patch, the controller gets put into D3 
-and resume does work.
-
-Alan Stern
-
+Thanks.
+ 
