@@ -1,108 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab2EAVaQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 17:30:16 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:44699 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab2EAVaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 17:30:14 -0400
-Date: Tue, 1 May 2012 23:29:58 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/5] mm + fs: prepare for non-page entries in page cache
-Message-ID: <20120501212958.GC2112@cmpxchg.org>
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
- <1335861713-4573-3-git-send-email-hannes@cmpxchg.org>
- <20120501120246.83d2ce28.akpm@linux-foundation.org>
- <20120501201504.GB2112@cmpxchg.org>
- <20120501132449.30485966.akpm@linux-foundation.org>
+	id S1754301Ab2EAVfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 17:35:08 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:48497 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163Ab2EAVfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 17:35:05 -0400
+Message-ID: <4FA056A1.1040209@us.ibm.com>
+Date: Tue, 01 May 2012 14:33:21 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120501132449.30485966.akpm@linux-foundation.org>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+CC: Felipe Balbi <balbi@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, "Bergmann, Arnd" <arnd@arndb.de>
+Subject: omap-usb-host.c compile error
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12050121-5518-0000-0000-000004103FF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 01:24:49PM -0700, Andrew Morton wrote:
-> On Tue, 1 May 2012 22:15:04 +0200
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > On Tue, May 01, 2012 at 12:02:46PM -0700, Andrew Morton wrote:
-> > > On Tue,  1 May 2012 10:41:50 +0200
-> > > Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > > 
-> > > > --- a/fs/inode.c
-> > > > +++ b/fs/inode.c
-> > > > @@ -544,8 +544,7 @@ static void evict(struct inode *inode)
-> > > >  	if (op->evict_inode) {
-> > > >  		op->evict_inode(inode);
-> > > >  	} else {
-> > > > -		if (inode->i_data.nrpages)
-> > > > -			truncate_inode_pages(&inode->i_data, 0);
-> > > > +		truncate_inode_pages(&inode->i_data, 0);
-> > > 
-> > > Why did we lose this optimisation?
-> > 
-> > For inodes with only shadow pages remaining in the tree, because there
-> > is no separate counter for them.  Otherwise, we'd leak the tree nodes.
-> > 
-> > I had mapping->nrshadows at first to keep truncation conditional, but
-> > thought that using an extra word per cached inode would be worse than
-> > removing this optimization.  There is not too much being done when the
-> > tree is empty.
-> > 
-> > Another solution would be to include the shadows count in ->nrpages,
-> > but filesystems use this counter for various other purposes.
-> > 
-> > Do you think it's worth reconsidering?
-> 
-> It doesn't sound like it's worth adding ->nrshadows for only that
-> reason.
-> 
-> That's a pretty significant alteration in the meaning of ->nrpages. 
-> Did this not have any other effects?
 
-It still means "number of page entries in radix tree", just that the
-radix tree can be non-empty when this count drops to zero.  AFAICS,
-it's used when writing/syncing the inode or when gathering statistics,
-like nr_blockdev_pages().  They only care about actual pages.  It's
-just the final truncate that has to make sure to remove the non-pages
-as well.
+I've been seeing the following compile issue for a few -rcs now:
+drivers/mfd/omap-usb-host.c: In function 'omap_usbhs_init':
+drivers/mfd/omap-usb-host.c:524: error: implicit declaration of function 
+'cpu_is_omap3430'
+drivers/mfd/omap-usb-host.c:524: error: implicit declaration of function 
+'omap_rev'
+drivers/mfd/omap-usb-host.c:524: error: 'OMAP3430_REV_ES2_1' undeclared 
+(first use in this function)
+drivers/mfd/omap-usb-host.c:524: error: (Each undeclared identifier is 
+reported only once
+drivers/mfd/omap-usb-host.c:524: error: for each function it appears in.)
 
-> What does truncate do?  I assume it invalidates shadow page entries in
-> the radix tree?  And frees the radix-tree nodes?
+Reverting 1fcb57d0f6e1150003d222051aaaf4bc4a9ccc94 seems to resolve it.
 
-Yes, it just does a radix_tree_delete() on these shadow page entries,
-see clear_exceptional_entry() in mm/truncate.c.  This garbage-collects
-empty nodes.
+This still isn't fixed in Linus' HEAD. Any plans here?
 
-> The patchset will make lookups slower in some (probably obscure)
-> circumstances, due to the additional radix-tree nodes.
-> 
-> I assume that if a pagecache lookup encounters a radix-tree node which
-> contains no real pages, the search will terminate at that point?  We
-> don't pointlessly go all the way down to the leaf nodes?
+thanks
+-john
 
-When reading/instantiating it's not pointless.  Empty slots or shadow
-slots are faults and we have to retrieve the shadow entries to
-calculate the refault distance.
-
-When writing: dirtied pages are tagged, and tags are propagated
-upwards in the tree, so we don't check any more nodes than before.
-For leaf nodes (64 slots) where shadow entries and dirty pages mix,
-the cost of skipping shadow entries is a bit bigger than that of empty
-slots (see the radix_tree_exception branch in find_get_pages(), which
-Hugh added to handle shmem's swap entries).
-
-Then there are filesystems that do page cache lookups for population
-analysis/heuristics, they could indeed pointlessly descend to leaf
-nodes that only contain non-page entries.  I haven't investigated yet
-how hot these paths actuallly are.  If this turns out to be a problem,
-we could add another tag and trade tree size for performance.
