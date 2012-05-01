@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab2EASUS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 14:20:18 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:46705 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197Ab2EASUQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 14:20:16 -0400
-Date: Tue, 1 May 2012 13:20:11 -0500
-From: scameron@beardog.cce.hp.com
-To: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Cc: scameron@beardog.cce.hp.com
-Subject: Re: [PATCH 07/17] hpsa: do not give up retry of driver cmds after only 3 retries
-Message-ID: <20120501182011.GS11802@beardog.cce.hp.com>
-References: <20120501163819.11705.10299.stgit@beardog.cce.hp.com> <20120501164240.11705.10308.stgit@beardog.cce.hp.com> <20120501172634.GA11302@andi>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120501172634.GA11302@andi>
-User-Agent: Mutt/1.4.2.2i
+	id S1757481Ab2EAS1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 14:27:40 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:48127 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756741Ab2EAS1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 14:27:39 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 1/2] asm-generic: io: remove {read,write} string functions
+Date: Tue, 1 May 2012 14:28:14 -0400
+User-Agent: KMail/1.13.7 (Linux/3.3.4; KDE/4.6.5; x86_64; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>
+References: <1335523376-14695-1-git-send-email-will.deacon@arm.com> <201204271926.14872.vapier@gentoo.org> <20120501133429.GB23919@mudshark.cambridge.arm.com>
+In-Reply-To: <20120501133429.GB23919@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2288888.c4ZMpV8PUX";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205011428.16299.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 07:26:34PM +0200, Andi Shyti wrote:
-> Hi,
-> 
-> > --- a/drivers/scsi/hpsa.c
-> > +++ b/drivers/scsi/hpsa.c
-> > @@ -1380,17 +1380,24 @@ static void hpsa_scsi_do_simple_cmd_core_if_no_lockup(struct ctlr_info *h,
-> >  	}
-> >  }
-> >  
-> > +#define MAX_DRIVER_CMD_RETRIES 25
-> >  static void hpsa_scsi_do_simple_cmd_with_retry(struct ctlr_info *h,
-> >  	struct CommandList *c, int data_direction)
-> >  {
-> > -	int retry_count = 0;
-> > +	int backoff_time = 10, retry_count = 0;
-> >  
-> >  	do {
-> >  		memset(c->err_info, 0, sizeof(*c->err_info));
-> >  		hpsa_scsi_do_simple_cmd_core(h, c);
-> >  		retry_count++;
-> > +		if (retry_count > 3) {
-> > +			msleep(backoff_time);
-> 
-> for 10ms isn't it better to avoid using msleep?
+--nextPart2288888.c4ZMpV8PUX
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-[...] 
-> > +			if (backoff_time < 1000)
-> > +				backoff_time *= 2;
+On Tuesday 01 May 2012 09:34:29 Will Deacon wrote:
+> On Sat, Apr 28, 2012 at 12:26:11AM +0100, Mike Frysinger wrote:
+> > i am strongly in favor though of agreeing on & documenting the baseline
+> > API first before attempting to clean anything up.  sorry to keep harping
+> > on this.
+>=20
+> It would be nice if we could just use asm-generic/io.h as the documention,
+> i.e. if you want to write a portable driver, just stick to the functions
+> implemented there.
 
-Eh, maybe.  from Documentation/timers-howto.txt
+we have Documentation/DocBook/deviceiobook.tmpl where we can document what=
+=20
+should be used in device drivers for portability, and what should be avoide=
+d. =20
+then we can refer to asm-generic/io.h for just the API level stuff (i.e.=20
+inputs/outputs/return values).
 
-                        msleep(1~20) may not do what the caller intends, and
-                        will often sleep longer (~20 ms actual sleep for any
-                        value given in the 1~20ms range). In many cases this
-                        is not the desired behavior.
+then we update asm-generic/io.h to:
+ - refer device driver authors to deviceiobook for the higher level=20
+documentation
+ - explicitly state that the API here is the baseline and any new functions=
+=20
+should be discussed first on linux-arch/lkml
+ - explicitly state what API functions have been omitted, and what should b=
+e=20
+used instead of those
 
-Sleeping longer (~20ms instead of 10ms) in this instance is fine, as I don't
-really care too much exactly how long it sleeps, and it backs off to up to
-1280ms eventually anyway.  The idea is, "wait a bit, and retry, and then if
-that doesn't work, wait twice as long, and retry, etc."  *exactly* how long
-"a bit" is is not super important.  I could change the initial back_off time
-to 20 or 30 to satisfy the letter of the advice in Documentation/timers-howto.txt,
-if doing so is important.
+how's that sound as a plan ?
 
-This is kind of a corner case of a corner case, I don't expect
-things will ordinarily end up waiting that long, because normally
-one of the 1st 3 retries will succeed.  I just wanted to make it 
-a little more robust and not just give up immediately if the 3
-initial retries don't succeed, the specific number of retries,
-wait times, etc, I just made up.  It still does eventually give up
-though, and then probably doesn't do anything good after that
-(same as current behavior, just somewhat less likely to get to
-that point.)  I'm not actually aware of any complaints of the 
-retries failing though (apart from the complaint that prompted
-the patch prior to this one, that we didn't retry on getting
-SAM_STAT_BUSY.)
+> It would be nice if we could just use asm-generic/io.h as the documention,
+> i.e. if you want to write a portable driver, just stick to the functions
+> implemented there. Apart from the string accessors, I think it's already
+> fairly accurate. The __raw_* functions seem to be missing on s390 but I
+> don't think driver portability is a huge concern for that architecture.
 
--- steve
+as long as we document expectations at the top of the file, that's fine.  t=
+his=20
+implicit assumption doesn't fly in general for asm-generic/ because it's be=
+en a=20
+constantly increasing code base as it merges more arches.  there were a bun=
+ch=20
+of files/apis i extended in asm-generic/ as i converted Blackfin over to it=
+=2E =20
+this is what we wanted from the beginning (afaik; i'm sure Arnd can correct=
+=20
+me).
+=2Dmike
 
-> > +		}
-> >  	} while ((check_for_unit_attention(h, c) ||
-> > -			check_for_busy(h, c)) && retry_count <= 3);
-> > +			check_for_busy(h, c)) &&
-> > +			retry_count <= MAX_DRIVER_CMD_RETRIES);
-> >  	hpsa_pci_unmap(h->pdev, c, 1, data_direction);
-> >  }
+--nextPart2288888.c4ZMpV8PUX
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJPoCtAAAoJEEFjO5/oN/WBS9wP+wZqZym22lU+NulzrwLrTO2S
+ZbeZBGvt+FWDVZkx+QOT/fxp5f8PPEZ8oygc12zt+naY9B+IiLAg5L8GyJnu2soC
+uZWErush1VBpdDqLux4L71R8YdESrcgV624bDfx0c8C+VLd+uD5JFK1l7XXKfbIZ
+T3sG2pMtF3Ch5o+m3lii0Ev73kPi7Z+CbzBEEgL1lI7mRi0TlOcgc5jI7Tgl/8w8
+IFzOVZWG242/MtacUumb/bedjksCYuqR2lFnEQLTukgw2X47+8GvDh6OK412l31e
+k7gtYDP0QQn4WCJVGi8yrUcrazYf1b8lb69KlfY1WwhTqVyw8sgZdbfuD7j+cCAS
+neN8WNw0Zp0SJFnAm6kQhZYR7RYZGsun976iqkv6qfntAvozLB7rfGlqGg1h9++J
++QQdJZLwrp6Ql5GN0Z9lZKs9y+pdM3uI5xqbAcempKlmV1bXC9UA59lT+W/8kEtj
+82IemJHZ3YZKrC7uK73t/y+BKBuCel+piu3hyz/hMSlNuaS4sQxDHMNx7GATGF4I
+tapjASmQOWQDWAZhRxiatvONvTjsQk+Ync0o+dxGmB+2BauViyKhf/B+6xTtmJtq
+6CwXCNnyz5jQTH0YPffMmgFHyxMzIZfxxyiaUznXXLs7NKPU4EUMzi/4QgzH3H9y
+kcRG1EtvcWtxMiY9zvxp
+=R9hM
+-----END PGP SIGNATURE-----
+
+--nextPart2288888.c4ZMpV8PUX--
