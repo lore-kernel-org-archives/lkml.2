@@ -1,143 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758494Ab2EATiJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 15:38:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8342 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757536Ab2EATiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 15:38:07 -0400
-Message-ID: <4FA03B99.2040306@redhat.com>
-Date: Tue, 01 May 2012 15:38:01 -0400
-From: Doug Ledford <dledford@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	id S1757904Ab2EATr5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 15:47:57 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:41903 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab2EATrz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 15:47:55 -0400
+Date: Tue, 1 May 2012 15:41:58 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Lin Ming <mlin@ss.pku.edu.cn>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH v2] xen/apic: implement io apic read with
+ hypercall
+Message-ID: <20120501194158.GA15164@phenom.dumpdata.com>
+References: <1335802587.4746.2.camel@chief-river-32>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [Patch 2/4] ipc/mqueue: correct mq_attr_ok test
-References: <1335894655-11398-1-git-send-email-dledford@redhat.com> <4a62cbda48cf31ca796f37fa8904f314f643db57.1335894230.git.dledford@redhat.com> <20120501123430.63f4bf85.akpm@linux-foundation.org>
-In-Reply-To: <20120501123430.63f4bf85.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigEBEC48C83E0345B4150115DB"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335802587.4746.2.camel@chief-river-32>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigEBEC48C83E0345B4150115DB
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, May 01, 2012 at 12:16:27AM +0800, Lin Ming wrote:
+> Implements xen_io_apic_read with hypercall, so it returns proper
+> IO-APIC information instead of fabricated one.
 
-On 05/01/2012 03:34 PM, Andrew Morton wrote:
-> On Tue,  1 May 2012 13:50:53 -0400
-> Doug Ledford <dledford@redhat.com> wrote:
->=20
->> While working on the other parts of the mqueue stuff, I noticed that
->> the calculation for overflow in mq_attr_ok didn't actually match
->> reality (this is especially true since my last patch which changed
->> how we account memory slightly).
->=20
-> Please cc Manfred on mqueue things?  He still watches ;)
->=20
->> In particular, we used to test for overflow using:
->>   msgs * msgsize + msgs * sizeof(struct msg_msg *)
->>
->> That was never really correct because each message we allocate via
->> load_msg() is actually a struct msg_msg followed by the data for
->> the message (and if struct msg_msg + data exceeds PAGE_SIZE we end
->> up allocating struct msg_msgseg structs too, but accounting for them
->> would get really tedious, so let's ignore those...they're only a
->> pointer in size anyway).  This patch updates the calculation to be
->> more accurate in regards to maximum possible memory consumption by the=
-
->> mqueue.
->>
->> ...
->>
->> --- a/ipc/mqueue.c
->> +++ b/ipc/mqueue.c
->>
->> ...
->>
->> @@ -684,8 +686,11 @@ static int mq_attr_ok(struct ipc_namespace *ipc_n=
-s, struct mq_attr *attr)
->>  	/* check for overflow */
->>  	if (attr->mq_msgsize > ULONG_MAX/attr->mq_maxmsg)
->>  		return 0;
->> -	if ((unsigned long)(attr->mq_maxmsg * (attr->mq_msgsize
->> -	    + sizeof (struct msg_msg *))) <
->> +	mq_treesize =3D attr->mq_maxmsg * sizeof(struct msg_msg) +
->> +		min_t(unsigned int, attr->mq_maxmsg, MQ_PRIO_MAX) *
->> +		sizeof(struct posix_msg_tree_node);
->> +	if ((unsigned long)(attr->mq_maxmsg * attr->mq_msgsize +
->> +			    mq_treesize) <
->>  	    (unsigned long)(attr->mq_maxmsg * attr->mq_msgsize))
->>  		return 0;
->>  	return 1;
->=20
-> That's a bit of a mouthful.  Does this look OK?
->=20
-> --- a/ipc/mqueue.c~ipc-mqueue-correct-mq_attr_ok-test-fix
-> +++ a/ipc/mqueue.c
-> @@ -672,7 +672,8 @@ static void remove_notification(struct m
->  static int mq_attr_ok(struct ipc_namespace *ipc_ns, struct mq_attr *at=
-tr)
+Looks good. I queued it up and sending the git pull to Ingo shortly.
+> 
+> Fallback to return an emulated IO_APIC values if hypercall fails.
+> 
+> Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
+> ---
+> 
+> v2: fallback to return an emulated IO_APIC values if hypercall fails
+> 
+>  arch/x86/xen/apic.c |   15 ++++++++++++++-
+>  1 files changed, 14 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/xen/apic.c b/arch/x86/xen/apic.c
+> index aee16ab..1913bf2 100644
+> --- a/arch/x86/xen/apic.c
+> +++ b/arch/x86/xen/apic.c
+> @@ -1,14 +1,27 @@
+>  #include <linux/init.h>
+>  #include <asm/x86_init.h>
+> +#include <asm/apic.h>
+> +#include <xen/interface/physdev.h>
+> +#include <asm/xen/hypercall.h>
+>  
+>  unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
 >  {
->  	int mq_treesize;
-> -
-> +	unsigned long total_size;
-> +=09
->  	if (attr->mq_maxmsg <=3D 0 || attr->mq_msgsize <=3D 0)
->  		return 0;
->  	if (capable(CAP_SYS_RESOURCE)) {
-> @@ -690,9 +691,8 @@ static int mq_attr_ok(struct ipc_namespa
->  	mq_treesize =3D attr->mq_maxmsg * sizeof(struct msg_msg) +
->  		min_t(unsigned int, attr->mq_maxmsg, MQ_PRIO_MAX) *
->  		sizeof(struct posix_msg_tree_node);
-> -	if ((unsigned long)(attr->mq_maxmsg * attr->mq_msgsize +
-> -			    mq_treesize) <
-> -	    (unsigned long)(attr->mq_maxmsg * attr->mq_msgsize))
-> +	total_size =3D attr->mq_maxmsg * attr->mq_msgsize;
-> +	if (total_size + mq_treesize < total_size)
->  		return 0;
->  	return 1;
+> +	struct physdev_apic apic_op;
+> +	int ret;
+> +
+> +	apic_op.apic_physbase = mpc_ioapic_addr(apic);
+> +	apic_op.reg = reg;
+> +	ret = HYPERVISOR_physdev_op(PHYSDEVOP_apic_read, &apic_op);
+> +	if (!ret)
+> +		return apic_op.value;
+> +
+> +	/* fallback to return an emulated IO_APIC values */
+>  	if (reg == 0x1)
+>  		return 0x00170020;
+>  	else if (reg == 0x0)
+>  		return apic << 24;
+>  
+> -	return 0xff;
+> +	return 0xfd;
 >  }
-
-Sure, looks fine to me and should preserve the wrap around test behavior.=
-
-
-
---=20
-Doug Ledford <dledford@redhat.com>
-              GPG KeyID: 0E572FDD
-	      http://people.redhat.com/dledford
-
-
-
---------------enigEBEC48C83E0345B4150115DB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJPoDuZAAoJELgmozMOVy/do10P/j6d8hLaKz0s+jdxqCjrNCcm
-X826TNI9D6ob8fakc2S4cwv7AUpl73bA1Lg4m5h4vvf6QDJK80/eZuRggQBU8lTW
-SY2h4+anmQq2VNpgjgMdB3Qgv8+SdWHUmp1N3ANo+5clyJ76h5kwNteXl0QpMn5z
-H4ifGPjRNknvocDfp1eUFZlJB5lWG8Z3OdVekBK76CNZ462tM0p/iLM/11S4T5f1
-wwef44CFXba3ndFw/xOYm80te4ufX0kiCe3+RI5LvFatQYFyglua+fPtz+oq+kcy
-wNI+cW360kufrn0DmVVdYVXeY6YAV9dIkjkXDOMGAcpPGbEzeLmMnKFbj6lj6ybS
-DgGk/dMSS78Z+O1T/BUkCmL1IRgtA0fspspHkTSY1H/I5uIiH9A3ad1e4m7MUs1p
-sKGcA0abDI0SuFK86IRRQgdZc2/w5naKibRlosUu21rxReqnD6O3Armb1OCyUnZk
-rdW/lQDzCsBAssppHEmZYpW45l3Fp8yBqDT0gqjmzgD2tsD0z1MgcLUUAD4YfAhv
-DkJgwCPkPY4IDDqbhVTi9ihHCXENHdGHHE/mRUQyhg8vdzH3gjACHazrOh5+mu+Q
-kH4fTLJ+tUhFKCk+ECyBvi7BkqYDUSmCtIGYuxcDjtvnjPdqaEx+gFpFXdtKA/b5
-Obg1AtCbfJOIkt7q91jK
-=7AkX
------END PGP SIGNATURE-----
-
---------------enigEBEC48C83E0345B4150115DB--
+>  
+>  void __init xen_init_apic(void)
+> -- 
+> 1.7.9
+> 
+> 
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
