@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab2EAWTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 18:19:08 -0400
-Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:50467 "EHLO
-	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755738Ab2EAWTG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 18:19:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120427181833.GA24587@arwen.pp.htv.fi>
-References: <1335529693-14280-1-git-send-email-rnayak@ti.com>
- <CAJOA=zNzkOvzdFSuSzC015ELZWE+Jtj=H5P9fbQSHW3HZdsZow@mail.gmail.com> <20120427181833.GA24587@arwen.pp.htv.fi>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Tue, 1 May 2012 15:18:43 -0700
-Message-ID: <CAJOA=zM0pwHrMM5j7c_v4Vy=r5=ChTigHDsFxTr8H_v1jNippw@mail.gmail.com>
-Subject: Re: [PATCH] clk: constify parent name arrays in macros
-To: balbi@ti.com
-Cc: Rajendra Nayak <rnayak@ti.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756111Ab2EAWYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 18:24:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59829 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab2EAWYU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 18:24:20 -0400
+From: mathieu.poirier@linaro.org
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, andrew@lunn.ch,
+        rpurdie@rpsys.net, mathieu.poirier@linaro.org
+Subject: [PATCH] drivers: correct __devexit annotations
+Date: Tue,  1 May 2012 16:24:13 -0600
+Message-Id: <1335911053-32506-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 11:18 AM, Felipe Balbi <balbi@ti.com> wrote:
-> On Fri, Apr 27, 2012 at 10:55:50AM -0700, Turquette, Mike wrote:
->> On Fri, Apr 27, 2012 at 5:28 AM, Rajendra Nayak <rnayak@ti.com> wrote:
->> > parent name array is now expected to be const char *, make
->> > the relevent changes in the clk macros which define
->> > default clock types.
->> >
->> > Signed-off-by: Rajendra Nayak <rnayak@ti.com>
->>
->> Good catch Rajendra.  I'll pull it into clk-next.
->>
->> Regards,
->> Mike
->>
->> > ---
->> >  include/linux/clk-private.h |    6 +++---
->> >  1 files changed, 3 insertions(+), 3 deletions(-)
->> >
->> > diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
->> > index eeae7a3..6ebec83 100644
->> > --- a/include/linux/clk-private.h
->> > +++ b/include/linux/clk-private.h
->> > @@ -70,7 +70,7 @@ struct clk {
->> >  #define DEFINE_CLK_FIXED_RATE(_name, _flags, _rate,            \
->> >                                _fixed_rate_flags)              \
->> >        static struct clk _name;                                \
->> > -       static char *_name##_parent_names[] = {};               \
->> > +       static const char *_name##_parent_names[] = {};         \
->
-> does it make sense to have this as:
->
-> static const char * const _name##_parent_names[] = { }; ??
+From: Arnd Bergmann <arnd@arndb.de>
 
-Hi Felipe,
+__devexit functions are discarded without CONFIG_HOTPLUG,
+so they need to be referenced carefully.  A __devexit
+function may also not be called from a __devinit
+function.
 
-I don't think so.  We're never going to reference the member of the
-array anyways, so I think the current approach is fine for just
-satisfying type qualifier-sameness.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/leds/leds-netxbig.c |    4 ++--
+ drivers/leds/leds-ns2.c     |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Thanks,
-Mike
+diff --git a/drivers/leds/leds-netxbig.c b/drivers/leds/leds-netxbig.c
+index d8433f2..73973fd 100644
+--- a/drivers/leds/leds-netxbig.c
++++ b/drivers/leds/leds-netxbig.c
+@@ -112,7 +112,7 @@ err_free_addr:
+ 	return err;
+ }
+ 
+-static void __devexit gpio_ext_free(struct netxbig_gpio_ext *gpio_ext)
++static void gpio_ext_free(struct netxbig_gpio_ext *gpio_ext)
+ {
+ 	int i;
+ 
+@@ -294,7 +294,7 @@ static ssize_t netxbig_led_sata_show(struct device *dev,
+ 
+ static DEVICE_ATTR(sata, 0644, netxbig_led_sata_show, netxbig_led_sata_store);
+ 
+-static void __devexit delete_netxbig_led(struct netxbig_led_data *led_dat)
++static void delete_netxbig_led(struct netxbig_led_data *led_dat)
+ {
+ 	if (led_dat->mode_val[NETXBIG_LED_SATA] != NETXBIG_LED_INVALID_MODE)
+ 		device_remove_file(led_dat->cdev.dev, &dev_attr_sata);
+diff --git a/drivers/leds/leds-ns2.c b/drivers/leds/leds-ns2.c
+index 2f0a144..01cf89e 100644
+--- a/drivers/leds/leds-ns2.c
++++ b/drivers/leds/leds-ns2.c
+@@ -255,7 +255,7 @@ err_free_cmd:
+ 	return ret;
+ }
+ 
+-static void __devexit delete_ns2_led(struct ns2_led_data *led_dat)
++static void delete_ns2_led(struct ns2_led_data *led_dat)
+ {
+ 	device_remove_file(led_dat->cdev.dev, &dev_attr_sata);
+ 	led_classdev_unregister(&led_dat->cdev);
+-- 
+1.7.5.4
+
