@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757042Ab2EAXPY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 19:15:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44338 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755678Ab2EAXPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 19:15:22 -0400
-Date: Wed, 2 May 2012 09:15:16 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-serial@vger.kernel.org, linux-pm@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Question:  How to power-manage UART-attached devices.
-Message-ID: <20120502091516.20d87fc8@notabene.brown>
-In-Reply-To: <20120501163303.GA4089@opensource.wolfsonmicro.com>
-References: <20120501082209.0b560708@notabene.brown>
-	<20120430223322.GA3951@sirena.org.uk>
-	<20120501093559.5c14087d@notabene.brown>
-	<20120501163303.GA4089@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Z/qVR5Ol0lURzcSZffP9xmg"; protocol="application/pgp-signature"
+	id S1757267Ab2EAXTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 19:19:00 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33191 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755934Ab2EAXS6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 19:18:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1205011310180.7742@chino.kir.corp.google.com>
+References: <1335516144-3486-1-git-send-email-minchan@kernel.org>
+	<alpine.DEB.2.00.1204270323000.11866@chino.kir.corp.google.com>
+	<CAPa8GCBN6U_GRaG=GYFByNB4REcVA-yy+kKMMbrGaDKULUXW9w@mail.gmail.com>
+	<alpine.DEB.2.00.1205011310180.7742@chino.kir.corp.google.com>
+Date: Wed, 2 May 2012 09:18:58 +1000
+Message-ID: <CAPa8GCD2m9R8YWY2FhO=LOMvCHhC6T=iFdn2YmpLxjO96_B4Ew@mail.gmail.com>
+Subject: Re: [RFC] vmalloc: add warning in __vmalloc
+From: Nick Piggin <npiggin@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        kosaki.motohiro@gmail.com, Neil Brown <neilb@suse.de>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Sage Weil <sage@newdream.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Z/qVR5Ol0lURzcSZffP9xmg
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 2 May 2012 06:22, David Rientjes <rientjes@google.com> wrote:
+> On Tue, 1 May 2012, Nick Piggin wrote:
+>
+>> > I disagree with this approach since it's going to violently spam an
+>> > innocent kernel user's log with no ratelimiting and for a situation that
+>> > actually may not be problematic.
+>>
+>> With WARN_ON_ONCE, it should be good.
+>>
+>
+> To catch a single instance of this per-boot, sure.  I've never seen us add
+> WARN_ON_ONCE()'s where we have concrete examples of kernel code that will
+> trigger it, though.  Not sure why spamming the kernel log and getting
+> users to think something is wrong and report the bug when it's possible to
+> audit the code and make a report to the subsystem maintainer.
 
-On Tue, 1 May 2012 17:33:03 +0100 Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+Because it needs to be an ongoing thing, which is caught as soon as the
+developer writes some code, rather than continually audited for and fixed
+up after the fact. There is not a good way to enforce this at compile time.
 
-> On Tue, May 01, 2012 at 09:35:59AM +1000, NeilBrown wrote:
-> > On Mon, 30 Apr 2012 23:33:22 +0100 Mark Brown
-> > > On Tue, May 01, 2012 at 08:22:09AM +1000, NeilBrown wrote:
->=20
-> > > The userspace consumer was added for users like this that live entire=
-ly
-> > > in userspace.
->=20
-> >  I assume you mean REGULATOR_VIRTUAL_CONSUMER (drivers/regulator/virtua=
-l.c)?
->=20
-> No, that's just for testing drivers in development.  I mean the
-> userspace consumer which is hidden away in userspace-consumer.c.
-
-Ahhh, of course.  What a cunning hiding place! :-)
-
-However it doesn't suit my need - I want something more abstracted.
-
-I can see there may well be a place for a simple on/off switch for some
-components, but then I would prefer to see it as
-
-   /sys/class/power-switch/$devicename/state
-
-rather than
-
-  /sys/devices/platform/reg-userspace-consumer.X/{name,state}
-
-
-Thanks,
-NeilBrown
-
---Sig_/Z/qVR5Ol0lURzcSZffP9xmg
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT6BuhDnsnt1WYoG5AQKlCA/+KRtmstwTK2E2uh7Nd/K8F+B9MI7fNylw
-ySNjUqloOCUALZrYwS1SOb9fIVbw/fd0WGvY9xJnswVkZ4YwAUwaKzfNqfeLnANd
-hm8YSQ3p72IzuxiyuhqCk9hdGcDYg52uEW6TtfsriyzlLMouGamQpFhmu/C2Vb7o
-usD5IdIe9OMwuZtfZ/91wH2tRB7BA544/j0gz6fChe6BzwBuFFYxHRlV9BwEE//K
-6TSSabwdrv3PzCh5IBcUELIyha+uor2ct5bhwcmYd6I4XoFVfP1JGLT6mXFg3ncU
-eZ/Ebf5Ey7yiWdHcTzFWmm513daMehKLRDfN/iWQ0IWCAUFuwZ6e6HO4P5uJnNI7
-pFmDq+J0fTO4s1vfx7PIWZu+FwBcuqpICfj7ZHJ65yOJwMR3KodK2JQMWz/qoc+z
-WADc8hHK84oKB4rl3zNbeIz8rWmrom618vTnuEZyrXHWEuMr1QG5xWEHInL/7nm/
-hZTIc2SO3WetCEnFxlCZO6Ii66JHBuOKdzXuFLKUu0IE1G5/tBMCGNJFmU0TcSrj
-zCEQWVykuq0jWjWKgmAWijY4BhOQcvx9kXZh3igkZ0WBrhvZS2O3BejiX0ORj+Sp
-LrrmG2auSKhIAVxAuhUKKPR6a2waMh4YYDM3Efy58R5JTsGcL5hgWMIwecXYZv8+
-x4Gf4ThVgaU=
-=qyQD
------END PGP SIGNATURE-----
-
---Sig_/Z/qVR5Ol0lURzcSZffP9xmg--
+The existing callers do need to be fixed too, of course.
