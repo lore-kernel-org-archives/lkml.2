@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab2EAX0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 19:26:14 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52956 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757261Ab2EAX0N convert rfc822-to-8bit (ORCPT
+	id S1757412Ab2EAX37 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 19:29:59 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61700 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755934Ab2EAX36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 19:26:13 -0400
+	Tue, 1 May 2012 19:29:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <1335768768-10231-1-git-send-email-sachin.kamat@linaro.org>
-References: <1335768768-10231-1-git-send-email-sachin.kamat@linaro.org>
-Date: Wed, 2 May 2012 01:26:12 +0200
-Message-ID: <CACRpkdYHKR+oOD36RCUMobEwJj_Y9WDHTUY+UaHAx0YegMhXyg@mail.gmail.com>
-Subject: Re: [PATCH] gpio/exynos: Fix compiler warnings when non-exynos
- machines are selected
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linus.walleij@stericsson.com, patches@linaro.org
+In-Reply-To: <4FA056A1.1040209@us.ibm.com>
+References: <4FA056A1.1040209@us.ibm.com>
+From: Nicolas Dechesne <ndec13@gmail.com>
+Date: Wed, 2 May 2012 01:29:36 +0200
+Message-ID: <CAOT3miKZ7daBum7FKntbUHwsK7TAdyT4HG3X_bs9TDjwEEnhUw@mail.gmail.com>
+Subject: Re: omap-usb-host.c compile error
+To: John Stultz <johnstul@us.ibm.com>
+Cc: Keshava Munegowda <keshava_mgowda@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, "Bergmann, Arnd" <arnd@arndb.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 8:52 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+On Tue, May 1, 2012 at 11:33 PM, John Stultz <johnstul@us.ibm.com> wrote:
+> I've been seeing the following compile issue for a few -rcs now:
+> drivers/mfd/omap-usb-host.c: In function 'omap_usbhs_init':
+> drivers/mfd/omap-usb-host.c:524: error: implicit declaration of function
+> 'cpu_is_omap3430'
+> drivers/mfd/omap-usb-host.c:524: error: implicit declaration of function
+> 'omap_rev'
+> drivers/mfd/omap-usb-host.c:524: error: 'OMAP3430_REV_ES2_1' undeclared
+> (first use in this function)
+> drivers/mfd/omap-usb-host.c:524: error: (Each undeclared identifier is
+> reported only once
+> drivers/mfd/omap-usb-host.c:524: error: for each function it appears in.)
+>
+> Reverting 1fcb57d0f6e1150003d222051aaaf4bc4a9ccc94 seems to resolve it.
+>
+> This still isn't fixed in Linus' HEAD. Any plans here?
 
-> +#if defined(CONFIG_ARCH_EXYNOS4) || defined(CONFIG_ARCH_EXYNOS5)
-> +#endif
-> -static struct samsung_gpio_chip exynos4_gpios_1[] = {
->  #ifdef CONFIG_ARCH_EXYNOS4
-> +static struct samsung_gpio_chip exynos4_gpios_1[] = {
-> -#endif
-> +#endif
-> -static struct samsung_gpio_chip exynos4_gpios_2[] = {
->  #ifdef CONFIG_ARCH_EXYNOS4
-> +static struct samsung_gpio_chip exynos4_gpios_2[] = {
-> -#endif
-> +#endif
-> -static struct samsung_gpio_chip exynos4_gpios_3[] = {
->  #ifdef CONFIG_ARCH_EXYNOS4
-> +static struct samsung_gpio_chip exynos4_gpios_3[] = {
-> -#endif
-> +#endif
->  #ifdef CONFIG_ARCH_EXYNOS5
-> +#if defined(CONFIG_CPU_EXYNOS4210) || defined(CONFIG_SOC_EXYNOS5250)
-> +#endif
-> +#if defined(CONFIG_CPU_EXYNOS4210) || defined(CONFIG_SOC_EXYNOS5250)
-> +#endif
+in fact the problem is related to this part of 1fcb57d0f6
 
-We really want to get rid of this kind of stuff from all drivers, #ifdefs are
-declared ugly already in Documentation/CodingStyle.
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 95a2e54..c8aae66 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -25,7 +25,6 @@
+ #include <linux/clk.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/spinlock.h>
+-#include <linux/gpio.h>
+ #include <plat/usb.h>
+ #include <linux/pm_runtime.h>
 
-Any chance you could solve this problem by reworking the driver to
-pass some flag in platform data tell which exynos it's for
-and jist adapt at runtime instead of the compile-time quirkiness?
-
-Besides looking better, it helps us to get to a single zImage for the
-exynoses too..
-
-Yours,
-Linus Walleij
+by removing linux/gpio.h, we remove the inclusion of plat/cpu.h which
+has the definition of cpu_is_omap3430()
