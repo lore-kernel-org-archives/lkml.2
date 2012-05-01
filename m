@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab2EAUYy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:24:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60101 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab2EAUYw (ORCPT
+	id S1752454Ab2EAUcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 16:32:35 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:29964 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007Ab2EAUce convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:24:52 -0400
-Date: Tue, 1 May 2012 13:24:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/5] mm + fs: prepare for non-page entries in page cache
-Message-Id: <20120501132449.30485966.akpm@linux-foundation.org>
-In-Reply-To: <20120501201504.GB2112@cmpxchg.org>
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
-	<1335861713-4573-3-git-send-email-hannes@cmpxchg.org>
-	<20120501120246.83d2ce28.akpm@linux-foundation.org>
-	<20120501201504.GB2112@cmpxchg.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 1 May 2012 16:32:34 -0400
+Date: Tue, 1 May 2012 16:26:40 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        mingo@kernel.org, suresh.b.siddha@intel.com, mlin@ss.pku.edu.cn
+Subject: Re: [GIT PULL] stable/for-ingo-v3.5 of IOAPIC abstraction (and then
+ some users) for v3.5
+Message-ID: <20120501202640.GB16209@phenom.dumpdata.com>
+References: <20120501194240.GA15237@phenom.dumpdata.com>
+ <CA+5PVA4OorzAkkBe+PayPPHa1k7=X6Y0ALg=jRWLyKxabAPpiw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA4OorzAkkBe+PayPPHa1k7=X6Y0ALg=jRWLyKxabAPpiw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 May 2012 22:15:04 +0200
-Johannes Weiner <hannes@cmpxchg.org> wrote:
-
-> On Tue, May 01, 2012 at 12:02:46PM -0700, Andrew Morton wrote:
-> > On Tue,  1 May 2012 10:41:50 +0200
-> > Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > 
-> > > --- a/fs/inode.c
-> > > +++ b/fs/inode.c
-> > > @@ -544,8 +544,7 @@ static void evict(struct inode *inode)
-> > >  	if (op->evict_inode) {
-> > >  		op->evict_inode(inode);
-> > >  	} else {
-> > > -		if (inode->i_data.nrpages)
-> > > -			truncate_inode_pages(&inode->i_data, 0);
-> > > +		truncate_inode_pages(&inode->i_data, 0);
-> > 
-> > Why did we lose this optimisation?
+On Tue, May 01, 2012 at 04:08:19PM -0400, Josh Boyer wrote:
+> On Tue, May 1, 2012 at 3:42 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> > -static void __init __ioapic_init_mappings(void)
+> > +void __init native_io_apic_init_mappings(void)
+> >  {
+> >        unsigned long ioapic_phys, idx = FIX_IO_APIC_BASE_0;
+> >        struct resource *ioapic_res;
+> > diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> > index 1a29015..8526317 100644
+> > --- a/arch/x86/kernel/setup.c
+> > +++ b/arch/x86/kernel/setup.c
+> > @@ -1012,7 +1012,7 @@ void __init setup_arch(char **cmdline_p)
+> >        init_cpu_to_node();
+> >
+> >        init_apic_mappings();
+> > -       ioapic_and_gsi_init();
+> > +       x86_io_apic_ops.init();
+> >
+> >        kvm_guest_init();
+> >
+> > diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+> > index 9cf71d0..35c5e54 100644
+> > --- a/arch/x86/kernel/x86_init.c
+> > +++ b/arch/x86/kernel/x86_init.c
+> > @@ -18,6 +18,7 @@
+> >  #include <asm/e820.h>
+> >  #include <asm/time.h>
+> >  #include <asm/irq.h>
+> > +#include <asm/io_apic.h>
+> >  #include <asm/pat.h>
+> >  #include <asm/tsc.h>
+> >  #include <asm/iommu.h>
+> > @@ -119,3 +120,10 @@ struct x86_msi_ops x86_msi = {
+> >        .teardown_msi_irqs = default_teardown_msi_irqs,
+> >        .restore_msi_irqs = default_restore_msi_irqs,
+> >  };
+> > +
+> > +struct x86_io_apic_ops x86_io_apic_ops = {
+> > +       .init   = native_io_apic_init_mappings,
+> > +       .read   = native_io_apic_read,
+> > +       .write  = native_io_apic_write,
+> > +       .modify = native_io_apic_modify,
+> > +};
 > 
-> For inodes with only shadow pages remaining in the tree, because there
-> is no separate counter for them.  Otherwise, we'd leak the tree nodes.
+> You'll get a section mismatch warning on this struct.  It's not a huge
+> deal, but native_io_apic_init_mappings is annotated as __init whereas
+> this struct isn't.  In practice it doesn't seem to matter as
+> x86_io_apic_ops.init is only called in setup_arch, but it's still a
+> valid warning.
+
+I think that the mismatch disappears if the structure has the word
+_ops in it. At least that is what I saw (when I ran with the MODULE_SECTION=y
+with the initial implementation of this and then fixed it up).
+
+However, let me double check - I might have seen that with something
+else and misremebered it.
+
 > 
-> I had mapping->nrshadows at first to keep truncation conditional, but
-> thought that using an extra word per cached inode would be worse than
-> removing this optimization.  There is not too much being done when the
-> tree is empty.
+> (First noticed in https://bugzilla.redhat.com/show_bug.cgi?id=817645 )
 > 
-> Another solution would be to include the shadows count in ->nrpages,
-> but filesystems use this counter for various other purposes.
-> 
-> Do you think it's worth reconsidering?
-
-It doesn't sound like it's worth adding ->nrshadows for only that
-reason.
-
-That's a pretty significant alteration in the meaning of ->nrpages. 
-Did this not have any other effects?
-
-What does truncate do?  I assume it invalidates shadow page entries in
-the radix tree?  And frees the radix-tree nodes?
-
-The patchset will make lookups slower in some (probably obscure)
-circumstances, due to the additional radix-tree nodes.
-
-I assume that if a pagecache lookup encounters a radix-tree node which
-contains no real pages, the search will terminate at that point?  We
-don't pointlessly go all the way down to the leaf nodes?
-
+> josh
