@@ -1,74 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758290Ab2EAPjF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 11:39:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40940 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757241Ab2EAPjD convert rfc822-to-8bit (ORCPT
+	id S1758188Ab2EAPkg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 11:40:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34069 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756412Ab2EAPkc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 11:39:03 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Michael Kerrisk <mtk.manpages@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-man@vger.kernel.org,
-        linux-mm@kvack.org, mgorman@suse.de, npiggin@gmail.com,
-        Andrea Arcangeli <aarcange@redhat.com>, Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
-References: <1335778207-6511-1-git-send-email-jack@suse.cz>
-	<CAHGf_=qdE3yNw=htuRssfav2pECO1Q0+gWMRTuNROd_3tVrd6Q@mail.gmail.com>
-	<CAHGf_=ojhwPUWJR0r+jVgjNd5h_sRrppzJntSpHzxyv+OuBueg@mail.gmail.com>
-	<x49ehr4lyw1.fsf@segfault.boston.devel.redhat.com>
-	<CAHGf_=rzcfo3OnwT-YsW2iZLchHs3eBKncobvbhTm7B5PE=L-w@mail.gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 01 May 2012 11:38:33 -0400
-In-Reply-To: <CAHGf_=rzcfo3OnwT-YsW2iZLchHs3eBKncobvbhTm7B5PE=L-w@mail.gmail.com>
-	(KOSAKI Motohiro's message of "Tue, 1 May 2012 11:34:04 -0400")
-Message-ID: <x491un3nc7a.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	Tue, 1 May 2012 11:40:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <CAE9FiQUOsMOQgZXCuPHpc6ZSEGnY3nv+uy1o0xvrW8-LKwNZrg@mail.gmail.com>
+References: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
+ <1332135781-13695-5-git-send-email-yinghai@kernel.org> <CAErSpo6Wbjh_pzDOkGRoog2WeJQET9UT0fiaanV0r15pq7hT6Q@mail.gmail.com>
+ <CAE9FiQV0XTd_1Ujz=tb6BSuwJvJ9nbT_GbE2PREtgMGv=yG0+g@mail.gmail.com>
+ <CAErSpo57pH81KtUbYZ3j6y4kC+ka33Lzr4rfcywVWf8OTmH_5Q@mail.gmail.com> <CAE9FiQUOsMOQgZXCuPHpc6ZSEGnY3nv+uy1o0xvrW8-LKwNZrg@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 1 May 2012 09:40:05 -0600
+Message-ID: <CAErSpo5EdBY-8M5FnQaGHOAvhaGO7qLHdDkmYGyDRN9de4umNw@mail.gmail.com>
+Subject: Re: [PATCH -v11 04/30] PCI: Add busn_res into struct pci_bus.
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KOSAKI Motohiro <kosaki.motohiro@gmail.com> writes:
-
-> On Tue, May 1, 2012 at 11:11 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
->> KOSAKI Motohiro <kosaki.motohiro@gmail.com> writes:
->>
->>>> Hello,
+On Tue, May 1, 2012 at 12:27 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Apr 30, 2012 at 9:02 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Mon, Apr 30, 2012 at 6:32 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> On Mon, Apr 30, 2012 at 4:25 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>>>> --- a/include/linux/pci.h
+>>>>> +++ b/include/linux/pci.h
+>>>>> @@ -419,6 +419,7 @@ struct pci_bus {
+>>>>>        struct list_head slots;         /* list of slots on this bus */
+>>>>>        struct resource *resource[PCI_BRIDGE_RESOURCE_NUM];
+>>>>>        struct list_head resources;     /* address space routed to this bus */
+>>>>> +       struct resource busn_res;       /* track registered bus num range */
+>>>>>
+>>>>>        struct pci_ops  *ops;           /* configuration access functions */
+>>>>>        void            *sysdata;       /* hook for sys-specific extension */
 >>>>
->>>> Thank you revisit this. But as far as my remember is correct, this issue is NOT
->>>> unaligned access issue. It's just get_user_pages(_fast) vs fork race issue. i.e.
->>>> DIRECT_IO w/ multi thread process should not use fork().
+>>>> struct pci_bus already includes "secondary" and "subordinate".    This
+>>>> new "busn_res" looks like it will contain the same information.  Why
+>>>> do we need both?
 >>>
->>> The problem is, fork (and its COW logic) assume new access makes cow break,
->>> But page table protection can't detect a DMA write. Therefore DIO may override
->>> shared page data.
+>>> In some case the could be different.
+>>> for root bus from _CRS, busn_res could bigger than subordinate,
+>>> because scan_childbus will update subordinate.
 >>
->> Hm, I've only seen this with misaligned or multiple sub-page-sized reads
->> in the same page. Â AFAIR, aligned, page-sized I/O does not get split.
->> But, I could be wrong...
+>> For a bus below a P2P bridge, I think it's always the case that the
+>> bridge's Subordinate Bus Number in config space == bus->subordinate ==
+>> bus->busn_res.end (correct me if I'm wrong).  I don't like the
+>> redundancy in this case.
 >
-> If my remember is correct, the reproducer of past thread is misleading.
+> there are about 70 bus->subordinate reference and 40 bus->secondary reference.
 >
-> dma_thread.c in
-> http://lkml.indiana.edu/hypermail/linux/kernel/0903.1/01498.html has
-> align parameter. But it doesn't only change align. Because of, every
-> worker thread read 4K (pagesize), then
->  - when offset is page aligned
->     -> every page is accessed from only one worker
->  - when offset is not page aligned
->     -> every page is accessed from two workers
->
-> But I don't remember why two threads are important things. hmm.. I'm
-> looking into the code a while.
-> Please don't 100% trust me.
+> could try to update them in following patch set.
 
-I bet Andrea or Larry would remember the details.
+If you're proposing this:
+  1. add bus->busn_res
+  2. remove bus->subordinate and bus->secondary
+I fully support that, and I'd like to merge both pieces at the same
+time (different patches is fine; I just want to make sure both pieces
+actually happen).
 
-Cheers,
-Jeff
+>> For a root bus where you set bus->busn_res from _CRS and
+>> bus->subordinate = pci_scan_child_bus(), bus->busn_res.end will
+>> generally be different from bus->subordinate, but there's no point in
+>> keeping track of bus->subordinate.
+>>
+>> The reason we care about secondary and subordinate is so we can
+>> allocate bus numbers when enumerating devices behind a bridge.  The
+>> only thing we need for that is the aperture of the upstream bridge and
+>> the apertures of any peer bridges on the same bus.  Let's say we have
+>> this:
+>>
+>>        pci 00:00.0 bridge to [bus a-b]
+>>        pci a:01.0 bridge to [bus c-d]  (already enumerated)
+>>        pci a:02.0 bridge to [bus e-f]  (already enumerated)
+>>        pci a:03.0 bridge to [bus x-y]  (enumerating now)
+>>
+>> We know [c-d] is contained in [a-b]; [e-f] is contained in [a-b]; a <
+>> c; and a < e.  To enumerate behind a:03.0, we need to assign x & y
+>> such that a < x; [x-y] is contained in [a-b]; and [x-y] does not
+>> overlap [c-d] or [e-f].  The value from pci_scan_child_bus() is
+>> probably useful for setting y, but we don't have to save it in the
+>> struct pci_bus for that.
+>
+> busn alloc will try to solve x-y may need big range than [a,b], it
+> will extend top of b and parents of bus a.
+> instead of just b+1 blindly.
+>
+> and will have more strict checking to avoid overlapping.
+
+Obviously the completely general problem of allocating bus numbers may
+require traversing up the tree.  My point is that I don't think it's
+necessary to keep both busn_res.end and subordinate to do that.
+
+>>> and also we have one resource to insert it into the resource tree, so
+>>> later could probe/allocate bus num range.
+>>
+>> Sorry, I didn't understand this.
+>
+> Using busn_res to track and allocate busn range, by put them in the
+> resource tree could reuse resource allocating code.
+
+Yes, I agree that replacing secondary & subordinate with a struct
+resource is a good idea.  That will allow a resource tree of bus
+numbers, as well as other useful things like the ability to "%pR".
+
+I just don't want *both* busn_resource and secondary & subordinate.
+
+Bjorn
