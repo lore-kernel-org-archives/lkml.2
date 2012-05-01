@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab2EAUPV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:15:21 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:44619 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165Ab2EAUPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:15:19 -0400
-Date: Tue, 1 May 2012 22:15:04 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/5] mm + fs: prepare for non-page entries in page cache
-Message-ID: <20120501201504.GB2112@cmpxchg.org>
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
- <1335861713-4573-3-git-send-email-hannes@cmpxchg.org>
- <20120501120246.83d2ce28.akpm@linux-foundation.org>
+	id S1752825Ab2EAUTP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 16:19:15 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63319 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab2EAUTO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 16:19:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120501120246.83d2ce28.akpm@linux-foundation.org>
+In-Reply-To: <4FA04373.6090100@redhat.com>
+References: <1335894655-11398-1-git-send-email-dledford@redhat.com>
+ <d280fa846e9093a3cc82d9e75da4bb8074c7d4c7.1335894230.git.dledford@redhat.com>
+ <4FA04131.2040004@gmail.com> <4FA04373.6090100@redhat.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 1 May 2012 16:18:52 -0400
+Message-ID: <CAHGf_=p34t2jrqr1V_TP0UiXLE8g1p6UXOV25SwWC8C9h2BVBQ@mail.gmail.com>
+Subject: Re: [Patch 3/4] ipc/mqueue: strengthen checks on mqueue creation
+To: Doug Ledford <dledford@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        sfr@canb.auug.org.au
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 12:02:46PM -0700, Andrew Morton wrote:
-> On Tue,  1 May 2012 10:41:50 +0200
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > --- a/fs/inode.c
-> > +++ b/fs/inode.c
-> > @@ -544,8 +544,7 @@ static void evict(struct inode *inode)
-> >  	if (op->evict_inode) {
-> >  		op->evict_inode(inode);
-> >  	} else {
-> > -		if (inode->i_data.nrpages)
-> > -			truncate_inode_pages(&inode->i_data, 0);
-> > +		truncate_inode_pages(&inode->i_data, 0);
-> 
-> Why did we lose this optimisation?
+>> But ENOMEM is more inaccurate. It almostly is used for kmalloc failure.
+>
+> I chose ENOMEM for that particular error because above there we have
+> checked the passed in arguments to make sure that they don't violate our
+> allowances for max message or max message size.  If we violate either of
+> those items, we return EINVAL.  In this case, neither of the values is
+> invalid, it's just that together they make an overly large allocation.
+> I would see that as more helpful to a programmer than EINVAL when the
+> values are within the maximums allowed.  At least with ENOMEM the
+> programmer knows they have to reduce their combined message size and
+> message count in order to get things working.
 
-For inodes with only shadow pages remaining in the tree, because there
-is no separate counter for them.  Otherwise, we'd leak the tree nodes.
-
-I had mapping->nrshadows at first to keep truncation conditional, but
-thought that using an extra word per cached inode would be worse than
-removing this optimization.  There is not too much being done when the
-tree is empty.
-
-Another solution would be to include the shadows count in ->nrpages,
-but filesystems use this counter for various other purposes.
-
-Do you think it's worth reconsidering?
+Incorrect. When ENOMEM is returned, programmers can't know
+which problem was happen 1) kernel has real memory starvation
+or 2) queue limitation exceed was happen. The problem is, you
+introduced new overloaded error code for avoiding overload error code.
+It doesn't make sense. My question was, why can't you choose no
+overload error code if you want accurate one?
