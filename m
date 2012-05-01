@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab2EAUhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:37:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28193 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007Ab2EAUhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:37:14 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jaxboe@fusionio.com, Kyle McMartin <kmcmarti@redhat.com>
-Subject: Re: [patch|rfc] block: don't mark buffers beyond end of disk as mapped
-References: <x49pqaom2u4.fsf@segfault.boston.devel.redhat.com>
-	<CAPa8GCAgDU8FYdMuWsn2PuUW0GQxdKWJV6K0SmQEzb3s1GHxwA@mail.gmail.com>
-	<x49lilcm1tb.fsf@segfault.boston.devel.redhat.com>
-	<CAPa8GCChTmXTmjY5GvsFsvXpP_WSuiiWMRDu7Lvb71G9tW1PTw@mail.gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 01 May 2012 16:37:10 -0400
-In-Reply-To: <CAPa8GCChTmXTmjY5GvsFsvXpP_WSuiiWMRDu7Lvb71G9tW1PTw@mail.gmail.com>
-	(Nick Piggin's message of "Wed, 2 May 2012 00:26:55 +1000")
-Message-ID: <x49bom7ljt5.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754037Ab2EAUmS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 16:42:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60218 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242Ab2EAUmQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 16:42:16 -0400
+Date: Tue, 1 May 2012 13:42:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH]  Re: [RFC PATCH] namespaces: fix leak on fork() failure
+Message-Id: <20120501134214.f6b44f4a.akpm@linux-foundation.org>
+In-Reply-To: <m1zk9rmyh4.fsf@fess.ebiederm.org>
+References: <1335604790.5995.22.camel@marge.simpson.net>
+	<20120428142605.GA20248@redhat.com>
+	<m14ns355ru.fsf@fess.ebiederm.org>
+	<20120429165846.GA19054@redhat.com>
+	<1335754867.17899.4.camel@marge.simpson.net>
+	<m1zk9rmyh4.fsf@fess.ebiederm.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick Piggin <npiggin@gmail.com> writes:
+On Tue, 01 May 2012 13:35:03 -0700
+ebiederm@xmission.com (Eric W. Biederman) wrote:
 
-> On 2 May 2012 00:08, Jeff Moyer <jmoyer@redhat.com> wrote:
->> Nick Piggin <npiggin@gmail.com> writes:
->>
->>> Not a bad fix. But it's kind of sad to have i_size checking logic also in
->>> block_read_full_page, that does not cope with this.
->>>
->>> I have found there are parts of the kernel (readahead) that try to read
->>> beyond EOF and seem to get angry if we return an error (by not
->>> marking uptodate in readpage) in that case though :(
->>>
->>> But, either way, I think it's very reasonable to not mark buffers beyond
->>> end of device as mapped. So I think your patch is fine.
->>>
->>> I guess for ext[234], it does not read metadata close to the end of the
->>> device or you were using 4K sized blocks?
->>
->> Well, the test case just reads directly from the loop device, bypassing
->> the file system, and I did use 1KB blocks when making the file system, so
->> it is quite puzzling.
->
-> It's because buffer_head creation does not go through the same paths
-> for bdev file access versus getblk APIs.
->
-> blkdev_get_block does the right thing there
->
-> In fact, it's probably good to unify the checks here, i.e., use max_blocks()
+> 
+> Andrew can you please pick up this patch?
 
-You really think it's worth it?  I mean, it's just an i_size_read and a
-shift, and there is precedent for it inside fs/buffer.c.  I'd prefer to
-keep the patch as-is, but will change it if you feel that strongly about
-it.
+Sure.  I assume it's fixing a post-3.4 regression?  No -stable backport
+needed?
 
-Cheers,
-Jeff
+> This doesn't explain all of the vsftp weirdness people have been seeing
+> but it does fix a real leak on fork failure that vsftp could most
+> definitely have triggered.
+> 
+> Mike Galbraith <efault@gmx.de> writes:
+
+hm, Mike had some test code.  If that was put in
+tools/testing/selftests/nsproxy, this leak wouldn't happen again!
