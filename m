@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757680Ab2EAAdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 20:33:50 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39051 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756932Ab2EAAdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 20:33:49 -0400
-Message-ID: <1335832418.20866.95.camel@pasglop>
-Subject: Re: linux-next ppc64: RCU mods cause __might_sleep BUGs
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Date: Tue, 01 May 2012 10:33:38 +1000
-In-Reply-To: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils>
-References: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757822Ab2EAAes (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 20:34:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38048 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754956Ab2EAAep convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Apr 2012 20:34:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo5AnsmfQs4oa3P7AQyPTJ+YqCVVh5p2L=bmDY=A+BO9PQ@mail.gmail.com>
+References: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
+	<1332135781-13695-6-git-send-email-yinghai@kernel.org>
+	<CAErSpo5AnsmfQs4oa3P7AQyPTJ+YqCVVh5p2L=bmDY=A+BO9PQ@mail.gmail.com>
+Date: Mon, 30 Apr 2012 17:34:45 -0700
+X-Google-Sender-Auth: SZloAk8sSxp7d3DjO9bs-ZzHmjw
+Message-ID: <CAE9FiQUH1SiToMBanL7brzem920rCoq70hh3KKxH-ps190=51w@mail.gmail.com>
+Subject: Re: [PATCH -v11 05/30] PCI: Add busn_res operation functions
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-30 at 15:37 -0700, Hugh Dickins wrote:
-> 
-> BUG: sleeping function called from invalid context at include/linux/pagemap.h:354
-> in_atomic(): 0, irqs_disabled(): 0, pid: 6886, name: cc1
+On Mon, Apr 30, 2012 at 4:29 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Sun, Mar 18, 2012 at 11:42 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> +void pci_bus_update_busn_res_end(struct pci_bus *b, int bus_max)
+>> +{
+>> +       struct resource *res = &b->busn_res;
+>> +       struct resource old_res = *res;
+>> +
+>> +       res->end = bus_max;
+>
+> I've mentioned before that I'm not comfortable with updating the
+> struct resource after it's been inserted into the tree.  If you want
+> to do an in-place update, I think you need to add a new interface in
+> kernel/resource.c so it can make sure the resource tree remains
+> consistent.
 
-Hrm ... in_atomic and irqs_disabled are both 0 ... so yeah it smells
-like a preempt count problem... odd.
-
-Did you get a specific bisect target yet ?
-
-Cheers,
-Ben.
-
-> Call Trace:
-> [c0000001a99f78e0] [c00000000000f34c] .show_stack+0x6c/0x16c (unreliable)
-> [c0000001a99f7990] [c000000000077b40] .__might_sleep+0x11c/0x134
-> [c0000001a99f7a10] [c0000000000c6228] .filemap_fault+0x1fc/0x494
-> [c0000001a99f7af0] [c0000000000e7c9c] .__do_fault+0x120/0x684
-> [c0000001a99f7c00] [c000000000025790] .do_page_fault+0x458/0x664
-> [c0000001a99f7e30] [c000000000005868] handle_page_fault+0x10/0x30
-> 
-> I've plenty more examples, most of them from page faults or from kswapd;
-> but I don't think there's any more useful information in them.
-> 
-> Anything I can try later on? 
-
+ok, will add one function in kernel/resource.c to make sure that end
+could be updated safely
+by checking parent and children.
