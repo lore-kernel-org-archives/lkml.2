@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab2EAUUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:20:39 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:48256 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab2EAUUh (ORCPT
+	id S1754096Ab2EAUXE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 16:23:04 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35873 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab2EAUXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:20:37 -0400
-Message-ID: <4FA04576.6030405@linux.vnet.ibm.com>
-Date: Wed, 02 May 2012 01:50:06 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Tue, 1 May 2012 16:23:01 -0400
+Date: Tue, 1 May 2012 13:22:57 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Nick Piggin <npiggin@gmail.com>
+cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        kosaki.motohiro@gmail.com, Neil Brown <neilb@suse.de>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Sage Weil <sage@newdream.net>
+Subject: Re: [RFC] vmalloc: add warning in __vmalloc
+In-Reply-To: <CAPa8GCBN6U_GRaG=GYFByNB4REcVA-yy+kKMMbrGaDKULUXW9w@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1205011310180.7742@chino.kir.corp.google.com>
+References: <1335516144-3486-1-git-send-email-minchan@kernel.org> <alpine.DEB.2.00.1204270323000.11866@chino.kir.corp.google.com> <CAPa8GCBN6U_GRaG=GYFByNB4REcVA-yy+kKMMbrGaDKULUXW9w@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        KVM <kvm@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Xen <xen-devel@lists.xensource.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC V6 1/5] kvm hypervisor : Add a hypercall to KVM hypervisor
- to support pv-ticketlocks
-References: <20120423095937.30893.14776.sendpatchset@codeblue.in.ibm.com> <20120423095947.30893.84029.sendpatchset@codeblue.in.ibm.com> <4F9D415B.7010103@redhat.com> <4F9E42F6.8050108@linux.vnet.ibm.com>
-In-Reply-To: <4F9E42F6.8050108@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12050110-7014-0000-0000-00000103196F
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-1914011446-1335903093=:7742"
+Content-ID: <alpine.DEB.2.00.1205011314360.7742@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2012 01:14 PM, Raghavendra K T wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
->>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->>> index 4044ce0..7fc9be6 100644
->>> --- a/arch/x86/kvm/x86.c
->>> +++ b/arch/x86/kvm/x86.c
->>> @@ -2147,6 +2147,7 @@ int kvm_dev_ioctl_check_extension(long ext)
->>> case KVM_CAP_ASYNC_PF:
->>> case KVM_CAP_GET_TSC_KHZ:
->>> case KVM_CAP_PCI_2_3:
->>> + case KVM_CAP_PV_UNHALT:
->>> r = 1;
->>> break;
->>> case KVM_CAP_COALESCED_MMIO:
->>
->> Redundant, since we can infer this from KVM_GET_SUPPORTED_CPUID. But
->> please indicate this in the documentation.
->>
->
-> Ok. will mention that in documentation added for KVM_CAP_PV_UNHALT.
->
+--397155492-1914011446-1335903093=:7742
+Content-Type: TEXT/PLAIN; CHARSET=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.00.1205011314361.7742@chino.kir.corp.google.com>
 
-I think it is better to remove  KVM_CAP_PV_UNHALT itself and avoid
-spamming CAP.. will do that in coming version.
+On Tue, 1 May 2012, Nick Piggin wrote:
 
+> > I disagree with this approach since it's going to violently spam an
+> > innocent kernel user's log with no ratelimiting and for a situation that
+> > actually may not be problematic.
+> 
+> With WARN_ON_ONCE, it should be good.
+> 
+
+To catch a single instance of this per-boot, sure.  I've never seen us add 
+WARN_ON_ONCE()'s where we have concrete examples of kernel code that will 
+trigger it, though.  Not sure why spamming the kernel log and getting 
+users to think something is wrong and report the bug when it's possible to 
+audit the code and make a report to the subsystem maintainer.  Perhaps 
+adding WARN_ON_ONCE()'s is just easier and then walk away from it?
+
+> > Passing any of these bits (the difference between GFP_KERNEL and
+> > GFP_ATOMIC) only means anything when we're going to do reclaim.  And I'm
+> > suspecting we would have seen problems with this already since
+> > pte_alloc_kernel() does __GFP_REPEAT on most architectures meaning that it
+> > will loop infinitely in the page allocator until at least one page is
+> > freed (since its an order-0 allocation) which would hardly ever happen if
+> > __GFP_FS or __GFP_IO actually meant something in this context.
+> >
+> > In other words, we would already have seen these deadlocks and it would
+> > have been diagnosed as a vmalloc(GFP_ATOMIC) problem.  Where are those bug
+> > reports?
+> 
+> That's not sound logic to disprove a bug.
+> 
+> I think simply most callers are permissive and don't mask out flags.
+> But for example a filesystem holding an fs lock and then doing
+> vmalloc(GFP_NOFS) can certainly deadlock.
+> 
+
+I'm not disproving a bug, I'm asking for an example of how this problem 
+has caused pain before and it has been the result of calling 
+vmalloc(GFP_NOFS).  I agree we should certainly fix those callers, but it 
+seems like adding the WARN_ON_ONCE()'s is certainly going to cause pain in 
+tons of bug reports where there's no actual problem that couldn't have 
+been found by auditing the code.
+--397155492-1914011446-1335903093=:7742--
