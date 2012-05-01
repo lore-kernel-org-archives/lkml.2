@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab2EAWt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 18:49:26 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:52393 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753633Ab2EAWtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 18:49:25 -0400
-Date: Tue, 1 May 2012 15:44:35 -0700
-From: Mike Turquette <mturquette@ti.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: mturquette@linaro.org, arnd.bergmann@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: COMMON_CLK_DISABLE_UNUSED
-Message-ID: <20120501224435.GA17311@gmail.com>
-References: <20120409222903.GA31622@lunn.ch>
- <CAJOA=zP8XFTN1mcAyUky3ovrx4Dg1zb9zaB5r8zUYE46Ec-tMQ@mail.gmail.com>
- <4F843778.8050506@gmail.com>
+	id S1756415Ab2EAWty (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 18:49:54 -0400
+Received: from claw.goop.org ([74.207.240.146]:40954 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753936Ab2EAWtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 18:49:52 -0400
+Message-ID: <4FA0688E.8030200@goop.org>
+Date: Tue, 01 May 2012 15:49:50 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F843778.8050506@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Avi Kivity <avi@redhat.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>, mingo@elte.hu,
+        mtosatti@redhat.com, kvm@vger.kernel.org, x86@kernel.org,
+        vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
+References: <20120427161727.27082.43096.stgit@abhimanyu>  <20120427162401.27082.59387.stgit@abhimanyu> <4F9D32B4.8040002@redhat.com>  <1335865176.13683.120.camel@twins> <4F9FBF38.2060903@redhat.com>  <1335869827.13683.133.camel@twins> <1335869998.13683.135.camel@twins>
+In-Reply-To: <1335869998.13683.135.camel@twins>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20120410-08:36, Rob Herring wrote:
-> On 04/09/2012 06:04 PM, Turquette, Mike wrote:
-> > On Mon, Apr 9, 2012 at 3:29 PM, Andrew Lunn <andrew@lunn.ch> wrote:
-> >> I think it would be good to consider deleting this config option and
-> >> just have the code always enabled.
-> > 
-> > I agree.  We already support the CLK_IGNORE_UNUSED flag, so any
-> > platforms that don't want this functionality wholesale can set that
-> > bit for every clock.
-> > 
-> > I'll pull out that option.
-> > 
-> 
-> CLK_IGNORE_UNUSED looks a bit broken to me. If you don't have the flag
-> set on the whole chain of parents, then a parent could be turned off.
-> This could happen at boot time or when another child get disabled and
-> the common parent's ref count goes to 0 and gets disabled.
-> 
-> I think a better solution would be a force enable or enable on boot flag
-> that sets ref counts correctly. Otherwise, each platform has to call
-> clk_prepare and clk_enable for all the clocks it wants to keep on.
-> 
-> Here's a simple case that needs work. You have a cpu clock controlled by
-> cpufreq driver. If the cpufreq driver is not loaded, we want the cpu
-> clock always enabled and don't want the clk infrastructure turning it
-> off. If the cpufreq driver is loaded, then we potentially want it to be
-> able to enable and disable the cpu clock if we switch parents. I guess
-> the easiest solution is the cpufreq driver needs to assume the cpu clock
-> is already enabled with a ref count of 1.
-> 
+On 05/01/2012 03:59 AM, Peter Zijlstra wrote:
+> On Tue, 2012-05-01 at 12:57 +0200, Peter Zijlstra wrote:
+>> Anyway, I don't have any idea about the costs involved with
+>> HAVE_RCU_TABLE_FREE, but I don't think its much.. otherwise these other
+>> platforms (PPC,SPARC) wouldn't have used it, gup_fast() is a very
+>> specific case, whereas mmu-gather is something affecting pretty much all
+>> tasks. 
+> Which reminds me, I thought Xen needed this too, but a git grep on
+> HAVE_RCU_TABLE_FREE shows its still only ppc and sparc.
+>
+> Jeremy?
 
-Hi Rob,
+Yeah, I was thinking that too, but I can't remember what we did to
+resolve it.  For pure PV guests, gupf simply isn't used, so the problem
+is moot.  But for dom0 or PCI-passthrough it could be.
 
-Apologies for the late reply.
+Konrad, Stefano?
 
-I think having any driver (including a cpufreq driver) assume anything
-about the usecount is broken.  Most code should follow the
-tried-and-true pattern:
-
-clk_get()
-clk_prepare()
-clk_enable()
-
-cpufreq is no exception to this pattern.  The only concern that has been
-raised to date is that of "re-enabling" a clock that is already enabled
-in hardware (which the cpufreq driver would do).  That case is only
-theoretical and no platform that I am aware of has a problem re-setting
-the bit to enable a clock (or i2c message, or whatever).
-
-Thanks,
-Mike
-
-> Rob
+    J
