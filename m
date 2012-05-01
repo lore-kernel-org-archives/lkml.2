@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767Ab2EASRD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 14:17:03 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:39414 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab2EASRA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 14:17:00 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-132.messagelabs.com!1335896167!10248363!93
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>
-Date: Tue, 1 May 2012 13:16:48 -0500
-Subject: linux-next: build failure after merge of drm-next tree
-Thread-Topic: linux-next: build failure after merge of drm-next tree
-Thread-Index: Ac0nxjdBE0rUbR8KQrqW5XT3CY647Q==
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698951E44@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755790Ab2EASS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 14:18:27 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:48011 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751877Ab2EASS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 14:18:26 -0400
+X-ASG-Debug-ID: 1335896305-03d6a5256fcacc0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4FA028EE.7020208@fusionio.com>
+Date: Tue, 1 May 2012 20:18:22 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized
+ to one
+References: <1335873936.16988.148.camel@lappy> <20120501161729.GV26595@google.com> <4FA0253F.4000302@fusionio.com> <20120501180906.GX26595@google.com>
+X-ASG-Orig-Subj: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized
+ to one
+In-Reply-To: <20120501180906.GX26595@google.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1335896305
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0019 1.0000 -2.0083
+X-Barracuda-Spam-Score: -2.01
+X-Barracuda-Spam-Status: No, SCORE=-2.01 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.95708
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alan,
+On 2012-05-01 20:09, Tejun Heo wrote:
+> On Tue, May 01, 2012 at 08:02:39PM +0200, Jens Axboe wrote:
+>> On 2012-05-01 18:17, Tejun Heo wrote:
+>>> create_task_io_context() left ioc->nr_tasks at zero; however, a newly
+>>> created ioc should have its nr_tasks initialized to one as it begins
+>>> attached to the task creating it.
+>>>
+>>> This affects only CLONE_IO which currently doesn't seem to have any
+>>> actual user.  Sasha triggered WARN_ON_ONCE() in ioc_task_link() using
+>>> syscall fuzzer.  Even when it happens, the failure mode isn't critical
+>>> (blk-cgroup may allow attaching a CLONE_IO'd task to a cgroup when it
+>>> shouldn't and blkcg limits may behave weirdly).
+>>
+>> CLONE_IO is an exported interface, it can be set from clone(2).
+>> Otherwise Sasha would not have hit this :-)
+> 
+> Yeah, but with pthread not exposing it, I'm very skeptical how much,
+> if any, use it's getting.  With its incompatibility with blk-cgroup
+> and cfq being able to merge coop request streams, I'm not sure how
+> much we need it.  Maybe we can just make it noop?
 
-linux-next is getting a build failure:
+It's a lot more robust and specific than hoping to get coop merging. For
+cfq, it also implies that multiple threads sharing an io context should
+be accounted as one.
 
-drivers/gpu/drm/gma500/mdfld_device.c:675:30: error: Expected } at end of initializer
-drivers/gpu/drm/gma500/mdfld_device.c:675:30: error: got ;
-drivers/gpu/drm/gma500/mdfld_device.c:676:9: error: Expected ; at the end of type declaration
-drivers/gpu/drm/gma500/mdfld_device.c:676:9: error: got .
-drivers/gpu/drm/gma500/mdfld_device.c:677:9: error: Expected ; at the end of type declaration
-drivers/gpu/drm/gma500/mdfld_device.c:677:9: error: got .
-  CC      drivers/gpu/drm/gma500/mdfld_device.o
-drivers/gpu/drm/gma500/mdfld_device.c:675: error: expected '}' before ';' token
+But as to actual users, I really don't know. I agree it's probably not
+that widely used. If google still had that code search, we could get a
+better idea :-)
 
-Introduced by commit d235e64a4367ad3ff204309490c4325b4f89b25b
-cdv: continue synching up with updated reference code
-
-Regards,
-Hartley
+-- 
+Jens Axboe
 
