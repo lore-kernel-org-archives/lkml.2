@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608Ab2EAShm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 14:37:42 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:56235 "EHLO mx1.fusionio.com"
+	id S1757293Ab2EASj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 14:39:27 -0400
+Received: from tex.lwn.net ([70.33.254.29]:34691 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877Ab2EAShl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 14:37:41 -0400
-X-ASG-Debug-ID: 1335897460-03d6a52572cb550002-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4FA02D71.3060001@fusionio.com>
-Date: Tue, 1 May 2012 20:37:37 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized
- to one
-References: <1335873936.16988.148.camel@lappy> <20120501161729.GV26595@google.com> <4FA0253F.4000302@fusionio.com> <20120501180906.GX26595@google.com> <4FA028EE.7020208@fusionio.com> <x49wr4vlpn8.fsf@segfault.boston.devel.redhat.com>
-X-ASG-Orig-Subj: Re: [PATCH v3.4-rc5] block: iocontext->nr_tasks should be initialized
- to one
-In-Reply-To: <x49wr4vlpn8.fsf@segfault.boston.devel.redhat.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1335897460
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0042 1.0000 -1.9933
-X-Barracuda-Spam-Score: -1.99
-X-Barracuda-Spam-Status: No, SCORE=-1.99 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.95710
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1754006Ab2EASjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 14:39:25 -0400
+Date: Tue, 1 May 2012 12:39:23 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-bluetooth@vger.kernel.org
+Subject: Re: [now bisected] Weird bluetooth keyboard regression - just me?
+Message-ID: <20120501123923.01ac1138@lwn.net>
+In-Reply-To: <20120501183149.GA28536@srcf.ucam.org>
+References: <20120501073711.028d31d6@lwn.net>
+	<20120501110156.2b6e0561@lwn.net>
+	<20120501171901.GA26006@srcf.ucam.org>
+	<20120501120145.21f65ae2@lwn.net>
+	<20120501183149.GA28536@srcf.ucam.org>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-01 20:31, Jeff Moyer wrote:
-> Jens Axboe <jaxboe@fusionio.com> writes:
+On Tue, 1 May 2012 19:31:49 +0100
+Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+
+> > It's Rawhide, updated yesterday.  "Removable" says "fixed".  
 > 
->> On 2012-05-01 20:09, Tejun Heo wrote:
->>> On Tue, May 01, 2012 at 08:02:39PM +0200, Jens Axboe wrote:
->>>> On 2012-05-01 18:17, Tejun Heo wrote:
->>>>> create_task_io_context() left ioc->nr_tasks at zero; however, a newly
->>>>> created ioc should have its nr_tasks initialized to one as it begins
->>>>> attached to the task creating it.
->>>>>
->>>>> This affects only CLONE_IO which currently doesn't seem to have any
->>>>> actual user.  Sasha triggered WARN_ON_ONCE() in ioc_task_link() using
->>>>> syscall fuzzer.  Even when it happens, the failure mode isn't critical
->>>>> (blk-cgroup may allow attaching a CLONE_IO'd task to a cgroup when it
->>>>> shouldn't and blkcg limits may behave weirdly).
->>>>
->>>> CLONE_IO is an exported interface, it can be set from clone(2).
->>>> Otherwise Sasha would not have hit this :-)
->>>
->>> Yeah, but with pthread not exposing it, I'm very skeptical how much,
->>> if any, use it's getting.  With its incompatibility with blk-cgroup
->>> and cfq being able to merge coop request streams, I'm not sure how
->>> much we need it.  Maybe we can just make it noop?
->>
->> It's a lot more robust and specific than hoping to get coop merging. For
->> cfq, it also implies that multiple threads sharing an io context should
->> be accounted as one.
->>
->> But as to actual users, I really don't know. I agree it's probably not
->> that widely used. If google still had that code search, we could get a
->> better idea :-)
-> 
-> I know of one project: the venerable dump/restore utility uses CLONE_IO.
+> Ok, well that's the problem. udev is seeing "fixed" and enabling 
+> autosuspend. Is this really bluetooth, or does it appear as a USB HID 
+> device? Can you send lsusb -v?
 
-Thanks Jeff, now I remember the specifics of what we tested. IIRC, we
-also did numbers back then comparing the coop merging vs specifically
-using CLONE_IO.
+Whether it's really bluetooth has been an issue in the past... parts of
+the system have fought over it.
 
--- 
-Jens Axboe
+lsusb says (on an older kernel where my keyboard works):
 
+Bus 002 Device 003: ID 046d:0b04 Logitech, Inc. 
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass            9 Hub
+  bDeviceSubClass         0 Unused
+  bDeviceProtocol         0 Full speed (or root) hub
+  bMaxPacketSize0         8
+  idVendor           0x046d Logitech, Inc.
+  idProduct          0x0b04 
+  bcdDevice           49.00
+  iManufacturer           1 Logitech
+  iProduct                2 Logitech BT Mini-Receiver
+  iSerial                 0 
+  bNumConfigurations      1
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength           25
+    bNumInterfaces          1
+    bConfigurationValue     1
+    iConfiguration          0 
+    bmAttributes         0xa0
+      (Bus Powered)
+      Remote Wakeup
+    MaxPower              100mA
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           1
+      bInterfaceClass         9 Hub
+      bInterfaceSubClass      0 Unused
+      bInterfaceProtocol      0 Full speed (or root) hub
+      iInterface              0 
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0001  1x 1 bytes
+        bInterval             255
+Hub Descriptor:
+  bLength               9
+  bDescriptorType      41
+  nNbrPorts             3
+  wHubCharacteristic 0x0004
+    Ganged power switching
+    Compound device
+    Ganged overcurrent protection
+  bPwrOn2PwrGood       50 * 2 milli seconds
+  bHubContrCurrent    100 milli Ampere
+  DeviceRemovable    0x0c
+  PortPwrCtrlMask    0xff
+ Hub Port Status:
+   Port 1: 0000.0100 power
+   Port 2: 0000.0103 power enable connect
+   Port 3: 0000.0103 power enable connect
+Device Status:     0x0000
+  (Bus Powered)
+
+jon
