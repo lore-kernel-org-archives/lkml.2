@@ -1,109 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab2EAWIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 18:08:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60592 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752759Ab2EAWIS (ORCPT
+	id S1754882Ab2EAWON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 18:14:13 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:41713 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751689Ab2EAWOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 18:08:18 -0400
-Date: Tue, 1 May 2012 15:08:13 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 05/16] mm: allow PF_MEMALLOC from softirq context
-Message-Id: <20120501150813.657cd5c0.akpm@linux-foundation.org>
-In-Reply-To: <1334578624-23257-6-git-send-email-mgorman@suse.de>
-References: <1334578624-23257-1-git-send-email-mgorman@suse.de>
-	<1334578624-23257-6-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 1 May 2012 18:14:12 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 4/6 v2] mfd/ab8500: print switch off cause
+Date: Wed, 2 May 2012 00:13:46 +0200
+Message-ID: <1335910426-19590-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Apr 2012 13:16:52 +0100
-Mel Gorman <mgorman@suse.de> wrote:
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-> This is needed to allow network softirq packet processing to make
-> use of PF_MEMALLOC.
+Instead of just printing the register value, also output some
+description of the value.
 
-hm, why?  You just added __GFP_MEMALLOC so we don't need to futz with
-PF_MEMALLOC?
+Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Reviewed-by: Mattias Wallin <mattias.wallin@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v1->v2:
+- Print each cause on its own line with a tab to avoid missing
+  initial cause heading if loglevel < info.
+---
+ drivers/mfd/ab8500-core.c |   26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
-> Currently softirq context cannot use PF_MEMALLOC due to it not being
-> associated with a task, and therefore not having task flags to fiddle
-> with - thus the gfp to alloc flag mapping ignores the task flags when
-> in interrupts (hard or soft) context.
-> 
-> Allowing softirqs to make use of PF_MEMALLOC therefore requires some
-> trickery.  We basically borrow the task flags from whatever process
-> happens to be preempted by the softirq.
-> 
-> So we modify the gfp to alloc flags mapping to not exclude task flags
-> in softirq context, and modify the softirq code to save, clear and
-> restore the PF_MEMALLOC flag.
-> 
-> The save and clear, ensures the preempted task's PF_MEMALLOC flag
-> doesn't leak into the softirq. The restore ensures a softirq's
-> PF_MEMALLOC flag cannot leak back into the preempted process.
-> 
-> ...
->
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1913,6 +1913,13 @@ static inline void rcu_copy_process(struct task_struct *p)
->  
->  #endif
->  
-> +static inline void tsk_restore_flags(struct task_struct *p,
-> +				     unsigned long pflags, unsigned long mask)
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index eee9560..437799a 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -1072,6 +1072,16 @@ static struct attribute_group ab9540_attr_group = {
+ 
+ int __devinit ab8500_init(struct ab8500 *ab8500, enum ab8500_version version)
+ {
++	static char *switch_off_status[] = {
++		"Swoff bit programming",
++		"Thermal protection activation",
++		"Vbat lower then BattOk falling threshold",
++		"Watchdog expired",
++		"Non presence of 32kHz clock",
++		"Battery level lower than power on reset threshold",
++		"Power on key 1 pressed longer than 10 seconds",
++		"DB8500 thermal shutdown"};
++
+ 	struct ab8500_platform_data *plat = dev_get_platdata(ab8500->dev);
+ 	int ret;
+ 	int i;
+@@ -1139,7 +1149,21 @@ int __devinit ab8500_init(struct ab8500 *ab8500, enum ab8500_version version)
+ 		AB8500_SWITCH_OFF_STATUS, &value);
+ 	if (ret < 0)
+ 		return ret;
+-	dev_info(ab8500->dev, "switch off status: %#x", value);
++	dev_info(ab8500->dev, "switch off cause(s) (%#x): ", value);
++
++	if (value) {
++		for (i = 0; i < ARRAY_SIZE(switch_off_status); i++) {
++			if (value & 1)
++				dev_info(ab8500->dev,
++					 "\"\t%s\" ", switch_off_status[i]);
++			value = value >> 1;
++
++		}
++		printk("\n");
++	} else {
++		printk("None\n");
++	}
++
+ 
+ 	if (plat && plat->init)
+ 		plat->init(ab8500);
+-- 
+1.7.9.2
 
-The naming is poor.
-
-p -> "tsk" or "task"
-pflags -> "old_flags"
-mask -> "flags"
-
-> +{
-> +	p->flags &= ~mask;
-> +	p->flags |= pflags & mask;
-> +}
-> +
->  #ifdef CONFIG_SMP
->  extern void do_set_cpus_allowed(struct task_struct *p,
->  			       const struct cpumask *new_mask);
-> diff --git a/kernel/softirq.c b/kernel/softirq.c
-> index 671f959..d349caa 100644
-> --- a/kernel/softirq.c
-> +++ b/kernel/softirq.c
-> @@ -210,6 +210,8 @@ asmlinkage void __do_softirq(void)
->  	__u32 pending;
->  	int max_restart = MAX_SOFTIRQ_RESTART;
->  	int cpu;
-> +	unsigned long pflags = current->flags;
-
-"old_flags"
-
-> +	current->flags &= ~PF_MEMALLOC;
-
-The line before this one would be a suitable place for a comment!
-
->  	pending = local_softirq_pending();
->  	account_system_vtime(current);
-> @@ -265,6 +267,7 @@ restart:
->  
->  	account_system_vtime(current);
->  	__local_bh_enable(SOFTIRQ_OFFSET);
-> +	tsk_restore_flags(current, pflags, PF_MEMALLOC);
->  }
->  
-> ...
->
