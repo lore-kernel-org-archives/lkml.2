@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757744Ab2EAAcE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 20:32:04 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:56257 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756896Ab2EAAcC (ORCPT
+	id S1757868Ab2EAAcV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Apr 2012 20:32:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50643 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757798Ab2EAAcT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 20:32:02 -0400
-Date: Tue, 1 May 2012 01:31:56 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Shea Levy <shea@shealevy.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] efi: Validate UEFI boot variables
-Message-ID: <20120501003156.GA9543@srcf.ucam.org>
-References: <1335816690-26019-1-git-send-email-mjg@redhat.com>
- <1335816690-26019-2-git-send-email-mjg@redhat.com>
- <4F9F279E.606@shealevy.com>
+	Mon, 30 Apr 2012 20:32:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9F279E.606@shealevy.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CAErSpo6Wbjh_pzDOkGRoog2WeJQET9UT0fiaanV0r15pq7hT6Q@mail.gmail.com>
+References: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
+	<1332135781-13695-5-git-send-email-yinghai@kernel.org>
+	<CAErSpo6Wbjh_pzDOkGRoog2WeJQET9UT0fiaanV0r15pq7hT6Q@mail.gmail.com>
+Date: Mon, 30 Apr 2012 17:32:18 -0700
+X-Google-Sender-Auth: HdkkKDWhL6z_5XZd-OaVWxvZVfg
+Message-ID: <CAE9FiQV0XTd_1Ujz=tb6BSuwJvJ9nbT_GbE2PREtgMGv=yG0+g@mail.gmail.com>
+Subject: Re: [PATCH -v11 04/30] PCI: Add busn_res into struct pci_bus.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 08:00:30PM -0400, Shea Levy wrote:
-> On 04/30/2012 04:11 PM, Matthew Garrett wrote:
-> >A common flaw in UEFI systems is a refusal to POST triggered by a malformed
-> >boot variable. Once in this state, machines may only be restored by
-> >reflashing their firmware with an external hardware device. While this is
-> >obviously a firmware bug, the serious nature of the outcome suggests that
-> >operating systems should filter their variable writes in order to prevent
-> >a malicious user from rendering the machine unusable.
-> 
-> Any chance this will make it safe to use efibootmgr on Apple EFI
-> firmware? I've been afraid to use it because I've read it can
-> silently brick the device due to a mistake in efibootmgr. Obviously
-> this won't correct that mistake, but with this applied should a
-> successful variable set imply that the firmware wasn't bricked?
+On Mon, Apr 30, 2012 at 4:25 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> --- a/include/linux/pci.h
+>> +++ b/include/linux/pci.h
+>> @@ -419,6 +419,7 @@ struct pci_bus {
+>>        struct list_head slots;         /* list of slots on this bus */
+>>        struct resource *resource[PCI_BRIDGE_RESOURCE_NUM];
+>>        struct list_head resources;     /* address space routed to this bus */
+>> +       struct resource busn_res;       /* track registered bus num range */
+>>
+>>        struct pci_ops  *ops;           /* configuration access functions */
+>>        void            *sysdata;       /* hook for sys-specific extension */
+>
+> struct pci_bus already includes "secondary" and "subordinate".    This
+> new "busn_res" looks like it will contain the same information.  Why
+> do we need both?
 
-As far as I know that's been fixed since 
-202f9d0a41809e3424af5f61489b48b622824aed - the problem wasn't 
-efibootmgr, the problem was Apple's firmware overwriting itself.
+In some case the could be different.
+for root bus from _CRS, busn_res could bigger than subordinate,
+because scan_childbus will update subordinate.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+and also we have one resource to insert it into the resource tree, so
+later could probe/allocate bus num range.
+
+Yinghai
