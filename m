@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab2EALQf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 07:16:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26884 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754574Ab2EALQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 07:16:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="138670781"
-Date: Tue, 1 May 2012 13:16:29 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 4/6] mfd/ab8500: print switch off cause
-Message-ID: <20120501111629.GD20224@sortiz-mobl>
-References: <1334647840-1736-1-git-send-email-linus.walleij@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334647840-1736-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755104Ab2EALUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 07:20:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35911 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab2EALUm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 07:20:42 -0400
+Message-ID: <1335871228.13683.141.camel@twins>
+Subject: Re: Generic rbtree search & insert cores
+From: Peter Zijlstra <peterz@infradead.org>
+To: daniel.santos@pobox.com
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
+Date: Tue, 01 May 2012 13:20:28 +0200
+In-Reply-To: <4F9E7365.2040907@att.net>
+References: <4F9E7365.2040907@att.net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 2012-04-30 at 06:11 -0500, Daniel Santos wrote:
+> 
+> So as long as our struct rbtree_relationship is a compile-time
+> constant, the generated code will look pretty much (if not exactly)
+> like that of the example code in rbtree.h.  Please let me know what
+> you think.  I've tested this in a userspace program, but haven't fully
+> stress tested it in kernelspace yet. 
 
-On Tue, Apr 17, 2012 at 09:30:40AM +0200, Linus Walleij wrote:
-> @@ -1139,7 +1149,20 @@ int __devinit ab8500_init(struct ab8500 *ab8500, enum ab8500_version version)
->  		AB8500_SWITCH_OFF_STATUS, &value);
->  	if (ret < 0)
->  		return ret;
-> -	dev_info(ab8500->dev, "switch off status: %#x", value);
-> +	dev_info(ab8500->dev, "switch off cause(s) (%#x): ", value);
-> +
-> +	if (value) {
-> +		for (i = 0; i < ARRAY_SIZE(switch_off_status); i++) {
-> +			if (value & 1)
-> +				printk("\"%s\" ", switch_off_status[i]);
-> +			value = value >> 1;
-> +
-> +		}
-> +		printk("\n");
-> +	} else {
-> +		printk("None\n");
-> +	}
-So if your default loglevel is not KERN_INFO, you may miss the dev_info
-output while getting the printk one. Why not using dev_info() only with e.g.
-tabs for the causes ?
+Right, this ought to work.
 
-Cheers,
-Samuel.
+I'm not sure the root_offset thing is worth it though, passing in the
+rb_root pointer isn't much of a hassle, in fact I'd expect to pass rb
+related pointers to a function called rbtree_insert().
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Also, using a macro to create the rbtree_relationship thing would make
+it easier. Something like:
+
+	RB_RELATION(struct mouse, node, name, name_cmp);
+
+I'd think you'd also want to provide an insertion variant that does the
+leftmost thing, that's used in several places, and you'd also need one
+for the augmented rb-tree.
+
+
