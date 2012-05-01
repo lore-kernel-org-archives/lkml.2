@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab2EAFGI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 01:06:08 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:56179 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751881Ab2EAFGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 01:06:05 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
-Date: Tue, 1 May 2012 01:06:36 -0400
-User-Agent: KMail/1.13.7 (Linux/3.3.4; KDE/4.6.5; x86_64; ; )
-Cc: Chen Liqin <liqin.chen@sunplusct.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>
-References: <20120426231942.GJ6871@ZenIV.linux.org.uk> <20120429180535.GZ6871@ZenIV.linux.org.uk> <20120501043129.GF6871@ZenIV.linux.org.uk>
-In-Reply-To: <20120501043129.GF6871@ZenIV.linux.org.uk>
+	id S1753713Ab2EAFK2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 01:10:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47916 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab2EAFKZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 01:10:25 -0400
+Date: Mon, 30 Apr 2012 22:10:06 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: linux-next ppc64: RCU mods cause __might_sleep BUGs
+In-Reply-To: <1335832418.20866.95.camel@pasglop>
+Message-ID: <alpine.LSU.2.00.1204302142310.27208@eggly.anvils>
+References: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils> <1335832418.20866.95.camel@pasglop>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1839395.1EfDY8gLil";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205010106.38495.vapier@gentoo.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1839395.1EfDY8gLil
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Tue, 1 May 2012, Benjamin Herrenschmidt wrote:
+> On Mon, 2012-04-30 at 15:37 -0700, Hugh Dickins wrote:
+> > 
+> > BUG: sleeping function called from invalid context at include/linux/pagemap.h:354
+> > in_atomic(): 0, irqs_disabled(): 0, pid: 6886, name: cc1
+> 
+> Hrm ... in_atomic and irqs_disabled are both 0 ... so yeah it smells
+> like a preempt count problem... odd.
+> 
+> Did you get a specific bisect target yet ?
 
-On Tuesday 01 May 2012 00:31:29 Al Viro wrote:
-> blackfin: no loop (=3D=3D multiple signals handling is fucked); no check =
-either
->         ret_from_fork doesn't handle signals, etc., userland or not.
->         kernel_execve doesn't handle signals, etc., success or no success
->         conclusion: check is probably not needed, multiple pending signals
-> are screwed
+Oh, I went as far as we need, I think, but I didn't bother quite to
+complete it because, once in that area, we know the schedule_tail()
+omission would muddy the waters: the tail of my bisect log was
 
-to be honest, i haven't been following this thread as Blackfin wasn't menti=
-oned=20
-in the initial summary.  now it seems we have ;).  i tried going back throu=
-gh=20
-this TIF_NOTIFY_RESUME thread but haven't quite got a bead on what needs to=
- be=20
-done.
+# bad: [e798cf3385d3aa7c84afa65677eb92e0c0876dfd] rcu: Add exports for per-CPU variables used for inlining
+git bisect bad e798cf3385d3aa7c84afa65677eb92e0c0876dfd
+# good: [90aec3b06194393c909e3e5a47b6ed99bb8caba5] rcu: Make exit_rcu() more precise and consolidate
+git bisect good 90aec3b06194393c909e3e5a47b6ed99bb8caba5
 
-seems like you're only referring to ret_from_fork here and not the normal=20
-syscall return path ?  in the Blackfin case, we don't have a fork(), so we =
-only=20
-have to handle the supervisor mode case (spawning kthreads), so i don't thi=
-nk=20
-we're quite as fucked as you might think :).
+from which I concluded that the patch responsible is
 
-what is it you're suggesting we add ?  in the past, i found documentation o=
-n=20
-the arch TIF_*/notify requirements to be pretty much non-existent.  so some=
-=20
-parts of the Blackfin paths are what i found from my eyes bleeding x86 asm=
-=20
-paths, and from single testing some random tests (like strace or gdb).  thi=
-ngs=20
-seem to run & be debugable, and no one has complained thus far, so we ship =
-it!
-=2Dmike
+commit ab8fc41a8545d40a4b58d745876c125af72a8a5c
+Author: Paul E. McKenney <paul.mckenney@linaro.org>
+Date:   Fri Apr 13 14:32:01 2012 -0700
 
---nextPart1839395.1EfDY8gLil
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+    rcu: Move __rcu_read_lock() and __rcu_read_unlock() to per-CPU variables
+    
+    This commit is another step towards inlinable __rcu_read_lock() and
+    __rcu_read_unlock() functions for preemptible RCU.  This keeps these two
+    functions out of line, but switches them to use the per-CPU variables
+    that are required to export their definitions without requiring that
+    all RCU users include sched.h.  These per-CPU variables are saved and
+    restored at context-switch time.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+> 
+> Cheers,
+> Ben.
+> 
+> > Call Trace:
+> > [c0000001a99f78e0] [c00000000000f34c] .show_stack+0x6c/0x16c (unreliable)
+> > [c0000001a99f7990] [c000000000077b40] .__might_sleep+0x11c/0x134
+> > [c0000001a99f7a10] [c0000000000c6228] .filemap_fault+0x1fc/0x494
+> > [c0000001a99f7af0] [c0000000000e7c9c] .__do_fault+0x120/0x684
+> > [c0000001a99f7c00] [c000000000025790] .do_page_fault+0x458/0x664
+> > [c0000001a99f7e30] [c000000000005868] handle_page_fault+0x10/0x30
+> > 
+> > I've plenty more examples, most of them from page faults or from kswapd;
+> > but I don't think there's any more useful information in them.
+> > 
+> > Anything I can try later on? 
 
-iQIcBAABAgAGBQJPn29eAAoJEEFjO5/oN/WBIuQP/3MgORCglH6V6U8MiDn7LOaY
-3X0M6QFTu0Sl+p1b7H2IHqZgGdohGr7QaotebkxCNrACkUY4axKeUxJcWE+aQs5C
-LP478XspH/a+XdCunvSlmezL8dY4eLlmi1dyHCAzOoKZ2e0YECGm+NkRwENHPI8N
-SAZo9rljjEYkvKjOO1+25jjkkAsmad3YiynXshDPco0km4winwdjrt0Vk1wlkgJz
-EFRNPvKmIAVDb9d2GvkhnNuX5A2pP5DJIlLT7afJ/JCexdfAS72U1+HhLczgl1ZY
-cx7vw/IgpRjLeTR0JA6L3yFxcNkiv111MJmJuITWMwBKO3B0X/FqHo0IRf9gy+fv
-p4SuQslugavmtMK8z+jO0E2f3+fLwxrnCneCu3FhqU2vYzIdTMJsDCT6S0fBrrp4
-jFaFSCgDDZ2bEMAHbXjBh+RkVfq+ECkIoMV12odPDHNdC0lTX76FJBzLTNIxYrlu
-Ieh5SSnyL5QtceEwtJR0IxGyq88uId6cFGVj0vQkDo7xxfK/nUnXAo1UPly+Ocd8
-yr4QryS0SWtEzGt9kDJ07Su2CBmKiHZMS9JUjfo2KBczkv2RMODYPnOFS9j2rczB
-A6KJcThKxO3Y9N/wK9ZT+ISIFiNOgq4hOM7Jcx5w4SgnmobhtZEtDYN5YhB1cr8V
-6tLw10yi/PBYnTBX1XZf
-=5XkO
------END PGP SIGNATURE-----
+I'd forgotten about CONFIG_PROVE_RCU (and hadn't been using PROVE_LOCKING
+on that machine), but following Paul's suggestion have now turned them on.
 
---nextPart1839395.1EfDY8gLil--
+But not much light shed, I'm afraid.  Within minutes it showed a trace
+exactly like the one above, but the only thing PROVE_LOCKING and PROVE_RCU
+had to say was that we're holding mmap_sem at that point, which is no
+surprise and not a problem, just something lockdep is right to note.
+
+That was an isolated occurrence, it continued quietly for maybe 20 minutes,
+then output lots to the console screen - but garbled in a way I've not
+seen before - the 0s came out just right (or perhaps all the hex digits
+were being shown as 0s), but most everything else was grayly unreadable.
+Then after a few minutes, spontaneously rebooted.
+
+Perhaps I should remind myself of netdump; but getting the trace above
+without complaint from PROVE_RCU tells me that it is not helping.
+
+Hugh
