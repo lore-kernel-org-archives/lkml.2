@@ -1,59 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab2EAPe0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 11:34:26 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46868 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab2EAPeZ convert rfc822-to-8bit (ORCPT
+	id S1758212Ab2EAPeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 11:34:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46910 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757520Ab2EAPee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 11:34:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <x49ehr4lyw1.fsf@segfault.boston.devel.redhat.com>
-References: <1335778207-6511-1-git-send-email-jack@suse.cz>
- <CAHGf_=qdE3yNw=htuRssfav2pECO1Q0+gWMRTuNROd_3tVrd6Q@mail.gmail.com>
- <CAHGf_=ojhwPUWJR0r+jVgjNd5h_sRrppzJntSpHzxyv+OuBueg@mail.gmail.com> <x49ehr4lyw1.fsf@segfault.boston.devel.redhat.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 1 May 2012 11:34:04 -0400
-Message-ID: <CAHGf_=rzcfo3OnwT-YsW2iZLchHs3eBKncobvbhTm7B5PE=L-w@mail.gmail.com>
-Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Michael Kerrisk <mtk.manpages@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-man@vger.kernel.org,
-        linux-mm@kvack.org, mgorman@suse.de, npiggin@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 May 2012 11:34:34 -0400
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: jj@chaosbits.net, dan.carpenter@oracle.com, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH NEXT]staging: "rtl8192e/r8192u" typo change ContiuneDiffCount.
+Date: Tue,  1 May 2012 08:34:14 -0700
+Message-Id: <1335886454-29502-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 1, 2012 at 11:11 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> KOSAKI Motohiro <kosaki.motohiro@gmail.com> writes:
->
->>> Hello,
->>>
->>> Thank you revisit this. But as far as my remember is correct, this issue is NOT
->>> unaligned access issue. It's just get_user_pages(_fast) vs fork race issue. i.e.
->>> DIRECT_IO w/ multi thread process should not use fork().
->>
->> The problem is, fork (and its COW logic) assume new access makes cow break,
->> But page table protection can't detect a DMA write. Therefore DIO may override
->> shared page data.
->
-> Hm, I've only seen this with misaligned or multiple sub-page-sized reads
-> in the same page.  AFAIR, aligned, page-sized I/O does not get split.
-> But, I could be wrong...
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-If my remember is correct, the reproducer of past thread is misleading.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-dma_thread.c in
-http://lkml.indiana.edu/hypermail/linux/kernel/0903.1/01498.html has
-align parameter. But it doesn't only change align. Because of, every
-worker thread read 4K (pagesize), then
- - when offset is page aligned
-    -> every page is accessed from only one worker
- - when offset is not page aligned
-    -> every page is accessed from two workers
+---
 
-But I don't remember why two threads are important things. hmm.. I'm
-looking into the code a while.
-Please don't 100% trust me.
+As mentioned by jesper juhl, we should probably change ContiuneDiffCount
+to ContinueDiffCount. Below you will find the changes to do so.
+I have compile tested this and everything builds with the changes, as for testing on the hardware
+I am unable to do.
+
+
+ drivers/staging/rtl8192e/rtl8192e/rtl_core.h |    2 +-
+ drivers/staging/rtl8192e/rtl8192e/rtl_dm.c   |   20 ++++++++++----------
+ drivers/staging/rtl8192u/r8192U.h            |    2 +-
+ drivers/staging/rtl8192u/r8192U_dm.c         |   20 ++++++++++----------
+ 4 files changed, 22 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_core.h b/drivers/staging/rtl8192e/rtl8192e/rtl_core.h
+index cebb748..320d5fc 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_core.h
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_core.h
+@@ -943,7 +943,7 @@ struct r8192_priv {
+ 	bool		bfsync_processing;
+ 	u32		rate_record;
+ 	u32		rateCountDiffRecord;
+-	u32		ContiuneDiffCount;
++	u32		ContinueDiffCount;
+ 	bool		bswitch_fsync;
+ 	u8		framesync;
+ 	u32		framesyncC34;
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c b/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c
+index 2dfb0f0..481b1e4 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c
+@@ -2615,22 +2615,22 @@ void dm_fsync_timer_callback(unsigned long data)
+ 				      rate_count_diff;
+ 			if (DiffNum >=
+ 			    priv->rtllib->fsync_seconddiff_ratethreshold)
+-				priv->ContiuneDiffCount++;
++				priv->ContinueDiffCount++;
+ 			else
+-				priv->ContiuneDiffCount = 0;
++				priv->ContinueDiffCount = 0;
+ 
+-			if (priv->ContiuneDiffCount >= 2) {
++			if (priv->ContinueDiffCount >= 2) {
+ 				bSwitchFromCountDiff = true;
+-				priv->ContiuneDiffCount = 0;
++				priv->ContinueDiffCount = 0;
+ 			}
+ 		} else {
+-			priv->ContiuneDiffCount = 0;
++			priv->ContinueDiffCount = 0;
+ 		}
+ 
+ 		if (rate_count_diff <=
+ 		    priv->rtllib->fsync_firstdiff_ratethreshold) {
+ 			bSwitchFromCountDiff = true;
+-			priv->ContiuneDiffCount = 0;
++			priv->ContinueDiffCount = 0;
+ 		}
+ 		priv->rate_record = rate_count;
+ 		priv->rateCountDiffRecord = rate_count_diff;
+@@ -2677,10 +2677,10 @@ void dm_fsync_timer_callback(unsigned long data)
+ 			write_nic_byte(dev, 0xC36, 0x5c);
+ 			write_nic_byte(dev, 0xC3e, 0x96);
+ 		}
+-		priv->ContiuneDiffCount = 0;
++		priv->ContinueDiffCount = 0;
+ 		write_nic_dword(dev, rOFDM0_RxDetector2, 0x465c52cd);
+ 	}
+-	RT_TRACE(COMP_HALDM, "ContiuneDiffCount %d\n", priv->ContiuneDiffCount);
++	RT_TRACE(COMP_HALDM, "ContinueDiffCount %d\n", priv->ContinueDiffCount);
+ 	RT_TRACE(COMP_HALDM, "rateRecord %d rateCount %d, rateCountdiff %d "
+ 		 "bSwitchFsync %d\n", priv->rate_record, rate_count,
+ 		 rate_count_diff, priv->bswitch_fsync);
+@@ -2723,7 +2723,7 @@ static void dm_EndSWFsync(struct net_device *dev)
+ 		write_nic_byte(dev, 0xC3e, 0x96);
+ 	}
+ 
+-	priv->ContiuneDiffCount = 0;
++	priv->ContinueDiffCount = 0;
+ 	write_nic_dword(dev, rOFDM0_RxDetector2, 0x465c52cd);
+ }
+ 
+@@ -2735,7 +2735,7 @@ static void dm_StartSWFsync(struct net_device *dev)
+ 
+ 	RT_TRACE(COMP_HALDM, "%s\n", __func__);
+ 	priv->rate_record = 0;
+-	priv->ContiuneDiffCount = 0;
++	priv->ContinueDiffCount = 0;
+ 	priv->rateCountDiffRecord = 0;
+ 	priv->bswitch_fsync  = false;
+ 
+diff --git a/drivers/staging/rtl8192u/r8192U.h b/drivers/staging/rtl8192u/r8192U.h
+index b4e99f4..57e3383 100644
+--- a/drivers/staging/rtl8192u/r8192U.h
++++ b/drivers/staging/rtl8192u/r8192U.h
+@@ -1116,7 +1116,7 @@ typedef struct r8192_priv
+ 	bool bfsync_processing;	// 500ms Fsync timer is active or not
+ 	u32 	rate_record;
+ 	u32 	rateCountDiffRecord;
+-	u32	ContiuneDiffCount;
++	u32	ContinueDiffCount;
+ 	bool bswitch_fsync;
+ 
+ 	u8	framesync;
+diff --git a/drivers/staging/rtl8192u/r8192U_dm.c b/drivers/staging/rtl8192u/r8192U_dm.c
+index 996e658..cd8dc85 100644
+--- a/drivers/staging/rtl8192u/r8192U_dm.c
++++ b/drivers/staging/rtl8192u/r8192U_dm.c
+@@ -3379,28 +3379,28 @@ extern void dm_fsync_timer_callback(unsigned long data)
+ 			u32 DiffNum = priv->rateCountDiffRecord - rate_count_diff;
+ 			// Continue count
+ 			if(DiffNum >= priv->ieee80211->fsync_seconddiff_ratethreshold)
+-				priv->ContiuneDiffCount++;
++				priv->ContinueDiffCount++;
+ 			else
+-				priv->ContiuneDiffCount = 0;
++				priv->ContinueDiffCount = 0;
+ 
+ 			// Continue count over
+-			if(priv->ContiuneDiffCount >=2)
++			if(priv->ContinueDiffCount >=2)
+ 			{
+ 				bSwitchFromCountDiff = true;
+-				priv->ContiuneDiffCount = 0;
++				priv->ContinueDiffCount = 0;
+ 			}
+ 		}
+ 		else
+ 		{
+ 			// Stop the continued count
+-			priv->ContiuneDiffCount = 0;
++			priv->ContinueDiffCount = 0;
+ 		}
+ 
+ 		//If Count diff <= FsyncRateCountThreshold
+ 		if(rate_count_diff <= priv->ieee80211->fsync_firstdiff_ratethreshold)
+ 		{
+ 			bSwitchFromCountDiff = true;
+-			priv->ContiuneDiffCount = 0;
++			priv->ContinueDiffCount = 0;
+ 		}
+ 		priv->rate_record = rate_count;
+ 		priv->rateCountDiffRecord = rate_count_diff;
+@@ -3468,14 +3468,14 @@ extern void dm_fsync_timer_callback(unsigned long data)
+ 		#endif
+ 			write_nic_byte(dev, 0xC3e, 0x96);
+ 		}
+-		priv->ContiuneDiffCount = 0;
++		priv->ContinueDiffCount = 0;
+ 	#ifdef RTL8190P
+ 		write_nic_dword(dev, rOFDM0_RxDetector2, 0x164052cd);
+ 	#else
+ 		write_nic_dword(dev, rOFDM0_RxDetector2, 0x465c52cd);
+ 	#endif
+ 	}
+-	RT_TRACE(COMP_HALDM, "ContiuneDiffCount %d\n", priv->ContiuneDiffCount);
++	RT_TRACE(COMP_HALDM, "ContinueDiffCount %d\n", priv->ContinueDiffCount);
+ 	RT_TRACE(COMP_HALDM, "rateRecord %d rateCount %d, rateCountdiff %d bSwitchFsync %d\n", priv->rate_record, rate_count, rate_count_diff , priv->bswitch_fsync);
+ }
+ 
+@@ -3507,7 +3507,7 @@ static void dm_EndSWFsync(struct net_device *dev)
+ 		write_nic_byte(dev, 0xC3e, 0x96);
+ 	}
+ 
+-	priv->ContiuneDiffCount = 0;
++	priv->ContinueDiffCount = 0;
+ #ifndef RTL8190P
+ 	write_nic_dword(dev, rOFDM0_RxDetector2, 0x465c52cd);
+ #endif
+@@ -3524,7 +3524,7 @@ static void dm_StartSWFsync(struct net_device *dev)
+ 	// Initial rate record to zero, start to record.
+ 	priv->rate_record = 0;
+ 	// Initialize continue diff count to zero, start to record.
+-	priv->ContiuneDiffCount = 0;
++	priv->ContinueDiffCount = 0;
+ 	priv->rateCountDiffRecord = 0;
+ 	priv->bswitch_fsync  = false;
+ 
+-- 
+1.7.5.4
+
