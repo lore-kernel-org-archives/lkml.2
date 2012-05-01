@@ -1,79 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187Ab2EAUIW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 16:08:22 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:57973 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab2EAUIU convert rfc822-to-8bit (ORCPT
+	id S1758336Ab2EAUJX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 16:09:23 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55100 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab2EAUJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 16:08:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120501194240.GA15237@phenom.dumpdata.com>
-References: <20120501194240.GA15237@phenom.dumpdata.com>
-Date: Tue, 1 May 2012 16:08:19 -0400
-Message-ID: <CA+5PVA4OorzAkkBe+PayPPHa1k7=X6Y0ALg=jRWLyKxabAPpiw@mail.gmail.com>
-Subject: Re: [GIT PULL] stable/for-ingo-v3.5 of IOAPIC abstraction (and then
- some users) for v3.5
-From: Josh Boyer <jwboyer@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        mingo@kernel.org, suresh.b.siddha@intel.com, mlin@ss.pku.edu.cn
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 May 2012 16:09:22 -0400
+Date: Tue, 1 May 2012 21:12:07 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Subject: Re: linux-next: build failure after merge of drm-next tree
+Message-ID: <20120501211207.1c565d41@pyramind.ukuu.org.uk>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698951E44@AUSP01VMBX24.collaborationhost.net>
+References: <ADE657CA350FB648AAC2C43247A983F0020698951E44@AUSP01VMBX24.collaborationhost.net>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 1, 2012 at 3:42 PM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> -static void __init __ioapic_init_mappings(void)
-> +void __init native_io_apic_init_mappings(void)
->  {
->        unsigned long ioapic_phys, idx = FIX_IO_APIC_BASE_0;
->        struct resource *ioapic_res;
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index 1a29015..8526317 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -1012,7 +1012,7 @@ void __init setup_arch(char **cmdline_p)
->        init_cpu_to_node();
->
->        init_apic_mappings();
-> -       ioapic_and_gsi_init();
-> +       x86_io_apic_ops.init();
->
->        kvm_guest_init();
->
-> diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-> index 9cf71d0..35c5e54 100644
-> --- a/arch/x86/kernel/x86_init.c
-> +++ b/arch/x86/kernel/x86_init.c
-> @@ -18,6 +18,7 @@
->  #include <asm/e820.h>
->  #include <asm/time.h>
->  #include <asm/irq.h>
-> +#include <asm/io_apic.h>
->  #include <asm/pat.h>
->  #include <asm/tsc.h>
->  #include <asm/iommu.h>
-> @@ -119,3 +120,10 @@ struct x86_msi_ops x86_msi = {
->        .teardown_msi_irqs = default_teardown_msi_irqs,
->        .restore_msi_irqs = default_restore_msi_irqs,
->  };
-> +
-> +struct x86_io_apic_ops x86_io_apic_ops = {
-> +       .init   = native_io_apic_init_mappings,
-> +       .read   = native_io_apic_read,
-> +       .write  = native_io_apic_write,
-> +       .modify = native_io_apic_modify,
-> +};
+On Tue, 1 May 2012 13:16:48 -0500
+H Hartley Sweeten <hartleys@visionengravers.com> wrote:
 
-You'll get a section mismatch warning on this struct.  It's not a huge
-deal, but native_io_apic_init_mappings is annotated as __init whereas
-this struct isn't.  In practice it doesn't seem to matter as
-x86_io_apic_ops.init is only called in setup_arch, but it's still a
-valid warning.
+> Hello Alan,
+> 
+> linux-next is getting a build failure:
 
-(First noticed in https://bugzilla.redhat.com/show_bug.cgi?id=817645 )
+Yep - and I was beaten to submitting the fix .. should be sorted once the
+tree has percolated into -next.
 
-josh
+Alan
