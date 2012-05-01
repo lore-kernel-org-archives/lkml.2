@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758589Ab2EASPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 14:15:22 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33362 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758555Ab2EASPS convert rfc822-to-8bit (ORCPT
+	id S1757767Ab2EASRD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 14:17:03 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:39414 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab2EASRA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 14:15:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FA02603.80807@openvz.org>
-References: <20120430112903.14137.81692.stgit@zurg> <20120430112910.14137.28935.stgit@zurg>
- <CAHGf_=rWDMMv2dKz3paV2MnjsCNWBa2BaUTi+RnDo8DZ4zEr=g@mail.gmail.com> <4FA02603.80807@openvz.org>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 1 May 2012 14:14:57 -0400
-Message-ID: <CAHGf_=o_R8k-ywaAodrrHcnnjad01kp1szw_AuA-5AiB19fLew@mail.gmail.com>
-Subject: Re: [PATCH RFC 3/3] proc/smaps: show amount of hwpoison pages
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 May 2012 14:17:00 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-132.messagelabs.com!1335896167!10248363!93
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Date: Tue, 1 May 2012 13:16:48 -0500
+Subject: linux-next: build failure after merge of drm-next tree
+Thread-Topic: linux-next: build failure after merge of drm-next tree
+Thread-Index: Ac0nxjdBE0rUbR8KQrqW5XT3CY647Q==
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698951E44@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 1, 2012 at 2:05 PM, Konstantin Khlebnikov
-<khlebnikov@openvz.org> wrote:
-> KOSAKI Motohiro wrote:
->>
->> On Mon, Apr 30, 2012 at 7:29 AM, Konstantin Khlebnikov
->> <khlebnikov@openvz.org>  wrote:
->>>
->>> This patch adds line "HWPoinson:<size>  kB" into /proc/pid/smaps if
->>> CONFIG_MEMORY_FAILURE=y and some HWPoison pages were found.
->>> This may be useful for searching applications which use a broken memory.
->>
->>
->> I dislike "maybe useful" claim. If we don't know exact motivation of a
->> feature,
->> we can't maintain them especially when a bugfix can't avoid ABI change.
->>
->> Please write down exact use case.
->
-> I don't know how to exactly use this hw-poison stuff, but smaps suppose to
-> export state of ptes in vma. It seems to rational to show also hw-poisoned
-> ptes,
-> since kernel has this feature and pte can be in hw-poisoned state.
->
-> and now everyone can easily find them:
-> # sudo grep HWPoison /proc/*/smaps
+Hello Alan,
 
-First, I don't think "we can expose it" is good reason. Second, hw-poisoned mean
-such process is going to be killed at next page touch. But I can't
-imagine anyone can
-use its information because it's racy against process kill. I think
-admin should use mce log.
+linux-next is getting a build failure:
 
-So, until we find a good use case, I don't ack this.
+drivers/gpu/drm/gma500/mdfld_device.c:675:30: error: Expected } at end of initializer
+drivers/gpu/drm/gma500/mdfld_device.c:675:30: error: got ;
+drivers/gpu/drm/gma500/mdfld_device.c:676:9: error: Expected ; at the end of type declaration
+drivers/gpu/drm/gma500/mdfld_device.c:676:9: error: got .
+drivers/gpu/drm/gma500/mdfld_device.c:677:9: error: Expected ; at the end of type declaration
+drivers/gpu/drm/gma500/mdfld_device.c:677:9: error: got .
+  CC      drivers/gpu/drm/gma500/mdfld_device.o
+drivers/gpu/drm/gma500/mdfld_device.c:675: error: expected '}' before ';' token
+
+Introduced by commit d235e64a4367ad3ff204309490c4325b4f89b25b
+cdv: continue synching up with updated reference code
+
+Regards,
+Hartley
+
