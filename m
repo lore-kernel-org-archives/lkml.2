@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758154Ab2EANrE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 09:47:04 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47481 "EHLO ogre.sisk.pl"
+	id S1758052Ab2EANvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 09:51:39 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:43821 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757665Ab2EANqs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 09:46:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: NeilBrown <neilb@suse.de>
-Subject: Re: [PATCH] epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll events are ready
-Date: Tue, 1 May 2012 15:51:33 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <CAMP5XgcatAchOXaEG0rbULes5pVHHsuGeuJ2CKaVGEdj1LzMDg@mail.gmail.com> <1335850428-30883-1-git-send-email-arve@android.com> <20120501162811.26261d1d@notabene.brown>
-In-Reply-To: <20120501162811.26261d1d@notabene.brown>
+	id S1753735Ab2EANvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 09:51:38 -0400
+Date: Tue, 1 May 2012 14:47:42 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hugetlb: avoid gratuitous BUG_ON in hugetlb_fault() ->
+ hugetlb_cow()
+Message-ID: <20120501134742.GA9004@csn.ul.ie>
+References: <201204291936.q3TJa4Mv008924@farm-0027.internal.tilera.com>
+ <alpine.LSU.2.00.1204301308090.2829@eggly.anvils>
+ <20120501131413.GA11435@suse.de>
+ <201205011333.q41DXsK7026759@farm-0013.internal.tilera.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201205011551.33699.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <201205011333.q41DXsK7026759@farm-0013.internal.tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 01, 2012, NeilBrown wrote:
-> On Mon, 30 Apr 2012 22:33:48 -0700 Arve Hjønnevåg <arve@android.com> wrote:
+On Sun, Apr 29, 2012 at 03:04:51PM -0400, Chris Metcalf wrote:
+> Commit 66aebce747eaf added code to avoid a race condition by
+> elevating the page refcount in hugetlb_fault() while calling
+> hugetlb_cow().  However, one code path in hugetlb_cow() includes
+> an assertion that the page count is 1, whereas it may now also
+> have the value 2 in this path.  Consensus is that this BUG_ON
+> has served its purpose, so rather than extending it to cover both
+> cases, we just remove it.
 > 
-> > When an epoll_event, that has the EPOLLWAKEUP flag set, is ready, a
-> > wakeup_source will be active to prevent suspend. This can be used to
-> > handle wakeup events from a driver that support poll, e.g. input, if
-> > that driver wakes up the waitqueue passed to epoll before allowing
-> > suspend.
-> > 
-> > Signed-off-by: Arve Hjønnevåg <arve@android.com>
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Thanks.
->  Reviewed-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-Thanks a lot for your involvement here!
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-> However:
-> 1/ I think all references to "automatic system suspend" can be replaced with
->    "system suspend" as an active wakeup_source disables any suspend, no matter
->    it's source
-
-OK, I'll change that when applying the patch (although that only applies to
-suspends taking the wakeup events signaling through wakeup sources into
-account).
-
-> 2/ I reserve to right to submit for discussion a later patch which removes
->    the ep->ws in favour or some other exclusion mechanism :-)
-
-Well, you can alwyas do that. :-)  Of course, when the patch goes to Linus,
-we'll have to be careful about changes visible to user space, though.
-
-Thanks,
-Rafael
+-- 
+Mel Gorman
+SUSE Labs
