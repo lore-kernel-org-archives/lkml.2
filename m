@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223Ab2EAPnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 11:43:03 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54835 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756870Ab2EAPnB (ORCPT
+	id S1757230Ab2EAPn1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 11:43:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47188 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab2EAPnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 11:43:01 -0400
-Date: Tue, 1 May 2012 16:45:36 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: Maarten Maathuis <madman2003@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Martin Peres <martin.peres@labri.fr>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Linux 3.4-rc4
-Message-ID: <20120501164536.62f7b072@pyramind.ukuu.org.uk>
-In-Reply-To: <20120501153123.GA17225@elliptictech.com>
-References: <20120425013537.GA11959@elliptictech.com>
-	<1335322574.1821.8.camel@nisroch>
-	<1335504021.5311.0.camel@nisroch>
-	<20120428003928.GA16805@elliptictech.com>
-	<CADnq5_N8Cf4ONL5TNA-Wmif7cty070TRrTOnUpqdiGhWbVbj=w@mail.gmail.com>
-	<20120428153350.GA19561@elliptictech.com>
-	<20120429223744.GA19382@core.coreip.homeip.net>
-	<CAGZ4FETGyatywWqx3vLo-=jSJsrSat2+r35Njg5NNJ4NnyUy=w@mail.gmail.com>
-	<20120501132352.GA28696@elliptictech.com>
-	<20120501160930.2f81538c@pyramind.ukuu.org.uk>
-	<20120501153123.GA17225@elliptictech.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 1 May 2012 11:43:25 -0400
+Date: Tue, 1 May 2012 08:43:03 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Chris Metcalf <cmetcalf@tilera.com>
+cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hugetlb: avoid gratuitous BUG_ON in hugetlb_fault() ->
+ hugetlb_cow()
+In-Reply-To: <201205011333.q41DXsK7026759@farm-0013.internal.tilera.com>
+Message-ID: <alpine.LSU.2.00.1205010834310.27480@eggly.anvils>
+References: <201204291936.q3TJa4Mv008924@farm-0027.internal.tilera.com> <alpine.LSU.2.00.1204301308090.2829@eggly.anvils> <20120501131413.GA11435@suse.de> <201205011333.q41DXsK7026759@farm-0013.internal.tilera.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 May 2012 11:31:23 -0400
-Nick Bowler <nbowler@elliptictech.com> wrote:
+On Sun, 29 Apr 2012, Chris Metcalf wrote:
 
-> On 2012-05-01 16:09 +0100, Alan Cox wrote:
-> > > OK, this time bisecting started off relatively smoothly (doing the same
-> > > "backwards" bisect on the branch-o-reverts as last time), but then my
-> > > disk died halfway through...  So I'll post the partial bisection results
-> > > now (11 commits left to test), but I clearly have other things to fix
-> > > before I can get back to this issue.
-> > 
-> > You may get stupid answers because of
-> > 
-> > commit eeefa4bea1af34207c5299f989fffe03628ea164
-> > commit 8353e6c632aeaea1470a286b83e68ca233073068
-> > 
-> > Been there, trying to chase down a GMA500 problemt that was muddled in
-> > with the broken edid.h patch as well as a driver bug.
+No, Chris wrote this version on Mon, 30 Apr 2012, but gmail,
+or its intereaction with imap, is too confused to grasp that.
+
+> Commit 66aebce747eaf added code to avoid a race condition by
+> elevating the page refcount in hugetlb_fault() while calling
+> hugetlb_cow().  However, one code path in hugetlb_cow() includes
+> an assertion that the page count is 1, whereas it may now also
+> have the value 2 in this path.  Consensus is that this BUG_ON
+> has served its purpose, so rather than extending it to cover both
+> cases, we just remove it.
 > 
-> I'm afraid I don't understand.  These commits do not appear to be in
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-Ok they only got as far as the DRM tree - thats good, so you ought to get
-a sane answer.
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org
 
-Alan
+It is rather important that we Cc stable on this, since the
+earlier fix triggering this BUG went out in 3.0.29, 3.2.16 and 3.3.3
+stable.  Sadly, 3.2.16 was the end of the 3.2 line...
+
+> ---
+>  mm/hugetlb.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index cd65cb1..baaad5d 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2498,7 +2498,6 @@ retry_avoidcopy:
+>  		if (outside_reserve) {
+>  			BUG_ON(huge_pte_none(pte));
+>  			if (unmap_ref_private(mm, vma, old_page, address)) {
+> -				BUG_ON(page_count(old_page) != 1);
+>  				BUG_ON(huge_pte_none(pte));
+>  				spin_lock(&mm->page_table_lock);
+>  				ptep = huge_pte_offset(mm, address & huge_page_mask(h));
+> -- 
+> 1.6.5.2
