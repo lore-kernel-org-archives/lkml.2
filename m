@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758333Ab2EAQSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 12:18:00 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:51807 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758167Ab2EAQR6 (ORCPT
+	id S1758174Ab2EAQTY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 12:19:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35642 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755584Ab2EAQTX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 12:17:58 -0400
-Message-ID: <4FA00C49.7000105@mvista.com>
-Date: Tue, 01 May 2012 20:16:09 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120420 Thunderbird/12.0
-MIME-Version: 1.0
-To: Preston Fick <pffick@gmail.com>
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        preston.fick@silabs.com
-Subject: Re: [PATCH 2/3] usb: cp210x: Added in support to get and store part
- number
-References: <1335845210-5147-1-git-send-email-preston.fick@silabs.com> <1335845210-5147-2-git-send-email-preston.fick@silabs.com>
-In-Reply-To: <1335845210-5147-2-git-send-email-preston.fick@silabs.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 1 May 2012 12:19:23 -0400
+Message-ID: <1335889139.13683.163.camel@twins>
+Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
+From: Peter Zijlstra <peterz@infradead.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>, mingo@elte.hu,
+        jeremy@goop.org, mtosatti@redhat.com, kvm@vger.kernel.org,
+        x86@kernel.org, vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, paulmck <paulmck@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Date: Tue, 01 May 2012 18:18:59 +0200
+In-Reply-To: <4FA002F4.8000508@redhat.com>
+References: <20120427161727.27082.43096.stgit@abhimanyu>
+	 <20120427162401.27082.59387.stgit@abhimanyu> <4F9D32B4.8040002@redhat.com>
+	  <1335865176.13683.120.camel@twins> <4F9FBF38.2060903@redhat.com>
+	 <1335869827.13683.133.camel@twins> <4F9FD337.5010908@redhat.com>
+	 <1335885292.13683.150.camel@twins> <4FA002F4.8000508@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+And now with David actually on CC ;-)
 
-On 01-05-2012 8:06, Preston Fick wrote:
+On Tue, 2012-05-01 at 18:36 +0300, Avi Kivity wrote:
 
-> This change gets the part number of the device when the driver is loaded and
-> stores it in the private portion of the port structure. This addition will
-> allow for part specific functionality to be added to the driver if needed.
+> > > What bounds the amount of memory waiting to be freed during an rcu grace
+> > > period?
+> >
+> > Most RCU implementations don't have limits, so that could be quite a
+> > lot. I think preemptible RCU has a batch limit at which point it tries
+> > rather hard to force a grace period, but I'm not sure if even that
+> > provides a hard limit.
+> >
+> > Practically though, I haven't had reports of PPC/Sparc going funny
+> > because of this.
+> 
+> It could be considered a DoS if a user is able to free page tables
+> faster than rcu is able to recycle them, possibly triggering the oom
+> killer (should that force a grace period before firing from the hip?)
 
-> Signed-off-by: Preston Fick<preston.fick@silabs.com>
-> ---
->   drivers/usb/serial/cp210x.c |   24 ++++++++++++++++++++++++
->   1 files changed, 24 insertions(+), 0 deletions(-)
+One would think that would be a good thing, yes. However I cannot seem
+to find anything like that in the current OOM killer. David, Paul, I
+seem to have vague recollections of a discussion about RCU vs OOM, what
+was the resolution (if anything) and would something like the below make
+sense?
 
-> diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-> index e67ccf3..b3646b8 100644
-> --- a/drivers/usb/serial/cp210x.c
-> +++ b/drivers/usb/serial/cp210x.c
-[...]
-> @@ -862,6 +874,7 @@ static int cp210x_startup(struct usb_serial *serial)
->   {
->   	struct cp210x_port_private *port_priv;
->   	int i;
-> +	unsigned int partNum;
->
->   	/* cp210x buffers behave strangely unless device is reset */
->   	usb_reset_device(serial->dev);
-> @@ -876,6 +889,17 @@ static int cp210x_startup(struct usb_serial *serial)
->   		    serial->interface->cur_altsetting->desc.bInterfaceNumber;
->
->   		usb_set_serial_port_data(serial->port[i], port_priv);
-> +
-> +		/* Get the 1-byte part number of the cp210x device */
-> +		usb_control_msg(serial->dev,
+---
+ mm/oom_kill.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-    This may involve DMA...
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 46bf2ed5..244a371 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -607,6 +607,9 @@ int try_set_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_mask)
+ 	struct zone *zone;
+ 	int ret = 1;
+ 
++	synchronize_sched();
++	synchronize_rcu();
++
+ 	spin_lock(&zone_scan_lock);
+ 	for_each_zone_zonelist(zone, z, zonelist, gfp_zone(gfp_mask)) {
+ 		if (zone_is_oom_locked(zone)) {
 
-> +			usb_rcvctrlpipe(serial->dev, 0),
-> +			CP210X_VENDOR_SPECIFIC,
-> +			REQTYPE_DEVICE_TO_HOST,
-> +			CP210X_GET_PARTNUM,
-> +			port_priv->bInterfaceNumber,
-> +			&partNum, 1,
 
-    You can't do DMA to a buffer situated on stack. You should kmalloc() the 
-buffer.
-
-> +			USB_CTRL_GET_TIMEOUT);
-> +		port_priv->bPartNumber = partNum&  0xFF;
->   	}
->
->   	return 0;
-
-WBR, Sergei
