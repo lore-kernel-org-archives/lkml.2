@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758742Ab2EBDti (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 23:49:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22403 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758669Ab2EBDrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 23:47:31 -0400
-Subject: [V2 PATCH 5/9] macvtap: zerocopy: validate vectors before building
- skb
-To: eric.dumazet@gmail.com, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        davem@davemloft.net
-From: Jason Wang <jasowang@redhat.com>
-Date: Wed, 02 May 2012 11:42:15 +0800
-Message-ID: <20120502034215.11782.9051.stgit@amd-6168-8-1.englab.nay.redhat.com>
-In-Reply-To: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
-User-Agent: StGit/0.16-1-g60c4
+	id S1758826Ab2EBDuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 23:50:04 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:33504 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758603Ab2EBDuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 23:50:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=Xu5RPjjeEU7o0h/BCm92e7ImuNPqXgRI
+	SJ54b53gWYF5j4slwKuOBtrexao+eg0o+Qm/SenDhn2t/Y0X4ZkDDk6kqHug+YQY
+	BCZakGlVuRfzzAjVdWKOWkgfLdM260ejNX3e7u6c26DlRdZUcilOgnQyo+p3uUoW
+	PvgadTz2/Tw=
+From: Junio C Hamano <gitster@pobox.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Git Mailing List <git@vger.kernel.org>
+Subject: Re: [PATCH 0/2] [GIT PULL] ktest: A couple of fixes
+References: <20120502004439.965120020@goodmis.org>
+ <CA+55aFy02d13HkfwY-TEGwu=2cd8en+_rnrnwcwixGKRmdJRtA@mail.gmail.com>
+Date: Tue, 01 May 2012 20:49:58 -0700
+In-Reply-To: <CA+55aFy02d13HkfwY-TEGwu=2cd8en+_rnrnwcwixGKRmdJRtA@mail.gmail.com> (Linus
+ Torvalds's message of "Tue, 1 May 2012 19:58:46 -0700")
+Message-ID: <7v62cf6y3d.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: E3CCD85A-9409-11E1-9CF8-FC762E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There're several reasons that the vectors need to be validated:
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-- Return error when caller provides vectors whose num is greater than UIO_MAXIOV.
-- Linearize part of skb when userspace provides vectors grater than MAX_SKB_FRAGS.
-- Return error when userspace provides vectors whose total length may exceed
-- MAX_SKB_FRAGS * PAGE_SIZE.
+> If you do a
+>
+>   git pull linus v3.4-rc5
+>
+> in order to just update to the state of my latest tag, then git will
+> assume you want to do a new commit (and thus a non-fast-forward) just
+> so that git can record the tag signature in the commit.
+>
+> The sad part is that I don't think you can even override the second
+> case.
+> ...
+> That's inconvenient, and an unintended consequence of the behavior I
+> wanted as a top-level maintainer. But I really do think it's wrong for
+> normal developers who might validly just want to update to some
+> particular tagged release.
+>
+> Junio? Any ideas?
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/macvtap.c |   25 +++++++++++++++++++++----
- 1 files changed, 21 insertions(+), 4 deletions(-)
+"Ideas" meaning "recipe to do with deployed binaries"?
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index a4ff694..163559c 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -529,9 +529,10 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
- 		}
- 		base = (unsigned long)from->iov_base + offset;
- 		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-+		if (i + size > MAX_SKB_FRAGS)
-+			return -EMSGSIZE;
- 		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
--		if ((num_pages != size) ||
--		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags)) {
-+		if (num_pages != size) {
- 			for (i = 0; i < num_pages; i++)
- 				put_page(page[i]);
- 			return -EFAULT;
-@@ -651,7 +652,7 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 	int err;
- 	struct virtio_net_hdr vnet_hdr = { 0 };
- 	int vnet_hdr_len = 0;
--	int copylen;
-+	int copylen = 0;
- 	bool zerocopy = false;
- 
- 	if (q->flags & IFF_VNET_HDR) {
-@@ -680,15 +681,31 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 	if (unlikely(len < ETH_HLEN))
- 		goto err;
- 
-+	err = -EMSGSIZE;
-+	if (unlikely(count > UIO_MAXIOV))
-+		goto err;
-+
- 	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
- 		zerocopy = true;
- 
- 	if (zerocopy) {
-+		/* Userspace may produce vectors with count greater than
-+		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
-+		 * to let the rest of data to be fit in the frags.
-+		 */
-+		if (count > MAX_SKB_FRAGS) {
-+			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
-+			if (copylen < vnet_hdr_len)
-+				copylen = 0;
-+			else
-+				copylen -= vnet_hdr_len;
-+		}
- 		/* There are 256 bytes to be copied in skb, so there is enough
- 		 * room for skb expand head in case it is used.
- 		 * The rest buffer is mapped from userspace.
- 		 */
--		copylen = vnet_hdr.hdr_len;
-+		if (copylen < vnet_hdr.hdr_len)
-+			copylen = vnet_hdr.hdr_len;
- 		if (!copylen)
- 			copylen = GOODCOPY_LEN;
- 	} else
+When a normal developer wants to _reset to_ a particular tagged release,
+in order to _start_ new work, she wouldn't be doing even the above "git
+pull linus v3.4-rc5".  That will contaminate the result with whatever
+random stuff she happened to have on the current branch.  A more natural
+sequence would be "git fetch --tags linus" followed by either
 
+        git checkout v3.4-rc5 ;# to detach
+
+or
+
+        git checkout -b mywork v3.4-rc5 ;# to start
+
+So the case to "reset to" is not very interesting.
+
+But when a normal developer wants to _sync to_ a particular tagged
+release, in order to _continue_ working on her topic, she would need to
+have a merge (unless she does not have _anything_ herself), and at that
+point, merging v3.4-rc5 vs v3.4-rc5^0 would not make that much of a
+difference.  If she absolutely detests the "mergetag" header, she could do
+a "git fetch --tags linus" followed by
+
+	git merge v3.4-rc5^0
+
+which admittedly is two more letters than she used to type.
+
+If you mean by "Ideas" for additional features, obviously the last step
+could be enhanced to use a more intuitive command line that requires the
+user to type even more, i.e.
+
+	git merge --ff v3.4-rc5
+
+Once that is done, "git pull --ff linus v3.4-rc5" would fall out as a
+logical consequence.
+
+But obviously these two would need new code ;-)
