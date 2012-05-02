@@ -1,79 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883Ab2EBTtt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 15:49:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46422 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755988Ab2EBTtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 15:49:47 -0400
-Date: Wed, 2 May 2012 21:49:45 +0200
-From: Jan Kara <jack@suse.cz>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to
- partition
-Message-ID: <20120502194945.GB18339@quack.suse.cz>
-References: <1335953452-10460-1-git-send-email-jack@suse.cz>
- <4FA1092E.9090603@redhat.com>
- <20120502135123.GF16976@quack.suse.cz>
- <4FA13DDF.9010006@redhat.com>
+	id S1757035Ab2EBTtz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 15:49:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57131 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756892Ab2EBTtv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 15:49:51 -0400
+Date: Wed, 2 May 2012 16:49:44 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL 0/5] perf/annotate fixes and improvements
+Message-ID: <20120502194944.GD28275@infradead.org>
+References: <1335987758-11039-1-git-send-email-acme@infradead.org>
+ <1335988003.13683.182.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4FA13DDF.9010006@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1335988003.13683.182.camel@twins>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 02-05-12 15:59:59, Paolo Bonzini wrote:
-> Il 02/05/2012 15:51, Jan Kara ha scritto:
-> >> > NACK.  I would bet that all the warnings you've seen are for ioctl that
-> >> > would have failed anyway with ENOTTY.
-> >   Actually, you would loose the bet ;)
+Em Wed, May 02, 2012 at 09:46:43PM +0200, Peter Zijlstra escreveu:
+> On Wed, 2012-05-02 at 16:42 -0300, Arnaldo Carvalho de Melo wrote:
+> > 
+> > avtab_search_node
+> >                push   %rbp
+> >                mov    %rsp,%rbp
+> >              → callq  mcount
+> >                movzwl 0x6(%rsi),%edx
+> >                and    $0x7fff,%dx
+> >                test   %rdi,%rdi
+> >        ┌─────↓ jne    20
+> >        │  17:  xor    %eax,%eax
+> >        │  19:  leaveq
+> >        │     ← retq
+> >        │       nopl   0x0(%rax,%rax,1)
+> >        └─→20:  mov    (%rdi),%rax
+> >                test   %rax,%rax
+> >              ↑ je     17
+> >                movzwl (%rsi),%ecx
+> >                movzwl 0x2(%rsi),%r9d
+> >                movzwl 0x4(%rsi),%r8d
+> >                movzwl %cx,%esi
+> >                movzwl %r9w,%r10d
+> >                shl    $0x9,%esi
+> >                lea    (%rsi,%r10,4),%esi
+> >                lea    (%r8,%rsi,1),%esi
+> >                and    0x10(%rdi),%si
+> >                movzwl %si,%esi
+> >                mov    (%rax,%rsi,8),%rax
+> >   1.63         test   %rax,%rax
+> >              ↑ je     19
+> >                nopw   0x0(%rax,%rax,1)
+> >   4.88    60:  cmp    %cx,(%rax)
+> >              ↓ jne    7e
+> >                cmp    %r9w,0x2(%rax)
+> >              ↓ jne    7e
+> >                cmp    %r8w,0x4(%rax)
+> >              ↓ jne    79
+> >                test   %dx,0x6(%rax)
+> >              ↑ jne    19
+> >           79:  cmp    %r8w,0x4(%rax)
+> >  86.99    7e:↑ ja     17
+> >   3.25         mov    0x10(%rax),%rax
+> >   3.25         test   %rax,%rax
+> >              ↑ jne    60
+> >                leaveq
+> >              ← retq
+> > 
+> > . Changes:
+> > 
+> >         - Don't show the big vertical line. 
 > 
-> Doh. :)
-> 
-> > The customer was complaining about
-> > warning about SG_IO ioctl. Apparently some Veritas filesystem thread generates
-> > a *lot* of these (I don't know if they happen to do all the filesystem IO
-> > with SG_IO and I'm not sure I want to know ;).
-> 
-> Can you at least ask the customer for help finding which command was
-> sent?  And perhaps have them try a kernel that blocks SG_IO to see what
-> breaks if anything?
-  I'm not sure they would be willing to try a different kernel because it's
-a production system. But maybe I can find out what SG_IO command is sent
-via strace?
+> Not sure about that, loosing that separator makes it looks messy.
 
-> > Also I tend to side with Alan that I don't quite see
-> > the point in trying to restrict CAP_SYS_RAWIO threads and thus breaking the
-> > compatibility
-> 
-> For example, we have a customer that wants this:
-> 
-> * a VM should be able to send vendor-specific commands to a disk via
-> SG_IO (vendor-specific commands require CAP_SYS_RAWIO).
-> 
-> * they want to assign logical volumes or partitions to the same VM
-> without letting it read or write outside the logical volume or partition.
-  But then it seems like they really want to be able to forbid sending
-SG_IO commands to some devices while allowing them for other devices and
-the distinction by partition / non-partition is a bit arbitrary?
- 
-> Of course a better solution for this would be customizable filters for
-> SG_IO commands, where a privileged application would open the block
-> device with CAP_SYS_RAWIO, set the filter and hand the file descriptor
-> to QEMU.  Or alternatively some extension of the device cgroup.  But
-> either solution would require a large amount of work.
-  I'm not sure whether you need to filter individual SG_IO commands or not.
-For your use case it seems that being able to forbid SG_IO completely for
-some fd (which would be passed to qemu) would be enough? But maybe filters
-are simpler to implement because they already exist, I don't really know...
+It was a request from Linus:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+commit 3e8b5ddf17d4639d41bc57ecfb51633815b70e49
+Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+Date:   Fri Apr 27 16:44:56 2012 -0300
+
+    perf annotate browser: Remove the vertical line after the percentages
+    
+    It is confusing when used with jump -> target lines.
+    
+    Requested-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+Make it configurable? Press 'S' and you get a separator? Linus?
+
+- Arnaldo
