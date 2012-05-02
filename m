@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab2EBU22 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 16:28:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42775 "EHLO
+	id S1757257Ab2EBU33 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 16:29:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42772 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757246Ab2EBU21 (ORCPT
+	with ESMTP id S1756401Ab2EBU31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 16:28:27 -0400
-Date: Wed, 2 May 2012 13:28:23 -0700
+	Wed, 2 May 2012 16:29:27 -0400
+Date: Wed, 2 May 2012 13:29:24 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [GIT PATCH] TTY VT bugfix for 3.4-rc5
-Message-ID: <20120502202823.GA27129@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB bug fix for 3.4-rc5
+Message-ID: <20120502202924.GA27158@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,24 +28,31 @@ The following changes since commit 69964ea4c7b68c9399f7977aa5b9aa6539a6a98a:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.4-rc6
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.4-rc6
 
-for you to fetch changes up to 84f904ecd3aa2ccb5779b815b69c1cb592f07bb5:
+for you to fetch changes up to 04c235c92ce8474e9f2b358bd97f013a500385f2:
 
-  vt: Fix deadlock on scroll-lock (2012-05-01 14:01:28 -0400)
+  USB: ehci-tegra: remove redundant gpio_set_value (2012-05-01 14:11:51 -0400)
 
 ----------------------------------------------------------------
-TTY fix for 3.4-rc5
+USB patches for 3.4-rc5
 
-This is a deadlock bugfix that was easy to hit, and that the vt layer lock
-rework got wrong, so it reverts the logic back to the way it was in 3.3 and
-earlier kernels to prevent problems.
+Here are two EHCI Tegra driver patches for your tree.
+
+The first is a bit big, but the majority is just moving code around. It
+is needed due to the other EHCI core changes that went in way back in
+3.4-rc1, so this driver will now properly handle suspend/resume, as it
+was broken.  The other one is a minor bugfix that resolves an warning
+that people have been seeing.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Alan Cox (1):
-      vt: Fix deadlock on scroll-lock
+Alan Stern (1):
+      EHCI: update PM methods in ehci-tegra.c
 
- drivers/tty/vt/keyboard.c |   26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+Stephen Warren (1):
+      USB: ehci-tegra: remove redundant gpio_set_value
+
+ drivers/usb/host/ehci-tegra.c |  376 +++++++++++++++++++++--------------------
+ 1 file changed, 195 insertions(+), 181 deletions(-)
