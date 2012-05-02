@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758581Ab2EBC7J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 22:59:09 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:57212 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758408Ab2EBC7I (ORCPT
+	id S1758523Ab2EBDDu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 23:03:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51946 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758177Ab2EBDDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 22:59:08 -0400
+	Tue, 1 May 2012 23:03:49 -0400
+Date: Wed, 2 May 2012 11:03:39 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Robert Lee <rob.lee@linaro.org>
+Cc: kernel@pengutronix.de, amit.kucheria@linaro.org, daniel.lezcano@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org, jj@chaosbits.net
+Subject: Re: [PATCH v2 0/3] Add imx cpuidle
+Message-ID: <20120502030337.GS2194@S2101-09.ap.freescale.net>
+References: <1335924760-796-1-git-send-email-rob.lee@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20120502004439.965120020@goodmis.org>
-References: <20120502004439.965120020@goodmis.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 1 May 2012 19:58:46 -0700
-X-Google-Sender-Auth: 68BXbPYeAstPQ1F_CQEPunfWZK4
-Message-ID: <CA+55aFy02d13HkfwY-TEGwu=2cd8en+_rnrnwcwixGKRmdJRtA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] [GIT PULL] ktest: A couple of fixes
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Junio C Hamano <gitster@pobox.com>,
-        Git Mailing List <git@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335924760-796-1-git-send-email-rob.lee@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 1, 2012 at 5:44 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> Is git set up to not fast forward by default? (I need to give it another try)
+On Tue, May 01, 2012 at 09:12:37PM -0500, Robert Lee wrote:
+> Add common imx cpuidle initialization functionality and add a i.MX5 and i.MX6Q
+> platform cpuidle implementation.
+> 
+> Based on v3.4-rc5 plus recently submitted device tree late_initcall patch:
 
-Git will fast-forward by default if you do a pull and there is no
-development of your own in your tree.
+Just to clarify, this is not a device tree late_initcall but a machine
+specific late_initcall time hook.  It has nothing to do with device
+tree.
 
-There are two exceptions:
+Regards,
+Shawn
 
- - you explicitly say that you don't want to fast-forward (--no-ff or
-"[merge] ff=false" in the git config file)
-
- - if you pull a signed tag with a modern version of git.
-
-That second case may be what you hit.
-
-If you do a
-
-  git pull linus v3.4-rc5
-
-in order to just update to the state of my latest tag, then git will
-assume you want to do a new commit (and thus a non-fast-forward) just
-so that git can record the tag signature in the commit.
-
-The sad part is that I don't think you can even override the second
-case. IOW, I think even "git pull --ff linus v3.4-rc5" will still do a
-non-fast-forward merge.
-
-That's inconvenient, and an unintended consequence of the behavior I
-wanted as a top-level maintainer. But I really do think it's wrong for
-normal developers who might validly just want to update to some
-particular tagged release.
-
-Junio? Any ideas?
-
-                           Linus
+>  http://www.spinics.net/lists/arm-kernel/msg171620.html
+> 
+> Changes since v1:
+>  * Removed some unnecessary  spaces
+>  * Added return value for an error message
+>  * Reworked init scheme to use device tree late_initcall.
+>  * Moved imx6q and imx5 cpuidle functionality to existing files.
+> 
+> Robert Lee (3):
+>   ARM: imx: Add common imx cpuidle init functionality.
+>   ARM: imx: Add imx5 cpuidle driver
+>   ARM: imx: Add imx6q cpuidle driver
+> 
+>  arch/arm/mach-imx/cpuidle-imx6q.c        |   33 ++++++++++++
+>  arch/arm/mach-imx/mach-imx6q.c           |   18 +++++++
+>  arch/arm/mach-imx/mm-imx5.c              |   42 ++++++++++++++--
+>  arch/arm/plat-mxc/Makefile               |    1 +
+>  arch/arm/plat-mxc/cpuidle.c              |   80 ++++++++++++++++++++++++++++++
+>  arch/arm/plat-mxc/include/mach/cpuidle.h |   22 ++++++++
+>  6 files changed, 193 insertions(+), 3 deletions(-)
+>  create mode 100644 arch/arm/mach-imx/cpuidle-imx6q.c
+>  create mode 100644 arch/arm/plat-mxc/cpuidle.c
+>  create mode 100644 arch/arm/plat-mxc/include/mach/cpuidle.h
+> 
+> -- 
+> 1.7.10
+> 
