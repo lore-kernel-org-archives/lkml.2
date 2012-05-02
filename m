@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab2EBPbH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 11:31:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47466 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754266Ab2EBPbF (ORCPT
+	id S1755520Ab2EBPcQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 11:32:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51102 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754266Ab2EBPcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 11:31:05 -0400
-Date: Wed, 2 May 2012 08:31:00 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sasikantha babu <sasikanth.v19@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] debugfs: New debugfs interface for creation of files,
- directory and symlinks
-Message-ID: <20120502153100.GA2777@kroah.com>
-References: <1335963054-24750-1-git-send-email-sasikanth.v19@gmail.com>
+	Wed, 2 May 2012 11:32:15 -0400
+Date: Wed, 2 May 2012 16:32:12 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Joe Korty <joe.korty@ccur.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: checkpatch: brackets around single statements fix
+Message-ID: <20120502153212.GE3364@shadowen.org>
+References: <20120502151046.GA25573@tsunami.ccur.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1335963054-24750-1-git-send-email-sasikanth.v19@gmail.com>
+In-Reply-To: <20120502151046.GA25573@tsunami.ccur.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 06:20:54PM +0530, Sasikantha babu wrote:
-> As we know the current debugfs file or directory or symlink creation
-> doesn't return proper error codes to the caller on failure. Because 
-> of this caller and user could not able to find the exact reason of
-> the failure.
+On Wed, May 02, 2012 at 11:10:46AM -0400, Joe Korty wrote:
+> Checkpatch thinks '#else' is the same as 'else' in its check for
+> this error:
+> 
+>    WARNING: braces {} are not necessary for single statement blocks
+> 
+> Signed-off-by: Joe Korty <joe.korty@ccur.com>
+> 
+> Index: linux/scripts/checkpatch.pl
+> ===================================================================
+> --- linux.orig/scripts/checkpatch.pl	2012-04-17 05:00:37.000000000 -0400
+> +++ linux/scripts/checkpatch.pl	2012-05-02 10:29:03.000000000 -0400
+> @@ -3038,7 +3038,7 @@
+>  			}
+>  		}
+>  		if (!defined $suppress_ifbraces{$linenr - 1} &&
+> -					$line =~ /\b(if|while|for|else)\b/) {
+> +					$line =~ /[^#]\b(if|while|for|else)\b/) {
+>  			my $allowed = 0;
+>  
+>  			# Check the pre-context.
 
-And what is the problem with this?  Either the file is created or not,
-you really shouldn't care anymore than that.  It's not like you are
-going to retry the creation, or are you?
+Interesting.  Got an example I can use to add to the test suite.
 
-Who really cares if the file is failed to be created?
-
-> As Andrew Morton suggested (http://www.spinics.net/lists/linux-mm/msg33617.html)
-> introduced new debugfs interface to create debugfs entries. Newer APIs 
-> returns proper error codes(ERR_PTR) on failure.
-
-Again, why?  What root problem are you trying to solve here?
-
-thanks,
-
-greg k-h
+-apw
