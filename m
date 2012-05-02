@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab2EBPsv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 11:48:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55799 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079Ab2EBPst (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 11:48:49 -0400
-Message-ID: <4FA1575C.8010400@googlemail.com>
-Date: Wed, 02 May 2012 17:48:44 +0200
-From: Tobias Powalowski <tobias.powalowski@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755420Ab2EBPuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 11:50:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754217Ab2EBPuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 11:50:35 -0400
+Message-ID: <4FA157A6.7050209@redhat.com>
+Date: Wed, 02 May 2012 17:49:58 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120425 Thunderbird/12.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: Possible 32bit i686 kernel hard crash bug 3.3.4?
-References: <4FA0E485.80902@googlemail.com> <20120502091226.GA1591@home.lan> <4FA10250.5050104@googlemail.com>
-In-Reply-To: <4FA10250.5050104@googlemail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigCE94EB0A843B9D1ADAC93864"
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
+References: <1335953452-10460-1-git-send-email-jack@suse.cz> <4FA1092E.9090603@redhat.com> <20120502135123.GF16976@quack.suse.cz> <4FA13DDF.9010006@redhat.com> <20120502161038.01ee9b59@pyramind.ukuu.org.uk>
+In-Reply-To: <20120502161038.01ee9b59@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigCE94EB0A843B9D1ADAC93864
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-Am 02.05.2012 11:45, schrieb Tobias Powalowski:
-> Am 02.05.2012 11:12, schrieb Jan R=C4=99korajski:
->> On Wed, 02 May 2012, Tobias Powalowski wrote:
+Il 02/05/2012 17:10, Alan Cox ha scritto:
+>>> Also I tend to side with Alan that I don't quite see
+>>> the point in trying to restrict CAP_SYS_RAWIO threads and thus breaking the
+>>> compatibility
 >>
->>> Hi,
->>> since we bumped to 3.3.4 some users reported hard crashes:
->>> https://bugs.archlinux.org/task/29694
->>> I cannot exactly say what it triggers it happens for me randomly.
->>> This kernel version is not usable for my server anymore.
->>> Hope you can help us. x86_64 seems not to be affected.
->> What version of binutils you built that kernel with?
->> Is it by any chance 2.22.52.0.2?
+>> For example, we have a customer that wants this:
 >>
-> Well it's from 20120323 with this patch attached:
-> https://projects.archlinux.org/svntogit/packages.git/commit/trunk/PKGBU=
-ILD?h=3Dpackages/binutils&id=3D9b0778356b73dd77ed7f98eae5dd5c1f5824ae96
->
-> greetings
-> tpowa
->
-Ok issues identified,
-broken binutils caused this.
+>> * a VM should be able to send vendor-specific commands to a disk via
+>> SG_IO (vendor-specific commands require CAP_SYS_RAWIO).
+>>
+>> * they want to assign logical volumes or partitions to the same VM
+>> without letting it read or write outside the logical volume or partition.
+> 
+> And if the process has CAP_SYS_RAWIO it can do it anyway.
 
-Soryy for the blurb.
-greetings
-tpowa
+How so?  Assuming /dev/sdb is not accessible, /dev/sdb1 is accessible,
+and no iopl/ioperm.
 
---=20
-Tobias Powalowski
-Archlinux Developer & Package Maintainer (tpowa)
-http://www.archlinux.org
-tpowa@archlinux.org
+> Or you could just do the special case ioctl magic out of band in the apps.
 
+You mentioned crass/gross hacks.  Forcing apps to detect if you're
+targeting a partition or a block device _is_ gross.
 
+> It's hardly an ultra performance critical path for the SG_IO cases.
 
---------------enigCE94EB0A843B9D1ADAC93864
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+That I agree with.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+>> Of course a better solution for this would be customizable filters for
+>> SG_IO commands, where a privileged application would open the block
+>> device with CAP_SYS_RAWIO, set the filter and hand the file descriptor
+>> to QEMU.  Or alternatively some extension of the device cgroup.  But
+>> either solution would require a large amount of work.
+> 
+> Customisable filters are not hard. We've got all the filtering code in
+> kernel and the ability to verify filters, even the ability to JIT them.
+> Just support adding/removing/running a BPF filter on the channel in
+> question.
+> 
+> So it shouldn't be much code to do what you want.
 
-iQEcBAEBAgAGBQJPoVddAAoJEHcd9mJ+32gf6GcH/RvSc7G55dXzq5Zs45T1/4oM
-62gq8l4tKzUTNGNhPcVzx3qslyVZ+V9ZKfQOabrLBRRC2ywm39ko//+WW1DXgOcM
-/a87tHv3haxI86AHmPBoZDb8QhG1sT5uI6vKMUuYQ+Be+XiBZwXlLinSQZmdV1+w
-RIMc5Xs5WDGM38McXA9iCPSpU3Qzi7Stbanw9a1AfMIKeItEqwJThK4q+ohaz14I
-eB6KW8YNyK3cw3R1lePPGpAFzDAmhp0p0xql4TcE5n9rwItVBMdi5Z/AHJSOpVzN
-kOyKtgAQrn/bXfx9vY1bXc+nbswG4WJOf07RssZLY++CCUQ/hV4bQMxj+y+ewx4=
-=UITD
------END PGP SIGNATURE-----
+Yes, it's not much code if I don't get into cgroups land and stick with
+a ioctl to add and remove BPF filters that look at CDBs.  One downside
+is that such filtering would likely be enabled by CAP_SYS_RAWIO.
+Because of this, tweaking the filter on the fly is still not too easy
+because I want to run as unprivileged as possible.  I guess some
+privileged helper program can set the filter and send me back the file
+descriptor via SCM_RIGHTS.  The filter will be preserved across that, right?
 
---------------enigCE94EB0A843B9D1ADAC93864--
+I still believe this is suboptimal in the general case, and that Jan's
+customer has a bug.  But hey I would have ended up implementing the
+filters anyway sooner or later, so I'd rather avoid further flames and
+work on them with someone supporting the idea. :)  Reluctantly
+
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+
+Paolo
