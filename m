@@ -1,301 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab2EBHD2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 03:03:28 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:51565 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab2EBHD0 (ORCPT
+	id S1754670Ab2EBHE7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 03:04:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40676 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346Ab2EBHE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 03:03:26 -0400
-Message-ID: <4FA0DBEE.3040909@linux.vnet.ibm.com>
-Date: Wed, 02 May 2012 12:32:06 +0530
-From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Wed, 2 May 2012 03:04:57 -0400
 MIME-Version: 1.0
-To: peterz@infradead.org, mingo@elte.hu
-CC: akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        ananth@in.ibm.com, jkenisto@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, oleg@redhat.com,
-        andi@firstfloor.org, hch@infradead.org, rostedt@goodmis.org,
-        acme@infradead.org, masami.hiramatsu.pt@hitachi.com,
-        tglx@linutronix.de, anton@redhat.com, srikar@linux.vnet.ibm.com,
-        dave.martin@linaro.org, linux-perf-users@vger.kernel.org
-Subject: [PATCH-V2] perf symbols: fix symbol offset breakage with separated
- debug info
+In-Reply-To: <1335935266-25289-6-git-send-email-thomas.abraham@linaro.org>
+References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
+	<1335935266-25289-6-git-send-email-thomas.abraham@linaro.org>
+Date: Wed, 2 May 2012 16:04:55 +0900
+X-Google-Sender-Auth: rC7Rn23LvyOozk81zX008MSBwJQ
+Message-ID: <CAH9JG2UwFc+vo1chsH_1XsgCYypLFV2e3AVOrh0=F+bMRKHBZA@mail.gmail.com>
+Subject: Re: [PATCH 5/7] ARM: Samsung: Add support for MSHC controller clocks
+From: Kyungmin Park <kmpark@infradead.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050207-7282-0000-0000-000008A8CD65
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Martin <dave.martin@linaro.org>
+Hi Thomas,
 
-perf resolves symbols to wrong offsets when debug info is separated
-from the lib/executable.
+I suggest to split the patches into mmc part and samsung specific
+part. As you know previous time there's mismatch between mmc and
+samsung. So split the patches and send it  separately to avoid merge
+conflict and mismatch.
 
-This patch is based on Dave Martin's initial work first published at
-https://lkml.org/lkml/2010/11/22/137
+I think regardless mmc changes, it can be merged into samsung tree directly.
 
-This patch loads the ELF section headers from a separate file if
-necessary, to avoid getting confused by the different section file
-offsets seen in debug images.  Invalid section headers are detected by
-checking for the presence of non-writable SHT_NOBITS sections, which
-don't make sense under normal circumstances.
+Thank you,
+Kyungmin Park
 
-In particular, this allows symbols in ET_EXEC images to get fixed up
-correctly in the presence of separated debug images.
-
-v2 addresses review comments (to remove asserts) from Dave Martin.
-
-Signed-off-by: Dave Martin <dave.martin@linaro.org>
-Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
----
-
- tools/perf/util/symbol.c |  168 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 164 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index caaf75a..a6ad4b1 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1158,8 +1158,105 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
- 	return -1;
- }
- 
-+/**
-+ * Read all section headers, copying them into a separate array so they survive
-+ * elf_end.
-+ *
-+ * @elf: the libelf instance to operate on.
-+ * @ehdr: the elf header: this must already have been read with gelf_getehdr().
-+ * @count: the number of headers read is assigned to *count on successful
-+ *	return.  count must not be NULL.
-+ *
-+ * Returns a pointer to the allocated headers, which should be deallocated with
-+ * free() when no longer needed.
-+ */
-+static GElf_Shdr *elf_get_all_shdrs(Elf *elf, GElf_Ehdr const *ehdr,
-+				    unsigned *count)
-+{
-+	GElf_Shdr *shdrs;
-+	Elf_Scn *scn;
-+	unsigned max_index = 0;
-+	unsigned i;
-+
-+	shdrs = malloc(ehdr->e_shnum * sizeof *shdrs);
-+	if (!shdrs)
-+		return NULL;
-+
-+	for (i = 0; i < ehdr->e_shnum; i++)
-+		shdrs[i].sh_type = SHT_NULL;
-+
-+	for (scn = NULL; (scn = elf_nextscn(elf, scn)); ) {
-+		size_t j;
-+
-+		/*
-+		 * Just assuming we get section 0, 1, ... in sequence may lead
-+		 * to wrong section indices.  Check the index explicitly:
-+		 */
-+		j = elf_ndxscn(scn);
-+		if (j > max_index)
-+			max_index = j;
-+
-+		if (!gelf_getshdr(scn, &shdrs[j]))
-+			goto error;
-+	}
-+
-+	*count = max_index + 1;
-+	return shdrs;
-+
-+error:
-+	free(shdrs);
-+	return NULL;
-+}
-+
-+/**
-+ * Check that the section headers @shdrs reflect accurately the file data
-+ * layout of the image that was loaded during perf record.  This is generally
-+ * not true for separated debug images generated with e.g.,
-+ * objcopy --only-keep-debug.
-+ *
-+ * We identify invalid files by checking for non-empty sections which are
-+ * declared as having no file data (SHT_NOBITS) but are not writable.
-+ *
-+ * @shdrs: the full set of section headers, as loaded by elf_get_all_shdrs().
-+ * @count: the number of headers present in @shdrs.
-+ *
-+ * Returns 1 for valid headers, 0 otherwise.
-+ */
-+static int elf_check_shdrs_valid(GElf_Shdr const *shdrs, unsigned count)
-+{
-+	unsigned i;
-+
-+	for (i = 0; i < count; i++) {
-+		if (shdrs[i].sh_type == SHT_NOBITS &&
-+		    !(shdrs[i].sh_flags & SHF_WRITE) &&
-+		    shdrs[i].sh_size != 0)
-+			return 0;
-+	}
-+
-+	return 1;
-+}
-+
-+/*
-+ * Notes:
-+ *
-+ * If saved_shdrs is non-NULL, the section headers will be read if found, and
-+ * will be used for address fixups.  saved_shdrs_count must also be non-NULL in
-+ * this case.  This may be needed for separated debug images, since the section
-+ * headers and symbols may need to come from separate images in that case.
-+ *
-+ * Note: irrespective of whether this function returns successfully,
-+ * *saved_shdrs may get initialised if saved_shdrs is non-NULL.  It is the
-+ * caller's responsibility to free() it when non longer needed.
-+ *
-+ * If want_symtab == 1, this function will only load symbols from .symtab
-+ * sections.  Otherwise (want_symtab == 0), .dynsym or .symtab symbols are
-+ * loaded.  This feature is used by dso__load() to search for the best image
-+ * to load.
-+ */
-+
- static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 			 int fd, symbol_filter_t filter, int kmodule,
-+			 GElf_Shdr **saved_shdrs, unsigned *saved_shdrs_count,
- 			 int want_symtab)
- {
- 	struct kmap *kmap = dso->kernel ? map__kmap(map) : NULL;
-@@ -1178,6 +1275,17 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 	int nr = 0;
- 	size_t opdidx = 0;
- 
-+	if (saved_shdrs != NULL && saved_shdrs_count == NULL) {
-+		/*
-+		 * If you trigger this check, you're calling this function
-+		 * incorrectly.  Refer to the notes above for details.
-+		 */
-+		pr_debug("%s: warning: saved_shdrs_count == NULL: "
-+			 "ignoring the saved section headers.\n",
-+			 __func__);
-+		saved_shdrs = NULL;
-+	}
-+
- 	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
- 	if (elf == NULL) {
- 		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
-@@ -1200,6 +1308,36 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 			goto out_elf_end;
- 	}
- 
-+	/*
-+	 * Copy all section headers from the image if requested and if not
-+	 * already loaded.
-+	 */
-+	if (saved_shdrs != NULL && *saved_shdrs == NULL) {
-+		GElf_Shdr *shdrs;
-+		unsigned count;
-+
-+		shdrs = elf_get_all_shdrs(elf, &ehdr, &count);
-+		if (shdrs == NULL)
-+			goto out_elf_end;
-+
-+		/*
-+		 * Only keep the headers if they reflect the actual run-time
-+		 * image's file layout:
-+		 */
-+		if (elf_check_shdrs_valid(shdrs, count)) {
-+			*saved_shdrs = shdrs;
-+			*saved_shdrs_count = count;
-+		} else
-+			free(shdrs);
-+	}
-+
-+	/*
-+	 * If no genuine ELF headers are available yet, give up: we can't
-+	 * adjust symbols correctly in that case:
-+	 */
-+	if (saved_shdrs != NULL && *saved_shdrs == NULL)
-+		goto out_elf_end;
-+
- 	sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
- 	if (sec == NULL) {
- 		if (want_symtab)
-@@ -1344,12 +1482,25 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 			goto new_symbol;
- 		}
- 
-+		/*
-+		 * Currently, symbols for shared objects and PIE executables
-+		 * (i.e., ET_DYN) do not seem to get adjusted.  This might need
-+		 * to change if file offset == virtual address is not actually
-+		 * guaranteed for these images.  ELF doesn't provide this
-+		 * guarantee natively.
-+		 */
- 		if (curr_dso->adjust_symbols) {
- 			pr_debug4("%s: adjusting symbol: st_value: %#" PRIx64 " "
- 				  "sh_addr: %#" PRIx64 " sh_offset: %#" PRIx64 "\n", __func__,
- 				  (u64)sym.st_value, (u64)shdr.sh_addr,
- 				  (u64)shdr.sh_offset);
--			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
-+			if (saved_shdrs && *saved_shdrs &&
-+			    sym.st_shndx < *saved_shdrs_count)
-+				sym.st_value -=
-+					(*saved_shdrs)[sym.st_shndx].sh_addr -
-+					(*saved_shdrs)[sym.st_shndx].sh_offset;
-+			else
-+				sym.st_value -= shdr.sh_addr - shdr.sh_offset;
- 		}
- 		/*
- 		 * We need to figure out if the object was created from C++ sources
-@@ -1590,6 +1741,8 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 	struct machine *machine;
- 	const char *root_dir;
- 	int want_symtab;
-+	GElf_Shdr *saved_shdrs = NULL;
-+	unsigned saved_shdrs_count;
- 
- 	dso__set_loaded(dso, map->type);
- 
-@@ -1692,6 +1845,7 @@ restart:
- 			continue;
- 
- 		ret = dso__load_sym(dso, map, name, fd, filter, 0,
-+				    &saved_shdrs, &saved_shdrs_count,
- 				    want_symtab);
- 		close(fd);
- 
-@@ -1713,14 +1867,19 @@ restart:
- 
- 	/*
- 	 * If we wanted a full symtab but no image had one,
--	 * relax our requirements and repeat the search.
-+	 * relax our requirements and repeat the search,
-+	 * provided we saw some valid section headers:
- 	 */
--	if (ret <= 0 && want_symtab) {
-+	if (ret <= 0 && want_symtab && saved_shdrs != NULL) {
- 		want_symtab = 0;
- 		goto restart;
- 	}
- 
- 	free(name);
-+
-+	if (saved_shdrs)
-+		free(saved_shdrs);
-+
- 	if (ret < 0 && strstr(dso->name, " (deleted)") != NULL)
- 		return 0;
- 	return ret;
-@@ -1989,7 +2148,8 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
- 
- 	dso__set_long_name(dso, (char *)vmlinux);
- 	dso__set_loaded(dso, map->type);
--	err = dso__load_sym(dso, map, symfs_vmlinux, fd, filter, 0, 0);
-+	err = dso__load_sym(dso, map, symfs_vmlinux, fd, filter, 0,
-+			    NULL, NULL, 0);
- 	close(fd);
- 
- 	if (err > 0)
-
-
+On 5/2/12, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+> Add clock instances for bus interface unit clock and card interface unit
+> clock of the all four MSHC controller instances.
+>
+> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+> ---
+>  arch/arm/mach-exynos/clock-exynos5.c |   45
+> ++++++++++++----------------------
+>  1 files changed, 16 insertions(+), 29 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/clock-exynos5.c
+> b/arch/arm/mach-exynos/clock-exynos5.c
+> index 7c0f810..4e17131 100644
+> --- a/arch/arm/mach-exynos/clock-exynos5.c
+> +++ b/arch/arm/mach-exynos/clock-exynos5.c
+> @@ -524,35 +524,30 @@ static struct clk exynos5_init_clocks_off[] = {
+>  		.enable		= exynos5_clk_ip_peris_ctrl,
+>  		.ctrlbit	= (1 << 19),
+>  	}, {
+> -		.name		= "hsmmc",
+> -		.devname	= "exynos4-sdhci.0",
+> +		.name		= "biu",
+> +		.devname	= "dw_mmc.0",
+>  		.parent		= &exynos5_clk_aclk_200.clk,
+>  		.enable		= exynos5_clk_ip_fsys_ctrl,
+>  		.ctrlbit	= (1 << 12),
+>  	}, {
+> -		.name		= "hsmmc",
+> -		.devname	= "exynos4-sdhci.1",
+> +		.name		= "biu",
+> +		.devname	= "dw_mmc.1",
+>  		.parent		= &exynos5_clk_aclk_200.clk,
+>  		.enable		= exynos5_clk_ip_fsys_ctrl,
+>  		.ctrlbit	= (1 << 13),
+>  	}, {
+> -		.name		= "hsmmc",
+> -		.devname	= "exynos4-sdhci.2",
+> +		.name		= "biu",
+> +		.devname	= "dw_mmc.2",
+>  		.parent		= &exynos5_clk_aclk_200.clk,
+>  		.enable		= exynos5_clk_ip_fsys_ctrl,
+>  		.ctrlbit	= (1 << 14),
+>  	}, {
+> -		.name		= "hsmmc",
+> -		.devname	= "exynos4-sdhci.3",
+> +		.name		= "biu",
+> +		.devname	= "dw_mmc.3",
+>  		.parent		= &exynos5_clk_aclk_200.clk,
+>  		.enable		= exynos5_clk_ip_fsys_ctrl,
+>  		.ctrlbit	= (1 << 15),
+>  	}, {
+> -		.name		= "dwmci",
+> -		.parent		= &exynos5_clk_aclk_200.clk,
+> -		.enable		= exynos5_clk_ip_fsys_ctrl,
+> -		.ctrlbit	= (1 << 16),
+> -	}, {
+>  		.name		= "sata",
+>  		.devname	= "ahci",
+>  		.enable		= exynos5_clk_ip_fsys_ctrl,
+> @@ -882,8 +877,8 @@ static struct clksrc_clk exynos5_clk_sclk_uart3 = {
+>
+>  static struct clksrc_clk exynos5_clk_sclk_mmc0 = {
+>  	.clk	= {
+> -		.name		= "sclk_mmc",
+> -		.devname	= "exynos4-sdhci.0",
+> +		.name		= "ciu",
+> +		.devname	= "dw_mmc.0",
+>  		.parent		= &exynos5_clk_dout_mmc0.clk,
+>  		.enable		= exynos5_clksrc_mask_fsys_ctrl,
+>  		.ctrlbit	= (1 << 0),
+> @@ -893,8 +888,8 @@ static struct clksrc_clk exynos5_clk_sclk_mmc0 = {
+>
+>  static struct clksrc_clk exynos5_clk_sclk_mmc1 = {
+>  	.clk	= {
+> -		.name		= "sclk_mmc",
+> -		.devname	= "exynos4-sdhci.1",
+> +		.name		= "ciu",
+> +		.devname	= "dw_mmc.1",
+>  		.parent		= &exynos5_clk_dout_mmc1.clk,
+>  		.enable		= exynos5_clksrc_mask_fsys_ctrl,
+>  		.ctrlbit	= (1 << 4),
+> @@ -904,8 +899,8 @@ static struct clksrc_clk exynos5_clk_sclk_mmc1 = {
+>
+>  static struct clksrc_clk exynos5_clk_sclk_mmc2 = {
+>  	.clk	= {
+> -		.name		= "sclk_mmc",
+> -		.devname	= "exynos4-sdhci.2",
+> +		.name		= "ciu",
+> +		.devname	= "dw_mmc.2",
+>  		.parent		= &exynos5_clk_dout_mmc2.clk,
+>  		.enable		= exynos5_clksrc_mask_fsys_ctrl,
+>  		.ctrlbit	= (1 << 8),
+> @@ -915,8 +910,8 @@ static struct clksrc_clk exynos5_clk_sclk_mmc2 = {
+>
+>  static struct clksrc_clk exynos5_clk_sclk_mmc3 = {
+>  	.clk	= {
+> -		.name		= "sclk_mmc",
+> -		.devname	= "exynos4-sdhci.3",
+> +		.name		= "ciu",
+> +		.devname	= "dw_mmc.3",
+>  		.parent		= &exynos5_clk_dout_mmc3.clk,
+>  		.enable		= exynos5_clksrc_mask_fsys_ctrl,
+>  		.ctrlbit	= (1 << 12),
+> @@ -927,14 +922,6 @@ static struct clksrc_clk exynos5_clk_sclk_mmc3 = {
+>  static struct clksrc_clk exynos5_clksrcs[] = {
+>  	{
+>  		.clk	= {
+> -			.name		= "sclk_dwmci",
+> -			.parent		= &exynos5_clk_dout_mmc4.clk,
+> -			.enable		= exynos5_clksrc_mask_fsys_ctrl,
+> -			.ctrlbit	= (1 << 16),
+> -		},
+> -		.reg_div = { .reg = EXYNOS5_CLKDIV_FSYS3, .shift = 8, .size = 8 },
+> -	}, {
+> -		.clk	= {
+>  			.name		= "sclk_fimd",
+>  			.devname	= "s3cfb.1",
+>  			.enable		= exynos5_clksrc_mask_disp1_0_ctrl,
+> --
+> 1.7.5.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
