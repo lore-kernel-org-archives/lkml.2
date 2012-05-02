@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab2EBJZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 05:25:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41522 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070Ab2EBJZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 05:25:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="136069170"
-Message-ID: <4FA0FD39.9060908@intel.com>
-Date: Wed, 02 May 2012 17:24:09 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1752486Ab2EBJ2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 05:28:47 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63273 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab2EBJ2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 05:28:46 -0400
+Date: Wed, 2 May 2012 11:28:38 +0200
+From: Andi Shyti <andi.shyti@gmail.com>
+To: jonghwa3.lee@samsung.com
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
+        Chiwoong byun <woong.byun@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] MFD : add MAX77686 mfd driver
+Message-ID: <20120502092838.GA16327@andi>
+Mail-Followup-To: jonghwa3.lee@samsung.com, sameo@linux.intel.com,
+	linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
+	Chiwoong byun <woong.byun@samsung.com>,
+	Kyungmin Park <kyungmin.park@samsung.com>,
+	MyungJoo Ham <myungjoo.ham@samsung.com>
+References: <1335776022-4571-1-git-send-email-jonghwa3.lee@samsung.com>
+ <20120430091748.GA2460@andi>
+ <4FA0BFFF.8090306@samsung.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: andi.kleen@intel.com, tim.c.chen@linux.intel.com, jeremy@goop.org,
-        chrisw@sous-sol.org, akataria@vmware.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
-        fweisbec@gmail.com, riel@redhat.com, luto@mit.edu, avi@redhat.com,
-        len.brown@intel.com, paul.gortmaker@windriver.com, dhowells@redhat.com,
-        fenghua.yu@intel.com, borislav.petkov@amd.com, yinghai@kernel.org,
-        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
-        yongjie.ren@intel.com
-Subject: Re: [PATCH 2/3] x86/flush_tlb: try flush_tlb_single one by one in
- flush_tlb_range
-References: <1335603099-2624-1-git-send-email-alex.shi@intel.com> <1335603099-2624-3-git-send-email-alex.shi@intel.com> <20120430105440.GC9303@aftab.osrc.amd.com>
-In-Reply-To: <20120430105440.GC9303@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA0BFFF.8090306@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2012 06:54 PM, Borislav Petkov wrote:
+Hi,
 
-> On Sat, Apr 28, 2012 at 04:51:38PM +0800, Alex Shi wrote:
->> x86 has no flush_tlb_range support in instruction level. Currently the
->> flush_tlb_range just implemented by flushing all page table. That is not
->> the best solution for all scenarios. In fact, if we just use 'invlpg' to
->> flush few lines from TLB, we can get the performance gain from later
->> remain TLB lines accessing.
->>
->> But the 'invlpg' instruction costs much of time. Its execution time can
->> compete with cr3 rewriting, and even a bit more on SNB CPU.
->>
->> So, on a 512 4KB TLB entries CPU, the balance points is at:
->> 512 * 100ns(assumed TLB refill cost) =
->> x(TLB flush entries) * 140ns(assumed invlpg cost)
->>
->> Here, x is about 360, that is about 5/8 of 512 entries.
->>
->> But with the mysterious CPU pre-fetcher and page miss handler Unit, the
->> assumed TLB refill cost is far lower then 100ns in sequential access. And
->> 2 HT siblings in one core makes the memory access more faster if they are
->> accessing the same memory. So, in the patch, I just do the change when
->> the target entries is less than 1/16 of whole active tlb entries.
->> Actually, I have no data support for the percentage '1/16', so any
->> suggestions are welcomed.
+On Wed, May 02, 2012 at 02:02:55PM +0900, jonghwa3.lee@samsung.com wrote:
+> On 2012-04-30 18:17, Andi Shyti wrote:
+> > Hi,
+> > 
+> >> +	mutex_lock(&max77686->iolock);
+> >> +	ret = i2c_smbus_read_i2c_block_data(i2c, reg, count, buf);
+> >> +	mutex_unlock(&max77686->iolock);
+> > 
+> > Is it relly necessay to lock whenever you read/write from/to the
+> > i2c bus? Considering also that these are exported function,
+> > someone else may lock here before, so we can have a double
+> > locking on the same mutex.
 > 
-> You could find the proper value empirically here by replacing the
-> FLUSHALL_BAR thing with a variable and exporting it through procfs or
-> sysfs or whatever, only for testing purposes, and letting mprotect.c
-> set it to a different value each time. Then run a bunch of times with
-> different thread counts and invalidation entries count and see which
-> combination performs best.
+> These exported functions will be used in 77686 area only, so there is no
+> overlap locking.
 
+OK... I think this could be a reason more to not over-use mutexes :)
 
+When you call i2c_smbus_* functions you are not accessing to any
+private data, all the new data is allocated in a new area. The
+smbus_xfer function should take care by himself that the global
+data are locked correctly. If not, is not up to your driver to do
+it.
+If, instead, you are taking care about the concurrency in the
+bus, this should be somehow managed by the chip itself.
+In my opinion you are abusing a bit of mutex_lock/unlock.
 
-For some of scenario, above equation can be modified as:
-(512 - X) * 100ns(assumed TLB refill cost) = X * 140ns(assumed invlpg cost)
+Andi
 
-When thread number less than cpu numbers, balance point can up to 1/2
-TLB entries.
-
-When thread number is equal to cpu number with HT, on our SNB EP
-machine, the balance point is 1/16 TLB entries, on NHM EP machine,
-balance at 1/32. So, need to change FLUSHALL_BAR to 32.
-
-when thread number is bigger than cpu number, context switch eat all
-improvement. the memory access latency is same as unpatched kernel.
-
+P.S. copied and paste your reply at the bottom of my previous
+comment.
