@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab2EBS1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 14:27:31 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:41925
+	id S1756012Ab2EBS0y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 14:26:54 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:36820
 	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755861Ab2EBS0z (ORCPT
+	by vger.kernel.org with ESMTP id S1755861Ab2EBS0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 14:26:55 -0400
+	Wed, 2 May 2012 14:26:52 -0400
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bh)
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M3ER8L-02-FJE-02
+X-WSS-ID: 0M3ER8L-02-FJD-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -18,9 +18,9 @@ CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 6/7] perf tools: Add pmu mappings to header information
-Date: Wed, 2 May 2012 20:26:31 +0200
-Message-ID: <1335983192-23731-7-git-send-email-robert.richter@amd.com>
+Subject: [PATCH 5/7] perf, tools: Add raw event support for dynamic allocated pmus
+Date: Wed, 2 May 2012 20:26:30 +0200
+Message-ID: <1335983192-23731-6-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1335983192-23731-1-git-send-email-robert.richter@amd.com>
 References: <1335983192-23731-1-git-send-email-robert.richter@amd.com>
@@ -31,161 +31,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With dynamic pmu allocation there are also dynamically assigned pmu
-ids. These ids are used in event->attr.type to describe the pmu to be
-used for that event. The information is available in sysfs, e.g:
+This patch extends the event parser to pass raw config values to a
+dynamic allocated pmu. The following event syntax is supported now:
 
- /sys/bus/event_source/devices/breakpoint/type: 5
- /sys/bus/event_source/devices/cpu/type: 4
- /sys/bus/event_source/devices/ibs_fetch/type: 6
- /sys/bus/event_source/devices/ibs_op/type: 7
- /sys/bus/event_source/devices/software/type: 1
- /sys/bus/event_source/devices/tracepoint/type: 2
+ <pmu_name>:<raw_config_value>:<modifier>
 
-These mappings are needed to know which samples belong to which pmu.
-If a pmu is added dynamically like for ibs_fetch or ibs_op the type
-value may vary.
+Example for the ibs pmu:
 
-Now, when decoding samples from perf.data this information in sysfs
-might be no longer available or may have changed. We need to store it
-in perf.data. Using the header for this. The header information
-created with perf report would contain an additional section looking
-like this:
-
- # pmu mappings: ibs_op = 7, ibs_fetch = 6, cpu = 4, breakpoint = 5, tracepoint = 2, software = 1
-
-V2:
-* improve error handling in print_pmu_mappings()
-* use perf_pmu__scan() to iterate over pmus
+ # perf record -a -e ibs_op:r000 ...
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- tools/perf/util/header.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h |    1 +
- 2 files changed, 79 insertions(+), 0 deletions(-)
+ tools/perf/util/parse-events.c |   20 +++++++++++++++-----
+ tools/perf/util/parse-events.h |    2 +-
+ tools/perf/util/parse-events.y |    7 ++++++-
+ tools/perf/util/pmu-ibs.c      |    4 ++++
+ 4 files changed, 26 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 4c7c2d7..c139da7 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -20,6 +20,7 @@
- #include "symbol.h"
- #include "debug.h"
- #include "cpumap.h"
-+#include "pmu.h"
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index d572204..8ad536c 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -524,6 +524,9 @@ static int parse_events_add_tracepoint(struct list_head *list, int *idx,
+ {
+ 	int ret;
  
- static bool no_buildid_cache = false;
- 
-@@ -1000,6 +1001,45 @@ done:
++	if (!event)
++		return -ENOENT;
++
+ 	ret = debugfs_valid_mountpoint(tracing_events_path);
+ 	if (ret)
+ 		return ret;
+@@ -533,8 +536,9 @@ static int parse_events_add_tracepoint(struct list_head *list, int *idx,
+ 	       add_tracepoint(list, idx, sys, event);
  }
  
- /*
-+ * File format:
-+ *
-+ * struct pmu_mappings {
-+ *	u32	pmu_num;
-+ *	struct pmu_map {
-+ *		u32	type;
-+ *		char	name[];
-+ *	}[pmu_num];
-+ * };
-+ */
+-static int __parse_events_add_generic_event(struct list_head *list, int *idx,
+-					    char *sys, char *event)
++static int
++__parse_events_add_generic_event(struct list_head *list, int *idx, char *sys,
++				 char *event, unsigned long config)
+ {
+ 	struct perf_event_attr attr;
+ 	char name[MAX_NAME_LEN];
+@@ -545,12 +549,18 @@ static int __parse_events_add_generic_event(struct list_head *list, int *idx,
+ 	if (ret)
+ 		return ret;
+ 
+-	snprintf(name, MAX_NAME_LEN, "%s:%s", sys, event);
++	if (event)
++		snprintf(name, MAX_NAME_LEN, "%s:%s", sys, event);
++	else
++		snprintf(name, MAX_NAME_LEN, "%s:r%lx", sys, config);
 +
-+static int write_pmu_mappings(int fd, struct perf_header *h __used,
-+			      struct perf_evlist *evlist __used)
-+{
-+	struct perf_pmu *pmu = NULL;
-+	off_t offset = lseek(fd, 0, SEEK_CUR);
-+	__u32 pmu_num = 0;
++	attr.config |= config;
 +
-+	/* write real pmu_num later */
-+	do_write(fd, &pmu_num, sizeof(pmu_num));
-+
-+	while ((pmu = perf_pmu__scan(pmu))) {
-+		if (!pmu->name)
-+			continue;
-+		pmu_num++;
-+		do_write(fd, &pmu->type, sizeof(pmu->type));
-+		do_write_string(fd, pmu->name);
-+	}
-+
-+	if (pwrite(fd, &pmu_num, sizeof(pmu_num), offset) != sizeof(pmu_num)) {
-+		/* discard all */
-+		lseek(fd, offset, SEEK_SET);
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-  * default get_cpuid(): nothing gets recorded
-  * actual implementation must be in arch/$(ARCH)/util/header.c
-  */
-@@ -1327,6 +1367,43 @@ static void print_branch_stack(struct perf_header *ph __used, int fd __used,
- 	fprintf(fp, "# contains samples with branch stack\n");
+ 	return add_event(list, idx, &attr, name);
  }
  
-+static void print_pmu_mappings(struct perf_header *ph, int fd, FILE *fp)
-+{
-+	const char *delimiter = "# pmu mappings: ";
-+	char *name;
-+	int ret;
-+	u32 pmu_num;
-+	u32 type;
-+
-+	ret = read(fd, &pmu_num, sizeof(pmu_num));
-+	if (ret != sizeof(pmu_num))
-+		goto error;
-+
-+	if (!pmu_num) {
-+		fprintf(fp, "# pmu mappings: not available\n");
-+		return;
-+	}
-+
-+	while (pmu_num) {
-+		if (read(fd, &type, sizeof(type)) != sizeof(type))
-+			break;
-+		name = do_read_string(fd, ph);
-+		if (!name)
-+			break;
-+		pmu_num--;
-+		fprintf(fp, "%s%s = %" PRIu32, delimiter, name, type);
-+		free(name);
-+		delimiter = ", ";
-+	}
-+
-+	fprintf(fp, "\n");
-+
-+	if (!pmu_num)
-+		return;
-+error:
-+	fprintf(fp, "# pmu mappings: unable to read\n");
-+}
-+
- static int __event_process_build_id(struct build_id_event *bev,
- 				    char *filename,
- 				    struct perf_session *session)
-@@ -1532,6 +1609,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
- 	FEAT_OPF(HEADER_CPU_TOPOLOGY,	cpu_topology),
- 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
- 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
-+	FEAT_OPA(HEADER_PMU_MAPPINGS,	pmu_mappings),
- };
+ int parse_events_add_generic_event(struct list_head *list, int *idx,
+-				   char *sys, char *event)
++				   char *sys, char *event, unsigned long config)
+ {
+ 	int ret1, ret2;
  
- struct header_print_data {
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 21a6be0..166dba6 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -28,6 +28,7 @@ enum {
- 	HEADER_CPU_TOPOLOGY,
- 	HEADER_NUMA_TOPOLOGY,
- 	HEADER_BRANCH_STACK,
-+	HEADER_PMU_MAPPINGS,
- 	HEADER_LAST_FEATURE,
- 	HEADER_FEAT_BITS	= 256,
- };
+@@ -558,7 +568,7 @@ int parse_events_add_generic_event(struct list_head *list, int *idx,
+ 	if (!ret1)
+ 		return 0;
+ 
+-	ret2 = __parse_events_add_generic_event(list, idx, sys, event);
++	ret2 = __parse_events_add_generic_event(list, idx, sys, event, config);
+ 	if (!ret2)
+ 		return 0;
+ 
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index e9df741..88950d8 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -63,7 +63,7 @@ int parse_events__new_term(struct parse_events__term **term, int type,
+ void parse_events__free_terms(struct list_head *terms);
+ int parse_events_modifier(struct list_head *list __used, char *str __used);
+ int parse_events_add_generic_event(struct list_head *list, int *idx,
+-				   char *sys, char *event);
++				   char *sys, char *event, unsigned long config);
+ int parse_events_add_raw(struct perf_evlist *evlist, unsigned long config,
+ 			 unsigned long config1, unsigned long config2,
+ 			 char *mod);
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 659b5e8..d07fddd 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -134,7 +134,12 @@ PE_PREFIX_MEM PE_VALUE sep_dc
+ event_legacy_generic:
+ PE_NAME ':' PE_NAME
+ {
+-	ABORT_ON(parse_events_add_generic_event(list_event, idx, $1, $3));
++	ABORT_ON(parse_events_add_generic_event(list_event, idx, $1, $3, 0));
++}
++|
++PE_NAME ':' PE_RAW
++{
++	ABORT_ON(parse_events_add_generic_event(list_event, idx, $1, NULL, $3));
+ }
+ 
+ event_legacy_numeric:
+diff --git a/tools/perf/util/pmu-ibs.c b/tools/perf/util/pmu-ibs.c
+index 604cb8c..a5468c8 100644
+--- a/tools/perf/util/pmu-ibs.c
++++ b/tools/perf/util/pmu-ibs.c
+@@ -375,6 +375,9 @@ static int ibs_parse_event(struct perf_event_attr *attr, char *sys, char *name)
+ 	if (strcmp("ibs_op", sys) && strcmp("ibs_fetch", sys))
+ 		return -ENOENT;
+ 
++	if (!name)
++		goto out;	/* raw event if name is NULL */
++
+ 	for (event = events; event->id; event++) {
+ 		if (!strcmp(event->name + strlen(sys) + 1, name))
+ 			goto match;
+@@ -384,6 +387,7 @@ static int ibs_parse_event(struct perf_event_attr *attr, char *sys, char *name)
+ match:
+ 	/* pseudo event found */
+ 	attr->config1 = event->config;
++out:
+ 	attr->sample_type = PERF_SAMPLE_CPU;
+ 
+ 	return 0;
 -- 
 1.7.8.4
 
