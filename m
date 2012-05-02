@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab2EBVui (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 17:50:38 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:39172 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab2EBVuh (ORCPT
+	id S1754245Ab2EBVwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 17:52:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61249 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab2EBVwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 17:50:37 -0400
-Date: Wed, 2 May 2012 22:50:34 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-bluetooth@vger.kernel.org
-Subject: Re: [now bisected] Weird bluetooth keyboard regression - just me?
-Message-ID: <20120502215034.GA622@srcf.ucam.org>
-References: <20120501073711.028d31d6@lwn.net>
- <20120501110156.2b6e0561@lwn.net>
- <20120501171901.GA26006@srcf.ucam.org>
- <20120501120145.21f65ae2@lwn.net>
- <20120501183149.GA28536@srcf.ucam.org>
- <20120501123923.01ac1138@lwn.net>
- <20120501185455.GA29060@srcf.ucam.org>
- <20120501192736.GA29770@srcf.ucam.org>
- <20120501172454.0e811379@lwn.net>
+	Wed, 2 May 2012 17:52:30 -0400
+Date: Wed, 2 May 2012 14:52:26 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Preston Fick <pffick@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        preston.fick@silabs.com
+Subject: Re: [PATCH 3/3] usb: cp210x: Add ioctl for GPIO support
+Message-ID: <20120502215226.GD27281@kroah.com>
+References: <1335845210-5147-1-git-send-email-preston.fick@silabs.com>
+ <1335845210-5147-3-git-send-email-preston.fick@silabs.com>
+ <20120502200356.GA25915@kroah.com>
+ <20120502214901.6b6e031c@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120501172454.0e811379@lwn.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20120502214901.6b6e031c@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 05:24:54PM -0600, Jonathan Corbet wrote:
-> > In either case, does the 
-> > attached file help if dropped into /lib/udev/rules.d ?
+On Wed, May 02, 2012 at 09:49:01PM +0100, Alan Cox wrote:
+> > Actually, why can't you use the GPIO subsystem for something like this?
+> > Can't you export your device as both a usb-serial device and a gpio
+> > device and have things work properly that way?
 > 
-> Nope, no joy there.  
+> You still need the ioctls even then in order to discover the gpio
+> numbers
 
-You tested after rebooting?
+What discovery?  The device knows what gpio values it has in it, and
+should be able to register those with the gpio subsystem.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> and having done that youi've got potential races with unload
+> when you try and open them. You've also got permissions considerations
+> and synchronization between gpio and data problems.
+
+That can be handled in the driver itself, if it really is a problem (the
+existing patch sure didn't handle any of that at all, so I'm guessing
+either it wasn't considered, or it isn't a problem.)
+
+> It's not a good way to go. It might make sense in some platforms to
+> expose them as both but its not a good general model.
+
+Why isn't the gpio subsystem a good general model?  I thought that is
+what it was created to solve?
+
+> I'm currently favouring adding some 'additional control line' bits to
+> termiox.
+
+Yes, but that's only good for usb-serial devices that also have gpio
+pins on the controller side.  Which seems pretty limited to me.
+
+If I have a userspace program, and I want to use GPIO, I shouldn't have
+to care/know that the pins are really on the end of a USB->serial
+bridge, or somewhere hanging off of a SOC, the same userspace api should
+"just work", right?
+
+Or am I missing something really obvious here?
+
+thanks,
+
+greg k-h
