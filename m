@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab2EBV42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 17:56:28 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:3460 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754019Ab2EBV40 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 17:56:26 -0400
-Message-ID: <1335995781.30754.27.camel@x61.thuisdomein>
-Subject: Re: [v3.4-rc5]: drm references experimental
-From: Paul Bolle <pebolle@tiscali.nl>
-To: =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@googlemail.com>
-Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
-Date: Wed, 02 May 2012 23:56:21 +0200
-In-Reply-To: <CADDKRnDR=baZtQfyQLxYGB2zVDMGi2C_V2ffNkSUhipJB-+t=A@mail.gmail.com>
-References: <CADDKRnDR=baZtQfyQLxYGB2zVDMGi2C_V2ffNkSUhipJB-+t=A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1754639Ab2EBV6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 17:58:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47488 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab2EBV6S convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 17:58:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120502153100.GA2777@kroah.com>
+References: <1335963054-24750-1-git-send-email-sasikanth.v19@gmail.com>
+	<20120502153100.GA2777@kroah.com>
+Date: Thu, 3 May 2012 03:28:17 +0530
+Message-ID: <CAOJFanXZEUfM4GQS62u4oR-KwywdLGOciOcgzmrM9zW+kOrXkg@mail.gmail.com>
+Subject: Re: [PATCH] debugfs: New debugfs interface for creation of files,
+ directory and symlinks
+From: Sasikanth babu <sasikanth.v19@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
-X-OriginalArrivalTime: 02 May 2012 21:56:21.0486 (UTC) FILETIME=[690358E0:01CD28AE]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-30 at 16:31 +0200, JÃ¶rg Otte wrote:
-> there is a dependency between drm and experimental driver. If I
-> don't enable EXPERIMENTAL I see the following during configuration:
-> 
-> warning: (DRM) selects DMA_SHARED_BUFFER which has unmet direct
-> dependencies (EXPERIMENTAL)
-> 
-> I think non-experimental code shouldn't depend on experimental code.
+On Wed, May 2, 2012 at 9:01 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, May 02, 2012 at 06:20:54PM +0530, Sasikantha babu wrote:
+>> As we know the current debugfs file or directory or symlink creation
+>> doesn't return proper error codes to the caller on failure. Because
+>> of this caller and user could not able to find the exact reason of
+>> the failure.
+>
+> And what is the problem with this?  Either the file is created or not,
+> you really shouldn't care anymore than that.  It's not like you are
+> going to retry the creation, or are you?
+>
+> Who really cares if the file is failed to be created?
 
-This reminds me of a brief discussion on the merits of EXPERIMENTAL
-starting at https://lkml.org/lkml/2012/1/18/385 . My impression from
-that discussion was that EXPERIMENTAL currently is set in most
-configurations (eg, even Debian stable has EXPERIMENTAL set). This means
-that people generally won't notice that an option that itself doesn't
-depend (indirectly) on EXPERIMENTAL selects an option that does depend
-directly on EXPERIMENTAL. So, yes, one wouldn't expect non-EXPERIMENTAL
-code to use EXPERIMENTAL code but, apparently, in practice it does.
+ In most of cases I had observed caller of debufs_create_file or
+ debufs_create_dir always returns -ENOMEM on failure, which is not true.
+ I felt returning proper error code will help in figuring out the actual
+ reason of the failure (for eg: it can be -EEXISTS based on the error
+ caller can change the name of the file or dir)
 
-I also noticed that there's not a single instance of CONFIG_EXPERIMENTAL
-in any code-file or in any Makefile. EXPERIMENTAL is only relevant in,
-well, Kconfig space. That should make it somewhat less likely that there
-are surprising changes to the code than in other cases of options
-selecting options with unmet direct dependencies.
+>
+>> As Andrew Morton suggested (http://www.spinics.net/lists/linux-mm/msg33617.html)
+>> introduced new debugfs interface to create debugfs entries. Newer APIs
+>> returns proper error codes(ERR_PTR) on failure.
+>
+> Again, why?  What root problem are you trying to solve here?
 
-
-Paul Bolle
-
+   The usage of debugfs throughout the kernel is not uniform especially the
+   error handling scenarios. Some place it is IS_ERR validations , other place
+   against NULL and some place ignoring the return value. Just tried to make it
+   uniform.
+>
+> thanks,
+>
+> greg k-h
