@@ -1,170 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab2EBLc2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 07:32:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:50718 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab2EBLc1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 07:32:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: Killing the tty lock
-Date: Wed, 2 May 2012 11:32:16 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <20120501173739.4fe61fb5@pyramind.ukuu.org.uk>
-In-Reply-To: <20120501173739.4fe61fb5@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205021132.16662.arnd@arndb.de>
-X-Provags-ID: V02:K0:Yw605RWNgOlLNWaaM/LhTJUI6A3Np+nqQEc3KwL3jtl
- utY0Yxix1Oi8pu9RnBDLsMUwLvSl3fUWFZbr2WZSsYVFWQnguE
- j5eDiSYZwV/dLZchz+cU9kJqq1t7g+ir80ghBmlwNsr+k6iuLF
- wKxCYQX0yVUZ1h6d9yESP3amBQgU2WSEosPrvYKPoPBUaBo8bf
- KCwI6hID22D0uGiu8qKCyLis2RByDQhXaeTu4ZlXWI9O7I5xkS
- k4hu6Ls9V6qzVi6nz1gj5/uAZ2QGay3yB+BgX/gcaTNZJ+AuPx
- LghF856a+mgAj8/zbxcHehDiWkKYg4+WyOQHVVNxumHv4EoCzI
- WDXc1Rde0sB2RLmJZWLU=
+	id S1754070Ab2EBLhv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 07:37:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753324Ab2EBLht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 07:37:49 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
+        mhiramat@redhat.com, robert.richter@amd.com, fche@redhat.com,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        drepper@gmail.com, asharma@fb.com, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 02/17] perf: Add ability to attach registers dump to sample
+Date: Wed,  2 May 2012 13:37:03 +0200
+Message-Id: <1335958638-5160-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1335958638-5160-1-git-send-email-jolsa@redhat.com>
+References: <1335958638-5160-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 May 2012, Alan Cox wrote:
-> This is a first stab at it by making the lock per tty and using tty_mutex
-> to cover the lookup for now. We ought to move to the lookup handing back
-> ttys with a ref but thats a further step.
-> 
-> It seems to mostly work but not quite reliably, so coul do with some more
-> eyes and review for ideas.
+Introducing new sample_type bit PERF_SAMPLE_REGS. Once set,
+the sample_regs value determines the kind of registers going
+to be attached to the sample.
 
-Hi Alan,
+Currently only user level registers are supported, specified by
+PERF_SAMPLE_REGS_USER sample_regs value. Meaning the register
+values of the user space context as it was before the user entered
+the kernel for whatever reason (syscall, irq, exception, or a PMI
+happening in userspace).
 
-I had tried the same some time ago but couldn't get it working because
-some of the prerequisites were not there. I'll comment on the differences
-between your patch and mine. In my version, I completely removed the
-tty_mutex.c file and just open-coded mutex_lock() functions, but you
-version with the extra checks also has its benefits. I found two differences
-where I think your version is wrong, but I could be missing something.
+When PERF_SAMPLE_REGS and PERF_SAMPLE_REGS_USER are set, the
+sample_regs_user bitmap lets a user choose a set of registers
+to dump for the sample. The layout of this bitmap is described
+in asm/perf_regs.h for archs that support register dump.
 
-> @@ -62,9 +63,7 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
->  		        mutex_unlock(&devpts_mutex);
->  		}
->  #endif
-> -		tty_unlock();
->  		tty_vhangup(tty->link);
-> -		tty_lock();
->  	}
->  }
+This is going to be useful to bring Dwarf CFI based stack
+unwinding on top of samples.
 
-I had missed that we don't need to unlock here once the lock is per-tty,
-this looks better than my version.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ include/linux/perf_event.h |   25 ++++++++++-
+ kernel/events/core.c       |   98 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 121 insertions(+), 2 deletions(-)
 
-> @@ -654,15 +654,17 @@ static int ptmx_open(struct inode *inode, struct file *filp)
->  	if (retval)
->  		goto err_release;
->  
-> -	tty_unlock();
-> +	tty_unlock(tty);
->  	return 0;
->  err_release:
-> -	tty_unlock();
-> +	tty_unlock(tty);
->  	tty_release(inode, filp);
->  	return retval;
->  out:
-> +        mutex_lock(&devpts_mutex);
->  	devpts_kill_index(inode, index);
-> -	tty_unlock();
-> +        mutex_unlock(&devpts_mutex);
-> +	tty_unlock(tty);
->  err_file:
->  	tty_free_file(filp);
->  	return retval;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index ddbb6a9..6a8c974 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -130,8 +130,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_STREAM_ID			= 1U << 9,
+ 	PERF_SAMPLE_RAW				= 1U << 10,
+ 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
++	PERF_SAMPLE_REGS			= 1U << 12,
+ 
+-	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 13,		/* non-ABI */
+ };
+ 
+ /*
+@@ -163,6 +164,15 @@ enum perf_branch_sample_type {
+ 	 PERF_SAMPLE_BRANCH_HV)
+ 
+ /*
++ * Values for sample_regs when PERF_SAMPLE_REGS is set.
++ * Defines register set to be attached to the sample.
++ */
++enum perf_sample_regs {
++	PERF_SAMPLE_REGS_USER	= 1U << 0, /* user registers */
++	PERF_SAMPLE_REGS_MAX	= 1U << 1, /* non-ABI */
++};
++
++/*
+  * The format of the data returned by read() on a perf event fd,
+  * as specified by attr.read_format:
+  *
+@@ -271,7 +281,16 @@ struct perf_event_attr {
+ 		__u64		bp_len;
+ 		__u64		config2; /* extension of config1 */
+ 	};
+-	__u64	branch_sample_type; /* enum branch_sample_type */
++	__u64	branch_sample_type; /* enum perf_branch_sample_type */
++
++	__u64	sample_regs; /* enum perf_sample_regs */
++
++	/*
++	 * Arch specific mask for PERF_SAMPLE_REGS_USER setup.
++	 * Defines set of user regs to dump on samples.
++	 * See asm/perf_regs.h for details.
++	 */
++	__u64	sample_regs_user;
+ };
+ 
+ /*
+@@ -607,6 +626,7 @@ struct perf_guest_info_callbacks {
+ #include <linux/static_key.h>
+ #include <linux/atomic.h>
+ #include <linux/sysfs.h>
++#include <linux/perf_regs.h>
+ #include <asm/local.h>
+ 
+ #define PERF_MAX_STACK_DEPTH		255
+@@ -1130,6 +1150,7 @@ struct perf_sample_data {
+ 	struct perf_callchain_entry	*callchain;
+ 	struct perf_raw_record		*raw;
+ 	struct perf_branch_stack	*br_stack;
++	struct pt_regs			*regs_user;
+ };
+ 
+ static inline void perf_sample_data_init(struct perf_sample_data *data, u64 addr)
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 32cfc76..dd99718 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3751,6 +3751,37 @@ int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs)
+ }
+ EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
+ 
++static void
++perf_output_sample_regs(struct perf_output_handle *handle,
++			struct pt_regs *regs, u64 mask)
++{
++	int i = 0;
++
++	do {
++		u64 val;
++
++		if (mask & 1) {
++			val = perf_reg_value(regs, i);
++			perf_output_put(handle, val);
++		}
++
++		mask >>= 1;
++		i++;
++	} while (mask);
++}
++
++static struct pt_regs *perf_sample_regs_user(struct pt_regs *regs)
++{
++	if (!user_mode(regs)) {
++		if (current->mm)
++			regs = task_pt_regs(current);
++		else
++			regs = NULL;
++	}
++
++	return regs;
++}
++
+ static void __perf_event_header__init_id(struct perf_event_header *header,
+ 					 struct perf_sample_data *data,
+ 					 struct perf_event *event)
+@@ -4011,6 +4042,30 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 			perf_output_put(handle, nr);
+ 		}
+ 	}
++
++	if (sample_type & PERF_SAMPLE_REGS) {
++		u64 mode = event->attr.sample_regs;
++
++		if (mode & PERF_SAMPLE_REGS_USER) {
++			u64 id = PERF_REGS_ABI_NONE;
++
++			/*
++			 * If there are no regs to dump, notice it through
++			 * PERF_REGS_ABI_NONE id.
++			 */
++			if (data->regs_user)
++				id = perf_reg_version();
++
++			perf_output_put(handle, id);
++
++			if (id) {
++				u64 mask = event->attr.sample_regs_user;
++				perf_output_sample_regs(handle,
++							data->regs_user,
++							mask);
++			}
++		}
++	}
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
+@@ -4062,6 +4117,24 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 		}
+ 		header->size += size;
+ 	}
++
++	if (sample_type & PERF_SAMPLE_REGS) {
++		u64 mode = event->attr.sample_regs;
++		int size = 0;
++
++		if (mode & PERF_SAMPLE_REGS_USER) {
++			/* regs ID size */
++			size += sizeof(u64);
++
++			data->regs_user = perf_sample_regs_user(regs);
++			if (data->regs_user) {
++				u64 mask = event->attr.sample_regs_user;
++				size += hweight64(mask) * sizeof(u64);
++			}
++		}
++
++		header->size += size;
++	}
+ }
+ 
+ static void perf_event_output(struct perf_event *event,
+@@ -6112,6 +6185,31 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 			attr->branch_sample_type = mask;
+ 		}
+ 	}
++
++	if (attr->sample_type & PERF_SAMPLE_REGS) {
++		/* Mode must be specified. */
++		if (attr->sample_regs & ~(PERF_SAMPLE_REGS_MAX-1))
++			return -EINVAL;
++
++		/* Validate registers mask for user mode. */
++		if (attr->sample_regs & PERF_SAMPLE_REGS_USER)
++			ret = perf_reg_validate(attr->sample_regs_user);
++		else if (attr->sample_regs_user)
++			return -EINVAL;
++
++		if (ret)
++			return ret;
++	} else  {
++		/*
++		 * Registers are not required in sample, all regs
++		 * settings should be zero.
++		 */
++		if (attr->sample_regs)
++			return -EINVAL;
++		if (attr->sample_regs_user)
++			return -EINVAL;
++	}
++
+ out:
+ 	return ret;
+ 
+-- 
+1.7.7.6
 
-This one looks wrong: when you get to the "out" label, tty is not valid.
-
-> @@ -1403,6 +1403,7 @@ struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx)
->  	}
->  	initialize_tty_struct(tty, driver, idx);
->  
-> +	tty_lock(tty);
->  	retval = tty_driver_install_tty(driver, tty);
->  	if (retval < 0)
->  		goto err_deinit_tty;
-> @@ -1418,6 +1419,7 @@ struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx)
->  	return tty;
->  
->  err_deinit_tty:
-> +	tty_unlock(tty);
->  	deinitialize_tty_struct(tty);
->  	free_tty_struct(tty);
->  err_module_put:
-> @@ -1426,6 +1428,7 @@ err_module_put:
->  
->  	/* call the tty release_tty routine to clean out this slot */
->  err_release_tty:
-> +	tty_unlock(tty);
->  	printk_ratelimited(KERN_INFO "tty_init_dev: ldisc open failed, "
->  				 "clearing slot %d\n", idx);
->  	release_tty(tty, idx);
-
-So tty_init_dev returns a locked tty on success? If so, a comment about this
-might be helpful. The part I don't understand is how ptmx_open takes the
-lock right after calling tty_init_dev without anyone releasing it inbetween.
-Or does it get released in tty_driver_install_tty or tty_ldisc_setup?
-
-> @@ -1675,7 +1679,7 @@ int tty_release(struct inode *inode, struct file *filp)
->  		   opens on /dev/tty */
->  
->  		mutex_lock(&tty_mutex);
-> -		tty_lock();
-> +		tty_lock_pair(tty, o_tty);
->  		tty_closing = tty->count <= 1;
->  		o_tty_closing = o_tty &&
->  			(o_tty->count <= (pty_master ? 1 : 0));
-
-Very clever.
-
->  static int tty_open(struct inode *inode, struct file *filp)
-> @@ -1916,8 +1923,7 @@ retry_open:
->  	retval = 0;
->  
->  	mutex_lock(&tty_mutex);
-> -	tty_lock();
-> -
-> +	/* This is protected by the tty_mutex */
->  	tty = tty_open_current_tty(device, filp);
->  	if (IS_ERR(tty)) {
->  		retval = PTR_ERR(tty);
-> @@ -1938,17 +1944,19 @@ retry_open:
->  	}
->  
->  	if (tty) {
-> +		tty_lock(tty);
->  		retval = tty_reopen(tty);
-> -		if (retval)
-> +		if (retval < 0) {
-> +			tty_unlock(tty);
->  			tty = ERR_PTR(retval);
-> -	} else
-> +		}
-> +	} else	/* Returns with the tty_lock held for now */
->  		tty = tty_init_dev(driver, index);
->  
->  	mutex_unlock(&tty_mutex);
->  	if (driver)
->  		tty_driver_kref_put(driver);
->  	if (IS_ERR(tty)) {
-> -		tty_unlock();
->  		retval = PTR_ERR(tty);
->  		goto err_file;
->  	}
-
-Ah, so this is why tty_init_dev takes the lock. In my version, I take
-the lock after tty_init_dev in the else path, but I guess the result
-is pretty much the same.
-
-	Arnd
