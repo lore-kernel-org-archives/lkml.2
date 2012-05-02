@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758523Ab2EBDDu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 23:03:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51946 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758177Ab2EBDDt (ORCPT
+	id S1758594Ab2EBDEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 23:04:36 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62996 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758479Ab2EBDEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 23:03:49 -0400
-Date: Wed, 2 May 2012 11:03:39 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Robert Lee <rob.lee@linaro.org>
-Cc: kernel@pengutronix.de, amit.kucheria@linaro.org, daniel.lezcano@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org, jj@chaosbits.net
-Subject: Re: [PATCH v2 0/3] Add imx cpuidle
-Message-ID: <20120502030337.GS2194@S2101-09.ap.freescale.net>
-References: <1335924760-796-1-git-send-email-rob.lee@linaro.org>
+	Tue, 1 May 2012 23:04:34 -0400
+Date: Tue, 1 May 2012 20:04:15 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Nick Piggin <npiggin@gmail.com>
+cc: mtk.manpages@gmail.com, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-man@vger.kernel.org, linux-mm@kvack.org, mgorman@suse.de,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH] Describe race of direct read and fork for unaligned
+ buffers
+In-Reply-To: <CAPa8GCC7tHm_8Ks_=tM4x544+SEtkVk6TMAF3KPsVqzNOi-naA@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1205011952040.1293@eggly.anvils>
+References: <1335778207-6511-1-git-send-email-jack@suse.cz> <CAHGf_=qqiast+6XzGnq+LRdFXoWG9h2MkofmjS1h5OeNPRyWfw@mail.gmail.com> <CAKgNAkjAOGM+mZLkXGiDFYsnMCpJsxx=Nd5pZfx-_f4B1jvh+A@mail.gmail.com>
+ <CAPa8GCC7tHm_8Ks_=tM4x544+SEtkVk6TMAF3KPsVqzNOi-naA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335924760-796-1-git-send-email-rob.lee@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 09:12:37PM -0500, Robert Lee wrote:
-> Add common imx cpuidle initialization functionality and add a i.MX5 and i.MX6Q
-> platform cpuidle implementation.
+On Wed, 2 May 2012, Nick Piggin wrote:
+> On 2 May 2012 03:56, Michael Kerrisk (man-pages) <mtk.manpages@gmail.com> wrote:
+> >
+> > In the light of all of the comments, can someone revise the man-pages
+> > patch that Jan sent?
 > 
-> Based on v3.4-rc5 plus recently submitted device tree late_initcall patch:
+> This does not quite describe the entire situation, but something understandable
+> to developers:
+> 
+> O_DIRECT IOs should never be run concurrently with fork(2) system call,
+> when the memory buffer is anonymous memory, or comes from mmap(2)
+> with MAP_PRIVATE.
+> 
+> Any such IOs, whether submitted with asynchronous IO interface or from
+> another thread in the process, should be quiesced before fork(2) is called.
+> Failure to do so can result in data corruption and undefined behavior in
+> parent and child processes.
+> 
+> This restriction does not apply when the memory buffer for the O_DIRECT
+> IOs comes from mmap(2) with MAP_SHARED or from shmat(2).
 
-Just to clarify, this is not a device tree late_initcall but a machine
-specific late_initcall time hook.  It has nothing to do with device
-tree.
+Nor does this restriction apply when the memory buffer has been advised
+as MADV_DONTFORK with madvise(2), ensuring that it will not be available
+to the child after fork(2).
 
-Regards,
-Shawn
+> 
+> 
+> 
+> Is that on the right track? I feel it might be necessary to describe this
+> allowance for MAP_SHARED, because some databases may be doing
+> such things, and anyway it gives apps a potential way to make this work
+> if concurrent fork + DIO is very important.
 
->  http://www.spinics.net/lists/arm-kernel/msg171620.html
-> 
-> Changes since v1:
->  * Removed some unnecessary  spaces
->  * Added return value for an error message
->  * Reworked init scheme to use device tree late_initcall.
->  * Moved imx6q and imx5 cpuidle functionality to existing files.
-> 
-> Robert Lee (3):
->   ARM: imx: Add common imx cpuidle init functionality.
->   ARM: imx: Add imx5 cpuidle driver
->   ARM: imx: Add imx6q cpuidle driver
-> 
->  arch/arm/mach-imx/cpuidle-imx6q.c        |   33 ++++++++++++
->  arch/arm/mach-imx/mach-imx6q.c           |   18 +++++++
->  arch/arm/mach-imx/mm-imx5.c              |   42 ++++++++++++++--
->  arch/arm/plat-mxc/Makefile               |    1 +
->  arch/arm/plat-mxc/cpuidle.c              |   80 ++++++++++++++++++++++++++++++
->  arch/arm/plat-mxc/include/mach/cpuidle.h |   22 ++++++++
->  6 files changed, 193 insertions(+), 3 deletions(-)
->  create mode 100644 arch/arm/mach-imx/cpuidle-imx6q.c
->  create mode 100644 arch/arm/plat-mxc/cpuidle.c
->  create mode 100644 arch/arm/plat-mxc/include/mach/cpuidle.h
-> 
-> -- 
-> 1.7.10
-> 
+Looks good, but we do need a reference to MADV_DONTFORK, perhaps as above.
+
+Hugh
