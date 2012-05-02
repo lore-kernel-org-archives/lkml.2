@@ -1,152 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab2EBJR3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 05:17:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38134 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2EBJR1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 05:17:27 -0400
+	id S1752621Ab2EBJS3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 05:18:29 -0400
+Received: from mail.mimuw.edu.pl ([193.0.96.6]:41862 "EHLO mail.mimuw.edu.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751236Ab2EBJS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 05:18:27 -0400
+X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 May 2012 05:18:26 EDT
+Date: Wed, 2 May 2012 11:12:26 +0200
+From: Jan =?utf-8?Q?R=C4=99korajski?= <baggins@sith.mimuw.edu.pl>
+To: linux-kernel@vger.kernel.org
+Cc: Tobias Powalowski <tobias.powalowski@googlemail.com>
+Subject: Re: Possible 32bit i686 kernel hard crash bug 3.3.4?
+Message-ID: <20120502091226.GA1591@home.lan>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	Tobias Powalowski <tobias.powalowski@googlemail.com>
+References: <4FA0E485.80902@googlemail.com>
 MIME-Version: 1.0
-In-Reply-To: <1335935266-25289-2-git-send-email-thomas.abraham@linaro.org>
-References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
-	<1335935266-25289-2-git-send-email-thomas.abraham@linaro.org>
-Date: Wed, 2 May 2012 10:17:26 +0100
-Message-ID: <CAFbHwiTZOOP1HwZQPPKBei3aGhbBjFyJ4QLJ+Ea465L6r6vEYg@mail.gmail.com>
-Subject: Re: [PATCH 1/7] mmc: dw_mmc: lookup for optional biu and ciu clocks
-From: Will Newton <will.newton@gmail.com>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FA0E485.80902@googlemail.com>
+X-Operating-System: Linux 3.3.3.lxc-1 x86_64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 2, 2012 at 6:07 AM, Thomas Abraham
-<thomas.abraham@linaro.org> wrote:
-> Some platforms allow for clock gating and control of bus interface unit clock
-> and card interface unit clock. Add support for clock lookup of optional biu
-> and ciu clocks for clock gating and clock speed determination.
->
-> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-> ---
->  drivers/mmc/host/dw_mmc.c  |   35 +++++++++++++++++++++++++++++++----
->  include/linux/mmc/dw_mmc.h |    4 ++++
->  2 files changed, 35 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index 1532357..036846f 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -1938,19 +1938,35 @@ int dw_mci_probe(struct dw_mci *host)
->                return -ENODEV;
->        }
->
-> -       if (!host->pdata->bus_hz) {
-> +       host->biu_clk = clk_get(&host->dev, "biu");
-> +       if (IS_ERR(host->biu_clk))
-> +               dev_info(&host->dev, "biu clock not available\n");
-> +       else
-> +               clk_enable(host->biu_clk);
-> +
-> +       host->ciu_clk = clk_get(&host->dev, "ciu");
-> +       if (IS_ERR(host->ciu_clk))
-> +               dev_info(&host->dev, "ciu clock not available\n");
+On Wed, 02 May 2012, Tobias Powalowski wrote:
 
-Should these printks be at debug level? I'm not 100% sure either way
-but it could be a little noisy on systems that do not use these
-clocks.
+> Hi,
+> since we bumped to 3.3.4 some users reported hard crashes:
+> https://bugs.archlinux.org/task/29694
+> I cannot exactly say what it triggers it happens for me randomly.
+> This kernel version is not usable for my server anymore.
+> Hope you can help us. x86_64 seems not to be affected.
 
-> +       else
-> +               clk_enable(host->ciu_clk);
-> +
-> +       if (IS_ERR(host->ciu_clk))
-> +               host->bus_hz = host->pdata->bus_hz;
-> +       else
-> +               host->bus_hz = clk_get_rate(host->ciu_clk);
-> +
-> +       if (!host->bus_hz) {
->                dev_err(&host->dev,
->                        "Platform data must supply bus speed\n");
-> -               return -ENODEV;
-> +               ret = -ENODEV;
-> +               goto err_clk;
->        }
->
-> -       host->bus_hz = host->pdata->bus_hz;
->        host->quirks = host->pdata->quirks;
->
->        spin_lock_init(&host->lock);
->        INIT_LIST_HEAD(&host->queue);
->
-> -
->        host->dma_ops = host->pdata->dma_ops;
->        dw_mci_init_dma(host);
->
-> @@ -2095,6 +2111,13 @@ err_dmaunmap:
->                regulator_disable(host->vmmc);
->                regulator_put(host->vmmc);
->        }
-> +       kfree(host);
-> +
-> +err_clk:
-> +       clk_disable(host->ciu_clk);
-> +       clk_disable(host->biu_clk);
-> +       clk_put(host->ciu_clk);
-> +       clk_put(host->biu_clk);
+What version of binutils you built that kernel with?
+Is it by any chance 2.22.52.0.2?
 
-Are these calls safe, or do we need to check IS_ERR as above?
+I'm seeing similiar crashes on i686 when running 3.3.x built with that
+version of binutils, and downgrade to 2.22.52.0.1 results in working
+kernel.
 
->        return ret;
->  }
->  EXPORT_SYMBOL(dw_mci_probe);
-> @@ -2128,6 +2151,10 @@ void dw_mci_remove(struct dw_mci *host)
->                regulator_put(host->vmmc);
->        }
->
-> +       clk_disable(host->ciu_clk);
-> +       clk_disable(host->biu_clk);
-> +       clk_put(host->ciu_clk);
-> +       clk_put(host->biu_clk);
+An example bugs:
 
-Likewise.
+[  309.059679] BUG: unable to handle kernel paging request at 00100104
+[  309.059986] IP: [<c01ea221>] isolate_lru_pages+0xc1/0x320
+[  309.059986] *pdpt = 000000001dd4c001 *pde = 0000000000000000 
+[  309.059986] Oops: 0002 [#1] SMP 
+[  309.059986] Modules linked in: sch_sfq md_mod dm_round_robin dm_multipath scsi_dh dm_mod ohci_hcd ehci_hcd ssb mmc_core pcmcia pcmcia_core usbcore ppdev usb_common i2c_piix4 psmouse serio_raw i2c_core sr_mod cdrom pcnet32 mii evdev floppy pcspkr parport_pc parport button ac processor xfs scsi_wait_scan sd_mod crc_t10dif ata_piix libata scsi_mod
+[  309.059986] 
+[  309.059986] Pid: 18, comm: kswapd0 Tainted: G    B        3.3.4.bad-1 #8 innotek GmbH VirtualBox
+[  309.059986] EIP: 0060:[<c01ea221>] EFLAGS: 00010002 CPU: 0
+[  309.059986] EIP is at isolate_lru_pages+0xc1/0x320
+[  309.059986] EAX: 00200200 EBX: df464474 ECX: dd4c7e08 EDX: 00100100
+[  309.059986] ESI: dec344e0 EDI: df464460 EBP: dd4c7dd0 ESP: dd4c7d78
+[  309.059986]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[  309.059986] Process kswapd0 (pid: 18, ti=dd4c6000 task=dee14840 task.ti=dd4c6000)
+[  309.059986] Stack:
+[  309.059986]  dd4c7dcc c0204b63 dd4c7dbc dd4c7e20 dd68a910 dd4c7da0 00000001 ffffffff
+[  309.059986]  dd4c7e14 00000000 dd4c7dcc 00000000 00000000 00000001 00000000 00000001
+[  309.059986]  00000001 dd4c7e08 00000000 dd4c7f58 c06964c0 00000001 dd4c7e30 c01eb7a5
+[  309.059986] Call Trace:
+[  309.059986]  [<c0204b63>] ? page_referenced+0x233/0x2b0
+[  309.059986]  [<c01eb7a5>] shrink_inactive_list+0xd5/0x420
+[  309.059986]  [<c01ebed4>] shrink_mem_cgroup_zone+0x3e4/0x590
+[  309.059986]  [<c021ff01>] ? mem_cgroup_iter+0xc1/0x210
+[  309.059986]  [<c01ec0de>] shrink_zone+0x5e/0x80
+[  309.059986]  [<c01ec4b0>] kswapd+0x3b0/0x8f0
+[  309.059986]  [<c015c240>] ? abort_exclusive_wait+0x80/0x80
+[  309.059986]  [<c01ec100>] ? shrink_zone+0x80/0x80
+[  309.059986]  [<c015bbbd>] kthread+0x6d/0x80
+[  309.059986]  [<c015bb50>] ? kthread_freezable_should_stop+0x60/0x60
+[  309.059986]  [<c04f901e>] kernel_thread_helper+0x6/0x10
+[  309.059986] Code: 10 8b 43 ec 89 f8 e8 4f fe ff ff 83 f8 f0 0f 84 2e 01 00 00 85 c0 0f 85 1e 01 00 00 89 f8 e8 27 75 03 00 8b 13 8b 43 04 8b 4d ec <89> 42 04 89 10 8b 01 8b 55 e0 89 58 04 89 03 89 4b 04 89 19 8b 
+[  309.059986] EIP: [<c01ea221>] isolate_lru_pages+0xc1/0x320 SS:ESP 0068:dd4c7d78
+[  309.059986] CR2: 0000000000100104
+[  309.059986] ---[ end trace 56683a8dc0a40f2b ]---
 
->  }
->  EXPORT_SYMBOL(dw_mci_remove);
->
-> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-> index 7a7ebd3..fa9a139 100644
-> --- a/include/linux/mmc/dw_mmc.h
-> +++ b/include/linux/mmc/dw_mmc.h
-> @@ -78,6 +78,8 @@ struct mmc_data;
->  * @data_offset: Set the offset of DATA register according to VERID.
->  * @dev: Device associated with the MMC controller.
->  * @pdata: Platform data associated with the MMC controller.
-> + * @biu_clk: Pointer to bus interface unit clock instance.
-> + * @ciu_clk: Pointer to card interface unit clock instance.
->  * @slot: Slots sharing this MMC controller.
->  * @fifo_depth: depth of FIFO.
->  * @data_shift: log2 of FIFO item size.
-> @@ -158,6 +160,8 @@ struct dw_mci {
->        u16                     data_offset;
->        struct device           dev;
->        struct dw_mci_board     *pdata;
-> +       struct clk              *biu_clk;
-> +       struct clk              *ciu_clk;
->        struct dw_mci_slot      *slot[MAX_MCI_SLOTS];
->
->        /* FIFO push and pull */
-> --
-> 1.7.5.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+[   41.600732] BUG: unable to handle kernel paging request at 00200200
+[   41.603345] IP: [<c01ea224>] isolate_lru_pages+0xc4/0x320
+[   41.603345] *pdpt = 0000000000091001 *pde = 0000000000000000 
+[   41.603345] Oops: 0002 [#1] SMP 
+[   41.603345] Modules linked in: sch_sfq md_mod dm_round_robin dm_multipath scsi_dh dm_mod ohci_hcd ehci_hcd ssb mmc_core pcmcia pcmcia_core usbcore usb_common sr_mod cdrom i2c_piix4 ppdev floppy psmouse serio_raw i2c_core evdev pcnet32 mii pcspkr processor parport_pc parport ac button xfs scsi_wait_scan sd_mod crc_t10dif ata_piix libata scsi_mod
+[   41.603345] 
+[   41.603345] Pid: 18, comm: kswapd0 Tainted: G    B        3.3.4.bad-1 #9 innotek GmbH VirtualBox
+[   41.603345] EIP: 0060:[<c01ea224>] EFLAGS: 00010006 CPU: 0
+[   41.603345] EIP is at isolate_lru_pages+0xc4/0x320
+[   41.603345] EAX: 00200200 EBX: df4637b4 ECX: dd4c7ed8 EDX: dec344d8
+[   41.603345] ESI: dec344d8 EDI: df4637a0 EBP: dd4c7ea0 ESP: dd4c7e48
+[   41.603345]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[   41.603345] Process kswapd0 (pid: 18, ti=dd4c6000 task=dee14840 task.ti=dd4c6000)
+[   41.603345] Stack:
+[   41.603345]  dd4c7e48 dd4c7e48 00000008 c06984c0 c06984c0 dd4c7e84 c01e5756 ffffffff
+[   41.603345]  c01e4ef0 00000000 df204bc0 00000000 00000000 00000001 00000007 00000001
+[   41.603345]  00000020 dd4c7ed8 00000007 dd4c7f58 00000002 dd4c7ed8 dd4c7f04 c01eaa7e
+[   41.603345] Call Trace:
+[   41.603345]  [<c01e5756>] ? pagevec_lru_move_fn+0xa6/0xc0
+[   41.603345]  [<c01e4ef0>] ? update_page_reclaim_stat+0x50/0x50
+[   41.603345]  [<c01eaa7e>] shrink_active_list.isra.54+0x9e/0x300
+[   41.603345]  [<c019720d>] ? css_get_next+0x5d/0xa0
+[   41.603345]  [<c01ec3ae>] kswapd+0x2ae/0x8f0
+[   41.603345]  [<c04f0791>] ? __schedule+0x241/0x690
+[   41.603345]  [<c015c240>] ? abort_exclusive_wait+0x80/0x80
+[   41.603345]  [<c01ec100>] ? shrink_zone+0x80/0x80
+[   41.603345]  [<c015bbbd>] kthread+0x6d/0x80
+[   41.603345]  [<c015bb50>] ? kthread_freezable_should_stop+0x60/0x60
+[   41.603345]  [<c04f901e>] kernel_thread_helper+0x6/0x10
+[   41.603345] Code: ec 89 f8 e8 4f fe ff ff 83 f8 f0 0f 84 2e 01 00 00 85 c0 0f 85 1e 01 00 00 89 f8 e8 27 75 03 00 8b 13 8b 43 04 8b 4d ec 89 42 04 <89> 10 8b 01 8b 55 e0 89 58 04 89 03 89 4b 04 89 19 8b 43 ec 25 
+[   41.603345] EIP: [<c01ea224>] isolate_lru_pages+0xc4/0x320 SS:ESP 0068:dd4c7e48
+[   41.603345] CR2: 0000000000200200
+[   41.603345] ---[ end trace c9a22c4036e832d4 ]---
+
+
+-- 
+Jan RÄ™korajski                                 | PLD/Linux
+SysAdm                                         | http://www.pld-linux.org/
+baggins<at>mimuw.edu.pl
+baggins<at>pld-linux.org
