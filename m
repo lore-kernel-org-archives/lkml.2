@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab2EBOya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 10:54:30 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:49459 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754649Ab2EBOyR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 10:54:17 -0400
-Date: Wed, 2 May 2012 15:54:12 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] efi: Validate UEFI boot variables
-Message-ID: <20120502145412.GA20058@srcf.ucam.org>
-References: <1335816690-26019-1-git-send-email-mjg@redhat.com>
- <1335816690-26019-2-git-send-email-mjg@redhat.com>
- <1335930906.8274.97.camel@deadeye>
+	id S1755187Ab2EBO4A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 10:56:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59914 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754266Ab2EBOz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 10:55:58 -0400
+Date: Wed, 2 May 2012 17:55:56 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: kvm@vger.kernel.org
+Cc: Rob Landley <rob@landley.net>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, gleb@redhat.com,
+        Randy Dunlap <randy.dunlap@oracle.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2] kvm: fix cpuid eax
+Message-ID: <20120502145554.GA2864@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1335930906.8274.97.camel@deadeye>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 04:55:06AM +0100, Ben Hutchings wrote:
+cpuid eax should return the max leaf so that
+guests can find out the valid range.
+This matches Xen et al.
+Update documentation to match.
 
-> This validation is crap; you're not accounting for the size of the node
-> or invalid lengths.  Try:
+Tested with -cpu host.
 
-Good catch.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-> Isn't this slightly too restrictive?  The '& 0xff' results in many
-> non-ASCII characters aliasing hex digits and potentially causes a
-> variable to be validated as if it was special.  I would think the
-> correct condition is:
+Changes from v1:
+	Updated documentation.
 
-Mm. Yeah, I guess that should probably be permitted.
+ Documentation/virtual/kvm/cpuid.txt |    6 +++++-
+ arch/x86/kvm/cpuid.c                |    2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-> 		if (var->VariableName[i] > 127 ||
-> 		    hex_to_bin(var->VariableName[i]) < 0)
-> 
-> Presumably the variable should also be ignored if there are any more
-> characters after the 4 hex digits?
-
-The spec doesn't permit any such names, so I don't think it makes any 
-difference in practice. But in theory, we should probably either 
-explicitly permit or reject them rather than treating them as if they're 
-boot variables.
-
-> > +	/* A valid entry must be at least 6 bytes */
-> > +	if (len < 6)
-> > +		return false;
-> 
-> Surely 8 bytes - otherwise you don't even have space for the
-> description's null terminator.
-
-Yes, I guess that could trip things up.
-
-> > +	filepathlength = buffer[4] | buffer[5] << 8;
-> > +
-> > +	/*
-> > +	 * There's no stored length for the description, so it has to be
-> > +	 * found by hand
-> > +	 */
-> > +	desclength = utf16_strsize((efi_char16_t *)(buffer + 6), len) + 2;
-> [...]
-> 
-> Second argument should be len - 6.
-
-Sure.
-
+diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
+index 8820685..83afe65 100644
+--- a/Documentation/virtual/kvm/cpuid.txt
++++ b/Documentation/virtual/kvm/cpuid.txt
+@@ -10,11 +10,15 @@ a guest.
+ KVM cpuid functions are:
+ 
+ function: KVM_CPUID_SIGNATURE (0x40000000)
+-returns : eax = 0,
++returns : eax = 0x40000001,
+           ebx = 0x4b4d564b,
+           ecx = 0x564b4d56,
+           edx = 0x4d.
+ Note that this value in ebx, ecx and edx corresponds to the string "KVMKVMKVM".
++The value in eax corresponds to the maximum cpuid function present in this leaf,
++and will be updated if more functions are added in the future.
++Note also that old hosts set eax value to 0x0. This should
++be interpreted as if the value was 0x40000001.
+ This function queries the presence of KVM cpuid leafs.
+ 
+ 
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index 9fed5be..eba8345 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -397,7 +397,7 @@ static int do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 	case KVM_CPUID_SIGNATURE: {
+ 		char signature[12] = "KVMKVMKVM\0\0";
+ 		u32 *sigptr = (u32 *)signature;
+-		entry->eax = 0;
++		entry->eax = KVM_CPUID_FEATURES;
+ 		entry->ebx = sigptr[0];
+ 		entry->ecx = sigptr[1];
+ 		entry->edx = sigptr[2];
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+MST
