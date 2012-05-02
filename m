@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602Ab2EBC1n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 22:27:43 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46094 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758562Ab2EBC1j (ORCPT
+	id S1758642Ab2EBC2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 22:28:05 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48838 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758609Ab2EBC1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 22:27:39 -0400
+	Tue, 1 May 2012 22:27:43 -0400
 From: Matt Turner <mattst88@gmail.com>
 To: linux-alpha@vger.kernel.org
 Cc: Richard Henderson <rth@twiddle.net>,
         Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
         linux-kernel@vger.kernel.org, Matt Turner <mattst88@gmail.com>
-Subject: [PATCH 2/4] alpha: properly define get/set_rtc_time on Marvel/SMP
-Date: Tue,  1 May 2012 22:27:22 -0400
-Message-Id: <1335925644-5192-2-git-send-email-mattst88@gmail.com>
+Subject: [PATCH 4/4] alpha: silence 'const' warning in sys_marvel.c
+Date: Tue,  1 May 2012 22:27:24 -0400
+Message-Id: <1335925644-5192-4-git-send-email-mattst88@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1335925644-5192-1-git-send-email-mattst88@gmail.com>
 References: <1335925644-5192-1-git-send-email-mattst88@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The marvel_get_rtc_time and marvel_set_rtc_time are static, but they're
-available through Marvel's machine vector.
+warning: passing argument 1 of 'pci_find_capability' discards 'const' qualifier from pointer target type
 
-Reported-by: Raúl Porcel <armin76@gentoo.org>
 Signed-off-by: Matt Turner <mattst88@gmail.com>
 ---
-Ivan: I'd appreciate it if you could confirm that this is okay. It's not
-clear to me how the marvel_get/set_rtc_time functions could have ever been
-called externally.
+ arch/alpha/kernel/sys_marvel.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
- arch/alpha/include/asm/rtc.h |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/arch/alpha/include/asm/rtc.h b/arch/alpha/include/asm/rtc.h
-index 1f7fba6..d70408d 100644
---- a/arch/alpha/include/asm/rtc.h
-+++ b/arch/alpha/include/asm/rtc.h
-@@ -1,14 +1,10 @@
- #ifndef _ALPHA_RTC_H
- #define _ALPHA_RTC_H
+diff --git a/arch/alpha/kernel/sys_marvel.c b/arch/alpha/kernel/sys_marvel.c
+index 14a4b6a..407accc 100644
+--- a/arch/alpha/kernel/sys_marvel.c
++++ b/arch/alpha/kernel/sys_marvel.c
+@@ -317,7 +317,7 @@ marvel_init_irq(void)
+ }
  
--#if defined(CONFIG_ALPHA_GENERIC)
-+#if defined(CONFIG_ALPHA_MARVEL) && defined(CONFIG_SMP) \
-+ || defined(CONFIG_ALPHA_GENERIC)
- # define get_rtc_time		alpha_mv.rtc_get_time
- # define set_rtc_time		alpha_mv.rtc_set_time
--#else
--# if defined(CONFIG_ALPHA_MARVEL) && defined(CONFIG_SMP)
--#  define get_rtc_time		marvel_get_rtc_time
--#  define set_rtc_time		marvel_set_rtc_time
--# endif
- #endif
- 
- #include <asm-generic/rtc.h>
+ static int 
+-marvel_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
++marvel_map_irq(struct pci_dev *dev, u8 slot, u8 pin)
+ {
+ 	struct pci_controller *hose = dev->sysdata;
+ 	struct io7_port *io7_port = hose->sysdata;
 -- 
 1.7.3.4
 
