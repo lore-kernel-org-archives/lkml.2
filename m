@@ -1,194 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab2EBT2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 15:28:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56702 "EHLO
+	id S1756310Ab2EBTZN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 15:25:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56682 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756155Ab2EBTZO (ORCPT
+	with ESMTP id S1756155Ab2EBTZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 15:25:14 -0400
+	Wed, 2 May 2012 15:25:11 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/15] perf stat: Convert to struct perf_target
-Date: Wed,  2 May 2012 16:24:52 -0300
-Message-Id: <1335986702-9408-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 03/15] perf tools: Fix include header files in util/parse-events.h
+Date: Wed,  2 May 2012 16:24:50 -0300
+Message-Id: <1335986702-9408-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1335986702-9408-1-git-send-email-acme@infradead.org>
 References: <1335986702-9408-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Robert Richter <robert.richter@amd.com>
 
-Use struct perf_target as it is introduced by previous patch.
+Include header fixes for
 
-This is a preparation of further changes.
+... bool:
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1335417327-11796-3-git-send-email-namhyung.kim@lge.com
+ util/parse-events.h:31: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘have_tracepoints’
+
+... and types.h:
+
+ util/parse-events.h:28: error: expected ‘)’ before ‘config’
+ util/parse-events.h:34: error: expected declaration specifiers or ‘...’ before ‘u64’
+ util/parse-events.h:45: error: expected ‘)’ before ‘type’
+
+This happens if now other include files are included before
+util/parse-events.h.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1333643188-26895-2-git-send-email-robert.richter@amd.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-stat.c |   47 +++++++++++++++++++++------------------------
- 1 file changed, 22 insertions(+), 25 deletions(-)
+ tools/perf/util/parse-events.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index dde9e17..1ca767d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -175,22 +175,19 @@ static struct perf_event_attr very_very_detailed_attrs[] = {
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index ca069f8..5cb0028 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -4,7 +4,9 @@
+  * Parse symbolic events/counts passed in as options:
+  */
  
- static struct perf_evlist	*evsel_list;
++#include <stdbool.h>
+ #include "../../../include/linux/perf_event.h"
++#include "types.h"
  
--static bool			system_wide			=  false;
--static int			run_idx				=  0;
-+static struct perf_target	target;
- 
-+static int			run_idx				=  0;
- static int			run_count			=  1;
- static bool			no_inherit			= false;
- static bool			scale				=  true;
- static bool			no_aggr				= false;
--static const char		*target_pid;
--static const char		*target_tid;
- static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
- static int			detailed_run			=  0;
- static bool			sync_run			=  false;
- static bool			big_num				=  true;
- static int			big_num_opt			=  -1;
--static const char		*cpu_list;
- static const char		*csv_sep			= NULL;
- static bool			csv_output			= false;
- static bool			group				= false;
-@@ -293,10 +290,10 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
- 
- 	attr->inherit = !no_inherit;
- 
--	if (system_wide)
-+	if (target.system_wide)
- 		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
- 						group, group_fd);
--	if (!target_pid && !target_tid && (!group || evsel == first)) {
-+	if (!target.pid && !target.tid && (!group || evsel == first)) {
- 		attr->disabled = 1;
- 		attr->enable_on_exec = 1;
- 	}
-@@ -446,7 +443,7 @@ static int run_perf_stat(int argc __used, const char **argv)
- 			exit(-1);
- 		}
- 
--		if (!target_tid && !target_pid && !system_wide)
-+		if (!target.tid && !target.pid && !target.system_wide)
- 			evsel_list->threads->map[0] = child_pid;
- 
- 		/*
-@@ -476,7 +473,7 @@ static int run_perf_stat(int argc __used, const char **argv)
- 				error("You may not have permission to collect %sstats.\n"
- 				      "\t Consider tweaking"
- 				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
--				      system_wide ? "system-wide " : "");
-+				      target.system_wide ? "system-wide " : "");
- 			} else {
- 				error("open_counter returned with %d (%s). "
- 				      "/bin/dmesg may provide additional information.\n",
-@@ -968,14 +965,14 @@ static void print_stat(int argc, const char **argv)
- 	if (!csv_output) {
- 		fprintf(output, "\n");
- 		fprintf(output, " Performance counter stats for ");
--		if (!target_pid && !target_tid) {
-+		if (!target.pid && !target.tid) {
- 			fprintf(output, "\'%s", argv[0]);
- 			for (i = 1; i < argc; i++)
- 				fprintf(output, " %s", argv[i]);
--		} else if (target_pid)
--			fprintf(output, "process id \'%s", target_pid);
-+		} else if (target.pid)
-+			fprintf(output, "process id \'%s", target.pid);
- 		else
--			fprintf(output, "thread id \'%s", target_tid);
-+			fprintf(output, "thread id \'%s", target.tid);
- 
- 		fprintf(output, "\'");
- 		if (run_count > 1)
-@@ -1049,11 +1046,11 @@ static const struct option options[] = {
- 		     "event filter", parse_filter),
- 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
- 		    "child tasks do not inherit counters"),
--	OPT_STRING('p', "pid", &target_pid, "pid",
-+	OPT_STRING('p', "pid", &target.pid, "pid",
- 		   "stat events on existing process id"),
--	OPT_STRING('t', "tid", &target_tid, "tid",
-+	OPT_STRING('t', "tid", &target.tid, "tid",
- 		   "stat events on existing thread id"),
--	OPT_BOOLEAN('a', "all-cpus", &system_wide,
-+	OPT_BOOLEAN('a', "all-cpus", &target.system_wide,
- 		    "system-wide collection from all CPUs"),
- 	OPT_BOOLEAN('g', "group", &group,
- 		    "put the counters into a counter group"),
-@@ -1072,7 +1069,7 @@ static const struct option options[] = {
- 	OPT_CALLBACK_NOOPT('B', "big-num", NULL, NULL, 
- 			   "print large numbers with thousands\' separators",
- 			   stat__set_big_num),
--	OPT_STRING('C', "cpu", &cpu_list, "cpu",
-+	OPT_STRING('C', "cpu", &target.cpu_list, "cpu",
- 		    "list of cpus to monitor in system-wide"),
- 	OPT_BOOLEAN('A', "no-aggr", &no_aggr,
- 		    "disable CPU count aggregation"),
-@@ -1190,13 +1187,13 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	} else if (big_num_opt == 0) /* User passed --no-big-num */
- 		big_num = false;
- 
--	if (!argc && !target_pid && !target_tid)
-+	if (!argc && !target.pid && !target.tid)
- 		usage_with_options(stat_usage, options);
- 	if (run_count <= 0)
- 		usage_with_options(stat_usage, options);
- 
- 	/* no_aggr, cgroup are for system-wide only */
--	if ((no_aggr || nr_cgroups) && !system_wide) {
-+	if ((no_aggr || nr_cgroups) && !target.system_wide) {
- 		fprintf(stderr, "both cgroup and no-aggregation "
- 			"modes only available in system-wide mode\n");
- 
-@@ -1206,18 +1203,18 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	if (add_default_attributes())
- 		goto out;
- 
--	if (target_pid)
--		target_tid = target_pid;
-+	if (target.pid)
-+		target.tid = target.pid;
- 
--	evsel_list->threads = thread_map__new_str(target_pid,
--						  target_tid, UINT_MAX);
-+	evsel_list->threads = thread_map__new_str(target.pid,
-+						  target.tid, UINT_MAX);
- 	if (evsel_list->threads == NULL) {
- 		pr_err("Problems finding threads of monitor\n");
- 		usage_with_options(stat_usage, options);
- 	}
- 
--	if (system_wide)
--		evsel_list->cpus = cpu_map__new(cpu_list);
-+	if (target.system_wide)
-+		evsel_list->cpus = cpu_map__new(target.cpu_list);
- 	else
- 		evsel_list->cpus = cpu_map__dummy_new();
- 
+ struct list_head;
+ struct perf_evsel;
 -- 
 1.7.9.2.358.g22243
 
