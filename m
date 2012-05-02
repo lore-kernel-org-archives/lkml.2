@@ -1,146 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab2EBFwu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 01:52:50 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:41576 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab2EBFws (ORCPT
+	id S1754251Ab2EBGLz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 02:11:55 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41834 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab2EBGLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 01:52:48 -0400
-Subject: [PATCH v2 02/12] mm: add link from struct lruvec to struct zone
-To: Andrew Morton <akpm@linux-foundation.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 02 May 2012 09:52:35 +0400
-Message-ID: <20120502055235.28244.86363.stgit@zurg>
-In-Reply-To: <20120426075356.18961.40318.stgit@zurg>
-References: <20120426075356.18961.40318.stgit@zurg>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 2 May 2012 02:11:54 -0400
+Date: Wed, 2 May 2012 16:11:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: There is no tree for May 2
+Message-Id: <20120502161140.56f3b75d4457e57da87bf770@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__2_May_2012_16_11_40_+1000_aiYoX1NAYLlihLkD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is first stage of struct mem_cgroup_zone removal, further patches replaces
-struct mem_cgroup_zone with pointer to struct lruvec.
+--Signature=_Wed__2_May_2012_16_11_40_+1000_aiYoX1NAYLlihLkD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If CONFIG_CGROUP_MEM_RES_CTLR=n lruvec_zone() is just container_of().
+"Normal service should resume tomorrow" ;-)
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
----
+--Signature=_Wed__2_May_2012_16_11_40_+1000_aiYoX1NAYLlihLkD
+Content-Type: application/pgp-signature
 
-v2: fix comment
----
- include/linux/mmzone.h |   14 ++++++++++++++
- mm/memcontrol.c        |    4 +---
- mm/mmzone.c            |   14 ++++++++++++++
- mm/page_alloc.c        |    8 +-------
- 4 files changed, 30 insertions(+), 10 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 5c4880b..2427706 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -201,6 +201,9 @@ struct zone_reclaim_stat {
- struct lruvec {
- 	struct list_head lists[NR_LRU_LISTS];
- 	struct zone_reclaim_stat reclaim_stat;
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-+	struct zone *zone;
-+#endif
- };
- 
- /* Mask used at gathering information at once (see memcontrol.c) */
-@@ -729,6 +732,17 @@ extern int init_currently_empty_zone(struct zone *zone, unsigned long start_pfn,
- 				     unsigned long size,
- 				     enum memmap_context context);
- 
-+extern void lruvec_init(struct lruvec *lruvec, struct zone *zone);
-+
-+static inline struct zone *lruvec_zone(struct lruvec *lruvec)
-+{
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-+	return lruvec->zone;
-+#else
-+	return container_of(lruvec, struct zone, lruvec);
-+#endif
-+}
-+
- #ifdef CONFIG_HAVE_MEMORY_PRESENT
- void memory_present(int nid, unsigned long start, unsigned long end);
- #else
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a2184a2..3e7b91c 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4934,7 +4934,6 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
- {
- 	struct mem_cgroup_per_node *pn;
- 	struct mem_cgroup_per_zone *mz;
--	enum lru_list lru;
- 	int zone, tmp = node;
- 	/*
- 	 * This routine is called against possible nodes.
-@@ -4952,8 +4951,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
- 
- 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
- 		mz = &pn->zoneinfo[zone];
--		for_each_lru(lru)
--			INIT_LIST_HEAD(&mz->lruvec.lists[lru]);
-+		lruvec_init(&mz->lruvec, &NODE_DATA(node)->node_zones[zone]);
- 		mz->usage_in_excess = 0;
- 		mz->on_tree = false;
- 		mz->memcg = memcg;
-diff --git a/mm/mmzone.c b/mm/mmzone.c
-index 7cf7b7d..6830eab 100644
---- a/mm/mmzone.c
-+++ b/mm/mmzone.c
-@@ -86,3 +86,17 @@ int memmap_valid_within(unsigned long pfn,
- 	return 1;
- }
- #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
-+
-+void lruvec_init(struct lruvec *lruvec, struct zone *zone)
-+{
-+	enum lru_list lru;
-+
-+	memset(lruvec, 0, sizeof(struct lruvec));
-+
-+	for_each_lru(lru)
-+		INIT_LIST_HEAD(&lruvec->lists[lru]);
-+
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-+	lruvec->zone = zone;
-+#endif
-+}
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1b951de..35478bd 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4361,7 +4361,6 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 	for (j = 0; j < MAX_NR_ZONES; j++) {
- 		struct zone *zone = pgdat->node_zones + j;
- 		unsigned long size, realsize, memmap_pages;
--		enum lru_list lru;
- 
- 		size = zone_spanned_pages_in_node(nid, j, zones_size);
- 		realsize = size - zone_absent_pages_in_node(nid, j,
-@@ -4411,12 +4410,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		zone->zone_pgdat = pgdat;
- 
- 		zone_pcp_init(zone);
--		for_each_lru(lru)
--			INIT_LIST_HEAD(&zone->lruvec.lists[lru]);
--		zone->lruvec.reclaim_stat.recent_rotated[0] = 0;
--		zone->lruvec.reclaim_stat.recent_rotated[1] = 0;
--		zone->lruvec.reclaim_stat.recent_scanned[0] = 0;
--		zone->lruvec.reclaim_stat.recent_scanned[1] = 0;
-+		lruvec_init(&zone->lruvec, zone);
- 		zap_zone_vm_stats(zone);
- 		zone->flags = 0;
- 		if (!size)
+iQIcBAEBCAAGBQJPoNAcAAoJEECxmPOUX5FECc4P/2QPGcRYnGFZBoKZc9E1MzQd
+UAsvqlCUfVcbilCxGS7mOpQPe+MGbGF+xwLev3gWE9Niq8RLin5uegh+S7Lc3lNj
+oEE6NvFqA7U1dDDQgKQwoqtIEaML2Wgq9LIehGccNR6ztY00YRzVYYVxshN1UV9l
+Qu0Pc5HyF58Cybc7nc9BGp/KapzgT6t0uTwxCqn6j4+0XceD8Kz/tzRbBqDZEC1C
+6YFN6d+9n8ej4lATArhFtSbdIsHhiqG1/2QgezWLaw51i/3hj8ty7hH/U+YRt6Bm
+m6TMCMdzllGdtfZGKJV+Vn32njSi96FqyUw8e6M8JrFjWZP2QUOTS6P2Pz147C2Q
+GKxVI5vcfeHE03Mr7XTiB/Mm267eqhOdlwvEbGUDMOgnQakSR/Ol9hkvVZsssxwc
+onTAZ7AbJfFHJVmtzxBxUjmOIcRtqBvT0EGPtbIOzGyYmaRrC9jPML6Q894NOLC8
+gekW5XJAwxDnHvxyWXI0oyFOjRlQYBY/0XxpXDzrMFqPJpWE5lABgjrV8NH6c8U5
+khTBuATcTMfPxyjQ6Yf75jAc8JVv6QLL46tyyDV3vjR/ZZgYoin80xGnbnDK+aUv
+JRhsxD5YDYRw2wz1GUS8Pi8uzZ8FNMKfnRmaBtTaakmcaFAuZo4ubkj8t3BFDISp
+0VtBM/unpqnC/V3ddEhM
+=cJjz
+-----END PGP SIGNATURE-----
 
+--Signature=_Wed__2_May_2012_16_11_40_+1000_aiYoX1NAYLlihLkD--
