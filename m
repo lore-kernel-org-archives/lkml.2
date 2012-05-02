@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758767Ab2EBDrn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 23:47:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25690 "EHLO mx1.redhat.com"
+	id S1758564Ab2EBDqj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 23:46:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1378 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758594Ab2EBDrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 23:47:40 -0400
-Subject: [V2 PATCH 6/9] vhost_net: zerocopy: fix possible NULL pointer
- dereference of vq->bufs
+	id S1752494Ab2EBDqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 23:46:38 -0400
+Subject: [V2 PATCH 0/9] vhost/macvtap zeropcopy fixes
 To: eric.dumazet@gmail.com, mst@redhat.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         davem@davemloft.net
 From: Jason Wang <jasowang@redhat.com>
-Date: Wed, 02 May 2012 11:42:23 +0800
-Message-ID: <20120502034223.11782.31222.stgit@amd-6168-8-1.englab.nay.redhat.com>
-In-Reply-To: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+Date: Wed, 02 May 2012 11:41:21 +0800
+Message-ID: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
 User-Agent: StGit/0.16-1-g60c4
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,27 +21,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we want to disable vhost_net backend while there's a tx work, a possible
-NULL pointer defernece may happen we we try to deference the vq->bufs after
-vhost_net_set_backend() assign a NULL to it.
+This is an updated since the last series of vhost/macvtap zerocopy fixes which
+fixes the the possible transmission stall, host kernel stack overflow and other
+misc fixes.
 
-As suggested by Michael, fix this by checking the vq->bufs instead of
-vhost_sock_zcopy().
+Changes from V1:
+- Addressing comments from Eric and Michael.
+- Adding more fixes into the seires.
+
 ---
- drivers/vhost/net.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index f0da2c3..ffdc0d8 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -166,7 +166,7 @@ static void handle_tx(struct vhost_net *net)
- 	if (wmem < sock->sk->sk_sndbuf / 2)
- 		tx_poll_stop(net);
- 	hdr_size = vq->vhost_hlen;
--	zcopy = vhost_sock_zcopy(sock);
-+	zcopy = vq->ubufs;
- 
- 	for (;;) {
- 		/* Release DMAs done buffers first */
+Jason Wang (9):
+      macvtap: zerocopy: fix offset calculation when building skb
+      macvtap: zerocopy: fix truesize underestimation
+      macvtap: zerocopy: put page when fail to get all requested user pages
+      macvtap: zerocopy: set SKBTX_DEV_ZEROCOPY only when skb is built successfully
+      macvtap: zerocopy: validate vectors before building skb
+      vhost_net: zerocopy: fix possible NULL pointer dereference of vq->bufs
+      vhost_net: re-poll only on EAGAIN or ENOBUFS
+      vhost_net: zerocopy: adding and signalling immediately when fully copied
+      vhost: zerocopy: poll vq in zerocopy callback
 
+
+ drivers/net/macvtap.c |   57 ++++++++++++++++++++++++++++++++++---------------
+ drivers/vhost/net.c   |    7 ++++--
+ drivers/vhost/vhost.c |    1 +
+ 3 files changed, 46 insertions(+), 19 deletions(-)
+
+-- 
+Jason Wang
