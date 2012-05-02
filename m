@@ -1,103 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab2EBF2t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 01:28:49 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:43252 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab2EBF2r (ORCPT
+	id S1753346Ab2EBFkE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 01:40:04 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49061 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab2EBFkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 01:28:47 -0400
-Message-ID: <4FA0C607.5010002@linux.vnet.ibm.com>
-Date: Wed, 02 May 2012 13:28:39 +0800
+	Wed, 2 May 2012 01:40:02 -0400
+Message-ID: <4FA0C8A7.9000001@linux.vnet.ibm.com>
+Date: Wed, 02 May 2012 13:39:51 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
 Subject: Re: [PATCH v4 06/10] KVM: MMU: fast path of handling guest page fault
-References: <4F9776D2.7020506@linux.vnet.ibm.com> <4F9777A4.208@linux.vnet.ibm.com> <20120426234535.GA5057@amt.cnet> <4F9A3445.2060305@linux.vnet.ibm.com> <20120427145213.GB28796@amt.cnet> <4F9B89D9.9060307@linux.vnet.ibm.com> <20120501013459.GB10142@amt.cnet>
-In-Reply-To: <20120501013459.GB10142@amt.cnet>
+References: <4F9776D2.7020506@linux.vnet.ibm.com> <4F9777A4.208@linux.vnet.ibm.com>	<20120426234535.GA5057@amt.cnet> <4F9A3445.2060305@linux.vnet.ibm.com>	<20120427145213.GB28796@amt.cnet> <20120429175004.b54d8c095a60d98c8cdbc942@gmail.com>
+In-Reply-To: <20120429175004.b54d8c095a60d98c8cdbc942@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12050205-5816-0000-0000-0000025EF3CC
+x-cbid: 12050205-9574-0000-0000-0000027186C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2012 09:34 AM, Marcelo Tosatti wrote:
+On 04/29/2012 04:50 PM, Takuya Yoshikawa wrote:
 
-
+> On Fri, 27 Apr 2012 11:52:13 -0300
+> Marcelo Tosatti <mtosatti@redhat.com> wrote:
 > 
-> It is getting better, but not yet, there are still reads of sptep
-> scattered all over (as mentioned before, i think a pattern of read spte
-> once, work on top of that, atomically write and then deal with results
-> _everywhere_ (where mmu lock is held) is more consistent.
+>> Yes but the objective you are aiming for is to read and write sptes
+>> without mmu_lock. That is, i am not talking about this patch. 
+>> Please read carefully the two examples i gave (separated by "example)").
 > 
-
-
-But we only need care the path which depends on is_writable_pte(), no?
-
-So, where call is_writable_pte() are spte_has_volatile_bits(),
-spte_write_protect() and set_spte().
-
-I have changed these functions:
-In spte_has_volatile_bits():
- static bool spte_has_volatile_bits(u64 spte)
- {
-+	/*
-+	 * Always atomicly update spte if it can be updated
-+	 * out of mmu-lock.
-+	 */
-+	if (spte_can_lockless_update(spte))
-+		return true;
-+
-
-In spte_write_protect():
-
-+	spte = mmu_spte_update(sptep, spte);
-+
-+	if (is_writable_pte(spte))
-+		*flush |= true;
-+
-The 'spte' is from atomically read-write (xchg).
-
-in set_spte():
- set_pte:
--	mmu_spte_update(sptep, spte);
-+	entry = mmu_spte_update(sptep, spte);
- 	/*
- 	 * If we overwrite a writable spte with a read-only one we
- 	 * should flush remote TLBs. Otherwise rmap_write_protect
-The 'entry' is also the latest value.
-
->         /*
->          * If we overwrite a writable spte with a read-only one we
->          * should flush remote TLBs. Otherwise rmap_write_protect
->          * will find a read-only spte, even though the writable spte
->          * might be cached on a CPU's TLB.
->          */
->         if (is_writable_pte(entry) && !is_writable_pte(*sptep))
->                 kvm_flush_remote_tlbs(vcpu->kvm);
+> The real objective is not still clear.
 > 
-> This is inconsistent with the above obviously.
+> The ~10% improvement reported before was on macro benchmarks during live
+> migration.  At least, that optimization was the initial objective.
+> 
+> But at some point, the objective suddenly changed to "lock-less" without
+> understanding what introduced the original improvement.
+> 
+> Was the problem really mmu_lock contention?
 > 
 
 
-'entry' is not a problem since it is from atomically read-write as
-mentioned above, i need change this code to:
+Takuya, i am so tired to argue the advantage of lockless write-protect
+and lockless O(1) dirty-log again and again.
 
-		/*
-		 * Optimization: for pte sync, if spte was writable the hash
-		 * lookup is unnecessary (and expensive). Write protection
-		 * is responsibility of mmu_get_page / kvm_sync_page.
-		 * Same reasoning can be applied to dirty page accounting.
-		 */
-		if (!can_unsync && is_writable_pte(entry) /* Use 'entry' instead of '*sptep'. */
-			goto set_pte
-   ......
+> If the path being introduced by this patch is really fast, isn't it
+> possible to achieve the same improvement still using mmu_lock?
+> 
+> 
+> Note: During live migration, the fact that the guest gets faulted is
+> itself a limitation.  We could easily see noticeable slowdown of a
+> program even if it runs only between two GET_DIRTY_LOGs.
+> 
 
 
-         if (is_writable_pte(entry) && !is_writable_pte(spte)) /* Use 'spte' instead of '*sptep'. */
-                 kvm_flush_remote_tlbs(vcpu->kvm);
+Obviously no.
+
+It depends on what the guest is doing, from my autotest test, it very
+easily to see that, the huge improvement is on bench-migration not
+pure-migration.
+
+> 
+>> The rules for code under mmu_lock should be:
+>>
+>> 1) Spte updates under mmu lock must always be atomic and 
+>> with locked instructions.
+>> 2) Spte values must be read once, and appropriate action
+>> must be taken when writing them back in case their value 
+>> has changed (remote TLB flush might be required).
+> 
+> Although I am not certain about what will be really needed in the
+> final form, if this kind of maybe-needed-overhead is going to be
+> added little by little, I worry about possible regression.
+
+
+Well, will you suggest Linus to reject all patches and stop
+all discussion for the "possible regression" reason?
 
