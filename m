@@ -1,58 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab2EBW11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 18:27:27 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:60801 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974Ab2EBW11 (ORCPT
+	id S1755682Ab2EBW2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 18:28:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57522 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755127Ab2EBW1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 18:27:27 -0400
-Date: Wed, 2 May 2012 23:27:24 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [now bisected] Weird bluetooth keyboard regression - just me?
-Message-ID: <20120502222724.GB2215@srcf.ucam.org>
-References: <20120501110156.2b6e0561@lwn.net>
- <20120501171901.GA26006@srcf.ucam.org>
- <20120501120145.21f65ae2@lwn.net>
- <20120501183149.GA28536@srcf.ucam.org>
- <20120501123923.01ac1138@lwn.net>
- <20120501185455.GA29060@srcf.ucam.org>
- <20120501192736.GA29770@srcf.ucam.org>
- <20120501172454.0e811379@lwn.net>
- <20120502215034.GA622@srcf.ucam.org>
- <20120502160437.5f355fa3@lwn.net>
+	Wed, 2 May 2012 18:27:32 -0400
+Date: Wed, 2 May 2012 15:27:28 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Preston Fick <pffick@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        preston.fick@silabs.com
+Subject: Re: [PATCH 3/3] usb: cp210x: Add ioctl for GPIO support
+Message-ID: <20120502222728.GA2871@kroah.com>
+References: <1335845210-5147-1-git-send-email-preston.fick@silabs.com>
+ <1335845210-5147-3-git-send-email-preston.fick@silabs.com>
+ <20120502200356.GA25915@kroah.com>
+ <20120502214901.6b6e031c@pyramind.ukuu.org.uk>
+ <20120502215226.GD27281@kroah.com>
+ <20120502231027.1c45105d@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120502160437.5f355fa3@lwn.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20120502231027.1c45105d@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 04:04:37PM -0600, Jonathan Corbet wrote:
-> On Wed, 2 May 2012 22:50:34 +0100
-> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+On Wed, May 02, 2012 at 11:10:27PM +0100, Alan Cox wrote:
+> On Wed, 2 May 2012 14:52:26 -0700
+> Greg KH <gregkh@linuxfoundation.org> wrote:
 > 
-> > > > In either case, does the 
-> > > > attached file help if dropped into /lib/udev/rules.d ?  
+> > On Wed, May 02, 2012 at 09:49:01PM +0100, Alan Cox wrote:
+> > > > Actually, why can't you use the GPIO subsystem for something like this?
+> > > > Can't you export your device as both a usb-serial device and a gpio
+> > > > device and have things work properly that way?
 > > > 
-> > > Nope, no joy there.    
+> > > You still need the ioctls even then in order to discover the gpio
+> > > numbers
 > > 
-> > You tested after rebooting?
+> > What discovery?  The device knows what gpio values it has in it, and
+> > should be able to register those with the gpio subsystem.
 > 
-> Yes, of course.  I'm running a kernel that actually talks to my keyboard
-> most of the time, I *have* to reboot to try a broken one.
+> You open /dev/ttyUSB0
+> 
+> Ok now in your user application how are you going to find which gpio
+> numbers to use that are associated with this specific port,
 
-Hm. Well, easiest thing to do would just to be to delete that for the 
-moment and make sure that things work again - beyond that it's me trying 
-to figure out how to write a udev file to do the right thing when I 
-don't have hardware that has this layout. I'll see if I can mock it up.
+Just look at the gpio device that has ttyUSB0 as its parent.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> and how is udev going to do that to manage permissions ?
+
+How does udev handle permissions for gpio devices today?
+
+> So you need an ioctl to give you the range that is mapped to this (or a
+> sysfs node, but the sysfs node makes the security problem pretty
+> much insoluble)
+
+range for what?  Doesn't the gpio interfac provide the size of the gpio
+registers to userspace?
+
+As for security, how is that handled today with gpio devices?
+
+> > > and having done that youi've got potential races with unload
+> > > when you try and open them. You've also got permissions considerations
+> > > and synchronization between gpio and data problems.
+> > 
+> > That can be handled in the driver itself, if it really is a problem (the
+> > existing patch sure didn't handle any of that at all, so I'm guessing
+> > either it wasn't considered, or it isn't a problem.)
+> 
+> Not reliably
+> 
+> 	open /dev/ttyUSB0 [or sysfs node]
+> 	read gpio numbers
+> 	close 
+> 
+> 	open gpio foo
+> 
+> Oh dear... so random shell scripting user is going to screw up horribly.
+
+What's the odds that the data going across the tty link corrisponds with
+the gpio control?
+
+And shell scripting the gpio interface is used today, I've seen it on
+the beaglebone machine.
+
+> > > It's not a good way to go. It might make sense in some platforms to
+> > > expose them as both but its not a good general model.
+> > 
+> > Why isn't the gpio subsystem a good general model?  I thought that is
+> > what it was created to solve?
+> 
+> gpio provides a flat abstraction for arbitary pins on a platform. It's
+> really oriented to fairly fixed system stuff. It doesn't provide a useful
+> abstraction for extra carrier lines.
+> 
+> Imagine if RTS and DTR were driven by GPIO pins instead of the tty
+> layer. Many devices use them as extra magic GPIO lines not as tty control
+> lines, so its an equivalent argument.
+
+Ok, fair enough, but RTS and DTR are "well defined" as part of the RS232
+specs, and handle flow of the data itself.  These gpio lines are not tty
+control, but as you point out, used for other things, so keeping them
+separate from the tty node seems to make sense to me.
+
+> > > I'm currently favouring adding some 'additional control line' bits to
+> > > termiox.
+> > 
+> > Yes, but that's only good for usb-serial devices that also have gpio
+> > pins on the controller side.  Which seems pretty limited to me.
+> > 
+> > If I have a userspace program, and I want to use GPIO, I shouldn't have
+> > to care/know that the pins are really on the end of a USB->serial
+> > bridge, or somewhere hanging off of a SOC, the same userspace api should
+> > "just work", right?
+> 
+> For certain applications that makes more sense, which is why I said you
+> may well want to expose it as both. However you still need both, and
+> ideally we need a standardised pattern of assignments for line
+> disciplines that use the extra control lines (which has come up recently
+> for another device with extra lines)
+> 
+> I think it basically boils down to this
+> 
+> If you have a serial port with some gpio lines that drive arbitary
+> unrelated electronics then the gpio interface is handy because you can
+> use the same code logic as if it was wired to other pins elsewhere
+> 
+> If you are using them as part of the tty interface as extra control lines
+> (eg for smartcard protocols) then you want them driven via the tty
+> interface and doubly so once we add some of the smartcard/sim ldisc
+> support.
+> 
+> Hence we really need to expose them both ways because end users are doing
+> both things with the gpio pins on these ports.
+> 
+> So I'd suggest we expose them via termiox bits and also via the tty
+> providing gpio range info in a standardised way.
+
+Ok, I'll wait for your proposed standardised way before complaining any
+more :)
+
+thanks,
+
+greg k-h
