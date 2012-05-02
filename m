@@ -1,74 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab2EBMC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 08:02:58 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55878 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827Ab2EBMC4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 08:02:56 -0400
-Date: Wed, 2 May 2012 13:05:31 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to
- partition
-Message-ID: <20120502130531.4b7d98fa@pyramind.ukuu.org.uk>
-In-Reply-To: <4FA11963.3040007@redhat.com>
-References: <1335953452-10460-1-git-send-email-jack@suse.cz>
-	<4FA1092E.9090603@redhat.com>
-	<20120502115447.7dcc3a54@pyramind.ukuu.org.uk>
-	<4FA11454.2010103@redhat.com>
-	<20120502121208.3c19a9bc@pyramind.ukuu.org.uk>
-	<4FA11963.3040007@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754652Ab2EBME2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 08:04:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30278 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753932Ab2EBME1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 08:04:27 -0400
+Date: Wed, 2 May 2012 15:04:02 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: async pf: INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order
+ detected
+Message-ID: <20120502120402.GM22191@redhat.com>
+References: <CA+1xoqcPSCA+iNdMETZMhXpmGaVkC2ACCJZAt4CSBkaoVwVvGQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+1xoqcPSCA+iNdMETZMhXpmGaVkC2ACCJZAt4CSBkaoVwVvGQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> not inventing anything, the old ATA subsystem is already blocking most
-> "dangerous" ioctls for partitions, even if you have CAP_SYS_RAWIO.
-
-It blocked a few by default to protect hardware. It's a tricky tradeoff,
-which is quite different to this.
-
-> Now of course CAP_SYS_RAWIO lets you use ioperm or iopl, but that's a
-> separate issue and only limited to x86.
-
-Ie only 99.99% of the systems running desktop/server Linux OS designs.
-
-> Almost any capability can be abused to bypass checks.  True,
-> CAP_SYS_RAWIO is especially good at that, but still you can try.
-
-Why try - you are seeking to arbitarily impose your own worldview on the
-interface (and in doing so break back compatibility). The whole basis of
-the Unix philosophy is that the OS shouldn't try and micromanage the
-priviledged apps because that just leads to crap code.
-
-Think "small government" on this aspect of design. And with the patch you
-propose the analogy for your patch is the TSA.
-
-> > A process with CAP_SYS_RAWIO has total power. It's assumed to know what
-> > it is doing. Trying to block it doing stuff like that simply makes
-> > authors do them via different more crass methods.
+On Thu, Apr 26, 2012 at 04:50:35PM +0200, Sasha Levin wrote:
+> Hi all.
 > 
-> Getting appropriate permission on device nodes is less crass than
-> abusing partition device nodes.
+> I got a "INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected" warning
+> while running LTP inside a KVM guest using the recent -next kernel.
+> 
+> It seems that it was initially originated from rcu_torture_rea(), but I
+> don't think that it's a problem with RCU itself (I'll cc. Paul just in
+> case). RCU torture was indeed configured to run during the testing.
+> 
+> The output is attached since it's a bit long.
+> 
+The reason is mmdrop() called from irq context and in reality we do
+not need to hold reference to mm at all, so the patch below drops it.
+---
 
-Given a passed file handle how do you do that securely. Remember that
-open /dev/foo while you have a handle on /dev/foo1 could open a
-different disk if a hotplug has occurred.
+KVM: Do not take reference to mm during async #PF
 
-So there are good reasons to keep the partition behaviour.
+It turned to be totally unneeded. The reason the code was introduced is
+so that KVM can prefault swapped in page, but prefault can fail even
+if mm is pinned since page table can change anyway. KVM handles this
+situation correctly though and does not inject spurious page faults.
 
-Alan
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index b8ba6e4..e554e5a 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -79,7 +79,6 @@ struct kvm_task_sleep_node {
+ 	u32 token;
+ 	int cpu;
+ 	bool halted;
+-	struct mm_struct *mm;
+ };
+ 
+ static struct kvm_task_sleep_head {
+@@ -126,9 +125,7 @@ void kvm_async_pf_task_wait(u32 token)
+ 
+ 	n.token = token;
+ 	n.cpu = smp_processor_id();
+-	n.mm = current->active_mm;
+ 	n.halted = idle || preempt_count() > 1;
+-	atomic_inc(&n.mm->mm_count);
+ 	init_waitqueue_head(&n.wq);
+ 	hlist_add_head(&n.link, &b->list);
+ 	spin_unlock(&b->lock);
+@@ -161,9 +158,6 @@ EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
+ static void apf_task_wake_one(struct kvm_task_sleep_node *n)
+ {
+ 	hlist_del_init(&n->link);
+-	if (!n->mm)
+-		return;
+-	mmdrop(n->mm);
+ 	if (n->halted)
+ 		smp_send_reschedule(n->cpu);
+ 	else if (waitqueue_active(&n->wq))
+@@ -207,7 +201,7 @@ again:
+ 		 * async PF was not yet handled.
+ 		 * Add dummy entry for the token.
+ 		 */
+-		n = kmalloc(sizeof(*n), GFP_ATOMIC);
++		n = kzalloc(sizeof(*n), GFP_ATOMIC);
+ 		if (!n) {
+ 			/*
+ 			 * Allocation failed! Busy wait while other cpu
+@@ -219,7 +213,6 @@ again:
+ 		}
+ 		n->token = token;
+ 		n->cpu = smp_processor_id();
+-		n->mm = NULL;
+ 		init_waitqueue_head(&n->wq);
+ 		hlist_add_head(&n->link, &b->list);
+ 	} else
 
-
-
-
+--
+			Gleb.
