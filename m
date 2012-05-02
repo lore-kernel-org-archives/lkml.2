@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758564Ab2EBDqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 23:46:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1378 "EHLO mx1.redhat.com"
+	id S1758789Ab2EBDrv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 23:47:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6371 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752494Ab2EBDqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 23:46:38 -0400
-Subject: [V2 PATCH 0/9] vhost/macvtap zeropcopy fixes
+	id S1758594Ab2EBDrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 23:47:48 -0400
+Subject: [V2 PATCH 7/9] vhost_net: re-poll only on EAGAIN or ENOBUFS
 To: eric.dumazet@gmail.com, mst@redhat.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         davem@davemloft.net
 From: Jason Wang <jasowang@redhat.com>
-Date: Wed, 02 May 2012 11:41:21 +0800
-Message-ID: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+Date: Wed, 02 May 2012 11:42:32 +0800
+Message-ID: <20120502034232.11782.46122.stgit@amd-6168-8-1.englab.nay.redhat.com>
+In-Reply-To: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
 User-Agent: StGit/0.16-1-g60c4
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,32 +23,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an updated since the last series of vhost/macvtap zerocopy fixes which
-fixes the the possible transmission stall, host kernel stack overflow and other
-misc fixes.
+Currently, we restart tx polling unconditionally when sendmsg()
+fails. This would cause unnecessary wakeups of vhost wokers and waste
+cpu utlization when evil userspace(guest driver) is able to hit EFAULT or
+EINVAL.
 
-Changes from V1:
-- Addressing comments from Eric and Michael.
-- Adding more fixes into the seires.
+The polling is only needed when the socket send buffer were exceeded or not
+enough memory. So fix this by restarting polling only when sendmsg() returns
+EAGAIN/ENOBUFS.
 
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
+ drivers/vhost/net.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Jason Wang (9):
-      macvtap: zerocopy: fix offset calculation when building skb
-      macvtap: zerocopy: fix truesize underestimation
-      macvtap: zerocopy: put page when fail to get all requested user pages
-      macvtap: zerocopy: set SKBTX_DEV_ZEROCOPY only when skb is built successfully
-      macvtap: zerocopy: validate vectors before building skb
-      vhost_net: zerocopy: fix possible NULL pointer dereference of vq->bufs
-      vhost_net: re-poll only on EAGAIN or ENOBUFS
-      vhost_net: zerocopy: adding and signalling immediately when fully copied
-      vhost: zerocopy: poll vq in zerocopy callback
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index ffdc0d8..62828aa 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -257,7 +257,8 @@ static void handle_tx(struct vhost_net *net)
+ 					UIO_MAXIOV;
+ 			}
+ 			vhost_discard_vq_desc(vq, 1);
+-			tx_poll_start(net, sock);
++			if (err == -EAGAIN || err == -ENOBUFS)
++				tx_poll_start(net, sock);
+ 			break;
+ 		}
+ 		if (err != len)
 
-
- drivers/net/macvtap.c |   57 ++++++++++++++++++++++++++++++++++---------------
- drivers/vhost/net.c   |    7 ++++--
- drivers/vhost/vhost.c |    1 +
- 3 files changed, 46 insertions(+), 19 deletions(-)
-
--- 
-Jason Wang
