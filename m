@@ -1,55 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab2EBSTH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 14:19:07 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:60025 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755131Ab2EBSTF (ORCPT
+	id S1756053Ab2EBS04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 14:26:56 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:52027
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755691Ab2EBS0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 14:19:05 -0400
-Message-ID: <4FA17A95.9050603@gmail.com>
-Date: Wed, 02 May 2012 14:19:01 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 2 May 2012 14:26:53 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275dhz2dh668h839hd24he5bh)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M3ER8K-02-FJC-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 0/7] perf/x86-ibs and tools: Add support for AMD IBS
+Date: Wed, 2 May 2012 20:26:25 +0200
+Message-ID: <1335983192-23731-1-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.8.4
 MIME-Version: 1.0
-To: Ulrich Drepper <drepper@akkadia.org>
-CC: akpm@linux-foundation.org, dyoung@redhat.com, fengguang.wu@intel.com,
-        kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        n-horiguchi@ah.jp.nec.com, kosaki.motohiro@gmail.com
-Subject: Re: [PATCH] Cleanup page-type.c
-References: <201205021441.q42Ef1ap026902@drepperk.user.openhosting.com>
-In-Reply-To: <201205021441.q42Ef1ap026902@drepperk.user.openhosting.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/2/12 10:41 AM), Ulrich Drepper wrote:
-> Compiling page-type.c with a recent compiler produces many warnings,
-> mostly related to signed/unsigned comparisons.  This patch cleans up
-> most of them.
-> 
-> One remaining warning is about an unused parameter.  The<compiler.h>
-> file doesn't define a __unused macro (or the like) yet.  This can be
-> addressed later.
-> 
-> The line numbers for this patch correspond to the file changed to remove
-> the duplicate definitions of the KPF_* macros which is contained in
-> another patch.  It should apply cleanly albeit with warnings even without
-> that patch applied first.
-> 
-> 
-> Signed-off-by: Ulrich Drepper<drepper@gmail.com>
-> 
->   page-types.c |   22 +++++++++++-----------
->   1 file changed, 11 insertions(+), 11 deletions(-)
+This patch set adds perf tool support for AMD IBS. Mostly perf tool
+patches, but
 
-Looks good to me.
- Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+ perf/x86-ibs: Add support for IBS pseudo events
+
+includes kernel changes.
+
+It basically implements:
+
+ * General perf tool support for dynamically allocated pmus,
+ * Support for IBS pseudo events,
+ * perf-script support for IBS (updated version).
+
+With this patches there is the possibility to add pmu handler code for
+a specific pmu. If a pmu with handler code is listed in sysfs, it is
+activated and can be used with perf tools. E.g. perf-list shows
+available events of this pmu and the event parser of perf-record is
+able to setup profiling for that particular pmu. This mechanism is
+used to implement pmus for ibs (ibs_op/ibs_fetch).
+
+IBS pseudo events are derived from an IBS sample and determined
+through a combination of one or more IBS event flags or values.
+E.g. one could profile mispredicted branches with ibs using such
+pseudo events:
+
+ # perf record -a -e ibs_op:MISPREDICTED_BRANCH ...
+
+This is implemented with kernel side filtering of ibs samples by
+passing filter settings to the kernel (attr.config1/config2).
+
+I also attached an updated version of my previously posted patch that
+implements perf-script support for ibs. This is usefull for a user to
+dump raw ibs samples. The script can be used by the user as a basis
+for a script that post-processes ibs samples.
+
+Changes can be pulled from kernel.org and are available in the git
+repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git perf-ibs
+
+-Robert
 
 
-offtopic:
-Wu, I have (unrelated) one question. page-type is used from production
-systems nowadays. Why don't you want to move page-type.c into tools/ dir?
+Robert Richter (7):
+  perf tools: Fix generation of pmu list
+  perf tools: Add basic dynamic PMU support
+  perf tools: Add parser for dynamic PMU events
+  perf/x86-ibs: Add support for IBS pseudo events
+  perf, tools: Add raw event support for dynamic allocated pmus
+  perf tools: Add pmu mappings to header information
+  perf script: Add script to collect and display IBS samples
+
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c |   83 ++++++-
+ tools/perf/Makefile                      |    1 +
+ tools/perf/scripts/perl/bin/ibs-record   |   23 ++
+ tools/perf/scripts/perl/bin/ibs-report   |    6 +
+ tools/perf/scripts/perl/ibs.pl           |   47 ++++
+ tools/perf/util/header.c                 |   78 ++++++
+ tools/perf/util/header.h                 |    1 +
+ tools/perf/util/parse-events.c           |   45 +++-
+ tools/perf/util/parse-events.h           |    4 +-
+ tools/perf/util/parse-events.y           |   11 +-
+ tools/perf/util/pmu-ibs.c                |  419 ++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.c                    |  102 +++++++-
+ tools/perf/util/pmu.h                    |   19 ++
+ 13 files changed, 828 insertions(+), 11 deletions(-)
+ create mode 100644 tools/perf/scripts/perl/bin/ibs-record
+ create mode 100644 tools/perf/scripts/perl/bin/ibs-report
+ create mode 100644 tools/perf/scripts/perl/ibs.pl
+ create mode 100644 tools/perf/util/pmu-ibs.c
+
+-- 
+1.7.8.4
+
 
