@@ -1,168 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab2EBNo7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 09:44:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25449 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273Ab2EBNoz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 09:44:55 -0400
-X-Authority-Analysis: v=2.0 cv=fvFelSEf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=9QRZpqc-8XMA:10 a=5SG0PmZfjMsA:10 a=Z4Rwk6OoAAAA:8 a=pe7uiH_1oFhS6a0rf0IA:9 a=qc93Q-uhG_Dmufa0CxcA:7 a=PUjeQqilurYA:10 a=jbrJJM5MRmoA:10 a=IvSWoApnl5rvpy7U1OMA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1335966292.14207.40.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 0/2] [GIT PULL] ktest: A couple of fixes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Git Mailing List <git@vger.kernel.org>
-Date: Wed, 02 May 2012 09:44:52 -0400
-In-Reply-To: <7v62cf6y3d.fsf@alter.siamese.dyndns.org>
-References: <20120502004439.965120020@goodmis.org>
-	 <CA+55aFy02d13HkfwY-TEGwu=2cd8en+_rnrnwcwixGKRmdJRtA@mail.gmail.com>
-	 <7v62cf6y3d.fsf@alter.siamese.dyndns.org>
-Content-Type: multipart/mixed; boundary="=-i1GOf1ESdzsghpoZJQGN"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
+	id S1754536Ab2EBNqA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 09:46:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33997 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752606Ab2EBNp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 09:45:58 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: jaxboe@fusionio.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        npiggin@kernel.dk
+Subject: [patch, v2] block: don't mark buffers beyond end of disk as mapped
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 02 May 2012 09:45:51 -0400
+Message-ID: <x49obq666i8.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-i1GOf1ESdzsghpoZJQGN
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+We have a bug report open where a squashfs image mounted on ppc64 would
+exhibit errors due to trying to read beyond the end of the disk.  It can
+easily be reproduced by doing the following:
 
-On Tue, 2012-05-01 at 20:49 -0700, Junio C Hamano wrote:
-> Linus Torvalds <torvalds@linux-foundation.org> writes:
-> 
+[root@ibm-p750e-02-lp3 ~]# ls -l install.img
+-rw-r--r-- 1 root root 142032896 Apr 30 16:46 install.img
+[root@ibm-p750e-02-lp3 ~]# mount -o loop ./install.img /mnt/test
+[root@ibm-p750e-02-lp3 ~]# dd if=/dev/loop0 of=/dev/null 
+dd: reading `/dev/loop0': Input/output error
+277376+0 records in
+277376+0 records out
+142016512 bytes (142 MB) copied, 0.9465 s, 150 MB/s
 
-> When a normal developer wants to _reset to_ a particular tagged release,
-> in order to _start_ new work, she wouldn't be doing even the above "git
-> pull linus v3.4-rc5".  That will contaminate the result with whatever
-> random stuff she happened to have on the current branch.  A more natural
-> sequence would be "git fetch --tags linus" followed by either
-> 
->         git checkout v3.4-rc5 ;# to detach
+In dmesg, you'll find the following:
 
-The problem is, I like to know what has been pulled into mainline. I
-have patches in quilt (for ktest only, not for my other work) and will
-start adding them on a "clean" release. By doing a git pull (or fetch
-and merge), I like to see the fast forward to know if everything that's
-in my current branch has been pulled. If it hasn't, then something may
-have been missed.
+squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[   43.106012] attempt to access beyond end of device
+[   43.106029] loop0: rw=0, want=277410, limit=277408
+[   43.106039] Buffer I/O error on device loop0, logical block 138704
+[   43.106053] attempt to access beyond end of device
+[   43.106057] loop0: rw=0, want=277412, limit=277408
+[   43.106061] Buffer I/O error on device loop0, logical block 138705
+[   43.106066] attempt to access beyond end of device
+[   43.106070] loop0: rw=0, want=277414, limit=277408
+[   43.106073] Buffer I/O error on device loop0, logical block 138706
+[   43.106078] attempt to access beyond end of device
+[   43.106081] loop0: rw=0, want=277416, limit=277408
+[   43.106085] Buffer I/O error on device loop0, logical block 138707
+[   43.106089] attempt to access beyond end of device
+[   43.106093] loop0: rw=0, want=277418, limit=277408
+[   43.106096] Buffer I/O error on device loop0, logical block 138708
+[   43.106101] attempt to access beyond end of device
+[   43.106104] loop0: rw=0, want=277420, limit=277408
+[   43.106108] Buffer I/O error on device loop0, logical block 138709
+[   43.106112] attempt to access beyond end of device
+[   43.106116] loop0: rw=0, want=277422, limit=277408
+[   43.106120] Buffer I/O error on device loop0, logical block 138710
+[   43.106124] attempt to access beyond end of device
+[   43.106128] loop0: rw=0, want=277424, limit=277408
+[   43.106131] Buffer I/O error on device loop0, logical block 138711
+[   43.106135] attempt to access beyond end of device
+[   43.106139] loop0: rw=0, want=277426, limit=277408
+[   43.106143] Buffer I/O error on device loop0, logical block 138712
+[   43.106147] attempt to access beyond end of device
+[   43.106151] loop0: rw=0, want=277428, limit=277408
+[   43.106154] Buffer I/O error on device loop0, logical block 138713
+[   43.106158] attempt to access beyond end of device
+[   43.106162] loop0: rw=0, want=277430, limit=277408
+[   43.106166] attempt to access beyond end of device
+[   43.106169] loop0: rw=0, want=277432, limit=277408
+...
+[   43.106307] attempt to access beyond end of device
+[   43.106311] loop0: rw=0, want=277470, limit=2774
 
-> 
-> or
-> 
->         git checkout -b mywork v3.4-rc5 ;# to start
+Squashfs manages to read in the end block(s) of the disk during the
+mount operation.  Then, when dd reads the block device, it leads to
+block_read_full_page being called with buffers that are beyond end of
+disk, but are marked as mapped.  Thus, it would end up submitting read
+I/O against them, resulting in the errors mentioned above.  I fixed the
+problem by modifying init_page_buffers to only set the buffer mapped if
+it fell inside of i_size.
 
-But then I would end up with several branches that would require
-deleting. One way I could see myself in handling this case would be to
-delete the current branch and start again (thinking that everything was
-already pulled). But by doing that, if something wasn't pulled in, then
-I would have lost those changes without ever knowing.
+Cheers,
+Jeff
 
-> 
-> So the case to "reset to" is not very interesting.
-> 
-> But when a normal developer wants to _sync to_ a particular tagged
-> release, in order to _continue_ working on her topic, she would need to
-> have a merge (unless she does not have _anything_ herself), and at that
-> point, merging v3.4-rc5 vs v3.4-rc5^0 would not make that much of a
-> difference.  If she absolutely detests the "mergetag" header, she could do
-> a "git fetch --tags linus" followed by
-> 
-> 	git merge v3.4-rc5^0
-> 
-> which admittedly is two more letters than she used to type.
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Acked-by: Nick Piggin <npiggin@kernel.dk>
 
-This would fit into my workflow. Thus I could use this.
+--
 
-> 
-> If you mean by "Ideas" for additional features, obviously the last step
-> could be enhanced to use a more intuitive command line that requires the
-> user to type even more, i.e.
-> 
-> 	git merge --ff v3.4-rc5
-> 
-> Once that is done, "git pull --ff linus v3.4-rc5" would fall out as a
-> logical consequence.
-> 
-> But obviously these two would need new code ;-)
+Changes from v1->v2: re-used max_block, as suggested by Nick Piggin.
 
-The -ff would make sense as it seems to be the logical thing a user
-would want. If they specify the fast-forward flag, then the user would
-expect the merge to be a fast forward if possible.
-
-BTW, is there a git compare type option. That is, I like to compare two
-separate branches with the result that one currently gets with git when
-a branch is following another branch. When you check out that branch, it
-gives you an update on how those two branches are related (is one a fast
-forward of the other, are they off by different commits?). It would be
-nice if git could do this with any two branches. I wrote a script to do
-this for me (attached) but it would be nice if git had it natively.
-
-$ git-branch-status v3.0.4 v3.0.5              
-Branch v3.0.4 can be fast forward to v3.0.5 in 240 commits
-
-$ git-branch-status v3.0.4 v3.1  
-Branch v3.0.4 and v3.1
-differ by 257 and 9380 commit(s) respectively
-
-
--- Steve
-
---=-i1GOf1ESdzsghpoZJQGN
-Content-Type: application/x-shellscript; name="git-branch-status"
-Content-Disposition: attachment; filename="git-branch-status"
-Content-Transfer-Encoding: 7bit
-
-#!/bin/bash
-
-if [ $# -lt 1 ]; then
-	echo "usage: git-branch-stat [branch1] branch2"
-	exit
-fi
-
-if [ $# -lt 2 ]; then
-	b1="HEAD"
-	b2=$1
-else
-	b1=$1
-	b2=$2
-fi
-
-
-c1=`git rev-list $b1..$b2 | wc -l`
-if [ $? -gt 0 ]; then
-	echo error in git
-	exit
-fi
-
-c2=`git rev-list $b2..$b1 | wc -l`
-if [ $? -gt 0 ]; then
-	echo error in git
-	exit
-fi
-
-if [ $c1 -eq 0 -a $c2 -eq 0 ]; then
-	echo "Branch $b1 and $b2 are equal"
-	exit
-fi
-
-if [ $c1 -eq 0 ]; then
-	echo "Branch $b2 can be fast forward to $b1 in $c2 commits"
-	exit
-fi
-
-if [ $c2 -eq 0 ]; then
-	echo "Branch $b1 can be fast forward to $b2 in $c1 commits"
-	exit
-fi
-
-echo "Branch $b1 and $b2"
-echo "differ by $c2 and $c1 commit(s) respectively"
-
---=-i1GOf1ESdzsghpoZJQGN--
-
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index e08f6a2..ba11c30 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -70,7 +70,7 @@ static void bdev_inode_switch_bdi(struct inode *inode,
+ 	spin_unlock(&dst->wb.list_lock);
+ }
+ 
+-static sector_t max_block(struct block_device *bdev)
++sector_t blkdev_max_block(struct block_device *bdev)
+ {
+ 	sector_t retval = ~((sector_t)0);
+ 	loff_t sz = i_size_read(bdev->bd_inode);
+@@ -163,7 +163,7 @@ static int
+ blkdev_get_block(struct inode *inode, sector_t iblock,
+ 		struct buffer_head *bh, int create)
+ {
+-	if (iblock >= max_block(I_BDEV(inode))) {
++	if (iblock >= blkdev_max_block(I_BDEV(inode))) {
+ 		if (create)
+ 			return -EIO;
+ 
+@@ -185,7 +185,7 @@ static int
+ blkdev_get_blocks(struct inode *inode, sector_t iblock,
+ 		struct buffer_head *bh, int create)
+ {
+-	sector_t end_block = max_block(I_BDEV(inode));
++	sector_t end_block = blkdev_max_block(I_BDEV(inode));
+ 	unsigned long max_blocks = bh->b_size >> inode->i_blkbits;
+ 
+ 	if ((iblock + max_blocks) > end_block) {
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 351e18e..ad5938c 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -921,6 +921,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
+ 	struct buffer_head *head = page_buffers(page);
+ 	struct buffer_head *bh = head;
+ 	int uptodate = PageUptodate(page);
++	sector_t end_block = blkdev_max_block(I_BDEV(bdev->bd_inode));
+ 
+ 	do {
+ 		if (!buffer_mapped(bh)) {
+@@ -929,7 +930,8 @@ init_page_buffers(struct page *page, struct block_device *bdev,
+ 			bh->b_blocknr = block;
+ 			if (uptodate)
+ 				set_buffer_uptodate(bh);
+-			set_buffer_mapped(bh);
++			if (block < end_block)
++				set_buffer_mapped(bh);
+ 		}
+ 		block++;
+ 		bh = bh->b_this_page;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8de6755..25c40b9 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2051,6 +2051,7 @@ extern void unregister_blkdev(unsigned int, const char *);
+ extern struct block_device *bdget(dev_t);
+ extern struct block_device *bdgrab(struct block_device *bdev);
+ extern void bd_set_size(struct block_device *, loff_t size);
++extern sector_t blkdev_max_block(struct block_device *bdev);
+ extern void bd_forget(struct inode *inode);
+ extern void bdput(struct block_device *);
+ extern void invalidate_bdev(struct block_device *);
