@@ -1,134 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab2EBKKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 06:10:45 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:34087 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753965Ab2EBKKm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 06:10:42 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Attilio Rao <attilio.rao@citrix.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-doc@vger.kernel.org,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 02 May 2012 15:39:47 +0530
-Message-Id: <20120502100947.13206.26518.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com>
-References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH RFC V8 17/17] Documentation/kvm : Add documentation on Hypercalls and features used for PV spinlock
-x-cbid: 12050210-5816-0000-0000-0000025FE913
+	id S1753895Ab2EBKLC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 06:11:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38693 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752050Ab2EBKLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 06:11:00 -0400
+From: Jan Kara <jack@suse.cz>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Paolo Bonzini <pbonzini@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
+Date: Wed,  2 May 2012 12:10:52 +0200
+Message-Id: <1335953452-10460-1-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> 
+Sometimes, warnings about ioctls to partition happen often enough that they
+form majority of the warnings in the kernel log and users complain. In some
+cases warnings are about ioctls such as SG_IO so it's not good to get rid of
+the warnings completely as they can ease debugging of userspace problems
+when ioctl is refused.
 
-KVM_HC_KICK_CPU  hypercall added to wakeup halted vcpu in paravirtual spinlock
-enabled guest.
+Since I have seen warnings from lots of commands, including some proprietary
+userspace applications, I don't think disallowing the ioctls for processes
+with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
+stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
 
-KVM_FEATURE_PV_UNHALT enables guest to check whether pv spinlock can be enabled
-in guest.
-
-Thanks Alex for KVM_HC_FEATURES inputs and Vatsa for rewriting KVM_HC_KICK_CPU
-
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: James Bottomley <JBottomley@parallels.com>
+CC: linux-scsi@vger.kernel.org
+Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- Documentation/virtual/kvm/cpuid.txt      |    4 ++
- Documentation/virtual/kvm/hypercalls.txt |   60 ++++++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+), 0 deletions(-)
-diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
-index 8820685..062dff9 100644
---- a/Documentation/virtual/kvm/cpuid.txt
-+++ b/Documentation/virtual/kvm/cpuid.txt
-@@ -39,6 +39,10 @@ KVM_FEATURE_CLOCKSOURCE2           ||     3 || kvmclock available at msrs
- KVM_FEATURE_ASYNC_PF               ||     4 || async pf can be enabled by
-                                    ||       || writing to msr 0x4b564d02
- ------------------------------------------------------------------------------
-+KVM_FEATURE_PV_UNHALT              ||     6 || guest checks this feature bit
-+                                   ||       || before enabling paravirtualized
-+                                   ||       || spinlock support.
-+------------------------------------------------------------------------------
- KVM_FEATURE_CLOCKSOURCE_STABLE_BIT ||    24 || host will warn if no guest-side
-                                    ||       || per-cpu warps are expected in
-                                    ||       || kvmclock.
-diff --git a/Documentation/virtual/kvm/hypercalls.txt b/Documentation/virtual/kvm/hypercalls.txt
-new file mode 100644
-index 0000000..bc3f14a
---- /dev/null
-+++ b/Documentation/virtual/kvm/hypercalls.txt
-@@ -0,0 +1,60 @@
-+KVM Hypercalls Documentation
-+===========================
-+The template for each hypercall is:
-+1. Hypercall name, value.
-+2. Architecture(s)
-+3. Status (deprecated, obsolete, active)
-+4. Purpose
+ block/scsi_ioctl.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index 260fa80..9a87daa 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -721,11 +721,14 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
+ 		break;
+ 	}
+ 
++	if (capable(CAP_SYS_RAWIO))
++		return 0;
 +
-+1. KVM_HC_VAPIC_POLL_IRQ
-+------------------------
-+Value: 1
-+Architecture: x86
-+Purpose: None
-+
-+2. KVM_HC_MMU_OP
-+------------------------
-+Value: 2
-+Architecture: x86
-+Status: deprecated.
-+Purpose: Support MMU operations such as writing to PTE,
-+flushing TLB, release PT.
-+
-+3. KVM_HC_FEATURES
-+------------------------
-+Value: 3
-+Architecture: PPC
-+Status: active
-+Purpose: Expose hypercall availability to the guest. On x86 platforms, cpuid
-+used to enumerate which hypercalls are available. On PPC, either device tree
-+based lookup ( which is also what EPAPR dictates) OR KVM specific enumeration
-+mechanism (which is this hypercall) can be used.
-+
-+4. KVM_HC_PPC_MAP_MAGIC_PAGE
-+------------------------
-+Value: 4
-+Architecture: PPC
-+Status: active
-+Purpose: To enable communication between the hypervisor and guest there is a
-+shared page that contains parts of supervisor visible register state.
-+The guest can map this shared page to access its supervisor register through
-+memory using this hypercall.
-+
-+5. KVM_HC_KICK_CPU
-+------------------------
-+Value: 5
-+Architecture: x86
-+Status: active
-+Purpose: Hypercall used to wakeup a vcpu from HLT state
-+
-+Usage example : A vcpu of a paravirtualized guest that is busywaiting in guest
-+kernel mode for an event to occur (ex: a spinlock to become available) can
-+execute HLT instruction once it has busy-waited for more than a threshold
-+time-interval. Execution of HLT instruction would cause the hypervisor to put
-+the vcpu to sleep until occurence of an appropriate event. Another vcpu of the
-+same guest can wakeup the sleeping vcpu by issuing KVM_HC_KICK_CPU hypercall,
-+specifying APIC ID of the vcpu to be wokenup.
-+
-+TODO:
-+1. more information on input and output needed?
-+2. Add more detail to purpose of hypercalls.
+ 	/* In particular, rule out all resets and host-specific ioctls.  */
+ 	printk_ratelimited(KERN_WARNING
+ 			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
+ 
+-	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
++	return -ENOIOCTLCMD;
+ }
+ EXPORT_SYMBOL(scsi_verify_blk_ioctl);
+ 
+-- 
+1.7.1
 
