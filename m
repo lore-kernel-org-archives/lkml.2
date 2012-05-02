@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab2EBJhG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 05:37:06 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:21150 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab2EBJhE (ORCPT
+	id S1754286Ab2EBJi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 05:38:26 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:47770 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955Ab2EBJiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 05:37:04 -0400
-X-AuditID: cbfee60e-b7c91ae000006c6e-e5-4fa1003cca96
-Date: Wed, 02 May 2012 09:37:00 +0000 (GMT)
-From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
-Subject: Re: Re: [PATCH] MFD : add MAX77686 mfd driver
-To: Andi Shyti <andi.shyti@gmail.com>,
-        =?euc-kr?Q?=C0=CC=C1=BE=C8=AD?= <jonghwa3.lee@samsung.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>,
-        =?euc-kr?Q?=BA=AF=C4=A1=BF=F5?= <woong.byun@samsung.com>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20120502093054218@myungjoo.ham
-Msgkey: 20120502093054218@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120502093054218@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <24380132.112141335951419265.JavaMail.weblogic@epml09>
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Wed, 2 May 2012 05:38:25 -0400
+Date: Wed, 2 May 2012 11:38:15 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>, andi.kleen@intel.com,
+        tim.c.chen@linux.intel.com, jeremy@goop.org, chrisw@sous-sol.org,
+        akataria@vmware.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rostedt@goodmis.org, fweisbec@gmail.com,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        paul.gortmaker@windriver.com, dhowells@redhat.com,
+        fenghua.yu@intel.com, yinghai@kernel.org, cpw@sgi.com, steiner@sgi.com,
+        linux-kernel@vger.kernel.org, yongjie.ren@intel.com
+Subject: Re: [PATCH 2/3] x86/flush_tlb: try flush_tlb_single one by one in
+ flush_tlb_range
+Message-ID: <20120502093815.GB12914@aftab.osrc.amd.com>
+References: <1335603099-2624-1-git-send-email-alex.shi@intel.com>
+ <1335603099-2624-3-git-send-email-alex.shi@intel.com>
+ <20120430105440.GC9303@aftab.osrc.amd.com>
+ <4FA0FD39.9060908@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA0FD39.9060908@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q429bFt5019794
 
-> Hi,
+On Wed, May 02, 2012 at 05:24:09PM +0800, Alex Shi wrote:
+> For some of scenario, above equation can be modified as:
+> (512 - X) * 100ns(assumed TLB refill cost) = X * 140ns(assumed invlpg cost)
 > 
-> On Wed, May 02, 2012 at 02:02:55PM +0900, jonghwa3.lee@samsung.com wrote:
-> > On 2012-04-30 18:17, Andi Shyti wrote:
-> > > Hi,
-> > > 
-> > >> + mutex_lock(&max77686->iolock);
-> > >> + ret = i2c_smbus_read_i2c_block_data(i2c, reg, count, buf);
-> > >> + mutex_unlock(&max77686->iolock);
-> > > 
-> > > Is it relly necessay to lock whenever you read/write from/to the
-> > > i2c bus? Considering also that these are exported function,
-> > > someone else may lock here before, so we can have a double
-> > > locking on the same mutex.
-> > 
-> > These exported functions will be used in 77686 area only, so there is no
-> > overlap locking.
+> When thread number less than cpu numbers, balance point can up to 1/2
+> TLB entries.
 > 
-> OK... I think this could be a reason more to not over-use mutexes :)
-> 
-> When you call i2c_smbus_* functions you are not accessing to any
-> private data, all the new data is allocated in a new area. The
-> smbus_xfer function should take care by himself that the global
-> data are locked correctly. If not, is not up to your driver to do
-> it.
-> If, instead, you are taking care about the concurrency in the
-> bus, this should be somehow managed by the chip itself.
-> In my opinion you are abusing a bit of mutex_lock/unlock.
-> 
-> Andi
-> 
-> P.S. copied and paste your reply at the bottom of my previous
-> comment.
+> When thread number is equal to cpu number with HT, on our SNB EP
+> machine, the balance point is 1/16 TLB entries, on NHM EP machine,
+> balance at 1/32. So, need to change FLUSHALL_BAR to 32.
 
-I expect MAX77686-PMIC(Regulator) driver will be using update_reg() heavily. That function requires mutexing such contexts to work correctly. You won't get correct update without a mutex as it will read a register and write to a register not atomically.
+Are you saying you want to have this setting per family?
 
-Without this mutex, updating a register (i.e., update the third bit to 1) can be disasterous with regulators.
+Also, have you run your patches with other benchmarks beside your
+microbenchmark, say kernbench, SPEC<something>, i.e. some other
+multithreaded benchmark touching shared memory? Are you seeing any
+improvement there?
 
+> when thread number is bigger than cpu number, context switch eat all
+> improvement. the memory access latency is same as unpatched kernel.
 
-Cheers!
-MyungJoo.
+Also, how do you know in the kernel that the thread number is the number
+of all threads touching this shared mmapped region - there could be
+unrelated threads doing something else.
 
-> 
-> 
-> 
+Thanks.
 
+-- 
+Regards/Gruss,
+Boris.
 
---
-
-MyungJoo Ham (ÇÔ¸íÁÖ), PHD
-
-System S/W Lab, S/W Platform Team, Software Center
-Samsung Electronics
-Cell: +82-10-6714-2858
-
-
-
- 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
