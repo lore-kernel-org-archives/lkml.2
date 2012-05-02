@@ -1,112 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936Ab2EBEKN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 00:10:13 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45390 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab2EBEKL (ORCPT
+	id S1752505Ab2EBEKm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 00:10:42 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:40850 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751011Ab2EBEKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 00:10:11 -0400
-Date: Tue, 1 May 2012 21:09:58 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH next 00/12] mm: replace struct mem_cgroup_zone with struct
- lruvec
-In-Reply-To: <4F9A4E8E.4040700@openvz.org>
-Message-ID: <alpine.LSU.2.00.1205012005390.1293@eggly.anvils>
-References: <20120426074632.18961.17803.stgit@zurg> <20120426162546.90991b7c.akpm@linux-foundation.org> <4F9A4E8E.4040700@openvz.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 2 May 2012 00:10:40 -0400
+X-Authenticated: #23875046
+X-Provags-ID: V01U2FsdGVkX1/r/uF1gAjrOjWkBxCGYft5+T7L+XmGa/NzrgmRdV
+	FJyhSM5lfmOoua
+Message-ID: <4FA0B3BB.1020005@fisher-privat.net>
+Date: Wed, 02 May 2012 06:10:35 +0200
+From: "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
+        Len Brown <lenb@kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrey Rahmatullin <wrar@wrar.name>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
+References: <Pine.LNX.4.44L0.1205011258180.1499-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1205011258180.1499-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Apr 2012, Konstantin Khlebnikov wrote:
-> Andrew Morton wrote:
-> > On Thu, 26 Apr 2012 11:53:44 +0400
-> > Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
-> > 
-> > > This patchset depends on Johannes Weiner's patch
-> > > "mm: memcg: count pte references from every member of the reclaimed
-> > > hierarchy".
-> > > 
-> > > bloat-o-meter delta for patches 2..12
-> > > 
-> > > add/remove: 6/6 grow/shrink: 6/14 up/down: 4414/-4625 (-211)
-> > 
-> > That's the sole effect and intent of the patchset?  To save 211 bytes?
+On 01.05.2012 18:59, Alan Stern wrote:
+> On Tue, 1 May 2012, Oleksij Rempel (fishor) wrote:
+>
+>>> There also remains a question about runtime power states and resume.
+>>>
+>>> Oleksij, with your patch, which state does the controller get put into
+>>> during runtime suspend, D2 or D3?  (You may need to enable runtime
+>>> suspend by doing
+>>>
+>>> 	echo auto>/sys/bus/pci/devices/0000:00:1d.0/power/control
+>>>
+>>> in order to test this.)  And if the controller is in runtime suspend,
+>>> does it resume correctly when you plug in a new USB device?
+>>>
+>>> I'm pretty sure that without the patch, the controller gets put into D3
+>>> and resume does work.
+>>
+>> I do not know if device really suspended, but every thing works like
+>> before. New usb devices are recognized and working.
+>
+> You ought to be able to tell the controller's state by looking at the
+> dmesg log (after doing the "echo" command above) or the output from
+> lspci -v.
+>
+> Alan Stern
+>
 
-I am surprised it's not more: it feels like more.
+looks like it stay in D0 after echo auto > contreol, or even after
+"echo 0000:00:1d.0 > /sys/bus/pci/drivers/ehci_hcd/unbind"
+Only difference i got is "AFStatus: TP+" after last command changed to 
+"TP-". Devices are powersupplied, but not recognized by the OS.
 
-> 
-> This is almost last bunch of cleanups for lru_lock splitting,
-> code reducing is only nice side-effect.
-> Also this patchset removes many redundant lruvec relookups.
-> 
-> Now mostly all page-to-lruvec translations are located at the same level
-> as zone->lru_lock locking. So lru-lock splitting patchset can something like
-> this:
-> 
-> -zone = page_zone(page)
-> -spin_lock_irq(&zone->lru_lock)
-> -lruvec = mem_cgroup_page_lruvec(page)
-> +lruvec = lock_page_lruvec_irq(page)
-> 
-> > 
-> > > ...
-> > > 
-> > >   include/linux/memcontrol.h |   16 +--
-> > >   include/linux/mmzone.h     |   14 ++
-> > >   mm/memcontrol.c            |   33 +++--
-> > >   mm/mmzone.c                |   14 ++
-> > >   mm/page_alloc.c            |    8 -
-> > >   mm/vmscan.c                |  277
-> > > ++++++++++++++++++++------------------------
-> > >   6 files changed, 177 insertions(+), 185 deletions(-)
-> > 
-> > If so, I'm not sure that it is worth the risk and effort?
 
-I'm pretty sure that it is worth the effort, and see very little risk.
-
-It's close to my "[PATCH 3/10] mm/memcg: add zone pointer into lruvec"
-posted 20 Feb (after Konstantin posted his set a few days earlier),
-which Kamezawa-san Acked with "I like this cleanup".  But this goes
-a little further (e.g. 01/12 saving an arg by moving priority into sc,
-that's nice; and v2 05/12 removing update_isolated_counts(), great).
-
-Konstantin and I came independently to this simplification, or
-generalization, from zone to lruvec: we're confident that it is the
-right direction, that it's a good basis for further work.  Certainly
-neither of us have yet posted numbers to justify per-memcg per-zone
-locking (and I expect split zone locking to need more justification
-than it's had); but we both think these patches are a worthwhile
-cleanup on their own.
-
-I don't think it was particularly useful to split this into all of
-12 pieces!  But never mind, that's a trivial detail, not worth undoing.
-There's a few by-the-by bits and pieces I liked in my version that are
-not here, but nothing important: if I care enough, I can always send a
-little cleanup afterwards.
-
-The only change I'd ask for is in the commit comment on 02/12: it
-puzzlingly says "page_zone()" where it means to say "lruvec_zone()".
-I think if I'd been doing 04/12, I'd have resented passing "zone" to
-shrink_page_list(), would have deleted its VM_BUG_ON, and used a
-page_zone() for ZONE_CONGESTED: but that's just me being mean.
-
-I've gone through and compared the result of these 12 against my own
-tree updated to next-20120427.  We come out much the same: the only
-divergence which worried me was that my mem_cgroup_zone_lruvec() says
-	IF (!memcg || mem_cgroup_disabled())
-		return &zone->lruvec;
-and although I'm sure I had a reason for adding that "!memcg || ",
-I cannot now see why.  Maybe it was for some intermediate use that went
-away (but I mention it in the hope that Konstantin will double check).
-
-To each one of the 12 (with lruvec_zone in 02/12, and v2 of 05/12):
-Acked-by: Hugh Dickins <hughd@google.com>
+lspci -vvs 00:1d.0
+00:1d.0 USB controller: Intel Corporation 6 Series/C200 Series Chipset 
+Family USB Enhanced Host Controller #1 (rev 05) (prog-if 20 [EHCI])
+	Subsystem: ASUSTeK Computer Inc. Device 1427
+	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0
+	Interrupt: pin A routed to IRQ 23
+	Region 0: Memory at dfe07000 (32-bit, non-prefetchable) [size=1K]
+	Capabilities: [50] Power Management version 2
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA 
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [58] Debug port: BAR=1 offset=00a0
+	Capabilities: [98] PCI Advanced Features
+		AFCap: TP+ FLR+
+		AFCtrl: FLR-
+		AFStatus: TP+
+	Kernel driver in use: ehci_hcd
+	Kernel modules: ehci-hcd
