@@ -1,169 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab2EBPRo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 11:17:44 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34717 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294Ab2EBPRm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 11:17:42 -0400
-Date: Wed, 2 May 2012 17:17:34 +0200
-From: Andi Shyti <andi.shyti@gmail.com>
-To: Peter Huewe <peter.huewe@infineon.com>
-Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>, tpmdd@selhorst.net,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>,
-        Luigi Semenzato <semenzato@google.com>,
-        Bryan Freed <bfreed@chromium.org>
-Subject: Re: [PATCH] CHROMIUM: tpm: tpm_tis_i2c: Lock the I2C adapter for a
- sequence of requests.
-Message-ID: <20120502151734.GD16981@andi>
-Mail-Followup-To: Peter Huewe <peter.huewe@infineon.com>,
-	Rajiv Andrade <srajiv@linux.vnet.ibm.com>, tpmdd@selhorst.net,
-	tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	Olof Johansson <olof@lixom.net>,
-	Luigi Semenzato <semenzato@google.com>,
-	Bryan Freed <bfreed@chromium.org>
-References: <1335967293-7728-1-git-send-email-peter.huewe@infineon.com>
- <1335967416-7564-1-git-send-email-peter.huewe@infineon.com>
+	id S1755505Ab2EBPUR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 11:20:17 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:45497 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754294Ab2EBPUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 11:20:14 -0400
+Message-ID: <4FA1502C.3040604@parallels.com>
+Date: Wed, 2 May 2012 12:18:04 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335967416-7564-1-git-send-email-peter.huewe@infineon.com>
+To: Suleiman Souhlal <suleiman@google.com>
+CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
+        "Johannes Weiner" <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Greg Thelen" <gthelen@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 11/23] slub: consider a memcg parameter in kmem_create_cache
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com> <1334959051-18203-12-git-send-email-glommer@parallels.com> <CABCjUKCW+SS8R1pUarkE4D3fvy8AchOBtkDnqLzrkqervWe-Kg@mail.gmail.com>
+In-Reply-To: <CABCjUKCW+SS8R1pUarkE4D3fvy8AchOBtkDnqLzrkqervWe-Kg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.19.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again :),
+On 04/30/2012 04:51 PM, Suleiman Souhlal wrote:
+> On Fri, Apr 20, 2012 at 2:57 PM, Glauber Costa<glommer@parallels.com>  wrote:
+>> Allow a memcg parameter to be passed during cache creation.
+>> The slub allocator will only merge caches that belong to
+>> the same memcg.
+>>
+>> Default function is created as a wrapper, passing NULL
+>> to the memcg version. We only merge caches that belong
+>> to the same memcg.
+>>
+>>  From the memcontrol.c side, 3 helper functions are created:
+>>
+>>   1) memcg_css_id: because slub needs a unique cache name
+>>     for sysfs. Since this is visible, but not the canonical
+>>     location for slab data, the cache name is not used, the
+>>     css_id should suffice.
+>>
+>>   2) mem_cgroup_register_cache: is responsible for assigning
+>>     a unique index to each cache, and other general purpose
+>>     setup. The index is only assigned for the root caches. All
+>>     others are assigned index == -1.
+>>
+>>   3) mem_cgroup_release_cache: can be called from the root cache
+>>     destruction, and will release the index for other caches.
+>>
+>> This index mechanism was developed by Suleiman Souhlal.
+>>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> CC: Christoph Lameter<cl@linux.com>
+>> CC: Pekka Enberg<penberg@cs.helsinki.fi>
+>> CC: Michal Hocko<mhocko@suse.cz>
+>> CC: Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Johannes Weiner<hannes@cmpxchg.org>
+>> CC: Suleiman Souhlal<suleiman@google.com>
+>> ---
+>>   include/linux/memcontrol.h |   14 ++++++++++++++
+>>   include/linux/slab.h       |    6 ++++++
+>>   mm/memcontrol.c            |   29 +++++++++++++++++++++++++++++
+>>   mm/slub.c                  |   31 +++++++++++++++++++++++++++----
+>>   4 files changed, 76 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> index f94efd2..99e14b9 100644
+>> --- a/include/linux/memcontrol.h
+>> +++ b/include/linux/memcontrol.h
+>> @@ -26,6 +26,7 @@ struct mem_cgroup;
+>>   struct page_cgroup;
+>>   struct page;
+>>   struct mm_struct;
+>> +struct kmem_cache;
+>>
+>>   /* Stats that can be updated by kernel. */
+>>   enum mem_cgroup_page_stat_item {
+>> @@ -440,7 +441,20 @@ struct sock;
+>>   #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>>   void sock_update_memcg(struct sock *sk);
+>>   void sock_release_memcg(struct sock *sk);
+>> +int memcg_css_id(struct mem_cgroup *memcg);
+>> +void mem_cgroup_register_cache(struct mem_cgroup *memcg,
+>> +                                     struct kmem_cache *s);
+>> +void mem_cgroup_release_cache(struct kmem_cache *cachep);
+>>   #else
+>> +static inline void mem_cgroup_register_cache(struct mem_cgroup *memcg,
+>> +                                            struct kmem_cache *s)
+>> +{
+>> +}
+>> +
+>> +static inline void mem_cgroup_release_cache(struct kmem_cache *cachep)
+>> +{
+>> +}
+>> +
+>>   static inline void sock_update_memcg(struct sock *sk)
+>>   {
+>>   }
+>> diff --git a/include/linux/slab.h b/include/linux/slab.h
+>> index a5127e1..c7a7e05 100644
+>> --- a/include/linux/slab.h
+>> +++ b/include/linux/slab.h
+>> @@ -321,6 +321,12 @@ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
+>>         __kmalloc(size, flags)
+>>   #endif /* DEBUG_SLAB */
+>>
+>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>> +#define MAX_KMEM_CACHE_TYPES 400
+>> +#else
+>> +#define MAX_KMEM_CACHE_TYPES 0
+>> +#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+>> +
+>>   #ifdef CONFIG_NUMA
+>>   /*
+>>   * kmalloc_node_track_caller is a special version of kmalloc_node that
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 36f1e6b..0015ed0 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -323,6 +323,11 @@ struct mem_cgroup {
+>>   #endif
+>>   };
+>>
+>> +int memcg_css_id(struct mem_cgroup *memcg)
+>> +{
+>> +       return css_id(&memcg->css);
+>> +}
+>> +
+>>   /* Stuffs for move charges at task migration. */
+>>   /*
+>>   * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
+>> @@ -461,6 +466,30 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
+>>   }
+>>   EXPORT_SYMBOL(tcp_proto_cgroup);
+>>   #endif /* CONFIG_INET */
+>> +
+>> +/* Bitmap used for allocating the cache id numbers. */
+>> +static DECLARE_BITMAP(cache_types, MAX_KMEM_CACHE_TYPES);
+>> +
+>> +void mem_cgroup_register_cache(struct mem_cgroup *memcg,
+>> +                              struct kmem_cache *cachep)
+>> +{
+>> +       int id = -1;
+>> +
+>> +       cachep->memcg_params.memcg = memcg;
+>> +
+>> +       if (!memcg) {
+>> +               id = find_first_zero_bit(cache_types, MAX_KMEM_CACHE_TYPES);
+>> +               BUG_ON(id<  0 || id>= MAX_KMEM_CACHE_TYPES);
+>> +               __set_bit(id, cache_types);
+>> +       } else
+>> +               INIT_LIST_HEAD(&cachep->memcg_params.destroyed_list);
+>> +       cachep->memcg_params.id = id;
+>> +}
+>> +
+>> +void mem_cgroup_release_cache(struct kmem_cache *cachep)
+>> +{
+>> +       __clear_bit(cachep->memcg_params.id, cache_types);
+>> +}
+>>   #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+>>
+>>   static void drain_all_stock_async(struct mem_cgroup *memcg);
+>> diff --git a/mm/slub.c b/mm/slub.c
+>> index 2652e7c..86e40cc 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -32,6 +32,7 @@
+>>   #include<linux/prefetch.h>
+>>
+>>   #include<trace/events/kmem.h>
+>> +#include<linux/memcontrol.h>
+>>
+>>   /*
+>>   * Lock order:
+>> @@ -3880,7 +3881,7 @@ static int slab_unmergeable(struct kmem_cache *s)
+>>         return 0;
+>>   }
+>>
+>> -static struct kmem_cache *find_mergeable(size_t size,
+>> +static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+>>                 size_t align, unsigned long flags, const char *name,
+>>                 void (*ctor)(void *))
+>>   {
+>> @@ -3916,21 +3917,29 @@ static struct kmem_cache *find_mergeable(size_t size,
+>>                 if (s->size - size>= sizeof(void *))
+>>                         continue;
+>>
+>> +               if (memcg&&  s->memcg_params.memcg != memcg)
+>> +                       continue;
+>> +
+>>                 return s;
+>>         }
+>>         return NULL;
+>>   }
+>>
+>> -struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+>> -               size_t align, unsigned long flags, void (*ctor)(void *))
+>> +struct kmem_cache *
+>> +kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>> +                       size_t align, unsigned long flags, void (*ctor)(void *))
+>>   {
+>>         struct kmem_cache *s;
+>>
+>>         if (WARN_ON(!name))
+>>                 return NULL;
+>>
+>> +#ifndef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>> +       WARN_ON(memcg != NULL);
+>> +#endif
+>> +
+>>         down_write(&slub_lock);
+>> -       s = find_mergeable(size, align, flags, name, ctor);
+>> +       s = find_mergeable(memcg, size, align, flags, name, ctor);
+>>         if (s) {
+>>                 s->refcount++;
+>>                 /*
+>> @@ -3954,12 +3963,15 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+>>                                 size, align, flags, ctor)) {
+>>                         list_add(&s->list,&slab_caches);
+>>                         up_write(&slub_lock);
+>> +                       mem_cgroup_register_cache(memcg, s);
+>
+> Do the kmalloc caches get their id registered correctly?
+>
 
-On Wed, May 02, 2012 at 04:03:36PM +0200, Peter Huewe wrote:
-> From: Bryan Freed <bfreed@chromium.org>
-> 
-> This is derived from Peter Huewe's recommended fix:
-> 
-> On some ChromeOS systems, a TPM sharing the I2C bus with another device
-> gets confused when it sees I2C requests to that other device.
-> This change locks the I2C adapter for the duration of the full sequence
-> of I2C requests the TPM needs to complete.
-> 
-> smbus_xfer is not supported, but SMBUS is not supported by the original
-> driver, either.
-> 
-> Signed-off-by: Bryan Freed <bfreed@chromium.org>
-> Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
-> ---
->  drivers/char/tpm/tpm_tis_i2c.c |   42 ++++++++++++++++++++++++++++++++++++---
->  1 files changed, 38 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm_tis_i2c.c b/drivers/char/tpm/tpm_tis_i2c.c
-> index 8975abf..e68f209 100644
-> --- a/drivers/char/tpm/tpm_tis_i2c.c
-> +++ b/drivers/char/tpm/tpm_tis_i2c.c
-> @@ -61,6 +61,28 @@ static struct tpm_inf_dev tpm_dev;
->  
->  
->  /*
-> + * Copy i2c-core:i2c_transfer() as close as possible without the adapter locks
-> + * and algorithm check.  These are done by the caller for atomicity.
-> + */
-> +static int i2c_transfer_nolock(struct i2c_adapter *adap, struct i2c_msg *msgs,
-> +			       int num)
-> +{
-> +	unsigned long orig_jiffies;
-> +	int ret, try;
-> +
-> +	/* Retry automatically on arbitration loss */
-> +	orig_jiffies = jiffies;
-> +	for (ret = 0, try = 0; try <= adap->retries; try++) {
-> +		ret = adap->algo->master_xfer(adap, msgs, num);
-> +		if (ret != -EAGAIN)
-> +			break;
-> +		if (time_after(jiffies, orig_jiffies + adap->timeout))
-> +			break;
-> +	}
-> +	return ret;
-> +}
-> +
-> +/*
->   * iic_tpm_read() - read from TPM register
->   * @addr: register address to read from
->   * @buffer: provided by caller
-> @@ -83,8 +105,13 @@ static int iic_tpm_read(u8 addr, u8 *buffer, size_t len)
->  	int rc;
->  	int count;
->  
-> +	/* Lock the adapter for the duration of the whole sequence. */
-> +	if (!tpm_dev.client->adapter->algo->master_xfer)
-> +		return -EOPNOTSUPP;
-> +	i2c_lock_adapter(tpm_dev.client->adapter);
-> +
->  	for (count = 0; count < MAX_COUNT; count++) {
-> -		rc = i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
-> +		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg1, 1);
->  		if (rc > 0)
->  			break; /* break here to skip sleep */
->  
-> @@ -92,19 +119,21 @@ static int iic_tpm_read(u8 addr, u8 *buffer, size_t len)
->  	}
->  
->  	if (rc <= 0)
-> -		return -EIO;
-> +		goto out;
->  
->  	/* After the TPM has successfully received the register address it needs
->  	 * some time, thus we're sleeping here again, before retrieving the data
->  	 */
->  	for (count = 0; count < MAX_COUNT; count++) {
->  		usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
-> -		rc = i2c_transfer(tpm_dev.client->adapter, &msg2, 1);
-> +		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg2, 1);
->  		if (rc > 0)
->  			break;
->  
->  	}
->  
-> +out:
-> +	i2c_unlock_adapter(tpm_dev.client->adapter);
->  	if (rc <= 0)
->  		return -EIO;
->  
-> @@ -121,17 +150,22 @@ static int iic_tpm_write_generic(u8 addr, u8 *buffer, size_t len,
->  
->  	struct i2c_msg msg1 = { tpm_dev.client->addr, 0, len + 1, tpm_dev.buf };
->  
-> +	if (!tpm_dev.client->adapter->algo->master_xfer)
-> +		return -EOPNOTSUPP;
-> +	i2c_lock_adapter(tpm_dev.client->adapter);
-> +
->  	tpm_dev.buf[0] = addr;
->  	memcpy(&(tpm_dev.buf[1]), buffer, len);
->  
->  	for (count = 0; count < max_count; count++) {
-> -		rc = i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
-> +		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg1, 1);
->  		if (rc > 0)
->  			break;
->  
->  		usleep_range(sleep_low, sleep_hi);
->  	}
->  
-> +	i2c_unlock_adapter(tpm_dev.client->adapter);
->  	if (rc <= 0)
->  		return -EIO;
->  
+For the slub, it seems to work okay. But I had to use the trick that for 
+the memcg-specific kmalloc caches, they come from the normal caches 
+rather than the special kmalloc pool. Since we are already paying the 
+penalty of dealing with the memcg finding, I hope this is okay.
 
-
-
-try to have a look to the i2c_smbus* function, you could avoid
-lot of code
-
-Andi
-
-> -- 
-> 1.7.6.msysgit.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+For the slab, my investigation wasn't that deep. But basic functionality 
+works okay.
