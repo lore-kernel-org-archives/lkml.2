@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab2EBIIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 04:08:42 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:34554 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab2EBIIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 04:08:37 -0400
-Date: Wed, 2 May 2012 02:08:36 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: zbr@ioremap.net
-cc: NeilBrown <neilb@suse.de>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] W1: OMAP HDQ1W: allow driver to be built on all OMAP2+
-Message-ID: <alpine.DEB.2.00.1205020206020.19695@utopia.booyaka.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755387Ab2EBILl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 04:11:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13970 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752122Ab2EBILj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 04:11:39 -0400
+Date: Wed, 2 May 2012 11:11:43 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: jasowang@redhat.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com
+Subject: Re: [V2 PATCH 0/9] vhost/macvtap zeropcopy fixes
+Message-ID: <20120502081141.GA30549@redhat.com>
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+ <20120502055008.GA29319@redhat.com>
+ <20120502.024427.22049954455309204.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120502.024427.22049954455309204.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 02, 2012 at 02:44:27AM -0400, David Miller wrote:
+> From: "Michael S. Tsirkin" <mst@redhat.com>
+> Date: Wed, 2 May 2012 08:50:09 +0300
+> 
+> > On Wed, May 02, 2012 at 11:41:21AM +0800, Jason Wang wrote:
+> >> This is an updated since the last series of vhost/macvtap zerocopy fixes which
+> >> fixes the the possible transmission stall, host kernel stack overflow and other
+> >> misc fixes.
+> >> 
+> >> Changes from V1:
+> >> - Addressing comments from Eric and Michael.
+> >> - Adding more fixes into the seires.
+> > 
+> > Thanks for fixing this.
+> > Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> > 
+> > Dave, can you merge this for 3.4 please?
+> 
+> It's rather late in the -RC for such a large patch set.
 
-Allow the OMAP HDQ1W driver to be built for all OMAP2+ SoCs by
-adjusting KConfig dependencies.  The previous dependency required
-either SOC_OMAP2430 or ARCH_OMAP3 to be set, but the HDQ IP block is
-present on OMAP2420 and OMAP44xx SoCs.  The driver was still
-selectable on multi-OMAP kernel configurations, however; so the
-previous prohibition was rather pointless.
-
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>
----
-Hi Evgeniy,
-
-was wondering if you would be willing to ack this so it can be submitted 
-along with the other OMAP HDQ patches here that you've already acked?  
-Thanks - Paul
-
- drivers/w1/masters/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/w1/masters/Kconfig b/drivers/w1/masters/Kconfig
-index 979d6ee..5ceb1cd 100644
---- a/drivers/w1/masters/Kconfig
-+++ b/drivers/w1/masters/Kconfig
-@@ -60,7 +60,7 @@ config W1_MASTER_GPIO
- 
- config HDQ_MASTER_OMAP
- 	tristate "OMAP HDQ driver"
--	depends on SOC_OMAP2430 || ARCH_OMAP3
-+	depends on ARCH_OMAP2PLUS
- 	help
- 	  Say Y here if you want support for the 1-wire or HDQ Interface
- 	  on an OMAP processor.
+I was in doubt that's why I asked instead of just merging through my tree.
+OK, I'll apply to my tree and send pull request for net-next a bit later.
 -- 
-1.7.10
-
+MST
