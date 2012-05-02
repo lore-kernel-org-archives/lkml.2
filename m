@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab2EBVsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 17:48:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43860 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab2EBVsU (ORCPT
+	id S1754208Ab2EBVui (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 17:50:38 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:39172 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134Ab2EBVuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 17:48:20 -0400
-Date: Wed, 2 May 2012 14:48:15 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 04/19] PCI: serialize hotplug operations triggered by
- PCI hotplug sysfs interfaces
-Message-ID: <20120502214815.GC27281@kroah.com>
-References: <1335539820-11232-1-git-send-email-jiang.liu@huawei.com>
- <1335539820-11232-5-git-send-email-jiang.liu@huawei.com>
- <20120502050625.GB23579@kroah.com>
- <4FA0E02F.5040901@huawei.com>
+	Wed, 2 May 2012 17:50:37 -0400
+Date: Wed, 2 May 2012 22:50:34 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-bluetooth@vger.kernel.org
+Subject: Re: [now bisected] Weird bluetooth keyboard regression - just me?
+Message-ID: <20120502215034.GA622@srcf.ucam.org>
+References: <20120501073711.028d31d6@lwn.net>
+ <20120501110156.2b6e0561@lwn.net>
+ <20120501171901.GA26006@srcf.ucam.org>
+ <20120501120145.21f65ae2@lwn.net>
+ <20120501183149.GA28536@srcf.ucam.org>
+ <20120501123923.01ac1138@lwn.net>
+ <20120501185455.GA29060@srcf.ucam.org>
+ <20120501192736.GA29770@srcf.ucam.org>
+ <20120501172454.0e811379@lwn.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FA0E02F.5040901@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120501172454.0e811379@lwn.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 03:20:15PM +0800, Jiang Liu wrote:
-> On 2012-5-2 13:06, Greg KH wrote:
-> >On Fri, Apr 27, 2012 at 11:16:45PM +0800, Jiang Liu wrote:
-> >>+	/* Avoid deadlock with pci_hp_deregister() */
-> >>+	while (!pci_hotplug_try_enter()) {
-> >>+		/* Check whether the slot has been deregistered. */
-> >>+		if (list_empty(&slot->slot_list)) {
-> >>+			retval = -ENODEV;
-> >>+			goto exit_put;
-> >>+		}
-> >>+		msleep(1);
-> >>+	}
-> >
-> >Oh my.
-> >
-> >Wow.
-> >
-> >{sigh}
-> >
-> >ick.
-> >
-> >My eyes hurt.
-> >
-> >And your cpu load just went crazy.
-> >
-> >You can now handle all of the nasty emails from sysadmins asking why
-> >their systems look like their load is high for no good reason.
-> My bad, should use schedule_timeout_interruptible() instead of
-> msleep(1) here to avoid busy waiting.
+On Tue, May 01, 2012 at 05:24:54PM -0600, Jonathan Corbet wrote:
+> > In either case, does the 
+> > attached file help if dropped into /lib/udev/rules.d ?
+> 
+> Nope, no joy there.  
 
-Um, no, that's not my main point here at all.
+You tested after rebooting?
 
-My main point is this type of loop is the wrong thing to do in the first
-place.
-
-Please redo this whole thing, as explained in my first email in this
-thread.
-
-greg k-h
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
