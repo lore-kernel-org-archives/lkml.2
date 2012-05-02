@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab2EBI67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 04:58:59 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64257 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755289Ab2EBI65 convert rfc822-to-8bit (ORCPT
+	id S1756058Ab2EBJCW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 05:02:22 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57512 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755319Ab2EBJCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 04:58:57 -0400
+	Wed, 2 May 2012 05:02:19 -0400
+Date: Wed, 2 May 2012 10:02:17 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-serial@vger.kernel.org, linux-pm@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Question:  How to power-manage UART-attached devices.
+Message-ID: <20120502090216.GD4075@opensource.wolfsonmicro.com>
+References: <20120501082209.0b560708@notabene.brown>
+ <20120430223322.GA3951@sirena.org.uk>
+ <20120501093559.5c14087d@notabene.brown>
+ <20120501163303.GA4089@opensource.wolfsonmicro.com>
+ <20120502091516.20d87fc8@notabene.brown>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20120502023836.GW3157@wantstofly.org>
-References: <CA+icZUWuynSaPE4pdxzoP783pw7r=5x27ewXN_pkR5VS=0kKUg@mail.gmail.com>
-	<20120427101732.GX3157@wantstofly.org>
-	<CA+icZUUnJPeDmL9xXfvj62an40bXwwaOnrJmxmLN_cBt9PyCZA@mail.gmail.com>
-	<CA+icZUV76wSBj88EpzmWbO=u2dP23yi5P98nN2KZehBUni9mEg@mail.gmail.com>
-	<20120427185809.GZ3157@wantstofly.org>
-	<CA+icZUWQmCRdjucb4+Nf24_zbJ4fzzp7zjqhKjXE6U01rppDfA@mail.gmail.com>
-	<CA+icZUXSaEMA=KbQP9UQcU6ZMBh8QD2sv-O=6r_Ly8is==gvSA@mail.gmail.com>
-	<20120501125102.GN3157@wantstofly.org>
-	<CA+icZUV=qtXwVxb+uvQJcsza0y+6k2LHJFFPnECY0M=QWBexaQ@mail.gmail.com>
-	<4FA089F9.1020602@erley.org>
-	<20120502023836.GW3157@wantstofly.org>
-Date: Wed, 2 May 2012 10:58:56 +0200
-Message-ID: <CA+icZUVLKEs4YAiByqeUpD6cRUyF+bvb2SY=PYebDKU8b+653A@mail.gmail.com>
-Subject: Re: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: Pat Erley <pat-lkml@erley.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lautriv <admin@coldplug.net>,
-        Jim Cromie <jim.cromie@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Hauke Mehrtens <hauke@hauke-m.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pZs/OQEoSSbxGlYw"
+Content-Disposition: inline
+In-Reply-To: <20120502091516.20d87fc8@notabene.brown>
+X-Cookie: You will soon forget this.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 2, 2012 at 4:38 AM, Lennert Buytenhek
-<buytenh@wantstofly.org> wrote:
-> On Tue, May 01, 2012 at 09:12:25PM -0400, Pat Erley wrote:
->
->> >--- a/drivers/net/wireless/mwl8k.c
->> >+++ b/drivers/net/wireless/mwl8k.c
->> >@@ -5225,6 +5225,7 @@ static void mwl8k_finalize_join_worker(struct work_struct *work)
->> >  }
->> >
->> >  enum {
->> >+    MWL8361P = 0,
->> >     MWL8363 = 0,
->> >     MWL8687,
->> >     MWL8366,
->>
->> I'm not an expert, but isn't this giving both 8361P and 8363 the
->> same values in the enum?
->
-> Yeah, this is broken.
 
-Before this email, Helmut pointed me to the enum thingie in a private query.
-As I was busy with OverlayFS the last days, I couldn't give that
-information back.
+--pZs/OQEoSSbxGlYw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So, this should be:
-...
-  enum {
-     MWL8361P = 0,
-     MWL8363,
-     MWL8687,
-     MWL8366,
-...
+On Wed, May 02, 2012 at 09:15:16AM +1000, NeilBrown wrote:
 
-Shall I cook up a new patch with a proper history and documented
-origin (original patch is from OpenWrt, I refreshed it against
-upstream)?
-...add some Tested-by (Helmut, Jim)...
-...send that to linux-wireless ML for a review?
+> However it doesn't suit my need - I want something more abstracted.
 
-- Sedat -
+> I can see there may well be a place for a simple on/off switch for some
+> components, but then I would prefer to see it as
+
+>    /sys/class/power-switch/$devicename/state
+
+> rather than
+
+>   /sys/devices/platform/reg-userspace-consumer.X/{name,state}
+
+That's a simple matter of programming if someone wants to do it, can't
+say it seems worth the effort personally though especially when classes
+are supposed to be going away.
+
+--pZs/OQEoSSbxGlYw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPoPgSAAoJEBus8iNuMP3dDj8P+wY8WEvmCIAi7pSkvPXj6mgw
+Q/Kyee+8GxJ9h2VYbiQt3bGQijQyie3pGVRHf809I3sVIu9KCsXWHtAsrGwDXT/3
+InCAmC7ZWMABNJMbx9Gqj/hUfXHVJQ2RUEz5Rjn8QVBUoOxlTpFUApG0hcDhx9yL
+CSTj4dUlvzOAVfbcSbf+xOiL8UQ3RkinB1eTXaqXoM8NZn8dbagzJC4/oHqbLpdA
+KWhb+k5wvabl4ffcNFZ6U01ddkWPMBCUSIqdcwlUcT02SSzIOL3j3VsapYOHYxkd
+kFaEYjYmuao0Zcv5N3A61XwtpZ//pb0BcaOZGtth6bNuwSjRoN1bVThEJJ/4IQ79
+MPMQb9G60j1hgOW3xao51ME/P2ypFKPHTnorYV49U1PnB8N2i1tyo6uJlbEj2uTM
+OqfuVjt7HtBX11Mxpzfsb/xXus1J5YA2NFFB+1uNYoLUscyaITspocV1wgOCIBQl
+lxBKuq3q3wkvDdG+kZn3UIUbq50WEtS726leS99RWURG2d2NsEeONyC44jAKGEYa
+H/2kh43ecuBc2MUCDWq4m/V6xLfbrK7hz5/gq/E/e8JxvenoKqJQt6vHHiAp5R0/
+8AtSx/4Jm6uLhgcSzN+ybQeKYaVYQAL5f+uzGYLnzhd7qhOsja5mWICQxNISYdNA
+n5RXNIIkyOQPHjJNijr9
+=75l3
+-----END PGP SIGNATURE-----
+
+--pZs/OQEoSSbxGlYw--
