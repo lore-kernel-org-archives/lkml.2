@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab2EBFMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 01:12:23 -0400
+	id S1756555Ab2EBFNz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 01:13:55 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38486 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab2EBFMT (ORCPT
+	with ESMTP id S1755678Ab2EBFMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 01:12:19 -0400
+	Wed, 2 May 2012 01:12:21 -0400
 From: Thomas Abraham <thomas.abraham@linaro.org>
 To: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
         linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
         patches@linaro.org
-Subject: [PATCH 3/7] mmc: dw_mmc: add device tree support
-Date: Tue,  1 May 2012 22:07:42 -0700
-Message-Id: <1335935266-25289-4-git-send-email-thomas.abraham@linaro.org>
+Subject: [PATCH 4/7] mmc: dw_mmc: add samsung exynos5250 specific extentions
+Date: Tue,  1 May 2012 22:07:43 -0700
+Message-Id: <1335935266-25289-5-git-send-email-thomas.abraham@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
 References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
@@ -23,460 +23,236 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree based discovery support.
+The instantiation of the Synopsis Designware controller on Exynos5250
+include extension for SDR and DDR specific tx/rx phase shift timing
+and CIU internal divider. In addition to that, the option to skip the
+command hold stage is also introduced. Add support for these Exynos5250
+specfic extenstions.
 
+Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
 Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
 ---
- .../devicetree/bindings/mmc/synposis-dw-mshc.txt   |   85 +++++++++
- drivers/mmc/host/dw_mmc-pltfm.c                    |   24 +++
- drivers/mmc/host/dw_mmc.c                          |  181 +++++++++++++++++++-
- drivers/mmc/host/dw_mmc.h                          |   10 +
- include/linux/mmc/dw_mmc.h                         |    2 +
- 5 files changed, 296 insertions(+), 6 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+ .../devicetree/bindings/mmc/synposis-dw-mshc.txt   |   33 +++++++++++++++++++-
+ drivers/mmc/host/dw_mmc-pltfm.c                    |    8 +++++
+ drivers/mmc/host/dw_mmc.c                          |   32 ++++++++++++++++++-
+ drivers/mmc/host/dw_mmc.h                          |   13 ++++++++
+ include/linux/mmc/dw_mmc.h                         |    6 +++
+ 5 files changed, 89 insertions(+), 3 deletions(-)
 
 diff --git a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
-new file mode 100644
-index 0000000..c1ed70e
---- /dev/null
+index c1ed70e..465fc31 100644
+--- a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
 +++ b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
-@@ -0,0 +1,85 @@
-+* Synopsis Designware Mobile Storage Host Controller
+@@ -7,6 +7,8 @@ Required Properties:
+ 
+ * compatible: should be one of the following
+ 	- synopsis,dw-mshc: for controllers compliant with synopsis dw-mshc.
++	- synopsis,dw-mshc-exynos5250: for controllers with Samsung
++	  Exynos5250 specific extentions.
+ 
+ * reg: physical base address of the dw-mshc controller and size of its memory
+   region.
+@@ -55,13 +57,40 @@ Optional properties:
+ * no-write-protect: The write protect pad of the controller is not connected
+   to the write protect pin on the slot.
+ 
++Samsung Exynos5250 specific properties:
 +
-+The Synopsis designware mobile storage host controller is used to interface
-+a SoC with storage medium such as eMMC or SD/MMC cards.
++* samsung,dw-mshc-sdr-timing: Specifies the value of CUI clock divider, CIU
++  clock phase shift value in transmit mode and CIU clock phase shift value in
++  receive mode for single data rate mode operation. Refer notes of the valid
++  values below.
 +
-+Required Properties:
++* samsung,dw-mshc-ddr-timing: Specifies the value of CUI clock divider, CIU
++  clock phase shift value in transmit mode and CIU clock phase shift value in
++  receive mode for double data rate mode operation. Refer notes of the valid
++  values below. The order of the cells should be
 +
-+* compatible: should be one of the following
-+	- synopsis,dw-mshc: for controllers compliant with synopsis dw-mshc.
++    - First Cell: 	CIU clock divider value.
++    - Second Cell:	CIU clock phase shift value for tx mode.
++    - Third Cell:	CIU clock phase shift value for rx mode.
 +
-+* reg: physical base address of the dw-mshc controller and size of its memory
-+  region.
++  Valid values for SDR and DDR CIU clock timing:
 +
-+* interrupts: interrupt specifier for the controller. The format and value of
-+  the interrupt specifier depends on the interrupt parent for the controller.
++    - valid values for CIU clock divider, tx phase shift and rx phase shift
++      is 0 to 7.
 +
-+# Slots: The slot specific information are contained within child-nodes with
-+  each child-node representing a supported slot. There should be atleast one
-+  child node representing a card slot. The name of the slot child node should
-+  be 'slot{n}' where n is the unique number of the slot connnected to the
-+  controller. The following are optional properties which can be included in
-+  the slot child node.
++    - When CIU clock divider value is set to 3, all possible 8 phase shift
++      values can be used.
 +
-+	* bus-width: specifies the width of the data bus connected from the
-+	  controller to the card slot. The value should be 1, 4 or 8. In case
-+	  this property is not specified, a default value of 1 is assumed for
-+	  this property.
++    - If CIU clock divider value is 0 (that is divide by 1), both tx and rx
++      phase shift clocks should be 0.
 +
-+	* cd-gpios: specifies the card detect gpio line. The format of the
-+	  gpio specifier depends on the gpio controller.
-+
-+	* wp-gpios: specifies the write protect gpio line. The format of the
-+	  gpio specifier depends on the gpio controller.
-+
-+	* gpios: specifies a list of gpios used for command, clock and data
-+	  bus. The first gpio is the command line and the second gpio is the
-+	  clock line. The rest of the gpios (depending on the bus-width
-+	  property) are the data lines in no particular order. The format of
-+	  the gpio specifier depends on the gpio controller.
-+
-+Optional properties:
-+
-+* fifo-depth: The maximum size of the tx/rx fifo's. If this property is not
-+  specified, the default value of the fifo size is determined from the
-+  controller registers.
-+
-+*  card-detect-delay: Delay in milli-seconds before detecting card after card
-+   insert event. The default value is 0.
-+
-+* supports-highspeed: Enables support for high speed cards (upto 50MHz)
-+
-+* card-detection-broken: The card detection functionality is not available on
-+  any of the slots.
-+
-+* no-write-protect: The write protect pad of the controller is not connected
-+  to the write protect pin on the slot.
-+
-+Example:
-+
-+  The MSHC controller node can be split into two portions, SoC specific and
-+  board specific portions as listed below.
-+
-+	dwmmc0@12200000 {
-+		compatible = "synopsis,dw-mshc";
-+		reg = <0x12200000 0x1000>;
-+		interrupts = <0 75 0>;
-+	};
-+
-+	dwmmc0@12200000 {
-+		supports-highspeed;
-+		card-detection-broken;
-+		no-write-protect;
-+		fifo-depth = <0x80>;
-+		card-detect-delay = <200>;
-+
-+		slot0 {
-+			bus-width = <8>;
-+			cd-gpios = <&gpc0 2 2 3 3>;
-+			gpios = <&gpc0 0 2 0 3>, <&gpc0 1 2 0 3>,
-+				<&gpc1 0 2 3 3>, <&gpc1 1 2 3 3>,
-+				<&gpc1 2 2 3 3>, <&gpc1 3 2 3 3>,
-+				<&gpc0 3 2 3 3>, <&gpc0 4 2 3 3>,
-+				<&gpc0 5 2 3 3>, <&gpc0 6 2 3 3>;
-+		};
-+	};
+ Example:
+ 
+   The MSHC controller node can be split into two portions, SoC specific and
+   board specific portions as listed below.
+ 
+ 	dwmmc0@12200000 {
+-		compatible = "synopsis,dw-mshc";
++		compatible = "synopsis,dw-mshc-exynos5250";
+ 		reg = <0x12200000 0x1000>;
+ 		interrupts = <0 75 0>;
+ 	};
+@@ -72,6 +101,8 @@ Example:
+ 		no-write-protect;
+ 		fifo-depth = <0x80>;
+ 		card-detect-delay = <200>;
++		samsung,dw-mshc-sdr-timing = <2 3 3>;
++		samsung,dw-mshc-ddr-timing = <1 2 3>;
+ 
+ 		slot0 {
+ 			bus-width = <8>;
 diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-index 92ec3eb..2b2c9bd 100644
+index 2b2c9bd..35056fd 100644
 --- a/drivers/mmc/host/dw_mmc-pltfm.c
 +++ b/drivers/mmc/host/dw_mmc-pltfm.c
-@@ -19,8 +19,24 @@
- #include <linux/mmc/host.h>
- #include <linux/mmc/mmc.h>
- #include <linux/mmc/dw_mmc.h>
-+#include <linux/of.h>
- #include "dw_mmc.h"
- 
-+#ifdef CONFIG_OF
-+static struct dw_mci_drv_data synopsis_drv_data = {
-+	.ctrl_type	= DW_MCI_TYPE_SYNOPSIS,
-+};
-+
-+static const struct of_device_id dw_mci_pltfm_match[] = {
-+	{ .compatible = "synopsis,dw-mshc",
-+			.data = (void *)&synopsis_drv_data, },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
-+#else
-+static const struct of_device_id dw_mci_pltfm_match[];
-+#endif
-+
- static int dw_mci_pltfm_probe(struct platform_device *pdev)
- {
- 	struct dw_mci *host;
-@@ -51,6 +67,13 @@ static int dw_mci_pltfm_probe(struct platform_device *pdev)
- 	if (!host->regs)
- 		goto err_free;
- 	platform_set_drvdata(pdev, host);
-+
-+	if (pdev->dev.of_node) {
-+		const struct of_device_id *match;
-+		match = of_match_node(dw_mci_pltfm_match, pdev->dev.of_node);
-+		host->drv_data = match->data;
-+	}
-+
- 	ret = dw_mci_probe(host);
- 	if (ret)
- 		goto err_out;
-@@ -111,6 +134,7 @@ static struct platform_driver dw_mci_pltfm_driver = {
- 	.remove		= __exit_p(dw_mci_pltfm_remove),
- 	.driver		= {
- 		.name		= "dw_mmc",
-+		.of_match_table	= of_match_ptr(dw_mci_pltfm_match),
- 		.pm		= &dw_mci_pltfm_pmops,
- 	},
+@@ -27,9 +27,17 @@ static struct dw_mci_drv_data synopsis_drv_data = {
+ 	.ctrl_type	= DW_MCI_TYPE_SYNOPSIS,
  };
+ 
++static struct dw_mci_drv_data exynos5250_drv_data = {
++	.ctrl_type	= DW_MCI_TYPE_EXYNOS5250,
++	.caps		= MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
++				MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
++};
++
+ static const struct of_device_id dw_mci_pltfm_match[] = {
+ 	{ .compatible = "synopsis,dw-mshc",
+ 			.data = (void *)&synopsis_drv_data, },
++	{ .compatible = "synopsis,dw-mshc-exynos5250",
++			.data = (void *)&exynos5250_drv_data, },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
 diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 38cb7f8..bcf66d7 100644
+index bcf66d7..9174a69 100644
 --- a/drivers/mmc/host/dw_mmc.c
 +++ b/drivers/mmc/host/dw_mmc.c
-@@ -33,9 +33,13 @@
- #include <linux/bitops.h>
- #include <linux/regulator/consumer.h>
- #include <linux/workqueue.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
- 
- #include "dw_mmc.h"
- 
-+#define NUM_PINS(x) (x + 2)
-+
- /* Common flag combinations */
- #define DW_MCI_DATA_ERROR_FLAGS	(SDMMC_INT_DTO | SDMMC_INT_DCRC | \
- 				 SDMMC_INT_HTO | SDMMC_INT_SBE  | \
-@@ -86,6 +90,8 @@ struct idmac_desc {
- struct dw_mci_slot {
- 	struct mmc_host		*mmc;
- 	struct dw_mci		*host;
-+	int			wp_gpio;
-+	int			cd_gpio;
- 
- 	u32			ctype;
- 
-@@ -816,6 +822,8 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
- 		read_only = 0;
- 	else if (brd->get_ro)
- 		read_only = brd->get_ro(slot->id);
-+	else if (gpio_is_valid(slot->wp_gpio))
-+		read_only = gpio_get_value(slot->wp_gpio);
- 	else
- 		read_only =
- 			mci_readl(slot->host, WRTPRT) & (1 << slot->id) ? 1 : 0;
-@@ -837,6 +845,8 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
- 		present = 1;
- 	else if (brd->get_cd)
- 		present = !brd->get_cd(slot->id);
-+	else if (gpio_is_valid(slot->cd_gpio))
-+		present = gpio_get_value(slot->cd_gpio);
- 	else
- 		present = (mci_readl(slot->host, CDETECT) & (1 << slot->id))
- 			== 0 ? 1 : 0;
-@@ -1747,6 +1757,96 @@ static void dw_mci_work_routine_card(struct work_struct *work)
- 	}
- }
- 
-+#ifdef CONFIG_OF
-+static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
-+{
-+	struct device_node *np;
-+	char name[7];
-+
-+	if (!dev || !dev->of_node)
-+		return NULL;
-+
-+	for_each_child_of_node(dev->of_node, np) {
-+		sprintf(name, "slot%d", slot);
-+		if (!strcmp(name, np->name))
-+			return np;
-+	}
-+	return NULL;
-+}
-+
-+static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
-+{
-+	struct device_node *np = dw_mci_of_find_slot_node(dev, slot);
-+	u32 bus_wd = 1;
-+
-+	if (!np)
-+		return 1;
-+
-+	if (of_property_read_u32(np, "bus-width", &bus_wd))
-+		dev_err(dev, "bus-width property not found, assuming width"
-+				" as 1\n");
-+	return bus_wd;
-+}
-+
-+static int dw_mci_of_setup_bus(struct dw_mci *host, u8 slot, u32 bus_wd)
-+{
-+	struct device_node *np = dw_mci_of_find_slot_node(&host->dev, slot);
-+	int idx, gpio, ret;
-+
-+	for (idx = 0; idx < NUM_PINS(bus_wd); idx++) {
-+		gpio = of_get_gpio(np, idx);
-+		if (!gpio_is_valid(gpio)) {
-+			dev_err(&host->dev, "invalid gpio: %d\n", gpio);
-+			return -EINVAL;
-+		}
-+
-+		ret = devm_gpio_request(&host->dev, gpio, "dw-mci-bus");
-+		if (ret) {
-+			dev_err(&host->dev, "gpio [%d] request failed\n", gpio);
-+			return -EBUSY;
-+		}
-+	}
-+
-+	host->slot[slot]->wp_gpio = -1;
-+	gpio = of_get_named_gpio(np, "wp_gpios", 0);
-+	if (!gpio_is_valid(gpio)) {
-+		dev_info(&host->dev, "wp gpio not available");
-+	} else {
-+		ret = devm_gpio_request(&host->dev, gpio, "dw-mci-wp");
-+		if (ret)
-+			dev_info(&host->dev, "gpio [%d] request failed\n",
-+						gpio);
-+		else
-+			host->slot[slot]->wp_gpio = gpio;
-+	}
-+
-+	host->slot[slot]->cd_gpio = -1;
-+	gpio = of_get_named_gpio(np, "cd-gpios", 0);
-+	if (!gpio_is_valid(gpio)) {
-+		dev_info(&host->dev, "cd gpio not available");
-+	} else {
-+		ret = devm_gpio_request(&host->dev, gpio, "dw-mci-cd");
-+		if (ret)
-+			dev_err(&host->dev, "gpio [%d] request failed\n", gpio);
-+		else
-+			host->slot[slot]->cd_gpio = gpio;
-+	}
-+
-+	return 0;
-+}
-+
-+#else /* CONFIG_OF */
-+static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
-+{
-+	return 1;
-+}
-+
-+static int dw_mci_of_setup_bus(struct dw_mci *host, u8 slot, u32 bus_wd)
-+{
-+	return -EINVAL;
-+}
-+#endif /* CONFIG_OF */
-+
- static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+@@ -236,6 +236,7 @@ static void dw_mci_set_timeout(struct dw_mci *host)
+ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
  {
- 	struct mmc_host *mmc;
-@@ -1760,6 +1860,7 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 	slot->id = id;
- 	slot->mmc = mmc;
- 	slot->host = host;
-+	host->slot[id] = slot;
+ 	struct mmc_data	*data;
++	struct dw_mci_slot *slot = mmc_priv(mmc);
+ 	u32 cmdr;
+ 	cmd->error = -EINPROGRESS;
  
- 	mmc->ops = &dw_mci_ops;
- 	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 510);
-@@ -1780,12 +1881,21 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 	if (host->pdata->caps)
- 		mmc->caps = host->pdata->caps;
- 
-+	mmc->caps |= host->drv_data->caps;
-+
- 	if (host->pdata->caps2)
- 		mmc->caps2 = host->pdata->caps2;
- 
--	if (host->pdata->get_bus_wd)
-+	if (host->pdata->get_bus_wd) {
- 		if (host->pdata->get_bus_wd(slot->id) >= 4)
- 			mmc->caps |= MMC_CAP_4_BIT_DATA;
-+	} else if (host->dev.of_node) {
-+		unsigned int bus_width;
-+		bus_width = dw_mci_of_get_bus_wd(&host->dev, slot->id);
-+		if (bus_width >= 4)
-+			mmc->caps |= MMC_CAP_4_BIT_DATA;
-+		dw_mci_of_setup_bus(host, slot->id, bus_width);
-+	}
- 
- 	if (host->pdata->quirks & DW_MCI_QUIRK_HIGHSPEED)
- 		mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
-@@ -1830,7 +1940,6 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 	else
- 		clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
- 
--	host->slot[id] = slot;
- 	mmc_add_host(mmc);
- 
- #if defined(CONFIG_DEBUG_FS)
-@@ -1923,15 +2032,75 @@ static bool mci_wait_reset(struct device *dev, struct dw_mci *host)
- 	return false;
- }
- 
-+#ifdef CONFIG_OF
-+static struct dw_mci_of_quirks {
-+	char *quirk;
-+	int id;
-+} of_quriks[] = {
-+	{
-+		.quirk	= "supports-highspeed",
-+		.id	= DW_MCI_QUIRK_HIGHSPEED,
-+	}, {
-+		.quirk	= "card-detection-broken",
-+		.id	= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
-+	}, {
-+		.quirk	= "no-write-protect",
-+		.id	= DW_MCI_QUIRK_NO_WRITE_PROTECT,
-+	},
-+	{ }
-+};
-+
-+static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
-+{
-+	struct dw_mci_board *pdata;
-+	struct device *dev = &host->dev;
-+	struct device_node *np = dev->of_node, *slot;
-+	u32 timing[3];
-+	int idx, cnt;
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(dev, "could not allocate memory for pdata\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	/* find out number of slots supported */
-+	for_each_child_of_node(np, slot)
-+		pdata->num_slots++;
-+
-+	/* get quirks */
-+	cnt = sizeof(of_quriks) / sizeof(struct dw_mci_of_quirks);
-+	for (idx = 0; idx < cnt; idx++)
-+		if (of_get_property(np, of_quriks[idx].quirk, NULL))
-+			pdata->quirks |= of_quriks[idx].id;
-+
-+	if (of_property_read_u32(np, "fifo-depth", &pdata->fifo_depth))
-+		dev_info(dev, "fifo-depth property not found, using "
-+				"value of FIFOTH register as default\n");
-+
-+	of_property_read_u32(np, "card-detect-delay", &pdata->detect_delay_ms);
-+
-+	return pdata;
-+}
-+
-+#else /* CONFIG_OF */
-+static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
-+{
-+	return ERR_PTR(-EINVAL);
-+}
-+#endif /* CONFIG_OF */
-+
- int dw_mci_probe(struct dw_mci *host)
- {
- 	int width, i, ret = 0;
- 	u32 fifo_size;
- 
--	if (!host->pdata || !host->pdata->init) {
--		dev_err(&host->dev,
--			"Platform data must supply init function\n");
--		return -ENODEV;
-+	if (!host->pdata) {
-+		host->pdata = dw_mci_parse_dt(host);
-+		if (IS_ERR(host->pdata)) {
-+			dev_err(&host->dev, "platform data not available\n");
-+			return -EINVAL;
-+		}
+@@ -265,6 +266,10 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
+ 			cmdr |= SDMMC_CMD_DAT_WR;
  	}
  
- 	if (!host->pdata->select_slot && host->pdata->num_slots > 1) {
++	if (slot->host->drv_data->ctrl_type == DW_MCI_TYPE_EXYNOS5250)
++		if (SDMMC_CLKSEL_GET_SELCLK_DRV(mci_readl(slot->host, CLKSEL)))
++			cmdr |= SDMMC_USE_HOLD_REG;
++
+ 	return cmdr;
+ }
+ 
+@@ -787,10 +792,19 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	regs = mci_readl(slot->host, UHS_REG);
+ 
+ 	/* DDR mode set */
+-	if (ios->timing == MMC_TIMING_UHS_DDR50)
++	if (ios->timing == MMC_TIMING_UHS_DDR50) {
+ 		regs |= (0x1 << slot->id) << 16;
+-	else
++		mci_writel(slot->host, CLKSEL, slot->host->ddr_timing);
++	} else {
+ 		regs &= ~(0x1 << slot->id) << 16;
++		mci_writel(slot->host, CLKSEL, slot->host->sdr_timing);
++	}
++
++	if (slot->host->drv_data->ctrl_type == DW_MCI_TYPE_EXYNOS5250) {
++		slot->host->bus_hz = clk_get_rate(slot->host->ciu_clk);
++		slot->host->bus_hz /= SDMMC_CLKSEL_GET_DIVRATIO(
++					mci_readl(slot->host, CLKSEL));
++	}
+ 
+ 	mci_writel(slot->host, UHS_REG, regs);
+ 
+@@ -2074,6 +2088,20 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
+ 		if (of_get_property(np, of_quriks[idx].quirk, NULL))
+ 			pdata->quirks |= of_quriks[idx].id;
+ 
++	if (of_property_read_u32_array(dev->of_node,
++			"samsung,dw-mshc-sdr-timing", timing, 3))
++		host->sdr_timing = DW_MCI_DEF_SDR_TIMING;
++	else
++		host->sdr_timing = SDMMC_CLKSEL_TIMING(timing[0],
++					timing[1], timing[2]);
++
++	if (of_property_read_u32_array(dev->of_node,
++			"samsung,dw-mshc-ddr-timing", timing, 3))
++		host->ddr_timing = DW_MCI_DEF_DDR_TIMING;
++	else
++		host->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0],
++					timing[1], timing[2]);
++
+ 	if (of_property_read_u32(np, "fifo-depth", &pdata->fifo_depth))
+ 		dev_info(dev, "fifo-depth property not found, using "
+ 				"value of FIFOTH register as default\n");
 diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-index 15c27e1..8b8862b 100644
+index 8b8862b..4b7e42b 100644
 --- a/drivers/mmc/host/dw_mmc.h
 +++ b/drivers/mmc/host/dw_mmc.h
-@@ -182,4 +182,14 @@ extern int dw_mci_suspend(struct dw_mci *host);
- extern int dw_mci_resume(struct dw_mci *host);
- #endif
+@@ -53,6 +53,7 @@
+ #define SDMMC_IDINTEN		0x090
+ #define SDMMC_DSCADDR		0x094
+ #define SDMMC_BUFADDR		0x098
++#define SDMMC_CLKSEL		0x09C /* specific to Samsung Exynos5250 */
+ #define SDMMC_DATA(x)		(x)
  
-+/* Variations in the dw_mci controller */
-+#define DW_MCI_TYPE_SYNOPSIS		0
-+#define DW_MCI_TYPE_EXYNOS5250		1 /* Samsung Exynos5250 Extensions */
+ /*
+@@ -111,6 +112,7 @@
+ #define SDMMC_INT_ERROR			0xbfc2
+ /* Command register defines */
+ #define SDMMC_CMD_START			BIT(31)
++#define SDMMC_USE_HOLD_REG		BIT(29)
+ #define SDMMC_CMD_CCS_EXP		BIT(23)
+ #define SDMMC_CMD_CEATA_RD		BIT(22)
+ #define SDMMC_CMD_UPD_CLK		BIT(21)
+@@ -142,6 +144,17 @@
+ /* Version ID register define */
+ #define SDMMC_GET_VERID(x)		((x) & 0xFFFF)
+ 
++#define DW_MCI_DEF_SDR_TIMING		0x03030002
++#define DW_MCI_DEF_DDR_TIMING		0x03020001
++#define SDMMC_CLKSEL_CCLK_SAMPLE(x)	(((x) & 3) << 0)
++#define SDMMC_CLKSEL_CCLK_DRIVE(x)	(((x) & 3) << 16)
++#define SDMMC_CLKSEL_CCLK_DIVIDER(x)	(((x) & 3) << 24)
++#define SDMMC_CLKSEL_TIMING(x, y, z)	(SDMMC_CLKSEL_CCLK_SAMPLE(x) |	\
++					SDMMC_CLKSEL_CCLK_DRIVE(y) |	\
++					SDMMC_CLKSEL_CCLK_DIVIDER(z))
++#define SDMMC_CLKSEL_GET_DIVRATIO(x)	((((x) >> 24) & 0x7) + 1)
++#define SDMMC_CLKSEL_GET_SELCLK_DRV(x)	(((x) >> 16) & 0x7)
 +
-+/* dw_mci platform driver data */
-+struct dw_mci_drv_data {
-+	unsigned long		ctrl_type;
-+	unsigned long		caps;
-+};
-+
- #endif /* _DW_MMC_H_ */
+ /* Register access macros */
+ #define mci_readl(dev, reg)			\
+ 	__raw_readl((dev)->regs + SDMMC_##reg)
 diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index fb51a5f..71d2b56 100644
+index 71d2b56..6e6d036 100644
 --- a/include/linux/mmc/dw_mmc.h
 +++ b/include/linux/mmc/dw_mmc.h
-@@ -78,6 +78,7 @@ struct mmc_data;
-  * @data_offset: Set the offset of DATA register according to VERID.
-  * @dev: Device associated with the MMC controller.
-  * @pdata: Platform data associated with the MMC controller.
-+ * @drv_data: Driver specific data for identified variant of the controller
+@@ -82,6 +82,8 @@ struct mmc_data;
   * @biu_clk: Pointer to bus interface unit clock instance.
   * @ciu_clk: Pointer to card interface unit clock instance.
   * @slot: Slots sharing this MMC controller.
-@@ -160,6 +161,7 @@ struct dw_mci {
- 	u16			data_offset;
- 	struct device		dev;
- 	struct dw_mci_board	*pdata;
-+	struct dw_mci_drv_data	*drv_data;
- 	struct clk		*biu_clk;
++ * @sdr_timing: Clock phase shifting for driving and sampling in sdr mode
++ * @ddr_timing: Clock phase shifting for driving and sampling in ddr mode
+  * @fifo_depth: depth of FIFO.
+  * @data_shift: log2 of FIFO item size.
+  * @part_buf_start: Start index in part_buf.
+@@ -166,6 +168,10 @@ struct dw_mci {
  	struct clk		*ciu_clk;
  	struct dw_mci_slot	*slot[MAX_MCI_SLOTS];
+ 
++	/* Phase Shift Value (for exynos5250 variant) */
++	u32			sdr_timing;
++	u32			ddr_timing;
++
+ 	/* FIFO push and pull */
+ 	int			fifo_depth;
+ 	int			data_shift;
 -- 
 1.7.5.4
 
