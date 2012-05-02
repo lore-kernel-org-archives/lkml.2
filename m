@@ -1,312 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932117Ab2EBCH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 22:07:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46532 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758479Ab2EBCHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 22:07:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="138970460"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 5/9] perf: Add Nehalem and Sandy Bridge uncore support
-Date: Wed,  2 May 2012 10:07:16 +0800
-Message-Id: <1335924440-11242-6-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
-References: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
+	id S1758612Ab2EBCJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 22:09:16 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:36445 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758432Ab2EBCJJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 22:09:09 -0400
+Date: Tue, 1 May 2012 19:04:18 -0700
+From: Mike Turquette <mturquette@ti.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
+        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
+Message-ID: <20120502020418.GF17311@gmail.com>
+References: <1335419936-10881-1-git-send-email-skannan@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335419936-10881-1-git-send-email-skannan@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On 20120425-22:58, Saravana Kannan wrote:
+> Create a struct clk_init_data to hold all data that needs to be passed from
+> the platfrom specific driver to the common clock framework during clock
+> registration. Add a pointer to this struct inside clk_hw.
+> 
+> This has several advantages:
+> * Completely hides struct clk from many clock platform drivers and static
+>   clock initialization code that don't care for static initialization of
+>   the struct clks.
+> * For platforms that want to do complete static initialization, it removed
+>   the need to directly mess with the struct clk's fields while still
+>   allowing to statically allocate struct clk. This keeps the code more
+>   future proof even if they include clk-private.h.
+> * Simplifies the generic clk_register() function and allows adding optional
+>   fields in the future without modifying the function signature.
+> * Simplifies the static initialization of clocks on all platforms by
+>   removing the need for forward delcarations or convoluted macros.
+> 
+> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
 
-Add Intel Nehalem and Sandy Bridge uncore pmu support.
+Hi Saravana,
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |  195 +++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |   50 +++++++
- 2 files changed, 245 insertions(+), 0 deletions(-)
+Thanks for the patch.  I've taken it into my clk-next but I have two
+points:
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 0dda34e..6022c8a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -10,6 +10,192 @@ static cpumask_t uncore_cpu_mask;
- static struct event_constraint constraint_fixed =
- 	EVENT_CONSTRAINT((u64)-1, 1 << UNCORE_PMC_IDX_FIXED, (u64)-1);
- 
-+DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
-+DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
-+DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
-+DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
-+DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
-+DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
-+
-+/* Sandy Bridge uncore support */
-+static void snb_uncore_msr_enable_event(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
-+		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
-+	else
-+		wrmsrl(hwc->config_base, SNB_UNC_CTL_EN);
-+}
-+
-+static void snb_uncore_msr_disable_event(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	wrmsrl(event->hw.config_base, 0);
-+}
-+
-+static u64 snb_uncore_msr_read_counter(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	u64 count;
-+	rdmsrl(event->hw.event_base, count);
-+	return count;
-+}
-+
-+static void snb_uncore_msr_init_box(struct intel_uncore_box *box)
-+{
-+	if (box->pmu->pmu_idx == 0) {
-+		wrmsrl(SNB_UNC_PERF_GLOBAL_CTL,
-+			SNB_UNC_GLOBAL_CTL_EN | SNB_UNC_GLOBAL_CTL_CORE_ALL);
-+	}
-+}
-+
-+static struct attribute *snb_uncore_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask5.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group snb_uncore_format_group = {
-+	.name = "format",
-+	.attrs = snb_uncore_formats_attr,
-+};
-+
-+static struct intel_uncore_ops snb_uncore_msr_ops = {
-+	.init_box	= snb_uncore_msr_init_box,
-+	.disable_event	= snb_uncore_msr_disable_event,
-+	.enable_event	= snb_uncore_msr_enable_event,
-+	.read_counter	= snb_uncore_msr_read_counter,
-+};
-+
-+static struct event_constraint snb_uncore_cbo_constraints[] = {
-+	UNCORE_EVENT_CONSTRAINT(0x80, 0x1),
-+	UNCORE_EVENT_CONSTRAINT(0x83, 0x1),
-+	EVENT_CONSTRAINT_END
-+};
-+
-+static struct intel_uncore_type snb_uncore_cbo = {
-+	.name		= "cbo",
-+	.num_counters   = 2,
-+	.num_boxes	= 4,
-+	.perf_ctr_bits	= 44,
-+	.fixed_ctr_bits	= 48,
-+	.perf_ctr	= SNB_UNC_CBO_0_PER_CTR0,
-+	.event_ctl	= SNB_UNC_CBO_0_PERFEVTSEL0,
-+	.fixed_ctr	= SNB_UNC_FIXED_CTR,
-+	.fixed_ctl	= SNB_UNC_FIXED_CTR_CTRL,
-+	.single_fixed	= 1,
-+	.event_mask	= SNB_UNC_RAW_EVENT_MASK,
-+	.msr_offset	= SNB_UNC_CBO_MSR_OFFSET,
-+	.constraints	= snb_uncore_cbo_constraints,
-+	.ops		= &snb_uncore_msr_ops,
-+	.format_group	= &snb_uncore_format_group,
-+};
-+
-+static struct intel_uncore_type *snb_msr_uncores[] = {
-+	&snb_uncore_cbo,
-+	NULL,
-+};
-+/* end of Sandy Bridge uncore support */
-+
-+/* Nehalem uncore support */
-+static void nhm_uncore_msr_disable_box(struct intel_uncore_box *box)
-+{
-+	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL, 0);
-+}
-+
-+static void nhm_uncore_msr_enable_box(struct intel_uncore_box *box)
-+{
-+	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL,
-+		NHM_UNC_GLOBAL_CTL_EN_PC_ALL | NHM_UNC_GLOBAL_CTL_EN_FC);
-+}
-+
-+static void nhm_uncore_msr_enable_event(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
-+		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
-+	else
-+		wrmsrl(hwc->config_base, NHM_UNC_FIXED_CTR_CTL_EN);
-+}
-+
-+static struct attribute *nhm_uncore_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask8.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group nhm_uncore_format_group = {
-+	.name = "format",
-+	.attrs = nhm_uncore_formats_attr,
-+};
-+
-+static struct uncore_event_desc nhm_uncore_events[] = {
-+	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
-+	/* full cache line writes to DRAM */
-+	INTEL_UNCORE_EVENT_DESC(QMC_WRITES_FULL_ANY, "event=0x2f,umask=0xf"),
-+	/* Quickpath Memory Controller normal priority read requests */
-+	INTEL_UNCORE_EVENT_DESC(QMC_NORMAL_READS_ANY, "event=0x2c,umask=0xf"),
-+	/* Quickpath Home Logic read requests from the IOH */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_READS,
-+				"event=0x20,umask=0x1"),
-+	/* Quickpath Home Logic write requests from the IOH */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_WRITES,
-+				"event=0x20,umask=0x2"),
-+	/* Quickpath Home Logic read requests from a remote socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_READS,
-+				"event=0x20,umask=0x4"),
-+	/* Quickpath Home Logic write requests from a remote socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_WRITES,
-+				"event=0x20,umask=0x8"),
-+	/* Quickpath Home Logic read requests from the local socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_READS,
-+				"event=0x20,umask=0x10"),
-+	/* Quickpath Home Logic write requests from the local socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_WRITES,
-+				"event=0x20,umask=0x20"),
-+	{ /* end: all zeroes */ },
-+};
-+
-+static struct intel_uncore_ops nhm_uncore_msr_ops = {
-+	.disable_box	= nhm_uncore_msr_disable_box,
-+	.enable_box	= nhm_uncore_msr_enable_box,
-+	.disable_event	= snb_uncore_msr_disable_event,
-+	.enable_event	= nhm_uncore_msr_enable_event,
-+	.read_counter	= snb_uncore_msr_read_counter,
-+};
-+
-+static struct intel_uncore_type nhm_uncore = {
-+	.name		= "",
-+	.num_counters   = 8,
-+	.num_boxes	= 1,
-+	.perf_ctr_bits	= 48,
-+	.fixed_ctr_bits	= 48,
-+	.event_ctl	= NHM_UNC_PERFEVTSEL0,
-+	.perf_ctr	= NHM_UNC_UNCORE_PMC0,
-+	.fixed_ctr	= NHM_UNC_FIXED_CTR,
-+	.fixed_ctl	= NHM_UNC_FIXED_CTR_CTRL,
-+	.event_mask	= NHM_UNC_RAW_EVENT_MASK,
-+	.event_descs	= nhm_uncore_events,
-+	.ops		= &nhm_uncore_msr_ops,
-+	.format_group	= &nhm_uncore_format_group,
-+};
-+
-+static struct intel_uncore_type *nhm_msr_uncores[] = {
-+	&nhm_uncore,
-+	NULL,
-+};
-+/* end of Nehalem uncore support */
-+
- static void uncore_assign_hw_event(struct intel_uncore_box *box,
- 				struct perf_event *event, int idx)
- {
-@@ -821,6 +1007,15 @@ static int __init uncore_cpu_init(void)
- 	int ret, cpu;
- 
- 	switch (boot_cpu_data.x86_model) {
-+	case 26: /* Nehalem */
-+	case 30:
-+	case 31:
-+	case 37: /* Westmere */
-+		msr_uncores = nhm_msr_uncores;
-+		break;
-+	case 42: /* Sandy Bridge */
-+		msr_uncores = snb_msr_uncores;
-+		break;
- 	default:
- 		return 0;
- 	}
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index ab648f3..1c87569 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -15,6 +15,56 @@
- 
- #define UNCORE_EVENT_CONSTRAINT(c, n) EVENT_CONSTRAINT(c, n, 0xff)
- 
-+/* SNB event control */
-+#define SNB_UNC_CTL_EV_SEL_MASK			0x000000ff
-+#define SNB_UNC_CTL_UMASK_MASK			0x0000ff00
-+#define SNB_UNC_CTL_EDGE_DET			(1 << 18)
-+#define SNB_UNC_CTL_EN				(1 << 22)
-+#define SNB_UNC_CTL_INVERT			(1 << 23)
-+#define SNB_UNC_CTL_CMASK_MASK			0x1f000000
-+#define NHM_UNC_CTL_CMASK_MASK			0xff000000
-+#define NHM_UNC_FIXED_CTR_CTL_EN		(1 << 0)
-+
-+#define SNB_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
-+						 SNB_UNC_CTL_UMASK_MASK | \
-+						 SNB_UNC_CTL_EDGE_DET | \
-+						 SNB_UNC_CTL_INVERT | \
-+						 SNB_UNC_CTL_CMASK_MASK)
-+
-+#define NHM_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
-+						 SNB_UNC_CTL_UMASK_MASK | \
-+						 SNB_UNC_CTL_EDGE_DET | \
-+						 SNB_UNC_CTL_INVERT | \
-+						 NHM_UNC_CTL_CMASK_MASK)
-+
-+/* SNB global control register */
-+#define SNB_UNC_PERF_GLOBAL_CTL                 0x391
-+#define SNB_UNC_FIXED_CTR_CTRL                  0x394
-+#define SNB_UNC_FIXED_CTR                       0x395
-+
-+/* SNB uncore global control */
-+#define SNB_UNC_GLOBAL_CTL_CORE_ALL             ((1 << 4) - 1)
-+#define SNB_UNC_GLOBAL_CTL_EN                   (1 << 29)
-+
-+/* SNB Cbo register */
-+#define SNB_UNC_CBO_0_PERFEVTSEL0               0x700
-+#define SNB_UNC_CBO_0_PER_CTR0                  0x706
-+#define SNB_UNC_CBO_MSR_OFFSET                  0x10
-+
-+/* NHM global control register */
-+#define NHM_UNC_PERF_GLOBAL_CTL                 0x391
-+#define NHM_UNC_FIXED_CTR                       0x394
-+#define NHM_UNC_FIXED_CTR_CTRL                  0x395
-+
-+/* NHM uncore global control */
-+#define NHM_UNC_GLOBAL_CTL_EN_PC_ALL            ((1ULL << 8) - 1)
-+#define NHM_UNC_GLOBAL_CTL_EN_FC                (1ULL << 32)
-+
-+/* NHM uncore register */
-+#define NHM_UNC_PERFEVTSEL0                     0x3c0
-+#define NHM_UNC_UNCORE_PMC0                     0x3b0
-+
-+
- struct intel_uncore_ops;
- struct intel_uncore_pmu;
- struct intel_uncore_box;
--- 
-1.7.7.6
+1) I'm surprised that you abandoned the approach of exposing the
+less-private members of struct clk via struct clk_hw.  Your original
+patch did just that, but did not account for static initialization.
+This patch seems to have gone in the opposite direction and only
+accounts for static initialization.
 
+I'm happy to take the patch as-is, but I did think that there were
+merits to your original approach.
+
+2) I did make a modification to your patch where I kept the
+DEFINE_CLK_* macros and continued to declare __clk_init in
+clk-private.h.  I do want to get rid of both of these in the future but
+currently my platform relies on static initialization before the
+allocator is available.  Please let me know if this causes a problem for
+you.
+
+Platform folks should rebase on top of this if needed.  This should be
+the last change to the driver/platform-facing API before 3.5.
+
+Sascha,
+
+Can you resubmit your fixed-factor clock?  I think the registration
+function collides with these changes.
+
+Thanks,
+Mike
