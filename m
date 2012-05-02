@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab2EBGuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 02:50:10 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:22463 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124Ab2EBGuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 02:50:08 -0400
-From: <leonid.moiseichuk@nokia.com>
-To: <minchan@kernel.org>, <anton.vorontsov@linaro.org>
-CC: <kosaki.motohiro@gmail.com>, <riel@redhat.com>, <penberg@kernel.org>,
-        <john.stultz@linaro.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
-        <patches@linaro.org>, <kernel-team@android.com>,
-        <glommer@parallels.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <suleiman@google.com>
-Subject: RE: [PATCH v4] vmevent: Implement greater-than attribute state and
- one-shot mode
-Thread-Topic: [PATCH v4] vmevent: Implement greater-than attribute state and
- one-shot mode
-Thread-Index: AQHNJ50OlOBu3h1unUSJMtRzhrRpypa1SzSAgAA2yoCAABDDgIAAJKaAgAAZ0gCAADwvUA==
-Date: Wed, 2 May 2012 06:46:15 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB98269045D2AC9@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <20120418083208.GA24904@lizard> <20120418083523.GB31556@lizard>
- <alpine.LFD.2.02.1204182259580.11868@tux.localdomain>
- <20120418224629.GA22150@lizard>
- <alpine.LFD.2.02.1204190841290.1704@tux.localdomain>
- <20120419162923.GA26630@lizard> <20120501131806.GA22249@lizard>
- <4FA04FD5.6010900@redhat.com> <20120502002026.GA3334@lizard>
- <4FA08BDB.1070009@gmail.com> <20120502033136.GA14740@lizard>
- <4FA0C042.9010907@kernel.org>
-In-Reply-To: <4FA0C042.9010907@kernel.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.82.242]
-Content-Type: text/plain; charset="utf-8"
+	id S1754512Ab2EBGuc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 02:50:32 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:57593 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753926Ab2EBGu3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 02:50:29 -0400
+Message-ID: <4FA0D930.3080806@ti.com>
+Date: Wed, 02 May 2012 12:20:24 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-X-OriginalArrivalTime: 02 May 2012 06:46:16.0193 (UTC) FILETIME=[45B8DF10:01CD282F]
-X-Nokia-AV: Clean
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 0/7] Add TI EMIF SDRAM controller driver
+References: <y> <1335529449-28046-1-git-send-email-santosh.shilimkar@ti.com> <20120502051623.GA23705@kroah.com>
+In-Reply-To: <20120502051623.GA23705@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q426oQ6a018898
 
-> -----Original Message-----
-> From: ext Minchan Kim [mailto:minchan@kernel.org]
-> Sent: 02 May, 2012 08:04
-> To: Anton Vorontsov
-> Cc: KOSAKI Motohiro; Rik van Riel; Pekka Enberg; Moiseichuk Leonid (Nokia-
-...
-> I think hardest problem in low mem notification is how to define _lowmem
-> situation_.
-> We all guys (server, desktop and embedded) should reach a conclusion on
-> define lowmem situation before progressing further implementation
-> because each part can require different limits.
-> Hopefully, I want it.
+Greg,
+
+On Wednesday 02 May 2012 10:46 AM, Greg KH wrote:
+> On Fri, Apr 27, 2012 at 05:54:02PM +0530, Santosh Shilimkar wrote:
+>> Add a driver for the EMIF SDRAM controller used in Texas Instrument SoCs
+>>
+>> EMIF is an SDRAM controller that supports, based on its revision,
+>> one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
+>> for LPDDR2.
+>>
+>> The driver supports the following features:
+>> - Calculates the DDR AC timing parameters to be set in EMIF
+>>   registers using data from the device data-sheets and based
+>>   on the DDR frequency. If data from data-sheets is not available
+>>   default timing values from the JEDEC spec are used. These
+>>   will be safe, but not necessarily optimal
+>> - API for changing timings during DVFS or at boot-up
+>> - Temperature alert configuration and handling of temperature
+>>   alerts, if any for LPDDR2 devices
+>>   * temperature alert is based on periodic polling of MR4 mode
+>>     register in DDR devices automatically performed by hardware
+>>   * timings are de-rated and brought back to nominal when
+>>     temperature raises and falls respectively
+>> - Cache of calculated register values to avoid re-calculating
+>>   them
+>>
+>> The driver will need some minor updates when it is eventually
+>> integrated with Dynamic Voltage and Frequency Scaling (DVFS).
+>> This can not be done now as DVFS support is not available in
+>> the mainline yet.
+>>
+>> Discussions with Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> were immensely helpful in shaping up the interfaces. Vibhore Vardhan
+>> <vvardhan@gmail.com> did the initial code snippet for thermal
+>> handling.
+>>
+>> Testing: 
+>> - The driver is tested on OMAP4430 SDP.
+>> - The driver in a slightly adapted form is also tested on OMAP5.
+>> - Since mainline kernel doesn't have DVFS support yet,
+>>   testing was done using a test module.
+>> - Temperature alert handling was tested with simulated interrupts
+>>   and faked temperature values as testing all cases in real-life
+>>   scenarios is difficult.
+>> - Tested the driver as a module
+>>
+>> Cc: Greg KH <greg@kroah.com>
 > 
-> What is the best situation we can call it as "low memory"?
+> This all looks good to me now, thanks for reworking this.
+> 
+> So, do you want me to take this through my "driver" tree to get to Linus
+> for 3.5, or do you want it to go through somewhere else?
+> 
+> If somewhere else, that's fine with me, consider this an:
+> 	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> If you want me to take it, just let me know, whichever you prefer is
+> fine with me.
+> 
+Can you take this one through your 3.5 driver tree please ?
+Thanks for help.
 
-That depends on what user-space can do. In n9 case [1] we can handle some OOM/slowness-prevention and actions e.g. close background applications, stop prestarted apps, 
-flush browser/graphics caches in applications and do all the things kernel even don't know about. This set of activities usually comes as memory management design.
+Regards
+Santosh
 
->From another side, polling by re-scan vmstat data using procfs might be performance heavy and for sure - use-time disaster.
 
-Leonid
-[1] http://maemo.gitorious.org/maemo-tools/libmemnotify - yes, not ideal but it works and quite well isolated code.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
