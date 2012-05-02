@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab2EBSfa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 14:35:30 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:60943 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755606Ab2EBSf3 (ORCPT
+	id S1756031Ab2EBSjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 14:39:44 -0400
+Received: from exprod7og118.obsmtp.com ([64.18.2.8]:58248 "EHLO
+	exprod7og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755587Ab2EBSjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 14:35:29 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6698"; a="184696043"
-Message-ID: <6c62e1bf619db82fb165dce5c6f383c4.squirrel@www.codeaurora.org>
-In-Reply-To: <001601cd2668$8a074940$9e15dbc0$%jun@samsung.com>
-References: <49230ae96550a05ad57cc55c38f31136.squirrel@www.codeaurora.org>
-    <001601cd2668$8a074940$9e15dbc0$%jun@samsung.com>
-Date: Wed, 2 May 2012 11:35:28 -0700 (PDT)
-Subject: RE: [PATCH v5 2/2] mmc: core: Support packed command for eMMC4.5 
-     device
-From: merez@codeaurora.org
-To: "Seungwon Jeon" <tgih.jun@samsung.com>
-Cc: merez@codeaurora.org, linux-mmc@vger.kernel.org,
-        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.17
+	Wed, 2 May 2012 14:39:43 -0400
+Message-ID: <4FA17F6A.9000606@genband.com>
+Date: Wed, 02 May 2012 12:39:38 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: George Porter <gmporter@cs.ucsd.edu>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: read() syscall slowing down due to other threads?
+References: <CANkdjvZinRvHYPKLCFsd6z3FXgM4ScS1Ar9OjO3s1SLDFnridw@mail.gmail.com>
+In-Reply-To: <CANkdjvZinRvHYPKLCFsd6z3FXgM4ScS1Ar9OjO3s1SLDFnridw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 May 2012 18:39:39.0002 (UTC) FILETIME=[EE2F35A0:01CD2892]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18880.001
+X-TM-AS-Result: No--5.441000-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> > @@ -1291,10 +1657,42 @@ static int mmc_blk_issue_rw_rq(struct
->> mmc_queue
->> *mq, struct request *rqc)
->> >  			 * A block was successfully transferred.
->> >  			 */
->> >  			mmc_blk_reset_success(md, type);
->> > -			spin_lock_irq(&md->lock);
->> > -			ret = __blk_end_request(req, 0,
->> > +
->> > +			if (mq_rq->packed_cmd != MMC_PACKED_NONE) {
->> > +				int idx = mq_rq->packed_fail_idx, i = 0;
->> > +				ret = 0;
->> > +				while (!list_empty(&mq_rq->packed_list)) {
->> > +					prq = list_entry_rq(
->> > +						mq_rq->packed_list.next);
->> > +					if (idx == i) {
->> > +						/* retry from error index */
->> > +						mq_rq->packed_num -= idx;
->> > +						mq_rq->req = prq;
->> > +						ret = 1;
->> > +						break;
->> > +					}
->> > +					list_del_init(&prq->queuelist);
->> > +					spin_lock_irq(&md->lock);
->> > +					__blk_end_request(prq, 0,
->> > +							blk_rq_bytes(prq));
->> > +					spin_unlock_irq(&md->lock);
->> > +					i++;
->> > +				}
->> > +				if (mq_rq->packed_num == MMC_PACKED_N_SINGLE) {
->> > +					prq = list_entry_rq(
->> > +						mq_rq->packed_list.next);
->> You already get the prq inside the while. There is no need to do it
->> again.
-> Right, but if while loop isn't taken, then prq can be used uninitialized.
-> Though that case wouldn't happen actually, we don't want to see the
-> compiling error.
+On 05/01/2012 12:03 AM, George Porter wrote:
 
-The loop must be taken since we are inside the case of packed commands so
-the list can't be empty.
+> However, if I start doing more computation on those other threads, the
+> read() syscalls take longer to read the same amount of data,
+> eventually slowing down to 50 MBps (50% slower).  I've used
+> setaffinity() to isolate the Reader threads to one set of cores, and
+> the compute threads to a different set of cores, and so I don't think
+> it is CPU/scheduling interference.
+>
+> Thoughts?  Has anyone run into this before?
 
-If the compiler complained, you can set prq to be the first request before
-entering the loop instead of setting it again in the if that follows the
-loop. It will probably be more understood.
-If you decide to leave it as is, I would also add the following to the if:
-+                                                mq_rq->req = prq;
-+                                                ret = 1;
-Otherwise it seems like there could be a bug in cases where the loop is
-not taken (since prq is the only one that is set) and the code is less
-understood.
+If you're using hyperthreading you may want to try it with either 
+putting the computation threads on the siblings of the cpus for the 
+reader threads (to share cache) or else not on the siblings of the cpus 
+for the reader threads (to minimize contention of cpu resources).
 
-Thanks,
-Maya Erez
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+Similarly, you may want to play with wither or not the threads are on 
+the same or different sockets.
 
+Chris
 
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
