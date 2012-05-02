@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab2EBUys (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 16:54:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40960 "EHLO
+	id S1757429Ab2EBVBS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 17:01:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59207 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756407Ab2EBUyp (ORCPT
+	with ESMTP id S1756072Ab2EBVBR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 16:54:45 -0400
-X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 May 2012 16:54:45 EDT
-Message-ID: <4FA19DC8.2030001@redhat.com>
-Date: Wed, 02 May 2012 22:49:12 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120425 Thunderbird/12.0
+	Wed, 2 May 2012 17:01:17 -0400
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 May 2012 17:01:17 EDT
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
-References: <1335953452-10460-1-git-send-email-jack@suse.cz> <4FA1092E.9090603@redhat.com> <20120502135123.GF16976@quack.suse.cz> <4FA13DDF.9010006@redhat.com> <20120502161038.01ee9b59@pyramind.ukuu.org.uk> <4FA157A6.7050209@redhat.com>
-In-Reply-To: <4FA157A6.7050209@redhat.com>
+In-Reply-To: <20120502201055.GA26148@kroah.com>
+References: <1335779216-32068-1-git-send-email-sasikanth.v19@gmail.com>
+	<20120502201055.GA26148@kroah.com>
+Date: Thu, 3 May 2012 02:24:34 +0530
+Message-ID: <CAOJFanXfohBi3ox4XGJ8EQyukJwHsUwEwRPG5v0rGNqYtwhFLQ@mail.gmail.com>
+Subject: Re: [PATCH v2] sysfs: Removed dup_name entirely in sysfs_rename
+From: Sasikanth babu <sasikanth.v19@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 02/05/2012 17:49, Paolo Bonzini ha scritto:
->> > Customisable filters are not hard. We've got all the filtering code in
->> > kernel and the ability to verify filters, even the ability to JIT them.
->> > Just support adding/removing/running a BPF filter on the channel in
->> > question.
->> > 
->> > So it shouldn't be much code to do what you want.
-> Yes, it's not much code if I don't get into cgroups land and stick with
-> a ioctl to add and remove BPF filters that look at CDBs.
-
-Except that then I need to access some "struct file" member in SG_IO,
-thus changing ioctl from block_device/fmode to block_device/file.  This
-would partially undo the 2007 switch from inode/file by Al Viro.
-Somehow I'm not that optimist anymore, though I'd be happy to be proven
-wrong.
-
-Paolo
-
+On Thu, May 3, 2012 at 1:40 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Mon, Apr 30, 2012 at 03:16:56PM +0530, Sasikantha babu wrote:
+>> Since no one using "dup_name", removed it completely in sysfs_rename,
+>>
+>> Signed-off-by: Sasikantha babu <sasikanth.v19@gmail.com>
+>
+> What kernel version did you create this against?  There is some odd fuzz
+> and offsets aren't right here, you should at the least, make it against
+> Linus's latest tree, and ideally against linux-next, this one was made
+> against neither, so I can't really apply it.
+>
+  The patch is against Linus latest tree only.  I got the same offsets after a
+  fresh clone.
+> Care to refresh it against Linus's tree and resend it so I can apply it?
+   Will resend the patch with latest Linus's tree.
+>
+> It makes me wonder how you tested it...
+   Tested on Kernel 3.4-rc5 version.
+>
+> greg k-h
