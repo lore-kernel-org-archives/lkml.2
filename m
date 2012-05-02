@@ -1,95 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab2EBSD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 14:03:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58906 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755828Ab2EBSD2 (ORCPT
+	id S1755927Ab2EBSHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 14:07:48 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57636 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755494Ab2EBSHq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 14:03:28 -0400
-Date: Wed, 2 May 2012 11:03:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 0/7] Add TI EMIF SDRAM controller driver
-Message-ID: <20120502180322.GA28837@kroah.com>
-References: <y>
- <1335529449-28046-1-git-send-email-santosh.shilimkar@ti.com>
- <20120502051623.GA23705@kroah.com>
- <4FA0D930.3080806@ti.com>
+	Wed, 2 May 2012 14:07:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA0D930.3080806@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [172.22.162.26]
+In-Reply-To: <1335935266-25289-4-git-send-email-thomas.abraham@linaro.org>
+References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
+	<1335935266-25289-4-git-send-email-thomas.abraham@linaro.org>
+Date: Wed, 2 May 2012 11:07:45 -0700
+Message-ID: <CAOesGMh_0dShqe+kSB1Xgn9bpLv0j+b9QP+vN9N57XHP1geSHg@mail.gmail.com>
+Subject: Re: [PATCH 3/7] mmc: dw_mmc: add device tree support
+From: Olof Johansson <olof@lixom.net>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 12:20:24PM +0530, Santosh Shilimkar wrote:
-> Greg,
-> 
-> On Wednesday 02 May 2012 10:46 AM, Greg KH wrote:
-> > On Fri, Apr 27, 2012 at 05:54:02PM +0530, Santosh Shilimkar wrote:
-> >> Add a driver for the EMIF SDRAM controller used in Texas Instrument SoCs
-> >>
-> >> EMIF is an SDRAM controller that supports, based on its revision,
-> >> one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
-> >> for LPDDR2.
-> >>
-> >> The driver supports the following features:
-> >> - Calculates the DDR AC timing parameters to be set in EMIF
-> >>   registers using data from the device data-sheets and based
-> >>   on the DDR frequency. If data from data-sheets is not available
-> >>   default timing values from the JEDEC spec are used. These
-> >>   will be safe, but not necessarily optimal
-> >> - API for changing timings during DVFS or at boot-up
-> >> - Temperature alert configuration and handling of temperature
-> >>   alerts, if any for LPDDR2 devices
-> >>   * temperature alert is based on periodic polling of MR4 mode
-> >>     register in DDR devices automatically performed by hardware
-> >>   * timings are de-rated and brought back to nominal when
-> >>     temperature raises and falls respectively
-> >> - Cache of calculated register values to avoid re-calculating
-> >>   them
-> >>
-> >> The driver will need some minor updates when it is eventually
-> >> integrated with Dynamic Voltage and Frequency Scaling (DVFS).
-> >> This can not be done now as DVFS support is not available in
-> >> the mainline yet.
-> >>
-> >> Discussions with Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >> were immensely helpful in shaping up the interfaces. Vibhore Vardhan
-> >> <vvardhan@gmail.com> did the initial code snippet for thermal
-> >> handling.
-> >>
-> >> Testing: 
-> >> - The driver is tested on OMAP4430 SDP.
-> >> - The driver in a slightly adapted form is also tested on OMAP5.
-> >> - Since mainline kernel doesn't have DVFS support yet,
-> >>   testing was done using a test module.
-> >> - Temperature alert handling was tested with simulated interrupts
-> >>   and faked temperature values as testing all cases in real-life
-> >>   scenarios is difficult.
-> >> - Tested the driver as a module
-> >>
-> >> Cc: Greg KH <greg@kroah.com>
-> > 
-> > This all looks good to me now, thanks for reworking this.
-> > 
-> > So, do you want me to take this through my "driver" tree to get to Linus
-> > for 3.5, or do you want it to go through somewhere else?
-> > 
-> > If somewhere else, that's fine with me, consider this an:
-> > 	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > If you want me to take it, just let me know, whichever you prefer is
-> > fine with me.
-> > 
-> Can you take this one through your 3.5 driver tree please ?
-> Thanks for help.
+Hi,
 
-Ok, all now applied.
+On Tue, May 1, 2012 at 10:07 PM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
+> Add device tree based discovery support.
+>
+> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+> ---
+>  .../devicetree/bindings/mmc/synposis-dw-mshc.txt   |   85 +++++++++
+>  drivers/mmc/host/dw_mmc-pltfm.c                    |   24 +++
+>  drivers/mmc/host/dw_mmc.c                          |  181 +++++++++++++++++++-
+>  drivers/mmc/host/dw_mmc.h                          |   10 +
+>  include/linux/mmc/dw_mmc.h                         |    2 +
+>  5 files changed, 296 insertions(+), 6 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+>
+> diff --git a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+> new file mode 100644
+> index 0000000..c1ed70e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+> @@ -0,0 +1,85 @@
+> +* Synopsis Designware Mobile Storage Host Controller
+> +
+> +The Synopsis designware mobile storage host controller is used to interface
+> +a SoC with storage medium such as eMMC or SD/MMC cards.
+> +
+> +Required Properties:
+> +
+> +* compatible: should be one of the following
+> +       - synopsis,dw-mshc: for controllers compliant with synopsis dw-mshc.
+> +
+> +* reg: physical base address of the dw-mshc controller and size of its memory
+> +  region.
+> +
+> +* interrupts: interrupt specifier for the controller. The format and value of
+> +  the interrupt specifier depends on the interrupt parent for the controller.
+> +
+> +# Slots: The slot specific information are contained within child-nodes with
+> +  each child-node representing a supported slot. There should be atleast one
+> +  child node representing a card slot. The name of the slot child node should
+> +  be 'slot{n}' where n is the unique number of the slot connnected to the
+> +  controller. The following are optional properties which can be included in
+> +  the slot child node.
 
-greg k-h
+Since we're talking slots / cards on a bus, I think the addressing
+model would be useful here. So in the main controller node:
+    #address-cells = <1>;
+    #size-cells = <0>;
+
+And then each slot would need a reg property and possibly unit address:
+
+   slot {
+        reg = <0>;
+        ...
+   };
+
+(unit addresses on the slots are only needed if they can't be
+disambiguated by name, so not needed if you only have one slot).
+
+
+-Olof
