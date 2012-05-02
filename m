@@ -1,149 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab2EBW2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 18:28:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57522 "EHLO
+	id S1755623Ab2EBWgK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 18:36:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64898 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755127Ab2EBW1c (ORCPT
+	with ESMTP id S1752226Ab2EBWgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 18:27:32 -0400
-Date: Wed, 2 May 2012 15:27:28 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Preston Fick <pffick@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        preston.fick@silabs.com
-Subject: Re: [PATCH 3/3] usb: cp210x: Add ioctl for GPIO support
-Message-ID: <20120502222728.GA2871@kroah.com>
-References: <1335845210-5147-1-git-send-email-preston.fick@silabs.com>
- <1335845210-5147-3-git-send-email-preston.fick@silabs.com>
- <20120502200356.GA25915@kroah.com>
- <20120502214901.6b6e031c@pyramind.ukuu.org.uk>
- <20120502215226.GD27281@kroah.com>
- <20120502231027.1c45105d@pyramind.ukuu.org.uk>
+	Wed, 2 May 2012 18:36:08 -0400
+Date: Wed, 2 May 2012 15:36:03 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sasikanth babu <sasikanth.v19@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] debugfs: New debugfs interface for creation of files,
+ directory and symlinks
+Message-ID: <20120502223603.GA3103@kroah.com>
+References: <1335963054-24750-1-git-send-email-sasikanth.v19@gmail.com>
+ <20120502153100.GA2777@kroah.com>
+ <CAOJFanXZEUfM4GQS62u4oR-KwywdLGOciOcgzmrM9zW+kOrXkg@mail.gmail.com>
+ <20120502220417.GA2667@kroah.com>
+ <20120502152003.d7b6aae9.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120502231027.1c45105d@pyramind.ukuu.org.uk>
+In-Reply-To: <20120502152003.d7b6aae9.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 11:10:27PM +0100, Alan Cox wrote:
-> On Wed, 2 May 2012 14:52:26 -0700
-> Greg KH <gregkh@linuxfoundation.org> wrote:
+On Wed, May 02, 2012 at 03:20:03PM -0700, Andrew Morton wrote:
+> On Wed, 2 May 2012 15:04:17 -0700
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 > 
-> > On Wed, May 02, 2012 at 09:49:01PM +0100, Alan Cox wrote:
-> > > > Actually, why can't you use the GPIO subsystem for something like this?
-> > > > Can't you export your device as both a usb-serial device and a gpio
-> > > > device and have things work properly that way?
+> > On Thu, May 03, 2012 at 03:28:17AM +0530, Sasikanth babu wrote:
+> > > On Wed, May 2, 2012 at 9:01 PM, Greg Kroah-Hartman
+> > > <gregkh@linuxfoundation.org> wrote:
+> > > > On Wed, May 02, 2012 at 06:20:54PM +0530, Sasikantha babu wrote:
+> > > >> As we know the current debugfs file or directory or symlink creation
+> > > >> doesn't return proper error codes to the caller on failure. Because
+> > > >> of this caller and user could not able to find the exact reason of
+> > > >> the failure.
+> > > >
+> > > > And what is the problem with this? __Either the file is created or not,
+> > > > you really shouldn't care anymore than that. __It's not like you are
+> > > > going to retry the creation, or are you?
+> > > >
+> > > > Who really cares if the file is failed to be created?
 > > > 
-> > > You still need the ioctls even then in order to discover the gpio
-> > > numbers
+> > >  In most of cases I had observed caller of debufs_create_file or
+> > >  debufs_create_dir always returns -ENOMEM on failure, which is not true.
 > > 
-> > What discovery?  The device knows what gpio values it has in it, and
-> > should be able to register those with the gpio subsystem.
+> > Where does that happen?  And why would the creation of a debugfs file
+> > fail?
 > 
-> You open /dev/ttyUSB0
+> How's he supposed to know, when the kernel cannot return the correct
+> diagnostic?
 > 
-> Ok now in your user application how are you going to find which gpio
-> numbers to use that are associated with this specific port,
+> That's the whole reason we have errnos: to report on what went wrong,
+> so operators can understand *why* it failed and so that programmers can
+> diagnose and fix bugs.
+> 
+> There's nothing special about debugfs and there is no reason why it
+> should deviate from well-established practice.
+> 
+> If well-written code checks the return value (as it should) and then
+> propagates an error code back to its caller (as it should), the stupid
+> debugfs interface forces that caller to invent an errno from thin air.
+> And if that guessed errno is wrong, it is actively misleading!
+> 
+> > You can fixup the callers to make it uniform, the api is uniform in what
+> > it returns today, right?
+> 
+> The API is stupid and wrong, actually.  There is no *advantage* to
+> having done it this way - none at all.
 
-Just look at the gpio device that has ttyUSB0 as its parent.
+Yes there is, it makes the caller logic trivial, which was the main goal
+here in getting people to use it over creating new proc files all the
+time for no good reason.
 
-> and how is udev going to do that to manage permissions ?
+No one cares about the return value when you create a proc file, either
+it succeeds or not, and you handle things from there, you never change
+the name to try it again.
 
-How does udev handle permissions for gpio devices today?
+Same thing with debugfs, you only care if it works or not, and really,
+you don't even care if it works, as the api lets you continue on if it
+didn't just fine.
 
-> So you need an ioctl to give you the range that is mapped to this (or a
-> sysfs node, but the sysfs node makes the security problem pretty
-> much insoluble)
+These are debugging files, with no set rules on what they contain.  Yes,
+people have grown to get used to them over the years, but the namespace
+in which they work has worked out for itself, and I have yet to ever
+hear of any two people wanting to create the same file/directory
+anywhere, and have anything fail.
 
-range for what?  Doesn't the gpio interfac provide the size of the gpio
-registers to userspace?
-
-As for security, how is that handled today with gpio devices?
-
-> > > and having done that youi've got potential races with unload
-> > > when you try and open them. You've also got permissions considerations
-> > > and synchronization between gpio and data problems.
-> > 
-> > That can be handled in the driver itself, if it really is a problem (the
-> > existing patch sure didn't handle any of that at all, so I'm guessing
-> > either it wasn't considered, or it isn't a problem.)
-> 
-> Not reliably
-> 
-> 	open /dev/ttyUSB0 [or sysfs node]
-> 	read gpio numbers
-> 	close 
-> 
-> 	open gpio foo
-> 
-> Oh dear... so random shell scripting user is going to screw up horribly.
-
-What's the odds that the data going across the tty link corrisponds with
-the gpio control?
-
-And shell scripting the gpio interface is used today, I've seen it on
-the beaglebone machine.
-
-> > > It's not a good way to go. It might make sense in some platforms to
-> > > expose them as both but its not a good general model.
-> > 
-> > Why isn't the gpio subsystem a good general model?  I thought that is
-> > what it was created to solve?
-> 
-> gpio provides a flat abstraction for arbitary pins on a platform. It's
-> really oriented to fairly fixed system stuff. It doesn't provide a useful
-> abstraction for extra carrier lines.
-> 
-> Imagine if RTS and DTR were driven by GPIO pins instead of the tty
-> layer. Many devices use them as extra magic GPIO lines not as tty control
-> lines, so its an equivalent argument.
-
-Ok, fair enough, but RTS and DTR are "well defined" as part of the RS232
-specs, and handle flow of the data itself.  These gpio lines are not tty
-control, but as you point out, used for other things, so keeping them
-separate from the tty node seems to make sense to me.
-
-> > > I'm currently favouring adding some 'additional control line' bits to
-> > > termiox.
-> > 
-> > Yes, but that's only good for usb-serial devices that also have gpio
-> > pins on the controller side.  Which seems pretty limited to me.
-> > 
-> > If I have a userspace program, and I want to use GPIO, I shouldn't have
-> > to care/know that the pins are really on the end of a USB->serial
-> > bridge, or somewhere hanging off of a SOC, the same userspace api should
-> > "just work", right?
-> 
-> For certain applications that makes more sense, which is why I said you
-> may well want to expose it as both. However you still need both, and
-> ideally we need a standardised pattern of assignments for line
-> disciplines that use the extra control lines (which has come up recently
-> for another device with extra lines)
-> 
-> I think it basically boils down to this
-> 
-> If you have a serial port with some gpio lines that drive arbitary
-> unrelated electronics then the gpio interface is handy because you can
-> use the same code logic as if it was wired to other pins elsewhere
-> 
-> If you are using them as part of the tty interface as extra control lines
-> (eg for smartcard protocols) then you want them driven via the tty
-> interface and doubly so once we add some of the smartcard/sim ldisc
-> support.
-> 
-> Hence we really need to expose them both ways because end users are doing
-> both things with the gpio pins on these ports.
-> 
-> So I'd suggest we expose them via termiox bits and also via the tty
-> providing gpio range info in a standardised way.
-
-Ok, I'll wait for your proposed standardised way before complaining any
-more :)
+Or am I missing some subsystem that is having problems like this with
+debugfs?
 
 thanks,
 
