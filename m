@@ -1,179 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab2EBMqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 08:46:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51182 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab2EBMql (ORCPT
+	id S1753856Ab2EBMqy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 08:46:54 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62851 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724Ab2EBMqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 08:46:41 -0400
+	Wed, 2 May 2012 08:46:51 -0400
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-serial@vger.kernel.org
-Cc: arnd@arndb.de, swarren@wwwdotorg.org, lethal@linux-sh.org,
-        gregkh@linuxfoundation.org, linux-sh@vger.kernel.org,
+Cc: horms@verge.net.au, arnd@arndb.de, linux-sh@vger.kernel.org,
+        gregkh@linuxfoundation.org, swarren@wwwdotorg.org,
         linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        paul.gortmaker@windriver.com, horms@verge.net.au, olof@lixom.net,
+        paul.gortmaker@windriver.com, lethal@linux-sh.org, olof@lixom.net,
         Magnus Damm <magnus.damm@gmail.com>, dan.j.williams@intel.com,
         alan@linux.intel.com
-Date: Wed, 02 May 2012 21:47:27 +0900
-Message-Id: <20120502124727.30480.66237.sendpatchset@w520>
+Date: Wed, 02 May 2012 21:47:36 +0900
+Message-Id: <20120502124736.30480.48207.sendpatchset@w520>
 In-Reply-To: <20120502124642.30480.41373.sendpatchset@w520>
 References: <20120502124642.30480.41373.sendpatchset@w520>
-Subject: [PATCH 05/06] serial8250: Introduce serial8250_register_8250_port()
+Subject: [PATCH 06/06] serial8250-em: Add Emma Mobile UART driver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Magnus Damm <damm@opensource.se>
 
-Introduce yet another 8250 registration function.
-This time it is serial8250_register_8250_port() and it
-allows us to register 8250 hardware instances using struct 
-uart_8250_port. The new function makes it possible to
-register 8250 hardware that makes use of 8250 specific
-callbacks such as ->dl_read() and ->dl_write().
+Add a platform driver for Emma Mobile 8250 hardware.
+
+The hardware itself has according to the data sheet
+up to 64 byte FIFOs but at this point we only make
+use of the 16550 compatible mode.
+
+To support this piece of hardware the common UART
+registers need to be remapped, and the access size
+differences need to be handled.
+
+The DLL and DLM registers can due to offset collision
+not be remapped easily, and because of that this
+driver makes use of ->dl_read() and ->dl_write()
+callbacks. This in turn requires a registration
+function that takes 8250-specific paramenters.
+
+Future potential enhancements include DT support,
+early platform driver console and fine grained PM.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
 
- drivers/tty/serial/8250/8250.c |   89 ++++++++++++++++++++++++++--------------
- include/linux/serial_8250.h    |    1 
+ Developed for the UARTs in Emma Mobile EV2, but should
+ in theory also support other SoCs in the Emma Mobile line.
 
---- 0005/drivers/tty/serial/8250/8250.c
-+++ work/drivers/tty/serial/8250/8250.c	2012-05-02 20:51:44.000000000 +0900
-@@ -3111,7 +3111,7 @@ static struct uart_8250_port *serial8250
- }
- 
- /**
-- *	serial8250_register_port - register a serial port
-+ *	serial8250_register_8250_port - register a serial port
-  *	@port: serial port template
-  *
-  *	Configure the serial port specified by the request. If the
-@@ -3123,52 +3123,56 @@ static struct uart_8250_port *serial8250
-  *
-  *	On success the port is ready to use and the line number is returned.
-  */
--int serial8250_register_port(struct uart_port *port)
-+int serial8250_register_8250_port(struct uart_8250_port *up)
- {
- 	struct uart_8250_port *uart;
- 	int ret = -ENOSPC;
- 
--	if (port->uartclk == 0)
-+	if (up->port.uartclk == 0)
- 		return -EINVAL;
- 
- 	mutex_lock(&serial_mutex);
- 
--	uart = serial8250_find_match_or_unused(port);
-+	uart = serial8250_find_match_or_unused(&up->port);
- 	if (uart) {
- 		uart_remove_one_port(&serial8250_reg, &uart->port);
- 
--		uart->port.iobase       = port->iobase;
--		uart->port.membase      = port->membase;
--		uart->port.irq          = port->irq;
--		uart->port.irqflags     = port->irqflags;
--		uart->port.uartclk      = port->uartclk;
--		uart->port.fifosize     = port->fifosize;
--		uart->port.regshift     = port->regshift;
--		uart->port.iotype       = port->iotype;
--		uart->port.flags        = port->flags | UPF_BOOT_AUTOCONF;
--		uart->port.mapbase      = port->mapbase;
--		uart->port.private_data = port->private_data;
--		if (port->dev)
--			uart->port.dev = port->dev;
-+		uart->port.iobase       = up->port.iobase;
-+		uart->port.membase      = up->port.membase;
-+		uart->port.irq          = up->port.irq;
-+		uart->port.irqflags     = up->port.irqflags;
-+		uart->port.uartclk      = up->port.uartclk;
-+		uart->port.fifosize     = up->port.fifosize;
-+		uart->port.regshift     = up->port.regshift;
-+		uart->port.iotype       = up->port.iotype;
-+		uart->port.flags        = up->port.flags | UPF_BOOT_AUTOCONF;
-+		uart->port.mapbase      = up->port.mapbase;
-+		uart->port.private_data = up->port.private_data;
-+		if (up->port.dev)
-+			uart->port.dev = up->port.dev;
- 
--		if (port->flags & UPF_FIXED_TYPE)
--			serial8250_init_fixed_type_port(uart, port->type);
-+		if (up->port.flags & UPF_FIXED_TYPE)
-+			serial8250_init_fixed_type_port(uart, up->port.type);
- 
- 		set_io_from_upio(&uart->port);
- 		/* Possibly override default I/O functions.  */
--		if (port->serial_in)
--			uart->port.serial_in = port->serial_in;
--		if (port->serial_out)
--			uart->port.serial_out = port->serial_out;
--		if (port->handle_irq)
--			uart->port.handle_irq = port->handle_irq;
-+		if (up->port.serial_in)
-+			uart->port.serial_in = up->port.serial_in;
-+		if (up->port.serial_out)
-+			uart->port.serial_out = up->port.serial_out;
-+		if (up->port.handle_irq)
-+			uart->port.handle_irq = up->port.handle_irq;
- 		/*  Possibly override set_termios call */
--		if (port->set_termios)
--			uart->port.set_termios = port->set_termios;
--		if (port->pm)
--			uart->port.pm = port->pm;
--		if (port->handle_break)
--			uart->port.handle_break = port->handle_break;
-+		if (up->port.set_termios)
-+			uart->port.set_termios = up->port.set_termios;
-+		if (up->port.pm)
-+			uart->port.pm = up->port.pm;
-+		if (up->port.handle_break)
-+			uart->port.handle_break = up->port.handle_break;
-+		if (up->dl_read)
-+			uart->dl_read = up->dl_read;
-+		if (up->dl_write)
-+			uart->dl_write = up->dl_write;
- 
- 		if (serial8250_isa_config != NULL)
- 			serial8250_isa_config(0, &uart->port,
-@@ -3182,6 +3186,29 @@ int serial8250_register_port(struct uart
- 
- 	return ret;
- }
-+EXPORT_SYMBOL(serial8250_register_8250_port);
-+
-+/**
-+ *	serial8250_register_port - register a serial port
-+ *	@port: serial port template
+ drivers/tty/serial/8250/8250_em.c |  179 +++++++++++++++++++++++++++++++++++++
+ drivers/tty/serial/8250/Kconfig   |    8 +
+ drivers/tty/serial/8250/Makefile  |    1 
+ 3 files changed, 188 insertions(+)
+
+--- /dev/null
++++ work/drivers/tty/serial/8250/8250_em.c	2012-05-02 17:25:20.000000000 +0900
+@@ -0,0 +1,179 @@
++/*
++ * Renesas Emma Mobile 8250 driver
 + *
-+ *	Configure the serial port specified by the request. If the
-+ *	port exists and is in use, it is hung up and unregistered
-+ *	first.
++ *  Copyright (C) 2012 Magnus Damm
 + *
-+ *	The port is then probed and if necessary the IRQ is autodetected
-+ *	If this fails an error is returned.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License
 + *
-+ *	On success the port is ready to use and the line number is returned.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + */
-+int serial8250_register_port(struct uart_port *port)
++
++#include <linux/device.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/serial_8250.h>
++#include <linux/serial_core.h>
++#include <linux/serial_reg.h>
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/slab.h>
++
++#include "8250.h"
++
++#define UART_DLL_EM 9
++#define UART_DLM_EM 10
++
++struct serial8250_em_priv {
++	struct clk *sclk;
++	int line;
++};
++
++static void serial8250_em_serial_out(struct uart_port *p, int offset, int value)
 +{
++	switch (offset) {
++	case UART_TX: /* TX @ 0x00 */
++		writeb(value, p->membase);
++		break;
++	case UART_FCR: /* FCR @ 0x0c (+1) */
++	case UART_LCR: /* LCR @ 0x10 (+1) */
++	case UART_MCR: /* MCR @ 0x14 (+1) */
++	case UART_SCR: /* SCR @ 0x20 (+1) */
++		writel(value, p->membase + ((offset + 1) << 2));
++		break;
++	case UART_IER: /* IER @ 0x04 */
++		value &= 0x0f; /* only 4 valid bits - not Xscale */
++		/* fall-through */
++	case UART_DLL_EM: /* DLL @ 0x24 (+9) */
++	case UART_DLM_EM: /* DLM @ 0x28 (+9) */
++		writel(value, p->membase + (offset << 2));
++	}
++}
++
++static unsigned int serial8250_em_serial_in(struct uart_port *p, int offset)
++{
++	switch (offset) {
++	case UART_RX: /* RX @ 0x00 */
++		return readb(p->membase);
++	case UART_MCR: /* MCR @ 0x14 (+1) */
++	case UART_LSR: /* LSR @ 0x18 (+1) */
++	case UART_MSR: /* MSR @ 0x1c (+1) */
++	case UART_SCR: /* SCR @ 0x20 (+1) */
++		return readl(p->membase + ((offset + 1) << 2));
++	case UART_IER: /* IER @ 0x04 */
++	case UART_IIR: /* IIR @ 0x08 */
++	case UART_DLL_EM: /* DLL @ 0x24 (+9) */
++	case UART_DLM_EM: /* DLM @ 0x28 (+9) */
++		return readl(p->membase + (offset << 2));
++	}
++	return 0;
++}
++
++static int serial8250_em_serial_dl_read(struct uart_8250_port *up)
++{
++	return serial_in(up, UART_DLL_EM) | serial_in(up, UART_DLM_EM) << 8;
++}
++
++static void serial8250_em_serial_dl_write(struct uart_8250_port *up, int value)
++{
++	serial_out(up, UART_DLL_EM, value & 0xff);
++	serial_out(up, UART_DLM_EM, value >> 8 & 0xff);
++}
++
++static int __devinit serial8250_em_probe(struct platform_device *pdev)
++{
++	struct resource *regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	struct resource *irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	struct serial8250_em_priv *priv;
 +	struct uart_8250_port up;
++	int ret = -EINVAL;
++
++	if (!regs || !irq) {
++		dev_err(&pdev->dev, "missing registers or irq\n");
++		goto err0;
++	}
++
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv) {
++		dev_err(&pdev->dev, "unable to allocate private data\n");
++		ret = -ENOMEM;
++		goto err0;
++	}
++
++	priv->sclk = clk_get(&pdev->dev, "sclk");
++	if (!priv->sclk) {
++		dev_err(&pdev->dev, "unable to get clock\n");
++		goto err1;
++	}
 +
 +	memset(&up, 0, sizeof(up));
-+	memcpy(&up.port, port, sizeof(*port));
-+	return serial8250_register_8250_port(&up);
++	up.port.mapbase = regs->start; /* assume 1:1 entity map */
++	up.port.membase = (void __iomem *)regs->start;
++	up.port.irq = irq->start;
++	up.port.type = PORT_UNKNOWN;
++	up.port.flags = UPF_BOOT_AUTOCONF | UPF_FIXED_PORT;
++	up.port.dev = &pdev->dev;
++	up.port.private_data = priv;
++
++	clk_enable(priv->sclk);
++	up.port.uartclk = clk_get_rate(priv->sclk);
++
++	up.port.iotype = UPIO_MEM32;
++	up.port.serial_in = serial8250_em_serial_in;
++	up.port.serial_out = serial8250_em_serial_out;
++	up.dl_read = serial8250_em_serial_dl_read;
++	up.dl_write = serial8250_em_serial_dl_write;
++
++	ret = serial8250_register_8250_port(&up);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "unable to register 8250 port\n");
++		goto err2;
++	}
++
++	priv->line = ret;
++	platform_set_drvdata(pdev, priv);
++	return 0;
++
++ err2:
++	clk_disable(priv->sclk);
++	clk_put(priv->sclk);
++ err1:
++	kfree(priv);
++ err0:
++	return ret;
 +}
- EXPORT_SYMBOL(serial8250_register_port);
- 
- /**
---- 0001/include/linux/serial_8250.h
-+++ work/include/linux/serial_8250.h	2012-05-02 20:47:21.000000000 +0900
-@@ -69,6 +69,7 @@ enum {
- struct uart_port;
- struct uart_8250_port;
- 
-+int serial8250_register_8250_port(struct uart_8250_port *);
- int serial8250_register_port(struct uart_port *);
- void serial8250_unregister_port(int line);
- void serial8250_suspend_port(int line);
++
++static int __devexit serial8250_em_remove(struct platform_device *pdev)
++{
++	struct serial8250_em_priv *priv = platform_get_drvdata(pdev);
++
++	serial8250_unregister_port(priv->line);
++	clk_disable(priv->sclk);
++	clk_put(priv->sclk);
++	kfree(priv);
++	return 0;
++}
++
++static struct platform_driver serial8250_em_platform_driver = {
++	.driver = {
++		.name		= "serial8250-em",
++		.owner		= THIS_MODULE,
++	},
++	.probe			= serial8250_em_probe,
++	.remove			= __devexit_p(serial8250_em_remove),
++};
++
++module_platform_driver(serial8250_em_platform_driver);
++
++MODULE_AUTHOR("Magnus Damm");
++MODULE_DESCRIPTION("Renesas Emma Mobile 8250 Driver");
++MODULE_LICENSE("GPL v2");
+--- 0001/drivers/tty/serial/8250/Kconfig
++++ work/drivers/tty/serial/8250/Kconfig	2012-05-02 17:25:19.000000000 +0900
+@@ -278,3 +278,11 @@ config SERIAL_8250_DW
+ 	help
+ 	  Selecting this option will enable handling of the extra features
+ 	  present in the Synopsys DesignWare APB UART.
++
++config SERIAL_8250_EM
++	tristate "Support for Emma Mobile intergrated serial port"
++	depends on SERIAL_8250
++	help
++	  Selecting this option will add support for the integrated serial
++	  port hardware found on the Emma Mobile line of processors.
++	  If unsure, say N.
+--- 0001/drivers/tty/serial/8250/Makefile
++++ work/drivers/tty/serial/8250/Makefile	2012-05-02 17:25:19.000000000 +0900
+@@ -18,3 +18,4 @@ obj-$(CONFIG_SERIAL_8250_HUB6)		+= 8250_
+ obj-$(CONFIG_SERIAL_8250_MCA)		+= 8250_mca.o
+ obj-$(CONFIG_SERIAL_8250_FSL)		+= 8250_fsl.o
+ obj-$(CONFIG_SERIAL_8250_DW)		+= 8250_dw.o
++obj-$(CONFIG_SERIAL_8250_EM)		+= 8250_em.o
