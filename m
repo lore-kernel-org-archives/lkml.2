@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab2EBT1q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 15:27:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56710 "EHLO
+	id S1756504Ab2EBT2x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 15:28:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56702 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756330Ab2EBTZO (ORCPT
+	with ESMTP id S1756155Ab2EBTZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 May 2012 15:25:14 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/15] perf tools: Introduce perf_target__validate() helper
-Date: Wed,  2 May 2012 16:24:54 -0300
-Message-Id: <1335986702-9408-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 05/15] perf stat: Convert to struct perf_target
+Date: Wed,  2 May 2012 16:24:52 -0300
+Message-Id: <1335986702-9408-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1335986702-9408-1-git-send-email-acme@infradead.org>
 References: <1335986702-9408-1-git-send-email-acme@infradead.org>
@@ -28,10 +28,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The perf_target__validate function is used to check given PID/TID/UID/CPU
-target options and warn if some combination is impossible. Also this can
-make some arguments of parse_target_uid() function useless as it is checked
-before the call via our new helper.
+Use struct perf_target as it is introduced by previous patch.
+
+This is a preparation of further changes.
 
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 Reviewed-by: David Ahern <dsahern@gmail.com>
@@ -40,152 +39,156 @@ Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1335417327-11796-5-git-send-email-namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1335417327-11796-3-git-send-email-namhyung.kim@lge.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |    9 +++------
- tools/perf/builtin-stat.c   |    3 +--
- tools/perf/builtin-top.c    |   15 +++------------
- tools/perf/util/usage.c     |   29 +++++++++++++++++++++--------
- tools/perf/util/util.h      |    4 +++-
- 5 files changed, 31 insertions(+), 29 deletions(-)
+ tools/perf/builtin-stat.c |   47 +++++++++++++++++++++------------------------
+ 1 file changed, 22 insertions(+), 25 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 4dcf270..3596cca 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -884,16 +884,13 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 		goto out_symbol_exit;
- 	}
- 
--	rec->opts.target.uid = parse_target_uid(rec->opts.target.uid_str,
--						rec->opts.target.tid,
--						rec->opts.target.pid);
-+	perf_target__validate(&rec->opts.target);
-+
-+	rec->opts.target.uid = parse_target_uid(rec->opts.target.uid_str);
- 	if (rec->opts.target.uid_str != NULL &&
- 	    rec->opts.target.uid == UINT_MAX - 1)
- 		goto out_free_fd;
- 
--	if (rec->opts.target.pid)
--		rec->opts.target.tid = rec->opts.target.pid;
--
- 	if (perf_evlist__create_maps(evsel_list, rec->opts.target.pid,
- 				     rec->opts.target.tid, rec->opts.target.uid,
- 				     rec->opts.target.cpu_list) < 0)
 diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 1ca767d..bb77232 100644
+index dde9e17..1ca767d 100644
 --- a/tools/perf/builtin-stat.c
 +++ b/tools/perf/builtin-stat.c
-@@ -1203,8 +1203,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+@@ -175,22 +175,19 @@ static struct perf_event_attr very_very_detailed_attrs[] = {
+ 
+ static struct perf_evlist	*evsel_list;
+ 
+-static bool			system_wide			=  false;
+-static int			run_idx				=  0;
++static struct perf_target	target;
+ 
++static int			run_idx				=  0;
+ static int			run_count			=  1;
+ static bool			no_inherit			= false;
+ static bool			scale				=  true;
+ static bool			no_aggr				= false;
+-static const char		*target_pid;
+-static const char		*target_tid;
+ static pid_t			child_pid			= -1;
+ static bool			null_run			=  false;
+ static int			detailed_run			=  0;
+ static bool			sync_run			=  false;
+ static bool			big_num				=  true;
+ static int			big_num_opt			=  -1;
+-static const char		*cpu_list;
+ static const char		*csv_sep			= NULL;
+ static bool			csv_output			= false;
+ static bool			group				= false;
+@@ -293,10 +290,10 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
+ 
+ 	attr->inherit = !no_inherit;
+ 
+-	if (system_wide)
++	if (target.system_wide)
+ 		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+ 						group, group_fd);
+-	if (!target_pid && !target_tid && (!group || evsel == first)) {
++	if (!target.pid && !target.tid && (!group || evsel == first)) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
+@@ -446,7 +443,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 			exit(-1);
+ 		}
+ 
+-		if (!target_tid && !target_pid && !system_wide)
++		if (!target.tid && !target.pid && !target.system_wide)
+ 			evsel_list->threads->map[0] = child_pid;
+ 
+ 		/*
+@@ -476,7 +473,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 				error("You may not have permission to collect %sstats.\n"
+ 				      "\t Consider tweaking"
+ 				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
+-				      system_wide ? "system-wide " : "");
++				      target.system_wide ? "system-wide " : "");
+ 			} else {
+ 				error("open_counter returned with %d (%s). "
+ 				      "/bin/dmesg may provide additional information.\n",
+@@ -968,14 +965,14 @@ static void print_stat(int argc, const char **argv)
+ 	if (!csv_output) {
+ 		fprintf(output, "\n");
+ 		fprintf(output, " Performance counter stats for ");
+-		if (!target_pid && !target_tid) {
++		if (!target.pid && !target.tid) {
+ 			fprintf(output, "\'%s", argv[0]);
+ 			for (i = 1; i < argc; i++)
+ 				fprintf(output, " %s", argv[i]);
+-		} else if (target_pid)
+-			fprintf(output, "process id \'%s", target_pid);
++		} else if (target.pid)
++			fprintf(output, "process id \'%s", target.pid);
+ 		else
+-			fprintf(output, "thread id \'%s", target_tid);
++			fprintf(output, "thread id \'%s", target.tid);
+ 
+ 		fprintf(output, "\'");
+ 		if (run_count > 1)
+@@ -1049,11 +1046,11 @@ static const struct option options[] = {
+ 		     "event filter", parse_filter),
+ 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
+ 		    "child tasks do not inherit counters"),
+-	OPT_STRING('p', "pid", &target_pid, "pid",
++	OPT_STRING('p', "pid", &target.pid, "pid",
+ 		   "stat events on existing process id"),
+-	OPT_STRING('t', "tid", &target_tid, "tid",
++	OPT_STRING('t', "tid", &target.tid, "tid",
+ 		   "stat events on existing thread id"),
+-	OPT_BOOLEAN('a', "all-cpus", &system_wide,
++	OPT_BOOLEAN('a', "all-cpus", &target.system_wide,
+ 		    "system-wide collection from all CPUs"),
+ 	OPT_BOOLEAN('g', "group", &group,
+ 		    "put the counters into a counter group"),
+@@ -1072,7 +1069,7 @@ static const struct option options[] = {
+ 	OPT_CALLBACK_NOOPT('B', "big-num", NULL, NULL, 
+ 			   "print large numbers with thousands\' separators",
+ 			   stat__set_big_num),
+-	OPT_STRING('C', "cpu", &cpu_list, "cpu",
++	OPT_STRING('C', "cpu", &target.cpu_list, "cpu",
+ 		    "list of cpus to monitor in system-wide"),
+ 	OPT_BOOLEAN('A', "no-aggr", &no_aggr,
+ 		    "disable CPU count aggregation"),
+@@ -1190,13 +1187,13 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	} else if (big_num_opt == 0) /* User passed --no-big-num */
+ 		big_num = false;
+ 
+-	if (!argc && !target_pid && !target_tid)
++	if (!argc && !target.pid && !target.tid)
+ 		usage_with_options(stat_usage, options);
+ 	if (run_count <= 0)
+ 		usage_with_options(stat_usage, options);
+ 
+ 	/* no_aggr, cgroup are for system-wide only */
+-	if ((no_aggr || nr_cgroups) && !system_wide) {
++	if ((no_aggr || nr_cgroups) && !target.system_wide) {
+ 		fprintf(stderr, "both cgroup and no-aggregation "
+ 			"modes only available in system-wide mode\n");
+ 
+@@ -1206,18 +1203,18 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
  	if (add_default_attributes())
  		goto out;
  
--	if (target.pid)
--		target.tid = target.pid;
-+	perf_target__validate(&target);
+-	if (target_pid)
+-		target_tid = target_pid;
++	if (target.pid)
++		target.tid = target.pid;
  
- 	evsel_list->threads = thread_map__new_str(target.pid,
- 						  target.tid, UINT_MAX);
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 2c1c207..4f47952 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1252,21 +1252,12 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+-	evsel_list->threads = thread_map__new_str(target_pid,
+-						  target_tid, UINT_MAX);
++	evsel_list->threads = thread_map__new_str(target.pid,
++						  target.tid, UINT_MAX);
+ 	if (evsel_list->threads == NULL) {
+ 		pr_err("Problems finding threads of monitor\n");
+ 		usage_with_options(stat_usage, options);
+ 	}
  
- 	setup_browser(false);
+-	if (system_wide)
+-		evsel_list->cpus = cpu_map__new(cpu_list);
++	if (target.system_wide)
++		evsel_list->cpus = cpu_map__new(target.cpu_list);
+ 	else
+ 		evsel_list->cpus = cpu_map__dummy_new();
  
--	top.target.uid = parse_target_uid(top.target.uid_str, top.target.tid,
--					  top.target.pid);
-+	perf_target__validate(&top.target);
-+
-+	top.target.uid = parse_target_uid(top.target.uid_str);
- 	if (top.target.uid_str != NULL && top.target.uid == UINT_MAX - 1)
- 		goto out_delete_evlist;
- 
--	/* CPU and PID are mutually exclusive */
--	if (top.target.tid && top.target.cpu_list) {
--		printf("WARNING: PID switch overriding CPU\n");
--		sleep(1);
--		top.target.cpu_list = NULL;
--	}
--
--	if (top.target.pid)
--		top.target.tid = top.target.pid;
--
- 	if (perf_evlist__create_maps(top.evlist, top.target.pid,
- 				     top.target.tid, top.target.uid,
- 				     top.target.cpu_list) < 0)
-diff --git a/tools/perf/util/usage.c b/tools/perf/util/usage.c
-index 52bb07c..0a1a885 100644
---- a/tools/perf/util/usage.c
-+++ b/tools/perf/util/usage.c
-@@ -83,7 +83,7 @@ void warning(const char *warn, ...)
- 	va_end(params);
- }
- 
--uid_t parse_target_uid(const char *str, const char *tid, const char *pid)
-+uid_t parse_target_uid(const char *str)
- {
- 	struct passwd pwd, *result;
- 	char buf[1024];
-@@ -91,13 +91,6 @@ uid_t parse_target_uid(const char *str, const char *tid, const char *pid)
- 	if (str == NULL)
- 		return UINT_MAX;
- 
--	/* UID and PID are mutually exclusive */
--	if (tid || pid) {
--		ui__warning("PID/TID switch overriding UID\n");
--		sleep(1);
--		return UINT_MAX;
--	}
--
- 	getpwnam_r(str, &pwd, buf, sizeof(buf), &result);
- 
- 	if (result == NULL) {
-@@ -120,3 +113,23 @@ uid_t parse_target_uid(const char *str, const char *tid, const char *pid)
- 
- 	return result->pw_uid;
- }
-+
-+void perf_target__validate(struct perf_target *target)
-+{
-+	if (target->pid)
-+		target->tid = target->pid;
-+
-+	/* CPU and PID are mutually exclusive */
-+	if (target->tid && target->cpu_list) {
-+		ui__warning("WARNING: PID switch overriding CPU\n");
-+		sleep(1);
-+		target->cpu_list = NULL;
-+	}
-+
-+	/* UID and PID are mutually exclusive */
-+	if (target->tid && target->uid_str) {
-+		ui__warning("PID/TID switch overriding UID\n");
-+		sleep(1);
-+		target->uid_str = NULL;
-+	}
-+}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 0f99f39..3f05d62 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -246,10 +246,12 @@ unsigned long convert_unit(unsigned long value, char *unit);
- int readn(int fd, void *buf, size_t size);
- 
- struct perf_event_attr;
-+struct perf_target;
- 
- void event_attr_init(struct perf_event_attr *attr);
- 
--uid_t parse_target_uid(const char *str, const char *tid, const char *pid);
-+uid_t parse_target_uid(const char *str);
-+void perf_target__validate(struct perf_target *target);
- 
- #define _STR(x) #x
- #define STR(x) _STR(x)
 -- 
 1.7.9.2.358.g22243
 
