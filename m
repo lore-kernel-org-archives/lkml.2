@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab2EBLJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 07:09:32 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55807 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab2EBLJb (ORCPT
+	id S1753827Ab2EBLOg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 07:14:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50434 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771Ab2EBLOe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 07:09:31 -0400
-Date: Wed, 2 May 2012 12:12:08 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to
- partition
-Message-ID: <20120502121208.3c19a9bc@pyramind.ukuu.org.uk>
-In-Reply-To: <4FA11454.2010103@redhat.com>
-References: <1335953452-10460-1-git-send-email-jack@suse.cz>
-	<4FA1092E.9090603@redhat.com>
-	<20120502115447.7dcc3a54@pyramind.ukuu.org.uk>
-	<4FA11454.2010103@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 May 2012 07:14:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
+References: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
+Date: Wed, 2 May 2012 13:14:33 +0200
+Message-ID: <CABPqkBThAMr2p+9fzYboJsZCwP9hwpD5UZ8Y2tJkZOMG4Odvrg@mail.gmail.com>
+Subject: Re: [BUG] perf stat: useless output for raw events with new event parser
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
+        David Ahern <dsahern@gmail.com>,
+        Robert Richter <robert.richter@amd.com>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sure, but then disallowing the ioctls for processes with CAP_SYS_RAWIO
-> will not cause regressions and _can_ happen.  The transition period only
+Peter,
 
-The user has CAP_SYS_RAWIO, they can already do it by poking the
-registers on the chip directly. It is a nonsense to attempt to block or
-warn about this.
+I will try to experiment with: cpu/event=INST_RETIRED:ANY:c=1/
+But for now with libpfm4 as it is. Then will try to come up with an
+external file format that encapsulates what I already have in the
+C-table. There is more than just what the hardware exports. You
+have to encode certain constraints, e.g., how umasks can be
+combined. I don't even use the same format for all arch. On
+X86 the AMD and Intel formats are different.
 
-> up and implement a very restrictive filter for SCSI commands sent to
-> partition.
 
-The process has CAP_SYS_RAWIO it can already bypass any check you try and
-put in place.
-
-> The right patch is one that prepares for these step,
-
-Doesn't look very right to me.
-
-> http://permalink.gmane.org/gmane.linux.kernel/1254625 for example.  It
-> leaves the warning only for SG_IO, and silently blocks the rest (more
-> rationale in the commit message there).
-
-Even the printk in that patch is wrong. We have capabilities. Being a
-"root" user is a meaningless distinction here so your ratelimited printk
-isn't just bogus - its wrong. It may have got into RHEL somehow but the
-kernel QA process is a bit higher standard than this proposed patch.
-
-A process with CAP_SYS_RAWIO has total power. It's assumed to know what
-it is doing. Trying to block it doing stuff like that simply makes
-authors do them via different more crass methods.
-
-Alan
+On Mon, Apr 23, 2012 at 12:45 PM, Stephane Eranian <eranian@google.com> wrote:
+> Hi,
+>
+> With the new event parser, one can express raw events field by field:
+>
+> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
+>
+> The problem with this is that the output of perf stat becomes useless:
+>
+> $ perf stat -e cpu/event=0x3c,umask=0x0/,cpu/event=0xc5,umask=0x0/ noploop 1
+> noploop for 1 seconds
+>
+>  Performance counter stats for 'noploop 1':
+>
+>        2395038678 pmu
+>            10787 pmu
+>                       ^^^^^^
+>       1.000802603 seconds time elapsed
+>
+> We lose the event names or encoding completely. Now for all events
+> expressed via this
+> new syntax , all we see is 'pmu'. That is pretty useless. It is hard
+> to decrypt the results
+> without some serious scripting.
+>
+> Not sure how to solve this given how the parser works. This looks like
+> a regression to me.
