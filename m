@@ -1,125 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab2EBAvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 20:51:12 -0400
-Received: from mail.us.es ([193.147.175.20]:43035 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753033Ab2EBAvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 20:51:10 -0400
-Date: Wed, 2 May 2012 02:51:02 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Benjamin Poirier <bpoirier@suse.de>
-Cc: netdev@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC 2/2] netfilter: conntrack: replace mutex with
- cmpxchg
-Message-ID: <20120502005102.GB14999@1984>
-References: <1335551333-6103-1-git-send-email-bpoirier@suse.de>
- <1335551333-6103-2-git-send-email-bpoirier@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335551333-6103-2-git-send-email-bpoirier@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757765Ab2EBAyU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 20:54:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8272 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755565Ab2EBAyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 20:54:17 -0400
+X-Authority-Analysis: v=2.0 cv=T/EOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=sHHRogNuewcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=FyswP2SAAAAA:20 a=VwQbUJbxAAAA:8 a=L2hyhxPZbOcU9QLCoksA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120502004439.965120020@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 01 May 2012 20:44:39 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 0/2] [GIT PULL] ktest: A couple of fixes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 02:28:53PM -0400, Benjamin Poirier wrote:
-> This mutex protects a single pointer.
 
-You seem to be using an old Linux kernel tree. This doesn't apply.
+Linus,
 
-> ---
->  net/netfilter/nf_conntrack_ecache.c |   38 +++++++++-------------------------
->  1 files changed, 10 insertions(+), 28 deletions(-)
-> 
-> diff --git a/net/netfilter/nf_conntrack_ecache.c b/net/netfilter/nf_conntrack_ecache.c
-> index 0134009..603eb69 100644
-> --- a/net/netfilter/nf_conntrack_ecache.c
-> +++ b/net/netfilter/nf_conntrack_ecache.c
-> @@ -25,8 +25,6 @@
->  #include <net/netfilter/nf_conntrack_core.h>
->  #include <net/netfilter/nf_conntrack_extend.h>
->  
-> -static DEFINE_MUTEX(nf_ct_ecache_mutex);
-> -
->  /* deliver cached events and clear cache entry - must be called with locally
->   * disabled softirqs */
->  void nf_ct_deliver_cached_events(struct nf_conn *ct)
-> @@ -80,52 +78,36 @@ EXPORT_SYMBOL_GPL(nf_ct_deliver_cached_events);
->  int nf_conntrack_register_notifier(struct net *net,
->  				   struct nf_ct_event_notifier *new)
->  {
-> -	int ret = 0;
-> -
-> -	mutex_lock(&nf_ct_ecache_mutex);
-> -	if (net->ct.nf_conntrack_event_cb != NULL)
-> -		ret = -EBUSY;
-> +	if (cmpxchg(&net->ct.nf_conntrack_event_cb, NULL, new) != NULL)
-> +		return -EBUSY;
->  	else
-> -		net->ct.nf_conntrack_event_cb = new;
-> -	mutex_unlock(&nf_ct_ecache_mutex);
-> -
-> -	return ret;
-> +		return 0;
->  }
->  EXPORT_SYMBOL_GPL(nf_conntrack_register_notifier);
->  
->  void nf_conntrack_unregister_notifier(struct net *net,
->  				      struct nf_ct_event_notifier *new)
->  {
-> -	mutex_lock(&nf_ct_ecache_mutex);
-> -	BUG_ON(net->ct.nf_conntrack_event_cb != new);
-> -	net->ct.nf_conntrack_event_cb = NULL;
-> -	mutex_unlock(&nf_ct_ecache_mutex);
-> +	if (xchg(&net->ct.nf_conntrack_event_cb, NULL) != new)
-> +		BUG();
->  }
->  EXPORT_SYMBOL_GPL(nf_conntrack_unregister_notifier);
->  
->  int nf_ct_expect_register_notifier(struct net *net,
->  				   struct nf_exp_event_notifier *new)
->  {
-> -	int ret = 0;
-> -
-> -	mutex_lock(&nf_ct_ecache_mutex);
-> -	if (net->ct.nf_expect_event_cb != NULL)
-> -		ret = -EBUSY;
-> +	if (cmpxchg(&net->ct.nf_expect_event_cb, NULL, new) != NULL)
-> +		return -EBUSY;
->  	else
-> -		net->ct.nf_expect_event_cb = new;
-> -	mutex_unlock(&nf_ct_ecache_mutex);
-> -
-> -	return ret;
-> +		return 0;
->  }
->  EXPORT_SYMBOL_GPL(nf_ct_expect_register_notifier);
->  
->  void nf_ct_expect_unregister_notifier(struct net *net,
->  				      struct nf_exp_event_notifier *new)
->  {
-> -	mutex_lock(&nf_ct_ecache_mutex);
-> -	BUG_ON(net->ct.nf_expect_event_cb != new);
-> -	net->ct.nf_expect_event_cb = NULL;
-> -	mutex_unlock(&nf_ct_ecache_mutex);
-> +	if (xchg(&net->ct.nf_expect_event_cb, NULL) != new)
-> +		BUG();
->  }
->  EXPORT_SYMBOL_GPL(nf_ct_expect_unregister_notifier);
->  
-> -- 
-> 1.7.7
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netfilter-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This includes two fixes, one of which seems to have fell under your
+radar before:
+
+ http://groups.google.com/group/linux.kernel/browse_thread/thread/b0a0880f3e0f415a/188f12ab40b7a6c9?show_docid=188f12ab40b7a6c9
+
+But that's fine, as I pulled in Russ's patch after merging your tree,
+and it did not do a fast forward of your tree. I didn't notices that
+it did that, and it seemed a bit strange to do a commit for a fast
+forward.
+
+Is git set up to not fast forward by default? (I need to give it another try)
+
+Anyway, changed my tree to be a fast forward (you haven't pulled it
+yet, so no harm done with a rebase), and I added another fix.
+
+New signed tag.
+
+Please pull the latest ktest-for-v3.4-rc5 tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
+ktest-for-v3.4-rc5
+
+Head SHA1: b66786c7ff4441f0b9ac3b05f8e62cad75df65ff
+
+
+Russ Dill (1):
+      ktest.pl: Fix combined usage of BISECT_REVERSE and BISECT_SKIP
+
+Steven Rostedt (1):
+      ktest: Fix reboot on success stopping all reboots
+
+----
+ tools/testing/ktest/ktest.pl |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
