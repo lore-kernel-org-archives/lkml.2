@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab2EBLks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 07:40:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55349 "EHLO mx1.redhat.com"
+	id S1754896Ab2EBLlD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 07:41:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754516Ab2EBLiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754172Ab2EBLiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 May 2012 07:38:18 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
@@ -13,36 +13,65 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         mhiramat@redhat.com, robert.richter@amd.com, fche@redhat.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 06/17] perf, tool: Fix format string for x86-32 compilation
-Date: Wed,  2 May 2012 13:37:07 +0200
-Message-Id: <1335958638-5160-7-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 09/17] perf, tool: Add '.note' check into search for NOTE section
+Date: Wed,  2 May 2012 13:37:10 +0200
+Message-Id: <1335958638-5160-10-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1335958638-5160-1-git-send-email-jolsa@redhat.com>
 References: <1335958638-5160-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using PRIu64 for printing out u64 nr_events to fix compilation
-for x86 32 bits.
+Adding '.note' section name to be check when looking for notes
+section. The '.note' name is used by kernel VDSO.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/builtin-report.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/symbol.c |   29 +++++++++++++++++++++++------
+ 1 files changed, 23 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 35c5a59..55901b3 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -304,7 +304,7 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
- 	if (evname != NULL)
- 		ret += fprintf(fp, " of event '%s'", evname);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 2ba1d22..bef9ae7 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1472,14 +1472,31 @@ static int elf_read_build_id(Elf *elf, void *bf, size_t size)
+ 		goto out;
+ 	}
  
--	ret += fprintf(fp, "\n# Event count (approx.): %lu", nr_events);
-+	ret += fprintf(fp, "\n# Event count (approx.): %" PRIu64, nr_events);
- 	return ret + fprintf(fp, "\n#\n");
- }
+-	sec = elf_section_by_name(elf, &ehdr, &shdr,
+-				  ".note.gnu.build-id", NULL);
+-	if (sec == NULL) {
++	/*
++	 * Check following sections for notes:
++	 *   '.note.gnu.build-id'
++	 *   '.notes'
++	 *   '.note' (VDSO specific)
++	 */
++	do {
++		sec = elf_section_by_name(elf, &ehdr, &shdr,
++					  ".note.gnu.build-id", NULL);
++		if (sec)
++			break;
++
+ 		sec = elf_section_by_name(elf, &ehdr, &shdr,
+ 					  ".notes", NULL);
+-		if (sec == NULL)
+-			goto out;
+-	}
++		if (sec)
++			break;
++
++		sec = elf_section_by_name(elf, &ehdr, &shdr,
++					  ".note", NULL);
++		if (sec)
++			break;
++
++		return err;
++
++	} while (0);
  
+ 	data = elf_getdata(sec, NULL);
+ 	if (data == NULL)
 -- 
 1.7.7.6
 
