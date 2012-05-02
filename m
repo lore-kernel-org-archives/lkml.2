@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab2EBPIC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 11:08:02 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56090 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079Ab2EBPIA (ORCPT
+	id S1755351Ab2EBPIy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 11:08:54 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55866 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755242Ab2EBPIv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 11:08:00 -0400
-Date: Wed, 2 May 2012 16:10:38 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to
- partition
-Message-ID: <20120502161038.01ee9b59@pyramind.ukuu.org.uk>
-In-Reply-To: <4FA13DDF.9010006@redhat.com>
-References: <1335953452-10460-1-git-send-email-jack@suse.cz>
-	<4FA1092E.9090603@redhat.com>
-	<20120502135123.GF16976@quack.suse.cz>
-	<4FA13DDF.9010006@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 May 2012 11:08:51 -0400
+Date: Wed, 2 May 2012 12:08:45 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Michael =?iso-8859-1?Q?Gr=FCtzner?= <mgruetzn@gmx.de>
+Cc: marcel@holtmann.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] bluetooth: Add support for Foxconn/Hon Hai AR5BBU22
+ 0489:E03C
+Message-ID: <20120502150844.GB16030@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Michael =?iso-8859-1?Q?Gr=FCtzner?= <mgruetzn@gmx.de>,
+	marcel@holtmann.org, johan.hedberg@gmail.com,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1769868.QZY8sEHkp9@dagobah>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1769868.QZY8sEHkp9@dagobah>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Also I tend to side with Alan that I don't quite see
-> > the point in trying to restrict CAP_SYS_RAWIO threads and thus breaking the
-> > compatibility
+Hi Michael.
+
+* Michael Grützner <mgruetzn@gmx.de> [2012-05-01 01:43:17 +0200]:
+
+> From: Michael Gruetzner <mgruetzn@gmx.de>
 > 
-> For example, we have a customer that wants this:
+> Add Foxconn/Hon Hai AR5BBU22 Bluetooth Module( 0x489:0xE03C) to 
+> the blacklist of btusb module and add it to the ath3k module to properly load 
+> the firmware in Kernel 3.3.4
+> The device is integrated in  e.g. some  Acer Aspire 7750G.
+>  
+> Output from /sys/kernel/debug/usb/devices:
 > 
-> * a VM should be able to send vendor-specific commands to a disk via
-> SG_IO (vendor-specific commands require CAP_SYS_RAWIO).
+> T:  Bus=01 Lev=02 Prnt=02 Port=05 Cnt=02 Dev#=  6 Spd=12   MxCh= 0
+> D:  Ver= 2.00 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=0489 ProdID=e03c Rev= 0.02
+> S:  Manufacturer=Atheros Communications
+> S:  Product=Bluetooth USB Host Controller
+> S:  SerialNumber=Alaska Day 2006
+> C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+> I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 > 
-> * they want to assign logical volumes or partitions to the same VM
-> without letting it read or write outside the logical volume or partition.
+> Signed-off-by: Michael Gruetzner <mgruetzn@gmx.de>
+> ---
+> diff -uprN -X linux-3.3.4-vanilla/Documentation/dontdiff linux-3.3.4-vanilla/drivers/bluetooth/ath3k.c linux-3.3.4/drivers/bluetooth/ath3k.c
+> --- linux-3.3.4-vanilla/drivers/bluetooth/ath3k.c	2012-04-27 19:17:35.000000000 +0200
+> +++ linux-3.3.4/drivers/bluetooth/ath3k.c	2012-04-30 01:29:47.081838667 +0200
+> @@ -79,6 +79,9 @@ static struct usb_device_id ath3k_table[
+>  	/* Atheros AR5BBU12 with sflash firmware */
+>  	{ USB_DEVICE(0x0489, 0xE02C) },
+>  
+> +	/* Atheros AR5BBU22 with sflash firmware */
+> +	{ USB_DEVICE(0x0489, 0xE03C) },
+> +
+>  	{ }	/* Terminating entry */
+>  };
+>  
+> @@ -95,6 +98,9 @@ static struct usb_device_id ath3k_blist_
+>  	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+>  	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+>  
+> +	/* Atheros AR5BBU22 with sflash firmware */
+> +	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
+> +
+>  	{ }	/* Terminating entry */
+>  };
+>  
+> diff -uprN -X linux-3.3.4-vanilla/Documentation/dontdiff linux-3.3.4-vanilla/drivers/bluetooth/btusb.c linux-3.3.4/drivers/bluetooth/btusb.c
+> --- linux-3.3.4-vanilla/drivers/bluetooth/btusb.c	2012-04-27 19:17:35.000000000 +0200
+> +++ linux-3.3.4/drivers/bluetooth/btusb.c	2012-04-30 01:31:49.302182281 +0200
+> @@ -135,6 +135,9 @@ static struct usb_device_id blacklist_ta
+>  	/* Atheros AR5BBU12 with sflash firmware */
+>  	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+>  
+> +	/* Atheros AR5BBU22 with sflash firmware */
+> +	{ USB_DEVICE(0x0489, 0xe03c), .driver_info = BTUSB_ATH3012 },
+> +
+>  	/* Broadcom BCM2035 */
+>  	{ USB_DEVICE(0x0a5c, 0x2035), .driver_info = BTUSB_WRONG_SCO_MTU },
+>  	{ USB_DEVICE(0x0a5c, 0x200a), .driver_info = BTUSB_WRONG_SCO_MTU },
 
-And if the process has CAP_SYS_RAWIO it can do it anyway. So not only is
-your agenda destructive - it doesn't actually work.
+This patch doesn't apply upstream, please rebase it on top of
+bluetooth-next.
 
-> Of course a better solution for this would be customizable filters for
-> SG_IO commands, where a privileged application would open the block
-> device with CAP_SYS_RAWIO, set the filter and hand the file descriptor
-> to QEMU.  Or alternatively some extension of the device cgroup.  But
-> either solution would require a large amount of work.
-
-Or you could just do the special case ioctl magic out of band in the apps.
-It's hardly an ultra performance critical path for the SG_IO cases.
-
-Customisable filters are not hard. We've got all the filtering code in
-kernel and the ability to verify filters, even the ability to JIT them.
-Just support adding/removing/running a BPF filter on the channel in
-question.
-
-So it shouldn't be much code to do what you want.
-
-Alan
-
-
-
+	Gustavo
