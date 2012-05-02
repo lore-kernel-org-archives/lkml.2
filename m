@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab2EBRej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 13:34:39 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58944 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755803Ab2EBReh convert rfc822-to-8bit (ORCPT
+	id S1755884Ab2EBRex (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 13:34:53 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:40456 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755587Ab2EBRei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 13:34:37 -0400
+	Wed, 2 May 2012 13:34:38 -0400
+Date: Wed, 2 May 2012 19:34:32 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/2] perf/urgent fixes
+Message-ID: <20120502173432.GA13450@gmail.com>
+References: <1335976024-13067-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20120427143745.GD27535@alberich.amd.com>
-References: <20120427143410.GB27535@alberich.amd.com> <20120427143745.GD27535@alberich.amd.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 2 May 2012 11:34:15 -0600
-Message-ID: <CAErSpo584dcpGhmp-jcP_Zsznmz9ZkfPuxpF3UK9UVfcnFUdRA@mail.gmail.com>
-Subject: Re: [PATCH 2/2][RESEND] x86/pci/amd: Enable early_fill_mp_bus_to_node
- on AMD family 15h models 0-0xf
-To: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335976024-13067-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 8:37 AM, Andreas Herrmann
-<andreas.herrmann3@amd.com> wrote:
->
-> While at it avoid calling this function on family 11h (aka Griffin)
-> which was a mobile part and doesn't support NUMA.
 
-This changelog doesn't seem like it goes with this patch.  It looks
-more related to the first patch (though that affects family 11h and
-greater, not just family 11h).
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-> ---
->  arch/x86/pci/amd_bus.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
-> index 0384e69..d552b29 100644
-> --- a/arch/x86/pci/amd_bus.c
-> +++ b/arch/x86/pci/amd_bus.c
-> @@ -27,7 +27,7 @@ static struct pci_hostbridge_probe pci_probes[] __initdata = {
->        { 0, 0x18, PCI_VENDOR_ID_AMD, 0x1100 },
->        { 0, 0x18, PCI_VENDOR_ID_AMD, 0x1200 },
->        { 0xff, 0, PCI_VENDOR_ID_AMD, 0x1200 },
-> -       { 0, 0x18, PCI_VENDOR_ID_AMD, 0x1300 },
-> +       { 0, 0x18, PCI_VENDOR_ID_AMD, 0x1600 },
->  };
->
->  /**
-> --
-> 1.7.8.5
->
->
->
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 33ff581eddf744ea91a50d46c2f0961b375a9595:
+> 
+>   perf symbols: Read plt symbols from proper symtab_type binary (2012-04-20 13:34:49 -0300)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to 5622c07b4741e0afd7607bce6e850b76eeb23210:
+> 
+>   perf stat: Fix case where guest/host monitoring is not supported by kernel (2012-05-01 14:20:00 -0300)
+> 
+> ----------------------------------------------------------------
+> Fixes for perf/urgent:
+> 
+> . Add fallback in 'perf stat' for kernels that don't support
+>   perf_event_attr.exclude_guest, from Stephane Eranian.
+> 
+> . Fix build id cache add routine to take the size of the buffer and not of a
+>   pointer, from Namhyung Kim.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Namhyung Kim (1):
+>       perf build-id: Fix filename size calculation
+> 
+> Stephane Eranian (1):
+>       perf stat: Fix case where guest/host monitoring is not supported by kernel
+> 
+>  tools/perf/builtin-stat.c |   33 +++++++++++++++++++++++++++++----
+>  tools/perf/util/header.c  |    2 +-
+>  2 files changed, 30 insertions(+), 5 deletions(-)
+
+Pulled, thanks Arnaldo!
+
+	Ingo
