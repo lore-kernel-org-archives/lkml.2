@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab2EBIw0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 04:52:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57167 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755183Ab2EBIwZ (ORCPT
+	id S1755853Ab2EBI67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 04:58:59 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:64257 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755289Ab2EBI65 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 04:52:25 -0400
-Date: Wed, 2 May 2012 09:52:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: jonghwa3.lee@samsung.com
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
-        Chiwoong byun <woong.byun@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] MFD : add MAX77686 mfd driver
-Message-ID: <20120502085220.GC4075@opensource.wolfsonmicro.com>
-References: <1335776022-4571-1-git-send-email-jonghwa3.lee@samsung.com>
- <20120501165825.GA3264@sirena.org.uk>
- <4FA0BF9C.7090107@samsung.com>
+	Wed, 2 May 2012 04:58:57 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JWEK1jqKZ6MHAcjA"
-Content-Disposition: inline
-In-Reply-To: <4FA0BF9C.7090107@samsung.com>
-X-Cookie: You will soon forget this.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20120502023836.GW3157@wantstofly.org>
+References: <CA+icZUWuynSaPE4pdxzoP783pw7r=5x27ewXN_pkR5VS=0kKUg@mail.gmail.com>
+	<20120427101732.GX3157@wantstofly.org>
+	<CA+icZUUnJPeDmL9xXfvj62an40bXwwaOnrJmxmLN_cBt9PyCZA@mail.gmail.com>
+	<CA+icZUV76wSBj88EpzmWbO=u2dP23yi5P98nN2KZehBUni9mEg@mail.gmail.com>
+	<20120427185809.GZ3157@wantstofly.org>
+	<CA+icZUWQmCRdjucb4+Nf24_zbJ4fzzp7zjqhKjXE6U01rppDfA@mail.gmail.com>
+	<CA+icZUXSaEMA=KbQP9UQcU6ZMBh8QD2sv-O=6r_Ly8is==gvSA@mail.gmail.com>
+	<20120501125102.GN3157@wantstofly.org>
+	<CA+icZUV=qtXwVxb+uvQJcsza0y+6k2LHJFFPnECY0M=QWBexaQ@mail.gmail.com>
+	<4FA089F9.1020602@erley.org>
+	<20120502023836.GW3157@wantstofly.org>
+Date: Wed, 2 May 2012 10:58:56 +0200
+Message-ID: <CA+icZUVLKEs4YAiByqeUpD6cRUyF+bvb2SY=PYebDKU8b+653A@mail.gmail.com>
+Subject: Re: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: Pat Erley <pat-lkml@erley.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lautriv <admin@coldplug.net>,
+        Jim Cromie <jim.cromie@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Hauke Mehrtens <hauke@hauke-m.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 2, 2012 at 4:38 AM, Lennert Buytenhek
+<buytenh@wantstofly.org> wrote:
+> On Tue, May 01, 2012 at 09:12:25PM -0400, Pat Erley wrote:
+>
+>> >--- a/drivers/net/wireless/mwl8k.c
+>> >+++ b/drivers/net/wireless/mwl8k.c
+>> >@@ -5225,6 +5225,7 @@ static void mwl8k_finalize_join_worker(struct work_struct *work)
+>> >  }
+>> >
+>> >  enum {
+>> >+    MWL8361P = 0,
+>> >     MWL8363 = 0,
+>> >     MWL8687,
+>> >     MWL8366,
+>>
+>> I'm not an expert, but isn't this giving both 8361P and 8363 the
+>> same values in the enum?
+>
+> Yeah, this is broken.
 
---JWEK1jqKZ6MHAcjA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Before this email, Helmut pointed me to the enum thingie in a private query.
+As I was busy with OverlayFS the last days, I couldn't give that
+information back.
 
-On Wed, May 02, 2012 at 02:01:16PM +0900, jonghwa3.lee@samsung.com wrote:
-> Hi Mark,
->=20
-> You point out many things. ;-) Thanks for your concern.
-> I want to explain one by one.
+So, this should be:
+...
+  enum {
+     MWL8361P = 0,
+     MWL8363,
+     MWL8687,
+     MWL8366,
+...
 
-Don't top post!  http://daringfireball.net/2007/07/on_top
+Shall I cook up a new patch with a proper history and documented
+origin (original patch is from OpenWrt, I refreshed it against
+upstream)?
+...add some Tested-by (Helmut, Jim)...
+...send that to linux-wireless ML for a review?
 
-> 2. Those steps is needed for wake-up interrupt occurred by 77686 irq.
->    When system has woken up from Suspend-to-RAM state by 77686 irq,
-> 	then it never call irq handler.
-
-Why?  Are you sure you aren't doing something like requesting the wrong
-trigger type for the interrupt?
-
-> 4. This will work when I2C interface is changed according to board
-> 	revision with board configuration.
-
-> 5. This is for some board that doesn't use RTC. (e.g. SMDK board)
-
-Since you top posted I'm really not sure which comments you're referring
-to with these...
-
---JWEK1jqKZ6MHAcjA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPoPWxAAoJEBus8iNuMP3dvAcQAJW06U1QnFxWUYHhUUpjtt/X
-mLHOUd62u+Kcbunz4BevLXIo/bHTV6pjdyqfuXIFC+zZbkINE9Ca4grJ4XhpPVYU
-aZG94aQIJ9YCjJftlxufJyPjJ+QLNbBZqp3C5H11ADhHcKHIUSNqJ3Xk4v99UlFs
-vkdXVVAR5jNWyAFeFuhBW7U1qDcRorJhxDlADL/UD7+QTIwi5G3RHFcQ7BwIs78q
-TNmUvzUJ1N+w0ecHIf4wPhnlBldZLENeP2iE8xcVic99gJ6EHuKde6ELbN42tp9D
-i9OY5V5sUt8qUvgocGxiAz8z1fEiXRKhG4+5n5Gw3DN5mwdlVRxfM9TvtuIWnLQb
-qQ3/os34HciphKPN7+v3BynOj2sWxQXk8SjL2XT9B77JQqsEE8BVk+QlMcdecK2a
-NNYAbItX3DSGInzkMi1Y4tsnehTiDfyP+pLlw9GMBMKWNfnzoGNECljskN9BuT5Z
-aTJmZ+3Qbol/GJYbBCnfvW2c/yV3blgp6O1/V4D1zCd0Hu+R56oJi8e2YF8cPwP9
-Re0x4ILb8piEcjUXwTJ9MKpmnmZ532tBRMv7i1p6TgIrFZwVuxMs4tg29FJojObt
-hpk2f25fDvmZMS0XHS3IF4cCDaZszTnbONwZfFC9IVqVYnz92abduVSYVojUpFHA
-9QAE7OwL7e00zgvBnvtO
-=QfiM
------END PGP SIGNATURE-----
-
---JWEK1jqKZ6MHAcjA--
+- Sedat -
