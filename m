@@ -1,170 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab2ECOZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:25:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58883 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755927Ab2ECOZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:25:08 -0400
-From: Venkatraman S <svenkatr@ti.com>
-To: <linux-mmc@vger.kernel.org>, <cjb@laptop.org>, <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <arnd.bergmann@linaro.org>,
-        <alex.lemberg@sandisk.com>, <ilan.smith@sandisk.com>,
-        <lporzio@micron.com>, <rmk+kernel@arm.linux.org.uk>,
-        Venkatraman S <svenkatr@ti.com>
-Subject: [PATCH v2 16/16] mmc: omap_hsmmc: Implement abort_req host_ops
-Date: Thu, 3 May 2012 19:53:15 +0530
-Message-ID: <1336054995-22988-17-git-send-email-svenkatr@ti.com>
-X-Mailer: git-send-email 1.7.10.rc2
-In-Reply-To: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
-References: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
+	id S932205Ab2ECO0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:26:00 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40353 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756091Ab2ECOZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 10:25:57 -0400
+Date: Wed, 2 May 2012 15:59:13 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 09/13] perf target: Introduce perf_target_errno
+Message-ID: <20120502185913.GE5745@infradead.org>
+References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
+ <1335417327-11796-10-git-send-email-namhyung.kim@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335417327-11796-10-git-send-email-namhyung.kim@lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide the abort_req implementation for omap_hsmmc host.
+Em Thu, Apr 26, 2012 at 02:15:23PM +0900, Namhyung Kim escreveu:
+> The perf_target_errno enumerations are used to indicate
+> specific error cases on perf target operations. It'd
+> help libperf being a more generic library.
+> 
+> Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> +	/* UID and SYSTEM are mutually exclusive */
+> +	if (target->uid_str && target->system_wide) {
+> +		target->system_wide = false;
+> +		if (ret == PERF_TARGET__SUCCESS)
+> +			ret = PERF_TARGET__UID_OVERRIDE_SYSTEM;
+> +	}
+> +
+> +	return ret;
+>  }
+> diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+> index 1348065ada5e..c3914c8a9890 100644
+> --- a/tools/perf/util/target.h
+> +++ b/tools/perf/util/target.h
+> @@ -12,6 +12,24 @@ struct perf_target {
+>  	bool	     system_wide;
+>  };
+>  
+> -void perf_target__validate(struct perf_target *target);
+> +enum perf_target_errno {
+> +	/*
+> +	 * XXX: Just choose an arbitrary big number standard errno can't have
 
-When invoked, the host controller should stop the transfer
-and end the ongoing request as early as possible.
+Here I think its better for us to use _negative_ big numbers, because
+according to:
 
-If the aborted command is a data transfer command, dma setup is
-aborted and a STOP command is issued. The transfer state is
-marked as an error (except when the command has almost completed
-while receiving the abort request, in which case finish the command
-normally).
+http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/errno.h.html
 
-Signed-off-by: Venkatraman S <svenkatr@ti.com>
----
- drivers/mmc/host/omap_hsmmc.c |   55 ++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 51 insertions(+), 4 deletions(-)
+<quote>
+Issue 6
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index d15b149..a4da478 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -177,6 +177,7 @@ struct omap_hsmmc_host {
- 	int			reqs_blocked;
- 	int			use_reg;
- 	int			req_in_progress;
-+	int			abort_in_progress;
- 	unsigned int		flags;
- 	struct omap_hsmmc_next	next_data;
- 
-@@ -982,6 +983,7 @@ static inline void omap_hsmmc_reset_controller_fsm(struct omap_hsmmc_host *host,
- static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status)
- {
- 	struct mmc_data *data;
-+	int err = 0;
- 	int end_cmd = 0, end_trans = 0;
- 
- 	if (!host->req_in_progress) {
-@@ -993,6 +995,11 @@ static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status)
- 		return;
- 	}
- 
-+	if (host->abort_in_progress) {
-+		end_trans = 1;
-+		end_cmd = 1;
-+	}
-+
- 	data = host->data;
- 	dev_dbg(mmc_dev(host->mmc), "IRQ Status is %x\n", status);
- 
-@@ -1021,7 +1028,7 @@ static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status)
- 		if ((status & DATA_TIMEOUT) ||
- 			(status & DATA_CRC)) {
- 			if (host->data || host->response_busy) {
--				int err = (status & DATA_TIMEOUT) ?
-+				err = (status & DATA_TIMEOUT) ?
- 						-ETIMEDOUT : -EILSEQ;
- 
- 				if (host->data)
-@@ -1045,10 +1052,13 @@ static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status)
- 
- 	OMAP_HSMMC_WRITE(host->base, STAT, status);
- 
--	if (end_cmd || ((status & CC) && host->cmd))
-+	if ((end_cmd || (status & CC)) && host->cmd)
- 		omap_hsmmc_cmd_done(host, host->cmd);
--	if ((end_trans || (status & TC)) && host->mrq)
-+	if ((end_trans || (status & TC)) && host->mrq) {
-+		if (data)
-+			data->error = err;
- 		omap_hsmmc_xfer_done(host, data);
-+	}
- }
- 
- /*
-@@ -1257,7 +1267,7 @@ static void omap_hsmmc_dma_cb(int lch, u16 ch_status, void *cb_data)
- 	}
- 
- 	spin_lock_irqsave(&host->irq_lock, flags);
--	if (host->dma_ch < 0) {
-+	if (host->dma_ch < 0 || host->abort_in_progress) {
- 		spin_unlock_irqrestore(&host->irq_lock, flags);
- 		return;
- 	}
-@@ -1478,6 +1488,40 @@ static void omap_hsmmc_pre_req(struct mmc_host *mmc, struct mmc_request *mrq,
- 			mrq->data->host_cookie = 0;
- }
- 
-+static int omap_hsmmc_abort_req(struct mmc_host *mmc, struct mmc_request *req)
-+{
-+	struct omap_hsmmc_host *host = mmc_priv(mmc);
-+	unsigned long flags;
-+
-+	if (!host->req_in_progress) {
-+		dev_dbg(mmc_dev(host->mmc), "No request to abort\n");
-+		return -EINVAL;
-+	}
-+	if (req && req != host->mrq) {
-+		dev_dbg(mmc_dev(host->mmc), "Non matching abort request\n");
-+		return -EINVAL;
-+	}
-+	spin_lock_irqsave(&host->irq_lock, flags);
-+	host->abort_in_progress = 1;
-+	omap_hsmmc_disable_irq(host);
-+	spin_unlock_irqrestore(&host->irq_lock, flags);
-+
-+	host->response_busy = 0;
-+
-+	if (host->data) {
-+		struct mmc_data *dat = host->data;
-+		omap_hsmmc_dma_cleanup(host, -EIO);
-+		dev_dbg(mmc_dev(host->mmc), "Aborting Transfer\n");
-+		omap_hsmmc_xfer_done(host, dat);
-+	} else if (host->cmd) {
-+		dev_dbg(mmc_dev(host->mmc), "Aborting Command\n");
-+		omap_hsmmc_cmd_done(host, host->cmd);
-+	}
-+
-+	dev_dbg(mmc_dev(host->mmc), "Request %pK aborted\n", req);
-+	return 0;
-+
-+}
- /*
-  * Request function. for read/write operation
-  */
-@@ -1488,6 +1532,8 @@ static void omap_hsmmc_request(struct mmc_host *mmc, struct mmc_request *req)
- 
- 	BUG_ON(host->req_in_progress);
- 	BUG_ON(host->dma_ch != -1);
-+	host->abort_in_progress = 0;
-+
- 	if (host->protect_card) {
- 		if (host->reqs_blocked < 3) {
- 			/*
-@@ -1664,6 +1710,7 @@ static const struct mmc_host_ops omap_hsmmc_ops = {
- 	.disable = omap_hsmmc_disable_fclk,
- 	.post_req = omap_hsmmc_post_req,
- 	.pre_req = omap_hsmmc_pre_req,
-+	.abort_req = omap_hsmmc_abort_req,
- 	.request = omap_hsmmc_request,
- 	.set_ios = omap_hsmmc_set_ios,
- 	.get_cd = omap_hsmmc_get_cd,
--- 
-1.7.10.rc2
+The following new requirements on POSIX implementations derive from
+alignment with the Single UNIX Specification:
 
+The majority of the error conditions previously marked as extensions are
+now mandatory, except for the STREAMS-related error conditions.
+
+Values for errno are now required to be distinct positive values rather
+than non-zero values. This change is for alignment with the ISO/IEC
+9899:1999 standard.
+</quote>
+
+So system errno range is all positive, since our error enumeration is a
+superset of the system one, using negative values won't ever clash.
+
+Also it would be better to have it as PERF_ERRNO__PID_OVERRIDE_CPU, etc.
+
+Agreed?
+
+Anybody else with reasons not to use this ernno range scheme?
+
+Ingo?
+
+- Arnaldo
+
+> +	 */
+> +	__PERF_TARGET__ERRNO_START		= 0x10000,
+> +
+> +	PERF_TARGET__SUCCESS			= __PERF_TARGET__ERRNO_START,
+> +
+> +	/* for perf_target__validate() */
+> +	PERF_TARGET__PID_OVERRIDE_CPU,
+> +	PERF_TARGET__PID_OVERRIDE_UID,
+> +	PERF_TARGET__UID_OVERRIDE_CPU,
+> +	PERF_TARGET__PID_OVERRIDE_SYSTEM,
+> +	PERF_TARGET__UID_OVERRIDE_SYSTEM,
+> +
+> +	__PERF_TARGET__ERRNO_END
+> +};
+> +
+> +enum perf_target_errno perf_target__validate(struct perf_target *target);
+>  
+>  #endif /* _PERF_TARGET_H */
+> -- 
+> 1.7.10
