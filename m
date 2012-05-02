@@ -1,86 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab2EBGmu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 02:42:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60088 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754251Ab2EBGmq (ORCPT
+	id S1753645Ab2EBGog (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 02:44:36 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:57281 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098Ab2EBGoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 02:42:46 -0400
-Date: Tue, 1 May 2012 22:16:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 0/7] Add TI EMIF SDRAM controller driver
-Message-ID: <20120502051623.GA23705@kroah.com>
-References: <y>
- <1335529449-28046-1-git-send-email-santosh.shilimkar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335529449-28046-1-git-send-email-santosh.shilimkar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 May 2012 02:44:34 -0400
+Date: Wed, 02 May 2012 02:44:27 -0400 (EDT)
+Message-Id: <20120502.024427.22049954455309204.davem@davemloft.net>
+To: mst@redhat.com
+Cc: jasowang@redhat.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com
+Subject: Re: [V2 PATCH 0/9] vhost/macvtap zeropcopy fixes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120502055008.GA29319@redhat.com>
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	<20120502055008.GA29319@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 01 May 2012 23:44:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 05:54:02PM +0530, Santosh Shilimkar wrote:
-> Add a driver for the EMIF SDRAM controller used in Texas Instrument SoCs
-> 
-> EMIF is an SDRAM controller that supports, based on its revision,
-> one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
-> for LPDDR2.
-> 
-> The driver supports the following features:
-> - Calculates the DDR AC timing parameters to be set in EMIF
->   registers using data from the device data-sheets and based
->   on the DDR frequency. If data from data-sheets is not available
->   default timing values from the JEDEC spec are used. These
->   will be safe, but not necessarily optimal
-> - API for changing timings during DVFS or at boot-up
-> - Temperature alert configuration and handling of temperature
->   alerts, if any for LPDDR2 devices
->   * temperature alert is based on periodic polling of MR4 mode
->     register in DDR devices automatically performed by hardware
->   * timings are de-rated and brought back to nominal when
->     temperature raises and falls respectively
-> - Cache of calculated register values to avoid re-calculating
->   them
-> 
-> The driver will need some minor updates when it is eventually
-> integrated with Dynamic Voltage and Frequency Scaling (DVFS).
-> This can not be done now as DVFS support is not available in
-> the mainline yet.
-> 
-> Discussions with Santosh Shilimkar <santosh.shilimkar@ti.com>
-> were immensely helpful in shaping up the interfaces. Vibhore Vardhan
-> <vvardhan@gmail.com> did the initial code snippet for thermal
-> handling.
-> 
-> Testing: 
-> - The driver is tested on OMAP4430 SDP.
-> - The driver in a slightly adapted form is also tested on OMAP5.
-> - Since mainline kernel doesn't have DVFS support yet,
->   testing was done using a test module.
-> - Temperature alert handling was tested with simulated interrupts
->   and faked temperature values as testing all cases in real-life
->   scenarios is difficult.
-> - Tested the driver as a module
-> 
-> Cc: Greg KH <greg@kroah.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Wed, 2 May 2012 08:50:09 +0300
 
-This all looks good to me now, thanks for reworking this.
+> On Wed, May 02, 2012 at 11:41:21AM +0800, Jason Wang wrote:
+>> This is an updated since the last series of vhost/macvtap zerocopy fixes which
+>> fixes the the possible transmission stall, host kernel stack overflow and other
+>> misc fixes.
+>> 
+>> Changes from V1:
+>> - Addressing comments from Eric and Michael.
+>> - Adding more fixes into the seires.
+> 
+> Thanks for fixing this.
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> Dave, can you merge this for 3.4 please?
 
-So, do you want me to take this through my "driver" tree to get to Linus
-for 3.5, or do you want it to go through somewhere else?
-
-If somewhere else, that's fine with me, consider this an:
-	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-If you want me to take it, just let me know, whichever you prefer is
-fine with me.
-
-thanks,
-
-greg k-h
+It's rather late in the -RC for such a large patch set.
