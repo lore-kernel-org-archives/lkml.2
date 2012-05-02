@@ -1,59 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab2EBAe6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 20:34:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61182 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756679Ab2EBAem (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 20:34:42 -0400
+	id S1757323Ab2EBAvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 20:51:12 -0400
+Received: from mail.us.es ([193.147.175.20]:43035 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753033Ab2EBAvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 20:51:10 -0400
+Date: Wed, 2 May 2012 02:51:02 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Benjamin Poirier <bpoirier@suse.de>
+Cc: netdev@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC 2/2] netfilter: conntrack: replace mutex with
+ cmpxchg
+Message-ID: <20120502005102.GB14999@1984>
+References: <1335551333-6103-1-git-send-email-bpoirier@suse.de>
+ <1335551333-6103-2-git-send-email-bpoirier@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <CAKgNAkjAOGM+mZLkXGiDFYsnMCpJsxx=Nd5pZfx-_f4B1jvh+A@mail.gmail.com>
-References: <1335778207-6511-1-git-send-email-jack@suse.cz>
-	<CAHGf_=qqiast+6XzGnq+LRdFXoWG9h2MkofmjS1h5OeNPRyWfw@mail.gmail.com>
-	<CAKgNAkjAOGM+mZLkXGiDFYsnMCpJsxx=Nd5pZfx-_f4B1jvh+A@mail.gmail.com>
-Date: Wed, 2 May 2012 10:34:42 +1000
-Message-ID: <CAPa8GCC7tHm_8Ks_=tM4x544+SEtkVk6TMAF3KPsVqzNOi-naA@mail.gmail.com>
-Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
-From: Nick Piggin <npiggin@gmail.com>
-To: mtk.manpages@gmail.com
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, linux-man@vger.kernel.org,
-        linux-mm@kvack.org, mgorman@suse.de, Jeff Moyer <jmoyer@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335551333-6103-2-git-send-email-bpoirier@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 May 2012 03:56, Michael Kerrisk (man-pages) <mtk.manpages@gmail.com> wrote:
-> On Wed, May 2, 2012 at 4:15 AM, KOSAKI Motohiro
-> <kosaki.motohiro@gmail.com> wrote:
->>> +suffices. However, if the user buffer is not page aligned and direct read
->>
->> One more thing. direct write also makes data corruption. Think
->> following scenario,
->
-> In the light of all of the comments, can someone revise the man-pages
-> patch that Jan sent?
+On Fri, Apr 27, 2012 at 02:28:53PM -0400, Benjamin Poirier wrote:
+> This mutex protects a single pointer.
 
-This does not quite describe the entire situation, but something understandable
-to developers:
+You seem to be using an old Linux kernel tree. This doesn't apply.
 
-O_DIRECT IOs should never be run concurrently with fork(2) system call,
-when the memory buffer is anonymous memory, or comes from mmap(2)
-with MAP_PRIVATE.
-
-Any such IOs, whether submitted with asynchronous IO interface or from
-another thread in the process, should be quiesced before fork(2) is called.
-Failure to do so can result in data corruption and undefined behavior in
-parent and child processes.
-
-This restriction does not apply when the memory buffer for the O_DIRECT
-IOs comes from mmap(2) with MAP_SHARED or from shmat(2).
-
-
-
-Is that on the right track? I feel it might be necessary to describe this
-allowance for MAP_SHARED, because some databases may be doing
-such things, and anyway it gives apps a potential way to make this work
-if concurrent fork + DIO is very important.
+> ---
+>  net/netfilter/nf_conntrack_ecache.c |   38 +++++++++-------------------------
+>  1 files changed, 10 insertions(+), 28 deletions(-)
+> 
+> diff --git a/net/netfilter/nf_conntrack_ecache.c b/net/netfilter/nf_conntrack_ecache.c
+> index 0134009..603eb69 100644
+> --- a/net/netfilter/nf_conntrack_ecache.c
+> +++ b/net/netfilter/nf_conntrack_ecache.c
+> @@ -25,8 +25,6 @@
+>  #include <net/netfilter/nf_conntrack_core.h>
+>  #include <net/netfilter/nf_conntrack_extend.h>
+>  
+> -static DEFINE_MUTEX(nf_ct_ecache_mutex);
+> -
+>  /* deliver cached events and clear cache entry - must be called with locally
+>   * disabled softirqs */
+>  void nf_ct_deliver_cached_events(struct nf_conn *ct)
+> @@ -80,52 +78,36 @@ EXPORT_SYMBOL_GPL(nf_ct_deliver_cached_events);
+>  int nf_conntrack_register_notifier(struct net *net,
+>  				   struct nf_ct_event_notifier *new)
+>  {
+> -	int ret = 0;
+> -
+> -	mutex_lock(&nf_ct_ecache_mutex);
+> -	if (net->ct.nf_conntrack_event_cb != NULL)
+> -		ret = -EBUSY;
+> +	if (cmpxchg(&net->ct.nf_conntrack_event_cb, NULL, new) != NULL)
+> +		return -EBUSY;
+>  	else
+> -		net->ct.nf_conntrack_event_cb = new;
+> -	mutex_unlock(&nf_ct_ecache_mutex);
+> -
+> -	return ret;
+> +		return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(nf_conntrack_register_notifier);
+>  
+>  void nf_conntrack_unregister_notifier(struct net *net,
+>  				      struct nf_ct_event_notifier *new)
+>  {
+> -	mutex_lock(&nf_ct_ecache_mutex);
+> -	BUG_ON(net->ct.nf_conntrack_event_cb != new);
+> -	net->ct.nf_conntrack_event_cb = NULL;
+> -	mutex_unlock(&nf_ct_ecache_mutex);
+> +	if (xchg(&net->ct.nf_conntrack_event_cb, NULL) != new)
+> +		BUG();
+>  }
+>  EXPORT_SYMBOL_GPL(nf_conntrack_unregister_notifier);
+>  
+>  int nf_ct_expect_register_notifier(struct net *net,
+>  				   struct nf_exp_event_notifier *new)
+>  {
+> -	int ret = 0;
+> -
+> -	mutex_lock(&nf_ct_ecache_mutex);
+> -	if (net->ct.nf_expect_event_cb != NULL)
+> -		ret = -EBUSY;
+> +	if (cmpxchg(&net->ct.nf_expect_event_cb, NULL, new) != NULL)
+> +		return -EBUSY;
+>  	else
+> -		net->ct.nf_expect_event_cb = new;
+> -	mutex_unlock(&nf_ct_ecache_mutex);
+> -
+> -	return ret;
+> +		return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(nf_ct_expect_register_notifier);
+>  
+>  void nf_ct_expect_unregister_notifier(struct net *net,
+>  				      struct nf_exp_event_notifier *new)
+>  {
+> -	mutex_lock(&nf_ct_ecache_mutex);
+> -	BUG_ON(net->ct.nf_expect_event_cb != new);
+> -	net->ct.nf_expect_event_cb = NULL;
+> -	mutex_unlock(&nf_ct_ecache_mutex);
+> +	if (xchg(&net->ct.nf_expect_event_cb, NULL) != new)
+> +		BUG();
+>  }
+>  EXPORT_SYMBOL_GPL(nf_ct_expect_unregister_notifier);
+>  
+> -- 
+> 1.7.7
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netfilter-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
