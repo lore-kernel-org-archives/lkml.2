@@ -1,32 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab2EBWpR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 18:45:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50017 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755903Ab2EBWpP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 18:45:15 -0400
-Date: Wed, 2 May 2012 23:45:14 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, myungjoo.ham@samsung.com,
-        gregkh@linuxfoundation.org, kyungmin.park@samsung.com
-Subject: Re: [PATCH] Extcon: fix section mismatch in extcon_gpio.c
-Message-ID: <20120502224510.GA19693@opensource.wolfsonmicro.com>
-References: <201205021538.45056.hartleys@visionengravers.com>
+	id S1756041Ab2EBWqf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 18:46:35 -0400
+Received: from na3sys010aog101.obsmtp.com ([74.125.245.70]:36043 "HELO
+	na3sys010aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754772Ab2EBWqe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 18:46:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205021538.45056.hartleys@visionengravers.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1335591601-26473-1-git-send-email-levinsasha928@gmail.com>
+References: <1335591601-26473-1-git-send-email-levinsasha928@gmail.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Wed, 2 May 2012 15:46:12 -0700
+X-Google-Sender-Auth: 166fCxhuBG_KuVadgdWXYJh9S8A
+Message-ID: <CAL1RGDUVmK4T=-SJOQz6KFQhbjkMnbXUaxU0-eyWDH-bXMNtQA@mail.gmail.com>
+Subject: Re: [PATCH] RDMA/ocrdma: Don't sleep in atomic notifier handler
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: sean.hefty@intel.com, hal.rosenstock@gmail.com, parav.pandit@emulex.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 03:38:44PM -0700, H Hartley Sweeten wrote:
-> Fix the section mismatch be renaming the struct platform_driver
-> variable.
+On Fri, Apr 27, 2012 at 10:40 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> +       spin_lock(&ocrdma_devlist_lock);
+> +       list_add_tail_rcu(&dev->entry, &ocrdma_dev_list);
+> +       spin_lock(&ocrdma_devlist_lock);
 
-I'm pretty sure I sent a version of this patch sometime last week :/
+Er, applied with this fixed to be spin_unlock at the end...
