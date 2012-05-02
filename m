@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab2EBLhz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 07:37:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48961 "EHLO mx1.redhat.com"
+	id S1754462Ab2EBLiP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 07:38:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43162 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754088Ab2EBLhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 07:37:52 -0400
+	id S1754385Ab2EBLiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 07:38:10 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -13,159 +13,387 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         mhiramat@redhat.com, robert.richter@amd.com, fche@redhat.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 03/17] perf: Factor __output_copy to be usable with specific copy function
-Date: Wed,  2 May 2012 13:37:04 +0200
-Message-Id: <1335958638-5160-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 07/17] perf, tool: Factor DSO symtab types to generic binary types
+Date: Wed,  2 May 2012 13:37:08 +0200
+Message-Id: <1335958638-5160-8-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1335958638-5160-1-git-send-email-jolsa@redhat.com>
 References: <1335958638-5160-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding a generic way to use __output_copy function with
-specific copy function via DEFINE_PERF_OUTPUT_COPY macro.
+Adding interface to access DSOs so it could be used
+from another place.
 
-Using this to add new __output_copy_user function, that provides
-output copy from user pointers. For x86 the copy_from_user_nmi
-function is used and __copy_from_user_inatomic for the rest
-of the architectures.
+New DSO binary type is added - making current SYMTAB__*
+types more general:
+   DSO_BINARY_TYPE__* = SYMTAB__*
 
-This new function will be used in user stack dump on sample,
-comming in next patches.
+Folowing function is added to return path based on the specified
+binary type:
+   dso__binary_type_file
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- arch/x86/include/asm/perf_event.h |    2 +
- include/linux/perf_event.h        |    2 +-
- kernel/events/internal.h          |   62 ++++++++++++++++++++++++------------
- kernel/events/ring_buffer.c       |    4 +-
- 4 files changed, 46 insertions(+), 24 deletions(-)
+ tools/perf/builtin-top.c   |    2 +-
+ tools/perf/util/annotate.c |    2 +-
+ tools/perf/util/symbol.c   |  181 +++++++++++++++++++++++++++-----------------
+ tools/perf/util/symbol.h   |   32 ++++----
+ 4 files changed, 129 insertions(+), 88 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 8a3c75d..fa2c7ed 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -251,4 +251,6 @@ static inline void perf_events_lapic_init(void)	{ }
-  static inline void amd_pmu_disable_virt(void) { }
- #endif
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 8ef59f8..10184f6 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -125,7 +125,7 @@ static int perf_top__parse_source(struct perf_top *top, struct hist_entry *he)
+ 	/*
+ 	 * We can't annotate with just /proc/kallsyms
+ 	 */
+-	if (map->dso->symtab_type == SYMTAB__KALLSYMS) {
++	if (map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
+ 		pr_err("Can't annotate %s: No vmlinux file was found in the "
+ 		       "path\n", sym->name);
+ 		sleep(1);
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 5eb3412..bf41cf8 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -500,7 +500,7 @@ fallback:
+ 		free_filename = false;
+ 	}
  
-+#define arch_perf_out_copy_user copy_from_user_nmi
+-	if (dso->symtab_type == SYMTAB__KALLSYMS) {
++	if (dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
+ 		char bf[BUILD_ID_SIZE * 2 + 16] = " with build id ";
+ 		char *build_id_msg = NULL;
+ 
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index ab9867b..fdc4e70 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -48,6 +48,22 @@ struct symbol_conf symbol_conf = {
+ 	.symfs            = "",
+ };
+ 
++static enum dso_binary_type binary_type_symtab[] = {
++	DSO_BINARY_TYPE__KALLSYMS,
++	DSO_BINARY_TYPE__GUEST_KALLSYMS,
++	DSO_BINARY_TYPE__JAVA_JIT,
++	DSO_BINARY_TYPE__BUILD_ID_CACHE,
++	DSO_BINARY_TYPE__FEDORA_DEBUGINFO,
++	DSO_BINARY_TYPE__UBUNTU_DEBUGINFO,
++	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
++	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
++	DSO_BINARY_TYPE__GUEST_KMODULE,
++	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
++	DSO_BINARY_TYPE__NOT_FOUND,
++};
 +
- #endif /* _ASM_X86_PERF_EVENT_H */
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 6a8c974..dcda0f16 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1304,7 +1304,7 @@ static inline bool has_branch_stack(struct perf_event *event)
- extern int perf_output_begin(struct perf_output_handle *handle,
- 			     struct perf_event *event, unsigned int size);
- extern void perf_output_end(struct perf_output_handle *handle);
--extern void perf_output_copy(struct perf_output_handle *handle,
-+extern unsigned int perf_output_copy(struct perf_output_handle *handle,
- 			     const void *buf, unsigned int len);
- extern int perf_swevent_get_recursion_context(void);
- extern void perf_swevent_put_recursion_context(int rctx);
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index b0b107f..ed8ab26 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -2,6 +2,7 @@
- #define _KERNEL_EVENTS_INTERNAL_H
++#define DSO_BINARY_TYPE__SYMTAB_CNT sizeof(binary_type_symtab)
++
+ int dso__name_len(const struct dso *dso)
+ {
+ 	if (!dso)
+@@ -318,7 +334,7 @@ struct dso *dso__new(const char *name)
+ 		dso__set_short_name(dso, dso->name);
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
+-		dso->symtab_type = SYMTAB__NOT_FOUND;
++		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+@@ -805,9 +821,9 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
+ 	symbols__fixup_end(&dso->symbols[map->type]);
  
- #include <linux/hardirq.h>
-+#include <asm/uaccess.h>
+ 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
+-		dso->symtab_type = SYMTAB__GUEST_KALLSYMS;
++		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KALLSYMS;
+ 	else
+-		dso->symtab_type = SYMTAB__KALLSYMS;
++		dso->symtab_type = DSO_BINARY_TYPE__KALLSYMS;
  
- /* Buffer handling */
+ 	return dso__split_kallsyms(dso, map, filter);
+ }
+@@ -1562,31 +1578,96 @@ out:
+ char dso__symtab_origin(const struct dso *dso)
+ {
+ 	static const char origin[] = {
+-		[SYMTAB__KALLSYMS]	      = 'k',
+-		[SYMTAB__JAVA_JIT]	      = 'j',
+-		[SYMTAB__BUILD_ID_CACHE]      = 'B',
+-		[SYMTAB__FEDORA_DEBUGINFO]    = 'f',
+-		[SYMTAB__UBUNTU_DEBUGINFO]    = 'u',
+-		[SYMTAB__BUILDID_DEBUGINFO]   = 'b',
+-		[SYMTAB__SYSTEM_PATH_DSO]     = 'd',
+-		[SYMTAB__SYSTEM_PATH_KMODULE] = 'K',
+-		[SYMTAB__GUEST_KALLSYMS]      =  'g',
+-		[SYMTAB__GUEST_KMODULE]	      =  'G',
++		[DSO_BINARY_TYPE__KALLSYMS]		= 'k',
++		[DSO_BINARY_TYPE__JAVA_JIT]		= 'j',
++		[DSO_BINARY_TYPE__BUILD_ID_CACHE]	= 'B',
++		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]	= 'f',
++		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]	= 'u',
++		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]	= 'b',
++		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]	= 'd',
++		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]	= 'K',
++		[DSO_BINARY_TYPE__GUEST_KALLSYMS]	= 'g',
++		[DSO_BINARY_TYPE__GUEST_KMODULE]	= 'G',
+ 	};
  
-@@ -76,30 +77,49 @@ static inline unsigned long perf_data_size(struct ring_buffer *rb)
- 	return rb->nr_pages << (PAGE_SHIFT + page_order(rb));
+-	if (dso == NULL || dso->symtab_type == SYMTAB__NOT_FOUND)
++	if (dso == NULL || dso->symtab_type == DSO_BINARY_TYPE__NOT_FOUND)
+ 		return '!';
+ 	return origin[dso->symtab_type];
  }
  
--static inline void
--__output_copy(struct perf_output_handle *handle,
--		   const void *buf, unsigned int len)
-+#define DEFINE_OUTPUT_COPY(func_name, memcpy_func)			\
-+static inline unsigned int							\
-+func_name(struct perf_output_handle *handle,				\
-+	  const void *buf, unsigned int len)				\
-+{									\
-+	unsigned long size, written;					\
-+									\
-+	do {								\
-+		size = min_t(unsigned long, handle->size, len);		\
-+									\
-+		written = memcpy_func(handle->addr, buf, size);		\
-+									\
-+		len -= written;						\
-+		handle->addr += written;				\
-+		buf += written;						\
-+		handle->size -= written;				\
-+		if (!handle->size) {					\
-+			struct ring_buffer *rb = handle->rb;		\
-+									\
-+			handle->page++;					\
-+			handle->page &= rb->nr_pages - 1;		\
-+			handle->addr = rb->data_pages[handle->page];	\
-+			handle->size = PAGE_SIZE << page_order(rb);	\
-+		}							\
-+	} while (len && written == size);				\
-+									\
-+	return len;							\
++int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
++			  char *root_dir, char *file, size_t size)
++{
++	char build_id_hex[BUILD_ID_SIZE * 2 + 1];
++	int ret = 0;
++
++	switch (type) {
++	case DSO_BINARY_TYPE__BUILD_ID_CACHE:
++		/* skip the locally configured cache if a symfs is given */
++		if (symbol_conf.symfs[0] ||
++		    (dso__build_id_filename(dso, file, size) == NULL))
++			ret = -1;
++		break;
++
++	case DSO_BINARY_TYPE__FEDORA_DEBUGINFO:
++		snprintf(file, size, "%s/usr/lib/debug%s.debug",
++			 symbol_conf.symfs, dso->long_name);
++		break;
++
++	case DSO_BINARY_TYPE__UBUNTU_DEBUGINFO:
++		snprintf(file, size, "%s/usr/lib/debug%s",
++			 symbol_conf.symfs, dso->long_name);
++		break;
++
++	case DSO_BINARY_TYPE__BUILDID_DEBUGINFO:
++		if (!dso->has_build_id) {
++			ret = -1;
++			break;
++		}
++
++		build_id__sprintf(dso->build_id,
++				  sizeof(dso->build_id),
++				  build_id_hex);
++		snprintf(file, size,
++			 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
++			 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
++		break;
++
++	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
++		snprintf(file, size, "%s%s",
++			 symbol_conf.symfs, dso->long_name);
++		break;
++
++	case DSO_BINARY_TYPE__GUEST_KMODULE:
++		snprintf(file, size, "%s%s%s", symbol_conf.symfs,
++			 root_dir, dso->long_name);
++		break;
++
++	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
++		snprintf(file, size, "%s%s", symbol_conf.symfs,
++			 dso->long_name);
++		break;
++
++	default:
++	case DSO_BINARY_TYPE__KALLSYMS:
++	case DSO_BINARY_TYPE__GUEST_KALLSYMS:
++	case DSO_BINARY_TYPE__JAVA_JIT:
++	case DSO_BINARY_TYPE__NOT_FOUND:
++		ret = -1;
++		break;
++	}
++
++	return ret;
 +}
 +
-+static inline int memcpy_common(void *dst, const void *src, size_t n)
+ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
  {
--	do {
--		unsigned long size = min_t(unsigned long, handle->size, len);
+-	int size = PATH_MAX;
+ 	char *name;
+ 	int ret = -1;
+ 	int fd;
++	u_int i;
+ 	struct machine *machine;
+-	const char *root_dir;
++	char *root_dir = (char *) "";
+ 	int want_symtab;
+ 
+ 	dso__set_loaded(dso, map->type);
+@@ -1601,7 +1682,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	else
+ 		machine = NULL;
+ 
+-	name = malloc(size);
++	name = malloc(PATH_MAX);
+ 	if (!name)
+ 		return -1;
+ 
+@@ -1620,69 +1701,27 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 		}
+ 
+ 		ret = dso__load_perf_map(dso, map, filter);
+-		dso->symtab_type = ret > 0 ? SYMTAB__JAVA_JIT :
+-					      SYMTAB__NOT_FOUND;
++		dso->symtab_type = ret > 0 ? DSO_BINARY_TYPE__JAVA_JIT :
++					     DSO_BINARY_TYPE__NOT_FOUND;
+ 		return ret;
+ 	}
+ 
++	if (machine)
++		root_dir = machine->root_dir;
++
+ 	/* Iterate over candidate debug images.
+ 	 * On the first pass, only load images if they have a full symtab.
+ 	 * Failing that, do a second pass where we accept .dynsym also
+ 	 */
+ 	want_symtab = 1;
+ restart:
+-	for (dso->symtab_type = SYMTAB__BUILD_ID_CACHE;
+-	     dso->symtab_type != SYMTAB__NOT_FOUND;
+-	     dso->symtab_type++) {
+-		switch (dso->symtab_type) {
+-		case SYMTAB__BUILD_ID_CACHE:
+-			/* skip the locally configured cache if a symfs is given */
+-			if (symbol_conf.symfs[0] ||
+-			    (dso__build_id_filename(dso, name, size) == NULL)) {
+-				continue;
+-			}
+-			break;
+-		case SYMTAB__FEDORA_DEBUGINFO:
+-			snprintf(name, size, "%s/usr/lib/debug%s.debug",
+-				 symbol_conf.symfs, dso->long_name);
+-			break;
+-		case SYMTAB__UBUNTU_DEBUGINFO:
+-			snprintf(name, size, "%s/usr/lib/debug%s",
+-				 symbol_conf.symfs, dso->long_name);
+-			break;
+-		case SYMTAB__BUILDID_DEBUGINFO: {
+-			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
 -
--		memcpy(handle->addr, buf, size);
--
--		len -= size;
--		handle->addr += size;
--		buf += size;
--		handle->size -= size;
--		if (!handle->size) {
--			struct ring_buffer *rb = handle->rb;
--
--			handle->page++;
--			handle->page &= rb->nr_pages - 1;
--			handle->addr = rb->data_pages[handle->page];
--			handle->size = PAGE_SIZE << page_order(rb);
+-			if (!dso->has_build_id)
+-				continue;
++	for (i = 0; i < DSO_BINARY_TYPE__SYMTAB_CNT; i++) {
+ 
+-			build_id__sprintf(dso->build_id,
+-					  sizeof(dso->build_id),
+-					  build_id_hex);
+-			snprintf(name, size,
+-				 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
+-				 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
+-			}
+-			break;
+-		case SYMTAB__SYSTEM_PATH_DSO:
+-			snprintf(name, size, "%s%s",
+-			     symbol_conf.symfs, dso->long_name);
+-			break;
+-		case SYMTAB__GUEST_KMODULE:
+-			if (map->groups && machine)
+-				root_dir = machine->root_dir;
+-			else
+-				root_dir = "";
+-			snprintf(name, size, "%s%s%s", symbol_conf.symfs,
+-				 root_dir, dso->long_name);
+-			break;
++		dso->symtab_type = binary_type_symtab[i];
+ 
+-		case SYMTAB__SYSTEM_PATH_KMODULE:
+-			snprintf(name, size, "%s%s", symbol_conf.symfs,
+-				 dso->long_name);
+-			break;
+-		default:;
 -		}
--	} while (len);
-+	memcpy(dst, src, n);
-+	return n;
- }
++		if (dso__binary_type_file(dso, dso->symtab_type,
++					  root_dir, name, PATH_MAX))
++			continue;
  
-+DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
-+
-+#ifndef arch_perf_out_copy_user
-+#define arch_perf_out_copy_user __copy_from_user_inatomic
-+#endif
-+
-+DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
-+
- /* Callchain handling */
- extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs);
- extern int get_callchain_buffers(void);
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index 6ddaba4..b4c2ad3 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -182,10 +182,10 @@ out:
- 	return -ENOSPC;
- }
+ 		/* Name is now the name of the next image to try */
+ 		fd = open(name, O_RDONLY);
+@@ -1899,9 +1938,9 @@ struct map *machine__new_module(struct machine *machine, u64 start,
+ 		return NULL;
  
--void perf_output_copy(struct perf_output_handle *handle,
-+unsigned int perf_output_copy(struct perf_output_handle *handle,
- 		      const void *buf, unsigned int len)
- {
--	__output_copy(handle, buf, len);
-+	return __output_copy(handle, buf, len);
+ 	if (machine__is_host(machine))
+-		dso->symtab_type = SYMTAB__SYSTEM_PATH_KMODULE;
++		dso->symtab_type = DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE;
+ 	else
+-		dso->symtab_type = SYMTAB__GUEST_KMODULE;
++		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KMODULE;
+ 	map_groups__insert(&machine->kmaps, map);
+ 	return map;
  }
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 1f00388..a86e9de 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -154,6 +154,20 @@ struct addr_location {
+ 	s32	      cpu;
+ };
  
- void perf_output_end(struct perf_output_handle *handle)
++enum dso_binary_type {
++	DSO_BINARY_TYPE__KALLSYMS = 0,
++	DSO_BINARY_TYPE__GUEST_KALLSYMS,
++	DSO_BINARY_TYPE__JAVA_JIT,
++	DSO_BINARY_TYPE__BUILD_ID_CACHE,
++	DSO_BINARY_TYPE__FEDORA_DEBUGINFO,
++	DSO_BINARY_TYPE__UBUNTU_DEBUGINFO,
++	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
++	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
++	DSO_BINARY_TYPE__GUEST_KMODULE,
++	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
++	DSO_BINARY_TYPE__NOT_FOUND,
++};
++
+ enum dso_kernel_type {
+ 	DSO_TYPE_USER = 0,
+ 	DSO_TYPE_KERNEL,
+@@ -165,13 +179,13 @@ struct dso {
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
+ 	enum dso_kernel_type	kernel;
++	enum dso_binary_type	symtab_type;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 hit:1;
+ 	u8		 annotate_warned:1;
+ 	u8		 sname_alloc:1;
+ 	u8		 lname_alloc:1;
+-	unsigned char	 symtab_type;
+ 	u8		 sorted_by_name;
+ 	u8		 loaded;
+ 	u8		 build_id[BUILD_ID_SIZE];
+@@ -223,20 +237,6 @@ size_t dso__fprintf_symbols_by_name(struct dso *dso,
+ 				    enum map_type type, FILE *fp);
+ size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp);
+ 
+-enum symtab_type {
+-	SYMTAB__KALLSYMS = 0,
+-	SYMTAB__GUEST_KALLSYMS,
+-	SYMTAB__JAVA_JIT,
+-	SYMTAB__BUILD_ID_CACHE,
+-	SYMTAB__FEDORA_DEBUGINFO,
+-	SYMTAB__UBUNTU_DEBUGINFO,
+-	SYMTAB__BUILDID_DEBUGINFO,
+-	SYMTAB__SYSTEM_PATH_DSO,
+-	SYMTAB__GUEST_KMODULE,
+-	SYMTAB__SYSTEM_PATH_KMODULE,
+-	SYMTAB__NOT_FOUND,
+-};
+-
+ char dso__symtab_origin(const struct dso *dso);
+ void dso__set_long_name(struct dso *dso, char *name);
+ void dso__set_build_id(struct dso *dso, void *build_id);
+@@ -272,4 +272,6 @@ bool symbol_type__is_a(char symbol_type, enum map_type map_type);
+ 
+ size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
+ 
++int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
++			  char *root_dir, char *file, size_t size);
+ #endif /* __PERF_SYMBOL */
 -- 
 1.7.7.6
 
