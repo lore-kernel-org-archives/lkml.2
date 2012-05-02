@@ -1,104 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab2EBOZH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 10:25:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50811 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab2EBOZF (ORCPT
+	id S1754842Ab2EBOcn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 10:32:43 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58363 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754193Ab2EBOcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 10:25:05 -0400
-Message-ID: <4FA143BC.2010702@canonical.com>
-Date: Wed, 02 May 2012 16:25:00 +0200
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: linux-scsi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Matthew Wilcox <matthew@wil.cx>, Stefan Bader <stefan.bader@canonical.com>
-Subject: Kernel oops in sym_int_sir
-X-Enigmail-Version: 1.4
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig8EC0A656348579D86C92CEE4"
+	Wed, 2 May 2012 10:32:41 -0400
+Subject: Re: [PATCH v2] net: l2tp: unlock socket lock before returning from
+ l2tp_ip_sendmsg
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: davem@davemloft.net, jchapman@katalix.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davej@redhat.com
+In-Reply-To: <1335967123-2588-1-git-send-email-levinsasha928@gmail.com>
+References: <1335967123-2588-1-git-send-email-levinsasha928@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 May 2012 16:32:36 +0200
+Message-ID: <1335969156.22133.570.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig8EC0A656348579D86C92CEE4
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2012-05-02 at 15:58 +0200, Sasha Levin wrote:
+> l2tp_ip_sendmsg could return without releasing socket lock, making it all the
+> way to userspace, and generating the following warning:
+> 
+> [  130.891594] ================================================
+> [  130.894569] [ BUG: lock held when returning to user space! ]
+> [  130.897257] 3.4.0-rc5-next-20120501-sasha #104 Tainted: G        W
+> [  130.900336] ------------------------------------------------
+> [  130.902996] trinity/8384 is leaving the kernel with locks still held!
+> [  130.906106] 1 lock held by trinity/8384:
+> [  130.907924]  #0:  (sk_lock-AF_INET){+.+.+.}, at: [<ffffffff82b9503f>] l2tp_ip_sendmsg+0x2f/0x550
+> 
+> Introduced by commit 2f16270 ("l2tp: Fix locking in l2tp_ip.c").
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
 
-While looking at a bug report [1] I found that the immediate cause of the=
- crash
-was in that specific case the reference cp->cmd for a printk:
+Oh well, please read Documentation/stable_kernel_rules.txt
 
-/*
-  * The device didn't switch to MSG IN phase after
-  * having reselected the initiator.
-  */
- case SIR_RESEL_NO_MSG_IN:
-         scmd_printk(KERN_WARNING, cp->cmd,
-                         "No MSG IN phase after reselection\n");
-         goto out_stuck;
+Also, David prefers to handle stable submissions himself for net tree.
 
-Unfortunately cp (that is returned by sym_ccb_from_dsa()) is NULL. This p=
-robably
-is as old as 2.6.24 when this patch added the scmd_printk:
+Anyway :
 
-commit 3fb364e089e05c35ead55a08d56d3004193681f6
-Author: Matthew Wilcox <matthew@wil.cx>
-Date: Fri Oct 5 15:55:10 2007 -0400
-
-    [SCSI] sym53c8xx: Use scmd_printk where appropriate
-
-A quick research looks like it might be other cases where this happened[2=
-].
-Maybe more often (or solely?) when running in a VM (KVM). I even found so=
-me post
-that looks like it tries to fix just this problem[3].
-
-However without more knowledge about that driver it could also be a probl=
-em in
-the hardware emulation so that normally cp =3D=3D NULL should never happe=
-n. Or it
-might be that the emulation is just running sufficiently "different" to c=
-ause
-races to happen which never would be observed on real hardware.
-
-Would [3] still make sense?
-
-Thanks,
-Stefan
+Acked-by: Eric Dumazet <edumazet@google.com>
 
 
-[1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/992328
-[2] http://www.mail-archive.com/kvm@vger.kernel.org/msg08927.html
-[3] https://lkml.org/lkml/2010/11/18/495
-
-
---------------enig8EC0A656348579D86C92CEE4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBCgAGBQJPoUO9AAoJEOhnXe7L7s6jFtAQAM3ffrcFuZkV18vOKXUGFXir
-8vCSDz6CI+i7cqskXp3DcD50OxvU8snChHRF8f7vqkekia0m5OBMvdEN8sS9g6la
-UYZg9ABoYhoMtmrcaa5UlJEbA8clHmQX4iIEfNrlDpEKFFpj2TqXoWmtzZwvWh+v
-vfj1pAoRT195W4GqqhNCcF68OdO7j7F6u9hgqkiNXA2YSrIv0Y0LmC1b/nOUsrDf
-dPDr3mQQZ6oMyImUJYK09ENP1X516Rfo5SI+BBfeb3oXOPHiJU0rkcXyF9Qg4hcU
-McKBjNlypIbjz+Fqdyl7BbA0BPgNiMvHDJVqBs16Z2InTX0f1zHxiTo/GeY3MTC+
-DdjZYo304KW/3xN6v0eYGu7JWK/zAWEEx9Ko4QoAogspW/O9ZhgKk+rkD0M8/x0T
-k6K+FFSetKDWXwYC/o8kUA7RpTCpVaJNl5uWtKrOD/gE4IP2GmSvomLbAHEZ3Bah
-uAezJGhNBrInDa28XnsZHDm1ijtrKkyb35TeLRi+YZnzGsHRgcA1GfIuQeki/kuZ
-u9q+LV4o63mo8/lvn/MWN8eQVqVMiWnCABjHotu3tJfM8SVTMyzbQ2f9iHZqCyvp
-kKlPia0oixeC9rTNd6oPFIVrtrmz134qm9bRDRcPpM5DlQW1eN1V71pfbdDoBkuM
-iicmAhrTe4HPMRvnBb8C
-=M68O
------END PGP SIGNATURE-----
-
---------------enig8EC0A656348579D86C92CEE4--
