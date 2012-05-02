@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab2EBWUH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 18:20:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43233 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401Ab2EBWUF (ORCPT
+	id S1754796Ab2EBW11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 18:27:27 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:60801 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753974Ab2EBW11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 18:20:05 -0400
-Date: Wed, 2 May 2012 15:20:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sasikanth babu <sasikanth.v19@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] debugfs: New debugfs interface for creation of files,
- directory and symlinks
-Message-Id: <20120502152003.d7b6aae9.akpm@linux-foundation.org>
-In-Reply-To: <20120502220417.GA2667@kroah.com>
-References: <1335963054-24750-1-git-send-email-sasikanth.v19@gmail.com>
-	<20120502153100.GA2777@kroah.com>
-	<CAOJFanXZEUfM4GQS62u4oR-KwywdLGOciOcgzmrM9zW+kOrXkg@mail.gmail.com>
-	<20120502220417.GA2667@kroah.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 May 2012 18:27:27 -0400
+Date: Wed, 2 May 2012 23:27:24 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [now bisected] Weird bluetooth keyboard regression - just me?
+Message-ID: <20120502222724.GB2215@srcf.ucam.org>
+References: <20120501110156.2b6e0561@lwn.net>
+ <20120501171901.GA26006@srcf.ucam.org>
+ <20120501120145.21f65ae2@lwn.net>
+ <20120501183149.GA28536@srcf.ucam.org>
+ <20120501123923.01ac1138@lwn.net>
+ <20120501185455.GA29060@srcf.ucam.org>
+ <20120501192736.GA29770@srcf.ucam.org>
+ <20120501172454.0e811379@lwn.net>
+ <20120502215034.GA622@srcf.ucam.org>
+ <20120502160437.5f355fa3@lwn.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120502160437.5f355fa3@lwn.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 May 2012 15:04:17 -0700
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-
-> On Thu, May 03, 2012 at 03:28:17AM +0530, Sasikanth babu wrote:
-> > On Wed, May 2, 2012 at 9:01 PM, Greg Kroah-Hartman
-> > <gregkh@linuxfoundation.org> wrote:
-> > > On Wed, May 02, 2012 at 06:20:54PM +0530, Sasikantha babu wrote:
-> > >> As we know the current debugfs file or directory or symlink creation
-> > >> doesn't return proper error codes to the caller on failure. Because
-> > >> of this caller and user could not able to find the exact reason of
-> > >> the failure.
-> > >
-> > > And what is the problem with this? __Either the file is created or not,
-> > > you really shouldn't care anymore than that. __It's not like you are
-> > > going to retry the creation, or are you?
-> > >
-> > > Who really cares if the file is failed to be created?
-> > 
-> >  In most of cases I had observed caller of debufs_create_file or
-> >  debufs_create_dir always returns -ENOMEM on failure, which is not true.
+On Wed, May 02, 2012 at 04:04:37PM -0600, Jonathan Corbet wrote:
+> On Wed, 2 May 2012 22:50:34 +0100
+> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 > 
-> Where does that happen?  And why would the creation of a debugfs file
-> fail?
+> > > > In either case, does the 
+> > > > attached file help if dropped into /lib/udev/rules.d ?  
+> > > 
+> > > Nope, no joy there.    
+> > 
+> > You tested after rebooting?
+> 
+> Yes, of course.  I'm running a kernel that actually talks to my keyboard
+> most of the time, I *have* to reboot to try a broken one.
 
-How's he supposed to know, when the kernel cannot return the correct
-diagnostic?
+Hm. Well, easiest thing to do would just to be to delete that for the 
+moment and make sure that things work again - beyond that it's me trying 
+to figure out how to write a udev file to do the right thing when I 
+don't have hardware that has this layout. I'll see if I can mock it up.
 
-That's the whole reason we have errnos: to report on what went wrong,
-so operators can understand *why* it failed and so that programmers can
-diagnose and fix bugs.
-
-There's nothing special about debugfs and there is no reason why it
-should deviate from well-established practice.
-
-If well-written code checks the return value (as it should) and then
-propagates an error code back to its caller (as it should), the stupid
-debugfs interface forces that caller to invent an errno from thin air.
-And if that guessed errno is wrong, it is actively misleading!
-
-> You can fixup the callers to make it uniform, the api is uniform in what
-> it returns today, right?
-
-The API is stupid and wrong, actually.  There is no *advantage* to
-having done it this way - none at all.
-
-> Again, I see no real benifit for returning the "true" error as no one
-> really cares about that, all that matters is if it worked or not, and
-> even then, no one should really care about that either, as remember,
-> this is debugfs, whose one rule is, "there is no rules."
-
-No.  If something has gone wrong then something needs to be fixed. 
-Either the system needs reconfiguration or kernel programmers have
-repairs to do.  Either way, information is needed to make those fixes. 
-debugfs designers don't get to tell debugfs users what is and is not
-important to those users.
-
-
-All that being said, it is unobvious that fixing this mistake is worth
-all the churn.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
