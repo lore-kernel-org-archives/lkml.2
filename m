@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab2EBFmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 01:42:22 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:41120 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab2EBFmU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 01:42:20 -0400
-X-SENDER-IP: [85.230.169.225]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlWaAMzIoE9V5qnhPGdsb2JhbABEiiulT4FhBIEcGQEBAQEeGQ0nggkBAQQBOhwjBQsIAw44FCUKGogbCboFE4sVhH1jBJV9hgaNJw
-X-IronPort-AV: E=Sophos;i="4.75,515,1330902000"; 
-   d="scan'208";a="108133872"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 2 May 2012 07:46:51 +0200
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>
-Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
-Message-ID: <20120502054651.GA3970@polaris.bitmath.org>
-References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
- <alpine.LNX.2.00.1205011300540.1856@pobox.suse.cz>
+	id S1754108Ab2EBFuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 01:50:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63646 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752124Ab2EBFuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 01:50:06 -0400
+Date: Wed, 2 May 2012 08:50:09 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        davem@davemloft.net
+Subject: Re: [V2 PATCH 0/9] vhost/macvtap zeropcopy fixes
+Message-ID: <20120502055008.GA29319@redhat.com>
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1205011300540.1856@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-> I have now updated the 'might-rebase/autoloading' branch of git.hid tree 
-> (this is a rebasing branch, so simple pull will not work for you as a 
-> fast-forward, you'll have to delete and repull the branch).
+On Wed, May 02, 2012 at 11:41:21AM +0800, Jason Wang wrote:
+> This is an updated since the last series of vhost/macvtap zerocopy fixes which
+> fixes the the possible transmission stall, host kernel stack overflow and other
+> misc fixes.
 > 
-> It's currently in a shape I would be okay to pushing out for -next and 
-> scheduling for next merge window, and I will do so tomorrow if nothing 
-> else pops up during testing or reviews.
+> Changes from V1:
+> - Addressing comments from Eric and Michael.
+> - Adding more fixes into the seires.
 
-The branch looks good in this end.
+Thanks for fixing this.
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-Thanks,
-Henrik
+Dave, can you merge this for 3.4 please?
+Thanks!
+
+> ---
+> 
+> Jason Wang (9):
+>       macvtap: zerocopy: fix offset calculation when building skb
+>       macvtap: zerocopy: fix truesize underestimation
+>       macvtap: zerocopy: put page when fail to get all requested user pages
+>       macvtap: zerocopy: set SKBTX_DEV_ZEROCOPY only when skb is built successfully
+>       macvtap: zerocopy: validate vectors before building skb
+>       vhost_net: zerocopy: fix possible NULL pointer dereference of vq->bufs
+>       vhost_net: re-poll only on EAGAIN or ENOBUFS
+>       vhost_net: zerocopy: adding and signalling immediately when fully copied
+>       vhost: zerocopy: poll vq in zerocopy callback
+> 
+> 
+>  drivers/net/macvtap.c |   57 ++++++++++++++++++++++++++++++++++---------------
+>  drivers/vhost/net.c   |    7 ++++--
+>  drivers/vhost/vhost.c |    1 +
+>  3 files changed, 46 insertions(+), 19 deletions(-)
+> 
+> -- 
+> Jason Wang
