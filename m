@@ -1,67 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab2EBAUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 20:20:19 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:39088 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755934Ab2EBAUR (ORCPT
+	id S1757397Ab2EBAVR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 20:21:17 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55595 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756111Ab2EBAVO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 20:20:17 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-131.messagelabs.com!1335918015!18661042!2
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: Add helper macro for comedi_driver boilerplate
-Date: Tue, 1 May 2012 17:20:04 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Tue, 1 May 2012 20:21:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201205011720.04599.hartleys@visionengravers.com>
+In-Reply-To: <1334573091-18602-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1334573091-18602-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Tue, 1 May 2012 20:20:42 -0400
+X-Google-Sender-Auth: nyEf3Ko4IJWza9fX8m2hBYLlrxk
+Message-ID: <CAP=VYLqgaCabQGDVgUXnCwKCZHtz0nWxpm_a6Cgz_ciMzGe9gQ@mail.gmail.com>
+Subject: Re: [PATCH -V6 07/14] memcg: Add HugeTLB extension
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-next@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce the module_comedi_driver macro which is a convenience
-macro for comedi driver modules similar to module_platform_driver.
-It is intended to be used by drivers where the init/exit section
-does nothing but register/unregister the comedi driver. By using
-this macro it is possible to eliminate a few lines of boilerplate
-code per comedi driver.
+On Mon, Apr 16, 2012 at 6:44 AM, Aneesh Kumar K.V
+<aneesh.kumar@linux.vnet.ibm.com> wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>
+> This patch implements a memcg extension that allows us to control HugeTLB
+> allocations via memory controller. The extension allows to limit the
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation
+Hi Aneesh,
 
----
+This breaks linux-next on some arch because they don't have any
+HUGE_MAX_HSTATE in scope with the current #ifdef layout.
 
-diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-index 02e4ae0..8828609 100644
---- a/drivers/staging/comedi/comedidev.h
-+++ b/drivers/staging/comedi/comedidev.h
-@@ -298,6 +298,18 @@ int comedi_device_attach(struct comedi_device *dev,
- int comedi_driver_register(struct comedi_driver *);
- int comedi_driver_unregister(struct comedi_driver *);
- 
-+/**
-+ * module_comedi_driver() - Helper macro for registering a comedi driver
-+ * @__comedi_driver: comedi_driver struct
-+ *
-+ * Helper macro for comedi drivers which do not do anything special in module
-+ * init/exit. This eliminates a lot of boilerplate. Each module may only use
-+ * this macro once, and calling it replaces module_init() and module_exit().
-+ */
-+#define module_comedi_driver(__comedi_driver) \
-+	module_driver(__comedi_driver, comedi_driver_register, \
-+			comedi_driver_unregister)
-+
- void init_polling(void);
- void cleanup_polling(void);
- void start_polling(struct comedi_device *);
+The breakage is in sh4, m68k, s390, and possibly others.
+
+http://kisskb.ellerman.id.au/kisskb/buildresult/6228689/
+http://kisskb.ellerman.id.au/kisskb/buildresult/6228670/
+http://kisskb.ellerman.id.au/kisskb/buildresult/6228484/
+
+This is a commit in akpm's mmotm queue, which used to be here:
+
+http://userweb.kernel.org/~akpm/mmotm
+
+Of course the above is invalid since userweb.kernel.org is dead.
+I don't have a post-kernel.org break-in link handy and a quick
+search didn't give me one, but I'm sure you'll recognize the change.
+
+Thanks,
+Paul.
+--
+
+> HugeTLB usage per control group and enforces the controller limit during
+> page fault. Since HugeTLB doesn't support page reclaim, enforcing the limit
+> at page fault time implies that, the application will get SIGBUS signal if it
+> tries to access HugeTLB pages beyond its limit. This requires the application
+> to know beforehand how much HugeTLB pages it would require for its use.
+>
+> The charge/uncharge calls will be added to HugeTLB code in later patch.
+> Support for memcg removal will be added in later patches.
+>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  include/linux/hugetlb.h    |    1 +
+>  include/linux/memcontrol.h |   42 ++++++++++++++
+>  init/Kconfig               |    8 +++
+>  mm/hugetlb.c               |    2 +-
+>  mm/memcontrol.c            |  132 ++++++++++++++++++++++++++++++++++++++++++++
+>  5 files changed, 184 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 46c6cbd..995c238 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -226,6 +226,7 @@ struct hstate *size_to_hstate(unsigned long size);
+>  #define HUGE_MAX_HSTATE 1
+>  #endif
+>
+> +extern int hugetlb_max_hstate;
+>  extern struct hstate hstates[HUGE_MAX_HSTATE];
+>  extern unsigned int default_hstate_idx;
+>
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index f94efd2..1d07e14 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -448,5 +448,47 @@ static inline void sock_release_memcg(struct sock *sk)
+>  {
+>  }
+>  #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+> +
+> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+> +extern int mem_cgroup_hugetlb_charge_page(int idx, unsigned long nr_pages,
+> +                                         struct mem_cgroup **ptr);
+> +extern void mem_cgroup_hugetlb_commit_charge(int idx, unsigned long nr_pages,
+> +                                            struct mem_cgroup *memcg,
+> +                                            struct page *page);
+> +extern void mem_cgroup_hugetlb_uncharge_page(int idx, unsigned long nr_pages,
+> +                                            struct page *page);
+> +extern void mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
+> +                                             struct mem_cgroup *memcg);
+> +
+> +#else
+> +static inline int
+> +mem_cgroup_hugetlb_charge_page(int idx, unsigned long nr_pages,
+> +                                                struct mem_cgroup **ptr)
+> +{
+> +       return 0;
+> +}
+> +
+> +static inline void
+> +mem_cgroup_hugetlb_commit_charge(int idx, unsigned long nr_pages,
+> +                                struct mem_cgroup *memcg,
+> +                                struct page *page)
+> +{
+> +       return;
+> +}
+> +
+> +static inline void
+> +mem_cgroup_hugetlb_uncharge_page(int idx, unsigned long nr_pages,
+> +                                struct page *page)
+> +{
+> +       return;
+> +}
+> +
+> +static inline void
+> +mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
+> +                                 struct mem_cgroup *memcg)
+> +{
+> +       return;
+> +}
+> +#endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
+>  #endif /* _LINUX_MEMCONTROL_H */
+>
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 72f33fa..a3b5665 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -716,6 +716,14 @@ config CGROUP_PERF
+>
+>          Say N if unsure.
+>
+> +config MEM_RES_CTLR_HUGETLB
+> +       bool "Memory Resource Controller HugeTLB Extension (EXPERIMENTAL)"
+> +       depends on CGROUP_MEM_RES_CTLR && HUGETLB_PAGE && EXPERIMENTAL
+> +       default n
+> +       help
+> +         Add HugeTLB management to memory resource controller. When you
+> +         enable this, you can put a per cgroup limit on HugeTLB usage.
+> +
+>  menuconfig CGROUP_SCHED
+>        bool "Group CPU scheduler"
+>        default n
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index a3ac624..8cd89b4 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -35,7 +35,7 @@ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+>  static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
+>  unsigned long hugepages_treat_as_movable;
+>
+> -static int hugetlb_max_hstate;
+> +int hugetlb_max_hstate;
+>  unsigned int default_hstate_idx;
+>  struct hstate hstates[HUGE_MAX_HSTATE];
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 901bb03..884f479 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -252,6 +252,10 @@ struct mem_cgroup {
+>        };
+>
+>        /*
+> +        * the counter to account for hugepages from hugetlb.
+> +        */
+> +       struct res_counter hugepage[HUGE_MAX_HSTATE];
+> +       /*
+>         * Per cgroup active and inactive list, similar to the
+>         * per zone LRU lists.
+>         */
+> @@ -3213,6 +3217,114 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
+>  }
+>  #endif
+>
+> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+> +static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
+> +{
+> +       int idx;
+> +       for (idx = 0; idx < hugetlb_max_hstate; idx++) {
+> +               if ((res_counter_read_u64(&memcg->hugepage[idx], RES_USAGE)) > 0)
+> +                       return 1;
+> +       }
+> +       return 0;
+> +}
+> +
+> +int mem_cgroup_hugetlb_charge_page(int idx, unsigned long nr_pages,
+> +                                  struct mem_cgroup **ptr)
+> +{
+> +       int ret = 0;
+> +       struct mem_cgroup *memcg = NULL;
+> +       struct res_counter *fail_res;
+> +       unsigned long csize = nr_pages * PAGE_SIZE;
+> +
+> +       if (mem_cgroup_disabled())
+> +               goto done;
+> +again:
+> +       rcu_read_lock();
+> +       memcg = mem_cgroup_from_task(current);
+> +       if (!memcg)
+> +               memcg = root_mem_cgroup;
+> +
+> +       if (!css_tryget(&memcg->css)) {
+> +               rcu_read_unlock();
+> +               goto again;
+> +       }
+> +       rcu_read_unlock();
+> +
+> +       ret = res_counter_charge(&memcg->hugepage[idx], csize, &fail_res);
+> +       css_put(&memcg->css);
+> +done:
+> +       *ptr = memcg;
+> +       return ret;
+> +}
+> +
+> +void mem_cgroup_hugetlb_commit_charge(int idx, unsigned long nr_pages,
+> +                                     struct mem_cgroup *memcg,
+> +                                     struct page *page)
+> +{
+> +       struct page_cgroup *pc;
+> +
+> +       if (mem_cgroup_disabled())
+> +               return;
+> +
+> +       pc = lookup_page_cgroup(page);
+> +       lock_page_cgroup(pc);
+> +       if (unlikely(PageCgroupUsed(pc))) {
+> +               unlock_page_cgroup(pc);
+> +               mem_cgroup_hugetlb_uncharge_memcg(idx, nr_pages, memcg);
+> +               return;
+> +       }
+> +       pc->mem_cgroup = memcg;
+> +       SetPageCgroupUsed(pc);
+> +       unlock_page_cgroup(pc);
+> +       return;
+> +}
+> +
+> +void mem_cgroup_hugetlb_uncharge_page(int idx, unsigned long nr_pages,
+> +                                     struct page *page)
+> +{
+> +       struct page_cgroup *pc;
+> +       struct mem_cgroup *memcg;
+> +       unsigned long csize = nr_pages * PAGE_SIZE;
+> +
+> +       if (mem_cgroup_disabled())
+> +               return;
+> +
+> +       pc = lookup_page_cgroup(page);
+> +       if (unlikely(!PageCgroupUsed(pc)))
+> +               return;
+> +
+> +       lock_page_cgroup(pc);
+> +       if (!PageCgroupUsed(pc)) {
+> +               unlock_page_cgroup(pc);
+> +               return;
+> +       }
+> +       memcg = pc->mem_cgroup;
+> +       pc->mem_cgroup = root_mem_cgroup;
+> +       ClearPageCgroupUsed(pc);
+> +       unlock_page_cgroup(pc);
+> +
+> +       res_counter_uncharge(&memcg->hugepage[idx], csize);
+> +       return;
+> +}
+> +
+> +void mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
+> +                                      struct mem_cgroup *memcg)
+> +{
+> +       unsigned long csize = nr_pages * PAGE_SIZE;
+> +
+> +       if (mem_cgroup_disabled())
+> +               return;
+> +
+> +       res_counter_uncharge(&memcg->hugepage[idx], csize);
+> +       return;
+> +}
+> +#else
+> +static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
+> +{
+> +       return 0;
+> +}
+> +#endif /* CONFIG_MEM_RES_CTLR_HUGETLB */
+> +
+>  /*
+>  * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
+>  * page belongs to.
+> @@ -4955,6 +5067,7 @@ err_cleanup:
+>  static struct cgroup_subsys_state * __ref
+>  mem_cgroup_create(struct cgroup *cont)
+>  {
+> +       int idx;
+>        struct mem_cgroup *memcg, *parent;
+>        long error = -ENOMEM;
+>        int node;
+> @@ -4997,9 +5110,22 @@ mem_cgroup_create(struct cgroup *cont)
+>                 * mem_cgroup(see mem_cgroup_put).
+>                 */
+>                mem_cgroup_get(parent);
+> +               /*
+> +                * We could get called before hugetlb init is called.
+> +                * Use HUGE_MAX_HSTATE as the max index.
+> +                */
+> +               for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
+> +                       res_counter_init(&memcg->hugepage[idx],
+> +                                        &parent->hugepage[idx]);
+>        } else {
+>                res_counter_init(&memcg->res, NULL);
+>                res_counter_init(&memcg->memsw, NULL);
+> +               /*
+> +                * We could get called before hugetlb init is called.
+> +                * Use HUGE_MAX_HSTATE as the max index.
+> +                */
+> +               for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
+> +                       res_counter_init(&memcg->hugepage[idx], NULL);
+>        }
+>        memcg->last_scanned_node = MAX_NUMNODES;
+>        INIT_LIST_HEAD(&memcg->oom_notify);
+> @@ -5030,6 +5156,12 @@ free_out:
+>  static int mem_cgroup_pre_destroy(struct cgroup *cont)
+>  {
+>        struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+> +       /*
+> +        * Don't allow memcg removal if we have HugeTLB resource
+> +        * usage.
+> +        */
+> +       if (mem_cgroup_have_hugetlb_usage(memcg))
+> +               return -EBUSY;
+>
+>        return mem_cgroup_force_empty(memcg, false);
+>  }
+> --
+> 1.7.10
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
