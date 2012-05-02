@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab2EBFkE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 01:40:04 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49061 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab2EBFkC (ORCPT
+	id S1753537Ab2EBFmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 01:42:22 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:41120 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab2EBFmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 01:40:02 -0400
-Message-ID: <4FA0C8A7.9000001@linux.vnet.ibm.com>
-Date: Wed, 02 May 2012 13:39:51 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Wed, 2 May 2012 01:42:20 -0400
+X-SENDER-IP: [85.230.169.225]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlWaAMzIoE9V5qnhPGdsb2JhbABEiiulT4FhBIEcGQEBAQEeGQ0nggkBAQQBOhwjBQsIAw44FCUKGogbCboFE4sVhH1jBJV9hgaNJw
+X-IronPort-AV: E=Sophos;i="4.75,515,1330902000"; 
+   d="scan'208";a="108133872"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 2 May 2012 07:46:51 +0200
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>
+Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
+Message-ID: <20120502054651.GA3970@polaris.bitmath.org>
+References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+ <alpine.LNX.2.00.1205011300540.1856@pobox.suse.cz>
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 06/10] KVM: MMU: fast path of handling guest page fault
-References: <4F9776D2.7020506@linux.vnet.ibm.com> <4F9777A4.208@linux.vnet.ibm.com>	<20120426234535.GA5057@amt.cnet> <4F9A3445.2060305@linux.vnet.ibm.com>	<20120427145213.GB28796@amt.cnet> <20120429175004.b54d8c095a60d98c8cdbc942@gmail.com>
-In-Reply-To: <20120429175004.b54d8c095a60d98c8cdbc942@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12050205-9574-0000-0000-0000027186C5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1205011300540.1856@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2012 04:50 PM, Takuya Yoshikawa wrote:
+Hi Jiri,
 
-> On Fri, 27 Apr 2012 11:52:13 -0300
-> Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> I have now updated the 'might-rebase/autoloading' branch of git.hid tree 
+> (this is a rebasing branch, so simple pull will not work for you as a 
+> fast-forward, you'll have to delete and repull the branch).
 > 
->> Yes but the objective you are aiming for is to read and write sptes
->> without mmu_lock. That is, i am not talking about this patch. 
->> Please read carefully the two examples i gave (separated by "example)").
-> 
-> The real objective is not still clear.
-> 
-> The ~10% improvement reported before was on macro benchmarks during live
-> migration.  At least, that optimization was the initial objective.
-> 
-> But at some point, the objective suddenly changed to "lock-less" without
-> understanding what introduced the original improvement.
-> 
-> Was the problem really mmu_lock contention?
-> 
+> It's currently in a shape I would be okay to pushing out for -next and 
+> scheduling for next merge window, and I will do so tomorrow if nothing 
+> else pops up during testing or reviews.
 
+The branch looks good in this end.
 
-Takuya, i am so tired to argue the advantage of lockless write-protect
-and lockless O(1) dirty-log again and again.
-
-> If the path being introduced by this patch is really fast, isn't it
-> possible to achieve the same improvement still using mmu_lock?
-> 
-> 
-> Note: During live migration, the fact that the guest gets faulted is
-> itself a limitation.  We could easily see noticeable slowdown of a
-> program even if it runs only between two GET_DIRTY_LOGs.
-> 
-
-
-Obviously no.
-
-It depends on what the guest is doing, from my autotest test, it very
-easily to see that, the huge improvement is on bench-migration not
-pure-migration.
-
-> 
->> The rules for code under mmu_lock should be:
->>
->> 1) Spte updates under mmu lock must always be atomic and 
->> with locked instructions.
->> 2) Spte values must be read once, and appropriate action
->> must be taken when writing them back in case their value 
->> has changed (remote TLB flush might be required).
-> 
-> Although I am not certain about what will be really needed in the
-> final form, if this kind of maybe-needed-overhead is going to be
-> added little by little, I worry about possible regression.
-
-
-Well, will you suggest Linus to reject all patches and stop
-all discussion for the "possible regression" reason?
-
+Thanks,
+Henrik
