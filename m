@@ -1,165 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab2EBTed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 15:34:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23093 "EHLO
+	id S1756716Ab2EBTec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 15:34:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11476 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755897Ab2EBTci (ORCPT
+	with ESMTP id S1756086Ab2EBTci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 May 2012 15:32:38 -0400
-X-Authority-Analysis: v=2.0 cv=fvFelSEf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=IQYnrVmFIPkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=4BIMDcWzHu9iSGmsBiMA:9 a=2gubk0O2b5VqwnY0ZwYA:7 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=fn377KWBaqxLxJIR:21 a=YRRBCSia_ZuyMKyK:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Authority-Analysis: v=2.0 cv=N/Wr5hBB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=n2lABFMPQmYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=k3KHomK8etPYVlJQuPwA:9 a=ueEir-6bpuOCoeLlHv8A:7 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=y6P4t-jWjoR4jnPp:21 a=A1VhSQEaZUrhuXIX:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120502193236.753783243@goodmis.org>
+Message-Id: <20120502193237.321234712@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 02 May 2012 15:24:22 -0400
+Date: Wed, 02 May 2012 15:24:24 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 4/9][RFC] ftrace: Consolidate ftrace_location() and ftrace_text_reserved()
+Subject: [PATCH 6/9][RFC] kprobes: Allow probe on ftrace reserved text (but move it)
 References: <20120502192418.024103772@goodmis.org>
-Content-Disposition: inline; filename=0004-ftrace-Consolidate-ftrace_location-and-ftrace_text_r.patch
+Content-Disposition: inline; filename=0006-kprobes-Allow-probe-on-ftrace-reserved-text-but-move.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Both ftrace_location() and ftrace_text_reserved() do basically the same thing.
-They search to see if an address is in the ftace table (contains an address
-that may change from nop to call ftrace_caller). The difference is
-that ftrace_location() searches a single address, but ftrace_text_reserved()
-searches a range.
+If a probe is placed on a ftrace nop (or ftrace_caller), simply move the
+probe to the next instruction instead of rejecting it. This will allow
+kprobes not to be affected by ftrace using the -mfentry gcc option which
+will put the ftrace nop at the beginning of the function. As a very common
+case for kprobes is to add a probe to the very beginning of a function
+we need a way to handle the case when ftrace takes the first instruction.
 
-This also makes the ftrace_text_reserved() faster as it now uses a bsearch()
-instead of linearly searching all the addresses within a page.
+Added KPROBE_FLAG_MOVED (as suggested by Masami) that is set when the address
+is moved to get around an ftrace nop.
 
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |   80 ++++++++++++++++++++++++-------------------------
- 1 file changed, 40 insertions(+), 40 deletions(-)
+ include/linux/ftrace.h  |    2 ++
+ include/linux/kprobes.h |    1 +
+ kernel/kprobes.c        |   13 ++++++++++++-
+ 3 files changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 333f890..51e07f7 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1383,35 +1383,28 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 9310993..211ae45 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -414,6 +414,8 @@ static inline int ftrace_text_reserved(void *start, void *end)
+ #define ftrace_set_notrace(ops, buf, len, reset) ({ -ENODEV; })
+ #define ftrace_free_filter(ops) do { } while (0)
  
- static int ftrace_cmp_recs(const void *a, const void *b)
- {
--	const struct dyn_ftrace *reca = a;
--	const struct dyn_ftrace *recb = b;
-+	const struct dyn_ftrace *key = a;
-+	const struct dyn_ftrace *rec = b;
- 
--	if (reca->ip > recb->ip)
--		return 1;
--	if (reca->ip < recb->ip)
-+	if (key->flags < rec->ip)
- 		return -1;
-+	if (key->ip >= rec->ip + MCOUNT_INSN_SIZE)
-+		return 1;
- 	return 0;
- }
- 
--/**
-- * ftrace_location - return true if the ip giving is a traced location
-- * @ip: the instruction pointer to check
-- *
-- * Returns 1 if @ip given is a pointer to a ftrace location.
-- * That is, the instruction that is either a NOP or call to
-- * the function tracer. It checks the ftrace internal tables to
-- * determine if the address belongs or not.
-- */
--int ftrace_location(unsigned long ip)
-+static int ftrace_location_range(unsigned long start, unsigned long end)
- {
- 	struct ftrace_page *pg;
- 	struct dyn_ftrace *rec;
- 	struct dyn_ftrace key;
- 
--	key.ip = ip;
-+	key.ip = start;
-+	key.flags = end;	/* overload flags, as it is unsigned long */
- 
- 	for (pg = ftrace_pages_start; pg; pg = pg->next) {
--		if (ip < pg->records[0].ip || ip > pg->records[pg->index - 1].ip)
-+		if (end < pg->records[0].ip ||
-+		    start >= (pg->records[pg->index - 1].ip + MCOUNT_INSN_SIZE))
- 			continue;
- 		rec = bsearch(&key, pg->records, pg->index,
- 			      sizeof(struct dyn_ftrace),
-@@ -1423,6 +1416,36 @@ int ftrace_location(unsigned long ip)
- 	return 0;
- }
- 
-+/**
-+ * ftrace_location - return true if the ip giving is a traced location
-+ * @ip: the instruction pointer to check
-+ *
-+ * Returns 1 if @ip given is a pointer to a ftrace location.
-+ * That is, the instruction that is either a NOP or call to
-+ * the function tracer. It checks the ftrace internal tables to
-+ * determine if the address belongs or not.
-+ */
-+int ftrace_location(unsigned long ip)
-+{
-+	return ftrace_location_range(ip, ip);
-+}
++static inline unsigned long ftrace_location(unsigned long ip) { return 0; }
 +
-+/**
-+ * ftrace_text_reserved - return true if range contains an ftrace location
-+ * @start: start of range to search
-+ * @end: end of range to search (inclusive). @end points to the last byte to check.
-+ *
-+ * Returns 1 if @start and @end contains a ftrace location.
-+ * That is, the instruction that is either a NOP or call to
-+ * the function tracer. It checks the ftrace internal tables to
-+ * determine if the address belongs or not.
-+ */
-+int ftrace_text_reserved(void *start, void *end)
-+{
-+	return ftrace_location_range((unsigned long)start,
-+				     (unsigned long)end);
-+}
-+
- static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
- 				     int filter_hash,
- 				     bool inc)
-@@ -1571,29 +1594,6 @@ void ftrace_bug(int failed, unsigned long ip)
- 	}
- }
+ static inline ssize_t ftrace_filter_write(struct file *file, const char __user *ubuf,
+ 			    size_t cnt, loff_t *ppos) { return -ENODEV; }
+ static inline ssize_t ftrace_notrace_write(struct file *file, const char __user *ubuf,
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index b6e1f8c..23cf41e 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -128,6 +128,7 @@ struct kprobe {
+ 				   * NOTE:
+ 				   * this flag is only for optimized_kprobe.
+ 				   */
++#define KPROBE_FLAG_MOVED	8 /* probe was moved passed ftrace nop */
  
--
--/* Return 1 if the address range is reserved for ftrace */
--int ftrace_text_reserved(void *s, void *e)
--{
--	struct dyn_ftrace *rec;
--	struct ftrace_page *pg;
--	unsigned long start = (unsigned long)s;
--	unsigned long end = (unsigned long)e;
--	int i;
--
--	for (pg = ftrace_pages_start; pg; pg = pg->next) {
--		if (end < pg->records[0].ip ||
--		    start >= (pg->records[pg->index - 1].ip + MCOUNT_INSN_SIZE))
--			continue;
--		for (i = 0; i < pg->index; i++) {
--			rec = &pg->records[i];
--			if (rec->ip <= end && rec->ip + MCOUNT_INSN_SIZE > start)
--				return 1;
--		}
--	}
--	return 0;
--}
--
- static int ftrace_check_record(struct dyn_ftrace *rec, int enable, int update)
- {
- 	unsigned long flag = 0UL;
+ /* Has this kprobe gone ? */
+ static inline int kprobe_gone(struct kprobe *p)
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index c62b854..952619b 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1319,10 +1319,22 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 	struct kprobe *old_p;
+ 	struct module *probed_mod;
+ 	kprobe_opcode_t *addr;
++	unsigned long ftrace_addr;
+ 
+ 	addr = kprobe_addr(p);
+ 	if (IS_ERR(addr))
+ 		return PTR_ERR(addr);
++
++	/*
++	 * If the address is located on a ftrace nop, set the
++	 * breakpoint to the following instruction.
++	 */
++	ftrace_addr = ftrace_location((unsigned long)addr);
++	if (unlikely(ftrace_addr)) {
++		addr = (kprobe_opcode_t *)(ftrace_addr + MCOUNT_INSN_SIZE);
++		p->flags |= KPROBE_FLAG_MOVED;
++	}
++
+ 	p->addr = addr;
+ 
+ 	ret = check_kprobe_rereg(p);
+@@ -1333,7 +1345,6 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 	preempt_disable();
+ 	if (!kernel_text_address((unsigned long) p->addr) ||
+ 	    in_kprobes_functions((unsigned long) p->addr) ||
+-	    ftrace_text_reserved(p->addr, p->addr) ||
+ 	    jump_label_text_reserved(p->addr, p->addr)) {
+ 		ret = -EINVAL;
+ 		goto cannot_probe;
 -- 
 1.7.9.5
 
