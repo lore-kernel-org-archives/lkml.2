@@ -1,323 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757641Ab2EBBGk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 21:06:40 -0400
-Received: from nm22.access.bullet.mail.mud.yahoo.com ([66.94.237.223]:44297
-	"HELO nm22.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756003Ab2EBBGi (ORCPT
+	id S1758026Ab2EBBK1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 21:10:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:62034 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757397Ab2EBBKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 21:06:38 -0400
-X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 May 2012 21:06:37 EDT
-X-Yahoo-Newman-Id: 480128.64469.bm@smtp109.sbc.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 8zWnFNQVM1ktUpX6bALAPnfHsGD8fwJKxeOH1MNTvhyQ7CN
- sSYNxOfGiA4hBR3cs6aEF2Qz_oNOLVRPw1S6ZTQ9mrv7A7yN9lxhHQSOn9bK
- 02Z6n7VWjWT9DziTahyVmmDOgOKTnfGMKZiJE4rYu5h8oBRl1c58vq3rVyLr
- jzLuRFW4Pq6sz7AF015dXBm0KG4p1S7j4DEQANETO7iSCdFrutNwvmq4JBau
- v39HvYTaSVfmecvzG74dgfiVOFn0fcw89rjvU_BjSCRU_dWqyH7SGbNJvE5Y
- fSPVmtwCQCbEFHIx95v1cF2nkhpESLheXP6SlDAzDuslZHyxVjqsL_H5JHw3
- I4MGEfquJlCHs4rkki6c8a0tZLByfF5crBf4ZDVjXELX62YGlC1MSyym5Plp
- D82Z.4i2_BIieILdIh5fvvWWdKxr.JATXhAPXfaUSys8FQXnUdZPG.rsZS5A
- 6usvniRvygw4S2IZb6Plaasb47Yuc5dk-
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <4FA08753.8080300@att.net>
-Date: Tue, 01 May 2012 20:01:07 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: daniel.santos@pobox.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120420 Thunderbird/10.0.3
+	Tue, 1 May 2012 21:10:25 -0400
+Date: Tue, 1 May 2012 21:10:23 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-next@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: linux-next: triage for May 1, 2012
+Message-ID: <20120502011022.GA24681@windriver.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: Generic rbtree search & insert cores
-References: <4F9E7365.2040907@att.net> <1335871228.13683.141.camel@twins> <1335888000.13683.158.camel@twins>
-In-Reply-To: <1335888000.13683.158.camel@twins>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for examining this!  I don't see any major problems with omitting
-the root node offset & accompanying mechanisms.  However, first consider
-it's purpose: the idea is to define a relationship between two
-structures and then call generic functions to manipulate them. Removing
-the root node offset reduces the scope and complexity of the generic
-rbtree interface, but also eliminates an abstraction mechanism, which
-can be desirable at times. None the less, there are many cases where a
-struct rb_root is used as a stand-alone variable, and even though it
-could still be used by passing zero for the root_node offset, It would
-appear to be chaff most (almost all?) of the time, so I can see that you
-are right about this.
+Recent problems seen in linux-next:
 
-On to naming, I think it's probably better to prefix all of these
-functions with "rb_" rather than "rbtree_" (as I had done), partially
-for brevity, but mostly for consistency.
+  The "undefined reference to `vga_default_device'" stuff still lingers
+  in a couple arch (arm/mips).  I gave mjg a heads up on IRC and he'll be
+  looking into fixing it ASAP.
+  [ http://kisskb.ellerman.id.au/kisskb/buildresult/6228428/ ]
+  [ http://kisskb.ellerman.id.au/kisskb/buildresult/6229055/ ]
+  [ http://kisskb.ellerman.id.au/kisskb/buildresult/6228983/ ]
 
-Next, is the issue of rather or not duplicate keys are allowed, which I
-didn't think about when I wrote my code.  For my purposes, I cannot have
-duplicate keys, so I coded it that way.  As I see it, the interface
-should support both.  Again, I think it better to have a single inline
-function that will support duplicate keys or not depending upon a
-compile-time constant fed to it.  This adds complexity to the actual
-insert function while reducing complexity in the interface (number of
-functions) and sources.  As long as gcc behaves, the generated code will
-be exactly what is needed and no more (else, we go with adding separate
-insert functions for duplicate keys allowed and not).  On top of that, I
-tried to leave it up to the caller as to rather or not they wanted their
-"insert without duplicates" function to replace an object with a
-matching key or not -- I guess some of this depends on what is needed,
-but it would seem to make sense to leave that functionality in as well,
-as long as it doesn't generated any extra instructions when it isn't needed.
+  Some ARM and MIPS failed because the USB deleted err() - I've given
+  gregKH fixes for these, so they should be short lived.  So I've not
+  listed them below in the board specific breakage.
+  [ http://marc.info/?l=linux-usb&m=133591198425099&w=2 ]
 
-Finally, as for augmented rbtrees, I'm not familiar with them, but I
-just read an LWN article about them and they sound cool!  Not only that,
-they sound like an excellent candidate for this type of genericizing. 
-Had I known about them before, I would have used them in some other
-(userspace) code where I'm using the linux rbtree implementation.  So
-I'll play with this tomorrow.
+  Several arch failed on a hugeTLB define; I've given a heads up,
+  and also skipped listing them below.
+  [ http://marc.info/?l=linux-next&m=133591821627008&w=2 ]
+  [ http://kisskb.ellerman.id.au/kisskb/buildresult/6228484/ ]
+  [ http://kisskb.ellerman.id.au/kisskb/buildresult/6228672/ ]
+  
+  Sparc/parisc is still borked by kvm header shuffle it seems.
+  Complaining about "file 'asm-generic/kvm_para.h' is not exported"
+  [ http://kisskb.ellerman.id.au/kisskb/buildresult/6141443/ ]
+  [ http://kisskb.ellerman.id.au/kisskb/buildresult/6137786/ ]
 
-As a side note, I had originally tried to combine the search & insert
-implementation into a single function that expanded differently
-depending upon how it was called (again, with compile-time constants)
-but it became it too ugly, so I split it out.
+---------------------
 
-Daniel
-PS: the BUILD_BUG_ON macro is really cool, thanks for showing that to me!
+New breakage since last report:
+	See above.
+			
+Randconfig fails that may or may not be new (by their very nature):
+	x86_64: also dies on vga_default_device -- see above.
 
-On 05/01/2012 11:00 AM, Peter Zijlstra wrote:
-> On Tue, 2012-05-01 at 13:20 +0200, Peter Zijlstra wrote:
->> On Mon, 2012-04-30 at 06:11 -0500, Daniel Santos wrote:
->>> So as long as our struct rbtree_relationship is a compile-time
->>> constant, the generated code will look pretty much (if not exactly)
->>> like that of the example code in rbtree.h.  Please let me know what
->>> you think.  I've tested this in a userspace program, but haven't fully
->>> stress tested it in kernelspace yet. 
->> Right, this ought to work.
->>
->> I'm not sure the root_offset thing is worth it though, passing in the
->> rb_root pointer isn't much of a hassle, in fact I'd expect to pass rb
->> related pointers to a function called rbtree_insert().
->>
->> Also, using a macro to create the rbtree_relationship thing would make
->> it easier. Something like:
->>
->> 	RB_RELATION(struct mouse, node, name, name_cmp);
->>
->> I'd think you'd also want to provide an insertion variant that does the
->> leftmost thing, that's used in several places, and you'd also need one
->> for the augmented rb-tree.
-> Something like the below,.. I wanted to add typechecking to
-> __RB_RELS_KEY and __RB_RELS_LEFT like:
->
-> #define __RB_RELS_KEY(_node_type, _node, _key) 				\
-> 	(typecheck(struct rb_node *, &((_node_type *)NULL)->_node),	\
-> 	 __REL_OFFSET(_node_type, _node, _key))
->
-> #define __RB_RELS_LEFT(_root_type, _root, _left) 			\
-> 	(typecheck(struct rb_root *, &((_root_type *)NULL)->_root),	\
-> 	 typecheck(struct rb_node *, ((_root_type *)NULL)->_left),	\
-> 	 __REL_OFFSET(_root_type, _root, _left))
->
-> But I didn't find a way to make GCC like that.
->
-> The below compiles, I haven't looked at the generated asm, nor booted
-> the thing.
->
-> ---
->  include/linux/rbtree.h |   84 ++++++++++++++++++++++++++++++++++++++++++++++++
->  kernel/sched/fair.c    |   51 ++++++-----------------------
->  2 files changed, 93 insertions(+), 42 deletions(-)
->
-> diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-> index 033b507..2a5f803 100644
-> --- a/include/linux/rbtree.h
-> +++ b/include/linux/rbtree.h
-> @@ -96,6 +96,8 @@ static inline struct page * rb_insert_page_cache(struct inode * inode,
->  
->  #include <linux/kernel.h>
->  #include <linux/stddef.h>
-> +#include <linux/typecheck.h>
-> +#include <linux/bug.h>
->  
->  struct rb_node
->  {
-> @@ -174,4 +176,86 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
->  	*rb_link = node;
->  }
->  
-> +struct rbtree_relations {
-> +	size_t key_offset;
-> +	size_t left_offset;
-> +
-> +	bool (*less)(const void *a, const void *b);
-> +};
-> +
-> +#define __REL_OFFSET(_t, _f1, _f2) \
-> +	(offsetof(_t, _f2) - offsetof(_t, _f1))
-> +
-> +#define __RB_RELS_KEY(_node_type, _node, _key) 				\
-> +	__REL_OFFSET(_node_type, _node, _key)
-> +
-> +#define __RB_RELS_LEFT(_root_type, _root, _left) 			\
-> +	__REL_OFFSET(_root_type, _root, _left)
-> +
-> +#define RB_RELATIONS(_node_type, _node, _key, _less) 			\
-> +	(const struct rbtree_relations){				\
-> +		.key_offset = __RB_RELS_KEY(_node_type, _node, _key),	\
-> +		.less = (bool (*)(const void *, const void *))_less,	\
-> +	}
-> +
-> +#define RB_RELATIONS_LEFT(_root_type, _root, _left, _node_type, _node, _key, _less) \
-> +	(const struct rbtree_relations){				\
-> +		.key_offset = __RB_RELS_KEY(_node_type, _node, _key),	\
-> +		.left_offset = __RB_RELS_LEFT(_root_type, _root, _left), \
-> +		.less = (bool (*)(const void *, const void *))_less,	\
-> +	}
-> +
-> +static __always_inline 
-> +const void *__rb_node_to_key(const struct rbtree_relations *rel, struct rb_node *node)
-> +{
-> +	BUILD_BUG_ON(!__builtin_constant_p(rel->key_offset));
-> +	return (const void *)((char *)node + rel->key_offset);
-> +}
-> +
-> +static __always_inline
-> +struct rb_node **__rb_root_to_left(const struct rbtree_relations *rel, struct rb_root *root)
-> +{
-> +	BUILD_BUG_ON(!__builtin_constant_p(rel->left_offset));
-> +	return (struct rb_node **)((char *)root + rel->left_offset);
-> +}
-> +
-> +static __always_inline 
-> +void rbtree_insert(struct rb_root *root, struct rb_node *node,
-> +		   const struct rbtree_relations *rel)
-> +{
-> +	struct rb_node **p = &root->rb_node;
-> +	struct rb_node *parent = NULL;
-> +	const void *key = __rb_node_to_key(rel, node);
-> +	int leftmost = 1;
-> +
-> +	while (*p) {
-> +		parent = *p;
-> +		if (rel->less(key, __rb_node_to_key(rel, *p)))
-> +			p = &(*p)->rb_left;
-> +		else {
-> +			p = &(*p)->rb_right;
-> +			leftmost = 0;
-> +		}
-> +	}
-> +
-> +	if (rel->left_offset && leftmost)
-> +		*__rb_root_to_left(rel, root) = node;
-> +
-> +	rb_link_node(node, parent, p);
-> +	rb_insert_color(node, root);
-> +}
-> +
-> +static __always_inline
-> +void rbtree_remove(struct rb_root *root, struct rb_node *node,
-> +		   const struct rbtree_relations *rel)
-> +{
-> +	if (rel->left_offset) {
-> +		struct rb_node **left = __rb_root_to_left(rel, root);
-> +		
-> +		if (*left == node)
-> +			*left = rb_next(node);
-> +	}
-> +	rb_erase(node, root);
-> +}
-> +
->  #endif	/* _LINUX_RBTREE_H */
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index e955364..81424a9 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -441,8 +441,8 @@ static inline u64 min_vruntime(u64 min_vruntime, u64 vruntime)
->  	return min_vruntime;
->  }
->  
-> -static inline int entity_before(struct sched_entity *a,
-> -				struct sched_entity *b)
-> +static inline bool entity_before(struct sched_entity *a,
-> +				 struct sched_entity *b)
->  {
->  	return (s64)(a->vruntime - b->vruntime) < 0;
->  }
-> @@ -472,55 +472,22 @@ static void update_min_vruntime(struct cfs_rq *cfs_rq)
->  #endif
->  }
->  
-> +static const struct rbtree_relations fair_tree_rels = 
-> +	RB_RELATIONS_LEFT(struct cfs_rq, tasks_timeline, rb_leftmost,
-> +			  struct sched_entity, run_node, vruntime,
-> +			  entity_before);
-> +
->  /*
->   * Enqueue an entity into the rb-tree:
->   */
->  static void __enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
->  {
-> -	struct rb_node **link = &cfs_rq->tasks_timeline.rb_node;
-> -	struct rb_node *parent = NULL;
-> -	struct sched_entity *entry;
-> -	int leftmost = 1;
-> -
-> -	/*
-> -	 * Find the right place in the rbtree:
-> -	 */
-> -	while (*link) {
-> -		parent = *link;
-> -		entry = rb_entry(parent, struct sched_entity, run_node);
-> -		/*
-> -		 * We dont care about collisions. Nodes with
-> -		 * the same key stay together.
-> -		 */
-> -		if (entity_before(se, entry)) {
-> -			link = &parent->rb_left;
-> -		} else {
-> -			link = &parent->rb_right;
-> -			leftmost = 0;
-> -		}
-> -	}
-> -
-> -	/*
-> -	 * Maintain a cache of leftmost tree entries (it is frequently
-> -	 * used):
-> -	 */
-> -	if (leftmost)
-> -		cfs_rq->rb_leftmost = &se->run_node;
-> -
-> -	rb_link_node(&se->run_node, parent, link);
-> -	rb_insert_color(&se->run_node, &cfs_rq->tasks_timeline);
-> +	rbtree_insert(&cfs_rq->tasks_timeline, &se->run_node, &fair_tree_rels);
->  }
->  
->  static void __dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
->  {
-> -	if (cfs_rq->rb_leftmost == &se->run_node) {
-> -		struct rb_node *next_node;
-> -
-> -		next_node = rb_next(&se->run_node);
-> -		cfs_rq->rb_leftmost = next_node;
-> -	}
-> -
-> -	rb_erase(&se->run_node, &cfs_rq->tasks_timeline);
-> +	rbtree_remove(&cfs_rq->tasks_timeline, &se->run_node, &fair_tree_rels);
->  }
->  
->  struct sched_entity *__pick_first_entity(struct cfs_rq *cfs_rq)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Builds that are fixed since last report:
+	Several, given the week away from linux-next.
 
--- 
-Daniel
+----------------------
 
-"Just because you go to church on Sunday, it doesn't absolve you from
-where you put your dick during the week" -- Michele Q.
+Note1: The randconfig fails are only listed once and not tracked
+in the below listing.
+
+Note2: Build fails that are perpetual and/or unlikely to ever
+get fixed are not tracked here.
+
+Note3: Issues that Stephen finds and reverts/avoids before kicking
+off the all-arch/all-config builds are also not tracked here.
+
+Note4: I'm also not tracking the kallsyms extra pass on ARM on
+a per board basis anymore.  It has nothing to do with the board.
+Why? See:  http://marc.info/?l=linux-next&m=133267456809502
+
+----------------------
+
+Latest results at:
+	http://kisskb.ellerman.id.au/kisskb/branch/9/
+
+Failures as of May 1st, 2012:
+===============================
+
+AM33:asb2303_defconfig,asb2364_defconfig
+	when:	Mar 15
+	why:	cc1: error: unrecognized command line option '-mmem-funcs'
+	status:	Possible fix from TonyB sent for review.
+	fix:	http://marc.info/?l=linux-kernel&m=133185020313818&w=2
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878400/
+----------------
+
+ARM:mackerel_defconfig,ag5evm_defconfig
+	when:	Apr 19 (possibly earlier?)
+	why:	pfc-sh7372.c: undefined reference to `mmc_detect_change'
+	why:	pfc-sh73a0.c: undefined reference to `mmc_detect_change'
+	status:	
+	fix:	
+	ref:	http://article.gmane.org/gmane.linux.ports.sh.devel/14412
+	ref:	http://article.gmane.org/gmane.linux.ports.sh.devel/14413
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131930/
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131908/
+
+ARM:bcmring_defconfig
+	when:	Apr 19 (possibly earlier?)
+	why:	core.c: macro "AMBA_APB_DEVICE" requires 6 args, but only 5 given
+	status:	fixed, pending feed into linux next.
+	fix:
+	ref:	http://www.spinics.net/lists/arm-kernel/msg169724.html
+
+ARM:ezx_defconfig
+	when:	Apr 19 (possibly earlier?)
+	why:	ezx-pcap.c: implicit declaration of function 'irq_to_gpio'
+	status:	
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131924/
+
+ARM:mini2440_defconfig
+	when:	Apr 19 (possibly earlier?)
+	why:	arm-unknown-linux-gnueabi-ld: no machine record defined
+	status:
+	fix:	http://marc.info/?l=linux-next&m=133494490918950&w=2
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131932/
+
+ARM:spear6xx_defconfig
+	when:	Apr 19 (possibly earlier?)
+	why:	asm/timex.h: fatal error: mach/timex.h: No such file
+	status:
+	fix:	http://marc.info/?l=linux-arm-kernel&m=133494361818349&w=2
+	ref:	http://marc.info/?l=linux-arm-kernel&m=133480180430812&w=2
+
+ARM:netx_defconfig,pnx4008_defconfig 
+	when:	Mar 14
+	why:	net/core/pktgen.c: can't find a register in class 'GENERAL_REGS'
+	status:	
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869486/
+	ref:	https://lkml.org/lkml/2012/3/13/670
+
+ARM:ixp4xx_defconfig
+	when:	Oct 26
+	why:	gpio.h: implicit declaration of function '__gpio_get_value'
+	status:	fixed (Imre Kaloz) - but possibly needs rework?
+	fix:	https://lkml.org/lkml/2012/2/8/288
+	ref:	https://lkml.org/lkml/2012/2/8/287
+
+ARM:raumfeld_defconfig
+	when:	Nov 23
+	why:	eeti_ts.c: implicit declaration of function 'irq_to_gpio'
+	status:	perhaps broken since 2010?  See ref below.
+	fix:	
+	ref:	http://www.gossamer-threads.com/lists/linux/kernel/1291618?do=post_view_threaded#1291618
+
+----------------
+
+AVR32:allnoconfig
+	when:	May 26 2010, 20:49
+	why:	at32_map_usart: undefined reference to `atmel_default_console_device'
+	status:
+	fix:
+	ref:
+---------------
+
+bfin: 50% of builds
+	when:	Mar 31
+	why:	"Error: pcrel too far BFD_RELOC_BFIN_10" from kernel/time/timekeeping.c
+	status:	unknown, binutils issue?
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6087324/
+---------------
+
+cris:allyesconfig,allmodconfig
+	when:	Apr 3
+	why:	too many to list here
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6035250/
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6035249/
+----------------
+
+i386:allmodconfig
+	when:	Apr 17
+	why:	samples/seccomp/bpf-direct.c:47:2: error: #error Unsupported platform
+	status:	reported
+	ref:	http://marc.info/?l=linux-kernel&m=133471624530782&w=2
+----------------
+
+h8300:defconfig
+	when:	Mar 15
+	why:	time.c: implicit declaration of function 'get_irq_regs'
+	why:	also seems gcc suffers an ICE
+	status:	ICE bug lodged with gcc folks (TonyB)
+	ref:	http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52598
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884668/
+----------------
+
+m32r:m32700ut.smp_defconfig
+	when:	Mar 15
+	why:	No rule to make target `arch/m32r/boot/compressed/vmlinux.bin
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884670/
+----------------
+
+mips:ip27_defconfig
+	when:	Apr 18
+	why: iwlwifi/iwl-core.h: static decl of 'iwl_alloc_traffic_mem' follows non-static
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131791/
+
+mips:allmodconfig
+	when:	Apr 17
+	why:	sound/oss/soundcard.c: 'MAX_DMA_CHANNELS' undeclared
+	status: one of many fixes mips needs...
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6091660/
+----------------
+
+parisc:defconfig
+	when:	Apr 20
+	why:	file 'asm-generic/kvm_para.h' is not exported
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6137786/
+
+parisc:allmodconfig
+	when:	?
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+
+parisc64:a500_defconfig 
+	when:	?
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+------------------
+
+sparc/m68k:all
+	when:	Apr 18
+	why:	fs/gfs2/lops.c:379:42: error: request for member 'virtual' in something not a structure or union
+	status:	reported/bisected by PaulG
+	ref:	http://marc.info/?l=linux-next&m=133479890929994&w=2
+------------------
+
+xtensa:defconfig
+	when:	Apr 20
+	why:	kallsyms.c:(.text+0x1eb44): undefined reference to `ack_bad_irq'
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6138090/
+Cc: 
+Bcc: 
+Subject: sdf
+Reply-To: 
 
