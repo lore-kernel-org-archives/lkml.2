@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab2EBQsv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 12:48:51 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:54390 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752595Ab2EBQsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 12:48:50 -0400
-Date: Wed, 2 May 2012 18:15:25 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 5/5] watchdog: remove ixp2000 driver
-Message-ID: <20120502161525.GB3074@spo001.leaseweb.com>
-References: <1333503243-7702-1-git-send-email-robherring2@gmail.com> <1333503243-7702-5-git-send-email-robherring2@gmail.com>
-Mime-Version: 1.0
+	id S1755393Ab2EBRNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 13:13:25 -0400
+Received: from flusers.ccur.com ([173.221.59.2]:58257 "EHLO gamx.iccur.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753983Ab2EBRNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 13:13:24 -0400
+Date: Wed, 2 May 2012 13:13:18 -0400
+From: Joe Korty <joe.korty@ccur.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: checkpatch: kstrtol fix
+Message-ID: <20120502171318.GA2103@tsunami.ccur.com>
+Reply-To: Joe Korty <joe.korty@ccur.com>
+References: <20120502151046.GA25594@tsunami.ccur.com>
+ <1335975202.2324.12.camel@groeck-laptop>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1333503243-7702-5-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <1335975202.2324.12.camel@groeck-laptop>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-
-> From: Rob Herring <rob.herring@calxeda.com>
+On Wed, May 02, 2012 at 12:13:22PM -0400, Guenter Roeck wrote:
+> On Wed, 2012-05-02 at 11:10 -0400, Joe Korty wrote:
+>> kstrtol is a substitute for simple_strtol() only when when second
+>> arg of simple_strtol() is NULL. For any other value the functionality
+>> of simple_strtol() cannot be implemented in terms of kstrtol.
 > 
-> The platform is removed, so there are no users of this driver.
+> If there _are_ uses of
+> simple_strtol() where the second argument is not used for error checking
+> but for some other purpose, I am sure that an alternative solution can
+> be found which does not require simple_strtol(). Or just live with the
+> warning for those cases.
 > 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Wim Van Sebroeck <wim@iguana.be>
-> Cc: linux-watchdog@vger.kernel.org
+> Thanks,
+> Guenter
 
-In linux-watchdog-next now.
+And of course the burning question is, what was the compelling reason
+kstrtol wasn't made upwards-compatible with strtol?  It just seems
+gratituous to have that little bit of incompatibility introduced
+into the kernel.
 
-Kind regards,
-Wim.
+Joe
 
