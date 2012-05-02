@@ -1,127 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758603Ab2EBFMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 01:12:53 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:63301 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756312Ab2EBFMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 01:12:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
-	jivpGtkPNCRjDLli3O/TLcNgZizGDFgwaXMQQ7ISmnyysiYvat9bfPNXQrlYFxBO
-	28+5l6x9Vw4G5uVv6ZOWiH5hzIIa05C82GpQS5mWJ+081Jax9mxIhBFw6C6iM63+
-	2JQLVcmoldQ890idBPtvMIt6PR1sGCgIu6dkX/JKcvs=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.10.1
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 01 May 2012 22:12:46 -0700
-Message-ID: <7vk40vjhdd.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 7524A7D2-9415-11E1-9FCE-FC762E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+	id S1758580Ab2EBFN0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 01:13:26 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35265 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755955Ab2EBFMX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 01:12:23 -0400
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org
+Subject: [PATCH 5/7] ARM: Samsung: Add support for MSHC controller clocks
+Date: Tue,  1 May 2012 22:07:44 -0700
+Message-Id: <1335935266-25289-6-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
+References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.10.1 is now available at
-the usual places.
+Add clock instances for bus interface unit clock and card interface unit
+clock of the all four MSHC controller instances.
 
-The release tarballs are found at:
+Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+---
+ arch/arm/mach-exynos/clock-exynos5.c |   45 ++++++++++++----------------------
+ 1 files changed, 16 insertions(+), 29 deletions(-)
 
-    http://code.google.com/p/git-core/downloads/list
+diff --git a/arch/arm/mach-exynos/clock-exynos5.c b/arch/arm/mach-exynos/clock-exynos5.c
+index 7c0f810..4e17131 100644
+--- a/arch/arm/mach-exynos/clock-exynos5.c
++++ b/arch/arm/mach-exynos/clock-exynos5.c
+@@ -524,35 +524,30 @@ static struct clk exynos5_init_clocks_off[] = {
+ 		.enable		= exynos5_clk_ip_peris_ctrl,
+ 		.ctrlbit	= (1 << 19),
+ 	}, {
+-		.name		= "hsmmc",
+-		.devname	= "exynos4-sdhci.0",
++		.name		= "biu",
++		.devname	= "dw_mmc.0",
+ 		.parent		= &exynos5_clk_aclk_200.clk,
+ 		.enable		= exynos5_clk_ip_fsys_ctrl,
+ 		.ctrlbit	= (1 << 12),
+ 	}, {
+-		.name		= "hsmmc",
+-		.devname	= "exynos4-sdhci.1",
++		.name		= "biu",
++		.devname	= "dw_mmc.1",
+ 		.parent		= &exynos5_clk_aclk_200.clk,
+ 		.enable		= exynos5_clk_ip_fsys_ctrl,
+ 		.ctrlbit	= (1 << 13),
+ 	}, {
+-		.name		= "hsmmc",
+-		.devname	= "exynos4-sdhci.2",
++		.name		= "biu",
++		.devname	= "dw_mmc.2",
+ 		.parent		= &exynos5_clk_aclk_200.clk,
+ 		.enable		= exynos5_clk_ip_fsys_ctrl,
+ 		.ctrlbit	= (1 << 14),
+ 	}, {
+-		.name		= "hsmmc",
+-		.devname	= "exynos4-sdhci.3",
++		.name		= "biu",
++		.devname	= "dw_mmc.3",
+ 		.parent		= &exynos5_clk_aclk_200.clk,
+ 		.enable		= exynos5_clk_ip_fsys_ctrl,
+ 		.ctrlbit	= (1 << 15),
+ 	}, {
+-		.name		= "dwmci",
+-		.parent		= &exynos5_clk_aclk_200.clk,
+-		.enable		= exynos5_clk_ip_fsys_ctrl,
+-		.ctrlbit	= (1 << 16),
+-	}, {
+ 		.name		= "sata",
+ 		.devname	= "ahci",
+ 		.enable		= exynos5_clk_ip_fsys_ctrl,
+@@ -882,8 +877,8 @@ static struct clksrc_clk exynos5_clk_sclk_uart3 = {
+ 
+ static struct clksrc_clk exynos5_clk_sclk_mmc0 = {
+ 	.clk	= {
+-		.name		= "sclk_mmc",
+-		.devname	= "exynos4-sdhci.0",
++		.name		= "ciu",
++		.devname	= "dw_mmc.0",
+ 		.parent		= &exynos5_clk_dout_mmc0.clk,
+ 		.enable		= exynos5_clksrc_mask_fsys_ctrl,
+ 		.ctrlbit	= (1 << 0),
+@@ -893,8 +888,8 @@ static struct clksrc_clk exynos5_clk_sclk_mmc0 = {
+ 
+ static struct clksrc_clk exynos5_clk_sclk_mmc1 = {
+ 	.clk	= {
+-		.name		= "sclk_mmc",
+-		.devname	= "exynos4-sdhci.1",
++		.name		= "ciu",
++		.devname	= "dw_mmc.1",
+ 		.parent		= &exynos5_clk_dout_mmc1.clk,
+ 		.enable		= exynos5_clksrc_mask_fsys_ctrl,
+ 		.ctrlbit	= (1 << 4),
+@@ -904,8 +899,8 @@ static struct clksrc_clk exynos5_clk_sclk_mmc1 = {
+ 
+ static struct clksrc_clk exynos5_clk_sclk_mmc2 = {
+ 	.clk	= {
+-		.name		= "sclk_mmc",
+-		.devname	= "exynos4-sdhci.2",
++		.name		= "ciu",
++		.devname	= "dw_mmc.2",
+ 		.parent		= &exynos5_clk_dout_mmc2.clk,
+ 		.enable		= exynos5_clksrc_mask_fsys_ctrl,
+ 		.ctrlbit	= (1 << 8),
+@@ -915,8 +910,8 @@ static struct clksrc_clk exynos5_clk_sclk_mmc2 = {
+ 
+ static struct clksrc_clk exynos5_clk_sclk_mmc3 = {
+ 	.clk	= {
+-		.name		= "sclk_mmc",
+-		.devname	= "exynos4-sdhci.3",
++		.name		= "ciu",
++		.devname	= "dw_mmc.3",
+ 		.parent		= &exynos5_clk_dout_mmc3.clk,
+ 		.enable		= exynos5_clksrc_mask_fsys_ctrl,
+ 		.ctrlbit	= (1 << 12),
+@@ -927,14 +922,6 @@ static struct clksrc_clk exynos5_clk_sclk_mmc3 = {
+ static struct clksrc_clk exynos5_clksrcs[] = {
+ 	{
+ 		.clk	= {
+-			.name		= "sclk_dwmci",
+-			.parent		= &exynos5_clk_dout_mmc4.clk,
+-			.enable		= exynos5_clksrc_mask_fsys_ctrl,
+-			.ctrlbit	= (1 << 16),
+-		},
+-		.reg_div = { .reg = EXYNOS5_CLKDIV_FSYS3, .shift = 8, .size = 8 },
+-	}, {
+-		.clk	= {
+ 			.name		= "sclk_fimd",
+ 			.devname	= "s3cfb.1",
+ 			.enable		= exynos5_clksrc_mask_disp1_0_ctrl,
+-- 
+1.7.5.4
 
-and their SHA-1 checksums are:
-
-870361f93fad7999f121bc7bc91a743feda68bdb  git-1.7.10.1.tar.gz
-29b79312482f9aaf92ee3d970caee5ed8ab96bba  git-htmldocs-1.7.10.1.tar.gz
-5bff761bc40a6b3cfe35ba824357dcf611dbd5d2  git-manpages-1.7.10.1.tar.gz
-
-Also the following public repositories all have a copy of the v1.7.10.1
-tag and the maint branch that the tag points at:
-
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git v1.7.10.1 Release Notes
-===========================
-
-Additions since v1.7.10
------------------------
-
-Localization message files for Danish and German have been added.
-
-
-Fixes since v1.7.10
--------------------
-
- * "git add -p" is not designed to deal with unmerged paths but did
-   not exclude them and tried to apply funny patches only to fail.
-
- * "git blame" started missing quite a few changes from the origin
-   since we stopped using the diff minimalization by default in v1.7.2
-   era.
-
- * When PATH contains an unreadable directory, alias expansion code
-   did not kick in, and failed with an error that said "git-subcmd"
-   was not found.
-
- * "git clean -d -f" (not "-d -f -f") is supposed to protect nested
-   working trees of independent git repositories that exist in the
-   current project working tree from getting removed, but the
-   protection applied only to such working trees that are at the
-   top-level of the current project by mistake.
-
- * "git commit --author=$name" did not tell the name that was being
-   recorded in the resulting commit to hooks, even though it does do
-   so when the end user overrode the authorship via the
-   "GIT_AUTHOR_NAME" environment variable.
-
- * When "git commit --template F" errors out because the user did not
-   touch the message, it claimed that it aborts due to "empty
-   message", which was utterly wrong.
-
- * The regexp configured with diff.wordregex was incorrectly reused
-   across files.
-
- * An age-old corner case bug in combine diff (only triggered with -U0
-   and the hunk at the beginning of the file needs to be shown) has
-   been fixed.
-
- * Rename detection logic used to match two empty files as renames
-   during merge-recursive, leading to unnatural mismerges.
-
- * The parser in "fast-import" did not diagnose ":9" style references
-   that is not followed by required SP/LF as an error.
-
- * When "git fetch" encounters repositories with too many references,
-   the command line of "fetch-pack" that is run by a helper
-   e.g. remote-curl, may fail to hold all of them. Now such an
-   internal invocation can feed the references through the standard
-   input of "fetch-pack".
-
- * "git fetch" that recurses into submodules on demand did not check
-   if it needs to go into submodules when non branches (most notably,
-   tags) are fetched.
-
- * "log -p --graph" used with "--stat" had a few formatting error.
-
- * Running "notes merge --commit" failed to perform correctly when run
-   from any directory inside $GIT_DIR/.  When "notes merge" stops with
-   conflicts, $GIT_DIR/NOTES_MERGE_WORKTREE is the place a user edits
-   to resolve it.
-
- * The 'push to upstream' implementation was broken in some corner
-   cases. "git push $there" without refspec, when the current branch
-   is set to push to a remote different from $there, used to push to
-   $there using the upstream information to a remote unreleated to
-   $there.
-
- * Giving "--continue" to a conflicted "rebase -i" session skipped a
-   commit that only results in changes to submodules.
-
-Also contains minor fixes and documentation updates.
