@@ -1,245 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008Ab2EBBBY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 21:01:24 -0400
-Received: from mail.us.es ([193.147.175.20]:43375 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756801Ab2EBBBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 21:01:22 -0400
-Date: Wed, 2 May 2012 03:01:19 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Denys Fedoryshchenko <denys@visp.net.lb>
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1] netfilter: xt_recent: Add optional mask option for
- xt_recent
-Message-ID: <20120502010119.GB15074@1984>
-References: <1331033084-23803-1-git-send-email-denys@visp.net.lb>
+	id S1758038Ab2EBBBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 21:01:52 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43848 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755565Ab2EBBBu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 21:01:50 -0400
+Date: Tue, 1 May 2012 18:01:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Nick Piggin <npiggin@gmail.com>
+cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        kosaki.motohiro@gmail.com, Neil Brown <neilb@suse.de>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Sage Weil <sage@newdream.net>
+Subject: Re: [RFC] vmalloc: add warning in __vmalloc
+In-Reply-To: <CAPa8GCD2m9R8YWY2FhO=LOMvCHhC6T=iFdn2YmpLxjO96_B4Ew@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1205011800220.13575@chino.kir.corp.google.com>
+References: <1335516144-3486-1-git-send-email-minchan@kernel.org> <alpine.DEB.2.00.1204270323000.11866@chino.kir.corp.google.com> <CAPa8GCBN6U_GRaG=GYFByNB4REcVA-yy+kKMMbrGaDKULUXW9w@mail.gmail.com> <alpine.DEB.2.00.1205011310180.7742@chino.kir.corp.google.com>
+ <CAPa8GCD2m9R8YWY2FhO=LOMvCHhC6T=iFdn2YmpLxjO96_B4Ew@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331033084-23803-1-git-send-email-denys@visp.net.lb>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 01:24:44PM +0200, Denys Fedoryshchenko wrote:
-> Use case for this feature:
-> 1)In some occasions if you need to allow,block,match specific subnet.
-> 2)I can use recent as a trigger when netfilter rule matches, with mask 0.0.0.0
-> 
-> Example:
-> 
-> If you ping 8.8.8.8, after that you can't ping 2.2.2.10
-> 
-> Tested for backward compatibility:
-> )old (userspace) iptables, new kernel
-> )old kernel, new iptables
-> )new kernel, new iptables
-> 
-> Signed-off-by: Denys Fedoryshchenko <denys@visp.net.lb>
-> ---
->  include/linux/netfilter.h           |   11 +++++
->  include/linux/netfilter/xt_recent.h |   10 +++++
->  net/netfilter/xt_recent.c           |   70 +++++++++++++++++++++++++++++++----
->  3 files changed, 83 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/netfilter.h b/include/linux/netfilter.h
-> index b809265..c132de6 100644
-> --- a/include/linux/netfilter.h
-> +++ b/include/linux/netfilter.h
-> @@ -85,6 +85,17 @@ static inline int NF_DROP_GETERR(int verdict)
-> 	return -(verdict >> NF_VERDICT_QBITS);
->  }
-> 
-> +
-> +static inline void nf_inet_addr_mask(const union nf_inet_addr *a1,
-> +				    union nf_inet_addr *result,
-> +				    const union nf_inet_addr *mask)
-> +{
-> +	result->all[0] = a1->all[0] & mask->all[0];
-> +	result->all[1] = a1->all[1] & mask->all[1];
-> +	result->all[2] = a1->all[2] & mask->all[2];
-> +	result->all[3] = a1->all[3] & mask->all[3];
-> +}
+On Wed, 2 May 2012, Nick Piggin wrote:
 
-Please, put this function in the xt_recent. I prefer leave it there
-until more clients of it show up.
+> Because it needs to be an ongoing thing, which is caught as soon as the
+> developer writes some code, rather than continually audited for and fixed
+> up after the fact. There is not a good way to enforce this at compile time.
+> 
+> The existing callers do need to be fixed too, of course.
+> 
 
-> +
->  static inline int nf_inet_addr_cmp(const union nf_inet_addr *a1,
-> 				   const union nf_inet_addr *a2)
->  {
-> diff --git a/include/linux/netfilter/xt_recent.h b/include/linux/netfilter/xt_recent.h
-> index 83318e0..6ef36c1 100644
-> --- a/include/linux/netfilter/xt_recent.h
-> +++ b/include/linux/netfilter/xt_recent.h
-> @@ -32,4 +32,14 @@ struct xt_recent_mtinfo {
-> 	__u8 side;
->  };
-> 
-> +struct xt_recent_mtinfo_v1 {
-> +	__u32 seconds;
-> +	__u32 hit_count;
-> +	__u8 check_set;
-> +	__u8 invert;
-> +	char name[XT_RECENT_NAME_LEN];
-> +	__u8 side;
-> +	union nf_inet_addr mask;
-> +};
-> +
->  #endif /* _LINUX_NETFILTER_XT_RECENT_H */
-> diff --git a/net/netfilter/xt_recent.c b/net/netfilter/xt_recent.c
-> index d2ff15a..bdc38fa 100644
-> --- a/net/netfilter/xt_recent.c
-> +++ b/net/netfilter/xt_recent.c
-> @@ -75,6 +75,7 @@ struct recent_entry {
->  struct recent_table {
-> 	struct list_head	list;
-> 	char			name[XT_RECENT_NAME_LEN];
-> +	union nf_inet_addr	mask;
-> 	unsigned int		refcnt;
-> 	unsigned int		entries;
-> 	struct list_head	lru_list;
-> @@ -228,10 +229,11 @@ recent_mt(const struct sk_buff *skb, struct xt_action_param *par)
->  {
-> 	struct net *net = dev_net(par->in ? par->in : par->out);
-> 	struct recent_net *recent_net = recent_pernet(net);
-> -	const struct xt_recent_mtinfo *info = par->matchinfo;
-> +	const struct xt_recent_mtinfo_v1 *info = par->matchinfo;
-> 	struct recent_table *t;
-> 	struct recent_entry *e;
-> 	union nf_inet_addr addr = {};
-> +	union nf_inet_addr addr_masked;
-> 	u_int8_t ttl;
-> 	bool ret = info->invert;
-> 
-> @@ -261,12 +263,15 @@ recent_mt(const struct sk_buff *skb, struct xt_action_param *par)
-> 
-> 	spin_lock_bh(&recent_lock);
-> 	t = recent_table_lookup(recent_net, info->name);
-> -	e = recent_entry_lookup(t, &addr, par->family,
-> +
-> +	nf_inet_addr_mask(&addr, &addr_masked, &t->mask);
-> +
-> +	e = recent_entry_lookup(t, &addr_masked, par->family,
-> 				(info->check_set & XT_RECENT_TTL) ? ttl : 0);
-> 	if (e == NULL) {
-> 		if (!(info->check_set & XT_RECENT_SET))
-> 			goto out;
-> -		e = recent_entry_init(t, &addr, par->family, ttl);
-> +		e = recent_entry_init(t, &addr_masked, par->family, ttl);
-> 		if (e == NULL)
-> 			par->hotdrop = true;
-> 		ret = !ret;
-> @@ -306,10 +311,10 @@ out:
-> 	return ret;
->  }
-> 
-> -static int recent_mt_check(const struct xt_mtchk_param *par)
-> +static int recent_mt_check(const struct xt_mtchk_param *par,
-> +	const struct xt_recent_mtinfo_v1 *info)
->  {
-> 	struct recent_net *recent_net = recent_pernet(par->net);
-> -	const struct xt_recent_mtinfo *info = par->matchinfo;
-> 	struct recent_table *t;
->  #ifdef CONFIG_PROC_FS
-> 	struct proc_dir_entry *pde;
-> @@ -361,6 +366,8 @@ static int recent_mt_check(const struct xt_mtchk_param *par)
-> 		goto out;
-> 	}
-> 	t->refcnt = 1;
-> +
-> +	memcpy(&t->mask, &info->mask, sizeof(t->mask));
-> 	strcpy(t->name, info->name);
-> 	INIT_LIST_HEAD(&t->lru_list);
-> 	for (i = 0; i < ip_list_hash_size; i++)
-> @@ -385,10 +392,37 @@ out:
-> 	return ret;
->  }
-> 
-> +static int recent_mt_check_v0(const struct xt_mtchk_param *par)
-> +{
-> +	const struct xt_recent_mtinfo_v0 *info_v0 = par->matchinfo;
-> +	struct xt_recent_mtinfo_v1 *info_v1 = par->matchinfo;
-> +	int ret;
-> +
-> +	info_v1 = kzalloc(sizeof(struct xt_recent_mtinfo_v1),
-> +		    GFP_KERNEL);
-
-Better allocate this in the stack. It's fairly small and it is used
-temporarily.
-
-> +	if (info_v1 == NULL)
-> +		return -ENOMEM;
-> +
-> +
-> +	/* Copy old data */
-> +	memcpy(info_v1, info_v0, sizeof(struct xt_recent_mtinfo));
-> +	/* Default mask will make same behavior as old recent */
-> +	memset(info_v1->mask.all, 0xFF, sizeof(info_v1->mask.all));
-> +	ret = recent_mt_check(par, info_v1);
-> +
-> +	kfree(info_v1);
-> +	return ret;
-> +}
-> +
-> +static int recent_mt_check_v1(const struct xt_mtchk_param *par)
-> +{
-> +	return recent_mt_check(par, par->matchinfo);
-> +}
-> +
->  static void recent_mt_destroy(const struct xt_mtdtor_param *par)
->  {
-> 	struct recent_net *recent_net = recent_pernet(par->net);
-> -	const struct xt_recent_mtinfo *info = par->matchinfo;
-> +	const struct xt_recent_mtinfo_v1 *info = par->matchinfo;
-> 	struct recent_table *t;
-> 
-> 	mutex_lock(&recent_mutex);
-> @@ -625,7 +659,7 @@ static struct xt_match recent_mt_reg[] __read_mostly = {
-> 		.family     = NFPROTO_IPV4,
-> 		.match      = recent_mt,
-> 		.matchsize  = sizeof(struct xt_recent_mtinfo),
-> -		.checkentry = recent_mt_check,
-> +		.checkentry = recent_mt_check_v0,
-> 		.destroy    = recent_mt_destroy,
-> 		.me         = THIS_MODULE,
-> 	},
-> @@ -635,10 +669,30 @@ static struct xt_match recent_mt_reg[] __read_mostly = {
-> 		.family     = NFPROTO_IPV6,
-> 		.match      = recent_mt,
-> 		.matchsize  = sizeof(struct xt_recent_mtinfo),
-> -		.checkentry = recent_mt_check,
-> +		.checkentry = recent_mt_check_v0,
-> 		.destroy    = recent_mt_destroy,
-> 		.me         = THIS_MODULE,
-> 	},
-> +	{
-> +		.name       = "recent",
-> +		.revision   = 1,
-> +		.family     = NFPROTO_IPV4,
-> +		.match      = recent_mt,
-> +		.matchsize  = sizeof(struct xt_recent_mtinfo_v1),
-> +		.checkentry = recent_mt_check_v1,
-> +		.destroy    = recent_mt_destroy,
-> +		.me         = THIS_MODULE,
-> +	},
-> +	{
-> +		.name       = "recent",
-> +		.revision   = 1,
-> +		.family     = NFPROTO_IPV6,
-> +		.match      = recent_mt,
-> +		.matchsize  = sizeof(struct xt_recent_mtinfo_v1),
-> +		.checkentry = recent_mt_check_v1,
-> +		.destroy    = recent_mt_destroy,
-> +		.me         = THIS_MODULE,
-> +	}
->  };
-> 
->  static int __init recent_mt_init(void)
-> --
-> 1.7.3.4
+I'm asking that existing callers be fixed up before such a warning is 
+introduced.
