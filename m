@@ -1,46 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab2EBWTc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 18:19:32 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:45539 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079Ab2EBWTb (ORCPT
+	id S1755371Ab2EBWUH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 18:20:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43233 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401Ab2EBWUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 18:19:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120502211805.GH5745@infradead.org>
-References: <1335987758-11039-1-git-send-email-acme@infradead.org>
- <1335988003.13683.182.camel@twins> <20120502211805.GH5745@infradead.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 2 May 2012 15:19:10 -0700
-X-Google-Sender-Auth: T5YyMQPa5H6nRuQJQoG8aUQYSLQ
-Message-ID: <CA+55aFzQisw4-jM94YdE9-i9+2NDLBNg3wV76t+oAHS9YwAX_g@mail.gmail.com>
-Subject: Re: [GIT PULL 0/5] perf/annotate fixes and improvements
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 May 2012 18:20:05 -0400
+Date: Wed, 2 May 2012 15:20:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sasikanth babu <sasikanth.v19@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] debugfs: New debugfs interface for creation of files,
+ directory and symlinks
+Message-Id: <20120502152003.d7b6aae9.akpm@linux-foundation.org>
+In-Reply-To: <20120502220417.GA2667@kroah.com>
+References: <1335963054-24750-1-git-send-email-sasikanth.v19@gmail.com>
+	<20120502153100.GA2777@kroah.com>
+	<CAOJFanXZEUfM4GQS62u4oR-KwywdLGOciOcgzmrM9zW+kOrXkg@mail.gmail.com>
+	<20120502220417.GA2667@kroah.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 2, 2012 at 2:18 PM, Arnaldo Carvalho de Melo
-<acme@infradead.org> wrote:
->
-> Also the fixed vertical line is drawn after we refresh the lines, i.e.,
-> it has a solid color, not influenced by each line percentages, as Linus
-> noticed previously.
+On Wed, 2 May 2012 15:04:17 -0700
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
-Looks good to me.  That said, I do wonder whether the vertical line
-really is needed (or maybe it could be at the last decimal, so it only
-shows for the instructions without percentages).
+> On Thu, May 03, 2012 at 03:28:17AM +0530, Sasikanth babu wrote:
+> > On Wed, May 2, 2012 at 9:01 PM, Greg Kroah-Hartman
+> > <gregkh@linuxfoundation.org> wrote:
+> > > On Wed, May 02, 2012 at 06:20:54PM +0530, Sasikantha babu wrote:
+> > >> As we know the current debugfs file or directory or symlink creation
+> > >> doesn't return proper error codes to the caller on failure. Because
+> > >> of this caller and user could not able to find the exact reason of
+> > >> the failure.
+> > >
+> > > And what is the problem with this? __Either the file is created or not,
+> > > you really shouldn't care anymore than that. __It's not like you are
+> > > going to retry the creation, or are you?
+> > >
+> > > Who really cares if the file is failed to be created?
+> > 
+> >  In most of cases I had observed caller of debufs_create_file or
+> >  debufs_create_dir always returns -ENOMEM on failure, which is not true.
+> 
+> Where does that happen?  And why would the creation of a debugfs file
+> fail?
 
-But with the color fixed, I doubt it annoys me nearly as much as it
-used to. And the other cleanups have already meant that the horizontal
-space is not as scarce a resource as it used to be.
+How's he supposed to know, when the kernel cannot return the correct
+diagnostic?
 
-                   Linus
+That's the whole reason we have errnos: to report on what went wrong,
+so operators can understand *why* it failed and so that programmers can
+diagnose and fix bugs.
+
+There's nothing special about debugfs and there is no reason why it
+should deviate from well-established practice.
+
+If well-written code checks the return value (as it should) and then
+propagates an error code back to its caller (as it should), the stupid
+debugfs interface forces that caller to invent an errno from thin air.
+And if that guessed errno is wrong, it is actively misleading!
+
+> You can fixup the callers to make it uniform, the api is uniform in what
+> it returns today, right?
+
+The API is stupid and wrong, actually.  There is no *advantage* to
+having done it this way - none at all.
+
+> Again, I see no real benifit for returning the "true" error as no one
+> really cares about that, all that matters is if it worked or not, and
+> even then, no one should really care about that either, as remember,
+> this is debugfs, whose one rule is, "there is no rules."
+
+No.  If something has gone wrong then something needs to be fixed. 
+Either the system needs reconfiguration or kernel programmers have
+repairs to do.  Either way, information is needed to make those fixes. 
+debugfs designers don't get to tell debugfs users what is and is not
+important to those users.
+
+
+All that being said, it is unobvious that fixing this mistake is worth
+all the churn.
