@@ -1,146 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab2EBUvA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 16:51:00 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:58223 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab2EBUu7 (ORCPT
+	id S1757400Ab2EBUxT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 16:53:19 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:43485 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756407Ab2EBUxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 16:50:59 -0400
-Date: Wed, 2 May 2012 13:49:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next ppc64: RCU mods cause __might_sleep BUGs
-Message-ID: <20120502204954.GK2450@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils>
- <1335832418.20866.95.camel@pasglop>
- <alpine.LSU.2.00.1204302142310.27208@eggly.anvils>
- <20120501142208.GA2441@linux.vnet.ibm.com>
- <alpine.LSU.2.00.1205011410360.28232@eggly.anvils>
- <20120501232516.GR2441@linux.vnet.ibm.com>
- <alpine.LSU.2.00.1205021324430.24246@eggly.anvils>
+	Wed, 2 May 2012 16:53:18 -0400
+X-SpamScore: -9
+X-BigFish: VPS-9(zf7Iz1469K542Mzz1202hzz8275bh8275dhz2fh668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4FA19EB7.7080000@am.sony.com>
+Date: Wed, 2 May 2012 13:53:11 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1205021324430.24246@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050220-7408-0000-0000-000004B17C0A
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Subject: Fwd: [PATCH] arm: Add extra clobber registers for assembly in kernel_execve
+References: <4F7F2DA2.4040805@am.sony.com>
+In-Reply-To: <4F7F2DA2.4040805@am.sony.com>
+X-Forwarded-Message-Id: <4F7F2DA2.4040805@am.sony.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 01:25:30PM -0700, Hugh Dickins wrote:
-> On Tue, 1 May 2012, Paul E. McKenney wrote:
-> > > > > > On Mon, 2012-04-30 at 15:37 -0700, Hugh Dickins wrote:
-> > > > > > > 
-> > > > > > > BUG: sleeping function called from invalid context at include/linux/pagemap.h:354
-> > > > > > > in_atomic(): 0, irqs_disabled(): 0, pid: 6886, name: cc1
-> > > > > > > Call Trace:
-> > > > > > > [c0000001a99f78e0] [c00000000000f34c] .show_stack+0x6c/0x16c (unreliable)
-> > > > > > > [c0000001a99f7990] [c000000000077b40] .__might_sleep+0x11c/0x134
-> > > > > > > [c0000001a99f7a10] [c0000000000c6228] .filemap_fault+0x1fc/0x494
-> > > > > > > [c0000001a99f7af0] [c0000000000e7c9c] .__do_fault+0x120/0x684
-> > > > > > > [c0000001a99f7c00] [c000000000025790] .do_page_fault+0x458/0x664
-> > > > > > > [c0000001a99f7e30] [c000000000005868] handle_page_fault+0x10/0x30
-> 
-> Got it at last.  Embarrassingly obvious.  __rcu_read_lock() and
-> __rcu_read_unlock() are not safe to be using __this_cpu operations,
-> the cpu may change in between the rmw's read and write: they should
-> be using this_cpu operations (or, I put preempt_disable/enable in the
-> __rcu_read_unlock below).  __this_cpus there work out fine on x86,
-> which was given good instructions to use; but not so well on PowerPC.
+Anyone interested in this?
 
-Thank you very much for tracking this down!!!
+-------- Original Message --------
+Subject: [PATCH] arm: Add extra clobber registers for assembly in kernel_execve
+Date: Fri, 6 Apr 2012 10:53:38 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+To: linux-arm-kernel@lists.infradead.org <linux-arm-kernel@lists.infradead.org>, Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
 
-> I've been running successfully for an hour now with the patch below;
-> but I expect you'll want to consider the tradeoffs, and may choose a
-> different solution.
 
-The thing that puzzles me about this is that the normal path through
-the scheduler would save and restore these per-CPU variables to and
-from the task structure.  There must be a sneak path through the
-scheduler that I failed to account for.
+The inline assembly in kernel_execve() uses r8 and r9.  Since this
+code sequence does not return, it usually doesn't matter if the
+register clobber list is accurate.  However, I saw a case where a
+particular version of gcc used r8 as an intermediate for the value
+eventually passed to r9.  Because r8 is used in the inline
+assembly, and not mentioned in the clobber list, r9 was set
+to an incorrect value.
 
-But given your good work, this should be easy for me to chase down
-even on my x86-based laptop -- just convert from __this_cpu_inc() to a
-read-inc-delay-write sequence.  And check that the underlying variable
-didn't change in the meantime.  And dump an ftrace if it did.  ;-)
+This resulted in a kernel panic on execution of the first user-space
+program in the system.  r9 is used in ret_to_user as the thread_info
+pointer, and if it's wrong, bad things happen.
 
-Thank you again, Hugh!
+Signed off by: Tim Bird <tim.bird@am.sony.com>
+---
+ arch/arm/kernel/sys_arm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-							Thanx, Paul
+diff --git a/arch/arm/kernel/sys_arm.c b/arch/arm/kernel/sys_arm.c
+index 62e7c61..0264ab4 100644
+--- a/arch/arm/kernel/sys_arm.c
++++ b/arch/arm/kernel/sys_arm.c
+@@ -115,7 +115,7 @@ int kernel_execve(const char *filename,
+ 		  "Ir" (THREAD_START_SP - sizeof(regs)),
+ 		  "r" (&regs),
+ 		  "Ir" (sizeof(regs))
+-		: "r0", "r1", "r2", "r3", "ip", "lr", "memory");
++		: "r0", "r1", "r2", "r3", "r8", "r9", "ip", "lr", "memory");
 
-> Hugh
-> 
-> --- 3.4-rc4-next-20120427/include/linux/rcupdate.h	2012-04-28 09:26:38.000000000 -0700
-> +++ testing/include/linux/rcupdate.h	2012-05-02 11:46:06.000000000 -0700
-> @@ -159,7 +159,7 @@ DECLARE_PER_CPU(struct task_struct *, rc
->   */
->  static inline void __rcu_read_lock(void)
->  {
-> -	__this_cpu_inc(rcu_read_lock_nesting);
-> +	this_cpu_inc(rcu_read_lock_nesting);
->  	barrier(); /* Keep code within RCU read-side critical section. */
->  }
-> 
-> --- 3.4-rc4-next-20120427/kernel/rcupdate.c	2012-04-28 09:26:40.000000000 -0700
-> +++ testing/kernel/rcupdate.c	2012-05-02 11:44:13.000000000 -0700
-> @@ -72,6 +72,7 @@ DEFINE_PER_CPU(struct task_struct *, rcu
->   */
->  void __rcu_read_unlock(void)
->  {
-> +	preempt_disable();
->  	if (__this_cpu_read(rcu_read_lock_nesting) != 1)
->  		__this_cpu_dec(rcu_read_lock_nesting);
->  	else {
-> @@ -83,13 +84,14 @@ void __rcu_read_unlock(void)
->  		barrier();  /* ->rcu_read_unlock_special load before assign */
->  		__this_cpu_write(rcu_read_lock_nesting, 0);
->  	}
-> -#ifdef CONFIG_PROVE_LOCKING
-> +#if 1 /* CONFIG_PROVE_LOCKING */
->  	{
->  		int rln = __this_cpu_read(rcu_read_lock_nesting);
-> 
-> -		WARN_ON_ONCE(rln < 0 && rln > INT_MIN / 2);
-> +		BUG_ON(rln < 0 && rln > INT_MIN / 2);
->  	}
->  #endif /* #ifdef CONFIG_PROVE_LOCKING */
-> +	preempt_enable();
->  }
->  EXPORT_SYMBOL_GPL(__rcu_read_unlock);
-> 
-> --- 3.4-rc4-next-20120427/kernel/sched/core.c	2012-04-28 09:26:40.000000000 -0700
-> +++ testing/kernel/sched/core.c	2012-05-01 22:40:46.000000000 -0700
-> @@ -2024,7 +2024,7 @@ asmlinkage void schedule_tail(struct tas
->  {
->  	struct rq *rq = this_rq();
-> 
-> -	rcu_switch_from(prev);
-> +	/* rcu_switch_from(prev); */
->  	rcu_switch_to();
->  	finish_task_switch(rq, prev);
-> 
-> @@ -7093,6 +7093,10 @@ void __might_sleep(const char *file, int
->  		"BUG: sleeping function called from invalid context at %s:%d\n",
->  			file, line);
->  	printk(KERN_ERR
-> +		"cpu=%d preempt_count=%x preempt_offset=%x rcu_nesting=%x nesting_save=%x\n",
-> +		raw_smp_processor_id(), preempt_count(), preempt_offset,
-> +		rcu_preempt_depth(), current->rcu_read_lock_nesting_save); 
-> +	printk(KERN_ERR
->  		"in_atomic(): %d, irqs_disabled(): %d, pid: %d, name: %s\n",
->  			in_atomic(), irqs_disabled(),
->  			current->pid, current->comm);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+  out:
+ 	return ret;
+-- 
+
+
 
