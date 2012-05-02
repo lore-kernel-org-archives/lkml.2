@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab2EBMZA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 08:25:00 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:33372 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab2EBMY7 (ORCPT
+	id S1754751Ab2EBM1O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 08:27:14 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:39456 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754001Ab2EBM1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 08:24:59 -0400
-Date: Wed, 02 May 2012 08:23:43 -0400 (EDT)
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
-Message-ID: <0fa65eaa-cdb1-42ed-ab00-aa491402ec5a@zmail13.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20120502130531.4b7d98fa@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Wed, 2 May 2012 08:27:13 -0400
+X-IronPort-AV: E=Sophos;i="4.75,516,1330902000"; 
+   d="scan'208";a="156390692"
+Date: Wed, 2 May 2012 14:27:11 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: question about fs/jffs2/readinode.c
+In-Reply-To: <1335960469.10293.49.camel@sauron.fi.intel.com>
+Message-ID: <alpine.DEB.2.02.1205021426530.1880@hadrien>
+References: <alpine.DEB.2.02.1204280701210.1917@hadrien> <1335960469.10293.49.camel@sauron.fi.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [10.36.112.19]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2 May 2012, Artem Bityutskiy wrote:
 
-> > not inventing anything, the old ATA subsystem is already blocking
-> > most
-> > "dangerous" ioctls for partitions, even if you have CAP_SYS_RAWIO.
-> 
-> It blocked a few by default to protect hardware. It's a tricky
-> tradeoff, which is quite different to this.
+> On Sat, 2012-04-28 at 07:06 +0200, Julia Lawall wrote:
+>> The function read_direntry in fs/jffs2/readinode.c contains the following
+>> code:
+>>
+>>          err = jffs2_flash_read(c, (ref_offset(ref)) + read,
+>>                                 rd->nsize - already, &read, &fd->name[already]);
+>>  	if (unlikely(read != rd->nsize - already) && likely(!err))
+>>                        return -EIO;
+>>
+>>          if (unlikely(err)) {
+>>                  JFFS2_ERROR("read remainder of name: error %d\n", err);
+>>                  jffs2_free_full_dirent(fd);
+>>                  return -EIO;
+>>          }
+>>
+>> Is it intentional that the first if doesn't free fd?  At first I thought
+>> that that might be the case, because what would be the point of having two
+>> conditionals if they are going to do the same thing.  But I can't see why
+>> fd should not be freed either, so maybe the two conditionals are just
+>> there to give different error messages?
+>
+> Hi Julia,
+>
+> I think this is a bug and thes conditionals can be joined into one.
 
-I agree it's tricky.
+Thanks!  I will send a patch soon.
 
-> > Now of course CAP_SYS_RAWIO lets you use ioperm or iopl, but that's
-> > a separate issue and only limited to x86.
-> 
-> Ie only 99.99% of the systems running desktop/server Linux OS
-> designs.
-
-You can still block those in other ways, seccompv2 could be one.
-
-> > Almost any capability can be abused to bypass checks.  True,
-> > CAP_SYS_RAWIO is especially good at that, but still you can try.
-> 
-> Why try - you are seeking to arbitarily impose your own worldview on
-> the interface (and in doing so break back compatibility). The whole basis
-> of the Unix philosophy is that the OS shouldn't try and micromanage the
-> priviledged apps because that just leads to crap code.
-
-The whole point of capabilities, SELinux, etc. is micromanaging privileged
-apps.  Linux has gone beyond the Unix philosophy, it seems.
-
-Besides, privileged apps can and do use capabilities to micromanage
-themselves.  Sure, ioperm/iopl do mean that a compromised CAP_SYS_RAWIO app
-has free reins.  However, until that app is compromised, it may like to get
-help from the OS in making effective use of access control.
-
-> > > A process with CAP_SYS_RAWIO has total power. It's assumed to
-> > > know what it is doing. Trying to block it doing stuff like that simply
-> > > makes authors do them via different more crass methods.
-> > 
-> > Getting appropriate permission on device nodes is less crass than
-> > abusing partition device nodes.
-> 
-> Given a passed file handle how do you do that securely. Remember that
-> open /dev/foo while you have a handle on /dev/foo1 could open a
-> different disk if a hotplug has occurred.
-
-What is the exact use case for this, where you wouldn't have gotten an
-fd for /dev/foo in the first place?  And what command do you want to
-send to the disk?  The only "valid" case found in the wild was using
-SG_IO to send "SYNCHRONIZE CACHE", which is wrong anyway (does not
-flush the OS cache).  fdatasync could and should have been used instead.
-
-Paolo
+julia
