@@ -1,114 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab2EBH3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 03:29:07 -0400
-Received: from szxga04-in.huawei.com ([58.251.152.67]:54629 "EHLO
-	szxga04-in.huawei.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752163Ab2EBH3F (ORCPT
+	id S1754915Ab2EBHdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 03:33:36 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43708 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825Ab2EBHdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 03:29:05 -0400
-Date: Wed, 02 May 2012 15:25:21 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [PATCH v2 02/19] PCI: introduce recursive rwsem to serialize PCI
- hotplug operations
-In-reply-to: <20120502050025.GA23579@kroah.com>
-X-Originating-IP: [10.107.208.49]
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Message-id: <4FA0E161.9060307@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222
- Thunderbird/9.0.1
-X-CFilter-Loop: Reflected
-References: <1335539820-11232-1-git-send-email-jiang.liu@huawei.com>
- <1335539820-11232-3-git-send-email-jiang.liu@huawei.com>
- <20120502050025.GA23579@kroah.com>
+	Wed, 2 May 2012 03:33:35 -0400
+Date: Wed, 2 May 2012 09:33:31 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Robert Lee <rob.lee@linaro.org>
+Cc: kernel@pengutronix.de, shawn.guo@linaro.org, amit.kucheria@linaro.org,
+        daniel.lezcano@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, jj@chaosbits.net
+Subject: Re: [PATCH v2 2/3] ARM: imx: Add imx5 cpuidle driver
+Message-ID: <20120502073331.GS4141@pengutronix.de>
+References: <1335924760-796-1-git-send-email-rob.lee@linaro.org>
+ <1335924760-796-3-git-send-email-rob.lee@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335924760-796-3-git-send-email-rob.lee@linaro.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:28:17 up 171 days, 15:15, 28 users,  load average: 0.36, 1.33,
+ 0.79
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-5-2 13:00, Greg KH wrote:
-> On Fri, Apr 27, 2012 at 11:16:43PM +0800, Jiang Liu wrote:
->> From: Jiang Liu<jiang.liu@huawei.com>
->>
->> There are multiple ways to trigger PCI hotplug requests concurrently,
->> such as:
->> 1. Sysfs interfaces exported by the PCI core subsystem
->> 2. Sysfs interfaces exported by the PCI hotplug subsystem
->> 3. PCI hotplug events triggered by PCI Hotplug Controllers
->> 4. ACPI hotplug events for PCI host bridges
->> 5. Driver binding/unbinding events
->>
->> The PCI core subsystem doesn't support concurrent hotplug operations yet,
->> so all PCI hotplug requests should be globally serialized. This patch
->> introduces several new interfaces to serialize PCI hotplug operations.
->>
->> pci_hotplug_try_enter(): try to acquire write lock
->
-> Ick, no, why would you ever want to do that?
->
->> pci_hotplug_enter(): acquire write lock
->> pci_hotplug_exit(): release write lock
->> pci_hotplug_disable(): acquire read lock
->> pci_hotplug_enable(): release read lock
->
-> No, the pci hotplug core should not need a rwsem, just a simple lock, if
-> that:
-> 	pci_hotplug_lock()
-> 	pci_hotplug_unlock()
-> and that's it.
->
-> Really you should not need these functions, the pci hotplug core should
-> handle it for you, and the drivers should not care at all.  That's the
-> "proper" way to fix this up, serialize stuff within the pci core, not
-> the individual drivers.
->
->> Today we have reproduced the issue on a real platform by using
->> acpiphp driver. It's an IA64 platform running Suse 11SP1 (official
->> 2.6.32.12 kernel). The test script is:
->>
->> This issue could be reproduced on an IA64 platform with Suse 11SP1
->> (official 2.6.32.12 kernel) and acpiphp driver.
->
-> You do realize just how old that kernel is right?  Please don't assume
-> that this kernel version is relevant to us all these years later.
-This could be reproduced with latest kernel too, such as 3.3. We
-use 2.6.32.12 because the all 3.x series kernels can't boot on
-our IA64 platform due to an issue in scheduler. We have reproduced
-similar issue on x86 platforms with 3.x kernels.
+On Tue, May 01, 2012 at 09:12:39PM -0500, Robert Lee wrote:
+> Add imx5 cpuidle driver.
+> 
+> Signed-off-by: Robert Lee <rob.lee@linaro.org>
+> ---
+>  arch/arm/mach-imx/mm-imx5.c |   42 +++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 39 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/mm-imx5.c b/arch/arm/mach-imx/mm-imx5.c
+> index d6b7e9f..cbd9bad 100644
+> --- a/arch/arm/mach-imx/mm-imx5.c
+> +++ b/arch/arm/mach-imx/mm-imx5.c
+> @@ -22,24 +22,59 @@
+>  #include <mach/common.h>
+>  #include <mach/devices-common.h>
+>  #include <mach/iomux-v3.h>
+> +#include <mach/cpuidle.h>
+>  
+>  static struct clk *gpc_dvfs_clk;
+>  
+> -static void imx5_idle(void)
+> +static int imx5_idle(void)
+>  {
+> +	int ret = 0;
+> +
+>  	/* gpc clock is needed for SRPG */
+>  	if (gpc_dvfs_clk == NULL) {
+>  		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
+>  		if (IS_ERR(gpc_dvfs_clk))
+> -			return;
+> +			return -ENODEV;
+>  	}
+>  	clk_enable(gpc_dvfs_clk);
+>  	mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
+>  	if (!tzic_enable_wake())
+>  		cpu_do_idle();
+> +	else
+> +		ret = -EBUSY;
+>  	clk_disable(gpc_dvfs_clk);
+> +
+> +	return ret;
+> +}
+> +
+> +static int imx5_cpuidle_enter(struct cpuidle_device *dev,
+> +				struct cpuidle_driver *drv, int idx)
+> +{
+> +	int ret;
+> +
+> +	ret = imx5_idle();
+> +
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return idx;
+>  }
+>  
+> +static struct cpuidle_driver imx5_cpuidle_driver = {
+> +	.name			= "imx5_cpuidle",
+> +	.owner			= THIS_MODULE,
+> +	.en_core_tk_irqen	= 1,
+> +	.states[0]	= {
+> +		.enter			= imx5_cpuidle_enter,
+> +		.exit_latency		= 20, /* max latency at 160MHz */
+> +		.target_residency	= 1,
+> +		.flags			= CPUIDLE_FLAG_TIME_VALID,
+> +		.name			= "IMX5 SRPG",
+> +		.desc			= "CPU state retained,powered off",
+> +	},
+> +	.state_count		= 1,
+> +};
+> +
+>  /*
+>   * Define the MX50 memory map.
+>   */
+> @@ -103,7 +138,7 @@ void __init imx51_init_early(void)
+>  	mxc_set_cpu_type(MXC_CPU_MX51);
+>  	mxc_iomux_v3_init(MX51_IO_ADDRESS(MX51_IOMUXC_BASE_ADDR));
+>  	mxc_arch_reset_init(MX51_IO_ADDRESS(MX51_WDOG1_BASE_ADDR));
+> -	arm_pm_idle = imx5_idle;
+> +	arm_pm_idle = (void *)imx5_idle;
 
->
->> +/*
->> + * trylock for writing -- returns 1 if successful, 0 if contention
->> + */
->> +int pci_hotplug_try_enter(void)
->> +{
->> +	if (current != pci_hotplug_mutex_owner) {
->> +		if (down_write_trylock(&pci_hotplug_rwsem) == 0)
->> +			return 0;
->> +		pci_hotplug_mutex_owner = current;
->> +	}
->> +	pci_hotplug_mutex_recursive++;
->> +
->> +	return 1;
->> +}
->> +EXPORT_SYMBOL(pci_hotplug_try_enter);
->
-> Don't try to invent new lock types like this, you are bound to get it
-> wrong.  And don't create recursive locks, fix the code up to never need
-> it.
->
-> thanks,
->
-> greg k-h
->
-> .
->
+I don't like this. It will cover all warnings when the prototype of
+arm_pm_idle changes in future. Better add a static void imx5_idle
+which calls a static int imx5_do_idle, then you have an idle function
+which returns an int.
 
+>  }
+>  
+>  void __init imx53_init_early(void)
+> @@ -238,4 +273,5 @@ void __init imx53_soc_init(void)
+>  void __init imx51_init_late(void)
+>  {
+>  	mx51_neon_fixup();
+> +	imx_cpuidle_init(&imx5_cpuidle_driver);
+>  }
+> -- 
+> 1.7.10
+> 
+> 
 
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
