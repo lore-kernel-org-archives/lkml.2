@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127Ab2EBMjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 08:39:32 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:49239 "EHLO ogre.sisk.pl"
+	id S1752173Ab2EBMle (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 08:41:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43430 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991Ab2EBMjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 08:39:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-Subject: Re: [PATCH] Documentation: power: suspend-and-cpuhotplug.txt: Fix typo
-Date: Wed, 2 May 2012 14:44:16 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>
-References: <1335911272-5907-1-git-send-email-marcos.souza.org@gmail.com> <4FA0C553.7010902@linux.vnet.ibm.com>
-In-Reply-To: <4FA0C553.7010902@linux.vnet.ibm.com>
+	id S1751164Ab2EBMld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 08:41:33 -0400
+Date: Wed, 2 May 2012 14:40:15 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>
+Subject: Re: [RFC PATCH] namespaces: fix leak on fork() failure
+Message-ID: <20120502124015.GA3657@redhat.com>
+References: <1335604790.5995.22.camel@marge.simpson.net> <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org> <20120429165846.GA19054@redhat.com> <m11un5zzzb.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205021444.16823.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m11un5zzzb.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 02, 2012, Srivatsa S. Bhat wrote:
-> On 05/02/2012 03:57 AM, Marcos Paulo de Souza wrote:
-> 
-> > sysfs was expected in this context.
-> > 
-> > Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> > Cc: Rob Landley <rob@landley.net>
-> > Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-> > ---
-> 
-> 
-> Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+On 04/29, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > On 04/29, Eric W. Biederman wrote:
+> >>
+> >> There are crazy code paths like daemonize()
+> >
+> > Forget. It has no callers anymore, should be killed. A user-space process
+> > should never use kernel_thread() and thus daemonize() is not needed.
+>
+> Good point.  Oleg do you think you can send in the patches to kill
+> daemonize.
 
-Thanks, applied to linux-pm/linux-next.
+Yes, will do. I am waiting until the last user in arch/powerpc goes
+away, the patch is already in mm.
 
-Marcos, please CC all PM-related patches to linux-pm@vger.kernel.org in
-the future.
-
-Thanks,
-Rafael
-
-
-> >  Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
-> > index f28f9a6..e13dafc 100644
-> > --- a/Documentation/power/suspend-and-cpuhotplug.txt
-> > +++ b/Documentation/power/suspend-and-cpuhotplug.txt
-> > @@ -29,7 +29,7 @@ More details follow:
-> > 
-> >                                    Write 'mem' to
-> >                                  /sys/power/state
-> > -                                    syfs file
-> > +                                    sysfs file
-> >                                          |
-> >                                          v
-> >                                 Acquire pm_mutex lock
-> 
-> 
-> 
-> 
+Oleg.
 
