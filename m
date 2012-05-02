@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab2EBUxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 16:53:19 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:43485 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756407Ab2EBUxS (ORCPT
+	id S1757364Ab2EBUyj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 16:54:39 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:35836 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756407Ab2EBUyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 16:53:18 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zf7Iz1469K542Mzz1202hzz8275bh8275dhz2fh668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4FA19EB7.7080000@am.sony.com>
-Date: Wed, 2 May 2012 13:53:11 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Wed, 2 May 2012 16:54:38 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/yreFYW2vyTYAV6v68Wtivbm/s8lCbkmwOQrwlXa
+	Iesd+VD216HLY2
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Bryan Freed <bfreed@chromium.org>
+Subject: Re: [PATCH] CHROMIUM: tpm: tpm_tis_i2c: Lock the I2C adapter for a sequence of requests.
+Date: Wed, 2 May 2012 22:54:33 +0200
+User-Agent: KMail/1.13.7 (Linux/3.3.3; KDE/4.7.4; x86_64; ; )
+Cc: Peter Huewe <peter.huewe@infineon.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>, tpmdd@selhorst.net,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>
+References: <1335967293-7728-1-git-send-email-peter.huewe@infineon.com> <20120502181435.GF16981@andi> <CAEYUcX06hvTb1YP=9vCpK9Z19dtZgNTjUcSRnrUvjc3bu-D--Q@mail.gmail.com>
+In-Reply-To: <CAEYUcX06hvTb1YP=9vCpK9Z19dtZgNTjUcSRnrUvjc3bu-D--Q@mail.gmail.com>
 MIME-Version: 1.0
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
-Subject: Fwd: [PATCH] arm: Add extra clobber registers for assembly in kernel_execve
-References: <4F7F2DA2.4040805@am.sony.com>
-In-Reply-To: <4F7F2DA2.4040805@am.sony.com>
-X-Forwarded-Message-Id: <4F7F2DA2.4040805@am.sony.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Message-Id: <201205022254.33707.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anyone interested in this?
+Am Mittwoch 02 Mai 2012, 21:06:14 schrieb Bryan Freed:
+> We could (in the unmodified version of this driver) replace all the
+> iic_tpm_read() calls of one byte (which sends an address byte before
+> reading a data byte) with an i2c_smbus_read_byte_command() call which
+> does the same thing.
 
--------- Original Message --------
-Subject: [PATCH] arm: Add extra clobber registers for assembly in kernel_execve
-Date: Fri, 6 Apr 2012 10:53:38 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-To: linux-arm-kernel@lists.infradead.org <linux-arm-kernel@lists.infradead.org>, Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Unfortunately we have to use two seperate transfers (write/read) for a single 
+byte read as the device does not support "repeated start" conditions and will 
+simply fail to respond.
 
+The device has some quirks that the driver has to workaround,
+one is the repeated start problem, the other is the locking of the device.
+If you can come up with a better solution I'd like to try it out if it's 
+compatible with the device.
 
-The inline assembly in kernel_execve() uses r8 and r9.  Since this
-code sequence does not return, it usually doesn't matter if the
-register clobber list is accurate.  However, I saw a case where a
-particular version of gcc used r8 as an intermediate for the value
-eventually passed to r9.  Because r8 is used in the inline
-assembly, and not mentioned in the clobber list, r9 was set
-to an incorrect value.
-
-This resulted in a kernel panic on execution of the first user-space
-program in the system.  r9 is used in ret_to_user as the thread_info
-pointer, and if it's wrong, bad things happen.
-
-Signed off by: Tim Bird <tim.bird@am.sony.com>
----
- arch/arm/kernel/sys_arm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/kernel/sys_arm.c b/arch/arm/kernel/sys_arm.c
-index 62e7c61..0264ab4 100644
---- a/arch/arm/kernel/sys_arm.c
-+++ b/arch/arm/kernel/sys_arm.c
-@@ -115,7 +115,7 @@ int kernel_execve(const char *filename,
- 		  "Ir" (THREAD_START_SP - sizeof(regs)),
- 		  "r" (&regs),
- 		  "Ir" (sizeof(regs))
--		: "r0", "r1", "r2", "r3", "ip", "lr", "memory");
-+		: "r0", "r1", "r2", "r3", "r8", "r9", "ip", "lr", "memory");
-
-  out:
- 	return ret;
--- 
-
-
-
+Thanks,
+Peter
