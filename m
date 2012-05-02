@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab2EBKhz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 06:37:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49398 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160Ab2EBKhy (ORCPT
+	id S1753467Ab2EBKma (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 06:42:30 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55768 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164Ab2EBKm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 06:37:54 -0400
-Message-ID: <4FA10E63.5000804@kernel.dk>
-Date: Wed, 02 May 2012 12:37:23 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
-References: <1335953452-10460-1-git-send-email-jack@suse.cz> <4FA1092E.9090603@redhat.com>
-In-Reply-To: <4FA1092E.9090603@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15
+	Wed, 2 May 2012 06:42:29 -0400
+Date: Wed, 2 May 2012 11:45:15 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Killing the tty lock
+Message-ID: <20120502114515.2cc22a26@pyramind.ukuu.org.uk>
+In-Reply-To: <20120502044544.GA32521@kroah.com>
+References: <20120501173739.4fe61fb5@pyramind.ukuu.org.uk>
+	<20120502044544.GA32521@kroah.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2012 12:15 PM, Paolo Bonzini wrote:
-> Il 02/05/2012 12:10, Jan Kara ha scritto:
->> Sometimes, warnings about ioctls to partition happen often enough that they
->> form majority of the warnings in the kernel log and users complain. In some
->> cases warnings are about ioctls such as SG_IO so it's not good to get rid of
->> the warnings completely as they can ease debugging of userspace problems
->> when ioctl is refused.
->>
->> Since I have seen warnings from lots of commands, including some proprietary
->> userspace applications, I don't think disallowing the ioctls for processes
->> with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
->> stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
+> It's mostly pretty "sane", but what is this:
 > 
-> NACK.  I would bet that all the warnings you've seen are for ioctl that
-> would have failed anyway with ENOTTY.
+> > +/*
+> > + * Getting the big tty mutex for a pair of ttys with lock ordering
+> > + * On a non pty/tty pair tty2 can be NULL which is just fine.
+> > + */
+> > +void __lockfunc tty_lock_pair(struct tty_struct *tty,
+> > +					struct tty_struct *tty2)
+> > +{
+> > +	if (tty < tty2) {
+> > +		tty_lock(tty);
+> > +		tty_lock(tty2);
+> > +	} else {
+> > +		if (tty2 && tty2 != tty)
+> > +			tty_lock(tty2);
+> > +		tty_lock(tty);
+> > +	}
+> > +}
+> > +EXPORT_SYMBOL(tty_lock_pair);
+> > +
+> > +void __lockfunc tty_unlock_pair(struct tty_struct *tty,
+> > +						struct tty_struct *tty2)
+> > +{
+> > +	tty_unlock(tty);
+> > +	if (tty2 && tty2 != tty)
+> > +		tty_unlock(tty2);
+> > +}
+> > +EXPORT_SYMBOL(tty_unlock_pair);
 > 
-> The right fix has already been posted, we've been carrying it in RHEL
-> for over six months and not a single bug has been seen.
+> for?
 
-I don't remember seeing the "right" fix. The messages are really
-annoying, so lets please get it resubmitted so that we can merge it.
+We need to take locks on a pair of tty devices at the same time in some
+cases (pty/tty pairs).
 
--- 
-Jens Axboe
+> And what's with the comparing of pointers as "<"?  How portable is that
+> really, and how are we supposed to control the memory location of these
+> structures?
 
+You don't need to. The point is that we must lock any arbitrary pair of
+tty structs in a defined order. Pointer comparisons work just fine for
+this. The fs layer uses similar logic for inode locking. We only care
+that for any given pair of objects the lock ordering is consistent.
+
+Alan
