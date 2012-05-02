@@ -1,120 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab2EBTcm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 15:32:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8627 "EHLO
+	id S1756661Ab2EBTcn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 15:32:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7090 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756070Ab2EBTci (ORCPT
+	with ESMTP id S1756303Ab2EBTck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 15:32:38 -0400
-X-Authority-Analysis: v=2.0 cv=T/EOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=MiADmTIbiPcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=_IGxp2mfFUYWymhGOywA:9 a=9GTYEX1tESxK75rzqtoA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Wed, 2 May 2012 15:32:40 -0400
+X-Authority-Analysis: v=2.0 cv=bcnpoZzB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=jmiI158Cp2wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=fOM_VpNnRYehBkQn8CUA:9 a=GihG3io9dNuPoLFiR2kA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120502193236.102368477@goodmis.org>
+Message-Id: <20120502193237.871176027@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 02 May 2012 15:24:19 -0400
+Date: Wed, 02 May 2012 15:24:26 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 1/9][RFC] ftrace: Sort all function addresses, not just per page
+Subject: [PATCH 8/9][RFC] ftrace/x86: Have x86 ftrace use the ftrace_modify_all_code()
 References: <20120502192418.024103772@goodmis.org>
-Content-Disposition: inline; filename=0001-ftrace-Sort-all-function-addresses-not-just-per-page.patch
+Content-Disposition: inline; filename=0008-ftrace-x86-Have-x86-ftrace-use-the-ftrace_modify_all.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Instead of just sorting the ip's of the functions per ftrace page,
-sort the entire list before adding them to the ftrace pages.
-
-This will allow the bsearch algorithm to be sped up as it can
-also sort by pages, not just records within a page.
+To remove duplicate code, have the ftrace arch_ftrace_update_code()
+use the generic ftrace_modify_all_code(). This requires that the
+default ftrace_replace_code() becomes a weak function so that an
+arch may override it.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/asm-generic/vmlinux.lds.h |    2 +-
- kernel/trace/ftrace.c             |   34 ++++++++++++++++++++++------------
- 2 files changed, 23 insertions(+), 13 deletions(-)
+ arch/x86/kernel/ftrace.c |   15 ++-------------
+ include/linux/ftrace.h   |    1 +
+ kernel/trace/ftrace.c    |    4 ++--
+ 3 files changed, 5 insertions(+), 15 deletions(-)
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 8aeadf6..4e2e1cc 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -486,8 +486,8 @@
- 	CPU_DISCARD(init.data)						\
- 	MEM_DISCARD(init.data)						\
- 	KERNEL_CTORS()							\
--	*(.init.rodata)							\
- 	MCOUNT_REC()							\
-+	*(.init.rodata)							\
- 	FTRACE_EVENTS()							\
- 	TRACE_SYSCALLS()						\
- 	DEV_DISCARD(init.rodata)					\
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index cf2d03e..06cfc67 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -435,7 +435,7 @@ static void run_sync(void)
+ 		local_irq_disable();
+ }
+ 
+-static void ftrace_replace_code(int enable)
++void ftrace_replace_code(int enable)
+ {
+ 	struct ftrace_rec_iter *iter;
+ 	struct dyn_ftrace *rec;
+@@ -493,18 +493,7 @@ void arch_ftrace_update_code(int command)
+ {
+ 	modifying_ftrace_code++;
+ 
+-	if (command & FTRACE_UPDATE_CALLS)
+-		ftrace_replace_code(1);
+-	else if (command & FTRACE_DISABLE_CALLS)
+-		ftrace_replace_code(0);
+-
+-	if (command & FTRACE_UPDATE_TRACE_FUNC)
+-		ftrace_update_ftrace_func(ftrace_trace_function);
+-
+-	if (command & FTRACE_START_FUNC_RET)
+-		ftrace_enable_ftrace_graph_caller();
+-	else if (command & FTRACE_STOP_FUNC_RET)
+-		ftrace_disable_ftrace_graph_caller();
++	ftrace_modify_all_code(command);
+ 
+ 	modifying_ftrace_code--;
+ }
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 873ceea..760845f 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -314,6 +314,7 @@ ftrace_set_early_filter(struct ftrace_ops *ops, char *buf, int enable);
+ /* defined in arch */
+ extern int ftrace_ip_converted(unsigned long ip);
+ extern int ftrace_dyn_arch_init(void *data);
++extern void ftrace_replace_code(int enable);
+ extern int ftrace_update_ftrace_func(ftrace_func_t func);
+ extern void ftrace_caller(void);
+ extern void ftrace_call(void);
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 0fa92f6..6a19e81 100644
+index a4ef17d..9e9eebd 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -3688,15 +3688,27 @@ static __init int ftrace_init_dyn_debugfs(struct dentry *d_tracer)
- 	return 0;
+@@ -1683,7 +1683,7 @@ __ftrace_replace_code(struct dyn_ftrace *rec, int enable)
+ 	return -1; /* unknow ftrace bug */
  }
  
--static void ftrace_swap_recs(void *a, void *b, int size)
-+static int ftrace_cmp_ips(const void *a, const void *b)
+-static void ftrace_replace_code(int update)
++void __weak ftrace_replace_code(int enable)
  {
--	struct dyn_ftrace *reca = a;
--	struct dyn_ftrace *recb = b;
--	struct dyn_ftrace t;
-+	const unsigned long *ipa = a;
-+	const unsigned long *ipb = b;
+ 	struct dyn_ftrace *rec;
+ 	struct ftrace_page *pg;
+@@ -1693,7 +1693,7 @@ static void ftrace_replace_code(int update)
+ 		return;
  
--	t = *reca;
--	*reca = *recb;
--	*recb = t;
-+	if (*ipa > *ipb)
-+		return 1;
-+	if (*ipa < *ipb)
-+		return -1;
-+	return 0;
-+}
-+
-+static void ftrace_swap_ips(void *a, void *b, int size)
-+{
-+	unsigned long *ipa = a;
-+	unsigned long *ipb = b;
-+	unsigned long t;
-+
-+	t = *ipa;
-+	*ipa = *ipb;
-+	*ipb = t;
- }
- 
- static int ftrace_process_locs(struct module *mod,
-@@ -3715,6 +3727,9 @@ static int ftrace_process_locs(struct module *mod,
- 	if (!count)
- 		return 0;
- 
-+	sort(start, count, sizeof(*start),
-+	     ftrace_cmp_ips, ftrace_swap_ips);
-+
- 	pg = ftrace_allocate_pages(count);
- 	if (!pg)
- 		return -ENOMEM;
-@@ -3762,11 +3777,6 @@ static int ftrace_process_locs(struct module *mod,
- 	/* These new locations need to be initialized */
- 	ftrace_new_pgs = pg;
- 
--	/* Make each individual set of pages sorted by ips */
--	for (; pg; pg = pg->next)
--		sort(pg->records, pg->index, sizeof(struct dyn_ftrace),
--		     ftrace_cmp_recs, ftrace_swap_recs);
--
- 	/*
- 	 * We only need to disable interrupts on start up
- 	 * because we are modifying code that an interrupt
+ 	do_for_each_ftrace_rec(pg, rec) {
+-		failed = __ftrace_replace_code(rec, update);
++		failed = __ftrace_replace_code(rec, enable);
+ 		if (failed) {
+ 			ftrace_bug(failed, rec->ip);
+ 			/* Stop processing */
 -- 
 1.7.9.5
 
