@@ -1,135 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab2EBNx3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 09:53:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60407 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750907Ab2EBNx1 (ORCPT
+	id S1754893Ab2EBNyH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 09:54:07 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:35140 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab2EBNyF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 09:53:27 -0400
-Message-ID: <1335966795.8274.129.camel@deadeye>
-Subject: Re: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
-From: Ben Hutchings <ben@decadent.org.uk>
-To: sedat.dilek@gmail.com
-Cc: Lennert Buytenhek <buytenh@wantstofly.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lautriv <admin@coldplug.net>,
-        Jim Cromie <jim.cromie@gmail.com>, Hauke Mehrtens <hauke@hauke-m.de>
-Date: Wed, 02 May 2012 14:53:15 +0100
-In-Reply-To: <CA+icZUV=qtXwVxb+uvQJcsza0y+6k2LHJFFPnECY0M=QWBexaQ@mail.gmail.com>
-References: <20120427094637.GV3157@wantstofly.org>
-	 <CA+icZUXNZ=exTnR=OgD_9bpt_0s-KnR+v-K6u+XzQr4HBoTQHQ@mail.gmail.com>
-	 <20120427095842.GW3157@wantstofly.org>
-	 <CA+icZUWuynSaPE4pdxzoP783pw7r=5x27ewXN_pkR5VS=0kKUg@mail.gmail.com>
-	 <20120427101732.GX3157@wantstofly.org>
-	 <CA+icZUUnJPeDmL9xXfvj62an40bXwwaOnrJmxmLN_cBt9PyCZA@mail.gmail.com>
-	 <CA+icZUV76wSBj88EpzmWbO=u2dP23yi5P98nN2KZehBUni9mEg@mail.gmail.com>
-	 <20120427185809.GZ3157@wantstofly.org>
-	 <CA+icZUWQmCRdjucb4+Nf24_zbJ4fzzp7zjqhKjXE6U01rppDfA@mail.gmail.com>
-	 <CA+icZUXSaEMA=KbQP9UQcU6ZMBh8QD2sv-O=6r_Ly8is==gvSA@mail.gmail.com>
-	 <20120501125102.GN3157@wantstofly.org>
-	 <CA+icZUV=qtXwVxb+uvQJcsza0y+6k2LHJFFPnECY0M=QWBexaQ@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-GtiMnukx0IbjvkdSusAz"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 2 May 2012 09:54:05 -0400
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Avi Kivity <avi@redhat.com>, mingo@elte.hu, jeremy@goop.org,
+        mtosatti@redhat.com, kvm@vger.kernel.org, x86@kernel.org,
+        vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
+In-Reply-To: <1335954040.13683.175.camel@twins>
+References: <20120427161727.27082.43096.stgit@abhimanyu> <20120427162401.27082.59387.stgit@abhimanyu> <4F9D32B4.8040002@redhat.com> <1335865176.13683.120.camel@twins> <87obq7ge4d.fsf@linux.vnet.ibm.com> <1335954040.13683.175.camel@twins>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
+Date: Wed, 02 May 2012 19:23:26 +0530
+Message-ID: <87lilahep5.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+x-cbid: 12050213-2000-0000-0000-000007524104
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 02 May 2012 12:20:40 +0200, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-05-02 at 14:21 +0530, Nikunj A Dadhania wrote:
+> > [root@krm1 linux]# grep HAVE_RCU_TABLE .config
+> > CONFIG_HAVE_RCU_TABLE_FREE=y
+> > [root@krm1 linux]# make -j32  -s
+> > mm/memory.c: In function ‘tlb_remove_table_one’:
+> > mm/memory.c:315: error: implicit declaration of function ‘__tlb_remove_table’
+> > 
+> > I suppose we need to have __tlb_remove_table. Trying to understand what
+> > needs to be done there. 
+> 
+> Argh, I really should get back to unifying all mmu-gather
+> implementations :/
+> 
+> I think something like the below ought to sort it.
+> 
+Thanks a lot.
 
---=-GtiMnukx0IbjvkdSusAz
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Completely untested though..
+> 
 
-On Tue, 2012-05-01 at 15:54 +0200, Sedat Dilek wrote:
-> On Tue, May 1, 2012 at 2:51 PM, Lennert Buytenhek
-> <buytenh@wantstofly.org> wrote:
-> > On Sun, Apr 29, 2012 at 12:25:21AM +0200, Sedat Dilek wrote:
-> >
-> >> > On 1st sight, logs look fine:
-> >> >
-> >> > [21:52:52] <lautriv> [    6.050967] ieee80211 phy0: 88w8361p v4,
-> >> > 00173f3bdde3, STA firmware 2.1.4.25
-> >> >
-> >> > But WLAN connection is not that fast and stable as lautriv reports
-> >> > (several abnormalities were observed).
-> >> >
-> >> > I requested a tarball which includes:
-> >> > * dmesg (Linux-3.3.3)
-> >> > * e_n_a (/etc/network/interfaces)
-> >> > * ifconfig output
-> >> > * iwconfig output
-> >> > * iw_phy output
-> >> > * ps_axu (WPA) output
-> >> >
-> >> > lautriv will be so kind to be around on #linux-wireless/Freenode the
-> >> > next days (UTC+2: German/Swiss local-time).
-> >> > Just ping him.
-> >> >
-> >> > Hope you have fun, together!
-> >> >
-> >> > - Sedat -
-> >>
-> >> A new tarball from lautriv with same outputs as before, but now tested
-> >> with Linux-3.4-rc4.
->=20
-> [ CC hauke (OpenWrt) and Ben Hutchings (linux-firmware maintainer) ]
->=20
-> > The output looks good enough for me to ACK adding the PCI ID.
-> >
-> > Can the firmware being used here be submitted to the linux-firmware
-> > git tree?
->=20
-> I can't say much about the firmware [1] inclusion or the procedure of
-> it into linux-firmware [2].
-> Maybe, Ben can explain the procedure and what has to be considered
-> before inclusion in linux-firmware.
-> The original firmware and helper images were extracted from a Netgear
-> Windows driver [1].
-[...]
+Tested-by: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
 
-Even assuming that the original driver binary is freely redistributable,
-it's not at all clear that these extracted blobs would be.
+Here is the comparison with the other version. 
 
-If there's some difficulty in getting a sensible licence for the
-firmware, you can consider providing a tool to do this extraction, as
-has been done for some other drivers whose vendors don't provide the
-firmware blobs alone.  However, as yet, linux-firmware doesn't include
-any such extraction tools and I would need to discuss such an addition
-with David (and maybe other distribution maintainers).  Hopefully that
-won't be necessary, though.
+	Gang    pv_spin_flush    pv_spin_flush_rcu  
+1VM     1.01       0.49            0.49     
+2VMs    7.07       4.04            4.06     
+4VMs    9.07       5.27            5.19     
+8VMs    9.99       7.65            7.80     
 
-Ben.
+Will test other use cases as well and report back.
 
---=20
-Ben Hutchings
-Design a system any fool can use, and only a fool will want to use it.
+Regards
+Nikunj
 
---=-GtiMnukx0IbjvkdSusAz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT6E8S+e/yOyVhhEJAQoDFw/9GyA95qJsXLlkw6DNrWfHSBbRpfBsRBsA
-U8i5Pf6+dN1J+h9WEN1uqF+/+EECSSaGfNDD26bZlNEjVkeH+M8c4dSFRUt/IaWq
-bOpgDNKdwXF6fHlEdugzxWyRW5Z512xJ1KJ6umNmxIqXw0BNXbJJmUFkMhK8Vf2U
-eVsYKBhOS/4MnR7A5+9HWPSBoPt34IOXsA4PVWGIQ9u3mNNSZL3cqrn5sa0aCW70
-ImuFSOvyAKFWgn7047EvJ/9nvKHXMfJc0YOdIkW/FGMZo1jh6C+/7bTmp+j1uxw6
-gqlResiVfmADCa1cJFwEprBF7xwyplDSsLDAG53UOtefRTYCGzNwCaNQH9cCepwI
-w6ap/OfT5SODm6saY+iJ0BSSqOYOAFJt0Kp5Yutj0LpVxcC7Gz94BMPGDebV5iut
-vZz7yJi6dp5k7DI0XIJOFm/xWESWfxhlNltolQGoAZasZwvFDVSzxaVXMXAy9vtt
-Gd5/Yh9AIAg6iqOHfR/3GG3TCrH4bB9xCJyRWz3wM3F+y/QxBY9W29L2i2DZghoO
-nRzrfQUpAKGMWH7QJ1ilbopPgss0FnD7DjVMfp1yb1HXUbjFUjSUkj64lvrxEb95
-EDVsV2h0qxxrttcUo6+MvIdUO7qPpnNMLHst5XKFmESFneUZZ0+6YpUaugIKMCsl
-aMTJ4t6gkbA=
-=7Ts2
------END PGP SIGNATURE-----
-
---=-GtiMnukx0IbjvkdSusAz--
