@@ -1,322 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab2EBHtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 03:49:36 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:52126 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab2EBHte (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 03:49:34 -0400
-X-AuditID: cbfee61b-b7ce2ae00000583e-43-4fa0e70c0dce
-Message-id: <4FA0E706.8060700@samsung.com>
-Date: Wed, 02 May 2012 16:49:26 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412
- Thunderbird/11.0.1
-MIME-version: 1.0
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>, linux-mmc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        kgene.kim@samsung.com, cjb@laptop.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/7] mmc: dw_mmc: add samsung exynos5250 specific extentions
-References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
- <1335935266-25289-5-git-send-email-thomas.abraham@linaro.org>
- <CAH9JG2XBinh=XAVnt3EnWrEqeTKz34d9yB6wfiuF-J-Se_Q__Q@mail.gmail.com>
-In-reply-to: <CAH9JG2XBinh=XAVnt3EnWrEqeTKz34d9yB6wfiuF-J-Se_Q__Q@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	id S1753645Ab2EBHyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 03:54:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59750 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913Ab2EBHyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 03:54:17 -0400
+From: Jean Delvare <jdelvare@suse.de>
+Organization: Suse Linux
+To: Luca Tettamanti <kronos.it@gmail.com>
+Subject: Re: Linux 3.4-rc4
+Date: Wed, 2 May 2012 09:54:13 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.32.54-0.3-pae; KDE/4.3.5; i686; ; )
+Cc: Maarten Maathuis <madman2003@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Martin Peres <martin.peres@labri.fr>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Ben Skeggs <bskeggs@redhat.com>
+References: <20120422164023.GA32342@elliptictech.com> <CAGZ4FETGyatywWqx3vLo-=jSJsrSat2+r35Njg5NNJ4NnyUy=w@mail.gmail.com> <CAKPcRGpxb6b-z3t8Lv6YU9+ttgeXTRtGyvCFb=RSDQOJMTqEjQ@mail.gmail.com>
+In-Reply-To: <CAKPcRGpxb6b-z3t8Lv6YU9+ttgeXTRtGyvCFb=RSDQOJMTqEjQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205020954.13273.jdelvare@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2012 04:01 PM, Kyungmin Park wrote:
+Hi Luca, Maarten,
 
-> Hi,
+On Monday 30 April 2012 01:01:30 pm Luca Tettamanti wrote:
+> On Mon, Apr 30, 2012 at 11:07 AM, Maarten Maathuis <madman2003@gmail.com> wrote:
+> > On Mon, Apr 30, 2012 at 12:37 AM, Dmitry Torokhov
+> >
+> > <dmitry.torokhov@gmail.com> wrote:
+> >> On Sat, Apr 28, 2012 at 11:33:50AM -0400, Nick Bowler wrote:
+> >>> On 2012-04-28 02:19 -0400, Alex Deucher wrote:
+> >>> > On Fri, Apr 27, 2012 at 8:39 PM, Nick Bowler <nbowler@elliptictech.com> wrote:
+> >>> > > Unfortunately, that's not the end of my VGA-related
+> >>> > > regressions. :(
+> >>> > >
+> >>> > > While tracking down the black screen issue, I've been having
+> >>> > > the monitor directly connected to the video card the whole
+> >>> > > time, but now when I'm connected through my KVM switch (an
+> >>> > > IOGear GCS1804), it appears that something's going wrong with
+> >>> > > reading the EDID, because the available modes are all screwed
+> >>> > > up (both console and X decide they want to drive the display
+> >>> > > at 1024x768).  Here's the output of xrandr on 3.2.15:
+> >>> > >
+> >>> > >  % xrandr
+> >>> > >  Screen 1: minimum 320 x 200, current 1600 x 1200, maximum
+> >>> > > 4096 x 4096 VGA-1 connected 1600x1200+0+0 (normal left
+> >>> > > inverted right x axis y axis) 352mm x 264mm
+> >>> > >     1600x1200      75.0*+   70.0     65.0     60.0
+> >>> > >     1280x1024      85.0 +   75.0     60.0
+> >>> > >     1920x1440      60.0
+> >>> > >     1856x1392      60.0
+> >>> > >     1792x1344      60.0
+> >>> > >     1920x1200      74.9     59.9
+> >>> > >     1680x1050      84.9     74.9     60.0
+> >>> > >     1400x1050      85.0     74.9     60.0
+> >>> > >     1440x900       84.8     75.0     59.9
+> >>> > >     1280x960       85.0     60.0
+> >>> > >     1360x768       60.0
+> >>> > >     1280x800       84.9     74.9     59.8
+> >>> > >     1152x864       75.0
+> >>> > >     1280x768       84.8     74.9     59.9
+> >>> > >     1024x768       85.0     75.1     75.0     70.1     60.0     43.5     43.5
+> >>> > >     832x624        74.6
+> >>> > >     800x600        85.1     72.2     75.0     60.3     56.2
+> >>> > >     848x480        60.0
+> >>> > >     640x480        85.0     75.0     72.8     72.8     66.7     60.0     59.9
+> >>> > >     720x400        85.0     87.8     70.1
+> >>> > >     640x400        85.1
+> >>> > >     640x350        85.1
+> >>> > >     320x200       165.1
+> >>> > >
+> >>> > > And on 3.4-rc4+ (with your patch cherry-picked):
+> >>> > >
+> >>> > >  % xrandr
+> >>> > >  Screen 1: minimum 320 x 200, current 1024 x 768, maximum
+> >>> > > 4096 x 4096 VGA-1 connected 1024x768+0+0 (normal left
+> >>> > > inverted right x axis y axis) 0mm x 0mm
+> >>> > >     1024x768       60.0*
+> >>> > >     800x600        60.3     56.2
+> >>> > >     848x480        60.0
+> >>> > >     640x480        59.9
+> >>> > >     320x200       165.1
+> >>> > >
+> >>> > > Running xrandr on 3.4-rc4+ also causes the screen to go black
+> >>> > > for a second when it does not on 3.2.15.  It also causes
+> >>> > > several messages of the form
+> >>> > >
+> >>> > >  [drm] nouveau 0000:01:00.0: Load detected on output B
+> >>> > >
+> >>> > > to be logged.  Also, looking at
+> >>> > > /sys/class/drm/card0-VGA-1/edid I see that it is empty on
+> >>> > > 3.4-rc4+ and it is correct on 3.2.15.  Things seem to work OK
+> >>> > > when the KVM is not involved.
+> >>> >
+> >>> > Were you ever able to fetch a EDID with the KVM involved?  KVMs
+> >>> > are notorious for not connecting the ddc pins.
+> >>>
+> >>> Yes, it works on 3.2.15 as described above.
+> >>
+> >> I have the same (or similar) KVM (not in the office at the moment)
+> >> and I can confirm that with newer kernels EDID fecthing in flaky.
+> >> It's 50/50 if EDED retrieval succeeds or if it fails with:
+> >>
+> >> Apr 26 13:06:57 dtor-d630 kernel: [13464.936336]
+> >> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid,
+> >> remainder is 208 Apr 26 13:06:57 dtor-d630 kernel: [13464.955317]
+> >> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid,
+> >> remainder is 208 Apr 26 13:06:57 dtor-d630 kernel: [13464.973879]
+> >> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid,
+> >> remainder is 208 Apr 27 09:13:03 dtor-d630 kernel: [44602.087659]
+> >> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid,
+> >> remainder is 208 Apr 27 09:13:03 dtor-d630 kernel: [44602.107147]
+> >> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid,
+> >> remainder is 208 Apr 27 09:13:03 dtor-d630 kernel: [44602.126908]
+> >> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid,
+> >> remainder is 208 Apr 27 09:13:03 dtor-d630 kernel: [44602.146277]
+> >> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid,
+> >> remainder is 208 Apr 27 09:13:03 dtor-d630 kernel: [44602.297659]
+> >> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid,
+> >> remainder is 208 Apr 27 09:13:03 dtor-d630 kernel: [44602.317063]
+> >> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid,
+> >> remainder is 208
+> >>
+> >> Earlier kernels were able to retrieve EDEDs reliably.
+> >>
+> >> This is with:
+> >>
+> >> [    1.678392] [drm] nouveau 0000:01:00.0: Detected an NV50
+> >> generation card (0x086b00a2)
+> >
+> > Just a crazy thought, but didn't we change some timings related to
+> > EDID retrieval? To make it faster.
 > 
-> On 5/2/12, Thomas Abraham <thomas.abraham@linaro.org> wrote:
->> The instantiation of the Synopsis Designware controller on Exynos5250
->> include extension for SDR and DDR specific tx/rx phase shift timing
->> and CIU internal divider. In addition to that, the option to skip the
->> command hold stage is also introduced. Add support for these Exynos5250
->> specfic extenstions.
->>
->> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
->> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
->> ---
->>  .../devicetree/bindings/mmc/synposis-dw-mshc.txt   |   33
->> +++++++++++++++++++-
->>  drivers/mmc/host/dw_mmc-pltfm.c                    |    8 +++++
->>  drivers/mmc/host/dw_mmc.c                          |   32
->> ++++++++++++++++++-
->>  drivers/mmc/host/dw_mmc.h                          |   13 ++++++++
->>  include/linux/mmc/dw_mmc.h                         |    6 +++
->>  5 files changed, 89 insertions(+), 3 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
->> b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
->> index c1ed70e..465fc31 100644
->> --- a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
->> +++ b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
->> @@ -7,6 +7,8 @@ Required Properties:
->>
->>  * compatible: should be one of the following
->>  	- synopsis,dw-mshc: for controllers compliant with synopsis dw-mshc.
->> +	- synopsis,dw-mshc-exynos5250: for controllers with Samsung
->> +	  Exynos5250 specific extentions.
->>
->>  * reg: physical base address of the dw-mshc controller and size of its
->> memory
->>    region.
->> @@ -55,13 +57,40 @@ Optional properties:
->>  * no-write-protect: The write protect pad of the controller is not
->> connected
->>    to the write protect pin on the slot.
->>
->> +Samsung Exynos5250 specific properties:
->> +
->> +* samsung,dw-mshc-sdr-timing: Specifies the value of CUI clock divider,
->> CIU
->> +  clock phase shift value in transmit mode and CIU clock phase shift value
->> in
->> +  receive mode for single data rate mode operation. Refer notes of the
->> valid
->> +  values below.
->> +
->> +* samsung,dw-mshc-ddr-timing: Specifies the value of CUI clock divider,
->> CIU
->> +  clock phase shift value in transmit mode and CIU clock phase shift value
->> in
->> +  receive mode for double data rate mode operation. Refer notes of the
->> valid
->> +  values below. The order of the cells should be
->> +
->> +    - First Cell: 	CIU clock divider value.
->> +    - Second Cell:	CIU clock phase shift value for tx mode.
->> +    - Third Cell:	CIU clock phase shift value for rx mode.
->> +
->> +  Valid values for SDR and DDR CIU clock timing:
->> +
->> +    - valid values for CIU clock divider, tx phase shift and rx phase
->> shift
->> +      is 0 to 7.
->> +
->> +    - When CIU clock divider value is set to 3, all possible 8 phase shift
->> +      values can be used.
->> +
->> +    - If CIU clock divider value is 0 (that is divide by 1), both tx and
->> rx
->> +      phase shift clocks should be 0.
->> +
->>  Example:
->>
->>    The MSHC controller node can be split into two portions, SoC specific
->> and
->>    board specific portions as listed below.
->>
->>  	dwmmc0@12200000 {
->> -		compatible = "synopsis,dw-mshc";
->> +		compatible = "synopsis,dw-mshc-exynos5250";
->>  		reg = <0x12200000 0x1000>;
->>  		interrupts = <0 75 0>;
->>  	};
->> @@ -72,6 +101,8 @@ Example:
->>  		no-write-protect;
->>  		fifo-depth = <0x80>;
->>  		card-detect-delay = <200>;
->> +		samsung,dw-mshc-sdr-timing = <2 3 3>;
->> +		samsung,dw-mshc-ddr-timing = <1 2 3>;
->>
->>  		slot0 {
->>  			bus-width = <8>;
->> diff --git a/drivers/mmc/host/dw_mmc-pltfm.c
->> b/drivers/mmc/host/dw_mmc-pltfm.c
->> index 2b2c9bd..35056fd 100644
->> --- a/drivers/mmc/host/dw_mmc-pltfm.c
->> +++ b/drivers/mmc/host/dw_mmc-pltfm.c
->> @@ -27,9 +27,17 @@ static struct dw_mci_drv_data synopsis_drv_data = {
->>  	.ctrl_type	= DW_MCI_TYPE_SYNOPSIS,
->>  };
->>
->> +static struct dw_mci_drv_data exynos5250_drv_data = {
->> +	.ctrl_type	= DW_MCI_TYPE_EXYNOS5250,
->> +	.caps		= MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
->> +				MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
-> These caps should be board specific. So it's not proper place. Esp.,
-> MMC_CAP_8_BIT_DATA.
->> +};
->> +
->>  static const struct of_device_id dw_mci_pltfm_match[] = {
->>  	{ .compatible = "synopsis,dw-mshc",
->>  			.data = (void *)&synopsis_drv_data, },
->> +	{ .compatible = "synopsis,dw-mshc-exynos5250",
->> +			.data = (void *)&exynos5250_drv_data, },
->>  	{},
->>  };
->>  MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
->> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
->> index bcf66d7..9174a69 100644
->> --- a/drivers/mmc/host/dw_mmc.c
->> +++ b/drivers/mmc/host/dw_mmc.c
->> @@ -236,6 +236,7 @@ static void dw_mci_set_timeout(struct dw_mci *host)
->>  static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command
->> *cmd)
->>  {
->>  	struct mmc_data	*data;
->> +	struct dw_mci_slot *slot = mmc_priv(mmc);
->>  	u32 cmdr;
->>  	cmd->error = -EINPROGRESS;
->>
->> @@ -265,6 +266,10 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc,
->> struct mmc_command *cmd)
->>  			cmdr |= SDMMC_CMD_DAT_WR;
->>  	}
->>
->> +	if (slot->host->drv_data->ctrl_type == DW_MCI_TYPE_EXYNOS5250)
->> +		if (SDMMC_CLKSEL_GET_SELCLK_DRV(mci_readl(slot->host, CLKSEL)))
->> +			cmdr |= SDMMC_USE_HOLD_REG;
-> Some other board, custom SOC also can use this HOLD register. So it's
-> not EXYNOS5250 specific one. I think we introduce the more generic
-> quirks for this instead of SOC specific.
-
-One more, I think that also need to check the IMPLEMENT_HOLD_REG bit in HCON register.
-It has dependency with that.
-As Mr.Park is mentioned, this register is clock phasing.
-In spec, card is enumerated in SDR12 or SDR25 mode, the application must program the use_hold_reg.
-
-Best Regards,
-Jaehoon Chung
-
->> +
->>  	return cmdr;
->>  }
->>
->> @@ -787,10 +792,19 @@ static void dw_mci_set_ios(struct mmc_host *mmc,
->> struct mmc_ios *ios)
->>  	regs = mci_readl(slot->host, UHS_REG);
->>
->>  	/* DDR mode set */
->> -	if (ios->timing == MMC_TIMING_UHS_DDR50)
->> +	if (ios->timing == MMC_TIMING_UHS_DDR50) {
->>  		regs |= (0x1 << slot->id) << 16;
->> -	else
->> +		mci_writel(slot->host, CLKSEL, slot->host->ddr_timing);
-> As you wrote, does CLKSEL is some SOC specific registers?
->> +	} else {
->>  		regs &= ~(0x1 << slot->id) << 16;
->> +		mci_writel(slot->host, CLKSEL, slot->host->sdr_timing);
->> +	}
->> +
->> +	if (slot->host->drv_data->ctrl_type == DW_MCI_TYPE_EXYNOS5250) {
->> +		slot->host->bus_hz = clk_get_rate(slot->host->ciu_clk);
->> +		slot->host->bus_hz /= SDMMC_CLKSEL_GET_DIVRATIO(
->> +					mci_readl(slot->host, CLKSEL));
->> +	}
->>
->>  	mci_writel(slot->host, UHS_REG, regs);
->>
->> @@ -2074,6 +2088,20 @@ static struct dw_mci_board *dw_mci_parse_dt(struct
->> dw_mci *host)
->>  		if (of_get_property(np, of_quriks[idx].quirk, NULL))
->>  			pdata->quirks |= of_quriks[idx].id;
->>
->> +	if (of_property_read_u32_array(dev->of_node,
->> +			"samsung,dw-mshc-sdr-timing", timing, 3))
->> +		host->sdr_timing = DW_MCI_DEF_SDR_TIMING;
->> +	else
->> +		host->sdr_timing = SDMMC_CLKSEL_TIMING(timing[0],
->> +					timing[1], timing[2]);
->> +
->> +	if (of_property_read_u32_array(dev->of_node,
->> +			"samsung,dw-mshc-ddr-timing", timing, 3))
->> +		host->ddr_timing = DW_MCI_DEF_DDR_TIMING;
->> +	else
->> +		host->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0],
->> +					timing[1], timing[2]);
->> +
->>  	if (of_property_read_u32(np, "fifo-depth", &pdata->fifo_depth))
->>  		dev_info(dev, "fifo-depth property not found, using "
->>  				"value of FIFOTH register as default\n");
->> diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
->> index 8b8862b..4b7e42b 100644
->> --- a/drivers/mmc/host/dw_mmc.h
->> +++ b/drivers/mmc/host/dw_mmc.h
->> @@ -53,6 +53,7 @@
->>  #define SDMMC_IDINTEN		0x090
->>  #define SDMMC_DSCADDR		0x094
->>  #define SDMMC_BUFADDR		0x098
->> +#define SDMMC_CLKSEL		0x09C /* specific to Samsung Exynos5250 */
-> Another Samsung Custom SOC also used it.
->>  #define SDMMC_DATA(x)		(x)
->>
->>  /*
->> @@ -111,6 +112,7 @@
->>  #define SDMMC_INT_ERROR			0xbfc2
->>  /* Command register defines */
->>  #define SDMMC_CMD_START			BIT(31)
->> +#define SDMMC_USE_HOLD_REG		BIT(29)
->>  #define SDMMC_CMD_CCS_EXP		BIT(23)
->>  #define SDMMC_CMD_CEATA_RD		BIT(22)
->>  #define SDMMC_CMD_UPD_CLK		BIT(21)
->> @@ -142,6 +144,17 @@
->>  /* Version ID register define */
->>  #define SDMMC_GET_VERID(x)		((x) & 0xFFFF)
->>
->> +#define DW_MCI_DEF_SDR_TIMING		0x03030002
->> +#define DW_MCI_DEF_DDR_TIMING		0x03020001
->> +#define SDMMC_CLKSEL_CCLK_SAMPLE(x)	(((x) & 3) << 0)
->> +#define SDMMC_CLKSEL_CCLK_DRIVE(x)	(((x) & 3) << 16)
->> +#define SDMMC_CLKSEL_CCLK_DIVIDER(x)	(((x) & 3) << 24)
->> +#define SDMMC_CLKSEL_TIMING(x, y, z)	(SDMMC_CLKSEL_CCLK_SAMPLE(x) |	\
->> +					SDMMC_CLKSEL_CCLK_DRIVE(y) |	\
->> +					SDMMC_CLKSEL_CCLK_DIVIDER(z))
->> +#define SDMMC_CLKSEL_GET_DIVRATIO(x)	((((x) >> 24) & 0x7) + 1)
->> +#define SDMMC_CLKSEL_GET_SELCLK_DRV(x)	(((x) >> 16) & 0x7)
->> +
->>  /* Register access macros */
->>  #define mci_readl(dev, reg)			\
->>  	__raw_readl((dev)->regs + SDMMC_##reg)
->> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
->> index 71d2b56..6e6d036 100644
->> --- a/include/linux/mmc/dw_mmc.h
->> +++ b/include/linux/mmc/dw_mmc.h
->> @@ -82,6 +82,8 @@ struct mmc_data;
->>   * @biu_clk: Pointer to bus interface unit clock instance.
->>   * @ciu_clk: Pointer to card interface unit clock instance.
->>   * @slot: Slots sharing this MMC controller.
->> + * @sdr_timing: Clock phase shifting for driving and sampling in sdr mode
->> + * @ddr_timing: Clock phase shifting for driving and sampling in ddr mode
->>   * @fifo_depth: depth of FIFO.
->>   * @data_shift: log2 of FIFO item size.
->>   * @part_buf_start: Start index in part_buf.
->> @@ -166,6 +168,10 @@ struct dw_mci {
->>  	struct clk		*ciu_clk;
->>  	struct dw_mci_slot	*slot[MAX_MCI_SLOTS];
->>
->> +	/* Phase Shift Value (for exynos5250 variant) */
->> +	u32			sdr_timing;
->> +	u32			ddr_timing;
->> +
->>  	/* FIFO push and pull */
->>  	int			fifo_depth;
->>  	int			data_shift;
->> --
->> 1.7.5.4
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Hum, this commit:
 > 
+> commit 1849ecb22fb3b5d57b65e7369a3957adf9f26f39
+> Author: Jean Delvare <jdelvare@suse.de>
+> Date:   Sat Jan 28 11:07:09 2012 +0100
+> 
+>     drm/kms: Make i2c buses faster
+> 
+> doubled the data rate but only for radeon and intel drivers. nouveau
+> doesn't use the standard i2c-algo-bit helpers (BTW: the
+>  cond_resched() has been removed), and AFAICS it's using 1us delay;
+>  the other drivers are using 10us, 1us seems a bit too low...
 
+As I read the code, it is actually using a 6 us delay. This is fast
+but reasonable, especially when the code handles clock stretching 
 
+Ben Skeggs (Cc'd) rewrote the I2C handling code in the nouveau
+driver completely in kernel 3.3:
+
+commit f553b79c03f0dbd52f6f03abe8233a2bef8cbd0d
+Author: Ben Skeggs <bskeggs@redhat.com>
+Date:   Wed Dec 21 18:09:12 2011 +1000
+
+    drm/nouveau/i2c: handle bit-banging ourselves
+
+    i2c-algo-bit doesn't actually work very well on one card I have access to
+    (NVS 300), random single-bit errors occur most of the time - what we're
+    doing now is closer to what xf86i2c.c does.
+
+    The original plan was to figure out why i2c-algo-bit fails on the NVS 300,
+    and fix it.  However, while investigating I discovered i2c-algo-bit calls
+    cond_resched(), which makes it a bad idea for us to be using as we execute
+    VBIOS scripts from a tasklet, and there may very well be i2c transfers as
+    a result.
+
+    So, since I already wrote this code in userspace to track down the NVS 300
+    bug, and it's not really much code - lets use it.
+
+    Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+
+So if the regression happened between 3.2.15 and 3.4-rc4, that would be
+a good candidate.
+
+BTW, Ben, there were two interesting fixes to i2c-algo-bit meanwhile,
+you may want to try using it again.
+
+Maarten, another commit you may want to try reverting is
+9292f37e1f5c79400254dca46f83313488093825 . If none of the above works,
+it would be great if you could test your KVM with another graphics
+adapter, so that we know if we are looking for a nouveau-specific bug
+or rather an issue in the common i2c or edid code. Otherwise a plain
+bisection is probably the way to go.
+
+-- 
+Jean Delvare
+Suse L3
