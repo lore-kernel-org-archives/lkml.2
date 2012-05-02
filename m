@@ -1,93 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758612Ab2EBCJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 22:09:16 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:36445 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758432Ab2EBCJJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 22:09:09 -0400
-Date: Tue, 1 May 2012 19:04:18 -0700
-From: Mike Turquette <mturquette@ti.com>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
-        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
-Message-ID: <20120502020418.GF17311@gmail.com>
-References: <1335419936-10881-1-git-send-email-skannan@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1335419936-10881-1-git-send-email-skannan@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758575Ab2EBCHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 22:07:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46532 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758394Ab2EBCHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 22:07:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="138970425"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
+        eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 3/9] perf: Introduce perf_pmu_migrate_context
+Date: Wed,  2 May 2012 10:07:14 +0800
+Message-Id: <1335924440-11242-4-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
+References: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20120425-22:58, Saravana Kannan wrote:
-> Create a struct clk_init_data to hold all data that needs to be passed from
-> the platfrom specific driver to the common clock framework during clock
-> registration. Add a pointer to this struct inside clk_hw.
-> 
-> This has several advantages:
-> * Completely hides struct clk from many clock platform drivers and static
->   clock initialization code that don't care for static initialization of
->   the struct clks.
-> * For platforms that want to do complete static initialization, it removed
->   the need to directly mess with the struct clk's fields while still
->   allowing to statically allocate struct clk. This keeps the code more
->   future proof even if they include clk-private.h.
-> * Simplifies the generic clk_register() function and allows adding optional
->   fields in the future without modifying the function signature.
-> * Simplifies the static initialization of clocks on all platforms by
->   removing the need for forward delcarations or convoluted macros.
-> 
-> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-Hi Saravana,
+Originally from Peter Zijlstra. The helper migrates perf events
+from one cpu to another cpu.
 
-Thanks for the patch.  I've taken it into my clk-next but I have two
-points:
+Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+---
+ include/linux/perf_event.h |    2 ++
+ kernel/events/core.c       |   36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 0 deletions(-)
 
-1) I'm surprised that you abandoned the approach of exposing the
-less-private members of struct clk via struct clk_hw.  Your original
-patch did just that, but did not account for static initialization.
-This patch seems to have gone in the opposite direction and only
-accounts for static initialization.
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index ddbb6a9..13b7b2d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1106,6 +1106,8 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr,
+ 				struct task_struct *task,
+ 				perf_overflow_handler_t callback,
+ 				void *context);
++extern void perf_pmu_migrate_context(struct pmu *pmu,
++				int src_cpu, int dst_cpu);
+ extern u64 perf_event_read_value(struct perf_event *event,
+ 				 u64 *enabled, u64 *running);
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 84911de..1fc7000 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1641,6 +1641,8 @@ perf_install_in_context(struct perf_event_context *ctx,
+ 	lockdep_assert_held(&ctx->mutex);
+ 
+ 	event->ctx = ctx;
++	if (event->cpu != -1)
++		event->cpu = cpu;
+ 
+ 	if (!task) {
+ 		/*
+@@ -6377,6 +6379,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	mutex_lock(&ctx->mutex);
+ 
+ 	if (move_group) {
++		synchronize_rcu();
+ 		perf_install_in_context(ctx, group_leader, event->cpu);
+ 		get_ctx(ctx);
+ 		list_for_each_entry(sibling, &group_leader->sibling_list,
+@@ -6482,6 +6485,39 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+ }
+ EXPORT_SYMBOL_GPL(perf_event_create_kernel_counter);
+ 
++void perf_pmu_migrate_context(struct pmu *pmu, int src_cpu, int dst_cpu)
++{
++	struct perf_event_context *src_ctx;
++	struct perf_event_context *dst_ctx;
++	struct perf_event *event, *tmp;
++	LIST_HEAD(events);
++
++	src_ctx = &per_cpu_ptr(pmu->pmu_cpu_context, src_cpu)->ctx;
++	dst_ctx = &per_cpu_ptr(pmu->pmu_cpu_context, dst_cpu)->ctx;
++
++	mutex_lock(&src_ctx->mutex);
++	list_for_each_entry_safe(event, tmp, &src_ctx->event_list,
++				 event_entry) {
++		perf_remove_from_context(event);
++		put_ctx(src_ctx);
++		list_add(&event->event_entry, &events);
++	}
++	mutex_unlock(&src_ctx->mutex);
++
++	synchronize_rcu();
++
++	mutex_lock(&dst_ctx->mutex);
++	list_for_each_entry_safe(event, tmp, &events, event_entry) {
++		list_del(&event->event_entry);
++		if (event->state >= PERF_EVENT_STATE_OFF)
++			event->state = PERF_EVENT_STATE_INACTIVE;
++		perf_install_in_context(dst_ctx, event, dst_cpu);
++		get_ctx(dst_ctx);
++	}
++	mutex_unlock(&dst_ctx->mutex);
++}
++EXPORT_SYMBOL_GPL(perf_pmu_migrate_context);
++
+ static void sync_child_event(struct perf_event *child_event,
+ 			       struct task_struct *child)
+ {
+-- 
+1.7.7.6
 
-I'm happy to take the patch as-is, but I did think that there were
-merits to your original approach.
-
-2) I did make a modification to your patch where I kept the
-DEFINE_CLK_* macros and continued to declare __clk_init in
-clk-private.h.  I do want to get rid of both of these in the future but
-currently my platform relies on static initialization before the
-allocator is available.  Please let me know if this causes a problem for
-you.
-
-Platform folks should rebase on top of this if needed.  This should be
-the last change to the driver/platform-facing API before 3.5.
-
-Sascha,
-
-Can you resubmit your fixed-factor clock?  I think the registration
-function collides with these changes.
-
-Thanks,
-Mike
