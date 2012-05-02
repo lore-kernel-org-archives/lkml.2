@@ -1,211 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab2EBMqJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 08:46:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51182 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab2EBMqF (ORCPT
+	id S1753102Ab2EBMqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 08:46:19 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38576 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909Ab2EBMqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 08:46:05 -0400
+	Wed, 2 May 2012 08:46:15 -0400
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-serial@vger.kernel.org
-Cc: arnd@arndb.de, swarren@wwwdotorg.org, lethal@linux-sh.org,
-        gregkh@linuxfoundation.org, linux-sh@vger.kernel.org,
+Cc: horms@verge.net.au, arnd@arndb.de, linux-sh@vger.kernel.org,
+        gregkh@linuxfoundation.org, swarren@wwwdotorg.org,
         linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        paul.gortmaker@windriver.com, horms@verge.net.au, olof@lixom.net,
+        paul.gortmaker@windriver.com, lethal@linux-sh.org, olof@lixom.net,
         Magnus Damm <magnus.damm@gmail.com>, dan.j.williams@intel.com,
         alan@linux.intel.com
-Date: Wed, 02 May 2012 21:46:51 +0900
-Message-Id: <20120502124651.30480.88827.sendpatchset@w520>
+Date: Wed, 02 May 2012 21:47:00 +0900
+Message-Id: <20120502124700.30480.63274.sendpatchset@w520>
 In-Reply-To: <20120502124642.30480.41373.sendpatchset@w520>
 References: <20120502124642.30480.41373.sendpatchset@w520>
-Subject: [PATCH 01/06] serial8250: Add dl_read()/dl_write() callbacks
+Subject: [PATCH 02/06] serial8250: Use dl_read()/dl_write() on Alchemy
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Magnus Damm <damm@opensource.se>
 
-Convert serial_dl_read() and serial_dl_write() from macro
-to 8250 specific callbacks. This change makes it easier to
-support 8250 hardware with non-standard DLL and DLM register
-configurations such as Alchemy, RM9K and upcoming Emma Mobile
-UART hardware.
+Convert the 8250 Alchemy support code to make
+use of the new dl_read()/dl_write() callbacks.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
 
- drivers/tty/serial/8250/8250.c |  117 +++++++++++++++++++++-------------------
- drivers/tty/serial/8250/8250.h |   14 ++++
- 2 files changed, 78 insertions(+), 53 deletions(-)
+ drivers/tty/serial/8250/8250.c |   67 +++++++++++++++-------------------------
+ 1 file changed, 26 insertions(+), 41 deletions(-)
 
---- 0001/drivers/tty/serial/8250/8250.c
-+++ work/drivers/tty/serial/8250/8250.c	2012-05-01 22:50:38.000000000 +0900
-@@ -284,6 +284,66 @@ static const struct serial8250_config ua
- 	},
- };
- 
-+/* Uart divisor latch read */
-+static int default_dl_read(struct uart_8250_port *up)
-+{
-+	return serial_in(up, UART_DLL) | serial_in(up, UART_DLM) << 8;
-+}
-+
-+/* Uart divisor latch write */
-+static void default_dl_write(struct uart_8250_port *up, int value)
-+{
-+	serial_out(up, UART_DLL, value & 0xff);
-+	serial_out(up, UART_DLM, value >> 8 & 0xff);
-+}
-+
-+#if defined(CONFIG_MIPS_ALCHEMY)
-+/* Au1x00 haven't got a standard divisor latch */
-+static int _serial_dl_read(struct uart_8250_port *up)
-+{
-+	if (up->port.iotype == UPIO_AU)
-+		return __raw_readl(up->port.membase + 0x28);
-+	else
-+		return default_dl_read(up);
-+}
-+
-+static void _serial_dl_write(struct uart_8250_port *up, int value)
-+{
-+	if (up->port.iotype == UPIO_AU)
-+		__raw_writel(value, up->port.membase + 0x28);
-+	else
-+		default_dl_write(up, value);
-+}
-+#elif defined(CONFIG_SERIAL_8250_RM9K)
-+static int _serial_dl_read(struct uart_8250_port *up)
-+{
-+	return	(up->port.iotype == UPIO_RM9000) ?
-+		(((__raw_readl(up->port.membase + 0x10) << 8) |
-+		(__raw_readl(up->port.membase + 0x08) & 0xff)) & 0xffff) :
-+		default_dl_read(up);
-+}
-+
-+static void _serial_dl_write(struct uart_8250_port *up, int value)
-+{
-+	if (up->port.iotype == UPIO_RM9000) {
-+		__raw_writel(value, up->port.membase + 0x08);
-+		__raw_writel(value >> 8, up->port.membase + 0x10);
-+	} else {
-+		default_dl_write(up, value);
-+	}
-+}
-+#else
-+static int _serial_dl_read(struct uart_8250_port *up)
-+{
-+	return default_dl_read(up);
-+}
-+
-+static void _serial_dl_write(struct uart_8250_port *up, int value)
-+{
-+	default_dl_write(up, value);
-+}
-+#endif
-+
- #if defined(CONFIG_MIPS_ALCHEMY)
- 
- /* Au1x00 UART hardware has a weird register layout */
-@@ -434,6 +494,10 @@ static void set_io_from_upio(struct uart
- {
- 	struct uart_8250_port *up =
- 		container_of(p, struct uart_8250_port, port);
-+
-+	up->dl_read = _serial_dl_read;
-+	up->dl_write = _serial_dl_write;
-+
- 	switch (p->iotype) {
- 	case UPIO_HUB6:
- 		p->serial_in = hub6_serial_in;
-@@ -481,59 +545,6 @@ serial_port_out_sync(struct uart_port *p
- 	}
+--- 0005/drivers/tty/serial/8250/8250.c
++++ work/drivers/tty/serial/8250/8250.c	2012-05-01 22:51:07.000000000 +0900
+@@ -297,24 +297,7 @@ static void default_dl_write(struct uart
+ 	serial_out(up, UART_DLM, value >> 8 & 0xff);
  }
  
--/* Uart divisor latch read */
--static inline int _serial_dl_read(struct uart_8250_port *up)
--{
--	return serial_in(up, UART_DLL) | serial_in(up, UART_DLM) << 8;
--}
--
--/* Uart divisor latch write */
--static inline void _serial_dl_write(struct uart_8250_port *up, int value)
--{
--	serial_out(up, UART_DLL, value & 0xff);
--	serial_out(up, UART_DLM, value >> 8 & 0xff);
--}
--
 -#if defined(CONFIG_MIPS_ALCHEMY)
 -/* Au1x00 haven't got a standard divisor latch */
--static int serial_dl_read(struct uart_8250_port *up)
+-static int _serial_dl_read(struct uart_8250_port *up)
 -{
 -	if (up->port.iotype == UPIO_AU)
 -		return __raw_readl(up->port.membase + 0x28);
 -	else
--		return _serial_dl_read(up);
+-		return default_dl_read(up);
 -}
 -
--static void serial_dl_write(struct uart_8250_port *up, int value)
+-static void _serial_dl_write(struct uart_8250_port *up, int value)
 -{
 -	if (up->port.iotype == UPIO_AU)
 -		__raw_writel(value, up->port.membase + 0x28);
 -	else
--		_serial_dl_write(up, value);
+-		default_dl_write(up, value);
 -}
 -#elif defined(CONFIG_SERIAL_8250_RM9K)
--static int serial_dl_read(struct uart_8250_port *up)
--{
--	return	(up->port.iotype == UPIO_RM9000) ?
--		(((__raw_readl(up->port.membase + 0x10) << 8) |
--		(__raw_readl(up->port.membase + 0x08) & 0xff)) & 0xffff) :
--		_serial_dl_read(up);
--}
--
--static void serial_dl_write(struct uart_8250_port *up, int value)
--{
--	if (up->port.iotype == UPIO_RM9000) {
--		__raw_writel(value, up->port.membase + 0x08);
--		__raw_writel(value >> 8, up->port.membase + 0x10);
--	} else {
--		_serial_dl_write(up, value);
--	}
--}
--#else
--#define serial_dl_read(up) _serial_dl_read(up)
--#define serial_dl_write(up, value) _serial_dl_write(up, value)
--#endif
--
- /*
-  * For the 16C950
-  */
---- 0001/drivers/tty/serial/8250/8250.h
-+++ work/drivers/tty/serial/8250/8250.h	2012-05-01 22:50:38.000000000 +0900
-@@ -37,6 +37,10 @@ struct uart_8250_port {
- 	unsigned char		lsr_saved_flags;
- #define MSR_SAVE_FLAGS UART_MSR_ANY_DELTA
- 	unsigned char		msr_saved_flags;
-+
-+	/* 8250 specific callbacks */
-+	int			(*dl_read)(struct uart_8250_port *);
-+	void			(*dl_write)(struct uart_8250_port *, int);
++#if defined(CONFIG_SERIAL_8250_RM9K)
+ static int _serial_dl_read(struct uart_8250_port *up)
+ {
+ 	return	(up->port.iotype == UPIO_RM9000) ?
+@@ -344,7 +327,7 @@ static void _serial_dl_write(struct uart
+ }
+ #endif
+ 
+-#if defined(CONFIG_MIPS_ALCHEMY)
++#ifdef CONFIG_MIPS_ALCHEMY
+ 
+ /* Au1x00 UART hardware has a weird register layout */
+ static const u8 au_io_in_map[] = {
+@@ -365,22 +348,32 @@ static const u8 au_io_out_map[] = {
+ 	[UART_MCR] = 6,
  };
  
- struct old_serial_port {
-@@ -96,6 +100,16 @@ static inline void serial_out(struct uar
- 	up->port.serial_out(&up->port, offset, value);
+-/* sane hardware needs no mapping */
+-static inline int map_8250_in_reg(struct uart_port *p, int offset)
++static unsigned int au_serial_in(struct uart_port *p, int offset)
+ {
+-	if (p->iotype != UPIO_AU)
+-		return offset;
+-	return au_io_in_map[offset];
++	offset = au_io_in_map[offset] << p->regshift;
++	return __raw_readl(p->membase + offset);
  }
  
-+static inline int serial_dl_read(struct uart_8250_port *up)
-+{
-+	return up->dl_read(up);
+-static inline int map_8250_out_reg(struct uart_port *p, int offset)
++static void au_serial_out(struct uart_port *p, int offset, int value)
+ {
+-	if (p->iotype != UPIO_AU)
+-		return offset;
+-	return au_io_out_map[offset];
++	offset = au_io_out_map[offset] << p->regshift;
++	__raw_writel(value, p->membase + offset);
 +}
 +
-+static inline void serial_dl_write(struct uart_8250_port *up, int value)
++/* Au1x00 haven't got a standard divisor latch */
++static int au_serial_dl_read(struct uart_8250_port *up)
 +{
-+	up->dl_write(up, value);
++	return __raw_readl(up->port.membase + 0x28);
 +}
 +
- #if defined(__alpha__) && !defined(CONFIG_PCI)
- /*
-  * Digital did something really horribly wrong with the OUT1 and OUT2
++static void au_serial_dl_write(struct uart_8250_port *up, int value)
++{
++	__raw_writel(value, up->port.membase + 0x28);
+ }
+ 
+-#elif defined(CONFIG_SERIAL_8250_RM9K)
++#endif
++
++#if defined(CONFIG_SERIAL_8250_RM9K)
+ 
+ static const u8
+ 	regmap_in[8] = {
+@@ -464,18 +457,6 @@ static unsigned int mem32_serial_in(stru
+ 	return readl(p->membase + offset);
+ }
+ 
+-static unsigned int au_serial_in(struct uart_port *p, int offset)
+-{
+-	offset = map_8250_in_reg(p, offset) << p->regshift;
+-	return __raw_readl(p->membase + offset);
+-}
+-
+-static void au_serial_out(struct uart_port *p, int offset, int value)
+-{
+-	offset = map_8250_out_reg(p, offset) << p->regshift;
+-	__raw_writel(value, p->membase + offset);
+-}
+-
+ static unsigned int io_serial_in(struct uart_port *p, int offset)
+ {
+ 	offset = map_8250_in_reg(p, offset) << p->regshift;
+@@ -515,10 +496,14 @@ static void set_io_from_upio(struct uart
+ 		p->serial_out = mem32_serial_out;
+ 		break;
+ 
++#ifdef CONFIG_MIPS_ALCHEMY
+ 	case UPIO_AU:
+ 		p->serial_in = au_serial_in;
+ 		p->serial_out = au_serial_out;
++		up->dl_read = au_serial_dl_read;
++		up->dl_write = au_serial_dl_write;
+ 		break;
++#endif
+ 
+ 	default:
+ 		p->serial_in = io_serial_in;
