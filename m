@@ -1,143 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab2EBPMD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 11:12:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23908 "EHLO mx1.redhat.com"
+	id S1755272Ab2EBPNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 11:13:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52449 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754377Ab2EBPMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 11:12:01 -0400
-Date: Wed, 2 May 2012 17:11:42 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 5/5] mm: refault distance-based file cache sizing
-Message-ID: <20120502151142.GA2410@redhat.com>
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
- <1335861713-4573-6-git-send-email-hannes@cmpxchg.org>
- <20120502015741.GE22923@redhat.com>
- <20120502062308.GN2536@cmpxchg.org>
+	id S1753729Ab2EBPNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 11:13:51 -0400
+Message-ID: <4FA14F13.6040002@redhat.com>
+Date: Wed, 02 May 2012 11:13:23 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120502062308.GN2536@cmpxchg.org>
+To: Alex Shi <alex.shi@intel.com>
+CC: andi.kleen@intel.com, tim.c.chen@linux.intel.com, jeremy@goop.org,
+        chrisw@sous-sol.org, akataria@vmware.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
+        fweisbec@gmail.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        paul.gortmaker@windriver.com, dhowells@redhat.com,
+        fenghua.yu@intel.com, borislav.petkov@amd.com, yinghai@kernel.org,
+        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] x86/tlb_info: get last level TLB entry number of
+ CPU
+References: <1335603006-2572-2-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1335603006-2572-2-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 08:23:09AM +0200, Johannes Weiner wrote:
-> On Wed, May 02, 2012 at 03:57:41AM +0200, Andrea Arcangeli wrote:
-> > On Tue, May 01, 2012 at 10:41:53AM +0200, Johannes Weiner wrote:
-> > > frequently used active page.  Instead, for each refault with a
-> > > distance smaller than the size of the active list, we deactivate an
-> > 
-> > Shouldn't this be the size of active list + size of inactive list?
-> > 
-> > If the active list is 500M, inactive 500M and the new working set is
-> > 600M, the refault distance will be 600M, it won't be smaller than the
-> > size of the active list, and it won't deactivate the active list as it
-> > should and it won't be detected as working set.
-> > 
-> > Only the refault distance bigger than inactive+active should not
-> > deactivate the active list if I understand how this works correctly.
-> 
-> The refault distance is what's missing, not the full reuse frequency.
-> You ignore the 500M worth of inactive LRU time the page had in memory.
-> The distance in that scenario would be 100M, the time between eviction
-> and refault:
-> 
->         +-----------------------------++-----------------------------+
->         |                             ||                             |
->         | inactive                    || active                      |
->         +-----------------------------++-----------------------------+
-> +~~~~~~~------------------------------+
-> |                                     |
-> | new set                             |
-> +~~~~~~~------------------------------+
-> ^       ^
-> |       |
-> |       eviction
-> refault
-> 
-> The ~~~'d part could fit into memory if the active list was 100M
-> smaller.
+On 04/28/2012 04:50 AM, Alex Shi wrote:
+> For 4KB pages, x86 CPU has 2 or 1 level TLB, first level is data TLB and
+> instruction TLB, second level is shared TLB for both data and instructions.
+>
+> For hupe page TLB, usually there is just one level and seperated by 2MB/4MB
+> and 1GB.
+>
+> Although each levels TLB size is important for performance tuning, but for
+> genernal and rude optimizing, just last level TLB entry number is suitable.
+> And in fact, last level TLB has the biggest entry number.
+>
+> This patch will get the biggest TLB entry number and use it in furture TLB
+> optimizing.
+>
+> Signed-off-by: Alex Shi<alex.shi@intel.com>
 
-Never mind, I see that the refault distance is only going to measure
-the amount of the new working set that spilled over the inactive list
-so it would only be set to 100M in the example.
+Acked-by: Rik van Riel <riel@redhat.com>
 
-> > > @@ -1726,6 +1728,11 @@ zonelist_scan:
-> > >  		if ((alloc_flags & ALLOC_CPUSET) &&
-> > >  			!cpuset_zone_allowed_softwall(zone, gfp_mask))
-> > >  				continue;
-> > > +		if ((alloc_flags & ALLOC_WMARK_LOW) &&
-> > > +		    current->refault_distance &&
-> > > +		    !workingset_zone_alloc(zone, current->refault_distance,
-> > > +					   &distance, &active))
-> > > +			continue;
-> > >  		/*
-> > >  		 * When allocating a page cache page for writing, we
-> > >  		 * want to get it from a zone that is within its dirty
-> > 
-> > It's a bit hard to see how this may not run oom prematurely if the
-> > distance is always bigger, this is just an implementation question and
-> > maybe I'm missing a fallback somewhere where we actually allocate
-> > memory from whatever place in case no place is ideal.
-> 
-> Sorry, this should be documented better.
-> 
-> The ALLOC_WMARK_LOW check makes sure this only applies in the
-> fastpath.  It will prepare reclaim with lruvec->shrink_active, then
-> wake up kswapd and retry the zonelist without this constraint.
-
-My point is this is going to change the semantics of ALLOC_WMARK_LOW
-to "return OOM randomly even if there's plenty of free memory" instead
-of "use only up to the low wmark". I see you want to wake kswapd and
-retry with the min wmark after that, but maybe it would be cleaner to
-have a new ALLOC_REFAULT_DISTANCE to avoid altering the meaning of
-ALLOC_WMARK_LOW. Then add a "|ALLOC_REFAULT_DISTANCE" to the
-parameter. It sounds simpler to keep controlling the wmark level
-checked with ALLOC_WMARK_LOW|MIN|HIGH without introducing a new special
-meanings to the LOW bitflag.
-
-This is only a cleanup though, I believe it works good at runtime.
-
-> > > +	/*
-> > > +	 * Lower zones may not even be full, and free pages are
-> > > +	 * potential inactive space, too.  But the dirty reserve is
-> > > +	 * not available to page cache due to lowmem reserves and the
-> > > +	 * kswapd watermark.  Don't include it.
-> > > +	 */
-> > > +	zone_free = zone_page_state(zone, NR_FREE_PAGES);
-> > > +	if (zone_free > zone->dirty_balance_reserve)
-> > > +		zone_free -= zone->dirty_balance_reserve;
-> > > +	else
-> > > +		zone_free = 0;
-> > 
-> > Maybe also remove the high wmark from the sum? It can be some hundred
-> > meg so it's better to take it into account, to have a more accurate
-> > math and locate the best zone that surely fits.
-> > 
-> > For the same reason it looks like the lowmem reserve should also be
-> > taken into account, on the full sum.
-> 
-> dirty_balance_reserve IS the sum of the high watermark and the biggest
-> lowmem reserve for a particular zone, see how it's calculated in
-> mm/page_alloc.c::calculate_totalreserve_pages().
-> 
-> nr_free - dirty_balance_reserve is the number of pages available to
-> page cache allocations without keeping kswapd alive or having to dip
-> into lowmem reserves.
-> 
-> Or did I misunderstand you?
-
-No, that's all right then! I didn't realize dirty_balance_reserve
-accounts exactly for what I wrote above (high wmark and lowmem
-reserve). I've seen it used by page-writeback and I naively assumed it
-had to do with dirty pages levels, while it has absolutely nothing to
-do with writeback or any dirty memory level! Despite its quite
-misleading _dirty prefix :)
