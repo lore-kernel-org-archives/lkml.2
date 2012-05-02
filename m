@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab2EBTmy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 15:42:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49667 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756331Ab2EBTmu (ORCPT
+	id S1756876Ab2EBTmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 15:42:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57006 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756220Ab2EBTmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 May 2012 15:42:50 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,13 +16,13 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/5] perf annotate browser: Show current jump, back or forward
-Date: Wed,  2 May 2012 16:42:36 -0300
-Message-Id: <1335987758-11039-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/5] perf ui browser: Add method to draw up/down arrow line
+Date: Wed,  2 May 2012 16:42:35 -0300
+Message-Id: <1335987758-11039-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1335987758-11039-1-git-send-email-acme@infradead.org>
 References: <1335987758-11039-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,15 +30,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Instead of trying to show the current loop by naively looking for the
-next backward jump, just use 'j' to toggle showing arrows connecting
-jump with its target.
+It figures out the direction and draws downwards arrows too if that is
+the case.
 
-And do it for forward jumps as well.
-
-Loop detection requires more code to follow the flow control, etc.
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -46,117 +40,100 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-soahcn1lz2u4wxj31ch0594j@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-tg329nr7q4dg9d0tl3o0wywg@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/annotate.c |   50 +++++++++++++++++--------------------
- 1 file changed, 23 insertions(+), 27 deletions(-)
+ tools/perf/ui/browser.c |   54 +++++++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/ui/browser.h |    4 ++--
+ 2 files changed, 54 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 4778172..d203daf 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -30,6 +30,7 @@ struct annotate_browser {
- 	int		    nr_entries;
- 	bool		    hide_src_code;
- 	bool		    use_offset;
-+	bool		    jump_arrows;
- 	bool		    searching_backwards;
- 	u8		    offset_width;
- 	char		    search_bf[128];
-@@ -144,56 +145,47 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 		ab->selection = dl;
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index 32ac116..f4b2530 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -600,8 +600,9 @@ void ui_browser__write_graph(struct ui_browser *browser __used, int graph)
+ 	SLsmg_set_char_set(0);
  }
  
--static void annotate_browser__draw_current_loop(struct ui_browser *browser)
-+static void annotate_browser__draw_current_jump(struct ui_browser *browser)
+-void __ui_browser__line_arrow_up(struct ui_browser *browser, unsigned int column,
+-				 u64 start, u64 end, int start_width)
++static void __ui_browser__line_arrow_up(struct ui_browser *browser,
++					unsigned int column,
++					u64 start, u64 end, int start_width)
  {
- 	struct annotate_browser *ab = container_of(browser, struct annotate_browser, b);
--	struct map_symbol *ms = browser->priv;
--	struct symbol *sym = ms->sym;
--	struct annotation *notes = symbol__annotation(sym);
--	struct disasm_line *cursor = ab->selection, *pos = cursor, *target;
--	struct browser_disasm_line *bcursor = disasm_line__browser(cursor),
--				   *btarget, *bpos;
-+	struct disasm_line *cursor = ab->selection, *target;
-+	struct browser_disasm_line *btarget, *bcursor;
- 	unsigned int from, to, start_width = 2;
+ 	unsigned int row, end_row;
  
--	list_for_each_entry_from(pos, &notes->src->source, node) {
--		if (!pos->ins || !ins__is_jump(pos->ins) ||
--		    !disasm_line__has_offset(pos))
--			continue;
--
--		target = ab->offsets[pos->ops.target.offset];
--		if (!target)
--			continue;
-+	if (!cursor->ins || !ins__is_jump(cursor->ins) ||
-+	    !disasm_line__has_offset(cursor))
-+		return;
- 
--		btarget = disasm_line__browser(target);
--		if (btarget->idx <= bcursor->idx)
--			goto found;
--	}
-+	target = ab->offsets[cursor->ops.target.offset];
-+	if (!target)
-+		return;
- 
--	return;
-+	bcursor = disasm_line__browser(cursor);
-+	btarget = disasm_line__browser(target);
- 
--found:
--	bpos = disasm_line__browser(pos);
- 	if (ab->hide_src_code) {
--		from = bpos->idx_asm;
-+		from = bcursor->idx_asm;
- 		to = btarget->idx_asm;
- 	} else {
--		from = (u64)bpos->idx;
-+		from = (u64)bcursor->idx;
- 		to = (u64)btarget->idx;
- 	}
- 
- 	ui_browser__set_color(browser, HE_COLORSET_CODE);
- 
--	if (!bpos->jump_target)
-+	if (!bcursor->jump_target)
- 		start_width += ab->offset_width + 1;
- 
--	__ui_browser__line_arrow_up(browser, 10, from, to, start_width);
-+	__ui_browser__line_arrow(browser, 10, from, to, start_width);
+@@ -639,6 +640,55 @@ out:
+ 	SLsmg_set_char_set(0);
  }
  
- static unsigned int annotate_browser__refresh(struct ui_browser *browser)
++static void __ui_browser__line_arrow_down(struct ui_browser *browser,
++					  unsigned int column,
++					  u64 start, u64 end, int start_width)
++{
++	unsigned int row, end_row;
++
++	SLsmg_set_char_set(1);
++
++	if (start >= browser->top_idx) {
++		row = start - browser->top_idx;
++		ui_browser__gotorc(browser, row, column);
++		SLsmg_write_char(SLSMG_ULCORN_CHAR);
++		ui_browser__gotorc(browser, row, column + 1);
++		SLsmg_draw_hline(start_width);
++
++		if (row++ == 0)
++			goto out;
++	} else
++		row = 0;
++
++	if (end >= browser->top_idx + browser->height)
++		end_row = browser->height - 1;
++	else
++		end_row = end - browser->top_idx;;
++
++	ui_browser__gotorc(browser, row, column);
++	SLsmg_draw_vline(end_row - row + 1);
++
++	ui_browser__gotorc(browser, end_row, column);
++	if (end < browser->top_idx + browser->height) {
++		SLsmg_write_char(SLSMG_LLCORN_CHAR);
++		ui_browser__gotorc(browser, end_row, column + 1);
++		SLsmg_write_char(SLSMG_HLINE_CHAR);
++		ui_browser__gotorc(browser, end_row, column + 2);
++		SLsmg_write_char(SLSMG_RARROW_CHAR);
++	}
++out:
++	SLsmg_set_char_set(0);
++}
++
++void __ui_browser__line_arrow(struct ui_browser *browser, unsigned int column,
++			      u64 start, u64 end, int start_width)
++{
++	if (start > end)
++		__ui_browser__line_arrow_up(browser, column, start, end, start_width);
++	else
++		__ui_browser__line_arrow_down(browser, column, start, end, start_width);
++}
++
+ void ui_browser__init(void)
  {
-+	struct annotate_browser *ab = container_of(browser, struct annotate_browser, b);
- 	int ret = ui_browser__list_head_refresh(browser);
+ 	int i = 0;
+diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
+index 2f226cb..059764b 100644
+--- a/tools/perf/ui/browser.h
++++ b/tools/perf/ui/browser.h
+@@ -38,8 +38,8 @@ void ui_browser__reset_index(struct ui_browser *self);
  
--	annotate_browser__draw_current_loop(browser);
-+	if (ab->jump_arrows)
-+		annotate_browser__draw_current_jump(browser);
- 
- 	return ret;
- }
-@@ -628,6 +620,9 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 		case 'o':
- 			self->use_offset = !self->use_offset;
- 			continue;
-+		case 'j':
-+			self->jump_arrows = !self->jump_arrows;
-+			continue;
- 		case '/':
- 			if (annotate_browser__search(self, delay_secs)) {
- show_help:
-@@ -739,6 +734,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 			.use_navkeypressed = true,
- 		},
- 		.use_offset = true,
-+		.jump_arrows = true,
- 	};
- 	int ret = -1;
- 
+ void ui_browser__gotorc(struct ui_browser *self, int y, int x);
+ void ui_browser__write_graph(struct ui_browser *browser, int graph);
+-void __ui_browser__line_arrow_up(struct ui_browser *browser, unsigned int column,
+-				 u64 start, u64 end, int start_width);
++void __ui_browser__line_arrow(struct ui_browser *browser, unsigned int column,
++			      u64 start, u64 end, int start_width);
+ void __ui_browser__show_title(struct ui_browser *browser, const char *title);
+ void ui_browser__show_title(struct ui_browser *browser, const char *title);
+ int ui_browser__show(struct ui_browser *self, const char *title,
 -- 
 1.7.9.2.358.g22243
 
