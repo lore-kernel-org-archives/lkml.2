@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab2EBIv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 04:51:56 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:50789 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036Ab2EBIvy convert rfc822-to-8bit (ORCPT
+	id S1755968Ab2EBIw0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 04:52:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57167 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755183Ab2EBIwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 04:51:54 -0400
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>
-Cc: mingo@elte.hu, jeremy@goop.org, mtosatti@redhat.com, kvm@vger.kernel.org,
-        x86@kernel.org, vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com
-Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
-In-Reply-To: <1335865176.13683.120.camel@twins>
-References: <20120427161727.27082.43096.stgit@abhimanyu> <20120427162401.27082.59387.stgit@abhimanyu> <4F9D32B4.8040002@redhat.com> <1335865176.13683.120.camel@twins>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
-Date: Wed, 02 May 2012 14:21:14 +0530
-Message-ID: <87obq7ge4d.fsf@linux.vnet.ibm.com>
+	Wed, 2 May 2012 04:52:25 -0400
+Date: Wed, 2 May 2012 09:52:21 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: jonghwa3.lee@samsung.com
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
+        Chiwoong byun <woong.byun@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] MFD : add MAX77686 mfd driver
+Message-ID: <20120502085220.GC4075@opensource.wolfsonmicro.com>
+References: <1335776022-4571-1-git-send-email-jonghwa3.lee@samsung.com>
+ <20120501165825.GA3264@sirena.org.uk>
+ <4FA0BF9C.7090107@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-x-cbid: 12050122-5140-0000-0000-0000012A9A7F
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JWEK1jqKZ6MHAcjA"
+Content-Disposition: inline
+In-Reply-To: <4FA0BF9C.7090107@samsung.com>
+X-Cookie: You will soon forget this.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 May 2012 11:39:36 +0200, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Sun, 2012-04-29 at 15:23 +0300, Avi Kivity wrote:
-> > On 04/27/2012 07:24 PM, Nikunj A. Dadhania wrote:
-> > > flush_tlb_others_ipi depends on lot of statics in tlb.c.  Replicated
-> > > the flush_tlb_others_ipi as kvm_flush_tlb_others to further adapt to
-> > > paravirtualization.
-> > >
-> > > Use the vcpu state information inside the kvm_flush_tlb_others to
-> > > avoid sending ipi to pre-empted vcpus.
-> > >
-> > > * Do not send ipi's to offline vcpus and set flush_on_enter flag
-> > 
-> > get_user_pages_fast() depends on the IPI to hold off page table teardown
-> > while they are locklessly walked with interrupts disabled.  If a vcpu
-> > were to be preempted while in this critical section, another vcpu
-> > tearing down page tables would go ahead and destroy them.  when the
-> > preempted vcpu resumes it then touches the freed pages.
-> > 
-> > We could try to teach kvm and get_user_pages_fast() about this, but this
-> > is intrusive.  Another option is to replace the cpu_relax() loop with
-> > something that sleeps and is then woken up by the TLB IPI handler if needed.
-> 
-> I think something like
-> 
->   select HAVE_RCU_TABLE_FREE if PARAVIRT
-> 
-> or somesuch is just about all it takes.
->
-[root@krm1 linux]# grep HAVE_RCU_TABLE .config
-CONFIG_HAVE_RCU_TABLE_FREE=y
-[root@krm1 linux]# make -j32  -s
-mm/memory.c: In function ‘tlb_remove_table_one’:
-mm/memory.c:315: error: implicit declaration of function ‘__tlb_remove_table’
 
-I suppose we need to have __tlb_remove_table. Trying to understand what
-needs to be done there.
+--JWEK1jqKZ6MHAcjA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards
-Nikunj
+On Wed, May 02, 2012 at 02:01:16PM +0900, jonghwa3.lee@samsung.com wrote:
+> Hi Mark,
+>=20
+> You point out many things. ;-) Thanks for your concern.
+> I want to explain one by one.
 
+Don't top post!  http://daringfireball.net/2007/07/on_top
+
+> 2. Those steps is needed for wake-up interrupt occurred by 77686 irq.
+>    When system has woken up from Suspend-to-RAM state by 77686 irq,
+> 	then it never call irq handler.
+
+Why?  Are you sure you aren't doing something like requesting the wrong
+trigger type for the interrupt?
+
+> 4. This will work when I2C interface is changed according to board
+> 	revision with board configuration.
+
+> 5. This is for some board that doesn't use RTC. (e.g. SMDK board)
+
+Since you top posted I'm really not sure which comments you're referring
+to with these...
+
+--JWEK1jqKZ6MHAcjA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPoPWxAAoJEBus8iNuMP3dvAcQAJW06U1QnFxWUYHhUUpjtt/X
+mLHOUd62u+Kcbunz4BevLXIo/bHTV6pjdyqfuXIFC+zZbkINE9Ca4grJ4XhpPVYU
+aZG94aQIJ9YCjJftlxufJyPjJ+QLNbBZqp3C5H11ADhHcKHIUSNqJ3Xk4v99UlFs
+vkdXVVAR5jNWyAFeFuhBW7U1qDcRorJhxDlADL/UD7+QTIwi5G3RHFcQ7BwIs78q
+TNmUvzUJ1N+w0ecHIf4wPhnlBldZLENeP2iE8xcVic99gJ6EHuKde6ELbN42tp9D
+i9OY5V5sUt8qUvgocGxiAz8z1fEiXRKhG4+5n5Gw3DN5mwdlVRxfM9TvtuIWnLQb
+qQ3/os34HciphKPN7+v3BynOj2sWxQXk8SjL2XT9B77JQqsEE8BVk+QlMcdecK2a
+NNYAbItX3DSGInzkMi1Y4tsnehTiDfyP+pLlw9GMBMKWNfnzoGNECljskN9BuT5Z
+aTJmZ+3Qbol/GJYbBCnfvW2c/yV3blgp6O1/V4D1zCd0Hu+R56oJi8e2YF8cPwP9
+Re0x4ILb8piEcjUXwTJ9MKpmnmZ532tBRMv7i1p6TgIrFZwVuxMs4tg29FJojObt
+hpk2f25fDvmZMS0XHS3IF4cCDaZszTnbONwZfFC9IVqVYnz92abduVSYVojUpFHA
+9QAE7OwL7e00zgvBnvtO
+=QfiM
+-----END PGP SIGNATURE-----
+
+--JWEK1jqKZ6MHAcjA--
