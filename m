@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab2EBTY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 15:24:29 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:36668 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756024Ab2EBTY2 (ORCPT
+	id S1756532Ab2EBTZX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 15:25:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56713 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756401Ab2EBTZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 15:24:28 -0400
-Date: Wed, 2 May 2012 12:19:38 -0700
-From: Mike Turquette <mturquette@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
-        Grant Likely <grant.likely@secretlab.ca>, h@pengutronix.de,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
-Message-ID: <20120502191938.GA18180@gmail.com>
-References: <4F9EE84C.90106@codeaurora.org>
- <CAJOA=zNCagT6GaeHi_jq7-LU9P-SfJZ8PA9bo-oeswjC0tHyYA@mail.gmail.com>
- <4F9F1659.1010804@codeaurora.org>
- <20120501081103.GC2194@S2101-09.ap.freescale.net>
- <20120501091334.GG15541@lunn.ch>
- <20120501170001.GB4089@opensource.wolfsonmicro.com>
- <4FA0258D.8020807@codeaurora.org>
- <20120501181922.GD4089@opensource.wolfsonmicro.com>
- <20120502015650.GE17311@gmail.com>
- <20120502051633.GH15541@lunn.ch>
+	Wed, 2 May 2012 15:25:16 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Ulrich Drepper <drepper@gmail.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/15] perf/core fixes and improvements
+Date: Wed,  2 May 2012 16:24:47 -0300
+Message-Id: <1335986702-9408-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120502051633.GH15541@lunn.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20120502-07:16, Andrew Lunn wrote:
-> > I could use some suggestions on the best way to resolve the merge issues
-> > we have currently.  It appears that we have three bases that platforms
-> > need to port over the common clk framework:
-> > 
-> > Russell's clkdev
-> > Arnd's arm-soc
-> > My clk-next branch
-> 
-> Hi Mike
-> 
-> The Orion code only depends on clk-next. I've been more conservative
-> with the changes, knowing that once they are merged i can add more
-> patches to make use of devm_get_clk() etc.
-> 
-> So for my, as well as going in via arm-soc, i could also imaging
-> giving you a pull request and becoming part of clk-next. However, i
-> don't care what route they take.
-> 
+Hi Ingo,
 
-Hi Andrew,
+	Please consider pulling,
 
-The choice is yours.
+- Arnaldo
 
-Regards,
-Mike
+The following changes since commit a385ec4f11bdcf81af094c03e2444ee9b7fad2e5:
 
->       Andrew
+  Merge tag 'v3.4-rc2' into perf/core (2012-04-13 09:57:10 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to dc41b9b8f02dbe2228ae787d525dac43beebb7fa:
+
+  perf ui: Change fallback policy of setup_browser() (2012-05-02 16:17:37 -0300)
+
+----------------------------------------------------------------
+New features and fixes for perf/core:
+
+. Improvements in how the gtk UI is handled when setting up the browser,
+  from Namhyung Kim.
+
+. Introduce a perf_target class to coalesce target (user, thread, cpu, etc)
+  handling and validation, from Namhyung Kim.
+
+. Clean up realloc use, from Ulrich Drepper.
+
+. Add missing include in parse-events.h, from Robert Richter.
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (1):
+      perf test: Make the rdpmc test honour 'verbose' mode
+
+Namhyung Kim (12):
+      perf tools: Introduce struct perf_target
+      perf stat: Convert to struct perf_target
+      perf top: Convert to struct perf_target
+      perf tools: Introduce perf_target__validate() helper
+      perf evlist: Make create_maps() take struct perf_target
+      perf tools: Check more combinations of PID/TID, UID and CPU switches
+      perf target: Split out perf_target handling code
+      perf ui: Make setup_browser() generic
+      perf ui gtk: Drop arg[cv] arguments from perf_gtk_setup_browser()
+      perf ui gtk: Rename functions for consistency
+      perf ui: Add gtk2 support into setup_browser()
+      perf ui: Change fallback policy of setup_browser()
+
+Robert Richter (1):
+      perf tools: Fix include header files in util/parse-events.h
+
+Ulrich Drepper (1):
+      perf tools: Cleanup realloc use
+
+ tools/perf/Makefile            |    8 ++
+ tools/perf/builtin-record.c    |   38 +++++----
+ tools/perf/builtin-report.c    |   10 +--
+ tools/perf/builtin-stat.c      |   46 +++++------
+ tools/perf/builtin-test.c      |   12 +--
+ tools/perf/builtin-top.c       |   34 +++-----
+ tools/perf/perf.h              |    8 +-
+ tools/perf/ui/gtk/browser.c    |   31 +++-----
+ tools/perf/ui/gtk/setup.c      |   12 +++
+ tools/perf/ui/setup.c          |  168 +++++++---------------------------------
+ tools/perf/ui/tui/setup.c      |  140 +++++++++++++++++++++++++++++++++
+ tools/perf/util/cache.h        |   24 ++++--
+ tools/perf/util/evlist.c       |   15 ++--
+ tools/perf/util/evlist.h       |    4 +-
+ tools/perf/util/evsel.c        |   11 +--
+ tools/perf/util/header.c       |   17 ++--
+ tools/perf/util/parse-events.h |    2 +
+ tools/perf/util/target.c       |   45 +++++++++++
+ tools/perf/util/target.h       |   18 +++++
+ tools/perf/util/top.c          |   19 ++---
+ tools/perf/util/top.h          |    6 +-
+ tools/perf/util/usage.c        |    9 +--
+ tools/perf/util/util.h         |    2 +-
+ 23 files changed, 380 insertions(+), 299 deletions(-)
+ create mode 100644 tools/perf/ui/gtk/setup.c
+ create mode 100644 tools/perf/ui/tui/setup.c
+ create mode 100644 tools/perf/util/target.c
+ create mode 100644 tools/perf/util/target.h
