@@ -1,156 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab2EBG0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 02:26:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55553 "EHLO mx2.suse.de"
+	id S1755678Ab2EBG13 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 02:27:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55713 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614Ab2EBG0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 02:26:34 -0400
-Date: Wed, 2 May 2012 16:26:27 +1000
+	id S1754073Ab2EBG11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 02:27:27 -0400
+Date: Wed, 2 May 2012 16:27:22 +1000
 From: NeilBrown <neilb@suse.de>
 To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] w1: Introduce a slave mutex for serializing IO.
-Message-ID: <20120502162627.50544c8b@notabene.brown>
-In-Reply-To: <20120501213958.GA15560@ioremap.net>
-References: <20120425124914.3187a794@notabene.brown>
-	<20120501213958.GA15560@ioremap.net>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: omap_hdq: use wait_event_timeout to wait for
+ read to complete.
+Message-ID: <20120502162722.2592421f@notabene.brown>
+In-Reply-To: <20120501214219.GB15560@ioremap.net>
+References: <20120425124153.2afa318b@notabene.brown>
+	<20120501214219.GB15560@ioremap.net>
 X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/I61CQDpV3LR+PK3zAoToZ+Y"; protocol="application/pgp-signature"
+ boundary="Sig_/SgbCGLDWKtR50uByREKpLXv"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/I61CQDpV3LR+PK3zAoToZ+Y
+--Sig_/SgbCGLDWKtR50uByREKpLXv
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2 May 2012 01:39:58 +0400 Evgeniy Polyakov <zbr@ioremap.net> wrote:
+On Wed, 2 May 2012 01:42:19 +0400 Evgeniy Polyakov <zbr@ioremap.net> wrote:
 
-> On Wed, Apr 25, 2012 at 12:49:14PM +1000, NeilBrown (neilb@suse.de) wrote:
-> > w1 devices need a mutex to serial IO.
-> > Most use master->mutex.
+> On Wed, Apr 25, 2012 at 12:41:53PM +1000, NeilBrown (neilb@suse.de) wrote:
+> > There is no gain in having a loop - there is no risk of missing the
+> > interrupt with wait_event_timeout.
 > >=20
-> > However that is used for other purposes and they can conflict.
-> >=20
-> > In particular master->mutex is held while w1_attach_slave_device is
-> > called.
-> >=20
-> > For bq27000, this registers a 'powersupply' device which tries to
-> > read the current status.  The attempt to read will cause a deadlock on
-> > master->mutex.
-> >=20
-> > So create a new per-slave mutex and use that for serializing IO for
-> > bq27000.
+> > Signed-off-by: NeilBrown <neilb@suse.de>
 >=20
-> How will this protect against master doing search for example?
-> It performs a number of read/write operations which are not allowed to
-> be interrupted by outside read.
+> Both patches look good, thank you
+> Feel free to add my ack if needed
 >=20
 
-Yes, you are right.  That was broken, I see it now.
+Thanks.  I'll add that and resent to GregKH.
 
-Take takes me back to the deadlock.
-To be precise:
-  while scanning the w1 bus - with master->mutex held - w1_attach_slave_dev=
-ice
-  eventually calls into bq27000_battery_probe  which calls
-    power_supply_register -> device_add -> kobject_uevent_env
-
-  and the to get all the data for the uevent, power_supply_uevent calls
-  the get_property callback which tries to read from the w1 bus and so
-  needs the master->mutex.  Which is held.  Deadlock.
-
-So options seems to be:
- - drop the lock while attaching slave devices
- - create a list of slave devices, then attach them after the bus scan has
-   finished.
- - have device_add run the kobject_uevent in a separate task (work_queue)
- - or maybe the following which feels ugly but is easy.  Mark the bq27000 as
-   not ready until after the power_supply_register, and if get_property is=
-=20
-   called before the device is ready, return ENODATA.
-   Simple and works.  Maybe horrible.
-   power_supply_register will have scheduled a power_supply_changed() which
-   will poll
-
-Thoughts?
-
-Thanks,
 NeilBrown
 
-
-diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_batter=
-y.c
-index 298de4b..bd89494 100644
---- a/drivers/power/bq27x00_battery.c
-+++ b/drivers/power/bq27x00_battery.c
-@@ -107,6 +107,7 @@ struct bq27x00_device_info {
-=20
- 	struct bq27x00_access_methods bus;
-=20
-+	int ready;
- 	struct mutex lock;
- };
-=20
-@@ -500,6 +501,8 @@ static int bq27x00_battery_get_property(struct power_su=
-pply *psy,
- 	int ret =3D 0;
- 	struct bq27x00_device_info *di =3D to_bq27x00_device_info(psy);
-=20
-+	if (!di->ready)
-+		return -ENODATA;
- 	mutex_lock(&di->lock);
- 	if (time_is_before_jiffies(di->last_update + 5 * HZ)) {
- 		cancel_delayed_work_sync(&di->work);
-@@ -583,6 +586,7 @@ static int bq27x00_powersupply_init(struct bq27x00_devi=
-ce_info *di)
- 	di->bat.num_properties =3D ARRAY_SIZE(bq27x00_battery_props);
- 	di->bat.get_property =3D bq27x00_battery_get_property;
- 	di->bat.external_power_changed =3D bq27x00_external_power_changed;
-+	di->ready =3D 0;
-=20
- 	INIT_DELAYED_WORK(&di->work, bq27x00_battery_poll);
- 	mutex_init(&di->lock);
-@@ -592,10 +596,12 @@ static int bq27x00_powersupply_init(struct bq27x00_de=
-vice_info *di)
- 		dev_err(di->dev, "failed to register battery: %d\n", ret);
- 		return ret;
- 	}
-+	di->ready =3D 1;
-=20
- 	dev_info(di->dev, "support ver. %s enabled\n", DRIVER_VERSION);
-=20
--	bq27x00_update(di);
-+	di->last_update =3D jiffies - 10*HZ;
-+	schedule_delayed_work(&di->work, 1);
-=20
- 	return 0;
- }
-
---Sig_/I61CQDpV3LR+PK3zAoToZ+Y
+--Sig_/SgbCGLDWKtR50uByREKpLXv
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIVAwUBT6DTkznsnt1WYoG5AQK3og//bCjoxr1ieGs2W1MUIXKLLA0xEuqC1JQ+
-7319c6GIRN3dn0IhKs5YJYP1q44sI17ZxZOutQuafKtqJ/6glZibCtgdUfjXgbci
-PN6qv6i+W0upGs6ax48ecOz/JU0xIKGEp2CysK0rJ/kWuKyhCQ1nEIt2YeCatNyE
-NxeQvUAh5aszKL4KtV//ksUBezAFW9xIPwre0EefleBtxpcjVu18htbGDDOgEd0l
-o9MVPZx/pVwsNKpFVAEG1GE8REPL9lXAKI93rsBlNRRRD3Y3rK3+7Ubrw+vKh4uh
-84eP5NXtMWR12Ce4Y+ox2CW/hZd0oGCdcywi76Kl9NYeWqYsvbGY1F0B0aHgo99W
-033pXdO8PeJOkMay3bo+IM37c6/xk/2oPJEc23y1WSIqd2xFLfSuiV5e1SaI952h
-gq39NMB5AIlwngyikl316jELShgUjOXKEzvK+VGqhlLGvQCHKCoNjBHBsjnAM0lu
-hLUlXe45OWnEGlDqdQVkRNjwKPrRhOL4ynoAZYk68ysqc/BQpe8HZw31AcU/o6Zi
-z1vum0ZwSFoTFpQcLClWmmc324EUPjItKlhYsFxSICi6+WDHHb5KB+5gwjoWQUYj
-d+TI/lVEYLaV1p7yi3tJqlYWlmmwZWfG0m29ipMRP1EVHJXzMDUDfe5erjVbl0QG
-KsKcmOYfZ28=
-=Iolu
+iQIVAwUBT6DTyjnsnt1WYoG5AQLTWQ/9G+mBBvex7OsrePrFEjnJGH5GSc5jiDKt
+dhLLLqukLWUOjr4PDW9gpFm1BJDRFeOcwAEaAvRWQu9oTi4EKYDIlMjkIo3tJ3wS
+aInXLeoysrF+kd/NL0v+tBUzDRy9EswylMhRwe/pdiCx/TBdGTWp1pqnmXzWBK8c
+THrmAk3CamUe0Wp3GHHBpj7z9kcSeURkZ8XfSxjnyZ7e4nsB+DkCE3FfdGVBitJI
+l/OZYuichxEMah2EFyk/vefsrJ8hYKvZ8vIQHn3JLmz6qADHp2UtCCeRVTRSSzD1
+kgwAIOdHx/Wh4sN0pImCg2TV2iBUKFFHKKAtMpw7LqOa4jJ2DG3nNeSrumkr5T92
+ZnawWM1UPm2OYrpG66RKJdof36p/alPfycVCStziGnytLoJ2TymGH4NzmcKda+h7
+O22gWucMvnGUgCkKhZgBAptYPv112RWIrvlHKjFyHOPhK0cdYnFUw/CPT7YPvE2b
+6tkn7tVnN7ERdikJvhGSYSKrZfIzArBpKSsAUkme4cxB+VdjB9LY2vrh4/bI/CWY
+WNiDUWZwzUStDRKz7VrhQcUyP9dpnXuioQmavL1487qNRgbWs0mYbTC/p3bzREJE
+8ERkiHz4w/87O7T5eHYpAUyRXeN3vKfNehPNR8ihkUa4KB9nrqxB7R3PMcsZuFO7
+1CtzNtI5iK8=
+=fJCe
 -----END PGP SIGNATURE-----
 
---Sig_/I61CQDpV3LR+PK3zAoToZ+Y--
+--Sig_/SgbCGLDWKtR50uByREKpLXv--
