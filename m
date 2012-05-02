@@ -1,102 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab2EBME2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 08:04:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30278 "EHLO mx1.redhat.com"
+	id S1754893Ab2EBMEc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 08:04:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46208 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753932Ab2EBME1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 08:04:27 -0400
-Date: Wed, 2 May 2012 15:04:02 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: async pf: INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order
- detected
-Message-ID: <20120502120402.GM22191@redhat.com>
-References: <CA+1xoqcPSCA+iNdMETZMhXpmGaVkC2ACCJZAt4CSBkaoVwVvGQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+1xoqcPSCA+iNdMETZMhXpmGaVkC2ACCJZAt4CSBkaoVwVvGQ@mail.gmail.com>
+	id S1753932Ab2EBMEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 08:04:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="136115112"
+Message-ID: <1335960469.10293.49.camel@sauron.fi.intel.com>
+Subject: Re: question about fs/jffs2/readinode.c
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 02 May 2012 15:07:49 +0300
+In-Reply-To: <alpine.DEB.2.02.1204280701210.1917@hadrien>
+References: <alpine.DEB.2.02.1204280701210.1917@hadrien>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-x8GaPyOvM2bU9Ys4p6yg"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 04:50:35PM +0200, Sasha Levin wrote:
-> Hi all.
-> 
-> I got a "INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected" warning
-> while running LTP inside a KVM guest using the recent -next kernel.
-> 
-> It seems that it was initially originated from rcu_torture_rea(), but I
-> don't think that it's a problem with RCU itself (I'll cc. Paul just in
-> case). RCU torture was indeed configured to run during the testing.
-> 
-> The output is attached since it's a bit long.
-> 
-The reason is mmdrop() called from irq context and in reality we do
-not need to hold reference to mm at all, so the patch below drops it.
----
 
-KVM: Do not take reference to mm during async #PF
+--=-x8GaPyOvM2bU9Ys4p6yg
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-It turned to be totally unneeded. The reason the code was introduced is
-so that KVM can prefault swapped in page, but prefault can fail even
-if mm is pinned since page table can change anyway. KVM handles this
-situation correctly though and does not inject spurious page faults.
+On Sat, 2012-04-28 at 07:06 +0200, Julia Lawall wrote:
+> The function read_direntry in fs/jffs2/readinode.c contains the following=
+=20
+> code:
+>=20
+>          err =3D jffs2_flash_read(c, (ref_offset(ref)) + read,
+>                                 rd->nsize - already, &read, &fd->name[alr=
+eady]);
+>  	if (unlikely(read !=3D rd->nsize - already) && likely(!err))
+>                        return -EIO;
+>=20
+>          if (unlikely(err)) {
+>                  JFFS2_ERROR("read remainder of name: error %d\n", err);
+>                  jffs2_free_full_dirent(fd);
+>                  return -EIO;
+>          }
+>=20
+> Is it intentional that the first if doesn't free fd?  At first I thought=
+=20
+> that that might be the case, because what would be the point of having tw=
+o=20
+> conditionals if they are going to do the same thing.  But I can't see why=
+=20
+> fd should not be freed either, so maybe the two conditionals are just=20
+> there to give different error messages?
 
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index b8ba6e4..e554e5a 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -79,7 +79,6 @@ struct kvm_task_sleep_node {
- 	u32 token;
- 	int cpu;
- 	bool halted;
--	struct mm_struct *mm;
- };
- 
- static struct kvm_task_sleep_head {
-@@ -126,9 +125,7 @@ void kvm_async_pf_task_wait(u32 token)
- 
- 	n.token = token;
- 	n.cpu = smp_processor_id();
--	n.mm = current->active_mm;
- 	n.halted = idle || preempt_count() > 1;
--	atomic_inc(&n.mm->mm_count);
- 	init_waitqueue_head(&n.wq);
- 	hlist_add_head(&n.link, &b->list);
- 	spin_unlock(&b->lock);
-@@ -161,9 +158,6 @@ EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
- static void apf_task_wake_one(struct kvm_task_sleep_node *n)
- {
- 	hlist_del_init(&n->link);
--	if (!n->mm)
--		return;
--	mmdrop(n->mm);
- 	if (n->halted)
- 		smp_send_reschedule(n->cpu);
- 	else if (waitqueue_active(&n->wq))
-@@ -207,7 +201,7 @@ again:
- 		 * async PF was not yet handled.
- 		 * Add dummy entry for the token.
- 		 */
--		n = kmalloc(sizeof(*n), GFP_ATOMIC);
-+		n = kzalloc(sizeof(*n), GFP_ATOMIC);
- 		if (!n) {
- 			/*
- 			 * Allocation failed! Busy wait while other cpu
-@@ -219,7 +213,6 @@ again:
- 		}
- 		n->token = token;
- 		n->cpu = smp_processor_id();
--		n->mm = NULL;
- 		init_waitqueue_head(&n->wq);
- 		hlist_add_head(&n->link, &b->list);
- 	} else
+Hi Julia,
 
---
-			Gleb.
+I think this is a bug and thes conditionals can be joined into one.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-x8GaPyOvM2bU9Ys4p6yg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPoSOVAAoJECmIfjd9wqK08S0P/3+XCWsE7k/UWhRgVKntvz/W
+0s0NKdJ999OS6aRVBbd2dBR+atmYTxkUIFVLthaEnOLibyn7Q61aaeW+ii1089jQ
+KkhkZGtOSUxW2T/eQ4nSdPp3v9jx7bvkwjn936QwxiXiV22Dn8I0DunJ+VludUNP
+ShXso1H636qZCrXlWi/zhAOvPSGOwjPb2U9nGbp9MzKP6Vgf0IHwswAUw88DhZkb
+XtoM6KMRCFGCoHfSaP53npvUrTGaUKrgnzSPoBHEhpfbIPTIoCAY8rurqkETdh7O
+zn1kYYIprYXgceHxN+CjFnmNINZxUaP2ol4zydBrtNffbyR30s9eJ/Wz616D1jWm
+mm1ko4nXlDj69lMseLwPDYJLLvvFn9KDQICEvp2jEtQIAfv1KQkzbTG4PbasPh6J
+WYMlMWJTmwEZwFFObif2L6oVCMqP1lVfPmx0OM1LVW9/YKw8QU55jFgvs3rKZppZ
+7deuYa8k23Xf7tUWH25k8dW6MZ81BGU1KuoQH9Ll0szDlb33bBNwftO4CjDtpmyq
+Z8bXuOfKEO3A4WnjNBUIUQDN8FK8QrT49s02BymFiAcTGm+MQutH5NA6/hWwOgiJ
+xhg1U9zK2qIvfxXUaEDWOEXYkj01BzDbuLKAJYMfghpsJIhrUAg/u5w3WXPzJufs
+bsnQQJ0zPdwPKEQVB/AN
+=wxgR
+-----END PGP SIGNATURE-----
+
+--=-x8GaPyOvM2bU9Ys4p6yg--
+
