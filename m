@@ -1,297 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab2EBHBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 03:01:50 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64686 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab2EBHBs (ORCPT
+	id S1754512Ab2EBHD2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 03:03:28 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:51565 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825Ab2EBHD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 03:01:48 -0400
+	Wed, 2 May 2012 03:03:26 -0400
+Message-ID: <4FA0DBEE.3040909@linux.vnet.ibm.com>
+Date: Wed, 02 May 2012 12:32:06 +0530
+From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <1335935266-25289-5-git-send-email-thomas.abraham@linaro.org>
-References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
-	<1335935266-25289-5-git-send-email-thomas.abraham@linaro.org>
-Date: Wed, 2 May 2012 16:01:47 +0900
-X-Google-Sender-Auth: GqSNLs7m98HeMIQf4ZZapjJ64V4
-Message-ID: <CAH9JG2XBinh=XAVnt3EnWrEqeTKz34d9yB6wfiuF-J-Se_Q__Q@mail.gmail.com>
-Subject: Re: [PATCH 4/7] mmc: dw_mmc: add samsung exynos5250 specific extentions
-From: Kyungmin Park <kmpark@infradead.org>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-samsung-soc@vger.kernel.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, kgene.kim@samsung.com, cjb@laptop.org,
-        linux-arm-kernel@lists.infradead.org
+To: peterz@infradead.org, mingo@elte.hu
+CC: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        ananth@in.ibm.com, jkenisto@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, oleg@redhat.com,
+        andi@firstfloor.org, hch@infradead.org, rostedt@goodmis.org,
+        acme@infradead.org, masami.hiramatsu.pt@hitachi.com,
+        tglx@linutronix.de, anton@redhat.com, srikar@linux.vnet.ibm.com,
+        dave.martin@linaro.org, linux-perf-users@vger.kernel.org
+Subject: [PATCH-V2] perf symbols: fix symbol offset breakage with separated
+ debug info
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12050207-7282-0000-0000-000008A8CD65
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Dave Martin <dave.martin@linaro.org>
 
-On 5/2/12, Thomas Abraham <thomas.abraham@linaro.org> wrote:
-> The instantiation of the Synopsis Designware controller on Exynos5250
-> include extension for SDR and DDR specific tx/rx phase shift timing
-> and CIU internal divider. In addition to that, the option to skip the
-> command hold stage is also introduced. Add support for these Exynos5250
-> specfic extenstions.
->
-> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-> ---
->  .../devicetree/bindings/mmc/synposis-dw-mshc.txt   |   33
-> +++++++++++++++++++-
->  drivers/mmc/host/dw_mmc-pltfm.c                    |    8 +++++
->  drivers/mmc/host/dw_mmc.c                          |   32
-> ++++++++++++++++++-
->  drivers/mmc/host/dw_mmc.h                          |   13 ++++++++
->  include/linux/mmc/dw_mmc.h                         |    6 +++
->  5 files changed, 89 insertions(+), 3 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
-> b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
-> index c1ed70e..465fc31 100644
-> --- a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
-> +++ b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
-> @@ -7,6 +7,8 @@ Required Properties:
->
->  * compatible: should be one of the following
->  	- synopsis,dw-mshc: for controllers compliant with synopsis dw-mshc.
-> +	- synopsis,dw-mshc-exynos5250: for controllers with Samsung
-> +	  Exynos5250 specific extentions.
->
->  * reg: physical base address of the dw-mshc controller and size of its
-> memory
->    region.
-> @@ -55,13 +57,40 @@ Optional properties:
->  * no-write-protect: The write protect pad of the controller is not
-> connected
->    to the write protect pin on the slot.
->
-> +Samsung Exynos5250 specific properties:
-> +
-> +* samsung,dw-mshc-sdr-timing: Specifies the value of CUI clock divider,
-> CIU
-> +  clock phase shift value in transmit mode and CIU clock phase shift value
-> in
-> +  receive mode for single data rate mode operation. Refer notes of the
-> valid
-> +  values below.
-> +
-> +* samsung,dw-mshc-ddr-timing: Specifies the value of CUI clock divider,
-> CIU
-> +  clock phase shift value in transmit mode and CIU clock phase shift value
-> in
-> +  receive mode for double data rate mode operation. Refer notes of the
-> valid
-> +  values below. The order of the cells should be
-> +
-> +    - First Cell: 	CIU clock divider value.
-> +    - Second Cell:	CIU clock phase shift value for tx mode.
-> +    - Third Cell:	CIU clock phase shift value for rx mode.
-> +
-> +  Valid values for SDR and DDR CIU clock timing:
-> +
-> +    - valid values for CIU clock divider, tx phase shift and rx phase
-> shift
-> +      is 0 to 7.
-> +
-> +    - When CIU clock divider value is set to 3, all possible 8 phase shift
-> +      values can be used.
-> +
-> +    - If CIU clock divider value is 0 (that is divide by 1), both tx and
-> rx
-> +      phase shift clocks should be 0.
-> +
->  Example:
->
->    The MSHC controller node can be split into two portions, SoC specific
-> and
->    board specific portions as listed below.
->
->  	dwmmc0@12200000 {
-> -		compatible = "synopsis,dw-mshc";
-> +		compatible = "synopsis,dw-mshc-exynos5250";
->  		reg = <0x12200000 0x1000>;
->  		interrupts = <0 75 0>;
->  	};
-> @@ -72,6 +101,8 @@ Example:
->  		no-write-protect;
->  		fifo-depth = <0x80>;
->  		card-detect-delay = <200>;
-> +		samsung,dw-mshc-sdr-timing = <2 3 3>;
-> +		samsung,dw-mshc-ddr-timing = <1 2 3>;
->
->  		slot0 {
->  			bus-width = <8>;
-> diff --git a/drivers/mmc/host/dw_mmc-pltfm.c
-> b/drivers/mmc/host/dw_mmc-pltfm.c
-> index 2b2c9bd..35056fd 100644
-> --- a/drivers/mmc/host/dw_mmc-pltfm.c
-> +++ b/drivers/mmc/host/dw_mmc-pltfm.c
-> @@ -27,9 +27,17 @@ static struct dw_mci_drv_data synopsis_drv_data = {
->  	.ctrl_type	= DW_MCI_TYPE_SYNOPSIS,
->  };
->
-> +static struct dw_mci_drv_data exynos5250_drv_data = {
-> +	.ctrl_type	= DW_MCI_TYPE_EXYNOS5250,
-> +	.caps		= MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
-> +				MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
-These caps should be board specific. So it's not proper place. Esp.,
-MMC_CAP_8_BIT_DATA.
-> +};
-> +
->  static const struct of_device_id dw_mci_pltfm_match[] = {
->  	{ .compatible = "synopsis,dw-mshc",
->  			.data = (void *)&synopsis_drv_data, },
-> +	{ .compatible = "synopsis,dw-mshc-exynos5250",
-> +			.data = (void *)&exynos5250_drv_data, },
->  	{},
->  };
->  MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index bcf66d7..9174a69 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -236,6 +236,7 @@ static void dw_mci_set_timeout(struct dw_mci *host)
->  static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command
-> *cmd)
->  {
->  	struct mmc_data	*data;
-> +	struct dw_mci_slot *slot = mmc_priv(mmc);
->  	u32 cmdr;
->  	cmd->error = -EINPROGRESS;
->
-> @@ -265,6 +266,10 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc,
-> struct mmc_command *cmd)
->  			cmdr |= SDMMC_CMD_DAT_WR;
->  	}
->
-> +	if (slot->host->drv_data->ctrl_type == DW_MCI_TYPE_EXYNOS5250)
-> +		if (SDMMC_CLKSEL_GET_SELCLK_DRV(mci_readl(slot->host, CLKSEL)))
-> +			cmdr |= SDMMC_USE_HOLD_REG;
-Some other board, custom SOC also can use this HOLD register. So it's
-not EXYNOS5250 specific one. I think we introduce the more generic
-quirks for this instead of SOC specific.
-> +
->  	return cmdr;
->  }
->
-> @@ -787,10 +792,19 @@ static void dw_mci_set_ios(struct mmc_host *mmc,
-> struct mmc_ios *ios)
->  	regs = mci_readl(slot->host, UHS_REG);
->
->  	/* DDR mode set */
-> -	if (ios->timing == MMC_TIMING_UHS_DDR50)
-> +	if (ios->timing == MMC_TIMING_UHS_DDR50) {
->  		regs |= (0x1 << slot->id) << 16;
-> -	else
-> +		mci_writel(slot->host, CLKSEL, slot->host->ddr_timing);
-As you wrote, does CLKSEL is some SOC specific registers?
-> +	} else {
->  		regs &= ~(0x1 << slot->id) << 16;
-> +		mci_writel(slot->host, CLKSEL, slot->host->sdr_timing);
-> +	}
-> +
-> +	if (slot->host->drv_data->ctrl_type == DW_MCI_TYPE_EXYNOS5250) {
-> +		slot->host->bus_hz = clk_get_rate(slot->host->ciu_clk);
-> +		slot->host->bus_hz /= SDMMC_CLKSEL_GET_DIVRATIO(
-> +					mci_readl(slot->host, CLKSEL));
-> +	}
->
->  	mci_writel(slot->host, UHS_REG, regs);
->
-> @@ -2074,6 +2088,20 @@ static struct dw_mci_board *dw_mci_parse_dt(struct
-> dw_mci *host)
->  		if (of_get_property(np, of_quriks[idx].quirk, NULL))
->  			pdata->quirks |= of_quriks[idx].id;
->
-> +	if (of_property_read_u32_array(dev->of_node,
-> +			"samsung,dw-mshc-sdr-timing", timing, 3))
-> +		host->sdr_timing = DW_MCI_DEF_SDR_TIMING;
-> +	else
-> +		host->sdr_timing = SDMMC_CLKSEL_TIMING(timing[0],
-> +					timing[1], timing[2]);
-> +
-> +	if (of_property_read_u32_array(dev->of_node,
-> +			"samsung,dw-mshc-ddr-timing", timing, 3))
-> +		host->ddr_timing = DW_MCI_DEF_DDR_TIMING;
-> +	else
-> +		host->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0],
-> +					timing[1], timing[2]);
-> +
->  	if (of_property_read_u32(np, "fifo-depth", &pdata->fifo_depth))
->  		dev_info(dev, "fifo-depth property not found, using "
->  				"value of FIFOTH register as default\n");
-> diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-> index 8b8862b..4b7e42b 100644
-> --- a/drivers/mmc/host/dw_mmc.h
-> +++ b/drivers/mmc/host/dw_mmc.h
-> @@ -53,6 +53,7 @@
->  #define SDMMC_IDINTEN		0x090
->  #define SDMMC_DSCADDR		0x094
->  #define SDMMC_BUFADDR		0x098
-> +#define SDMMC_CLKSEL		0x09C /* specific to Samsung Exynos5250 */
-Another Samsung Custom SOC also used it.
->  #define SDMMC_DATA(x)		(x)
->
->  /*
-> @@ -111,6 +112,7 @@
->  #define SDMMC_INT_ERROR			0xbfc2
->  /* Command register defines */
->  #define SDMMC_CMD_START			BIT(31)
-> +#define SDMMC_USE_HOLD_REG		BIT(29)
->  #define SDMMC_CMD_CCS_EXP		BIT(23)
->  #define SDMMC_CMD_CEATA_RD		BIT(22)
->  #define SDMMC_CMD_UPD_CLK		BIT(21)
-> @@ -142,6 +144,17 @@
->  /* Version ID register define */
->  #define SDMMC_GET_VERID(x)		((x) & 0xFFFF)
->
-> +#define DW_MCI_DEF_SDR_TIMING		0x03030002
-> +#define DW_MCI_DEF_DDR_TIMING		0x03020001
-> +#define SDMMC_CLKSEL_CCLK_SAMPLE(x)	(((x) & 3) << 0)
-> +#define SDMMC_CLKSEL_CCLK_DRIVE(x)	(((x) & 3) << 16)
-> +#define SDMMC_CLKSEL_CCLK_DIVIDER(x)	(((x) & 3) << 24)
-> +#define SDMMC_CLKSEL_TIMING(x, y, z)	(SDMMC_CLKSEL_CCLK_SAMPLE(x) |	\
-> +					SDMMC_CLKSEL_CCLK_DRIVE(y) |	\
-> +					SDMMC_CLKSEL_CCLK_DIVIDER(z))
-> +#define SDMMC_CLKSEL_GET_DIVRATIO(x)	((((x) >> 24) & 0x7) + 1)
-> +#define SDMMC_CLKSEL_GET_SELCLK_DRV(x)	(((x) >> 16) & 0x7)
-> +
->  /* Register access macros */
->  #define mci_readl(dev, reg)			\
->  	__raw_readl((dev)->regs + SDMMC_##reg)
-> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-> index 71d2b56..6e6d036 100644
-> --- a/include/linux/mmc/dw_mmc.h
-> +++ b/include/linux/mmc/dw_mmc.h
-> @@ -82,6 +82,8 @@ struct mmc_data;
->   * @biu_clk: Pointer to bus interface unit clock instance.
->   * @ciu_clk: Pointer to card interface unit clock instance.
->   * @slot: Slots sharing this MMC controller.
-> + * @sdr_timing: Clock phase shifting for driving and sampling in sdr mode
-> + * @ddr_timing: Clock phase shifting for driving and sampling in ddr mode
->   * @fifo_depth: depth of FIFO.
->   * @data_shift: log2 of FIFO item size.
->   * @part_buf_start: Start index in part_buf.
-> @@ -166,6 +168,10 @@ struct dw_mci {
->  	struct clk		*ciu_clk;
->  	struct dw_mci_slot	*slot[MAX_MCI_SLOTS];
->
-> +	/* Phase Shift Value (for exynos5250 variant) */
-> +	u32			sdr_timing;
-> +	u32			ddr_timing;
-> +
->  	/* FIFO push and pull */
->  	int			fifo_depth;
->  	int			data_shift;
-> --
-> 1.7.5.4
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+perf resolves symbols to wrong offsets when debug info is separated
+from the lib/executable.
+
+This patch is based on Dave Martin's initial work first published at
+https://lkml.org/lkml/2010/11/22/137
+
+This patch loads the ELF section headers from a separate file if
+necessary, to avoid getting confused by the different section file
+offsets seen in debug images.  Invalid section headers are detected by
+checking for the presence of non-writable SHT_NOBITS sections, which
+don't make sense under normal circumstances.
+
+In particular, this allows symbols in ET_EXEC images to get fixed up
+correctly in the presence of separated debug images.
+
+v2 addresses review comments (to remove asserts) from Dave Martin.
+
+Signed-off-by: Dave Martin <dave.martin@linaro.org>
+Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+---
+
+ tools/perf/util/symbol.c |  168 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 164 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index caaf75a..a6ad4b1 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1158,8 +1158,105 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+ 	return -1;
+ }
+ 
++/**
++ * Read all section headers, copying them into a separate array so they survive
++ * elf_end.
++ *
++ * @elf: the libelf instance to operate on.
++ * @ehdr: the elf header: this must already have been read with gelf_getehdr().
++ * @count: the number of headers read is assigned to *count on successful
++ *	return.  count must not be NULL.
++ *
++ * Returns a pointer to the allocated headers, which should be deallocated with
++ * free() when no longer needed.
++ */
++static GElf_Shdr *elf_get_all_shdrs(Elf *elf, GElf_Ehdr const *ehdr,
++				    unsigned *count)
++{
++	GElf_Shdr *shdrs;
++	Elf_Scn *scn;
++	unsigned max_index = 0;
++	unsigned i;
++
++	shdrs = malloc(ehdr->e_shnum * sizeof *shdrs);
++	if (!shdrs)
++		return NULL;
++
++	for (i = 0; i < ehdr->e_shnum; i++)
++		shdrs[i].sh_type = SHT_NULL;
++
++	for (scn = NULL; (scn = elf_nextscn(elf, scn)); ) {
++		size_t j;
++
++		/*
++		 * Just assuming we get section 0, 1, ... in sequence may lead
++		 * to wrong section indices.  Check the index explicitly:
++		 */
++		j = elf_ndxscn(scn);
++		if (j > max_index)
++			max_index = j;
++
++		if (!gelf_getshdr(scn, &shdrs[j]))
++			goto error;
++	}
++
++	*count = max_index + 1;
++	return shdrs;
++
++error:
++	free(shdrs);
++	return NULL;
++}
++
++/**
++ * Check that the section headers @shdrs reflect accurately the file data
++ * layout of the image that was loaded during perf record.  This is generally
++ * not true for separated debug images generated with e.g.,
++ * objcopy --only-keep-debug.
++ *
++ * We identify invalid files by checking for non-empty sections which are
++ * declared as having no file data (SHT_NOBITS) but are not writable.
++ *
++ * @shdrs: the full set of section headers, as loaded by elf_get_all_shdrs().
++ * @count: the number of headers present in @shdrs.
++ *
++ * Returns 1 for valid headers, 0 otherwise.
++ */
++static int elf_check_shdrs_valid(GElf_Shdr const *shdrs, unsigned count)
++{
++	unsigned i;
++
++	for (i = 0; i < count; i++) {
++		if (shdrs[i].sh_type == SHT_NOBITS &&
++		    !(shdrs[i].sh_flags & SHF_WRITE) &&
++		    shdrs[i].sh_size != 0)
++			return 0;
++	}
++
++	return 1;
++}
++
++/*
++ * Notes:
++ *
++ * If saved_shdrs is non-NULL, the section headers will be read if found, and
++ * will be used for address fixups.  saved_shdrs_count must also be non-NULL in
++ * this case.  This may be needed for separated debug images, since the section
++ * headers and symbols may need to come from separate images in that case.
++ *
++ * Note: irrespective of whether this function returns successfully,
++ * *saved_shdrs may get initialised if saved_shdrs is non-NULL.  It is the
++ * caller's responsibility to free() it when non longer needed.
++ *
++ * If want_symtab == 1, this function will only load symbols from .symtab
++ * sections.  Otherwise (want_symtab == 0), .dynsym or .symtab symbols are
++ * loaded.  This feature is used by dso__load() to search for the best image
++ * to load.
++ */
++
+ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			 int fd, symbol_filter_t filter, int kmodule,
++			 GElf_Shdr **saved_shdrs, unsigned *saved_shdrs_count,
+ 			 int want_symtab)
+ {
+ 	struct kmap *kmap = dso->kernel ? map__kmap(map) : NULL;
+@@ -1178,6 +1275,17 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 	int nr = 0;
+ 	size_t opdidx = 0;
+ 
++	if (saved_shdrs != NULL && saved_shdrs_count == NULL) {
++		/*
++		 * If you trigger this check, you're calling this function
++		 * incorrectly.  Refer to the notes above for details.
++		 */
++		pr_debug("%s: warning: saved_shdrs_count == NULL: "
++			 "ignoring the saved section headers.\n",
++			 __func__);
++		saved_shdrs = NULL;
++	}
++
+ 	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+ 	if (elf == NULL) {
+ 		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
+@@ -1200,6 +1308,36 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			goto out_elf_end;
+ 	}
+ 
++	/*
++	 * Copy all section headers from the image if requested and if not
++	 * already loaded.
++	 */
++	if (saved_shdrs != NULL && *saved_shdrs == NULL) {
++		GElf_Shdr *shdrs;
++		unsigned count;
++
++		shdrs = elf_get_all_shdrs(elf, &ehdr, &count);
++		if (shdrs == NULL)
++			goto out_elf_end;
++
++		/*
++		 * Only keep the headers if they reflect the actual run-time
++		 * image's file layout:
++		 */
++		if (elf_check_shdrs_valid(shdrs, count)) {
++			*saved_shdrs = shdrs;
++			*saved_shdrs_count = count;
++		} else
++			free(shdrs);
++	}
++
++	/*
++	 * If no genuine ELF headers are available yet, give up: we can't
++	 * adjust symbols correctly in that case:
++	 */
++	if (saved_shdrs != NULL && *saved_shdrs == NULL)
++		goto out_elf_end;
++
+ 	sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
+ 	if (sec == NULL) {
+ 		if (want_symtab)
+@@ -1344,12 +1482,25 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			goto new_symbol;
+ 		}
+ 
++		/*
++		 * Currently, symbols for shared objects and PIE executables
++		 * (i.e., ET_DYN) do not seem to get adjusted.  This might need
++		 * to change if file offset == virtual address is not actually
++		 * guaranteed for these images.  ELF doesn't provide this
++		 * guarantee natively.
++		 */
+ 		if (curr_dso->adjust_symbols) {
+ 			pr_debug4("%s: adjusting symbol: st_value: %#" PRIx64 " "
+ 				  "sh_addr: %#" PRIx64 " sh_offset: %#" PRIx64 "\n", __func__,
+ 				  (u64)sym.st_value, (u64)shdr.sh_addr,
+ 				  (u64)shdr.sh_offset);
+-			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
++			if (saved_shdrs && *saved_shdrs &&
++			    sym.st_shndx < *saved_shdrs_count)
++				sym.st_value -=
++					(*saved_shdrs)[sym.st_shndx].sh_addr -
++					(*saved_shdrs)[sym.st_shndx].sh_offset;
++			else
++				sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+ 		}
+ 		/*
+ 		 * We need to figure out if the object was created from C++ sources
+@@ -1590,6 +1741,8 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	struct machine *machine;
+ 	const char *root_dir;
+ 	int want_symtab;
++	GElf_Shdr *saved_shdrs = NULL;
++	unsigned saved_shdrs_count;
+ 
+ 	dso__set_loaded(dso, map->type);
+ 
+@@ -1692,6 +1845,7 @@ restart:
+ 			continue;
+ 
+ 		ret = dso__load_sym(dso, map, name, fd, filter, 0,
++				    &saved_shdrs, &saved_shdrs_count,
+ 				    want_symtab);
+ 		close(fd);
+ 
+@@ -1713,14 +1867,19 @@ restart:
+ 
+ 	/*
+ 	 * If we wanted a full symtab but no image had one,
+-	 * relax our requirements and repeat the search.
++	 * relax our requirements and repeat the search,
++	 * provided we saw some valid section headers:
+ 	 */
+-	if (ret <= 0 && want_symtab) {
++	if (ret <= 0 && want_symtab && saved_shdrs != NULL) {
+ 		want_symtab = 0;
+ 		goto restart;
+ 	}
+ 
+ 	free(name);
++
++	if (saved_shdrs)
++		free(saved_shdrs);
++
+ 	if (ret < 0 && strstr(dso->name, " (deleted)") != NULL)
+ 		return 0;
+ 	return ret;
+@@ -1989,7 +2148,8 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+ 
+ 	dso__set_long_name(dso, (char *)vmlinux);
+ 	dso__set_loaded(dso, map->type);
+-	err = dso__load_sym(dso, map, symfs_vmlinux, fd, filter, 0, 0);
++	err = dso__load_sym(dso, map, symfs_vmlinux, fd, filter, 0,
++			    NULL, NULL, 0);
+ 	close(fd);
+ 
+ 	if (err > 0)
+
+
