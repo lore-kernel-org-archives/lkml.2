@@ -1,53 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab2EBXKS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 19:10:18 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:33539 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab2EBXKQ convert rfc822-to-8bit (ORCPT
+	id S1753271Ab2EBXND (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 19:13:03 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:32982 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751727Ab2EBXNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 19:10:16 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-132.messagelabs.com!1336000203!8790597!10
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>
-Date: Wed, 2 May 2012 18:10:10 -0500
-Subject: RE: [PATCH] Extcon: fix section mismatch in extcon_gpio.c
-Thread-Topic: [PATCH] Extcon: fix section mismatch in extcon_gpio.c
-Thread-Index: Ac0otT89HlrJY6RNSKGmWHeBbqm/BAAA1VHQ
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206989522B6@AUSP01VMBX24.collaborationhost.net>
-References: <201205021538.45056.hartleys@visionengravers.com>
- <20120502224510.GA19693@opensource.wolfsonmicro.com>
-In-Reply-To: <20120502224510.GA19693@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 2 May 2012 19:13:01 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18N5IBF1t0NvHMQQKLEmu4DZRpg7ILJfhxpGPh3b2
+	HRIcX4N29dhsFt
+Message-ID: <4FA1BF76.8080109@gmx.de>
+Date: Wed, 02 May 2012 23:12:54 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
 MIME-Version: 1.0
+To: Peter Huewe <peterhuewe@gmx.de>
+CC: Thomas Winischhofer <thomas@winischhofer.net>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] video/sis: Use SiS_DRAMType from init.h and annotate
+ it __devinitconst
+References: <1334524209-20518-1-git-send-email-peterhuewe@gmx.de> <1335731167-3311-1-git-send-email-peterhuewe@gmx.de>
+In-Reply-To: <1335731167-3311-1-git-send-email-peterhuewe@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 02, 2012 3:45 PM, Mark Brown wrote:
-> On Wed, May 02, 2012 at 03:38:44PM -0700, H Hartley Sweeten wrote:
->> Fix the section mismatch be renaming the struct platform_driver
->> variable.
->
-> I'm pretty sure I sent a version of this patch sometime last week :/
+Hi Peter,
 
-If you have Mark's patch already, I have no problem with you using his
-instead.
+On 04/29/2012 08:26 PM, Peter Huewe wrote:
+> This patch removes the duplicated SiS_DRAMType from sis_main.c since it
+> is already defined exactly the same in init.h.
+> Since we don't want to include init.h (for size reasons) we move the
+> struct to sis_main.h.
+> Since SiS_DRAMType is const and only used by sisfb_post_300_rwtest which is
+> marked __devinit we can also annotate SiS_DRAMType with __devinitconst.
+> 
+> And since hardcoded values are bad we use ARRAY_SIZE for determining the
+> size of SiS_DRAMType ;)
+> 
+> v2:
+> Move struct to sis_main.h to decrease module size
 
-Regards,
-Hartley
+As far as I can see it should be possible to keep the array in
+sis_main.c and just delete it in the header files, shouldn't it? I'd
+prefer to do it this way.
+
+
+Best regards,
+
+Florian Tobias Schandinat
+
+> 
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> ---
+>  drivers/video/sis/init.h     |   20 --------------------
+>  drivers/video/sis/sis_main.c |   21 +--------------------
+>  drivers/video/sis/sis_main.h |   20 ++++++++++++++++++++
+>  3 files changed, 21 insertions(+), 40 deletions(-)
+> 
+> diff --git a/drivers/video/sis/init.h b/drivers/video/sis/init.h
+> index a22e892..85d6738 100644
+> --- a/drivers/video/sis/init.h
+> +++ b/drivers/video/sis/init.h
+> @@ -105,26 +105,6 @@ static const unsigned short ModeIndex_1920x1440[]    = {0x68, 0x69, 0x00, 0x6b};
+>  static const unsigned short ModeIndex_300_2048x1536[]= {0x6c, 0x6d, 0x00, 0x00};
+>  static const unsigned short ModeIndex_310_2048x1536[]= {0x6c, 0x6d, 0x00, 0x6e};
+>  
+> -static const unsigned short SiS_DRAMType[17][5]={
+> -	{0x0C,0x0A,0x02,0x40,0x39},
+> -	{0x0D,0x0A,0x01,0x40,0x48},
+> -	{0x0C,0x09,0x02,0x20,0x35},
+> -	{0x0D,0x09,0x01,0x20,0x44},
+> -	{0x0C,0x08,0x02,0x10,0x31},
+> -	{0x0D,0x08,0x01,0x10,0x40},
+> -	{0x0C,0x0A,0x01,0x20,0x34},
+> -	{0x0C,0x09,0x01,0x08,0x32},
+> -	{0x0B,0x08,0x02,0x08,0x21},
+> -	{0x0C,0x08,0x01,0x08,0x30},
+> -	{0x0A,0x08,0x02,0x04,0x11},
+> -	{0x0B,0x0A,0x01,0x10,0x28},
+> -	{0x09,0x08,0x02,0x02,0x01},
+> -	{0x0B,0x09,0x01,0x08,0x24},
+> -	{0x0B,0x08,0x01,0x04,0x20},
+> -	{0x0A,0x08,0x01,0x02,0x10},
+> -	{0x09,0x08,0x01,0x01,0x00}
+> -};
+> -
+>  static const unsigned char SiS_MDA_DAC[] =
+>  {
+>  	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+> diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
+> index 078ca21..8abd42b 100644
+> --- a/drivers/video/sis/sis_main.c
+> +++ b/drivers/video/sis/sis_main.c
+> @@ -4231,27 +4231,8 @@ sisfb_post_300_rwtest(struct sis_video_info *ivideo, int iteration, int buswidth
+>  	unsigned short sr14;
+>  	unsigned int k, RankCapacity, PageCapacity, BankNumHigh, BankNumMid;
+>  	unsigned int PhysicalAdrOtherPage, PhysicalAdrHigh, PhysicalAdrHalfPage;
+> -	static const unsigned short SiS_DRAMType[17][5] = {
+> -		{0x0C,0x0A,0x02,0x40,0x39},
+> -		{0x0D,0x0A,0x01,0x40,0x48},
+> -		{0x0C,0x09,0x02,0x20,0x35},
+> -		{0x0D,0x09,0x01,0x20,0x44},
+> -		{0x0C,0x08,0x02,0x10,0x31},
+> -		{0x0D,0x08,0x01,0x10,0x40},
+> -		{0x0C,0x0A,0x01,0x20,0x34},
+> -		{0x0C,0x09,0x01,0x08,0x32},
+> -		{0x0B,0x08,0x02,0x08,0x21},
+> -		{0x0C,0x08,0x01,0x08,0x30},
+> -		{0x0A,0x08,0x02,0x04,0x11},
+> -		{0x0B,0x0A,0x01,0x10,0x28},
+> -		{0x09,0x08,0x02,0x02,0x01},
+> -		{0x0B,0x09,0x01,0x08,0x24},
+> -		{0x0B,0x08,0x01,0x04,0x20},
+> -		{0x0A,0x08,0x01,0x02,0x10},
+> -		{0x09,0x08,0x01,0x01,0x00}
+> -	};
+>  
+> -	 for(k = 0; k <= 16; k++) {
+> +	 for (k = 0; k < ARRAY_SIZE(SiS_DRAMType); k++) {
+>  
+>  		RankCapacity = buswidth * SiS_DRAMType[k][3];
+>  
+> diff --git a/drivers/video/sis/sis_main.h b/drivers/video/sis/sis_main.h
+> index 9540e97..242c1c3 100644
+> --- a/drivers/video/sis/sis_main.h
+> +++ b/drivers/video/sis/sis_main.h
+> @@ -776,6 +776,26 @@ extern void		SiS_Chrontel701xBLOff(struct SiS_Private *SiS_Pr);
+>  #endif
+>  extern void		SiS_SiS30xBLOn(struct SiS_Private *SiS_Pr);
+>  extern void		SiS_SiS30xBLOff(struct SiS_Private *SiS_Pr);
+> +
+> +static const unsigned short __devinitconst SiS_DRAMType[17][5] = {
+> +	{0x0C,0x0A,0x02,0x40,0x39},
+> +	{0x0D,0x0A,0x01,0x40,0x48},
+> +	{0x0C,0x09,0x02,0x20,0x35},
+> +	{0x0D,0x09,0x01,0x20,0x44},
+> +	{0x0C,0x08,0x02,0x10,0x31},
+> +	{0x0D,0x08,0x01,0x10,0x40},
+> +	{0x0C,0x0A,0x01,0x20,0x34},
+> +	{0x0C,0x09,0x01,0x08,0x32},
+> +	{0x0B,0x08,0x02,0x08,0x21},
+> +	{0x0C,0x08,0x01,0x08,0x30},
+> +	{0x0A,0x08,0x02,0x04,0x11},
+> +	{0x0B,0x0A,0x01,0x10,0x28},
+> +	{0x09,0x08,0x02,0x02,0x01},
+> +	{0x0B,0x09,0x01,0x08,0x24},
+> +	{0x0B,0x08,0x01,0x04,0x20},
+> +	{0x0A,0x08,0x01,0x02,0x10},
+> +	{0x09,0x08,0x01,0x01,0x00}
+> +};
+>  #endif
+>  
+>  
 
