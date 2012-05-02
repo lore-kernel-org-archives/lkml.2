@@ -1,125 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab2EBFWA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 01:22:00 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60049 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266Ab2EBFV6 (ORCPT
+	id S1752558Ab2EBF0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 01:26:11 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:45840 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab2EBF0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 01:21:58 -0400
-X-AuditID: 9c93016f-b7b1bae0000044da-5e-4fa0c47184cd
-Message-ID: <4FA0C473.1000505@kernel.org>
-Date: Wed, 02 May 2012 14:21:55 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Wed, 2 May 2012 01:26:10 -0400
+Message-ID: <4FA0C553.7010902@linux.vnet.ibm.com>
+Date: Wed, 02 May 2012 10:55:39 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.file-systems,gmane.linux.kernel
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 5/5] mm: refault distance-based file cache sizing
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org> <1335861713-4573-6-git-send-email-hannes@cmpxchg.org> <20120501141330.GA2207@barrios> <20120501153825.GA4837@cmpxchg.org>
-In-Reply-To: <20120501153825.GA4837@cmpxchg.org>
+To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+CC: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] Documentation: power: suspend-and-cpuhotplug.txt: Fix
+ typo
+References: <1335911272-5907-1-git-send-email-marcos.souza.org@gmail.com>
+In-Reply-To: <1335911272-5907-1-git-send-email-marcos.souza.org@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+x-cbid: 12050205-3864-0000-0000-000002842671
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2012 12:38 AM, Johannes Weiner wrote:
+On 05/02/2012 03:57 AM, Marcos Paulo de Souza wrote:
 
-> On Tue, May 01, 2012 at 11:13:30PM +0900, Minchan Kim wrote:
->> Hi Hannes,
->>
->> On Tue, May 01, 2012 at 10:41:53AM +0200, Johannes Weiner wrote:
->>> To protect frequently used page cache (workingset) from bursts of less
->>> frequently used or one-shot cache, page cache pages are managed on two
->>> linked lists.  The inactive list is where all cache starts out on
->>> fault and ends on reclaim.  Pages that get accessed another time while
->>> on the inactive list get promoted to the active list to protect them
->>> from reclaim.
->>>
->>> Right now we have two main problems.
->>>
->>> One stems from numa allocation decisions and how the page allocator
->>> and kswapd interact.  The both of them can enter into a perfect loop
->>> where kswapd reclaims from the preferred zone of a task, allowing the
->>> task to continuously allocate from that zone.  Or, the node distance
->>> can lead to the allocator to do direct zone reclaim to stay in the
->>> preferred zone.  This may be good for locality, but the task has only
->>
->> Understood.
->>
->>> the inactive space of that one zone to get its memory activated.
->>> Forcing the allocator to spread out to lower zones in the right
->>> situation makes the difference between continuous IO to serve the
->>> workingset, or taking the numa cost but serving fully from memory.
->>
->> It's hard to parse your word due to my dumb brain.
->> Could you elaborate on it?
->> It would be a good if you say with example.
+> sysfs was expected in this context.
 > 
-> Say your Normal zone is 4G (DMA32 also 4G) and you have 2G of active
-> file pages in Normal and DMA32 is full of other stuff.  Now you access
-> a new 6G file repeatedly.  First it allocates from Normal (preferred),
-> then tries DMA32 (full), wakes up kswapd and retries all zones.  If
-> kswapd then frees pages at roughly the same pace as the allocator
-> allocates from Normal, kswapd never goes to sleep and evicts pages
-> from the 6G file before they can get accessed a second time.  Even
-> though the 6G file could fit in memory (4G Normal + 4G DMA32), the
-> allocator only uses the 4G Normal zone.
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+> ---
+
+
+Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+ 
+Regards,
+Srivatsa S. Bhat
+
+>  Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Same applies if you have a load that would fit in the memory of two
-> nodes but the node distance leads the allocator to do zone_reclaim()
-> and forcing the pages to stay in one node, again preventing the load
-> from being fully cached in memory, which is much more expensive than
-> the foreign node cost.
+> diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
+> index f28f9a6..e13dafc 100644
+> --- a/Documentation/power/suspend-and-cpuhotplug.txt
+> +++ b/Documentation/power/suspend-and-cpuhotplug.txt
+> @@ -29,7 +29,7 @@ More details follow:
 > 
->>> up to half of memory, and don't recognize workingset changes that are
->>> bigger than half of memory.
->>
->> Workingset change?
->> You mean if new workingset is bigger than half of memory and it's like
->> stream before retouch, we could cache only part of working set because 
->> head pages on working set would be discared by tail pages of working set
->> in inactive list?
-> 
-> Spot-on.  I called that 'tail-chasing' in my notes :-) When you are in
-> a perpetual loop of evicting pages you will need in a couple hundred
-> page faults.  Those couple hundred page faults are the refault
-> distance and my code is able to detect these loops and increases the
-> space available to the inactive list to end them, if possible.
-> 
+>                                    Write 'mem' to
+>                                  /sys/power/state
+> -                                    syfs file
+> +                                    sysfs file
+>                                          |
+>                                          v
+>                                 Acquire pm_mutex lock
 
 
-Thanks! It would be better to add above explanation in cover-letter.
-
-
-> This is the whole principle of the series.
-> 
-> If such a loop is recognized in a single zone, the allocator goes for
-> lower zones to increase the inactive space.  If such a loop is
-> recognized over all allowed zones in the zonelist, the active lists
-> are shrunk to increase the inactive space.
-
->
-
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
-
--- 
-Kind regards,
-Minchan Kim
