@@ -1,85 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab2EBLjA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 07:39:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:42961 "EHLO mga01.intel.com"
+	id S1754903Ab2EBLi6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 07:38:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36121 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754567Ab2EBLiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 07:38:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="148455781"
-Message-ID: <4FA11CC7.5040302@intel.com>
-Date: Wed, 02 May 2012 19:38:47 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: andi.kleen@intel.com, tim.c.chen@linux.intel.com, jeremy@goop.org,
-        chrisw@sous-sol.org, akataria@vmware.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
-        fweisbec@gmail.com, riel@redhat.com, luto@mit.edu, avi@redhat.com,
-        len.brown@intel.com, paul.gortmaker@windriver.com, dhowells@redhat.com,
-        fenghua.yu@intel.com, yinghai@kernel.org, cpw@sgi.com, steiner@sgi.com,
-        linux-kernel@vger.kernel.org, yongjie.ren@intel.com
-Subject: Re: [PATCH 2/3] x86/flush_tlb: try flush_tlb_single one by one in
- flush_tlb_range
-References: <1335603099-2624-1-git-send-email-alex.shi@intel.com> <1335603099-2624-3-git-send-email-alex.shi@intel.com> <20120430105440.GC9303@aftab.osrc.amd.com> <4FA0FD39.9060908@intel.com> <20120502093815.GB12914@aftab.osrc.amd.com>
-In-Reply-To: <20120502093815.GB12914@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754171Ab2EBLiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 07:38:54 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
+        mhiramat@redhat.com, robert.richter@amd.com, fche@redhat.com,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        drepper@gmail.com, asharma@fb.com, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 16/17] perf, tool: Add dso data caching
+Date: Wed,  2 May 2012 13:37:17 +0200
+Message-Id: <1335958638-5160-17-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1335958638-5160-1-git-send-email-jolsa@redhat.com>
+References: <1335958638-5160-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2012 05:38 PM, Borislav Petkov wrote:
+Adding dso data caching so we dont need to open/read/close,
+each time we want dso data.
 
-> On Wed, May 02, 2012 at 05:24:09PM +0800, Alex Shi wrote:
->> For some of scenario, above equation can be modified as:
->> (512 - X) * 100ns(assumed TLB refill cost) = X * 140ns(assumed invlpg cost)
->>
->> When thread number less than cpu numbers, balance point can up to 1/2
->> TLB entries.
->>
->> When thread number is equal to cpu number with HT, on our SNB EP
->> machine, the balance point is 1/16 TLB entries, on NHM EP machine,
->> balance at 1/32. So, need to change FLUSHALL_BAR to 32.
-> 
-> Are you saying you want to have this setting per family?
+The DSO data caching affects following functions:
+  dso__data_read_offset
+  dso__data_read_addr
 
+Each DSO read tries to find the data (based on offset) inside
+the cache. If it's not present it fills the cache from file,
+and returns the data. If it is present, data are returned
+with no file read.
 
-Set it according to CPU type is more precise, but looks ugly. I am
-wondering if it worth to do. Maybe conservative selection is acceptable?
+Each data read is cached by reading cache page sized/alligned
+amount of DSO data. The cache page size is hardcoded to 4096.
+The cache is using RB tree with file offset as a sort key.
 
->
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/symbol.c |  154 ++++++++++++++++++++++++++++++++++++++++------
+ tools/perf/util/symbol.h |   11 +++
+ 2 files changed, 147 insertions(+), 18 deletions(-)
 
-> Also, have you run your patches with other benchmarks beside your
-> microbenchmark, say kernbench, SPEC<something>, i.e. some other
-> multithreaded benchmark touching shared memory? Are you seeing any
-> improvement there?
-
-
-I tested oltp reading and specjbb2005 with openjdk. They should not much
-flush_tlb_range calling. So, no clear improvement.
-Do you know benchmarks which cause enough flush_tlb_range?
-
-> 
->> when thread number is bigger than cpu number, context switch eat all
->> improvement. the memory access latency is same as unpatched kernel.
-> 
-> Also, how do you know in the kernel that the thread number is the number
-> of all threads touching this shared mmapped region - there could be
-> unrelated threads doing something else.
-
-
-Believe we didn't need to know this, much more thread number just weaken
-and cover the improvement. When the thread number goes down, the
-performance gain appears. So, don't need care this.
-
-Any more comments for this patchset?
-
-> 
-> Thanks.
-> 
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index bef9ae7..09a868a 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -29,6 +29,7 @@
+ #define NT_GNU_BUILD_ID 3
+ #endif
+ 
++static void dso_cache__free(struct rb_root *root);
+ static bool dso__build_id_equal(const struct dso *dso, u8 *build_id);
+ static int elf_read_build_id(Elf *elf, void *bf, size_t size);
+ static void dsos__add(struct list_head *head, struct dso *dso);
+@@ -342,6 +343,7 @@ struct dso *dso__new(const char *name)
+ 		dso__set_short_name(dso, dso->name);
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
++		dso->cache = RB_ROOT;
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+@@ -376,6 +378,7 @@ void dso__delete(struct dso *dso)
+ 		free((char *)dso->short_name);
+ 	if (dso->lname_alloc)
+ 		free(dso->long_name);
++	dso_cache__free(&dso->cache);
+ 	free(dso);
+ }
+ 
+@@ -2892,22 +2895,87 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
+ 	return -EINVAL;
+ }
+ 
+-static ssize_t dso_cache_read(struct dso *dso __used, u64 offset __used,
+-			      u8 *data __used, ssize_t size __used)
++static void
++dso_cache__free(struct rb_root *root)
+ {
+-	return -EINVAL;
++	struct rb_node *next = rb_first(root);
++
++	while (next) {
++		struct dso_cache *cache;
++
++		cache = rb_entry(next, struct dso_cache, rb_node);
++		next = rb_next(&cache->rb_node);
++		rb_erase(&cache->rb_node, root);
++		free(cache);
++	}
+ }
+ 
+-static int dso_cache_add(struct dso *dso __used, u64 offset __used,
+-			 u8 *data __used, ssize_t size __used)
++static struct dso_cache*
++dso_cache__find(struct rb_root *root, u64 offset)
+ {
+-	return 0;
++	struct rb_node **p = &root->rb_node;
++	struct rb_node *parent = NULL;
++	struct dso_cache *cache;
++
++	while (*p != NULL) {
++		u64 end;
++
++		parent = *p;
++		cache = rb_entry(parent, struct dso_cache, rb_node);
++		end = cache->offset + DSO__DATA_CACHE_SIZE;
++
++		if (offset < cache->offset)
++			p = &(*p)->rb_left;
++		else if (offset >= end)
++			p = &(*p)->rb_right;
++		else
++			return cache;
++	}
++	return NULL;
++}
++
++static void
++dso_cache__insert(struct rb_root *root, struct dso_cache *new)
++{
++	struct rb_node **p = &root->rb_node;
++	struct rb_node *parent = NULL;
++	struct dso_cache *cache;
++	u64 offset = new->offset;
++
++	while (*p != NULL) {
++		u64 end;
++
++		parent = *p;
++		cache = rb_entry(parent, struct dso_cache, rb_node);
++		end = cache->offset + DSO__DATA_CACHE_SIZE;
++
++		if (offset < cache->offset)
++			p = &(*p)->rb_left;
++		else if (offset >= end)
++			p = &(*p)->rb_right;
++	}
++
++	rb_link_node(&new->rb_node, parent, p);
++	rb_insert_color(&new->rb_node, root);
++}
++
++static ssize_t
++dso_cache__memcpy(struct dso_cache *cache, u64 offset,
++		  u8 *data, u64 size)
++{
++	u64 cache_offset = offset - cache->offset;
++	u64 cache_size   = min(cache->size - cache_offset, size);
++
++	memcpy(data, cache->data + cache_offset, cache_size);
++	return cache_size;
+ }
+ 
+-static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
+-		     u64 offset, u8 *data, ssize_t size)
++static ssize_t
++dso_cache__read(struct dso *dso, struct machine *machine,
++		 u64 offset, u8 *data, ssize_t size)
+ {
+-	ssize_t rsize = -1;
++	struct dso_cache *cache;
++	ssize_t ret;
+ 	int fd;
+ 
+ 	fd = dso__data_fd(dso, machine);
+@@ -2915,28 +2983,78 @@ static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
+ 		return -1;
+ 
+ 	do {
+-		if (-1 == lseek(fd, offset, SEEK_SET))
++		u64 cache_offset;
++
++		ret = -ENOMEM;
++
++		cache = zalloc(sizeof(*cache) + DSO__DATA_CACHE_SIZE);
++		if (!cache)
+ 			break;
+ 
+-		rsize = read(fd, data, size);
+-		if (-1 == rsize)
++		cache_offset = offset & DSO__DATA_CACHE_MASK;
++		ret = -EINVAL;
++
++		if (-1 == lseek(fd, cache_offset, SEEK_SET))
+ 			break;
+ 
+-		if (dso_cache_add(dso, offset, data, size))
+-			pr_err("Failed to add data int dso cache.");
++		ret = read(fd, cache->data, DSO__DATA_CACHE_SIZE);
++		if (ret <= 0)
++			break;
++
++		cache->offset = cache_offset;
++		cache->size   = ret;
++		dso_cache__insert(&dso->cache, cache);
++
++		ret = dso_cache__memcpy(cache, offset, data, size);
+ 
+ 	} while (0);
+ 
++	if (ret <= 0)
++		free(cache);
++
+ 	close(fd);
+-	return rsize;
++	return ret;
++}
++
++static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
++			      u64 offset, u8 *data, ssize_t size)
++{
++	struct dso_cache *cache;
++
++	cache = dso_cache__find(&dso->cache, offset);
++	if (cache)
++		return dso_cache__memcpy(cache, offset, data, size);
++	else
++		return dso_cache__read(dso, machine, offset, data, size);
+ }
+ 
+ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ 			      u64 offset, u8 *data, ssize_t size)
+ {
+-	if (dso_cache_read(dso, offset, data, size))
+-		return read_dso_data(dso, machine, offset, data, size);
+-	return 0;
++	ssize_t r = 0;
++	u8 *p = data;
++
++	do {
++		ssize_t ret;
++
++		ret = dso_cache_read(dso, machine, offset, p, size);
++		if (ret < 0)
++			return ret;
++
++		/* Reached EOF, return what we have. */
++		if (!ret)
++			break;
++
++		BUG_ON(ret > size);
++
++		r      += ret;
++		p      += ret;
++		offset += ret;
++		size   -= ret;
++
++	} while (size);
++
++	return r;
+ }
+ 
+ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index a5a30fc..e7e5eaf 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -174,10 +174,21 @@ enum dso_kernel_type {
+ 	DSO_TYPE_GUEST_KERNEL
+ };
+ 
++#define DSO__DATA_CACHE_SIZE 4096
++#define DSO__DATA_CACHE_MASK ~(DSO__DATA_CACHE_SIZE - 1)
++
++struct dso_cache {
++	struct rb_node	rb_node;
++	u64 offset;
++	u64 size;
++	char data[0];
++};
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
++	struct rb_root	 cache;
+ 	enum dso_kernel_type	kernel;
+ 	enum dso_binary_type	symtab_type;
+ 	enum dso_binary_type	data_type;
+-- 
+1.7.7.6
 
