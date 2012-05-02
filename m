@@ -1,129 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab2EBAEH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 20:04:07 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:45568 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756364Ab2EBAEF (ORCPT
+	id S1757042Ab2EBAJW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 20:09:22 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:37492 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440Ab2EBAJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 20:04:05 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-10.tower-160.messagelabs.com!1335917043!2610493!2
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: fix build errors caused by module_init/module_exit refactor
-Date: Tue, 1 May 2012 17:03:48 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Tue, 1 May 2012 20:09:20 -0400
+Message-ID: <4FA07B27.70501@gmail.com>
+Date: Tue, 01 May 2012 20:09:11 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Ulrich Drepper <drepper@akkadia.org>
+CC: arnd@arndb.de, davem@davemloft.net, hch@infradead.org, hverkuil@xs4all.nl,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        mchehab@redhat.com, kosaki.motohiro@gmail.com
+Subject: Re: [PATCH] [RESEND] Install kernel-page-flags.h
+References: <201204291404.q3TE4vfN023826@drepperk.user.openhosting.com>
+In-Reply-To: <201204291404.q3TE4vfN023826@drepperk.user.openhosting.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201205011703.50312.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A couple build errors were introduced with the module_init/module_exit
-refactor.
+(4/29/12 10:04 AM), Ulrich Drepper wrote:
+> No one has definitely commented on this patch nor is it applied.  Christoph at first said it shouldn't be done but I think he had to retract his objection.  The interface is already out there.  It's also IMO the right choice to go with a binary interface since there is so much data involved and the format is not tied directly to kernel-internal data structures.
+> 
+> Could either the patch please be applied or a reason given why not?
+> 
+> 
+> Signed-off-by: Ulrich Drepper<drepper@gmail.com>
+> 
 
-The struct comedi_driver variable was being accessed directly in the
-attach and detach routines. Instead of doing this, access the variable
-indirectly using the driver pointer in struct comedi_device.
+linux/Documentation/vm/page-type.c has redundant definition of KPF_*. then, this exporting will solve it.
+I'm going to ack if you can fix two things.
+ 1) your current changelog looks like a chat log style. Please write formal changelog.
+ 2) Please fix page-type.c too.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+and pelase cc Wu Fengguang <fengguang.wu@intel.com>. His last commit explicitly says kernel-page-flags.h
+was intentionally made for user space tools. see below.
 
----
 
-diff --git a/drivers/staging/comedi/drivers/pcmda12.c b/drivers/staging/comedi/drivers/pcmda12.c
-index 4846d98..a82b343 100644
---- a/drivers/staging/comedi/drivers/pcmda12.c
-+++ b/drivers/staging/comedi/drivers/pcmda12.c
-@@ -172,10 +172,10 @@ static int pcmda12_attach(struct comedi_device *dev,
- 
- 	iobase = it->options[0];
- 	printk(KERN_INFO
--	       "comedi%d: %s: io: %lx %s ", dev->minor, driver.driver_name,
-+	       "comedi%d: %s: io: %lx %s ", dev->minor, dev->driver->driver_name,
- 	       iobase, it->options[1] ? "simultaneous xfer mode enabled" : "");
- 
--	if (!request_region(iobase, IOSIZE, driver.driver_name)) {
-+	if (!request_region(iobase, IOSIZE, dev->driver->driver_name)) {
- 		printk("I/O port conflict\n");
- 		return -EIO;
- 	}
-@@ -230,7 +230,7 @@ static int pcmda12_attach(struct comedi_device *dev,
- static int pcmda12_detach(struct comedi_device *dev)
- {
- 	printk(KERN_INFO
--	       "comedi%d: %s: remove\n", dev->minor, driver.driver_name);
-+	       "comedi%d: %s: remove\n", dev->minor, dev->driver->driver_name);
- 	if (dev->iobase)
- 		release_region(dev->iobase, IOSIZE);
- 	return 0;
-diff --git a/drivers/staging/comedi/drivers/pcmmio.c b/drivers/staging/comedi/drivers/pcmmio.c
-index e05d157..75ccb48 100644
---- a/drivers/staging/comedi/drivers/pcmmio.c
-+++ b/drivers/staging/comedi/drivers/pcmmio.c
-@@ -1022,13 +1022,13 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	irq[0] = it->options[1];
- 
- 	printk(KERN_INFO "comedi%d: %s: io: %lx attaching...\n", dev->minor,
--			driver.driver_name, iobase);
-+			dev->driver->driver_name, iobase);
- 
- 	dev->iobase = iobase;
- 
- 	if (!iobase || !request_region(iobase,
- 				       thisboard->total_iosize,
--				       driver.driver_name)) {
-+				       dev->driver->driver_name)) {
- 		printk(KERN_ERR "comedi%d: I/O port conflict\n", dev->minor);
- 		return -EIO;
- 	}
-@@ -1227,7 +1227,8 @@ static int pcmmio_detach(struct comedi_device *dev)
- {
- 	int i;
- 
--	printk(KERN_INFO "comedi%d: %s: remove\n", dev->minor, driver.driver_name);
-+	printk(KERN_INFO "comedi%d: %s: remove\n", dev->minor,
-+		dev->driver->driver_name);
- 	if (dev->iobase)
- 		release_region(dev->iobase, thisboard->total_iosize);
- 
-diff --git a/drivers/staging/comedi/drivers/pcmuio.c b/drivers/staging/comedi/drivers/pcmuio.c
-index de4f486..47a3ee6 100644
---- a/drivers/staging/comedi/drivers/pcmuio.c
-+++ b/drivers/staging/comedi/drivers/pcmuio.c
-@@ -757,13 +757,13 @@ static int pcmuio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	irq[1] = it->options[2];
- 
- 	dev_dbg(dev->hw_dev, "comedi%d: %s: io: %lx attached\n", dev->minor,
--		driver.driver_name, iobase);
-+		dev->driver->driver_name, iobase);
- 
- 	dev->iobase = iobase;
- 
- 	if (!iobase || !request_region(iobase,
- 				       thisboard->num_asics * ASIC_IOSIZE,
--				       driver.driver_name)) {
-+				       dev->driver->driver_name)) {
- 		dev_err(dev->hw_dev, "I/O port conflict\n");
- 		return -EIO;
- 	}
-@@ -913,7 +913,7 @@ static int pcmuio_detach(struct comedi_device *dev)
- 	int i;
- 
- 	dev_dbg(dev->hw_dev, "comedi%d: %s: remove\n", dev->minor,
--		driver.driver_name);
-+		dev->driver->driver_name);
- 	if (dev->iobase)
- 		release_region(dev->iobase, ASIC_IOSIZE * thisboard->num_asics);
- 
+commit 1a9b5b7fe0c5dad8a635288882d36785dea742f9
+Author: Wu Fengguang <fengguang.wu@intel.com>
+Date:   Wed Dec 16 12:19:59 2009 +0100
+
+    mm: export stable page flags
+    
+    Rename get_uflags() to stable_page_flags() and make it a global function
+    for use in the hwpoison page flags filter, which need to compare user
+    page flags with the value provided by user space.
+    
+    Also move KPF_* to kernel-page-flags.h for use by user space tools.
+    
+    Acked-by: Matt Mackall <mpm@selenic.com>
+    Signed-off-by: Andi Kleen <ak@linux.intel.com>
+    CC: Nick Piggin <npiggin@suse.de>
+    CC: Christoph Lameter <cl@linux-foundation.org>
+    Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+    Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
