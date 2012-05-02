@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab2EBXVg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 19:21:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37750 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab2EBXVf (ORCPT
+	id S1754125Ab2EBXad (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 19:30:33 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:51125 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab2EBXac convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 19:21:35 -0400
-Date: Wed, 2 May 2012 16:21:26 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com
-Subject: Re: [PATCH] Extcon: fix section mismatch in extcon_gpio.c
-Message-ID: <20120502232126.GA24513@kroah.com>
-References: <201205021538.45056.hartleys@visionengravers.com>
- <20120502224510.GA19693@opensource.wolfsonmicro.com>
- <20120502225115.GA3535@kroah.com>
- <20120502230418.GC19693@opensource.wolfsonmicro.com>
+	Wed, 2 May 2012 19:30:32 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-209.messagelabs.com!1336001429!4630894!7
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Question: Section mismatch warnings in drivers/net
+Date: Wed, 2 May 2012 16:30:25 -0700
+User-Agent: KMail/1.9.9
+CC: <netdev@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20120502230418.GC19693@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <201205021630.25233.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 12:04:18AM +0100, Mark Brown wrote:
-> On Wed, May 02, 2012 at 03:51:15PM -0700, Greg KH wrote:
-> 
-> > So did I, but I can't seem to find it anywhere.  Did I not apply it?
-> 
-> > odd.
-> 
-> Nope, no response at all from you that I recall.  Perhaps I forgot to CC
-> the list or something.
+Hello all,
 
-Hm, I found it now, it ended up in my "already applied this" mbox, but
-obviously, I didn't apply it.
+I noticed a number of section mismatch warnings in various
+drivers/net/ drivers. I was going to submit some patches to
+clean them up but then saw these commits:
 
-Very sorry about that, I went through a few hundred patches the other
-day on the airplane, I must have messed this one up, my apologies.
+commit 948252cb9e01d65a89ecadf67be5018351eee15e
+Author: David S. Miller <davem@davemloft.net>
+Date:   Tue May 31 19:27:48 2011 -0700
 
-greg k-h
+    Revert "net: fix section mismatches"
+    
+    This reverts commit e5cb966c0838e4da43a3b0751bdcac7fe719f7b4.
+    
+    It causes new build regressions with gcc-4.2 which is
+    pretty common on non-x86 platforms.
+    
+    Reported-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+commit e5cb966c0838e4da43a3b0751bdcac7fe719f7b4
+Author: Michał Mirosław <mirq-linux@rere.qmqm.pl>
+Date:   Mon Apr 18 13:31:20 2011 +0000
+
+    net: fix section mismatches
+    
+    Fix build warnings like the following:
+    
+    WARNING: drivers/net/built-in.o(.data+0x12434): Section mismatch in reference from the variable madge
+    
+    And add some consts to EISA device ID tables along the way.
+    
+    Signed-off-by: Michał Mirosław <mirq-linux@rere.qmqm.pl>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+Was the issue with the build regressions ever worked out? Would
+patches to fix the section mismatches be appropriate now?
+
+Regards,
+Hartley
