@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab2EBUSr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 16:18:47 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34612 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756181Ab2EBUSp (ORCPT
+	id S1757205Ab2EBUUh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 16:20:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54029 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756181Ab2EBUUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 16:18:45 -0400
-Date: Wed, 2 May 2012 22:18:32 +0200
-From: Andi Shyti <andi.shyti@gmail.com>
-To: Bryan Freed <bfreed@chromium.org>
-Cc: Peter Huewe <peter.huewe@infineon.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>, tpmdd@selhorst.net,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>,
-        Luigi Semenzato <semenzato@google.com>
-Subject: Re: [PATCH] CHROMIUM: tpm: tpm_tis_i2c: Lock the I2C adapter for a
- sequence of requests.
-Message-ID: <20120502201832.GA19349@andi>
-Mail-Followup-To: Bryan Freed <bfreed@chromium.org>,
-	Peter Huewe <peter.huewe@infineon.com>,
-	Rajiv Andrade <srajiv@linux.vnet.ibm.com>, tpmdd@selhorst.net,
-	tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	Olof Johansson <olof@lixom.net>,
-	Luigi Semenzato <semenzato@google.com>
-References: <1335967293-7728-1-git-send-email-peter.huewe@infineon.com>
- <1335967416-7564-1-git-send-email-peter.huewe@infineon.com>
- <20120502151734.GD16981@andi>
- <CAEYUcX0jBHasvcdLefR0fOGrVPaDw3pqzfQ_8_JGXHSPQHW7Ew@mail.gmail.com>
- <20120502181435.GF16981@andi>
- <CAEYUcX06hvTb1YP=9vCpK9Z19dtZgNTjUcSRnrUvjc3bu-D--Q@mail.gmail.com>
+	Wed, 2 May 2012 16:20:36 -0400
+Date: Wed, 2 May 2012 13:20:31 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: joseph daniel <josephdanielwalter@gmail.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        Ali Bahar <ali@internetdog.org>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: staging/rtl8712: unhandled default case in SwLedOn function.
+Message-ID: <20120502202031.GA26628@kroah.com>
+References: <CAFDqYy3OCmRHFR05=iQs-Q1hc5OMwZFiVkDbVnv5KXPA5pxfQA@mail.gmail.com>
+ <CAFDqYy03M7aZBzz30fT590YsLvZsm6JorXBGZ1CwJg2Qp01UOQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAEYUcX06hvTb1YP=9vCpK9Z19dtZgNTjUcSRnrUvjc3bu-D--Q@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFDqYy03M7aZBzz30fT590YsLvZsm6JorXBGZ1CwJg2Qp01UOQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, May 02, 2012 at 12:06:14PM -0700, Bryan Freed wrote:
-> Hi Andi,
-> 
-> On Wed, May 2, 2012 at 11:14 AM, Andi Shyti <andi.shyti@gmail.com> wrote:
-> > Hi Bryan,
+On Thu, May 03, 2012 at 02:12:39AM +0600, joseph daniel wrote:
+> On Thu, May 3, 2012 at 2:10 AM, joseph daniel
+> <josephdanielwalter@gmail.com> wrote:
+> > Hi kernel developers,
 > >
-> >> > try to have a look to the i2c_smbus* function, you could avoid
-> >> > lot of code
-> > On Wed, May 02, 2012 at 10:25:09AM -0700, Bryan Freed wrote:
-> >> (Sorry for resending...)
-> >>
-> >> Andi, it is not clear what i2c_smbus_* functions in particular will
-> >> improve upon this change.
-> >>
-> >> All i2c_smbus_* functions go through i2c_smbus_xfer() which at some
-> >> point will i2c_lock_adapter() for each request.
-> >> This is true for adapters that support SMBUS (where the lock occurs
-> >> directly in i2c_smbus_xfer()) or just I2C (where the lock occurs in
-> >> i2c_transfer() called through i2c_smbus_xfer_emulated()).
-> >>
-> >> The goal of this change is for the tpm_tis_i2c driver to be able to
-> >> lock an adapter over the duration of several I2C requests.
-> >> Presumably, that is why i2c_lock_adapter() is exported.
+> > In the function SwLedOn in rtl8712_led.c, we put the bLedOn = true,
+> > even if its a default case. may be we need to return? or BUG()?.
 > >
-> > the i2c_smbus_* functions will not improve anything to the
-> > driver, it will increase the readability and it will allow you to
-> > do the same stuff with less code.
-> 
-> I think I see what you are saying.
-> We could (in the unmodified version of this driver) replace all the
-> iic_tpm_read() calls of one byte (which sends an address byte before
-> reading a data byte) with an i2c_smbus_read_byte_command() call which
-> does the same thing.
-> Switching to the SMBUS calls in this driver will still work on
-> adapters that only support I2C because of i2c_smbus_xfer_emulated().
-> Right?
-> > All the i2c communication implementation you wrote here, is
-> > already written in the i2c-core.c file.
-> 
-> Right.  Unfortunately, we cannot use any of the i2c_smbus_* functions
-> in this driver.  The device will fail because the adapter lock is not
-> held long enough to prevent I2C traffic going to other devices on the
-> same bus.  That other traffic to other devices confuses the i2c core
-> in this device.  Our only driver solution is to lock the adapter for a
-> longer duration.
-> 
-> Yes, the code we have here is copied from the i2c-core.c file.  In
-> fact, we comment this with, "Copy i2c-core:i2c_transfer() as close as
-> possible without the adapter locks
-> and algorithm check".
-> 
-> And that really is the problem with using the i2c-core.c calls.  This
-> driver needs to lock the adapter for an extended duration.
+> > the code listing is:
+> >
+> > if ((padapter->bSurpriseRemoved == true) ||
+> >        (padapter->bDriverStopped == true))
+> >        return;
+> >    LedCfg = r8712_read8(padapter, LEDCFG);
+> >    switch (pLed->LedPin) {
+> >    case LED_PIN_GPIO0:
+> >        break;
+> >    case LED_PIN_LED0:
+> >        /* SW control led0 on.*/
+> >        r8712_write8(padapter, LEDCFG, LedCfg&0xf0);
+> >        break;
+> >    case LED_PIN_LED1:
+> >        /* SW control led1 on.*/
+> >        r8712_write8(padapter, LEDCFG, LedCfg&0x0f);
+> >        break;
+> >    default:
+> /* at this point of the code */
+> >       /* break; */
+>          return; /* or */
+>          /* BUG(); */ /*since we may not be getting into here */
 
-mmhhh... you still haven't convinced me. I always thought that
-every dublicated code is useless.
-You may have good reasons to do that, but I could still try to
-find out a way on how to simplify it.
+Never crash the kernel in a driver, that's just rude.  Error out
+properly if something unexpected happens.
 
-Thanks for the explanation,
-Andi
+thanks,
+
+greg k-h
