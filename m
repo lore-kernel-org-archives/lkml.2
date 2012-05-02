@@ -1,160 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab2EBXND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 19:13:03 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:32982 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751727Ab2EBXNB (ORCPT
+	id S1753477Ab2EBXVg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 19:21:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37750 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab2EBXVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 19:13:01 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18N5IBF1t0NvHMQQKLEmu4DZRpg7ILJfhxpGPh3b2
-	HRIcX4N29dhsFt
-Message-ID: <4FA1BF76.8080109@gmx.de>
-Date: Wed, 02 May 2012 23:12:54 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
+	Wed, 2 May 2012 19:21:35 -0400
+Date: Wed, 2 May 2012 16:21:26 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com
+Subject: Re: [PATCH] Extcon: fix section mismatch in extcon_gpio.c
+Message-ID: <20120502232126.GA24513@kroah.com>
+References: <201205021538.45056.hartleys@visionengravers.com>
+ <20120502224510.GA19693@opensource.wolfsonmicro.com>
+ <20120502225115.GA3535@kroah.com>
+ <20120502230418.GC19693@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Peter Huewe <peterhuewe@gmx.de>
-CC: Thomas Winischhofer <thomas@winischhofer.net>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] video/sis: Use SiS_DRAMType from init.h and annotate
- it __devinitconst
-References: <1334524209-20518-1-git-send-email-peterhuewe@gmx.de> <1335731167-3311-1-git-send-email-peterhuewe@gmx.de>
-In-Reply-To: <1335731167-3311-1-git-send-email-peterhuewe@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120502230418.GC19693@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-On 04/29/2012 08:26 PM, Peter Huewe wrote:
-> This patch removes the duplicated SiS_DRAMType from sis_main.c since it
-> is already defined exactly the same in init.h.
-> Since we don't want to include init.h (for size reasons) we move the
-> struct to sis_main.h.
-> Since SiS_DRAMType is const and only used by sisfb_post_300_rwtest which is
-> marked __devinit we can also annotate SiS_DRAMType with __devinitconst.
+On Thu, May 03, 2012 at 12:04:18AM +0100, Mark Brown wrote:
+> On Wed, May 02, 2012 at 03:51:15PM -0700, Greg KH wrote:
 > 
-> And since hardcoded values are bad we use ARRAY_SIZE for determining the
-> size of SiS_DRAMType ;)
+> > So did I, but I can't seem to find it anywhere.  Did I not apply it?
 > 
-> v2:
-> Move struct to sis_main.h to decrease module size
-
-As far as I can see it should be possible to keep the array in
-sis_main.c and just delete it in the header files, shouldn't it? I'd
-prefer to do it this way.
-
-
-Best regards,
-
-Florian Tobias Schandinat
-
+> > odd.
 > 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
->  drivers/video/sis/init.h     |   20 --------------------
->  drivers/video/sis/sis_main.c |   21 +--------------------
->  drivers/video/sis/sis_main.h |   20 ++++++++++++++++++++
->  3 files changed, 21 insertions(+), 40 deletions(-)
-> 
-> diff --git a/drivers/video/sis/init.h b/drivers/video/sis/init.h
-> index a22e892..85d6738 100644
-> --- a/drivers/video/sis/init.h
-> +++ b/drivers/video/sis/init.h
-> @@ -105,26 +105,6 @@ static const unsigned short ModeIndex_1920x1440[]    = {0x68, 0x69, 0x00, 0x6b};
->  static const unsigned short ModeIndex_300_2048x1536[]= {0x6c, 0x6d, 0x00, 0x00};
->  static const unsigned short ModeIndex_310_2048x1536[]= {0x6c, 0x6d, 0x00, 0x6e};
->  
-> -static const unsigned short SiS_DRAMType[17][5]={
-> -	{0x0C,0x0A,0x02,0x40,0x39},
-> -	{0x0D,0x0A,0x01,0x40,0x48},
-> -	{0x0C,0x09,0x02,0x20,0x35},
-> -	{0x0D,0x09,0x01,0x20,0x44},
-> -	{0x0C,0x08,0x02,0x10,0x31},
-> -	{0x0D,0x08,0x01,0x10,0x40},
-> -	{0x0C,0x0A,0x01,0x20,0x34},
-> -	{0x0C,0x09,0x01,0x08,0x32},
-> -	{0x0B,0x08,0x02,0x08,0x21},
-> -	{0x0C,0x08,0x01,0x08,0x30},
-> -	{0x0A,0x08,0x02,0x04,0x11},
-> -	{0x0B,0x0A,0x01,0x10,0x28},
-> -	{0x09,0x08,0x02,0x02,0x01},
-> -	{0x0B,0x09,0x01,0x08,0x24},
-> -	{0x0B,0x08,0x01,0x04,0x20},
-> -	{0x0A,0x08,0x01,0x02,0x10},
-> -	{0x09,0x08,0x01,0x01,0x00}
-> -};
-> -
->  static const unsigned char SiS_MDA_DAC[] =
->  {
->  	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-> diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
-> index 078ca21..8abd42b 100644
-> --- a/drivers/video/sis/sis_main.c
-> +++ b/drivers/video/sis/sis_main.c
-> @@ -4231,27 +4231,8 @@ sisfb_post_300_rwtest(struct sis_video_info *ivideo, int iteration, int buswidth
->  	unsigned short sr14;
->  	unsigned int k, RankCapacity, PageCapacity, BankNumHigh, BankNumMid;
->  	unsigned int PhysicalAdrOtherPage, PhysicalAdrHigh, PhysicalAdrHalfPage;
-> -	static const unsigned short SiS_DRAMType[17][5] = {
-> -		{0x0C,0x0A,0x02,0x40,0x39},
-> -		{0x0D,0x0A,0x01,0x40,0x48},
-> -		{0x0C,0x09,0x02,0x20,0x35},
-> -		{0x0D,0x09,0x01,0x20,0x44},
-> -		{0x0C,0x08,0x02,0x10,0x31},
-> -		{0x0D,0x08,0x01,0x10,0x40},
-> -		{0x0C,0x0A,0x01,0x20,0x34},
-> -		{0x0C,0x09,0x01,0x08,0x32},
-> -		{0x0B,0x08,0x02,0x08,0x21},
-> -		{0x0C,0x08,0x01,0x08,0x30},
-> -		{0x0A,0x08,0x02,0x04,0x11},
-> -		{0x0B,0x0A,0x01,0x10,0x28},
-> -		{0x09,0x08,0x02,0x02,0x01},
-> -		{0x0B,0x09,0x01,0x08,0x24},
-> -		{0x0B,0x08,0x01,0x04,0x20},
-> -		{0x0A,0x08,0x01,0x02,0x10},
-> -		{0x09,0x08,0x01,0x01,0x00}
-> -	};
->  
-> -	 for(k = 0; k <= 16; k++) {
-> +	 for (k = 0; k < ARRAY_SIZE(SiS_DRAMType); k++) {
->  
->  		RankCapacity = buswidth * SiS_DRAMType[k][3];
->  
-> diff --git a/drivers/video/sis/sis_main.h b/drivers/video/sis/sis_main.h
-> index 9540e97..242c1c3 100644
-> --- a/drivers/video/sis/sis_main.h
-> +++ b/drivers/video/sis/sis_main.h
-> @@ -776,6 +776,26 @@ extern void		SiS_Chrontel701xBLOff(struct SiS_Private *SiS_Pr);
->  #endif
->  extern void		SiS_SiS30xBLOn(struct SiS_Private *SiS_Pr);
->  extern void		SiS_SiS30xBLOff(struct SiS_Private *SiS_Pr);
-> +
-> +static const unsigned short __devinitconst SiS_DRAMType[17][5] = {
-> +	{0x0C,0x0A,0x02,0x40,0x39},
-> +	{0x0D,0x0A,0x01,0x40,0x48},
-> +	{0x0C,0x09,0x02,0x20,0x35},
-> +	{0x0D,0x09,0x01,0x20,0x44},
-> +	{0x0C,0x08,0x02,0x10,0x31},
-> +	{0x0D,0x08,0x01,0x10,0x40},
-> +	{0x0C,0x0A,0x01,0x20,0x34},
-> +	{0x0C,0x09,0x01,0x08,0x32},
-> +	{0x0B,0x08,0x02,0x08,0x21},
-> +	{0x0C,0x08,0x01,0x08,0x30},
-> +	{0x0A,0x08,0x02,0x04,0x11},
-> +	{0x0B,0x0A,0x01,0x10,0x28},
-> +	{0x09,0x08,0x02,0x02,0x01},
-> +	{0x0B,0x09,0x01,0x08,0x24},
-> +	{0x0B,0x08,0x01,0x04,0x20},
-> +	{0x0A,0x08,0x01,0x02,0x10},
-> +	{0x09,0x08,0x01,0x01,0x00}
-> +};
->  #endif
->  
->  
+> Nope, no response at all from you that I recall.  Perhaps I forgot to CC
+> the list or something.
 
+Hm, I found it now, it ended up in my "already applied this" mbox, but
+obviously, I didn't apply it.
+
+Very sorry about that, I went through a few hundred patches the other
+day on the airplane, I must have messed this one up, my apologies.
+
+greg k-h
