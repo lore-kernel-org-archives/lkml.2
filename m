@@ -1,114 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab2EBUZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 16:25:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:32845 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756655Ab2EBUZu (ORCPT
+	id S1757006Ab2EBU2K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 16:28:10 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56648 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756181Ab2EBU2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 16:25:50 -0400
-Date: Wed, 2 May 2012 13:25:30 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next ppc64: RCU mods cause __might_sleep BUGs
-In-Reply-To: <20120501232516.GR2441@linux.vnet.ibm.com>
-Message-ID: <alpine.LSU.2.00.1205021324430.24246@eggly.anvils>
-References: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils> <1335832418.20866.95.camel@pasglop> <alpine.LSU.2.00.1204302142310.27208@eggly.anvils> <20120501142208.GA2441@linux.vnet.ibm.com> <alpine.LSU.2.00.1205011410360.28232@eggly.anvils>
- <20120501232516.GR2441@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 2 May 2012 16:28:08 -0400
+Date: Wed, 2 May 2012 22:27:59 +0200
+From: Andi Shyti <andi.shyti@gmail.com>
+To: scameron@beardog.cce.hp.com
+Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Subject: Re: [PATCH 07/17] hpsa: do not give up retry of driver cmds after
+ only 3 retries
+Message-ID: <20120502202759.GB19349@andi>
+Mail-Followup-To: scameron@beardog.cce.hp.com,
+	james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+	linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+	thenzl@redhat.com, akpm@linux-foundation.org,
+	mikem@beardog.cce.hp.com
+References: <20120501163819.11705.10299.stgit@beardog.cce.hp.com>
+ <20120501164240.11705.10308.stgit@beardog.cce.hp.com>
+ <20120501172634.GA11302@andi>
+ <20120501182011.GS11802@beardog.cce.hp.com>
+ <20120501213934.GD11302@andi>
+ <20120502163009.GV11802@beardog.cce.hp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120502163009.GV11802@beardog.cce.hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 May 2012, Paul E. McKenney wrote:
-> > > > > On Mon, 2012-04-30 at 15:37 -0700, Hugh Dickins wrote:
-> > > > > > 
-> > > > > > BUG: sleeping function called from invalid context at include/linux/pagemap.h:354
-> > > > > > in_atomic(): 0, irqs_disabled(): 0, pid: 6886, name: cc1
-> > > > > > Call Trace:
-> > > > > > [c0000001a99f78e0] [c00000000000f34c] .show_stack+0x6c/0x16c (unreliable)
-> > > > > > [c0000001a99f7990] [c000000000077b40] .__might_sleep+0x11c/0x134
-> > > > > > [c0000001a99f7a10] [c0000000000c6228] .filemap_fault+0x1fc/0x494
-> > > > > > [c0000001a99f7af0] [c0000000000e7c9c] .__do_fault+0x120/0x684
-> > > > > > [c0000001a99f7c00] [c000000000025790] .do_page_fault+0x458/0x664
-> > > > > > [c0000001a99f7e30] [c000000000005868] handle_page_fault+0x10/0x30
+On Wed, May 02, 2012 at 11:30:09AM -0500, scameron@beardog.cce.hp.com wrote:
+> On Tue, May 01, 2012 at 11:39:34PM +0200, Andi Shyti wrote:
+> > Hi Steve,
+> > 
+> > Thanks for the walk-through, but still some doubts...
+> > 
+> > On Tue, May 01, 2012 at 01:20:11PM -0500, scameron@beardog.cce.hp.com wrote:
+> > > On Tue, May 01, 2012 at 07:26:34PM +0200, Andi Shyti wrote:
+> > > > >  
+> > > > >  	do {
+> > > > >  		memset(c->err_info, 0, sizeof(*c->err_info));
+> > > > >  		hpsa_scsi_do_simple_cmd_core(h, c);
+> > > > >  		retry_count++;
+> > > > > +		if (retry_count > 3) {
+> > > > > +			msleep(backoff_time);
+> > > > 
+> > > > for 10ms isn't it better to avoid using msleep?
+> > > 
+> > > [...] 
+> > > > > +			if (backoff_time < 1000)
+> > > > > +				backoff_time *= 2;
+> > > 
+> > > Eh, maybe.  from Documentation/timers-howto.txt
+> > > 
+> > >                         msleep(1~20) may not do what the caller intends, and
+> > >                         will often sleep longer (~20 ms actual sleep for any
+> > >                         value given in the 1~20ms range). In many cases this
+> > >                         is not the desired behavior.
+> > > 
+> > > Sleeping longer (~20ms instead of 10ms) in this instance is fine, as I don't
+> > > really care too much exactly how long it sleeps, and it backs off to up to
+> > > 1280ms eventually anyway.  The idea is, "wait a bit, and retry, and then if
+> > > that doesn't work, wait twice as long, and retry, etc."  *exactly* how long
+> > > "a bit" is is not super important.  I could change the initial back_off time
+> > > to 20 or 30 to satisfy the letter of the advice in Documentation/timers-howto.txt,
+> > > if doing so is important.
+> > 
+> > No, you're right, it should not really matter, but here in the
+> > worst case you put the driver on sleep for almost 22 seconds,
+> > that is a huge difference compared to the original
+> > implementation.
+> >  
+> > > This is kind of a corner case of a corner case, I don't expect
+> > > things will ordinarily end up waiting that long, because normally
+> > > one of the 1st 3 retries will succeed.  I just wanted to make it 
+> > > a little more robust and not just give up immediately if the 3
+> > > initial retries don't succeed, the specific number of retries,
+> > > wait times, etc, I just made up.
+> > 
+> > Premising that I don't know the device, therefore I could be
+> > totally wrong, if you don't expect things to wait so long, why not
+> > to decrease the MAX_DRIVER_CMD_RETRIES and sleep increasingly (as
+> > you did) but for shorter period?
+> 
+> [...]
+> 
+> So yeah, the "echo 1 > /sys/blah/blah/rescan" process will sleep for up to ~20 seconds
+> in the event of some (presumably very rare) 20 second BUSY condition, but it will work in
+> cases the old code will not, and so it sleeps 20 secs, I don't think that's really a 
+> problem, esp. compared to the alternative of just failing.
+>
 
-Got it at last.  Embarrassingly obvious.  __rcu_read_lock() and
-__rcu_read_unlock() are not safe to be using __this_cpu operations,
-the cpu may change in between the rmw's read and write: they should
-be using this_cpu operations (or, I put preempt_disable/enable in the
-__rcu_read_unlock below).  __this_cpus there work out fine on x86,
-which was given good instructions to use; but not so well on PowerPC.
+Uhh... that was a good explanation :)
+Thanks a lot! You convinced me :)
 
-I've been running successfully for an hour now with the patch below;
-but I expect you'll want to consider the tradeoffs, and may choose a
-different solution.
+If you want you can add
 
-Hugh
-
---- 3.4-rc4-next-20120427/include/linux/rcupdate.h	2012-04-28 09:26:38.000000000 -0700
-+++ testing/include/linux/rcupdate.h	2012-05-02 11:46:06.000000000 -0700
-@@ -159,7 +159,7 @@ DECLARE_PER_CPU(struct task_struct *, rc
-  */
- static inline void __rcu_read_lock(void)
- {
--	__this_cpu_inc(rcu_read_lock_nesting);
-+	this_cpu_inc(rcu_read_lock_nesting);
- 	barrier(); /* Keep code within RCU read-side critical section. */
- }
- 
---- 3.4-rc4-next-20120427/kernel/rcupdate.c	2012-04-28 09:26:40.000000000 -0700
-+++ testing/kernel/rcupdate.c	2012-05-02 11:44:13.000000000 -0700
-@@ -72,6 +72,7 @@ DEFINE_PER_CPU(struct task_struct *, rcu
-  */
- void __rcu_read_unlock(void)
- {
-+	preempt_disable();
- 	if (__this_cpu_read(rcu_read_lock_nesting) != 1)
- 		__this_cpu_dec(rcu_read_lock_nesting);
- 	else {
-@@ -83,13 +84,14 @@ void __rcu_read_unlock(void)
- 		barrier();  /* ->rcu_read_unlock_special load before assign */
- 		__this_cpu_write(rcu_read_lock_nesting, 0);
- 	}
--#ifdef CONFIG_PROVE_LOCKING
-+#if 1 /* CONFIG_PROVE_LOCKING */
- 	{
- 		int rln = __this_cpu_read(rcu_read_lock_nesting);
- 
--		WARN_ON_ONCE(rln < 0 && rln > INT_MIN / 2);
-+		BUG_ON(rln < 0 && rln > INT_MIN / 2);
- 	}
- #endif /* #ifdef CONFIG_PROVE_LOCKING */
-+	preempt_enable();
- }
- EXPORT_SYMBOL_GPL(__rcu_read_unlock);
- 
---- 3.4-rc4-next-20120427/kernel/sched/core.c	2012-04-28 09:26:40.000000000 -0700
-+++ testing/kernel/sched/core.c	2012-05-01 22:40:46.000000000 -0700
-@@ -2024,7 +2024,7 @@ asmlinkage void schedule_tail(struct tas
- {
- 	struct rq *rq = this_rq();
- 
--	rcu_switch_from(prev);
-+	/* rcu_switch_from(prev); */
- 	rcu_switch_to();
- 	finish_task_switch(rq, prev);
- 
-@@ -7093,6 +7093,10 @@ void __might_sleep(const char *file, int
- 		"BUG: sleeping function called from invalid context at %s:%d\n",
- 			file, line);
- 	printk(KERN_ERR
-+		"cpu=%d preempt_count=%x preempt_offset=%x rcu_nesting=%x nesting_save=%x\n",
-+		raw_smp_processor_id(), preempt_count(), preempt_offset,
-+		rcu_preempt_depth(), current->rcu_read_lock_nesting_save); 
-+	printk(KERN_ERR
- 		"in_atomic(): %d, irqs_disabled(): %d, pid: %d, name: %s\n",
- 			in_atomic(), irqs_disabled(),
- 			current->pid, current->comm);
+Reviewed-by: Andi Shyti <andi.shyti@gmail.com> 
