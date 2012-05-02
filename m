@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388Ab2EBGmn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 02:42:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36155 "EHLO
+	id S1755036Ab2EBGmu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 02:42:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60088 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab2EBGmk (ORCPT
+	with ESMTP id S1754251Ab2EBGmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 02:42:40 -0400
-Date: Tue, 1 May 2012 22:10:27 -0700
+	Wed, 2 May 2012 02:42:46 -0400
+Date: Tue, 1 May 2012 22:16:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 06/19] PCI: prepare for serializing hotplug operations
- triggered by pciehp driver
-Message-ID: <20120502051027.GD23579@kroah.com>
-References: <1335539820-11232-1-git-send-email-jiang.liu@huawei.com>
- <1335539820-11232-7-git-send-email-jiang.liu@huawei.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 0/7] Add TI EMIF SDRAM controller driver
+Message-ID: <20120502051623.GA23705@kroah.com>
+References: <y>
+ <1335529449-28046-1-git-send-email-santosh.shilimkar@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1335539820-11232-7-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1335529449-28046-1-git-send-email-santosh.shilimkar@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 11:16:47PM +0800, Jiang Liu wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
+On Fri, Apr 27, 2012 at 05:54:02PM +0530, Santosh Shilimkar wrote:
+> Add a driver for the EMIF SDRAM controller used in Texas Instrument SoCs
 > 
-> Split pciehp_wq into two workqueues to avoid possible deadlock issues
-> when using PCI hotplug lock to serialize hotplug operations triggered
-> by pciehp driver.
+> EMIF is an SDRAM controller that supports, based on its revision,
+> one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
+> for LPDDR2.
+> 
+> The driver supports the following features:
+> - Calculates the DDR AC timing parameters to be set in EMIF
+>   registers using data from the device data-sheets and based
+>   on the DDR frequency. If data from data-sheets is not available
+>   default timing values from the JEDEC spec are used. These
+>   will be safe, but not necessarily optimal
+> - API for changing timings during DVFS or at boot-up
+> - Temperature alert configuration and handling of temperature
+>   alerts, if any for LPDDR2 devices
+>   * temperature alert is based on periodic polling of MR4 mode
+>     register in DDR devices automatically performed by hardware
+>   * timings are de-rated and brought back to nominal when
+>     temperature raises and falls respectively
+> - Cache of calculated register values to avoid re-calculating
+>   them
+> 
+> The driver will need some minor updates when it is eventually
+> integrated with Dynamic Voltage and Frequency Scaling (DVFS).
+> This can not be done now as DVFS support is not available in
+> the mainline yet.
+> 
+> Discussions with Santosh Shilimkar <santosh.shilimkar@ti.com>
+> were immensely helpful in shaping up the interfaces. Vibhore Vardhan
+> <vvardhan@gmail.com> did the initial code snippet for thermal
+> handling.
+> 
+> Testing: 
+> - The driver is tested on OMAP4430 SDP.
+> - The driver in a slightly adapted form is also tested on OMAP5.
+> - Since mainline kernel doesn't have DVFS support yet,
+>   testing was done using a test module.
+> - Temperature alert handling was tested with simulated interrupts
+>   and faked temperature values as testing all cases in real-life
+>   scenarios is difficult.
+> - Tested the driver as a module
+> 
+> Cc: Greg KH <greg@kroah.com>
 
-Why two workqueues?  What is deadlocking?  And why name one "power" and
-one "event"?  What do they now do differently?  How are you serializing
-events across the workqueues as they can be doing the same thing at the
-same time to the same hardware now, right?
+This all looks good to me now, thanks for reworking this.
 
-What am I missing?
+So, do you want me to take this through my "driver" tree to get to Linus
+for 3.5, or do you want it to go through somewhere else?
 
-Ick, I said I wasn't going to read anymore, I'm really stopping now.
-Sorry, it's like watching a train-wreck, you just can't turn away...
+If somewhere else, that's fine with me, consider this an:
+	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+If you want me to take it, just let me know, whichever you prefer is
+fine with me.
+
+thanks,
 
 greg k-h
