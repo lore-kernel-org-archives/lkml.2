@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab2ECIi2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 04:38:28 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47390 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710Ab2ECIi0 (ORCPT
+	id S1755724Ab2ECIkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 04:40:06 -0400
+Received: from 89-19-18-106.cizgi.net.tr ([89.19.18.106]:4050 "EHLO
+	mail.localhost.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753524Ab2ECIkE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 04:38:26 -0400
-Date: Thu, 3 May 2012 11:38:17 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: jim.cromie@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: re: params: add 3rd arg to option handler callback signature
-Message-ID: <20120503083809.GA15622@elgon.mountain>
+	Thu, 3 May 2012 04:40:04 -0400
+X-Greylist: delayed 9554 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 May 2012 04:40:03 EDT
+Reply-To: busra.alternatifmedya@gmail.com
+Message-ID: <7a9a4fa1f8b176b35513af2d2d35c396@alternatifmedya.org>
+From: "=?iso-8859-9?B?Qvz+cmEgQUxUQd4=?=" <busra@alternatifmedya.org>
+To: <linux-kernel@vger.kernel.org>
+Subject: Haber Paketi Reklam Teklifi...
+Date: Wed, 2 May 2012 16:28:46 +0300
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain;
+	charset="iso-8859-9"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jim Cromie,
+Sayýn Yetkili;
 
-This is a semi-automatic email about new static checker warnings in
-linux-next.
+Günümüzde reklam tüm sektörler için vazgeçilmez bir unsur olmuþtur.
+Firmalarýn markalaþma ve rakip firmalarla rekabet avantajý saðlamasýnda özellikle televizyon reklamlarýnýn faydalarý tartýþýlmaz.
+Uygun fiyat avantajýmýzý firmanýzla paylaþarak size, bütçenize uygun reklam ve tanýtým seçenekleri sunuyorum.
 
-The patch 9fb48c744ba6: "params: add 3rd arg to option handler
-callback signature" from Apr 27, 2012, leads to the following Smatch
-complaint:
+1.HABERTÜRK OPT(gündüz) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
+2.SAMANYOLU HABER PT(akþam) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
+3.CNNTURK OPT(gündüz) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
+4.SKYTURK PT(akþam) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
+5.NTV SPOR OPT(gündüz) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
+6.TGRT HABER PT(akþam) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
+7.KANAL24 OPT(gündüz) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
+8.TRT HABER PT(akþam) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
 
-kernel/params.c:196 parse_args()
-	 error: we previously assumed 'args' could be null (see line 193)
+Toplam Spot: 40 adet kuþak reklam.
+Toplam Süre: 320sn.
+Toplam Bütçe : 3.650 TL+KDV
 
-kernel/params.c
-   192	
-   193		if (args && *args)
-                    ^^^^
-New check.
+Prodüksiyon ve seslendirme firmamýz tarafýndan ücretsiz hazýrlanmaktadýr.
+Ýstediðiniz kanal ve bütçeye göre de size özel planlamalar oluþturabilirim.
 
-   194			pr_debug("doing %s, parsing ARGS: '%s'\n", doing, args);
-   195	
-   196		while (*args) {
-                       ^^^^^
-Old dereference.
+Deðerlendirmelerinizi bekler, Ýyi çalýþmalar dilerim.
 
-   197			int ret;
-   198			int irq_was_disabled;
+Saygýlarýmla...
 
-regards,
-dan carpenter
+ALTERNATÝF MEDYA
+Büþra ALTAÞ
+Reklam Satýþ Müdürü
+T:0216 459 0 444
+F:0216 459 0 555
+busra@alternatifmedya.tv & busra.alternatifmedya@gmail.com
+
+Not: Mail almak istemiyorsanýz bu maili 'listenizden çýkmak istiyorum' diye cevaplamanýz yeterlidir.
+
+
+
+
+
+
+
 
