@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382Ab2EBFOS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 01:14:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45424 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754467Ab2EBFMR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 01:12:17 -0400
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Subject: [PATCH 2/7] mmc: dw_mmc: add quirk to indicate missing write protect line
-Date: Tue,  1 May 2012 22:07:41 -0700
-Message-Id: <1335935266-25289-3-git-send-email-thomas.abraham@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
-References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
+	id S1758469Ab2EBFOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 01:14:30 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:36103 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753678Ab2EBFO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 01:14:27 -0400
+Date: Wed, 2 May 2012 07:16:33 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Mike Turquette <mturquette@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>, h@pengutronix.de,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
+Message-ID: <20120502051633.GH15541@lunn.ch>
+Mail-Followup-To: Mike Turquette <mturquette@ti.com>,
+	Mark Brown <broonie@opensource.wolfsonmicro.com>,
+	Saravana Kannan <skannan@codeaurora.org>,
+	Shawn Guo <shawn.guo@linaro.org>,
+	Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+	Grant Likely <grant.likely@secretlab.ca>, h@pengutronix.de,
+	Jamie Iles <jamie@jamieiles.com>,
+	Jeremy Kerr <jeremy.kerr@canonical.com>,
+	Magnus Damm <magnus.damm@gmail.com>,
+	Deepak Saxena <dsaxena@linaro.org>,
+	linux-arm-kernel@lists.infradead.org,
+	Arnd Bergman <arnd.bergmann@linaro.org>,
+	linux-arm-msm@vger.kernel.org,
+	Rob Herring <rob.herring@calxeda.com>,
+	Russell King <linux@arm.linux.org.uk>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Richard Zhao <richard.zhao@linaro.org>,
+	Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+	Linus Walleij <linus.walleij@stericsson.com>,
+	Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+	Amit Kucheria <amit.kucheria@linaro.org>
+References: <20120426095135.GG17184@pengutronix.de>
+ <4F9EE84C.90106@codeaurora.org>
+ <CAJOA=zNCagT6GaeHi_jq7-LU9P-SfJZ8PA9bo-oeswjC0tHyYA@mail.gmail.com>
+ <4F9F1659.1010804@codeaurora.org>
+ <20120501081103.GC2194@S2101-09.ap.freescale.net>
+ <20120501091334.GG15541@lunn.ch>
+ <20120501170001.GB4089@opensource.wolfsonmicro.com>
+ <4FA0258D.8020807@codeaurora.org>
+ <20120501181922.GD4089@opensource.wolfsonmicro.com>
+ <20120502015650.GE17311@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120502015650.GE17311@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the write protect pad of the controller is not connected to the write
-protect pin of the slot, the driver should be notified of this condition
-so that incorrect check for write protection by reading the WRTORT
-register can avoided. The get_ro platform callback can be used for in
-such cases, but with device tree support enabled, such platform callbacks
-cannot be supported.
+> I could use some suggestions on the best way to resolve the merge issues
+> we have currently.  It appears that we have three bases that platforms
+> need to port over the common clk framework:
+> 
+> Russell's clkdev
+> Arnd's arm-soc
+> My clk-next branch
 
-Add a new quirk for notifying the driver about the missing write protect
-line so the driver can assume that the card write protection is disabled.
+Hi Mike
 
-Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
----
- drivers/mmc/host/dw_mmc.c  |    4 +++-
- include/linux/mmc/dw_mmc.h |    3 ++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+The Orion code only depends on clk-next. I've been more conservative
+with the changes, knowing that once they are merged i can add more
+patches to make use of devm_get_clk() etc.
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 036846f..38cb7f8 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -812,7 +812,9 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
- 	struct dw_mci_board *brd = slot->host->pdata;
- 
- 	/* Use platform get_ro function, else try on board write protect */
--	if (brd->get_ro)
-+	if (brd->quirks & DW_MCI_QUIRK_NO_WRITE_PROTECT)
-+		read_only = 0;
-+	else if (brd->get_ro)
- 		read_only = brd->get_ro(slot->id);
- 	else
- 		read_only =
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index fa9a139..fb51a5f 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -205,7 +205,8 @@ struct dw_mci_dma_ops {
- #define DW_MCI_QUIRK_HIGHSPEED			BIT(2)
- /* Unreliable card detection */
- #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
--
-+/* Write Protect detection not available */
-+#define DW_MCI_QUIRK_NO_WRITE_PROTECT		BIT(4)
- 
- struct dma_pdata;
- 
--- 
-1.7.5.4
+So for my, as well as going in via arm-soc, i could also imaging
+giving you a pull request and becoming part of clk-next. However, i
+don't care what route they take.
 
+      Andrew
