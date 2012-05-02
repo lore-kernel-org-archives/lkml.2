@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab2EBVWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 17:22:31 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53078 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047Ab2EBVW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 17:22:29 -0400
-Message-ID: <1335993615.4088.1.camel@pasglop>
-Subject: Re: linux-next ppc64: RCU mods cause __might_sleep BUGs
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Date: Thu, 03 May 2012 07:20:15 +1000
-In-Reply-To: <alpine.LSU.2.00.1205021324430.24246@eggly.anvils>
-References: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils>
-	 <1335832418.20866.95.camel@pasglop>
-	 <alpine.LSU.2.00.1204302142310.27208@eggly.anvils>
-	 <20120501142208.GA2441@linux.vnet.ibm.com>
-	 <alpine.LSU.2.00.1205011410360.28232@eggly.anvils>
-	 <20120501232516.GR2441@linux.vnet.ibm.com>
-	 <alpine.LSU.2.00.1205021324430.24246@eggly.anvils>
+	id S1753606Ab2EBVXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 17:23:01 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:12241 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab2EBVW6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 17:22:58 -0400
+Message-ID: <1335993631.16730.74.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/4] ACPI: Set hotplug _OST support bit to _OSC
+From: Toshi Kani <toshi.kani@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Date: Wed, 02 May 2012 15:20:31 -0600
+In-Reply-To: <1335564323.16730.41.camel@misato.fc.hp.com>
+References: <1334096510-17319-1-git-send-email-toshi.kani@hp.com>
+	 <1334096510-17319-2-git-send-email-toshi.kani@hp.com>
+	 <CAErSpo6Ofm8qHUophN+oXrsKKfnJXvaEJUfFkEFwbXLfb4xZ=g@mail.gmail.com>
+	 <1335460230.17002.62.camel@misato.fc.hp.com>
+	 <1335564323.16730.41.camel@misato.fc.hp.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-02 at 13:25 -0700, Hugh Dickins wrote:
-> Got it at last.  Embarrassingly obvious.  __rcu_read_lock() and
-> __rcu_read_unlock() are not safe to be using __this_cpu operations,
-> the cpu may change in between the rmw's read and write: they should
-> be using this_cpu operations (or, I put preempt_disable/enable in the
-> __rcu_read_unlock below).  __this_cpus there work out fine on x86,
-> which was given good instructions to use; but not so well on PowerPC.
-> 
-> I've been running successfully for an hour now with the patch below;
-> but I expect you'll want to consider the tradeoffs, and may choose a
-> different solution.
+On Fri, 2012-04-27 at 16:05 -0600, Toshi Kani wrote:
+> On Thu, 2012-04-26 at 11:10 -0600, Toshi Kani wrote:
+> > On Thu, 2012-04-26 at 09:16 -0600, Bjorn Helgaas wrote:
+> > > On Tue, Apr 10, 2012 at 4:21 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+	:
+> > > >
+> > > > +#if defined(CONFIG_ACPI_HOTPLUG_CPU) || defined(CONFIG_ACPI_HOTPLUG_MEMORY) ||\
+> > > > +                defined(CONFIG_ACPI_HOTPLUG_MEMORY_MODULE)
+> > > > +       capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_HOTPLUG_OST_SUPPORT;
+> > > > +#endif
+> > > 
+> > > This seems a bit strange to me.  For one thing, the _OSC discussion
+> > > doesn't seem to indicate that _OST support is specific to CPU or
+> > > memory hotplug.  If we tell the platform that we support _OST, the
+> > > platform can assume that we'll evaluate _OST for *any* device, which
+> > > is not the case.  I guess this is just another reason why we need
+> > > hotplug support in the ACPI core, not in the individual drivers.  Then
+> > > we wouldn't have the ifdefs at all.
 
-Didn't Linus recently rant about these __this_cpu vs this_cpu nonsense ?
+Thinking further, I am going to make the following changes to address
+this comment.
 
-I thought that was going out..
+1. Add CONFIG_ACPI_HOTPLUG_OST (disable by default)
+When this option is set, the kernel calls _OSC with the hotplug _OST
+flag at boot-time.  This replaces the current use of device-specific
+config options, such as CONFIG_ACPI_HOTPLUG_CPU.  Also, the kernel only
+calls _OST when this option is set.  In other words, all features in
+this patch set is disabled when this option is not set (default).  This
+should address Shuah's concerns about pre-enablement as well.
 
-Cheers,
-Ben.
+2. Add support of container hotplug
+_OST will be supported for three major ACPI hotplug operations; CPU,
+memory and container.  (This assumes PCI will use native hotplug going
+forward.)  It will also support asynchronous hot-removal, such as
+KOBJ_OFFLINE -> udev -> eject.
+
+I will send updated _OST patches when they are ready.
+
+Thanks,
+-Toshi
 
 
