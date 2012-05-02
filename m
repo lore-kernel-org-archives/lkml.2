@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab2EBKLC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 06:11:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38693 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752050Ab2EBKLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 06:11:00 -0400
-From: Jan Kara <jack@suse.cz>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        Paolo Bonzini <pbonzini@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
-Date: Wed,  2 May 2012 12:10:52 +0200
-Message-Id: <1335953452-10460-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
+	id S1754172Ab2EBKLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 06:11:25 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:33626 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805Ab2EBKJE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 06:09:04 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>
+Cc: Attilio Rao <attilio.rao@citrix.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 02 May 2012 15:38:40 +0530
+Message-Id: <20120502100840.13206.44392.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com>
+References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH RFC V8 12/17]  xen: Enable PV ticketlocks on HVM Xen
+x-cbid: 12050200-1618-0000-0000-00000172F97C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes, warnings about ioctls to partition happen often enough that they
-form majority of the warnings in the kernel log and users complain. In some
-cases warnings are about ioctls such as SG_IO so it's not good to get rid of
-the warnings completely as they can ease debugging of userspace problems
-when ioctl is refused.
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Since I have seen warnings from lots of commands, including some proprietary
-userspace applications, I don't think disallowing the ioctls for processes
-with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
-stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
-
-CC: Paolo Bonzini <pbonzini@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: James Bottomley <JBottomley@parallels.com>
-CC: linux-scsi@vger.kernel.org
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
- block/scsi_ioctl.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 260fa80..9a87daa 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -721,11 +721,14 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
- 		break;
- 	}
- 
-+	if (capable(CAP_SYS_RAWIO))
-+		return 0;
-+
- 	/* In particular, rule out all resets and host-specific ioctls.  */
- 	printk_ratelimited(KERN_WARNING
- 			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
- 
--	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
-+	return -ENOIOCTLCMD;
+ arch/x86/xen/smp.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 7dc400a..6a7a3da 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -589,4 +589,5 @@ void __init xen_hvm_smp_init(void)
+ 	smp_ops.cpu_die = xen_hvm_cpu_die;
+ 	smp_ops.send_call_func_ipi = xen_smp_send_call_function_ipi;
+ 	smp_ops.send_call_func_single_ipi = xen_smp_send_call_function_single_ipi;
++	xen_init_spinlocks();
  }
- EXPORT_SYMBOL(scsi_verify_blk_ioctl);
- 
--- 
-1.7.1
 
