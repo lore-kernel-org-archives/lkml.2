@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab2EBReZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 13:34:25 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45802 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755547Ab2EBReY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 13:34:24 -0400
-Message-ID: <4FA17015.1000504@parallels.com>
-Date: Wed, 02 May 2012 21:34:13 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1755841Ab2EBRej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 13:34:39 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58944 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755803Ab2EBReh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 13:34:37 -0400
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: "khlebnikov@openvz.org" <khlebnikov@openvz.org>,
-        "gorcunov@openvz.org" <gorcunov@openvz.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: c/r: broken locking when executing map_files
-References: <1335979380.10666.6.camel@lappy>
-In-Reply-To: <1335979380.10666.6.camel@lappy>
+In-Reply-To: <20120427143745.GD27535@alberich.amd.com>
+References: <20120427143410.GB27535@alberich.amd.com> <20120427143745.GD27535@alberich.amd.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 2 May 2012 11:34:15 -0600
+Message-ID: <CAErSpo584dcpGhmp-jcP_Zsznmz9ZkfPuxpF3UK9UVfcnFUdRA@mail.gmail.com>
+Subject: Re: [PATCH 2/2][RESEND] x86/pci/amd: Enable early_fill_mp_bus_to_node
+ on AMD family 15h models 0-0xf
+To: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2012 09:23 PM, Sasha Levin wrote:
-> Hi all,
-> 
-> I've stumbled on several lockdep warnings when playing with the new files created under /proc/[pid], specifically 'map_files'.
-> 
-> My theory is that files under map_files shouldn't be executable, 
+On Fri, Apr 27, 2012 at 8:37 AM, Andreas Herrmann
+<andreas.herrmann3@amd.com> wrote:
+>
+> While at it avoid calling this function on family 11h (aka Griffin)
+> which was a mobile part and doesn't support NUMA.
 
-These are symlinks and x bit on them doesn't mean anything, but anyway, thanks for catching this.
+This changelog doesn't seem like it goes with this patch.  It looks
+more related to the first patch (though that affects family 11h and
+greater, not just family 11h).
 
-> but since I'm not sure what the usermode code for
-> c/r does exactly, I should probably confirm that first. If it's indeed the case, you can probably skip
-> the rest of this mail.
-> 
-> First, if I try to simply execute one of the mappings:
+> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+> ---
+>  arch/x86/pci/amd_bus.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
+> index 0384e69..d552b29 100644
+> --- a/arch/x86/pci/amd_bus.c
+> +++ b/arch/x86/pci/amd_bus.c
+> @@ -27,7 +27,7 @@ static struct pci_hostbridge_probe pci_probes[] __initdata = {
+>        { 0, 0x18, PCI_VENDOR_ID_AMD, 0x1100 },
+>        { 0, 0x18, PCI_VENDOR_ID_AMD, 0x1200 },
+>        { 0xff, 0, PCI_VENDOR_ID_AMD, 0x1200 },
+> -       { 0, 0x18, PCI_VENDOR_ID_AMD, 0x1300 },
+> +       { 0, 0x18, PCI_VENDOR_ID_AMD, 0x1600 },
+>  };
+>
+>  /**
+> --
+> 1.7.8.5
+>
+>
+>
