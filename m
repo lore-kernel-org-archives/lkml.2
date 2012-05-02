@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab2EBNdZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 09:33:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:49679 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab2EBNdY (ORCPT
+	id S1754150Ab2EBNiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 09:38:16 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:60032 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606Ab2EBNiP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 09:33:24 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Mike Turquette <mturquette@ti.com>
-Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
-Date: Wed, 2 May 2012 13:32:44 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
-        Grant Likely <grant.likely@secretlab.ca>, h@pengutronix.de,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>
-References: <4d67387a86d99cbb4e2acf68d3588b1c.squirrel@www.codeaurora.org> <20120501181922.GD4089@opensource.wolfsonmicro.com> <20120502015650.GE17311@gmail.com>
-In-Reply-To: <20120502015650.GE17311@gmail.com>
+	Wed, 2 May 2012 09:38:15 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205021332.44699.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:zb6UXa3kLAbNZIi08hL7x+7pkgGSw3RFg7Cv6+IbEix
- JV2W05hIMK3h83cN6v9851ot0w3FNC62pRap6xbASoSN7QqS9s
- SAbXq77MTXASN4pMK0In7BIWVA1wLgCsKZE4PGkq5yKG1u+ycq
- 5wwSZ5ArDusj1cOuu4gOz3rR6Gkw5mSOEz/+iyVxay9av/shnO
- 43fKn+IwzUsIbpytarwBzixahFWEIHAMyISu2oQIgDt6cDxhem
- NJt+P3y3CGOu6O1LFiqmfOjF2rPWT9dV31iF920zkfdBEF1yI1
- XkpliliKUJ+W2+LdH3aHpWevu7i8lfuHnyE8OGI3h5NEenGEl7
- 4xQ1u8MkilVcZyPtmsQDrfl5WrxeqiKufHSXBDG1k
+In-Reply-To: <1333956052-25319-5-git-send-email-tinamdar@apm.com>
+References: <1333956052-25319-1-git-send-email-tinamdar@apm.com>
+	<1333956052-25319-2-git-send-email-tinamdar@apm.com>
+	<1333956052-25319-3-git-send-email-tinamdar@apm.com>
+	<1333956052-25319-4-git-send-email-tinamdar@apm.com>
+	<1333956052-25319-5-git-send-email-tinamdar@apm.com>
+Date: Wed, 2 May 2012 09:38:14 -0400
+Message-ID: <CA+5PVA4sjX_Dk6ecySG4ZZoM=xhaWu2jGrQ=LtFgxGL88G=-Nw@mail.gmail.com>
+Subject: Re: [V2 5/5] powerpc: kernel: 16650 UART reg-shift support
+From: Josh Boyer <jwboyer@gmail.com>
+To: Tanmay Inamdar <tinamdar@apm.com>
+Cc: benh@kernel.crashing.org, grant.likely@secretlab.ca,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 02 May 2012, Mike Turquette wrote:
-> I was happy to push my changes to Linus directly (as discussed in
-> previous mails) but I'm starting to think that maybe having Arnd absorb
-> the clk-next branch as part of arm-soc would be the fastest way to
-> assist platforms that are porting over.
-> 
-> Do the platform folks agree?  Is this suggestion sane?
+On Mon, Apr 9, 2012 at 3:20 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+> In APM8018X SOC, UART register address space has been relocated to 32-bit
+> data boundaries for APB bus implementation.
+> Current legacy_serial driver ignores the reg-shift property. This patch
+> modifies legacy_serial.c and udbg_16550.c to work with above mentioned UARTs.
+>
+> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+> ---
+> :100644 100644 8338aef... f5fc106... M  arch/powerpc/include/asm/udbg.h
+> :100644 100644 bedd12e... d523b7d... M  arch/powerpc/kernel/legacy_serial.c
+> :100644 100644 6837f83... e0cb7dc... M  arch/powerpc/kernel/udbg_16550.c
+>  arch/powerpc/include/asm/udbg.h     |    2 +-
+>  arch/powerpc/kernel/legacy_serial.c |   16 +++++---
+>  arch/powerpc/kernel/udbg_16550.c    |   64 ++++++++++++++++++++++------------
+>  3 files changed, 52 insertions(+), 30 deletions(-)
+>
+> diff --git a/arch/powerpc/include/asm/udbg.h b/arch/powerpc/include/asm/udbg.h
+> index 8338aef..f5fc106 100644
+> --- a/arch/powerpc/include/asm/udbg.h
+> +++ b/arch/powerpc/include/asm/udbg.h
+> @@ -29,7 +29,7 @@ extern void udbg_printf(const char *fmt, ...)
+>  extern void udbg_progress(char *s, unsigned short hex);
+>
+>  extern void udbg_init_uart(void __iomem *comport, unsigned int speed,
+> -                          unsigned int clock);
+> +                          unsigned int clock,  unsigned int regshift);
+>  extern unsigned int udbg_probe_uart_speed(void __iomem *comport,
+>                                          unsigned int clock);
+>
+> diff --git a/arch/powerpc/kernel/legacy_serial.c b/arch/powerpc/kernel/legacy_serial.c
+> index bedd12e..d523b7d 100644
+> --- a/arch/powerpc/kernel/legacy_serial.c
+> +++ b/arch/powerpc/kernel/legacy_serial.c
+> @@ -33,6 +33,7 @@ static struct legacy_serial_info {
+>        unsigned int                    clock;
+>        int                             irq_check_parent;
+>        phys_addr_t                     taddr;
+> +       unsigned int                    regshift;
+>  } legacy_serial_infos[MAX_LEGACY_SERIAL_PORTS];
+>
+>  static struct __initdata of_device_id legacy_serial_parents[] = {
+> @@ -42,6 +43,7 @@ static struct __initdata of_device_id legacy_serial_parents[] = {
+>        {.compatible = "ibm,opb",},
+>        {.compatible = "simple-bus",},
+>        {.compatible = "wrs,epld-localbus",},
+> +       {.compatible = "apm,apb",},
+>        {},
+>  };
+>
+> @@ -163,11 +165,6 @@ static int __init add_legacy_soc_port(struct device_node *np,
+>        if (of_get_property(np, "clock-frequency", NULL) == NULL)
+>                return -1;
+>
+> -       /* if reg-shift or offset, don't try to use it */
+> -       if ((of_get_property(np, "reg-shift", NULL) != NULL) ||
+> -               (of_get_property(np, "reg-offset", NULL) != NULL))
+> -               return -1;
+> -
 
-I guess that makes sense while there are still nontrivial
-interdependencies between work going the clk-next branch and into
-arm-soc.
+So we explicitly didn't support reg-shift before.  I'm guessing there is
+a reason for that, but I don't recall what.  Ben?
 
-	Arnd
+Also, why do you need to use the legacy serial driver at all for this
+SOC?  As far as I remember, the OF serial driver should be sufficient.
+
+> +static unsigned int reg_shift;
+> +#define ns16550_offset(addr) (addr - (unsigned char *)udbg_comport)
+> +
+>  static struct NS16550 __iomem *udbg_comport;
+>
+> +static inline u8 serial_read(unsigned char *addr)
+> +{
+> +       u32 offset = ns16550_offset(addr) << reg_shift;
+> +       return readb(udbg_comport + offset);
+> +}
+> +
+> +static inline void serial_write(unsigned char *addr, char val)
+> +{
+> +       u32 offset = ns16550_offset(addr) << reg_shift;
+> +       writeb(val, udbg_comport + offset);
+> +}
+> +
+
+I don't think readb/writeb are correct here.  Why did you switch to
+using those instead of sticking with in_8/out_8?
+
+josh
