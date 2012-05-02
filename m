@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab2EBFC7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 01:02:59 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:14966 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab2EBFC6 (ORCPT
+	id S1752977Ab2EBFEF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 01:04:05 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52923 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab2EBFEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 01:02:58 -0400
-X-AuditID: cbfee61b-b7ce2ae00000583e-ed-4fa0bfff453a
-Message-id: <4FA0BFFF.8090306@samsung.com>
-Date: Wed, 02 May 2012 14:02:55 +0900
-From: jonghwa3.lee@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: sameo@linux.intel.com, linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
-        Chiwoong byun <woong.byun@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] MFD : add MAX77686 mfd driver
-References: <1335776022-4571-1-git-send-email-jonghwa3.lee@samsung.com>
- <20120430091748.GA2460@andi>
-In-reply-to: <20120430091748.GA2460@andi>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
+	Wed, 2 May 2012 01:04:02 -0400
+X-AuditID: 9c93016f-b7b1bae0000044da-21-4fa0c03fa998
+Message-ID: <4FA0C042.9010907@kernel.org>
+Date: Wed, 02 May 2012 14:04:02 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        Glauber Costa <glommer@parallels.com>, kamezawa.hiroyu@jp.fujitsu.com,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v4] vmevent: Implement greater-than attribute state and
+ one-shot mode
+References: <20120418083208.GA24904@lizard> <20120418083523.GB31556@lizard> <alpine.LFD.2.02.1204182259580.11868@tux.localdomain> <20120418224629.GA22150@lizard> <alpine.LFD.2.02.1204190841290.1704@tux.localdomain> <20120419162923.GA26630@lizard> <20120501131806.GA22249@lizard> <4FA04FD5.6010900@redhat.com> <20120502002026.GA3334@lizard> <4FA08BDB.1070009@gmail.com> <20120502033136.GA14740@lizard>
+In-Reply-To: <20120502033136.GA14740@lizard>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Andi.
+On 05/02/2012 12:31 PM, Anton Vorontsov wrote:
 
-These exported functions will be used in 77686 area only, so there is no
-overlap locking.
-
-Thanks.
-
-On 2012-04-30 18:17, Andi Shyti wrote:
-
-> Hi,
+> Hello KOSAKI,
 > 
->> +	mutex_lock(&max77686->iolock);
->> +	ret = i2c_smbus_read_i2c_block_data(i2c, reg, count, buf);
->> +	mutex_unlock(&max77686->iolock);
+> On Tue, May 01, 2012 at 09:20:27PM -0400, KOSAKI Motohiro wrote:
+> [...]
+>>> It would be great indeed, but so far I don't see much that
+>>> vmevent could share. Plus, sharing the code at this point is not
+>>> that interesting; it's mere 500 lines of code (comparing to
+>>> more than 10K lines for cgroups, and it's not including memcg_
+>>> hooks and logic that is spread all over mm/).
+>>>
+>>> Today vmevent code is mostly an ABI implementation, there is
+>>> very little memory management logic (in contrast to the memcg).
+>>
+>> But, if it doesn't work desktop/server area, it shouldn't be merged.
 > 
-> Is it relly necessay to lock whenever you read/write from/to the
-> i2c bus? Considering also that these are exported function,
-> someone else may lock here before, so we can have a double
-> locking on the same mutex.
+> What makes you think that vmevent won't work for desktop or servers?
+> :-)
 > 
-> Andi
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> E.g. for some servers you don't always want memcg, really. Suppose,
+> a kvm farm or a database server. Sometimes there's really no need for
+> the memcg, but there's still a demand for low memory notifications.
 > 
+> Current Linux desktops don't use any notifications at all, I think.
+> So nothing to say about, neither on cgroup's nor on vmevent's behalf.
+> I hardly imagine why desktop would use the whole memcg thing, but
+> still have a use case for memory notifications.
+> 
+>> We have to consider the best design before kernel inclusion. They cann't
+>> be separeted to discuss.
+> 
+> Of course, no objections here. But I somewhat disagree with the
+> "best design" term. Which design is better, reading a file via
+> read() or mmap()? It depends. Same here.
 
 
+I think hardest problem in low mem notification is how to define _lowmem situation_.
+We all guys (server, desktop and embedded) should reach a conclusion on define lowmem situation
+before progressing further implementation because each part can require different limits.
+Hopefully, I want it.
+
+What is the best situation we can call it as "low memory"?
+
+As a matter of fact, if we can define it well, I think even we don't need vmevent ABI.
+In my opinion, it's not easy to generalize each use-cases so we can pass it to user space and
+just export low attributes of vmstat in kernel by vmevent.
+Userspace program can determine low mem situation well on his environment with other vmstats
+when notification happens. Of course, it has a drawback that userspace couples kernel's vmstat
+but at least I think that's why we need vmevent for triggering event when we start watching carefully.
+
+
+-- 
+Kind regards,
+Minchan Kim
