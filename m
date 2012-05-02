@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819Ab2EBMXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 08:23:49 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:33636 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754304Ab2EBMXs (ORCPT
+	id S1754795Ab2EBMZA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 08:25:00 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:33372 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab2EBMY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 08:23:48 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Anisse Astier <anisse@astier.eu>
-Cc: linux-uvc-devel@lists.sourceforge.net, linux-media@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: UVCvideo:  Failed to resubmit video URB (-27) with Linux 3.3.3
-Date: Wed, 02 May 2012 14:24:11 +0200
-Message-ID: <1682934.ZponbpoO2x@avalon>
-User-Agent: KMail/4.8.0 (Linux/3.2.1-gentoo-r2; KDE/4.8.1; x86_64; ; )
-In-Reply-To: <20120426200721.0c3ca642@destiny.ordissimo>
-References: <20120426200721.0c3ca642@destiny.ordissimo>
+	Wed, 2 May 2012 08:24:59 -0400
+Date: Wed, 02 May 2012 08:23:43 -0400 (EDT)
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
+Message-ID: <0fa65eaa-cdb1-42ed-ab00-aa491402ec5a@zmail13.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <20120502130531.4b7d98fa@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [10.36.112.19]
+X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anisse,
 
-On Thursday 26 April 2012 20:07:21 Anisse Astier wrote:
-> Hi,
+> > not inventing anything, the old ATA subsystem is already blocking
+> > most
+> > "dangerous" ioctls for partitions, even if you have CAP_SYS_RAWIO.
 > 
-> I'm experiencing a problem with uvcvideo with kernel 3.3.3 and today's
-> Linus' tree.
+> It blocked a few by default to protect hardware. It's a tricky
+> tradeoff, which is quite different to this.
+
+I agree it's tricky.
+
+> > Now of course CAP_SYS_RAWIO lets you use ioperm or iopl, but that's
+> > a separate issue and only limited to x86.
 > 
-> Problem not reproduced in 3.2.15, so this could be labelled as a regression.
+> Ie only 99.99% of the systems running desktop/server Linux OS
+> designs.
+
+You can still block those in other ways, seccompv2 could be one.
+
+> > Almost any capability can be abused to bypass checks.  True,
+> > CAP_SYS_RAWIO is especially good at that, but still you can try.
 > 
-> See webcam lsusb and (verbose!) dmesg log in attachment, which exhibits
-> the problem.
+> Why try - you are seeking to arbitarily impose your own worldview on
+> the interface (and in doing so break back compatibility). The whole basis
+> of the Unix philosophy is that the OS shouldn't try and micromanage the
+> priviledged apps because that just leads to crap code.
+
+The whole point of capabilities, SELinux, etc. is micromanaging privileged
+apps.  Linux has gone beyond the Unix philosophy, it seems.
+
+Besides, privileged apps can and do use capabilities to micromanage
+themselves.  Sure, ioperm/iopl do mean that a compromised CAP_SYS_RAWIO app
+has free reins.  However, until that app is compromised, it may like to get
+help from the OS in making effective use of access control.
+
+> > > A process with CAP_SYS_RAWIO has total power. It's assumed to
+> > > know what it is doing. Trying to block it doing stuff like that simply
+> > > makes authors do them via different more crass methods.
+> > 
+> > Getting appropriate permission on device nodes is less crass than
+> > abusing partition device nodes.
 > 
-> We see lots of error (-18 = -EXDEV), that indicate that URB was too late
-> and then dropped, and they add up until we reach the "Failed to resubmit
-> video URB" scheduling issue.
+> Given a passed file handle how do you do that securely. Remember that
+> open /dev/foo while you have a handle on /dev/foo1 could open a
+> different disk if a hotplug has occurred.
 
-Those are USB controller issues. The uvcvideo driver submits URBs with the 
-URB_ISO_ASAP transfer flag, so the controller should not fail to schedule 
-them.
+What is the exact use case for this, where you wouldn't have gotten an
+fd for /dev/foo in the first place?  And what command do you want to
+send to the disk?  The only "valid" case found in the wild was using
+SG_IO to send "SYNCHRONIZE CACHE", which is wrong anyway (does not
+flush the OS cache).  fdatasync could and should have been used instead.
 
-> Installed libv4l version is 0.8.6.
-> I'm reproducing this with: gst-launch-0.10 --verbose v4l2src  ! xvimagesink
-> (Skype exhibits the problem too, while it isn't using gstreamer, so it
-> really seems to come from kernel. Also, doesn't happen with 3.2)
-> 
-> This is the first part of the problem. The second part is that if I
-> restart the webcam with gst-launch after the first failure, I have a
-> total freeze, just after these messages in the log (fetched with
-> netconsole, I wasn't able to get a panic trace):
-> 
-> [  191.796217] uvcvideo: Marking buffer as bad (error bit set).
-> [  191.796233] uvcvideo: Marking buffer as bad (error bit set).
-> [  191.796244] uvcvideo: Marking buffer as bad (error bit set).
-> [  191.796252] uvcvideo: Marking buffer as bad (error bit set).
-> [  191.796259] uvcvideo: Frame complete (EOF found).
-> [  191.796265] uvcvideo: EOF in empty payload.
-> [  192.972803] uvcvideo: Marking buffer as bad (error bit set).
-> [  192.972818] uvcvideo: Dropping payload (out of sync).
-> [  194.289463] uvcvideo: Marking buffer as bad (error bit set).
-> [  194.289478] uvcvideo: Frame complete (FID bit toggled).
-> [  194.289486] uvcvideo: Marking buffer as bad (error bit set).
-> [  194.289493] uvcvideo: Frame complete (FID bit toggled).
-> [  194.289499] uvcvideo: Marking buffer as bad (error bit set).
-> [  194.289505] uvcvideo: Frame complete (FID bit toggled).
-> [  194.289511] uvcvideo: Marking buffer as bad (error bit set).
-> [  194.289518] uvcvideo: Frame complete (FID bit toggled).
-> [  194.289524] uvcvideo: Marking buffer as bad (error bit set).
-> [  194.289531] uvcvideo: Frame complete (FID bit toggled).
->
-> Last but not least, uvcvideo is un-bisectable because there were a few
-> crash-fixes during the 3.3 development cycle. I started bisecting and got
-> kernel panics.
-
-Are the kernel panics related to uvcvideo ? There's one known bug introduced 
-between v3.2 and v3.3 and fixed (before v3.3) in commit 
-8e57dec0454d8a3ba987d18b3ab19922c766d4bc.
-
--- 
-Regards,
-
-Laurent Pinchart
-
+Paolo
