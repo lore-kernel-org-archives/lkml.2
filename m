@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab2EBO4A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 10:56:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59914 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754266Ab2EBOz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 10:55:58 -0400
-Date: Wed, 2 May 2012 17:55:56 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: kvm@vger.kernel.org
-Cc: Rob Landley <rob@landley.net>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, gleb@redhat.com,
-        Randy Dunlap <randy.dunlap@oracle.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv2] kvm: fix cpuid eax
-Message-ID: <20120502145554.GA2864@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1754948Ab2EBPIC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 11:08:02 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56090 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab2EBPIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 11:08:00 -0400
+Date: Wed, 2 May 2012 16:10:38 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to
+ partition
+Message-ID: <20120502161038.01ee9b59@pyramind.ukuu.org.uk>
+In-Reply-To: <4FA13DDF.9010006@redhat.com>
+References: <1335953452-10460-1-git-send-email-jack@suse.cz>
+	<4FA1092E.9090603@redhat.com>
+	<20120502135123.GF16976@quack.suse.cz>
+	<4FA13DDF.9010006@redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpuid eax should return the max leaf so that
-guests can find out the valid range.
-This matches Xen et al.
-Update documentation to match.
+> > Also I tend to side with Alan that I don't quite see
+> > the point in trying to restrict CAP_SYS_RAWIO threads and thus breaking the
+> > compatibility
+> 
+> For example, we have a customer that wants this:
+> 
+> * a VM should be able to send vendor-specific commands to a disk via
+> SG_IO (vendor-specific commands require CAP_SYS_RAWIO).
+> 
+> * they want to assign logical volumes or partitions to the same VM
+> without letting it read or write outside the logical volume or partition.
 
-Tested with -cpu host.
+And if the process has CAP_SYS_RAWIO it can do it anyway. So not only is
+your agenda destructive - it doesn't actually work.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+> Of course a better solution for this would be customizable filters for
+> SG_IO commands, where a privileged application would open the block
+> device with CAP_SYS_RAWIO, set the filter and hand the file descriptor
+> to QEMU.  Or alternatively some extension of the device cgroup.  But
+> either solution would require a large amount of work.
 
-Changes from v1:
-	Updated documentation.
+Or you could just do the special case ioctl magic out of band in the apps.
+It's hardly an ultra performance critical path for the SG_IO cases.
 
- Documentation/virtual/kvm/cpuid.txt |    6 +++++-
- arch/x86/kvm/cpuid.c                |    2 +-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+Customisable filters are not hard. We've got all the filtering code in
+kernel and the ability to verify filters, even the ability to JIT them.
+Just support adding/removing/running a BPF filter on the channel in
+question.
 
-diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
-index 8820685..83afe65 100644
---- a/Documentation/virtual/kvm/cpuid.txt
-+++ b/Documentation/virtual/kvm/cpuid.txt
-@@ -10,11 +10,15 @@ a guest.
- KVM cpuid functions are:
- 
- function: KVM_CPUID_SIGNATURE (0x40000000)
--returns : eax = 0,
-+returns : eax = 0x40000001,
-           ebx = 0x4b4d564b,
-           ecx = 0x564b4d56,
-           edx = 0x4d.
- Note that this value in ebx, ecx and edx corresponds to the string "KVMKVMKVM".
-+The value in eax corresponds to the maximum cpuid function present in this leaf,
-+and will be updated if more functions are added in the future.
-+Note also that old hosts set eax value to 0x0. This should
-+be interpreted as if the value was 0x40000001.
- This function queries the presence of KVM cpuid leafs.
- 
- 
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index 9fed5be..eba8345 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -397,7 +397,7 @@ static int do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 	case KVM_CPUID_SIGNATURE: {
- 		char signature[12] = "KVMKVMKVM\0\0";
- 		u32 *sigptr = (u32 *)signature;
--		entry->eax = 0;
-+		entry->eax = KVM_CPUID_FEATURES;
- 		entry->ebx = sigptr[0];
- 		entry->ecx = sigptr[1];
- 		entry->edx = sigptr[2];
--- 
-MST
+So it shouldn't be much code to do what you want.
+
+Alan
+
+
+
