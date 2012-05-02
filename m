@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab2EBKma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 06:42:30 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55768 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab2EBKm3 (ORCPT
+	id S1753396Ab2EBKrV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 06:47:21 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:38474 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751634Ab2EBKrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 06:42:29 -0400
-Date: Wed, 2 May 2012 11:45:15 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Killing the tty lock
-Message-ID: <20120502114515.2cc22a26@pyramind.ukuu.org.uk>
-In-Reply-To: <20120502044544.GA32521@kroah.com>
-References: <20120501173739.4fe61fb5@pyramind.ukuu.org.uk>
-	<20120502044544.GA32521@kroah.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Wed, 2 May 2012 06:47:18 -0400
+X-Greylist: delayed 565 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 May 2012 06:47:18 EDT
+Subject: Re: [RFC] TIF_NOTIFY_RESUME, arch/*/*/*signal*.c and all such
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20120427175434.GA31524@redhat.com>
+References: <CA+55aFxia+u3VAf0qN-2wv7DyAQZK-Z8=n=cqUvo--+C905aFg@mail.gmail.com>
+	 <20120420160848.GG6871@ZenIV.linux.org.uk>
+	 <20120420164239.GH6871@ZenIV.linux.org.uk>
+	 <CA+55aFzuTspDyyLaOA-g-dTWydaUeeWo9uVGR+rZ=ZJzPW_Ocw@mail.gmail.com>
+	 <20120420180748.GI6871@ZenIV.linux.org.uk>
+	 <20120423180150.GA6871@ZenIV.linux.org.uk>
+	 <20120424072617.GB6871@ZenIV.linux.org.uk>
+	 <20120426183742.GA324@redhat.com>
+	 <20120426231942.GJ6871@ZenIV.linux.org.uk>
+	 <20120427172444.GA30267@redhat.com>  <20120427175434.GA31524@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 May 2012 11:37:50 +0100
+Message-ID: <1335955070.18999.37.camel@mfleming-mobl1.ger.corp.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It's mostly pretty "sane", but what is this:
+On Fri, 2012-04-27 at 19:54 +0200, Oleg Nesterov wrote:
+> On 04/27, Oleg Nesterov wrote:
+> >
+> > Not only sigreturn. Just look at sigprocmask(SIG_SETMASK) callers, almost
+> > all should be converted to use set_current_blocked(). For example, pselect.
 > 
-> > +/*
-> > + * Getting the big tty mutex for a pair of ttys with lock ordering
-> > + * On a non pty/tty pair tty2 can be NULL which is just fine.
-> > + */
-> > +void __lockfunc tty_lock_pair(struct tty_struct *tty,
-> > +					struct tty_struct *tty2)
-> > +{
-> > +	if (tty < tty2) {
-> > +		tty_lock(tty);
-> > +		tty_lock(tty2);
-> > +	} else {
-> > +		if (tty2 && tty2 != tty)
-> > +			tty_lock(tty2);
-> > +		tty_lock(tty);
-> > +	}
-> > +}
-> > +EXPORT_SYMBOL(tty_lock_pair);
-> > +
-> > +void __lockfunc tty_unlock_pair(struct tty_struct *tty,
-> > +						struct tty_struct *tty2)
-> > +{
-> > +	tty_unlock(tty);
-> > +	if (tty2 && tty2 != tty)
-> > +		tty_unlock(tty2);
-> > +}
-> > +EXPORT_SYMBOL(tty_unlock_pair);
+> which btw doesn't need sigsaved.
 > 
-> for?
+> > The last thing. Matt, could you please look at
+> > git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal.git ? It seems to me
+> > you already sent some of these changes (use set_current_blocked/block_sigmask).
+> > Perhaps there are alreay in -mm or linux-next?
+> 
+> Forgot to add Matt, sorry for noise...
 
-We need to take locks on a pair of tty devices at the same time in some
-cases (pty/tty pairs).
+Any of the changes that aren't in Linus' tree will be in -mm and
+linux-next. The ones currently in linux-next are,
 
-> And what's with the comparing of pointers as "<"?  How portable is that
-> really, and how are we supposed to control the memory location of these
-> structures?
+07d969a parisc: use set_current_blocked() and block_sigmask()
+5becb45 frv: use set_current_blocked() and block_sigmask()
+3608417 blackfin: use set_current_blocked() and block_sigmask()
+cd21f1a unicore32: use block_sigmask()
+2bb36fd h8300: use set_current_blocked() and block_sigmask()
+a624f4f score: use set_current_blocked() and block_sigmask()
+2326e2e score: don't mask signals if we fail to setup signal stack
+b2f6181 microblaze: use set_current_blocked() and block_sigmask()
+f557a56 microblaze: fix signal masking
+9ff7b4a microblaze: no need to reset handler if SA_ONESHOT
+6cb49f5 microblaze: don't reimplement force_sigsegv()
+bd9767f ia64: use set_current_blocked() and block_sigmask()
+cdbc96c cris: use set_current_blocked() and block_sigmask()
+295f127 mn10300: use set_current_blocked() and block_sigmask()
+524987e m68k: use set_current_blocked() and block_sigmask()
+f0c96a3 m32r: use set_current_blocked() and block_sigmask()
+f0f0acd avr32: use block_sigmask()
+ef64059 avr32: don't mask signals in the error path
 
-You don't need to. The point is that we must lock any arbitrary pair of
-tty structs in a defined order. Pointer comparisons work just fine for
-this. The fs layer uses similar logic for inode locking. We only care
-that for any given pair of objects the lock ordering is consistent.
+... and this one from you, Oleg, that was sent as part of my series,
 
-Alan
+3e6c120 avr32: use set_current_blocked() in handle_signal/sys_rt_sigreturn
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
+
