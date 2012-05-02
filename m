@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab2EBVXB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 17:23:01 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:12241 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753456Ab2EBVW6 (ORCPT
+	id S1753866Ab2EBVXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 17:23:10 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:53970 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753688Ab2EBVXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 17:22:58 -0400
-Message-ID: <1335993631.16730.74.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/4] ACPI: Set hotplug _OST support bit to _OSC
-From: Toshi Kani <toshi.kani@hp.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com
-Date: Wed, 02 May 2012 15:20:31 -0600
-In-Reply-To: <1335564323.16730.41.camel@misato.fc.hp.com>
-References: <1334096510-17319-1-git-send-email-toshi.kani@hp.com>
-	 <1334096510-17319-2-git-send-email-toshi.kani@hp.com>
-	 <CAErSpo6Ofm8qHUophN+oXrsKKfnJXvaEJUfFkEFwbXLfb4xZ=g@mail.gmail.com>
-	 <1335460230.17002.62.camel@misato.fc.hp.com>
-	 <1335564323.16730.41.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 2 May 2012 17:23:07 -0400
+X-Sasl-enc: Gs9u1FZQwh1SKiUWOLan+OA8Pl35NWzXTcmG895zeRlZ 1335993785
+Date: Wed, 2 May 2012 14:23:04 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>
+Subject: Re: linux-next: manual merge of the staging tree with Linus' tree
+Message-ID: <20120502212304.GA16799@kroah.com>
+References: <20120427143703.f6946999cbca5509e22820a6@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120427143703.f6946999cbca5509e22820a6@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-27 at 16:05 -0600, Toshi Kani wrote:
-> On Thu, 2012-04-26 at 11:10 -0600, Toshi Kani wrote:
-> > On Thu, 2012-04-26 at 09:16 -0600, Bjorn Helgaas wrote:
-> > > On Tue, Apr 10, 2012 at 4:21 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-	:
-> > > >
-> > > > +#if defined(CONFIG_ACPI_HOTPLUG_CPU) || defined(CONFIG_ACPI_HOTPLUG_MEMORY) ||\
-> > > > +                defined(CONFIG_ACPI_HOTPLUG_MEMORY_MODULE)
-> > > > +       capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_HOTPLUG_OST_SUPPORT;
-> > > > +#endif
-> > > 
-> > > This seems a bit strange to me.  For one thing, the _OSC discussion
-> > > doesn't seem to indicate that _OST support is specific to CPU or
-> > > memory hotplug.  If we tell the platform that we support _OST, the
-> > > platform can assume that we'll evaluate _OST for *any* device, which
-> > > is not the case.  I guess this is just another reason why we need
-> > > hotplug support in the ACPI core, not in the individual drivers.  Then
-> > > we wouldn't have the ifdefs at all.
+On Fri, Apr 27, 2012 at 02:37:03PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/vt6656/ioctl.c between commit 17b7e1ba1e2e ("staging:
+> vt6656: Don't leak memory in drivers/staging/vt6656/ioctl.c::private_ioctl
+> ()") from Linus' tree and commit 62ef30b5781d ("staging: vt6656: Remove
+> redundant casts from ioctl.c") from the staging tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Thinking further, I am going to make the following changes to address
-this comment.
+This should now be resolved, thanks.
 
-1. Add CONFIG_ACPI_HOTPLUG_OST (disable by default)
-When this option is set, the kernel calls _OSC with the hotplug _OST
-flag at boot-time.  This replaces the current use of device-specific
-config options, such as CONFIG_ACPI_HOTPLUG_CPU.  Also, the kernel only
-calls _OST when this option is set.  In other words, all features in
-this patch set is disabled when this option is not set (default).  This
-should address Shuah's concerns about pre-enablement as well.
-
-2. Add support of container hotplug
-_OST will be supported for three major ACPI hotplug operations; CPU,
-memory and container.  (This assumes PCI will use native hotplug going
-forward.)  It will also support asynchronous hot-removal, such as
-KOBJ_OFFLINE -> udev -> eject.
-
-I will send updated _OST patches when they are ready.
-
-Thanks,
--Toshi
-
-
+greg k-h
