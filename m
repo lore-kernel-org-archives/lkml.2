@@ -1,120 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab2EBFTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 01:19:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45510 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab2EBFTC convert rfc822-to-8bit (ORCPT
+	id S1753494Ab2EBFWA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 01:22:00 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60049 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab2EBFV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 01:19:02 -0400
+	Wed, 2 May 2012 01:21:58 -0400
+X-AuditID: 9c93016f-b7b1bae0000044da-5e-4fa0c47184cd
+Message-ID: <4FA0C473.1000505@kernel.org>
+Date: Wed, 02 May 2012 14:21:55 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4BZAf_i3ojXpg5WSFJ00G5i_vscVTu2va_Z3WJ0UHg=g@mail.gmail.com>
-References: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
-	<1332135781-13695-18-git-send-email-yinghai@kernel.org>
-	<CAErSpo4BZAf_i3ojXpg5WSFJ00G5i_vscVTu2va_Z3WJ0UHg=g@mail.gmail.com>
-Date: Tue, 1 May 2012 22:19:01 -0700
-X-Google-Sender-Auth: PJlGmYFVwOdwklSrANmxtaPs6s0
-Message-ID: <CAE9FiQURuG9z655PZgP-QR3w7LoSFondt4fhioO0whP=Q7+2rA@mail.gmail.com>
-Subject: Re: [PATCH -v11 17/30] resources: Add probe_resource()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.file-systems,gmane.linux.kernel
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
+        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 5/5] mm: refault distance-based file cache sizing
+References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org> <1335861713-4573-6-git-send-email-hannes@cmpxchg.org> <20120501141330.GA2207@barrios> <20120501153825.GA4837@cmpxchg.org>
+In-Reply-To: <20120501153825.GA4837@cmpxchg.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 1, 2012 at 4:57 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Sun, Mar 18, 2012 at 11:42 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> It is changed from busn_res only version, because Bjorn found that version
->> was not holding resource_lock.
->> Even it may be ok for busn_res not holding resource_lock.
->> It would be better to have it to be generic and use lock and we would
->> use it for other resources.
+On 05/02/2012 12:38 AM, Johannes Weiner wrote:
+
+> On Tue, May 01, 2012 at 11:13:30PM +0900, Minchan Kim wrote:
+>> Hi Hannes,
 >>
->> probe_resource() will try to find specified size or more in parent bus.
->> If can not find current parent resource, and it will try to expand parents
->> top.
->> If still can not find that specified on top, it will try to reduce target size
->> until find one.
+>> On Tue, May 01, 2012 at 10:41:53AM +0200, Johannes Weiner wrote:
+>>> To protect frequently used page cache (workingset) from bursts of less
+>>> frequently used or one-shot cache, page cache pages are managed on two
+>>> linked lists.  The inactive list is where all cache starts out on
+>>> fault and ends on reclaim.  Pages that get accessed another time while
+>>> on the inactive list get promoted to the active list to protect them
+>>> from reclaim.
+>>>
+>>> Right now we have two main problems.
+>>>
+>>> One stems from numa allocation decisions and how the page allocator
+>>> and kswapd interact.  The both of them can enter into a perfect loop
+>>> where kswapd reclaims from the preferred zone of a task, allowing the
+>>> task to continuously allocate from that zone.  Or, the node distance
+>>> can lead to the allocator to do direct zone reclaim to stay in the
+>>> preferred zone.  This may be good for locality, but the task has only
 >>
->> It will return 0, if it find any resource that it could use.
+>> Understood.
 >>
->> Returned resource already register in the tree.
+>>> the inactive space of that one zone to get its memory activated.
+>>> Forcing the allocator to spread out to lower zones in the right
+>>> situation makes the difference between continuous IO to serve the
+>>> workingset, or taking the numa cost but serving fully from memory.
 >>
->> So caller may still need call resource_replace to put real resource in
->> the tree.
+>> It's hard to parse your word due to my dumb brain.
+>> Could you elaborate on it?
+>> It would be a good if you say with example.
+> 
+> Say your Normal zone is 4G (DMA32 also 4G) and you have 2G of active
+> file pages in Normal and DMA32 is full of other stuff.  Now you access
+> a new 6G file repeatedly.  First it allocates from Normal (preferred),
+> then tries DMA32 (full), wakes up kswapd and retries all zones.  If
+> kswapd then frees pages at roughly the same pace as the allocator
+> allocates from Normal, kswapd never goes to sleep and evicts pages
+> from the 6G file before they can get accessed a second time.  Even
+> though the 6G file could fit in memory (4G Normal + 4G DMA32), the
+> allocator only uses the 4G Normal zone.
+> 
+> Same applies if you have a load that would fit in the memory of two
+> nodes but the node distance leads the allocator to do zone_reclaim()
+> and forcing the pages to stay in one node, again preventing the load
+> from being fully cached in memory, which is much more expensive than
+> the foreign node cost.
+> 
+>>> up to half of memory, and don't recognize workingset changes that are
+>>> bigger than half of memory.
 >>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> ---
->>  include/linux/ioport.h |    7 ++
->>  kernel/resource.c      |  160 ++++++++++++++++++++++++++++++++++++++++++++++--
->>  2 files changed, 162 insertions(+), 5 deletions(-)
->>
->> diff --git a/include/linux/ioport.h b/include/linux/ioport.h
->> index e885ba2..20a30df 100644
->> --- a/include/linux/ioport.h
->> +++ b/include/linux/ioport.h
->> @@ -156,6 +156,13 @@ extern int allocate_resource(struct resource *root, struct resource *new,
->>                                                       resource_size_t,
->>                                                       resource_size_t),
->>                             void *alignf_data);
->> +void resource_shrink_parents_top(struct resource *b_res,
->> +                                long size, struct resource *parent_res);
->> +struct device;
->> +int probe_resource(struct resource *b_res,
->> +                       struct device *dev, struct resource *busn_res,
->> +                       resource_size_t needed_size, struct resource **p,
->> +                       int skip_nr, int limit, char *name);
+>> Workingset change?
+>> You mean if new workingset is bigger than half of memory and it's like
+>> stream before retouch, we could cache only part of working set because 
+>> head pages on working set would be discared by tail pages of working set
+>> in inactive list?
+> 
+> Spot-on.  I called that 'tail-chasing' in my notes :-) When you are in
+> a perpetual loop of evicting pages you will need in a couple hundred
+> page faults.  Those couple hundred page faults are the refault
+> distance and my code is able to detect these loops and increases the
+> space available to the inactive list to end them, if possible.
+> 
+
+
+Thanks! It would be better to add above explanation in cover-letter.
+
+
+> This is the whole principle of the series.
+> 
+> If such a loop is recognized in a single zone, the allocator goes for
+> lower zones to increase the inactive space.  If such a loop is
+> recognized over all allowed zones in the zonelist, the active lists
+> are shrunk to increase the inactive space.
+
 >
-> This interface is a mess.  I have a vague impression that this is
-> supposed to figure out whether a resource can be expanded, but why
-> does it need a struct device *?  (I can read the code and see how you
-> use it, but it just doesn't fit in the resource abstraction.)
 
-for debug printing purpose.
-
-> Supplying one struct resource * makes sense, but you have three.  A
-> char * name?  What's skip_nr?  This just doesn't make sense to me.
-
-name is for debug purpose too.
-
-skip_nr is for skipping.
-
-for example: parent [60-7e]
-
-when we try to probe for child buses, we need skip 60 as it is used already for
-pci devices.
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
 
->
-> I think you need a simpler, more general interface.  update_resource()
-> seems OK to me -- it's pretty straightforward and has an obvious
-> meaning.  Maybe you can make a resource_expand() or something that
-> just expands a resource in both directions as far as possible (until
-> it hits a sibling or the parent limits).  Then you would know the
-> maximum possible size, and you could use update_resource() to shrink
-> it again and give up anything you don't need.
 
-both directions may need more code.
-
->
-> I spent most of the day merging the patches up to this point, and they
-> mostly make sense, but this one and the following ones are beyond my
-> ken, so I gave up.
-
-ok, let me check if i could simplify that code more.
-
-Thanks
-
-Yinghai
+-- 
+Kind regards,
+Minchan Kim
