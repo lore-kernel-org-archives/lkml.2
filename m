@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756818Ab2EBTmv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 15:42:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57005 "EHLO
+	id S1756981Ab2EBToA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 15:44:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57007 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756196Ab2EBTmu (ORCPT
+	with ESMTP id S1756721Ab2EBTmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 May 2012 15:42:50 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/5] perf annotate browser: Add a right arrow before call instructions
-Date: Wed,  2 May 2012 16:42:34 -0300
-Message-Id: <1335987758-11039-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 5/5] perf annotate browser: Don't display 0.00 percentages
+Date: Wed,  2 May 2012 16:42:38 -0300
+Message-Id: <1335987758-11039-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1335987758-11039-1-git-send-email-acme@infradead.org>
 References: <1335987758-11039-1-git-send-email-acme@infradead.org>
@@ -30,9 +30,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The counterpart of 'ret' instructions.
+Cleaning up more the output.
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -40,26 +39,62 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-jlz2ldaquaow0rqi2vr4b91l@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-81pimnsnaa9y2j0a9plstu1c@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/annotate.c |    3 +++
- 1 file changed, 3 insertions(+)
+ tools/perf/ui/browsers/annotate.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 077380b..4778172 100644
+index a90680b..44fb6a4 100644
 --- a/tools/perf/ui/browsers/annotate.c
 +++ b/tools/perf/ui/browsers/annotate.c
-@@ -117,6 +117,9 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 				ui_browser__write_graph(self, fwd ? SLSMG_DARROW_CHAR :
- 								    SLSMG_UARROW_CHAR);
- 				SLsmg_write_char(' ');
-+			} else if (ins__is_call(dl->ins)) {
-+				ui_browser__write_graph(self, SLSMG_RARROW_CHAR);
-+				SLsmg_write_char(' ');
- 			} else {
- 				slsmg_write_nstring(" ", 2);
- 			}
+@@ -64,12 +64,12 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+ 					         !self->navkeypressed)));
+ 	int width = self->width;
+ 
+-	if (dl->offset != -1) {
++	if (dl->offset != -1 && bdl->percent != 0.0) {
+ 		ui_browser__set_percent_color(self, bdl->percent, current_entry);
+-		slsmg_printf(" %7.2f ", bdl->percent);
++		slsmg_printf("%6.2f ", bdl->percent);
+ 	} else {
+ 		ui_browser__set_percent_color(self, 0, current_entry);
+-		slsmg_write_nstring(" ", 9);
++		slsmg_write_nstring(" ", 7);
+ 	}
+ 
+ 	SLsmg_write_char(' ');
+@@ -82,9 +82,9 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+ 		ui_browser__set_color(self, HE_COLORSET_CODE);
+ 
+ 	if (!*dl->line)
+-		slsmg_write_nstring(" ", width - 9);
++		slsmg_write_nstring(" ", width - 7);
+ 	else if (dl->offset == -1)
+-		slsmg_write_nstring(dl->line, width - 9);
++		slsmg_write_nstring(dl->line, width - 7);
+ 	else {
+ 		char bf[256];
+ 		u64 addr = dl->offset;
+@@ -137,7 +137,7 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+ 			scnprintf(bf, sizeof(bf), "%-6.6s %s", dl->name, dl->ops.raw);
+ 		}
+ 
+-		slsmg_write_nstring(bf, width - 11 - printed);
++		slsmg_write_nstring(bf, width - 9 - printed);
+ 	}
+ 
+ 	if (current_entry)
+@@ -175,7 +175,7 @@ static void annotate_browser__draw_current_jump(struct ui_browser *browser)
+ 	if (!bcursor->jump_target)
+ 		start_width += ab->offset_width + 1;
+ 
+-	__ui_browser__line_arrow(browser, 9, from, to, start_width);
++	__ui_browser__line_arrow(browser, 7, from, to, start_width);
+ }
+ 
+ static unsigned int annotate_browser__refresh(struct ui_browser *browser)
 -- 
 1.7.9.2.358.g22243
 
