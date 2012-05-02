@@ -1,115 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758302Ab2EBBVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 21:21:23 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:16577 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758008Ab2EBBUr (ORCPT
+	id S1758242Ab2EBBXU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 21:23:20 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:56102 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757244Ab2EBBXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 21:20:47 -0400
-Date: Tue, 1 May 2012 21:20:29 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Maarten Maathuis <madman2003@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Martin Peres <martin.peres@labri.fr>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: Re: Linux 3.4-rc4
-Message-ID: <20120502012029.GA24097@elliptictech.com>
-References: <20120424010345.GA30674@elliptictech.com>
- <20120425013537.GA11959@elliptictech.com>
- <1335322574.1821.8.camel@nisroch>
- <1335504021.5311.0.camel@nisroch>
- <20120428003928.GA16805@elliptictech.com>
- <CADnq5_N8Cf4ONL5TNA-Wmif7cty070TRrTOnUpqdiGhWbVbj=w@mail.gmail.com>
- <20120428153350.GA19561@elliptictech.com>
- <20120429223744.GA19382@core.coreip.homeip.net>
- <CAGZ4FETGyatywWqx3vLo-=jSJsrSat2+r35Njg5NNJ4NnyUy=w@mail.gmail.com>
- <20120501132352.GA28696@elliptictech.com>
+	Tue, 1 May 2012 21:23:19 -0400
+Message-ID: <4FA08B39.60300@marvell.com>
+Date: Wed, 2 May 2012 09:17:45 +0800
+From: Yilu Mao <ylmao@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120501132352.GA28696@elliptictech.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Lu Mao <ylmao@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4] ARM: cache-l2x0.c: save aux ctrl for resume in case
+ l2x0 is enabled before init
+References: <1335791786-32377-1-git-send-email-ylmao@marvell.com> <CAHkRjk51pATYdhKhmBb9sWywN+0BgeQLpW9bMfTkRgf_09wydg@mail.gmail.com>
+In-Reply-To: <CAHkRjk51pATYdhKhmBb9sWywN+0BgeQLpW9bMfTkRgf_09wydg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(re-adding Ben to the Cc because he was apparently dropped somewhere in
-this thread)
+On 04/30/2012 09:34 PM, Catalin Marinas wrote:
+> On 30 April 2012 14:16, Yilu Mao<ylmao@marvell.com>  wrote:
+>> If l2x0 controller has been enabled when calling l2x0_init, the aux ctrl
+>> register will not be saved in l2x0_saved_regs. Therefore we can not use
+>> l2x0_saved_regs.aux_ctrl for resume later. This patch fixed the problem
+>> by saving aux ctrl in l2x0_saved_regs just after it's being read from
+>> the register.
+>> And in case some bits of aux ctrl register are reserved, re-read and
+>> save it properly after set it if l2x0 is disabled before init.
+>>
+>> Change-Id: I54f3002274ffe9cdc667dba81e36e08f2e121467
+>> Signed-off-by: Yilu Mao<ylmao@marvell.com>
+>> ---
+>>   arch/arm/mm/cache-l2x0.c |    9 +++++++++
+>>   1 files changed, 9 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+>> index a53fd2a..9893e58 100644
+>> --- a/arch/arm/mm/cache-l2x0.c
+>> +++ b/arch/arm/mm/cache-l2x0.c
+>> @@ -320,6 +320,13 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
+>>         cache_id = readl_relaxed(l2x0_base + L2X0_CACHE_ID);
+>>         aux = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
+>>
+>> +       /*
+>> +        * In case l2x controller is enabled, the aux ctrl register
+>> +        * can't be set. So the original value should be stored in
+>> +        * the l2x0_saved_regs for restoring when resume.
+>> +        */
+>> +       l2x0_saved_regs.aux_ctrl = aux;
+>
+> Why not move this
+>
+>> +
+>>         aux&= aux_mask;
+>>         aux |= aux_val;
+>>
+>> @@ -364,6 +371,8 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
+>>                 /* l2x0 controller is disabled */
+>>                 writel_relaxed(aux, l2x0_base + L2X0_AUX_CTRL);
+>>
+>> +               /* Re-read it in case some bits are reserved. */
+>> +               aux = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
+>
+> and this
+>
+>>                 l2x0_saved_regs.aux_ctrl = aux;
+>>
+>>                 l2x0_inv_all();
+>
+> somewhere after the if block and we only read the aux once. The
+> comment may no longer make sense though.
+>
+Hi Catalin,
 
-On 2012-05-01 09:23 -0400, Nick Bowler wrote:
-> On 2012-04-30 11:07 +0200, Maarten Maathuis wrote:
-> > On Mon, Apr 30, 2012 at 12:37 AM, Dmitry Torokhov
-> > <dmitry.torokhov@gmail.com> wrote:
-> > > On Sat, Apr 28, 2012 at 11:33:50AM -0400, Nick Bowler wrote:
-> > >> On 2012-04-28 02:19 -0400, Alex Deucher wrote:
-> > >> > On Fri, Apr 27, 2012 at 8:39 PM, Nick Bowler <nbowler@elliptictech.com> wrote:
-> > >> > > While tracking down the black screen issue, I've been having the monitor
-> > >> > > directly connected to the video card the whole time, but now when I'm
-> > >> > > connected through my KVM switch (an IOGear GCS1804), it appears that
-> > >> > > something's going wrong with reading the EDID, because the available
-> > >> > > modes are all screwed up (both console and X decide they want to drive
-> > >> > > the display at 1024x768).
-> [...]
-> > >> > > Also, looking at /sys/class/drm/card0-VGA-1/edid I see that it
-> > >> > > is empty on 3.4-rc4+ and it is correct on 3.2.15.  Things seem
-> > >> > > to work OK when the KVM is not involved.
-> > >> >
-> > >> > Were you ever able to fetch a EDID with the KVM involved?  KVMs are
-> > >> > notorious for not connecting the ddc pins.
-> > >>
-> > >> Yes, it works on 3.2.15 as described above.
-> > >
-> > > I have the same (or similar) KVM (not in the office at the moment) and I
-> > > can confirm that with newer kernels EDID fecthing in flaky. It's 50/50
-> > > if EDED retrieval succeeds or if it fails with:
-> > >
-> > > Apr 26 13:06:57 dtor-d630 kernel: [13464.936336] [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder is 208
-> [...]
-> > > Earlier kernels were able to retrieve EDEDs reliably.
-> 
-> FWIW, for me EDID failure on new kernels is 100% reproducible, and there
-> are no such checksum errors in the log.  It's just missing.
-> 
-> > Just a crazy thought, but didn't we change some timings related to
-> > EDID retrieval? To make it faster.
-> 
-> OK, this time bisecting started off relatively smoothly (doing the same
-> "backwards" bisect on the branch-o-reverts as last time), but then my
-> disk died halfway through...
-[...]
+I want to make it clear before I provide a new patch. :)
+We can't only read once because we must read it before handle the 
+aux_val and aux_mask arguments.
+Do you still want the "l2x0_saved_regs.aux_ctrl = aux;" operation only 
+located after the "if"?
+If so, I will provide a patch for it.
 
-OK, system is back online and I finished the bisection.  The commit that
-broke it for me is the following, and reverting it on top of 3.3.4 + the
-"make VGA work at all" patch fixes this particular issue for me.
-
-commit f553b79c03f0dbd52f6f03abe8233a2bef8cbd0d
-Author: Ben Skeggs <bskeggs@redhat.com>
-Date:   Wed Dec 21 18:09:12 2011 +1000
-
-    drm/nouveau/i2c: handle bit-banging ourselves
-    
-    i2c-algo-bit doesn't actually work very well on one card I have access to
-    (NVS 300), random single-bit errors occur most of the time - what we're
-    doing now is closer to what xf86i2c.c does.
-    
-    The original plan was to figure out why i2c-algo-bit fails on the NVS 300,
-    and fix it.  However, while investigating I discovered i2c-algo-bit calls
-    cond_resched(), which makes it a bad idea for us to be using as we execute
-    VBIOS scripts from a tasklet, and there may very well be i2c transfers as
-    a result.
-    
-    So, since I already wrote this code in userspace to track down the NVS 300
-    bug, and it's not really much code - lets use it.
-    
-    Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-
-Cheers,
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Thanks.
 
+Best Wishes,
+Yilu Mao
