@@ -1,218 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab2EBHBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 03:01:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36902 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab2EBHBR (ORCPT
+	id S1754338Ab2EBHBu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 03:01:50 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64686 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab2EBHBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 03:01:17 -0400
+	Wed, 2 May 2012 03:01:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQURuG9z655PZgP-QR3w7LoSFondt4fhioO0whP=Q7+2rA@mail.gmail.com>
-References: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
-	<1332135781-13695-18-git-send-email-yinghai@kernel.org>
-	<CAErSpo4BZAf_i3ojXpg5WSFJ00G5i_vscVTu2va_Z3WJ0UHg=g@mail.gmail.com>
-	<CAE9FiQURuG9z655PZgP-QR3w7LoSFondt4fhioO0whP=Q7+2rA@mail.gmail.com>
-Date: Wed, 2 May 2012 00:01:16 -0700
-X-Google-Sender-Auth: M-wfYuoFetl9g3j3zR212INY8DM
-Message-ID: <CAE9FiQWa7fZsXXqch5HqQHjEz_HKHK3Oq7+2JPADqS2RwmMEOw@mail.gmail.com>
-Subject: Re: [PATCH -v11 17/30] resources: Add probe_resource()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: multipart/mixed; boundary=047d7b339c79e9c73704bf0840b2
+In-Reply-To: <1335935266-25289-5-git-send-email-thomas.abraham@linaro.org>
+References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
+	<1335935266-25289-5-git-send-email-thomas.abraham@linaro.org>
+Date: Wed, 2 May 2012 16:01:47 +0900
+X-Google-Sender-Auth: GqSNLs7m98HeMIQf4ZZapjJ64V4
+Message-ID: <CAH9JG2XBinh=XAVnt3EnWrEqeTKz34d9yB6wfiuF-J-Se_Q__Q@mail.gmail.com>
+Subject: Re: [PATCH 4/7] mmc: dw_mmc: add samsung exynos5250 specific extentions
+From: Kyungmin Park <kmpark@infradead.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-samsung-soc@vger.kernel.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com, cjb@laptop.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b339c79e9c73704bf0840b2
-Content-Type: text/plain; charset=ISO-8859-1
+Hi,
 
-On Tue, May 1, 2012 at 10:19 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, May 1, 2012 at 4:57 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> I spent most of the day merging the patches up to this point, and they
->> mostly make sense, but this one and the following ones are beyond my
->> ken, so I gave up.
+On 5/2/12, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+> The instantiation of the Synopsis Designware controller on Exynos5250
+> include extension for SDR and DDR specific tx/rx phase shift timing
+> and CIU internal divider. In addition to that, the option to skip the
+> command hold stage is also introduced. Add support for these Exynos5250
+> specfic extenstions.
 >
-> ok, let me check if i could simplify that code more.
-
-Split this one into two patches, and add more comments.
-
-Please check if it is readable.
-
-Thanks
-
-Yinghai
-
---047d7b339c79e9c73704bf0840b2
-Content-Type: application/octet-stream; name="probe_resource_1.patch"
-Content-Disposition: attachment; filename="probe_resource_1.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h1q1desb0
-
-U3ViamVjdDogW1BBVENIXSByZXNvdXJjZXM6IFNwbGl0IG91dCBfX2FsbG9jYXRlX3Jlc291cmNl
-KCkKCkl0IHdpbGwgdGFrZSBib29sIGxvY2ssIHNvIHdlIGNvdWxkIHVzZSBpdCBpbiBvdGhlciBm
-dW5jdGlvbnMgdGhhdApob2xkIHRoZSByZXNvdXJjZSBsb2NrLgoKU2lnbmVkLW9mZi1ieTogWWlu
-Z2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgpDYzogQW5kcmV3IE1vcnRvbiA8YWtwbUBsaW51
-eC1mb3VuZGF0aW9uLm9yZz4KCgotLS0KIGtlcm5lbC9yZXNvdXJjZS5jIHwgICAyNCArKysrKysr
-KysrKysrKysrKysrLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAxOSBpbnNlcnRpb25zKCspLCA1IGRl
-bGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9rZXJuZWwvcmVzb3VyY2UuYwo9PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-Ci0tLSBsaW51eC0yLjYub3JpZy9rZXJuZWwvcmVzb3VyY2UuYworKysgbGludXgtMi42L2tlcm5l
-bC9yZXNvdXJjZS5jCkBAIC01NzAsMTQgKzU3MCwxNCBAQCBvdXQ6CiAgKiBAYWxpZ25mOiBhbGln
-bm1lbnQgZnVuY3Rpb24sIG9wdGlvbmFsLCBjYWxsZWQgaWYgbm90IE5VTEwKICAqIEBhbGlnbmZf
-ZGF0YTogYXJiaXRyYXJ5IGRhdGEgdG8gcGFzcyB0byB0aGUgQGFsaWduZiBmdW5jdGlvbgogICov
-Ci1pbnQgYWxsb2NhdGVfcmVzb3VyY2Uoc3RydWN0IHJlc291cmNlICpyb290LCBzdHJ1Y3QgcmVz
-b3VyY2UgKm5ldywKK3N0YXRpYyBpbnQgX19hbGxvY2F0ZV9yZXNvdXJjZShzdHJ1Y3QgcmVzb3Vy
-Y2UgKnJvb3QsIHN0cnVjdCByZXNvdXJjZSAqbmV3LAogCQkgICAgICByZXNvdXJjZV9zaXplX3Qg
-c2l6ZSwgcmVzb3VyY2Vfc2l6ZV90IG1pbiwKIAkJICAgICAgcmVzb3VyY2Vfc2l6ZV90IG1heCwg
-cmVzb3VyY2Vfc2l6ZV90IGFsaWduLAogCQkgICAgICByZXNvdXJjZV9zaXplX3QgKCphbGlnbmYp
-KHZvaWQgKiwKIAkJCQkJCWNvbnN0IHN0cnVjdCByZXNvdXJjZSAqLAogCQkJCQkJcmVzb3VyY2Vf
-c2l6ZV90LAogCQkJCQkJcmVzb3VyY2Vfc2l6ZV90KSwKLQkJICAgICAgdm9pZCAqYWxpZ25mX2Rh
-dGEpCisJCSAgICAgIHZvaWQgKmFsaWduZl9kYXRhLCBib29sIGxvY2spCiB7CiAJaW50IGVycjsK
-IAlzdHJ1Y3QgcmVzb3VyY2VfY29uc3RyYWludCBjb25zdHJhaW50OwpAQCAtNTkxLDE5ICs1OTEs
-MzMgQEAgaW50IGFsbG9jYXRlX3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZSAqcgogCWNvbnN0cmFp
-bnQuYWxpZ25mID0gYWxpZ25mOwogCWNvbnN0cmFpbnQuYWxpZ25mX2RhdGEgPSBhbGlnbmZfZGF0
-YTsKIAotCWlmICggbmV3LT5wYXJlbnQgKSB7CisJaWYgKG5ldy0+cGFyZW50ICYmIGxvY2spIHsK
-IAkJLyogcmVzb3VyY2UgaXMgYWxyZWFkeSBhbGxvY2F0ZWQsIHRyeSByZWFsbG9jYXRpbmcgd2l0
-aAogCQkgICB0aGUgbmV3IGNvbnN0cmFpbnRzICovCiAJCXJldHVybiByZWFsbG9jYXRlX3Jlc291
-cmNlKHJvb3QsIG5ldywgc2l6ZSwgJmNvbnN0cmFpbnQpOwogCX0KIAotCXdyaXRlX2xvY2soJnJl
-c291cmNlX2xvY2spOworCWlmIChsb2NrKQorCQl3cml0ZV9sb2NrKCZyZXNvdXJjZV9sb2NrKTsK
-IAllcnIgPSBmaW5kX3Jlc291cmNlKHJvb3QsIG5ldywgc2l6ZSwgJmNvbnN0cmFpbnQpOwogCWlm
-IChlcnIgPj0gMCAmJiBfX3JlcXVlc3RfcmVzb3VyY2Uocm9vdCwgbmV3KSkKIAkJZXJyID0gLUVC
-VVNZOwotCXdyaXRlX3VubG9jaygmcmVzb3VyY2VfbG9jayk7CisJaWYgKGxvY2spCisJCXdyaXRl
-X3VubG9jaygmcmVzb3VyY2VfbG9jayk7CiAJcmV0dXJuIGVycjsKIH0KK2ludCBhbGxvY2F0ZV9y
-ZXNvdXJjZShzdHJ1Y3QgcmVzb3VyY2UgKnJvb3QsIHN0cnVjdCByZXNvdXJjZSAqbmV3LAorCQkg
-ICAgICByZXNvdXJjZV9zaXplX3Qgc2l6ZSwgcmVzb3VyY2Vfc2l6ZV90IG1pbiwKKwkJICAgICAg
-cmVzb3VyY2Vfc2l6ZV90IG1heCwgcmVzb3VyY2Vfc2l6ZV90IGFsaWduLAorCQkgICAgICByZXNv
-dXJjZV9zaXplX3QgKCphbGlnbmYpKHZvaWQgKiwKKwkJCQkJCWNvbnN0IHN0cnVjdCByZXNvdXJj
-ZSAqLAorCQkJCQkJcmVzb3VyY2Vfc2l6ZV90LAorCQkJCQkJcmVzb3VyY2Vfc2l6ZV90KSwKKwkJ
-ICAgICAgdm9pZCAqYWxpZ25mX2RhdGEpCit7CisJcmV0dXJuIF9fYWxsb2NhdGVfcmVzb3VyY2Uo
-cm9vdCwgbmV3LCBzaXplLCBtaW4sIG1heCwgYWxpZ24sCisJCQkJICAgYWxpZ25mLCBhbGlnbmZf
-ZGF0YSwgdHJ1ZSk7Cit9CiAKIEVYUE9SVF9TWU1CT0woYWxsb2NhdGVfcmVzb3VyY2UpOwogCg==
---047d7b339c79e9c73704bf0840b2
-Content-Type: application/octet-stream; name="probe_resource_2.patch"
-Content-Disposition: attachment; filename="probe_resource_2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h1q1dm0y1
-
-U3ViamVjdDogW1BBVENIXSByZXNvdXJjZXM6IEFkZCBwcm9iZV9yZXNvdXJjZSgpCgpJdCBpcyBj
-aGFuZ2VkIGZyb20gYnVzbl9yZXMgb25seSB2ZXJzaW9uLCBiZWNhdXNlIEJqb3JuIGZvdW5kIHRo
-YXQgdmVyc2lvbgp3YXMgbm90IGhvbGRpbmcgcmVzb3VyY2VfbG9jay4KRXZlbiBpdCBtYXkgYmUg
-b2sgZm9yIGJ1c25fcmVzIG5vdCBob2xkaW5nIHJlc291cmNlX2xvY2suCkl0IHdvdWxkIGJlIGJl
-dHRlciB0byBoYXZlIGl0IHRvIGJlIGdlbmVyaWMgYW5kIHVzZSBsb2NrIGFuZCB3ZSB3b3VsZAp1
-c2UgaXQgZm9yIG90aGVyIHJlc291cmNlcy4KCnByb2JlX3Jlc291cmNlKCkgd2lsbCB0cnkgdG8g
-ZmluZCBzcGVjaWZpZWQgc2l6ZSBvciBtb3JlIGluIHBhcmVudCBidXMuCklmIGNhbiBub3QgZmlu
-ZCBjdXJyZW50IHBhcmVudCByZXNvdXJjZSwgYW5kIGl0IHdpbGwgdHJ5IHRvIGV4cGFuZCBwYXJl
-bnRzCnRvcC4KSWYgc3RpbGwgY2FuIG5vdCBmaW5kIHRoYXQgc3BlY2lmaWVkIG9uIHRvcCwgaXQg
-d2lsbCB0cnkgdG8gcmVkdWNlIHRhcmdldCBzaXplCnVudGlsIGZpbmQgb25lLgoKSXQgd2lsbCBy
-ZXR1cm4gMCwgaWYgaXQgZmluZCBhbnkgcmVzb3VyY2UgdGhhdCBpdCBjb3VsZCB1c2UuCgpSZXR1
-cm5lZCByZXNvdXJjZSBhbHJlYWR5IHJlZ2lzdGVyIGluIHRoZSB0cmVlLgoKU28gY2FsbGVyIG1h
-eSBzdGlsbCBuZWVkIGNhbGwgcmVwbGFjZV9yZXNvdXJjZSB0byBwdXQgcmVhbCByZXNvdXJjZSBp
-bgp0aGUgdHJlZS4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9y
-Zz4KQ2M6IEFuZHJldyBNb3J0b24gPGFrcG1AbGludXgtZm91bmRhdGlvbi5vcmc+CgoKLS0tCiBp
-bmNsdWRlL2xpbnV4L2lvcG9ydC5oIHwgICAgNyArKwoga2VybmVsL3Jlc291cmNlLmMgICAgICB8
-ICAxNTcgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKwog
-MiBmaWxlcyBjaGFuZ2VkLCAxNjQgaW5zZXJ0aW9ucygrKQoKSW5kZXg6IGxpbnV4LTIuNi9pbmNs
-dWRlL2xpbnV4L2lvcG9ydC5oCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2luY2x1ZGUv
-bGludXgvaW9wb3J0LmgKKysrIGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L2lvcG9ydC5oCkBAIC0x
-NTgsNiArMTU4LDEzIEBAIGV4dGVybiBpbnQgYWxsb2NhdGVfcmVzb3VyY2Uoc3RydWN0IHJlc28K
-IAkJCQkJCSAgICAgICByZXNvdXJjZV9zaXplX3QsCiAJCQkJCQkgICAgICAgcmVzb3VyY2Vfc2l6
-ZV90KSwKIAkJCSAgICAgdm9pZCAqYWxpZ25mX2RhdGEpOwordm9pZCByZXNvdXJjZV9zaHJpbmtf
-cGFyZW50c190b3Aoc3RydWN0IHJlc291cmNlICpiX3JlcywKKwkJCQkgbG9uZyBzaXplLCBzdHJ1
-Y3QgcmVzb3VyY2UgKnBhcmVudF9yZXMpOworc3RydWN0IGRldmljZTsKK2ludCBwcm9iZV9yZXNv
-dXJjZShzdHJ1Y3QgcmVzb3VyY2UgKmJfcmVzLAorCQkJc3RydWN0IGRldmljZSAqZGV2LCBzdHJ1
-Y3QgcmVzb3VyY2UgKmJ1c25fcmVzLAorCQkJcmVzb3VyY2Vfc2l6ZV90IG5lZWRlZF9zaXplLCBz
-dHJ1Y3QgcmVzb3VyY2UgKipwLAorCQkJaW50IHNraXBfbnIsIGludCBsaW1pdCwgY2hhciAqbmFt
-ZSk7CiBzdHJ1Y3QgcmVzb3VyY2UgKmxvb2t1cF9yZXNvdXJjZShzdHJ1Y3QgcmVzb3VyY2UgKnJv
-b3QsIHJlc291cmNlX3NpemVfdCBzdGFydCk7CiBpbnQgYWRqdXN0X3Jlc291cmNlKHN0cnVjdCBy
-ZXNvdXJjZSAqcmVzLCByZXNvdXJjZV9zaXplX3Qgc3RhcnQsCiAJCSAgICByZXNvdXJjZV9zaXpl
-X3Qgc2l6ZSk7CkluZGV4OiBsaW51eC0yLjYva2VybmVsL3Jlc291cmNlLmMKPT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQot
-LS0gbGludXgtMi42Lm9yaWcva2VybmVsL3Jlc291cmNlLmMKKysrIGxpbnV4LTIuNi9rZXJuZWwv
-cmVzb3VyY2UuYwpAQCAtMTAyNCw2ICsxMDI0LDE2MyBAQCB2b2lkIF9fcmVsZWFzZV9yZWdpb24o
-c3RydWN0IHJlc291cmNlICpwCiB9CiBFWFBPUlRfU1lNQk9MKF9fcmVsZWFzZV9yZWdpb24pOwog
-CitzdGF0aWMgdm9pZCBfX3Jlc291cmNlX3VwZGF0ZV9wYXJlbnRzX3RvcChzdHJ1Y3QgcmVzb3Vy
-Y2UgKmJfcmVzLAorCQkgbG9uZyBzaXplLCBzdHJ1Y3QgcmVzb3VyY2UgKnBhcmVudF9yZXMpCit7
-CisJc3RydWN0IHJlc291cmNlICpyZXMgPSBiX3JlczsKKworCWlmICghc2l6ZSkKKwkJcmV0dXJu
-OworCisJd2hpbGUgKHJlcykgeworCQlpZiAocmVzID09IHBhcmVudF9yZXMpCisJCQlicmVhazsK
-KwkJcmVzLT5lbmQgKz0gc2l6ZTsKKwkJcmVzID0gcmVzLT5wYXJlbnQ7CisJfQorfQorCitzdGF0
-aWMgdm9pZCBfX3Jlc291cmNlX2V4dGVuZF9wYXJlbnRzX3RvcChzdHJ1Y3QgcmVzb3VyY2UgKmJf
-cmVzLAorCQkgbG9uZyBzaXplLCBzdHJ1Y3QgcmVzb3VyY2UgKnBhcmVudF9yZXMpCit7CisJX19y
-ZXNvdXJjZV91cGRhdGVfcGFyZW50c190b3AoYl9yZXMsIHNpemUsIHBhcmVudF9yZXMpOworfQor
-Cit2b2lkIHJlc291cmNlX3Nocmlua19wYXJlbnRzX3RvcChzdHJ1Y3QgcmVzb3VyY2UgKmJfcmVz
-LAorCQkgbG9uZyBzaXplLCBzdHJ1Y3QgcmVzb3VyY2UgKnBhcmVudF9yZXMpCit7CisJd3JpdGVf
-bG9jaygmcmVzb3VyY2VfbG9jayk7CisJX19yZXNvdXJjZV91cGRhdGVfcGFyZW50c190b3AoYl9y
-ZXMsIC1zaXplLCBwYXJlbnRfcmVzKTsKKwl3cml0ZV91bmxvY2soJnJlc291cmNlX2xvY2spOwor
-fQorCitzdGF0aWMgcmVzb3VyY2Vfc2l6ZV90IF9fZmluZF9yZXNfdG9wX2ZyZWVfc2l6ZShzdHJ1
-Y3QgcmVzb3VyY2UgKnJlcywKKwkJCQkJCSBpbnQgc2tpcF9ucikKK3sKKwlyZXNvdXJjZV9zaXpl
-X3Qgbl9zaXplOworCXN0cnVjdCByZXNvdXJjZSB0bXBfcmVzOworCisJLyoKKwkgKiAgIGZpbmQg
-b3V0IGZyZWUgbnVtYmVyIGJlbG93IHJlcy0+ZW5kIHRoYXQgd2UgY2FuIHVzZS4KKwkgKglyZXMt
-PnN0YXJ0IHRvIHJlcy0+c3RhcnQgKyBza2lwX25yIC0gMSBjYW4gbm90IGJlIHVzZWQuCisJICov
-CisJbl9zaXplID0gcmVzb3VyY2Vfc2l6ZShyZXMpOworCWlmIChuX3NpemUgPD0gc2tpcF9ucikK
-KwkJcmV0dXJuIDA7CisKKwluX3NpemUgLT0gc2tpcF9ucjsKKwltZW1zZXQoJnRtcF9yZXMsIDAs
-IHNpemVvZihzdHJ1Y3QgcmVzb3VyY2UpKTsKKwl3aGlsZSAobl9zaXplID4gMCkgeworCQlpbnQg
-cmV0OworCisJCXJldCA9IF9fYWxsb2NhdGVfcmVzb3VyY2UocmVzLCAmdG1wX3Jlcywgbl9zaXpl
-LAorCQkJcmVzLT5lbmQgLSBuX3NpemUgKyBza2lwX25yLCByZXMtPmVuZCwKKwkJCTEsIE5VTEws
-IE5VTEwsIGZhbHNlKTsKKwkJaWYgKHJldCA9PSAwKSB7CisJCQlfX3JlbGVhc2VfcmVzb3VyY2Uo
-JnRtcF9yZXMpOworCQkJYnJlYWs7CisJCX0KKwkJbl9zaXplLS07CisJfQorCisJcmV0dXJuIG5f
-c2l6ZTsKK30KKworLyoqCisgKiBwcm9iZV9yZXNvdXJjZSAtIFByb2JlIHJlc291cmNlIGluIHBh
-cmVudCByZXNvdXJjZS4KKyAqIEBiX3JlczogcGFyZW50IHJlc291cmNlIGRlc2NyaXB0b3IKKyAq
-IEBkZXY6IGRlYnVnIHB1cnBvc2UKKyAqIEBidXNuX3JlczogcmV0dXJuIHByb2JlZCByZXNvdXJj
-ZQorICogQG5lZWRlZF9zaXplOiB0YXJnZXQgc2l6ZQorICogQHA6IHBvaW50ZXIgdG8gZmFyZXN0
-IHBhcmVudCB0aGF0IHdlIGV4dGVuZCB0aGUgdG9wCisgKiBAc2tpcF9ucjogbnVtYmVyIGluIGJf
-cmVzIHN0YXJ0IHRoYXQgd2UgbmVlZCB0byBza2lwLgorICogQGxpbWl0OiBsb2NhbCBib3VuZGFy
-eQorICogQG5hbWU6IGRlYnVnIHB1cnBvc2UKKyAqCisgKiB3aWxsIHRyeSB0byBhbGxvY2F0ZSBy
-ZXNvdXJjZSBpbiBiX3JlcywgaWYgY2FuIG5vdCBmaW5kIHRoZSByYW5nZQorICogIHdpbGwgdHJ5
-IHRvIGV4dGVuZCBwYXJlbnQgcmVzb3VyY2VzJyB0b3AuCisgKiBpZiBzdGlsbCBjYW4gbm90IG1h
-a2UgaXQsIHdpbGwgcmVkdWNlIG5lZWRlZF9zaXplLgorICovCitpbnQgcHJvYmVfcmVzb3VyY2Uo
-c3RydWN0IHJlc291cmNlICpiX3JlcywKKwkJCSBzdHJ1Y3QgZGV2aWNlICpkZXYsIHN0cnVjdCBy
-ZXNvdXJjZSAqYnVzbl9yZXMsCisJCQkgcmVzb3VyY2Vfc2l6ZV90IG5lZWRlZF9zaXplLCBzdHJ1
-Y3QgcmVzb3VyY2UgKipwLAorCQkJIGludCBza2lwX25yLCBpbnQgbGltaXQsIGNoYXIgKm5hbWUp
-Cit7CisJaW50IHJldCA9IC1FTk9NRU07CisJcmVzb3VyY2Vfc2l6ZV90IG5fc2l6ZTsKKwlzdHJ1
-Y3QgcmVzb3VyY2UgKnBhcmVudF9yZXMgPSBOVUxMOworCXJlc291cmNlX3NpemVfdCB0bXAgPSBi
-X3Jlcy0+ZW5kICsgMTsKKworYWdhaW46CisJLyoKKwkgKiBXZSBmaXJzdCB0cnkgdG8gYWxsb2Nh
-dGUgYmlnZ2VzdCByYW5nZSBpbiBiX3JlcyB0aGF0CisJICogIHdlIGNhbiB1c2UgaW4gYl9yZXMg
-ZGlyZWN0bHkuCisJICogIHdlIGNhbiBub3QgdXNlIHNraXBfbnIgZnJvbSBzdGFydCBvZiBiX3Jl
-cy4KKwkgKi8KKwluX3NpemUgPSByZXNvdXJjZV9zaXplKGJfcmVzKTsKKwlpZiAobl9zaXplID4g
-c2tpcF9ucikKKwkJbl9zaXplIC09IHNraXBfbnI7CisJZWxzZQorCQluX3NpemUgPSAwOworCW1l
-bXNldChidXNuX3JlcywgMCwgc2l6ZW9mKHN0cnVjdCByZXNvdXJjZSkpOworCWRldl9wcmludGso
-S0VSTl9ERUJVRywgZGV2LCAiZmluZCBmcmVlICVzIGluIHJlczogJXBSXG4iLCBuYW1lLCBiX3Jl
-cyk7CisJd2hpbGUgKG5fc2l6ZSA+PSBuZWVkZWRfc2l6ZSkgeworCQlyZXQgPSBhbGxvY2F0ZV9y
-ZXNvdXJjZShiX3JlcywgYnVzbl9yZXMsIG5fc2l6ZSwKKwkJCQliX3Jlcy0+c3RhcnQgKyBza2lw
-X25yLCBiX3Jlcy0+ZW5kLAorCQkJCTEsIE5VTEwsIE5VTEwpOworCQlpZiAoIXJldCkKKwkJCXJl
-dHVybiByZXQ7CisJCW5fc2l6ZS0tOworCX0KKworCS8qIFdlIG5lZWQgdG8gZXh0ZW5kIHRoZSB0
-b3Agb2YgcGFyZW50IHJlc291cmNlcyB0byBtZWV0IG5lZWRlZF9zaXplICovCisKKwkvKiBmaW5k
-IG91dCBmcmVlIHJhbmdlIHVuZGVyIHRvcCBhdCBmaXJzdCAqLworCXdyaXRlX2xvY2soJnJlc291
-cmNlX2xvY2spOworCW5fc2l6ZSA9IF9fZmluZF9yZXNfdG9wX2ZyZWVfc2l6ZShiX3Jlcywgc2tp
-cF9ucik7CisJZGV2X3ByaW50ayhLRVJOX0RFQlVHLCBkZXYsICJmb3VuZCBmcmVlICVzICVsZCBp
-biByZXM6ICVwUiB0b3BcbiIsCisJCQluYW1lLCAodW5zaWduZWQgbG9uZyluX3NpemUsIGJfcmVz
-KTsKKwkvKiBjYW4gbm90IGV4dGVuZCBjcm9zcyBsb2NhbCBib3VuZGFyeSAqLworCWlmICgobGlt
-aXQgLSBiX3Jlcy0+ZW5kKSA8IChuZWVkZWRfc2l6ZSAtIG5fc2l6ZSkpCisJCWdvdG8gcmVkdWNl
-X25lZWRlZF9zaXplOworCisJLyogUHJvYmUgZXh0ZW5kZWQgcmFuZ2UgYWJvdmUgdG9wICovCisJ
-bWVtc2V0KGJ1c25fcmVzLCAwLCBzaXplb2Yoc3RydWN0IHJlc291cmNlKSk7CisJcGFyZW50X3Jl
-cyA9IGJfcmVzLT5wYXJlbnQ7CisJd2hpbGUgKHBhcmVudF9yZXMpIHsKKwkJcmV0ID0gX19hbGxv
-Y2F0ZV9yZXNvdXJjZShwYXJlbnRfcmVzLCBidXNuX3JlcywKKwkJCSBuZWVkZWRfc2l6ZSAtIG5f
-c2l6ZSwKKwkJCSB0bXAsIHRtcCArIG5lZWRlZF9zaXplIC0gbl9zaXplIC0gMSwKKwkJCSAxLCBO
-VUxMLCBOVUxMLCBmYWxzZSk7CisJCWlmICghcmV0KSB7CisJCQkvKiBzYXZlIHBhcmVudF9yZXMs
-IHdlIG5lZWQgaXQgYXMgc3RvcHBlciBsYXRlciAqLworCQkJKnAgPSBwYXJlbnRfcmVzOworCisJ
-CQkvKiBwcmVwYXJlIGJ1c25fcmVzIGZvciByZXR1cm4gKi8KKwkJCV9fcmVsZWFzZV9yZXNvdXJj
-ZShidXNuX3Jlcyk7CisJCQlidXNuX3Jlcy0+c3RhcnQgLT0gbl9zaXplOworCisJCQkvKiBleHRl
-bmQgcGFyZW50IHJlc291cmNlcyB0b3AqLworCQkJX19yZXNvdXJjZV9leHRlbmRfcGFyZW50c190
-b3AoYl9yZXMsCisJCQkJCSBuZWVkZWRfc2l6ZSAtIG5fc2l6ZSwgcGFyZW50X3Jlcyk7CisJCQlf
-X3JlcXVlc3RfcmVzb3VyY2UoYl9yZXMsIGJ1c25fcmVzKTsKKworCQkJd3JpdGVfdW5sb2NrKCZy
-ZXNvdXJjZV9sb2NrKTsKKwkJCXJldHVybiByZXQ7CisJCX0KKwkJcGFyZW50X3JlcyA9IHBhcmVu
-dF9yZXMtPnBhcmVudDsKKwl9CisKK3JlZHVjZV9uZWVkZWRfc2l6ZToKKwl3cml0ZV91bmxvY2so
-JnJlc291cmNlX2xvY2spOworCS8qIHJldCBtdXN0IG5vdCBiZSAwIGhlcmUgKi8KKwluZWVkZWRf
-c2l6ZS0tOworCWlmIChuZWVkZWRfc2l6ZSkKKwkJZ290byBhZ2FpbjsKKworCXJldHVybiByZXQ7
-Cit9CisKIC8qCiAgKiBNYW5hZ2VkIHJlZ2lvbiByZXNvdXJjZQogICovCg==
---047d7b339c79e9c73704bf0840b2--
+> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+> ---
+>  .../devicetree/bindings/mmc/synposis-dw-mshc.txt   |   33
+> +++++++++++++++++++-
+>  drivers/mmc/host/dw_mmc-pltfm.c                    |    8 +++++
+>  drivers/mmc/host/dw_mmc.c                          |   32
+> ++++++++++++++++++-
+>  drivers/mmc/host/dw_mmc.h                          |   13 ++++++++
+>  include/linux/mmc/dw_mmc.h                         |    6 +++
+>  5 files changed, 89 insertions(+), 3 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+> b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+> index c1ed70e..465fc31 100644
+> --- a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+> +++ b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+> @@ -7,6 +7,8 @@ Required Properties:
+>
+>  * compatible: should be one of the following
+>  	- synopsis,dw-mshc: for controllers compliant with synopsis dw-mshc.
+> +	- synopsis,dw-mshc-exynos5250: for controllers with Samsung
+> +	  Exynos5250 specific extentions.
+>
+>  * reg: physical base address of the dw-mshc controller and size of its
+> memory
+>    region.
+> @@ -55,13 +57,40 @@ Optional properties:
+>  * no-write-protect: The write protect pad of the controller is not
+> connected
+>    to the write protect pin on the slot.
+>
+> +Samsung Exynos5250 specific properties:
+> +
+> +* samsung,dw-mshc-sdr-timing: Specifies the value of CUI clock divider,
+> CIU
+> +  clock phase shift value in transmit mode and CIU clock phase shift value
+> in
+> +  receive mode for single data rate mode operation. Refer notes of the
+> valid
+> +  values below.
+> +
+> +* samsung,dw-mshc-ddr-timing: Specifies the value of CUI clock divider,
+> CIU
+> +  clock phase shift value in transmit mode and CIU clock phase shift value
+> in
+> +  receive mode for double data rate mode operation. Refer notes of the
+> valid
+> +  values below. The order of the cells should be
+> +
+> +    - First Cell: 	CIU clock divider value.
+> +    - Second Cell:	CIU clock phase shift value for tx mode.
+> +    - Third Cell:	CIU clock phase shift value for rx mode.
+> +
+> +  Valid values for SDR and DDR CIU clock timing:
+> +
+> +    - valid values for CIU clock divider, tx phase shift and rx phase
+> shift
+> +      is 0 to 7.
+> +
+> +    - When CIU clock divider value is set to 3, all possible 8 phase shift
+> +      values can be used.
+> +
+> +    - If CIU clock divider value is 0 (that is divide by 1), both tx and
+> rx
+> +      phase shift clocks should be 0.
+> +
+>  Example:
+>
+>    The MSHC controller node can be split into two portions, SoC specific
+> and
+>    board specific portions as listed below.
+>
+>  	dwmmc0@12200000 {
+> -		compatible = "synopsis,dw-mshc";
+> +		compatible = "synopsis,dw-mshc-exynos5250";
+>  		reg = <0x12200000 0x1000>;
+>  		interrupts = <0 75 0>;
+>  	};
+> @@ -72,6 +101,8 @@ Example:
+>  		no-write-protect;
+>  		fifo-depth = <0x80>;
+>  		card-detect-delay = <200>;
+> +		samsung,dw-mshc-sdr-timing = <2 3 3>;
+> +		samsung,dw-mshc-ddr-timing = <1 2 3>;
+>
+>  		slot0 {
+>  			bus-width = <8>;
+> diff --git a/drivers/mmc/host/dw_mmc-pltfm.c
+> b/drivers/mmc/host/dw_mmc-pltfm.c
+> index 2b2c9bd..35056fd 100644
+> --- a/drivers/mmc/host/dw_mmc-pltfm.c
+> +++ b/drivers/mmc/host/dw_mmc-pltfm.c
+> @@ -27,9 +27,17 @@ static struct dw_mci_drv_data synopsis_drv_data = {
+>  	.ctrl_type	= DW_MCI_TYPE_SYNOPSIS,
+>  };
+>
+> +static struct dw_mci_drv_data exynos5250_drv_data = {
+> +	.ctrl_type	= DW_MCI_TYPE_EXYNOS5250,
+> +	.caps		= MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
+> +				MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
+These caps should be board specific. So it's not proper place. Esp.,
+MMC_CAP_8_BIT_DATA.
+> +};
+> +
+>  static const struct of_device_id dw_mci_pltfm_match[] = {
+>  	{ .compatible = "synopsis,dw-mshc",
+>  			.data = (void *)&synopsis_drv_data, },
+> +	{ .compatible = "synopsis,dw-mshc-exynos5250",
+> +			.data = (void *)&exynos5250_drv_data, },
+>  	{},
+>  };
+>  MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index bcf66d7..9174a69 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -236,6 +236,7 @@ static void dw_mci_set_timeout(struct dw_mci *host)
+>  static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command
+> *cmd)
+>  {
+>  	struct mmc_data	*data;
+> +	struct dw_mci_slot *slot = mmc_priv(mmc);
+>  	u32 cmdr;
+>  	cmd->error = -EINPROGRESS;
+>
+> @@ -265,6 +266,10 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc,
+> struct mmc_command *cmd)
+>  			cmdr |= SDMMC_CMD_DAT_WR;
+>  	}
+>
+> +	if (slot->host->drv_data->ctrl_type == DW_MCI_TYPE_EXYNOS5250)
+> +		if (SDMMC_CLKSEL_GET_SELCLK_DRV(mci_readl(slot->host, CLKSEL)))
+> +			cmdr |= SDMMC_USE_HOLD_REG;
+Some other board, custom SOC also can use this HOLD register. So it's
+not EXYNOS5250 specific one. I think we introduce the more generic
+quirks for this instead of SOC specific.
+> +
+>  	return cmdr;
+>  }
+>
+> @@ -787,10 +792,19 @@ static void dw_mci_set_ios(struct mmc_host *mmc,
+> struct mmc_ios *ios)
+>  	regs = mci_readl(slot->host, UHS_REG);
+>
+>  	/* DDR mode set */
+> -	if (ios->timing == MMC_TIMING_UHS_DDR50)
+> +	if (ios->timing == MMC_TIMING_UHS_DDR50) {
+>  		regs |= (0x1 << slot->id) << 16;
+> -	else
+> +		mci_writel(slot->host, CLKSEL, slot->host->ddr_timing);
+As you wrote, does CLKSEL is some SOC specific registers?
+> +	} else {
+>  		regs &= ~(0x1 << slot->id) << 16;
+> +		mci_writel(slot->host, CLKSEL, slot->host->sdr_timing);
+> +	}
+> +
+> +	if (slot->host->drv_data->ctrl_type == DW_MCI_TYPE_EXYNOS5250) {
+> +		slot->host->bus_hz = clk_get_rate(slot->host->ciu_clk);
+> +		slot->host->bus_hz /= SDMMC_CLKSEL_GET_DIVRATIO(
+> +					mci_readl(slot->host, CLKSEL));
+> +	}
+>
+>  	mci_writel(slot->host, UHS_REG, regs);
+>
+> @@ -2074,6 +2088,20 @@ static struct dw_mci_board *dw_mci_parse_dt(struct
+> dw_mci *host)
+>  		if (of_get_property(np, of_quriks[idx].quirk, NULL))
+>  			pdata->quirks |= of_quriks[idx].id;
+>
+> +	if (of_property_read_u32_array(dev->of_node,
+> +			"samsung,dw-mshc-sdr-timing", timing, 3))
+> +		host->sdr_timing = DW_MCI_DEF_SDR_TIMING;
+> +	else
+> +		host->sdr_timing = SDMMC_CLKSEL_TIMING(timing[0],
+> +					timing[1], timing[2]);
+> +
+> +	if (of_property_read_u32_array(dev->of_node,
+> +			"samsung,dw-mshc-ddr-timing", timing, 3))
+> +		host->ddr_timing = DW_MCI_DEF_DDR_TIMING;
+> +	else
+> +		host->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0],
+> +					timing[1], timing[2]);
+> +
+>  	if (of_property_read_u32(np, "fifo-depth", &pdata->fifo_depth))
+>  		dev_info(dev, "fifo-depth property not found, using "
+>  				"value of FIFOTH register as default\n");
+> diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
+> index 8b8862b..4b7e42b 100644
+> --- a/drivers/mmc/host/dw_mmc.h
+> +++ b/drivers/mmc/host/dw_mmc.h
+> @@ -53,6 +53,7 @@
+>  #define SDMMC_IDINTEN		0x090
+>  #define SDMMC_DSCADDR		0x094
+>  #define SDMMC_BUFADDR		0x098
+> +#define SDMMC_CLKSEL		0x09C /* specific to Samsung Exynos5250 */
+Another Samsung Custom SOC also used it.
+>  #define SDMMC_DATA(x)		(x)
+>
+>  /*
+> @@ -111,6 +112,7 @@
+>  #define SDMMC_INT_ERROR			0xbfc2
+>  /* Command register defines */
+>  #define SDMMC_CMD_START			BIT(31)
+> +#define SDMMC_USE_HOLD_REG		BIT(29)
+>  #define SDMMC_CMD_CCS_EXP		BIT(23)
+>  #define SDMMC_CMD_CEATA_RD		BIT(22)
+>  #define SDMMC_CMD_UPD_CLK		BIT(21)
+> @@ -142,6 +144,17 @@
+>  /* Version ID register define */
+>  #define SDMMC_GET_VERID(x)		((x) & 0xFFFF)
+>
+> +#define DW_MCI_DEF_SDR_TIMING		0x03030002
+> +#define DW_MCI_DEF_DDR_TIMING		0x03020001
+> +#define SDMMC_CLKSEL_CCLK_SAMPLE(x)	(((x) & 3) << 0)
+> +#define SDMMC_CLKSEL_CCLK_DRIVE(x)	(((x) & 3) << 16)
+> +#define SDMMC_CLKSEL_CCLK_DIVIDER(x)	(((x) & 3) << 24)
+> +#define SDMMC_CLKSEL_TIMING(x, y, z)	(SDMMC_CLKSEL_CCLK_SAMPLE(x) |	\
+> +					SDMMC_CLKSEL_CCLK_DRIVE(y) |	\
+> +					SDMMC_CLKSEL_CCLK_DIVIDER(z))
+> +#define SDMMC_CLKSEL_GET_DIVRATIO(x)	((((x) >> 24) & 0x7) + 1)
+> +#define SDMMC_CLKSEL_GET_SELCLK_DRV(x)	(((x) >> 16) & 0x7)
+> +
+>  /* Register access macros */
+>  #define mci_readl(dev, reg)			\
+>  	__raw_readl((dev)->regs + SDMMC_##reg)
+> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+> index 71d2b56..6e6d036 100644
+> --- a/include/linux/mmc/dw_mmc.h
+> +++ b/include/linux/mmc/dw_mmc.h
+> @@ -82,6 +82,8 @@ struct mmc_data;
+>   * @biu_clk: Pointer to bus interface unit clock instance.
+>   * @ciu_clk: Pointer to card interface unit clock instance.
+>   * @slot: Slots sharing this MMC controller.
+> + * @sdr_timing: Clock phase shifting for driving and sampling in sdr mode
+> + * @ddr_timing: Clock phase shifting for driving and sampling in ddr mode
+>   * @fifo_depth: depth of FIFO.
+>   * @data_shift: log2 of FIFO item size.
+>   * @part_buf_start: Start index in part_buf.
+> @@ -166,6 +168,10 @@ struct dw_mci {
+>  	struct clk		*ciu_clk;
+>  	struct dw_mci_slot	*slot[MAX_MCI_SLOTS];
+>
+> +	/* Phase Shift Value (for exynos5250 variant) */
+> +	u32			sdr_timing;
+> +	u32			ddr_timing;
+> +
+>  	/* FIFO push and pull */
+>  	int			fifo_depth;
+>  	int			data_shift;
+> --
+> 1.7.5.4
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
