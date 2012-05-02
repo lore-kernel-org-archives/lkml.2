@@ -1,51 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab2EBXzG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 19:55:06 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:51397 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab2EBXzD (ORCPT
+	id S1754217Ab2EBX4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 19:56:23 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:41711 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752280Ab2EBX4V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 19:55:03 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-13.tower-160.messagelabs.com!1336002901!5356472!1
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] watchdog: sp5100_tco.c: quiet sparse noise about using plain integer was NULL pointer
-Date: Wed, 2 May 2012 16:54:43 -0700
-User-Agent: KMail/1.9.9
-CC: <linux-watchdog@vger.kernel.org>, <wim@iguana.be>
+	Wed, 2 May 2012 19:56:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201205021654.43838.hartleys@visionengravers.com>
+In-Reply-To: <1333905129-8776-3-git-send-email-jiang.liu@huawei.com>
+References: <20120406115948.3536e6c8.izumi.taku@jp.fujitsu.com>
+ <1333905129-8776-1-git-send-email-jiang.liu@huawei.com> <1333905129-8776-3-git-send-email-jiang.liu@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 2 May 2012 17:55:58 -0600
+Message-ID: <CAErSpo5K-foOsdantKQhK0=KOmV6-GCRGfjYYrdyi7ijecv-3w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PCI, ACPI, x86: update MMCFG information when
+ hot-plugging PCI host bridges
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, "Pearson, Greg" <greg.pearson@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pointers should not be compared to plain integers.
-Quiets the sparse warning:
-warning: Using plain integer as NULL pointer
+On Sun, Apr 8, 2012 at 11:12 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> This patch enhances pci_root driver to update MMCFG information when
+> hot-plugging PCI root bridges on x86 platforms.
+>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> ---
+>  arch/x86/pci/acpi.c      |   58 ++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/acpi/pci_root.c  |   20 ++++++++++++++++
+>  include/acpi/acnames.h   |    1 +
+>  include/linux/pci-acpi.h |    3 ++
+>  4 files changed, 82 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+> index da0149d..9184970 100644
+> --- a/arch/x86/pci/acpi.c
+> +++ b/arch/x86/pci/acpi.c
+> @@ -488,6 +488,64 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+>        return bus;
+>  }
+>
+> +int arch_acpi_pci_root_add(struct acpi_pci_root *root)
+> +{
+> +       int result = 0;
+> +       acpi_status status;
+> +       unsigned long long base_addr;
+> +       struct pci_mmcfg_region *cfg;
+> +
+> +       /*
+> +        * Try to insert MMCFG information for host bridges with _CBA method
+> +        */
+> +       status = acpi_evaluate_integer(root->device->handle, METHOD_NAME__CBA,
+> +                                      NULL, &base_addr);
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>
+I would prefer to have _CBA evaluated in drivers/acpi/pci_root.c, not
+in the arch code.  It's true that _CBA is probably only used by x86
+today, but the spec says nothing about it being arch-dependent, and I
+suspect it may be used on arm soon.
 
----
+> +       if (ACPI_SUCCESS(status)) {
+> +               result = pci_mmconfig_insert(root->segment,
+> +                                            root->secondary.start,
+> +                                            root->secondary.end,
+> +                                            base_addr);
+> +               /*
+> +                * MMCFG information for hot-pluggable host bridges may have
+> +                * already been added by __pci_mmcfg_init();
+> +                */
+> +               if (result == -EEXIST)
+> +                       result = 0;
+> +       } else if (status == AE_NOT_FOUND) {
+> +               /*
+> +                * Check whether MMCFG information has been added for
+> +                * host bridges without _CBA method.
+> +                */
+> +               rcu_read_lock();
+> +               cfg = pci_mmconfig_lookup(root->segment, root->secondary.start);
+> +               if (!cfg || cfg->end_bus < root->secondary.end)
+> +                       result = -ENODEV;
+> +               rcu_read_unlock();
+> +       } else
+> +               result = -ENODEV;
+> +
+> +       return result;
+> +}
+> +
+> +int arch_acpi_pci_root_remove(struct acpi_pci_root *root)
+> +{
+> +       acpi_status status;
+> +       unsigned long long base_addr;
+> +
+> +       /* Remove MMCFG information for host bridges with _CBA method */
+> +       status = acpi_evaluate_integer(root->device->handle, METHOD_NAME__CBA,
+> +                                      NULL, &base_addr);
 
-diff --git a/drivers/watchdog/sp5100_tco.c b/drivers/watchdog/sp5100_tco.c
-index 59108e4..ae5e82c 100644
---- a/drivers/watchdog/sp5100_tco.c
-+++ b/drivers/watchdog/sp5100_tco.c
-@@ -313,7 +313,7 @@ static unsigned char __devinit sp5100_tco_setupdevice(void)
- 	tcobase_phys = val;
- 
- 	tcobase = ioremap(val, SP5100_WDT_MEM_MAP_SIZE);
--	if (tcobase == 0) {
-+	if (!tcobase) {
- 		pr_err("failed to get tcobase address\n");
- 		goto unreg_mem_region;
- 	}
+I think the arch-specific "map MMCONFIG space at this addr" should
+return a pointer or something that we can save and use to unmap it on
+remove.  That way we don't have to evaluate _CBA again.
+
+> +       if (ACPI_SUCCESS(status))
+> +               return pci_mmconfig_delete(root->segment,
+> +                                          root->secondary.start,
+> +                                          root->secondary.end,
+> +                                          base_addr);
+> +       else if (status != AE_NOT_FOUND)
+> +               return -ENODEV;
+> +
+> +       return 0;
+> +}
+> +
+>  int __init pci_acpi_init(void)
+>  {
+>        struct pci_dev *dev = NULL;
+> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+> index 4a7d575..a62bfa8 100644
+> --- a/drivers/acpi/pci_root.c
+> +++ b/drivers/acpi/pci_root.c
+> @@ -448,6 +448,16 @@ out:
+>  }
+>  EXPORT_SYMBOL(acpi_pci_osc_control_set);
+>
+> +int __weak arch_acpi_pci_root_add(struct acpi_pci_root *root)
+> +{
+> +       return 0;
+> +}
+> +
+> +int __weak arch_acpi_pci_root_remove(struct acpi_pci_root *root)
+> +{
+> +       return 0;
+> +}
+> +
+>  static int __devinit acpi_pci_root_add(struct acpi_device *device)
+>  {
+>        unsigned long long segment, bus;
+> @@ -504,6 +514,14 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+>        strcpy(acpi_device_class(device), ACPI_PCI_ROOT_CLASS);
+>        device->driver_data = root;
+>
+> +       if (arch_acpi_pci_root_add(root)) {
+> +               printk(KERN_ERR PREFIX
+> +                       "can't add MMCFG information for Bus %04x:%02x\n",
+> +                       root->segment, (unsigned int)root->secondary.start);
+> +               result = -ENODEV;
+> +               goto out_free;
+> +       }
+> +
+>        /*
+>         * All supported architectures that use ACPI have support for
+>         * PCI domains, so we indicate this in _OSC support capabilities.
+> @@ -629,6 +647,7 @@ out_del_root:
+>        list_del_rcu(&root->node);
+>        mutex_unlock(&acpi_pci_root_lock);
+>        synchronize_rcu();
+> +       arch_acpi_pci_root_remove(root);
+>  out_free:
+>        kfree(root);
+>        return result;
+> @@ -679,6 +698,7 @@ out:
+>        list_del_rcu(&root->node);
+>        mutex_unlock(&acpi_pci_root_lock);
+>        synchronize_rcu();
+> +       arch_acpi_pci_root_remove(root);
+>        kfree(root);
+>
+>        return 0;
+> diff --git a/include/acpi/acnames.h b/include/acpi/acnames.h
+> index 38f5088..99bda75 100644
+> --- a/include/acpi/acnames.h
+> +++ b/include/acpi/acnames.h
+> @@ -62,6 +62,7 @@
+>  #define METHOD_NAME__AEI        "_AEI"
+>  #define METHOD_NAME__PRW        "_PRW"
+>  #define METHOD_NAME__SRS        "_SRS"
+> +#define METHOD_NAME__CBA       "_CBA"
+>
+>  /* Method names - these methods must appear at the namespace root */
+>
+> diff --git a/include/linux/pci-acpi.h b/include/linux/pci-acpi.h
+> index ac93634..816b971 100644
+> --- a/include/linux/pci-acpi.h
+> +++ b/include/linux/pci-acpi.h
+> @@ -38,6 +38,9 @@ static inline acpi_handle acpi_pci_get_bridge_handle(struct pci_bus *pbus)
+>
+>  void acpi_pci_root_rescan(void);
+>
+> +extern int arch_acpi_pci_root_add(struct acpi_pci_root *root);
+> +extern int arch_acpi_pci_root_remove(struct acpi_pci_root *root);
+> +
+>  #else
+>
+>  static inline void acpi_pci_root_rescan(void) { }
+
+I don't know where to put this in the conversation, but I think we
+should separate the question of whether we do blind probing from the
+question of how we set up MMCONFIG space from MCFG.
+
+We currently parse the entire MCFG in some sort of initcall, but I
+think we *could* change the x86 blind probing routines to attempt to
+set up MMCONFIG space for the buses they find, just like
+acpi_pci_root_add() does it for the ACPI host bridges.
+
+That way we can continue blind probing, but make MMCONFIG init more sensible.
+
+Bjorn
