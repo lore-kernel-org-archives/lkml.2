@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758631Ab2EBCID (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 22:08:03 -0400
+	id S1758619Ab2EBCIA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 22:08:00 -0400
 Received: from mga09.intel.com ([134.134.136.24]:46532 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758519Ab2EBCHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 22:07:40 -0400
+	id S1758498Ab2EBCHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 May 2012 22:07:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="138970486"
+   d="scan'208";a="138970476"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
         eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 8/9] perf tool: Make the event parser reentrantable
-Date: Wed,  2 May 2012 10:07:19 +0800
-Message-Id: <1335924440-11242-9-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH 7/9] perf: Add Sandy Bridge-EP uncore support
+Date: Wed,  2 May 2012 10:07:18 +0800
+Message-Id: <1335924440-11242-8-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
 References: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
@@ -25,322 +25,665 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
+Add Intel Nehalem and Sandy Bridge uncore pmu support. The uncore
+subsystem in Sandy Bridge-EP consists of 8 components (Ubox,
+Cacheing Agent, Home Agent, Memory controller, Power Control,
+QPI Link Layer, R2PCIe, R3QPI).
+
 Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
 ---
- tools/perf/Makefile            |    7 ++-
- tools/perf/util/parse-events.c |   32 ++++++++++----
- tools/perf/util/parse-events.h |    2 +-
- tools/perf/util/parse-events.l |   92 ++++++++++++++++++++-------------------
- tools/perf/util/parse-events.y |    9 +++-
- 5 files changed, 83 insertions(+), 59 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |  489 ++++++++++++++++++++++++-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |   86 +++++
+ include/linux/pci_ids.h                       |   11 +
+ 3 files changed, 584 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 7055a00..2d59ca1 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -725,14 +725,17 @@ $(OUTPUT)perf.o perf.spec \
- .SUFFIXES:
- .SUFFIXES: .o .c .S .s
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index b4a15a5..c0c77d0 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -4,6 +4,9 @@ static struct intel_uncore_type *empty_uncore[] = { NULL, };
+ static struct intel_uncore_type **msr_uncores = empty_uncore;
+ static struct intel_uncore_type **pci_uncores = empty_uncore;
  
-+# Remove -Wextra to suppress 'unused parameter' warning
-+ALL_CFLAGS_NO_WEXTRA = $(shell echo $(ALL_CFLAGS) | sed "s/-Wextra //g")
++/* pci bus to socket mapping */
++static int pcibus_to_phyid[256] = { [0 ... 255] = -1, };
 +
- # These two need to be here so that when O= is not used they take precedence
- # over the general rule for .o
+ /* mask of cpus that collect uncore events */
+ static cpumask_t uncore_cpu_mask;
  
- $(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS_NO_WEXTRA) -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
- 
- $(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS_NO_WEXTRA) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
- 
- $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 5b3a0ef..c587ae8 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -11,6 +11,7 @@
- #include "cache.h"
- #include "header.h"
- #include "debugfs.h"
-+#include "parse-events-bison.h"
- #include "parse-events-flex.h"
- #include "pmu.h"
- 
-@@ -24,7 +25,8 @@ struct event_symbol {
- };
- 
- int parse_events_parse(struct list_head *list, struct list_head *list_tmp,
--		       int *idx);
-+		       int *idx, void *scanner);
-+static int __parse_events(const char *str, int *idx, struct list_head *list);
- 
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-@@ -747,20 +749,34 @@ int parse_events_modifier(struct list_head *list, char *str)
- 	return 0;
- }
- 
--int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
-+static int __parse_events(const char *str, int *idx, struct list_head *list)
- {
--	LIST_HEAD(list);
- 	LIST_HEAD(list_tmp);
- 	YY_BUFFER_STATE buffer;
--	int ret, idx = evlist->nr_entries;
-+	void *scanner;
-+	int ret;
+@@ -17,6 +20,482 @@ DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
+ DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
+ DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
+ DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
++DEFINE_UNCORE_FORMAT_ATTR(thresh8, thresh, "config:24-31");
++DEFINE_UNCORE_FORMAT_ATTR(thresh5, thresh, "config:24-28");
++DEFINE_UNCORE_FORMAT_ATTR(occ_sel, occ_sel, "config:14-15");
++DEFINE_UNCORE_FORMAT_ATTR(occ_invert, occ_invert, "config:30");
++DEFINE_UNCORE_FORMAT_ATTR(occ_edge, occ_edge, "config:14-51");
 +
-+	ret = parse_events_lex_init(&scanner);
-+	if (ret)
-+		return ret;
++/* Sandy Bridge-EP uncore support */
++static void snbep_uncore_pci_disable_box(struct intel_uncore_box *box)
++{
++	struct pci_dev *pdev = box->pci_dev;
++	int box_ctl = uncore_pci_box_ctl(box);
++	u32 config;
 +
-+	buffer = parse_events__scan_string(str, scanner);
- 
--	buffer = parse_events__scan_string(str);
-+	ret = parse_events_parse(list, &list_tmp, idx, scanner);
- 
--	ret = parse_events_parse(&list, &list_tmp, &idx);
-+	parse_events__flush_buffer(buffer, scanner);
-+	parse_events__delete_buffer(buffer, scanner);
-+	parse_events_lex_destroy(scanner);
- 
--	parse_events__flush_buffer(buffer);
--	parse_events__delete_buffer(buffer);
-+	return ret;
++	pci_read_config_dword(pdev, box_ctl, &config);
++	config |= SNBEP_PMON_BOX_CTL_FRZ;
++	pci_write_config_dword(pdev, box_ctl, config);
 +}
 +
-+int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
++static void snbep_uncore_pci_enable_box(struct intel_uncore_box *box)
 +{
-+	LIST_HEAD(list);
-+	int ret, idx = evlist->nr_entries;
++	struct pci_dev *pdev = box->pci_dev;
++	int box_ctl = uncore_pci_box_ctl(box);
++	u32 config;
++
++	pci_read_config_dword(pdev, box_ctl, &config);
++	config &= ~SNBEP_PMON_BOX_CTL_FRZ;
++	pci_write_config_dword(pdev, box_ctl, config);
++}
++
++static void snbep_uncore_pci_enable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct pci_dev *pdev = box->pci_dev;
++	struct hw_perf_event *hwc = &event->hw;
++
++	pci_write_config_dword(pdev, hwc->config_base, hwc->config |
++				SNBEP_PMON_CTL_EN);
++}
++
++static void snbep_uncore_pci_disable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct pci_dev *pdev = box->pci_dev;
++	struct hw_perf_event *hwc = &event->hw;
++
++	pci_write_config_dword(pdev, hwc->config_base, hwc->config);
++}
++
++static u64 snbep_uncore_pci_read_counter(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct pci_dev *pdev = box->pci_dev;
++	struct hw_perf_event *hwc = &event->hw;
++	u64 count;
++
++	pci_read_config_dword(pdev, hwc->event_base, (u32 *)&count);
++	pci_read_config_dword(pdev, hwc->event_base + 4, (u32 *)&count + 1);
++	return count;
++}
++
++static void snbep_uncore_pci_init_box(struct intel_uncore_box *box)
++{
++	struct pci_dev *pdev = box->pci_dev;
++	pci_write_config_dword(pdev, SNBEP_PCI_PMON_BOX_CTL,
++				SNBEP_PMON_BOX_CTL_INT);
++}
++
++static void snbep_uncore_msr_disable_box(struct intel_uncore_box *box)
++{
++	u64 config;
++	unsigned msr;
++
++	msr = uncore_msr_box_ctl(box);
++	if (msr) {
++		rdmsrl(msr, config);
++		config |= SNBEP_PMON_BOX_CTL_FRZ;
++		wrmsrl(msr, config);
++		return;
++	}
++}
++
++static void snbep_uncore_msr_enable_box(struct intel_uncore_box *box)
++{
++	u64 config;
++	unsigned msr;
++
++	msr = uncore_msr_box_ctl(box);
++	if (msr) {
++		rdmsrl(msr, config);
++		config &= ~SNBEP_PMON_BOX_CTL_FRZ;
++		wrmsrl(msr, config);
++		return;
++	}
++}
++
++static void snbep_uncore_msr_enable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct hw_perf_event *hwc = &event->hw;
++
++	wrmsrl(hwc->config_base, hwc->config | SNBEP_PMON_CTL_EN);
++}
++
++static void snbep_uncore_msr_disable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct hw_perf_event *hwc = &event->hw;
++
++	wrmsrl(hwc->config_base, hwc->config);
++}
++
++static u64 snbep_uncore_msr_read_counter(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct hw_perf_event *hwc = &event->hw;
++	u64 count;
++
++	rdmsrl(hwc->event_base, count);
++	return count;
++}
++
++static void snbep_uncore_msr_init_box(struct intel_uncore_box *box)
++{
++	unsigned msr = uncore_msr_box_ctl(box);
++	if (msr)
++		wrmsrl(msr, SNBEP_PMON_BOX_CTL_INT);
++}
++
++static struct attribute *snbep_uncore_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_thresh8.attr,
++	NULL,
++};
++
++static struct attribute *snbep_uncore_ubox_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_thresh5.attr,
++	NULL,
++};
++
++static struct attribute *snbep_uncore_pcu_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_occ_sel.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_thresh5.attr,
++	&format_attr_occ_invert.attr,
++	&format_attr_occ_edge.attr,
++	NULL,
++};
++
++static struct uncore_event_desc snbep_uncore_imc_events[] = {
++	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
++	/* read */
++	INTEL_UNCORE_EVENT_DESC(CAS_COUNT_RD, "event=0x4,umask=0x3"),
++	/* write */
++	INTEL_UNCORE_EVENT_DESC(CAS_COUNT_WR, "event=0x4,umask=0xc"),
++	{ /* end: all zeroes */ },
++};
++
++static struct uncore_event_desc snbep_uncore_qpi_events[] = {
++	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "event=0x14"),
++	/* outgoing data+nondata flits */
++	INTEL_UNCORE_EVENT_DESC(TxL_FLITS_ACTIVE, "event=0x0,umask=0x6"),
++	/* DRS data received */
++	INTEL_UNCORE_EVENT_DESC(DRS_DATA, "event=0x2,umask=0x8"),
++	/* NCB data received */
++	INTEL_UNCORE_EVENT_DESC(NCB_DATA, "event=0x3,umask=0x4"),
++	{ /* end: all zeroes */ },
++};
++
++static struct attribute_group snbep_uncore_format_group = {
++	.name = "format",
++	.attrs = snbep_uncore_formats_attr,
++};
++
++static struct attribute_group snbep_uncore_ubox_format_group = {
++	.name = "format",
++	.attrs = snbep_uncore_ubox_formats_attr,
++};
++
++static struct attribute_group snbep_uncore_pcu_format_group = {
++	.name = "format",
++	.attrs = snbep_uncore_pcu_formats_attr,
++};
++
++static struct intel_uncore_ops snbep_uncore_msr_ops = {
++	.init_box	= snbep_uncore_msr_init_box,
++	.disable_box	= snbep_uncore_msr_disable_box,
++	.enable_box	= snbep_uncore_msr_enable_box,
++	.disable_event	= snbep_uncore_msr_disable_event,
++	.enable_event	= snbep_uncore_msr_enable_event,
++	.read_counter	= snbep_uncore_msr_read_counter,
++};
++
++static struct intel_uncore_ops snbep_uncore_pci_ops = {
++	.init_box	= snbep_uncore_pci_init_box,
++	.disable_box	= snbep_uncore_pci_disable_box,
++	.enable_box	= snbep_uncore_pci_enable_box,
++	.disable_event	= snbep_uncore_pci_disable_event,
++	.enable_event	= snbep_uncore_pci_enable_event,
++	.read_counter	= snbep_uncore_pci_read_counter,
++};
++
++static struct event_constraint snbep_uncore_cbo_constraints[] = {
++	UNCORE_EVENT_CONSTRAINT(0x01, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x02, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x04, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x05, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x07, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x11, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x12, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x13, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x1b, 0xc),
++	UNCORE_EVENT_CONSTRAINT(0x1c, 0xc),
++	UNCORE_EVENT_CONSTRAINT(0x1d, 0xc),
++	UNCORE_EVENT_CONSTRAINT(0x1e, 0xc),
++	UNCORE_EVENT_CONSTRAINT(0x1f, 0xe),
++	UNCORE_EVENT_CONSTRAINT(0x21, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x23, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x31, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x32, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x33, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x34, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x35, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x36, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x37, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x38, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x39, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x3b, 0x1),
++	EVENT_CONSTRAINT_END
++};
++
++static struct event_constraint snbep_uncore_r2pcie_constraints[] = {
++	UNCORE_EVENT_CONSTRAINT(0x10, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x11, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x12, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x23, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x24, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x25, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x26, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x32, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x33, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x34, 0x3),
++	EVENT_CONSTRAINT_END
++};
++
++static struct event_constraint snbep_uncore_r3qpi_constraints[] = {
++	UNCORE_EVENT_CONSTRAINT(0x10, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x11, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x12, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x13, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x20, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x21, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x22, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x23, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x24, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x25, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x26, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x30, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x31, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x32, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x33, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x34, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x36, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x37, 0x3),
++	EVENT_CONSTRAINT_END
++};
++
++static struct intel_uncore_type snbep_uncore_ubox = {
++	.name		= "ubox",
++	.num_counters   = 2,
++	.num_boxes	= 1,
++	.perf_ctr_bits	= 44,
++	.fixed_ctr_bits	= 48,
++	.perf_ctr	= SNBEP_U_MSR_PMON_CTR0,
++	.event_ctl	= SNBEP_U_MSR_PMON_CTL0,
++	.event_mask	= SNBEP_U_MSR_PMON_RAW_EVENT_MASK,
++	.fixed_ctr	= SNBEP_U_MSR_PMON_UCLK_FIXED_CTR,
++	.fixed_ctl	= SNBEP_U_MSR_PMON_UCLK_FIXED_CTL,
++	.ops		= &snbep_uncore_msr_ops,
++	.format_group	= &snbep_uncore_ubox_format_group,
++};
++
++static struct intel_uncore_type snbep_uncore_cbo = {
++	.name		= "cbo",
++	.num_counters   = 4,
++	.num_boxes	= 8,
++	.perf_ctr_bits	= 44,
++	.event_ctl	= SNBEP_C0_MSR_PMON_CTL0,
++	.perf_ctr	= SNBEP_C0_MSR_PMON_CTR0,
++	.event_mask	= SNBEP_PMON_RAW_EVENT_MASK,
++	.box_ctl	= SNBEP_C0_MSR_PMON_BOX_CTL,
++	.msr_offset	= SNBEP_CBO_MSR_OFFSET,
++	.constraints	= snbep_uncore_cbo_constraints,
++	.ops		= &snbep_uncore_msr_ops,
++	.format_group	= &snbep_uncore_format_group,
++};
++
++static struct intel_uncore_type snbep_uncore_pcu = {
++	.name		= "pcu",
++	.num_counters   = 4,
++	.num_boxes	= 1,
++	.perf_ctr_bits	= 48,
++	.perf_ctr	= SNBEP_PCU_MSR_PMON_CTR0,
++	.event_ctl	= SNBEP_PCU_MSR_PMON_CTL0,
++	.event_mask	= SNBEP_PCU_MSR_PMON_RAW_EVENT_MASK,
++	.box_ctl	= SNBEP_PCU_MSR_PMON_BOX_CTL,
++	.ops		= &snbep_uncore_msr_ops,
++	.format_group	= &snbep_uncore_pcu_format_group,
++};
++
++static struct intel_uncore_type *snbep_msr_uncores[] = {
++	&snbep_uncore_ubox,
++	&snbep_uncore_cbo,
++	&snbep_uncore_pcu,
++	NULL,
++};
++
++#define SNBEP_UNCORE_PCI_COMMON_INIT()				\
++	.perf_ctr	= SNBEP_PCI_PMON_CTR0,			\
++	.event_ctl	= SNBEP_PCI_PMON_CTL0,			\
++	.event_mask	= SNBEP_PMON_RAW_EVENT_MASK,		\
++	.box_ctl	= SNBEP_PCI_PMON_BOX_CTL,		\
++	.ops		= &snbep_uncore_pci_ops,		\
++	.format_group	= &snbep_uncore_format_group
++
++static struct intel_uncore_type snbep_uncore_ha = {
++	.name		= "ha",
++	.num_counters   = 4,
++	.num_boxes	= 1,
++	.perf_ctr_bits	= 48,
++	SNBEP_UNCORE_PCI_COMMON_INIT(),
++};
++
++static struct intel_uncore_type snbep_uncore_imc = {
++	.name		= "imc",
++	.num_counters   = 4,
++	.num_boxes	= 4,
++	.perf_ctr_bits	= 48,
++	.fixed_ctr_bits	= 48,
++	.fixed_ctr	= SNBEP_MC_CHy_PCI_PMON_FIXED_CTR,
++	.fixed_ctl	= SNBEP_MC_CHy_PCI_PMON_FIXED_CTL,
++	.event_descs	= snbep_uncore_imc_events,
++	SNBEP_UNCORE_PCI_COMMON_INIT(),
++};
++
++static struct intel_uncore_type snbep_uncore_qpi = {
++	.name		= "qpi",
++	.num_counters   = 4,
++	.num_boxes	= 2,
++	.perf_ctr_bits	= 48,
++	.event_descs	= snbep_uncore_qpi_events,
++	SNBEP_UNCORE_PCI_COMMON_INIT(),
++};
++
++
++static struct intel_uncore_type snbep_uncore_r2pcie = {
++	.name		= "r2pcie",
++	.num_counters   = 4,
++	.num_boxes	= 1,
++	.perf_ctr_bits	= 44,
++	.constraints	= snbep_uncore_r2pcie_constraints,
++	SNBEP_UNCORE_PCI_COMMON_INIT(),
++};
++
++static struct intel_uncore_type snbep_uncore_r3qpi = {
++	.name		= "r3qpi",
++	.num_counters   = 3,
++	.num_boxes	= 2,
++	.perf_ctr_bits	= 44,
++	.constraints	= snbep_uncore_r3qpi_constraints,
++	SNBEP_UNCORE_PCI_COMMON_INIT(),
++};
++
++static struct intel_uncore_type *snbep_pci_uncores[] = {
++	&snbep_uncore_ha,
++	&snbep_uncore_imc,
++	&snbep_uncore_qpi,
++	&snbep_uncore_r2pcie,
++	&snbep_uncore_r3qpi,
++	NULL,
++};
++
++static DEFINE_PCI_DEVICE_TABLE(snbep_uncore_pci_ids) = {
++	{ /* Home Agent */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_HA),
++		.driver_data = (unsigned long)&snbep_uncore_ha,
++	},
++	{ /* MC Channel 0 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC0),
++		.driver_data = (unsigned long)&snbep_uncore_imc,
++	},
++	{ /* MC Channel 1 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC1),
++		.driver_data = (unsigned long)&snbep_uncore_imc,
++	},
++	{ /* MC Channel 2 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC2),
++		.driver_data = (unsigned long)&snbep_uncore_imc,
++	},
++	{ /* MC Channel 3 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC3),
++		.driver_data = (unsigned long)&snbep_uncore_imc,
++	},
++	{ /* QPI Port 0 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_QPI0),
++		.driver_data = (unsigned long)&snbep_uncore_qpi,
++	},
++	{ /* QPI Port 1 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_QPI1),
++		.driver_data = (unsigned long)&snbep_uncore_qpi,
++	},
++	{ /* P2PCIe */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R2PCIE),
++		.driver_data = (unsigned long)&snbep_uncore_r2pcie,
++	},
++	{ /* R3QPI Link 0 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R3QPI0),
++		.driver_data = (unsigned long)&snbep_uncore_r3qpi,
++	},
++	{ /* R3QPI Link 1 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R3QPI1),
++		.driver_data = (unsigned long)&snbep_uncore_r3qpi,
++	},
++	{ /* end: all zeroes */ }
++};
++
++static struct pci_driver snbep_uncore_pci_driver = {
++	.name		= "snbep_uncore",
++	.id_table	= snbep_uncore_pci_ids,
++};
++
++/*
++ * build pci bus to socket mapping
++ */
++static void snbep_pci2phy_map_init(void)
++{
++	struct pci_dev *ubox_dev = NULL;
++	int i, bus, nodeid;
++	u32 config;
++
++	while (1) {
++		/* find the UBOX device */
++		ubox_dev = pci_get_device(PCI_VENDOR_ID_INTEL,
++					PCI_DEVICE_ID_INTEL_JAKETOWN_UBOX,
++					ubox_dev);
++		if (!ubox_dev)
++			break;
++		bus = ubox_dev->bus->number;
++		/* get the Node ID of the local register */
++		pci_read_config_dword(ubox_dev, 0x40, &config);
++		nodeid = config;
++		/* get the Node ID mapping */
++		pci_read_config_dword(ubox_dev, 0x54, &config);
++		/*
++		 * every three bits in the Node ID mapping register maps
++		 * to a particular node.
++		 */
++		for (i = 0; i < 8; i++) {
++			if (nodeid == ((config >> (3 * i)) & 0x7)) {
++				pcibus_to_phyid[bus] = i;
++				break;
++			}
++		}
++	};
++	return;
++}
++/* end of Sandy Bridge-EP uncore support */
++
  
-+	ret =  __parse_events(str, &idx, &list);
- 	if (!ret) {
- 		int entries = idx - evlist->nr_entries;
- 		perf_evlist__splice_list_tail(evlist, &list, entries);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index ca069f8..e1ffeb7 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -80,7 +80,7 @@ void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
- void parse_events_error(struct list_head *list_all,
- 			struct list_head *list_event,
--			int *idx, char const *msg);
-+			int *idx, void *scanner, char const *msg);
+ /* Sandy Bridge uncore support */
+ static void snb_uncore_msr_enable_event(struct intel_uncore_box *box,
+@@ -819,8 +1298,6 @@ static int __init uncore_types_init(struct intel_uncore_type **types)
+ static DEFINE_SPINLOCK(uncore_pci_lock);
+ static struct pci_driver *uncore_pci_driver;
+ static bool pcidrv_registered;
+-/* pci bus to socket mapping */
+-static int pcibus_to_phyid[256] = { [0 ... 255] = -1, };
  
- void print_events(const char *event_glob);
- void print_events_type(u8 type);
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 1fcf1bb..eec423c 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -1,4 +1,6 @@
+ /*
+  * add a pci uncore device
+@@ -902,6 +1379,11 @@ static int __init uncore_pci_init(void)
+ 	int ret;
  
-+%option reentrant
-+%option bison-bridge
- %option prefix="parse_events_"
+ 	switch (boot_cpu_data.x86_model) {
++	case 45: /* Sandy Bridge-EP */
++		pci_uncores = snbep_pci_uncores;
++		uncore_pci_driver = &snbep_uncore_pci_driver;
++		snbep_pci2phy_map_init();
++		break;
+ 	default:
+ 		return 0;
+ 	}
+@@ -1163,6 +1645,9 @@ static int __init uncore_cpu_init(void)
+ 	case 42: /* Sandy Bridge */
+ 		msr_uncores = snb_msr_uncores;
+ 		break;
++	case 45: /* Sandy Birdge-EP */
++		msr_uncores = snbep_msr_uncores;
++		break;
+ 	default:
+ 		return 0;
+ 	}
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index b39e623..07c4908 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -65,6 +65,92 @@
+ #define NHM_UNC_PERFEVTSEL0                     0x3c0
+ #define NHM_UNC_UNCORE_PMC0                     0x3b0
  
- %{
-@@ -7,7 +9,7 @@
- #include "parse-events-bison.h"
- #include "parse-events.h"
++/* SNB-EP Box level control */
++#define SNBEP_PMON_BOX_CTL_RST_CTRL	(1 << 0)
++#define SNBEP_PMON_BOX_CTL_RST_CTRS	(1 << 1)
++#define SNBEP_PMON_BOX_CTL_FRZ		(1 << 8)
++#define SNBEP_PMON_BOX_CTL_FRZ_EN	(1 << 16)
++#define SNBEP_PMON_BOX_CTL_INT		(SNBEP_PMON_BOX_CTL_RST_CTRL | \
++					 SNBEP_PMON_BOX_CTL_RST_CTRS | \
++					 SNBEP_PMON_BOX_CTL_FRZ_EN)
++/* SNB-EP event control */
++#define SNBEP_PMON_CTL_EV_SEL_MASK	0x000000ff
++#define SNBEP_PMON_CTL_UMASK_MASK	0x0000ff00
++#define SNBEP_PMON_CTL_RST		(1 << 17)
++#define SNBEP_PMON_CTL_EDGE_DET		(1 << 18)
++#define SNBEP_PMON_CTL_EV_SEL_EXT	(1 << 21)	/* only for QPI */
++#define SNBEP_PMON_CTL_EN		(1 << 22)
++#define SNBEP_PMON_CTL_INVERT		(1 << 23)
++#define SNBEP_PMON_CTL_TRESH_MASK	0xff000000
++#define SNBEP_PMON_RAW_EVENT_MASK	(SNBEP_PMON_CTL_EV_SEL_MASK | \
++					 SNBEP_PMON_CTL_UMASK_MASK | \
++					 SNBEP_PMON_CTL_EDGE_DET | \
++					 SNBEP_PMON_CTL_INVERT | \
++					 SNBEP_PMON_CTL_TRESH_MASK)
++
++/* SNB-EP Ubox event control */
++#define SNBEP_U_MSR_PMON_CTL_TRESH_MASK		0x1f000000
++#define SNBEP_U_MSR_PMON_RAW_EVENT_MASK		\
++				(SNBEP_PMON_CTL_EV_SEL_MASK | \
++				 SNBEP_PMON_CTL_UMASK_MASK | \
++				 SNBEP_PMON_CTL_EDGE_DET | \
++				 SNBEP_PMON_CTL_INVERT | \
++				 SNBEP_U_MSR_PMON_CTL_TRESH_MASK)
++
++/* SNB-EP PCU event control */
++#define SNBEP_PCU_MSR_PMON_CTL_OCC_SEL_MASK	0x0000c000
++#define SNBEP_PCU_MSR_PMON_CTL_TRESH_MASK	0x1f000000
++#define SNBEP_PCU_MSR_PMON_CTL_OCC_INVERT	(1 << 30)
++#define SNBEP_PCU_MSR_PMON_CTL_OCC_EDGE_DET	(1 << 31)
++#define SNBEP_PCU_MSR_PMON_RAW_EVENT_MASK	\
++				(SNBEP_PMON_CTL_EV_SEL_MASK | \
++				 SNBEP_PCU_MSR_PMON_CTL_OCC_SEL_MASK | \
++				 SNBEP_PMON_CTL_EDGE_DET | \
++				 SNBEP_PMON_CTL_INVERT | \
++				 SNBEP_PCU_MSR_PMON_CTL_TRESH_MASK | \
++				 SNBEP_PCU_MSR_PMON_CTL_OCC_INVERT | \
++				 SNBEP_PCU_MSR_PMON_CTL_OCC_EDGE_DET)
++
++/* SNB-EP pci control register */
++#define SNBEP_PCI_PMON_BOX_CTL			0xf4
++#define SNBEP_PCI_PMON_CTL0			0xd8
++/* SNB-EP pci counter register */
++#define SNBEP_PCI_PMON_CTR0			0xa0
++
++/* SNB-EP home agent register */
++#define SNBEP_HA_PCI_PMON_BOX_ADDRMATCH0	0x40
++#define SNBEP_HA_PCI_PMON_BOX_ADDRMATCH1	0x44
++#define SNBEP_HA_PCI_PMON_BOX_OPCODEMATCH	0x48
++/* SNB-EP memory controller register */
++#define SNBEP_MC_CHy_PCI_PMON_FIXED_CTL		0xf0
++#define SNBEP_MC_CHy_PCI_PMON_FIXED_CTR		0xd0
++/* SNB-EP QPI register */
++#define SNBEP_Q_Py_PCI_PMON_PKT_MATCH0		0x228
++#define SNBEP_Q_Py_PCI_PMON_PKT_MATCH1		0x22c
++#define SNBEP_Q_Py_PCI_PMON_PKT_MASK0		0x238
++#define SNBEP_Q_Py_PCI_PMON_PKT_MASK1		0x23c
++
++/* SNB-EP Ubox register */
++#define SNBEP_U_MSR_PMON_CTR0			0xc16
++#define SNBEP_U_MSR_PMON_CTL0			0xc10
++
++#define SNBEP_U_MSR_PMON_UCLK_FIXED_CTL		0xc08
++#define SNBEP_U_MSR_PMON_UCLK_FIXED_CTR		0xc09
++
++/* SNB-EP Cbo register */
++#define SNBEP_C0_MSR_PMON_CTR0			0xd16
++#define SNBEP_C0_MSR_PMON_CTL0			0xd10
++#define SNBEP_C0_MSR_PMON_BOX_FILTER		0xd14
++#define SNBEP_C0_MSR_PMON_BOX_CTL		0xd04
++#define SNBEP_CBO_MSR_OFFSET			0x20
++
++/* SNB-EP PCU register */
++#define SNBEP_PCU_MSR_PMON_CTR0			0xc36
++#define SNBEP_PCU_MSR_PMON_CTL0			0xc30
++#define SNBEP_PCU_MSR_PMON_BOX_FILTER		0xc34
++#define SNBEP_PCU_MSR_PMON_BOX_CTL		0xc24
++#define SNBEP_PCU_MSR_CORE_C3_CTR		0x3fc
++#define SNBEP_PCU_MSR_CORE_C6_CTR		0x3fd
  
--static int __value(char *str, int base, int token)
-+static int __value(YYSTYPE *yylval, char *str, int base, int token)
- {
- 	long num;
- 
-@@ -16,35 +18,35 @@ static int __value(char *str, int base, int token)
- 	if (errno)
- 		return PE_ERROR;
- 
--	parse_events_lval.num = num;
-+	yylval->num = num;
- 	return token;
- }
- 
--static int value(int base)
-+static int value(YYSTYPE *yylval, char *text, int base)
- {
--	return __value(parse_events_text, base, PE_VALUE);
-+	return __value(yylval, text, base, PE_VALUE);
- }
- 
--static int raw(void)
-+static int raw(YYSTYPE *yylval, char *text)
- {
--	return __value(parse_events_text + 1, 16, PE_RAW);
-+	return __value(yylval, text + 1, 16, PE_RAW);
- }
- 
--static int str(int token)
-+static int str(YYSTYPE *yylval, char *text, int token)
- {
--	parse_events_lval.str = strdup(parse_events_text);
-+	yylval->str = strdup(text);
- 	return token;
- }
- 
--static int sym(int type, int config)
-+static int sym(YYSTYPE *yylval, int type, int config)
- {
--	parse_events_lval.num = (type << 16) + config;
-+	yylval->num = (type << 16) + config;
- 	return PE_VALUE_SYM;
- }
- 
--static int term(int type)
-+static int term(YYSTYPE *yylval, int type)
- {
--	parse_events_lval.num = type;
-+	yylval->num = type;
- 	return PE_TERM;
- }
- 
-@@ -58,25 +60,25 @@ modifier_event	[ukhpGH]{1,8}
- modifier_bp	[rwx]
- 
- %%
--cpu-cycles|cycles				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
--stalled-cycles-frontend|idle-cycles-frontend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
--stalled-cycles-backend|idle-cycles-backend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
--instructions					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
--cache-references				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
--cache-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
--branch-instructions|branches			{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
--branch-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
--bus-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
--ref-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
--cpu-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
--task-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
--page-faults|faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
--minor-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
--major-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
--context-switches|cs				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
--cpu-migrations|migrations			{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
--alignment-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
--emulation-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
-+cpu-cycles|cycles				{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
-+stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
-+stalled-cycles-backend|idle-cycles-backend	{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
-+instructions					{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
-+cache-references				{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
-+cache-misses					{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
-+branch-instructions|branches			{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
-+branch-misses					{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
-+bus-cycles					{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
-+ref-cycles					{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
-+cpu-clock					{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
-+task-clock					{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
-+page-faults|faults				{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
-+minor-faults					{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
-+major-faults					{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
-+context-switches|cs				{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
-+cpu-migrations|migrations			{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
-+alignment-faults				{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
-+emulation-faults				{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
- 
- L1-dcache|l1-d|l1d|L1-data		|
- L1-icache|l1-i|l1i|L1-instruction	|
-@@ -84,14 +86,14 @@ LLC|L2					|
- dTLB|d-tlb|Data-TLB			|
- iTLB|i-tlb|Instruction-TLB		|
- branch|branches|bpu|btb|bpc		|
--node					{ return str(PE_NAME_CACHE_TYPE); }
-+node					{ return str(yylval, yytext, PE_NAME_CACHE_TYPE); }
- 
- load|loads|read				|
- store|stores|write			|
- prefetch|prefetches			|
- speculative-read|speculative-load	|
- refs|Reference|ops|access		|
--misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
-+misses|miss				{ return str(yylval, yytext, PE_NAME_CACHE_OP_RESULT); }
- 
- 	/*
- 	 * These are event config hardcoded term names to be specified
-@@ -99,20 +101,20 @@ misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
- 	 * so we can put them here directly. In case the we have a conflict
- 	 * in future, this needs to go into '//' condition block.
- 	 */
--config			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG); }
--config1			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG1); }
--config2			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG2); }
--period			{ return term(PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
--branch_type		{ return term(PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
-+config			{ return term(yylval, PARSE_EVENTS__TERM_TYPE_CONFIG); }
-+config1			{ return term(yylval, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
-+config2			{ return term(yylval, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
-+period			{ return term(yylval, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
-+branch_type		{ return term(yylval, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
- 
- mem:			{ return PE_PREFIX_MEM; }
--r{num_raw_hex}		{ return raw(); }
--{num_dec}		{ return value(10); }
--{num_hex}		{ return value(16); }
-+r{num_raw_hex}		{ return raw(yylval, yytext); }
-+{num_dec}		{ return value(yylval, yytext, 10); }
-+{num_hex}		{ return value(yylval, yytext, 16); }
- 
--{modifier_event}	{ return str(PE_MODIFIER_EVENT); }
--{modifier_bp}		{ return str(PE_MODIFIER_BP); }
--{name}			{ return str(PE_NAME); }
-+{modifier_event}	{ return str(yylval, yytext, PE_MODIFIER_EVENT); }
-+{modifier_bp}		{ return str(yylval, yytext, PE_MODIFIER_BP); }
-+{name}			{ return str(yylval, yytext, PE_NAME); }
- "/"			{ return '/'; }
- -			{ return '-'; }
- ,			{ return ','; }
-@@ -121,7 +123,7 @@ r{num_raw_hex}		{ return raw(); }
- 
- %%
- 
--int parse_events_wrap(void)
-+int parse_events_wrap(void *scanner __used)
- {
- 	return 1;
- }
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index d9637da..52082a7 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -1,8 +1,10 @@
--
-+%pure-parser
- %name-prefix "parse_events_"
- %parse-param {struct list_head *list_all}
- %parse-param {struct list_head *list_event}
- %parse-param {int *idx}
-+%parse-param {void *scanner}
-+%lex-param {void* scanner}
- 
- %{
- 
-@@ -13,8 +15,9 @@
- #include "types.h"
- #include "util.h"
- #include "parse-events.h"
-+#include "parse-events-bison.h"
- 
--extern int parse_events_lex (void);
-+extern int parse_events_lex (YYSTYPE* lvalp, void* scanner);
- 
- #define ABORT_ON(val) \
- do { \
-@@ -223,7 +226,7 @@ sep_slash_dc: '/' | ':' |
- 
- void parse_events_error(struct list_head *list_all __used,
- 			struct list_head *list_event __used,
--			int *idx __used,
-+			int *idx __used, void *scanner __used,
- 			char const *msg __used)
- {
- }
+ struct intel_uncore_ops;
+ struct intel_uncore_pmu;
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 3329965..9870b8d 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2754,6 +2754,17 @@
+ #define PCI_DEVICE_ID_INTEL_IOAT_SNB7	0x3c27
+ #define PCI_DEVICE_ID_INTEL_IOAT_SNB8	0x3c2e
+ #define PCI_DEVICE_ID_INTEL_IOAT_SNB9	0x3c2f
++#define PCI_DEVICE_ID_INTEL_UNC_HA	0x3c46
++#define PCI_DEVICE_ID_INTEL_UNC_IMC0	0x3cb0
++#define PCI_DEVICE_ID_INTEL_UNC_IMC1	0x3cb1
++#define PCI_DEVICE_ID_INTEL_UNC_IMC2	0x3cb4
++#define PCI_DEVICE_ID_INTEL_UNC_IMC3	0x3cb5
++#define PCI_DEVICE_ID_INTEL_UNC_QPI0	0x3c41
++#define PCI_DEVICE_ID_INTEL_UNC_QPI1	0x3c42
++#define PCI_DEVICE_ID_INTEL_UNC_R2PCIE	0x3c43
++#define PCI_DEVICE_ID_INTEL_UNC_R3QPI0	0x3c44
++#define PCI_DEVICE_ID_INTEL_UNC_R3QPI1	0x3c45
++#define PCI_DEVICE_ID_INTEL_JAKETOWN_UBOX	0x3ce0
+ #define PCI_DEVICE_ID_INTEL_IOAT_SNB	0x402f
+ #define PCI_DEVICE_ID_INTEL_5100_16	0x65f0
+ #define PCI_DEVICE_ID_INTEL_5100_21	0x65f5
 -- 
 1.7.7.6
 
