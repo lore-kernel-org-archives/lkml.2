@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab2EBUyj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 16:54:39 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:35836 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756407Ab2EBUyi (ORCPT
+	id S1757460Ab2EBUys (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 16:54:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40960 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756407Ab2EBUyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 16:54:38 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/yreFYW2vyTYAV6v68Wtivbm/s8lCbkmwOQrwlXa
-	Iesd+VD216HLY2
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Bryan Freed <bfreed@chromium.org>
-Subject: Re: [PATCH] CHROMIUM: tpm: tpm_tis_i2c: Lock the I2C adapter for a sequence of requests.
-Date: Wed, 2 May 2012 22:54:33 +0200
-User-Agent: KMail/1.13.7 (Linux/3.3.3; KDE/4.7.4; x86_64; ; )
-Cc: Peter Huewe <peter.huewe@infineon.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>, tpmdd@selhorst.net,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-References: <1335967293-7728-1-git-send-email-peter.huewe@infineon.com> <20120502181435.GF16981@andi> <CAEYUcX06hvTb1YP=9vCpK9Z19dtZgNTjUcSRnrUvjc3bu-D--Q@mail.gmail.com>
-In-Reply-To: <CAEYUcX06hvTb1YP=9vCpK9Z19dtZgNTjUcSRnrUvjc3bu-D--Q@mail.gmail.com>
+	Wed, 2 May 2012 16:54:45 -0400
+X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 May 2012 16:54:45 EDT
+Message-ID: <4FA19DC8.2030001@redhat.com>
+Date: Wed, 02 May 2012 22:49:12 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120425 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
+References: <1335953452-10460-1-git-send-email-jack@suse.cz> <4FA1092E.9090603@redhat.com> <20120502135123.GF16976@quack.suse.cz> <4FA13DDF.9010006@redhat.com> <20120502161038.01ee9b59@pyramind.ukuu.org.uk> <4FA157A6.7050209@redhat.com>
+In-Reply-To: <4FA157A6.7050209@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205022254.33707.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch 02 Mai 2012, 21:06:14 schrieb Bryan Freed:
-> We could (in the unmodified version of this driver) replace all the
-> iic_tpm_read() calls of one byte (which sends an address byte before
-> reading a data byte) with an i2c_smbus_read_byte_command() call which
-> does the same thing.
+Il 02/05/2012 17:49, Paolo Bonzini ha scritto:
+>> > Customisable filters are not hard. We've got all the filtering code in
+>> > kernel and the ability to verify filters, even the ability to JIT them.
+>> > Just support adding/removing/running a BPF filter on the channel in
+>> > question.
+>> > 
+>> > So it shouldn't be much code to do what you want.
+> Yes, it's not much code if I don't get into cgroups land and stick with
+> a ioctl to add and remove BPF filters that look at CDBs.
 
-Unfortunately we have to use two seperate transfers (write/read) for a single 
-byte read as the device does not support "repeated start" conditions and will 
-simply fail to respond.
+Except that then I need to access some "struct file" member in SG_IO,
+thus changing ioctl from block_device/fmode to block_device/file.  This
+would partially undo the 2007 switch from inode/file by Al Viro.
+Somehow I'm not that optimist anymore, though I'd be happy to be proven
+wrong.
 
-The device has some quirks that the driver has to workaround,
-one is the repeated start problem, the other is the locking of the device.
-If you can come up with a better solution I'd like to try it out if it's 
-compatible with the device.
+Paolo
 
-Thanks,
-Peter
