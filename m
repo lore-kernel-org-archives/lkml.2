@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab2EBQPI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 12:15:08 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:59987 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448Ab2EBQPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 12:15:07 -0400
-Message-ID: <1335975202.2324.12.camel@groeck-laptop>
-Subject: Re: checkpatch: kstrtol fix
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Joe Korty <joe.korty@ccur.com>
-CC: Andy Whitcroft <apw@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 2 May 2012 09:13:22 -0700
-In-Reply-To: <20120502151046.GA25594@tsunami.ccur.com>
-References: <20120502151046.GA25594@tsunami.ccur.com>
-Organization: Ericsson
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
+	id S1754760Ab2EBQSW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 12:18:22 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:17906 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab2EBQSV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 12:18:21 -0400
+From: Jerry Hoemann <jerry.hoemann@hp.com>
+To: JBottomley@parallels.com
+Cc: andrew.vasquez@qlogic.com, linux-driver@qlogic.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jerry Hoemann <jerry.hoemann@hp.com>
+Subject: [PATCH] [SCSI] qla2xxx: qla2x00_probe_one kernel panic.
+Date: Wed,  2 May 2012 10:17:25 -0600
+Message-Id: <1335975445-14595-1-git-send-email-jerry.hoemann@hp.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-02 at 11:10 -0400, Joe Korty wrote:
-> kstrtol is a substitute for simple_strtol() only when when second
-> arg of simple_strtol() is NULL. For any other value the functionality
-> of simple_strtol() cannot be implemented in terms of kstrtol.
-> 
-> So modify checkpatch.pl so that it prints out the following warning only
-> if the second argument is null:
-> 
->    WARNING: simple_strtol is obsolete, use kstrtol instead
-> 
-> Signed-off-by: Joe Korty <joe.korty@ccur.com>
-> 
+When qla2x00_probe_one fails, its back-out logic tries to free up
+resources already allocated.
 
-I think this would be a bad idea. Most if not all instances in the
-kernel (at least all the ones I looked at) use the second argument to
-determine if the parameter was actually a number or not, ie it is used
-to detect parameter errors. This is exactly the point of using kstrtol()
-in the first place. So it _is_ possible, at least in most cases, to
-implement the same functionality with kstrtol(). If there _are_ uses of
-simple_strtol() where the second argument is not used for error checking
-but for some other purpose, I am sure that an alternative solution can
-be found which does not require simple_strtol(). Or just live with the
-warning for those cases.
+When qla2x00_probe_one fails at the steps for qla2x00_request_irqs
+or qla2x00_alloc_queues, it will call qla2x00_free_device.  This
+path eventually calls qla2x00_free_irqs which accesses ha->rsp_q_map.
+However, the rsp_q_map pointer hasn't been initialized yet.
 
-Thanks,
-Guenter
+This causes a "NULL pointer dereference" panic.
 
+Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
+---
+ drivers/scsi/qla2xxx/qla_os.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
+index a2f9992..7aeb5aa 100644
+--- a/drivers/scsi/qla2xxx/qla_os.c
++++ b/drivers/scsi/qla2xxx/qla_os.c
+@@ -2420,7 +2420,7 @@ qla2x00_probe_one(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	/* Set up the irqs */
+ 	ret = qla2x00_request_irqs(ha, rsp);
+ 	if (ret)
+-		goto probe_init_failed;
++		goto probe_hw_failed;
+ 
+ 	pci_save_state(pdev);
+ 
+@@ -2429,7 +2429,7 @@ que_init:
+ 	if (!qla2x00_alloc_queues(ha)) {
+ 		ql_log(ql_log_fatal, base_vha, 0x003d,
+ 		    "Failed to allocate memory for queue pointers.. aborting.\n");
+-		goto probe_init_failed;
++		goto probe_hw_failed;
+ 	}
+ 
+ 	ha->rsp_q_map[0] = rsp;
+@@ -2579,11 +2579,6 @@ skip_dpc:
+ 
+ 	return 0;
+ 
+-probe_init_failed:
+-	qla2x00_free_req_que(ha, req);
+-	qla2x00_free_rsp_que(ha, rsp);
+-	ha->max_req_queues = ha->max_rsp_queues = 0;
+-
+ probe_failed:
+ 	if (base_vha->timer_active)
+ 		qla2x00_stop_timer(base_vha);
+-- 
+1.7.7.6
 
