@@ -1,266 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab2EBTKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 15:10:54 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:50162 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608Ab2EBTKw convert rfc822-to-8bit (ORCPT
+	id S1756190Ab2EBTMC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 15:12:02 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:54679 "EHLO
+	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756090Ab2EBTL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 15:10:52 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Don Zickus <dzickus@redhat.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>
-CC: "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        kexec-list <kexec@lists.infradead.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Date: Wed, 2 May 2012 15:10:34 -0400
-Subject: RE: [PATCH] x86, kdump: No need to disable ioapic in crash path
-Thread-Topic: [PATCH] x86, kdump: No need to disable ioapic in crash path
-Thread-Index: Ac0nE14ipDjl52iYQ5uXg1orRaRaIABgmBXQ
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2E4D461583@USINDEVS01.corp.hds.com>
-References: <1330546129-4812-1-git-send-email-dzickus@redhat.com>
- <20120315202652.GA13930@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2E31C6F859@USINDEVS01.corp.hds.com>
- <20120430205354.GA32472@redhat.com>
-In-Reply-To: <20120430205354.GA32472@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 2 May 2012 15:11:57 -0400
+Date: Wed, 2 May 2012 12:07:06 -0700
+From: Mike Turquette <mturquette@ti.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
+        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
+Message-ID: <20120502190706.GB15873@gmail.com>
+References: <1335419936-10881-1-git-send-email-skannan@codeaurora.org>
+ <20120502020418.GF17311@gmail.com>
+ <4FA0BB3D.4040004@codeaurora.org>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=7 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1205020214
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA0BB3D.4040004@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 20120501-21:42, Saravana Kannan wrote:
+> On 05/01/2012 07:04 PM, Mike Turquette wrote:
+> >1) I'm surprised that you abandoned the approach of exposing the
+> >less-private members of struct clk via struct clk_hw.  Your original
+> >patch did just that, but did not account for static initialization.
+> >This patch seems to have gone in the opposite direction and only
+> >accounts for static initialization.
+> 
+> I think there might be some misunderstanding on what can/can't be
+> done with my patch. Or may be I'm not understanding your question.
+> 
 
-> Perhaps calling setup_IO_APIC before setup_local_APIC would be a better fix?
+I believe I am reading the code correctly.  I'll try reiterating below.
 
-I checked Intel develper's manual and there is no restriction about the order of enabling IO_APIC/local_APIC.
-So, it may work.
+> I used to expose the "shared" info through clk_hw. I just put them
+> in a struct and make clk_hw point to it. This would allow for easily
+> marking this shared info as __init data.
 
-But, I don't understand why we have to change the stable boot-up code.
-If kdump disables both local_apic and IO_APIC in proper way in 1st kernel,  2nd kernel works without any change.
+So platforms must choose between marking clk->hw->init as __initdata, OR
+they can keep it around and reference it later from clock code that
+includes clk-provder.h.  Is this a fair statement?
 
-I think busting spinlocks ,like io_apic_lock, in 1st kernel is reasonable.
+> It would have a been a pain
+> to do (or not even possible) if I had put the fields directly into
+> clk_hw.
+> 
 
-Seiji
+Not true.  Combining Sascha's original static initializer idea with your
+struct clk_hw patch would be easy.  A separate struct for static init
+would be marked as __initdata.  When passed into a registration function
+that data would be copied to fields in struct clk_hw.  You've done this
+exact same thing, with the exception of copying the data to struct clk
+instead.
 
-> -----Original Message-----
-> From: Don Zickus [mailto:dzickus@redhat.com]
-> Sent: Monday, April 30, 2012 4:54 PM
-> To: Seiji Aguchi; ebiederm@xmission.com
-> Cc: x86@kernel.org; LKML; kexec-list; Vivek Goyal
-> Subject: Re: [PATCH] x86, kdump: No need to disable ioapic in crash path
+It is not a big deal, and I'm fine with the direction this patch has
+taken, but I wanted to point it out.  If you look at Russell's and
+Sascha's replies in this thread you'll see that they regard
+clk->hw->init as purely __initdata, going so far as to mark it NULL in
+clk_register.  This sort of change at the framework level would
+eliminate the ability for your clock code to reference these members
+directly.
+
+> I'm not sure why you say my patch only accounts for static
+> initialization. The entire clk specific struct (say, struct
+> fixed_clk), the clk_init_data can be dynamically allocated and
+> registered using clk_register.
 > 
-> On Thu, Mar 15, 2012 at 05:16:50PM -0400, Seiji Aguchi wrote:
-> > Don,
-> >
-> > What do you think about following scenario?
-> > Disabling I/O APIC seems to be needed before booting kdump kernel.
+
+This was a miscommunication on my part and can be disregarded.  Of
+course your patch allows for dynamic registration.
+
+My point was that of the two previous approaches on this list (Sascha's
+static initializers and your own struct clk_hw modifications), this
+patch only represents the functionality of the former.  I should have
+been more clear.
+
+> >2) I did make a modification to your patch where I kept the
+> >DEFINE_CLK_* macros and continued to declare __clk_init in
+> >clk-private.h.  I do want to get rid of both of these in the future but
+> >currently my platform relies on static initialization before the
+> >allocator is available.  Please let me know if this causes a problem for
+> >you.
 > 
-> For some reason I actually believed this was cleared before interrupts were enabled on bootup.  Apparently not.  On a virt guest I can
-> easily create a scenario in which scp'ing a file then kdumping, leaves the ethernet interrupt in a triggered state.
+> I definitely had your requirements in mind too when I made the changes.
 > 
-> Before this patch, it would be masked by disable_IO_APIC.  With my patch the irq nevers gets masked and during setup_local_APIC
-> the kernel falls over once the local APIC is enabled (as setup_IO_APIC is called later).
-> Perhaps calling setup_IO_APIC before setup_local_APIC would be a better fix?
+> You really shouldn't need __clk_init. That's why I added
+> __clk_register.
+
+I completely missed __clk_register.  I'm not sure I see the point of it
+however.  struct clk is still exposed to folks that are using this new
+function; compared to simply calling __clk_init it has added a few loads
+& stores.  Regardless these interfaces will hopefully die off completely
+once OMAP's clock code uses an initcall.
+
+> >Platform folks should rebase on top of this if needed.  This should be
+> >the last change to the driver/platform-facing API before 3.5.
 > 
-> Just like NMIs prohibit the abilty to remove the disable local apic code, an actively triggered interrupt seems to prevent us from
-> removing the disable io apic.
+> I really wish we discussed your changes before it was made, pulled
+> in and announced since clk_init isn't really needed. But since you
+> just added more APIs and didn't remove the ones I added, I guess
+> it's not very bad.
 > 
-> This leaves me with my original problem of deadlocking in the disable_IO_APIC path.
-> 
-> Thoughts?
-> 
-> Cheers,
-> Don
-> 
-> >
-> > Seiji
-> >
-> >
-> > commit 1e75b31d638d5242ca8e9771dfdcbd28a5f041df
-> > Author: Suresh Siddha <suresh.b.siddha@intel.com>
-> > Date:   Thu Aug 25 12:01:11 2011 -0700
-> >
-> >     x86, kdump, ioapic: Reset remote-IRR in clear_IO_APIC
-> >
-> >     In the kdump scenario mentioned below, we can have a case where
-> >     the device using level triggered interrupt will not generate any
-> >     interrupts in the kdump kernel.
-> >
-> >     1. IO-APIC sends a level triggered interrupt to the CPU's local APIC.
-> >
-> >     2. Kernel crashed before the CPU services this interrupt, leaving
-> >        the remote-IRR in the IO-APIC set.
-> >
-> >     3. kdump kernel boot sequence does clear_IO_APIC() as part of IO-APIC
-> >        initialization. But this fails to reset remote-IRR bit of the
-> >        IO-APIC RTE as the remote-IRR bit is read-only.
-> >
-> >     4. Device using that level triggered entry can't generate any
-> >        more interrupts because of the remote-IRR bit.
-> >
-> >     In clear_IO_APIC_pin(), check if the remote-IRR bit is set and if
-> >     so do an explicit attempt to clear it (by doing EOI write on
-> >     modern io-apic's and changing trigger mode to edge/level on
-> >     older io-apic's). Also before doing the explicit EOI to the
-> >     io-apic, ensure that the trigger mode is indeed set to level.
-> >     This will enable the explicit EOI to the io-apic to reset the
-> >     remote-IRR bit.
-> >
-> >     Tested-by: Leonardo Chiquitto <lchiquitto@novell.com>
-> >     Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> >     Fixes: https://bugzilla.novell.com/show_bug.cgi?id=701686
-> >     Cc: Rafael Wysocki <rjw@novell.com>
-> >     Cc: Maciej W. Rozycki <macro@linux-mips.org>
-> >     Cc: Thomas Renninger <trenn@suse.de>
-> >     Cc: jbeulich@novell.com
-> >     Cc: yinghai@kernel.org
-> >     Link: http://lkml.kernel.org/r/20110825190657.157502602@sbsiddha-desk.sc.intel.com
-> >     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> >
-> > > -----Original Message-----
-> > > From: linux-kernel-owner@vger.kernel.org
-> > > [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Don Zickus
-> > > Sent: Thursday, March 15, 2012 4:27 PM
-> > > To: x86@kernel.org
-> > > Cc: LKML; kexec-list; Eric W. Biederman; Vivek Goyal
-> > > Subject: Re: [PATCH] x86, kdump: No need to disable ioapic in crash
-> > > path
-> > >
-> > > On Wed, Feb 29, 2012 at 03:08:49PM -0500, Don Zickus wrote:
-> > > > A customer of ours noticed when their machine crashed, kdump did
-> > > > not work but hung instead.  Using their firmware dumping solution
-> > > > they grabbed a vmcore and decoded the stacks on the cpus.  What
-> > > > they noticed seemed to be a rare deadlock with the ioapic_lock.
-> > >
-> > > While we are discussing the NMI stuff in another thread, does anyone
-> > > have any objection to committing this patch.  It fixes a real problem today.
-> > >
-> > > Cheers,
-> > > Don
-> > >
-> > > >
-> > > >  CPU4:
-> > > >  machine_crash_shutdown
-> > > >  -> machine_ops.crash_shutdown
-> > > >     -> native_machine_crash_shutdown
-> > > >        -> kdump_nmi_shootdown_cpus ------> Send NMI to other CPUs
-> > > >        -> disable_IO_APIC
-> > > >           -> clear_IO_APIC
-> > > >              -> clear_IO_APIC_pin
-> > > >                 -> ioapic_read_entry
-> > > >                    -> spin_lock_irqsave(&ioapic_lock, flags)
-> > > >                    ---Infinite loop here---
-> > > >
-> > > >  CPU0:
-> > > >  do_IRQ
-> > > >  -> handle_irq
-> > > >     -> handle_edge_irq
-> > > >         -> ack_apic_edge
-> > > >            -> move_native_irq
-> > > >                -> mask_IO_APIC_irq
-> > > >                   -> mask_IO_APIC_irq_desc
-> > > >                      -> spin_lock_irqsave(&ioapic_lock, flags)
-> > > >                      ---Receive NMI here after getting spinlock---
-> > > >                         -> nmi
-> > > >                            -> do_nmi
-> > > >                               -> crash_nmi_callback
-> > > >                               ---Infinite loop here---
-> > > >
-> > > > The problem is that although kdump tries to shutdown minimal
-> > > > hardware, it still needs to disable the IO APIC.  This requires
-> > > > spinlocks which may be held by another cpu.  This other cpu is
-> > > > being held infinitely in an NMI context by kdump in order to serialize the crashing path.
-> > > > Instant deadlock.
-> > > >
-> > > > Eric, brought up a point that because the boot code was
-> > > > restructured we may not need to disable the io apic any more in the crash path.
-> > > > The original concern that led to the development of
-> > > > disable_IO_APIC, was that the jiffies calibration on boot up
-> > > > relied on the PIT timer for reference.  Access to the PIT required
-> > > > 8259 interrupts to be working.  This wouldn't work if the ioapic needed to be configured.
-> > > > So on panic path, the ioapic was reconfigured to use virtual wire mode to allow the 8259 to passthrough.
-> > > >
-> > > > Those concerns don't hold true now, thanks to the jiffies
-> > > > calibration code not needing the PIT.  As a result, we can remove
-> > > > this call and simplify the locking needed in the panic path.
-> > > >
-> > > > I tested kdump on an Ivy Bridge platform, a Pentium4 and an old
-> > > > athlon that did not have an ioapic.  All three were successful.
-> > > >
-> > > > I also tested using lkdtm that would use jprobes to panic the
-> > > > system when entering do_IRQ.  The idea was to see how the system
-> > > > reacted with an interrupt pending in the second kernel.  My core2
-> > > > quad successfully kdump'd
-> > > > 3 times in a row with no issues.
-> > > >
-> > > > v2: removed the disable lapic code too
-> > > > v3: re-add disabling of lapic code
-> > > >
-> > > > Cc: Eric W. Biederman <ebiederm@xmission.com>
-> > > > Cc: Vivek Goyal <vgoyal@redhat.com>
-> > > > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > > > ---
-> > > >
-> > > > There are really two problems here.  One is the deadlock of the
-> > > > ioapic_lock that I describe above.  Removing the code to disable
-> > > > the ioapic seems to resolve that.
-> > > >
-> > > > The second issue is handling non-IRQ exceptions like NMIs.  Eric
-> > > > asked me to include removing the disable lapic code too.  However,
-> > > > because the nmi watchdog is stil active and kexec zeros out the
-> > > > idt before it jumps to purgatory, an NMI that comes in during the
-> > > > transition between the first kernel and second kernel will see an empty idt and reset the cpu.
-> > > >
-> > > > Leaving the code to disable the lapic in, turns off perf and
-> > > > blocks those NMIs from happening (though an external NMI would
-> > > > still be an issue but that is no different than right now).
-> > > >
-> > > > I tried playing with a stub idt and leaving it in place through
-> > > > the transition to the second kernel, but I can't quite get it to
-> > > > work correctly.  Spinning in the first kernel before the purgatory
-> > > > jump catches the idt properly.  Spinning in purgatory before the
-> > > > second kernel jump doesn't.  I even disabled the zero'ing out of the idt in the purgatory code.
-> > > >
-> > > > I would like to get resolution on the ioapic deadlock to fix a
-> > > > customer issue while working the idt and NMI thing on the side,
-> > > > hence the split of this patchset.
-> > > >
-> > > > Hopefully, people recognize there are two issues here and that
-> > > > this patch resolves the first one and the second one needs more debugging and time.
-> > > > ---
-> > > >  arch/x86/kernel/crash.c |    3 ---
-> > > >  1 files changed, 0 insertions(+), 3 deletions(-)
-> > > >
-> > > > diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-> > > > index
-> > > > 13ad899..b053cf9 100644
-> > > > --- a/arch/x86/kernel/crash.c
-> > > > +++ b/arch/x86/kernel/crash.c
-> > > > @@ -96,9 +96,6 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
-> > > >  	cpu_emergency_svm_disable();
-> > > >
-> > > >  	lapic_shutdown();
-> > > > -#if defined(CONFIG_X86_IO_APIC)
-> > > > -	disable_IO_APIC();
-> > > > -#endif
-> > > >  #ifdef CONFIG_HPET_TIMER
-> > > >  	hpet_disable();
-> > > >  #endif
-> > > > --
-> > > > 1.7.7.6
-> > > >
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe
-> > > linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
+
+I probably announced it too soon, but everything you added to the API is
+still there, just with some extra stuff that should go away in the
+future.
+
+> Since people were already frustrated with the API change I made at
+> this point, can we recommend people to not use __clk_init() when
+> sending patches for your clk-next? And make it static after the next
+> kernel release?
+
+Yes, I completely agree.  It would be good to get rid of __clk_register
+and __clk_init down the road.  Marking the interfaces as deprecated is
+one solution; however I agree with your suggestion and just catching it
+in review is probably the best route.
+
+Thanks,
+Mike
