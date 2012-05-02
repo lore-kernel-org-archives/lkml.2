@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab2EBT72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 15:59:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756318Ab2EBT71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 15:59:27 -0400
-Date: Wed, 2 May 2012 15:59:19 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>, "x86@kernel.org" <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        kexec-list <kexec@lists.infradead.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] x86, kdump: No need to disable ioapic in crash path
-Message-ID: <20120502195919.GU32472@redhat.com>
-References: <1330546129-4812-1-git-send-email-dzickus@redhat.com>
- <20120315202652.GA13930@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2E31C6F859@USINDEVS01.corp.hds.com>
- <20120430205354.GA32472@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2E4D461583@USINDEVS01.corp.hds.com>
- <87vckemkyt.fsf@xmission.com>
+	id S1756923Ab2EBUEE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 16:04:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33185 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756477Ab2EBUEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 16:04:01 -0400
+Date: Wed, 2 May 2012 13:03:56 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Preston Fick <pffick@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, preston.fick@silabs.com
+Subject: Re: [PATCH 3/3] usb: cp210x: Add ioctl for GPIO support
+Message-ID: <20120502200356.GA25915@kroah.com>
+References: <1335845210-5147-1-git-send-email-preston.fick@silabs.com>
+ <1335845210-5147-3-git-send-email-preston.fick@silabs.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87vckemkyt.fsf@xmission.com>
+In-Reply-To: <1335845210-5147-3-git-send-email-preston.fick@silabs.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 12:39:06PM -0700, Eric W. Biederman wrote:
-> Seiji Aguchi <seiji.aguchi@hds.com> writes:
+On Mon, Apr 30, 2012 at 11:06:50PM -0500, Preston Fick wrote:
+> This patch adds support for GPIO for CP210x devices that support it through two
+> IOCTLs to get or set the GPIO latch on a CP210x device. The specification for
+> this can be found in Silicon Labs AN571 document on section 5.27.1-4.
 > 
-> >> Perhaps calling setup_IO_APIC before setup_local_APIC would be a better fix?
-> >
-> > I checked Intel develper's manual and there is no restriction about the order of enabling IO_APIC/local_APIC.
-> > So, it may work.
-> >
-> > But, I don't understand why we have to change the stable boot-up code.
+> Signed-off-by: Preston Fick <preston.fick@silabs.com>
+> ---
+>  drivers/usb/serial/cp210x.c |   98 +++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 98 insertions(+), 0 deletions(-)
 > 
-> Because the boot-up code is buggy.  We need to get a better handle on
-> how it is buggy but apparently an interrupt coming in at the wrong
-> moment while booting with interrupts on the interrupt flag on the cpus
-> disalbed puts us in a state where we fail to boot.
-> 
-> We should be able to boot with apics enabled, and we almost can
-> emperically there are a few bugs.
-> 
-> The kdump path is particularly good at finding bugs.
-> 
-> > If kdump disables both local_apic and IO_APIC in proper way in 1st kernel,  2nd kernel works without any change.
-> 
-> We can not guarnatee disabling the local apics in the first kernel.
-> 
-> Ultimately the less we do in the first kernel the more reliable kdump is
-> going to be.  Disabling the apics has been a long standing bug work
-> around.
-> 
-> At worst we may have been a smidge premature in using assuming the
-> kernel can boot with the apics enabled but it I would hope we can
-> track down and fix the boot up code.
-> 
-> Probably what we want to do is not to disable the I/O apics but
-> to program the I/O apics before we enable the local apic so that
-> we have control of the in-comming interrupts.  But I haven't
-> looked at this in nearly enough detail to even guess what needs
-> to happen.
+> diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+> index b3646b8..9d1e542 100644
+> --- a/drivers/usb/serial/cp210x.c
+> +++ b/drivers/usb/serial/cp210x.c
+> @@ -35,6 +35,8 @@
+>   */
+>  static int cp210x_open(struct tty_struct *tty, struct usb_serial_port *);
+>  static void cp210x_close(struct usb_serial_port *);
+> +static int cp210x_ioctl(struct tty_struct *tty,
+> +	unsigned int cmd, unsigned long arg);
+>  static void cp210x_get_termios(struct tty_struct *,
+>  	struct usb_serial_port *port);
+>  static void cp210x_get_termios_port(struct usb_serial_port *port,
+> @@ -175,6 +177,7 @@ static struct usb_serial_driver cp210x_device = {
+>  	.bulk_out_size		= 256,
+>  	.open			= cp210x_open,
+>  	.close			= cp210x_close,
+> +	.ioctl			= cp210x_ioctl,
+>  	.break_ctl		= cp210x_break_ctl,
+>  	.set_termios		= cp210x_set_termios,
+>  	.tiocmget 		= cp210x_tiocmget,
+> @@ -195,6 +198,10 @@ static struct usb_serial_driver * const serial_drivers[] = {
+>  #define CP2104_PARTNUM		0x04
+>  #define CP2105_PARTNUM		0x05
+>  
+> +/* IOCTLs */
+> +#define IOCTL_GPIOGET		0x8000
+> +#define IOCTL_GPIOSET		0x8001
 
-Hi Eric,
+As Alan pointed out, we can't just add random ioctls for individual
+drivers for this type of thing.  We need to standardize on this.
 
-Thanks for the info.  I have don't have a problem with what you say above,
-I think that is a noble effort worth pursuing.  From a high level
-perspective, I am trying to understand how that is supposed to be
-acheived.  Getting the code to match the theory is probably easier to do
-than throw random patches/hacks at various kdump problems as they arise.
+Actually, why can't you use the GPIO subsystem for something like this?
+Can't you export your device as both a usb-serial device and a gpio
+device and have things work properly that way?
 
-So can I understand what your thoughts are? Are you expecting the
-following in the first kernel:
+thanks,
 
-panic
-disable other cpus
-setup 2nd kernel jumptables
-disable panic cpu interrupts
-idt/gdt settings??
-jump to purgatory
-
-(this leaves apics and virt stuff untouched?)
-(i am ignoring nmi/mce/faults and other exceptions for now)
-
-purgatory stuff...
-
-2nd kernel:
-
-normal early boot stuff
-setup memory
-setup scheduler
-...
-program ioapic/lapic??
-   #currently this is down _after_ boot cpu interrupts are enabled
-   #which seem problematic if you have leftover screaming interrupts
-   #probably a reason for this like timers or something
-enable boot cpu interrupts
-setup boot cpu
-setup other cpus
-....
-
-Cheers,
-Don
+greg k-h
