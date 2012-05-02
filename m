@@ -1,53 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757111Ab2EBUKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 16:10:20 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45295 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756196Ab2EBUKT (ORCPT
+	id S1757135Ab2EBULC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 16:11:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47444 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756953Ab2EBULA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 16:10:19 -0400
+	Wed, 2 May 2012 16:11:00 -0400
+Date: Wed, 2 May 2012 13:10:55 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sasikantha babu <sasikanth.v19@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] sysfs: Removed dup_name entirely in sysfs_rename
+Message-ID: <20120502201055.GA26148@kroah.com>
+References: <1335779216-32068-1-git-send-email-sasikanth.v19@gmail.com>
 MIME-Version: 1.0
-Date: Thu, 3 May 2012 02:10:17 +0600
-Message-ID: <CAFDqYy3OCmRHFR05=iQs-Q1hc5OMwZFiVkDbVnv5KXPA5pxfQA@mail.gmail.com>
-Subject: staging/rtl8712: unhandled default case in SwLedOn function.
-From: joseph daniel <josephdanielwalter@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ali Bahar <ali@internetDog.org>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335779216-32068-1-git-send-email-sasikanth.v19@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi kernel developers,
+On Mon, Apr 30, 2012 at 03:16:56PM +0530, Sasikantha babu wrote:
+> Since no one using "dup_name", removed it completely in sysfs_rename, 
+> 
+> Signed-off-by: Sasikantha babu <sasikanth.v19@gmail.com>
 
-In the function SwLedOn in rtl8712_led.c, we put the bLedOn = true,
-even if its a default case. may be we need to return? or BUG()?.
+What kernel version did you create this against?  There is some odd fuzz
+and offsets aren't right here, you should at the least, make it against
+Linus's latest tree, and ideally against linux-next, this one was made
+against neither, so I can't really apply it.
 
-the code listing is:
+Care to refresh it against Linus's tree and resend it so I can apply it?
 
-if ((padapter->bSurpriseRemoved == true) ||
-        (padapter->bDriverStopped == true))
-        return;
-    LedCfg = r8712_read8(padapter, LEDCFG);
-    switch (pLed->LedPin) {
-    case LED_PIN_GPIO0:
-        break;
-    case LED_PIN_LED0:
-        /* SW control led0 on.*/
-        r8712_write8(padapter, LEDCFG, LedCfg&0xf0);
-        break;
-    case LED_PIN_LED1:
-        /* SW control led1 on.*/
-        r8712_write8(padapter, LEDCFG, LedCfg&0x0f);
-        break;
-    default:
-        break;
-    }
-    pLed->bLedOn = true;
+It makes me wonder how you tested it...
 
-Thanks,
-Dev.
+greg k-h
