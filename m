@@ -1,70 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758522Ab2EBDKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 May 2012 23:10:07 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63489 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757629Ab2EBDKF (ORCPT
+	id S1758515Ab2EBDNY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 May 2012 23:13:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64051 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758159Ab2EBDNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 May 2012 23:10:05 -0400
+	Tue, 1 May 2012 23:13:23 -0400
+Date: Wed, 2 May 2012 11:13:13 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Robert Lee <rob.lee@linaro.org>
+Cc: kernel@pengutronix.de, amit.kucheria@linaro.org, daniel.lezcano@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org, jj@chaosbits.net
+Subject: Re: [PATCH v2 1/3] ARM: imx: Add common imx cpuidle init
+ functionality.
+Message-ID: <20120502031311.GT2194@S2101-09.ap.freescale.net>
+References: <1335924760-796-1-git-send-email-rob.lee@linaro.org>
+ <1335924760-796-2-git-send-email-rob.lee@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1205011952040.1293@eggly.anvils>
-References: <1335778207-6511-1-git-send-email-jack@suse.cz>
-	<CAHGf_=qqiast+6XzGnq+LRdFXoWG9h2MkofmjS1h5OeNPRyWfw@mail.gmail.com>
-	<CAKgNAkjAOGM+mZLkXGiDFYsnMCpJsxx=Nd5pZfx-_f4B1jvh+A@mail.gmail.com>
-	<CAPa8GCC7tHm_8Ks_=tM4x544+SEtkVk6TMAF3KPsVqzNOi-naA@mail.gmail.com>
-	<alpine.LSU.2.00.1205011952040.1293@eggly.anvils>
-Date: Wed, 2 May 2012 13:10:04 +1000
-Message-ID: <CAPa8GCB7UGe0xr_pagbAJQAXn1t03m_8sraYxpkdbY1F3o7GRw@mail.gmail.com>
-Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
-From: Nick Piggin <npiggin@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: mtk.manpages@gmail.com, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-man@vger.kernel.org, linux-mm@kvack.org, mgorman@suse.de,
-        Jeff Moyer <jmoyer@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335924760-796-2-git-send-email-rob.lee@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 May 2012 13:04, Hugh Dickins <hughd@google.com> wrote:
-> On Wed, 2 May 2012, Nick Piggin wrote:
->> On 2 May 2012 03:56, Michael Kerrisk (man-pages) <mtk.manpages@gmail.com> wrote:
->> >
->> > In the light of all of the comments, can someone revise the man-pages
->> > patch that Jan sent?
->>
->> This does not quite describe the entire situation, but something understandable
->> to developers:
->>
->> O_DIRECT IOs should never be run concurrently with fork(2) system call,
->> when the memory buffer is anonymous memory, or comes from mmap(2)
->> with MAP_PRIVATE.
->>
->> Any such IOs, whether submitted with asynchronous IO interface or from
->> another thread in the process, should be quiesced before fork(2) is called.
->> Failure to do so can result in data corruption and undefined behavior in
->> parent and child processes.
->>
->> This restriction does not apply when the memory buffer for the O_DIRECT
->> IOs comes from mmap(2) with MAP_SHARED or from shmat(2).
->
-> Nor does this restriction apply when the memory buffer has been advised
-> as MADV_DONTFORK with madvise(2), ensuring that it will not be available
-> to the child after fork(2).
+On Tue, May 01, 2012 at 09:12:38PM -0500, Robert Lee wrote:
+> Add common cpuidle init functionality that can be used by various
+> imx platforms.
+> 
+> Signed-off-by: Robert Lee <rob.lee@linaro.org>
+> ---
+>  arch/arm/plat-mxc/Makefile               |    1 +
+>  arch/arm/plat-mxc/cpuidle.c              |   80 ++++++++++++++++++++++++++++++
+>  arch/arm/plat-mxc/include/mach/cpuidle.h |   22 ++++++++
+>  3 files changed, 103 insertions(+)
+>  create mode 100644 arch/arm/plat-mxc/cpuidle.c
+>  create mode 100644 arch/arm/plat-mxc/include/mach/cpuidle.h
+> 
+> diff --git a/arch/arm/plat-mxc/Makefile b/arch/arm/plat-mxc/Makefile
+> index e81290c..63b064b 100644
+> --- a/arch/arm/plat-mxc/Makefile
+> +++ b/arch/arm/plat-mxc/Makefile
+> @@ -16,6 +16,7 @@ obj-$(CONFIG_MXC_ULPI) += ulpi.o
+>  obj-$(CONFIG_MXC_USE_EPIT) += epit.o
+>  obj-$(CONFIG_MXC_DEBUG_BOARD) += 3ds_debugboard.o
+>  obj-$(CONFIG_CPU_FREQ_IMX)    += cpufreq.o
+> +obj-$(CONFIG_CPU_IDLE) += cpuidle.o
+>  ifdef CONFIG_SND_IMX_SOC
+>  obj-y += ssi-fiq.o
+>  obj-y += ssi-fiq-ksym.o
+> diff --git a/arch/arm/plat-mxc/cpuidle.c b/arch/arm/plat-mxc/cpuidle.c
+> new file mode 100644
+> index 0000000..b7a5e1c
+> --- /dev/null
+> +++ b/arch/arm/plat-mxc/cpuidle.c
+> @@ -0,0 +1,80 @@
+> +/*
+> + * Copyright 2012 Freescale Semiconductor, Inc.
+> + * Copyright 2012 Linaro Ltd.
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/io.h>
+> +#include <linux/cpuidle.h>
+> +#include <linux/hrtimer.h>
+> +#include <linux/err.h>
+> +#include <linux/slab.h>
+> +
+> +static struct cpuidle_device __percpu * imx_cpuidle_devices;
+> +
+> +void imx_cpuidle_devices_uninit(void)
+> +{
+> +	int cpu_id;
+> +	struct cpuidle_device *dev;
+> +
+> +	for_each_possible_cpu(cpu_id) {
+> +		dev = per_cpu_ptr(imx_cpuidle_devices, cpu_id);
+> +		cpuidle_unregister_device(dev);
+> +	}
+> +
+> +	free_percpu(imx_cpuidle_devices);
+> +}
 
-Yes of course, I forgot that was exported too.
+Does this function need to be exported?  I haven't seen it being
+used anywhere outside this file.  Also, can it be __init?
 
->
->>
->>
->>
->> Is that on the right track? I feel it might be necessary to describe this
->> allowance for MAP_SHARED, because some databases may be doing
->> such things, and anyway it gives apps a potential way to make this work
->> if concurrent fork + DIO is very important.
->
-> Looks good, but we do need a reference to MADV_DONTFORK, perhaps as above.
+> +
+> +int __init imx_cpuidle_init(struct cpuidle_driver *drv)
+> +{
+> +	struct cpuidle_device *dev;
+> +	int cpu_id, ret;
+> +
+> +	if (!drv || drv->state_count > CPUIDLE_STATE_MAX) {
+> +		pr_err("%s: Invalid Input\n", __func__);
+> +		return -EINVAL;
+> +	}
+> +
+> +	ret = cpuidle_register_driver(drv);
+> +	if (ret) {
+> +		pr_err("%s: Failed to register cpuidle driver with error: %d\n",
+> +			 __func__, ret);
+> +		return ret;
+> +	}
+> +
+> +	imx_cpuidle_devices = alloc_percpu(struct cpuidle_device);
+> +	if (imx_cpuidle_devices == NULL) {
+> +		ret = -ENOMEM;
+> +		goto unregister_drv;
+> +	}
+> +
+> +	/* initialize state data for each cpuidle_device */
+> +	for_each_possible_cpu(cpu_id) {
+> +		dev = per_cpu_ptr(imx_cpuidle_devices, cpu_id);
+> +		dev->cpu = cpu_id;
+> +		dev->state_count = drv->state_count;
+> +
+> +		ret = cpuidle_register_device(dev);
+> +		if (ret) {
+> +			pr_err("%s: Failed to register cpu %u\n",
+> +				__func__, cpu_id);
 
-Yep, thanks Hugh.
+Nit: print ret (error code) too?
+
+> +			goto uninit;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +
+> +uninit:
+> +	imx_cpuidle_devices_uninit();
+> +
+> +unregister_drv:
+> +	cpuidle_unregister_driver(drv);
+> +	return ret;
+> +}
+> diff --git a/arch/arm/plat-mxc/include/mach/cpuidle.h b/arch/arm/plat-mxc/include/mach/cpuidle.h
+> new file mode 100644
+> index 0000000..8612510
+> --- /dev/null
+> +++ b/arch/arm/plat-mxc/include/mach/cpuidle.h
+> @@ -0,0 +1,22 @@
+> +/*
+> + * Copyright 2012 Freescale Semiconductor, Inc.
+> + * Copyright 2012 Linaro Ltd.
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +
+> +#include <linux/cpuidle.h>
+> +
+> +#ifdef CONFIG_CPU_IDLE
+> +extern void imx_cpuidle_devices_uninit(void);
+> +extern int imx_cpuidle_init(struct cpuidle_driver *drv);
+> +#else
+> +static inline void imx_cpuidle_devices_uninit(void) {}
+> +static inline int imx_cpuidle_init(struct cpuidle_driver *drv)
+> +{ return -ENODEV; }
+
+Nit: if it can not be in the same line with function name, we usually
+have it be:
+
+{
+	return -ENODEV;
+}
+
+> +#endif
+> -- 
+> 1.7.10
+> 
+
+-- 
+Regards,
+Shawn
