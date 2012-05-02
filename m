@@ -1,61 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab2EBFuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 01:50:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63646 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124Ab2EBFuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 01:50:06 -0400
-Date: Wed, 2 May 2012 08:50:09 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        davem@davemloft.net
-Subject: Re: [V2 PATCH 0/9] vhost/macvtap zeropcopy fixes
-Message-ID: <20120502055008.GA29319@redhat.com>
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	id S1753560Ab2EBFwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 01:52:50 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:41576 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453Ab2EBFws (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 01:52:48 -0400
+Subject: [PATCH v2 02/12] mm: add link from struct lruvec to struct zone
+To: Andrew Morton <akpm@linux-foundation.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 02 May 2012 09:52:35 +0400
+Message-ID: <20120502055235.28244.86363.stgit@zurg>
+In-Reply-To: <20120426075356.18961.40318.stgit@zurg>
+References: <20120426075356.18961.40318.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 11:41:21AM +0800, Jason Wang wrote:
-> This is an updated since the last series of vhost/macvtap zerocopy fixes which
-> fixes the the possible transmission stall, host kernel stack overflow and other
-> misc fixes.
-> 
-> Changes from V1:
-> - Addressing comments from Eric and Michael.
-> - Adding more fixes into the seires.
+This is first stage of struct mem_cgroup_zone removal, further patches replaces
+struct mem_cgroup_zone with pointer to struct lruvec.
 
-Thanks for fixing this.
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+If CONFIG_CGROUP_MEM_RES_CTLR=n lruvec_zone() is just container_of().
 
-Dave, can you merge this for 3.4 please?
-Thanks!
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-> ---
-> 
-> Jason Wang (9):
->       macvtap: zerocopy: fix offset calculation when building skb
->       macvtap: zerocopy: fix truesize underestimation
->       macvtap: zerocopy: put page when fail to get all requested user pages
->       macvtap: zerocopy: set SKBTX_DEV_ZEROCOPY only when skb is built successfully
->       macvtap: zerocopy: validate vectors before building skb
->       vhost_net: zerocopy: fix possible NULL pointer dereference of vq->bufs
->       vhost_net: re-poll only on EAGAIN or ENOBUFS
->       vhost_net: zerocopy: adding and signalling immediately when fully copied
->       vhost: zerocopy: poll vq in zerocopy callback
-> 
-> 
->  drivers/net/macvtap.c |   57 ++++++++++++++++++++++++++++++++++---------------
->  drivers/vhost/net.c   |    7 ++++--
->  drivers/vhost/vhost.c |    1 +
->  3 files changed, 46 insertions(+), 19 deletions(-)
-> 
-> -- 
-> Jason Wang
+---
+
+v2: fix comment
+---
+ include/linux/mmzone.h |   14 ++++++++++++++
+ mm/memcontrol.c        |    4 +---
+ mm/mmzone.c            |   14 ++++++++++++++
+ mm/page_alloc.c        |    8 +-------
+ 4 files changed, 30 insertions(+), 10 deletions(-)
+
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 5c4880b..2427706 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -201,6 +201,9 @@ struct zone_reclaim_stat {
+ struct lruvec {
+ 	struct list_head lists[NR_LRU_LISTS];
+ 	struct zone_reclaim_stat reclaim_stat;
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++	struct zone *zone;
++#endif
+ };
+ 
+ /* Mask used at gathering information at once (see memcontrol.c) */
+@@ -729,6 +732,17 @@ extern int init_currently_empty_zone(struct zone *zone, unsigned long start_pfn,
+ 				     unsigned long size,
+ 				     enum memmap_context context);
+ 
++extern void lruvec_init(struct lruvec *lruvec, struct zone *zone);
++
++static inline struct zone *lruvec_zone(struct lruvec *lruvec)
++{
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++	return lruvec->zone;
++#else
++	return container_of(lruvec, struct zone, lruvec);
++#endif
++}
++
+ #ifdef CONFIG_HAVE_MEMORY_PRESENT
+ void memory_present(int nid, unsigned long start, unsigned long end);
+ #else
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a2184a2..3e7b91c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4934,7 +4934,6 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+ {
+ 	struct mem_cgroup_per_node *pn;
+ 	struct mem_cgroup_per_zone *mz;
+-	enum lru_list lru;
+ 	int zone, tmp = node;
+ 	/*
+ 	 * This routine is called against possible nodes.
+@@ -4952,8 +4951,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+ 
+ 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
+ 		mz = &pn->zoneinfo[zone];
+-		for_each_lru(lru)
+-			INIT_LIST_HEAD(&mz->lruvec.lists[lru]);
++		lruvec_init(&mz->lruvec, &NODE_DATA(node)->node_zones[zone]);
+ 		mz->usage_in_excess = 0;
+ 		mz->on_tree = false;
+ 		mz->memcg = memcg;
+diff --git a/mm/mmzone.c b/mm/mmzone.c
+index 7cf7b7d..6830eab 100644
+--- a/mm/mmzone.c
++++ b/mm/mmzone.c
+@@ -86,3 +86,17 @@ int memmap_valid_within(unsigned long pfn,
+ 	return 1;
+ }
+ #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
++
++void lruvec_init(struct lruvec *lruvec, struct zone *zone)
++{
++	enum lru_list lru;
++
++	memset(lruvec, 0, sizeof(struct lruvec));
++
++	for_each_lru(lru)
++		INIT_LIST_HEAD(&lruvec->lists[lru]);
++
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++	lruvec->zone = zone;
++#endif
++}
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1b951de..35478bd 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4361,7 +4361,6 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 	for (j = 0; j < MAX_NR_ZONES; j++) {
+ 		struct zone *zone = pgdat->node_zones + j;
+ 		unsigned long size, realsize, memmap_pages;
+-		enum lru_list lru;
+ 
+ 		size = zone_spanned_pages_in_node(nid, j, zones_size);
+ 		realsize = size - zone_absent_pages_in_node(nid, j,
+@@ -4411,12 +4410,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 		zone->zone_pgdat = pgdat;
+ 
+ 		zone_pcp_init(zone);
+-		for_each_lru(lru)
+-			INIT_LIST_HEAD(&zone->lruvec.lists[lru]);
+-		zone->lruvec.reclaim_stat.recent_rotated[0] = 0;
+-		zone->lruvec.reclaim_stat.recent_rotated[1] = 0;
+-		zone->lruvec.reclaim_stat.recent_scanned[0] = 0;
+-		zone->lruvec.reclaim_stat.recent_scanned[1] = 0;
++		lruvec_init(&zone->lruvec, zone);
+ 		zap_zone_vm_stats(zone);
+ 		zone->flags = 0;
+ 		if (!size)
+
