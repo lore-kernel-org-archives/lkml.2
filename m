@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab2EBUVi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 16:21:38 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:35362 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757100Ab2EBUVg (ORCPT
+	id S1757082Ab2EBUYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 16:24:08 -0400
+Received: from exprod7og102.obsmtp.com ([64.18.2.157]:36729 "EHLO
+	exprod7og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756138Ab2EBUYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 16:21:36 -0400
-X-Sasl-enc: Qpwn6ORbz3ccE5R4ZC2P7r9VX+lVEbCZQ4UXBlhVAdaR 1335990095
-Date: Wed, 2 May 2012 13:21:34 -0700
-From: Greg KH <greg@kroah.com>
-To: Markus Franke <markus.franke@s2002.tu-chemnitz.de>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] w1: Add 1-wire slave device driver for DS28E04-100
-Message-ID: <20120502202134.GB26628@kroah.com>
-References: <20120430021300.GA18148@kroah.com>
- <4FA1953B.40008@hrz.tu-chemnitz.de>
+	Wed, 2 May 2012 16:24:06 -0400
+Message-ID: <4FA197DD.8030702@genband.com>
+Date: Wed, 02 May 2012 14:23:57 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA1953B.40008@hrz.tu-chemnitz.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: why would irq0 have many many more interrupts than LOC?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 May 2012 20:23:58.0767 (UTC) FILETIME=[814B8BF0:01CD28A1]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18880.001
+X-TM-AS-Result: No--6.822100-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 10:12:43PM +0200, Markus Franke wrote:
-> Dear Greg,
-> 
-> Am 30.04.2012 04:13, schrieb Greg KH:
-> >On Thu, Apr 12, 2012 at 12:40:30AM +0200, Markus Franke wrote:
-> >>This patch adds a 1-wire slave device driver for the DS28E04-100.
-> >>
-> >>Signed-off-by: Markus Franke<franm@hrz.tu-chemnitz.de>
-> >>Acked-by: Evgeniy Polyakov<zbr@ioremap.net>
-> >
-> >You have a lot of checkpatch warnings and errors, and you are creating
-> 
-> Don't have a clue what you mean. You were able to apply the patch
-> successfully in the past.
 
-Applying it was fine, but the patch created lots of problems if you ran
-it through the scripts/checkpatch.pl tool.  Please fix all of those
-warnings and errors up.
+I have an x86_64 2.6.27 kernel running on a Sandy Bridge machine.
 
-> >new sysfs files with no documentation at all as to what you are doing,
-> >and why you are doing it.  sysfs binary files at that, which should not
-> >be used by ANY code that is trying to intrepret the data being sent to
-> >those files, sysfs binary files are for "pass-through" mode only.
-> 
-> Well, I just stuck to the way things are done in already existing
-> drivers e.g. drivers/w1/slaves/w1_ds2433.c
+/proc/interrupts currently shows 75573114 counts for irq0 on cpu 0 and 
+no counts on other cpus and between 2973587 and 4185923 counts for "LOC" 
+spread across all cpus including cpu0.
 
-Really?  Ick, where are those files documented?
+The following are enabled.
 
-greg k-h
+CONFIG_GENERIC_HARDIRQS=y
+CONFIG_PREEMPT_SOFTIRQS=y
+CONFIG_PREEMPT_HARDIRQS=y
+CONFIG_HIGH_RES_TIMERS=y
+CONFIG_HZ_1000=y
+CONFIG_HZ=1000
+
+
+It almost seems like it's taking a timer interrupt on cpu0 for every 
+local timer interrupt on every cpu.  Surely that's not design intent?
+
+Any ideas on how to fix this?
+
+Chris
+
+
+
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
