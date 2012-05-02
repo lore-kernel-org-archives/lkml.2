@@ -1,84 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab2EBWui (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 18:50:38 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:10910 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874Ab2EBWuh (ORCPT
+	id S1756169Ab2EBWvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 18:51:08 -0400
+Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:46197 "HELO
+	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755921Ab2EBWvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 18:50:37 -0400
-Message-ID: <1335999034.2810.4.camel@lorien2>
-Subject: [PATCH] x86: kernel/dumpstack.c simple_strtoul cleanup
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de
-Cc: shuahkhan@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 02 May 2012 16:50:34 -0600
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 2 May 2012 18:51:06 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-rdma@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] RDMA/ocrdma: Fix build with IPV6=n
+Date: Wed,  2 May 2012 15:51:00 -0700
+Message-Id: <1335999060-23779-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <4F9ACFC4.6010002@xenotime.net>
+References: <4F9ACFC4.6010002@xenotime.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change kstack_setup() and code_bytes_setup() in kernel/dumpstack.c
-to call kstrtoul() instead of calling obsoleted simple_strtoul().
+From: Roland Dreier <roland@purestorage.com>
 
->From 2988db2b5cef39ee908a0165732a42c12897ccef Mon Sep 17 00:00:00 2001
-From: Shuah Khan <shuahkhan@gmail.com>
-Date: Wed, 2 May 2012 12:59:17 -0600
-Subject: [PATCH] x86: kernel/dumpstack.c simple_strtoul cleanup
+When IPV6 is not enabled:
 
+    ERROR: "register_inet6addr_notifier" [drivers/infiniband/hw/ocrdma/ocrdma.ko] undefined!
+    ERROR: "unregister_inet6addr_notifier" [drivers/infiniband/hw/ocrdma/ocrdma.ko] undefined!
 
-Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+Fix this by wrapping the inet6 calls in #ifdef IPV6.  Also make the
+ocrdma module depend on (IPV6 || IPV6=n) to forbid the case of modular
+ipv6 but built-in ocrdma (which can't work, because ocrdma calls ipv6
+functions).
+
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 ---
- arch/x86/kernel/dumpstack.c |   21 +++++++++++++++++++--
- 1 files changed, 19 insertions(+), 2 deletions(-)
+OK, added this to my tree, should fix this.
 
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 1b81839..b154f6d 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -311,16 +311,33 @@ void die(const char *str, struct pt_regs *regs, long err)
+Thanks,
+  Roland
+
+ drivers/infiniband/hw/ocrdma/Kconfig       |    2 +-
+ drivers/infiniband/hw/ocrdma/ocrdma_main.c |   29 ++++++++++++++++++++--------
+ 2 files changed, 22 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/infiniband/hw/ocrdma/Kconfig b/drivers/infiniband/hw/ocrdma/Kconfig
+index cf99342..b5b6056 100644
+--- a/drivers/infiniband/hw/ocrdma/Kconfig
++++ b/drivers/infiniband/hw/ocrdma/Kconfig
+@@ -1,6 +1,6 @@
+ config INFINIBAND_OCRDMA
+ 	tristate "Emulex One Connect HCA support"
+-	depends on ETHERNET && NETDEVICES && PCI
++	depends on ETHERNET && NETDEVICES && PCI && (IPV6 || IPV6=n)
+ 	select NET_VENDOR_EMULEX
+ 	select BE2NET
+ 	---help---
+diff --git a/drivers/infiniband/hw/ocrdma/ocrdma_main.c b/drivers/infiniband/hw/ocrdma/ocrdma_main.c
+index 0bc1efb..a20d16e 100644
+--- a/drivers/infiniband/hw/ocrdma/ocrdma_main.c
++++ b/drivers/infiniband/hw/ocrdma/ocrdma_main.c
+@@ -51,12 +51,6 @@ static DEFINE_SPINLOCK(ocrdma_devlist_lock);
+ static DEFINE_IDR(ocrdma_dev_id);
  
- static int __init kstack_setup(char *s)
+ static union ib_gid ocrdma_zero_sgid;
+-static int ocrdma_inet6addr_event(struct notifier_block *,
+-				  unsigned long, void *);
+-
+-static struct notifier_block ocrdma_inet6addr_notifier = {
+-	.notifier_call = ocrdma_inet6addr_event
+-};
+ 
+ static int ocrdma_get_instance(void)
  {
-+	ssize_t ret;
-+	unsigned long val;
-+
- 	if (!s)
- 		return -EINVAL;
--	kstack_depth_to_print = simple_strtoul(s, NULL, 0);
-+
-+	ret = kstrtoul(s, 0, &val);
-+	if (ret)
-+		return ret;
-+	kstack_depth_to_print = val;
+@@ -204,6 +198,8 @@ static int ocrdma_build_sgid_tbl(struct ocrdma_dev *dev)
  	return 0;
  }
- early_param("kstack", kstack_setup);
  
- static int __init code_bytes_setup(char *s)
++#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
++
+ static int ocrdma_inet6addr_event(struct notifier_block *notifier,
+ 				  unsigned long event, void *ptr)
  {
--	code_bytes = simple_strtoul(s, NULL, 0);
-+	ssize_t ret;
-+	unsigned long val;
-+
-+	if (!s)
-+		return -EINVAL;
-+
-+	ret = kstrtoul(s, 0, &val);
-+	if (ret)
-+		return ret;
-+
-+	code_bytes = val;
- 	if (code_bytes > 8192)
- 		code_bytes = 8192;
+@@ -259,6 +255,12 @@ static int ocrdma_inet6addr_event(struct notifier_block *notifier,
+ 	return NOTIFY_OK;
+ }
  
++static struct notifier_block ocrdma_inet6addr_notifier = {
++	.notifier_call = ocrdma_inet6addr_event
++};
++
++#endif /* IPV6 */
++
+ static enum rdma_link_layer ocrdma_link_layer(struct ib_device *device,
+ 					      u8 port_num)
+ {
+@@ -541,23 +543,34 @@ static struct ocrdma_driver ocrdma_drv = {
+ 	.state_change_handler	= ocrdma_event_handler,
+ };
+ 
++static void ocrdma_unregister_inet6addr_notifier(void)
++{
++#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
++	unregister_inet6addr_notifier(&ocrdma_inet6addr_notifier);
++#endif
++}
++
+ static int __init ocrdma_init_module(void)
+ {
+ 	int status;
+ 
++#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+ 	status = register_inet6addr_notifier(&ocrdma_inet6addr_notifier);
+ 	if (status)
+ 		return status;
++#endif
++
+ 	status = be_roce_register_driver(&ocrdma_drv);
+ 	if (status)
+-		unregister_inet6addr_notifier(&ocrdma_inet6addr_notifier);
++		ocrdma_unregister_inet6addr_notifier();
++
+ 	return status;
+ }
+ 
+ static void __exit ocrdma_exit_module(void)
+ {
+ 	be_roce_unregister_driver(&ocrdma_drv);
+-	unregister_inet6addr_notifier(&ocrdma_inet6addr_notifier);
++	ocrdma_unregister_inet6addr_notifier();
+ }
+ 
+ module_init(ocrdma_init_module);
 -- 
-1.7.5.4
-
-
+1.7.9.5
 
