@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab2EBNoj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 09:44:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62551 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752606Ab2EBNoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 09:44:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="137950315"
-Message-ID: <1335966464.10293.53.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] M25: Add support for Everspin MR25H256 MRAM chip
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Marek Vasut <marex@denx.de>
-Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 02 May 2012 16:47:44 +0300
-In-Reply-To: <1335837840-15511-1-git-send-email-marex@denx.de>
-References: <1335837840-15511-1-git-send-email-marex@denx.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-UiWbTCrIQAzLVO15hDn3"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Mime-Version: 1.0
+	id S1754244Ab2EBNow (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 09:44:52 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:48958 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754121Ab2EBNov (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 09:44:51 -0400
+Date: Wed, 2 May 2012 15:44:41 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>, andi.kleen@intel.com,
+        tim.c.chen@linux.intel.com, jeremy@goop.org, chrisw@sous-sol.org,
+        akataria@vmware.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rostedt@goodmis.org, fweisbec@gmail.com,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        paul.gortmaker@windriver.com, dhowells@redhat.com,
+        fenghua.yu@intel.com, yinghai@kernel.org, cpw@sgi.com, steiner@sgi.com,
+        linux-kernel@vger.kernel.org, yongjie.ren@intel.com
+Subject: Re: [PATCH 2/3] x86/flush_tlb: try flush_tlb_single one by one in
+ flush_tlb_range
+Message-ID: <20120502134441.GF12914@aftab.osrc.amd.com>
+References: <1335603099-2624-1-git-send-email-alex.shi@intel.com>
+ <1335603099-2624-3-git-send-email-alex.shi@intel.com>
+ <20120430105440.GC9303@aftab.osrc.amd.com>
+ <4FA0FD39.9060908@intel.com>
+ <20120502093815.GB12914@aftab.osrc.amd.com>
+ <4FA11CC7.5040302@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA11CC7.5040302@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 02, 2012 at 07:38:47PM +0800, Alex Shi wrote:
+> > Are you saying you want to have this setting per family?
+> 
+> Set it according to CPU type is more precise, but looks ugly.
 
---=-UiWbTCrIQAzLVO15hDn3
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+By "CPU type" do you mean microarchitecture here?
 
-On Tue, 2012-05-01 at 04:04 +0200, Marek Vasut wrote:
-> This chip isn't JEDEC-compatible.
->=20
-> Signed-off-by: Marek Vasut <marex@denx.de>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> Cc: linux-mtd@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
+> I am wondering if it worth to do. Maybe conservative selection is
+> acceptable?
 
-Pushed to l2-mtd.git, thanks!
+Well, as I said earlier, I'd run it on a couple of different machines
+and make FLUSHALL_BAR configurable from userspace - this way you have
+real, solid data instead of guessing the exact number.
 
---=20
-Best Regards,
-Artem Bityutskiy
+> > Also, have you run your patches with other benchmarks beside your
+> > microbenchmark, say kernbench, SPEC<something>, i.e. some other
+> > multithreaded benchmark touching shared memory? Are you seeing any
+> > improvement there?
+> 
+> I tested oltp reading and specjbb2005 with openjdk. They should not much
+> flush_tlb_range calling. So, no clear improvement.
+> Do you know benchmarks which cause enough flush_tlb_range?
 
---=-UiWbTCrIQAzLVO15hDn3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Not really. Probably get a couple of benchmarks and count
+flush_tlb_range calls with trace_printk or perf probe? :-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+[..]
 
-iQIcBAABAgAGBQJPoTsAAAoJECmIfjd9wqK0SYEQAJGTSEvZc+EjFtLorejvlj8s
-jQWZlHAMSfailhX2BPMEuC9pUIP0jYqlAX1KdzCdn6J3XGbiIWvtaiFPej998xKQ
-E/kgnbWOy0E2p/wDa2TgJPBM2qHyVDcYa1DiET2WwXF1Mbgq/MM9FfXBb314Xc47
-goUvrUIDVai65sKVWV2t55Np6+1ZijIxLwBnyBYmyEqngkkJlUVth8U3vcK1hi7k
-C9sLgjLSFpJkSLA/O7spPzxCnoKNNLbOZjsfax/PNMWiSD049cp89jQrcmm0g70W
-pnmV5HMyfYAJMqQxMGiwae5k+d07nP0OBruc5kWAVwi4dZ1B1PwqXItcOktWXsBJ
-cEHz0Buzxpi9qFrhDvX64XR1HEnVsaQ6ycq7NsQO42hbnnla3squTRiZ3k6XIdRI
-l4bZCVrq5LskXJ8xI6+czS8tP4rcoPS2pe+96yDIVk1/uQiQCb7de+b0GG2erQIk
-UnEyn5uLKUa4PSTeJnPidKXuXefOjteogUKZMD8Gm4HA9tC+9OA3OO+csk4YeUh0
-sTtWDrUfdOEGxm7aCZzjuxzkEyt+nyjzAPSb+p6JoTYT3V0XD0bBaNx2FkB51OY1
-ZgonSIuKohlMriG7pqMaXooXAU3aWzJ7MVnbF/qduHasOf8OCgYqylukuHkK29a/
-A2YbKHQSPtDNl4R1hUCS
-=2kqr
------END PGP SIGNATURE-----
+> Believe we didn't need to know this, much more thread number just
+> weaken and cover the improvement. When the thread number goes down,
+> the performance gain appears. So, don't need care this.
 
---=-UiWbTCrIQAzLVO15hDn3--
+Ok, this is also what the data showed, much higher gain with smaller
+thread counts.
 
+> Any more comments for this patchset?
+
+Nope, thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
