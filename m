@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab2EBV6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 17:58:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47488 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754019Ab2EBV6S convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 17:58:18 -0400
+	id S1754838Ab2EBV6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 17:58:41 -0400
+Received: from fieldses.org ([174.143.236.118]:37985 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754019Ab2EBV6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 17:58:40 -0400
+Date: Wed, 2 May 2012 17:58:37 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH v3 0/2] SUNRPC: separate per-net data creation from
+ service
+Message-ID: <20120502215837.GA12089@fieldses.org>
+References: <20120502120536.8794.22210.stgit@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20120502153100.GA2777@kroah.com>
-References: <1335963054-24750-1-git-send-email-sasikanth.v19@gmail.com>
-	<20120502153100.GA2777@kroah.com>
-Date: Thu, 3 May 2012 03:28:17 +0530
-Message-ID: <CAOJFanXZEUfM4GQS62u4oR-KwywdLGOciOcgzmrM9zW+kOrXkg@mail.gmail.com>
-Subject: Re: [PATCH] debugfs: New debugfs interface for creation of files,
- directory and symlinks
-From: Sasikanth babu <sasikanth.v19@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120502120536.8794.22210.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 2, 2012 at 9:01 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, May 02, 2012 at 06:20:54PM +0530, Sasikantha babu wrote:
->> As we know the current debugfs file or directory or symlink creation
->> doesn't return proper error codes to the caller on failure. Because
->> of this caller and user could not able to find the exact reason of
->> the failure.
->
-> And what is the problem with this?  Either the file is created or not,
-> you really shouldn't care anymore than that.  It's not like you are
-> going to retry the creation, or are you?
->
-> Who really cares if the file is failed to be created?
+Thanks, applying.
 
- In most of cases I had observed caller of debufs_create_file or
- debufs_create_dir always returns -ENOMEM on failure, which is not true.
- I felt returning proper error code will help in figuring out the actual
- reason of the failure (for eg: it can be -EEXISTS based on the error
- caller can change the name of the file or dir)
+--b.
 
->
->> As Andrew Morton suggested (http://www.spinics.net/lists/linux-mm/msg33617.html)
->> introduced new debugfs interface to create debugfs entries. Newer APIs
->> returns proper error codes(ERR_PTR) on failure.
->
-> Again, why?  What root problem are you trying to solve here?
-
-   The usage of debugfs throughout the kernel is not uniform especially the
-   error handling scenarios. Some place it is IS_ERR validations , other place
-   against NULL and some place ignoring the return value. Just tried to make it
-   uniform.
->
-> thanks,
->
-> greg k-h
+On Wed, May 02, 2012 at 04:08:29PM +0400, Stanislav Kinsbursky wrote:
+> creation
+> 
+> v3: "SUNRPC: new svc_bind() routine introduced" patch was squashed with the
+>     "SUNRPC: check rpcbind clients usage counter before decrement" patch.
+> 
+> v2: Increase per-net usage counted in lockd_up_net().
+> 
+> This is a cleanup patch set.
+> It will be followed my LockD start/stop cleanup patch set and NFS callback
+> service containerization patch set (yes, I forgot to implement it).
+> 
+> Today per-net data is created with service, and then is service is starting in
+> other network namespace. And thus it's destroyed with service too. Moreover,
+> network context for destroying of per-net data is taken from current process.
+> This is correct, but code looks ugly.
+> This patch set separates per-net data allocation from service allocation and
+> destruction.
+> IOW, per-net data have to be destroyed by service users - not service itself.
+> 
+> BTW, NFSd code become uglier with this patch set. Sorry.
+> But I assume, that these new ugly parts will be replaced later by NFSd service
+> containerization code.
+> 
+> The following series implements...
+> 
+> ---
+> 
+> Stanislav Kinsbursky (2):
+>       SUNRPC: new svc_bind() routine introduced
+>       SUNRPC: move per-net operations from svc_destroy()
+> 
+> 
+>  fs/lockd/svc.c             |   33 +++++++++++++++++++++------------
+>  fs/nfs/callback.c          |   11 +++++++++++
+>  fs/nfsd/nfsctl.c           |    4 ++++
+>  fs/nfsd/nfssvc.c           |   16 ++++++++++++++++
+>  include/linux/sunrpc/svc.h |    1 +
+>  net/sunrpc/rpcb_clnt.c     |   12 +++++++-----
+>  net/sunrpc/svc.c           |   23 ++++++++++-------------
+>  7 files changed, 70 insertions(+), 30 deletions(-)
+> 
