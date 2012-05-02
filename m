@@ -1,105 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab2EBU2K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 16:28:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56648 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756181Ab2EBU2I (ORCPT
+	id S1757352Ab2EBU22 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 16:28:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42775 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757246Ab2EBU21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 16:28:08 -0400
-Date: Wed, 2 May 2012 22:27:59 +0200
-From: Andi Shyti <andi.shyti@gmail.com>
-To: scameron@beardog.cce.hp.com
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Subject: Re: [PATCH 07/17] hpsa: do not give up retry of driver cmds after
- only 3 retries
-Message-ID: <20120502202759.GB19349@andi>
-Mail-Followup-To: scameron@beardog.cce.hp.com,
-	james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-	linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-	thenzl@redhat.com, akpm@linux-foundation.org,
-	mikem@beardog.cce.hp.com
-References: <20120501163819.11705.10299.stgit@beardog.cce.hp.com>
- <20120501164240.11705.10308.stgit@beardog.cce.hp.com>
- <20120501172634.GA11302@andi>
- <20120501182011.GS11802@beardog.cce.hp.com>
- <20120501213934.GD11302@andi>
- <20120502163009.GV11802@beardog.cce.hp.com>
+	Wed, 2 May 2012 16:28:27 -0400
+Date: Wed, 2 May 2012 13:28:23 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: [GIT PATCH] TTY VT bugfix for 3.4-rc5
+Message-ID: <20120502202823.GA27129@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120502163009.GV11802@beardog.cce.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 11:30:09AM -0500, scameron@beardog.cce.hp.com wrote:
-> On Tue, May 01, 2012 at 11:39:34PM +0200, Andi Shyti wrote:
-> > Hi Steve,
-> > 
-> > Thanks for the walk-through, but still some doubts...
-> > 
-> > On Tue, May 01, 2012 at 01:20:11PM -0500, scameron@beardog.cce.hp.com wrote:
-> > > On Tue, May 01, 2012 at 07:26:34PM +0200, Andi Shyti wrote:
-> > > > >  
-> > > > >  	do {
-> > > > >  		memset(c->err_info, 0, sizeof(*c->err_info));
-> > > > >  		hpsa_scsi_do_simple_cmd_core(h, c);
-> > > > >  		retry_count++;
-> > > > > +		if (retry_count > 3) {
-> > > > > +			msleep(backoff_time);
-> > > > 
-> > > > for 10ms isn't it better to avoid using msleep?
-> > > 
-> > > [...] 
-> > > > > +			if (backoff_time < 1000)
-> > > > > +				backoff_time *= 2;
-> > > 
-> > > Eh, maybe.  from Documentation/timers-howto.txt
-> > > 
-> > >                         msleep(1~20) may not do what the caller intends, and
-> > >                         will often sleep longer (~20 ms actual sleep for any
-> > >                         value given in the 1~20ms range). In many cases this
-> > >                         is not the desired behavior.
-> > > 
-> > > Sleeping longer (~20ms instead of 10ms) in this instance is fine, as I don't
-> > > really care too much exactly how long it sleeps, and it backs off to up to
-> > > 1280ms eventually anyway.  The idea is, "wait a bit, and retry, and then if
-> > > that doesn't work, wait twice as long, and retry, etc."  *exactly* how long
-> > > "a bit" is is not super important.  I could change the initial back_off time
-> > > to 20 or 30 to satisfy the letter of the advice in Documentation/timers-howto.txt,
-> > > if doing so is important.
-> > 
-> > No, you're right, it should not really matter, but here in the
-> > worst case you put the driver on sleep for almost 22 seconds,
-> > that is a huge difference compared to the original
-> > implementation.
-> >  
-> > > This is kind of a corner case of a corner case, I don't expect
-> > > things will ordinarily end up waiting that long, because normally
-> > > one of the 1st 3 retries will succeed.  I just wanted to make it 
-> > > a little more robust and not just give up immediately if the 3
-> > > initial retries don't succeed, the specific number of retries,
-> > > wait times, etc, I just made up.
-> > 
-> > Premising that I don't know the device, therefore I could be
-> > totally wrong, if you don't expect things to wait so long, why not
-> > to decrease the MAX_DRIVER_CMD_RETRIES and sleep increasingly (as
-> > you did) but for shorter period?
-> 
-> [...]
-> 
-> So yeah, the "echo 1 > /sys/blah/blah/rescan" process will sleep for up to ~20 seconds
-> in the event of some (presumably very rare) 20 second BUSY condition, but it will work in
-> cases the old code will not, and so it sleeps 20 secs, I don't think that's really a 
-> problem, esp. compared to the alternative of just failing.
->
+The following changes since commit 69964ea4c7b68c9399f7977aa5b9aa6539a6a98a:
 
-Uhh... that was a good explanation :)
-Thanks a lot! You convinced me :)
+  Linux 3.4-rc5 (2012-04-29 15:19:10 -0700)
 
-If you want you can add
+are available in the git repository at:
 
-Reviewed-by: Andi Shyti <andi.shyti@gmail.com> 
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.4-rc6
+
+for you to fetch changes up to 84f904ecd3aa2ccb5779b815b69c1cb592f07bb5:
+
+  vt: Fix deadlock on scroll-lock (2012-05-01 14:01:28 -0400)
+
+----------------------------------------------------------------
+TTY fix for 3.4-rc5
+
+This is a deadlock bugfix that was easy to hit, and that the vt layer lock
+rework got wrong, so it reverts the logic back to the way it was in 3.3 and
+earlier kernels to prevent problems.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Alan Cox (1):
+      vt: Fix deadlock on scroll-lock
+
+ drivers/tty/vt/keyboard.c |   26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
