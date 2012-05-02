@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab2EBTEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 15:04:54 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:58745 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab2EBTEx (ORCPT
+	id S1756105Ab2EBTGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 15:06:18 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42556 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755587Ab2EBTGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 15:04:53 -0400
-Date: Wed, 2 May 2012 18:36:29 +0200
-From: Nico Schottelius <nico-linux-20120419@schottelius.org>
-To: Francois Rigaut <frigaut@gmail.com>
-Cc: Nico Schottelius <nico-linux-20120419@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Linux Support for Thunderbolt using Apple Monitor
-Message-ID: <20120502163629.GE928@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20120419@schottelius.org>,
-	Francois Rigaut <frigaut@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20120419163800.GB13977@schottelius.org>
- <CAMVeQ8r_3vuAxzbLyKoecOHOOGijUDkLfw+MK7o-WoWbuOGSrg@mail.gmail.com>
+	Wed, 2 May 2012 15:06:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMVeQ8r_3vuAxzbLyKoecOHOOGijUDkLfw+MK7o-WoWbuOGSrg@mail.gmail.com>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: brief (Linux 3.3.3-1-ARCH x86_64)
+In-Reply-To: <20120502181435.GF16981@andi>
+References: <1335967293-7728-1-git-send-email-peter.huewe@infineon.com>
+	<1335967416-7564-1-git-send-email-peter.huewe@infineon.com>
+	<20120502151734.GD16981@andi>
+	<CAEYUcX0jBHasvcdLefR0fOGrVPaDw3pqzfQ_8_JGXHSPQHW7Ew@mail.gmail.com>
+	<20120502181435.GF16981@andi>
+Date: Wed, 2 May 2012 12:06:14 -0700
+X-Google-Sender-Auth: QrtsdSvpzLLTL_yWHOuoV3hNcJ0
+Message-ID: <CAEYUcX06hvTb1YP=9vCpK9Z19dtZgNTjUcSRnrUvjc3bu-D--Q@mail.gmail.com>
+Subject: Re: [PATCH] CHROMIUM: tpm: tpm_tis_i2c: Lock the I2C adapter for a
+ sequence of requests.
+From: Bryan Freed <bfreed@chromium.org>
+To: Bryan Freed <bfreed@chromium.org>, Peter Huewe <peter.huewe@infineon.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>, tpmdd@selhorst.net,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>,
+        Luigi Semenzato <semenzato@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Francois,
+Hi Andi,
 
-Francois Rigaut [Mon, Apr 30, 2012 at 11:45:52AM +1000]:
-> I have a MBA 13" (mid 2011), and I believe we already have been in contact
-> about the state of linux on it. Thanks for your early work on it, it helped
-> me quite a bit in the initial setup.
+On Wed, May 2, 2012 at 11:14 AM, Andi Shyti <andi.shyti@gmail.com> wrote:
+> Hi Bryan,
+>
+>> > try to have a look to the i2c_smbus* function, you could avoid
+>> > lot of code
+> On Wed, May 02, 2012 at 10:25:09AM -0700, Bryan Freed wrote:
+>> (Sorry for resending...)
+>>
+>> Andi, it is not clear what i2c_smbus_* functions in particular will
+>> improve upon this change.
+>>
+>> All i2c_smbus_* functions go through i2c_smbus_xfer() which at some
+>> point will i2c_lock_adapter() for each request.
+>> This is true for adapters that support SMBUS (where the lock occurs
+>> directly in i2c_smbus_xfer()) or just I2C (where the lock occurs in
+>> i2c_transfer() called through i2c_smbus_xfer_emulated()).
+>>
+>> The goal of this change is for the tpm_tis_i2c driver to be able to
+>> lock an adapter over the duration of several I2C requests.
+>> Presumably, that is why i2c_lock_adapter() is exported.
+>
+> the i2c_smbus_* functions will not improve anything to the
+> driver, it will increase the readability and it will allow you to
+> do the same stuff with less code.
 
-Great to have helped!
+I think I see what you are saying.
+We could (in the unmodified version of this driver) replace all the
+iic_tpm_read() calls of one byte (which sends an address byte before
+reading a data byte) with an i2c_smbus_read_byte_command() call which
+does the same thing.
+Switching to the SMBUS calls in this driver will still work on
+adapters that only support I2C because of i2c_smbus_xfer_emulated().
+Right?
 
-> I agree with you that linux is now pretty stable on MBAs. I'm exclusively
-> running linux on mine, and beside the thunderbold/displayport support issue
-> (that's why I am replying to this thread), I have been more than happy with
-> it. btw, I don't experience the X crashes myself, and the network (both
-> wired and wireless) is working flawlessly.
+> All the i2c communication implementation you wrote here, is
+> already written in the i2c-core.c file.
 
-Network is mostly working fine nowadays as well, besides having to issue
-"reassociate" in wpa_cli after each resume/suspend and a new bug in Xorg
-that forces me to "rmmod bcm5974; modprobe bcm5974;" to make Xorg
-recognsie the touchpad again (speaking of Linux 3.3.3-1-ARCH and
-X.Org X Server 1.12.1 and xf86-input-synaptics 1.5.99.904-1).
+Right.  Unfortunately, we cannot use any of the i2c_smbus_* functions
+in this driver.  The device will fail because the adapter lock is not
+held long enough to prevent I2C traffic going to other devices on the
+same bus.  That other traffic to other devices confuses the i2c core
+in this device.  Our only driver solution is to lock the adapter for a
+longer duration.
 
-> Now to the thunderbolt support: I have myself a thunderbolt 27" at work. In
-> a nutshell: [...]
+Yes, the code we have here is copied from the i2c-core.c file.  In
+fact, we comment this with, "Copy i2c-core:i2c_transfer() as close as
+possible without the adapter locks
+and algorithm check".
 
-This smells exactly like in the old Linux days, when an external monitor
-only worked when it was connected at startup.
+And that really is the problem with using the i2c-core.c calls.  This
+driver needs to lock the adapter for an extended duration.
 
-I've tried to get some information about thunderbolt, but it seems Intel
-is currently unwillingly to give information out:
+> Andi
 
-  http://communities.intel.com/message/155263#155263
-
-I'm wondering if anyone from the Intel developers reading this list
-can comment on this?
-
-Cheers,
-
-Nico
-
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+bryan.
