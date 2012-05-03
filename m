@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062Ab2ECR6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 13:58:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33344 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345Ab2ECR6d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 13:58:33 -0400
-Message-ID: <4FA2C746.5080000@wwwdotorg.org>
-Date: Thu, 03 May 2012 11:58:30 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1758069Ab2ECR7F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 13:59:05 -0400
+Received: from tservice.ru ([195.178.208.66]:54129 "EHLO tservice.net.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754117Ab2ECR7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 13:59:03 -0400
+Date: Thu, 3 May 2012 21:58:57 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] w1: Introduce a slave mutex for serializing IO.
+Message-ID: <20120503175857.GA13988@ioremap.net>
+References: <20120425124914.3187a794@notabene.brown>
+ <20120501213958.GA15560@ioremap.net>
+ <20120502162627.50544c8b@notabene.brown>
 MIME-Version: 1.0
-To: Hiroshi DOYU <hdoyu@nvidia.com>
-CC: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 3/4] iommu/tegra: smmu: Refrain from accessing to AHB
-References: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com> <1336061147-10245-3-git-send-email-hdoyu@nvidia.com> <4FA2C4E9.2080509@wwwdotorg.org>
-In-Reply-To: <4FA2C4E9.2080509@wwwdotorg.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120502162627.50544c8b@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 11:48 AM, Stephen Warren wrote:
-> On 05/03/2012 10:05 AM, Hiroshi DOYU wrote:
->> Use "tegra_ahb_enable_smmu()" to inform AHB that SMMU is
->> ready, instead of directly aceessing AHB registers.
-
-Oh, that should be "accessing".
-
->> @@ -911,14 +899,16 @@ static int tegra_smmu_probe(struct platform_device *pdev)
+On Wed, May 02, 2012 at 04:26:27PM +1000, NeilBrown (neilb@suse.de) wrote:
+> Take takes me back to the deadlock.
+> To be precise:
+>   while scanning the w1 bus - with master->mutex held - w1_attach_slave_device
+>   eventually calls into bq27000_battery_probe  which calls
+>     power_supply_register -> device_add -> kobject_uevent_env
 > 
->> +	smmu->ahb = of_parse_phandle(pdev->dev.of_node, "ahb", 0);
+>   and the to get all the data for the uevent, power_supply_uevent calls
+>   the get_property callback which tries to read from the w1 bus and so
+>   needs the master->mutex.  Which is held.  Deadlock.
 > 
-> Hmm, "ahb" should probably be "nvidia,ahb".
-> 
-> I see that neither this patch nor the next patch include binding
-> documentation that describe this property. Can you please add documentation.
+> So options seems to be:
+>  - drop the lock while attaching slave devices
+>  - create a list of slave devices, then attach them after the bus scan has
+>    finished.
+>  - have device_add run the kobject_uevent in a separate task (work_queue)
+>  - or maybe the following which feels ugly but is easy.  Mark the bq27000 as
+>    not ready until after the power_supply_register, and if get_property is 
+>    called before the device is ready, return ENODATA.
+>    Simple and works.  Maybe horrible.
+>    power_supply_register will have scheduled a power_supply_changed() which
+>    will poll
 
-Oh, the next patch is just adding the entry to the .dtsi file for the
-AHB, so no surprise it doesn't add a binding document for the SMMU!
+You can check mutex owner - and if it is you who holds it, then dig into
+low-level function without lock.
 
-I see that with this patch, the driver still expects the DMA window to
-be represented as a reg property (IORESOURCE_MEM), so if we add a
-binding document to this patch it won't be very consistent either:-( And
-then, there's the issue of whether the SMMU should be it's own device or
-a child of some MC device, since there's non-SMMU functionality in these
-registers too. This makes all the SMMU rework need a little more thought.
-
-So, I propose dropping this patch from this series, since this series is
-all about adding the AHB driver. We should move this patch to a series
-relating to the SMMU driver.
+-- 
+	Evgeniy Polyakov
