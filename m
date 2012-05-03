@@ -1,51 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab2ECHDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 03:03:53 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:40494 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab2ECHDw (ORCPT
+	id S1754784Ab2ECHJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 03:09:06 -0400
+Received: from smtp-vbr14.xs4all.nl ([194.109.24.34]:4052 "EHLO
+	smtp-vbr14.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab2ECHJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 03:03:52 -0400
-Date: Thu, 03 May 2012 03:02:42 -0400 (EDT)
-Message-Id: <20120503.030242.2286535518319226860.davem@davemloft.net>
-To: hpa@zytor.com
-Cc: torvalds@linux-foundation.org, npiggin@gmail.com, jana@saout.de,
-        jlbec@evilplan.org, linux-kernel@vger.kernel.org
-Subject: Re: Oops with DCACHE_WORD_ACCESS and ocfs2, autofs4
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4FA22C75.6010001@zytor.com>
-References: <4FA227FB.7060709@zytor.com>
-	<20120503.025427.1277785208536786257.davem@davemloft.net>
-	<4FA22C75.6010001@zytor.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 3 May 2012 03:09:04 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: manjunatha_halli@ti.com
+Subject: Re: [PATCH V3 2/5] [Media] New control class and features for FM RX
+Date: Thu, 3 May 2012 09:08:57 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4.0-rc3-tschai; KDE/4.7.4; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Manjunatha Halli <x0130808@ti.com>
+References: <1335994951-15842-1-git-send-email-manjunatha_halli@ti.com> <1335994951-15842-3-git-send-email-manjunatha_halli@ti.com>
+In-Reply-To: <1335994951-15842-3-git-send-email-manjunatha_halli@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 03 May 2012 00:02:44 -0700 (PDT)
+Message-Id: <201205030908.57369.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 02 May 2012 23:57:57 -0700
+Just a few more minor notes:
 
-> On 05/02/2012 11:54 PM, David Miller wrote:
->>>
->>> Can we do the trick of aligning the pointer and ignoring the start?
->>> That would allow even architectures that don't have unaligned accesses
->>> to work, too.
->> 
->> Doing that would flub the hash computation.
+On Wed May 2 2012 23:42:28 manjunatha_halli@ti.com wrote:
+> From: Manjunatha Halli <x0130808@ti.com>
 > 
-> I guess the shifts would be to expensive?
+> This patch creates new ctrl class for FM RX and adds new CID's for
+> below FM features,
+>         1) De-Emphasis filter mode
+> 	2) RDS AF switch
+> 
+> Also this patch adds a field for band selection in struct v4l2_hw_freq_seek
+> 
+> Signed-off-by: Manjunatha Halli <x0130808@ti.com>
+> ---
+>  drivers/media/video/v4l2-ctrls.c |   17 +++++++++++++++++
+>  include/linux/videodev2.h        |   11 ++++++++++-
+>  2 files changed, 27 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/v4l2-ctrls.c b/drivers/media/video/v4l2-ctrls.c
+> index 18015c0..e1bba7d 100644
+> --- a/drivers/media/video/v4l2-ctrls.c
+> +++ b/drivers/media/video/v4l2-ctrls.c
+> @@ -372,6 +372,12 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+>  		NULL,
+>  	};
+>  
+> +	static const char * const tune_deemphasis[] = {
+> +		"No deemphasis",
+> +		"50 useconds",
+> +		"75 useconds",
+> +		NULL,
+> +	};
 
-Yes, barrel-shifting (if that's your idea) would negate much of the
-gain from the optimization.
+I suggest that we re-use tune_preemphasis[] here. Just replace the first
+entry from "No Preemphasis" to "None" to make it generic.
 
-Actually, thinking some more, a barrel-shifting loop would have the
-same problem the current code has.  You don't know if you are at the
-end of the string until you do the tests on the word.  But if you're
-at the end of the page, you need to somehow elide that extra load
-to get the word you're going to barrel-shift into the previous word.
+Rename tune_preemphasis[] to tune_emphasis[] as well.
 
+>  	switch (id) {
+>  	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
+>  		return mpeg_audio_sampling_freq;
+> @@ -414,6 +420,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+>  		return colorfx;
+>  	case V4L2_CID_TUNE_PREEMPHASIS:
+>  		return tune_preemphasis;
+> +	case V4L2_CID_TUNE_DEEMPHASIS:
+> +		return tune_deemphasis;
+>  	case V4L2_CID_FLASH_LED_MODE:
+>  		return flash_led_mode;
+>  	case V4L2_CID_FLASH_STROBE_SOURCE:
+> @@ -644,6 +652,12 @@ const char *v4l2_ctrl_get_name(u32 id)
+>  	case V4L2_CID_JPEG_COMPRESSION_QUALITY:	return "Compression Quality";
+>  	case V4L2_CID_JPEG_ACTIVE_MARKER:	return "Active Markers";
+>  
+> +	/* FM Radio Receiver control */
+> +	/* Keep the order of the 'case's the same as in videodev2.h! */
+> +	case V4L2_CID_FM_RX_CLASS:		return "FM Radio Receiver Controls";
+> +	case V4L2_CID_RDS_AF_SWITCH:		return "FM RX RDS AF switch";
+
+I would call this "RDS AF Switch" or perhaps even better: "RDS Auto-Frequency Switch"
+
+> +	case V4L2_CID_TUNE_DEEMPHASIS:		return "FM RX De-emphasis settings";
+
+Rename to "De-Emphasis" to be consistent with the existing "Pre-Emphasis" string.
+
+Regards,
+
+	Hans
