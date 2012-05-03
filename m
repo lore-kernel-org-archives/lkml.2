@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab2ECO6B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:58:01 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55935 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757315Ab2ECO5W (ORCPT
+	id S1757306Ab2ECO5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:57:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41032 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756215Ab2ECO5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:57:22 -0400
-From: Gilad Ben-Yossef <gilad@benyossef.com>
+	Thu, 3 May 2012 10:57:12 -0400
+Message-ID: <1336057018.4205.2.camel@phoenix>
+Subject: [PATCH] IIO: industrialio-core: Checking NULL instead of IS_ERR for
+ debugfs_create_dir()
+From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
-Subject: [PATCH v1 4/6] mm: make lru_drain selective where it schedules work
-Date: Thu,  3 May 2012 17:56:00 +0300
-Message-Id: <1336056962-10465-5-git-send-email-gilad@benyossef.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
-References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        linux-iio@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Thu, 03 May 2012 22:56:58 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lru drain work is being done by scheduling a work queue on each
-CPU, whether it has LRU pages to drain or not, thus creating
-interference on isolated CPUs.
+If defined CONFIG_DEBUG_FS, debugfs_create_dir returns NULL on failure.
 
-This patch uses schedule_on_each_cpu_cond() to schedule the work
-only on CPUs where it seems that there are LRUs to drain.
-
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Tejun Heo <tj@kernel.org>
-CC: John Stultz <johnstul@us.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Mike Frysinger <vapier@gentoo.org>
-CC: David Rientjes <rientjes@google.com>
-CC: Hugh Dickins <hughd@google.com>
-CC: Minchan Kim <minchan.kim@gmail.com>
-CC: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Christoph Lameter <cl@linux.com>
-CC: Chris Metcalf <cmetcalf@tilera.com>
-CC: Hakan Akkan <hakanakkan@gmail.com>
-CC: Max Krasnyansky <maxk@qualcomm.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: linux-kernel@vger.kernel.org
-CC: linux-mm@kvack.org
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- mm/swap.c |   25 ++++++++++++++++++++++++-
- 1 files changed, 24 insertions(+), 1 deletions(-)
+ drivers/iio/industrialio-core.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/mm/swap.c b/mm/swap.c
-index 5c13f13..ab07b62 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -562,12 +562,35 @@ static void lru_add_drain_per_cpu(struct work_struct *dummy)
- 	lru_add_drain();
- }
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index 72e33b8..c74412b 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -235,15 +235,12 @@ static int iio_device_register_debugfs(struct iio_dev *indio_dev)
+ 	if (indio_dev->info->debugfs_reg_access == NULL)
+ 		return 0;
  
-+static bool lru_drain_cpu(int cpu)
-+{
-+	struct pagevec *pvecs = per_cpu(lru_add_pvecs, cpu);
-+	struct pagevec *pvec;
-+	int lru;
-+
-+	for_each_lru(lru) {
-+		pvec = &pvecs[lru - LRU_BASE];
-+		if (pagevec_count(pvec))
-+			return true;
-+	}
-+
-+	pvec = &per_cpu(lru_rotate_pvecs, cpu);
-+	if (pagevec_count(pvec))
-+		return true;
-+
-+	pvec = &per_cpu(lru_deactivate_pvecs, cpu);
-+	if (pagevec_count(pvec))
-+		return true;
-+
-+	return false;
-+}
-+
- /*
-  * Returns 0 for success
-  */
- int lru_add_drain_all(void)
- {
--	return schedule_on_each_cpu(lru_add_drain_per_cpu);
-+	return schedule_on_each_cpu_cond(lru_add_drain_per_cpu, lru_drain_cpu);
- }
+-	if (IS_ERR(iio_debugfs_dentry))
++	if (!iio_debugfs_dentry)
+ 		return 0;
  
- /*
+ 	indio_dev->debugfs_dentry =
+ 		debugfs_create_dir(dev_name(&indio_dev->dev),
+ 				   iio_debugfs_dentry);
+-	if (IS_ERR(indio_dev->debugfs_dentry))
+-		return PTR_ERR(indio_dev->debugfs_dentry);
+-
+ 	if (indio_dev->debugfs_dentry == NULL) {
+ 		dev_warn(indio_dev->dev.parent,
+ 			 "Failed to create debugfs directory\n");
 -- 
-1.7.0.4
+1.7.5.4
+
+
 
