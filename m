@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab2ECL0V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 07:26:21 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:57152 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab2ECL0U (ORCPT
+	id S1752919Ab2ECL0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 07:26:46 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34666 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab2ECL0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 07:26:20 -0400
-From: Vlad Zolotarov <vlad@scalemp.com>
-Organization: ScaleMP Ltd.
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] fs: Move bh_cachep to the __read_mostly section
-Date: Thu, 3 May 2012 14:26:26 +0300
-User-Agent: KMail/1.13.5 (Linux/2.6.32-41-generic; KDE/4.4.5; i686; ; )
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, alan@lxorguk.ukuu.org.uk,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <201204241422.23065.vlad@scalemp.com>
-In-Reply-To: <201204241422.23065.vlad@scalemp.com>
+	Thu, 3 May 2012 07:26:45 -0400
+Date: Thu, 3 May 2012 13:26:23 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] i2c: Convert i2c-octeon.c to use device tree.
+Message-ID: <20120503112623.GF9574@pengutronix.de>
+References: <1335489630-27017-1-git-send-email-ddaney.cavm@gmail.com>
+ <1335489630-27017-2-git-send-email-ddaney.cavm@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205031426.27432.vlad@scalemp.com>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="p8PhoBjPxaQXD0vg"
+Content-Disposition: inline
+In-Reply-To: <1335489630-27017-2-git-send-email-ddaney.cavm@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 24, 2012 02:22:22 pm Vlad Zolotarov wrote:
-> From: Shai Fultheim <shai@scalemp.com>
-> 
-> bh_cachep is only written to once on initialization, so move it to the
-> __read_mostly section.
-> 
-> Signed-off-by: Shai Fultheim <shai@scalemp.com>
-> Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
-> ---
->  fs/buffer.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 36d6665..a1d82fb 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -3151,7 +3151,7 @@ SYSCALL_DEFINE2(bdflush, int, func, long, data)
->  /*
->   * Buffer-head allocation
->   */
-> -static struct kmem_cache *bh_cachep;
-> +static struct kmem_cache *bh_cachep __read_mostly;
-> 
->  /*
->   * Once the number of bh's in the machine exceeds this level, we start
 
-Thomas, Ingo, Peter, Alan, do u want me to respin this patch? 
-(Alan, this one is not x86 ;))
+--p8PhoBjPxaQXD0vg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Could u, pls., advice what should be done for it to be applied?
+On Thu, Apr 26, 2012 at 06:20:26PM -0700, David Daney wrote:
+> From: David Daney <david.daney@cavium.com>
+>=20
+> There are three parts to this:
+>=20
+> 1) Remove the definitions of OCTEON_IRQ_TWSI and OCTEON_IRQ_TWSI2.
+>    The interrupts are specified by the device tree and these hard
+>    coded irq numbers block the used of the irq lines by the irq_domain
+>    code.
+>=20
+> 2) Remove platform device setup code from octeon-platform.c, it is
+>    now unused.
+>=20
+> 3) Convert i2c-octeon.c to use device tree.  Part of this includes
+>    using the devm_* functions instead of the raw counterparts, thus
+>    simplifying error handling.  No functionality is changed.
+>=20
+> Signed-off-by: David Daney <david.daney@cavium.com>
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
+> Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
+> Cc: "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>
+> Cc: linux-i2c@vger.kernel.org
 
-thanks,
-vlad
+I2C changes look okay. I'd think this goes in via MIPS-tree?
+
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--p8PhoBjPxaQXD0vg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+ia18ACgkQD27XaX1/VRvy0QCgw45MhoPCDZwSKlGvSSUYtFT4
+KqgAn0dIv9IJZIyeWi2K8dXNg2coKDbO
+=pvhr
+-----END PGP SIGNATURE-----
+
+--p8PhoBjPxaQXD0vg--
