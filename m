@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab2ECKFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 06:05:18 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57705 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754622Ab2ECKFQ convert rfc822-to-8bit (ORCPT
+	id S1756616Ab2ECKGo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 06:06:44 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:39369 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622Ab2ECKGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 06:05:16 -0400
+	Thu, 3 May 2012 06:06:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <5b62749cb9227016ed5965fa57b96c0dccce37a8.1335894230.git.dledford@redhat.com>
-References: <1335894655-11398-1-git-send-email-dledford@redhat.com>
-	<5b62749cb9227016ed5965fa57b96c0dccce37a8.1335894230.git.dledford@redhat.com>
-Date: Thu, 3 May 2012 20:05:15 +1000
-Message-ID: <CAPa8GCCBQfR-nUOmwz6oSdCao63tHUH1jfGs2XcgCe_+g3grCQ@mail.gmail.com>
-Subject: Re: [Patch 1/4] ipc/mqueue: improve performance of send/recv
-From: Nick Piggin <npiggin@gmail.com>
-To: Doug Ledford <dledford@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        sfr@canb.auug.org.au
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAN+gG=HHxzYPSD+1i5JS8HmkxusHi=e6im48VzXHy2KsFoce+w@mail.gmail.com>
+References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+	<alpine.LNX.2.00.1205011300540.1856@pobox.suse.cz>
+	<CAN+gG=GGVFDgf_PkovS+_OX26LH0Q19_FwwkGP2pSwnoX4d_Ug@mail.gmail.com>
+	<alpine.LNX.2.00.1205021044240.14613@pobox.suse.cz>
+	<CAN+gG=HHxzYPSD+1i5JS8HmkxusHi=e6im48VzXHy2KsFoce+w@mail.gmail.com>
+Date: Thu, 3 May 2012 12:06:41 +0200
+Message-ID: <CAN+gG=HDZJf+73SoddWar_pRPH2NvFrvpVuAaRC8_frXmGQYfA@mail.gmail.com>
+Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephane Chatty <chatty@enac.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 May 2012 03:50, Doug Ledford <dledford@redhat.com> wrote:
-
-> Avg time to send/recv (in nanoseconds per message)
->  when queue empty            305/288                    349/318
->  when queue full (65528 messages)
->    constant priority      526589/823                    362/314
->    increasing priority    403105/916                    495/445
->    decreasing priority     73420/594                    482/409
->    random priority        280147/920                    546/436
+On Wed, May 2, 2012 at 12:55 PM, Benjamin Tissoires
+<benjamin.tissoires@gmail.com> wrote:
+> On Wed, May 2, 2012 at 10:45 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+>> On Wed, 2 May 2012, Benjamin Tissoires wrote:
+>>
+>>> > It's currently in a shape I would be okay to pushing out for -next and
+>>> > scheduling for next merge window, and I will do so tomorrow if nothing
+>>> > else pops up during testing or reviews.
+>>>
+>>> Hi Jiri,
+>>>
+>>> Well, I'm back in my lab this morning, and I'm testing your branch
+>>> against the different devices we have here. I'm observing a strange
+>>> problem: when connecting some devices, the first touch is always at
+>>> 0,0. If I rmmod and insmod hid_multitouch it seems to work after....
+>>>
+>>> I'm investigating this bug now. I'll tell you when I'm done. I still
+>>> don't now if it's related to Henrik's changes or 3.4-rc4.
+>>
+>> I see, thanks a lot for the heads-up, I will be waiting for your analysis
+>> of this.
+>>
+>> I have already renamed the branch to 'device-groups' and merged it into
+>> branch that goes into next, so please send me any followup patches on top
+>> of that queue now.
 >
-> Time to fill/drain queue (65528 messages, in seconds)
->  constant priority         17.37/.12                    .13/.12
->  increasing priority        4.14/.14                    .21/.18
->  decreasing priority       12.93/.13                    .21/.18
->  random priority            8.88/.16                    .22/.17
+> Ok, I think I understood: nothing related to Henrik's changes. The bug
+> is also present in the upstream kernel.
+> In the function set_last_slot_field, I was doing a:
+> test_bit(usage->hid, hi->input->absbit);
 >
-> So, I think the results speak for themselves.  It's possible this
-> implementation could be improved by cacheing at least one priority
-> level in the node tree (that would bring the queue empty performance
-> more in line with the old implementation), but this works and is *so*
-> much better than what we had, especially for the common case of a
-> single priority in use, that further refinements can be in follow on
-> patches.
+> for instance, 0x10030 (X hid field) in the absbit bit field which
+> contains only ABS_CNT (0x40) bits.... That's why it was a random bug.
+> Now I understood why Ubuntu complained about this test ;-)
+>
+> I won't have the time to submit the patch right now, I have to give a
+> lecture this afternoon. Maybe this evening or tomorrow.
+>
+> Cheers,
+> Benjamin
 
-Nice work! Yeah I think if you cache a last unused entry, that
-should mostly solve the empty queue regression.
+Hi guys,
 
-I would imagine most users won't have huge queues, so the
-empty case should be important too.
+I'm currently on the bug fix I told you earlier. However, I found a
+more problematic bug in the hid_groups functionality.
+
+Some device, like the Perixx peripad, present several interfaces
+(mouse, keyboard and multitouch).
+The hid groups functionality detects the HID field Contact ID, and
+then forwards all interfaces to hid-multitouch. The point is that
+hid-multitouch does not know how to handle mice and keyboards, and
+then fails handling the interfaces of the device.
+
+This particular device is then fully broken (as anyone pumped the events).
+I also noticed the same problem (but less problematic) with cypress
+panels: it presents different vendor interfaces and they are handled
+by hid-multitouch.
+
+Sorry for spotting this that late,
+Benjamin
+
+
+>
+>>
+>> Thanks,
+>>
+>> --
+>> Jiri Kosina
+>> SUSE Labs
