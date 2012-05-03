@@ -1,36 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab2ECOvP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:51:15 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47120 "EHLO
+	id S1756177Ab2ECOww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:52:52 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37057 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754312Ab2ECOvN (ORCPT
+	by vger.kernel.org with ESMTP id S1753871Ab2ECOwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:51:13 -0400
-Date: Thu, 3 May 2012 15:51:08 +0100
+	Thu, 3 May 2012 10:52:51 -0400
+Date: Thu, 3 May 2012 15:52:48 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH v2 3/4] leds: add LM3533 LED driver
-Message-ID: <20120503145108.GI3955@opensource.wolfsonmicro.com>
-References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
- <1336040799-18433-1-git-send-email-jhovold@gmail.com>
- <1336040799-18433-4-git-send-email-jhovold@gmail.com>
- <20120503104344.GC3955@opensource.wolfsonmicro.com>
- <20120503115059.GB15752@localhost>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 2/3] MFD: twl6040: Allocate IRQ numbers dynamically
+Message-ID: <20120503145248.GJ3955@opensource.wolfsonmicro.com>
+References: <1336049665-27777-1-git-send-email-peter.ujfalusi@ti.com>
+ <1336049665-27777-3-git-send-email-peter.ujfalusi@ti.com>
+ <20120503132004.GB14296@sirena.org.uk>
+ <4FA2881B.6010902@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dCSxeJc5W8HZXZrD"
+	protocol="application/pgp-signature"; boundary="YZVh52eu0Ophig4D"
 Content-Disposition: inline
-In-Reply-To: <20120503115059.GB15752@localhost>
+In-Reply-To: <4FA2881B.6010902@ti.com>
 X-Cookie: You will get what you deserve.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -38,68 +32,42 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---dCSxeJc5W8HZXZrD
+--YZVh52eu0Ophig4D
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, May 03, 2012 at 01:50:59PM +0200, Johan Hovold wrote:
-> On Thu, May 03, 2012 at 11:43:44AM +0100, Mark Brown wrote:
+On Thu, May 03, 2012 at 04:28:59PM +0300, Peter Ujfalusi wrote:
+> On 05/03/2012 04:20 PM, Mark Brown wrote:
 
-> > > +		5 - 4.194 s
-> > > +		6 - 8.389 s
-> > > +		7 - 16.78 s
+> > It looks like you're totally removing the use of irq_base which will
+> > break any boards that didn't convert to DT.  The usual idiom is to use
 
-> > Shouldn't these be controlled by led_blink_set() rather than a custom
-> > ABI?
+> In the current board files the pdata->irq_base set to some #defined
+> value (which is a comfortably big number).
 
-> led_blink_set controls the on/off times, but the LM3533 has the two
-> additional rise and fall-time settings which determine the transition
-> time between these states.
+Are you sure there aren't any boards out there which rely on the
+interrupt base (eg, using a GPIO with the IRQ output of a chip)?
 
-Hrm.  In that case these rise times are very large - I'd expect them to
-cause issues with led_set_blink() users?  Though actually I suspect the
-solution here is to pull these out into the framework later; we can
-probably simulate reasonably in software with a lot of brightness
-variable LEDs.
-
-> > > +What:		/sys/class/leds/<led>/max_current
-
-> > Shouldn't this be set by platform data, the maximum current you can push
-> > through the LEDs seems like a board dependant thing which won't change
-> > dynamically at runtime.  The brightness can already be varied.
-
-> I fully agree and it is possible to set via the platform data for that
-> reason. The end-customer, however, insisted that even this setting be
-> available through sysfs to facilitate their integration and testing.
-
-> I'd be willing drop this attribute if requested, as it would only be used
-> during integration and could easily be added back by the end-customer if
-> needed.
-
-I'd strongly suggest removing this for mainline.  If it's present it
-should at least be limited to the maximum specified in platform data
-(just for safety if nothing else).
-
---dCSxeJc5W8HZXZrD
+--YZVh52eu0Ophig4D
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPoptPAAoJEBus8iNuMP3dnG4QAJZ8QTyGyPgEBIQu7u2wLHPX
-+3T6HRWNeshaF+PCv23EyHr+YmOW62yQa3Z450P0Zym6LfIO3UiciCMOXALariUz
-XB+ynKoKW+5e9jbaZv67fwMZ31vjjYo8x5B4D+ueEIZTZFy0RQqgUoqYxDo0CuQt
-b+iAjRXy6/Bg890VYmL4lBTzfrDfco33uSJYCow0ixNZ237aCZnNjVEMks4TZ10O
-+cLkGiUqtQ6BM0SwD5JNITiPDjFcNyHj3rJbkfoD5Y9kXZq64f1tmTi1Lxz7KnnE
-PMMjIv1BEcuUPbgn1QiWE4VR8S/ShpE7j8u5bI9z12b3XYucaI8OMOiorPdywylZ
-Yc8suNDg4lSZaADcWxPwcEP36npdTiA7rVvHixnl5aMzFYxceq4RdPxLtDGW/Znh
-oLFEHVtt18Cw0lMXPjOB2jdgdyL+PmQxtNSRkWQf6tRgJ+SjEvbB7URW1BbU0h78
-9JlmUf1LaQdEb9Nuoa5H4jtwI8IOkBKE8G0UZMbJrSfxiqvEYEGCJ6A2H3Kma6No
-7evhq3jT+EaSd3vgKgcWU2pVOrMbPi+20PhQ+hPuJw5Rr1TIllp6mSqhHveHw0O5
-UWWM/kVLzdPM02V7nWMJ9H5a1IzyfMs5a5aLj12A5VKUh/7KlcKAGlity8+cgPWt
-oXUONtw/gd82qeS0QrPY
-=mn64
+iQIcBAEBAgAGBQJPopu0AAoJEBus8iNuMP3d3ekP/jPw6tqbLQidQIE6A4lX3r0W
+3AhDBqI/uQrNr6/r+zw9VB/5SDnTuRTxou4l1ddp+71MlbUQW6/v2Xe2PkFmHGQg
+PeZvm7lVpmESsXj/3X6yGx2RBSzv89SDDAd0Abq47UyXdp5D14fLEYX2yi90SLEb
+pza1onK7wLeRaG+Qcm3I22gq3SSXPDmtWfhB1BeUjoQykF3GQo5wPbfQa68vyndB
+gj/5cQmCWXsU2OKD5XGQRh7+MUOrlL5f+saKH51gEWQ94ewtg4BI1/ncFVNz4c36
+y5fSP3R6EPh20jap5wSrRug2dThhE9cnUQBeTTx33yxJ/OZvT7V4da+B8EWQdCqm
+pcjsFK2UzDmWtumrqqrXl6IrSJGAlNdnXZnANi+igpB+V/Sx41lyx0SyIIDwCn2v
+UGY2C8/7CgfeL78D2WmdRqaqpwf8ltmayV6haakx3mQ0vAuhDeI6ftUgO3E+/kwn
+5b/MUMxh+Q4yFmq+slbr9lpDG5y7geei+wCUdropvh0P0BTflBgbUaQwJWQOPWEM
+S+DhAf4zH7Wu1WkCJXL0NB2wg4RG3rOHu+gB3quUNvaSwUMF2PS12aGNZX9MR0Qj
+cJwPj//XOWBeKXcdhoCQSqJhW2+ImgRYLcZwF+mLhU97UpvDGMkMHKx2J11bo62F
+80QOUenXUXCJPtcTSVxA
+=CpAG
 -----END PGP SIGNATURE-----
 
---dCSxeJc5W8HZXZrD--
+--YZVh52eu0Ophig4D--
