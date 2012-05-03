@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab2ECO1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:27:42 -0400
-Received: from fieldses.org ([174.143.236.118]:52393 "EHLO fieldses.org"
+	id S932241Ab2ECO2P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:28:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53883 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932212Ab2ECO1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:27:39 -0400
-Date: Thu, 3 May 2012 10:27:35 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH v3 0/2] SUNRPC: separate per-net data creation from
- service
-Message-ID: <20120503142735.GA16940@fieldses.org>
-References: <20120502120536.8794.22210.stgit@localhost.localdomain>
- <20120502215837.GA12089@fieldses.org>
+	id S932115Ab2ECOZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 10:25:01 -0400
+From: Venkatraman S <svenkatr@ti.com>
+To: <linux-mmc@vger.kernel.org>, <cjb@laptop.org>, <linux-mm@kvack.org>,
+        <linux-fsdevel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <arnd.bergmann@linaro.org>,
+        <alex.lemberg@sandisk.com>, <ilan.smith@sandisk.com>,
+        <lporzio@micron.com>, <rmk+kernel@arm.linux.org.uk>,
+        Venkatraman S <svenkatr@ti.com>
+Subject: [PATCH v2 13/16] mmc: Documentation: Add sysfs ABI for hpi_time_threshold
+Date: Thu, 3 May 2012 19:53:12 +0530
+Message-ID: <1336054995-22988-14-git-send-email-svenkatr@ti.com>
+X-Mailer: git-send-email 1.7.10.rc2
+In-Reply-To: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
+References: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120502215837.GA12089@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 05:58:37PM -0400, J. Bruce Fields wrote:
-> Thanks, applying.
+hpi_time_threshold can be set to configure elapsed time in ms,
+after which an ongoing request will not be preempted.
+Explain the hpi_time_threhold parameter for MMC devices.
 
-Whoops, no--I'm hitting the BUG at net/sunrpc/svc.c:558 (the first of
-the two BUG_ON()s in svc_destroy()) when restarting nfsd.  Could you
-look into this?
+Signed-off-by: Venkatraman S <svenkatr@ti.com>
+---
+ Documentation/ABI/testing/sysfs-devices-mmc |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---b.
+diff --git a/Documentation/ABI/testing/sysfs-devices-mmc b/Documentation/ABI/testing/sysfs-devices-mmc
+index 5a50ab6..133dba5 100644
+--- a/Documentation/ABI/testing/sysfs-devices-mmc
++++ b/Documentation/ABI/testing/sysfs-devices-mmc
+@@ -19,3 +19,15 @@ Description:
+ 		is enabled, this attribute will indicate the size of enhanced
+ 		data area. If not, this attribute will be -EINVAL.
+ 		Unit KByte. Format decimal.
++
++What:		/sys/devices/.../mmc_host/mmcX/mmcX:XXXX/hpi_time_threshold
++Date:		April 2012
++Contact:	Venkatraman S <svenkatr@ti.com>
++Description:
++		High Priority Interrupt is a new feature defined in eMMC4.4
++		standard. If this feature is enabled, stack needs to decide
++		till what time since the last issued request is considered
++		preemptible. This attribute value (in milliseconds) is
++		used for arriving at the most optimal value for a specific
++		card. Default is zero, which also disables the feature, as
++		the request becomes non-preemptible immediately.
+-- 
+1.7.10.rc2
 
-> 
-> --b.
-> 
-> On Wed, May 02, 2012 at 04:08:29PM +0400, Stanislav Kinsbursky wrote:
-> > creation
-> > 
-> > v3: "SUNRPC: new svc_bind() routine introduced" patch was squashed with the
-> >     "SUNRPC: check rpcbind clients usage counter before decrement" patch.
-> > 
-> > v2: Increase per-net usage counted in lockd_up_net().
-> > 
-> > This is a cleanup patch set.
-> > It will be followed my LockD start/stop cleanup patch set and NFS callback
-> > service containerization patch set (yes, I forgot to implement it).
-> > 
-> > Today per-net data is created with service, and then is service is starting in
-> > other network namespace. And thus it's destroyed with service too. Moreover,
-> > network context for destroying of per-net data is taken from current process.
-> > This is correct, but code looks ugly.
-> > This patch set separates per-net data allocation from service allocation and
-> > destruction.
-> > IOW, per-net data have to be destroyed by service users - not service itself.
-> > 
-> > BTW, NFSd code become uglier with this patch set. Sorry.
-> > But I assume, that these new ugly parts will be replaced later by NFSd service
-> > containerization code.
-> > 
-> > The following series implements...
-> > 
-> > ---
-> > 
-> > Stanislav Kinsbursky (2):
-> >       SUNRPC: new svc_bind() routine introduced
-> >       SUNRPC: move per-net operations from svc_destroy()
-> > 
-> > 
-> >  fs/lockd/svc.c             |   33 +++++++++++++++++++++------------
-> >  fs/nfs/callback.c          |   11 +++++++++++
-> >  fs/nfsd/nfsctl.c           |    4 ++++
-> >  fs/nfsd/nfssvc.c           |   16 ++++++++++++++++
-> >  include/linux/sunrpc/svc.h |    1 +
-> >  net/sunrpc/rpcb_clnt.c     |   12 +++++++-----
-> >  net/sunrpc/svc.c           |   23 ++++++++++-------------
-> >  7 files changed, 70 insertions(+), 30 deletions(-)
-> > 
