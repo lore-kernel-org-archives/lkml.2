@@ -1,47 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758635Ab2ECUeO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 16:34:14 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:37689 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135Ab2ECUeM (ORCPT
+	id S1758700Ab2ECUe3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 16:34:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58906 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758680Ab2ECUe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 16:34:12 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AowFACvqok9bdWOb/2dsb2JhbABFgx6sA4NbgQeCCQEBBXkQCxgJJQ8CRgYNAQcCiA26cpEIBJV+kEKCag
-X-IronPort-AV: E=Sophos;i="4.75,527,1330902000"; 
-   d="scan'208";a="508697004"
-Message-ID: <4FA2ECF5.10607@igalia.com>
-Date: Thu, 03 May 2012 22:39:17 +0200
-From: =?ISO-8859-1?Q?Javier_Mu=F1oz?= <jmunhoz@igalia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20120104 Icedove/8.0
+	Thu, 3 May 2012 16:34:28 -0400
+Message-ID: <4FA2EBCC.5060905@gmail.com>
+Date: Thu, 03 May 2012 14:34:20 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: gewang@siliconmotion.com, boyod.yang@siliconmotion.com.cn,
-        wuzhangjin@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 0/7] staging: sm7xx: code improvements and cleanup
-References: <20120425205532.GA9642@kroah.com> <1335465955-32057-1-git-send-email-jmunhoz@igalia.com> <20120430013313.GA14456@kroah.com>
-In-Reply-To: <20120430013313.GA14456@kroah.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/13] perf target: Introduce perf_target_errno
+References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com> <1335417327-11796-10-git-send-email-namhyung.kim@lge.com> <20120502185913.GE5745@infradead.org>
+In-Reply-To: <20120502185913.GE5745@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2012 03:33 AM, Greg KH wrote:
-> On Thu, Apr 26, 2012 at 08:45:48PM +0200, Javier M. Mellid wrote:
->> This set of patches implement some code improvements, dead code removal
->> and cleanup. New code uses dynamic debug support.
->>
->> The patches address new checkpatch warnings.
->>
->> Patches tested with SM712.
-> 
-> Very nice, thanks for breaking this up, all now applied.
+On 5/2/12 12:59 PM, Arnaldo Carvalho de Melo wrote:
+> Also it would be better to have it as PERF_ERRNO__PID_OVERRIDE_CPU, etc.
 
-Great. Thanks Greg!
+I thought you wanted subsystem based errno's (PERF_TARGET__XXXXX) versus 
+one big set (PERF_ERRNO__XXXXX). Did you change your mind?
 
-Javier
+David
 
