@@ -1,102 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758320Ab2ECUFj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 16:05:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13148 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754615Ab2ECUFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 16:05:37 -0400
-Date: Thu, 3 May 2012 22:05:18 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, mingo@elte.hu
-Cc: mingo@elte.hu, andi@firstfloor.org, eranian@google.com,
-        ming.m.lin@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 9/9] perf tool: Add pmu event alias support
-Message-ID: <20120503200518.GC1671@m.brq.redhat.com>
-References: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
- <1335924440-11242-10-git-send-email-zheng.z.yan@intel.com>
- <20120503105655.GB1671@m.brq.redhat.com>
- <1336044261.22523.11.camel@twins>
+	id S932180Ab2ECUKK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 16:10:10 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38119 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab2ECUKI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 16:10:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336044261.22523.11.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1336075373.6509.9.camel@twins>
+References: <1336004953.4240.9.camel@mop> <1336074483.6509.3.camel@twins>
+ <CA+55aFxhQ3SQrZJ6KGDu0xQ6sWSDxrS1C-V_fBcgCYmSqAKSWQ@mail.gmail.com> <1336075373.6509.9.camel@twins>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 May 2012 13:09:47 -0700
+X-Google-Sender-Auth: u5oK5UHNLmlxbhxeu6UgUA-2xcc
+Message-ID: <CA+55aFx1BO-s1YZ3EwscdWh2y5C2Q2dUyH8xQmuBKTNZrZWTNA@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kay Sievers <kay@vrfy.org>, Greg Kroah-Hartmann <greg@kroah.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 01:24:21PM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-05-03 at 12:56 +0200, Jiri Olsa wrote:
-> > - in sysfs you would have directory with aliases (now called 'events')
-> > - each alias is sysfs dir, with file attrs:
-> >         file name = term name, file value = term value
-> >   eg.:
-> >         events/
-> >                 CAS_COUNT_RD/
-> >                         # files:
-> >                         config  - value 1
-> >                         config1 - value 2
-> >                         mask    - value ... 
-> 
-> I'd prefer the thing Yan proposed (if the sysfs folks let us),
-> 
-> $foo/events/QHL_REQUEST_REMOTE_READS
-> 
-> with contents: "event=0x20,umask=0x4"
-> 
-> > this way it's also possible to add extra terms to existing alias
-> > in command line if needed... might be handy
-> > 
-> That should always be possible, if you modify the parser to take things
-> like:
-> 
->   event=0x20,umask=0x4,event=0x21
-> 
-> and have latter values override earlier values, so it collapses into:
-> 
->   umask=0x4,event=0x21
-> 
-> you can simply take whatever comes out of the event file and stick extra
-> bits at the end.
+On Thu, May 3, 2012 at 1:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> Thing is, with bonkers stuff like usb-console and kms/drm that's a _lot_
+> of code running under the logbuf/console locks.
 
-I discussed this with Peter on irc, so I'll try to sum it up
+The top-level console lock shouldn't be a problem - we use trylock and
+delay if it is held.
 
-we have following options so far:
+It's the lower-level driver-specific locks that screw us up. And quite
+frankly, I am *not* willing to say that that is a printk() problem.
+That is purely a "USB serial console is damn well broken" issue, and
+should not be considered a limitation of printk.
 
-   with event alias 'al' with definition 'config=1,config1=1,config2=2'
-
-1) inside parse_events_add_pmu function
-   once alias term is detected as part of event definition 'pmu/al/mod' we
-   construct new event 'pmu/config=1,config1=1,config2=2/mod' and rerun the
-   event parser on that
-
-2) inside parse_events_add_pmu function 
-   once alias term is detected as part of event definition 'pmu/al/mod' we
-   replace that term with list of terms for that alias definition and run
-   perf_pmu__config with this new term list
-
-3) during bison/flex processing
-   have option 2) embeded inside flex/bison rules. Once alias term
-   is detected, insert the aliased terms directly to the list of terms,
-   not replacing expos as in option 2.
-
-
-- option 1 is currently implemented 
-- options 2 and 3 requires the aliased config is loaded/parsed from pmu
-  sysfs tree in form of terms list
-- option 3 is a little fuzzy for me now on how to integrate this with
-  flex/bison
-
-My interest here is to go with option 2 or 3 if possible - preferrably 2 ;),
-because I think it's better/cleaner to deal with terms in one place once they
-are parsed - in parse_events_add_pmu function.
-
-I think there's no need to re run the whole parser (option 1) when we
-have the whole thing ready by adding just extra terms.
-
-thoughts?
-
-thanks,
-jirka
+                  Linus
