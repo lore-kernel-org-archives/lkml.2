@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab2ECOEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:04:39 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:47750 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755730Ab2ECOEi (ORCPT
+	id S1756602Ab2ECOEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:04:50 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37656 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755120Ab2ECOEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:04:38 -0400
+	Thu, 3 May 2012 10:04:46 -0400
+Date: Thu, 3 May 2012 15:04:28 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Deepak Saxena <dsaxena@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>, shawn.guo@linaro.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>, Nicolas Pitre <nico@fluxnic.net>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: Making ARM multiplatform kernels DT-only?
+Message-ID: <20120503140428.GB897@n2100.arm.linux.org.uk>
+References: <201205031350.35476.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20120503135452.GA12050@polaris.bitmath.org>
-References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
-	<alpine.LNX.2.00.1205011300540.1856@pobox.suse.cz>
-	<CAN+gG=GGVFDgf_PkovS+_OX26LH0Q19_FwwkGP2pSwnoX4d_Ug@mail.gmail.com>
-	<alpine.LNX.2.00.1205021044240.14613@pobox.suse.cz>
-	<CAN+gG=HHxzYPSD+1i5JS8HmkxusHi=e6im48VzXHy2KsFoce+w@mail.gmail.com>
-	<CAN+gG=HDZJf+73SoddWar_pRPH2NvFrvpVuAaRC8_frXmGQYfA@mail.gmail.com>
-	<20120503122359.GA11552@polaris.bitmath.org>
-	<CAN+gG=GS_aQ35ekF71oCjZXquB4X3xJvzq2_fT2d7nM+iBK=Zg@mail.gmail.com>
-	<20120503131904.GA11741@polaris.bitmath.org>
-	<CAN+gG=GU8NGJ70Yx8_roeA4LCohcmym7wEspbv4d_xMqbrP5hw@mail.gmail.com>
-	<20120503135452.GA12050@polaris.bitmath.org>
-Date: Thu, 3 May 2012 16:04:37 +0200
-Message-ID: <CAN+gG=F3c-hUqzyOv7DEkWYBN6=mATVMGSKOr-MrWvid8mc-hA@mail.gmail.com>
-Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephane Chatty <chatty@enac.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205031350.35476.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 3, 2012 at 3:54 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
->> >> > 2) Add the interface type to the group descision, which should
->> >> > probably be done anyway. I have a patch in the pipe that, will send it
->> >> > later today.
->> >>
->> >> A simpler solution consists in adding the macros HID_USB_MT_DEVICE(v,
->> >> p) and HID_BLUETOOTH_MT_DEVICE(v, p) as you had introduced in a
->> >> earlier patch (I don't know why it disappeared).
->> >
->> > No, the specific entries in the hid-multitouch device list matches any
->> > group, so those defines were simplified away in the second version.
->>
->> disagree: a device can present several interface (because it has
->> several "devices") and only those presenting Contact ID can and should
->> be handled by hid-multitouch.
->
-> Obviously this is only a problem for the devices with mixed
-> interfaces, but for those, solution 2) together with specifying the
-> group as you suggest should work. We can definitely change all devices
-> in the list, it just was not necessary before (or so I thought).
->
->> The think is that they do match hid-generic (they get the group
->> HID_GROUP_GENERIC).
->> However they also match hid-multitouch (as hid-multitouch does not ask
->> for a particular group). So, if hid-multitouch is loaded __before__
->> hid-generic, it will be given the device whatever the match with
->> hid-generic.
->
-> I suppose what you describe here is how it was working before the
-> device groups.
+On Thu, May 03, 2012 at 01:50:35PM +0000, Arnd Bergmann wrote:
+> Hi everyone,
+> 
+> I've been discussing multiplatform kernels with a few people recently,
+> and we will have a lot of discussion sessions about this at Linaro
+> Connect in Hong Kong.
+> 
+> One question that came up repeatedly is whether we should support all
+> possible board files for each platform in a multiplatform kernel,
+> or just the ones that are already using DT probing. I would like
+> to get a quick poll of opinions on that and I've tried to put those
+> people on Cc that would be most impacted by this, i.e. the maintainers
+> for platforms that have both DT and non-DT board files at the moment.
+> 
+> My feeling is that we should just mandate DT booting for multiplatform
+> kernels, because it significantly reduces the combinatorial space
+> at compile time, avoids a lot of legacy board files that we cannot
+> test anyway, reduces the total kernel size and gives an incentive
+> for people to move forward to DT with their existing boards.
+> 
+> The counterargument is that we won't be able to support all the
+> boards we currently do when the user switches on multiplatform,
+> but I think that is acceptable.
+> Note that I would still want to allow users to build platforms
+> separately in order to enable the ATAG style board files, even
+> for platforms that are not multiplatform capable.
 
-Just to be clear: no, this last paragraph occurs after device groups.
-Before, it was working as hid-generic catch the device first, then
-released it while looking at the report descriptors. Now, it's purely
-dependent on which driver is loaded first for this particaular case.
+I'm basing my comments off mach-zynq.
 
-Benjamin
+How about we take the following steps towards it?
 
-> Ok, I see what to do now. I will be back shortly with a
-> patch which should make USB_DEVICE_ID_TOPSEED2_PERIPAD_701 work, and
-> let's take it from there.
->
-> Thanks for testing,
-> Henrik
+1. create arch/arm/include/mach/ which contains standardized headers
+   for DT based implementations.  This must include all headers included
+   by asm/ or linux/ includes.  This will also be the only mach/ header
+   directory included for code outside of arch/arm/mach-*.  This also
+   acts as the 'default' set of mach/* includes for stuff like timex.h
+   and the empty hardware.h
+
+2. DT based mach-* directories do not have an include directory; their
+   include files must be located in the main include/ heirarchy if shared
+   with other parts of the kernel, otherwise they must be in the mach-*
+   directory.
+
+3. Allow build multiple mach-* directories (which we already do... see
+   the samsung stuff.)
+
+We still have irqs.h being SoC dependent, and we still haven't taken
+debug-macros.S far enough along to get rid of that.  Then there's also
+the problem of uncompress.h.  The last piece of the puzzle is the common
+clock stuff.
+
+So, I think we're still a way off it yet - maybe six months or so.
