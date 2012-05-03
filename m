@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab2ECJDA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:03:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49925 "EHLO
+	id S1756713Ab2ECJFs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:05:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49958 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245Ab2ECJCz (ORCPT
+	with ESMTP id S1756338Ab2ECJC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:02:55 -0400
-Message-Id: <20120503085034.692078846@linutronix.de>
+	Thu, 3 May 2012 05:02:59 -0400
+Message-Id: <20120503085035.211123184@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 03 May 2012 09:02:54 -0000
+Date: Thu, 03 May 2012 09:02:57 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [patch V2 13/31] hexagon: Use generic idle_task
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [patch V2 21/31] powerpc: Use generic init_task
 References: <20120503083859.991965503@linutronix.de>
-Content-Disposition: inline; filename=hexagon-use-generic-idle-task.patch
+Content-Disposition: inline; filename=powerpc-use-generic-init-task.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -22,106 +23,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Same code. Use the generic version. The special Makefile treatment is
-pointless anyway as init_task.o contains only data which is handled by
-the linker script. So no point on being treated like head text.
+Same code. Use the generic version.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-and-tested-by: Richard Kuo <rkuo@codeaurora.org>
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- arch/hexagon/Kconfig            |    1 
- arch/hexagon/Makefile           |    3 --
- arch/hexagon/kernel/Makefile    |    2 -
- arch/hexagon/kernel/init_task.c |   54 ----------------------------------------
- 4 files changed, 3 insertions(+), 57 deletions(-)
+ arch/powerpc/Kconfig            |    1 +
+ arch/powerpc/kernel/Makefile    |    2 +-
+ arch/powerpc/kernel/init_task.c |   29 -----------------------------
+ 3 files changed, 2 insertions(+), 30 deletions(-)
 
-Index: tip/arch/hexagon/Kconfig
+Index: tip/arch/powerpc/Kconfig
 ===================================================================
---- tip.orig/arch/hexagon/Kconfig
-+++ tip/arch/hexagon/Kconfig
-@@ -28,6 +28,7 @@ config HEXAGON
- 	select NO_IOPORT
- 	select GENERIC_IOMAP
+--- tip.orig/arch/powerpc/Kconfig
++++ tip/arch/powerpc/Kconfig
+@@ -145,6 +145,7 @@ config PPC
+ 	select HAVE_ARCH_JUMP_LABEL
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
  	select GENERIC_SMP_IDLE_THREAD
 +	select HAVE_GENERIC_INIT_TASK
- 	# mostly generic routines, with some accelerated ones
- 	---help---
- 	  Qualcomm Hexagon is a processor architecture designed for high
-Index: tip/arch/hexagon/Makefile
+ 
+ config EARLY_PRINTK
+ 	bool
+Index: tip/arch/powerpc/kernel/Makefile
 ===================================================================
---- tip.orig/arch/hexagon/Makefile
-+++ tip/arch/hexagon/Makefile
-@@ -45,8 +45,7 @@ KBUILD_AFLAGS += -DTHREADINFO_REG=$(TIR_
- LIBGCC := $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
- libs-y += $(LIBGCC)
+--- tip.orig/arch/powerpc/kernel/Makefile
++++ tip/arch/powerpc/kernel/Makefile
+@@ -28,7 +28,7 @@ endif
  
--head-y := arch/hexagon/kernel/head.o \
--	arch/hexagon/kernel/init_task.o
-+head-y := arch/hexagon/kernel/head.o
- 
- core-y += arch/hexagon/kernel/ \
- 	arch/hexagon/mm/ \
-Index: tip/arch/hexagon/kernel/Makefile
+ obj-y				:= cputable.o ptrace.o syscalls.o \
+ 				   irq.o align.o signal_32.o pmc.o vdso.o \
+-				   init_task.o process.o systbl.o idle.o \
++				   process.o systbl.o idle.o \
+ 				   signal.o sysfs.o cacheinfo.o time.o \
+ 				   prom.o traps.o setup-common.o \
+ 				   udbg.o misc.o io.o dma.o \
+Index: tip/arch/powerpc/kernel/init_task.c
 ===================================================================
---- tip.orig/arch/hexagon/kernel/Makefile
-+++ tip/arch/hexagon/kernel/Makefile
-@@ -1,4 +1,4 @@
--extra-y := head.o vmlinux.lds init_task.o
-+extra-y := head.o vmlinux.lds
- 
- obj-$(CONFIG_SMP) += smp.o topology.o
- 
-Index: tip/arch/hexagon/kernel/init_task.c
-===================================================================
---- tip.orig/arch/hexagon/kernel/init_task.c
+--- tip.orig/arch/powerpc/kernel/init_task.c
 +++ /dev/null
-@@ -1,54 +0,0 @@
--/*
-- * Init task definition
-- *
-- * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-- * 02110-1301, USA.
-- */
--
+@@ -1,29 +0,0 @@
 -#include <linux/mm.h>
--#include <linux/module.h>
+-#include <linux/export.h>
 -#include <linux/sched.h>
+-#include <linux/init.h>
 -#include <linux/init_task.h>
 -#include <linux/fs.h>
 -#include <linux/mqueue.h>
--#include <asm/thread_info.h>
 -#include <asm/uaccess.h>
--#include <asm/pgtable.h>
 -
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
--
 -/*
 - * Initial thread structure.
 - *
-- * We need to make sure that this is 8192-byte aligned due to the
-- * way process stacks are handled. This is done by making sure
-- * the linker maps this in the .text segment right after head.S,
-- * and making head.S ensure the proper alignment.
+- * We need to make sure that this is 16384-byte aligned due to the
+- * way process stacks are handled. This is done by having a special
+- * "init_task" linker map entry..
 - */
--union thread_union init_thread_union
--	__attribute__((__section__(".data.init_task"),
--		__aligned__(THREAD_SIZE))) = {
--			INIT_THREAD_INFO(init_task)
--		};
+-union thread_union init_thread_union __init_task_data =
+-	{ INIT_THREAD_INFO(init_task) };
 -
 -/*
 - * Initial task structure.
@@ -129,6 +90,7 @@ Index: tip/arch/hexagon/kernel/init_task.c
 - * All other task structs will be allocated on slabs in fork.c
 - */
 -struct task_struct init_task = INIT_TASK(init_task);
+-
 -EXPORT_SYMBOL(init_task);
 
 
