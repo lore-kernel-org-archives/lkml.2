@@ -1,151 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759046Ab2ECXhy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 19:37:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54967 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756946Ab2ECXhw (ORCPT
+	id S1759053Ab2ECXjE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 19:39:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59453 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756946Ab2ECXjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 19:37:52 -0400
-Date: Thu, 3 May 2012 16:37:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: rajman mekaco <rajman.mekaco@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-ia64@vger.kernel.org
-Subject: Re: [PATCH 1/1] page_alloc.c: remove argument to
- pageblock_default_order
-Message-Id: <20120503163749.d24bf07f.akpm@linux-foundation.org>
-In-Reply-To: <1336065312-2891-1-git-send-email-rajman.mekaco@gmail.com>
-References: <1336065312-2891-1-git-send-email-rajman.mekaco@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 May 2012 19:39:02 -0400
+Date: Thu, 3 May 2012 16:38:58 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Francois Rigaut <frigaut@gmail.com>
+Cc: Nico Schottelius <nico-linux-20120419@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Linux Support for Thunderbolt using Apple Monitor
+Message-ID: <20120503233858.GA13453@kroah.com>
+References: <20120419163800.GB13977@schottelius.org>
+ <CAMVeQ8r_3vuAxzbLyKoecOHOOGijUDkLfw+MK7o-WoWbuOGSrg@mail.gmail.com>
+ <20120502163629.GE928@schottelius.org>
+ <20120502202509.GA26798@kroah.com>
+ <20120503065003.GB13386@schottelius.org>
+ <CAMVeQ8qYu4bShd_+pwRv8bShhusJMDa-jjoqu7EujS4jt7RSNA@mail.gmail.com>
+ <20120503153547.GD20334@kroah.com>
+ <CAMVeQ8q3PMMGmFSgrnqbW2HVdfmN+LgatX3TSfv5_2Ebuuj=QQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMVeQ8q3PMMGmFSgrnqbW2HVdfmN+LgatX3TSfv5_2Ebuuj=QQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  3 May 2012 22:45:12 +0530
-rajman mekaco <rajman.mekaco@gmail.com> wrote:
-
-> When CONFIG_HUGETLB_PAGE_SIZE_VARIABLE is not defined, then
-> pageblock_default_order has an argument to it.
+On Fri, May 04, 2012 at 09:04:33AM +1000, Francois Rigaut wrote:
+> Sorry for the lag, I live down under.
 > 
-> However, free_area_init_core will call it without any argument
-> anyway.
+> On Fri, May 4, 2012 at 1:35 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
 > 
-> Remove the argument to pageblock_default_order when
-> CONFIG_HUGETLB_PAGE_SIZE_VARIABLE is not defined.
+>     On Thu, May 03, 2012 at 09:45:00PM +1000, Francois Rigaut wrote:
+>     > After Greg pointed to the PCIE, I realized that modules related to PCIE
+>     > hotpluging were not loaded in my config. I then did a whole bunch of test
+>     > modprobing a couple of modules: pciehp (with and without pciehp_force and
+>     /or
+>     > pciehp_poll_mode) and acpiphp (not together obviously). No
+>     change:connecting
+>     > the thunderbolt does not lead to any kernel activity. No message
+>     whatsoever in
+>     > /var/log/everything.log.
+>     > Checked /sys/bus/pci/slots, nothing appeared. No change in lspci. Added a
+>     "echo
+>     > 1 > /sys/bus/pci/rescan" for good measure to no avail.
 > 
-> Signed-off-by: rajman mekaco <rajman.mekaco@gmail.com>
-> ---
->  mm/page_alloc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>     Does anything show up in there at all?
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index a712fb9..4b95412 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4274,7 +4274,7 @@ static inline void __init set_pageblock_order(unsigned int order)
->   * at compile-time. See include/linux/pageblock-flags.h for the values of
->   * pageblock_order based on the kernel config
->   */
-> -static inline int pageblock_default_order(unsigned int order)
-> +static inline int pageblock_default_order(void)
->  {
->  	return MAX_ORDER-1;
->  }
+> Greg, nope, nothing at all shows in either slots or everything.log after a
+> hotplug. not a single line in the log file and no files in the /sys/bus/pci/
+> slots directory.
+>  
+> 
+> 
+>     How about if you load the acpiphp module instead?  Some BIOSes use that
+>     instead of pciehp.
+> 
+> I tried both with pciehp *and* acpiphp.
 
-Interesting.  It has been that way since at least 3.1.
+Odd, one of them should work.  If not, then that's why this isn't
+working.
 
-It didn't break the build because pageblock_default_order() is only
-ever invoked by set_pageblock_order(), with:
+>     You need one of those drivers in order for this to work properly.
+> 
+>     Also, speaking of BIOS, make sure you have the latest updates, there
+>     were a lot of initial problems with Thunderbolt hotplug issues that were
+>     fixed in newer BIOS versions, so that will be required to be updated.
+> 
+> well that might be the problem. In fact, I'm booting EFI directly using the
+> 3.3+ kernel direct efi boot feature. Might that be the problem? I though
+> booting EFI on an EFI machine was supposed to give you better hardware
+> recognition (I am on a macbook air trying to hotplug a thunderbolt display to
+> the thunderbolt/displayport connector).
+> Anyway, I will try with a more standard (fake) BIOS boot when I get to work.
 
-	set_pageblock_order(pageblock_default_order());
+That "shouldn't" make a difference, but it would be good to find out.
 
-and set_pageblock_order() is a macro:
+thanks,
 
-#define set_pageblock_order(x)	do {} while (0)
-
-
-There's yet another reason not to use macros, dammit - they hide bugs.
-
-
-Mel, can you have a think about this please?  Can we just kill off
-pageblock_default_order() and fold its guts into
-set_pageblock_order(void)?  Only ia64 and powerpc can define
-CONFIG_HUGETLB_PAGE_SIZE_VARIABLE.
-
---- a/mm/page_alloc.c~a
-+++ a/mm/page_alloc.c
-@@ -4300,25 +4300,24 @@ static inline void setup_usemap(struct p
- 
- #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
- 
--/* Return a sensible default order for the pageblock size. */
--static inline int pageblock_default_order(void)
--{
--	if (HPAGE_SHIFT > PAGE_SHIFT)
--		return HUGETLB_PAGE_ORDER;
--
--	return MAX_ORDER-1;
--}
--
- /* Initialise the number of pages represented by NR_PAGEBLOCK_BITS */
--static inline void __init set_pageblock_order(unsigned int order)
-+static inline void __init set_pageblock_order(void)
- {
-+	unsigned int order;
-+
- 	/* Check that pageblock_nr_pages has not already been setup */
- 	if (pageblock_order)
- 		return;
- 
-+	if (HPAGE_SHIFT > PAGE_SHIFT)
-+		order = HUGETLB_PAGE_ORDER;
-+	else
-+		order = MAX_ORDER - 1;
-+
- 	/*
- 	 * Assume the largest contiguous order of interest is a huge page.
--	 * This value may be variable depending on boot parameters on IA64
-+	 * This value may be variable depending on boot parameters on IA64 and
-+	 * powerpc.
- 	 */
- 	pageblock_order = order;
- }
-@@ -4326,15 +4325,13 @@ static inline void __init set_pageblock_
- 
- /*
-  * When CONFIG_HUGETLB_PAGE_SIZE_VARIABLE is not set, set_pageblock_order()
-- * and pageblock_default_order() are unused as pageblock_order is set
-- * at compile-time. See include/linux/pageblock-flags.h for the values of
-- * pageblock_order based on the kernel config
-+ * is unused as pageblock_order is set at compile-time. See
-+ * include/linux/pageblock-flags.h for the values of pageblock_order based on
-+ * the kernel config
-  */
--static inline int pageblock_default_order(unsigned int order)
-+static inline void set_pageblock_order(void)
- {
--	return MAX_ORDER-1;
- }
--#define set_pageblock_order(x)	do {} while (0)
- 
- #endif /* CONFIG_HUGETLB_PAGE_SIZE_VARIABLE */
- 
-@@ -4422,7 +4419,7 @@ static void __paginginit free_area_init_
- 		if (!size)
- 			continue;
- 
--		set_pageblock_order(pageblock_default_order());
-+		set_pageblock_order();
- 		setup_usemap(pgdat, zone, size);
- 		ret = init_currently_empty_zone(zone, zone_start_pfn,
- 						size, MEMMAP_EARLY);
-_
-
-
+greg k-h
