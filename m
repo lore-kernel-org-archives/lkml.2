@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab2ECJGh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:06:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49948 "EHLO
+	id S1757079Ab2ECJHT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:07:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49932 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756312Ab2ECJC5 (ORCPT
+	with ESMTP id S1756241Ab2ECJC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:02:57 -0400
-Message-Id: <20120503085035.083343435@linutronix.de>
+	Thu, 3 May 2012 05:02:56 -0400
+Message-Id: <20120503085034.816195285@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 03 May 2012 09:02:56 -0000
+Date: Thu, 03 May 2012 09:02:54 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [patch V2 19/31] openrisc: Use generic init_task
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [patch V2 15/31] m68k: Use generic init_task
 References: <20120503083859.991965503@linutronix.de>
-Content-Disposition: inline; filename=openrisc-use-generic-init-task.patch
+Content-Disposition: inline; filename=m68k-use-generic-init-task.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -23,103 +23,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Same code. Use the generic version. The special Makefile treatment is
-pointless anyway as init_task.o contains only data which is handled by
-the linker script. So no point on being treated like head text.
+Same code. Use the generic version.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jonas Bonn <jonas@southpole.se>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/openrisc/Kconfig            |    1 
- arch/openrisc/Makefile           |    2 -
- arch/openrisc/kernel/Makefile    |    2 -
- arch/openrisc/kernel/init_task.c |   42 ---------------------------------------
- 4 files changed, 3 insertions(+), 44 deletions(-)
+ arch/m68k/Kconfig            |    1 +
+ arch/m68k/kernel/Makefile    |    2 +-
+ arch/m68k/kernel/init_task.c |   35 -----------------------------------
+ 3 files changed, 2 insertions(+), 36 deletions(-)
 
-Index: tip/arch/openrisc/Kconfig
+Index: tip/arch/m68k/Kconfig
 ===================================================================
---- tip.orig/arch/openrisc/Kconfig
-+++ tip/arch/openrisc/Kconfig
-@@ -17,6 +17,7 @@ config OPENRISC
- 	select GENERIC_IOMAP
+--- tip.orig/arch/m68k/Kconfig
++++ tip/arch/m68k/Kconfig
+@@ -8,6 +8,7 @@ config M68K
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG if RMW_INSNS
  	select GENERIC_CPU_DEVICES
- 	select GENERIC_ATOMIC64
+ 	select FPU if MMU
 +	select HAVE_GENERIC_INIT_TASK
  
- config MMU
- 	def_bool y
-Index: tip/arch/openrisc/Makefile
+ config RWSEM_GENERIC_SPINLOCK
+ 	bool
+Index: tip/arch/m68k/kernel/Makefile
 ===================================================================
---- tip.orig/arch/openrisc/Makefile
-+++ tip/arch/openrisc/Makefile
-@@ -38,7 +38,7 @@ else
- 	KBUILD_CFLAGS += $(call cc-option,-msoft-div)
- endif
+--- tip.orig/arch/m68k/kernel/Makefile
++++ tip/arch/m68k/kernel/Makefile
+@@ -13,7 +13,7 @@ extra-$(CONFIG_SUN3X)	:= head.o
+ extra-$(CONFIG_SUN3)	:= sun3-head.o
+ extra-y			+= vmlinux.lds
  
--head-y 		:= arch/openrisc/kernel/head.o arch/openrisc/kernel/init_task.o
-+head-y 		:= arch/openrisc/kernel/head.o
+-obj-y	:= entry.o init_task.o irq.o m68k_ksyms.o module.o process.o ptrace.o
++obj-y	:= entry.o irq.o m68k_ksyms.o module.o process.o ptrace.o
+ obj-y	+= setup.o signal.o sys_m68k.o syscalltable.o time.o traps.o
  
- core-y		+= arch/openrisc/lib/ \
- 		   arch/openrisc/kernel/ \
-Index: tip/arch/openrisc/kernel/Makefile
+ obj-$(CONFIG_MMU_MOTOROLA) += ints.o vectors.o
+Index: tip/arch/m68k/kernel/init_task.c
 ===================================================================
---- tip.orig/arch/openrisc/kernel/Makefile
-+++ tip/arch/openrisc/kernel/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for the linux kernel.
- #
- 
--extra-y	:= head.o vmlinux.lds init_task.o
-+extra-y	:= head.o vmlinux.lds
- 
- obj-y	:= setup.o idle.o or32_ksyms.o process.o dma.o \
- 	   traps.o time.o irq.o entry.o ptrace.o signal.o sys_or32.o \
-Index: tip/arch/openrisc/kernel/init_task.c
-===================================================================
---- tip.orig/arch/openrisc/kernel/init_task.c
+--- tip.orig/arch/m68k/kernel/init_task.c
 +++ /dev/null
-@@ -1,42 +0,0 @@
+@@ -1,35 +0,0 @@
 -/*
-- * OpenRISC init_task.c
-- *
-- * Linux architectural port borrowing liberally from similar works of
-- * others.  All original copyrights apply as per the original source
-- * declaration.
-- *
-- * Modifications for the OpenRISC architecture:
-- * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
-- * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
-- *
-- *      This program is free software; you can redistribute it and/or
-- *      modify it under the terms of the GNU General Public License
-- *      as published by the Free Software Foundation; either version
-- *      2 of the License, or (at your option) any later version.
+- *  linux/arch/m68knommu/kernel/init_task.c
 - */
--
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/sched.h>
+-#include <linux/init.h>
 -#include <linux/init_task.h>
+-#include <linux/fs.h>
 -#include <linux/mqueue.h>
--#include <linux/export.h>
+-
+-#include <asm/uaccess.h>
+-#include <asm/pgtable.h>
 -
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
--
--/*
-- * Initial thread structure.
-- *
-- * We need to make sure that this is THREAD_SIZE aligned due to the
-- * way process stacks are handled. This is done by having a special
-- * "init_task" linker map entry..
-- */
--union thread_union init_thread_union __init_task_data = {
--	INIT_THREAD_INFO(init_task)
--};
--
 -/*
 - * Initial task structure.
 - *
 - * All other task structs will be allocated on slabs in fork.c
 - */
 -struct task_struct init_task = INIT_TASK(init_task);
+-
 -EXPORT_SYMBOL(init_task);
+-
+-/*
+- * Initial thread structure.
+- *
+- * We need to make sure that this is THREAD size aligned due to the
+- * way process stacks are handled. This is done by having a special
+- * "init_task" linker map entry..
+- */
+-union thread_union init_thread_union __init_task_data =
+-	{ INIT_THREAD_INFO(init_task) };
+-
 
 
