@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab2ECS25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 14:28:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51002 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753863Ab2ECS24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 14:28:56 -0400
-Message-ID: <4FA2CE5C.8000100@zytor.com>
-Date: Thu, 03 May 2012 11:28:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1758010Ab2ECSao (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 14:30:44 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:57511 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab2ECSan (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 14:30:43 -0400
+To: Rupjyoti Sarmah <rsarmah@amcc.com>
+cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, rsarmah@apm.com
+From: Wolfgang Denk <wd@denx.de>
+Subject: Re: [PATCH v16 01/10]USB/ppc4xx: Add Synopsys DWC OTG Register definitions
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@gmail.com>,
-        Jana Saout <jana@saout.de>, Joel Becker <jlbec@evilplan.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Oops with DCACHE_WORD_ACCESS and ocfs2, autofs4
-References: <1335788867.29087.19.camel@localhost> <20120501110024.GC6649@dhcp-172-17-9-228.mtv.corp.google.com> <1335875321.26671.15.camel@localhost> <CAPa8GCANv=-c7HsYvDqM+8JqJq6Gr9muxAivU2Ni16x9Ru5EXw@mail.gmail.com> <CA+55aFwPgWqCPA=ao6XmZy56PaJZ4WC+hOZ_CHGWpo_zO425VA@mail.gmail.com> <20120503064722.GN6871@ZenIV.linux.org.uk> <CA+55aFx0EUgXCE9CfUGz6zde-6iYgUKZRxB1=-VOEG0kSX2qEA@mail.gmail.com> <CA+55aFxeBHSB6iBpP55kV2bLQGg8ZC9Ve5mvCmZN0ARH9dVwKg@mail.gmail.com> <4FA2CAD9.6010808@zytor.com> <CA+55aFxrBghonjRvS=KK=5Oqw_Wj9PDh2wkDtVh7U9jw8=uTsA@mail.gmail.com>
-In-Reply-To: <CA+55aFxrBghonjRvS=KK=5Oqw_Wj9PDh2wkDtVh7U9jw8=uTsA@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8bit
+In-reply-to: <201205031223.q43CN3LN022598@amcc.com>
+References: <201205031223.q43CN3LN022598@amcc.com>
+Comments: In-reply-to Rupjyoti Sarmah <rsarmah@amcc.com>
+   message dated "Thu, 03 May 2012 17:53:03 +0530."
+Date: Thu, 03 May 2012 20:30:37 +0200
+Message-Id: <20120503183037.774D4204A81@gemini.denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+		"lea" __WORDSUFFIX " %2,%1\n\t"
-+		"and" __WORDSUFFIX " %4,%1\n\t"
-+		"shl" __WORDSUFFIX " $3,%1\n\t"
-+		"shr" __WORDSUFFIX " %b1,%0\n\t"
+Dear Rupjyoti Sarmah,
 
-Also, for this sequence of instructions using %ecx unconditionally is
-actually better (avoids REX prefixes on 64 bits.)
+In message <201205031223.q43CN3LN022598@amcc.com> you wrote:
+> 
+> Add Synopsys Design Ware core register definitions.
 
-	-hpa
+Olof Johansson <olof@lixom.net> has commented v15 of this patch as
+follows:
+
+> No, just start over from scratch. Just leave the crap driver behind,
+> use it for reference but write the new one.
+> 
+> It's obvious given that you are already at iteration v15 and it's
+> still looking this bad that this is not realistic to get reviewed and
+> accepted as-is. I don't think staging is a good target either -- what
+> the driver really needs is _functional_ cut-down to only cover the use
+> cases that your product uses, and staging cleanups are mostly around
+> style and refactoring, not changing, fixing or removing functionality.
+> ...
+> I don't think you understood what I meant. Try building an ARM config
+> with this driver enabled, for example, and you'll see that it breaks
+> the build.
+
+See http://thread.gmane.org/gmane.linux.usb.general/53348/focus=53913
+for the full context and other important comments.
+
+It seems most of these requests have been ignored so far.
+
+I would also like to point out that the same Synopsys USB controller
+is used in a number of other SoCs (especially ARM chips), and
+supported by other drivers, some of these even in mainline.
+
+See http://thread.gmane.org/gmane.linux.usb.general/61714/focus=62139
+for a related thread.
+
+
+Instead of trying to add a completely new driver to mainline (and one
+which has been repeatedly been rejected), I vote for focussing on the
+existing driver code that is already in mainline, and testing and
+improving this so we can use a single implementation of this driver
+code for all SoCs that use the same IP block.
+
+
+Best regards,
+
+Wolfgang Denk
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
+panic: kernel trap (ignored)
