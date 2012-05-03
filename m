@@ -1,56 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674Ab2ECUtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 16:49:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42906 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754023Ab2ECUtq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 16:49:46 -0400
-Message-ID: <4FA2EF67.9070107@gmail.com>
-Date: Thu, 03 May 2012 14:49:43 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/13] perf target: Introduce perf_target_errno
-References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com> <1335417327-11796-10-git-send-email-namhyung.kim@lge.com> <20120502185913.GE5745@infradead.org> <4FA2EBCC.5060905@gmail.com> <20120503204212.GC8807@infradead.org>
-In-Reply-To: <20120503204212.GC8807@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758711Ab2ECUvA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 16:51:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10334 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751270Ab2ECUu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 16:50:58 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        stable@vger.kernel.org
+Subject: [PATCH] efivars: Improve variable validation
+Date: Thu,  3 May 2012 16:50:46 -0400
+Message-Id: <1336078246-9557-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.41.104
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/3/12 2:42 PM, Arnaldo Carvalho de Melo wrote:
-> Em Thu, May 03, 2012 at 02:34:20PM -0600, David Ahern escreveu:
->> On 5/2/12 12:59 PM, Arnaldo Carvalho de Melo wrote:
->>> Also it would be better to have it as PERF_ERRNO__PID_OVERRIDE_CPU, etc.
->>
->> I thought you wanted subsystem based errno's (PERF_TARGET__XXXXX)
->> versus one big set (PERF_ERRNO__XXXXX). Did you change your mind?
->
-> Oops, I didn't realize PID being the subsys, then yeah, that is ok.
->
-> But that would make it PERF_ERR__TARGET_, as PERF_TARGET__ doesn't
-> straight away brings back "error enumeration", at least for me :)
->
-> But this is getting overly long, ideas?
->
-> PERF_ we need, its libperf's "namespace", then ERRNO looks needed too,
-> heck, make it long:
->
-> PERF_ERRNO_TARGET__PID_OVERRIDE_CPU
->
-> After all most of the time this will just be inside the function setting
-> the error and the strerrno function that will convert this to an string,
-> right?
+Ben Hutchings pointed out that the validation in efivars was inadequate -
+most obviously, an entry with size 0 would server as a DoS against the
+kernel. Improve this based on his suggestions.
 
-Agreed, the long macro name shouldn't be visible outside of the depths 
-of the perf files that set it and convert it to a string.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/firmware/efivars.c |   46 +++++++++++++++++++++++++++++---------------
+ 1 file changed, 30 insertions(+), 16 deletions(-)
 
-David
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 891e467..47408e8 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -192,18 +192,21 @@ utf16_strncmp(const efi_char16_t *a, const efi_char16_t *b, size_t len)
+ }
+ 
+ static bool
+-validate_device_path(struct efi_variable *var, int match, u8 *buffer, int len)
++validate_device_path(struct efi_variable *var, int match, u8 *buffer,
++		     unsigned long len)
+ {
+ 	struct efi_generic_dev_path *node;
+ 	int offset = 0;
+ 
+ 	node = (struct efi_generic_dev_path *)buffer;
+ 
+-	while (offset < len) {
+-		offset += node->length;
++	if (len < sizeof(*node))
++		return false;
+ 
+-		if (offset > len)
+-			return false;
++	while (offset <= len - sizeof(*node) &&
++	       node->length >= sizeof(*node) &&
++		node->length <= len - offset) {
++		offset += node->length;
+ 
+ 		if ((node->type == EFI_DEV_END_PATH ||
+ 		     node->type == EFI_DEV_END_PATH2) &&
+@@ -222,7 +225,8 @@ validate_device_path(struct efi_variable *var, int match, u8 *buffer, int len)
+ }
+ 
+ static bool
+-validate_boot_order(struct efi_variable *var, int match, u8 *buffer, int len)
++validate_boot_order(struct efi_variable *var, int match, u8 *buffer,
++		    unsigned long len)
+ {
+ 	/* An array of 16-bit integers */
+ 	if ((len % 2) != 0)
+@@ -232,19 +236,27 @@ validate_boot_order(struct efi_variable *var, int match, u8 *buffer, int len)
+ }
+ 
+ static bool
+-validate_load_option(struct efi_variable *var, int match, u8 *buffer, int len)
++validate_load_option(struct efi_variable *var, int match, u8 *buffer,
++		     unsigned long len)
+ {
+ 	u16 filepathlength;
+-	int i, desclength = 0;
++	int i, desclength = 0, namelen;
++
++	namelen = utf16_strnlen(var->VariableName, sizeof(var->VariableName));
+ 
+ 	/* Either "Boot" or "Driver" followed by four digits of hex */
+ 	for (i = match; i < match+4; i++) {
+-		if (hex_to_bin(var->VariableName[i] & 0xff) < 0)
++		if (var->VariableName[i] > 127 ||
++		    hex_to_bin(var->VariableName[i] & 0xff) < 0)
+ 			return true;
+ 	}
+ 
+-	/* A valid entry must be at least 6 bytes */
+-	if (len < 6)
++	/* Reject it if there's 4 digits of hex and then further content */
++	if (namelen > match + 4)
++		return false;
++
++	/* A valid entry must be at least 8 bytes */
++	if (len < 8)
+ 		return false;
+ 
+ 	filepathlength = buffer[4] | buffer[5] << 8;
+@@ -253,7 +265,7 @@ validate_load_option(struct efi_variable *var, int match, u8 *buffer, int len)
+ 	 * There's no stored length for the description, so it has to be
+ 	 * found by hand
+ 	 */
+-	desclength = utf16_strsize((efi_char16_t *)(buffer + 6), len) + 2;
++	desclength = utf16_strsize((efi_char16_t *)(buffer + 6), len - 6) + 2;
+ 
+ 	/* Each boot entry must have a descriptor */
+ 	if (!desclength)
+@@ -275,7 +287,8 @@ validate_load_option(struct efi_variable *var, int match, u8 *buffer, int len)
+ }
+ 
+ static bool
+-validate_uint16(struct efi_variable *var, int match, u8 *buffer, int len)
++validate_uint16(struct efi_variable *var, int match, u8 *buffer,
++		unsigned long len)
+ {
+ 	/* A single 16-bit integer */
+ 	if (len != 2)
+@@ -285,7 +298,8 @@ validate_uint16(struct efi_variable *var, int match, u8 *buffer, int len)
+ }
+ 
+ static bool
+-validate_ascii_string(struct efi_variable *var, int match, u8 *buffer, int len)
++validate_ascii_string(struct efi_variable *var, int match, u8 *buffer,
++		      unsigned long len)
+ {
+ 	int i;
+ 
+@@ -303,7 +317,7 @@ validate_ascii_string(struct efi_variable *var, int match, u8 *buffer, int len)
+ struct variable_validate {
+ 	char *name;
+ 	bool (*validate)(struct efi_variable *var, int match, u8 *data,
+-			 int len);
++			 unsigned long len);
+ };
+ 
+ static const struct variable_validate variable_validate[] = {
+@@ -325,7 +339,7 @@ static const struct variable_validate variable_validate[] = {
+ };
+ 
+ static bool
+-validate_var(struct efi_variable *var, u8 *data, int len)
++validate_var(struct efi_variable *var, u8 *data, unsigned long len)
+ {
+ 	int i;
+ 	u16 *unicode_name = var->VariableName;
+-- 
+1.7.10
+
