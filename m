@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab2ECKWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 06:22:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50332 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab2ECKWI (ORCPT
+	id S1756481Ab2ECKWz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 06:22:55 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:49058 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab2ECKWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 06:22:08 -0400
-Date: Thu, 3 May 2012 12:22:06 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: Felix Radensky <felix@embedded-sol.com>,
-        Thomas Wucher <thwucher@linutronix.de>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: mpc8xxx: Prevent NULL pointer deref in demux
- handler
-In-Reply-To: <alpine.LFD.2.02.1205031207050.6271@ionos>
-Message-ID: <alpine.LFD.2.02.1205031219320.6271@ionos>
-References: <alpine.LFD.2.02.1205031207050.6271@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 3 May 2012 06:22:53 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>, Johan Hovold <jhovold@gmail.com>
+Subject: Re: [PATCH 1/4] mfd: add LM3533 lighting-power core driver
+Date: Thu,  3 May 2012 12:22:40 +0200
+Message-Id: <1336040560-18185-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
+In-Reply-To: <20120426124122.GA26692@sirena.org.uk>
+References: <20120426124122.GA26692@sirena.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This time with the correct CC of the reporter :)
+[ Sorry for the resend -- Android/gmail apparently added HTML to my previous
+  attempt. ] 
 
--------------->
-Subject: gpio: mpc8xxx: Prevent NULL pointer deref in demux handler
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 03 May 2012 11:58:09 +0200
+On Apr 26, 2012 2:41 PM, "Mark Brown" <broonie@opensource.wolfsonmicro.com>
+wrote:
+> On Fri, Apr 20, 2012 at 05:30:23PM +0200, Johan Hovold wrote:
+> > +static int __lm3533_read(struct lm3533 *lm3533, u8 reg, u8 *val)
+> > +{
+> > +     int ret;
+> > +
+> > +     ret = lm3533->read(lm3533, reg, val);
+> > +     if (ret < 0) {
+>
+> Looks like you could save a bunch of code by using regmap for the
+> register I/O.  This would also give you access to the cache and
+> diagnostic infrastructure it has.
 
-commit cfadd838(powerpc/8xxx: Fix interrupt handling in MPC8xxx GPIO
-driver) added an unconditional call of chip->irq_eoi() to the demux
-handler.
+Using regmap only saves about ten lines for the actual io implementation,
+but it does allow me to get rid of the custom debugfs interface. I'm not
+enabling caching at this point but it'll probably come in handy later.
 
-This leads to a NULL pointer derefernce on MPC512x platforms which use
-this driver as well.
-
-Make it conditional.
-
-Reported-by: Thomas Wucher <thwucher@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Felix Radensky <felix@embedded-sol.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: stable@vger.kernel.org
----
- drivers/gpio/gpio-mpc8xxx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/gpio/gpio-mpc8xxx.c
-===================================================================
---- linux-2.6.orig/drivers/gpio/gpio-mpc8xxx.c
-+++ linux-2.6/drivers/gpio/gpio-mpc8xxx.c
-@@ -163,7 +163,8 @@ static void mpc8xxx_gpio_irq_cascade(uns
- 	if (mask)
- 		generic_handle_irq(irq_linear_revmap(mpc8xxx_gc->irq,
- 						     32 - ffs(mask)));
--	chip->irq_eoi(&desc->irq_data);
-+	if (chip->irq_eoi)
-+		chip->irq_eoi(&desc->irq_data);
- }
- 
- static void mpc8xxx_irq_unmask(struct irq_data *d)
+Thanks,
+Johan
