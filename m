@@ -1,160 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750968Ab2ECEXE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 00:23:04 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38189 "EHLO gate.crashing.org"
+	id S1751195Ab2ECEX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 00:23:59 -0400
+Received: from tundra.namei.org ([65.99.196.166]:37543 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750746Ab2ECEXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 00:23:02 -0400
-Message-ID: <1336018961.2653.11.camel@pasglop>
-Subject: Re: [PATCH] powerpc: use local var instead of
- local_paca->irq_happened directly in __check_irq_replay
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-Cc: Milton Miller <miltonm@bga.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 03 May 2012 14:22:41 +1000
-In-Reply-To: <1336011306.2653.3.camel@pasglop>
-References: <4FA1E527.1090807@gmail.com> <1336011306.2653.3.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1750826Ab2ECEX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 00:23:56 -0400
+Date: Thu, 3 May 2012 14:23:48 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        "Jonathan Corbet <corbet@lwn.net>, Kasatkin, Dmitry" 
+	<dmitry.kasatkin@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
+ ima-appraisal patches)
+In-Reply-To: <1335796351.1827.6.camel@falcor>
+Message-ID: <alpine.LRH.2.02.1205031421490.7642@tundra.namei.org>
+References: <1334865448.2429.35.camel@falcor>  <20120420004303.GB6871@ZenIV.linux.org.uk>  <alpine.LSU.2.00.1204201133340.1450@eggly.anvils>  <20120420190418.GK6871@ZenIV.linux.org.uk>  <CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com> 
+ <20120420195833.GM6871@ZenIV.linux.org.uk>  <CA+55aFzaC8YfN_q1TxPbNgpD7AnoAVac2Bqa+ysEji3u7ZQ18A@mail.gmail.com>  <20120420221315.GN6871@ZenIV.linux.org.uk>  <CA+55aFzEwsW1kdLo2hpgW2PUCRkyaRxS_KB40iwmuk1FDgV+cg@mail.gmail.com> 
+ <CALLzPKarZY11htkukZPi+7ny5r=au9hMdKBOy20wAdFjSBOyjA@mail.gmail.com>  <20120427173417.GK6871@ZenIV.linux.org.uk> <1335796351.1827.6.camel@falcor>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 30 Apr 2012, Mimi Zohar wrote:
 
-> It should not as __check_irq_replay() should always be called
-> with interrupts hard disabled... Do you see any code path
-> where that is not the case ?
+> Jon, thank you for summarizing the discussion - article
+> http://lwn.net/Articles/494158/.  As Jake Edge's previous LWN article
+> http://lwn.net/Articles/488906/ said, we've been working on upstreaming
+> the different integrity components for quite a while.  Although
+> IMA-appraisal isn't the last component, it is a major one and were
+> hoping that it would be upstreamed in the near future.  Is 3.5 still a
+> possibility?
 
-More specifically, your backtrace seems to indicate that
-__check_irq_repay() was called from arch_local_irq_restore() which
-should have done this before calling __check_irq_replay():
-
-	if (unlikely(irq_happened != PACA_IRQ_HARD_DIS))
-		__hard_irq_disable();
-
-Now, the only possibility that I can see for an interrupt to come in
-and trip the problem you observed would be if for some reason we
-had irq_happened set to PACA_IRQ_HARD_DIS while interrupts were
-not hard disabled.
-
-Can you try if removing the test (and thus unconditionally calling
-__hard_irq_disable()) fixes the problem for you ?
-
-If that is the case, then we need to audit the code to figure out how we
-can end up with that bit in irq_happened set and interrupts hard
-enabled.
-
-Something like may_hard_irq_enable() shouldn't cause it since it should
-only be called while hard disabled but adding a check in there might be
-worth it (something like WARN_ON(mfmsr() & MSR_EE)).
-
-Cheers,
-Ben.
-
-> Cheers,
-> Ben.
-> 
-> > Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> > ---
-> >  arch/powerpc/kernel/irq.c |   46 +++++++++++++++++++++++++++++---------------
-> >  1 files changed, 30 insertions(+), 16 deletions(-)
-> > 
-> > diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
-> > index 5ec1b23..3d48b23 100644
-> > --- a/arch/powerpc/kernel/irq.c
-> > +++ b/arch/powerpc/kernel/irq.c
-> > @@ -137,15 +137,17 @@ static inline notrace int decrementer_check_overflow(void)
-> >   */
-> >  notrace unsigned int __check_irq_replay(void)
-> >  {
-> > +	unsigned int ret_val;
-> >  	/*
-> >  	 * We use local_paca rather than get_paca() to avoid all
-> >  	 * the debug_smp_processor_id() business in this low level
-> >  	 * function
-> >  	 */
-> > -	unsigned char happened = local_paca->irq_happened;
-> > +	unsigned char happened, irq_happened;
-> > +	happened = irq_happened = local_paca->irq_happened;
-> >  
-> >  	/* Clear bit 0 which we wouldn't clear otherwise */
-> > -	local_paca->irq_happened &= ~PACA_IRQ_HARD_DIS;
-> > +	irq_happened &= ~PACA_IRQ_HARD_DIS;
-> >  
-> >  	/*
-> >  	 * Force the delivery of pending soft-disabled interrupts on PS3.
-> > @@ -161,33 +163,45 @@ notrace unsigned int __check_irq_replay(void)
-> >  	 * decrementer itself rather than the paca irq_happened field
-> >  	 * in case we also had a rollover while hard disabled
-> >  	 */
-> > -	local_paca->irq_happened &= ~PACA_IRQ_DEC;
-> > -	if (decrementer_check_overflow())
-> > -		return 0x900;
-> > +	irq_happened &= ~PACA_IRQ_DEC;
-> > +	if (decrementer_check_overflow()) {
-> > +		ret_val = 0x900;
-> > +		goto replay;
-> > +	}
-> >  
-> >  	/* Finally check if an external interrupt happened */
-> > -	local_paca->irq_happened &= ~PACA_IRQ_EE;
-> > -	if (happened & PACA_IRQ_EE)
-> > -		return 0x500;
-> > +	irq_happened &= ~PACA_IRQ_EE;
-> > +	if (happened & PACA_IRQ_EE) {
-> > +		ret_val = 0x500;
-> > +		goto replay;
-> > +	}
-> >  
-> >  #ifdef CONFIG_PPC_BOOK3E
-> >  	/* Finally check if an EPR external interrupt happened
-> >  	 * this bit is typically set if we need to handle another
-> >  	 * "edge" interrupt from within the MPIC "EPR" handler
-> >  	 */
-> > -	local_paca->irq_happened &= ~PACA_IRQ_EE_EDGE;
-> > -	if (happened & PACA_IRQ_EE_EDGE)
-> > -		return 0x500;
-> > +	irq_happened &= ~PACA_IRQ_EE_EDGE;
-> > +	if (happened & PACA_IRQ_EE_EDGE) {
-> > +		ret_val = 0x500;
-> > +		goto replay;
-> > +	}
-> >  
-> > -	local_paca->irq_happened &= ~PACA_IRQ_DBELL;
-> > -	if (happened & PACA_IRQ_DBELL)
-> > -		return 0x280;
-> > +	irq_happened &= ~PACA_IRQ_DBELL;
-> > +	if (happened & PACA_IRQ_DBELL) {
-> > +		ret_val = 0x280;
-> > +		goto replay;
-> > +	}
-> >  #endif /* CONFIG_PPC_BOOK3E */
-> >  
-> >  	/* There should be nothing left ! */
-> > -	BUG_ON(local_paca->irq_happened != 0);
-> > +	BUG_ON(irq_happened != 0);
-> > +	ret_val = 0;
-> >  
-> > -	return 0;
-> > +replay:
-> > +	local_paca->irq_happened = irq_happened;
-> > +
-> > +	return ret_val;
-> >  }
-> >  
-> >  notrace void arch_local_irq_restore(unsigned long en)
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Not sure why you're asking Jon, but the technical issues raised by Al need 
+to be resolved before the code can be considered for upstreaming.
 
 
+- James
+-- 
+James Morris
+<jmorris@namei.org>
