@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab2ECJix (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:38:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54268 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab2ECJiv (ORCPT
+	id S1756575Ab2ECJjJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:39:09 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:39273 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756247Ab2ECJjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:38:51 -0400
-From: Ike Panhc <ike.pan@canonical.com>
-To: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Cc: Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 2/2] ideapad: generate valid key event only
-Date: Thu,  3 May 2012 17:38:46 +0800
-Message-Id: <1336037926-9987-1-git-send-email-ike.pan@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1336037865-9918-1-git-send-email-ike.pan@canonical.com>
-References: <1336037865-9918-1-git-send-email-ike.pan@canonical.com>
+	Thu, 3 May 2012 05:39:06 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aq4FAIlRok9bdWOb/2dsb2JhbABFgx6wB4EHggkBAQV4ARALGAkWDwkDAgECAUUGDQEFAgEBiA26dJEIBJV+hXaKTIJq
+X-IronPort-AV: E=Sophos;i="4.75,523,1330902000"; 
+   d="scan'208";a="901241889"
+Message-ID: <4FA25238.8090902@igalia.com>
+Date: Thu, 03 May 2012 11:39:04 +0200
+From: =?ISO-8859-1?Q?Samuel_Iglesias_Gons=E1lvez?= <siglesias@igalia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] Staging: ipack: add support for IP-OCTAL mezzanine
+ board
+References: <1336031267-10689-1-git-send-email-siglesias@igalia.com> <1336031267-10689-4-git-send-email-siglesias@igalia.com> <20120503101513.2b2915ef@pyramind.ukuu.org.uk>
+In-Reply-To: <20120503101513.2b2915ef@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise will generate KEY_UNKNOWN on un-listed vpc event,
-which means nothing and is hard for user to report the detail
-of the event.
+On 05/03/2012 11:15 AM, Alan Cox wrote:
+> On Thu,  3 May 2012 09:47:47 +0200
+> Samuel Iglesias Gonsalvez <siglesias@igalia.com> wrote:
+>
+>> IP-OCTAL is a 8-channels serial port device. There are several models
+one per
+>> each standard: RS-232, RS-422, RS-485.
+>>
+>> This driver can manage all of them.
+>
+> What are the plans for cleaning up this set of patches ?
+>
 
-Signed-off-by: Ike Panhc <ike.pan@canonical.com>
----
- drivers/platform/x86/ideapad-laptop.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Fix the wrong stuff in the needed iterations before they reach staging.
+I can work on it the following weeks.
 
-diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
-index 00d82f1..4f20f8d 100644
---- a/drivers/platform/x86/ideapad-laptop.c
-+++ b/drivers/platform/x86/ideapad-laptop.c
-@@ -784,6 +784,10 @@ static void ideapad_acpi_notify(struct acpi_device *adevice, u32 event)
- 			case 9:
- 				ideapad_sync_rfk_state(priv);
- 				break;
-+			case 13:
-+			case 6:
-+				ideapad_input_report(priv, vpc_bit);
-+				break;
- 			case 4:
- 				ideapad_backlight_notify_brightness(priv);
- 				break;
-@@ -794,7 +798,7 @@ static void ideapad_acpi_notify(struct acpi_device *adevice, u32 event)
- 				ideapad_backlight_notify_power(priv);
- 				break;
- 			default:
--				ideapad_input_report(priv, vpc_bit);
-+				pr_info("Unknown event: %lu\n", vpc_bit);
- 			}
- 		}
- 	}
--- 
-1.7.9.5
+Looking at your comments, at least this patch needs more love before
+being accepted in staging. I will work on it and send them again
+including the suggestions of the other patches.
 
+[...]
+>
+> Can't really comment on the bus stuff, but the tty driver looks mostly
+> ok. It just needs a bit of modernising, and apart from that, and the
+> locking issue on write looks pretty good.
+
+Thanks,
+
+Sam
