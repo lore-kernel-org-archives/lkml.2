@@ -1,611 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab2ECK1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 06:27:18 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:59022 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756064Ab2ECK07 (ORCPT
+	id S1756665Ab2ECKak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 06:30:40 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:38408 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab2ECKai convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 06:26:59 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-fbdev@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH v2 4/4] backlight: add LM3533 backlight driver
-Date: Thu,  3 May 2012 12:26:39 +0200
-Message-Id: <1336040799-18433-5-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.8.5
-In-Reply-To: <1336040799-18433-1-git-send-email-jhovold@gmail.com>
-References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
- <1336040799-18433-1-git-send-email-jhovold@gmail.com>
+	Thu, 3 May 2012 06:30:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1205030208120.21476@chino.kir.corp.google.com>
+References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au>
+	<4F9ABF9C.2070707@xenotime.net>
+	<alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com>
+	<20120427132343.fbb443b9.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com>
+	<20120427143646.8209627e.akpm@linux-foundation.org>
+	<87fwbnag6u.fsf@skywalker.in.ibm.com>
+	<alpine.DEB.2.00.1205030208120.21476@chino.kir.corp.google.com>
+Date: Thu, 3 May 2012 19:30:37 +0900
+Message-ID: <CABEgKgqWo=b=o7PwOLc=QqCWXQxUaYvMX99GP9cR_Y-RoTEW3g@mail.gmail.com>
+Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add sub-driver for the backlights on National Semiconductor / TI LM3533
-lighting power chips.
+On Thu, May 3, 2012 at 6:13 PM, David Rientjes <rientjes@google.com> wrote:
+> On Sat, 28 Apr 2012, Aneesh Kumar K.V wrote:
+>
+>> My first version was to do it as a seperate controller
+>>
+>> http://thread.gmane.org/gmane.linux.kernel.mm/73826
+>>
+>> But the feedback I received was to do it as a part of memcg extension,
+>> because what the controller is limiting is memory albeit a different
+>> type. AFAIU there is also this goal of avoiding controller proliferation.
+>>
+>
+> Maybe Kame can speak up if he feels strongly about this, but I really
+> think it should be its own controller in its own file (which would
+> obviously make this discussion irrelevant since mm/hugetlbcg.c would be
+> dependent on your own config symbol).  I don't feel like this is the same
+> as kmem since its not a global resource like hugetlb pages are.
+>
+> Hugetlb pages can either be allocated statically on the command line at
+> boot or dynamically via sysfs and they are globally available to whoever
+> mmaps them through hugetlbfs.  I see a real benefit from being able to
+> limit the number of hugepages in the global pool to a set of tasks so they
+> can't overuse what has been statically or dynamically allocated.  And that
+> ability should be available, in my opinion, without having to enable
+> memcg, the page_cgroup metadata overhead that comes along with it, and the
+> performance impact in using it.  I also think it would be wise to seperate
+> it out into its own file at the source level so things like this don't
+> arise in the future.
+>
+> What do you think?  Kame?
 
-The chip provides 256 brightness levels and ambient-light-sensor and pwm
-input control.
+I think hugetlb should be handled under memcg.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
+1. I think Hugetlb is memory.
 
-v2:
- - add sysfs-ABI documentation
- - open code max_current/pwm macros
+2. The characteristics of hugetlb usage you pointed out is
+characteristics comes from
+   "current" implementation.
+    Yes, it's now unreclaimable and should be allocated by hands of
+admin. But,
+    considering recent improvements, memory-defrag, CMA, it can be less
+    hard-to-use thing by updating implementation and on-demand allocation
+    can be allowed.
 
+3. If overhead is the problem, and it's better to disable memcg,
+    Please show numbers with HPC apps. I didn't think memcg has very
+bad overhead
+    with Bull's presentation in collaboration summit, this April.
 
- .../testing/sysfs-class-backlight-driver-lm3533    |   50 +++
- drivers/video/backlight/Kconfig                    |   12 +
- drivers/video/backlight/Makefile                   |    1 +
- drivers/video/backlight/lm3533_bl.c                |  458 ++++++++++++++++++++
- 4 files changed, 521 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-backlight-driver-lm3533
- create mode 100644 drivers/video/backlight/lm3533_bl.c
+4. I guess a user who uses hugetlbfs will use usual memory at the same time.
+    Having 2 hierarchy for memory and hugetlb will bring him a confusion.
 
-diff --git a/Documentation/ABI/testing/sysfs-class-backlight-driver-lm3533 b/Documentation/ABI/testing/sysfs-class-backlight-driver-lm3533
-new file mode 100644
-index 0000000..866fd3e
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-class-backlight-driver-lm3533
-@@ -0,0 +1,50 @@
-+What:		/sys/class/backlight/<backlight>/als
-+Date:		April 2012
-+KernelVersion:	3.5
-+Contact:	Johan Hovold <jhovold@gmail.com>
-+Description:
-+		Set the ALS-control mode (0,..2), where
-+
-+		0 - disabled
-+		1 - ALS-mapper 1 (backlight 0)
-+		2 - ALS-mapper 2 (backlight 1)
-+
-+What:		/sys/class/backlight/<backlight>/id
-+Date:		April 2012
-+KernelVersion:	3.5
-+Contact:	Johan Hovold <jhovold@gmail.com>
-+Description:
-+		Get the id of this backlight (0, 1).
-+
-+What:		/sys/class/backlight/<backlight>/linear
-+Date:		April 2012
-+KernelVersion:	3.5
-+Contact:	Johan Hovold <jhovold@gmail.com>
-+Description:
-+		Set the brightness-mapping mode (0, 1), where
-+
-+		0 - exponential mode
-+		1 - linear mode
-+
-+What:		/sys/class/backlight/<backlight>/max_current
-+Date:		April 2012
-+KernelVersion:	3.5
-+Contact:	Johan Hovold <jhovold@gmail.com>
-+Description:
-+		Set the full-scale current I_{LED_FULLSCALE} (0..31), where
-+
-+		I_{LED_FULLSCALE} = 5mA + max_current * 0.8mA
-+
-+What:		/sys/class/backlight/<backlight>/pwm
-+Date:		April 2012
-+KernelVersion:	3.5
-+Contact:	Johan Hovold <jhovold@gmail.com>
-+Description:
-+		Set the PWM-input control mask (5 bits), where
-+
-+		bit 5 - PWM-input enabled in Zone 4
-+		bit 4 - PWM-input enabled in Zone 3
-+		bit 3 - PWM-input enabled in Zone 2
-+		bit 2 - PWM-input enabled in Zone 1
-+		bit 1 - PWM-input enabled in Zone 0
-+		bit 0 - PWM-input enabled
-diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-index af16884..fa2b037 100644
---- a/drivers/video/backlight/Kconfig
-+++ b/drivers/video/backlight/Kconfig
-@@ -184,6 +184,18 @@ config BACKLIGHT_GENERIC
- 	  known as the Corgi backlight driver. If you have a Sharp Zaurus
- 	  SL-C7xx, SL-Cxx00 or SL-6000x say y.
- 
-+config BACKLIGHT_LM3533
-+	tristate "Backlight Driver for LM3533"
-+	depends on BACKLIGHT_CLASS_DEVICE
-+	depends on MFD_LM3533
-+	help
-+	  Say Y to enable the backlight driver for National Semiconductor / TI
-+	  LM3533 Lighting Power chips.
-+
-+	  The backlights can be controlled directly, through PWM input, or by
-+	  the ambient-light-sensor interface. The chip supports 256 brightness
-+	  levels.
-+
- config BACKLIGHT_LOCOMO
- 	tristate "Sharp LOCOMO LCD/Backlight Driver"
- 	depends on SHARP_LOCOMO
-diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-index 36855ae..a2ac9cf 100644
---- a/drivers/video/backlight/Makefile
-+++ b/drivers/video/backlight/Makefile
-@@ -21,6 +21,7 @@ obj-$(CONFIG_BACKLIGHT_EP93XX)	+= ep93xx_bl.o
- obj-$(CONFIG_BACKLIGHT_GENERIC)	+= generic_bl.o
- obj-$(CONFIG_BACKLIGHT_HP700)	+= jornada720_bl.o
- obj-$(CONFIG_BACKLIGHT_HP680)	+= hp680_bl.o
-+obj-$(CONFIG_BACKLIGHT_LM3533)	+= lm3533_bl.o
- obj-$(CONFIG_BACKLIGHT_LOCOMO)	+= locomolcd.o
- obj-$(CONFIG_BACKLIGHT_LP855X)	+= lp855x_bl.o
- obj-$(CONFIG_BACKLIGHT_OMAP1)	+= omap1_bl.o
-diff --git a/drivers/video/backlight/lm3533_bl.c b/drivers/video/backlight/lm3533_bl.c
-new file mode 100644
-index 0000000..4100c7a
---- /dev/null
-+++ b/drivers/video/backlight/lm3533_bl.c
-@@ -0,0 +1,458 @@
-+/*
-+ * lm3533-bl.c -- LM3533 Backlight driver
-+ *
-+ * Copyright (C) 2011-2012 Texas Instruments
-+ *
-+ * Author: Johan Hovold <jhovold@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under  the terms of the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/backlight.h>
-+#include <linux/fb.h>
-+#include <linux/slab.h>
-+
-+#include <linux/mfd/lm3533.h>
-+
-+
-+#define LM3533_HVCTRLBANK_COUNT		2
-+#define LM3533_BL_MAX_BRIGHTNESS	255
-+
-+#define LM3533_REG_CTRLBANK_AB_BCONF	0x1a
-+
-+
-+struct lm3533_bl {
-+	struct lm3533 *lm3533;
-+	struct lm3533_ctrlbank cb;
-+	struct backlight_device *bd;
-+	int id;
-+};
-+
-+
-+static inline int lm3533_bl_get_ctrlbank_id(struct lm3533_bl *bl)
-+{
-+	return bl->id;
-+}
-+
-+static int lm3533_bl_update_status(struct backlight_device *bd)
-+{
-+	struct lm3533_bl *bl = bl_get_data(bd);
-+	int brightness = bd->props.brightness;
-+
-+	if (bd->props.power != FB_BLANK_UNBLANK)
-+		brightness = 0;
-+	if (bd->props.fb_blank != FB_BLANK_UNBLANK)
-+		brightness = 0;
-+
-+	return lm3533_ctrlbank_set_brightness(&bl->cb, (u8)brightness);
-+}
-+
-+static int lm3533_bl_get_brightness(struct backlight_device *bd)
-+{
-+	struct lm3533_bl *bl = bl_get_data(bd);
-+	u8 val;
-+	int ret;
-+
-+	ret = lm3533_ctrlbank_get_brightness(&bl->cb, &val);
-+	if (ret)
-+		return ret;
-+
-+	return val;
-+}
-+
-+static const struct backlight_ops lm3533_bl_ops = {
-+	.get_brightness	= lm3533_bl_get_brightness,
-+	.update_status	= lm3533_bl_update_status,
-+};
-+
-+static ssize_t show_id(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lm3533_bl *bl = dev_get_drvdata(dev);
-+
-+	return scnprintf(buf, PAGE_SIZE, "%d\n", bl->id);
-+}
-+
-+/*
-+ * ALS-control setting:
-+ *
-+ *   0 - ALS disabled
-+ *   1 - ALS-mapper 1 (backlight 0)
-+ *   2 - ALS-mapper 2 (backlight 1)
-+ */
-+static ssize_t show_als(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lm3533_bl *bl = dev_get_drvdata(dev);
-+	int ctrlbank = lm3533_bl_get_ctrlbank_id(bl);
-+	u8 val;
-+	u8 mask;
-+	int als;
-+	int ret;
-+
-+	ret = lm3533_read(bl->lm3533, LM3533_REG_CTRLBANK_AB_BCONF, &val);
-+	if (ret)
-+		return ret;
-+
-+	mask = 2 * ctrlbank;
-+	als = val & mask;
-+	if (als)
-+		als = ctrlbank + 1;
-+
-+	return scnprintf(buf, PAGE_SIZE, "%d\n", als);
-+}
-+
-+static ssize_t store_als(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t len)
-+{
-+	struct lm3533_bl *bl = dev_get_drvdata(dev);
-+	int ctrlbank = lm3533_bl_get_ctrlbank_id(bl);
-+	int als;
-+	u8 val;
-+	u8 mask;
-+	int ret;
-+
-+	if (kstrtoint(buf, 0, &als))
-+		return -EINVAL;
-+
-+	if (als != 0 && (als != ctrlbank + 1))
-+		return -EINVAL;
-+
-+	mask = 1 << (2 * ctrlbank);
-+
-+	if (als)
-+		val = mask;
-+	else
-+		val = 0;
-+
-+	ret = lm3533_update(bl->lm3533, LM3533_REG_CTRLBANK_AB_BCONF, val,
-+									mask);
-+	if (ret)
-+		return ret;
-+
-+	return len;
-+}
-+
-+static ssize_t show_linear(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lm3533_bl *bl = dev_get_drvdata(dev);
-+	u8 val;
-+	u8 mask;
-+	int linear;
-+	int ret;
-+
-+	ret = lm3533_read(bl->lm3533, LM3533_REG_CTRLBANK_AB_BCONF, &val);
-+	if (ret)
-+		return ret;
-+
-+	mask = 1 << (2 * lm3533_bl_get_ctrlbank_id(bl) + 1);
-+
-+	if (val & mask)
-+		linear = 1;
-+	else
-+		linear = 0;
-+
-+	return scnprintf(buf, PAGE_SIZE, "%x\n", linear);
-+}
-+
-+static ssize_t store_linear(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t len)
-+{
-+	struct lm3533_bl *bl = dev_get_drvdata(dev);
-+	unsigned long linear;
-+	u8 mask;
-+	u8 val;
-+	int ret;
-+
-+	if (kstrtoul(buf, 0, &linear))
-+		return -EINVAL;
-+
-+	mask = 1 << (2 * lm3533_bl_get_ctrlbank_id(bl) + 1);
-+
-+	if (linear)
-+		val = mask;
-+	else
-+		val = 0;
-+
-+	ret = lm3533_update(bl->lm3533, LM3533_REG_CTRLBANK_AB_BCONF, val,
-+									mask);
-+	if (ret)
-+		return ret;
-+
-+	return len;
-+}
-+
-+static ssize_t show_max_current(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct lm3533_bl *bl = dev_get_drvdata(dev);
-+	u8 val;
-+	int ret;
-+
-+	ret = lm3533_ctrlbank_get_max_current(&bl->cb, &val);
-+	if (ret)
-+		return ret;
-+
-+	return scnprintf(buf, PAGE_SIZE, "%u\n", val);
-+}
-+
-+static ssize_t store_max_current(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t len)
-+{
-+	struct lm3533_bl *bl = dev_get_drvdata(dev);
-+	u8 val;
-+	int ret;
-+
-+	if (kstrtou8(buf, 0, &val))
-+		return -EINVAL;
-+
-+	ret = lm3533_ctrlbank_set_max_current(&bl->cb, val);
-+	if (ret)
-+		return ret;
-+
-+	return len;
-+}
-+
-+static ssize_t show_pwm(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct lm3533_bl *bl = dev_get_drvdata(dev);
-+	u8 val;
-+	int ret;
-+
-+	ret = lm3533_ctrlbank_get_pwm(&bl->cb, &val);
-+	if (ret)
-+		return ret;
-+
-+	return scnprintf(buf, PAGE_SIZE, "%u\n", val);
-+}
-+
-+static ssize_t store_pwm(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t len)
-+{
-+	struct lm3533_bl *bl = dev_get_drvdata(dev);
-+	u8 val;
-+	int ret;
-+
-+	if (kstrtou8(buf, 0, &val))
-+		return -EINVAL;
-+
-+	ret = lm3533_ctrlbank_set_pwm(&bl->cb, val);
-+	if (ret)
-+		return ret;
-+
-+	return len;
-+}
-+
-+static LM3533_ATTR_RW(als);
-+static LM3533_ATTR_RO(id);
-+static LM3533_ATTR_RW(linear);
-+static LM3533_ATTR_RW(max_current);
-+static LM3533_ATTR_RW(pwm);
-+
-+static struct attribute *lm3533_bl_attributes[] = {
-+	&dev_attr_als.attr,
-+	&dev_attr_id.attr,
-+	&dev_attr_linear.attr,
-+	&dev_attr_max_current.attr,
-+	&dev_attr_pwm.attr,
-+	NULL,
-+};
-+
-+static mode_t lm3533_bl_attr_is_visible(struct kobject *kobj,
-+					     struct attribute *attr, int n)
-+{
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct lm3533_bl *bl = dev_get_drvdata(dev);
-+	mode_t mode = attr->mode;
-+
-+	if (attr == &dev_attr_als.attr) {
-+		if (!bl->lm3533->have_als)
-+			mode = 0;
-+	}
-+
-+	return mode;
-+};
-+
-+static struct attribute_group lm3533_bl_attribute_group = {
-+	.is_visible	= lm3533_bl_attr_is_visible,
-+	.attrs		= lm3533_bl_attributes
-+};
-+
-+static int __devinit lm3533_bl_setup(struct lm3533_bl *bl,
-+					struct lm3533_bl_platform_data *pdata)
-+{
-+	int ret;
-+
-+	ret = lm3533_ctrlbank_set_max_current(&bl->cb, pdata->max_current);
-+	if (ret)
-+		return ret;
-+
-+	return lm3533_ctrlbank_set_pwm(&bl->cb, pdata->pwm);
-+}
-+
-+static int __devinit lm3533_bl_probe(struct platform_device *pdev)
-+{
-+	struct lm3533 *lm3533;
-+	struct lm3533_bl_platform_data *pdata;
-+	struct lm3533_bl *bl;
-+	struct backlight_device *bd;
-+	struct backlight_properties props;
-+	int ret;
-+
-+	dev_dbg(&pdev->dev, "%s\n", __func__);
-+
-+	lm3533 = dev_get_drvdata(pdev->dev.parent);
-+	if (!lm3533)
-+		return -EINVAL;
-+
-+	pdata = pdev->dev.platform_data;
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "no platform data\n");
-+		return -EINVAL;
-+	}
-+
-+	if (pdev->id < 0 || pdev->id >= LM3533_HVCTRLBANK_COUNT) {
-+		dev_err(&pdev->dev, "illegal backlight id %d\n", pdev->id);
-+		return -EINVAL;
-+	}
-+
-+	bl = kzalloc(sizeof(*bl), GFP_KERNEL);
-+	if (!bl) {
-+		dev_err(&pdev->dev,
-+				"failed to allocate memory for backlight\n");
-+		return -ENOMEM;
-+	}
-+
-+	bl->lm3533 = lm3533;
-+	bl->id = pdev->id;
-+
-+	bl->cb.lm3533 = lm3533;
-+	bl->cb.id = lm3533_bl_get_ctrlbank_id(bl);
-+	bl->cb.dev = NULL;			/* until registered */
-+
-+	memset(&props, 0, sizeof(props));
-+	props.type = BACKLIGHT_RAW;
-+	props.max_brightness = LM3533_BL_MAX_BRIGHTNESS;
-+	props.brightness = pdata->default_brightness;
-+	bd = backlight_device_register(pdata->name, pdev->dev.parent, bl,
-+						&lm3533_bl_ops, &props);
-+	if (IS_ERR(bd)) {
-+		dev_err(&pdev->dev, "failed to register backlight device\n");
-+		ret = PTR_ERR(bd);
-+		goto err_free;
-+	}
-+
-+	bl->bd = bd;
-+	bl->cb.dev = &bl->bd->dev;
-+
-+	platform_set_drvdata(pdev, bl);
-+
-+	ret = sysfs_create_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to create sysfs attributes\n");
-+		goto err_unregister;
-+	}
-+
-+	backlight_update_status(bd);
-+
-+	ret = lm3533_bl_setup(bl, pdata);
-+	if (ret)
-+		goto err_sysfs_remove;
-+
-+	ret = lm3533_ctrlbank_enable(&bl->cb);
-+	if (ret)
-+		goto err_sysfs_remove;
-+
-+	return 0;
-+
-+err_sysfs_remove:
-+	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
-+err_unregister:
-+	backlight_device_unregister(bd);
-+err_free:
-+	kfree(bl);
-+
-+	return ret;
-+}
-+
-+static int __devexit lm3533_bl_remove(struct platform_device *pdev)
-+{
-+	struct lm3533_bl *bl = platform_get_drvdata(pdev);
-+	struct backlight_device *bd = bl->bd;
-+
-+	dev_dbg(&bd->dev, "%s\n", __func__);
-+
-+	bd->props.power = FB_BLANK_POWERDOWN;
-+	bd->props.brightness = 0;
-+
-+	lm3533_ctrlbank_disable(&bl->cb);
-+	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
-+	backlight_device_unregister(bd);
-+	kfree(bl);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int lm3533_bl_suspend(struct platform_device *pdev, pm_message_t state)
-+{
-+	struct lm3533_bl *bl = platform_get_drvdata(pdev);
-+
-+	dev_dbg(&pdev->dev, "%s\n", __func__);
-+
-+	return lm3533_ctrlbank_disable(&bl->cb);
-+}
-+
-+static int lm3533_bl_resume(struct platform_device *pdev)
-+{
-+	struct lm3533_bl *bl = platform_get_drvdata(pdev);
-+
-+	dev_dbg(&pdev->dev, "%s\n", __func__);
-+
-+	return lm3533_ctrlbank_enable(&bl->cb);
-+}
-+#else
-+#define lm3533_bl_suspend	NULL
-+#define lm3533_bl_resume	NULL
-+#endif
-+
-+static void lm3533_bl_shutdown(struct platform_device *pdev)
-+{
-+	struct lm3533_bl *bl = platform_get_drvdata(pdev);
-+
-+	dev_dbg(&pdev->dev, "%s\n", __func__);
-+
-+	lm3533_ctrlbank_disable(&bl->cb);
-+}
-+
-+static struct platform_driver lm3533_bl_driver = {
-+	.driver = {
-+		.name	= "lm3533-backlight",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= lm3533_bl_probe,
-+	.remove		= __devexit_p(lm3533_bl_remove),
-+	.shutdown	= lm3533_bl_shutdown,
-+	.suspend	= lm3533_bl_suspend,
-+	.resume		= lm3533_bl_resume,
-+};
-+module_platform_driver(lm3533_bl_driver);
-+
-+MODULE_AUTHOR("Johan Hovold <jhovold@gmail.com>");
-+MODULE_DESCRIPTION("LM3533 Backlight driver");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:lm3533-backlight");
--- 
-1.7.8.5
-
+Thanks,
+-Kame
