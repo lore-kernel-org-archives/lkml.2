@@ -1,129 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab2ECOrN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:47:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61400 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754842Ab2ECOrM (ORCPT
+	id S1756419Ab2ECOvP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:51:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47120 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754312Ab2ECOvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:47:12 -0400
-Subject: Re: [PATCH 09/13] perf target: Introduce perf_target_errno
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-In-Reply-To: <20120502185913.GE5745@infradead.org>
-References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
-	 <1335417327-11796-10-git-send-email-namhyung.kim@lge.com>
-	 <20120502185913.GE5745@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 May 2012 23:47:05 +0900
-Message-ID: <1336056425.1493.24.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 3 May 2012 10:51:13 -0400
+Date: Thu, 3 May 2012 15:51:08 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] leds: add LM3533 LED driver
+Message-ID: <20120503145108.GI3955@opensource.wolfsonmicro.com>
+References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-4-git-send-email-jhovold@gmail.com>
+ <20120503104344.GC3955@opensource.wolfsonmicro.com>
+ <20120503115059.GB15752@localhost>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dCSxeJc5W8HZXZrD"
+Content-Disposition: inline
+In-Reply-To: <20120503115059.GB15752@localhost>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-2012-05-02 (수), 15:59 -0300, Arnaldo Carvalho de Melo:
-> Em Thu, Apr 26, 2012 at 02:15:23PM +0900, Namhyung Kim escreveu:
-> > The perf_target_errno enumerations are used to indicate
-> > specific error cases on perf target operations. It'd
-> > help libperf being a more generic library.
-> > 
-> > Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> > Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-> > +	/* UID and SYSTEM are mutually exclusive */
-> > +	if (target->uid_str && target->system_wide) {
-> > +		target->system_wide = false;
-> > +		if (ret == PERF_TARGET__SUCCESS)
-> > +			ret = PERF_TARGET__UID_OVERRIDE_SYSTEM;
-> > +	}
-> > +
-> > +	return ret;
-> >  }
-> > diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
-> > index 1348065ada5e..c3914c8a9890 100644
-> > --- a/tools/perf/util/target.h
-> > +++ b/tools/perf/util/target.h
-> > @@ -12,6 +12,24 @@ struct perf_target {
-> >  	bool	     system_wide;
-> >  };
-> >  
-> > -void perf_target__validate(struct perf_target *target);
-> > +enum perf_target_errno {
-> > +	/*
-> > +	 * XXX: Just choose an arbitrary big number standard errno can't have
-> 
-> Here I think its better for us to use _negative_ big numbers, because
-> according to:
-> 
-> http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/errno.h.html
-> 
-> <quote>
-> Issue 6
-> 
-> The following new requirements on POSIX implementations derive from
-> alignment with the Single UNIX Specification:
-> 
-> The majority of the error conditions previously marked as extensions are
-> now mandatory, except for the STREAMS-related error conditions.
-> 
-> Values for errno are now required to be distinct positive values rather
-> than non-zero values. This change is for alignment with the ISO/IEC
-> 9899:1999 standard.
-> </quote>
-> 
-> So system errno range is all positive, since our error enumeration is a
-> superset of the system one, using negative values won't ever clash.
-> 
-> Also it would be better to have it as PERF_ERRNO__PID_OVERRIDE_CPU, etc.
-> 
-> Agreed?
-> 
+--dCSxeJc5W8HZXZrD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Agreed and thanks for the info. Will change the name of error constants
-too.
+On Thu, May 03, 2012 at 01:50:59PM +0200, Johan Hovold wrote:
+> On Thu, May 03, 2012 at 11:43:44AM +0100, Mark Brown wrote:
 
-Thanks,
-Namhyung
+> > > +		5 - 4.194 s
+> > > +		6 - 8.389 s
+> > > +		7 - 16.78 s
 
+> > Shouldn't these be controlled by led_blink_set() rather than a custom
+> > ABI?
 
-> Anybody else with reasons not to use this ernno range scheme?
-> 
-> Ingo?
-> 
-> - Arnaldo
-> 
-> > +	 */
-> > +	__PERF_TARGET__ERRNO_START		= 0x10000,
-> > +
-> > +	PERF_TARGET__SUCCESS			= __PERF_TARGET__ERRNO_START,
-> > +
-> > +	/* for perf_target__validate() */
-> > +	PERF_TARGET__PID_OVERRIDE_CPU,
-> > +	PERF_TARGET__PID_OVERRIDE_UID,
-> > +	PERF_TARGET__UID_OVERRIDE_CPU,
-> > +	PERF_TARGET__PID_OVERRIDE_SYSTEM,
-> > +	PERF_TARGET__UID_OVERRIDE_SYSTEM,
-> > +
-> > +	__PERF_TARGET__ERRNO_END
-> > +};
-> > +
-> > +enum perf_target_errno perf_target__validate(struct perf_target *target);
-> >  
-> >  #endif /* _PERF_TARGET_H */
-> > -- 
-> > 1.7.10
+> led_blink_set controls the on/off times, but the LM3533 has the two
+> additional rise and fall-time settings which determine the transition
+> time between these states.
 
+Hrm.  In that case these rise times are very large - I'd expect them to
+cause issues with led_set_blink() users?  Though actually I suspect the
+solution here is to pull these out into the framework later; we can
+probably simulate reasonably in software with a lot of brightness
+variable LEDs.
 
--- 
-Regards,
-Namhyung Kim
+> > > +What:		/sys/class/leds/<led>/max_current
 
+> > Shouldn't this be set by platform data, the maximum current you can push
+> > through the LEDs seems like a board dependant thing which won't change
+> > dynamically at runtime.  The brightness can already be varied.
 
+> I fully agree and it is possible to set via the platform data for that
+> reason. The end-customer, however, insisted that even this setting be
+> available through sysfs to facilitate their integration and testing.
+
+> I'd be willing drop this attribute if requested, as it would only be used
+> during integration and could easily be added back by the end-customer if
+> needed.
+
+I'd strongly suggest removing this for mainline.  If it's present it
+should at least be limited to the maximum specified in platform data
+(just for safety if nothing else).
+
+--dCSxeJc5W8HZXZrD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPoptPAAoJEBus8iNuMP3dnG4QAJZ8QTyGyPgEBIQu7u2wLHPX
++3T6HRWNeshaF+PCv23EyHr+YmOW62yQa3Z450P0Zym6LfIO3UiciCMOXALariUz
+XB+ynKoKW+5e9jbaZv67fwMZ31vjjYo8x5B4D+ueEIZTZFy0RQqgUoqYxDo0CuQt
+b+iAjRXy6/Bg890VYmL4lBTzfrDfco33uSJYCow0ixNZ237aCZnNjVEMks4TZ10O
++cLkGiUqtQ6BM0SwD5JNITiPDjFcNyHj3rJbkfoD5Y9kXZq64f1tmTi1Lxz7KnnE
+PMMjIv1BEcuUPbgn1QiWE4VR8S/ShpE7j8u5bI9z12b3XYucaI8OMOiorPdywylZ
+Yc8suNDg4lSZaADcWxPwcEP36npdTiA7rVvHixnl5aMzFYxceq4RdPxLtDGW/Znh
+oLFEHVtt18Cw0lMXPjOB2jdgdyL+PmQxtNSRkWQf6tRgJ+SjEvbB7URW1BbU0h78
+9JlmUf1LaQdEb9Nuoa5H4jtwI8IOkBKE8G0UZMbJrSfxiqvEYEGCJ6A2H3Kma6No
+7evhq3jT+EaSd3vgKgcWU2pVOrMbPi+20PhQ+hPuJw5Rr1TIllp6mSqhHveHw0O5
+UWWM/kVLzdPM02V7nWMJ9H5a1IzyfMs5a5aLj12A5VKUh/7KlcKAGlity8+cgPWt
+oXUONtw/gd82qeS0QrPY
+=mn64
+-----END PGP SIGNATURE-----
+
+--dCSxeJc5W8HZXZrD--
